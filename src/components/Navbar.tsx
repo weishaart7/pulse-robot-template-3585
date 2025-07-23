@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
-import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -80,7 +79,9 @@ const Navbar = () => {
 
         {/* Login Button - Desktop */}
         <div className="hidden md:flex items-center">
-          <InteractiveHoverButton text="Se connecter" />
+          <button className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-colors">
+            Se connecter
+          </button>
         </div>
 
         {/* Mobile menu button - increased touch target */}
@@ -131,14 +132,15 @@ const Navbar = () => {
           >
             Contact
           </a>
-          <InteractiveHoverButton 
-            text="Se connecter"
-            className="mt-4"
+          <button 
+            className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-colors mt-4"
             onClick={() => {
               setIsMenuOpen(false);
               document.body.style.overflow = '';
             }}
-          />
+          >
+            Se connecter
+          </button>
         </nav>
       </div>
     </header>
