@@ -27,7 +27,7 @@ const Hero = () => {
       className="overflow-hidden relative bg-cover" 
       id="hero" 
       style={{
-        backgroundImage: 'url("/lovable-uploads/faba2d34-c007-426d-b4d5-6f5eacafa131.png")',
+        backgroundImage: 'url("/Header-background.webp")',
         backgroundPosition: 'center 30%', 
         padding: '120px 20px 60px'
       }}
