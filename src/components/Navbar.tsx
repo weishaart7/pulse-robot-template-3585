@@ -77,6 +77,13 @@ const Navbar = () => {
           <a href="#details" className="nav-link">Contact</a>
         </nav>
 
+        {/* Login Button - Desktop */}
+        <div className="hidden md:flex items-center">
+          <button className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-colors">
+            Se connecter
+          </button>
+        </div>
+
         {/* Mobile menu button - increased touch target */}
         <button 
           className="md:hidden text-gray-700 p-3 focus:outline-none" 
@@ -125,6 +132,15 @@ const Navbar = () => {
           >
             Contact
           </a>
+          <button 
+            className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-colors mt-4"
+            onClick={() => {
+              setIsMenuOpen(false);
+              document.body.style.overflow = '';
+            }}
+          >
+            Se connecter
+          </button>
         </nav>
       </div>
     </header>
