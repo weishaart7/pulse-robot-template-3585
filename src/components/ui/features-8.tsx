@@ -13,7 +13,7 @@ export function Features() {
                                     </svg>
                                     <span className="mx-auto block w-fit text-5xl font-semibold">100%</span>
                                 </div>
-                                <h2 className="mt-6 text-center text-3xl font-semibold">Customizable</h2>
+                                <h2 className="mt-6 text-center text-3xl font-semibold">Transparant</h2>
                             </CardContent>
                         </Card>
                         <Card className="relative col-span-full overflow-hidden sm:col-span-3 lg:col-span-2">
@@ -37,7 +37,7 @@ export function Features() {
                                     </svg>
                                 </div>
                                 <div className="relative z-10 mt-6 space-y-2 text-center">
-                                    <h2 className="group-hover:text-secondary-950 text-lg font-medium transition dark:text-white">Secure by default</h2>
+                                    <h2 className="group-hover:text-secondary-950 text-lg font-medium transition dark:text-white">À votre image</h2>
                                     <p className="text-foreground">Provident fugit and vero voluptate. magnam magni doloribus dolores voluptates a sapiente nisi.</p>
                                 </div>
                             </CardContent>
