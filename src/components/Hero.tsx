@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { MoveRight, PhoneCall } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Particles } from "@/components/ui/particles";
 const Hero = () => {
   const [titleNumber, setTitleNumber] = useState(0);
   const titles = useMemo(() => ["incroyable", "nouveau", "merveilleux", "magnifique", "intelligent"], []);
@@ -15,12 +16,16 @@ const Hero = () => {
     }, 2000);
     return () => clearTimeout(timeoutId);
   }, [titleNumber, titles]);
-  return <section className="overflow-hidden relative bg-cover" id="hero" style={{
-    backgroundImage: 'url("/Header-background.webp")',
-    backgroundPosition: 'center 30%',
+  return <section className="overflow-hidden relative" id="hero" style={{
     padding: '120px 20px 60px'
   }}>
-      <div className="absolute -top-[10%] -right-[5%] w-1/2 h-[70%] bg-pulse-gradient opacity-20 blur-3xl rounded-full"></div>
+      <Particles
+        className="absolute inset-0"
+        quantity={100}
+        ease={80}
+        color="#ffffff"
+        refresh
+      />
       
       <div className="container px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-12 items-center">
