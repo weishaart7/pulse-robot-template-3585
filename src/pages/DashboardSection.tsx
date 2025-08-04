@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import FamilleSection from './famille/FamilleSection';
 
 const DashboardSection = () => {
   const { section } = useParams();
@@ -32,6 +33,11 @@ const DashboardSection = () => {
     };
     return descriptions[section] || 'Description non disponible';
   };
+
+  // Si la section est "famille", afficher le composant spécialisé
+  if (section === 'famille') {
+    return <FamilleSection />;
+  }
 
   return (
     <div className="p-6">
