@@ -1,11 +1,15 @@
 
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const { isAuthenticated, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -77,11 +81,31 @@ const Navbar = () => {
           <a href="#details" className="nav-link">Contact</a>
         </nav>
 
-        {/* Login Button - Desktop */}
+        {/* Login/Dashboard Button - Desktop */}
         <div className="hidden md:flex items-center">
-          <button className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-colors">
-            Se connecter
-          </button>
+          {isAuthenticated ? (
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => navigate('/dashboard')}
+                className="bg-secondary text-secondary-foreground hover:bg-secondary/80 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Tableau de bord
+              </button>
+              <button 
+                onClick={logout}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Déconnexion
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={() => navigate('/login')}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              Se connecter
+            </button>
+          )}
         </div>
 
         {/* Mobile menu button - increased touch target */}
@@ -132,15 +156,41 @@ const Navbar = () => {
           >
             Contact
           </a>
-          <button 
-            className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-colors mt-4"
-            onClick={() => {
-              setIsMenuOpen(false);
-              document.body.style.overflow = '';
-            }}
-          >
-            Se connecter
-          </button>
+          {isAuthenticated ? (
+            <div className="flex flex-col gap-4 w-full">
+              <button 
+                className="bg-secondary text-secondary-foreground hover:bg-secondary/80 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                onClick={() => {
+                  navigate('/dashboard');
+                  setIsMenuOpen(false);
+                  document.body.style.overflow = '';
+                }}
+              >
+                Tableau de bord
+              </button>
+              <button 
+                className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                onClick={() => {
+                  logout();
+                  setIsMenuOpen(false);
+                  document.body.style.overflow = '';
+                }}
+              >
+                Déconnexion
+              </button>
+            </div>
+          ) : (
+            <button 
+              className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-colors mt-4"
+              onClick={() => {
+                navigate('/login');
+                setIsMenuOpen(false);
+                document.body.style.overflow = '';
+              }}
+            >
+              Se connecter
+            </button>
+          )}
         </nav>
       </div>
     </header>
