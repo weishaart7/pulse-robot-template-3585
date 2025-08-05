@@ -165,9 +165,18 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSubmit, onCancel,
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Mode de détention</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choisir un mode de détention" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Pleine propriété">Pleine propriété</SelectItem>
+                            <SelectItem value="Usufruit">Usufruit</SelectItem>
+                            <SelectItem value="Nue-propriété">Nue-propriété</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
