@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
+import { useFamilyProfile } from '@/hooks/useFamilyData';
 
 const formSchema = z.object({
   civilite: z.enum(['M', 'Mme', 'Autre'], {
@@ -52,7 +52,7 @@ const professions = [
 ];
 
 export function FicheClientForm() {
-  const { toast } = useToast();
+  const { data, loading, saving, saveData } = useFamilyProfile();
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -61,20 +61,59 @@ export function FicheClientForm() {
     },
   });
 
-  const onSubmit = (data: FormData) => {
-    console.log('Données du formulaire:', data);
-    
-    // Sauvegarde mockée en localStorage
-    localStorage.setItem('ficheClient', JSON.stringify(data));
-    
-    toast({
-      title: 'Fiche client enregistrée',
-      description: 'Les informations ont été sauvegardées avec succès.',
-    });
-    
-    // Reset du formulaire après sauvegarde
-    form.reset();
+  // Charger les données depuis Supabase
+  useEffect(() => {
+    if (data) {
+      const formattedData = {
+        civilite: data.civility as 'M' | 'Mme' | 'Autre' || undefined,
+        nom: data.nom || '',
+        prenom: data.prenom || '',
+        dateNaissance: data.date_naissance ? new Date(data.date_naissance) : undefined,
+        profession: data.profession || '',
+        professionLibre: '',
+        communeNaissance: data.commune_naissance || '',
+        paysNaissance: data.pays_naissance || '',
+        nationalite: data.nationalite || '',
+        handicape: data.personne_handicapee || false,
+        telephone: data.telephone || '',
+        email: data.email || '',
+        adresse: data.adresse_postale || '',
+      };
+      form.reset(formattedData);
+    }
+  }, [data, form]);
+
+  const onSubmit = async (formData: FormData) => {
+    try {
+      const supabaseData = {
+        civility: formData.civilite,
+        nom: formData.nom,
+        prenom: formData.prenom,
+        date_naissance: formData.dateNaissance ? formData.dateNaissance.toISOString().split('T')[0] : undefined,
+        profession: formData.profession || formData.professionLibre,
+        commune_naissance: formData.communeNaissance,
+        pays_naissance: formData.paysNaissance,
+        nationalite: formData.nationalite,
+        personne_handicapee: formData.handicape,
+        telephone: formData.telephone,
+        email: formData.email,
+        adresse_postale: formData.adresse,
+      };
+
+      await saveData(supabaseData);
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Chargement des données...</span>
+      </div>
+    );
+  }
 
   return (
     <Form {...form}>
@@ -343,7 +382,16 @@ export function FicheClientForm() {
         />
 
         <div className="flex justify-end">
-          <Button type="submit">Enregistrer</Button>
+          <Button type="submit" disabled={saving}>
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Enregistrement...
+              </>
+            ) : (
+              'Enregistrer'
+            )}
+          </Button>
         </div>
       </form>
     </Form>
