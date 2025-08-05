@@ -100,7 +100,7 @@ export const BudgetSection = () => {
       {showChargesForm && <ChargesForm charge={editingCharge} onSubmit={handleSubmitCharge} onCancel={handleCancelCharge} />}
 
       {/* Boutons d'ajout */}
-      {!showRevenusForm && !showChargesForm && <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {!showRevenusForm && !showChargesForm && <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mx-[30px]">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
