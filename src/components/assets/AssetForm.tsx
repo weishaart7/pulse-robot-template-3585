@@ -41,9 +41,10 @@ interface AssetFormProps {
   asset?: Asset;
   onSubmit: (asset: AssetFormValues, charges: AssetCharge[]) => Promise<void>;
   onCancel: () => void;
+  onDelete?: (assetId: string) => Promise<void>;
 }
 
-export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSubmit, onCancel }) => {
+export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSubmit, onCancel, onDelete }) => {
   const [charges, setCharges] = useState<AssetCharge[]>([]);
   const [showChargeForm, setShowChargeForm] = useState(false);
   const [editingCharge, setEditingCharge] = useState<AssetCharge | null>(null);
@@ -109,6 +110,17 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSubmit, onCancel 
   const handleChargeEdit = (charge: AssetCharge) => {
     setEditingCharge(charge);
     setShowChargeForm(true);
+  };
+
+  const handleDelete = async () => {
+    if (asset?.id && onDelete && window.confirm('Êtes-vous sûr de vouloir supprimer cet actif ? Cette action est irréversible.')) {
+      setIsLoading(true);
+      try {
+        await onDelete(asset.id);
+      } finally {
+        setIsLoading(false);
+      }
+    }
   };
 
   // Options for detenteur are already defined above
@@ -381,13 +393,25 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSubmit, onCancel 
                 )}
               </div>
 
-              <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={onCancel}>
-                  Annuler
-                </Button>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? 'Enregistrement...' : 'Enregistrer'}
-                </Button>
+              <div className="flex justify-between">
+                {asset?.id && onDelete && (
+                  <Button 
+                    type="button" 
+                    variant="destructive" 
+                    onClick={handleDelete}
+                    disabled={isLoading}
+                  >
+                    Supprimer l'actif
+                  </Button>
+                )}
+                <div className="flex space-x-2 ml-auto">
+                  <Button type="button" variant="outline" onClick={onCancel}>
+                    Annuler
+                  </Button>
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading ? 'Enregistrement...' : 'Enregistrer'}
+                  </Button>
+                </div>
               </div>
             </form>
           </Form>

@@ -9,7 +9,7 @@ import { Asset, AssetCharge } from '@/services/assetService';
 export const PatrimoineSection = () => {
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
-  const { assets, createAsset, updateAsset, loading } = useAssets();
+  const { assets, createAsset, updateAsset, deleteAsset, loading } = useAssets();
 
   const handleAssetSubmit = async (assetData: any, charges: AssetCharge[]) => {
     try {
@@ -30,12 +30,23 @@ export const PatrimoineSection = () => {
     }
   };
 
+  const handleAssetDelete = async (assetId: string) => {
+    try {
+      await deleteAsset(assetId);
+      setShowAssetForm(false);
+      setEditingAsset(null);
+    } catch (error) {
+      console.error('Error deleting asset:', error);
+    }
+  };
+
   if (showAssetForm) {
     return (
       <div className="p-6">
         <AssetForm
           asset={editingAsset || undefined}
           onSubmit={handleAssetSubmit}
+          onDelete={editingAsset ? handleAssetDelete : undefined}
           onCancel={() => {
             setShowAssetForm(false);
             setEditingAsset(null);
