@@ -14,6 +14,119 @@ export type Database = {
   }
   public: {
     Tables: {
+      asset_charges: {
+        Row: {
+          asset_id: string
+          created_at: string
+          date_debut: string
+          debiteur: string
+          denomination: string
+          duree_annees: number | null
+          duree_fin_date: string | null
+          duree_type: string
+          id: string
+          impact_budget: boolean | null
+          montant: number
+          periodicite: string
+          type_charge: string
+          unite: string
+          updated_at: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          date_debut: string
+          debiteur: string
+          denomination: string
+          duree_annees?: number | null
+          duree_fin_date?: string | null
+          duree_type: string
+          id?: string
+          impact_budget?: boolean | null
+          montant: number
+          periodicite: string
+          type_charge: string
+          unite: string
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          date_debut?: string
+          debiteur?: string
+          denomination?: string
+          duree_annees?: number | null
+          duree_fin_date?: string | null
+          duree_type?: string
+          id?: string
+          impact_budget?: boolean | null
+          montant?: number
+          periodicite?: string
+          type_charge?: string
+          unite?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_charges_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assets: {
+        Row: {
+          created_at: string
+          date_acquisition: string | null
+          date_estimation: string | null
+          denomination: string | null
+          detenteur: string | null
+          frais_acquisition: number | null
+          id: string
+          mode_detention: string | null
+          nature: string
+          revalorisation_annuelle: number | null
+          updated_at: string
+          user_id: string
+          valeur_acquisition: number | null
+          valeur_estimee: number | null
+        }
+        Insert: {
+          created_at?: string
+          date_acquisition?: string | null
+          date_estimation?: string | null
+          denomination?: string | null
+          detenteur?: string | null
+          frais_acquisition?: number | null
+          id?: string
+          mode_detention?: string | null
+          nature: string
+          revalorisation_annuelle?: number | null
+          updated_at?: string
+          user_id: string
+          valeur_acquisition?: number | null
+          valeur_estimee?: number | null
+        }
+        Update: {
+          created_at?: string
+          date_acquisition?: string | null
+          date_estimation?: string | null
+          denomination?: string | null
+          detenteur?: string | null
+          frais_acquisition?: number | null
+          id?: string
+          mode_detention?: string | null
+          nature?: string
+          revalorisation_annuelle?: number | null
+          updated_at?: string
+          user_id?: string
+          valeur_acquisition?: number | null
+          valeur_estimee?: number | null
+        }
+        Relationships: []
+      }
       family_links: {
         Row: {
           a_charge: boolean | null
