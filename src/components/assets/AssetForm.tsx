@@ -186,22 +186,6 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                         <FormMessage />
                       </FormItem>} />
 
-                   <FormField control={form.control} name="revalorisation_annuelle" render={({
-                  field
-                }) => (
-                    <FormItem>
-                      <FormLabel>Revalorisation annuelle (%)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          step="0.01" 
-                          {...field} 
-                          onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
                 </div>
 
                 <FormField control={form.control} name="denomination" render={({
