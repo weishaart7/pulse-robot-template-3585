@@ -1,5 +1,4 @@
-import React from 'react';
-import { useLocation, NavLink } from 'react-router-dom';
+import React, { useState } from 'react';
 import {
   Users,
   Building2,
@@ -11,70 +10,115 @@ import {
   Target,
   Home,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
 
 import {
   Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
-} from '@/components/ui/sidebar';
+  SidebarBody,
+  SidebarLink,
+} from '@/components/ui/sidebar-animated';
 
 const menuItems = [
-  { title: 'Vue d\'ensemble', url: '/dashboard', icon: Home },
-  { title: 'Famille', url: '/dashboard/famille', icon: Users },
-  { title: 'Patrimoine', url: '/dashboard/patrimoine', icon: Building2 },
-  { title: 'Sociétés', url: '/dashboard/societes', icon: Briefcase },
-  { title: 'Retraite', url: '/dashboard/retraite', icon: Clock },
-  { title: 'Budget', url: '/dashboard/budget', icon: Wallet },
-  { title: 'Fiscalité', url: '/dashboard/fiscalite', icon: Receipt },
-  { title: 'Transmission', url: '/dashboard/transmission', icon: ArrowRightLeft },
-  { title: 'Stratégies', url: '/dashboard/strategies', icon: Target },
+  { 
+    label: 'Vue d\'ensemble', 
+    href: '/dashboard', 
+    icon: <Home className="text-foreground h-5 w-5 flex-shrink-0" />
+  },
+  { 
+    label: 'Famille', 
+    href: '/dashboard/famille', 
+    icon: <Users className="text-foreground h-5 w-5 flex-shrink-0" />
+  },
+  { 
+    label: 'Patrimoine', 
+    href: '/dashboard/patrimoine', 
+    icon: <Building2 className="text-foreground h-5 w-5 flex-shrink-0" />
+  },
+  { 
+    label: 'Sociétés', 
+    href: '/dashboard/societes', 
+    icon: <Briefcase className="text-foreground h-5 w-5 flex-shrink-0" />
+  },
+  { 
+    label: 'Retraite', 
+    href: '/dashboard/retraite', 
+    icon: <Clock className="text-foreground h-5 w-5 flex-shrink-0" />
+  },
+  { 
+    label: 'Budget', 
+    href: '/dashboard/budget', 
+    icon: <Wallet className="text-foreground h-5 w-5 flex-shrink-0" />
+  },
+  { 
+    label: 'Fiscalité', 
+    href: '/dashboard/fiscalite', 
+    icon: <Receipt className="text-foreground h-5 w-5 flex-shrink-0" />
+  },
+  { 
+    label: 'Transmission', 
+    href: '/dashboard/transmission', 
+    icon: <ArrowRightLeft className="text-foreground h-5 w-5 flex-shrink-0" />
+  },
+  { 
+    label: 'Stratégies', 
+    href: '/dashboard/strategies', 
+    icon: <Target className="text-foreground h-5 w-5 flex-shrink-0" />
+  },
 ];
 
-export function AppSidebar() {
-  const { state } = useSidebar();
-  const location = useLocation();
-  const currentPath = location.pathname;
+export const Logo = () => {
+  return (
+    <div className="font-normal flex space-x-2 items-center text-sm py-1 relative z-20">
+      <div className="h-5 w-6 bg-primary rounded-br-lg rounded-tr-sm rounded-tl-lg rounded-bl-sm flex-shrink-0" />
+      <motion.span
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="font-medium text-foreground whitespace-pre"
+      >
+        Patrimoine
+      </motion.span>
+    </div>
+  );
+};
 
-  const isCollapsed = state === 'collapsed';
+export const LogoIcon = () => {
+  return (
+    <div className="font-normal flex space-x-2 items-center text-sm py-1 relative z-20">
+      <div className="h-5 w-6 bg-primary rounded-br-lg rounded-tr-sm rounded-tl-lg rounded-bl-sm flex-shrink-0" />
+    </div>
+  );
+};
+
+export function AppSidebar() {
+  const [open, setOpen] = useState(false);
+  const { user } = useAuth();
 
   return (
-    <Sidebar className={isCollapsed ? 'w-14' : 'w-64'} collapsible="icon">
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className={isCollapsed ? 'sr-only' : ''}>
-            Gestion Patrimoniale
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url}
-                      className={({ isActive }) =>
-                        `flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
-                          isActive 
-                            ? 'bg-primary text-primary-foreground' 
-                            : 'hover:bg-accent hover:text-accent-foreground'
-                        }`
-                      }
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {!isCollapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+    <Sidebar open={open} setOpen={setOpen}>
+      <SidebarBody className="justify-between gap-10">
+        <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+          {open ? <Logo /> : <LogoIcon />}
+          <div className="mt-8 flex flex-col gap-2">
+            {menuItems.map((link, idx) => (
+              <SidebarLink key={idx} link={link} />
+            ))}
+          </div>
+        </div>
+        <div>
+          <SidebarLink
+            link={{
+              label: user?.email || 'Utilisateur',
+              href: '#',
+              icon: (
+                <div className="h-7 w-7 flex-shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
+                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                </div>
+              ),
+            }}
+          />
+        </div>
+      </SidebarBody>
     </Sidebar>
   );
 }
