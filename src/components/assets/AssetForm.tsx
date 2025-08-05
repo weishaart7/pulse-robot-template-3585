@@ -5,7 +5,6 @@ import * as z from 'zod';
 import { CalendarIcon, Plus, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -33,27 +32,28 @@ const assetSchema = z.object({
   detenteur: z.string().optional(),
   valeur_acquisition: z.number().optional(),
   frais_acquisition: z.number().optional(),
-  date_acquisition: z.date().optional(),
+  date_acquisition: z.date().optional()
 });
-
 type AssetFormValues = z.infer<typeof assetSchema>;
-
 interface AssetFormProps {
   asset?: Asset;
   onSubmit: (asset: AssetFormValues, charges: AssetCharge[]) => Promise<void>;
   onCancel: () => void;
   onDelete?: (assetId: string) => Promise<void>;
 }
-
-export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSubmit, onCancel, onDelete }) => {
+export const AssetForm: React.FC<AssetFormProps> = ({
+  asset,
+  onSubmit,
+  onCancel,
+  onDelete
+}) => {
   const [charges, setCharges] = useState<AssetCharge[]>([]);
   const [showChargeForm, setShowChargeForm] = useState(false);
   const [editingCharge, setEditingCharge] = useState<AssetCharge | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Static options for detenteur
   const detenteurOptions = ['Époux 1', 'Époux 2', 'Couple'];
-
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
     defaultValues: asset ? {
@@ -66,53 +66,51 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSubmit, onCancel,
       detenteur: asset.detenteur || '',
       valeur_acquisition: asset.valeur_acquisition || undefined,
       frais_acquisition: asset.frais_acquisition || undefined,
-      date_acquisition: asset.date_acquisition ? new Date(asset.date_acquisition) : undefined,
+      date_acquisition: asset.date_acquisition ? new Date(asset.date_acquisition) : undefined
     } : {
       nature: '',
       denomination: '',
       mode_detention: '',
-      detenteur: '',
+      detenteur: ''
     }
   });
-
   const handleSubmit = async (values: AssetFormValues) => {
     setIsLoading(true);
     try {
       const formattedValues = {
         ...values,
         date_estimation: values.date_estimation ? format(values.date_estimation, 'yyyy-MM-dd') : undefined,
-        date_acquisition: values.date_acquisition ? format(values.date_acquisition, 'yyyy-MM-dd') : undefined,
+        date_acquisition: values.date_acquisition ? format(values.date_acquisition, 'yyyy-MM-dd') : undefined
       };
       await onSubmit(formattedValues as any, charges);
     } finally {
       setIsLoading(false);
     }
   };
-
   const handleChargeSubmit = (chargeData: any) => {
     if (editingCharge) {
-      setCharges(prev => prev.map(c => c.id === editingCharge.id ? { ...editingCharge, ...chargeData } : c));
+      setCharges(prev => prev.map(c => c.id === editingCharge.id ? {
+        ...editingCharge,
+        ...chargeData
+      } : c));
       setEditingCharge(null);
     } else {
       const newCharge: AssetCharge = {
         id: `temp-${Date.now()}`,
         asset_id: asset?.id || '',
-        ...chargeData,
+        ...chargeData
       };
       setCharges(prev => [...prev, newCharge]);
     }
     setShowChargeForm(false);
   };
-
   const handleChargeDelete = (chargeId: string) => {
     setCharges(prev => prev.filter(c => c.id !== chargeId));
   };
-
   const handleChargeEdit = (charge: AssetCharge) => {
     setEditingCharge(charge);
     setShowChargeForm(true);
   };
-
   const handleDelete = async () => {
     if (asset?.id && onDelete && window.confirm('Êtes-vous sûr de vouloir supprimer cet actif ? Cette action est irréversible.')) {
       setIsLoading(true);
@@ -126,8 +124,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSubmit, onCancel,
 
   // Options for detenteur are already defined above
 
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>{asset ? 'Modifier l\'actif' : 'Ajouter un actif'}</CardTitle>
@@ -140,30 +137,19 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSubmit, onCancel,
                 <h3 className="text-lg font-semibold">1. Description de l'actif</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="nature"
-                    render={({ field }) => (
-                      <FormItem>
+                  <FormField control={form.control} name="nature" render={({
+                  field
+                }) => <FormItem>
                         <FormLabel>Nature *</FormLabel>
                         <FormControl>
-                          <SearchableSelect
-                            options={ASSET_NATURES}
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Choisir une nature"
-                          />
+                          <SearchableSelect options={ASSET_NATURES} value={field.value} onChange={field.onChange} placeholder="Choisir une nature" />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      </FormItem>} />
 
-                  <FormField
-                    control={form.control}
-                    name="mode_detention"
-                    render={({ field }) => (
-                      <FormItem>
+                  <FormField control={form.control} name="mode_detention" render={({
+                  field
+                }) => <FormItem>
                         <FormLabel>Mode de détention</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
@@ -178,80 +164,42 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSubmit, onCancel,
                           </SelectContent>
                         </Select>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      </FormItem>} />
 
-                  <FormField
-                    control={form.control}
-                    name="valeur_estimee"
-                    render={({ field }) => (
-                      <FormItem>
+                  <FormField control={form.control} name="valeur_estimee" render={({
+                  field
+                }) => <FormItem>
                         <FormLabel>Valeur estimée (€)</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="number" 
-                            step="0.01"
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
-                          />
+                          <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      </FormItem>} />
 
-                  <FormField
-                    control={form.control}
-                    name="date_estimation"
-                    render={({ field }) => (
-                      <FormItem>
+                  <FormField control={form.control} name="date_estimation" render={({
+                  field
+                }) => <FormItem>
                         <FormLabel>Date d'estimation</FormLabel>
                         <FormControl>
-                          <DateInput
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="jj/mm/aaaa"
-                          />
+                          <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      </FormItem>} />
 
-                  <FormField
-                    control={form.control}
-                    name="revalorisation_annuelle"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Hypothèse de revalorisation annuelle (%)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            step="0.01"
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormField control={form.control} name="revalorisation_annuelle" render={({
+                  field
+                }) => {}} />
                 </div>
 
-                <FormField
-                  control={form.control}
-                  name="denomination"
-                  render={({ field }) => (
-                    <FormItem>
+                <FormField control={form.control} name="denomination" render={({
+                field
+              }) => <FormItem>
                       <FormLabel>Dénomination</FormLabel>
                       <FormControl>
                         <Textarea {...field} rows={3} />
                       </FormControl>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    </FormItem>} />
               </div>
 
               <Separator />
@@ -261,11 +209,9 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSubmit, onCancel,
                 <h3 className="text-lg font-semibold">2. Détenteur</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="detenteur"
-                    render={({ field }) => (
-                      <FormItem>
+                  <FormField control={form.control} name="detenteur" render={({
+                  field
+                }) => <FormItem>
                         <FormLabel>Détenteur</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
@@ -274,73 +220,43 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSubmit, onCancel,
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {detenteurOptions.map((option) => (
-                              <SelectItem key={option} value={option}>
+                            {detenteurOptions.map(option => <SelectItem key={option} value={option}>
                                 {option}
-                              </SelectItem>
-                            ))}
+                              </SelectItem>)}
                           </SelectContent>
                         </Select>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      </FormItem>} />
 
-                  <FormField
-                    control={form.control}
-                    name="date_acquisition"
-                    render={({ field }) => (
-                      <FormItem>
+                  <FormField control={form.control} name="date_acquisition" render={({
+                  field
+                }) => <FormItem>
                         <FormLabel>Date d'acquisition</FormLabel>
                         <FormControl>
-                          <DateInput
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="jj/mm/aaaa"
-                          />
+                          <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      </FormItem>} />
 
-                  <FormField
-                    control={form.control}
-                    name="valeur_acquisition"
-                    render={({ field }) => (
-                      <FormItem>
+                  <FormField control={form.control} name="valeur_acquisition" render={({
+                  field
+                }) => <FormItem>
                         <FormLabel>Valeur d'acquisition (€)</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="number" 
-                            step="0.01"
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
-                          />
+                          <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      </FormItem>} />
 
-                  <FormField
-                    control={form.control}
-                    name="frais_acquisition"
-                    render={({ field }) => (
-                      <FormItem>
+                  <FormField control={form.control} name="frais_acquisition" render={({
+                  field
+                }) => <FormItem>
                         <FormLabel>Frais d'acquisition (€)</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="number" 
-                            step="0.01"
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
-                          />
+                          <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      </FormItem>} />
                 </div>
               </div>
 
@@ -350,21 +266,14 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSubmit, onCancel,
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">3. Charges</h3>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowChargeForm(true)}
-                    className="flex items-center gap-2"
-                  >
+                  <Button type="button" variant="outline" onClick={() => setShowChargeForm(true)} className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
                     Ajouter une charge
                   </Button>
                 </div>
 
-                {charges.length > 0 && (
-                  <div className="space-y-2">
-                    {charges.map((charge) => (
-                      <Card key={charge.id} className="p-4">
+                {charges.length > 0 && <div className="space-y-2">
+                    {charges.map(charge => <Card key={charge.id} className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="font-medium">{charge.denomination}</p>
@@ -373,41 +282,22 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSubmit, onCancel,
                             </p>
                           </div>
                           <div className="flex gap-2">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleChargeEdit(charge)}
-                            >
+                            <Button type="button" variant="ghost" size="sm" onClick={() => handleChargeEdit(charge)}>
                               Modifier
                             </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleChargeDelete(charge.id!)}
-                            >
+                            <Button type="button" variant="ghost" size="sm" onClick={() => handleChargeDelete(charge.id!)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
-                      </Card>
-                    ))}
-                  </div>
-                )}
+                      </Card>)}
+                  </div>}
               </div>
 
               <div className="flex justify-between">
-                {asset?.id && onDelete && (
-                  <Button 
-                    type="button" 
-                    variant="destructive" 
-                    onClick={handleDelete}
-                    disabled={isLoading}
-                  >
+                {asset?.id && onDelete && <Button type="button" variant="destructive" onClick={handleDelete} disabled={isLoading}>
                     Supprimer l'actif
-                  </Button>
-                )}
+                  </Button>}
                 <div className="flex space-x-2 ml-auto">
                   <Button type="button" variant="outline" onClick={onCancel}>
                     Annuler
@@ -423,16 +313,9 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSubmit, onCancel,
       </Card>
 
       {/* Formulaire de charge */}
-      {showChargeForm && (
-        <ChargeForm
-          charge={editingCharge || undefined}
-          onSubmit={handleChargeSubmit}
-          onCancel={() => {
-            setShowChargeForm(false);
-            setEditingCharge(null);
-          }}
-        />
-      )}
-    </div>
-  );
+      {showChargeForm && <ChargeForm charge={editingCharge || undefined} onSubmit={handleChargeSubmit} onCancel={() => {
+      setShowChargeForm(false);
+      setEditingCharge(null);
+    }} />}
+    </div>;
 };
