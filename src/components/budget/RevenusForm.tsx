@@ -13,7 +13,6 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { REVENUS_CATEGORIES } from '@/constants/budgetTypes';
 import { useFamilyData } from '@/hooks/useFamilyData';
 import { Revenu } from '@/services/budgetService';
-
 const formSchema = z.object({
   nature: z.string().min(1, "La nature est obligatoire"),
   libelle: z.string().min(1, "Le libellé est obligatoire"),
@@ -21,19 +20,21 @@ const formSchema = z.object({
   revenu_disponible: z.boolean().default(false),
   commentaire: z.string().optional()
 });
-
 type FormData = z.infer<typeof formSchema>;
-
 interface RevenusFormProps {
   revenu?: Revenu;
   onSubmit: (data: Omit<Revenu, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<void>;
   onCancel: () => void;
 }
-
-export const RevenusForm = ({ revenu, onSubmit, onCancel }: RevenusFormProps) => {
+export const RevenusForm = ({
+  revenu,
+  onSubmit,
+  onCancel
+}: RevenusFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { familyMembers } = useFamilyData();
-
+  const {
+    familyMembers
+  } = useFamilyData();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -44,7 +45,6 @@ export const RevenusForm = ({ revenu, onSubmit, onCancel }: RevenusFormProps) =>
       commentaire: revenu?.commentaire || ''
     }
   });
-
   const handleSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
@@ -61,61 +61,38 @@ export const RevenusForm = ({ revenu, onSubmit, onCancel }: RevenusFormProps) =>
   };
 
   // Créer une liste plate de toutes les options de revenus
-  const revenus = Object.entries(REVENUS_CATEGORIES).flatMap(([category, items]) =>
-    items.map(item => `${category} - ${item}`)
-  );
-
-  const beneficiaires = [
-    "Moi",
-    ...familyMembers.map(member => `${member.prenom} ${member.nom}`)
-  ];
-
-  return (
-    <Card>
+  const revenus = Object.entries(REVENUS_CATEGORIES).flatMap(([category, items]) => items.map(item => `${category} - ${item}`));
+  const beneficiaires = ["Moi", ...familyMembers.map(member => `${member.prenom} ${member.nom}`)];
+  return <Card className="mx-[30px]">
       <CardHeader>
         <CardTitle>{revenu ? 'Modifier le revenu' : 'Ajouter un revenu'}</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="nature"
-              render={({ field }) => (
-                <FormItem>
+            <FormField control={form.control} name="nature" render={({
+            field
+          }) => <FormItem>
                   <FormLabel>Nature du revenu</FormLabel>
                   <FormControl>
-                    <SearchableSelect
-                      options={revenus}
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="Sélectionnez la nature du revenu..."
-                    />
+                    <SearchableSelect options={revenus} value={field.value} onChange={field.onChange} placeholder="Sélectionnez la nature du revenu..." />
                   </FormControl>
                   <FormMessage />
-                </FormItem>
-              )}
-            />
+                </FormItem>} />
 
-            <FormField
-              control={form.control}
-              name="libelle"
-              render={({ field }) => (
-                <FormItem>
+            <FormField control={form.control} name="libelle" render={({
+            field
+          }) => <FormItem>
                   <FormLabel>Libellé</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
                   <FormMessage />
-                </FormItem>
-              )}
-            />
+                </FormItem>} />
 
-            <FormField
-              control={form.control}
-              name="beneficiaire"
-              render={({ field }) => (
-                <FormItem>
+            <FormField control={form.control} name="beneficiaire" render={({
+            field
+          }) => <FormItem>
                   <FormLabel>Bénéficiaire</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
@@ -124,49 +101,34 @@ export const RevenusForm = ({ revenu, onSubmit, onCancel }: RevenusFormProps) =>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {beneficiaires.map((beneficiaire) => (
-                        <SelectItem key={beneficiaire} value={beneficiaire}>
+                      {beneficiaires.map(beneficiaire => <SelectItem key={beneficiaire} value={beneficiaire}>
                           {beneficiaire}
-                        </SelectItem>
-                      ))}
+                        </SelectItem>)}
                     </SelectContent>
                   </Select>
                   <FormMessage />
-                </FormItem>
-              )}
-            />
+                </FormItem>} />
 
-            <FormField
-              control={form.control}
-              name="revenu_disponible"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+            <FormField control={form.control} name="revenu_disponible" render={({
+            field
+          }) => <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                   <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                   <div className="space-y-1 leading-none">
                     <FormLabel>Revenu disponible</FormLabel>
                   </div>
-                </FormItem>
-              )}
-            />
+                </FormItem>} />
 
-            <FormField
-              control={form.control}
-              name="commentaire"
-              render={({ field }) => (
-                <FormItem>
+            <FormField control={form.control} name="commentaire" render={({
+            field
+          }) => <FormItem>
                   <FormLabel>Commentaire</FormLabel>
                   <FormControl>
                     <Textarea {...field} rows={3} />
                   </FormControl>
                   <FormMessage />
-                </FormItem>
-              )}
-            />
+                </FormItem>} />
 
             <div className="flex gap-2">
               <Button type="submit" disabled={isSubmitting}>
@@ -179,6 +141,5 @@ export const RevenusForm = ({ revenu, onSubmit, onCancel }: RevenusFormProps) =>
           </form>
         </Form>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
