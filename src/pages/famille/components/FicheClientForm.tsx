@@ -23,7 +23,10 @@ const formSchema = z.object({
   }),
   nom: z.string().min(1, 'Le nom est obligatoire'),
   prenom: z.string().min(1, 'Le prénom est obligatoire'),
-  dateNaissance: z.date({
+  dateNaissance: z.union([
+    z.date(),
+    z.string().regex(/^\d{2}\/\d{2}\/\d{4}$/, 'Format de date invalide (DD/MM/YYYY)')
+  ], {
     required_error: 'La date de naissance est obligatoire',
   }),
   profession: z.string().optional(),
@@ -85,11 +88,18 @@ export function FicheClientForm() {
 
   const onSubmit = async (formData: FormData) => {
     try {
+      // Convert string date to Date if needed
+      let dateNaissance = formData.dateNaissance;
+      if (typeof dateNaissance === 'string') {
+        const [day, month, year] = dateNaissance.split('/');
+        dateNaissance = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      }
+
       const supabaseData = {
         civility: formData.civilite,
         nom: formData.nom,
         prenom: formData.prenom,
-        date_naissance: formData.dateNaissance ? formData.dateNaissance.toISOString().split('T')[0] : undefined,
+        date_naissance: dateNaissance instanceof Date ? dateNaissance.toISOString().split('T')[0] : undefined,
         profession: formData.profession || formData.professionLibre,
         commune_naissance: formData.communeNaissance,
         pays_naissance: formData.paysNaissance,
@@ -188,38 +198,53 @@ export function FicheClientForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Date de naissance *</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
+                <div className="flex gap-2">
+                  <FormControl className="flex-1">
+                    <Input
+                      placeholder="JJ/MM/AAAA"
+                      value={field.value instanceof Date ? format(field.value, 'dd/MM/yyyy') : field.value || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                          try {
+                            const [day, month, year] = value.split('/');
+                            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                            if (!isNaN(date.getTime())) {
+                              field.onChange(date);
+                              return;
+                            }
+                          } catch (error) {
+                            // Invalid date, keep as string
+                          }
+                        }
+                        field.onChange(value);
+                      }}
+                    />
+                  </FormControl>
+                  <Popover>
+                    <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        className={cn(
-                          'w-full pl-3 text-left font-normal',
-                          !field.value && 'text-muted-foreground'
-                        )}
+                        size="icon"
+                        className="shrink-0"
                       >
-                        {field.value ? (
-                          format(field.value, 'dd/MM/yyyy')
-                        ) : (
-                          <span>Sélectionner une date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        <CalendarIcon className="h-4 w-4" />
                       </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) =>
-                        date > new Date() || date < new Date('1900-01-01')
-                      }
-                      initialFocus
-                      className="p-3 pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value instanceof Date ? field.value : undefined}
+                        onSelect={(date) => date && field.onChange(date)}
+                        disabled={(date) =>
+                          date > new Date() || date < new Date('1900-01-01')
+                        }
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
