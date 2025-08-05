@@ -186,17 +186,17 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                         <FormMessage />
                       </FormItem>} />
 
-                </div>
+                  <FormField control={form.control} name="denomination" render={({
+                  field
+                }) => <FormItem className="md:col-span-2">
+                        <FormLabel>Dénomination</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} rows={3} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>} />
 
-                <FormField control={form.control} name="denomination" render={({
-                field
-              }) => <FormItem>
-                      <FormLabel>Dénomination</FormLabel>
-                      <FormControl>
-                        <Textarea {...field} rows={3} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>} />
+                </div>
               </div>
 
               <Separator />
