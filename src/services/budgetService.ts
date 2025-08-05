@@ -6,6 +6,7 @@ export interface Revenu {
   nature: string;
   libelle: string;
   beneficiaire?: string;
+  montant?: number;
   revenu_disponible: boolean;
   commentaire?: string;
   created_at: string;

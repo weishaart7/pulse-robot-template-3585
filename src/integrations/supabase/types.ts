@@ -362,6 +362,7 @@ export type Database = {
           created_at: string
           id: string
           libelle: string
+          montant: number | null
           nature: string
           revenu_disponible: boolean | null
           updated_at: string
@@ -373,6 +374,7 @@ export type Database = {
           created_at?: string
           id?: string
           libelle: string
+          montant?: number | null
           nature: string
           revenu_disponible?: boolean | null
           updated_at?: string
@@ -384,6 +386,7 @@ export type Database = {
           created_at?: string
           id?: string
           libelle?: string
+          montant?: number | null
           nature?: string
           revenu_disponible?: boolean | null
           updated_at?: string

@@ -17,6 +17,7 @@ const formSchema = z.object({
   nature: z.string().min(1, "La nature est obligatoire"),
   libelle: z.string().min(1, "Le libellé est obligatoire"),
   beneficiaire: z.string().optional(),
+  montant: z.string().optional(),
   revenu_disponible: z.boolean().default(false),
   commentaire: z.string().optional()
 });
@@ -41,6 +42,7 @@ export const RevenusForm = ({
       nature: revenu?.nature || '',
       libelle: revenu?.libelle || '',
       beneficiaire: revenu?.beneficiaire || '',
+      montant: revenu?.montant?.toString() || '',
       revenu_disponible: revenu?.revenu_disponible || false,
       commentaire: revenu?.commentaire || ''
     }
@@ -52,6 +54,7 @@ export const RevenusForm = ({
         nature: data.nature,
         libelle: data.libelle,
         beneficiaire: data.beneficiaire || '',
+        montant: data.montant ? parseFloat(data.montant) : undefined,
         revenu_disponible: data.revenu_disponible,
         commentaire: data.commentaire || ''
       });
@@ -106,6 +109,16 @@ export const RevenusForm = ({
                         </SelectItem>)}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>} />
+
+            <FormField control={form.control} name="montant" render={({
+            field
+          }) => <FormItem>
+                  <FormLabel>Montant (€)</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>} />
 
