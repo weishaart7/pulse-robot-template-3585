@@ -7,29 +7,25 @@ import { RevenusForm } from '@/components/budget/RevenusForm';
 import { ChargesForm } from '@/components/budget/ChargesForm';
 import { BudgetList } from '@/components/budget/BudgetList';
 import { Revenu, Charge } from '@/services/budgetService';
-
 export const BudgetSection = () => {
   const [showRevenusForm, setShowRevenusForm] = useState(false);
   const [showChargesForm, setShowChargesForm] = useState(false);
   const [editingRevenu, setEditingRevenu] = useState<Revenu | undefined>();
   const [editingCharge, setEditingCharge] = useState<Charge | undefined>();
-
-  const { 
-    revenus, 
-    loading: revenusLoading, 
-    createRevenu, 
-    updateRevenu, 
-    deleteRevenu 
+  const {
+    revenus,
+    loading: revenusLoading,
+    createRevenu,
+    updateRevenu,
+    deleteRevenu
   } = useRevenus();
-
-  const { 
-    charges, 
-    loading: chargesLoading, 
-    createCharge, 
-    updateCharge, 
-    deleteCharge 
+  const {
+    charges,
+    loading: chargesLoading,
+    createCharge,
+    updateCharge,
+    deleteCharge
   } = useCharges();
-
   const handleSubmitRevenu = async (data: Omit<Revenu, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (editingRevenu) {
       await updateRevenu(editingRevenu.id, data);
@@ -39,7 +35,6 @@ export const BudgetSection = () => {
     }
     setShowRevenusForm(false);
   };
-
   const handleSubmitCharge = async (data: Omit<Charge, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (editingCharge) {
       await updateCharge(editingCharge.id, data);
@@ -49,39 +44,32 @@ export const BudgetSection = () => {
     }
     setShowChargesForm(false);
   };
-
   const handleEditRevenu = (revenu: Revenu) => {
     setEditingRevenu(revenu);
     setShowRevenusForm(true);
   };
-
   const handleEditCharge = (charge: Charge) => {
     setEditingCharge(charge);
     setShowChargesForm(true);
   };
-
   const handleCancelRevenu = () => {
     setShowRevenusForm(false);
     setEditingRevenu(undefined);
   };
-
   const handleCancelCharge = () => {
     setShowChargesForm(false);
     setEditingCharge(undefined);
   };
-
   const loading = revenusLoading || chargesLoading;
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Budget</h1>
       </div>
 
       {/* Résumé */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-0 px-0 mx-[30px]">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 mx-0">
             <CardTitle className="text-sm font-medium">Revenus</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -107,25 +95,12 @@ export const BudgetSection = () => {
       </div>
 
       {/* Formulaires */}
-      {showRevenusForm && (
-        <RevenusForm
-          revenu={editingRevenu}
-          onSubmit={handleSubmitRevenu}
-          onCancel={handleCancelRevenu}
-        />
-      )}
+      {showRevenusForm && <RevenusForm revenu={editingRevenu} onSubmit={handleSubmitRevenu} onCancel={handleCancelRevenu} />}
 
-      {showChargesForm && (
-        <ChargesForm
-          charge={editingCharge}
-          onSubmit={handleSubmitCharge}
-          onCancel={handleCancelCharge}
-        />
-      )}
+      {showChargesForm && <ChargesForm charge={editingCharge} onSubmit={handleSubmitCharge} onCancel={handleCancelCharge} />}
 
       {/* Boutons d'ajout */}
-      {!showRevenusForm && !showChargesForm && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {!showRevenusForm && !showChargesForm && <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -134,10 +109,7 @@ export const BudgetSection = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Button
-                onClick={() => setShowRevenusForm(true)}
-                className="w-full"
-              >
+              <Button onClick={() => setShowRevenusForm(true)} className="w-full">
                 <Plus className="h-4 w-4 mr-2" />
                 Ajouter un revenu
               </Button>
@@ -152,28 +124,15 @@ export const BudgetSection = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Button
-                onClick={() => setShowChargesForm(true)}
-                className="w-full"
-              >
+              <Button onClick={() => setShowChargesForm(true)} className="w-full">
                 <Plus className="h-4 w-4 mr-2" />
                 Ajouter une charge
               </Button>
             </CardContent>
           </Card>
-        </div>
-      )}
+        </div>}
 
       {/* Liste des revenus et charges */}
-      <BudgetList
-        revenus={revenus}
-        charges={charges}
-        onEditRevenu={handleEditRevenu}
-        onDeleteRevenu={deleteRevenu}
-        onEditCharge={handleEditCharge}
-        onDeleteCharge={deleteCharge}
-        loading={loading}
-      />
-    </div>
-  );
+      <BudgetList revenus={revenus} charges={charges} onEditRevenu={handleEditRevenu} onDeleteRevenu={deleteRevenu} onEditCharge={handleEditCharge} onDeleteCharge={deleteCharge} loading={loading} />
+    </div>;
 };
