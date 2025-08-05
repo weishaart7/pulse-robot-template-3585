@@ -20,7 +20,7 @@ export function DashboardHeader() {
       
       <div className="flex items-center gap-4">
         <span className="text-sm text-muted-foreground">
-          Bienvenue, {user?.name}
+          Bienvenue, {user?.email}
         </span>
         <Button 
           variant="outline" 

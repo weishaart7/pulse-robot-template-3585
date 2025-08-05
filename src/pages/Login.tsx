@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -11,11 +11,29 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   
-  const { login } = useAuth();
+  const { login, signup, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -46,18 +64,41 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const result = await login(email, password);
+      const result = isSignUp ? await signup(email, password) : await login(email, password);
       
       if (result.success) {
-        toast({
-          title: "Connexion réussie",
-          description: "Vous êtes maintenant connecté",
-        });
-        navigate('/dashboard');
+        if (isSignUp) {
+          toast({
+            title: "Compte créé avec succès",
+            description: "Vérifiez votre email pour confirmer votre compte",
+          });
+          // Reste sur la page pour que l'utilisateur puisse se connecter après confirmation
+          setIsSignUp(false);
+        } else {
+          toast({
+            title: "Connexion réussie",
+            description: "Vous êtes maintenant connecté",
+          });
+          navigate('/dashboard');
+        }
       } else {
+        const errorMessage = result.error || "Une erreur s'est produite";
+        let friendlyMessage = errorMessage;
+        
+        // Messages d'erreur plus conviviaux
+        if (errorMessage.includes('User already registered')) {
+          friendlyMessage = 'Un compte avec cet email existe déjà';
+        } else if (errorMessage.includes('Invalid login credentials')) {
+          friendlyMessage = 'Email ou mot de passe incorrect';
+        } else if (errorMessage.includes('Password should be at least')) {
+          friendlyMessage = 'Le mot de passe doit contenir au moins 6 caractères';
+        } else if (errorMessage.includes('Unable to validate email address')) {
+          friendlyMessage = 'Adresse email invalide';
+        }
+        
         toast({
-          title: "Erreur de connexion",
-          description: result.error || "Une erreur s'est produite",
+          title: isSignUp ? "Erreur lors de l'inscription" : "Erreur de connexion",
+          description: friendlyMessage,
           variant: "destructive",
         });
       }
@@ -76,9 +117,14 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Connexion</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">
+            {isSignUp ? 'Créer un compte' : 'Connexion'}
+          </CardTitle>
           <CardDescription className="text-center">
-            Connectez-vous à votre compte pour accéder au tableau de bord
+            {isSignUp 
+              ? 'Créez votre compte pour accéder au tableau de bord'
+              : 'Connectez-vous à votre compte pour accéder au tableau de bord'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -118,12 +164,27 @@ const Login = () => {
               className="w-full" 
               disabled={isLoading}
             >
-              {isLoading ? 'Connexion...' : 'Se connecter'}
+              {isLoading 
+                ? (isSignUp ? 'Création...' : 'Connexion...') 
+                : (isSignUp ? 'Créer un compte' : 'Se connecter')
+              }
             </Button>
           </form>
           
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            <p>Compte de test : test@example.com / password</p>
+          <div className="mt-4 text-center">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setErrors({});
+              }}
+              className="text-sm"
+            >
+              {isSignUp 
+                ? 'Déjà un compte ? Se connecter'
+                : 'Pas de compte ? Créer un compte'
+              }
+            </Button>
           </div>
         </CardContent>
       </Card>
