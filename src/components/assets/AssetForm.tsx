@@ -1,0 +1,453 @@
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { CalendarIcon, Plus, Trash2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
+import { Asset, AssetCharge } from '@/services/assetService';
+import { ChargeForm } from './ChargeForm';
+import { ASSET_NATURES } from '@/constants/assetTypes';
+// Import removed - will use static options for now
+
+const assetSchema = z.object({
+  nature: z.string().min(1, 'La nature est requise'),
+  denomination: z.string().optional(),
+  mode_detention: z.string().optional(),
+  valeur_estimee: z.number().optional(),
+  date_estimation: z.date().optional(),
+  revalorisation_annuelle: z.number().optional(),
+  detenteur: z.string().optional(),
+  valeur_acquisition: z.number().optional(),
+  frais_acquisition: z.number().optional(),
+  date_acquisition: z.date().optional(),
+});
+
+type AssetFormValues = z.infer<typeof assetSchema>;
+
+interface AssetFormProps {
+  asset?: Asset;
+  onSubmit: (asset: AssetFormValues, charges: AssetCharge[]) => Promise<void>;
+  onCancel: () => void;
+}
+
+export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSubmit, onCancel }) => {
+  const [charges, setCharges] = useState<AssetCharge[]>([]);
+  const [showChargeForm, setShowChargeForm] = useState(false);
+  const [editingCharge, setEditingCharge] = useState<AssetCharge | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Static options for detenteur
+  const detenteurOptions = ['Époux 1', 'Époux 2', 'Couple'];
+
+  const form = useForm<AssetFormValues>({
+    resolver: zodResolver(assetSchema),
+    defaultValues: asset ? {
+      nature: asset.nature,
+      denomination: asset.denomination || '',
+      mode_detention: asset.mode_detention || '',
+      valeur_estimee: asset.valeur_estimee || undefined,
+      date_estimation: asset.date_estimation ? new Date(asset.date_estimation) : undefined,
+      revalorisation_annuelle: asset.revalorisation_annuelle || undefined,
+      detenteur: asset.detenteur || '',
+      valeur_acquisition: asset.valeur_acquisition || undefined,
+      frais_acquisition: asset.frais_acquisition || undefined,
+      date_acquisition: asset.date_acquisition ? new Date(asset.date_acquisition) : undefined,
+    } : {
+      nature: '',
+      denomination: '',
+      mode_detention: '',
+      detenteur: '',
+    }
+  });
+
+  const handleSubmit = async (values: AssetFormValues) => {
+    setIsLoading(true);
+    try {
+      const formattedValues = {
+        ...values,
+        date_estimation: values.date_estimation ? format(values.date_estimation, 'yyyy-MM-dd') : undefined,
+        date_acquisition: values.date_acquisition ? format(values.date_acquisition, 'yyyy-MM-dd') : undefined,
+      };
+      await onSubmit(formattedValues as any, charges);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChargeSubmit = (chargeData: any) => {
+    if (editingCharge) {
+      setCharges(prev => prev.map(c => c.id === editingCharge.id ? { ...editingCharge, ...chargeData } : c));
+      setEditingCharge(null);
+    } else {
+      const newCharge: AssetCharge = {
+        id: `temp-${Date.now()}`,
+        asset_id: asset?.id || '',
+        ...chargeData,
+      };
+      setCharges(prev => [...prev, newCharge]);
+    }
+    setShowChargeForm(false);
+  };
+
+  const handleChargeDelete = (chargeId: string) => {
+    setCharges(prev => prev.filter(c => c.id !== chargeId));
+  };
+
+  const handleChargeEdit = (charge: AssetCharge) => {
+    setEditingCharge(charge);
+    setShowChargeForm(true);
+  };
+
+  // Options for detenteur are already defined above
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>{asset ? 'Modifier l\'actif' : 'Ajouter un actif'}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+              {/* Section 1: Description de l'actif */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">1. Description de l'actif</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="nature"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nature *</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choisir une nature" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="max-h-60">
+                            {ASSET_NATURES.map((nature) => (
+                              <SelectItem key={nature} value={nature}>
+                                {nature}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="mode_detention"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mode de détention</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="valeur_estimee"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Valeur estimée (€)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            step="0.01"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="date_estimation"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Date d'estimation</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP", { locale: fr })
+                                ) : (
+                                  <span>Choisir une date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              initialFocus
+                              className="pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="revalorisation_annuelle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Hypothèse de revalorisation annuelle (%)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            step="0.01"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="denomination"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dénomination</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} rows={3} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <Separator />
+
+              {/* Section 2: Détenteur */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">2. Détenteur</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="detenteur"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Détenteur</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choisir un détenteur" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {detenteurOptions.map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="date_acquisition"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Date d'acquisition</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP", { locale: fr })
+                                ) : (
+                                  <span>Choisir une date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              initialFocus
+                              className="pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="valeur_acquisition"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Valeur d'acquisition (€)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            step="0.01"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="frais_acquisition"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Frais d'acquisition (€)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            step="0.01"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Section 3: Charges */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">3. Charges</h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowChargeForm(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Ajouter une charge
+                  </Button>
+                </div>
+
+                {charges.length > 0 && (
+                  <div className="space-y-2">
+                    {charges.map((charge) => (
+                      <Card key={charge.id} className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{charge.denomination}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {charge.type_charge} - {charge.montant} {charge.unite} ({charge.periodicite})
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleChargeEdit(charge)}
+                            >
+                              Modifier
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleChargeDelete(charge.id!)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={onCancel}>
+                  Annuler
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? 'Enregistrement...' : 'Enregistrer'}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+
+      {/* Formulaire de charge */}
+      {showChargeForm && (
+        <ChargeForm
+          charge={editingCharge || undefined}
+          onSubmit={handleChargeSubmit}
+          onCancel={() => {
+            setShowChargeForm(false);
+            setEditingCharge(null);
+          }}
+        />
+      )}
+    </div>
+  );
+};

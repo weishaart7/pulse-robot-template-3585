@@ -2,6 +2,7 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import FamilleSection from './famille/FamilleSection';
+import { PatrimoineSection } from './patrimoine/PatrimoineSection';
 
 const DashboardSection = () => {
   const { section } = useParams();
@@ -37,6 +38,11 @@ const DashboardSection = () => {
   // Si la section est "famille", afficher le composant spécialisé
   if (section === 'famille') {
     return <FamilleSection />;
+  }
+  
+  // Si la section est "patrimoine", afficher le composant spécialisé
+  if (section === 'patrimoine') {
+    return <PatrimoineSection />;
   }
 
   return (
