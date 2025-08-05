@@ -62,7 +62,7 @@ export const BudgetSection = () => {
   };
   const loading = revenusLoading || chargesLoading;
   return <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mx-[30px]">
         <h1 className="text-3xl font-bold">Budget</h1>
       </div>
 
