@@ -127,6 +127,42 @@ export type Database = {
         }
         Relationships: []
       }
+      charges: {
+        Row: {
+          commentaire: string | null
+          created_at: string
+          debiteur: string | null
+          id: string
+          libelle: string
+          montant: number | null
+          nature: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          commentaire?: string | null
+          created_at?: string
+          debiteur?: string | null
+          id?: string
+          libelle: string
+          montant?: number | null
+          nature: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          commentaire?: string | null
+          created_at?: string
+          debiteur?: string | null
+          id?: string
+          libelle?: string
+          montant?: number | null
+          nature?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       family_links: {
         Row: {
           a_charge: boolean | null
@@ -316,6 +352,42 @@ export type Database = {
         Update: {
           created_at?: string
           id?: number
+        }
+        Relationships: []
+      }
+      revenus: {
+        Row: {
+          beneficiaire: string | null
+          commentaire: string | null
+          created_at: string
+          id: string
+          libelle: string
+          nature: string
+          revenu_disponible: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          beneficiaire?: string | null
+          commentaire?: string | null
+          created_at?: string
+          id?: string
+          libelle: string
+          nature: string
+          revenu_disponible?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          beneficiaire?: string | null
+          commentaire?: string | null
+          created_at?: string
+          id?: string
+          libelle?: string
+          nature?: string
+          revenu_disponible?: boolean | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

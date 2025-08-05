@@ -113,6 +113,11 @@ export const useMaritalStatus = () => {
   return { data, loading, saving, saveData, refetch: fetchData };
 };
 
+export const useFamilyData = () => {
+  const { data: familyMembers, ...familyLinksData } = useFamilyLinks();
+  return { familyMembers, ...familyLinksData };
+};
+
 export const useFamilyLinks = () => {
   const [data, setData] = useState<FamilyLink[]>([]);
   const [loading, setLoading] = useState(true);
