@@ -2,6 +2,8 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FicheClientForm } from './components/FicheClientForm';
+import { SituationMatrimonialeForm } from './components/SituationMatrimonialeForm';
+import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
 
 const FamilleSection = () => {
   return (
@@ -47,9 +49,7 @@ const FamilleSection = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                Cette section sera disponible prochainement. Vous pouvez la sélectionner dès maintenant.
-              </p>
+              <SituationMatrimonialeForm />
             </CardContent>
           </Card>
         </TabsContent>
@@ -63,9 +63,7 @@ const FamilleSection = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                Cette section sera disponible prochainement. Vous pouvez la sélectionner dès maintenant.
-              </p>
+              <LiensFamiliauxForm />
             </CardContent>
           </Card>
         </TabsContent>
