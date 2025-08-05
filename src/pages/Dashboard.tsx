@@ -1,7 +1,15 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import BudgetStatisticsCard from '@/components/ui/budget-statistics-card';
+import { useRevenus, useCharges } from '@/hooks/useBudget';
 
 const Dashboard = () => {
+  const { revenus } = useRevenus();
+  const { charges } = useCharges();
+
+  const totalRevenus = revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0);
+  const totalCharges = charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -48,9 +56,12 @@ const Dashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Contenu à venir...
-            </p>
+            <BudgetStatisticsCard 
+              totalRevenus={totalRevenus}
+              totalCharges={totalCharges}
+              revenusCount={revenus.length}
+              chargesCount={charges.length}
+            />
           </CardContent>
         </Card>
       </div>
