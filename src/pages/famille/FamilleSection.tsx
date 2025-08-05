@@ -16,10 +16,10 @@ const FamilleSection = () => {
       <Tabs defaultValue="fiche-client" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="fiche-client">Fiche client</TabsTrigger>
-          <TabsTrigger value="situation-matrimoniale" disabled>
+          <TabsTrigger value="situation-matrimoniale">
             Situation matrimoniale
           </TabsTrigger>
-          <TabsTrigger value="liens-familiaux" disabled>
+          <TabsTrigger value="liens-familiaux">
             Liens familiaux
           </TabsTrigger>
         </TabsList>
@@ -43,9 +43,14 @@ const FamilleSection = () => {
             <CardHeader>
               <CardTitle>Situation matrimoniale</CardTitle>
               <CardDescription>
-                En cours de développement
+                Renseignez votre statut matrimonial et vos informations de couple
               </CardDescription>
             </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                Cette section sera disponible prochainement. Vous pouvez la sélectionner dès maintenant.
+              </p>
+            </CardContent>
           </Card>
         </TabsContent>
         
@@ -54,9 +59,14 @@ const FamilleSection = () => {
             <CardHeader>
               <CardTitle>Liens familiaux</CardTitle>
               <CardDescription>
-                En cours de développement
+                Gérez les membres de votre famille et leurs relations
               </CardDescription>
             </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                Cette section sera disponible prochainement. Vous pouvez la sélectionner dès maintenant.
+              </p>
+            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>

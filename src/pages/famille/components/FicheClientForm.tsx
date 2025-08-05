@@ -63,10 +63,17 @@ export function FicheClientForm() {
 
   const onSubmit = (data: FormData) => {
     console.log('Données du formulaire:', data);
+    
+    // Sauvegarde mockée en localStorage
+    localStorage.setItem('ficheClient', JSON.stringify(data));
+    
     toast({
       title: 'Fiche client enregistrée',
       description: 'Les informations ont été sauvegardées avec succès.',
     });
+    
+    // Reset du formulaire après sauvegarde
+    form.reset();
   };
 
   return (
