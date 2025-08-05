@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AssetForm } from '@/components/assets/AssetForm';
+import { PatrimoineDashboard } from '@/components/PatrimoineDashboard';
 import { useAssets } from '@/hooks/useAssets';
 import { Asset, AssetCharge } from '@/services/assetService';
 import { getAssetCategory } from '@/constants/assetTypes';
@@ -84,6 +85,9 @@ export const PatrimoineSection = () => {
         </Card>
       ) : (
         <div className="space-y-6">
+          {/* Dashboard avec graphique */}
+          <PatrimoineDashboard assets={assets} />
+          
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Mes actifs</h3>
             <Button onClick={() => setShowAssetForm(true)} className="flex items-center gap-2">
