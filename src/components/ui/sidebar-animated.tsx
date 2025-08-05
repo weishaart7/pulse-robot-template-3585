@@ -166,6 +166,7 @@ export const SidebarLink = ({
   return (
     <NavLink
       to={link.href}
+      end={link.href === '/dashboard'}
       className={({ isActive }) =>
         cn(
           "flex items-center justify-start gap-2 group/sidebar py-2 px-2 rounded-md transition-colors",
