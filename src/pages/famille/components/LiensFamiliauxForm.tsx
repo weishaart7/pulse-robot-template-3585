@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon, Plus, Trash2, Users } from 'lucide-react';
+import { CalendarIcon, Plus, Trash2, Edit, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -17,35 +17,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
+import { useFamilyLinks } from '@/hooks/useFamilyData';
+import { FamilyLink } from '@/services/familyService';
 
 const membreFamilleSchema = z.object({
-  id: z.string(),
-  lienFamilial: z.string().min(1, 'Le lien familial est obligatoire'),
-  lienAvecEpoux: z.enum(['un', 'autre', 'couple'], {
-    required_error: 'Veuillez préciser le lien avec les époux',
-  }),
-  civilite: z.enum(['M', 'Mme', 'Autre']),
+  lien_familial: z.string().min(1, 'Le lien familial est obligatoire'),
   nom: z.string().min(1, 'Le nom est obligatoire'),
-  prenom: z.string().min(1, 'Le prénom est obligatoire'),
-  dateNaissance: z.date({
-    required_error: 'La date de naissance est obligatoire',
-  }),
-  lieuNaissance: z.string().min(1, 'Le lieu de naissance est obligatoire'),
-  decede: z.boolean().default(false),
-  fiscalementCharge: z.number().default(25),
-  niveauScolaire: z.string().optional(),
-  handicape: z.boolean().default(false),
-  adopte: z.boolean().default(false),
-  indigniteSuccessorale: z.boolean().default(false),
-  renoncantSuccession: z.boolean().default(false),
+  prenom: z.string().optional(),
+  date_naissance: z.date().optional(),
+  nationalite: z.string().optional(),
+  niveau_scolaire: z.string().optional(),
+  a_charge: z.boolean().default(false),
+  handicap: z.boolean().default(false),
+  enfant_mineur: z.boolean().default(false),
 });
 
-const formSchema = z.object({
-  membres: z.array(membreFamilleSchema),
-});
-
-type FormData = z.infer<typeof formSchema>;
 type MembreFamille = z.infer<typeof membreFamilleSchema>;
 
 const liensFamiliaux = [
@@ -72,156 +58,132 @@ const niveauxScolaires = [
 ];
 
 export function LiensFamiliauxForm() {
-  const { toast } = useToast();
+  const { data: familyLinks, loading, saving, addLink, updateLink, deleteLink } = useFamilyLinks();
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingMember, setEditingMember] = useState<MembreFamille | null>(null);
+  const [editingMember, setEditingMember] = useState<FamilyLink | null>(null);
   
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      membres: [],
-    },
-  });
-
   const memberForm = useForm<MembreFamille>({
     resolver: zodResolver(membreFamilleSchema),
     defaultValues: {
-      id: '',
-      decede: false,
-      fiscalementCharge: 25,
-      handicape: false,
-      adopte: false,
-      indigniteSuccessorale: false,
-      renoncantSuccession: false,
+      a_charge: false,
+      handicap: false,
+      enfant_mineur: false,
     },
   });
 
-  const membres = form.watch('membres');
-
-  const onSubmit = (data: FormData) => {
-    console.log('Liens familiaux:', data);
-    
-    localStorage.setItem('liensFamiliaux', JSON.stringify(data));
-    
-    toast({
-      title: 'Liens familiaux enregistrés',
-      description: 'Les informations ont été sauvegardées avec succès.',
-    });
-  };
-
-  const addMember = (data: Omit<MembreFamille, 'id'>) => {
-    const newMember = {
-      ...data,
-      id: Date.now().toString(),
-    };
-    
-    const currentMembers = form.getValues('membres');
-    form.setValue('membres', [...currentMembers, newMember]);
-    
-    memberForm.reset();
-    setShowAddForm(false);
+  const handleAddMember = () => {
     setEditingMember(null);
-    
-    toast({
-      title: 'Membre ajouté',
-      description: 'Le membre de la famille a été ajouté avec succès.',
+    memberForm.reset({
+      a_charge: false,
+      handicap: false,
+      enfant_mineur: false,
     });
-  };
-
-  const editMember = (member: MembreFamille) => {
-    setEditingMember(member);
-    memberForm.reset(member);
     setShowAddForm(true);
   };
 
-  const updateMember = (data: Omit<MembreFamille, 'id'>) => {
-    if (!editingMember) return;
-    
-    const updatedMember = { ...data, id: editingMember.id };
-    const currentMembers = form.getValues('membres');
-    const updatedMembers = currentMembers.map(m => 
-      m.id === editingMember.id ? updatedMember : m
-    );
-    
-    form.setValue('membres', updatedMembers);
-    
-    memberForm.reset();
-    setShowAddForm(false);
-    setEditingMember(null);
-    
-    toast({
-      title: 'Membre modifié',
-      description: 'Les informations ont été mises à jour.',
+  const handleEditMember = (member: FamilyLink) => {
+    setEditingMember(member);
+    memberForm.reset({
+      lien_familial: member.lien_familial,
+      nom: member.nom,
+      prenom: member.prenom || '',
+      date_naissance: member.date_naissance ? new Date(member.date_naissance) : undefined,
+      nationalite: member.nationalite || '',
+      niveau_scolaire: member.niveau_scolaire || '',
+      a_charge: member.a_charge || false,
+      handicap: member.handicap || false,
+      enfant_mineur: member.enfant_mineur || false,
     });
+    setShowAddForm(true);
   };
 
-  const deleteMember = (id: string) => {
-    const currentMembers = form.getValues('membres');
-    const filteredMembers = currentMembers.filter(m => m.id !== id);
-    form.setValue('membres', filteredMembers);
-    
-    toast({
-      title: 'Membre supprimé',
-      description: 'Le membre a été retiré de la liste.',
-    });
-  };
-
-  const handleMemberSubmit = (data: Omit<MembreFamille, 'id'>) => {
-    if (editingMember) {
-      updateMember(data);
-    } else {
-      addMember(data);
+  const handleDeleteMember = async (id: string) => {
+    try {
+      await deleteLink(id);
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
     }
   };
 
+  const handleMemberSubmit = async (data: MembreFamille) => {
+    try {
+      const memberData = {
+        lien_familial: data.lien_familial,
+        nom: data.nom,
+        prenom: data.prenom,
+        date_naissance: data.date_naissance ? data.date_naissance.toISOString().split('T')[0] : undefined,
+        nationalite: data.nationalite,
+        niveau_scolaire: data.niveau_scolaire,
+        a_charge: data.a_charge,
+        handicap: data.handicap,
+        enfant_mineur: data.enfant_mineur,
+      };
+
+      if (editingMember) {
+        await updateLink(editingMember.id!, memberData);
+      } else {
+        await addLink(memberData);
+      }
+
+      setShowAddForm(false);
+      setEditingMember(null);
+      memberForm.reset();
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde du membre:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Chargement des données...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Liste des membres */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Membres de la famille</CardTitle>
-            <Button
-              type="button"
-              onClick={() => setShowAddForm(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Ajouter un membre
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {membres.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              Aucun membre de famille ajouté. Cliquez sur "Ajouter un membre" pour commencer.
-            </p>
-          ) : (
+      {/* Liste des membres existants */}
+      {familyLinks.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <span>Membres de la famille</span>
+              <Badge variant="secondary">{familyLinks.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nom</TableHead>
                   <TableHead>Lien familial</TableHead>
+                  <TableHead>Nom</TableHead>
+                  <TableHead>Prénom</TableHead>
                   <TableHead>Date de naissance</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {membres.map((membre) => (
-                  <TableRow key={membre.id}>
+                {familyLinks.map((member) => (
+                  <TableRow key={member.id}>
                     <TableCell>
-                      {membre.civilite} {membre.prenom} {membre.nom}
+                      <Badge variant="outline">{member.lien_familial}</Badge>
                     </TableCell>
-                    <TableCell>{membre.lienFamilial}</TableCell>
+                    <TableCell className="font-medium">{member.nom}</TableCell>
+                    <TableCell>{member.prenom || '-'}</TableCell>
                     <TableCell>
-                      {format(membre.dateNaissance, 'dd/MM/yyyy')}
+                      {member.date_naissance ? 
+                        format(new Date(member.date_naissance), 'dd/MM/yyyy') : 
+                        '-'
+                      }
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 flex-wrap">
-                        {membre.decede && <Badge variant="secondary">Décédé</Badge>}
-                        {membre.handicape && <Badge variant="outline">Handicapé</Badge>}
-                        {membre.adopte && <Badge variant="outline">Adopté</Badge>}
+                        {member.a_charge && <Badge variant="secondary" className="text-xs">À charge</Badge>}
+                        {member.handicap && <Badge variant="secondary" className="text-xs">Handicap</Badge>}
+                        {member.enfant_mineur && <Badge variant="secondary" className="text-xs">Mineur</Badge>}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -229,14 +191,16 @@ export function LiensFamiliauxForm() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => editMember(membre)}
+                          onClick={() => handleEditMember(member)}
+                          disabled={saving}
                         >
-                          Modifier
+                          <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => deleteMember(membre.id)}
+                          onClick={() => handleDeleteMember(member.id!)}
+                          disabled={saving}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -246,26 +210,34 @@ export function LiensFamiliauxForm() {
                 ))}
               </TableBody>
             </Table>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Bouton d'ajout */}
+      {!showAddForm && (
+        <Button onClick={handleAddMember} className="w-full" variant="outline">
+          <Plus className="mr-2 h-4 w-4" />
+          Ajouter un membre de la famille
+        </Button>
+      )}
 
       {/* Formulaire d'ajout/modification */}
       {showAddForm && (
         <Card>
           <CardHeader>
             <CardTitle>
-              {editingMember ? 'Modifier le membre' : 'Ajouter un membre de la famille'}
+              {editingMember ? 'Modifier un membre' : 'Ajouter un membre de la famille'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <Form {...memberForm}>
               <form onSubmit={memberForm.handleSubmit(handleMemberSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Lien familial */}
                   <FormField
                     control={memberForm.control}
-                    name="lienFamilial"
+                    name="lien_familial"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Lien familial *</FormLabel>
@@ -283,70 +255,6 @@ export function LiensFamiliauxForm() {
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Lien avec époux */}
-                  <FormField
-                    control={memberForm.control}
-                    name="lienAvecEpoux"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Lien avec les époux *</FormLabel>
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="flex flex-row space-x-4"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="un" id="un" />
-                              <label htmlFor="un">L'un</label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="autre" id="autre" />
-                              <label htmlFor="autre">L'autre</label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="couple" id="couple" />
-                              <label htmlFor="couple">Le couple</label>
-                            </div>
-                          </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Civilité */}
-                  <FormField
-                    control={memberForm.control}
-                    name="civilite"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Civilité *</FormLabel>
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="flex flex-row space-x-4"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="M" id="m-membre" />
-                              <label htmlFor="m-membre">M.</label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="Mme" id="mme-membre" />
-                              <label htmlFor="mme-membre">Mme</label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="Autre" id="autre-membre" />
-                              <label htmlFor="autre-membre">Autre</label>
-                            </div>
-                          </RadioGroup>
-                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -373,7 +281,7 @@ export function LiensFamiliauxForm() {
                     name="prenom"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Prénom *</FormLabel>
+                        <FormLabel>Prénom</FormLabel>
                         <FormControl>
                           <Input placeholder="Prénom" {...field} />
                         </FormControl>
@@ -385,10 +293,10 @@ export function LiensFamiliauxForm() {
                   {/* Date de naissance */}
                   <FormField
                     control={memberForm.control}
-                    name="dateNaissance"
+                    name="date_naissance"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Date de naissance *</FormLabel>
+                        <FormLabel>Date de naissance</FormLabel>
                         <Popover>
                           <PopoverTrigger asChild>
                             <FormControl>
@@ -413,11 +321,8 @@ export function LiensFamiliauxForm() {
                               mode="single"
                               selected={field.value}
                               onSelect={field.onChange}
-                              disabled={(date) =>
-                                date > new Date() || date < new Date('1900-01-01')
-                              }
+                              disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
                               initialFocus
-                              className="p-3 pointer-events-auto"
                             />
                           </PopoverContent>
                         </Popover>
@@ -426,36 +331,15 @@ export function LiensFamiliauxForm() {
                     )}
                   />
 
-                  {/* Lieu de naissance */}
+                  {/* Nationalité */}
                   <FormField
                     control={memberForm.control}
-                    name="lieuNaissance"
+                    name="nationalite"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Lieu de naissance *</FormLabel>
+                        <FormLabel>Nationalité</FormLabel>
                         <FormControl>
-                          <Input placeholder="Lieu de naissance" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Fiscalement à charge */}
-                  <FormField
-                    control={memberForm.control}
-                    name="fiscalementCharge"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Fiscalement à charge jusqu'à (ans)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            min="0" 
-                            max="50" 
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                          />
+                          <Input placeholder="Nationalité" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -465,7 +349,7 @@ export function LiensFamiliauxForm() {
                   {/* Niveau scolaire */}
                   <FormField
                     control={memberForm.control}
-                    name="niveauScolaire"
+                    name="niveau_scolaire"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Niveau scolaire</FormLabel>
@@ -489,11 +373,11 @@ export function LiensFamiliauxForm() {
                   />
                 </div>
 
-                {/* Cases à cocher */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Checkboxes */}
+                <div className="space-y-4">
                   <FormField
                     control={memberForm.control}
-                    name="decede"
+                    name="a_charge"
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                         <FormControl>
@@ -502,14 +386,16 @@ export function LiensFamiliauxForm() {
                             onCheckedChange={field.onChange}
                           />
                         </FormControl>
-                        <FormLabel>Décédé</FormLabel>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>À charge</FormLabel>
+                        </div>
                       </FormItem>
                     )}
                   />
 
                   <FormField
                     control={memberForm.control}
-                    name="handicape"
+                    name="handicap"
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                         <FormControl>
@@ -518,14 +404,16 @@ export function LiensFamiliauxForm() {
                             onCheckedChange={field.onChange}
                           />
                         </FormControl>
-                        <FormLabel>Handicapé</FormLabel>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Personne handicapée</FormLabel>
+                        </div>
                       </FormItem>
                     )}
                   />
 
                   <FormField
                     control={memberForm.control}
-                    name="adopte"
+                    name="enfant_mineur"
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                         <FormControl>
@@ -534,44 +422,15 @@ export function LiensFamiliauxForm() {
                             onCheckedChange={field.onChange}
                           />
                         </FormControl>
-                        <FormLabel>Adopté</FormLabel>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={memberForm.control}
-                    name="indigniteSuccessorale"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <FormLabel>Frappé d'indignité successorale</FormLabel>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={memberForm.control}
-                    name="renoncantSuccession"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <FormLabel>Renonçant à la succession</FormLabel>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Enfant mineur</FormLabel>
+                        </div>
                       </FormItem>
                     )}
                   />
                 </div>
 
+                {/* Boutons */}
                 <div className="flex justify-end gap-2">
                   <Button
                     type="button"
@@ -581,11 +440,19 @@ export function LiensFamiliauxForm() {
                       setEditingMember(null);
                       memberForm.reset();
                     }}
+                    disabled={saving}
                   >
                     Annuler
                   </Button>
-                  <Button type="submit">
-                    {editingMember ? 'Modifier' : 'Ajouter'}
+                  <Button type="submit" disabled={saving}>
+                    {saving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Enregistrement...
+                      </>
+                    ) : (
+                      editingMember ? 'Modifier' : 'Ajouter'
+                    )}
                   </Button>
                 </div>
               </form>
@@ -594,31 +461,20 @@ export function LiensFamiliauxForm() {
         </Card>
       )}
 
-      {/* Arbre généalogique - placeholder */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Arbre généalogique
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>L'arbre généalogique interactif sera disponible prochainement.</p>
-            <p className="text-sm">Il permettra de visualiser les relations familiales de manière hiérarchique.</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Bouton de sauvegarde globale */}
-      <Form {...form}>
-        <div className="flex justify-end">
-          <Button onClick={form.handleSubmit(onSubmit)}>
-            Enregistrer les liens familiaux
-          </Button>
-        </div>
-      </Form>
+      {/* Placeholder pour l'arbre familial */}
+      {familyLinks.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Arbre familial</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center text-muted-foreground py-8">
+              <div className="text-lg">🌳</div>
+              <p>Visualisation de l'arbre familial à venir</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
