@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { CHARGES_CATEGORIES, DEBITEUR_OPTIONS } from '@/constants/budgetTypes';
 import { Charge } from '@/services/budgetService';
-
 const formSchema = z.object({
   nature: z.string().min(1, "La nature est obligatoire"),
   libelle: z.string().min(1, "Le libellé est obligatoire"),
@@ -19,18 +18,18 @@ const formSchema = z.object({
   montant: z.string().optional(),
   commentaire: z.string().optional()
 });
-
 type FormData = z.infer<typeof formSchema>;
-
 interface ChargesFormProps {
   charge?: Charge;
   onSubmit: (data: Omit<Charge, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<void>;
   onCancel: () => void;
 }
-
-export const ChargesForm = ({ charge, onSubmit, onCancel }: ChargesFormProps) => {
+export const ChargesForm = ({
+  charge,
+  onSubmit,
+  onCancel
+}: ChargesFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -41,7 +40,6 @@ export const ChargesForm = ({ charge, onSubmit, onCancel }: ChargesFormProps) =>
       commentaire: charge?.commentaire || ''
     }
   });
-
   const handleSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
@@ -58,56 +56,37 @@ export const ChargesForm = ({ charge, onSubmit, onCancel }: ChargesFormProps) =>
   };
 
   // Créer une liste plate de toutes les options de charges
-  const charges = Object.entries(CHARGES_CATEGORIES).flatMap(([category, items]) =>
-    items.map(item => `${category} - ${item}`)
-  );
-
-  return (
-    <Card>
+  const charges = Object.entries(CHARGES_CATEGORIES).flatMap(([category, items]) => items.map(item => `${category} - ${item}`));
+  return <Card className="mx-[30px]">
       <CardHeader>
         <CardTitle>{charge ? 'Modifier la charge' : 'Ajouter une charge'}</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="nature"
-              render={({ field }) => (
-                <FormItem>
+            <FormField control={form.control} name="nature" render={({
+            field
+          }) => <FormItem>
                   <FormLabel>Nature de la charge</FormLabel>
                   <FormControl>
-                    <SearchableSelect
-                      options={charges}
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="Sélectionnez la nature de la charge..."
-                    />
+                    <SearchableSelect options={charges} value={field.value} onChange={field.onChange} placeholder="Sélectionnez la nature de la charge..." />
                   </FormControl>
                   <FormMessage />
-                </FormItem>
-              )}
-            />
+                </FormItem>} />
 
-            <FormField
-              control={form.control}
-              name="libelle"
-              render={({ field }) => (
-                <FormItem>
+            <FormField control={form.control} name="libelle" render={({
+            field
+          }) => <FormItem>
                   <FormLabel>Libellé</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
                   <FormMessage />
-                </FormItem>
-              )}
-            />
+                </FormItem>} />
 
-            <FormField
-              control={form.control}
-              name="debiteur"
-              render={({ field }) => (
-                <FormItem>
+            <FormField control={form.control} name="debiteur" render={({
+            field
+          }) => <FormItem>
                   <FormLabel>Débiteur</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
@@ -116,50 +95,33 @@ export const ChargesForm = ({ charge, onSubmit, onCancel }: ChargesFormProps) =>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {DEBITEUR_OPTIONS.map((debiteur) => (
-                        <SelectItem key={debiteur} value={debiteur}>
+                      {DEBITEUR_OPTIONS.map(debiteur => <SelectItem key={debiteur} value={debiteur}>
                           {debiteur}
-                        </SelectItem>
-                      ))}
+                        </SelectItem>)}
                     </SelectContent>
                   </Select>
                   <FormMessage />
-                </FormItem>
-              )}
-            />
+                </FormItem>} />
 
-            <FormField
-              control={form.control}
-              name="montant"
-              render={({ field }) => (
-                <FormItem>
+            <FormField control={form.control} name="montant" render={({
+            field
+          }) => <FormItem>
                   <FormLabel>Montant (€)</FormLabel>
                   <FormControl>
-                    <Input 
-                      {...field} 
-                      type="number" 
-                      step="0.01" 
-                      placeholder="0.00"
-                    />
+                    <Input {...field} type="number" step="0.01" placeholder="0.00" />
                   </FormControl>
                   <FormMessage />
-                </FormItem>
-              )}
-            />
+                </FormItem>} />
 
-            <FormField
-              control={form.control}
-              name="commentaire"
-              render={({ field }) => (
-                <FormItem>
+            <FormField control={form.control} name="commentaire" render={({
+            field
+          }) => <FormItem>
                   <FormLabel>Commentaire</FormLabel>
                   <FormControl>
                     <Textarea {...field} rows={3} />
                   </FormControl>
                   <FormMessage />
-                </FormItem>
-              )}
-            />
+                </FormItem>} />
 
             <div className="flex gap-2">
               <Button type="submit" disabled={isSubmitting}>
@@ -172,6 +134,5 @@ export const ChargesForm = ({ charge, onSubmit, onCancel }: ChargesFormProps) =>
           </form>
         </Form>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
