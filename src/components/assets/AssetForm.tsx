@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Separator } from '@/components/ui/separator';
 import { DateInput } from '@/components/ui/date-input';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { cn } from '@/lib/utils';
 import { Asset, AssetCharge } from '@/services/assetService';
 import { ChargeForm } from './ChargeForm';
@@ -145,20 +146,14 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSubmit, onCancel,
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Nature *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Choisir une nature" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="max-h-60">
-                            {ASSET_NATURES.map((nature) => (
-                              <SelectItem key={nature} value={nature}>
-                                {nature}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableSelect
+                            options={ASSET_NATURES}
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Choisir une nature"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
