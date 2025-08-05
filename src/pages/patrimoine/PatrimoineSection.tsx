@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { AssetForm } from '@/components/assets/AssetForm';
 import { useAssets } from '@/hooks/useAssets';
 import { Asset, AssetCharge } from '@/services/assetService';
+import { getAssetCategory } from '@/constants/assetTypes';
 
 export const PatrimoineSection = () => {
   const [showAssetForm, setShowAssetForm] = useState(false);
@@ -94,7 +96,12 @@ export const PatrimoineSection = () => {
             {assets.map((asset) => (
               <Card key={asset.id} className="cursor-pointer hover:shadow-md transition-shadow">
                 <CardHeader>
-                  <CardTitle className="text-base">{asset.nature}</CardTitle>
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="text-base flex-1">{asset.nature}</CardTitle>
+                    <Badge variant="secondary" className="ml-2 text-xs">
+                      {getAssetCategory(asset.nature)}
+                    </Badge>
+                  </div>
                   {asset.denomination && (
                     <CardDescription className="line-clamp-2">
                       {asset.denomination}

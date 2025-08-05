@@ -107,3 +107,95 @@ export const UNITE_OPTIONS = [
   "€",
   "%"
 ] as const;
+
+export const ASSET_CATEGORIES = {
+  "immobiliers": [
+    "Résidence principale",
+    "Résidences secondaires", 
+    "Terrains",
+    "Autres biens d'usage",
+    "Immeubles locatifs (loués nus)",
+    "Immeubles locatifs (LMNP)",
+    "Immeubles locatifs (LMP)",
+    "Parts de SCI",
+    "Parts de SCPI",
+    "Autres immeubles de rapport",
+    "Immeubles professionnels (hors LMP)",
+    "Terrains agricoles",
+    "Parts de groupements fonciers",
+    "Bois & forêts",
+    "Parts de GFA, GAF, GFV et GFR",
+    "Parts de sociétés d'épargne forestière"
+  ],
+  "mobiliers corporels": [
+    "Meubles meublants",
+    "Objets d'art et antiquités",
+    "Autres placements divers"
+  ],
+  "professionnels": [
+    "Droits sociaux",
+    "Droits sociaux (Pacte Dutreil)",
+    "Autres droits sociaux",
+    "Entreprise individuelle",
+    "Autres biens professionnels",
+    "Parts de holding",
+    "Compte courant d'associé"
+  ],
+  "retraite et prévoyance": [
+    "PER individuel",
+    "PER entreprise collectif",
+    "PER entreprise obligatoire",
+    "PERCO / PERCOI",
+    "PERP",
+    "Contrat loi Madelin",
+    "Contrat loi Madelin Agricole",
+    "Contrat 83",
+    "Contrat 82",
+    "Contrat Préfon-retraite",
+    "Contrat retraite mutualiste du combattant",
+    "Temporaire décès",
+    "Vie entière",
+    "Contrat prévoyance individuelle",
+    "Contrat d'assurance-vie",
+    "Contrat vie-génération",
+    "PEP assurance vie",
+    "Bons & contrats de capitalisation",
+    "PEE / PEI"
+  ],
+  "financiers liquides": [
+    "PEL",
+    "CEL",
+    "PEP Bancaire",
+    "Comptes courants",
+    "Comptes sur livret (CSL)",
+    "LDDS",
+    "Livret A",
+    "Livret Bleu",
+    "LEP",
+    "Livret Jeune",
+    "Compte à terme",
+    "Bons de caisse",
+    "Autres dépôts",
+    "Autres disponibilités"
+  ],
+  "financiers investis": [
+    "Compte-titres",
+    "PEA",
+    "PEA-PME",
+    "Portefeuille de valeurs numériques (cryptomonnaies)",
+    "Parts de SOFICA",
+    "Parts de FIP",
+    "Parts de FCPI",
+    "Parts de FIP Corse",
+    "Autres valeurs mobilières"
+  ]
+} as const;
+
+export const getAssetCategory = (nature: string): string => {
+  for (const [category, natures] of Object.entries(ASSET_CATEGORIES)) {
+    if ((natures as readonly string[]).includes(nature)) {
+      return category;
+    }
+  }
+  return "autres";
+};
