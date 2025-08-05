@@ -14,7 +14,198 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      family_links: {
+        Row: {
+          a_charge: boolean | null
+          created_at: string | null
+          date_naissance: string | null
+          enfant_mineur: boolean | null
+          handicap: boolean | null
+          id: string
+          lien_familial: string
+          nationalite: string | null
+          niveau_scolaire: string | null
+          nom: string
+          prenom: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          a_charge?: boolean | null
+          created_at?: string | null
+          date_naissance?: string | null
+          enfant_mineur?: boolean | null
+          handicap?: boolean | null
+          id?: string
+          lien_familial: string
+          nationalite?: string | null
+          niveau_scolaire?: string | null
+          nom: string
+          prenom?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          a_charge?: boolean | null
+          created_at?: string | null
+          date_naissance?: string | null
+          enfant_mineur?: boolean | null
+          handicap?: boolean | null
+          id?: string
+          lien_familial?: string
+          nationalite?: string | null
+          niveau_scolaire?: string | null
+          nom?: string
+          prenom?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      family_profiles: {
+        Row: {
+          adresse_postale: string | null
+          civility: string | null
+          commune_naissance: string | null
+          created_at: string | null
+          date_naissance: string | null
+          email: string | null
+          id: string
+          nationalite: string | null
+          nom: string | null
+          pays_naissance: string | null
+          personne_handicapee: boolean | null
+          prenom: string | null
+          profession: string | null
+          telephone: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          adresse_postale?: string | null
+          civility?: string | null
+          commune_naissance?: string | null
+          created_at?: string | null
+          date_naissance?: string | null
+          email?: string | null
+          id?: string
+          nationalite?: string | null
+          nom?: string | null
+          pays_naissance?: string | null
+          personne_handicapee?: boolean | null
+          prenom?: string | null
+          profession?: string | null
+          telephone?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          adresse_postale?: string | null
+          civility?: string | null
+          commune_naissance?: string | null
+          created_at?: string | null
+          date_naissance?: string | null
+          email?: string | null
+          id?: string
+          nationalite?: string | null
+          nom?: string | null
+          pays_naissance?: string | null
+          personne_handicapee?: boolean | null
+          prenom?: string | null
+          profession?: string | null
+          telephone?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      marital_status: {
+        Row: {
+          adresse_notaire: string | null
+          contrat_mariage: string | null
+          created_at: string | null
+          date_mariage: string | null
+          date_naissance_conjoint: string | null
+          date_pacs: string | null
+          id: string
+          lieu_mariage: string | null
+          lieu_pacs: string | null
+          mariage_precedent_conjoint: boolean | null
+          mariage_precedent_personne: boolean | null
+          nationalite_conjoint: string | null
+          nom_conjoint: string | null
+          nom_notaire: string | null
+          nombre_enfants_charges: number | null
+          parent_isole: boolean | null
+          prenom_conjoint: string | null
+          profession_conjoint: string | null
+          statut_couple: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          adresse_notaire?: string | null
+          contrat_mariage?: string | null
+          created_at?: string | null
+          date_mariage?: string | null
+          date_naissance_conjoint?: string | null
+          date_pacs?: string | null
+          id?: string
+          lieu_mariage?: string | null
+          lieu_pacs?: string | null
+          mariage_precedent_conjoint?: boolean | null
+          mariage_precedent_personne?: boolean | null
+          nationalite_conjoint?: string | null
+          nom_conjoint?: string | null
+          nom_notaire?: string | null
+          nombre_enfants_charges?: number | null
+          parent_isole?: boolean | null
+          prenom_conjoint?: string | null
+          profession_conjoint?: string | null
+          statut_couple?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          adresse_notaire?: string | null
+          contrat_mariage?: string | null
+          created_at?: string | null
+          date_mariage?: string | null
+          date_naissance_conjoint?: string | null
+          date_pacs?: string | null
+          id?: string
+          lieu_mariage?: string | null
+          lieu_pacs?: string | null
+          mariage_precedent_conjoint?: boolean | null
+          mariage_precedent_personne?: boolean | null
+          nationalite_conjoint?: string | null
+          nom_conjoint?: string | null
+          nom_notaire?: string | null
+          nombre_enfants_charges?: number | null
+          parent_isole?: boolean | null
+          prenom_conjoint?: string | null
+          profession_conjoint?: string | null
+          statut_couple?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      Profils: {
+        Row: {
+          created_at: string
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+        }
+        Update: {
+          created_at?: string
+          id?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
