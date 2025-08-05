@@ -9,6 +9,7 @@ import {
   Receipt,
   ArrowRightLeft,
   Target,
+  Home,
 } from 'lucide-react';
 
 import {
@@ -24,6 +25,7 @@ import {
 } from '@/components/ui/sidebar';
 
 const menuItems = [
+  { title: 'Vue d\'ensemble', url: '/dashboard', icon: Home },
   { title: 'Famille', url: '/dashboard/famille', icon: Users },
   { title: 'Patrimoine', url: '/dashboard/patrimoine', icon: Building2 },
   { title: 'Sociétés', url: '/dashboard/societes', icon: Briefcase },
