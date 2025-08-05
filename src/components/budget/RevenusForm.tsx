@@ -36,7 +36,7 @@ export const RevenusForm = ({
   const {
     familyMembers
   } = useFamilyData();
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       nature: revenu?.nature || '',
