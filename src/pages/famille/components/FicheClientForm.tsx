@@ -103,6 +103,8 @@ export function FicheClientForm() {
 
   const onSubmit = async (formData: FormData) => {
     try {
+      console.log('Form data before save:', formData);
+      
       // Convert string date to Date if needed
       let dateNaissance = formData.dateNaissance;
       if (typeof dateNaissance === 'string') {
@@ -110,12 +112,21 @@ export function FicheClientForm() {
         dateNaissance = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
       }
 
+      // Déterminer quelle profession utiliser
+      const finalProfession = formData.professionLibre?.trim() 
+        ? formData.professionLibre.trim() 
+        : formData.profession || '';
+
+      console.log('Selected profession:', formData.profession);
+      console.log('Free profession:', formData.professionLibre);
+      console.log('Final profession to save:', finalProfession);
+
       const supabaseData = {
         civility: formData.civilite,
         nom: formData.nom,
         prenom: formData.prenom,
         date_naissance: dateNaissance instanceof Date ? dateNaissance.toISOString().split('T')[0] : undefined,
-        profession: formData.professionLibre || formData.profession,
+        profession: finalProfession,
         commune_naissance: formData.communeNaissance,
         pays_naissance: formData.paysNaissance,
         nationalite: formData.nationalite,
@@ -125,6 +136,7 @@ export function FicheClientForm() {
         adresse_postale: formData.adresse,
       };
 
+      console.log('Data to save to Supabase:', supabaseData);
       await saveData(supabaseData);
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
