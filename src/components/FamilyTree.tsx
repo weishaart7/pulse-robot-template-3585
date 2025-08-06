@@ -1,17 +1,8 @@
-import React, { useMemo } from 'react';
-import {
-  ReactFlow,
-  Node,
-  Edge,
-  Background,
-  Controls,
-  MiniMap,
-  Position,
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
+import React from 'react';
 import { FamilyLink, FamilyProfile, MaritalStatus } from '@/services/familyService';
 import { Card, CardContent } from '@/components/ui/card';
-import { User, Heart, Users } from 'lucide-react';
+import { Cross } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface FamilyTreeProps {
   familyProfile: FamilyProfile | null;
@@ -19,144 +10,117 @@ interface FamilyTreeProps {
   familyMembers: FamilyLink[];
 }
 
-const FamilyNode = ({ data }: { data: any }) => {
-  const { name, type, age, relation } = data;
-  
-  const getIcon = () => {
-    if (type === 'main') return <User className="w-4 h-4" />;
-    if (type === 'spouse') return <Heart className="w-4 h-4" />;
-    return <Users className="w-4 h-4" />;
+const getRelationColor = (relation: string) => {
+  const colors: Record<string, string> = {
+    'Enfant': 'bg-green-500',
+    'Petit-enfant': 'bg-green-400',
+    'Arrière petit-enfant': 'bg-green-300',
+    'Parent': 'bg-blue-600',
+    'Grand-parent': 'bg-blue-500',
+    'Arrière grand-parent': 'bg-blue-400',
+    'Frère/Sœur': 'bg-orange-500',
+    'Oncle/Tante': 'bg-purple-500',
+    'Neveu/Nièce': 'bg-purple-400',
+    'Cousin/Cousine': 'bg-purple-300',
+    'Beau-parent': 'bg-indigo-500',
+    'Beau-frère/Belle-sœur': 'bg-indigo-400',
+    'Autre': 'bg-gray-500',
   };
+  return colors[relation] || 'bg-gray-500';
+};
 
-  const getBgColor = () => {
-    if (type === 'main') return 'bg-primary/10 border-primary';
-    if (type === 'spouse') return 'bg-pink-100 border-pink-300';
-    if (relation === 'Enfant') return 'bg-blue-100 border-blue-300';
-    return 'bg-gray-100 border-gray-300';
-  };
+const FamilyMemberCard = ({ member, isMain = false, isSpouse = false }: { 
+  member: any; 
+  isMain?: boolean;
+  isSpouse?: boolean;
+}) => {
+  const bgColor = isMain 
+    ? 'bg-slate-700 text-white' 
+    : isSpouse 
+    ? 'bg-slate-600 text-white'
+    : `${getRelationColor(member.relation)} text-white`;
 
   return (
-    <Card className={`min-w-[160px] ${getBgColor()}`}>
-      <CardContent className="p-3 text-center">
-        <div className="flex items-center justify-center mb-2">
-          {getIcon()}
+    <Card className={`${bgColor} border-none shadow-lg min-w-[140px] rounded-3xl`}>
+      <CardContent className="p-4 text-center">
+        <div className="font-medium text-sm">
+          {member.prenom || member.name}
         </div>
-        <div className="font-medium text-sm">{name}</div>
-        {age && <div className="text-xs text-muted-foreground">{age} ans</div>}
-        {relation && type !== 'main' && type !== 'spouse' && (
-          <div className="text-xs text-muted-foreground mt-1">{relation}</div>
+        {member.dateNaissance && (
+          <div className="text-xs opacity-80 mt-1">
+            {member.dateNaissance}
+          </div>
+        )}
+        {member.isDeceased && (
+          <Cross className="w-3 h-3 mx-auto mt-1 opacity-80" />
         )}
       </CardContent>
     </Card>
   );
 };
 
-const nodeTypes = {
-  family: FamilyNode,
+const organizeFamily = (familyProfile: FamilyProfile | null, maritalStatus: MaritalStatus | null, familyMembers: FamilyLink[]) => {
+  const generations: Record<string, FamilyLink[]> = {
+    grandParents: [],
+    parents: [],
+    siblings: [],
+    children: [],
+    grandChildren: [],
+    others: []
+  };
+
+  familyMembers.forEach(member => {
+    switch (member.lien_familial) {
+      case 'Grand-parent':
+      case 'Arrière grand-parent':
+        generations.grandParents.push(member);
+        break;
+      case 'Parent':
+      case 'Beau-parent':
+        generations.parents.push(member);
+        break;
+      case 'Frère/Sœur':
+      case 'Beau-frère/Belle-sœur':
+        generations.siblings.push(member);
+        break;
+      case 'Enfant':
+        generations.children.push(member);
+        break;
+      case 'Petit-enfant':
+      case 'Arrière petit-enfant':
+        generations.grandChildren.push(member);
+        break;
+      default:
+        generations.others.push(member);
+        break;
+    }
+  });
+
+  return generations;
 };
 
 export function FamilyTree({ familyProfile, maritalStatus, familyMembers }: FamilyTreeProps) {
-  const { nodes, edges } = useMemo(() => {
-    const nodes: Node[] = [];
-    const edges: Edge[] = [];
-    
-    // Nœud principal (la personne connectée)
-    if (familyProfile) {
-      const age = familyProfile.date_naissance 
-        ? new Date().getFullYear() - new Date(familyProfile.date_naissance).getFullYear()
-        : null;
-      
-      nodes.push({
-        id: 'main',
-        type: 'family',
-        position: { x: 250, y: 200 },
-        data: {
-          name: `${familyProfile.prenom || ''} ${familyProfile.nom || ''}`.trim() || 'Vous',
-          type: 'main',
-          age: age,
-        },
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
-      });
-    }
+  const generations = organizeFamily(familyProfile, maritalStatus, familyMembers);
+  
+  const mainUser = familyProfile ? {
+    name: `${familyProfile.prenom || ''} ${familyProfile.nom || ''}`.trim() || 'Vous',
+    prenom: familyProfile.prenom || 'Vous',
+    dateNaissance: familyProfile.date_naissance 
+      ? format(new Date(familyProfile.date_naissance), 'dd/MM/yyyy')
+      : null,
+    isDeceased: false
+  } : null;
 
-    // Conjoint si marié, en concubinage ou pacsé
-    if (maritalStatus && ['Marié(e)', 'Concubin(e)', 'Pacsé(e)'].includes(maritalStatus.statut_couple || '')) {
-      const spouseAge = maritalStatus.date_naissance_conjoint
-        ? new Date().getFullYear() - new Date(maritalStatus.date_naissance_conjoint).getFullYear()
-        : null;
+  const spouse = maritalStatus && ['Marié(e)', 'Concubin(e)', 'Pacsé(e)'].includes(maritalStatus.statut_couple || '') ? {
+    name: `${maritalStatus.prenom_conjoint || ''} ${maritalStatus.nom_conjoint || ''}`.trim() || 'Conjoint(e)',
+    prenom: maritalStatus.prenom_conjoint || 'Conjoint(e)',
+    dateNaissance: maritalStatus.date_naissance_conjoint 
+      ? format(new Date(maritalStatus.date_naissance_conjoint), 'dd/MM/yyyy')
+      : null,
+    isDeceased: false
+  } : null;
 
-      nodes.push({
-        id: 'spouse',
-        type: 'family',
-        position: { x: 50, y: 200 },
-        data: {
-          name: `${maritalStatus.prenom_conjoint || ''} ${maritalStatus.nom_conjoint || ''}`.trim() || 'Conjoint(e)',
-          type: 'spouse',
-          age: spouseAge,
-        },
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
-      });
-
-      // Lien entre les conjoints
-      edges.push({
-        id: 'main-spouse',
-        source: 'spouse',
-        target: 'main',
-        type: 'smoothstep',
-        style: { stroke: '#f472b6', strokeWidth: 2 },
-        label: maritalStatus.statut_couple,
-        labelStyle: { fontSize: 12, fill: '#f472b6' },
-      });
-    }
-
-    // Membres de la famille
-    familyMembers.forEach((member, index) => {
-      const age = member.date_naissance
-        ? new Date().getFullYear() - new Date(member.date_naissance).getFullYear()
-        : null;
-
-      // Position des enfants en bas, autres membres à droite
-      const isChild = member.lien_familial === 'Enfant';
-      const position = isChild 
-        ? { x: 150 + (index * 120), y: 350 }
-        : { x: 450, y: 100 + (index * 80) };
-
-      nodes.push({
-        id: `member-${member.id}`,
-        type: 'family',
-        position,
-        data: {
-          name: `${member.prenom || ''} ${member.nom}`.trim(),
-          type: 'member',
-          age: age,
-          relation: member.lien_familial,
-        },
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
-      });
-
-      // Connexions vers le nœud principal
-      const sourceNode = isChild ? 'main' : 'main';
-      edges.push({
-        id: `${sourceNode}-member-${member.id}`,
-        source: sourceNode,
-        target: `member-${member.id}`,
-        type: 'smoothstep',
-        style: { 
-          stroke: isChild ? '#60a5fa' : '#6b7280', 
-          strokeWidth: isChild ? 2 : 1 
-        },
-        label: isChild ? '' : member.lien_familial,
-        labelStyle: { fontSize: 10, fill: '#6b7280' },
-      });
-    });
-
-    return { nodes, edges };
-  }, [familyProfile, maritalStatus, familyMembers]);
-
-  if (nodes.length === 0) {
+  if (!mainUser && familyMembers.length === 0) {
     return (
       <div className="text-center text-muted-foreground py-8">
         <div className="text-lg">👥</div>
@@ -166,29 +130,137 @@ export function FamilyTree({ familyProfile, maritalStatus, familyMembers }: Fami
   }
 
   return (
-    <div className="h-96 w-full border rounded-lg">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        fitView
-        attributionPosition="bottom-left"
-        style={{ backgroundColor: '#fafafa' }}
-        nodesDraggable={false}
-        nodesConnectable={false}
-        elementsSelectable={false}
-      >
-        <Background />
-        <Controls />
-        <MiniMap 
-          zoomable 
-          pannable 
-          style={{ 
-            backgroundColor: '#ffffff',
-            border: '1px solid #e5e7eb'
-          }}
-        />
-      </ReactFlow>
+    <div className="w-full p-6 bg-gray-50 rounded-lg">
+      <h3 className="text-xl font-bold text-center mb-6">Filiation</h3>
+      
+      {/* Grands-parents */}
+      {generations.grandParents.length > 0 && (
+        <div className="flex justify-center gap-4 mb-6">
+          {generations.grandParents.map((member, index) => (
+            <FamilyMemberCard 
+              key={`grandparent-${index}`}
+              member={{
+                ...member,
+                prenom: member.prenom || member.nom,
+                dateNaissance: member.date_naissance 
+                  ? format(new Date(member.date_naissance), 'dd/MM/yyyy')
+                  : null,
+                relation: member.lien_familial
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Parents */}
+      {generations.parents.length > 0 && (
+        <div className="flex justify-center gap-4 mb-6">
+          {generations.parents.map((member, index) => (
+            <FamilyMemberCard 
+              key={`parent-${index}`}
+              member={{
+                ...member,
+                prenom: member.prenom || member.nom,
+                dateNaissance: member.date_naissance 
+                  ? format(new Date(member.date_naissance), 'dd/MM/yyyy')
+                  : null,
+                relation: member.lien_familial
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Utilisateur principal et conjoint */}
+      <div className="flex justify-center gap-4 mb-6">
+        {spouse && (
+          <FamilyMemberCard member={spouse} isSpouse={true} />
+        )}
+        {mainUser && (
+          <FamilyMemberCard member={mainUser} isMain={true} />
+        )}
+      </div>
+
+      {/* Frères et sœurs */}
+      {generations.siblings.length > 0 && (
+        <div className="flex justify-center gap-4 mb-6">
+          {generations.siblings.map((member, index) => (
+            <FamilyMemberCard 
+              key={`sibling-${index}`}
+              member={{
+                ...member,
+                prenom: member.prenom || member.nom,
+                dateNaissance: member.date_naissance 
+                  ? format(new Date(member.date_naissance), 'dd/MM/yyyy')
+                  : null,
+                relation: member.lien_familial
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Enfants */}
+      {generations.children.length > 0 && (
+        <div className="bg-gray-200 rounded-lg p-4 mx-auto max-w-2xl">
+          <h4 className="text-center text-sm font-medium text-gray-700 mb-3">
+            Enfants de {mainUser?.prenom || 'l\'utilisateur'}
+          </h4>
+          <div className="flex justify-center gap-4 flex-wrap">
+            {generations.children.map((member, index) => (
+              <FamilyMemberCard 
+                key={`child-${index}`}
+                member={{
+                  ...member,
+                  prenom: member.prenom || member.nom,
+                  dateNaissance: member.date_naissance 
+                    ? format(new Date(member.date_naissance), 'dd/MM/yyyy')
+                    : null,
+                  relation: member.lien_familial
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Petits-enfants */}
+      {generations.grandChildren.length > 0 && (
+        <div className="flex justify-center gap-4 mt-6">
+          {generations.grandChildren.map((member, index) => (
+            <FamilyMemberCard 
+              key={`grandchild-${index}`}
+              member={{
+                ...member,
+                prenom: member.prenom || member.nom,
+                dateNaissance: member.date_naissance 
+                  ? format(new Date(member.date_naissance), 'dd/MM/yyyy')
+                  : null,
+                relation: member.lien_familial
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Autres membres */}
+      {generations.others.length > 0 && (
+        <div className="flex justify-center gap-4 mt-6 flex-wrap">
+          {generations.others.map((member, index) => (
+            <FamilyMemberCard 
+              key={`other-${index}`}
+              member={{
+                ...member,
+                prenom: member.prenom || member.nom,
+                dateNaissance: member.date_naissance 
+                  ? format(new Date(member.date_naissance), 'dd/MM/yyyy')
+                  : null,
+                relation: member.lien_familial
+              }}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
