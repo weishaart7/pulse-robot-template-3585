@@ -304,16 +304,23 @@ export function LiensFamiliauxForm() {
                               value={field.value ? format(field.value, 'dd/MM/yyyy') : ''}
                               onChange={(e) => {
                                 const value = e.target.value;
-                                if (value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                                  try {
-                                    const [day, month, year] = value.split('/');
-                                    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                                    if (!isNaN(date.getTime())) {
-                                      field.onChange(date);
+                                // Permettre la saisie libre
+                                if (value.length <= 10) {
+                                  // Si le format est complet, essayer de convertir en date
+                                  if (value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                                    try {
+                                      const [day, month, year] = value.split('/');
+                                      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                                      if (!isNaN(date.getTime()) && date.getFullYear() == parseInt(year)) {
+                                        field.onChange(date);
+                                        return;
+                                      }
+                                    } catch (error) {
+                                      // Ignorer l'erreur et laisser l'utilisateur continuer à taper
                                     }
-                                  } catch (error) {
-                                    // Invalid date format
                                   }
+                                  // Pour la saisie en cours, garder la valeur comme string
+                                  field.onChange(value);
                                 }
                               }}
                             />
@@ -324,6 +331,7 @@ export function LiensFamiliauxForm() {
                                 variant="outline"
                                 size="icon"
                                 className="shrink-0"
+                                type="button"
                               >
                                 <CalendarIcon className="h-4 w-4" />
                               </Button>
@@ -331,8 +339,8 @@ export function LiensFamiliauxForm() {
                             <PopoverContent className="w-auto p-0" align="start">
                               <Calendar
                                 mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
+                                selected={field.value instanceof Date ? field.value : undefined}
+                                onSelect={(date) => date && field.onChange(date)}
                                 disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
                                 initialFocus
                                 className="p-3 pointer-events-auto"
