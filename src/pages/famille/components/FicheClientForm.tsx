@@ -67,13 +67,16 @@ export function FicheClientForm() {
   // Charger les données depuis Supabase
   useEffect(() => {
     if (data) {
+      // Déterminer si la profession est prédéfinie ou libre
+      const isPredefinedProfession = data.profession && professions.includes(data.profession);
+      
       const formattedData = {
-        civilite: data.civility as 'M' | 'Mme' | 'Autre' || undefined,
+        civilite: (data.civility as 'M' | 'Mme' | 'Autre') || undefined,
         nom: data.nom || '',
         prenom: data.prenom || '',
         dateNaissance: data.date_naissance ? new Date(data.date_naissance) : undefined,
-        profession: data.profession || '',
-        professionLibre: '',
+        profession: isPredefinedProfession ? data.profession : '',
+        professionLibre: !isPredefinedProfession ? (data.profession || '') : '',
         communeNaissance: data.commune_naissance || '',
         paysNaissance: data.pays_naissance || '',
         nationalite: data.nationalite || '',
