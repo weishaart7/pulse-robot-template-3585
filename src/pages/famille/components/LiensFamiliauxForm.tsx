@@ -17,8 +17,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useFamilyLinks } from '@/hooks/useFamilyData';
+import { useFamilyLinks, useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { FamilyLink } from '@/services/familyService';
+import { FamilyTree } from '@/components/FamilyTree';
 
 const membreFamilleSchema = z.object({
   lien_familial: z.string().min(1, 'Le lien familial est obligatoire'),
@@ -59,6 +60,8 @@ const niveauxScolaires = [
 
 export function LiensFamiliauxForm() {
   const { data: familyLinks, loading, saving, addLink, updateLink, deleteLink } = useFamilyLinks();
+  const { data: familyProfile } = useFamilyProfile();
+  const { data: maritalStatus } = useMaritalStatus();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingMember, setEditingMember] = useState<FamilyLink | null>(null);
   
@@ -490,10 +493,11 @@ export function LiensFamiliauxForm() {
             <CardTitle>Arbre familial</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center text-muted-foreground py-8">
-              <div className="text-lg">🌳</div>
-              <p>Visualisation de l'arbre familial à venir</p>
-            </div>
+            <FamilyTree 
+              familyProfile={familyProfile}
+              maritalStatus={maritalStatus}
+              familyMembers={familyLinks}
+            />
           </CardContent>
         </Card>
       )}
