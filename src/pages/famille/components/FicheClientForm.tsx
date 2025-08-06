@@ -115,7 +115,7 @@ export function FicheClientForm() {
         nom: formData.nom,
         prenom: formData.prenom,
         date_naissance: dateNaissance instanceof Date ? dateNaissance.toISOString().split('T')[0] : undefined,
-        profession: formData.profession || formData.professionLibre,
+        profession: formData.professionLibre || formData.profession,
         commune_naissance: formData.communeNaissance,
         pays_naissance: formData.paysNaissance,
         nationalite: formData.nationalite,
