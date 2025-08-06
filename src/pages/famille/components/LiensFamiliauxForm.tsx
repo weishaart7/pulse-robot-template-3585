@@ -297,35 +297,49 @@ export function LiensFamiliauxForm() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Date de naissance</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
+                        <div className="flex gap-2">
+                          <FormControl className="flex-1">
+                            <Input
+                              placeholder="JJ/MM/AAAA"
+                              value={field.value ? format(field.value, 'dd/MM/yyyy') : ''}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                                  try {
+                                    const [day, month, year] = value.split('/');
+                                    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                                    if (!isNaN(date.getTime())) {
+                                      field.onChange(date);
+                                    }
+                                  } catch (error) {
+                                    // Invalid date format
+                                  }
+                                }
+                              }}
+                            />
+                          </FormControl>
+                          <Popover>
+                            <PopoverTrigger asChild>
                               <Button
                                 variant="outline"
-                                className={cn(
-                                  'w-full pl-3 text-left font-normal',
-                                  !field.value && 'text-muted-foreground'
-                                )}
+                                size="icon"
+                                className="shrink-0"
                               >
-                                {field.value ? (
-                                  format(field.value, 'dd/MM/yyyy')
-                                ) : (
-                                  <span>Sélectionner une date</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                <CalendarIcon className="h-4 w-4" />
                               </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
+                                initialFocus
+                                className="p-3 pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
