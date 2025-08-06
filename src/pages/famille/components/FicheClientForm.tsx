@@ -60,7 +60,19 @@ export function FicheClientForm() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      civilite: undefined,
+      nom: '',
+      prenom: '',
+      dateNaissance: undefined,
+      profession: '',
+      professionLibre: '',
+      communeNaissance: '',
+      paysNaissance: '',
+      nationalite: '',
       handicape: false,
+      telephone: '',
+      email: '',
+      adresse: '',
     },
   });
 
@@ -142,7 +154,7 @@ export function FicheClientForm() {
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
                     className="flex flex-row space-x-4"
                   >
                     <div className="flex items-center space-x-2">
@@ -260,7 +272,7 @@ export function FicheClientForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Profession</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner une profession" />
