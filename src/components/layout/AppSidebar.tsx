@@ -26,24 +26,9 @@ const menuItems = [
     icon: <Home className="text-foreground h-5 w-5 flex-shrink-0" />
   },
   { 
-    label: 'Famille', 
-    href: '/dashboard/famille', 
-    icon: <Users className="text-foreground h-5 w-5 flex-shrink-0" />
-  },
-  { 
     label: 'Patrimoine', 
     href: '/dashboard/patrimoine', 
-    icon: <Building2 className="text-foreground h-5 w-5 flex-shrink-0" />
-  },
-  { 
-    label: 'Sociétés', 
-    href: '/dashboard/societes', 
     icon: <Briefcase className="text-foreground h-5 w-5 flex-shrink-0" />
-  },
-  { 
-    label: 'Retraite', 
-    href: '/dashboard/retraite', 
-    icon: <Clock className="text-foreground h-5 w-5 flex-shrink-0" />
   },
   { 
     label: 'Budget', 
@@ -51,19 +36,19 @@ const menuItems = [
     icon: <Wallet className="text-foreground h-5 w-5 flex-shrink-0" />
   },
   { 
-    label: 'Fiscalité', 
-    href: '/dashboard/fiscalite', 
-    icon: <Receipt className="text-foreground h-5 w-5 flex-shrink-0" />
-  },
-  { 
-    label: 'Transmission', 
-    href: '/dashboard/transmission', 
-    icon: <ArrowRightLeft className="text-foreground h-5 w-5 flex-shrink-0" />
-  },
-  { 
-    label: 'Stratégies', 
-    href: '/dashboard/strategies', 
+    label: 'Performance', 
+    href: '/dashboard/performance', 
     icon: <Target className="text-foreground h-5 w-5 flex-shrink-0" />
+  },
+  { 
+    label: 'Famille', 
+    href: '/dashboard/famille', 
+    icon: <Users className="text-foreground h-5 w-5 flex-shrink-0" />
+  },
+  { 
+    label: 'Rapports', 
+    href: '/dashboard/rapports', 
+    icon: <Receipt className="text-foreground h-5 w-5 flex-shrink-0" />
   },
 ];
 
@@ -76,7 +61,7 @@ export const Logo = () => {
         animate={{ opacity: 1 }}
         className="font-medium text-foreground whitespace-pre"
       >
-        Patrimoine
+        Wealth Manager
       </motion.span>
     </div>
   );
