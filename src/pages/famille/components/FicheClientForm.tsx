@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -34,6 +34,9 @@ const formSchema = z.object({
   communeNaissance: z.string().min(1, 'La commune de naissance est obligatoire'),
   paysNaissance: z.string().min(1, 'Le pays de naissance est obligatoire'),
   nationalite: z.string().min(1, 'La nationalité est obligatoire'),
+  capaciteJuridique: z.enum(['normale', 'curatelle', 'tutelle', 'sauvegarde'], {
+    required_error: 'Veuillez sélectionner une capacité juridique',
+  }),
   handicape: z.boolean().default(false),
   telephone: z.string().optional(),
   email: z.string().email('Adresse email invalide').optional().or(z.literal('')),
@@ -69,6 +72,7 @@ export function FicheClientForm() {
       communeNaissance: '',
       paysNaissance: '',
       nationalite: '',
+      capaciteJuridique: undefined,
       handicape: false,
       telephone: '',
       email: '',
@@ -92,6 +96,7 @@ export function FicheClientForm() {
         communeNaissance: data.commune_naissance || '',
         paysNaissance: data.pays_naissance || '',
         nationalite: data.nationalite || '',
+        capaciteJuridique: ((data as any).capacite_juridique as 'normale' | 'curatelle' | 'tutelle' | 'sauvegarde') || 'normale',
         handicape: data.personne_handicapee || false,
         telephone: data.telephone || '',
         email: data.email || '',
@@ -130,6 +135,7 @@ export function FicheClientForm() {
         commune_naissance: formData.communeNaissance,
         pays_naissance: formData.paysNaissance,
         nationalite: formData.nationalite,
+        capacite_juridique: formData.capaciteJuridique,
         personne_handicapee: formData.handicape,
         telephone: formData.telephone,
         email: formData.email,
@@ -394,21 +400,55 @@ export function FicheClientForm() {
           />
         </div>
 
+        {/* Capacité juridique */}
+        <FormField
+          control={form.control}
+          name="capaciteJuridique"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Capacité juridique *</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  className="flex flex-col space-y-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="normale" id="normale" />
+                    <label htmlFor="normale">Normale</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="curatelle" id="curatelle" />
+                    <label htmlFor="curatelle">Majeur sous curatelle</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="tutelle" id="tutelle" />
+                    <label htmlFor="tutelle">Majeur sous tutelle</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="sauvegarde" id="sauvegarde" />
+                    <label htmlFor="sauvegarde">Majeur sous sauvegarde de justice</label>
+                  </div>
+                </RadioGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         {/* Personne handicapée */}
         <FormField
           control={form.control}
           name="handicape"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+            <FormItem>
               <FormControl>
-                <Checkbox
+                <Switch
                   checked={field.value}
                   onCheckedChange={field.onChange}
+                  label="Personne handicapée"
                 />
               </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>Personne handicapée</FormLabel>
-              </div>
             </FormItem>
           )}
         />
