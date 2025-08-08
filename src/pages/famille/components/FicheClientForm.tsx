@@ -408,28 +408,28 @@ export function FicheClientForm() {
             <FormItem>
               <FormLabel>Capacité juridique *</FormLabel>
               <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  value={field.value}
-                  className="flex flex-col space-y-2"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="normale" id="normale" />
-                    <label htmlFor="normale">Normale</label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="curatelle" id="curatelle" />
-                    <label htmlFor="curatelle">Majeur sous curatelle</label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="tutelle" id="tutelle" />
-                    <label htmlFor="tutelle">Majeur sous tutelle</label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="sauvegarde" id="sauvegarde" />
-                    <label htmlFor="sauvegarde">Majeur sous sauvegarde de justice</label>
-                  </div>
-                </RadioGroup>
+                <div className="flex flex-col space-y-4">
+                  <Switch
+                    checked={field.value === 'normale'}
+                    onCheckedChange={(checked) => checked && field.onChange('normale')}
+                    label="Normale"
+                  />
+                  <Switch
+                    checked={field.value === 'curatelle'}
+                    onCheckedChange={(checked) => checked && field.onChange('curatelle')}
+                    label="Majeur sous curatelle"
+                  />
+                  <Switch
+                    checked={field.value === 'tutelle'}
+                    onCheckedChange={(checked) => checked && field.onChange('tutelle')}
+                    label="Majeur sous tutelle"
+                  />
+                  <Switch
+                    checked={field.value === 'sauvegarde'}
+                    onCheckedChange={(checked) => checked && field.onChange('sauvegarde')}
+                    label="Majeur sous sauvegarde de justice"
+                  />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
