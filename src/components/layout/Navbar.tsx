@@ -67,11 +67,7 @@ export function Navbar() {
       {/* Header avec logo et déconnexion */}
       <div className="h-16 flex items-center justify-between px-4 md:px-6">
         <div className="flex items-center">
-          <img 
-            src="/lovable-uploads/66880016-e746-4cf1-ba6b-00cadbd6cc86.png" 
-            alt="Merislabs Logo" 
-            className="h-6 w-auto"
-          />
+          <img src="/lovable-uploads/66880016-e746-4cf1-ba6b-00cadbd6cc86.png" alt="Merislabs Logo" className="h-6 w-auto" />
         </div>
         
         <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
@@ -83,7 +79,7 @@ export function Navbar() {
       {/* Navigation */}
       <div className="px-4 border-t mx-0 my-0 md:px-[10px] py-0">
         <Tabs value={getCurrentValue()} onValueChange={handleTabChange}>
-          <TabsList variant="line" className="h-10 border-0 w-full justify-start text-[10px] font-light">
+          <TabsList variant="line" className="h-10 border-0 w-full justify-start text-[10px] font-light mx-[12px]">
             {menuItems.map(item => <TabsTrigger key={item.value} value={item.value} className="h-full data-[state=active]:text-black data-[state=active]:border-black">
                 {item.label}
               </TabsTrigger>)}
