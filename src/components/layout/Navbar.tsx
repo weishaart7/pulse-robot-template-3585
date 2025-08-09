@@ -80,7 +80,7 @@ export function Navbar() {
       {/* Navigation */}
       <div className="px-4 border-t mx-0 my-0 md:px-[10px] py-0">
         <Tabs value={getCurrentValue()} onValueChange={handleTabChange}>
-          <TabsList variant="line" className="h-10 border-0 w-full justify-start text-[11px] font-light">
+          <TabsList variant="line" className="h-10 border-0 w-full justify-start text-[10px] font-light">
             {menuItems.map(item => <TabsTrigger key={item.value} value={item.value} className="h-full data-[state=active]:text-black data-[state=active]:border-black">
                 {item.label}
               </TabsTrigger>)}
