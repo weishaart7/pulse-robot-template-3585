@@ -280,6 +280,48 @@ export type Database = {
         }
         Relationships: []
       }
+      liberalites: {
+        Row: {
+          beneficiaire: string
+          created_at: string
+          date_acte: string | null
+          denomination: string
+          description: string | null
+          id: string
+          montant: number | null
+          notaire: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          beneficiaire: string
+          created_at?: string
+          date_acte?: string | null
+          denomination: string
+          description?: string | null
+          id?: string
+          montant?: number | null
+          notaire?: string | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          beneficiaire?: string
+          created_at?: string
+          date_acte?: string | null
+          denomination?: string
+          description?: string | null
+          id?: string
+          montant?: number | null
+          notaire?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       marital_status: {
         Row: {
           adresse_notaire: string | null

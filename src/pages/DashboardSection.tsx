@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import FamilleSection from './famille/FamilleSection';
 import { PatrimoineSection } from './patrimoine/PatrimoineSection';
 import { BudgetSection } from './budget/BudgetSection';
+import { TransmissionSection } from './transmission/TransmissionSection';
 
 const DashboardSection = () => {
   const { section } = useParams();
@@ -49,6 +50,11 @@ const DashboardSection = () => {
   // Si la section est "budget", afficher le composant spécialisé
   if (section === 'budget') {
     return <BudgetSection />;
+  }
+  
+  // Si la section est "transmission", afficher le composant spécialisé
+  if (section === 'transmission') {
+    return <TransmissionSection />;
   }
 
   return (
