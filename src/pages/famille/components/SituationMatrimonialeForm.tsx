@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import { useMaritalStatus } from '@/hooks/useFamilyData';
 
 const formSchema = z.object({
-  statutCouple: z.enum(['CELIBATAIRE', 'PACS', 'MARIE', 'PARENT_ISOLE']),
+  statutCouple: z.enum(['célibataire', 'pacsé(e)', 'marié(e)', 'concubinage']),
   nomConjoint: z.string().optional(),
   prenomConjoint: z.string().optional(),
   dateNaissanceConjoint: z.date().optional(),
@@ -43,7 +43,7 @@ export function SituationMatrimonialeForm() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      statutCouple: 'CELIBATAIRE',
+      statutCouple: 'célibataire',
       parentIsole: false,
       nombreEnfantsCharges: 0,
       mariagePrecedentPersonne: false,
@@ -59,7 +59,7 @@ export function SituationMatrimonialeForm() {
   useEffect(() => {
     if (data) {
       const formattedData = {
-        statutCouple: (data.statut_couple as any) || 'CELIBATAIRE',
+        statutCouple: (data.statut_couple as any) || 'célibataire',
         nomConjoint: data.nom_conjoint || '',
         prenomConjoint: data.prenom_conjoint || '',
         dateNaissanceConjoint: data.date_naissance_conjoint ? new Date(data.date_naissance_conjoint) : undefined,
@@ -134,20 +134,20 @@ export function SituationMatrimonialeForm() {
                   className="grid grid-cols-2 gap-4"
                 >
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="CELIBATAIRE" id="celibataire" />
+                    <RadioGroupItem value="célibataire" id="celibataire" />
                     <label htmlFor="celibataire">Célibataire</label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="PACS" id="pacs" />
+                    <RadioGroupItem value="pacsé(e)" id="pacs" />
                     <label htmlFor="pacs">PACS</label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="MARIE" id="marie" />
+                    <RadioGroupItem value="marié(e)" id="marie" />
                     <label htmlFor="marie">Marié(e)</label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="PARENT_ISOLE" id="parent-isole" />
-                    <label htmlFor="parent-isole">Parent isolé</label>
+                    <RadioGroupItem value="concubinage" id="concubinage" />
+                    <label htmlFor="concubinage">Concubinage</label>
                   </div>
                 </RadioGroup>
               </FormControl>
@@ -156,7 +156,7 @@ export function SituationMatrimonialeForm() {
           )}
         />
 
-        {statutCouple !== 'CELIBATAIRE' && (
+        {statutCouple !== 'célibataire' && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Nom du conjoint */}
@@ -264,7 +264,7 @@ export function SituationMatrimonialeForm() {
               />
             </div>
 
-            {statutCouple === 'PACS' && (
+            {statutCouple === 'pacsé(e)' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Date du PACS */}
                 <FormField
@@ -327,7 +327,7 @@ export function SituationMatrimonialeForm() {
               </div>
             )}
 
-            {statutCouple === 'MARIE' && (
+            {statutCouple === 'marié(e)' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Date du mariage */}
                 <FormField
