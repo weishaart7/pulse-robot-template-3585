@@ -66,9 +66,12 @@ export function Navbar() {
   return <div className="border-b bg-background">
       {/* Header avec logo et déconnexion */}
       <div className="h-16 flex items-center justify-between px-4 md:px-6">
-        <div className="font-normal flex space-x-2 items-center text-sm">
-          <div className="h-5 w-6 bg-primary rounded-br-lg rounded-tr-sm rounded-tl-lg rounded-bl-sm flex-shrink-0" />
-          <span className="font-medium text-foreground">Patrimoine</span>
+        <div className="flex items-center">
+          <img 
+            src="/lovable-uploads/66880016-e746-4cf1-ba6b-00cadbd6cc86.png" 
+            alt="Merislabs Logo" 
+            className="h-6 w-auto"
+          />
         </div>
         
         <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
