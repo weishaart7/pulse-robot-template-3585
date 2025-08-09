@@ -61,13 +61,16 @@ export const BudgetSection = () => {
     setEditingCharge(undefined);
   };
   const loading = revenusLoading || chargesLoading;
-  return <div className="space-y-6">
-      <div className="flex justify-between items-center mx-[30px]">
-        <h1 className="text-3xl font-bold">Budget</h1>
+  return <div className="p-6">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold tracking-tight">Budget</h2>
+        <p className="text-muted-foreground">
+          Contrôlez vos revenus, dépenses et objectifs financiers
+        </p>
       </div>
 
       {/* Résumé */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-0 px-0 mx-[30px]">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 mx-0">
             <CardTitle className="text-sm font-medium">Revenus</CardTitle>
@@ -100,7 +103,7 @@ export const BudgetSection = () => {
       {showChargesForm && <ChargesForm charge={editingCharge} onSubmit={handleSubmitCharge} onCancel={handleCancelCharge} />}
 
       {/* Boutons d'ajout */}
-      {!showRevenusForm && !showChargesForm && <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mx-[30px]">
+      {!showRevenusForm && !showChargesForm && <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
