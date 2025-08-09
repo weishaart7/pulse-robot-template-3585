@@ -15,6 +15,15 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-destructive-foreground: oklch(1 0 0);
+  --destructive-foreground: oklch(1 0 0);
+}
+
+.dark {
+  --destructive-foreground: oklch(1 0 0);
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
