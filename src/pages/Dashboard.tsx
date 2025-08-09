@@ -16,7 +16,7 @@ const Dashboard = () => {
     <div className="p-6">
       <div className="mb-6 bg-card rounded-lg p-6">
         <div className="flex justify-between items-start">
-          <h2 className="text-sm text-foreground/70 font-medium">Bonjour {familyProfile?.prenom || '(Prénom)'}.</h2>
+          <h2 className="text-base text-foreground/70 font-medium">Bonjour {familyProfile?.prenom || '(Prénom)'}.</h2>
           
           <div className="bg-muted rounded-lg p-6 max-w-md">
             <h3 className="text-base font-semibold text-foreground mb-3">Parlez avec un expert</h3>
