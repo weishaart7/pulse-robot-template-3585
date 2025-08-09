@@ -41,6 +41,9 @@ const formSchema = z.object({
   telephone: z.string().optional(),
   email: z.string().email('Adresse email invalide').optional().or(z.literal('')),
   adresse: z.string().optional(),
+  codePostal: z.string().optional(),
+  ville: z.string().optional(),
+  pays: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -77,6 +80,9 @@ export function FicheClientForm() {
       telephone: '',
       email: '',
       adresse: '',
+      codePostal: '',
+      ville: '',
+      pays: '',
     },
   });
 
@@ -101,6 +107,9 @@ export function FicheClientForm() {
         telephone: data.telephone || '',
         email: data.email || '',
         adresse: data.adresse_postale || '',
+        codePostal: '',
+        ville: '',
+        pays: '',
       };
       form.reset(formattedData);
     }
@@ -453,25 +462,64 @@ export function FicheClientForm() {
           )}
         />
 
-        {/* Adresse postale */}
-        <FormField
-          control={form.control}
-          name="adresse"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Adresse postale</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Adresse complète"
-                  className="resize-none"
-                  rows={3}
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Adresse */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="adresse"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Adresse</FormLabel>
+                <FormControl>
+                  <Input placeholder="Numéro et nom de rue" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="codePostal"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Code postal</FormLabel>
+                <FormControl>
+                  <Input placeholder="Code postal" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="ville"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Ville</FormLabel>
+                <FormControl>
+                  <Input placeholder="Ville" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="pays"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Pays</FormLabel>
+                <FormControl>
+                  <Input placeholder="Pays" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <div className="flex justify-end">
           <Button type="submit" disabled={saving}>
