@@ -41,28 +41,14 @@ export function Navbar() {
   };
 
   return (
-    <header className="h-16 border-b bg-background flex items-center justify-between px-4 md:px-6">
-      <div className="flex items-center gap-6">
+    <div className="border-b bg-background">
+      {/* Header avec logo et déconnexion */}
+      <div className="h-16 flex items-center justify-between px-4 md:px-6">
         <div className="font-normal flex space-x-2 items-center text-sm">
           <div className="h-5 w-6 bg-primary rounded-br-lg rounded-tr-sm rounded-tl-lg rounded-bl-sm flex-shrink-0" />
           <span className="font-medium text-foreground">Patrimoine</span>
         </div>
         
-        <Tabs value={getCurrentValue()} onValueChange={handleTabChange}>
-          <TabsList variant="line" className="h-full border-0">
-            {menuItems.map((item) => (
-              <TabsTrigger key={item.value} value={item.value} className="h-full">
-                {item.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-      </div>
-      
-      <div className="flex items-center gap-4">
-        <span className="text-sm text-muted-foreground">
-          Bienvenue, {user?.email}
-        </span>
         <Button 
           variant="outline" 
           size="sm" 
@@ -73,6 +59,19 @@ export function Navbar() {
           Déconnexion
         </Button>
       </div>
-    </header>
+      
+      {/* Navigation */}
+      <div className="px-4 md:px-6">
+        <Tabs value={getCurrentValue()} onValueChange={handleTabChange}>
+          <TabsList variant="line" className="h-12 border-0 w-full justify-start">
+            {menuItems.map((item) => (
+              <TabsTrigger key={item.value} value={item.value} className="h-full">
+                {item.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      </div>
+    </div>
   );
 }
