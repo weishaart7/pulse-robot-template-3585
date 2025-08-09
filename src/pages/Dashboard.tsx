@@ -16,14 +16,14 @@ const Dashboard = () => {
     <div className="p-6">
       <div className="mb-6 bg-card rounded-lg p-6">
         <div className="flex justify-between items-start">
-          <h2 className="text-foreground/70 font-medium">Bonjour {familyProfile?.prenom || '(Prénom)'}.</h2>
+          <h2 className="text-sm text-foreground/70 font-medium">Bonjour {familyProfile?.prenom || '(Prénom)'}.</h2>
           
           <div className="bg-muted rounded-lg p-6 max-w-md">
-            <h3 className="text-lg font-semibold text-foreground mb-3">Parlez avec un expert</h3>
-            <p className="text-muted-foreground text-sm mb-4 leading-relaxed">
+            <h3 className="text-base font-semibold text-foreground mb-3">Parlez avec un expert</h3>
+            <p className="text-muted-foreground text-xs mb-4 leading-relaxed">
               Notre équipe interne de conseillers financiers, de conseillers patrimoniaux et partenaires est à vos côtés pour vous accompagner sereinement, qu'il s'agisse de questions simples ou de décisions stratégiques.
             </p>
-            <button className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors">
+            <button className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-xs font-medium hover:bg-primary/90 transition-colors">
               Planifier un rendez-vous
             </button>
           </div>
