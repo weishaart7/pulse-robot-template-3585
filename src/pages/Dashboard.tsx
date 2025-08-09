@@ -33,7 +33,7 @@ const Dashboard = () => {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>Famille</CardTitle>
+            <CardTitle className="text-xl">Famille</CardTitle>
             <CardDescription>
               Gérez les informations de votre famille
             </CardDescription>
@@ -47,7 +47,7 @@ const Dashboard = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle>Patrimoine</CardTitle>
+            <CardTitle className="text-xl">Patrimoine</CardTitle>
             <CardDescription>
               Suivez l'évolution de votre patrimoine
             </CardDescription>
@@ -61,7 +61,7 @@ const Dashboard = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle>Budget</CardTitle>
+            <CardTitle className="text-xl">Budget</CardTitle>
             <CardDescription>
               Contrôlez vos finances au quotidien
             </CardDescription>
