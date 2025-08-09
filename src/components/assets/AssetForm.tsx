@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { Asset, AssetCharge } from '@/services/assetService';
 import { ChargeForm } from './ChargeForm';
 import { ASSET_NATURES } from '@/constants/assetTypes';
-// Import removed - will use static options for now
+import { familyService } from '@/services/familyService';
 
 const assetSchema = z.object({
   nature: z.string().min(1, 'La nature est requise'),
@@ -51,9 +51,42 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const [showChargeForm, setShowChargeForm] = useState(false);
   const [editingCharge, setEditingCharge] = useState<AssetCharge | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
 
-  // Static options for detenteur
-  const detenteurOptions = ['Époux 1', 'Époux 2', 'Couple'];
+  // Load family data to get real names
+  useEffect(() => {
+    const loadFamilyData = async () => {
+      try {
+        const [familyProfile, maritalStatus] = await Promise.all([
+          familyService.getFamilyProfile(),
+          familyService.getMaritalStatus()
+        ]);
+
+        const options: string[] = [];
+        
+        // Add user's first name
+        if (familyProfile?.prenom) {
+          options.push(familyProfile.prenom);
+        }
+
+        // Add partner's first name if married, in PACS or cohabiting
+        if (maritalStatus?.statut_couple && 
+            ['marié(e)', 'pacsé(e)', 'concubinage'].includes(maritalStatus.statut_couple) &&
+            maritalStatus.prenom_conjoint) {
+          options.push(maritalStatus.prenom_conjoint);
+          options.push('Le couple');
+        }
+
+        setDetenteurOptions(options);
+      } catch (error) {
+        console.error('Error loading family data:', error);
+        // Fallback to generic options
+        setDetenteurOptions(['Utilisateur']);
+      }
+    };
+
+    loadFamilyData();
+  }, []);
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
     defaultValues: asset ? {
@@ -121,8 +154,6 @@ export const AssetForm: React.FC<AssetFormProps> = ({
       }
     }
   };
-
-  // Options for detenteur are already defined above
 
   return <div className="space-y-6">
       <Card>
