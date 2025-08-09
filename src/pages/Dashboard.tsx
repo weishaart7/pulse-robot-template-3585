@@ -2,10 +2,12 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import BudgetStatisticsCard from '@/components/ui/budget-statistics-card';
 import { useRevenus, useCharges } from '@/hooks/useBudget';
+import { useFamilyProfile } from '@/hooks/useFamilyData';
 
 const Dashboard = () => {
   const { revenus } = useRevenus();
   const { charges } = useCharges();
+  const { data: familyProfile } = useFamilyProfile();
 
   const totalRevenus = revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0);
   const totalCharges = charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
@@ -14,7 +16,7 @@ const Dashboard = () => {
     <div className="p-6">
       <div className="mb-6 bg-card rounded-lg p-6">
         <div className="flex justify-between items-start">
-          <h2 className="text-foreground/70 font-medium">Bonjour (Prénom)</h2>
+          <h2 className="text-foreground/70 font-medium">Bonjour {familyProfile?.prenom || '(Prénom)'}.</h2>
           
           <div className="bg-muted rounded-lg p-6 max-w-md">
             <h3 className="text-lg font-semibold text-foreground mb-3">Parlez avec un expert</h3>
