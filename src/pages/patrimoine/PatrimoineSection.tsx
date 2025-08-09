@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { AssetForm } from '@/components/assets/AssetForm';
-import { PatrimoineDashboard } from '@/components/PatrimoineDashboard';
+import { PatrimoineSidebar } from '@/components/patrimoine/PatrimoineSidebar';
+import { PatrimoineMainContent } from '@/components/patrimoine/PatrimoineMainContent';
 import { useAssets } from '@/hooks/useAssets';
 import { Asset, AssetCharge } from '@/services/assetService';
-import { getAssetCategory } from '@/constants/assetTypes';
 
 export const PatrimoineSection = () => {
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const { assets, createAsset, updateAsset, deleteAsset, loading } = useAssets();
 
   const handleAssetSubmit = async (assetData: any, charges: AssetCharge[]) => {
@@ -59,16 +58,15 @@ export const PatrimoineSection = () => {
     );
   }
 
-  return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold tracking-tight">Patrimoine</h2>
-        <p className="text-muted-foreground">
-          Gérez vos actifs patrimoniaux
-        </p>
-      </div>
-
-      {assets.length === 0 ? (
+  if (assets.length === 0) {
+    return (
+      <div className="p-6">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold tracking-tight">Patrimoine</h2>
+          <p className="text-muted-foreground">
+            Gérez vos actifs patrimoniaux
+          </p>
+        </div>
         <Card className="text-center p-8">
           <CardHeader>
             <CardTitle>Aucun actif enregistré</CardTitle>
@@ -78,75 +76,37 @@ export const PatrimoineSection = () => {
           </CardHeader>
           <CardContent>
             <Button onClick={() => setShowAssetForm(true)} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
               Ajouter un actif
             </Button>
           </CardContent>
         </Card>
-      ) : (
-        <div className="space-y-6">
-          {/* Dashboard avec graphique */}
-          <PatrimoineDashboard assets={assets} />
-          
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Mes actifs</h3>
-            <Button onClick={() => setShowAssetForm(true)} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Ajouter un actif
-            </Button>
-          </div>
+      </div>
+    );
+  }
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {assets.map((asset) => (
-              <Card key={asset.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-base flex-1">{asset.nature}</CardTitle>
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      {getAssetCategory(asset.nature)}
-                    </Badge>
-                  </div>
-                  {asset.denomination && (
-                    <CardDescription className="line-clamp-2">
-                      {asset.denomination}
-                    </CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 text-sm">
-                    {asset.valeur_estimee && (
-                      <p>
-                        <span className="font-medium">Valeur estimée:</span> {asset.valeur_estimee.toLocaleString()} €
-                      </p>
-                    )}
-                    {asset.detenteur && (
-                      <p>
-                        <span className="font-medium">Détenteur:</span> {asset.detenteur}
-                      </p>
-                    )}
-                    {asset.date_estimation && (
-                      <p>
-                        <span className="font-medium">Date d'estimation:</span> {new Date(asset.date_estimation).toLocaleDateString()}
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full mt-4"
-                    onClick={() => {
-                      setEditingAsset(asset);
-                      setShowAssetForm(true);
-                    }}
-                  >
-                    Modifier
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
+  return (
+    <div className="flex h-full">
+      {/* Sidebar gauche - 1/4 de la largeur */}
+      <PatrimoineSidebar
+        assets={assets}
+        onAssetEdit={(asset) => {
+          setEditingAsset(asset);
+          setShowAssetForm(true);
+        }}
+        selectedCategory={selectedCategory}
+        onCategorySelect={setSelectedCategory}
+      />
+      
+      {/* Contenu principal - 3/4 de la largeur */}
+      <PatrimoineMainContent
+        assets={assets}
+        selectedCategory={selectedCategory}
+        onAssetEdit={(asset) => {
+          setEditingAsset(asset);
+          setShowAssetForm(true);
+        }}
+        onAddAsset={() => setShowAssetForm(true)}
+      />
     </div>
   );
 };
