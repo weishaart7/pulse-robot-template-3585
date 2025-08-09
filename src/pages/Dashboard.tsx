@@ -12,11 +12,20 @@ const Dashboard = () => {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold tracking-tight">Vue d'ensemble</h2>
-        <p className="text-muted-foreground">
-          Bienvenue dans votre espace de gestion patrimoniale
-        </p>
+      <div className="mb-6 bg-card rounded-lg p-6">
+        <div className="flex justify-between items-start">
+          <h2 className="text-foreground/70 font-medium">Bonjour (Prénom)</h2>
+          
+          <div className="bg-muted rounded-lg p-6 max-w-md">
+            <h3 className="text-lg font-semibold text-foreground mb-3">Parlez avec un expert</h3>
+            <p className="text-muted-foreground text-sm mb-4 leading-relaxed">
+              Notre équipe interne de conseillers financiers, de conseillers patrimoniaux et partenaires est à vos côtés pour vous accompagner sereinement, qu'il s'agisse de questions simples ou de décisions stratégiques.
+            </p>
+            <button className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors">
+              Planifier un rendez-vous
+            </button>
+          </div>
+        </div>
       </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
