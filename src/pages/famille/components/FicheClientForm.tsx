@@ -102,14 +102,14 @@ export function FicheClientForm() {
         communeNaissance: data.commune_naissance || '',
         paysNaissance: data.pays_naissance || '',
         nationalite: data.nationalite || '',
-        capaciteJuridique: ((data as any).capacite_juridique as 'normale' | 'curatelle' | 'tutelle' | 'sauvegarde') || 'normale',
+        capaciteJuridique: (data.capacite_juridique as 'normale' | 'curatelle' | 'tutelle' | 'sauvegarde') || 'normale',
         handicape: data.personne_handicapee || false,
         telephone: data.telephone || '',
         email: data.email || '',
         adresse: data.adresse_postale || '',
-        codePostal: '',
-        ville: '',
-        pays: '',
+        codePostal: data.code_postal || '',
+        ville: data.ville || '',
+        pays: data.pays || '',
       };
       form.reset(formattedData);
     }
@@ -149,6 +149,9 @@ export function FicheClientForm() {
         telephone: formData.telephone,
         email: formData.email,
         adresse_postale: formData.adresse,
+        code_postal: formData.codePostal,
+        ville: formData.ville,
+        pays: formData.pays,
       };
 
       console.log('Data to save to Supabase:', supabaseData);

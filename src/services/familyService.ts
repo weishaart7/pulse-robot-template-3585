@@ -15,6 +15,10 @@ export interface FamilyProfile {
   email?: string;
   personne_handicapee?: boolean;
   adresse_postale?: string;
+  code_postal?: string;
+  ville?: string;
+  pays?: string;
+  capacite_juridique?: string;
 }
 
 export interface MaritalStatus {

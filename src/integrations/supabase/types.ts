@@ -214,7 +214,9 @@ export type Database = {
       family_profiles: {
         Row: {
           adresse_postale: string | null
+          capacite_juridique: string | null
           civility: string | null
+          code_postal: string | null
           commune_naissance: string | null
           created_at: string | null
           date_naissance: string | null
@@ -222,6 +224,7 @@ export type Database = {
           id: string
           nationalite: string | null
           nom: string | null
+          pays: string | null
           pays_naissance: string | null
           personne_handicapee: boolean | null
           prenom: string | null
@@ -229,10 +232,13 @@ export type Database = {
           telephone: string | null
           updated_at: string | null
           user_id: string
+          ville: string | null
         }
         Insert: {
           adresse_postale?: string | null
+          capacite_juridique?: string | null
           civility?: string | null
+          code_postal?: string | null
           commune_naissance?: string | null
           created_at?: string | null
           date_naissance?: string | null
@@ -240,6 +246,7 @@ export type Database = {
           id?: string
           nationalite?: string | null
           nom?: string | null
+          pays?: string | null
           pays_naissance?: string | null
           personne_handicapee?: boolean | null
           prenom?: string | null
@@ -247,10 +254,13 @@ export type Database = {
           telephone?: string | null
           updated_at?: string | null
           user_id: string
+          ville?: string | null
         }
         Update: {
           adresse_postale?: string | null
+          capacite_juridique?: string | null
           civility?: string | null
+          code_postal?: string | null
           commune_naissance?: string | null
           created_at?: string | null
           date_naissance?: string | null
@@ -258,6 +268,7 @@ export type Database = {
           id?: string
           nationalite?: string | null
           nom?: string | null
+          pays?: string | null
           pays_naissance?: string | null
           personne_handicapee?: boolean | null
           prenom?: string | null
@@ -265,6 +276,7 @@ export type Database = {
           telephone?: string | null
           updated_at?: string | null
           user_id?: string
+          ville?: string | null
         }
         Relationships: []
       }
