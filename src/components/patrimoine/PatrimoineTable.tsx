@@ -32,76 +32,91 @@ export const PatrimoineTable = ({ assets, selectedCategory, onAssetEdit }: Patri
     return totalValue > 0 ? ((assetValue / totalValue) * 100).toFixed(2) : '0.00';
   };
 
+  // Couleurs pour les catégories
+  const getCategoryColor = (category: string) => {
+    const colors: { [key: string]: string } = {
+      'Immobilier': 'hsl(var(--chart-1))',
+      'Actifs financiers': 'hsl(var(--chart-2))', 
+      'Disponibilités': 'hsl(var(--chart-3))',
+      'Véhicules': 'hsl(var(--chart-4))',
+      'Autres': 'hsl(var(--chart-5))'
+    };
+    return colors[category] || 'hsl(var(--muted-foreground))';
+  };
+
+  // Grouper les actifs par catégorie pour l'affichage
+  const assetsByCategory = filteredAssets.reduce((acc, asset) => {
+    const category = getAssetCategory(asset.nature);
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(asset);
+    return acc;
+  }, {} as { [key: string]: Asset[] });
+
+  // Calculer les statistiques par catégorie
+  const categoryStats = Object.entries(assetsByCategory).map(([category, categoryAssets]) => {
+    const categoryValue = categoryAssets.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
+    const categoryWeight = totalValue > 0 ? ((categoryValue / totalValue) * 100).toFixed(2) : '0.00';
+    return {
+      category,
+      assets: categoryAssets,
+      count: categoryAssets.length,
+      value: categoryValue,
+      weight: categoryWeight,
+      color: getCategoryColor(category)
+    };
+  }).sort((a, b) => b.value - a.value);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">
-          {selectedCategory ? `Actifs - ${selectedCategory}` : 'Tous les actifs'}
+          {selectedCategory ? `Actifs - ${selectedCategory}` : 'Répartition des actifs'}
         </h3>
         <Badge variant="secondary">
           {filteredAssets.length} actif{filteredAssets.length > 1 ? 's' : ''}
         </Badge>
       </div>
 
-      <ScrollArea className="h-80">
+      <div className="bg-card rounded-lg border">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Actif</TableHead>
-              <TableHead>Catégorie</TableHead>
-              <TableHead className="text-right">Poids</TableHead>
-              <TableHead className="text-right">Valeur</TableHead>
-              <TableHead className="text-right">+/- Value</TableHead>
-              <TableHead></TableHead>
+            <TableRow className="hover:bg-transparent border-b">
+              <TableHead className="font-semibold text-foreground">Classe d'actifs</TableHead>
+              <TableHead className="text-center font-semibold text-foreground">Nb. d'actifs</TableHead>
+              <TableHead className="text-center font-semibold text-foreground">% des actifs</TableHead>
+              <TableHead className="text-right font-semibold text-foreground">Valeur</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredAssets.map((asset) => {
-              const weight = calculateWeight(asset.valeur_estimee || 0);
-              const category = getAssetCategory(asset.nature);
-              
-              return (
-                <TableRow key={asset.id} className="hover:bg-muted/50">
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{asset.nature}</div>
-                      {asset.denomination && (
-                        <div className="text-sm text-muted-foreground truncate max-w-32">
-                          {asset.denomination}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs">
-                      {category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-mono">
-                    {weight}%
-                  </TableCell>
-                  <TableCell className="text-right font-mono">
-                    {asset.valeur_estimee ? formatCurrency(asset.valeur_estimee) : 'Non évalué'}
-                  </TableCell>
-                  <TableCell className="text-right font-mono">
-                    <span className="text-muted-foreground">—</span>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onAssetEdit(asset)}
-                      className="h-8 px-2"
-                    >
-                      Modifier
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {categoryStats.map((stat, index) => (
+              <TableRow key={stat.category} className="hover:bg-muted/30 border-b last:border-b-0">
+                <TableCell className="py-4">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-3 h-3 rounded-full flex-shrink-0" 
+                      style={{ backgroundColor: stat.color }}
+                    />
+                    <span className="font-medium text-foreground">{stat.category}</span>
+                  </div>
+                </TableCell>
+                <TableCell className="text-center py-4">
+                  <span className="text-muted-foreground">{stat.count}</span>
+                </TableCell>
+                <TableCell className="text-center py-4">
+                  <span className="text-muted-foreground font-mono">{stat.weight}%</span>
+                </TableCell>
+                <TableCell className="text-right py-4">
+                  <span className="font-semibold text-foreground font-mono">
+                    {formatCurrency(stat.value)}
+                  </span>
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
-      </ScrollArea>
+      </div>
     </div>
   );
 };
