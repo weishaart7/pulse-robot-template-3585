@@ -94,7 +94,7 @@ export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartPro
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Bouton de switch */}
       <div className="flex justify-center">
         <ToggleGroup 
@@ -112,42 +112,61 @@ export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartPro
         </ToggleGroup>
       </div>
 
-      {/* Graphique */}
-      <div className="h-80">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={chartData}
-              cx="50%"
-              cy="50%"
-              outerRadius={120}
-              innerRadius={40}
-              paddingAngle={2}
-              dataKey="value"
-            >
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-            <Legend 
-              verticalAlign="bottom" 
-              height={36}
-              formatter={(value, entry) => (
-                <span style={{ color: entry.color }}>{value}</span>
-              )}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Valeur totale au centre */}
-      <div className="text-center">
-        <div className="text-2xl font-bold text-primary">
-          {formatCurrency(totalValue)}
+      {/* Container du graphique avec centrage */}
+      <div className="flex flex-col items-center space-y-4">
+        {/* Graphique donut moderne */}
+        <div className="relative w-64 h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                outerRadius={115}
+                innerRadius={87}
+                paddingAngle={0}
+                dataKey="value"
+                stroke="hsl(var(--background))"
+                strokeWidth={3}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+          
+          {/* Valeur totale au centre du donut */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="text-2xl font-bold text-foreground">
+              {formatCurrency(totalValue)}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Patrimoine total
+            </div>
+          </div>
         </div>
-        <div className="text-sm text-muted-foreground">
-          Patrimoine total
+
+        {/* Légende personnalisée */}
+        <div className="flex flex-wrap justify-center gap-4 max-w-sm">
+          {chartData.map((entry, index) => {
+            const percentage = totalValue > 0 ? (entry.value / totalValue * 100).toFixed(1) : '0';
+            return (
+              <div key={index} className="flex items-center gap-2">
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="text-sm text-foreground font-medium">
+                  {entry.name}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {percentage}%
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
