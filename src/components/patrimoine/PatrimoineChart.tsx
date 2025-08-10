@@ -22,6 +22,7 @@ const CATEGORY_COLORS = {
 
 export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartProps) => {
   const [viewMode, setViewMode] = useState<'category' | 'weight'>('category');
+  const [hoveredCategory, setHoveredCategory] = useState<{ name: string; value: number; percentage: string } | null>(null);
 
   const chartData = useMemo(() => {
     if (viewMode === 'category') {
@@ -126,21 +127,49 @@ export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartPro
                 strokeWidth={3}
               >
                 {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={entry.color}
+                    onMouseEnter={() => {
+                      const percentage = totalValue > 0 ? ((entry.value / totalValue) * 100).toFixed(1) : '0';
+                      setHoveredCategory({
+                        name: entry.name,
+                        value: entry.value,
+                        percentage
+                      });
+                    }}
+                    onMouseLeave={() => setHoveredCategory(null)}
+                  />
                 ))}
               </Pie>
               <Tooltip content={<CustomTooltip />} />
             </PieChart>
           </ResponsiveContainer>
           
-          {/* Valeur totale au centre du donut */}
+          {/* Contenu dynamique au centre du donut */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="text-2xl font-bold text-foreground">
-              {formatCurrency(totalValue)}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              Patrimoine total
-            </div>
+            {hoveredCategory ? (
+              <>
+                <div className="text-lg font-semibold text-foreground text-center">
+                  {hoveredCategory.name}
+                </div>
+                <div className="text-xl font-bold text-primary">
+                  {formatCurrency(hoveredCategory.value)}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {hoveredCategory.percentage}% du patrimoine
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold text-foreground">
+                  {formatCurrency(totalValue)}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Patrimoine total
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
