@@ -11,9 +11,10 @@ interface PatrimoineChartProps {
 }
 
 const CATEGORY_COLORS = {
-  'immobiliers': '#ef4444',
-  'financiers liquides': '#22c55e', 
-  'financiers investis': '#3b82f6',
+  'immobiliers': '#0B5563',
+  'financiers liquides': '#544343', 
+  'financiers investis': '#D8D8F6',
+  'retraite et prévoyance': '#838E3E',
   'mobiliers corporels': '#f59e0b',
   'professionnels': '#8b5cf6',
   'autres': '#6b7280'
@@ -38,7 +39,7 @@ export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartPro
       }, {} as Record<string, { category: string; value: number; assets: Asset[] }>);
 
       return Object.values(categoryData).map(item => ({
-        name: item.category,
+        name: item.category.charAt(0).toUpperCase() + item.category.slice(1),
         value: item.value,
         color: CATEGORY_COLORS[item.category as keyof typeof CATEGORY_COLORS] || CATEGORY_COLORS.autres,
         assets: item.assets
@@ -51,7 +52,7 @@ export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartPro
           name: asset.denomination || asset.nature,
           value: asset.valeur_estimee!,
           color: CATEGORY_COLORS[getAssetCategory(asset.nature) as keyof typeof CATEGORY_COLORS] || CATEGORY_COLORS.autres,
-          category: getAssetCategory(asset.nature)
+          category: getAssetCategory(asset.nature).charAt(0).toUpperCase() + getAssetCategory(asset.nature).slice(1)
         }))
         .sort((a, b) => b.value - a.value);
     }
