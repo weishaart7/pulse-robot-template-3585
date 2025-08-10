@@ -38,12 +38,14 @@ export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartPro
         return acc;
       }, {} as Record<string, { category: string; value: number; assets: Asset[] }>);
 
-      return Object.values(categoryData).map(item => ({
-        name: item.category.charAt(0).toUpperCase() + item.category.slice(1),
-        value: item.value,
-        color: CATEGORY_COLORS[item.category as keyof typeof CATEGORY_COLORS] || CATEGORY_COLORS.autres,
-        assets: item.assets
-      }));
+      return Object.values(categoryData)
+        .map(item => ({
+          name: item.category.charAt(0).toUpperCase() + item.category.slice(1),
+          value: item.value,
+          color: CATEGORY_COLORS[item.category as keyof typeof CATEGORY_COLORS] || CATEGORY_COLORS.autres,
+          assets: item.assets
+        }))
+        .sort((a, b) => b.value - a.value); // Trier par valeur décroissante
     } else {
       // Vue par poids individuel
       return assets
@@ -76,18 +78,9 @@ export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartPro
       
       return (
         <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
-          <p className="font-medium">{data.name}</p>
-          <p className="text-primary font-semibold">{formatCurrency(data.value)}</p>
-          <p className="text-sm text-muted-foreground">{percentage}% du patrimoine</p>
-          {viewMode === 'category' && data.assets && (
-            <div className="mt-2 space-y-1">
-              {data.assets.map((asset: Asset, index: number) => (
-                <div key={index} className="text-xs text-muted-foreground">
-                  • {asset.denomination || asset.nature}: {formatCurrency(asset.valeur_estimee || 0)}
-                </div>
-              ))}
-            </div>
-          )}
+          <p className="font-medium text-lg">{data.name}</p>
+          <p className="text-primary font-semibold text-xl">{formatCurrency(data.value)}</p>
+          <p className="text-muted-foreground font-medium">{percentage}% du patrimoine</p>
         </div>
       );
     }
@@ -127,6 +120,8 @@ export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartPro
                 innerRadius={87}
                 paddingAngle={0}
                 dataKey="value"
+                startAngle={90}
+                endAngle={450}
                 stroke="hsl(var(--background))"
                 strokeWidth={3}
               >
@@ -147,27 +142,6 @@ export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartPro
               Patrimoine total
             </div>
           </div>
-        </div>
-
-        {/* Légende personnalisée */}
-        <div className="flex flex-wrap justify-center gap-4 max-w-sm">
-          {chartData.map((entry, index) => {
-            const percentage = totalValue > 0 ? (entry.value / totalValue * 100).toFixed(1) : '0';
-            return (
-              <div key={index} className="flex items-center gap-2">
-                <div 
-                  className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: entry.color }}
-                />
-                <span className="text-sm text-foreground font-medium">
-                  {entry.name}
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  {percentage}%
-                </span>
-              </div>
-            );
-          })}
         </div>
       </div>
     </div>
