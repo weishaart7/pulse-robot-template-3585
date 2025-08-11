@@ -18,7 +18,7 @@ export const TransmissionSection = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList variant="line" className="w-full">
           <TabsTrigger value="synthese">Synthèse</TabsTrigger>
           <TabsTrigger value="liberalites">Libéralités</TabsTrigger>
           <TabsTrigger value="premier-deces">1er Décès</TabsTrigger>
