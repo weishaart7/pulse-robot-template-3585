@@ -32,16 +32,20 @@ export const PatrimoineTable = ({ assets, selectedCategory, onAssetEdit }: Patri
     return totalValue > 0 ? ((assetValue / totalValue) * 100).toFixed(2) : '0.00';
   };
 
-  // Couleurs pour les catégories
+  // Couleurs pour les catégories (alignées avec le graphique)
   const getCategoryColor = (category: string) => {
     const colors: { [key: string]: string } = {
-      'Immobilier': 'hsl(var(--chart-1))',
-      'Actifs financiers': 'hsl(var(--chart-2))', 
-      'Disponibilités': 'hsl(var(--chart-3))',
-      'Véhicules': 'hsl(var(--chart-4))',
-      'Autres': 'hsl(var(--chart-5))'
+      'IMMOBILIERS': '#0B5563',
+      'FINANCIERS INVESTIS': '#D8D8F6', 
+      'FINANCIERS LIQUIDES': '#544343',
+      'RETRAITE ET PRÉVOYANCE': '#838E3E',
+      'Immobilier': '#0B5563',
+      'Actifs financiers': '#D8D8F6', 
+      'Disponibilités': '#544343',
+      'Véhicules': '#838E3E',
+      'Autres': '#838E3E'
     };
-    return colors[category] || 'hsl(var(--muted-foreground))';
+    return colors[category] || '#6B7280';
   };
 
   // Grouper les actifs par catégorie pour l'affichage
@@ -79,7 +83,7 @@ export const PatrimoineTable = ({ assets, selectedCategory, onAssetEdit }: Patri
         </Badge>
       </div>
 
-      <div className="bg-card rounded-lg border">
+      <div className="bg-card rounded-lg">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent border-b">
