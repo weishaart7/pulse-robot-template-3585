@@ -16,7 +16,7 @@ const FamilleSection = () => {
       </div>
       
       <Tabs defaultValue="fiche-client" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList variant="line" className="w-full">
           <TabsTrigger value="fiche-client">Fiche client</TabsTrigger>
           <TabsTrigger value="situation-matrimoniale">
             Situation matrimoniale
