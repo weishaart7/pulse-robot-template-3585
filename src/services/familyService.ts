@@ -60,9 +60,13 @@ export interface FamilyLink {
 export const familyService = {
   // Family Profile
   async getFamilyProfile(): Promise<FamilyProfile | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
     const { data, error } = await supabase
       .from('family_profiles')
       .select('*')
+      .eq('user_id', user.id)
       .maybeSingle();
 
     if (error) {
@@ -98,9 +102,13 @@ export const familyService = {
 
   // Marital Status
   async getMaritalStatus(): Promise<MaritalStatus | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
     const { data, error } = await supabase
       .from('marital_status')
       .select('*')
+      .eq('user_id', user.id)
       .maybeSingle();
 
     if (error) {
@@ -136,9 +144,13 @@ export const familyService = {
 
   // Family Links
   async getFamilyLinks(): Promise<FamilyLink[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
     const { data, error } = await supabase
       .from('family_links')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: true });
 
     if (error) {
