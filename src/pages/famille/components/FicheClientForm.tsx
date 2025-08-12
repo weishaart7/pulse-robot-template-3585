@@ -465,8 +465,10 @@ export function FicheClientForm() {
           )}
         />
 
-        {/* Adresse */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Coordonnées */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-foreground">Coordonnées</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
             name="adresse"
@@ -522,6 +524,7 @@ export function FicheClientForm() {
               </FormItem>
             )}
           />
+          </div>
         </div>
 
         <div className="flex justify-end">
