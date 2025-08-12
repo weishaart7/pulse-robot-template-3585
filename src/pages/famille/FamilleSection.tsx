@@ -7,7 +7,7 @@ import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
 
 const FamilleSection = () => {
   return (
-    <div className="p-6">
+    <div className="space-y-6">
       <div className="mb-6">
         <h2 className="text-2xl font-bold tracking-tight">Famille</h2>
         <p className="text-muted-foreground">
