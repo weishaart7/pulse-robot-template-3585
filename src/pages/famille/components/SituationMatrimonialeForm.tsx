@@ -452,24 +452,6 @@ export function SituationMatrimonialeForm() {
           )}
         />
 
-        {/* Nombre d'enfants à charge */}
-        <FormField
-          control={form.control}
-          name="nombreEnfantsCharges"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nombre d'enfants à charge</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder="Nombre d'enfants à charge"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         {/* Mariage précédent de la personne */}
         <FormField
