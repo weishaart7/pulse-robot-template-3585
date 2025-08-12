@@ -111,7 +111,7 @@ export const PatrimoineSidebar = ({
                     <ChevronRight className="h-4 w-4" />
                   )}
                   <div className="text-left">
-                    <div className="font-normal text-sm">{category}</div>
+                    <div className="font-normal text-sm">{category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()}</div>
                     <div className="text-xs text-muted-foreground">
                       {formatCurrency(value)} ({percentage.toFixed(1)}%)
                     </div>

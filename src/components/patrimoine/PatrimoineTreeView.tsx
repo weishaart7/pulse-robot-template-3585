@@ -82,7 +82,7 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewPr
                       ) : (
                         <ChevronRight className="h-4 w-4" />
                       )}
-                      {category}
+                       {category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()}
                       <Badge variant="secondary" className="ml-2 uppercase">
                         {categoryAssets.length}
                       </Badge>
