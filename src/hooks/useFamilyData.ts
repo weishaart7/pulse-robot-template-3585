@@ -65,7 +65,10 @@ export const useMaritalStatus = () => {
   const { isAuthenticated } = useAuth();
 
   const fetchData = async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      setLoading(false);
+      return;
+    }
     
     try {
       setLoading(true);
@@ -84,6 +87,15 @@ export const useMaritalStatus = () => {
   };
 
   const saveData = async (status: MaritalStatus) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Erreur",
+        description: "Vous devez être connecté pour enregistrer",
+        variant: "destructive",
+      });
+      throw new Error('Utilisateur non connecté');
+    }
+
     try {
       setSaving(true);
       const savedStatus = await familyService.upsertMaritalStatus(status);

@@ -14,6 +14,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { useMaritalStatus } from '@/hooks/useFamilyData';
+import { useAuth } from '@/contexts/AuthContext';
 
 const formSchema = z.object({
   statutCouple: z.enum(['CELIBATAIRE', 'PACS', 'MARIE', 'CONCUBINAGE']),
@@ -39,6 +40,7 @@ type FormData = z.infer<typeof formSchema>;
 
 export function SituationMatrimonialeForm() {
   const { data, loading, saving, saveData } = useMaritalStatus();
+  const { isAuthenticated } = useAuth();
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -82,6 +84,11 @@ export function SituationMatrimonialeForm() {
   }, [data, form]);
 
   const onSubmit = async (formData: FormData) => {
+    if (!isAuthenticated) {
+      console.error('Utilisateur non connecté');
+      return;
+    }
+
     try {
       const supabaseData = {
         statut_couple: formData.statutCouple,
