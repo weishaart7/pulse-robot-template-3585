@@ -63,7 +63,7 @@ export function Navbar() {
   const handleLogout = () => {
     logout();
   };
-  return <div className="fixed top-0 left-0 w-full z-50 border-b bg-background">
+  return <div className="border-b bg-background">
       {/* Header avec logo et déconnexion */}
       <div className="h-16 flex items-center justify-between px-4 md:px-6">
         <div className="flex items-center">
