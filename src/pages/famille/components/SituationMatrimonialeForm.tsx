@@ -8,7 +8,7 @@ import { CalendarIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -127,30 +127,39 @@ export function SituationMatrimonialeForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Statut du couple</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  className="grid grid-cols-2 gap-4"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="CELIBATAIRE" id="celibataire" />
-                    <label htmlFor="celibataire">Célibataire</label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="PACS" id="pacs" />
-                    <label htmlFor="pacs">PACS</label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="MARIE" id="marie" />
-                    <label htmlFor="marie">Marié(e)</label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="CONCUBINAGE" id="concubinage" />
-                    <label htmlFor="concubinage">Concubinage</label>
-                  </div>
-                </RadioGroup>
-              </FormControl>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger size="lg">
+                    <SelectValue placeholder="Sélectionner le statut du couple" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="CELIBATAIRE">
+                    <span className="flex flex-col items-start gap-px">
+                      <span className="font-medium">Célibataire</span>
+                      <small className="text-muted-foreground text-xs">Personne non mariée et sans PACS</small>
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="PACS">
+                    <span className="flex flex-col items-start gap-px">
+                      <span className="font-medium">PACS</span>
+                      <small className="text-muted-foreground text-xs">Pacte civil de solidarité</small>
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="MARIE">
+                    <span className="flex flex-col items-start gap-px">
+                      <span className="font-medium">Marié(e)</span>
+                      <small className="text-muted-foreground text-xs">Union légale devant la loi</small>
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="CONCUBINAGE">
+                    <span className="flex flex-col items-start gap-px">
+                      <span className="font-medium">Concubinage</span>
+                      <small className="text-muted-foreground text-xs">Union libre sans engagement légal</small>
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
