@@ -29,9 +29,20 @@ export const useFamilyProfile = () => {
   };
 
   const saveData = async (profile: FamilyProfile) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Erreur",
+        description: "Vous devez être connecté pour enregistrer",
+        variant: "destructive",
+      });
+      throw new Error('Utilisateur non connecté');
+    }
+
     try {
       setSaving(true);
+      console.log('Saving family profile:', profile);
       const savedProfile = await familyService.upsertFamilyProfile(profile);
+      console.log('Family profile saved successfully:', savedProfile);
       setData(savedProfile);
       toast({
         title: "Succès",
