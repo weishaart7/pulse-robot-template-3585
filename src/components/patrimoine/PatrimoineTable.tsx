@@ -102,7 +102,7 @@ export const PatrimoineTable = ({ assets, selectedCategory, onAssetEdit }: Patri
                       className="w-3 h-3 rounded-full flex-shrink-0" 
                       style={{ backgroundColor: stat.color }}
                     />
-                    <span className="font-normal text-foreground">{stat.category}</span>
+                    <span className="font-normal text-foreground uppercase">{stat.category}</span>
                   </div>
                 </TableCell>
                 <TableCell className="text-center py-4">
