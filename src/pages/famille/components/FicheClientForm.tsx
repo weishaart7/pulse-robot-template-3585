@@ -304,7 +304,7 @@ export function FicheClientForm() {
                 <FormLabel>Profession</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger size="lg">
                       <SelectValue placeholder="Sélectionner une profession" />
                     </SelectTrigger>
                   </FormControl>

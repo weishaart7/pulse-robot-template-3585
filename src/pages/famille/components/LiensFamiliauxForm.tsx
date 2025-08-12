@@ -246,7 +246,7 @@ export function LiensFamiliauxForm() {
                         <FormLabel>Lien familial *</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger size="lg">
                               <SelectValue placeholder="Sélectionner un lien" />
                             </SelectTrigger>
                           </FormControl>
@@ -380,7 +380,7 @@ export function LiensFamiliauxForm() {
                         <FormLabel>Niveau scolaire</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger size="lg">
                               <SelectValue placeholder="Sélectionner un niveau" />
                             </SelectTrigger>
                           </FormControl>
