@@ -127,37 +127,17 @@ export function SituationMatrimonialeForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Statut du couple</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger size="lg">
-                    <SelectValue placeholder="Sélectionner le statut du couple" />
+                    <SelectValue placeholder="Choisir un statut" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="CELIBATAIRE">
-                    <span className="flex flex-col items-start gap-px">
-                      <span className="font-medium">Célibataire</span>
-                      <small className="text-muted-foreground text-xs">Personne non mariée et sans PACS</small>
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="PACS">
-                    <span className="flex flex-col items-start gap-px">
-                      <span className="font-medium">PACS</span>
-                      <small className="text-muted-foreground text-xs">Pacte civil de solidarité</small>
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="MARIE">
-                    <span className="flex flex-col items-start gap-px">
-                      <span className="font-medium">Marié(e)</span>
-                      <small className="text-muted-foreground text-xs">Union légale devant la loi</small>
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="CONCUBINAGE">
-                    <span className="flex flex-col items-start gap-px">
-                      <span className="font-medium">Concubinage</span>
-                      <small className="text-muted-foreground text-xs">Union libre sans engagement légal</small>
-                    </span>
-                  </SelectItem>
+                  <SelectItem value="CELIBATAIRE">Célibataire</SelectItem>
+                  <SelectItem value="PACS">PACS</SelectItem>
+                  <SelectItem value="MARIE">Marié(e)</SelectItem>
+                  <SelectItem value="CONCUBINAGE">Concubinage</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
