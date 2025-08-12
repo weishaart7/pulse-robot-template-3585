@@ -74,7 +74,7 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewPr
                   <TableCell>
                     <Button
                       variant="ghost"
-                      className="p-0 h-auto font-semibold flex items-center gap-2"
+                      className="p-0 h-auto font-normal flex items-center gap-2"
                       onClick={() => toggleCategory(category)}
                     >
                       {isExpanded ? (
@@ -83,15 +83,15 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewPr
                         <ChevronRight className="h-4 w-4" />
                       )}
                       {category}
-                      <Badge variant="secondary" className="ml-2">
+                      <Badge variant="secondary" className="ml-2 uppercase">
                         {categoryAssets.length}
                       </Badge>
                     </Button>
                   </TableCell>
-                  <TableCell className="text-right font-mono font-semibold">
+                  <TableCell className="text-right font-mono font-normal">
                     {categoryWeight}%
                   </TableCell>
-                  <TableCell className="text-right font-mono font-semibold">
+                  <TableCell className="text-right font-mono font-normal">
                     {formatCurrency(categoryValue)}
                   </TableCell>
                   <TableCell className="text-right font-mono">
@@ -108,7 +108,7 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewPr
                     <TableRow key={asset.id} className="hover:bg-muted/30">
                       <TableCell className="pl-8">
                         <div>
-                          <div className="font-medium">{asset.nature}</div>
+                          <div className="font-normal">{asset.nature}</div>
                           {asset.denomination && (
                             <div className="text-sm text-muted-foreground">
                               {asset.denomination}

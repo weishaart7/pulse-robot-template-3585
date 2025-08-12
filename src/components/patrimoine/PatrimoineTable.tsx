@@ -75,10 +75,10 @@ export const PatrimoineTable = ({ assets, selectedCategory, onAssetEdit }: Patri
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">
+        <h3 className="text-lg font-normal">
           {selectedCategory ? `Actifs - ${selectedCategory}` : 'Répartition des actifs'}
         </h3>
-        <Badge variant="secondary">
+        <Badge variant="secondary" className="uppercase">
           {filteredAssets.length} actif{filteredAssets.length > 1 ? 's' : ''}
         </Badge>
       </div>
@@ -87,10 +87,10 @@ export const PatrimoineTable = ({ assets, selectedCategory, onAssetEdit }: Patri
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent border-b">
-              <TableHead className="font-semibold text-foreground">Classe d'actifs</TableHead>
-              <TableHead className="text-center font-semibold text-foreground">Nb. d'actifs</TableHead>
-              <TableHead className="text-center font-semibold text-foreground">% des actifs</TableHead>
-              <TableHead className="text-right font-semibold text-foreground">Valeur</TableHead>
+              <TableHead className="font-normal text-foreground">Classe d'actifs</TableHead>
+              <TableHead className="text-center font-normal text-foreground">Nb. d'actifs</TableHead>
+              <TableHead className="text-center font-normal text-foreground">% des actifs</TableHead>
+              <TableHead className="text-right font-normal text-foreground">Valeur</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -102,7 +102,7 @@ export const PatrimoineTable = ({ assets, selectedCategory, onAssetEdit }: Patri
                       className="w-3 h-3 rounded-full flex-shrink-0" 
                       style={{ backgroundColor: stat.color }}
                     />
-                    <span className="font-medium text-foreground">{stat.category}</span>
+                    <span className="font-normal text-foreground">{stat.category}</span>
                   </div>
                 </TableCell>
                 <TableCell className="text-center py-4">
@@ -112,7 +112,7 @@ export const PatrimoineTable = ({ assets, selectedCategory, onAssetEdit }: Patri
                   <span className="text-muted-foreground font-mono">{stat.weight}%</span>
                 </TableCell>
                 <TableCell className="text-right py-4">
-                  <span className="font-semibold text-foreground font-mono">
+                  <span className="font-normal text-foreground font-mono">
                     {formatCurrency(stat.value)}
                   </span>
                 </TableCell>

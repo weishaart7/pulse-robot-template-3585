@@ -111,13 +111,13 @@ export const PatrimoineSidebar = ({
                     <ChevronRight className="h-4 w-4" />
                   )}
                   <div className="text-left">
-                    <div className="font-medium text-sm">{category}</div>
+                    <div className="font-normal text-sm">{category}</div>
                     <div className="text-xs text-muted-foreground">
                       {formatCurrency(value)} ({percentage.toFixed(1)}%)
                     </div>
                   </div>
                 </div>
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-xs uppercase">
                   {count}
                 </Badge>
               </Button>
@@ -133,13 +133,13 @@ export const PatrimoineSidebar = ({
                       onClick={() => onAssetEdit(asset)}
                     >
                       <div className="flex-1">
-                        <div className="text-sm font-medium">{asset.nature}</div>
+                        <div className="text-sm font-normal">{asset.nature}</div>
                         {asset.denomination && (
                           <div className="text-xs text-muted-foreground truncate">
                             {asset.denomination}
                           </div>
                         )}
-                        <div className="text-xs font-medium text-primary">
+                        <div className="text-xs font-normal text-primary">
                           {asset.valeur_estimee ? formatCurrency(asset.valeur_estimee) : 'Non évalué'}
                         </div>
                       </div>
