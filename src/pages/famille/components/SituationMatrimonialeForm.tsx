@@ -17,7 +17,7 @@ import { useMaritalStatus } from '@/hooks/useFamilyData';
 import { useAuth } from '@/contexts/AuthContext';
 
 const formSchema = z.object({
-  statutCouple: z.enum(['CELIBATAIRE', 'PACS', 'MARIE', 'CONCUBINAGE']),
+  statutCouple: z.enum(['CELIBATAIRE', 'Pacsé(e)', 'Marié(e)', 'Concubinage']),
   nomConjoint: z.string().optional(),
   prenomConjoint: z.string().optional(),
   dateNaissanceConjoint: z.date().optional(),
@@ -142,9 +142,9 @@ export function SituationMatrimonialeForm() {
                 </FormControl>
                 <SelectContent>
                   <SelectItem value="CELIBATAIRE">Célibataire</SelectItem>
-                  <SelectItem value="PACS">PACS</SelectItem>
-                  <SelectItem value="MARIE">Marié(e)</SelectItem>
-                  <SelectItem value="CONCUBINAGE">Concubinage</SelectItem>
+                  <SelectItem value="Pacsé(e)">Pacsé(e)</SelectItem>
+                  <SelectItem value="Marié(e)">Marié(e)</SelectItem>
+                  <SelectItem value="Concubinage">Concubinage</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -260,7 +260,7 @@ export function SituationMatrimonialeForm() {
               />
             </div>
 
-            {statutCouple === 'PACS' && (
+            {statutCouple === 'Pacsé(e)' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Date du PACS */}
                 <FormField
@@ -323,7 +323,7 @@ export function SituationMatrimonialeForm() {
               </div>
             )}
 
-            {statutCouple === 'MARIE' && (
+            {statutCouple === 'Marié(e)' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Date du mariage */}
                 <FormField
