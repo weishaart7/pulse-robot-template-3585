@@ -10,6 +10,8 @@ export interface Asset {
   date_estimation?: string;
   revalorisation_annuelle?: number;
   detenteur?: string;
+  pourcentage_utilisateur?: number;
+  pourcentage_conjoint?: number;
   valeur_acquisition?: number;
   frais_acquisition?: number;
   date_acquisition?: string;

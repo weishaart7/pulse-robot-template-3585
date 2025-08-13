@@ -30,6 +30,8 @@ const assetSchema = z.object({
   date_estimation: z.date().optional(),
   revalorisation_annuelle: z.number().optional(),
   detenteur: z.string().optional(),
+  pourcentage_utilisateur: z.number().optional(),
+  pourcentage_conjoint: z.number().optional(),
   valeur_acquisition: z.number().optional(),
   frais_acquisition: z.number().optional(),
   date_acquisition: z.date().optional()
@@ -52,6 +54,11 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const [editingCharge, setEditingCharge] = useState<AssetCharge | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
+  const [familyData, setFamilyData] = useState<{
+    userFirstName?: string;
+    partnerFirstName?: string;
+    hasPartner: boolean;
+  }>({ hasPartner: false });
 
   // Load family data to get real names
   useEffect(() => {
@@ -63,10 +70,12 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         ]);
 
         const options: string[] = [];
+        const familyInfo = { hasPartner: false, userFirstName: '', partnerFirstName: '' };
         
         // Add user's first name
         if (familyProfile?.prenom) {
           options.push(familyProfile.prenom);
+          familyInfo.userFirstName = familyProfile.prenom;
         }
 
         // Add partner's first name if married, in PACS or cohabiting
@@ -75,9 +84,12 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             maritalStatus.prenom_conjoint) {
           options.push(maritalStatus.prenom_conjoint);
           options.push('Le couple');
+          familyInfo.hasPartner = true;
+          familyInfo.partnerFirstName = maritalStatus.prenom_conjoint;
         }
 
         setDetenteurOptions(options);
+        setFamilyData(familyInfo);
       } catch (error) {
         console.error('Error loading family data:', error);
         // Fallback to generic options
@@ -97,6 +109,8 @@ export const AssetForm: React.FC<AssetFormProps> = ({
       date_estimation: asset.date_estimation ? new Date(asset.date_estimation) : undefined,
       revalorisation_annuelle: asset.revalorisation_annuelle || undefined,
       detenteur: asset.detenteur || '',
+      pourcentage_utilisateur: asset.pourcentage_utilisateur || 50,
+      pourcentage_conjoint: asset.pourcentage_conjoint || 50,
       valeur_acquisition: asset.valeur_acquisition || undefined,
       frais_acquisition: asset.frais_acquisition || undefined,
       date_acquisition: asset.date_acquisition ? new Date(asset.date_acquisition) : undefined
@@ -104,7 +118,9 @@ export const AssetForm: React.FC<AssetFormProps> = ({
       nature: '',
       denomination: '',
       mode_detention: '',
-      detenteur: ''
+      detenteur: '',
+      pourcentage_utilisateur: 50,
+      pourcentage_conjoint: 50
     }
   });
   const handleSubmit = async (values: AssetFormValues) => {
@@ -241,9 +257,9 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                   field
                 }) => <FormItem>
                         <FormLabel>Détenteur</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger size="lg">
                               <SelectValue placeholder="Choisir un détenteur" />
                             </SelectTrigger>
                           </FormControl>
@@ -255,6 +271,59 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                         </Select>
                         <FormMessage />
                       </FormItem>} />
+
+                  {/* Pourcentages si "Le couple" est sélectionné */}
+                  {form.watch('detenteur') === 'Le couple' && familyData.hasPartner && (
+                    <>
+                      <FormField control={form.control} name="pourcentage_utilisateur" render={({
+                        field
+                      }) => (
+                        <FormItem>
+                          <FormLabel>Pourcentage appartenant à {familyData.userFirstName || 'vous'} (%)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min="0" 
+                              max="100" 
+                              step="0.1"
+                              {...field} 
+                              onChange={e => {
+                                const value = parseFloat(e.target.value) || 0;
+                                field.onChange(value);
+                                // Auto-adjust partner percentage
+                                form.setValue('pourcentage_conjoint', 100 - value);
+                              }} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+
+                      <FormField control={form.control} name="pourcentage_conjoint" render={({
+                        field
+                      }) => (
+                        <FormItem>
+                          <FormLabel>Pourcentage appartenant à {familyData.partnerFirstName || 'votre conjoint(e)'} (%)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min="0" 
+                              max="100" 
+                              step="0.1"
+                              {...field} 
+                              onChange={e => {
+                                const value = parseFloat(e.target.value) || 0;
+                                field.onChange(value);
+                                // Auto-adjust user percentage
+                                form.setValue('pourcentage_utilisateur', 100 - value);
+                              }} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </>
+                  )}
 
                   <FormField control={form.control} name="date_acquisition" render={({
                   field
