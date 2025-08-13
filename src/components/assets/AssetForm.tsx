@@ -78,14 +78,20 @@ export const AssetForm: React.FC<AssetFormProps> = ({
           familyInfo.userFirstName = familyProfile.prenom;
         }
 
-        // Add partner's first name if married, in PACS or cohabiting
-        if (maritalStatus?.statut_couple && 
+        // Check if user has partner (married, pacsé or concubinage)
+        const hasPartner = maritalStatus?.statut_couple && 
             ['marié(e)', 'pacsé(e)', 'concubinage'].includes(maritalStatus.statut_couple) &&
-            maritalStatus.prenom_conjoint) {
+            maritalStatus.prenom_conjoint;
+
+        if (hasPartner) {
           options.push(maritalStatus.prenom_conjoint);
-          options.push('Le couple');
           familyInfo.hasPartner = true;
           familyInfo.partnerFirstName = maritalStatus.prenom_conjoint;
+        }
+
+        // Always add "Le couple" option if there's a partner
+        if (familyInfo.hasPartner) {
+          options.push('Le couple');
         }
 
         setDetenteurOptions(options);
