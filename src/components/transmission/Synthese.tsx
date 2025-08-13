@@ -1,110 +1,288 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { useAssets } from '@/hooks/useAssets';
-
-// Import du service pour les charges au lieu du hook useBudget
 import { supabase } from '@/integrations/supabase/client';
-import { useState, useEffect } from 'react';
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
-
-// Données mockées pour les héritiers (à connecter plus tard à la section Succession)
-const heritiersData = [
-  { nom: 'Héritier 1', pourcentage: 50 },
-  { nom: 'Héritier 2', pourcentage: 30 },
-  { nom: 'Héritier 3', pourcentage: 20 },
-];
+import { useAuth } from '@/contexts/AuthContext';
+import { computeTransmission, FamilyGraph, PatrimonySnapshot, Liberalite, TransmissionParams } from '@/lib/transmission';
+import transmissionParamsData from '@/data/transmission-params.json';
 
 export const Synthese = () => {
-  const { assets } = useAssets();
-  const [charges, setCharges] = useState<any[]>([]);
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [transmissionResult, setTransmissionResult] = useState<any>(null);
 
   useEffect(() => {
-    const fetchCharges = async () => {
-      const { data } = await supabase.from('charges').select('*');
-      setCharges(data || []);
+    if (user) {
+      fetchTransmissionData();
+    }
+  }, [user]);
+
+  const fetchTransmissionData = async () => {
+    try {
+      setLoading(true);
+
+      // Récupérer les données famille
+      const { data: familyProfile } = await supabase
+        .from('family_profiles')
+        .select('*')
+        .eq('user_id', user!.id)
+        .single();
+
+      const { data: maritalStatus } = await supabase
+        .from('marital_status')
+        .select('*')
+        .eq('user_id', user!.id)
+        .single();
+
+      const { data: familyLinks } = await supabase
+        .from('family_links')
+        .select('*')
+        .eq('user_id', user!.id);
+
+      // Récupérer les assets
+      const { data: assets } = await supabase
+        .from('assets')
+        .select('*')
+        .eq('user_id', user!.id);
+
+      // Récupérer les passifs (charges)
+      const { data: charges } = await supabase
+        .from('charges')
+        .select('*')
+        .eq('user_id', user!.id);
+
+      // Récupérer les libéralités
+      const { data: liberalites } = await supabase
+        .from('liberalites')
+        .select('*')
+        .eq('user_id', user!.id);
+
+      // Construire le graphe familial
+      const family: FamilyGraph = buildFamilyGraph(familyProfile, maritalStatus, familyLinks || []);
+      
+      // Construire le patrimoine
+      const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], charges || []);
+      
+      // Transformer les libéralités
+      const liberalitesFormatted: Liberalite[] = (liberalites || []).map(lib => ({
+        id: lib.id!,
+        type: lib.type as 'donation' | 'legs',
+        beneficiaireId: lib.beneficiaire || 'tiers',
+        valeur: Number(lib.montant) || 0,
+        date: lib.date_acte || new Date().toISOString().split('T')[0],
+        denomination: lib.denomination,
+        beneficiaireName: lib.beneficiaire
+      }));
+
+      // Paramètres fiscaux - conversion de type appropriée
+      const params: TransmissionParams = {
+        abattements: {
+          ...transmissionParamsData.abattements,
+          conjoint: transmissionParamsData.abattements.conjoint === "Infinity" ? Infinity : Number(transmissionParamsData.abattements.conjoint)
+        },
+        bareme: transmissionParamsData.bareme,
+        prelevement990I: transmissionParamsData.prelevement990I,
+        fraisNotaire: {
+          mode: transmissionParamsData.fraisNotaire.mode as "pourcentage" | "forfait",
+          valeur: transmissionParamsData.fraisNotaire.valeur
+        }
+      };
+
+      // Calculer la transmission
+      const result = computeTransmission({
+        family,
+        patrimony,
+        liberalites: liberalitesFormatted,
+        params
+      });
+
+      setTransmissionResult(result);
+    } catch (error) {
+      console.error('Erreur lors du calcul de transmission:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const buildFamilyGraph = (profile: any, marital: any, links: any[]): FamilyGraph => {
+    const persons = [
+      {
+        id: user!.id,
+        nom: profile?.nom || 'Utilisateur',
+        prenom: profile?.prenom || '',
+        estDecede: false
+      }
+    ];
+
+    const familyLinks: any[] = [];
+    const marriages: any[] = [];
+    
+    // Ajouter le conjoint si marié/pacsé
+    let survivingSpouseId: string | undefined;
+    if (marital?.statut_couple && ['Marié(e)', 'Pacsé(e)'].includes(marital.statut_couple)) {
+      const conjointId = `conjoint-${user!.id}`;
+      persons.push({
+        id: conjointId,
+        nom: marital.nom_conjoint || 'Conjoint',
+        prenom: marital.prenom_conjoint || '',
+        estDecede: false
+      });
+      
+      familyLinks.push({
+        from: user!.id,
+        to: conjointId,
+        relation: 'spouse' as const
+      });
+      
+      marriages.push({
+        spouseA: user!.id,
+        spouseB: conjointId
+      });
+      
+      survivingSpouseId = conjointId;
+    }
+
+    // Ajouter les liens familiaux
+    const childrenIds: string[] = [];
+    links.forEach(link => {
+      const personId = `person-${link.id}`;
+      persons.push({
+        id: personId,
+        nom: link.nom,
+        prenom: link.prenom || '',
+        estDecede: false
+      });
+
+      familyLinks.push({
+        from: user!.id,
+        to: personId,
+        relation: link.lien_familial === 'enfant' ? 'child' as const : 'other' as const
+      });
+
+      if (link.lien_familial === 'enfant') {
+        childrenIds.push(personId);
+      }
+    });
+
+    return {
+      persons,
+      links: familyLinks,
+      marriages,
+      decedentId: user!.id,
+      hasSurvivingSpouse: !!survivingSpouseId,
+      survivingSpouseId,
+      childrenOfDecedent: childrenIds,
+      childrenCommonWithSpouse: childrenIds // Simplification
     };
-    fetchCharges();
-  }, []);
+  };
 
-  // Calculs basés sur les données réelles
-  const totalActifs = assets.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
-  const totalPassifs = charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
-  const assuranceVie = assets
-    .filter(asset => asset.nature?.toLowerCase().includes('assurance'))
-    .reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
+  const buildPatrimonySnapshot = (assets: any[], charges: any[]): PatrimonySnapshot => {
+    const totalActifs = assets.reduce((sum, asset) => sum + (Number(asset.valeur_estimee) || 0), 0);
+    const totalPassifs = charges.reduce((sum, charge) => sum + (Number(charge.montant) || 0), 0);
 
-  // Formule: (Actif - Passifs - Assurance vie) + Assurance vie = Actif - Passifs
-  const transmissionNette = totalActifs - totalPassifs;
-
-  // Calcul des parts par héritier
-  const heritiers = heritiersData.map(h => ({
-    ...h,
-    partNette: Math.round((transmissionNette * h.pourcentage) / 100),
-  }));
-
-  // Données pour le graphique
-  const chartData = heritiers.map(h => ({
-    name: h.nom,
-    value: h.partNette,
-    percentage: h.pourcentage,
-  }));
-
-  // Frais estimés (calculs simplifiés)
-  const droitsSuccession = Math.round(transmissionNette * 0.15); // 15% estimé
-  const prelevement990I = Math.round(transmissionNette * 0.02); // 2% estimé
-  const fraisNotaire = Math.round(transmissionNette * 0.03); // 3% estimé
+    return {
+      date: new Date().toISOString().split('T')[0],
+      biensExistants: totalActifs,
+      passifs: totalPassifs
+    };
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-lg">Calcul en cours...</div>
+      </div>
+    );
+  }
+
+  if (!transmissionResult) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="text-lg font-semibold mb-2">Données insuffisantes</h3>
+        <p className="text-muted-foreground">
+          Veuillez renseigner vos données dans les sections Famille et Patrimoine.
+        </p>
+      </div>
+    );
+  }
+
+  const chartData = transmissionResult.heirs.map((heir: any, index: number) => ({
+    name: heir.nom,
+    value: heir.partFinale,
+    color: `hsl(${index * 45}, 70%, 50%)`
+  }));
+
   return (
     <div className="space-y-6">
-      {/* Total transmission nette */}
+      {/* Synthèse globale */}
       <Card>
         <CardHeader>
-          <CardTitle>Total Transmission Nette</CardTitle>
+          <CardTitle>Synthèse de la transmission</CardTitle>
           <CardDescription>
-            Montant total transmissible après déduction des passifs
+            Vue d'ensemble des valeurs et droits de transmission
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-4xl font-bold text-primary">
-            {formatCurrency(transmissionNette)}
-          </div>
-          <div className="mt-2 text-sm text-muted-foreground">
-            Actifs: {formatCurrency(totalActifs)} - Passifs: {formatCurrency(totalPassifs)}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center p-4 bg-muted rounded-lg">
+              <div className="text-2xl font-bold text-primary">
+                {formatCurrency(transmissionResult.transmissionNette)}
+              </div>
+              <div className="text-sm text-muted-foreground">Transmission nette</div>
+            </div>
+            
+            <div className="text-center p-4 bg-muted rounded-lg">
+              <div className="text-2xl font-bold text-destructive">
+                {formatCurrency(transmissionResult.totalDroitsSuccession)}
+              </div>
+              <div className="text-sm text-muted-foreground">Droits de succession</div>
+            </div>
+            
+            <div className="text-center p-4 bg-muted rounded-lg">
+              <div className="text-2xl font-bold text-orange-600">
+                {formatCurrency(transmissionResult.fraisNotaire)}
+              </div>
+              <div className="text-sm text-muted-foreground">Frais de notaire</div>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Répartition des héritiers */}
+      {/* Répartition par héritier */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Répartition par Héritier</CardTitle>
+            <CardTitle>Répartition par héritier</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Héritier</TableHead>
-                  <TableHead>Part Nette</TableHead>
-                  <TableHead>%</TableHead>
+                  <TableHead>Lien</TableHead>
+                  <TableHead className="text-right">Part finale</TableHead>
+                  <TableHead className="text-right">Droits</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {heritiers.map((heritier, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">{heritier.nom}</TableCell>
-                    <TableCell>{formatCurrency(heritier.partNette)}</TableCell>
-                    <TableCell>{heritier.pourcentage}%</TableCell>
+                {transmissionResult.heirs.map((heir: any) => (
+                  <TableRow key={heir.personId}>
+                    <TableCell className="font-medium">{heir.nom}</TableCell>
+                    <TableCell>{heir.lien}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(heir.partFinale)}</TableCell>
+                    <TableCell className="text-right text-destructive">
+                      {formatCurrency(heir.droitsSuccession)}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -112,76 +290,59 @@ export const Synthese = () => {
           </CardContent>
         </Card>
 
-        {/* Graphique circulaire */}
         <Card>
           <CardHeader>
-            <CardTitle>Répartition Visuelle</CardTitle>
+            <CardTitle>Répartition graphique</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percentage }) => `${name}: ${percentage}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            {chartData.length > 0 && (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    dataKey="value"
+                    label={(entry) => `${entry.name}: ${formatCurrency(entry.value)}`}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Tableau des frais */}
+      {/* Détails fiscaux */}
       <Card>
         <CardHeader>
-          <CardTitle>Estimation des Frais</CardTitle>
-          <CardDescription>
-            Frais estimés liés à la transmission (calculs indicatifs)
-          </CardDescription>
+          <CardTitle>Détails des calculs</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Type de Frais</TableHead>
-                <TableHead>Montant Estimé</TableHead>
-                <TableHead>Base de Calcul</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">Droits de succession</TableCell>
-                <TableCell>{formatCurrency(droitsSuccession)}</TableCell>
-                <TableCell>15% du patrimoine net</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Prélèvement 990 I</TableCell>
-                <TableCell>{formatCurrency(prelevement990I)}</TableCell>
-                <TableCell>2% du patrimoine net</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Frais de notaire</TableCell>
-                <TableCell>{formatCurrency(fraisNotaire)}</TableCell>
-                <TableCell>3% du patrimoine net</TableCell>
-              </TableRow>
-              <TableRow className="font-bold border-t">
-                <TableCell>Total des frais</TableCell>
-                <TableCell>{formatCurrency(droitsSuccession + prelevement990I + fraisNotaire)}</TableCell>
-                <TableCell>20% du patrimoine net</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 className="font-semibold mb-2">Masse de calcul</h4>
+              <p>{formatCurrency(transmissionResult.masseCalcul)}</p>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-2">Réserve globale</h4>
+              <p>{formatCurrency(transmissionResult.reserve)}</p>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-2">Quotité disponible</h4>
+              <p>{formatCurrency(transmissionResult.quotiteDisponible)}</p>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-2">Total 990 I</h4>
+              <p>{formatCurrency(transmissionResult.total990I)}</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
