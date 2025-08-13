@@ -80,7 +80,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
 
         // Check if user has partner (married, pacsé or concubinage)
         const hasPartner = maritalStatus?.statut_couple && 
-            ['marié(e)', 'pacsé(e)', 'concubinage'].includes(maritalStatus.statut_couple) &&
+            ['MARIE', 'marié(e)', 'PACSE', 'pacsé(e)', 'CONCUBINAGE', 'concubinage'].includes(maritalStatus.statut_couple) &&
             maritalStatus.prenom_conjoint;
 
         if (hasPartner) {
