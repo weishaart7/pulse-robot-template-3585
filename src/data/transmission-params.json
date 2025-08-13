@@ -1,0 +1,59 @@
+{
+  "abattements": {
+    "enfant": 100000,
+    "conjoint": "Infinity",
+    "parent": 100000,
+    "frere_soeur": 15932,
+    "neveu_niece": 7967,
+    "autre": 1594
+  },
+  "bareme": [
+    {
+      "lien": "enfant",
+      "tranches": [
+        { "seuil": 0, "taux": 5 },
+        { "seuil": 8072, "taux": 10 },
+        { "seuil": 12109, "taux": 15 },
+        { "seuil": 15932, "taux": 20 },
+        { "seuil": 552324, "taux": 30 },
+        { "seuil": 902838, "taux": 40 },
+        { "seuil": 1805677, "taux": 45 }
+      ]
+    },
+    {
+      "lien": "conjoint",
+      "tranches": []
+    },
+    {
+      "lien": "frere_soeur", 
+      "tranches": [
+        { "seuil": 0, "taux": 35 },
+        { "seuil": 24430, "taux": 45 }
+      ]
+    },
+    {
+      "lien": "neveu_niece",
+      "tranches": [
+        { "seuil": 0, "taux": 55 }
+      ]
+    },
+    {
+      "lien": "autre",
+      "tranches": [
+        { "seuil": 0, "taux": 60 }
+      ]
+    }
+  ],
+  "prelevement990I": {
+    "seuilParBenef": 152500,
+    "tranches": [
+      { "seuil": 0, "taux": 20 },
+      { "seuil": 700000, "taux": 31.25 }
+    ],
+    "exonerations": ["conjoint", "enfant", "parent"]
+  },
+  "fraisNotaire": {
+    "mode": "pourcentage",
+    "valeur": 2.5
+  }
+}
