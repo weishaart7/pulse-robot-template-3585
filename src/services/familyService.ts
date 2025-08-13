@@ -185,6 +185,20 @@ export const familyService = {
   },
 
   async updateFamilyLink(id: string, link: Partial<FamilyLink>): Promise<FamilyLink> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Verify user owns this family link before updating
+    const { data: existingLink } = await supabase
+      .from('family_links')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    if (!existingLink || existingLink.user_id !== user.id) {
+      throw new Error('Unauthorized: Family link not found or access denied');
+    }
+
     const { data, error } = await supabase
       .from('family_links')
       .update(link)
@@ -201,6 +215,20 @@ export const familyService = {
   },
 
   async deleteFamilyLink(id: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Verify user owns this family link before deleting
+    const { data: existingLink } = await supabase
+      .from('family_links')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    if (!existingLink || existingLink.user_id !== user.id) {
+      throw new Error('Unauthorized: Family link not found or access denied');
+    }
+
     const { error } = await supabase
       .from('family_links')
       .delete()
@@ -213,6 +241,19 @@ export const familyService = {
   },
 
   async deleteFamilyLinks(ids: string[]): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Verify user owns all family links before deleting
+    const { data: existingLinks } = await supabase
+      .from('family_links')
+      .select('id, user_id')
+      .in('id', ids);
+
+    if (!existingLinks || existingLinks.some(link => link.user_id !== user.id)) {
+      throw new Error('Unauthorized: One or more family links not found or access denied');
+    }
+
     const { error } = await supabase
       .from('family_links')
       .delete()

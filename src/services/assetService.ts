@@ -74,6 +74,20 @@ export const assetService = {
   },
 
   async updateAsset(id: string, asset: Partial<Asset>) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Verify user owns this asset before updating
+    const { data: existingAsset } = await supabase
+      .from('assets')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    if (!existingAsset || existingAsset.user_id !== user.id) {
+      throw new Error('Unauthorized: Asset not found or access denied');
+    }
+
     const { data, error } = await supabase
       .from('assets')
       .update(asset)
@@ -86,6 +100,20 @@ export const assetService = {
   },
 
   async deleteAsset(id: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Verify user owns this asset before deleting
+    const { data: existingAsset } = await supabase
+      .from('assets')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    if (!existingAsset || existingAsset.user_id !== user.id) {
+      throw new Error('Unauthorized: Asset not found or access denied');
+    }
+
     const { error } = await supabase
       .from('assets')
       .delete()
@@ -117,6 +145,24 @@ export const assetService = {
   },
 
   async updateAssetCharge(id: string, charge: Partial<AssetCharge>): Promise<AssetCharge> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Verify user owns the asset associated with this charge
+    const { data: chargeWithAsset } = await supabase
+      .from('asset_charges')
+      .select(`
+        id,
+        asset_id,
+        assets!inner(user_id)
+      `)
+      .eq('id', id)
+      .single();
+
+    if (!chargeWithAsset || chargeWithAsset.assets.user_id !== user.id) {
+      throw new Error('Unauthorized: Asset charge not found or access denied');
+    }
+
     const { data, error } = await supabase
       .from('asset_charges')
       .update(charge)
@@ -129,6 +175,24 @@ export const assetService = {
   },
 
   async deleteAssetCharge(id: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Verify user owns the asset associated with this charge
+    const { data: chargeWithAsset } = await supabase
+      .from('asset_charges')
+      .select(`
+        id,
+        asset_id,
+        assets!inner(user_id)
+      `)
+      .eq('id', id)
+      .single();
+
+    if (!chargeWithAsset || chargeWithAsset.assets.user_id !== user.id) {
+      throw new Error('Unauthorized: Asset charge not found or access denied');
+    }
+
     const { error } = await supabase
       .from('asset_charges')
       .delete()

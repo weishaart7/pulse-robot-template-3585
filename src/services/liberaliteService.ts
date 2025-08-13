@@ -40,6 +40,20 @@ export const liberaliteService = {
   },
 
   async updateLiberalite(id: string, liberalite: Partial<Liberalite>): Promise<Liberalite> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Verify user owns this liberalite before updating
+    const { data: existingLiberalite } = await supabase
+      .from('liberalites')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    if (!existingLiberalite || existingLiberalite.user_id !== user.id) {
+      throw new Error('Unauthorized: Liberalite not found or access denied');
+    }
+
     const { data, error } = await supabase
       .from('liberalites')
       .update(liberalite)
@@ -52,6 +66,20 @@ export const liberaliteService = {
   },
 
   async deleteLiberalite(id: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Verify user owns this liberalite before deleting
+    const { data: existingLiberalite } = await supabase
+      .from('liberalites')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    if (!existingLiberalite || existingLiberalite.user_id !== user.id) {
+      throw new Error('Unauthorized: Liberalite not found or access denied');
+    }
+
     const { error } = await supabase
       .from('liberalites')
       .delete()

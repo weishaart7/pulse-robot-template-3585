@@ -52,6 +52,20 @@ export const budgetService = {
   },
 
   async updateRevenu(id: string, revenu: Partial<Revenu>): Promise<Revenu> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Verify user owns this revenue before updating
+    const { data: existingRevenu } = await supabase
+      .from('revenus')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    if (!existingRevenu || existingRevenu.user_id !== user.id) {
+      throw new Error('Unauthorized: Revenue not found or access denied');
+    }
+
     const { data, error } = await supabase
       .from('revenus')
       .update(revenu)
@@ -64,6 +78,20 @@ export const budgetService = {
   },
 
   async deleteRevenu(id: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Verify user owns this revenue before deleting
+    const { data: existingRevenu } = await supabase
+      .from('revenus')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    if (!existingRevenu || existingRevenu.user_id !== user.id) {
+      throw new Error('Unauthorized: Revenue not found or access denied');
+    }
+
     const { error } = await supabase
       .from('revenus')
       .delete()
@@ -98,6 +126,20 @@ export const budgetService = {
   },
 
   async updateCharge(id: string, charge: Partial<Charge>): Promise<Charge> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Verify user owns this charge before updating
+    const { data: existingCharge } = await supabase
+      .from('charges')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    if (!existingCharge || existingCharge.user_id !== user.id) {
+      throw new Error('Unauthorized: Charge not found or access denied');
+    }
+
     const { data, error } = await supabase
       .from('charges')
       .update(charge)
@@ -110,6 +152,20 @@ export const budgetService = {
   },
 
   async deleteCharge(id: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Verify user owns this charge before deleting
+    const { data: existingCharge } = await supabase
+      .from('charges')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    if (!existingCharge || existingCharge.user_id !== user.id) {
+      throw new Error('Unauthorized: Charge not found or access denied');
+    }
+
     const { error } = await supabase
       .from('charges')
       .delete()
