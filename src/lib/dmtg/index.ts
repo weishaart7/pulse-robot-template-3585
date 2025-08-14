@@ -15,6 +15,7 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
   const { deathDate, params, regimeMatrimonial, assets, civilShares, beneficiaries, donations, avContracts } = ctx;
 
   logs.push(`=== Calcul DMTG pour décès du ${deathDate} ===`);
+  console.log('Context DMTG:', ctx);
 
   // Phase 1 : Liquidation matrimoniale & périmètre taxable
   const matrimonialResult = computeMatrimonialLiquidation({

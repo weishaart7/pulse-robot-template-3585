@@ -135,6 +135,7 @@ export const Synthese = () => {
 
       // Calculer les droits DMTG
       const dmtgResult = computeDMTG(dmtgContext);
+      console.log('Résultat DMTG:', dmtgResult);
 
       // Combiner les résultats
       const combinedResult = {

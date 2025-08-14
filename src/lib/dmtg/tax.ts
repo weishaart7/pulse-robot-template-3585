@@ -77,7 +77,7 @@ export function computeProgressiveTax(
     if (remainingAmount <= 0 || trancheMax === Infinity) break;
   }
 
-  return {
+  const result = {
     taxe: Math.round(totalTaxe),
     trancheDetails: trancheDetails.map(t => ({
       ...t,
@@ -85,6 +85,9 @@ export function computeProgressiveTax(
       duty: Math.round(t.duty)
     }))
   };
+  
+  console.log(`Calcul progressif pour ${lien}: montant=${amountAfterAllowance}, tranches consommées=${consumedBracketsAmount}, résultat=${result.taxe}€`);
+  return result;
 }
 
 export function getBaremeForLien(lien: Lien, params: DmtgParams, comesFromRepresentationWithPlurality?: boolean): Array<{ upTo: number | null; rate: number }> {
