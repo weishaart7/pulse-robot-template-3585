@@ -297,11 +297,18 @@ export const Synthese = () => {
 
   // Données fictives pour le développement
   const heritiersData = [
-    { name: "Conjoint", value: 250000, color: "hsl(var(--chart-1))" },
-    { name: "Enfant 1", value: 150000, color: "hsl(var(--chart-2))" },
-    { name: "Enfant 2", value: 150000, color: "hsl(var(--chart-3))" }
+    { name: "Conjoint", value: 250000, percentage: "45.5" },
+    { name: "Enfant 1", value: 150000, percentage: "27.3" },
+    { name: "Enfant 2", value: 150000, percentage: "27.3" }
   ];
   const transmissionNette = heritiersData.reduce((sum, heir) => sum + heir.value, 0);
+
+  const COLORS = {
+    'Conjoint': 'hsl(var(--chart-1))',
+    'Enfant 1': 'hsl(var(--chart-2))',
+    'Enfant 2': 'hsl(var(--chart-3))',
+    'autres': 'hsl(var(--muted))'
+  };
 
   return (
     <div className="space-y-6">
@@ -330,28 +337,10 @@ export const Synthese = () => {
                     {heritiersData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={entry.color} 
+                        fill={COLORS[entry.name] || COLORS['autres']} 
                       />
                     ))}
                   </Pie>
-                  <Legend 
-                    content={({ payload }) => (
-                      <div className="flex flex-col gap-2 mt-4">
-                        {payload?.map((entry, index) => (
-                          <div key={index} className="flex items-center gap-2 text-sm">
-                            <div 
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: entry.color }}
-                            />
-                            <span className="text-foreground">{entry.value}</span>
-                            <span className="text-muted-foreground ml-auto">
-                              {formatCurrency(heritiersData[index].value)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  />
                 </PieChart>
               </ResponsiveContainer>
               
@@ -370,19 +359,47 @@ export const Synthese = () => {
           </CardContent>
         </Card>
 
-        {/* Espace pour autres éléments */}
+        {/* Détails par héritier */}
         <Card>
           <CardHeader>
-            <CardTitle>Détails</CardTitle>
+            <CardTitle>Détail par héritier</CardTitle>
             <CardDescription>
-              Informations complémentaires à venir
+              Montants détaillés pour chaque héritier
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">
-                Contenu à développer
-              </p>
+            <div className="space-y-4">
+              {heritiersData.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">
+                  Aucun héritier défini
+                </p>
+              ) : (
+                heritiersData
+                  .sort((a, b) => b.value - a.value)
+                  .map((heritier) => (
+                    <div key={heritier.name} className="flex items-center justify-between p-3 rounded-lg border">
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-4 h-4 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: COLORS[heritier.name] || COLORS['autres'] }}
+                        />
+                        <div>
+                          <div className="font-medium text-foreground">
+                            {heritier.name}
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {heritier.percentage}% de la transmission
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold">
+                          {formatCurrency(heritier.value)}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+              )}
             </div>
           </CardContent>
         </Card>
