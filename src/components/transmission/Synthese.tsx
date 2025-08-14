@@ -5,6 +5,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recha
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, Liberalite, TransmissionParams } from '@/lib/transmission';
+import { computeDMTG, DMTGContext, DEFAULT_DMTG_PARAMS } from '@/lib/dmtg';
 import transmissionParamsData from '@/data/transmission-params.json';
 
 export const Synthese = () => {
@@ -89,16 +90,66 @@ export const Synthese = () => {
         }
       };
 
-      // Calculer la transmission
-      const result = computeTransmission({
+      // Calculer la transmission civile
+      const civilResult = computeTransmission({
         family,
         patrimony,
         liberalites: liberalitesFormatted,
         params
       });
 
-      // Ajouter la référence du graphe familial au résultat pour l'affichage
-      setTransmissionResult({ ...result, family });
+      // Préparer les données pour le calcul DMTG
+      const dmtgContext: DMTGContext = {
+        deathDate: new Date().toISOString().split('T')[0],
+        params: DEFAULT_DMTG_PARAMS,
+        regimeMatrimonial: {
+          regime: maritalStatus?.contrat_mariage?.toLowerCase().includes('communauté') ? 'communauté' : 'séparation',
+          actifCommun: 0,
+          passifCommun: 0,
+          avantagesMatrimoniaux: []
+        },
+        assets: (assets || []).map(asset => ({
+          id: asset.id!,
+          label: asset.denomination || '',
+          valeurVenale: Number(asset.valeur_estimee) || 0,
+          nature: 'autre',
+          location: 'metropole',
+          isResidencePrincipale: asset.nature === 'immobilier',
+          exclurePour: {}
+        })),
+        civilShares: civilResult.heirs.map(heir => ({
+          beneficiaryId: heir.personId,
+          fraction: heir.partFinale / civilResult.transmissionNette,
+          source: 'legal'
+        })),
+        beneficiaries: civilResult.heirs.map(heir => ({
+          id: heir.personId,
+          lien: heir.lien === 'conjoint' ? 'conjoint' : 
+                heir.lien === 'enfant' ? 'enfant' :
+                heir.lien === 'parent' ? 'ascendant' :
+                heir.lien === 'frère' || heir.lien === 'soeur' ? 'frere_soeur' : 'autre'
+        })),
+        donations: [], // À récupérer depuis les libéralités si besoin
+        avContracts: [] // À implémenter si contrats AV
+      };
+
+      // Calculer les droits DMTG
+      const dmtgResult = computeDMTG(dmtgContext);
+
+      // Combiner les résultats
+      const combinedResult = {
+        ...civilResult,
+        family,
+        dmtg: dmtgResult,
+        // Mettre à jour les droits de succession avec les calculs DMTG
+        heirs: civilResult.heirs.map(heir => ({
+          ...heir,
+          droitsSuccession: dmtgResult.perBeneficiary[heir.personId]?.droitsTotaux || 0
+        })),
+        totalDroitsSuccession: dmtgResult.totals.droitsTotaux
+      };
+
+      setTransmissionResult(combinedResult);
     } catch (error) {
       console.error('Erreur lors du calcul de transmission:', error);
     } finally {
