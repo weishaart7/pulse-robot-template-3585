@@ -1,0 +1,51 @@
+{
+  "year": 2025,
+  "abattements": {
+    "enfant_ascendant": 100000,
+    "frere_soeur": 15932,
+    "neveu_niece": 7967,
+    "tiers": 1594,
+    "handicap": 159325,
+    "don_790G": 31865,
+    "apres70_AV_global": 30500,
+    "av_990I_allowance": 152500
+  },
+  "baremes": {
+    "ligne_directe": [
+      { "upTo": 8072, "rate": 0.05 },
+      { "upTo": 12109, "rate": 0.10 },
+      { "upTo": 15932, "rate": 0.15 },
+      { "upTo": 552324, "rate": 0.20 },
+      { "upTo": 902838, "rate": 0.30 },
+      { "upTo": 1805677, "rate": 0.40 },
+      { "upTo": null, "rate": 0.45 }
+    ],
+    "frere_soeur": [
+      { "upTo": 24430, "rate": 0.35 },
+      { "upTo": null, "rate": 0.45 }
+    ],
+    "collateral_4": [
+      { "upTo": null, "rate": 0.55 }
+    ],
+    "autre": [
+      { "upTo": null, "rate": 0.60 }
+    ]
+  },
+  "av_990I_rates": [
+    { "upTo": 852500, "rate": 0.20 },
+    { "upTo": null, "rate": 0.3125 }
+  ],
+  "demembrementViager": [
+    { "minAge": 0, "maxAge": 20, "usufruitPct": 0.90, "nuePropPct": 0.10 },
+    { "minAge": 21, "maxAge": 30, "usufruitPct": 0.80, "nuePropPct": 0.20 },
+    { "minAge": 31, "maxAge": 40, "usufruitPct": 0.70, "nuePropPct": 0.30 },
+    { "minAge": 41, "maxAge": 50, "usufruitPct": 0.60, "nuePropPct": 0.40 },
+    { "minAge": 51, "maxAge": 60, "usufruitPct": 0.50, "nuePropPct": 0.50 },
+    { "minAge": 61, "maxAge": 70, "usufruitPct": 0.40, "nuePropPct": 0.60 },
+    { "minAge": 71, "maxAge": 80, "usufruitPct": 0.30, "nuePropPct": 0.70 },
+    { "minAge": 81, "maxAge": 90, "usufruitPct": 0.20, "nuePropPct": 0.80 },
+    { "minAge": 91, "maxAge": 999, "usufruitPct": 0.10, "nuePropPct": 0.90 }
+  ],
+  "corseEndDate": "2027-12-31",
+  "fraisFunerairesForfait": 1500
+}
