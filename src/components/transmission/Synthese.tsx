@@ -295,23 +295,98 @@ export const Synthese = () => {
     color: `hsl(${index * 45}, 70%, 50%)`
   }));
 
+  // Données fictives pour le développement
+  const heritiersData = [
+    { name: "Conjoint", value: 250000, color: "hsl(var(--chart-1))" },
+    { name: "Enfant 1", value: 150000, color: "hsl(var(--chart-2))" },
+    { name: "Enfant 2", value: 150000, color: "hsl(var(--chart-3))" }
+  ];
+  const transmissionNette = heritiersData.reduce((sum, heir) => sum + heir.value, 0);
+
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Synthèse de la transmission</CardTitle>
-          <CardDescription>
-            Les calculs sont en cours de développement. Cette section sera remise en fonction prochainement.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">
-              Section temporairement désactivée pour refonte des calculs
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Graphique de transmission nette */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Transmission nette</CardTitle>
+            <CardDescription>
+              Répartition entre les héritiers
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="relative h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={heritiersData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={120}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {heritiersData.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={entry.color} 
+                      />
+                    ))}
+                  </Pie>
+                  <Legend 
+                    content={({ payload }) => (
+                      <div className="flex flex-col gap-2 mt-4">
+                        {payload?.map((entry, index) => (
+                          <div key={index} className="flex items-center gap-2 text-sm">
+                            <div 
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: entry.color }}
+                            />
+                            <span className="text-foreground">{entry.value}</span>
+                            <span className="text-muted-foreground ml-auto">
+                              {formatCurrency(heritiersData[index].value)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              
+              {/* Valeur totale au centre */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-foreground">
+                    {formatCurrency(transmissionNette)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Transmission nette
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Espace pour autres éléments */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Détails</CardTitle>
+            <CardDescription>
+              Informations complémentaires à venir
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">
+                Contenu à développer
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
