@@ -1,13 +1,184 @@
-// lib/dmtg/simpleFiscal.ts
+// Moteur fiscal simplifié et corrigé - intégré avec les règles complètes
+import { 
+  computeAbattementWithRappel, 
+  computeProgressiveTaxWithBrackets,
+  computeReductions,
+  FiscalContext,
+  AbattementResult,
+  ProgressiveTaxResult
+} from './fiscalRules';
+
 type Money = number;
-type Lien = 'enfant' | 'parent' | 'conjoint' | 'frere_soeur' | 'neveu_niece' | 'tiers' | 'autre';
+type Lien = 'enfant' | 'parent' | 'conjoint' | 'pacs' | 'frere_soeur' | 'neveu_niece' | 'petit_enfant' | 'cousin' | 'tiers' | 'autre';
 
 interface Params {
   abattements: Record<string, Money>;
   baremes: { [k: string]: Array<{ upTo: number | null; rate: number }> };
 }
 
+interface BeneficiaryFiscalContext {
+  personId: string;
+  lien: Lien;
+  isHandicapped?: boolean;
+  isMutileGuerre?: boolean;
+  isFromGuyane?: boolean;
+  representationContext?: {
+    isRepresenting: boolean;
+    representedPersonId: string;
+    numberOfRepresentants: number;
+    hasPlurality?: boolean;
+  };
+}
+
+interface CompleteFiscalResult {
+  partBrute: Money;
+  exonerations: Money;
+  baseAvantAbattement: Money;
+  abattementResult: AbattementResult;
+  baseTaxable: Money;
+  progressiveTaxResult: ProgressiveTaxResult;
+  reductions: {
+    reductionMutile: number;
+    reductionGuyane: number;
+    droitsApresReduction: number;
+  };
+  droitsFinaux: Money;
+}
+
 function roundEuros(n: number) { return Math.round(n); }
+
+/**
+ * Calcul fiscal complet pour un bénéficiaire
+ */
+export function computeInheritanceForBeneficiary(
+  partBrute: Money,
+  lien: Lien,
+  consumedBracketsAmount: Money, // Conservé pour compatibilité - sera remplacé par rappel fiscal
+  params: Params,
+  fiscalContext?: FiscalContext,
+  beneficiaryContext?: BeneficiaryFiscalContext
+): { base: Money; abattementApplied: Money; tax: Money } {
+  
+  // Si on a le contexte complet, utiliser le nouveau moteur
+  if (fiscalContext && beneficiaryContext) {
+    const result = computeCompleteFiscalTax(
+      partBrute,
+      fiscalContext,
+      beneficiaryContext
+    );
+    
+    return {
+      base: result.baseTaxable,
+      abattementApplied: result.abattementResult.abattementUtilise,
+      tax: result.droitsFinaux
+    };
+  }
+  
+  // Sinon, utiliser le moteur simplifié (pour compatibilité)
+  return computeSimplifiedTax(partBrute, lien, consumedBracketsAmount, params);
+}
+
+/**
+ * Moteur fiscal complet avec toutes les règles
+ */
+export function computeCompleteFiscalTax(
+  partBrute: Money,
+  fiscalContext: FiscalContext,
+  beneficiaryContext: BeneficiaryFiscalContext
+): CompleteFiscalResult {
+  
+  // 1. Exonérations (conjoint, etc.)
+  const exonerations = beneficiaryContext.lien === 'conjoint' || beneficiaryContext.lien === 'pacs' 
+    ? partBrute : 0;
+  
+  if (exonerations >= partBrute) {
+    return {
+      partBrute,
+      exonerations,
+      baseAvantAbattement: 0,
+      abattementResult: {
+        abattementTotal: 0,
+        abattementUtilise: 0,
+        abattementResiduel: 0,
+        rappelFiscal: { donationsRappelees: [], totalRappele: 0, abattementDejaUtilise: 0 }
+      },
+      baseTaxable: 0,
+      progressiveTaxResult: {
+        baseTaxable: 0,
+        tranchesConsommees: 0,
+        tranches: [],
+        droitsTotal: 0
+      },
+      reductions: { reductionMutile: 0, reductionGuyane: 0, droitsApresReduction: 0 },
+      droitsFinaux: 0
+    };
+  }
+  
+  const baseAvantAbattement = partBrute - exonerations;
+  
+  // 2. Calcul de l'abattement avec rappel fiscal
+  const abattementResult = computeAbattementWithRappel(
+    beneficiaryContext.personId,
+    beneficiaryContext.lien,
+    beneficiaryContext.isHandicapped || false,
+    fiscalContext,
+    beneficiaryContext.representationContext
+  );
+  
+  const baseTaxable = Math.max(0, baseAvantAbattement - abattementResult.abattementResiduel);
+  
+  // 3. Calcul de l'impôt progressif
+  const progressiveTaxResult = computeProgressiveTaxWithBrackets(
+    baseTaxable,
+    beneficiaryContext.lien,
+    abattementResult.rappelFiscal,
+    beneficiaryContext.representationContext?.hasPlurality || false
+  );
+  
+  // 4. Réductions
+  const reductions = computeReductions(
+    progressiveTaxResult.droitsTotal,
+    {
+      isMutileGuerre: beneficiaryContext.isMutileGuerre,
+      isFromGuyane: beneficiaryContext.isFromGuyane
+    }
+  );
+  
+  return {
+    partBrute,
+    exonerations,
+    baseAvantAbattement,
+    abattementResult,
+    baseTaxable,
+    progressiveTaxResult,
+    reductions,
+    droitsFinaux: reductions.droitsApresReduction
+  };
+}
+
+/**
+ * Moteur simplifié (pour compatibilité avec l'ancien système)
+ */
+function computeSimplifiedTax(
+  partBrute: Money,
+  lien: Lien,
+  consumedBracketsAmount: Money,
+  params: Params
+): { base: Money; abattementApplied: Money; tax: Money } {
+  
+  // Exonération conjoint/PACS
+  if (lien === 'conjoint' || lien === 'pacs') {
+    return { base: 0, abattementApplied: partBrute, tax: 0 };
+  }
+  
+  // 1) Appliquer abattement
+  const { base, abattementApplied } = applyAbattement(partBrute, lien, params);
+  
+  // 2) Calculer l'impôt progressif avec tranches consommées
+  const { tax } = computeProgressiveTax(base, lien, consumedBracketsAmount, params);
+  
+  return { base, abattementApplied, tax };
+}
 
 /** soustrait abattement (capped at amount) */
 function applyAbattement(amount: Money, lien: Lien, params: Params): { base: Money; abattementApplied: Money } {
@@ -28,7 +199,7 @@ function applyAbattement(amount: Money, lien: Lien, params: Params): { base: Mon
  */
 function computeProgressiveTax(amount: Money, lien: Lien, consumedBracketsAmount: Money, params: Params) {
   // Exonération conjoint/PACS
-  if (lien === 'conjoint') {
+  if (lien === 'conjoint' || lien === 'pacs') {
     return { tax: 0 };
   }
 
@@ -75,20 +246,6 @@ function computeProgressiveTax(amount: Money, lien: Lien, consumedBracketsAmount
   }
 
   return { tax: roundEuros(tax) };
-}
-
-/** High-level compute for single beneficiary (without AV/demembrement) */
-export function computeInheritanceForBeneficiary(
-  partBrute: Money,
-  lien: Lien,
-  consumedBracketsAmount: Money,
-  params: Params
-) {
-  // 1) apply abattement
-  const { base, abattementApplied } = applyAbattement(partBrute, lien, params);
-  // 2) compute progressive tax with consumed brackets
-  const { tax } = computeProgressiveTax(base, lien, consumedBracketsAmount, params);
-  return { base, abattementApplied, tax };
 }
 
 /**
