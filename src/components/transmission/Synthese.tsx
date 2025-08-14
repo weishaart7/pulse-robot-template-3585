@@ -120,15 +120,25 @@ export const Synthese = () => {
         civilShares: civilResult.heirs.map(heir => ({
           beneficiaryId: heir.personId,
           fraction: heir.partFinale / civilResult.transmissionNette,
-          source: 'legal'
+          source: 'legal' as const
         })),
-        beneficiaries: civilResult.heirs.map(heir => ({
-          id: heir.personId,
-          lien: heir.lien === 'conjoint' ? 'conjoint' : 
-                heir.lien === 'enfant' ? 'enfant' :
-                heir.lien === 'parent' ? 'ascendant' :
-                heir.lien === 'frère' || heir.lien === 'soeur' ? 'frere_soeur' : 'autre'
-        })),
+        beneficiaries: civilResult.heirs.map(heir => {
+          // Corriger le mapping des liens familiaux
+          const person = family.persons.find(p => p.id === heir.personId);
+          const lienFamilial = person?.lienFamilial || heir.lien;
+          
+          let dmtgLien: any = 'autre';
+          if (lienFamilial === 'conjoint') dmtgLien = 'conjoint';
+          else if (lienFamilial === 'enfant') dmtgLien = 'enfant';
+          else if (lienFamilial === 'parent') dmtgLien = 'ascendant';
+          else if (lienFamilial === 'soeur' || lienFamilial === 'frère') dmtgLien = 'frere_soeur';
+          else if (lienFamilial === 'neveu' || lienFamilial === 'nièce') dmtgLien = 'neveu_niece';
+          
+          return {
+            id: heir.personId,
+            lien: dmtgLien
+          };
+        }),
         donations: [], // À récupérer depuis les libéralités si besoin
         avContracts: [] // À implémenter si contrats AV
       };

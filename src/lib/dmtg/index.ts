@@ -53,9 +53,13 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
     const benId = beneficiary.id;
     const baseHorsAV = taxBaseResult.perBeneficiary[benId] || 0;
     
+    console.log(`=== Calcul pour ${benId} (${beneficiary.lien}) ===`);
+    console.log(`Base hors AV: ${baseHorsAV}€`);
+    
     // Ajouter la réintégration 757B à la base
     const reintegration757B = avResult.perBeneficiary[benId]?.reintegration757B || 0;
     const baseApresFrais = baseHorsAV + reintegration757B;
+    console.log(`Base après frais: ${baseApresFrais}€`);
 
     // Phase 4 : Rappel fiscal (15 ans)
     const donations15y = filterDonations15Years(donations, deathDate, benId);
@@ -64,9 +68,13 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
       donations15y,
       params
     });
+    
+    console.log(`Abattement résiduel: ${recallResult.allowanceGeneralResidual}€`);
+    console.log(`Tranches consommées: ${recallResult.consumedBracketsAmount}€`);
 
     // Base taxable après abattements
     const taxableAfterAllowance = Math.max(0, baseApresFrais - (recallResult.allowanceGeneralResidual === Infinity ? baseApresFrais : recallResult.allowanceGeneralResidual));
+    console.log(`Base taxable après abattement: ${taxableAfterAllowance}€`);
 
     // Phase 5 : Barème & calcul de droits
     const taxResult = computeProgressiveTax(
@@ -75,6 +83,8 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
       recallResult.consumedBracketsAmount,
       params
     );
+    
+    console.log(`Droits calculés: ${taxResult.taxe}€`);
 
     const prelev990I = avResult.perBeneficiary[benId]?.prelev990I || 0;
     const droitsTotaux = taxResult.taxe + prelev990I;
