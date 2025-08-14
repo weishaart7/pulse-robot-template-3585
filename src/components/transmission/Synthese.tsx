@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { Calculator, FileText, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, Liberalite, TransmissionParams } from '@/lib/transmission';
@@ -304,26 +307,163 @@ export const Synthese = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-4 bg-muted rounded-lg">
-              <div className="text-2xl font-bold text-primary">
-                {formatCurrency(transmissionResult.transmissionNette)}
-              </div>
-              <div className="text-sm text-muted-foreground">Transmission nette</div>
-            </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <div className="text-center p-4 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors">
+                  <div className="text-2xl font-bold text-primary">
+                    {formatCurrency(transmissionResult.transmissionNette)}
+                  </div>
+                  <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
+                    <Calculator className="h-4 w-4" />
+                    Transmission nette
+                  </div>
+                </div>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Détail du calcul - Transmission nette</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="border rounded-lg p-4">
+                    <h4 className="font-semibold mb-2">Composition du patrimoine</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Actifs bruts :</span>
+                        <span>{formatCurrency(transmissionResult.masseCalcul)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Passifs :</span>
+                        <span>-{formatCurrency(0)}</span>
+                      </div>
+                      <hr />
+                      <div className="flex justify-between font-semibold">
+                        <span>Patrimoine net :</span>
+                        <span>{formatCurrency(transmissionResult.transmissionNette)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {transmissionResult.dmtg?.logs && (
+                    <div className="border rounded-lg p-4">
+                      <h4 className="font-semibold mb-2">Journal de calcul DMTG</h4>
+                      <div className="space-y-1 text-sm font-mono">
+                        {transmissionResult.dmtg.logs.map((log: string, index: number) => (
+                          <div key={index} className="text-xs">{log}</div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
             
-            <div className="text-center p-4 bg-muted rounded-lg">
-              <div className="text-2xl font-bold text-destructive">
-                {formatCurrency(transmissionResult.totalDroitsSuccession)}
-              </div>
-              <div className="text-sm text-muted-foreground">Droits de succession</div>
-            </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <div className="text-center p-4 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors">
+                  <div className="text-2xl font-bold text-destructive">
+                    {formatCurrency(transmissionResult.totalDroitsSuccession)}
+                  </div>
+                  <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
+                    <FileText className="h-4 w-4" />
+                    Droits de succession
+                  </div>
+                </div>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Détail du calcul - Droits de succession (DMTG)</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  {transmissionResult.dmtg?.perBeneficiary && Object.entries(transmissionResult.dmtg.perBeneficiary).map(([benId, details]: [string, any]) => {
+                    const person = transmissionResult.family?.persons?.find((p: any) => p.id === benId);
+                    return (
+                      <div key={benId} className="border rounded-lg p-4">
+                        <h4 className="font-semibold mb-3">
+                          {person?.nom} {person?.prenom} ({person?.lienFamilial})
+                        </h4>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <div className="flex justify-between py-1">
+                              <span>Part brute hors AV :</span>
+                              <span>{formatCurrency(details.baseHorsAV)}</span>
+                            </div>
+                            <div className="flex justify-between py-1">
+                              <span>Frais funéraires :</span>
+                              <span>-{formatCurrency(details.fraisFunerairesImputes)}</span>
+                            </div>
+                            <div className="flex justify-between py-1 font-medium">
+                              <span>Base après frais :</span>
+                              <span>{formatCurrency(details.baseApresFrais)}</span>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between py-1">
+                              <span>Abattement applicable :</span>
+                              <span>-{formatCurrency(details.allowanceGeneralResidual === Infinity ? details.baseApresFrais : details.allowanceGeneralResidual)}</span>
+                            </div>
+                            <div className="flex justify-between py-1 font-medium">
+                              <span>Base taxable :</span>
+                              <span>{formatCurrency(details.taxableAfterAllowance)}</span>
+                            </div>
+                            <div className="flex justify-between py-1 font-bold text-destructive">
+                              <span>Droits dus :</span>
+                              <span>{formatCurrency(details.droitsTotaux)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between font-bold text-lg">
+                      <span>Total droits de succession :</span>
+                      <span className="text-destructive">{formatCurrency(transmissionResult.dmtg?.totals?.droitsTotaux || 0)}</span>
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
             
-            <div className="text-center p-4 bg-muted rounded-lg">
-              <div className="text-2xl font-bold text-orange-600">
-                {formatCurrency(transmissionResult.fraisNotaire)}
-              </div>
-              <div className="text-sm text-muted-foreground">Frais de notaire</div>
-            </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <div className="text-center p-4 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {formatCurrency(transmissionResult.fraisNotaire)}
+                  </div>
+                  <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
+                    <DollarSign className="h-4 w-4" />
+                    Frais de notaire
+                  </div>
+                </div>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Détail du calcul - Frais de notaire</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="border rounded-lg p-4">
+                    <h4 className="font-semibold mb-2">Calcul des frais</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Base de calcul :</span>
+                        <span>{formatCurrency(transmissionResult.transmissionNette)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Taux appliqué :</span>
+                        <span>Variable selon barème notarial</span>
+                      </div>
+                      <hr />
+                      <div className="flex justify-between font-semibold">
+                        <span>Frais de notaire :</span>
+                        <span>{formatCurrency(transmissionResult.fraisNotaire)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    <p>Les frais de notaire comprennent les émoluments, les taxes et les débours nécessaires au règlement de la succession.</p>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardContent>
       </Card>
