@@ -97,7 +97,8 @@ export const Synthese = () => {
         params
       });
 
-      setTransmissionResult(result);
+      // Ajouter la référence du graphe familial au résultat pour l'affichage
+      setTransmissionResult({ ...result, family });
     } catch (error) {
       console.error('Erreur lors du calcul de transmission:', error);
     } finally {
@@ -111,7 +112,8 @@ export const Synthese = () => {
         id: user!.id,
         nom: profile?.nom || 'Utilisateur',
         prenom: profile?.prenom || '',
-        estDecede: false
+        estDecede: false,
+        lienFamilial: 'défunt'
       }
     ];
 
@@ -126,7 +128,8 @@ export const Synthese = () => {
         id: conjointId,
         nom: marital.nom_conjoint || 'Conjoint',
         prenom: marital.prenom_conjoint || '',
-        estDecede: false
+        estDecede: false,
+        lienFamilial: 'conjoint'
       });
       
       familyLinks.push({
@@ -151,7 +154,8 @@ export const Synthese = () => {
         id: personId,
         nom: link.nom,
         prenom: link.prenom || '',
-        estDecede: false
+        estDecede: false,
+        lienFamilial: link.lien_familial
       });
 
       familyLinks.push({
@@ -278,7 +282,9 @@ export const Synthese = () => {
                 {transmissionResult.heirs.map((heir: any) => (
                   <TableRow key={heir.personId}>
                     <TableCell className="font-medium">{heir.nom}</TableCell>
-                    <TableCell>{heir.lien}</TableCell>
+                    <TableCell>
+                      {transmissionResult.family?.persons?.find(p => p.id === heir.personId)?.lienFamilial || heir.lien}
+                    </TableCell>
                     <TableCell className="text-right">{formatCurrency(heir.partFinale)}</TableCell>
                     <TableCell className="text-right text-destructive">
                       {formatCurrency(heir.droitsSuccession)}

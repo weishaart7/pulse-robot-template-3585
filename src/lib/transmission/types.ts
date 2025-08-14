@@ -10,6 +10,7 @@ export interface Person {
   estDecede?: boolean;
   dateDeces?: string;
   handicap?: boolean;
+  lienFamilial?: string;
 }
 
 export interface FamilyGraph {
