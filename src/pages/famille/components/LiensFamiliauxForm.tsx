@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useFamilyLinks, useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { FamilyLink } from '@/services/familyService';
@@ -62,7 +63,7 @@ export function LiensFamiliauxForm() {
   const { data: familyLinks, loading, saving, addLink, updateLink, deleteLink } = useFamilyLinks();
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<FamilyLink | null>(null);
   
   const memberForm = useForm<MembreFamille>({
@@ -81,7 +82,7 @@ export function LiensFamiliauxForm() {
       handicap: false,
       enfant_mineur: false,
     });
-    setShowAddForm(true);
+    setDialogOpen(true);
   };
 
   const handleEditMember = (member: FamilyLink) => {
@@ -97,7 +98,7 @@ export function LiensFamiliauxForm() {
       handicap: member.handicap || false,
       enfant_mineur: member.enfant_mineur || false,
     });
-    setShowAddForm(true);
+    setDialogOpen(true);
   };
 
   const handleDeleteMember = async (id: string) => {
@@ -128,7 +129,7 @@ export function LiensFamiliauxForm() {
         await addLink(memberData);
       }
 
-      setShowAddForm(false);
+      setDialogOpen(false);
       setEditingMember(null);
       memberForm.reset();
     } catch (error) {
@@ -217,23 +218,22 @@ export function LiensFamiliauxForm() {
         </Card>
       )}
 
-      {/* Bouton d'ajout */}
-      {!showAddForm && (
-        <Button onClick={handleAddMember} className="w-full" variant="outline">
-          <Plus className="mr-2 h-4 w-4" />
-          Ajouter un membre de la famille
-        </Button>
-      )}
+      {/* Bouton d'ajout avec Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogTrigger asChild>
+          <Button onClick={handleAddMember} className="w-full" variant="outline">
+            <Plus className="mr-2 h-4 w-4" />
+            Ajouter un membre de la famille
+          </Button>
+        </DialogTrigger>
 
-      {/* Formulaire d'ajout/modification */}
-      {showAddForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
               {editingMember ? 'Modifier un membre' : 'Ajouter un membre de la famille'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-6">
             <Form {...memberForm}>
               <form onSubmit={memberForm.handleSubmit(handleMemberSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -461,7 +461,7 @@ export function LiensFamiliauxForm() {
                     type="button"
                     variant="outline"
                     onClick={() => {
-                      setShowAddForm(false);
+                      setDialogOpen(false);
                       setEditingMember(null);
                       memberForm.reset();
                     }}
@@ -482,9 +482,9 @@ export function LiensFamiliauxForm() {
                 </div>
               </form>
             </Form>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Placeholder pour l'arbre familial */}
       {familyLinks.length > 0 && (
