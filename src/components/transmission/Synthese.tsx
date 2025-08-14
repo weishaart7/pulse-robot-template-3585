@@ -329,7 +329,7 @@ export const Synthese = () => {
                     data={heritiersData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
+                    innerRadius={80}
                     outerRadius={120}
                     paddingAngle={2}
                     dataKey="value"
