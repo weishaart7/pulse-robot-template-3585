@@ -15,6 +15,8 @@ import {
   computeRapport 
 } from './reserve';
 import { computeInheritanceTax, compute990I, computeNotaryFees } from './fiscal';
+import { computeInheritanceForBeneficiary } from '../dmtg/simpleFiscal';
+import DMTG_PARAMS from '../dmtg/params-dmtg.json';
 
 export interface TransmissionContext {
   family: FamilyGraph;
@@ -87,8 +89,20 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     // Base fiscale = part finale
     const baseFiscale = Math.max(0, partFinale);
     
-    // Droits de succession
-    const fiscalResult = computeInheritanceTax(baseFiscale, heir.lien, params);
+    // Droits de succession - utilisation du moteur fiscal corrigé
+    let droitsSuccession = 0;
+    if (baseFiscale > 0 && heir.lien !== "conjoint") {
+      // TODO: Calculer les tranches consommées par le rappel fiscal (donations des 15 dernières années)
+      const consumedBracketsAmount = 0; // À implémenter selon les donations antérieures
+      
+      const fiscalResult = computeInheritanceForBeneficiary(
+        baseFiscale,
+        heir.lien as any,
+        consumedBracketsAmount,
+        DMTG_PARAMS
+      );
+      droitsSuccession = fiscalResult.tax;
+    }
     
     // Droits 990 I (si assurance-vie)
     const capitauxAV = 0; // À implémenter selon les contrats d'assurance-vie
@@ -101,7 +115,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       partCivile: heir.part * masseCalcul,
       partFinale: Math.max(0, partFinale),
       baseFiscale,
-      droitsSuccession: fiscalResult.droitsSuccession,
+      droitsSuccession,
       droits990I: prelevement990I.droits990I
     };
   });

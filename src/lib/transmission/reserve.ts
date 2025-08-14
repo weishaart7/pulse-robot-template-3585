@@ -104,14 +104,18 @@ export function computeReserveAndQD(
 }
 
 /**
- * Impute les libéralités sur la réserve et la quotité disponible
+ * Impute les libéralités sur la réserve et la quotité disponible selon l'ordre légal
  */
 export function imputeLiberalites(
   liberalites: Liberalite[],
   reserveResult: ReserveResult,
   childrenIds: string[]
 ): ImputationResult {
-  const donations = liberalites.filter(lib => lib.type === "donation");
+  // Trier les donations par date (plus anciennes d'abord pour l'imputation)
+  const donations = liberalites
+    .filter(lib => lib.type === "donation")
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  
   const legs = liberalites.filter(lib => lib.type === "legs");
   
   const donationResults: { liberaliteId: string; imputeSurReserve: number; imputeSurQD: number }[] = [];
@@ -120,27 +124,27 @@ export function imputeLiberalites(
   let qdRestante = reserveResult.quotiteDisponible;
   let reserveEnfantsRestante = reserveResult.reserveEnfants;
   
-  // 1. Imputer d'abord les donations
+  // 1. Imputer d'abord les donations (ordre chronologique)
   for (const donation of donations) {
     let imputeSurReserve = 0;
     let imputeSurQD = 0;
     
-    // Si donation à un réservataire (enfant)
-    if (childrenIds.includes(donation.beneficiaireId as string)) {
-      // S'impute d'abord sur sa part de réserve
+    // Si donation à un héritier réservataire (enfant) ET donation en avancement de part
+    if (childrenIds.includes(donation.beneficiaireId as string) && 
+        (donation.rapportable === undefined || donation.rapportable === true)) {
+      // Donation en avancement de part : s'impute d'abord sur la part de réserve du bénéficiaire
       const reservePersonnelle = reserveResult.reserveEnfants / childrenIds.length;
       imputeSurReserve = Math.min(donation.valeur, reservePersonnelle);
+      reserveEnfantsRestante -= imputeSurReserve;
       
       const excedent = donation.valeur - imputeSurReserve;
       if (excedent > 0) {
-        // Excédent sur QD
+        // L'excédent s'impute sur la quotité disponible
         imputeSurQD = Math.min(excedent, qdRestante);
         qdRestante -= imputeSurQD;
       }
-      
-      reserveEnfantsRestante -= imputeSurReserve;
     } else {
-      // Donation à un non-réservataire : s'impute sur QD
+      // Donation hors part successorale ou à un non-réservataire : s'impute sur QD
       imputeSurQD = Math.min(donation.valeur, qdRestante);
       qdRestante -= imputeSurQD;
     }
@@ -152,7 +156,8 @@ export function imputeLiberalites(
     });
   }
   
-  // 2. Imputer ensuite les legs (sur QD uniquement)
+  // 2. Imputer ensuite les legs concurremment avec donations entre époux (s'il y en a)
+  // Les legs sont présumés hors part successorale donc s'imputent sur QD
   for (const legItem of legs) {
     const imputeSurQD = Math.min(legItem.valeur, qdRestante);
     qdRestante -= imputeSurQD;
@@ -163,7 +168,7 @@ export function imputeLiberalites(
     });
   }
   
-  // Vérifier si la réserve est atteinte
+  // Vérifier si la réserve est atteinte (empiètement sur la QD)
   const totalImputeSurQD = donationResults.reduce((sum, d) => sum + d.imputeSurQD, 0) +
                           legResults.reduce((sum, l) => sum + l.imputeSurQD, 0);
   const reserveAtteinte = totalImputeSurQD > reserveResult.quotiteDisponible;
@@ -177,7 +182,7 @@ export function imputeLiberalites(
 }
 
 /**
- * Applique les réductions si la réserve est atteinte
+ * Applique les réductions si la réserve est atteinte (ordre inverse des imputations)
  */
 export function applyReductions(
   liberalites: Liberalite[],
@@ -201,39 +206,57 @@ export function applyReductions(
     return { reductions, totalReduit };
   }
   
-  // 1. Réduire d'abord les legs (ordre inverse chronologique)
+  // Ordre de réduction : legs en premier, puis donations (plus récente → plus ancienne)
+  
+  // 1. Réduire d'abord les legs concurremment (y compris donations entre époux si elles s'imputent avec)
   const legsToReduce = liberalites
     .filter(lib => lib.type === "legs")
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   
   let depassementRestant = depassement;
   
-  for (const legLib of legsToReduce) {
-    if (depassementRestant <= 0) break;
+  // Réduction proportionnelle des legs
+  if (legsToReduce.length > 0) {
+    const totalLegsValue = legsToReduce.reduce((sum, leg) => {
+      const legResult = imputationResult.legs.find(l => l.liberaliteId === leg.id);
+      return sum + (legResult?.imputeSurQD || 0);
+    }, 0);
     
-    const legResult = imputationResult.legs.find(l => l.liberaliteId === legLib.id);
-    if (!legResult || legResult.imputeSurQD === 0) continue;
-    
-    const reduction = Math.min(legResult.imputeSurQD, depassementRestant);
-    const ratio = reduction / legLib.valeur;
-    
-    reductions.push({
-      liberaliteId: legLib.id,
-      montantReduit: reduction,
-      ratioReduction: ratio
-    });
-    
-    totalReduit += reduction;
-    depassementRestant -= reduction;
+    if (totalLegsValue > 0) {
+      for (const legLib of legsToReduce) {
+        if (depassementRestant <= 0) break;
+        
+        const legResult = imputationResult.legs.find(l => l.liberaliteId === legLib.id);
+        if (!legResult || legResult.imputeSurQD === 0) continue;
+        
+        // Réduction proportionnelle
+        const proportionalReduction = Math.min(
+          legResult.imputeSurQD,
+          (legResult.imputeSurQD / totalLegsValue) * depassement
+        );
+        
+        const reduction = Math.min(proportionalReduction, depassementRestant);
+        const ratio = reduction / legLib.valeur;
+        
+        reductions.push({
+          liberaliteId: legLib.id,
+          montantReduit: reduction,
+          ratioReduction: ratio
+        });
+        
+        totalReduit += reduction;
+        depassementRestant -= reduction;
+      }
+    }
   }
   
   // 2. Si nécessaire, réduire les donations (plus récente vers plus ancienne)
   if (depassementRestant > 0) {
-    const donations = liberalites
+    const donationsToReduce = liberalites
       .filter(lib => lib.type === "donation")
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
-    for (const donationLib of donations) {
+    for (const donationLib of donationsToReduce) {
       if (depassementRestant <= 0) break;
       
       const donationResult = imputationResult.donations.find(d => d.liberaliteId === donationLib.id);

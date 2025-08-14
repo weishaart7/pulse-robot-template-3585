@@ -60,20 +60,23 @@ function getSuccessionOrder(graph: FamilyGraph, personId: PersonId): number {
     return 1;
   }
   
-  // 2e ordre : ascendants privilégiés + collatéraux privilégiés
+  // 2e ordre : ascendants privilégiés (père/mère) + collatéraux privilégiés (frères/sœurs et leurs descendants)
   if (isParent(graph, personId, decedentId) || isSibling(graph, personId, decedentId) || 
       isDescendantOfSibling(graph, personId, decedentId)) {
     return 2;
   }
   
-  // 3e ordre : ascendants ordinaires
+  // 3e ordre : ascendants ordinaires (grands-parents et plus)
   if (isAscendant(graph, personId, decedentId) && !isParent(graph, personId, decedentId)) {
     return 3;
   }
   
-  // 4e ordre : collatéraux ordinaires
+  // 4e ordre : collatéraux ordinaires (oncles/tantes, cousins) jusqu'au 6ème degré
   if (isCollateral(graph, personId, decedentId)) {
-    return 4;
+    const degree = calculateDegree(graph, personId, decedentId);
+    if (degree <= 6) {
+      return 4;
+    }
   }
   
   return 5; // Hors succession
@@ -130,10 +133,11 @@ function getLien(graph: FamilyGraph, personId: PersonId): string {
   if (isDescendant(graph, personId, decedentId)) return "enfant";
   if (isParent(graph, personId, decedentId)) return "parent";
   if (isSibling(graph, personId, decedentId)) return "frere_soeur";
+  if (isDescendantOfSibling(graph, personId, decedentId)) return "neveu_niece";
   
   const degree = calculateDegree(graph, personId, decedentId);
-  if (degree === 4) return "neveu_niece";
-  if (degree >= 5) return "cousin";
+  if (degree >= 5 && degree <= 6) return "cousin";
+  if (isAscendant(graph, personId, decedentId)) return "parent"; // grands-parents
   
   return "autre";
 }
@@ -144,33 +148,115 @@ function getLien(graph: FamilyGraph, personId: PersonId): string {
 function applyRepresentation(graph: FamilyGraph, shares: DevolutionShares): DevolutionShares {
   const result = { ...shares };
   
-  // Représentation dans les descendants
+  // 1. Représentation dans l'ordre des descendants (1er ordre)
   const descendants = Object.values(shares).filter(heir => heir.ordre === 1);
-  const directChildren = descendants.filter(heir => 
-    graph.links.some(link => 
-      link.from === graph.decedentId && link.to === heir.personId && link.relation === "child"
-    )
-  );
   
-  // Pour chaque enfant direct prédécédé, redistribuer sa part à ses descendants
-  for (const child of directChildren) {
-    const person = graph.persons.find(p => p.id === child.personId);
-    if (person?.estDecede) {
+  // Identifier tous les enfants directs du défunt (vivants et décédés)
+  const allDirectChildren = graph.links
+    .filter(link => link.from === graph.decedentId && link.relation === "child")
+    .map(link => link.to);
+  
+  // Pour chaque enfant direct du défunt
+  for (const childId of allDirectChildren) {
+    const child = graph.persons.find(p => p.id === childId);
+    const childShare = shares[childId];
+    
+    // Si l'enfant est prédécédé
+    if (child?.estDecede) {
+      // Trouver ses descendants qui héritent
       const childDescendants = descendants.filter(heir => 
-        isDescendant(graph, heir.personId, child.personId)
+        isDescendant(graph, heir.personId, childId)
       );
       
       if (childDescendants.length > 0) {
-        const partPerDescendant = child.part / childDescendants.length;
+        // Calculer la part qu'aurait eue l'enfant prédécédé
+        const childWouldHavePart = 1 / allDirectChildren.length;
+        
+        // Redistribuer par parts égales entre ses descendants (représentation par tête)
+        const partPerDescendant = childWouldHavePart / childDescendants.length;
+        
         childDescendants.forEach(desc => {
-          result[desc.personId] = { ...desc, part: desc.part + partPerDescendant };
+          if (!result[desc.personId]) {
+            result[desc.personId] = { ...desc, part: 0 };
+          }
+          result[desc.personId].part += partPerDescendant;
         });
-        delete result[child.personId];
+        
+        // Supprimer l'enfant prédécédé s'il était dans les parts
+        if (childShare) {
+          delete result[childId];
+        }
+      }
+    }
+  }
+  
+  // 2. Représentation dans l'ordre des collatéraux privilégiés (2ème ordre - frères/sœurs)
+  const collateralsPrivileges = Object.values(shares).filter(heir => 
+    heir.ordre === 2 && (heir.lien === "frere_soeur" || heir.lien === "neveu_niece")
+  );
+  
+  if (collateralsPrivileges.length > 0) {
+    // Identifier tous les frères et sœurs du défunt (vivants et décédés)
+    const allSiblings = graph.links
+      .filter(link => link.from === graph.decedentId && link.relation === "sibling")
+      .map(link => link.to);
+    
+    for (const siblingId of allSiblings) {
+      const sibling = graph.persons.find(p => p.id === siblingId);
+      const siblingShare = shares[siblingId];
+      
+      // Si le frère/sœur est prédécédé
+      if (sibling?.estDecede) {
+        // Trouver ses descendants qui héritent
+        const siblingDescendants = collateralsPrivileges.filter(heir =>
+          heir.lien === "neveu_niece" && isDescendant(graph, heir.personId, siblingId)
+        );
+        
+        if (siblingDescendants.length > 0) {
+          // La part du frère/sœur prédécédé est redistribuée à ses enfants
+          const siblingWouldHavePart = siblingShare?.part || (1 / allSiblings.length);
+          const partPerDescendant = siblingWouldHavePart / siblingDescendants.length;
+          
+          siblingDescendants.forEach(desc => {
+            if (!result[desc.personId]) {
+              result[desc.personId] = { ...desc, part: 0 };
+            }
+            result[desc.personId].part += partPerDescendant;
+          });
+          
+          // Supprimer le frère/sœur prédécédé
+          if (siblingShare) {
+            delete result[siblingId];
+          }
+        }
       }
     }
   }
   
   return result;
+}
+
+/**
+ * Applique la fente successorale (répartition entre branches paternelle et maternelle)
+ */
+function applyFente(graph: FamilyGraph, shares: DevolutionShares): DevolutionShares {
+  const heirs = Object.values(shares);
+  
+  // La fente ne s'applique que dans certains cas :
+  // 1. Ordre des ascendants ordinaires (3ème ordre)
+  // 2. Ordre des collatéraux ordinaires (4ème ordre)  
+  // 3. Concurrence entre ascendant privilégié d'une branche et ascendants ordinaires de l'autre
+  
+  const ordre3Heirs = heirs.filter(h => h.ordre === 3);
+  const ordre4Heirs = heirs.filter(h => h.ordre === 4);
+  
+  if (ordre3Heirs.length > 0 || ordre4Heirs.length > 0) {
+    // TODO: Implémenter la logique de fente
+    // Cela nécessiterait d'identifier la branche paternelle vs maternelle de chaque héritier
+    // Pour l'instant, on conserve la répartition actuelle
+  }
+  
+  return shares;
 }
 
 /**
@@ -270,12 +356,12 @@ export function computeHeirsShares(graph: FamilyGraph): DevolutionShares {
       };
     });
   } else if (closestOrder === 2) {
-    // 2e ordre : père, mère et fratrie
+    // 2e ordre : ascendants privilégiés (père/mère) + collatéraux privilégiés (frères/sœurs)
     const parents = closestOrderHeirs.filter(h => h.lien === "parent");
     const siblings = closestOrderHeirs.filter(h => h.lien === "frere_soeur" || h.lien === "neveu_niece");
     
     if (parents.length === 2 && siblings.length > 0) {
-      // Père: 1/4, Mère: 1/4, Fratrie: 1/2
+      // Père: 1/4, Mère: 1/4, Frères/sœurs: 1/2
       parents.forEach(parent => {
         shares[parent.personId] = {
           ...parent,
@@ -291,7 +377,7 @@ export function computeHeirsShares(graph: FamilyGraph): DevolutionShares {
         };
       });
     } else if (parents.length === 1 && siblings.length > 0) {
-      // Un parent: 1/4, Fratrie: 3/4
+      // Un parent: 1/4, Frères/sœurs: 3/4
       shares[parents[0].personId] = {
         ...parents[0],
         part: remainingShare * 0.25
@@ -310,6 +396,22 @@ export function computeHeirsShares(graph: FamilyGraph): DevolutionShares {
         shares[parent.personId] = {
           ...parent,
           part: remainingShare * 0.5
+        };
+      });
+    } else if (parents.length === 1 && siblings.length === 0) {
+      // Un seul parent survit et pas de frères/sœurs
+      // Il hérite de tout SI il n'y a pas d'ascendant ordinaire dans l'autre branche
+      shares[parents[0].personId] = {
+        ...parents[0],
+        part: remainingShare
+      };
+    } else if (parents.length === 0 && siblings.length > 0) {
+      // Seulement des frères/sœurs (parents décédés)
+      const partPerSibling = remainingShare / siblings.length;
+      siblings.forEach(sibling => {
+        shares[sibling.personId] = {
+          ...sibling,
+          part: partPerSibling
         };
       });
     } else {
@@ -336,6 +438,7 @@ export function computeHeirsShares(graph: FamilyGraph): DevolutionShares {
     });
   }
   
-  // Appliquer la représentation
-  return applyRepresentation(graph, shares);
+  // Appliquer la représentation puis la fente si nécessaire
+  const sharesWithRepresentation = applyRepresentation(graph, shares);
+  return applyFente(graph, sharesWithRepresentation);
 }
