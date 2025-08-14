@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Synthese } from '@/components/transmission/Synthese';
 import { Liberalites } from '@/components/transmission/Liberalites';
+import { FiscalDiagnosticButton } from '@/components/transmission/FiscalDiagnosticButton';
 import { PremierDeces } from '@/components/transmission/PremierDeces';
 import { DeuxiemeDeces } from '@/components/transmission/DeuxiemeDeces';
 
@@ -11,10 +12,15 @@ export const TransmissionSection = () => {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold tracking-tight">Transmission</h2>
-        <p className="text-muted-foreground">
-          Planifiez et optimisez la transmission de votre patrimoine
-        </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Transmission</h2>
+            <p className="text-muted-foreground">
+              Planifiez et optimisez la transmission de votre patrimoine
+            </p>
+          </div>
+          <FiscalDiagnosticButton />
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
