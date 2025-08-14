@@ -384,7 +384,54 @@ export const Synthese = () => {
                           <div>
                             <div className="flex justify-between py-1">
                               <span>Part brute hors AV :</span>
-                              <span>{formatCurrency(details.baseHorsAV)}</span>
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <span className="cursor-pointer hover:text-primary underline">
+                                    {formatCurrency(details.baseHorsAV)}
+                                  </span>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                                  <DialogHeader>
+                                    <DialogTitle>
+                                      Détail du calcul - Part brute hors AV ({person?.nom} {person?.prenom})
+                                    </DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4">
+                                    <div className="border rounded-lg p-4">
+                                      <h4 className="font-semibold mb-3">Répartition civile et patrimoniale</h4>
+                                      <div className="space-y-2 text-sm">
+                                        <div className="flex justify-between">
+                                          <span>Patrimoine net total :</span>
+                                          <span>{formatCurrency(transmissionResult.transmissionNette)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span>Quote-part héritée ({person?.lienFamilial}) :</span>
+                                          <span>{((details.baseHorsAV / transmissionResult.transmissionNette) * 100).toFixed(2)}%</span>
+                                        </div>
+                                        <hr />
+                                        <div className="flex justify-between font-medium">
+                                          <span>Part brute hors assurance-vie :</span>
+                                          <span>{formatCurrency(details.baseHorsAV)}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="border rounded-lg p-4">
+                                      <h4 className="font-semibold mb-3">Composition de la part</h4>
+                                      <div className="text-sm space-y-1">
+                                        <p>Cette part représente la quote-part de succession revenant à {person?.nom} selon :</p>
+                                        <ul className="list-disc list-inside ml-4 space-y-1">
+                                          <li>Les règles de dévolution légale (réserve héréditaire et quotité disponible)</li>
+                                          <li>Les éventuels legs particuliers ou donations entre époux</li>
+                                          <li>Après déduction des passifs et charges</li>
+                                        </ul>
+                                        <p className="mt-2 text-xs text-muted-foreground">
+                                          Cette base exclut les contrats d'assurance-vie qui sont soumis à des règles fiscales spécifiques (990 I et 757 B).
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
                             </div>
                             <div className="flex justify-between py-1">
                               <span>Frais funéraires :</span>
