@@ -123,9 +123,11 @@ export const Synthese = () => {
           source: 'legal' as const
         })),
         beneficiaries: civilResult.heirs.map(heir => {
-          // Corriger le mapping des liens familiaux
+          // Corriger le mapping des liens familiaux depuis la base de données
           const person = family.persons.find(p => p.id === heir.personId);
           const lienFamilial = person?.lienFamilial || heir.lien;
+          
+          console.log(`Mapping lien pour ${heir.personId}: lienFamilial=${lienFamilial}, heir.lien=${heir.lien}`);
           
           let dmtgLien: any = 'autre';
           if (lienFamilial === 'conjoint') dmtgLien = 'conjoint';
@@ -133,6 +135,8 @@ export const Synthese = () => {
           else if (lienFamilial === 'parent') dmtgLien = 'ascendant';
           else if (lienFamilial === 'soeur' || lienFamilial === 'frère') dmtgLien = 'frere_soeur';
           else if (lienFamilial === 'neveu' || lienFamilial === 'nièce') dmtgLien = 'neveu_niece';
+          
+          console.log(`Lien DMTG final: ${dmtgLien}`);
           
           return {
             id: heir.personId,

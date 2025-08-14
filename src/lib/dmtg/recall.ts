@@ -9,6 +9,8 @@ export function computeRecallAndAllowances(input: {
 
   // Déterminer l'abattement de base selon le lien
   let abattementBase = 0;
+  console.log(`Calcul abattement pour ${beneficiary.id} avec lien: ${beneficiary.lien}`);
+  
   switch (beneficiary.lien) {
     case 'conjoint':
     case 'pacs':
@@ -27,6 +29,8 @@ export function computeRecallAndAllowances(input: {
     default:
       abattementBase = params.abattements.tiers;
   }
+  
+  console.log(`Abattement de base: ${abattementBase}€`);
 
   // Abattement handicap (cumulable sauf avec tiers)
   if (beneficiary.isHandicapped && beneficiary.lien !== 'autre') {
