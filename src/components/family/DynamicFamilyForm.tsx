@@ -67,7 +67,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
               <FormLabel>{getParentLabel()}</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger size="lg">
                     <SelectValue placeholder="Sélectionner" />
                   </SelectTrigger>
                 </FormControl>
@@ -95,7 +95,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
               <FormLabel>Branche familiale</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value || 'Branche paternelle'}>
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger size="lg">
                     <SelectValue placeholder="Sélectionner une branche" />
                   </SelectTrigger>
                 </FormControl>
@@ -123,7 +123,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
               <FormLabel>Civilité</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger size="lg">
                     <SelectValue placeholder="Sélectionner" />
                   </SelectTrigger>
                 </FormControl>
@@ -333,7 +333,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
                 <FormLabel>Enfant adopté</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value || 'Non'}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger size="lg">
                       <SelectValue placeholder="Sélectionner" />
                     </SelectTrigger>
                   </FormControl>
@@ -381,7 +381,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
                     <FormLabel>Renonce à la succession de</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger size="lg">
                           <SelectValue placeholder="Sélectionner un parent" />
                         </SelectTrigger>
                       </FormControl>
