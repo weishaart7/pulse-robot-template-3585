@@ -192,38 +192,80 @@ export function SituationMatrimonialeForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Date de naissance du conjoint</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              'w-full pl-3 text-left font-normal',
-                              !field.value && 'text-muted-foreground'
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, 'dd/MM/yyyy')
-                            ) : (
-                              <span>Sélectionner une date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date > new Date() || date < new Date('1900-01-01')
+                    <div className="flex gap-2">
+                      <FormControl className="flex-1">
+                        <Input
+                          placeholder="JJ/MM/AAAA"
+                          value={
+                            field.value instanceof Date 
+                              ? format(field.value, 'dd/MM/yyyy')
+                              : field.value || ''
                           }
-                          initialFocus
-                          className="p-3 pointer-events-auto"
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            
+                            // Permettre seulement chiffres et /
+                            const cleanValue = value.replace(/[^\d/]/g, '');
+                            
+                            // Limiter à 10 caractères
+                            if (cleanValue.length > 10) return;
+                            
+                            // Auto-formatage pendant la saisie
+                            let formattedValue = cleanValue;
+                            if (cleanValue.length >= 2 && !cleanValue.includes('/')) {
+                              formattedValue = cleanValue.slice(0, 2) + '/' + cleanValue.slice(2);
+                            }
+                            if (cleanValue.length >= 5 && cleanValue.split('/').length === 2) {
+                              const parts = formattedValue.split('/');
+                              formattedValue = parts[0] + '/' + parts[1].slice(0, 2) + '/' + cleanValue.slice(4);
+                            }
+                            
+                            // Validation finale si format complet
+                            if (formattedValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                              try {
+                                const [day, month, year] = formattedValue.split('/').map(Number);
+                                const date = new Date(year, month - 1, day);
+                                
+                                // Vérifier que la date est valide
+                                if (date.getDate() === day && 
+                                    date.getMonth() === month - 1 && 
+                                    date.getFullYear() === year &&
+                                    year >= 1900 && year <= new Date().getFullYear()) {
+                                  field.onChange(date);
+                                  return;
+                                }
+                              } catch (error) {
+                                // Continue avec la valeur string si parsing échoue
+                              }
+                            }
+                            
+                            // Stocker la valeur formatée comme string pendant la saisie
+                            field.onChange(formattedValue);
+                          }}
                         />
-                      </PopoverContent>
-                    </Popover>
+                      </FormControl>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="icon" className="shrink-0" type="button">
+                            <CalendarIcon className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value instanceof Date ? field.value : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                field.onChange(date);
+                              }
+                            }}
+                            disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
+                            initialFocus
+                            className="p-3 pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -269,38 +311,80 @@ export function SituationMatrimonialeForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Date du PACS</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                'w-full pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, 'dd/MM/yyyy')
-                              ) : (
-                                <span>Sélectionner une date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) =>
-                              date > new Date() || date < new Date('1900-01-01')
+                      <div className="flex gap-2">
+                        <FormControl className="flex-1">
+                          <Input
+                            placeholder="JJ/MM/AAAA"
+                            value={
+                              field.value instanceof Date 
+                                ? format(field.value, 'dd/MM/yyyy')
+                                : field.value || ''
                             }
-                            initialFocus
-                            className="p-3 pointer-events-auto"
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              
+                              // Permettre seulement chiffres et /
+                              const cleanValue = value.replace(/[^\d/]/g, '');
+                              
+                              // Limiter à 10 caractères
+                              if (cleanValue.length > 10) return;
+                              
+                              // Auto-formatage pendant la saisie
+                              let formattedValue = cleanValue;
+                              if (cleanValue.length >= 2 && !cleanValue.includes('/')) {
+                                formattedValue = cleanValue.slice(0, 2) + '/' + cleanValue.slice(2);
+                              }
+                              if (cleanValue.length >= 5 && cleanValue.split('/').length === 2) {
+                                const parts = formattedValue.split('/');
+                                formattedValue = parts[0] + '/' + parts[1].slice(0, 2) + '/' + cleanValue.slice(4);
+                              }
+                              
+                              // Validation finale si format complet
+                              if (formattedValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                                try {
+                                  const [day, month, year] = formattedValue.split('/').map(Number);
+                                  const date = new Date(year, month - 1, day);
+                                  
+                                  // Vérifier que la date est valide
+                                  if (date.getDate() === day && 
+                                      date.getMonth() === month - 1 && 
+                                      date.getFullYear() === year &&
+                                      year >= 1900 && year <= new Date().getFullYear()) {
+                                    field.onChange(date);
+                                    return;
+                                  }
+                                } catch (error) {
+                                  // Continue avec la valeur string si parsing échoue
+                                }
+                              }
+                              
+                              // Stocker la valeur formatée comme string pendant la saisie
+                              field.onChange(formattedValue);
+                            }}
                           />
-                        </PopoverContent>
-                      </Popover>
+                        </FormControl>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" size="icon" className="shrink-0" type="button">
+                              <CalendarIcon className="h-4 w-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value instanceof Date ? field.value : undefined}
+                              onSelect={(date) => {
+                                if (date) {
+                                  field.onChange(date);
+                                }
+                              }}
+                              disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
+                              initialFocus
+                              className="p-3 pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -332,38 +416,80 @@ export function SituationMatrimonialeForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Date du mariage</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                'w-full pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, 'dd/MM/yyyy')
-                              ) : (
-                                <span>Sélectionner une date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) =>
-                              date > new Date() || date < new Date('1900-01-01')
+                      <div className="flex gap-2">
+                        <FormControl className="flex-1">
+                          <Input
+                            placeholder="JJ/MM/AAAA"
+                            value={
+                              field.value instanceof Date 
+                                ? format(field.value, 'dd/MM/yyyy')
+                                : field.value || ''
                             }
-                            initialFocus
-                            className="p-3 pointer-events-auto"
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              
+                              // Permettre seulement chiffres et /
+                              const cleanValue = value.replace(/[^\d/]/g, '');
+                              
+                              // Limiter à 10 caractères
+                              if (cleanValue.length > 10) return;
+                              
+                              // Auto-formatage pendant la saisie
+                              let formattedValue = cleanValue;
+                              if (cleanValue.length >= 2 && !cleanValue.includes('/')) {
+                                formattedValue = cleanValue.slice(0, 2) + '/' + cleanValue.slice(2);
+                              }
+                              if (cleanValue.length >= 5 && cleanValue.split('/').length === 2) {
+                                const parts = formattedValue.split('/');
+                                formattedValue = parts[0] + '/' + parts[1].slice(0, 2) + '/' + cleanValue.slice(4);
+                              }
+                              
+                              // Validation finale si format complet
+                              if (formattedValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                                try {
+                                  const [day, month, year] = formattedValue.split('/').map(Number);
+                                  const date = new Date(year, month - 1, day);
+                                  
+                                  // Vérifier que la date est valide
+                                  if (date.getDate() === day && 
+                                      date.getMonth() === month - 1 && 
+                                      date.getFullYear() === year &&
+                                      year >= 1900 && year <= new Date().getFullYear()) {
+                                    field.onChange(date);
+                                    return;
+                                  }
+                                } catch (error) {
+                                  // Continue avec la valeur string si parsing échoue
+                                }
+                              }
+                              
+                              // Stocker la valeur formatée comme string pendant la saisie
+                              field.onChange(formattedValue);
+                            }}
                           />
-                        </PopoverContent>
-                      </Popover>
+                        </FormControl>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" size="icon" className="shrink-0" type="button">
+                              <CalendarIcon className="h-4 w-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value instanceof Date ? field.value : undefined}
+                              onSelect={(date) => {
+                                if (date) {
+                                  field.onChange(date);
+                                }
+                              }}
+                              disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
+                              initialFocus
+                              className="p-3 pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
