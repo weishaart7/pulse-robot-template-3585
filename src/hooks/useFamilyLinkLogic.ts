@@ -47,24 +47,9 @@ export const useFamilyLinkLogic = (
         enabled: true
       },
       {
-        value: 'Petit-enfant',
-        label: 'Petit-enfant',
-        enabled: (existingLinks['Enfant'] || []).length > 0
-      },
-      {
-        value: 'Arrière petit-enfant',
-        label: 'Arrière petit-enfant',
-        enabled: (existingLinks['Petit-enfant'] || []).length > 0
-      },
-      {
         value: 'Parent',
         label: 'Parent',
         enabled: true
-      },
-      {
-        value: 'Grand-parent',
-        label: 'Grand-parent',
-        enabled: (existingLinks['Parent'] || []).length > 0
       },
       {
         value: 'Frère/Sœur',
@@ -72,24 +57,9 @@ export const useFamilyLinkLogic = (
         enabled: true
       },
       {
-        value: 'Neveu/Nièce',
-        label: 'Neveu/Nièce',
-        enabled: (existingLinks['Frère/Sœur'] || []).length > 0
-      },
-      {
-        value: 'Petit neveu/nièce',
-        label: 'Petit neveu/nièce',
-        enabled: (existingLinks['Neveu/Nièce'] || []).length > 0
-      },
-      {
         value: 'Oncle/Tante',
         label: 'Oncle/Tante',
         enabled: true
-      },
-      {
-        value: 'Cousin/Cousine',
-        label: 'Cousin/Cousine',
-        enabled: (existingLinks['Oncle/Tante'] || []).length > 0
       },
       {
         value: 'Tierce personne',
@@ -97,6 +67,59 @@ export const useFamilyLinkLogic = (
         enabled: true
       }
     ];
+
+    // Ajouter les liens conditionnels seulement s'ils sont disponibles
+    if ((existingLinks['Enfant'] || []).length > 0) {
+      links.splice(1, 0, {
+        value: 'Petit-enfant',
+        label: 'Petit-enfant',
+        enabled: true
+      });
+    }
+
+    if ((existingLinks['Petit-enfant'] || []).length > 0) {
+      links.splice(2, 0, {
+        value: 'Arrière petit-enfant',
+        label: 'Arrière petit-enfant',
+        enabled: true
+      });
+    }
+
+    if ((existingLinks['Parent'] || []).length > 0) {
+      const parentIndex = links.findIndex(link => link.value === 'Parent');
+      links.splice(parentIndex + 1, 0, {
+        value: 'Grand-parent',
+        label: 'Grand-parent',
+        enabled: true
+      });
+    }
+
+    if ((existingLinks['Frère/Sœur'] || []).length > 0) {
+      const siblingIndex = links.findIndex(link => link.value === 'Frère/Sœur');
+      links.splice(siblingIndex + 1, 0, {
+        value: 'Neveu/Nièce',
+        label: 'Neveu/Nièce',
+        enabled: true
+      });
+    }
+
+    if ((existingLinks['Neveu/Nièce'] || []).length > 0) {
+      const nephewIndex = links.findIndex(link => link.value === 'Neveu/Nièce');
+      links.splice(nephewIndex + 1, 0, {
+        value: 'Petit neveu/nièce',
+        label: 'Petit neveu/nièce',
+        enabled: true
+      });
+    }
+
+    if ((existingLinks['Oncle/Tante'] || []).length > 0) {
+      const uncleIndex = links.findIndex(link => link.value === 'Oncle/Tante');
+      links.splice(uncleIndex + 1, 0, {
+        value: 'Cousin/Cousine',
+        label: 'Cousin/Cousine',
+        enabled: true
+      });
+    }
 
     return links;
   }, [existingLinks]);

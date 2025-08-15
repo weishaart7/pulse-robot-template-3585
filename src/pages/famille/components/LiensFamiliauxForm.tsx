@@ -257,7 +257,7 @@ export function LiensFamiliauxForm() {
                         defaultValue={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger size="lg">
                             <SelectValue placeholder="Sélectionner un lien" />
                           </SelectTrigger>
                         </FormControl>
@@ -266,10 +266,8 @@ export function LiensFamiliauxForm() {
                             <SelectItem 
                               key={linkOption.value} 
                               value={linkOption.value}
-                              disabled={!linkOption.enabled}
                             >
                               {linkOption.label}
-                              {!linkOption.enabled && ' (non disponible)'}
                             </SelectItem>
                           ))}
                         </SelectContent>
