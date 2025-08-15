@@ -8,9 +8,14 @@ import { GenealogyTree } from '@/components/GenealogyTree';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 
 const FamilleSection = () => {
-  const { data: familyProfile } = useFamilyProfile();
-  const { data: maritalStatus } = useMaritalStatus();
-  const { data: familyMembers, updateLink } = useFamilyLinks();
+  const familyProfileResult = useFamilyProfile();
+  const maritalStatusResult = useMaritalStatus();
+  const familyLinksResult = useFamilyLinks();
+  
+  const familyProfile = familyProfileResult?.data || null;
+  const maritalStatus = maritalStatusResult?.data || null;
+  const familyMembers = familyLinksResult?.data || [];
+  const updateLink = familyLinksResult?.updateLink;
 
   return (
     <div className="space-y-6">

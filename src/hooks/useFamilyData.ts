@@ -146,8 +146,12 @@ export const useMaritalStatus = () => {
 };
 
 export const useFamilyData = () => {
-  const { data: familyMembers, ...familyLinksData } = useFamilyLinks();
-  return { familyMembers, ...familyLinksData };
+  const familyLinksResult = useFamilyLinks();
+  if (!familyLinksResult) {
+    return { familyMembers: [], loading: true, saving: false, addLink: () => Promise.reject(), updateLink: () => Promise.reject(), deleteLink: () => Promise.reject(), deleteLinks: () => Promise.reject(), refetch: () => Promise.resolve() };
+  }
+  const { data: familyMembers, ...familyLinksData } = familyLinksResult;
+  return { familyMembers: familyMembers || [], ...familyLinksData };
 };
 
 export const useFamilyLinks = () => {
