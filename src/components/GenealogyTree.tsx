@@ -188,7 +188,8 @@ export function GenealogyTree({ familyProfile, maritalStatus, familyMembers, onE
   }, [familyProfile, maritalStatus, familyMembers]);
 
   const handleNodeClick = useCallback((nodeData: any) => {
-    const attributes = nodeData.data.attributes;
+    const data = nodeData?.data;
+    const attributes = data?.attributes;
     if (attributes?.memberType === 'family' && attributes.memberId) {
       const member = membersMap[attributes.memberId];
       if (member) {
@@ -199,7 +200,8 @@ export function GenealogyTree({ familyProfile, maritalStatus, familyMembers, onE
   }, [membersMap]);
 
   const CustomNodeElement = ({ nodeData }: { nodeData: any }) => {
-    const { name, attributes } = nodeData.data;
+    const data = nodeData?.data || {};
+    const { name = 'Unknown', attributes = {} } = data;
     const isMain = attributes?.isMain;
     const isClickable = attributes?.memberType === 'family';
 
