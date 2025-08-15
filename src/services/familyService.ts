@@ -47,14 +47,22 @@ export interface FamilyLink {
   id?: string;
   user_id?: string;
   lien_familial: string;
+  civilite?: string;
   nom: string;
   prenom?: string;
   date_naissance?: string;
-  nationalite?: string;
-  niveau_scolaire?: string;
-  a_charge?: boolean;
+  est_decede?: boolean;
+  date_deces?: string;
   handicap?: boolean;
-  enfant_mineur?: boolean;
+  enfant_adopte?: string;
+  enfant_renoncant?: boolean;
+  enfant_renoncant_de?: string;
+  branche_familiale?: string;
+  enfant_de?: string;
+  parent_de?: string;
+  exoneration_succession?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export const familyService = {

@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -171,46 +171,67 @@ export type Database = {
       }
       family_links: {
         Row: {
-          a_charge: boolean | null
+          branche_familiale: string | null
+          civilite: string | null
           created_at: string | null
+          date_deces: string | null
           date_naissance: string | null
-          enfant_mineur: boolean | null
+          enfant_adopte: string | null
+          enfant_de: string | null
+          enfant_renoncant: boolean | null
+          enfant_renoncant_de: string | null
+          est_decede: boolean | null
+          exoneration_succession: boolean | null
           handicap: boolean | null
           id: string
           lien_familial: string
           nationalite: string | null
-          niveau_scolaire: string | null
           nom: string
+          parent_de: string | null
           prenom: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
-          a_charge?: boolean | null
+          branche_familiale?: string | null
+          civilite?: string | null
           created_at?: string | null
+          date_deces?: string | null
           date_naissance?: string | null
-          enfant_mineur?: boolean | null
+          enfant_adopte?: string | null
+          enfant_de?: string | null
+          enfant_renoncant?: boolean | null
+          enfant_renoncant_de?: string | null
+          est_decede?: boolean | null
+          exoneration_succession?: boolean | null
           handicap?: boolean | null
           id?: string
           lien_familial: string
           nationalite?: string | null
-          niveau_scolaire?: string | null
           nom: string
+          parent_de?: string | null
           prenom?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
-          a_charge?: boolean | null
+          branche_familiale?: string | null
+          civilite?: string | null
           created_at?: string | null
+          date_deces?: string | null
           date_naissance?: string | null
-          enfant_mineur?: boolean | null
+          enfant_adopte?: string | null
+          enfant_de?: string | null
+          enfant_renoncant?: boolean | null
+          enfant_renoncant_de?: string | null
+          est_decede?: boolean | null
+          exoneration_succession?: boolean | null
           handicap?: boolean | null
           id?: string
           lien_familial?: string
           nationalite?: string | null
-          niveau_scolaire?: string | null
           nom?: string
+          parent_de?: string | null
           prenom?: string | null
           updated_at?: string | null
           user_id?: string

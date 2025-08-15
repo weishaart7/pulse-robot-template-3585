@@ -3,13 +3,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon, Plus, Trash2, Edit, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Edit, Loader2, CalendarIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -21,43 +20,27 @@ import { cn } from '@/lib/utils';
 import { useFamilyLinks, useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { FamilyLink } from '@/services/familyService';
 import { FamilyTree } from '@/components/FamilyTree';
+import { useFamilyLinkLogic } from '@/hooks/useFamilyLinkLogic';
+import { DynamicFamilyForm } from '@/components/family/DynamicFamilyForm';
 
 const membreFamilleSchema = z.object({
   lien_familial: z.string().min(1, 'Le lien familial est obligatoire'),
+  civilite: z.string().optional(),
   nom: z.string().min(1, 'Le nom est obligatoire'),
   prenom: z.string().optional(),
   date_naissance: z.date().optional(),
-  nationalite: z.string().optional(),
-  niveau_scolaire: z.string().optional(),
-  a_charge: z.boolean().default(false),
+  est_decede: z.boolean().default(false),
+  date_deces: z.date().optional(),
   handicap: z.boolean().default(false),
-  enfant_mineur: z.boolean().default(false),
+  enfant_adopte: z.string().default('Non'),
+  enfant_renoncant: z.boolean().default(false),
+  enfant_renoncant_de: z.string().optional(),
+  branche_familiale: z.string().optional(),
+  enfant_de: z.string().optional(),
+  exoneration_succession: z.boolean().default(false),
 });
 
 type MembreFamille = z.infer<typeof membreFamilleSchema>;
-
-const liensFamiliaux = [
-  'Enfant',
-  'Petit-enfant',
-  'Arrière petit-enfant',
-  'Parent',
-  'Grand-parent',
-  'Arrière grand-parent',
-  'Frère/Sœur',
-  'Oncle/Tante',
-  'Neveu/Nièce',
-  'Cousin/Cousine',
-  'Beau-parent',
-  'Beau-frère/Belle-sœur',
-  'Autre',
-];
-
-const niveauxScolaires = [
-  'Primaire',
-  'Collège',
-  'Lycée',
-  'Supérieur',
-];
 
 export function LiensFamiliauxForm() {
   const { data: familyLinks, loading, saving, addLink, updateLink, deleteLink } = useFamilyLinks();
@@ -65,38 +48,52 @@ export function LiensFamiliauxForm() {
   const { data: maritalStatus } = useMaritalStatus();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<FamilyLink | null>(null);
+  const [selectedLinkType, setSelectedLinkType] = useState<string>('');
+  
+  const familyLinkLogic = useFamilyLinkLogic(familyLinks, familyProfile, maritalStatus);
   
   const memberForm = useForm<MembreFamille>({
     resolver: zodResolver(membreFamilleSchema),
     defaultValues: {
-      a_charge: false,
+      est_decede: false,
       handicap: false,
-      enfant_mineur: false,
+      enfant_adopte: 'Non',
+      enfant_renoncant: false,
+      exoneration_succession: false,
     },
   });
 
   const handleAddMember = () => {
     setEditingMember(null);
+    setSelectedLinkType('');
     memberForm.reset({
-      a_charge: false,
+      est_decede: false,
       handicap: false,
-      enfant_mineur: false,
+      enfant_adopte: 'Non',
+      enfant_renoncant: false,
+      exoneration_succession: false,
     });
     setDialogOpen(true);
   };
 
   const handleEditMember = (member: FamilyLink) => {
     setEditingMember(member);
+    setSelectedLinkType(member.lien_familial);
     memberForm.reset({
       lien_familial: member.lien_familial,
+      civilite: member.civilite || '',
       nom: member.nom,
       prenom: member.prenom || '',
       date_naissance: member.date_naissance ? new Date(member.date_naissance) : undefined,
-      nationalite: member.nationalite || '',
-      niveau_scolaire: member.niveau_scolaire || '',
-      a_charge: member.a_charge || false,
+      est_decede: member.est_decede || false,
+      date_deces: member.date_deces ? new Date(member.date_deces) : undefined,
       handicap: member.handicap || false,
-      enfant_mineur: member.enfant_mineur || false,
+      enfant_adopte: member.enfant_adopte || 'Non',
+      enfant_renoncant: member.enfant_renoncant || false,
+      enfant_renoncant_de: member.enfant_renoncant_de || '',
+      branche_familiale: member.branche_familiale || '',
+      enfant_de: member.enfant_de || '',
+      exoneration_succession: member.exoneration_succession || false,
     });
     setDialogOpen(true);
   };
@@ -113,14 +110,20 @@ export function LiensFamiliauxForm() {
     try {
       const memberData = {
         lien_familial: data.lien_familial,
+        civilite: data.civilite,
         nom: data.nom,
         prenom: data.prenom,
         date_naissance: data.date_naissance ? data.date_naissance.toISOString().split('T')[0] : undefined,
-        nationalite: data.nationalite,
-        niveau_scolaire: data.niveau_scolaire,
-        a_charge: data.a_charge,
+        est_decede: data.est_decede,
+        date_deces: data.date_deces ? data.date_deces.toISOString().split('T')[0] : undefined,
         handicap: data.handicap,
-        enfant_mineur: data.enfant_mineur,
+        enfant_adopte: data.enfant_adopte,
+        enfant_renoncant: data.enfant_renoncant,
+        enfant_renoncant_de: data.enfant_renoncant_de,
+        branche_familiale: data.branche_familiale,
+        enfant_de: data.enfant_de,
+        parent_de: data.enfant_de, // Copy for backward compatibility
+        exoneration_succession: data.exoneration_succession,
       };
 
       if (editingMember) {
@@ -131,6 +134,7 @@ export function LiensFamiliauxForm() {
 
       setDialogOpen(false);
       setEditingMember(null);
+      setSelectedLinkType('');
       memberForm.reset();
     } catch (error) {
       console.error('Erreur lors de la sauvegarde du membre:', error);
@@ -185,9 +189,11 @@ export function LiensFamiliauxForm() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 flex-wrap">
-                        {member.a_charge && <Badge variant="secondary" className="text-xs">À charge</Badge>}
+                        {member.est_decede && <Badge variant="destructive" className="text-xs">Décédé</Badge>}
                         {member.handicap && <Badge variant="secondary" className="text-xs">Handicap</Badge>}
-                        {member.enfant_mineur && <Badge variant="secondary" className="text-xs">Mineur</Badge>}
+                        {member.enfant_adopte && member.enfant_adopte !== 'Non' && <Badge variant="outline" className="text-xs">{member.enfant_adopte}</Badge>}
+                        {member.enfant_renoncant && <Badge variant="outline" className="text-xs">Renonçant</Badge>}
+                        {member.exoneration_succession && <Badge variant="secondary" className="text-xs">Exonération</Badge>}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -236,224 +242,51 @@ export function LiensFamiliauxForm() {
           <div className="mt-6">
             <Form {...memberForm}>
               <form onSubmit={memberForm.handleSubmit(handleMemberSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Lien familial */}
-                  <FormField
-                    control={memberForm.control}
-                    name="lien_familial"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Lien familial *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger size="lg">
-                              <SelectValue placeholder="Sélectionner un lien" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {liensFamiliaux.map((lien) => (
-                              <SelectItem key={lien} value={lien}>
-                                {lien}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Nom */}
-                  <FormField
-                    control={memberForm.control}
-                    name="nom"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nom *</FormLabel>
+                {/* Sélection du lien familial */}
+                <FormField
+                  control={memberForm.control}
+                  name="lien_familial"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Lien familial *</FormLabel>
+                      <Select 
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setSelectedLinkType(value);
+                        }} 
+                        defaultValue={field.value}
+                      >
                         <FormControl>
-                          <Input placeholder="Nom de famille" {...field} />
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner un lien" />
+                          </SelectTrigger>
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        <SelectContent>
+                          {familyLinkLogic.availableLinks.map((linkOption) => (
+                            <SelectItem 
+                              key={linkOption.value} 
+                              value={linkOption.value}
+                              disabled={!linkOption.enabled}
+                            >
+                              {linkOption.label}
+                              {!linkOption.enabled && ' (non disponible)'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  {/* Prénom */}
-                  <FormField
-                    control={memberForm.control}
-                    name="prenom"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Prénom</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Prénom" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                {/* Formulaire dynamique selon le type */}
+                {(selectedLinkType || editingMember) && (
+                  <DynamicFamilyForm 
+                    linkType={selectedLinkType || editingMember?.lien_familial || ''}
+                    parentOptions={familyLinkLogic.getParentOptions(selectedLinkType || editingMember?.lien_familial || '')}
+                    parentsForRenunciation={familyLinkLogic.getParentsForRenunciation()}
                   />
-
-                  {/* Date de naissance */}
-                  <FormField
-                    control={memberForm.control}
-                    name="date_naissance"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Date de naissance</FormLabel>
-                        <div className="flex gap-2">
-                          <FormControl className="flex-1">
-                            <Input
-                              placeholder="JJ/MM/AAAA"
-                              value={field.value ? format(field.value, 'dd/MM/yyyy') : ''}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                // Permettre la saisie libre
-                                if (value.length <= 10) {
-                                  // Si le format est complet, essayer de convertir en date
-                                  if (value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                                    try {
-                                      const [day, month, year] = value.split('/');
-                                      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                                      if (!isNaN(date.getTime()) && date.getFullYear() == parseInt(year)) {
-                                        field.onChange(date);
-                                        return;
-                                      }
-                                    } catch (error) {
-                                      // Ignorer l'erreur et laisser l'utilisateur continuer à taper
-                                    }
-                                  }
-                                  // Pour la saisie en cours, garder la valeur comme string
-                                  field.onChange(value);
-                                }
-                              }}
-                            />
-                          </FormControl>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="shrink-0"
-                                type="button"
-                              >
-                                <CalendarIcon className="h-4 w-4" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value instanceof Date ? field.value : undefined}
-                                onSelect={(date) => date && field.onChange(date)}
-                                disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
-                                initialFocus
-                                className="p-3 pointer-events-auto"
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Nationalité */}
-                  <FormField
-                    control={memberForm.control}
-                    name="nationalite"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nationalité</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Nationalité" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Niveau scolaire */}
-                  <FormField
-                    control={memberForm.control}
-                    name="niveau_scolaire"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Niveau scolaire</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger size="lg">
-                              <SelectValue placeholder="Sélectionner un niveau" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {niveauxScolaires.map((niveau) => (
-                              <SelectItem key={niveau} value={niveau}>
-                                {niveau}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Checkboxes */}
-                <div className="space-y-4">
-                  <FormField
-                    control={memberForm.control}
-                    name="a_charge"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>À charge</FormLabel>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={memberForm.control}
-                    name="handicap"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Personne handicapée</FormLabel>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={memberForm.control}
-                    name="enfant_mineur"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Enfant mineur</FormLabel>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                )}
 
                 {/* Boutons */}
                 <div className="flex justify-end gap-2">
