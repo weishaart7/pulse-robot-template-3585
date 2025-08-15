@@ -7,7 +7,7 @@ export const useFamilyProfile = () => {
   const [data, setData] = useState<FamilyProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
 
   const fetchData = async () => {
     if (!isAuthenticated) return;
@@ -29,6 +29,15 @@ export const useFamilyProfile = () => {
   };
 
   const saveData = async (profile: FamilyProfile) => {
+    // Attendre que l'authentification soit chargée
+    if (authLoading) {
+      toast({
+        title: "Chargement",
+        description: "Vérification de l'authentification en cours...",
+      });
+      return;
+    }
+    
     if (!isAuthenticated) {
       toast({
         title: "Erreur",
