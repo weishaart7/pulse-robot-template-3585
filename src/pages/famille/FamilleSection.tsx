@@ -4,8 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { FicheClientForm } from './components/FicheClientForm';
 import { SituationMatrimonialeForm } from './components/SituationMatrimonialeForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
+import { GenealogyTree } from '@/components/GenealogyTree';
+import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 
 const FamilleSection = () => {
+  const { data: familyProfile } = useFamilyProfile();
+  const { data: maritalStatus } = useMaritalStatus();
+  const { data: familyMembers, updateLink } = useFamilyLinks();
+
   return (
     <div className="space-y-6">
       <div className="mb-6">
@@ -15,8 +21,9 @@ const FamilleSection = () => {
         </p>
       </div>
       
-      <Tabs defaultValue="fiche-client" className="w-full">
+      <Tabs defaultValue="arbre-genealogique" className="w-full">
         <TabsList variant="line" className="w-full">
+          <TabsTrigger value="arbre-genealogique">Arbre généalogique</TabsTrigger>
           <TabsTrigger value="fiche-client">Fiche client</TabsTrigger>
           <TabsTrigger value="situation-matrimoniale">
             Situation matrimoniale
@@ -25,6 +32,28 @@ const FamilleSection = () => {
             Liens familiaux
           </TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="arbre-genealogique" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Arbre généalogique</CardTitle>
+              <CardDescription>
+                Visualisation interactive de votre famille - cliquez sur un membre pour voir ses détails
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <GenealogyTree 
+                familyProfile={familyProfile}
+                maritalStatus={maritalStatus}
+                familyMembers={familyMembers}
+                onEditMember={(member) => {
+                  // TODO: Implémenter l'ouverture du formulaire d'édition
+                  console.log('Edit member:', member);
+                }}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
         
         <TabsContent value="fiche-client" className="mt-6">
           <Card>
