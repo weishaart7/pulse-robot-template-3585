@@ -7,7 +7,16 @@ export const useFamilyProfile = () => {
   const [data, setData] = useState<FamilyProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  
+  let authContext;
+  try {
+    authContext = useAuth();
+  } catch (error) {
+    console.error('Auth context error:', error);
+    authContext = { isAuthenticated: false, loading: false };
+  }
+  
+  const { isAuthenticated, loading: authLoading } = authContext;
 
   const fetchData = async () => {
     if (!isAuthenticated) return;
@@ -82,7 +91,16 @@ export const useMaritalStatus = () => {
   const [data, setData] = useState<MaritalStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const { isAuthenticated } = useAuth();
+  
+  let authContext;
+  try {
+    authContext = useAuth();
+  } catch (error) {
+    console.error('Auth context error:', error);
+    authContext = { isAuthenticated: false, loading: false };
+  }
+  
+  const { isAuthenticated } = authContext;
 
   const fetchData = async () => {
     if (!isAuthenticated) {
@@ -158,7 +176,16 @@ export const useFamilyLinks = () => {
   const [data, setData] = useState<FamilyLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const { isAuthenticated } = useAuth();
+  
+  let authContext;
+  try {
+    authContext = useAuth();
+  } catch (error) {
+    console.error('Auth context error:', error);
+    authContext = { isAuthenticated: false, loading: false };
+  }
+  
+  const { isAuthenticated } = authContext;
 
   const fetchData = async () => {
     if (!isAuthenticated) return;
