@@ -43,9 +43,20 @@ const membreFamilleSchema = z.object({
 type MembreFamille = z.infer<typeof membreFamilleSchema>;
 
 export function LiensFamiliauxForm() {
-  const { data: familyLinks, loading, saving, addLink, updateLink, deleteLink } = useFamilyLinks();
-  const { data: familyProfile } = useFamilyProfile();
-  const { data: maritalStatus } = useMaritalStatus();
+  const familyLinksResult = useFamilyLinks();
+  const familyProfileResult = useFamilyProfile();
+  const maritalStatusResult = useMaritalStatus();
+  
+  const familyLinks = familyLinksResult?.data || [];
+  const loading = familyLinksResult?.loading || false;
+  const saving = familyLinksResult?.saving || false;
+  const addLink = familyLinksResult?.addLink;
+  const updateLink = familyLinksResult?.updateLink;
+  const deleteLink = familyLinksResult?.deleteLink;
+  
+  const familyProfile = familyProfileResult?.data || null;
+  const maritalStatus = maritalStatusResult?.data || null;
+  
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<FamilyLink | null>(null);
   const [selectedLinkType, setSelectedLinkType] = useState<string>('');
