@@ -8,16 +8,18 @@ import {
   Position,
   useNodesState,
   useEdgesState,
+  NodeMouseHandler,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { FamilyLink, FamilyProfile, MaritalStatus } from '@/services/familyService';
 import { format } from 'date-fns';
-import { Cross } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface FamilyTreeFlowProps {
   familyProfile: FamilyProfile | null;
   maritalStatus: MaritalStatus | null;
   familyMembers: FamilyLink[];
+  onEditMember?: (member: FamilyLink) => void;
 }
 
 interface FamilyMember {
@@ -29,6 +31,8 @@ interface FamilyMember {
   isMain?: boolean;
   isSpouse?: boolean;
   generation: number;
+  originalData?: FamilyLink;
+  isClickable?: boolean;
 }
 
 const getRelationColor = (relation: string, isMain = false, isSpouse = false) => {
@@ -55,10 +59,13 @@ const getRelationColor = (relation: string, isMain = false, isSpouse = false) =>
 
 const FamilyNode = ({ data }: { data: FamilyMember }) => {
   const bgColor = getRelationColor(data.relation, data.isMain, data.isSpouse);
+  const isClickable = data.isClickable && !data.isMain && !data.isSpouse;
   
   return (
     <div 
-      className="px-4 py-3 rounded-lg shadow-lg border-2 min-w-[120px] text-center"
+      className={`px-4 py-3 rounded-lg shadow-lg border-2 min-w-[140px] text-center transition-all duration-200 ${
+        isClickable ? 'cursor-pointer hover:scale-105 hover:shadow-xl' : ''
+      }`}
       style={{ 
         backgroundColor: bgColor,
         borderColor: data.isMain || data.isSpouse ? '#ffffff' : bgColor,
@@ -74,11 +81,21 @@ const FamilyNode = ({ data }: { data: FamilyMember }) => {
         </div>
       )}
       {data.isDeceased && (
-        <Cross className="w-3 h-3 mx-auto mt-1 opacity-80" />
+        <X className="w-3 h-3 mx-auto mt-1 opacity-80" />
       )}
       {!data.isMain && !data.isSpouse && (
         <div className="text-xs opacity-70 mt-1">
           {data.relation}
+        </div>
+      )}
+      {data.isMain && (
+        <div className="text-xs opacity-70 mt-1">
+          Vous
+        </div>
+      )}
+      {data.isSpouse && (
+        <div className="text-xs opacity-70 mt-1">
+          Conjoint(e)
         </div>
       )}
     </div>
@@ -89,7 +106,7 @@ const nodeTypes = {
   family: FamilyNode,
 };
 
-export function FamilyTreeFlow({ familyProfile, maritalStatus, familyMembers }: FamilyTreeFlowProps) {
+export function FamilyTreeFlow({ familyProfile, maritalStatus, familyMembers, onEditMember }: FamilyTreeFlowProps) {
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
     const members: FamilyMember[] = [];
     let nodeId = 1;
@@ -136,22 +153,28 @@ export function FamilyTreeFlow({ familyProfile, maritalStatus, familyMembers }: 
           break;
         case 'Frère/Sœur':
         case 'Beau-frère/Belle-sœur':
-        case 'Oncle/Tante':
           generation = 0;
+          break;
+        case 'Oncle/Tante':
+          generation = -1; // Same generation as parents
           break;
         case 'Enfant':
           generation = 1;
           break;
         case 'Petit-enfant':
-        case 'Neveu/Nièce':
           generation = 2;
           break;
         case 'Arrière petit-enfant':
+          generation = 3;
+          break;
+        case 'Neveu/Nièce':
+          generation = 2; // Same generation as grandchildren
+          break;
         case 'Petit neveu/nièce':
           generation = 3;
           break;
         case 'Cousin/Cousine':
-          generation = 0;
+          generation = 0; // Same generation as siblings
           break;
         default:
           generation = 0;
@@ -163,7 +186,9 @@ export function FamilyTreeFlow({ familyProfile, maritalStatus, familyMembers }: 
         birthDate: member.date_naissance ? format(new Date(member.date_naissance), 'dd/MM/yyyy') : null,
         isDeceased: member.est_decede || false,
         relation: member.lien_familial,
-        generation
+        generation,
+        originalData: member,
+        isClickable: true
       });
     });
 
@@ -178,15 +203,18 @@ export function FamilyTreeFlow({ familyProfile, maritalStatus, familyMembers }: 
     const edges: Edge[] = [];
 
     const generations = Object.keys(generationGroups).map(Number).sort((a, b) => a - b);
-    const baseY = 300; // Center Y position for generation 0
+    const baseY = 200; // Center Y position for generation 0
+    const levelHeight = 150; // Distance between generations
+    const nodeWidth = 200; // Spacing between nodes horizontally
 
     generations.forEach(generation => {
       const membersInGeneration = generationGroups[generation];
-      const startX = 400 - (membersInGeneration.length * 150) / 2;
+      const totalWidth = membersInGeneration.length * nodeWidth;
+      const startX = 400 - totalWidth / 2 + nodeWidth / 2;
 
       membersInGeneration.forEach((member, index) => {
-        const x = startX + index * 150;
-        const y = baseY - generation * 120;
+        const x = startX + index * nodeWidth;
+        const y = baseY - generation * levelHeight;
 
         nodes.push({
           id: member.id,
@@ -196,63 +224,113 @@ export function FamilyTreeFlow({ familyProfile, maritalStatus, familyMembers }: 
         });
 
         // Create edges for family relationships
-        if (member.generation > 0) {
+        if (member.generation === 1) {
           // Children connect to main user
           if (member.relation === 'Enfant') {
             edges.push({
-              id: `edge-${member.id}-main`,
+              id: `edge-main-${member.id}`,
               source: 'main',
               target: member.id,
-              type: 'smoothstep',
+              type: 'straight',
               style: { stroke: '#64748b', strokeWidth: 2 },
             });
             
             // Also connect to spouse if exists
             if (members.find(m => m.id === 'spouse')) {
               edges.push({
-                id: `edge-${member.id}-spouse`,
+                id: `edge-spouse-${member.id}`,
                 source: 'spouse',
                 target: member.id,
-                type: 'smoothstep',
+                type: 'straight',
                 style: { stroke: '#64748b', strokeWidth: 2 },
               });
             }
           }
-          
-          // Grandchildren connect to their parents
+        } else if (member.generation === 2) {
+          // Grandchildren and nephews/nieces
           if (member.relation === 'Petit-enfant') {
             const parents = members.filter(m => m.relation === 'Enfant');
             if (parents.length > 0) {
               edges.push({
-                id: `edge-${member.id}-parent`,
+                id: `edge-${parents[0].id}-${member.id}`,
                 source: parents[0].id,
                 target: member.id,
-                type: 'smoothstep',
+                type: 'straight',
+                style: { stroke: '#64748b', strokeWidth: 2 },
+              });
+            }
+          } else if (member.relation === 'Neveu/Nièce') {
+            const siblings = members.filter(m => m.relation === 'Frère/Sœur');
+            if (siblings.length > 0) {
+              edges.push({
+                id: `edge-${siblings[0].id}-${member.id}`,
+                source: siblings[0].id,
+                target: member.id,
+                type: 'straight',
                 style: { stroke: '#64748b', strokeWidth: 2 },
               });
             }
           }
-        } else if (member.generation < 0) {
-          // Parents connect to main user
+        } else if (member.generation === -1) {
+          // Parents and uncles/aunts connect to main user
           if (member.relation === 'Parent') {
             edges.push({
-              id: `edge-parent-${member.id}`,
+              id: `edge-${member.id}-main`,
               source: member.id,
               target: 'main',
-              type: 'smoothstep',
+              type: 'straight',
               style: { stroke: '#64748b', strokeWidth: 2 },
             });
+          } else if (member.relation === 'Oncle/Tante') {
+            // Connect uncles/aunts to grandparents
+            const grandparents = members.filter(m => m.relation === 'Grand-parent');
+            if (grandparents.length > 0) {
+              edges.push({
+                id: `edge-${grandparents[0].id}-${member.id}`,
+                source: grandparents[0].id,
+                target: member.id,
+                type: 'straight',
+                style: { stroke: '#64748b', strokeWidth: 2 },
+              });
+            }
           }
-          
+        } else if (member.generation === -2) {
           // Grandparents connect to parents
           if (member.relation === 'Grand-parent') {
             const parents = members.filter(m => m.relation === 'Parent');
             if (parents.length > 0) {
               edges.push({
-                id: `edge-grandparent-${member.id}`,
+                id: `edge-${member.id}-${parents[0].id}`,
                 source: member.id,
                 target: parents[0].id,
-                type: 'smoothstep',
+                type: 'straight',
+                style: { stroke: '#64748b', strokeWidth: 2 },
+              });
+            }
+          }
+        } else if (member.generation === 0) {
+          // Siblings and cousins
+          if (member.relation === 'Frère/Sœur') {
+            // Connect siblings to parents
+            const parents = members.filter(m => m.relation === 'Parent');
+            if (parents.length > 0) {
+              edges.push({
+                id: `edge-${parents[0].id}-${member.id}`,
+                source: parents[0].id,
+                target: member.id,
+                type: 'straight',
+                style: { stroke: '#64748b', strokeWidth: 2 },
+              });
+            }
+          } else if (member.relation === 'Cousin/Cousine') {
+            // Connect cousins to uncles/aunts
+            const uncles = members.filter(m => m.relation === 'Oncle/Tante');
+            if (uncles.length > 0) {
+              edges.push({
+                id: `edge-${uncles[0].id}-${member.id}`,
+                source: uncles[0].id,
+                target: member.id,
+                type: 'straight',
                 style: { stroke: '#64748b', strokeWidth: 2 },
               });
             }
@@ -261,7 +339,7 @@ export function FamilyTreeFlow({ familyProfile, maritalStatus, familyMembers }: 
       });
     });
 
-    // Connect spouse to main user
+    // Connect spouse to main user with a special red line
     if (members.find(m => m.id === 'spouse')) {
       edges.push({
         id: 'edge-main-spouse',
@@ -277,6 +355,13 @@ export function FamilyTreeFlow({ familyProfile, maritalStatus, familyMembers }: 
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  const onNodeClick: NodeMouseHandler = useCallback((event, node) => {
+    const nodeData = node.data as unknown as FamilyMember;
+    if (nodeData.isClickable && nodeData.originalData && onEditMember) {
+      onEditMember(nodeData.originalData);
+    }
+  }, [onEditMember]);
 
   if (!familyProfile && familyMembers.length === 0) {
     return (
@@ -294,12 +379,15 @@ export function FamilyTreeFlow({ familyProfile, maritalStatus, familyMembers }: 
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodeClick={onNodeClick}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.3}
         maxZoom={1.5}
         style={{ backgroundColor: '#f8fafc' }}
+        nodesDraggable={false}
+        nodesConnectable={false}
       >
         <Background color="#e2e8f0" size={1} />
         <Controls />

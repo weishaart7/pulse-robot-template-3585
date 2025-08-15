@@ -328,6 +328,7 @@ export function LiensFamiliauxForm() {
               familyProfile={familyProfile}
               maritalStatus={maritalStatus}
               familyMembers={familyLinks}
+              onEditMember={handleEditMember}
             />
           </CardContent>
         </Card>
