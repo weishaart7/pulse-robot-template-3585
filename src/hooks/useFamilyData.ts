@@ -7,16 +7,7 @@ export const useFamilyProfile = () => {
   const [data, setData] = useState<FamilyProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
-  let authContext;
-  try {
-    authContext = useAuth();
-  } catch (error) {
-    console.error('Auth context error:', error);
-    authContext = { isAuthenticated: false, loading: false };
-  }
-  
-  const { isAuthenticated, loading: authLoading } = authContext;
+  const { isAuthenticated, loading: authLoading } = useAuth();
 
   const fetchData = async () => {
     if (!isAuthenticated) return;
@@ -91,16 +82,7 @@ export const useMaritalStatus = () => {
   const [data, setData] = useState<MaritalStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
-  let authContext;
-  try {
-    authContext = useAuth();
-  } catch (error) {
-    console.error('Auth context error:', error);
-    authContext = { isAuthenticated: false, loading: false };
-  }
-  
-  const { isAuthenticated } = authContext;
+  const { isAuthenticated } = useAuth();
 
   const fetchData = async () => {
     if (!isAuthenticated) {
@@ -164,28 +146,15 @@ export const useMaritalStatus = () => {
 };
 
 export const useFamilyData = () => {
-  const familyLinksResult = useFamilyLinks();
-  if (!familyLinksResult) {
-    return { familyMembers: [], loading: true, saving: false, addLink: () => Promise.reject(), updateLink: () => Promise.reject(), deleteLink: () => Promise.reject(), deleteLinks: () => Promise.reject(), refetch: () => Promise.resolve() };
-  }
-  const { data: familyMembers, ...familyLinksData } = familyLinksResult;
-  return { familyMembers: familyMembers || [], ...familyLinksData };
+  const { data: familyMembers, ...familyLinksData } = useFamilyLinks();
+  return { familyMembers, ...familyLinksData };
 };
 
 export const useFamilyLinks = () => {
   const [data, setData] = useState<FamilyLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
-  let authContext;
-  try {
-    authContext = useAuth();
-  } catch (error) {
-    console.error('Auth context error:', error);
-    authContext = { isAuthenticated: false, loading: false };
-  }
-  
-  const { isAuthenticated } = authContext;
+  const { isAuthenticated } = useAuth();
 
   const fetchData = async () => {
     if (!isAuthenticated) return;
