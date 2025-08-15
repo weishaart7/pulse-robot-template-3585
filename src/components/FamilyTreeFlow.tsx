@@ -223,117 +223,153 @@ export function FamilyTreeFlow({ familyProfile, maritalStatus, familyMembers, on
           data: member as any,
         });
 
-        // Create edges for family relationships
-        if (member.generation === 1) {
-          // Children connect to main user
-          if (member.relation === 'Enfant') {
+        // Create edges for family relationships with more visible styling
+        const edgeStyle = { 
+          stroke: '#3b82f6', 
+          strokeWidth: 3,
+          strokeDasharray: 'none'
+        };
+        
+        const spouseEdgeStyle = { 
+          stroke: '#ef4444', 
+          strokeWidth: 4,
+          strokeDasharray: 'none'
+        };
+
+        // Connect children to both parents
+        if (member.relation === 'Enfant') {
+          edges.push({
+            id: `edge-main-${member.id}`,
+            source: 'main',
+            target: member.id,
+            type: 'smoothstep',
+            style: edgeStyle,
+            animated: false,
+            markerEnd: { type: 'arrowclosed', color: '#3b82f6' }
+          });
+          
+          // Also connect to spouse if exists
+          const spouse = members.find(m => m.id === 'spouse');
+          if (spouse) {
             edges.push({
-              id: `edge-main-${member.id}`,
-              source: 'main',
+              id: `edge-spouse-${member.id}`,
+              source: 'spouse',
               target: member.id,
-              type: 'straight',
-              style: { stroke: '#64748b', strokeWidth: 2 },
+              type: 'smoothstep',
+              style: edgeStyle,
+              animated: false,
+              markerEnd: { type: 'arrowclosed', color: '#3b82f6' }
             });
-            
-            // Also connect to spouse if exists
-            if (members.find(m => m.id === 'spouse')) {
-              edges.push({
-                id: `edge-spouse-${member.id}`,
-                source: 'spouse',
-                target: member.id,
-                type: 'straight',
-                style: { stroke: '#64748b', strokeWidth: 2 },
-              });
-            }
           }
-        } else if (member.generation === 2) {
-          // Grandchildren and nephews/nieces
-          if (member.relation === 'Petit-enfant') {
-            const parents = members.filter(m => m.relation === 'Enfant');
-            if (parents.length > 0) {
-              edges.push({
-                id: `edge-${parents[0].id}-${member.id}`,
-                source: parents[0].id,
-                target: member.id,
-                type: 'straight',
-                style: { stroke: '#64748b', strokeWidth: 2 },
-              });
-            }
-          } else if (member.relation === 'Neveu/Nièce') {
-            const siblings = members.filter(m => m.relation === 'Frère/Sœur');
-            if (siblings.length > 0) {
-              edges.push({
-                id: `edge-${siblings[0].id}-${member.id}`,
-                source: siblings[0].id,
-                target: member.id,
-                type: 'straight',
-                style: { stroke: '#64748b', strokeWidth: 2 },
-              });
-            }
-          }
-        } else if (member.generation === -1) {
-          // Parents and uncles/aunts connect to main user
-          if (member.relation === 'Parent') {
+        }
+        
+        // Connect grandchildren to their parents (children)
+        else if (member.relation === 'Petit-enfant') {
+          const children = members.filter(m => m.relation === 'Enfant');
+          if (children.length > 0) {
+            // Connect to first child found
             edges.push({
-              id: `edge-${member.id}-main`,
-              source: member.id,
-              target: 'main',
-              type: 'straight',
-              style: { stroke: '#64748b', strokeWidth: 2 },
+              id: `edge-${children[0].id}-${member.id}`,
+              source: children[0].id,
+              target: member.id,
+              type: 'smoothstep',
+              style: edgeStyle,
+              animated: false,
+              markerEnd: { type: 'arrowclosed', color: '#3b82f6' }
             });
-          } else if (member.relation === 'Oncle/Tante') {
-            // Connect uncles/aunts to grandparents
-            const grandparents = members.filter(m => m.relation === 'Grand-parent');
-            if (grandparents.length > 0) {
-              edges.push({
-                id: `edge-${grandparents[0].id}-${member.id}`,
-                source: grandparents[0].id,
-                target: member.id,
-                type: 'straight',
-                style: { stroke: '#64748b', strokeWidth: 2 },
-              });
-            }
           }
-        } else if (member.generation === -2) {
-          // Grandparents connect to parents
-          if (member.relation === 'Grand-parent') {
-            const parents = members.filter(m => m.relation === 'Parent');
-            if (parents.length > 0) {
-              edges.push({
-                id: `edge-${member.id}-${parents[0].id}`,
-                source: member.id,
-                target: parents[0].id,
-                type: 'straight',
-                style: { stroke: '#64748b', strokeWidth: 2 },
-              });
-            }
+        }
+        
+        // Connect nephews/nieces to their parents (siblings)
+        else if (member.relation === 'Neveu/Nièce') {
+          const siblings = members.filter(m => m.relation === 'Frère/Sœur');
+          if (siblings.length > 0) {
+            edges.push({
+              id: `edge-${siblings[0].id}-${member.id}`,
+              source: siblings[0].id,
+              target: member.id,
+              type: 'smoothstep',
+              style: edgeStyle,
+              animated: false,
+              markerEnd: { type: 'arrowclosed', color: '#3b82f6' }
+            });
           }
-        } else if (member.generation === 0) {
-          // Siblings and cousins
-          if (member.relation === 'Frère/Sœur') {
-            // Connect siblings to parents
-            const parents = members.filter(m => m.relation === 'Parent');
-            if (parents.length > 0) {
-              edges.push({
-                id: `edge-${parents[0].id}-${member.id}`,
-                source: parents[0].id,
-                target: member.id,
-                type: 'straight',
-                style: { stroke: '#64748b', strokeWidth: 2 },
-              });
-            }
-          } else if (member.relation === 'Cousin/Cousine') {
-            // Connect cousins to uncles/aunts
-            const uncles = members.filter(m => m.relation === 'Oncle/Tante');
-            if (uncles.length > 0) {
-              edges.push({
-                id: `edge-${uncles[0].id}-${member.id}`,
-                source: uncles[0].id,
-                target: member.id,
-                type: 'straight',
-                style: { stroke: '#64748b', strokeWidth: 2 },
-              });
-            }
+        }
+        
+        // Connect parents to main user
+        else if (member.relation === 'Parent') {
+          edges.push({
+            id: `edge-${member.id}-main`,
+            source: member.id,
+            target: 'main',
+            type: 'smoothstep',
+            style: edgeStyle,
+            animated: false,
+            markerEnd: { type: 'arrowclosed', color: '#3b82f6' }
+          });
+        }
+        
+        // Connect siblings to the same parents
+        else if (member.relation === 'Frère/Sœur') {
+          const parents = members.filter(m => m.relation === 'Parent');
+          if (parents.length > 0) {
+            edges.push({
+              id: `edge-${parents[0].id}-${member.id}`,
+              source: parents[0].id,
+              target: member.id,
+              type: 'smoothstep',
+              style: edgeStyle,
+              animated: false,
+              markerEnd: { type: 'arrowclosed', color: '#3b82f6' }
+            });
+          }
+        }
+        
+        // Connect grandparents to parents
+        else if (member.relation === 'Grand-parent') {
+          const parents = members.filter(m => m.relation === 'Parent');
+          if (parents.length > 0) {
+            edges.push({
+              id: `edge-${member.id}-${parents[0].id}`,
+              source: member.id,
+              target: parents[0].id,
+              type: 'smoothstep',
+              style: edgeStyle,
+              animated: false,
+              markerEnd: { type: 'arrowclosed', color: '#3b82f6' }
+            });
+          }
+        }
+        
+        // Connect uncles/aunts to grandparents
+        else if (member.relation === 'Oncle/Tante') {
+          const grandparents = members.filter(m => m.relation === 'Grand-parent');
+          if (grandparents.length > 0) {
+            edges.push({
+              id: `edge-${grandparents[0].id}-${member.id}`,
+              source: grandparents[0].id,
+              target: member.id,
+              type: 'smoothstep',
+              style: edgeStyle,
+              animated: false,
+              markerEnd: { type: 'arrowclosed', color: '#3b82f6' }
+            });
+          }
+        }
+        
+        // Connect cousins to uncles/aunts
+        else if (member.relation === 'Cousin/Cousine') {
+          const uncles = members.filter(m => m.relation === 'Oncle/Tante');
+          if (uncles.length > 0) {
+            edges.push({
+              id: `edge-${uncles[0].id}-${member.id}`,
+              source: uncles[0].id,
+              target: member.id,
+              type: 'smoothstep',
+              style: edgeStyle,
+              animated: false,
+              markerEnd: { type: 'arrowclosed', color: '#3b82f6' }
+            });
           }
         }
       });
