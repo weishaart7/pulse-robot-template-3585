@@ -26,7 +26,7 @@ export const useFamilyLinkLogic = (
 
   const isMarriedOrPacsed = useMemo(() => {
     return maritalStatus?.statut_couple && 
-           ['marie', 'pacs'].includes(maritalStatus.statut_couple);
+           ['Marié(e)', 'Pacsé(e)', 'Concubinage'].includes(maritalStatus.statut_couple);
   }, [maritalStatus]);
 
   const existingLinks = useMemo(() => {
@@ -127,56 +127,75 @@ export const useFamilyLinkLogic = (
   const getParentOptions = (linkType: string) => {
     const options: { value: string; label: string }[] = [];
 
-    switch (linkType) {
-      case 'Enfant':
-      case 'Parent':
-      case 'Frère/Sœur':
-      case 'Oncle/Tante':
-        options.push({ value: userDisplayName, label: userDisplayName });
-        if (isMarriedOrPacsed && spouseDisplayName) {
-          options.push({ value: spouseDisplayName, label: spouseDisplayName });
-        }
-        break;
+    // Always add user as default option
+    options.push({ value: 'user', label: userDisplayName });
 
+    // Add spouse if married/pacsed/concubinage
+    if (isMarriedOrPacsed && spouseDisplayName) {
+      options.push({ value: 'spouse', label: spouseDisplayName });
+      
+      // For "Enfant" link type, add combined parent option
+      if (linkType === 'Enfant') {
+        options.push({ 
+          value: 'both_parents', 
+          label: `${userDisplayName} & ${spouseDisplayName}` 
+        });
+      }
+    }
+
+    // Add existing family members based on link type
+    switch (linkType) {
       case 'Petit-enfant':
         (existingLinks['Enfant'] || []).forEach(child => {
           const childName = `${child.prenom || ''} ${child.nom || ''}`.trim();
-          options.push({ value: childName, label: childName });
+          if (child.id) {
+            options.push({ value: child.id, label: childName });
+          }
         });
         break;
 
       case 'Arrière petit-enfant':
         (existingLinks['Petit-enfant'] || []).forEach(grandchild => {
           const grandchildName = `${grandchild.prenom || ''} ${grandchild.nom || ''}`.trim();
-          options.push({ value: grandchildName, label: grandchildName });
+          if (grandchild.id) {
+            options.push({ value: grandchild.id, label: grandchildName });
+          }
         });
         break;
 
       case 'Grand-parent':
         (existingLinks['Parent'] || []).forEach(parent => {
           const parentName = `${parent.prenom || ''} ${parent.nom || ''}`.trim();
-          options.push({ value: parentName, label: parentName });
+          if (parent.id) {
+            options.push({ value: parent.id, label: parentName });
+          }
         });
         break;
 
       case 'Neveu/Nièce':
         (existingLinks['Frère/Sœur'] || []).forEach(sibling => {
           const siblingName = `${sibling.prenom || ''} ${sibling.nom || ''}`.trim();
-          options.push({ value: siblingName, label: siblingName });
+          if (sibling.id) {
+            options.push({ value: sibling.id, label: siblingName });
+          }
         });
         break;
 
       case 'Petit neveu/nièce':
         (existingLinks['Neveu/Nièce'] || []).forEach(nephew => {
           const nephewName = `${nephew.prenom || ''} ${nephew.nom || ''}`.trim();
-          options.push({ value: nephewName, label: nephewName });
+          if (nephew.id) {
+            options.push({ value: nephew.id, label: nephewName });
+          }
         });
         break;
 
       case 'Cousin/Cousine':
         (existingLinks['Oncle/Tante'] || []).forEach(uncle => {
           const uncleName = `${uncle.prenom || ''} ${uncle.nom || ''}`.trim();
-          options.push({ value: uncleName, label: uncleName });
+          if (uncle.id) {
+            options.push({ value: uncle.id, label: uncleName });
+          }
         });
         break;
     }
@@ -187,9 +206,9 @@ export const useFamilyLinkLogic = (
   const getParentsForRenunciation = () => {
     const parents: { value: string; label: string }[] = [];
     
-    parents.push({ value: userDisplayName, label: userDisplayName });
+    parents.push({ value: 'user', label: userDisplayName });
     if (isMarriedOrPacsed && spouseDisplayName) {
-      parents.push({ value: spouseDisplayName, label: spouseDisplayName });
+      parents.push({ value: 'spouse', label: spouseDisplayName });
     }
 
     return parents;
