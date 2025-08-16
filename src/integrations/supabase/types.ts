@@ -352,13 +352,16 @@ export type Database = {
       marital_status: {
         Row: {
           adresse_notaire: string | null
+          civilite_conjoint: string | null
           contrat_mariage: string | null
+          convention_pacs: string | null
           created_at: string | null
           date_mariage: string | null
           date_naissance_conjoint: string | null
           date_pacs: string | null
           id: string
           lieu_mariage: string | null
+          lieu_naissance_conjoint: string | null
           lieu_pacs: string | null
           mariage_precedent_conjoint: boolean | null
           mariage_precedent_personne: boolean | null
@@ -367,21 +370,27 @@ export type Database = {
           nom_notaire: string | null
           nombre_enfants_charges: number | null
           parent_isole: boolean | null
+          personne_handicapee_conjoint: boolean | null
           prenom_conjoint: string | null
           profession_conjoint: string | null
+          profession_csp_conjoint: string | null
+          regime_matrimonial: string | null
           statut_couple: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
           adresse_notaire?: string | null
+          civilite_conjoint?: string | null
           contrat_mariage?: string | null
+          convention_pacs?: string | null
           created_at?: string | null
           date_mariage?: string | null
           date_naissance_conjoint?: string | null
           date_pacs?: string | null
           id?: string
           lieu_mariage?: string | null
+          lieu_naissance_conjoint?: string | null
           lieu_pacs?: string | null
           mariage_precedent_conjoint?: boolean | null
           mariage_precedent_personne?: boolean | null
@@ -390,21 +399,27 @@ export type Database = {
           nom_notaire?: string | null
           nombre_enfants_charges?: number | null
           parent_isole?: boolean | null
+          personne_handicapee_conjoint?: boolean | null
           prenom_conjoint?: string | null
           profession_conjoint?: string | null
+          profession_csp_conjoint?: string | null
+          regime_matrimonial?: string | null
           statut_couple?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           adresse_notaire?: string | null
+          civilite_conjoint?: string | null
           contrat_mariage?: string | null
+          convention_pacs?: string | null
           created_at?: string | null
           date_mariage?: string | null
           date_naissance_conjoint?: string | null
           date_pacs?: string | null
           id?: string
           lieu_mariage?: string | null
+          lieu_naissance_conjoint?: string | null
           lieu_pacs?: string | null
           mariage_precedent_conjoint?: boolean | null
           mariage_precedent_personne?: boolean | null
@@ -413,8 +428,11 @@ export type Database = {
           nom_notaire?: string | null
           nombre_enfants_charges?: number | null
           parent_isole?: boolean | null
+          personne_handicapee_conjoint?: boolean | null
           prenom_conjoint?: string | null
           profession_conjoint?: string | null
+          profession_csp_conjoint?: string | null
+          regime_matrimonial?: string | null
           statut_couple?: string | null
           updated_at?: string | null
           user_id?: string

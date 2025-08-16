@@ -71,23 +71,24 @@ export function SituationMatrimonialeForm() {
 
   useEffect(() => {
     if (data) {
+      const dataAny = data as any; // Contournement temporaire pour les nouveaux champs
       const formattedData = {
-        statutCouple: data.statut_couple as any,
-        parentIsole: data.parent_isole || false,
-        civilitePartenaire: '', // Nouveau champ, pas encore en base
-        nomPartenaire: data.nom_conjoint || '',
-        prenomPartenaire: data.prenom_conjoint || '',
-        dateNaissancePartenaire: data.date_naissance_conjoint ? new Date(data.date_naissance_conjoint) : undefined,
-        lieuNaissancePartenaire: '', // Nouveau champ, pas encore en base
-        professionCSP: '', // Nouveau champ, pas encore en base
-        professionLibelle: data.profession_conjoint || '',
-        nationalitePartenaire: data.nationalite_conjoint || '',
-        personneHandicapee: false, // Nouveau champ, pas encore en base
-        conventionPacs: 'Régime de la séparation des biens' as const, // Nouveau champ, pas encore en base
-        datePacs: data.date_pacs ? new Date(data.date_pacs) : undefined,
-        regimeMatrimonial: 'Communauté réduite aux acquêts (option sans contrat de mariage)' as const, // Nouveau champ, pas encore en base
-        dateMariage: data.date_mariage ? new Date(data.date_mariage) : undefined,
-        lieuMariage: data.lieu_mariage || '',
+        statutCouple: dataAny.statut_couple,
+        parentIsole: dataAny.parent_isole || false,
+        civilitePartenaire: dataAny.civilite_conjoint || '',
+        nomPartenaire: dataAny.nom_conjoint || '',
+        prenomPartenaire: dataAny.prenom_conjoint || '',
+        dateNaissancePartenaire: dataAny.date_naissance_conjoint ? new Date(dataAny.date_naissance_conjoint) : undefined,
+        lieuNaissancePartenaire: dataAny.lieu_naissance_conjoint || '',
+        professionCSP: dataAny.profession_csp_conjoint || '',
+        professionLibelle: dataAny.profession_conjoint || '',
+        nationalitePartenaire: dataAny.nationalite_conjoint || '',
+        personneHandicapee: dataAny.personne_handicapee_conjoint || false,
+        conventionPacs: dataAny.convention_pacs || 'Régime de la séparation des biens',
+        datePacs: dataAny.date_pacs ? new Date(dataAny.date_pacs) : undefined,
+        regimeMatrimonial: dataAny.regime_matrimonial || 'Communauté réduite aux acquêts (option sans contrat de mariage)',
+        dateMariage: dataAny.date_mariage ? new Date(dataAny.date_mariage) : undefined,
+        lieuMariage: dataAny.lieu_mariage || '',
       };
       form.reset(formattedData);
     }
