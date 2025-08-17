@@ -1,22 +1,26 @@
-import React, { useEffect } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { format } from 'date-fns';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { z } from "zod";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useAuth } from "@/contexts/AuthContext";
+import { useMaritalStatus, useFamilyProfile } from "@/hooks/useFamilyData";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { CalendarIcon, Loader2 } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
+import { MatrimonialRegimeOptions } from "@/components/famille/MatrimonialRegimeOptions";
 
-import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
-import { useMaritalStatus } from '@/hooks/useFamilyData';
-import { useAuth } from '@/contexts/AuthContext';
-
+// Schéma de validation du formulaire
 const formSchema = z.object({
   statutCouple: z.enum(['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)']).optional(),
   parentIsole: z.boolean().default(false),
@@ -50,10 +54,12 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-export function SituationMatrimonialeForm() {
-  const { data, loading, saving, saveData } = useMaritalStatus();
-  const { isAuthenticated } = useAuth();
-  
+export const SituationMatrimonialeForm = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const { data: maritalData, loading, saving, saveData } = useMaritalStatus();
+  const { data: familyProfile } = useFamilyProfile();
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -64,14 +70,28 @@ export function SituationMatrimonialeForm() {
     },
   });
 
+  // Watch pour les changements de statut
   const statutCouple = useWatch({
     control: form.control,
-    name: 'statutCouple',
+    name: "statutCouple"
   });
 
+  const regimeMatrimonial = useWatch({
+    control: form.control,
+    name: "regimeMatrimonial"
+  });
+
+  // Profils pour les options du régime matrimonial
+  const userProfile = familyProfile;
+  const spouseProfile = {
+    prenom: form.watch("prenomPartenaire"),
+    nom: form.watch("nomPartenaire")
+  };
+
+  // Effet pour charger les données existantes
   useEffect(() => {
-    if (data) {
-      const dataAny = data as any; // Contournement temporaire pour les nouveaux champs
+    if (maritalData) {
+      const dataAny = maritalData as any; // Contournement temporaire pour les nouveaux champs
       const formattedData = {
         statutCouple: dataAny.statut_couple,
         parentIsole: dataAny.parent_isole || false,
@@ -92,11 +112,15 @@ export function SituationMatrimonialeForm() {
       };
       form.reset(formattedData);
     }
-  }, [data, form]);
+  }, [maritalData, form]);
 
   const onSubmit = async (formData: FormData) => {
-    if (!isAuthenticated) {
-      console.error('Utilisateur non connecté');
+    if (!user) {
+      toast({
+        title: "Erreur",
+        description: "Vous devez être connecté pour sauvegarder vos données.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -121,8 +145,17 @@ export function SituationMatrimonialeForm() {
       };
 
       await saveData(supabaseData);
+      toast({
+        title: "Succès",
+        description: "Vos informations ont été sauvegardées avec succès.",
+      });
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la sauvegarde.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -565,8 +598,42 @@ export function SituationMatrimonialeForm() {
                   <CardHeader>
                     <CardTitle>Options relatives au régime choisi</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">Cette section sera complétée ultérieurement.</p>
+                  <CardContent className="space-y-6">
+                    {regimeMatrimonial === "Communauté réduite aux acquêts (option sans contrat de mariage)" && (
+                      <MatrimonialRegimeOptions 
+                        regimeType="communaute_reduite"
+                        userProfile={userProfile}
+                        spouseProfile={spouseProfile}
+                      />
+                    )}
+                    {regimeMatrimonial === "Communauté de meubles et d'acquêts" && (
+                      <MatrimonialRegimeOptions 
+                        regimeType="communaute_meubles"
+                        userProfile={userProfile}
+                        spouseProfile={spouseProfile}
+                      />
+                    )}
+                    {regimeMatrimonial === "Communauté universelle" && (
+                      <MatrimonialRegimeOptions 
+                        regimeType="communaute_universelle"
+                        userProfile={userProfile}
+                        spouseProfile={spouseProfile}
+                      />
+                    )}
+                    {regimeMatrimonial === "Séparation de biens" && (
+                      <MatrimonialRegimeOptions 
+                        regimeType="separation_biens"
+                        userProfile={userProfile}
+                        spouseProfile={spouseProfile}
+                      />
+                    )}
+                    {regimeMatrimonial === "Participation aux acquêts" && (
+                      <MatrimonialRegimeOptions 
+                        regimeType="participation_acquets"
+                        userProfile={userProfile}
+                        spouseProfile={spouseProfile}
+                      />
+                    )}
                   </CardContent>
                 </Card>
               </>
@@ -590,4 +657,4 @@ export function SituationMatrimonialeForm() {
       </form>
     </Form>
   );
-}
+};
