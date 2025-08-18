@@ -11,12 +11,14 @@ import { Liberalite } from '@/services/liberaliteService';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { DonationForm } from './DonationForm';
 
 export const Liberalites = () => {
   const { liberalites, loading, createLiberalite, updateLiberalite, deleteLiberalite } = useLiberalites();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingLiberalite, setEditingLiberalite] = useState<Liberalite | null>(null);
   const [liberaliteType, setLiberaliteType] = useState<'donation' | 'legs'>('donation');
+  const [isDonationFormOpen, setIsDonationFormOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     denomination: '',
@@ -116,7 +118,7 @@ export const Liberalites = () => {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             Donations
-            <Button onClick={() => handleOpenDialog('donation')}>
+            <Button onClick={() => setIsDonationFormOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Ajouter une donation
             </Button>
@@ -314,6 +316,12 @@ export const Liberalites = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Donation Form */}
+      <DonationForm 
+        open={isDonationFormOpen} 
+        onOpenChange={setIsDonationFormOpen} 
+      />
     </div>
   );
 };
