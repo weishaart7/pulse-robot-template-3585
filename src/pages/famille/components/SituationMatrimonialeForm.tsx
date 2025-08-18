@@ -224,10 +224,10 @@ export const SituationMatrimonialeForm = () => {
         {/* Formulaires pour Concubinage, PACS et Mariage */}
         {(statutCouple === 'Concubinage' || statutCouple === 'Pacsé(e)' || statutCouple === 'Marié(e)') && (
           <>
-            {/* Fiche du partenaire */}
+            {/* BLOC 1: Fiche du partenaire */}
             <Card>
               <CardHeader>
-                <CardTitle>Fiche du partenaire</CardTitle>
+                <CardTitle>Informations du conjoint/partenaire</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -239,9 +239,9 @@ export const SituationMatrimonialeForm = () => {
                         <FormLabel>Civilité</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                  <SelectTrigger size="lg">
-                    <SelectValue placeholder="Sélectionner" />
-                  </SelectTrigger>
+                            <SelectTrigger size="lg">
+                              <SelectValue placeholder="Sélectionner" />
+                            </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="M.">M.</SelectItem>
@@ -412,127 +412,84 @@ export const SituationMatrimonialeForm = () => {
                     </FormItem>
                   )}
                 />
-              </CardContent>
-            </Card>
 
-            {/* Informations PACS */}
-            {statutCouple === 'Pacsé(e)' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Informations PACS</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="conventionPacs"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Convention de PACS</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                          <SelectTrigger size="lg">
-                            <SelectValue />
-                          </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Régime de la séparation des biens">Régime de la séparation des biens</SelectItem>
-                            <SelectItem value="Indivision">Indivision</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                {/* Informations spécifiques PACS */}
+                {statutCouple === 'Pacsé(e)' && (
+                  <div className="space-y-4 mt-6 pt-6 border-t border-border">
+                    <h4 className="text-lg font-medium">Informations PACS</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="conventionPacs"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Convention de PACS</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger size="lg">
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="Régime de la séparation des biens">Régime de la séparation des biens</SelectItem>
+                                <SelectItem value="Indivision">Indivision</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                  <FormField
-                    control={form.control}
-                    name="datePacs"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Date de PACS</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "dd/MM/yyyy")
-                                ) : (
-                                  <span>Sélectionner une date</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) =>
-                                date > new Date() || date < new Date("1900-01-01")
-                              }
-                              initialFocus
-                              className="p-3 pointer-events-auto"
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-            )}
+                      <FormField
+                        control={form.control}
+                        name="datePacs"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Date de PACS</FormLabel>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    className={cn(
+                                      "w-full pl-3 text-left font-normal",
+                                      !field.value && "text-muted-foreground"
+                                    )}
+                                  >
+                                    {field.value ? (
+                                      format(field.value, "dd/MM/yyyy")
+                                    ) : (
+                                      <span>Sélectionner une date</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={field.onChange}
+                                  disabled={(date) =>
+                                    date > new Date() || date < new Date("1900-01-01")
+                                  }
+                                  initialFocus
+                                  className="p-3 pointer-events-auto"
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                )}
 
-            {/* Informations Mariage */}
-            {statutCouple === 'Marié(e)' && (
-              <>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Régime matrimonial</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="regimeMatrimonial"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Régime matrimonial</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                            <SelectTrigger size="lg">
-                              <SelectValue />
-                            </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="Communauté réduite aux acquêts (option sans contrat de mariage)">
-                                Communauté réduite aux acquêts (option sans contrat de mariage)
-                              </SelectItem>
-                              <SelectItem value="Communauté de meubles et d'acquêts">
-                                Communauté de meubles et d'acquêts
-                              </SelectItem>
-                              <SelectItem value="Communauté universelle">
-                                Communauté universelle
-                              </SelectItem>
-                              <SelectItem value="Séparation de biens">
-                                Séparation de biens
-                              </SelectItem>
-                              <SelectItem value="Participation aux acquêts">
-                                Participation aux acquêts
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
+                {/* Informations spécifiques Mariage */}
+                {statutCouple === 'Marié(e)' && (
+                  <div className="space-y-4 mt-6 pt-6 border-t border-border">
+                    <h4 className="text-lg font-medium">Informations Mariage</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
@@ -591,52 +548,91 @@ export const SituationMatrimonialeForm = () => {
                         )}
                       />
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Options relatives au régime choisi</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {regimeMatrimonial === "Communauté réduite aux acquêts (option sans contrat de mariage)" && (
-                      <MatrimonialRegimeOptions 
-                        regimeType="communaute_reduite"
-                        userProfile={userProfile}
-                        spouseProfile={spouseProfile}
-                      />
+            {/* BLOC 2: Régime matrimonial et options (uniquement pour les mariés) */}
+            {statutCouple === 'Marié(e)' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Régime matrimonial et options</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="regimeMatrimonial"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Régime matrimonial</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger size="lg">
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Communauté réduite aux acquêts (option sans contrat de mariage)">
+                              Communauté réduite aux acquêts (option sans contrat de mariage)
+                            </SelectItem>
+                            <SelectItem value="Communauté de meubles et d'acquêts">
+                              Communauté de meubles et d'acquêts
+                            </SelectItem>
+                            <SelectItem value="Communauté universelle">
+                              Communauté universelle
+                            </SelectItem>
+                            <SelectItem value="Séparation de biens">
+                              Séparation de biens
+                            </SelectItem>
+                            <SelectItem value="Participation aux acquêts">
+                              Participation aux acquêts
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                    {regimeMatrimonial === "Communauté de meubles et d'acquêts" && (
-                      <MatrimonialRegimeOptions 
-                        regimeType="communaute_meubles"
-                        userProfile={userProfile}
-                        spouseProfile={spouseProfile}
-                      />
-                    )}
-                    {regimeMatrimonial === "Communauté universelle" && (
-                      <MatrimonialRegimeOptions 
-                        regimeType="communaute_universelle"
-                        userProfile={userProfile}
-                        spouseProfile={spouseProfile}
-                      />
-                    )}
-                    {regimeMatrimonial === "Séparation de biens" && (
-                      <MatrimonialRegimeOptions 
-                        regimeType="separation_biens"
-                        userProfile={userProfile}
-                        spouseProfile={spouseProfile}
-                      />
-                    )}
-                    {regimeMatrimonial === "Participation aux acquêts" && (
-                      <MatrimonialRegimeOptions 
-                        regimeType="participation_acquets"
-                        userProfile={userProfile}
-                        spouseProfile={spouseProfile}
-                      />
-                    )}
-                  </CardContent>
-                </Card>
-              </>
+                  />
+
+                  {/* Options relatives au régime choisi */}
+                  {regimeMatrimonial === "Communauté réduite aux acquêts (option sans contrat de mariage)" && (
+                    <MatrimonialRegimeOptions 
+                      regimeType="communaute_reduite"
+                      userProfile={userProfile}
+                      spouseProfile={spouseProfile}
+                    />
+                  )}
+                  {regimeMatrimonial === "Communauté de meubles et d'acquêts" && (
+                    <MatrimonialRegimeOptions 
+                      regimeType="communaute_meubles"
+                      userProfile={userProfile}
+                      spouseProfile={spouseProfile}
+                    />
+                  )}
+                  {regimeMatrimonial === "Communauté universelle" && (
+                    <MatrimonialRegimeOptions 
+                      regimeType="communaute_universelle"
+                      userProfile={userProfile}
+                      spouseProfile={spouseProfile}
+                    />
+                  )}
+                  {regimeMatrimonial === "Séparation de biens" && (
+                    <MatrimonialRegimeOptions 
+                      regimeType="separation_biens"
+                      userProfile={userProfile}
+                      spouseProfile={spouseProfile}
+                    />
+                  )}
+                  {regimeMatrimonial === "Participation aux acquêts" && (
+                    <MatrimonialRegimeOptions 
+                      regimeType="participation_acquets"
+                      userProfile={userProfile}
+                      spouseProfile={spouseProfile}
+                    />
+                  )}
+                </CardContent>
+              </Card>
             )}
           </>
         )}
