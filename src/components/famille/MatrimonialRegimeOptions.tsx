@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus } from 'lucide-react';
 import { useAssets } from '@/hooks/useAssets';
-import { useFamilyData } from '@/hooks/useFamilyData';
+import { useFamilyData, useMaritalStatus } from '@/hooks/useFamilyData';
+import { useToast } from '@/hooks/use-toast';
 
 interface MatrimonialRegimeOptionsProps {
   regimeType: 'communaute_reduite' | 'communaute_meubles' | 'communaute_universelle' | 'separation_biens' | 'participation_acquets';
@@ -152,6 +153,8 @@ export const MatrimonialRegimeOptions: React.FC<MatrimonialRegimeOptionsProps> =
   userProfile,
   spouseProfile
 }) => {
+  const { toast } = useToast();
+  const { data: maritalData, saveData } = useMaritalStatus();
   const [clauseModalOpen, setClauseModalOpen] = useState(false);
   const [assetModalOpen, setAssetModalOpen] = useState(false);
   const [currentAssetModal, setCurrentAssetModal] = useState<string>('');
@@ -161,16 +164,67 @@ export const MatrimonialRegimeOptions: React.FC<MatrimonialRegimeOptionsProps> =
     enFaveurConjoint: false
   });
 
-  const handleClauseToggle = (clauseName: string) => {
-    setClauses(prev => ({
-      ...prev,
-      [clauseName]: {
-        ...prev[clauseName],
-        enabled: !prev[clauseName]?.enabled,
-        partPleineProprietee: prev[clauseName]?.partPleineProprietee || 50,
-        partUsufruit: prev[clauseName]?.partUsufruit || 50
+  // Charger les données existantes
+  useEffect(() => {
+    if (maritalData) {
+      const dataAny = maritalData as any;
+      if (dataAny.clauses_contrat) {
+        try {
+          const parsedClauses = typeof dataAny.clauses_contrat === 'string' 
+            ? JSON.parse(dataAny.clauses_contrat) 
+            : dataAny.clauses_contrat;
+          setClauses(parsedClauses);
+        } catch (error) {
+          console.error('Erreur de parsing clauses:', error);
+        }
       }
-    }));
+      if (dataAny.donation_dernier_vivant) {
+        try {
+          const parsedDonation = typeof dataAny.donation_dernier_vivant === 'string' 
+            ? JSON.parse(dataAny.donation_dernier_vivant) 
+            : dataAny.donation_dernier_vivant;
+          setDonation(parsedDonation);
+        } catch (error) {
+          console.error('Erreur de parsing donation:', error);
+        }
+      }
+    }
+  }, [maritalData]);
+
+  // Fonction pour sauvegarder les données
+  const saveClausesData = async (newClauses: ClauseState, newDonation: DonationState) => {
+    try {
+      const dataToSave = {
+        clauses_contrat: JSON.stringify(newClauses),
+        donation_dernier_vivant: JSON.stringify(newDonation),
+      };
+      await saveData(dataToSave as any);
+      toast({
+        title: "Succès",
+        description: "Les clauses ont été sauvegardées avec succès.",
+      });
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la sauvegarde.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleClauseToggle = (clauseName: string) => {
+    const newClauses = {
+      ...clauses,
+      [clauseName]: {
+        ...clauses[clauseName],
+        enabled: !clauses[clauseName]?.enabled,
+        partPleineProprietee: clauses[clauseName]?.partPleineProprietee || 50,
+        partUsufruit: clauses[clauseName]?.partUsufruit || 50
+      }
+    };
+    setClauses(newClauses);
+    saveClausesData(newClauses, donation);
   };
 
   const handleAssetSelection = (clauseName: string) => {
@@ -179,24 +233,28 @@ export const MatrimonialRegimeOptions: React.FC<MatrimonialRegimeOptionsProps> =
   };
 
   const handleAssetConfirm = (selectedAssets: string[]) => {
-    setClauses(prev => ({
-      ...prev,
+    const newClauses = {
+      ...clauses,
       [currentAssetModal]: {
-        ...prev[currentAssetModal],
+        ...clauses[currentAssetModal],
         selectedAssets
       }
-    }));
+    };
+    setClauses(newClauses);
+    saveClausesData(newClauses, donation);
   };
 
   const handlePercentageChange = (clauseName: string, partPP: number, partUsufruit: number) => {
-    setClauses(prev => ({
-      ...prev,
+    const newClauses = {
+      ...clauses,
       [clauseName]: {
-        ...prev[clauseName],
+        ...clauses[clauseName],
         partPleineProprietee: partPP,
         partUsufruit: partUsufruit
       }
-    }));
+    };
+    setClauses(newClauses);
+    saveClausesData(newClauses, donation);
   };
 
   const getClausesForRegime = () => {
@@ -391,18 +449,20 @@ export const MatrimonialRegimeOptions: React.FC<MatrimonialRegimeOptionsProps> =
                             <Checkbox
                               id={`${clause.key}_pleine_propriete`}
                               checked={clauses[clause.key]?.options?.pleineProprietee || false}
-                              onCheckedChange={(checked) => 
-                                setClauses(prev => ({
-                                  ...prev,
+                              onCheckedChange={(checked) => {
+                                const newClauses = {
+                                  ...clauses,
                                   [clause.key]: {
-                                    ...prev[clause.key],
+                                    ...clauses[clause.key],
                                     options: {
-                                      ...prev[clause.key]?.options,
+                                      ...clauses[clause.key]?.options,
                                       pleineProprietee: checked
                                     }
                                   }
-                                }))
-                              }
+                                };
+                                setClauses(newClauses);
+                                saveClausesData(newClauses, donation);
+                              }}
                             />
                             <Label htmlFor={`${clause.key}_pleine_propriete`}>En pleine propriété</Label>
                           </div>
@@ -410,18 +470,20 @@ export const MatrimonialRegimeOptions: React.FC<MatrimonialRegimeOptionsProps> =
                             <Checkbox
                               id={`${clause.key}_usufruit`}
                               checked={clauses[clause.key]?.options?.usufruit || false}
-                              onCheckedChange={(checked) => 
-                                setClauses(prev => ({
-                                  ...prev,
+                              onCheckedChange={(checked) => {
+                                const newClauses = {
+                                  ...clauses,
                                   [clause.key]: {
-                                    ...prev[clause.key],
+                                    ...clauses[clause.key],
                                     options: {
-                                      ...prev[clause.key]?.options,
+                                      ...clauses[clause.key]?.options,
                                       usufruit: checked
                                     }
                                   }
-                                }))
-                              }
+                                };
+                                setClauses(newClauses);
+                                saveClausesData(newClauses, donation);
+                              }}
                             />
                             <Label htmlFor={`${clause.key}_usufruit`}>En usufruit</Label>
                           </div>
@@ -462,9 +524,11 @@ export const MatrimonialRegimeOptions: React.FC<MatrimonialRegimeOptionsProps> =
               <Checkbox
                 id="donation_utilisateur"
                 checked={donation.enFaveurUtilisateur}
-                onCheckedChange={(checked) => 
-                  setDonation(prev => ({ ...prev, enFaveurUtilisateur: checked as boolean }))
-                }
+                onCheckedChange={(checked) => {
+                  const newDonation = { ...donation, enFaveurUtilisateur: checked as boolean };
+                  setDonation(newDonation);
+                  saveClausesData(clauses, newDonation);
+                }}
               />
               <Label htmlFor="donation_utilisateur">
                 En faveur de : {userProfile.prenom} {userProfile.nom}
@@ -477,9 +541,11 @@ export const MatrimonialRegimeOptions: React.FC<MatrimonialRegimeOptionsProps> =
               <Checkbox
                 id="donation_conjoint"
                 checked={donation.enFaveurConjoint}
-                onCheckedChange={(checked) => 
-                  setDonation(prev => ({ ...prev, enFaveurConjoint: checked as boolean }))
-                }
+                onCheckedChange={(checked) => {
+                  const newDonation = { ...donation, enFaveurConjoint: checked as boolean };
+                  setDonation(newDonation);
+                  saveClausesData(clauses, newDonation);
+                }}
               />
               <Label htmlFor="donation_conjoint">
                 En faveur de : {spouseProfile.prenom} {spouseProfile.nom}
