@@ -239,9 +239,9 @@ export const SituationMatrimonialeForm = () => {
                         <FormLabel>Civilité</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sélectionner" />
-                            </SelectTrigger>
+                  <SelectTrigger size="lg">
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="M.">M.</SelectItem>
@@ -346,7 +346,7 @@ export const SituationMatrimonialeForm = () => {
                         <FormLabel>Profession (CSP)</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger size="lg">
                               <SelectValue placeholder="Sélectionner une CSP" />
                             </SelectTrigger>
                           </FormControl>
@@ -430,9 +430,9 @@ export const SituationMatrimonialeForm = () => {
                         <FormLabel>Convention de PACS</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
+                          <SelectTrigger size="lg">
+                            <SelectValue />
+                          </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="Régime de la séparation des biens">Régime de la séparation des biens</SelectItem>
@@ -506,9 +506,9 @@ export const SituationMatrimonialeForm = () => {
                           <FormLabel>Régime matrimonial</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
+                            <SelectTrigger size="lg">
+                              <SelectValue />
+                            </SelectTrigger>
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="Communauté réduite aux acquêts (option sans contrat de mariage)">
