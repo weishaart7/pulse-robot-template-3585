@@ -107,7 +107,7 @@ export const PatrimoineSidebar = ({
   );
 
   return (
-    <div className="fixed left-10 top-[120px] h-[calc(100vh-160px)] w-80 bg-background border border-border rounded-lg flex flex-col shadow-lg z-10">
+    <div className="fixed left-3 top-[calc(var(--navbar-height,64px)+12px)] h-[calc(100vh-var(--navbar-height,64px)-24px)] w-80 bg-background border border-border rounded-lg flex flex-col shadow-lg z-10">
       {/* En-tête avec patrimoine net */}
       <div className="p-6 border-b border-border">
         <div 

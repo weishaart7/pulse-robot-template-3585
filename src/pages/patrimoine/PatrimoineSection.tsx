@@ -97,8 +97,8 @@ export const PatrimoineSection = () => {
         onCategorySelect={setSelectedCategory}
       />
       
-      {/* Contenu principal - avec marge pour la sidebar */}
-      <div className="ml-80 flex-1">
+      {/* Contenu principal - avec marge de 12px par rapport à la sidebar */}
+      <div className="ml-[332px] flex-1 pr-3">
         <PatrimoineMainContent
         assets={assets}
         selectedCategory={selectedCategory}
