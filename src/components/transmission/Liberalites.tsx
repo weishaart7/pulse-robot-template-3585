@@ -12,6 +12,7 @@ import { Plus, Edit, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { DonationForm } from './DonationForm';
+import { LegsForm } from './LegsForm';
 
 export const Liberalites = () => {
   const { liberalites, loading, createLiberalite, updateLiberalite, deleteLiberalite } = useLiberalites();
@@ -19,6 +20,7 @@ export const Liberalites = () => {
   const [editingLiberalite, setEditingLiberalite] = useState<Liberalite | null>(null);
   const [liberaliteType, setLiberaliteType] = useState<'donation' | 'legs'>('donation');
   const [isDonationFormOpen, setIsDonationFormOpen] = useState(false);
+  const [isLegsFormOpen, setIsLegsFormOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     denomination: '',
@@ -181,7 +183,7 @@ export const Liberalites = () => {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             Legs (Testament)
-            <Button onClick={() => handleOpenDialog('legs')}>
+            <Button onClick={() => setIsLegsFormOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Ajouter un legs
             </Button>
@@ -321,6 +323,12 @@ export const Liberalites = () => {
       <DonationForm 
         open={isDonationFormOpen} 
         onOpenChange={setIsDonationFormOpen} 
+      />
+
+      {/* Legs Form */}
+      <LegsForm 
+        open={isLegsFormOpen} 
+        onOpenChange={setIsLegsFormOpen} 
       />
     </div>
   );
