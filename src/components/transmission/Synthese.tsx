@@ -196,7 +196,7 @@ export const Synthese = () => {
         id: user!.id,
         nom: profile?.nom || 'Utilisateur',
         prenom: profile?.prenom || '',
-        estDecede: false,
+        estDecede: true, // Le défunt pour la simulation
         lienFamilial: 'défunt'
       }
     ];
@@ -204,9 +204,12 @@ export const Synthese = () => {
     const familyLinks: any[] = [];
     const marriages: any[] = [];
     
-    // Ajouter le conjoint si marié/pacsé
+    // Ajouter le conjoint - IGNORER si statut célibataire même avec date_pacs
     let survivingSpouseId: string | undefined;
-    if (marital?.statut_couple && ['Marié(e)', 'Pacsé(e)'].includes(marital.statut_couple)) {
+    if (marital?.statut_couple && 
+        marital.statut_couple !== 'Célibataire' && 
+        marital.statut_couple !== 'celibataire' &&
+        ['Marié(e)', 'Pacsé(e)'].includes(marital.statut_couple)) {
       const conjointId = `conjoint-${user!.id}`;
       persons.push({
         id: conjointId,
@@ -230,7 +233,7 @@ export const Synthese = () => {
       survivingSpouseId = conjointId;
     }
 
-    // Ajouter les liens familiaux
+    // Ajouter les liens familiaux avec normalisation
     const childrenIds: string[] = [];
     links.forEach(link => {
       const personId = `person-${link.id}`;
@@ -238,18 +241,24 @@ export const Synthese = () => {
         id: personId,
         nom: link.nom,
         prenom: link.prenom || '',
-        estDecede: false,
+        estDecede: link.est_decede || false, // Utiliser est_decede
         lienFamilial: link.lien_familial
       });
 
-      familyLinks.push({
-        from: user!.id,
-        to: personId,
-        relation: link.lien_familial === 'enfant' ? 'child' as const : 'other' as const
-      });
-
-      if (link.lien_familial === 'enfant') {
+      // Normaliser les relations familiales
+      const lienNormalise = link.lien_familial?.toLowerCase();
+      let relation: 'child' | 'parent' | 'sibling' | 'other' = 'other';
+      
+      if (lienNormalise === 'enfant') {
+        relation = 'child';
+        familyLinks.push({ from: user!.id, to: personId, relation });
         childrenIds.push(personId);
+      } else if (lienNormalise === 'parent') {
+        relation = 'parent';
+        familyLinks.push({ from: personId, to: user!.id, relation: 'child' });
+      } else if (lienNormalise === 'frère' || lienNormalise === 'sœur' || lienNormalise === 'frère/sœur') {
+        relation = 'sibling';
+        familyLinks.push({ from: user!.id, to: personId, relation });
       }
     });
 

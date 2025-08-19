@@ -490,14 +490,17 @@ function areAllChildrenCommon(graph: FamilyGraph, enfants: any[]): boolean {
 }
 
 function getParentsVivants(graph: FamilyGraph, personnesVivantes: any[]): any[] {
-  return personnesVivantes.filter(p =>
-    p.lienFamilial === 'parent'
-  );
+  return personnesVivantes.filter(p => {
+    const lienNormalise = p.lienFamilial?.toLowerCase();
+    return lienNormalise === 'parent';
+  });
 }
 
 function getFreresSoeursVivants(graph: FamilyGraph, personnesVivantes: any[]): any[] {
-  return personnesVivantes.filter(p =>
-    p.lienFamilial === 'frère' || p.lienFamilial === 'soeur'
+  return personnesVivantes.filter(p => {
+    const lienNormalise = p.lienFamilial?.toLowerCase();
+    return lienNormalise === 'frère' || lienNormalise === 'sœur' || lienNormalise === 'frère/sœur';
+  }
   );
 }
 
