@@ -23,6 +23,21 @@ interface Asset {
   detenteur: string;
 }
 
+interface FamilyMember {
+  id: string;
+  nom: string;
+  prenom: string;
+  lien_familial: string;
+}
+
+interface Beneficiary {
+  id: string;
+  nom: string;
+  prenom: string;
+  lien_familial: string;
+  pourcentage: number;
+}
+
 interface DonationFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -43,6 +58,8 @@ export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
   const [showClauses, setShowClauses] = useState(false);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [selectedAssets, setSelectedAssets] = useState<{id: string, valeurDonation: number}[]>([]);
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
   const [loading, setLoading] = useState(false);
 
   const naturesOptions = [
@@ -97,6 +114,20 @@ export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
     }
   };
 
+  const fetchFamilyMembers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('family_links')
+        .select('id, nom, prenom, lien_familial')
+        .order('nom');
+
+      if (error) throw error;
+      setFamilyMembers(data || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des liens familiaux:', error);
+    }
+  };
+
   const handleAssetToggle = (assetId: string, valeurEstimee: number) => {
     setSelectedAssets(prev => {
       const exists = prev.find(a => a.id === assetId);
@@ -114,16 +145,34 @@ export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
     );
   };
 
+  const handleBeneficiaryToggle = (member: FamilyMember) => {
+    setBeneficiaries(prev => {
+      const exists = prev.find(b => b.id === member.id);
+      if (exists) {
+        return prev.filter(b => b.id !== member.id);
+      } else {
+        return [...prev, { ...member, pourcentage: 0 }];
+      }
+    });
+  };
+
+  const updateBeneficiaryPercentage = (beneficiaryId: string, percentage: number) => {
+    setBeneficiaries(prev => 
+      prev.map(b => b.id === beneficiaryId ? { ...b, pourcentage: percentage } : b)
+    );
+  };
+
   useEffect(() => {
     if (open) {
       fetchAssets();
+      fetchFamilyMembers();
     }
   }, [open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Handle form submission
-    console.log('Form data:', formData, 'Clauses:', selectedClauses, 'Selected assets:', selectedAssets);
+    console.log('Form data:', formData, 'Clauses:', selectedClauses, 'Selected assets:', selectedAssets, 'Beneficiaries:', beneficiaries);
     onOpenChange(false);
   };
 
@@ -350,9 +399,84 @@ export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
               <CardTitle>Donataires</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                Qui a reçu, lien de parenté, pourcentage reçu (à implémenter)
-              </p>
+              {familyMembers.length === 0 ? (
+                <p className="text-muted-foreground">
+                  Aucun lien familial renseigné. Ajoutez des membres de famille dans la section "Liens familiaux" pour les sélectionner comme donataires.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Sélectionnez les personnes qui recevront cette donation et indiquez le pourcentage reçu par chacune.
+                  </p>
+                  {familyMembers.map((member) => {
+                    const isSelected = beneficiaries.find(b => b.id === member.id);
+                    return (
+                      <div key={member.id} className="border rounded-lg p-4 space-y-3">
+                        <div className="flex items-start space-x-3">
+                          <Checkbox
+                            id={`beneficiary-${member.id}`}
+                            checked={!!isSelected}
+                            onCheckedChange={() => handleBeneficiaryToggle(member)}
+                          />
+                          <div className="flex-1">
+                            <div className="grid grid-cols-3 gap-4 mb-3">
+                              <div>
+                                <Label className="text-sm font-medium text-muted-foreground">Nom</Label>
+                                <p className="text-sm">{member.nom}</p>
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium text-muted-foreground">Prénom</Label>
+                                <p className="text-sm">{member.prenom || 'Non renseigné'}</p>
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium text-muted-foreground">Lien de parenté</Label>
+                                <p className="text-sm">{member.lien_familial}</p>
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <div className="mt-3">
+                                <Label htmlFor={`percentage-${member.id}`} className="text-sm font-medium">
+                                  Pourcentage reçu (%)
+                                </Label>
+                                <Input
+                                  id={`percentage-${member.id}`}
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="0.01"
+                                  value={isSelected.pourcentage}
+                                  onChange={(e) => updateBeneficiaryPercentage(member.id, Number(e.target.value))}
+                                  placeholder="Ex: 50"
+                                  className="mt-1 w-32"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {beneficiaries.length > 0 && (
+                    <div className="mt-4 p-3 bg-muted rounded-lg">
+                      <div className="text-sm">
+                        <span className="font-medium">Total des pourcentages : </span>
+                        <span className={`${
+                          beneficiaries.reduce((sum, b) => sum + b.pourcentage, 0) === 100 
+                            ? 'text-green-600' 
+                            : 'text-orange-600'
+                        } font-medium`}>
+                          {beneficiaries.reduce((sum, b) => sum + b.pourcentage, 0).toFixed(2)}%
+                        </span>
+                      </div>
+                      {beneficiaries.reduce((sum, b) => sum + b.pourcentage, 0) !== 100 && (
+                        <p className="text-xs text-orange-600 mt-1">
+                          Le total doit être égal à 100% pour une donation complète
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
