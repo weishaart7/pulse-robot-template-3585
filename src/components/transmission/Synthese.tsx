@@ -292,16 +292,27 @@ export const Synthese = () => {
   // Utiliser les vraies données calculées
   const heritiersData = transmissionResult.heirs.map((heir: any) => {
     const person = transmissionResult.family.persons.find((p: any) => p.id === heir.personId);
-    const displayName = person ? `${person.prenom || ''} ${person.nom}`.trim() : heir.nom;
+    
+    // Améliorer l'affichage du nom complet
+    let displayName = heir.nom || 'Héritier inconnu';
+    if (person) {
+      const prenom = person.prenom || '';
+      const nom = person.nom || '';
+      displayName = `${prenom} ${nom}`.trim() || displayName;
+    }
+    
     const percentage = transmissionResult.transmissionNette > 0 
       ? ((heir.partFinale / transmissionResult.transmissionNette) * 100).toFixed(1)
       : "0";
+    
+    // Utiliser le lien familial de la personne dans le graphe familial
+    const lienFamilial = person?.lienFamilial || heir.lien || 'autre';
     
     return {
       name: displayName,
       value: heir.partFinale,
       percentage,
-      lien: heir.lien
+      lien: lienFamilial
     };
   }).filter(heir => heir.value > 0); // Exclure les héritiers avec une part nulle
 
