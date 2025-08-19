@@ -107,12 +107,12 @@ export const PatrimoineSidebar = ({
   );
 
   return (
-    <div className="h-full bg-background border border-border rounded-lg flex flex-col shadow-sm">
+    <div className="h-full bg-background rounded-lg flex flex-col">
       {/* En-tête avec patrimoine net */}
-      <div className="p-6 border-b border-border">
+      <div className="p-6">
         <div 
           className={`cursor-pointer p-4 rounded-lg transition-colors hover:bg-muted/50 ${
-            selectedCategory === null ? 'bg-primary/5 border border-primary/20' : 'bg-muted/20'
+            selectedCategory === null ? 'bg-primary/5' : 'bg-muted/20'
           }`}
           onClick={() => onCategorySelect(null)}
         >
@@ -138,7 +138,7 @@ export const PatrimoineSidebar = ({
       </div>
 
       {/* Barre de recherche */}
-      <div className="p-4 border-b border-border">
+      <div className="p-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -157,7 +157,7 @@ export const PatrimoineSidebar = ({
             <div key={category} className="space-y-1">
               <div
                 className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all hover:bg-muted/50 group ${
-                  selectedCategory === category ? 'bg-primary/5 border border-primary/20' : ''
+                  selectedCategory === category ? 'bg-primary/5' : ''
                 } ${expandedCategories.has(category) ? 'bg-muted/30' : ''}`}
                 onClick={() => {
                   toggleCategory(category);
@@ -199,7 +199,7 @@ export const PatrimoineSidebar = ({
 
               {/* Liste des actifs de la catégorie */}
               {expandedCategories.has(category) && (
-                <div className="ml-11 space-y-1 border-l border-border/50 pl-4">
+                <div className="ml-11 space-y-1 pl-4">
                   {assetsByCategory[category]
                     .filter(asset => 
                       searchTerm === '' || 
@@ -235,7 +235,7 @@ export const PatrimoineSidebar = ({
       </ScrollArea>
 
       {/* Bouton d'ajout fixe en bas */}
-      <div className="p-4 border-t border-border">
+      <div className="p-4">
         <Button 
           className="w-full" 
           onClick={() => {/* TODO: ajouter la fonction d'ajout */}}
