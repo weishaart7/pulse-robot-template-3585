@@ -289,25 +289,40 @@ export const Synthese = () => {
     );
   }
 
-  const chartData = transmissionResult.heirs.map((heir: any, index: number) => ({
-    name: heir.nom,
-    value: heir.partFinale,
+  // Utiliser les vraies données calculées
+  const heritiersData = transmissionResult.heirs.map((heir: any) => {
+    const person = transmissionResult.family.persons.find((p: any) => p.id === heir.personId);
+    const displayName = person ? `${person.prenom || ''} ${person.nom}`.trim() : heir.nom;
+    const percentage = transmissionResult.transmissionNette > 0 
+      ? ((heir.partFinale / transmissionResult.transmissionNette) * 100).toFixed(1)
+      : "0";
+    
+    return {
+      name: displayName,
+      value: heir.partFinale,
+      percentage,
+      lien: heir.lien
+    };
+  }).filter(heir => heir.value > 0); // Exclure les héritiers avec une part nulle
+
+  const chartData = heritiersData.map((heir, index) => ({
+    name: heir.name,
+    value: heir.value,
     color: `hsl(${index * 45}, 70%, 50%)`
   }));
 
-  // Données fictives pour le développement
-  const heritiersData = [
-    { name: "Conjoint", value: 250000, percentage: "45.5" },
-    { name: "Enfant 1", value: 150000, percentage: "27.3" },
-    { name: "Enfant 2", value: 150000, percentage: "27.3" }
-  ];
-  const transmissionNette = heritiersData.reduce((sum, heir) => sum + heir.value, 0);
-
-  const COLORS = {
-    'Conjoint': 'hsl(var(--chart-1))',
-    'Enfant 1': 'hsl(var(--chart-2))',
-    'Enfant 2': 'hsl(var(--chart-3))',
-    'autres': 'hsl(var(--muted))'
+  // Couleurs dynamiques selon le lien familial
+  const getColorForLien = (lien: string, index: number) => {
+    const colors = {
+      'conjoint': 'hsl(var(--chart-1))',
+      'enfant': 'hsl(var(--chart-2))',
+      'parent': 'hsl(var(--chart-3))',
+      'frère': 'hsl(var(--chart-4))',
+      'soeur': 'hsl(var(--chart-4))',
+      'neveu': 'hsl(var(--chart-5))',
+      'nièce': 'hsl(var(--chart-5))'
+    };
+    return colors[lien as keyof typeof colors] || `hsl(${(index + 1) * 45}, 60%, 50%)`;
   };
 
   return (
@@ -337,10 +352,12 @@ export const Synthese = () => {
                     {heritiersData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={COLORS[entry.name] || COLORS['autres']} 
+                        fill={getColorForLien(entry.lien, index)} 
                       />
                     ))}
                   </Pie>
+                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
               
@@ -348,7 +365,7 @@ export const Synthese = () => {
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-foreground">
-                    {formatCurrency(transmissionNette)}
+                    {formatCurrency(transmissionResult.transmissionNette)}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     Transmission nette
@@ -381,14 +398,14 @@ export const Synthese = () => {
                       <div className="flex items-center gap-3">
                         <div 
                           className="w-4 h-4 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: COLORS[heritier.name] || COLORS['autres'] }}
+                          style={{ backgroundColor: getColorForLien(heritier.lien, heritiersData.indexOf(heritier)) }}
                         />
                         <div>
                           <div className="font-medium text-foreground">
                             {heritier.name}
                           </div>
                           <p className="text-sm text-muted-foreground mt-1">
-                            {heritier.percentage}% de la transmission
+                            {heritier.percentage}% de la transmission • {heritier.lien}
                           </p>
                         </div>
                       </div>
