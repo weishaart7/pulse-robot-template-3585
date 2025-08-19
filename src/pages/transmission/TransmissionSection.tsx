@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Synthese } from '@/components/transmission/Synthese';
 import { Liberalites } from '@/components/transmission/Liberalites';
 import { PremierDeces } from '@/components/transmission/PremierDeces';
@@ -7,6 +7,28 @@ import { DeuxiemeDeces } from '@/components/transmission/DeuxiemeDeces';
 
 export const TransmissionSection = () => {
   const [activeTab, setActiveTab] = useState('synthese');
+
+  const TABS = [
+    { id: 'synthese', label: 'Synthèse' },
+    { id: 'liberalites', label: 'Libéralités' },
+    { id: 'premier-deces', label: '1er Décès' },
+    { id: 'deuxieme-deces', label: '2ème Décès' }
+  ];
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'synthese':
+        return <Synthese />;
+      case 'liberalites':
+        return <Liberalites />;
+      case 'premier-deces':
+        return <PremierDeces />;
+      case 'deuxieme-deces':
+        return <DeuxiemeDeces />;
+      default:
+        return <Synthese />;
+    }
+  };
 
   return (
     <div className="p-6">
@@ -19,30 +41,34 @@ export const TransmissionSection = () => {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList variant="line" className="w-full">
-          <TabsTrigger value="synthese">Synthèse</TabsTrigger>
-          <TabsTrigger value="liberalites">Libéralités</TabsTrigger>
-          <TabsTrigger value="premier-deces">1er Décès</TabsTrigger>
-          <TabsTrigger value="deuxieme-deces">2ème Décès</TabsTrigger>
-        </TabsList>
+      <div className="mb-6 flex justify-center">
+        <div className="rounded-[8px] bg-muted p-[2px]">
+          <AnimatedBackground
+            defaultValue="synthese"
+            onValueChange={(value) => setActiveTab(value || 'synthese')}
+            className="rounded-lg bg-background shadow-sm"
+            transition={{
+              ease: "easeInOut",
+              duration: 0.2,
+            }}
+          >
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                data-id={tab.id}
+                type="button"
+                className="inline-flex min-w-24 items-center justify-center px-3 py-2 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
+              >
+                {tab.label}
+              </button>
+            ))}
+          </AnimatedBackground>
+        </div>
+      </div>
 
-        <TabsContent value="synthese" className="mt-6">
-          <Synthese />
-        </TabsContent>
-
-        <TabsContent value="liberalites" className="mt-6">
-          <Liberalites />
-        </TabsContent>
-
-        <TabsContent value="premier-deces" className="mt-6">
-          <PremierDeces />
-        </TabsContent>
-
-        <TabsContent value="deuxieme-deces" className="mt-6">
-          <DeuxiemeDeces />
-        </TabsContent>
-      </Tabs>
+      <div className="mt-6">
+        {renderContent()}
+      </div>
     </div>
   );
 };
