@@ -97,7 +97,7 @@ export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
           <div>
             <Label>Nature</Label>
             <Select value={formData.nature} onValueChange={(value) => setFormData({ ...formData, nature: value })}>
-              <SelectTrigger>
+              <SelectTrigger size="lg">
                 <SelectValue placeholder="Sélectionnez la nature" />
               </SelectTrigger>
               <SelectContent>
@@ -114,7 +114,7 @@ export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
           <div>
             <Label>Démembrement</Label>
             <Select value={formData.demembrement} onValueChange={(value) => setFormData({ ...formData, demembrement: value })}>
-              <SelectTrigger>
+              <SelectTrigger size="lg">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -129,7 +129,7 @@ export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
           <div>
             <Label>Type de donation</Label>
             <Select value={formData.typeDonation} onValueChange={(value) => setFormData({ ...formData, typeDonation: value })}>
-              <SelectTrigger>
+              <SelectTrigger size="lg">
                 <SelectValue placeholder="Sélectionnez le type" />
               </SelectTrigger>
               <SelectContent>
@@ -186,7 +186,7 @@ export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
           <div>
             <Label>Réalisée par</Label>
             <Select value={formData.realiseePar} onValueChange={(value) => setFormData({ ...formData, realiseePar: value })}>
-              <SelectTrigger>
+              <SelectTrigger size="lg">
                 <SelectValue placeholder="Sélectionnez qui a réalisé" />
               </SelectTrigger>
               <SelectContent>
