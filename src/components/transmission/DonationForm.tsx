@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,16 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+
+interface Asset {
+  id: string;
+  denomination: string;
+  nature: string;
+  valeur_estimee: number;
+  date_estimation: string;
+  detenteur: string;
+}
 
 interface DonationFormProps {
   open: boolean;
@@ -31,6 +41,9 @@ export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
 
   const [selectedClauses, setSelectedClauses] = useState<string[]>([]);
   const [showClauses, setShowClauses] = useState(false);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [selectedAssets, setSelectedAssets] = useState<{id: string, valeurDonation: number}[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const naturesOptions = [
     'Donation simple',
@@ -67,10 +80,50 @@ export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
     );
   };
 
+  const fetchAssets = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('assets')
+        .select('id, denomination, nature, valeur_estimee, date_estimation, detenteur')
+        .order('denomination');
+
+      if (error) throw error;
+      setAssets(data || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des biens:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAssetToggle = (assetId: string, valeurEstimee: number) => {
+    setSelectedAssets(prev => {
+      const exists = prev.find(a => a.id === assetId);
+      if (exists) {
+        return prev.filter(a => a.id !== assetId);
+      } else {
+        return [...prev, { id: assetId, valeurDonation: valeurEstimee }];
+      }
+    });
+  };
+
+  const updateAssetDonationValue = (assetId: string, value: number) => {
+    setSelectedAssets(prev => 
+      prev.map(a => a.id === assetId ? { ...a, valeurDonation: value } : a)
+    );
+  };
+
+  useEffect(() => {
+    if (open) {
+      fetchAssets();
+    }
+  }, [open]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Handle form submission
-    console.log('Form data:', formData, 'Clauses:', selectedClauses);
+    console.log('Form data:', formData, 'Clauses:', selectedClauses, 'Selected assets:', selectedAssets);
     onOpenChange(false);
   };
 
@@ -231,9 +284,63 @@ export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
               <CardTitle>Sélection des biens donnés</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                Liste des biens du patrimoine avec cases à cocher (à implémenter selon les biens disponibles)
-              </p>
+              {loading ? (
+                <p className="text-muted-foreground">Chargement des biens...</p>
+              ) : assets.length === 0 ? (
+                <p className="text-muted-foreground">Aucun bien disponible</p>
+              ) : (
+                <div className="space-y-4">
+                  {assets.map((asset) => {
+                    const isSelected = selectedAssets.find(a => a.id === asset.id);
+                    return (
+                      <div key={asset.id} className="border rounded-lg p-4 space-y-3">
+                        <div className="flex items-start space-x-3">
+                          <Checkbox
+                            id={asset.id}
+                            checked={!!isSelected}
+                            onCheckedChange={() => handleAssetToggle(asset.id, asset.valeur_estimee || 0)}
+                          />
+                          <div className="flex-1 space-y-2">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-sm font-medium text-muted-foreground">Dénomination</Label>
+                                <p className="text-sm">{asset.denomination}</p>
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium text-muted-foreground">Nature</Label>
+                                <p className="text-sm">{asset.nature}</p>
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium text-muted-foreground">Détenteur</Label>
+                                <p className="text-sm">{asset.detenteur}</p>
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium text-muted-foreground">Valeur actuelle</Label>
+                                <p className="text-sm">{asset.valeur_estimee?.toLocaleString('fr-FR')} €</p>
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <div className="mt-3">
+                                <Label htmlFor={`valeur-${asset.id}`} className="text-sm font-medium">
+                                  Valeur au jour de la donation
+                                </Label>
+                                <Input
+                                  id={`valeur-${asset.id}`}
+                                  type="number"
+                                  value={isSelected.valeurDonation}
+                                  onChange={(e) => updateAssetDonationValue(asset.id, Number(e.target.value))}
+                                  placeholder="Valeur de donation"
+                                  className="mt-1"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
 
