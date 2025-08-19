@@ -85,8 +85,8 @@ export const PatrimoineSection = () => {
   }
 
   return (
-    <div className="flex h-full">
-      {/* Sidebar gauche - 1/4 de la largeur */}
+    <div className="flex h-full relative">
+      {/* Sidebar gauche - position fixe */}
       <PatrimoineSidebar
         assets={assets}
         onAssetEdit={(asset) => {
@@ -97,16 +97,18 @@ export const PatrimoineSection = () => {
         onCategorySelect={setSelectedCategory}
       />
       
-      {/* Contenu principal - 3/4 de la largeur */}
-      <PatrimoineMainContent
+      {/* Contenu principal - avec marge pour la sidebar */}
+      <div className="ml-80 flex-1">
+        <PatrimoineMainContent
         assets={assets}
         selectedCategory={selectedCategory}
         onAssetEdit={(asset) => {
           setEditingAsset(asset);
           setShowAssetForm(true);
         }}
-        onAddAsset={() => setShowAssetForm(true)}
-      />
+          onAddAsset={() => setShowAssetForm(true)}
+        />
+      </div>
     </div>
   );
 };
