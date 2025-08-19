@@ -1,10 +1,24 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, TrendingUp } from 'lucide-react';
+import { 
+  ChevronDown, 
+  ChevronRight, 
+  TrendingUp, 
+  Search, 
+  Home, 
+  Car, 
+  Banknote, 
+  PiggyBank, 
+  Building2, 
+  Briefcase,
+  CreditCard,
+  Plus
+} from 'lucide-react';
 import { Asset } from '@/services/assetService';
 import { getAssetCategory } from '@/constants/assetTypes';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface PatrimoineSidebarProps {
   assets: Asset[];
@@ -20,6 +34,29 @@ export const PatrimoineSidebar = ({
   onCategorySelect 
 }: PatrimoineSidebarProps) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Fonction pour obtenir l'icône de catégorie
+  const getCategoryIcon = (category: string) => {
+    switch (category.toLowerCase()) {
+      case 'immobilier':
+        return <Home className="h-4 w-4" />;
+      case 'véhicules':
+        return <Car className="h-4 w-4" />;
+      case 'liquidités':
+        return <Banknote className="h-4 w-4" />;
+      case 'épargne':
+        return <PiggyBank className="h-4 w-4" />;
+      case 'immobilier d\'entreprise':
+        return <Building2 className="h-4 w-4" />;
+      case 'professionnel':
+        return <Briefcase className="h-4 w-4" />;
+      case 'passifs':
+        return <CreditCard className="h-4 w-4" />;
+      default:
+        return <Building2 className="h-4 w-4" />;
+    }
+  };
 
   // Grouper les actifs par catégorie
   const assetsByCategory = assets.reduce((acc, asset) => {
@@ -60,96 +97,152 @@ export const PatrimoineSidebar = ({
     }).format(value);
   };
 
+  // Filtrer les catégories selon la recherche
+  const filteredCategories = categoryValues.filter(({ category }) =>
+    category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    assetsByCategory[category].some(asset => 
+      asset.nature.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      asset.denomination?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
+
   return (
-    <div className="w-1/4 border-r border-border bg-card">
-      <div className="p-4">
-        {/* Vue d'ensemble du patrimoine net */}
-        <Card 
-          className={`mb-4 cursor-pointer transition-colors hover:bg-muted/50 ${
-            selectedCategory === null ? 'ring-2 ring-primary' : ''
+    <div className="fixed left-0 top-0 h-screen w-80 bg-background border-r border-border flex flex-col">
+      {/* En-tête avec patrimoine net */}
+      <div className="p-6 border-b border-border">
+        <div 
+          className={`cursor-pointer p-4 rounded-lg transition-colors hover:bg-muted/50 ${
+            selectedCategory === null ? 'bg-primary/5 border border-primary/20' : 'bg-muted/20'
           }`}
           onClick={() => onCategorySelect(null)}
         >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Patrimoine net
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">
-              {formatCurrency(totalValue)}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <TrendingUp className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <div className="font-semibold text-foreground">Patrimoine net</div>
+                <div className="text-sm text-muted-foreground">
+                  {assets.length} actif{assets.length > 1 ? 's' : ''}
+                </div>
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground">
-              {assets.length} actif{assets.length > 1 ? 's' : ''}
-            </p>
-          </CardContent>
-        </Card>
+            <div className="text-right">
+              <div className="text-lg font-bold text-foreground">
+                {formatCurrency(totalValue)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        {/* Liste des catégories */}
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">
-            Catégories d'actifs
-          </h3>
-          
-          {categoryValues.map(({ category, value, percentage, count }) => (
+      {/* Barre de recherche */}
+      <div className="p-4 border-b border-border">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher des comptes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 h-10 bg-muted/20 border-0 focus:bg-background"
+          />
+        </div>
+      </div>
+
+      {/* Liste scrollable des catégories */}
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-1">
+          {filteredCategories.map(({ category, value, percentage, count }) => (
             <div key={category} className="space-y-1">
-              <Button
-                variant="ghost"
-                className={`w-full justify-between h-auto p-3 hover:bg-muted/50 ${
-                  selectedCategory === category ? 'bg-muted' : ''
-                }`}
+              <div
+                className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all hover:bg-muted/50 group ${
+                  selectedCategory === category ? 'bg-primary/5 border border-primary/20' : ''
+                } ${expandedCategories.has(category) ? 'bg-muted/30' : ''}`}
                 onClick={() => {
                   toggleCategory(category);
                   onCategorySelect(category);
                 }}
               >
-                <div className="flex items-center gap-2 flex-1">
-                  {expandedCategories.has(category) ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
-                  <div className="text-left">
-                    <div className="font-normal text-sm">{category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()}</div>
+                <div className="flex items-center gap-3 flex-1">
+                  <div className={`p-2 rounded-lg transition-colors ${
+                    selectedCategory === category || expandedCategories.has(category) 
+                      ? 'bg-primary/10' 
+                      : 'bg-muted/20 group-hover:bg-muted/40'
+                  }`}>
+                    {getCategoryIcon(category)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm text-foreground truncate">
+                      {category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()}
+                    </div>
                     <div className="text-xs text-muted-foreground">
-                      {formatCurrency(value)} ({percentage.toFixed(1)}%)
+                      {count} actif{count > 1 ? 's' : ''}
                     </div>
                   </div>
                 </div>
-                <Badge variant="secondary" className="text-xs uppercase">
-                  {count}
-                </Badge>
-              </Button>
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    <div className="text-sm font-semibold text-foreground">
+                      {formatCurrency(value)}
+                    </div>
+                  </div>
+                  <div className="text-muted-foreground">
+                    {expandedCategories.has(category) ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </div>
+                </div>
+              </div>
 
               {/* Liste des actifs de la catégorie */}
               {expandedCategories.has(category) && (
-                <div className="ml-6 space-y-1">
-                  {assetsByCategory[category].map((asset) => (
-                    <Button
+                <div className="ml-11 space-y-1 border-l border-border/50 pl-4">
+                  {assetsByCategory[category]
+                    .filter(asset => 
+                      searchTerm === '' || 
+                      asset.nature.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      asset.denomination?.toLowerCase().includes(searchTerm.toLowerCase())
+                    )
+                    .map((asset) => (
+                    <div
                       key={asset.id}
-                      variant="ghost"
-                      className="w-full justify-start h-auto p-2 text-left hover:bg-muted/30"
+                      className="flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-muted/30 transition-colors"
                       onClick={() => onAssetEdit(asset)}
                     >
-                      <div className="flex-1">
-                        <div className="text-sm font-normal">{asset.nature}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-foreground truncate">
+                          {asset.nature}
+                        </div>
                         {asset.denomination && (
                           <div className="text-xs text-muted-foreground truncate">
                             {asset.denomination}
                           </div>
                         )}
-                        <div className="text-xs font-normal text-primary">
-                          {asset.valeur_estimee ? formatCurrency(asset.valeur_estimee) : 'Non évalué'}
-                        </div>
                       </div>
-                    </Button>
+                      <div className="text-sm font-semibold text-foreground ml-2">
+                        {asset.valeur_estimee ? formatCurrency(asset.valeur_estimee) : '-'}
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
             </div>
           ))}
         </div>
+      </ScrollArea>
+
+      {/* Bouton d'ajout fixe en bas */}
+      <div className="p-4 border-t border-border">
+        <Button 
+          className="w-full" 
+          onClick={() => {/* TODO: ajouter la fonction d'ajout */}}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Ajouter un actif
+        </Button>
       </div>
     </div>
   );
