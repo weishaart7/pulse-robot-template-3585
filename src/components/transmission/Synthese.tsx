@@ -9,12 +9,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, Liberalite, TransmissionParams } from '@/lib/transmission';
 import { computeDMTG, DMTGContext, DEFAULT_DMTG_PARAMS } from '@/lib/dmtg';
+import { calculateSuccessionLegale, SuccessionLegaleResult } from '@/lib/transmission/successionLegale';
 import transmissionParamsData from '@/data/transmission-params.json';
 
 export const Synthese = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [transmissionResult, setTransmissionResult] = useState<any>(null);
+  const [successionLegale, setSuccessionLegale] = useState<SuccessionLegaleResult | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -150,6 +152,13 @@ export const Synthese = () => {
         avContracts: [] // À implémenter si contrats AV
       };
 
+      // Vérifier s'il y a des legs/testaments
+      const hasTestament = (liberalites || []).some(lib => lib.type === 'legs');
+      
+      // Calculer la succession légale "à défaut de dispositions"
+      const successionLegaleResult = calculateSuccessionLegale(family, hasTestament);
+      setSuccessionLegale(successionLegaleResult);
+
       // Calculer les droits DMTG
       const dmtgResult = computeDMTG(dmtgContext);
       console.log('Résultat DMTG:', dmtgResult);
@@ -159,6 +168,7 @@ export const Synthese = () => {
         ...civilResult,
         family,
         dmtg: dmtgResult,
+        successionLegale: successionLegaleResult,
         // Mettre à jour les droits de succession avec les calculs DMTG
         heirs: civilResult.heirs.map(heir => ({
           ...heir,
@@ -289,32 +299,46 @@ export const Synthese = () => {
     );
   }
 
-  // Utiliser les vraies données calculées
-  const heritiersData = transmissionResult.heirs.map((heir: any) => {
-    const person = transmissionResult.family.persons.find((p: any) => p.id === heir.personId);
-    
-    // Améliorer l'affichage du nom complet
-    let displayName = heir.nom || 'Héritier inconnu';
-    if (person) {
-      const prenom = person.prenom || '';
-      const nom = person.nom || '';
-      displayName = `${prenom} ${nom}`.trim() || displayName;
-    }
-    
-    const percentage = transmissionResult.transmissionNette > 0 
-      ? ((heir.partFinale / transmissionResult.transmissionNette) * 100).toFixed(1)
-      : "0";
-    
-    // Utiliser le lien familial de la personne dans le graphe familial
-    const lienFamilial = person?.lienFamilial || heir.lien || 'autre';
-    
-    return {
-      name: displayName,
-      value: heir.partFinale,
-      percentage,
-      lien: lienFamilial
-    };
-  }).filter(heir => heir.value > 0); // Exclure les héritiers avec une part nulle
+  // Utiliser les données de succession légale si disponibles, sinon les calculs civils
+  const heritiersData = successionLegale && successionLegale.heritiers.length > 0 
+    ? successionLegale.heritiers.map((heritier: any) => {
+        const displayName = `${heritier.prenom} ${heritier.nom}`.trim() || heritier.nom || 'Héritier inconnu';
+        const percentage = (heritier.quotePart * 100).toFixed(1);
+        
+        return {
+          name: displayName,
+          value: heritier.quotePart * transmissionResult.transmissionNette,
+          percentage,
+          lien: heritier.lien,
+          typeQuotePart: heritier.typeQuotePart,
+          representation: heritier.representation
+        };
+      })
+    : transmissionResult.heirs.map((heir: any) => {
+        const person = transmissionResult.family.persons.find((p: any) => p.id === heir.personId);
+        
+        // Améliorer l'affichage du nom complet
+        let displayName = heir.nom || 'Héritier inconnu';
+        if (person) {
+          const prenom = person.prenom || '';
+          const nom = person.nom || '';
+          displayName = `${prenom} ${nom}`.trim() || displayName;
+        }
+        
+        const percentage = transmissionResult.transmissionNette > 0 
+          ? ((heir.partFinale / transmissionResult.transmissionNette) * 100).toFixed(1)
+          : "0";
+        
+        // Utiliser le lien familial de la personne dans le graphe familial
+        const lienFamilial = person?.lienFamilial || heir.lien || 'autre';
+        
+        return {
+          name: displayName,
+          value: heir.partFinale,
+          percentage,
+          lien: lienFamilial
+        };
+      }).filter(heir => heir.value > 0);
 
   const chartData = heritiersData.map((heir, index) => ({
     name: heir.name,
@@ -338,6 +362,40 @@ export const Synthese = () => {
 
   return (
     <div className="space-y-6">
+      {/* Affichage des explications de succession légale */}
+      {successionLegale && successionLegale.explicationsTexte.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Succession légale</CardTitle>
+            <CardDescription>
+              À défaut de dispositions testamentaires
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {successionLegale.explicationsTexte.map((explication, index) => (
+                <p key={index} className="text-sm text-muted-foreground">
+                  {explication}
+                </p>
+              ))}
+            </div>
+            
+            {successionLegale.optionConjoint && (
+              <div className="mt-4 p-4 rounded-lg bg-muted/50">
+                <h4 className="font-medium mb-2">Option du conjoint survivant</h4>
+                <p className="text-sm text-muted-foreground">
+                  Le conjoint peut choisir entre :
+                </p>
+                <ul className="text-sm text-muted-foreground mt-1 ml-4 list-disc">
+                  <li>1/4 en pleine propriété</li>
+                  <li>La totalité en usufruit (enfants en nue-propriété)</li>
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+      
       <div className="grid gap-6 md:grid-cols-2">
         {/* Graphique de transmission nette */}
         <Card>
@@ -414,9 +472,13 @@ export const Synthese = () => {
                         <div>
                           <div className="font-medium text-foreground">
                             {heritier.name}
+                            {heritier.representation && <span className="text-xs text-muted-foreground ml-1">(par représentation)</span>}
                           </div>
                           <p className="text-sm text-muted-foreground mt-1">
                             {heritier.percentage}% de la transmission • {heritier.lien}
+                            {heritier.typeQuotePart && heritier.typeQuotePart !== 'pleine_propriete' && (
+                              <span className="ml-1">({heritier.typeQuotePart.replace('_', ' ')})</span>
+                            )}
                           </p>
                         </div>
                       </div>
