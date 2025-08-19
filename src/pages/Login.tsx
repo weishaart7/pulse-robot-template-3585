@@ -89,11 +89,13 @@ const Login = () => {
         if (errorMessage.includes('User already registered')) {
           friendlyMessage = 'Un compte avec cet email existe déjà';
         } else if (errorMessage.includes('Invalid login credentials')) {
-          friendlyMessage = 'Email ou mot de passe incorrect';
+          friendlyMessage = 'Email ou mot de passe incorrect. Vérifiez vos identifiants ou créez un compte.';
         } else if (errorMessage.includes('Password should be at least')) {
           friendlyMessage = 'Le mot de passe doit contenir au moins 6 caractères';
         } else if (errorMessage.includes('Unable to validate email address')) {
           friendlyMessage = 'Adresse email invalide';
+        } else if (errorMessage.includes('Email not confirmed')) {
+          friendlyMessage = 'Veuillez confirmer votre email avant de vous connecter';
         }
         
         toast({
