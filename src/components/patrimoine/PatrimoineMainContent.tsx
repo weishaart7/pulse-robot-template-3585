@@ -26,64 +26,56 @@ export const PatrimoineMainContent = ({
   return (
     <div className="flex-1 p-6 space-y-6">
       {/* Section Actifs/Passifs */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'actifs' | 'passifs')}>
-              <TabsList>
-                <TabsTrigger value="actifs">Actifs</TabsTrigger>
-                <TabsTrigger value="passifs">Passifs</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <Button onClick={onAddAsset} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Ajouter un actif
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab}>
-            <TabsContent value="actifs" className="mt-0">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Graphique circulaire */}
-                <div>
-                  <PatrimoineChart 
-                    assets={assets} 
-                    selectedCategory={selectedCategory}
-                  />
-                </div>
-                
-                {/* Tableau interactif */}
-                <div>
-                  <PatrimoineTable 
-                    assets={assets} 
-                    selectedCategory={selectedCategory}
-                    onAssetEdit={onAssetEdit}
-                  />
-                </div>
-              </div>
-            </TabsContent>
-            <TabsContent value="passifs" className="mt-0">
-              <div className="text-center py-8 text-muted-foreground">
-                Les passifs seront affichés ici (crédits, dettes, etc.)
-              </div>
-            </TabsContent>
+      <div className="bg-background rounded-lg p-6">
+        <div className="flex justify-between items-center mb-6">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'actifs' | 'passifs')}>
+            <TabsList>
+              <TabsTrigger value="actifs">Actifs</TabsTrigger>
+              <TabsTrigger value="passifs">Passifs</TabsTrigger>
+            </TabsList>
           </Tabs>
-        </CardContent>
-      </Card>
+          <Button onClick={onAddAsset} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Ajouter un actif
+          </Button>
+        </div>
+        <Tabs value={activeTab}>
+          <TabsContent value="actifs" className="mt-0">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Graphique circulaire */}
+              <div>
+                <PatrimoineChart 
+                  assets={assets} 
+                  selectedCategory={selectedCategory}
+                />
+              </div>
+              
+              {/* Tableau interactif */}
+              <div>
+                <PatrimoineTable 
+                  assets={assets} 
+                  selectedCategory={selectedCategory}
+                  onAssetEdit={onAssetEdit}
+                />
+              </div>
+            </div>
+          </TabsContent>
+          <TabsContent value="passifs" className="mt-0">
+            <div className="text-center py-8 text-muted-foreground">
+              Les passifs seront affichés ici (crédits, dettes, etc.)
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
 
       {/* Vue en arbre détaillée */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Vue détaillée par catégories</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PatrimoineTreeView 
-            assets={assets}
-            onAssetEdit={onAssetEdit}
-          />
-        </CardContent>
-      </Card>
+      <div className="bg-background rounded-lg p-6">
+        <h3 className="text-lg font-semibold mb-6">Vue détaillée par catégories</h3>
+        <PatrimoineTreeView 
+          assets={assets}
+          onAssetEdit={onAssetEdit}
+        />
+      </div>
     </div>
   );
 };
