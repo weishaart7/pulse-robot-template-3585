@@ -41,7 +41,7 @@ export const TransmissionSection = () => {
         </div>
       </div>
 
-      <div className="mb-6 flex justify-center">
+      <div className="mb-6 flex justify-start">
         <div className="rounded-[8px] bg-muted p-[2px]">
           <AnimatedBackground
             defaultValue="synthese"
