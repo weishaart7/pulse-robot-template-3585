@@ -5,6 +5,7 @@ import FamilleSection from './famille/FamilleSection';
 import { PatrimoineSection } from './patrimoine/PatrimoineSection';
 import { BudgetSection } from './budget/BudgetSection';
 import { TransmissionSection } from './transmission/TransmissionSection';
+import { SocietesSection } from './societes/SocietesSection';
 
 const DashboardSection = () => {
   const { section } = useParams();
@@ -55,6 +56,11 @@ const DashboardSection = () => {
   // Si la section est "transmission", afficher le composant spécialisé
   if (section === 'transmission') {
     return <TransmissionSection />;
+  }
+  
+  // Si la section est "sociétés", afficher le composant spécialisé
+  if (section === 'societes') {
+    return <SocietesSection />;
   }
 
   return (
