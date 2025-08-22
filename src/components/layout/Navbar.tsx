@@ -90,7 +90,7 @@ export function Navbar() {
               scale={0.9}
             />
             <button className="relative inline-flex items-center gap-1 rounded-md bg-zinc-950 px-2.5 py-1.5 text-sm text-zinc-50 outline outline-1 outline-[#fff2f21f]">
-              Investissements
+              Investir
             </button>
           </div>
           
