@@ -371,17 +371,8 @@ export const Synthese = () => {
 
   // Couleurs dynamiques selon le lien familial
   const getColorForLien = (lien: string, index: number) => {
-    const colors = {
-      'conjoint': 'hsl(var(--chart-1))',
-      'enfant': 'hsl(var(--chart-2))',
-      'parent': 'hsl(var(--chart-3))',
-      'frère': 'hsl(var(--chart-4))',
-      'soeur': 'hsl(var(--chart-4))',
-      'neveu': 'hsl(var(--chart-5))',
-      'nièce': 'hsl(var(--chart-5))',
-      'état': 'hsl(var(--muted))'
-    };
-    return colors[lien as keyof typeof colors] || `hsl(var(--chart-${(index % 5) + 1}))`;
+    const colors = ['#76ff61', '#ffbe98', '#15eae2', '#c698f5', '#0b5563', '#caeffb', '#05aaa4'];
+    return colors[index % colors.length];
   };
 
   return (
@@ -437,8 +428,8 @@ export const Synthese = () => {
                     data={heritiersData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={120}
+                    innerRadius={95}
+                    outerRadius={110}
                     paddingAngle={2}
                     dataKey="value"
                     stroke="hsl(var(--background))"
