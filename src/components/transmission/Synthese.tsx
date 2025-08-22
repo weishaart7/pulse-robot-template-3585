@@ -378,9 +378,10 @@ export const Synthese = () => {
       'frère': 'hsl(var(--chart-4))',
       'soeur': 'hsl(var(--chart-4))',
       'neveu': 'hsl(var(--chart-5))',
-      'nièce': 'hsl(var(--chart-5))'
+      'nièce': 'hsl(var(--chart-5))',
+      'état': 'hsl(var(--muted))'
     };
-    return colors[lien as keyof typeof colors] || `hsl(${(index + 1) * 45}, 60%, 50%)`;
+    return colors[lien as keyof typeof colors] || `hsl(var(--chart-${(index % 5) + 1}))`;
   };
 
   return (
@@ -436,10 +437,12 @@ export const Synthese = () => {
                     data={heritiersData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={80}
+                    innerRadius={60}
                     outerRadius={120}
                     paddingAngle={2}
                     dataKey="value"
+                    stroke="hsl(var(--background))"
+                    strokeWidth={2}
                   >
                     {heritiersData.map((entry, index) => (
                       <Cell 
@@ -449,7 +452,6 @@ export const Synthese = () => {
                     ))}
                   </Pie>
                   <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
               
