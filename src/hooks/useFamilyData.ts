@@ -118,7 +118,9 @@ export const useMaritalStatus = () => {
 
     try {
       setSaving(true);
+      console.log('Saving marital status:', status);
       const savedStatus = await familyService.upsertMaritalStatus(status);
+      console.log('Marital status saved successfully:', savedStatus);
       setData(savedStatus);
       toast({
         title: "Succès",
@@ -127,6 +129,7 @@ export const useMaritalStatus = () => {
       return savedStatus;
     } catch (error) {
       console.error('Error saving marital status:', error);
+      console.error('Error details:', error);
       toast({
         title: "Erreur",
         description: "Impossible d'enregistrer la situation matrimoniale",
