@@ -125,8 +125,6 @@ export const SituationMatrimonialeForm = () => {
     }
 
     try {
-      console.log('Form data submitted:', formData);
-      
       const supabaseData = {
         statut_couple: formData.statutCouple,
         parent_isole: formData.parentIsole,
@@ -146,8 +144,6 @@ export const SituationMatrimonialeForm = () => {
         lieu_mariage: formData.lieuMariage,
       };
 
-      console.log('Transformed data for Supabase:', supabaseData);
-      
       await saveData(supabaseData);
       toast({
         title: "Succès",
@@ -155,7 +151,6 @@ export const SituationMatrimonialeForm = () => {
       });
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
-      console.error('Error details:', error);
       toast({
         title: "Erreur",
         description: "Une erreur est survenue lors de la sauvegarde.",

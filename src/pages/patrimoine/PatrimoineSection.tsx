@@ -5,7 +5,7 @@ import { AssetForm } from '@/components/assets/AssetForm';
 import { PatrimoineSidebar } from '@/components/patrimoine/PatrimoineSidebar';
 import { PatrimoineMainContent } from '@/components/patrimoine/PatrimoineMainContent';
 import { useAssets } from '@/hooks/useAssets';
-import { Asset, AssetCharge } from '@/services/assetService';
+import { Asset, AssetCharge, assetService } from '@/services/assetService';
 
 export const PatrimoineSection = () => {
   const [showAssetForm, setShowAssetForm] = useState(false);
@@ -22,8 +22,26 @@ export const PatrimoineSection = () => {
         savedAsset = await createAsset(assetData);
       }
       
-      // TODO: Save charges when asset is created/updated
-      // This would require additional API calls or batch operations
+      // Save charges for the asset
+      if (charges.length > 0) {
+        await Promise.all(
+          charges.map(charge => {
+            const chargeData = {
+              ...charge,
+              asset_id: savedAsset.id
+            };
+            
+            // Remove temporary id for new charges
+            if (charge.id?.startsWith('temp-')) {
+              delete chargeData.id;
+            }
+            
+            return charge.id?.startsWith('temp-') 
+              ? assetService.createAssetCharge(chargeData)
+              : assetService.updateAssetCharge(charge.id!, chargeData);
+          })
+        );
+      }
       
       setShowAssetForm(false);
       setEditingAsset(null);
@@ -96,6 +114,7 @@ export const PatrimoineSection = () => {
           }}
           selectedCategory={selectedCategory}
           onCategorySelect={setSelectedCategory}
+          onAddAsset={() => setShowAssetForm(true)}
         />
       </div>
       

@@ -25,13 +25,15 @@ interface PatrimoineSidebarProps {
   onAssetEdit: (asset: Asset) => void;
   selectedCategory: string | null;
   onCategorySelect: (category: string | null) => void;
+  onAddAsset: () => void;
 }
 
 export const PatrimoineSidebar = ({ 
   assets, 
   onAssetEdit, 
   selectedCategory, 
-  onCategorySelect 
+  onCategorySelect,
+  onAddAsset
 }: PatrimoineSidebarProps) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
@@ -238,7 +240,7 @@ export const PatrimoineSidebar = ({
       <div className="p-4">
         <Button 
           className="w-full" 
-          onClick={() => {/* TODO: ajouter la fonction d'ajout */}}
+          onClick={onAddAsset}
         >
           <Plus className="h-4 w-4 mr-2" />
           Ajouter un actif
