@@ -2,17 +2,20 @@ import * as React from "react"
 import { motion } from "motion/react"
 import { cn } from "@/lib/utils"
 import { GlowEffect } from "./glow-effect"
+import { useGlow } from "@/contexts/GlowContext"
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, ...props }, ref) => {
-    const [isFocused, setIsFocused] = React.useState(false)
+    const { focusedInputId, setFocusedInputId } = useGlow()
+    const inputId = React.useId()
+    const isThisFocused = focusedInputId === inputId
 
     return (
       <div className="relative">
         <motion.div
           className="pointer-events-none absolute inset-0 rounded-md"
           animate={{
-            opacity: isFocused ? 1 : 0,
+            opacity: isThisFocused ? 1 : 0,
           }}
           transition={{
             duration: 0.2,
@@ -35,11 +38,11 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           )}
           ref={ref}
           onFocus={(e) => {
-            setIsFocused(true)
+            setFocusedInputId(inputId)
             props.onFocus?.(e)
           }}
           onBlur={(e) => {
-            setIsFocused(false)
+            setFocusedInputId(null)
             props.onBlur?.(e)
           }}
           {...props}

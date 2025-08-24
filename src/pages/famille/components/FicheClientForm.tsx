@@ -17,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import SelectMenu from '@/components/ui/select-menu';
 import { cn } from '@/lib/utils';
 import { useFamilyProfile } from '@/hooks/useFamilyData';
+import { GlowProvider } from '@/contexts/GlowContext';
 
 const formSchema = z.object({
   civilite: z.enum(['M', 'Mme', 'Autre'], {
@@ -172,8 +173,9 @@ export function FicheClientForm() {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <GlowProvider>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Civilité */}
           <FormField
@@ -544,7 +546,8 @@ export function FicheClientForm() {
             )}
           </Button>
         </div>
-      </form>
-    </Form>
+        </form>
+      </Form>
+    </GlowProvider>
   );
 }
