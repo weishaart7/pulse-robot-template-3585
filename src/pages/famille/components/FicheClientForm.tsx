@@ -14,6 +14,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import SelectMenu from '@/components/ui/select-menu';
 import { cn } from '@/lib/utils';
 import { useFamilyProfile } from '@/hooks/useFamilyData';
 
@@ -518,7 +519,11 @@ export function FicheClientForm() {
               <FormItem>
                 <FormLabel>Pays</FormLabel>
                 <FormControl>
-                  <Input placeholder="Pays" {...field} />
+                  <SelectMenu
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Sélectionnez votre pays"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

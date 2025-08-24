@@ -1,0 +1,130 @@
+import * as Select from "@radix-ui/react-select";
+import React, { useState } from "react";
+import { cn } from "@/lib/utils";
+import { ChevronDown, Search, Check } from "lucide-react";
+
+interface SelectMenuProps {
+  value?: string;
+  onValueChange?: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+}
+
+export default function SelectMenu({ value, onValueChange, placeholder = "Sélectionnez votre pays", className }: SelectMenuProps) {
+  // Liste complète des pays
+  const allCountries = [
+    "Afghanistan", "Afrique du Sud", "Albanie", "Algérie", "Allemagne", "Andorre", "Angola", "Antigua-et-Barbuda",
+    "Arabie Saoudite", "Argentine", "Arménie", "Australie", "Autriche", "Azerbaïdjan", "Bahamas", "Bahreïn",
+    "Bangladesh", "Barbade", "Belgique", "Belize", "Bénin", "Bhoutan", "Biélorussie", "Bolivie",
+    "Bosnie-Herzégovine", "Botswana", "Brésil", "Brunei", "Bulgarie", "Burkina Faso", "Burundi", "Cambodge",
+    "Cameroun", "Canada", "Cap-Vert", "République Centrafricaine", "Chili", "Chine", "Chypre", "Colombie",
+    "Comores", "République du Congo", "République Démocratique du Congo", "Corée du Nord", "Corée du Sud",
+    "Costa Rica", "Côte d'Ivoire", "Croatie", "Cuba", "Danemark", "Djibouti", "Dominique", "Égypte",
+    "Émirats Arabes Unis", "Équateur", "Érythrée", "Espagne", "Estonie", "Eswatini", "États-Unis", "Éthiopie",
+    "Fidji", "Finlande", "France", "Gabon", "Gambie", "Géorgie", "Ghana", "Grèce", "Grenade", "Guatemala",
+    "Guinée", "Guinée-Bissau", "Guinée Équatoriale", "Guyana", "Haïti", "Honduras", "Hongrie", "Inde",
+    "Indonésie", "Irak", "Iran", "Irlande", "Islande", "Israël", "Italie", "Jamaïque", "Japon", "Jordanie",
+    "Kazakhstan", "Kenya", "Kirghizistan", "Kiribati", "Koweït", "Laos", "Lesotho", "Lettonie", "Liban",
+    "Liberia", "Libye", "Liechtenstein", "Lituanie", "Luxembourg", "Macédoine du Nord", "Madagascar", "Malaisie",
+    "Malawi", "Maldives", "Mali", "Malte", "Maroc", "Marshall", "Maurice", "Mauritanie", "Mexique", "Micronésie",
+    "Moldavie", "Monaco", "Mongolie", "Monténégro", "Mozambique", "Myanmar", "Namibie", "Nauru", "Népal",
+    "Nicaragua", "Niger", "Nigeria", "Norvège", "Nouvelle-Zélande", "Oman", "Ouganda", "Ouzbékistan",
+    "Pakistan", "Palaos", "Palestine", "Panama", "Papouasie-Nouvelle-Guinée", "Paraguay", "Pays-Bas", "Pérou",
+    "Philippines", "Pologne", "Portugal", "Qatar", "République Dominicaine", "République Tchèque", "Roumanie",
+    "Royaume-Uni", "Russie", "Rwanda", "Saint-Christophe-et-Niévès", "Sainte-Lucie", "Saint-Marin",
+    "Saint-Vincent-et-les-Grenadines", "Salomon", "Salvador", "Samoa", "São Tomé-et-Principe", "Sénégal",
+    "Serbie", "Seychelles", "Sierra Leone", "Singapour", "Slovaquie", "Slovénie", "Somalie", "Soudan",
+    "Soudan du Sud", "Sri Lanka", "Suède", "Suisse", "Suriname", "Syrie", "Tadjikistan", "Tanzanie", "Tchad",
+    "Thaïlande", "Timor Oriental", "Togo", "Tonga", "Trinité-et-Tobago", "Tunisie", "Turkménistan", "Turquie",
+    "Tuvalu", "Ukraine", "Uruguay", "Vanuatu", "Vatican", "Venezuela", "Vietnam", "Yémen", "Zambie", "Zimbabwe"
+  ];
+
+  const [searchValue, setSearchValue] = useState("");
+  const [countries, setCountries] = React.useState(allCountries);
+
+  const handleSearch = (e: React.FormEvent<HTMLInputElement>) => {
+    const value = e.currentTarget.value;
+    setSearchValue(value);
+    const results = allCountries.filter((item) =>
+      item.toLowerCase().includes(value.toLowerCase())
+    );
+    setTimeout(() => setCountries(results), 100);
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      setCountries(allCountries);
+      setSearchValue("");
+    }
+  };
+
+  return (
+    <Select.Root
+      value={value}
+      onValueChange={onValueChange}
+      onOpenChange={handleOpenChange}
+    >
+      <div className={cn("w-full", className)}>
+        <Select.Trigger className="w-full inline-flex items-center justify-between px-3 py-2 text-sm bg-background border border-input rounded-md shadow-sm outline-none focus:ring-offset-2 focus:ring-ring focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50">
+          <Select.Value placeholder={placeholder}>
+            {value}
+          </Select.Value>
+          <Select.Icon className="text-muted-foreground">
+            <ChevronDown className="w-4 h-4" />
+          </Select.Icon>
+        </Select.Trigger>
+        <Select.Portal>
+          <Select.Content
+            position="popper"
+            avoidCollisions={false}
+            className="w-[var(--radix-select-trigger-width)] overflow-hidden mt-1 bg-background border border-border rounded-lg shadow-lg text-sm z-50"
+          >
+            <div className="flex items-center border-b border-border">
+              <Search className="h-4 w-4 mx-3 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Rechercher un pays..."
+                value={searchValue}
+                className="p-2 text-foreground w-full rounded-md outline-none bg-transparent"
+                onChange={handleSearch}
+              />
+            </div>
+            <Select.Viewport className="max-h-64 mt-1 overflow-y-auto">
+              {countries.length < 1 ? (
+                <div className="px-3 py-2 text-muted-foreground">Aucun pays trouvé.</div>
+              ) : (
+                countries.map((item, idx) => (
+                  <SelectItem key={idx} value={item}>
+                    {item}
+                  </SelectItem>
+                ))
+              )}
+            </Select.Viewport>
+          </Select.Content>
+        </Select.Portal>
+      </div>
+    </Select.Root>
+  );
+}
+
+const SelectItem = React.forwardRef<
+  React.ElementRef<typeof Select.Item>,
+  React.ComponentPropsWithoutRef<typeof Select.Item>
+>(({ children, className, ...props }, forwardedRef) => {
+  return (
+    <Select.Item
+      className="flex items-center justify-between px-3 cursor-default py-2 duration-150 text-foreground data-[state=checked]:text-primary data-[state=checked]:bg-primary/10 data-[highlighted]:text-primary data-[highlighted]:bg-primary/10 outline-none"
+      {...props}
+      ref={forwardedRef}
+    >
+      <Select.ItemText>
+        <div className="pr-4 line-clamp-1">{children}</div>
+      </Select.ItemText>
+      <div className="w-4">
+        <Select.ItemIndicator>
+          <Check className="w-4 h-4 text-primary" />
+        </Select.ItemIndicator>
+      </div>
+    </Select.Item>
+  );
+});
