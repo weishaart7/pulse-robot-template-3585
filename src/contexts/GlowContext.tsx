@@ -19,8 +19,12 @@ export function GlowProvider({ children }: { children: ReactNode }) {
 
 export function useGlow() {
   const context = useContext(GlowContext);
+  // Rendre le contexte optionnel - retourner des valeurs par défaut si pas de provider
   if (context === undefined) {
-    throw new Error('useGlow must be used within a GlowProvider');
+    return {
+      focusedInputId: null,
+      setFocusedInputId: () => {} // fonction vide si pas de provider
+    };
   }
   return context;
 }
