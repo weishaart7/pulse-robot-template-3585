@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { MoveRight, PhoneCall } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Particles } from "@/components/ui/particles";
+import StatsSection from "@/components/ui/stats-section";
 const Hero = () => {
   const [titleNumber, setTitleNumber] = useState(0);
   const titles = useMemo(() => ["incroyable", "nouveau", "merveilleux", "magnifique", "intelligent"], []);
@@ -91,23 +92,7 @@ const Hero = () => {
           </div>
         </div>
 
-        {/* Statistics Banner */}
-        <div className="mt-16 pt-8 border-t border-white/10">
-          <div className="flex flex-col sm:flex-row gap-8 sm:gap-12 items-center justify-center">
-            <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-spektr-cyan-50 mb-2">15M</div>
-              <div className="text-sm md:text-base text-muted-foreground">Encours sous gestion</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-spektr-cyan-50 mb-2">500</div>
-              <div className="text-sm md:text-base text-muted-foreground">Utilisateurs satisfaits</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-spektr-cyan-50 mb-2">4,88</div>
-              <div className="text-sm md:text-base text-muted-foreground">Note sur 5</div>
-            </div>
-          </div>
-        </div>
+        <StatsSection />
       </div>
       
       <div className="hidden lg:block absolute bottom-0 left-1/4 w-64 h-64 bg-pulse-100/30 rounded-full blur-3xl -z-10"></div>
