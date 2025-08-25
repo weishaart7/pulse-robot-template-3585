@@ -1,7 +1,6 @@
 export default function StatsSection() {
-    return (
-        <section className="py-16 md:py-32">
-            <div className="mx-auto max-w-5xl space-y-8 px-6 md:space-y-12">
+  return <section className="py-16 md:py-32">
+            <div className="max-w-5xl space-y-8 md:space-y-12 mx-0 my-0 px-0 py-0">
                 <div className="relative z-10 max-w-xl space-y-6">
                     <h2 className="text-4xl font-medium lg:text-5xl">Notre écosystème réunit nos expertises.</h2>
                     <p>
@@ -13,11 +12,11 @@ export default function StatsSection() {
                         <p>Elle supporte un écosystème complet — des produits aux API et plateformes aidant les conseillers et entreprises à innover dans la gestion patrimoniale</p>
                         <div className="mb-12 mt-12 grid grid-cols-2 gap-2 md:mb-0">
                             <div className="space-y-4">
-                                <div className="bg-gradient-to-r from-black to-gray-600 bg-clip-text text-5xl font-bold text-transparent">15M</div>
+                                <div className="bg-linear-to-r from-zinc-950 to-zinc-600 bg-clip-text text-5xl font-bold text-transparent dark:from-white dark:to-zinc-800">15M</div>
                                 <p>Encours sous gestion</p>
                             </div>
                             <div className="space-y-4">
-                                <div className="bg-gradient-to-r from-black to-gray-600 bg-clip-text text-5xl font-bold text-transparent">500</div>
+                                <div className="bg-linear-to-r from-zinc-950 to-zinc-600 bg-clip-text text-5xl font-bold text-transparent dark:from-white dark:to-zinc-800">500</div>
                                 <p>Utilisateurs satisfaits</p>
                             </div>
                         </div>
@@ -34,6 +33,5 @@ export default function StatsSection() {
                     </div>
                 </div>
             </div>
-        </section>
-    )
+        </section>;
 }
