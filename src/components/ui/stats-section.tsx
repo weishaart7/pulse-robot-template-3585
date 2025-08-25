@@ -13,11 +13,11 @@ export default function StatsSection() {
                         <p>Elle supporte un écosystème complet — des produits aux API et plateformes aidant les conseillers et entreprises à innover dans la gestion patrimoniale</p>
                         <div className="mb-12 mt-12 grid grid-cols-2 gap-2 md:mb-0">
                             <div className="space-y-4">
-                                <div className="bg-linear-to-r from-zinc-950 to-zinc-600 bg-clip-text text-5xl font-bold text-transparent dark:from-white dark:to-zinc-800">15M</div>
+                                <div className="bg-gradient-to-r from-black to-gray-600 bg-clip-text text-5xl font-bold text-transparent">15M</div>
                                 <p>Encours sous gestion</p>
                             </div>
                             <div className="space-y-4">
-                                <div className="bg-linear-to-r from-zinc-950 to-zinc-600 bg-clip-text text-5xl font-bold text-transparent dark:from-white dark:to-zinc-800">500</div>
+                                <div className="bg-gradient-to-r from-black to-gray-600 bg-clip-text text-5xl font-bold text-transparent">500</div>
                                 <p>Utilisateurs satisfaits</p>
                             </div>
                         </div>
