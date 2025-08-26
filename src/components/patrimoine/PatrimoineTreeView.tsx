@@ -88,13 +88,13 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewPr
                       </Badge>
                     </Button>
                   </TableCell>
-                  <TableCell className="text-right font-mono font-normal">
+                  <TableCell className="text-right font-normal">
                     {categoryWeight}%
                   </TableCell>
-                  <TableCell className="text-right font-mono font-normal">
+                  <TableCell className="text-right font-normal">
                     {formatCurrency(categoryValue)}
                   </TableCell>
-                  <TableCell className="text-right font-mono">
+                  <TableCell className="text-right font-normal">
                     <span className="text-muted-foreground">—</span>
                   </TableCell>
                   <TableCell></TableCell>
@@ -116,13 +116,13 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewPr
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right font-mono">
+                      <TableCell className="text-right font-normal">
                         {assetWeight}%
                       </TableCell>
-                      <TableCell className="text-right font-mono">
+                      <TableCell className="text-right font-normal">
                         {asset.valeur_estimee ? formatCurrency(asset.valeur_estimee) : 'Non évalué'}
                       </TableCell>
-                      <TableCell className="text-right font-mono">
+                      <TableCell className="text-right font-normal">
                         <span className="text-muted-foreground">—</span>
                       </TableCell>
                       <TableCell>

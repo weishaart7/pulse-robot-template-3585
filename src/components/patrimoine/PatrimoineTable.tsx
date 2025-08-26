@@ -108,9 +108,9 @@ export const PatrimoineTable = ({ assets, selectedCategory, onAssetEdit }: Patri
                 {stat.count}
               </TableCell>
               <TableCell className="text-center">
-                <span className="font-mono">{stat.weight}%</span>
+                <span className="font-normal">{stat.weight}%</span>
               </TableCell>
-              <TableCell className="text-right font-mono">
+              <TableCell className="text-right font-normal">
                 {formatCurrency(stat.value)}
               </TableCell>
             </TableRow>
@@ -121,7 +121,7 @@ export const PatrimoineTable = ({ assets, selectedCategory, onAssetEdit }: Patri
             <TableCell colSpan={3} className="text-right font-semibold">
               Total du patrimoine
             </TableCell>
-            <TableCell className="text-right font-bold text-foreground font-mono">
+            <TableCell className="text-right font-semibold text-foreground">
               {formatCurrency(totalValue)}
             </TableCell>
           </TableRow>
