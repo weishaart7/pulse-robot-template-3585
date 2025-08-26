@@ -20,20 +20,30 @@ export const PatrimoineOwnershipChart = ({ assets }: PatrimoineOwnershipChartPro
     const userFirstName = familyProfile?.prenom || 'Vous';
     const spouseFirstName = maritalStatus?.prenom_conjoint || 'Conjoint';
 
-    // Catégoriser les actifs selon le détenteur
-    const userAssets = assets.filter(asset => 
-      asset.detenteur === 'user' || asset.detenteur === 'utilisateur' || !asset.detenteur
-    );
-    const spouseAssets = assets.filter(asset => 
-      asset.detenteur === 'spouse' || asset.detenteur === 'conjoint'
-    );
-    const commonAssets = assets.filter(asset => 
-      asset.detenteur === 'common' || asset.detenteur === 'commun' || asset.mode_detention === 'indivision'
-    );
+    // Calculer les valeurs selon le détenteur et les quote-parts
+    let userValue = 0;
+    let spouseValue = 0;
+    let commonValue = 0;
 
-    const userValue = userAssets.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
-    const spouseValue = spouseAssets.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
-    const commonValue = commonAssets.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
+    assets.forEach(asset => {
+      const estimatedValue = asset.valeur_estimee || 0;
+      
+      if (asset.detenteur === 'user' || asset.detenteur === 'utilisateur' || !asset.detenteur) {
+        // Biens propres de l'utilisateur
+        userValue += estimatedValue;
+      } else if (asset.detenteur === 'spouse' || asset.detenteur === 'conjoint') {
+        // Biens propres du conjoint
+        spouseValue += estimatedValue;
+      } else if (asset.detenteur === 'common' || asset.detenteur === 'commun' || asset.detenteur === 'couple') {
+        // Biens communs - utiliser les quote-parts
+        const userQuote = (asset.pourcentage_utilisateur || 50) / 100;
+        const spouseQuote = (asset.pourcentage_conjoint || 50) / 100;
+        
+        userValue += estimatedValue * userQuote;
+        spouseValue += estimatedValue * spouseQuote;
+        commonValue += estimatedValue; // Pour affichage du total des biens communs
+      }
+    });
     
     const totalValue = userValue + spouseValue + commonValue;
 
