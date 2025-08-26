@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Asset } from '@/services/assetService';
 import { PatrimoineChart } from './PatrimoineChart';
-import { PatrimoineTable } from './PatrimoineTable';
+import { PatrimoineOwnershipChart } from './PatrimoineOwnershipChart';
 import { PatrimoineTreeView } from './PatrimoineTreeView';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,12 +50,10 @@ export const PatrimoineMainContent = ({
                 />
               </div>
               
-              {/* Tableau interactif */}
+              {/* Graphique de répartition par détenteur */}
               <div>
-                <PatrimoineTable 
-                  assets={assets} 
-                  selectedCategory={selectedCategory}
-                  onAssetEdit={onAssetEdit}
+                <PatrimoineOwnershipChart 
+                  assets={assets}
                 />
               </div>
             </div>
