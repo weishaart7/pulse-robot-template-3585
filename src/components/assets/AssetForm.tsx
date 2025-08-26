@@ -60,6 +60,37 @@ export const AssetForm: React.FC<AssetFormProps> = ({
     hasPartner: boolean;
   }>({ hasPartner: false });
 
+  // Mapping functions for detenteur values
+  const mapDetenteurToDisplay = (dbValue: string, familyData: any): string => {
+    switch (dbValue) {
+      case 'user':
+      case 'utilisateur':
+        return familyData.userFirstName || 'Vous';
+      case 'spouse':
+      case 'conjoint':
+        return familyData.partnerFirstName || 'Conjoint';
+      case 'common':
+      case 'commun':
+      case 'couple':
+        return 'Le couple';
+      default:
+        return dbValue;
+    }
+  };
+
+  const mapDetenteurToDb = (displayValue: string, familyData: any): string => {
+    if (displayValue === familyData.userFirstName || displayValue === 'Vous') {
+      return 'user';
+    }
+    if (displayValue === familyData.partnerFirstName || displayValue === 'Conjoint') {
+      return 'spouse';
+    }
+    if (displayValue === 'Le couple') {
+      return 'common';
+    }
+    return displayValue;
+  };
+
   // Load family data to get real names
   useEffect(() => {
     const loadFamilyData = async () => {
@@ -107,20 +138,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   }, []);
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
-    defaultValues: asset ? {
-      nature: asset.nature,
-      denomination: asset.denomination || '',
-      mode_detention: asset.mode_detention || '',
-      valeur_estimee: asset.valeur_estimee || undefined,
-      date_estimation: asset.date_estimation ? new Date(asset.date_estimation) : undefined,
-      revalorisation_annuelle: asset.revalorisation_annuelle || undefined,
-      detenteur: asset.detenteur || '',
-      pourcentage_utilisateur: asset.pourcentage_utilisateur || 50,
-      pourcentage_conjoint: asset.pourcentage_conjoint || 50,
-      valeur_acquisition: asset.valeur_acquisition || undefined,
-      frais_acquisition: asset.frais_acquisition || undefined,
-      date_acquisition: asset.date_acquisition ? new Date(asset.date_acquisition) : undefined
-    } : {
+    defaultValues: {
       nature: '',
       denomination: '',
       mode_detention: '',
@@ -129,11 +147,36 @@ export const AssetForm: React.FC<AssetFormProps> = ({
       pourcentage_conjoint: 50
     }
   });
+
+  // Update form values when family data is loaded and asset is provided
+  useEffect(() => {
+    if (asset && familyData.userFirstName) {
+      const displayDetenteur = mapDetenteurToDisplay(asset.detenteur || '', familyData);
+      form.reset({
+        nature: asset.nature,
+        denomination: asset.denomination || '',
+        mode_detention: asset.mode_detention || '',
+        valeur_estimee: asset.valeur_estimee || undefined,
+        date_estimation: asset.date_estimation ? new Date(asset.date_estimation) : undefined,
+        revalorisation_annuelle: asset.revalorisation_annuelle || undefined,
+        detenteur: displayDetenteur,
+        pourcentage_utilisateur: asset.pourcentage_utilisateur || 50,
+        pourcentage_conjoint: asset.pourcentage_conjoint || 50,
+        valeur_acquisition: asset.valeur_acquisition || undefined,
+        frais_acquisition: asset.frais_acquisition || undefined,
+        date_acquisition: asset.date_acquisition ? new Date(asset.date_acquisition) : undefined
+      });
+    }
+  }, [asset, familyData, form]);
   const handleSubmit = async (values: AssetFormValues) => {
     setIsLoading(true);
     try {
+      // Convert display values to database values
+      const dbDetenteur = mapDetenteurToDb(values.detenteur || '', familyData);
+      
       const formattedValues = {
         ...values,
+        detenteur: dbDetenteur,
         date_estimation: values.date_estimation ? format(values.date_estimation, 'yyyy-MM-dd') : undefined,
         date_acquisition: values.date_acquisition ? format(values.date_acquisition, 'yyyy-MM-dd') : undefined
       };
