@@ -99,38 +99,39 @@ export const PatrimoineOwnershipChart = ({ assets }: PatrimoineOwnershipChartPro
         <CardTitle>Répartition par détenteur</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {ownershipData.categories.map((category, index) => (
-          <div key={index} className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">{category.label}</span>
-              <span className="text-sm text-muted-foreground">
-                {formatCurrency(category.value)}
-              </span>
-            </div>
-            <div className="w-full bg-muted rounded-full h-8">
+        {/* Graphique en barres */}
+        <div className="space-y-3">
+          {ownershipData.categories.map((category, index) => (
+            <div key={index} className="w-full bg-muted h-8">
               <div
-                className="h-8 rounded-full flex items-center justify-end pr-3 text-white text-sm font-medium transition-all duration-500 ease-out"
+                className="h-8 flex items-center justify-center text-white text-sm font-medium transition-all duration-500 ease-out"
                 style={{
                   width: `${Math.max(category.percentage, 2)}%`,
                   backgroundColor: category.color
                 }}
               >
-                {category.percentage > 10 && `${category.percentage.toFixed(1)}%`}
+                {category.percentage > 15 && `${category.percentage.toFixed(1)}%`}
               </div>
             </div>
-            {category.percentage <= 10 && (
-              <div className="text-right text-xs text-muted-foreground">
-                {category.percentage.toFixed(1)}%
-              </div>
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
         
-        <div className="pt-4 border-t border-border">
-          <div className="flex justify-between items-center font-semibold">
-            <span>Total du patrimoine</span>
-            <span>{formatCurrency(ownershipData.totalValue)}</span>
-          </div>
+        {/* Légende */}
+        <div className="grid grid-cols-1 gap-3 pt-4">
+          {ownershipData.categories.map((category, index) => (
+            <div key={index} className="flex items-center gap-3">
+              <div 
+                className="w-4 h-4 flex-shrink-0"
+                style={{ backgroundColor: category.color }}
+              />
+              <div className="flex-1">
+                <div className="text-xs font-medium">{category.label}</div>
+                <div className="text-xs text-muted-foreground">
+                  {formatCurrency(category.value)}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>
