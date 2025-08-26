@@ -91,5 +91,98 @@ export const PatrimoineSidebar = ({
   const filteredCategories = categoryValues.filter(({
     category
   }) => category.toLowerCase().includes(searchTerm.toLowerCase()) || assetsByCategory[category].some(asset => asset.nature.toLowerCase().includes(searchTerm.toLowerCase()) || asset.denomination?.toLowerCase().includes(searchTerm.toLowerCase())));
-  return;
+
+  return (
+    <div className="h-full bg-card border border-border rounded-lg flex flex-col">
+      {/* Header avec recherche et total */}
+      <div className="p-4 border-b border-border">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Patrimoine</h3>
+          <Button size="sm" onClick={onAddAsset} className="flex items-center gap-1">
+            <Plus className="h-4 w-4" />
+            Ajouter
+          </Button>
+        </div>
+        
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        
+        <div className="bg-muted rounded-lg p-3">
+          <div className="flex items-center gap-2 mb-1">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium">Total patrimoine</span>
+          </div>
+          <p className="text-xl font-bold text-primary">{formatCurrency(totalValue)}</p>
+        </div>
+      </div>
+
+      {/* Liste des catégories */}
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-2">
+          {filteredCategories.map(({ category, value, percentage, count }) => (
+            <div key={category}>
+              <button
+                onClick={() => {
+                  toggleCategory(category);
+                  onCategorySelect(selectedCategory === category ? null : category);
+                }}
+                className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors hover:bg-muted ${
+                  selectedCategory === category ? 'bg-primary/10 border-primary' : 'border-border'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  {getCategoryIcon(category)}
+                  <div className="text-left">
+                    <p className="font-medium">{category}</p>
+                    <p className="text-sm text-muted-foreground">{count} actif{count > 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold">{formatCurrency(value)}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-muted-foreground">{percentage.toFixed(1)}%</p>
+                    {expandedCategories.has(category) ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </div>
+                </div>
+              </button>
+              
+              {expandedCategories.has(category) && (
+                <div className="ml-6 mt-2 space-y-1">
+                  {assetsByCategory[category]
+                    .filter(asset => 
+                      searchTerm === '' || 
+                      asset.nature.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      asset.denomination?.toLowerCase().includes(searchTerm.toLowerCase())
+                    )
+                    .map(asset => (
+                      <button
+                        key={asset.id}
+                        onClick={() => onAssetEdit(asset)}
+                        className="w-full text-left p-2 rounded border border-border hover:bg-muted transition-colors"
+                      >
+                        <p className="font-medium text-sm">{asset.denomination || asset.nature}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatCurrency(asset.valeur_estimee || 0)}
+                        </p>
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
+    </div>
+  );
 };
