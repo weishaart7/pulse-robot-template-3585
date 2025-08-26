@@ -77,7 +77,7 @@ export function FicheClientForm() {
       communeNaissance: '',
       paysNaissance: '',
       nationalite: '',
-      capaciteJuridique: undefined,
+      capaciteJuridique: 'normale',
       handicape: false,
       telephone: '',
       email: '',
@@ -422,30 +422,19 @@ export function FicheClientForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Capacité juridique *</FormLabel>
-              <FormControl>
-                <div className="flex flex-col space-y-4">
-                  <Switch
-                    checked={field.value === 'normale'}
-                    onCheckedChange={(checked) => checked && field.onChange('normale')}
-                    label="Normale"
-                  />
-                  <Switch
-                    checked={field.value === 'curatelle'}
-                    onCheckedChange={(checked) => checked && field.onChange('curatelle')}
-                    label="Majeur sous curatelle"
-                  />
-                  <Switch
-                    checked={field.value === 'tutelle'}
-                    onCheckedChange={(checked) => checked && field.onChange('tutelle')}
-                    label="Majeur sous tutelle"
-                  />
-                  <Switch
-                    checked={field.value === 'sauvegarde'}
-                    onCheckedChange={(checked) => checked && field.onChange('sauvegarde')}
-                    label="Majeur sous sauvegarde de justice"
-                  />
-                </div>
-              </FormControl>
+              <Select onValueChange={field.onChange} value={field.value || 'normale'}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner une capacité juridique" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="normale">Normale</SelectItem>
+                  <SelectItem value="curatelle">Majeur sous curatelle</SelectItem>
+                  <SelectItem value="tutelle">Majeur sous tutelle</SelectItem>
+                  <SelectItem value="sauvegarde">Majeur sous sauvegarde de justice</SelectItem>
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
