@@ -103,35 +103,16 @@ export const PatrimoineSection = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto h-full">
-      <div className="h-full flex gap-6">
-        {/* Sidebar gauche intégrée */}
-        <div className="w-80 flex-shrink-0">
-          <PatrimoineSidebar
-            assets={assets}
-            onAssetEdit={(asset) => {
-              setEditingAsset(asset);
-              setShowAssetForm(true);
-            }}
-            selectedCategory={selectedCategory}
-            onCategorySelect={setSelectedCategory}
-            onAddAsset={() => setShowAssetForm(true)}
-          />
-        </div>
-        
-        {/* Contenu principal */}
-        <div className="flex-1 min-w-0">
-          <PatrimoineMainContent
-            assets={assets}
-            selectedCategory={selectedCategory}
-            onAssetEdit={(asset) => {
-              setEditingAsset(asset);
-              setShowAssetForm(true);
-            }}
-            onAddAsset={() => setShowAssetForm(true)}
-          />
-        </div>
-      </div>
+    <div className="max-w-6xl mx-auto h-full">
+      <PatrimoineMainContent
+        assets={assets}
+        selectedCategory={selectedCategory}
+        onAssetEdit={(asset) => {
+          setEditingAsset(asset);
+          setShowAssetForm(true);
+        }}
+        onAddAsset={() => setShowAssetForm(true)}
+      />
     </div>
   );
 };
