@@ -20,31 +20,34 @@ export const PatrimoineOwnershipChart = ({ assets }: PatrimoineOwnershipChartPro
     const userFirstName = familyProfile?.prenom || 'Vous';
     const spouseFirstName = maritalStatus?.prenom_conjoint || 'Conjoint';
 
-    // Calculer les valeurs selon le détenteur
+    // Calculer les valeurs selon le détenteur et les quote-parts
     let userValue = 0;
     let spouseValue = 0;
-    let commonValue = 0;
 
     assets.forEach(asset => {
       const estimatedValue = asset.valeur_estimee || 0;
       
       if (asset.detenteur === 'user' || asset.detenteur === 'utilisateur' || !asset.detenteur) {
-        // Biens propres de l'utilisateur uniquement
+        // Biens propres de l'utilisateur
         userValue += estimatedValue;
       } else if (asset.detenteur === 'spouse' || asset.detenteur === 'conjoint') {
-        // Biens propres du conjoint uniquement
+        // Biens propres du conjoint
         spouseValue += estimatedValue;
       } else if (asset.detenteur === 'common' || asset.detenteur === 'commun' || asset.detenteur === 'couple') {
-        // Biens communs - valeur totale dans la catégorie commune
-        commonValue += estimatedValue;
+        // Biens communs - répartir selon les quote-parts
+        const userQuote = (asset.pourcentage_utilisateur || 50) / 100;
+        const spouseQuote = (asset.pourcentage_conjoint || 50) / 100;
+        
+        userValue += estimatedValue * userQuote;
+        spouseValue += estimatedValue * spouseQuote;
       }
     });
     
-    const totalValue = userValue + spouseValue + commonValue;
+    const totalValue = userValue + spouseValue;
 
     const categories = [
       {
-        label: `Biens propres de ${userFirstName}`,
+        label: `Biens de ${userFirstName}`,
         value: userValue,
         percentage: totalValue > 0 ? (userValue / totalValue) * 100 : 0,
         color: '#E879F9', // primary purple
@@ -52,23 +55,14 @@ export const PatrimoineOwnershipChart = ({ assets }: PatrimoineOwnershipChartPro
       }
     ];
 
-    if (isInCouple) {
-      categories.push(
-        {
-          label: 'Biens communs',
-          value: commonValue,
-          percentage: totalValue > 0 ? (commonValue / totalValue) * 100 : 0,
-          color: '#F97316', // orange
-          show: true
-        },
-        {
-          label: `Biens propres de ${spouseFirstName}`,
-          value: spouseValue,
-          percentage: totalValue > 0 ? (spouseValue / totalValue) * 100 : 0,
-          color: '#06B6D4', // cyan
-          show: true
-        }
-      );
+    if (isInCouple && spouseValue > 0) {
+      categories.push({
+        label: `Biens de ${spouseFirstName}`,
+        value: spouseValue,
+        percentage: totalValue > 0 ? (spouseValue / totalValue) * 100 : 0,
+        color: '#06B6D4', // cyan
+        show: true
+      });
     }
 
     return { categories: categories.filter(cat => cat.show), totalValue };
