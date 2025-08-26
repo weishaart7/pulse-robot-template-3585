@@ -186,7 +186,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProp
               handleInputChange('activite', '');
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger size="lg">
               <SelectValue placeholder="Sélectionnez le type de société" />
             </SelectTrigger>
             <SelectContent>
@@ -206,7 +206,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProp
               value={formData.formeSocieteCivile}
               onValueChange={(value) => handleInputChange('formeSocieteCivile', value)}
             >
-              <SelectTrigger>
+              <SelectTrigger size="lg">
                 <SelectValue placeholder="Sélectionnez la forme" />
               </SelectTrigger>
               <SelectContent>
@@ -228,7 +228,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProp
               onValueChange={(value) => handleInputChange('activite', value)}
               disabled={isActiviteBlocked(formData.typeSociete)}
             >
-              <SelectTrigger>
+              <SelectTrigger size="lg">
                 <SelectValue placeholder="Sélectionnez l'activité" />
               </SelectTrigger>
               <SelectContent>
@@ -250,7 +250,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProp
               onValueChange={(value) => handleInputChange('regimeFiscal', value)}
               disabled={isRegimeFiscalBlocked(formData.typeSociete)}
             >
-              <SelectTrigger>
+              <SelectTrigger size="lg">
                 <SelectValue placeholder="Sélectionnez le régime fiscal" />
               </SelectTrigger>
               <SelectContent>
@@ -271,7 +271,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProp
               value={formData.holding}
               onValueChange={(value) => handleInputChange('holding', value)}
             >
-              <SelectTrigger>
+              <SelectTrigger size="lg">
                 <SelectValue placeholder="Sélectionnez le type de holding" />
               </SelectTrigger>
               <SelectContent>
@@ -357,7 +357,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProp
               value={formData.jourCloture}
               onValueChange={(value) => handleInputChange('jourCloture', value)}
             >
-              <SelectTrigger>
+              <SelectTrigger size="lg">
                 <SelectValue placeholder="Jour" />
               </SelectTrigger>
               <SelectContent>
@@ -372,7 +372,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProp
               value={formData.moisCloture}
               onValueChange={(value) => handleInputChange('moisCloture', value)}
             >
-              <SelectTrigger>
+              <SelectTrigger size="lg">
                 <SelectValue placeholder="Mois" />
               </SelectTrigger>
               <SelectContent>
