@@ -65,8 +65,16 @@ export const SituationMatrimonialeForm = () => {
     defaultValues: {
       parentIsole: false,
       personneHandicapee: false,
+      civilitePartenaire: "",
+      nomPartenaire: "",
+      prenomPartenaire: "",
+      lieuNaissancePartenaire: "",
+      professionCSP: "",
+      professionLibelle: "",
+      nationalitePartenaire: "",
       conventionPacs: 'Régime de la séparation des biens',
       regimeMatrimonial: 'Communauté réduite aux acquêts (option sans contrat de mariage)',
+      lieuMariage: "",
     },
   });
 
@@ -178,7 +186,7 @@ export const SituationMatrimonialeForm = () => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Statut matrimonial</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={field.onChange} value={field.value || ""}>
                 <FormControl>
                   <SelectTrigger size="lg">
                     <SelectValue placeholder="Choisir un statut" />
@@ -237,7 +245,7 @@ export const SituationMatrimonialeForm = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Civilité</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
                           <FormControl>
                             <SelectTrigger size="lg">
                               <SelectValue placeholder="Sélectionner" />
@@ -344,7 +352,7 @@ export const SituationMatrimonialeForm = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Profession (CSP)</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
                           <FormControl>
                             <SelectTrigger size="lg">
                               <SelectValue placeholder="Sélectionner une CSP" />
@@ -424,7 +432,7 @@ export const SituationMatrimonialeForm = () => {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Convention de PACS</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value || "Régime de la séparation des biens"}>
                               <FormControl>
                                 <SelectTrigger size="lg">
                                   <SelectValue />
@@ -566,7 +574,7 @@ export const SituationMatrimonialeForm = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Régime matrimonial</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
                           <FormControl>
                             <SelectTrigger size="lg">
                               <SelectValue />
