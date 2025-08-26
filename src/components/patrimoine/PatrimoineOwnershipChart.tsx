@@ -20,7 +20,7 @@ export const PatrimoineOwnershipChart = ({ assets }: PatrimoineOwnershipChartPro
     const userFirstName = familyProfile?.prenom || 'Vous';
     const spouseFirstName = maritalStatus?.prenom_conjoint || 'Conjoint';
 
-    // Calculer les valeurs selon le détenteur et les quote-parts
+    // Calculer les valeurs selon le détenteur
     let userValue = 0;
     let spouseValue = 0;
     let commonValue = 0;
@@ -29,19 +29,14 @@ export const PatrimoineOwnershipChart = ({ assets }: PatrimoineOwnershipChartPro
       const estimatedValue = asset.valeur_estimee || 0;
       
       if (asset.detenteur === 'user' || asset.detenteur === 'utilisateur' || !asset.detenteur) {
-        // Biens propres de l'utilisateur
+        // Biens propres de l'utilisateur uniquement
         userValue += estimatedValue;
       } else if (asset.detenteur === 'spouse' || asset.detenteur === 'conjoint') {
-        // Biens propres du conjoint
+        // Biens propres du conjoint uniquement
         spouseValue += estimatedValue;
       } else if (asset.detenteur === 'common' || asset.detenteur === 'commun' || asset.detenteur === 'couple') {
-        // Biens communs - utiliser les quote-parts
-        const userQuote = (asset.pourcentage_utilisateur || 50) / 100;
-        const spouseQuote = (asset.pourcentage_conjoint || 50) / 100;
-        
-        userValue += estimatedValue * userQuote;
-        spouseValue += estimatedValue * spouseQuote;
-        commonValue += estimatedValue; // Pour affichage du total des biens communs
+        // Biens communs - valeur totale dans la catégorie commune
+        commonValue += estimatedValue;
       }
     });
     
