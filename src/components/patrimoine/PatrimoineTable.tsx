@@ -3,7 +3,7 @@ import { Asset } from '@/services/assetService';
 import { getAssetCategory } from '@/constants/assetTypes';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface PatrimoineTableProps {
@@ -73,54 +73,64 @@ export const PatrimoineTable = ({ assets, selectedCategory, onAssetEdit }: Patri
   }).sort((a, b) => b.value - a.value);
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-normal">
+    <div className="max-w-4xl mx-auto rounded-xl border border-border bg-background p-6 shadow-sm">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold text-foreground">
           {selectedCategory ? `Actifs - ${selectedCategory}` : 'Répartition des actifs'}
-        </h3>
+        </h2>
         <Badge variant="secondary" className="uppercase">
           {filteredAssets.length} actif{filteredAssets.length > 1 ? 's' : ''}
         </Badge>
       </div>
 
-      <div className="bg-card rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent border-b">
-              <TableHead className="font-normal text-foreground">Classe d'actifs</TableHead>
-              <TableHead className="text-center font-normal text-foreground">Nb. d'actifs</TableHead>
-              <TableHead className="text-center font-normal text-foreground">% des actifs</TableHead>
-              <TableHead className="text-right font-normal text-foreground">Valeur</TableHead>
+      <Table className="table-fixed">
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[200px]">Classe d'actifs</TableHead>
+            <TableHead className="w-[120px] text-center">Nb. d'actifs</TableHead>
+            <TableHead className="w-[120px] text-center">% des actifs</TableHead>
+            <TableHead className="text-right">Valeur</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {categoryStats.map((stat) => (
+            <TableRow key={stat.category} className="hover:bg-muted/40 transition-colors">
+              <TableCell className="font-medium">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-3 h-3 rounded-full flex-shrink-0" 
+                    style={{ backgroundColor: stat.color }}
+                  />
+                  <span>{stat.category.charAt(0).toUpperCase() + stat.category.slice(1).toLowerCase()}</span>
+                </div>
+              </TableCell>
+              <TableCell className="text-center">
+                {stat.count}
+              </TableCell>
+              <TableCell className="text-center">
+                <span className="font-mono">{stat.weight}%</span>
+              </TableCell>
+              <TableCell className="text-right font-mono">
+                {formatCurrency(stat.value)}
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {categoryStats.map((stat, index) => (
-              <TableRow key={stat.category} className="hover:bg-muted/30 border-b last:border-b-0">
-                <TableCell className="py-4">
-                  <div className="flex items-center gap-3">
-                    <div 
-                      className="w-3 h-3 rounded-full flex-shrink-0" 
-                      style={{ backgroundColor: stat.color }}
-                    />
-                    <span className="font-normal text-foreground">{stat.category.charAt(0).toUpperCase() + stat.category.slice(1).toLowerCase()}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-center py-4">
-                  <span className="text-muted-foreground">{stat.count}</span>
-                </TableCell>
-                <TableCell className="text-center py-4">
-                  <span className="text-muted-foreground font-mono">{stat.weight}%</span>
-                </TableCell>
-                <TableCell className="text-right py-4">
-                  <span className="font-normal text-foreground font-mono">
-                    {formatCurrency(stat.value)}
-                  </span>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+          ))}
+        </TableBody>
+        <TableFooter>
+          <TableRow>
+            <TableCell colSpan={3} className="text-right font-semibold">
+              Total du patrimoine
+            </TableCell>
+            <TableCell className="text-right font-bold text-foreground font-mono">
+              {formatCurrency(totalValue)}
+            </TableCell>
+          </TableRow>
+        </TableFooter>
+      </Table>
+      
+      <p className="mt-4 text-center text-sm text-muted-foreground">
+        synthèse de votre patrimoine par catégories
+      </p>
     </div>
   );
 };
