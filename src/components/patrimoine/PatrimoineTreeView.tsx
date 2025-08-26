@@ -55,10 +55,10 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewPr
         <TableHeader>
           <TableRow>
             <TableHead>Catégorie / Actif</TableHead>
-            <TableHead className="text-right">Poids</TableHead>
-            <TableHead className="text-right">Valeur</TableHead>
-            <TableHead className="text-right">+/- Value</TableHead>
-            <TableHead></TableHead>
+            <TableHead className="text-center w-[120px]">Poids</TableHead>
+            <TableHead className="text-center w-[150px]">Valeur</TableHead>
+            <TableHead className="text-center w-[120px]">+/- Value</TableHead>
+            <TableHead className="w-[100px]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -88,13 +88,13 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewPr
                       </Badge>
                     </Button>
                   </TableCell>
-                  <TableCell className="text-right font-normal">
+                  <TableCell className="text-center font-normal">
                     {categoryWeight}%
                   </TableCell>
-                  <TableCell className="text-right font-normal">
+                  <TableCell className="text-center font-normal">
                     {formatCurrency(categoryValue)}
                   </TableCell>
-                  <TableCell className="text-right font-normal">
+                  <TableCell className="text-center font-normal">
                     <span className="text-muted-foreground">—</span>
                   </TableCell>
                   <TableCell></TableCell>
@@ -116,13 +116,13 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewPr
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right font-normal">
+                      <TableCell className="text-center font-normal">
                         {assetWeight}%
                       </TableCell>
-                      <TableCell className="text-right font-normal">
+                      <TableCell className="text-center font-normal">
                         {asset.valeur_estimee ? formatCurrency(asset.valeur_estimee) : 'Non évalué'}
                       </TableCell>
-                      <TableCell className="text-right font-normal">
+                      <TableCell className="text-center font-normal">
                         <span className="text-muted-foreground">—</span>
                       </TableCell>
                       <TableCell>
