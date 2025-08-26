@@ -496,6 +496,90 @@ export type Database = {
         }
         Relationships: []
       }
+      societes: {
+        Row: {
+          activite: string | null
+          capital_social: number | null
+          code_postal: string | null
+          commune: string | null
+          created_at: string
+          date_creation: string | null
+          denomination: string
+          forme_societe_civile: string | null
+          holding: string | null
+          id: string
+          jour_cloture: string | null
+          mois_cloture: string | null
+          nombre_salaries: number | null
+          nombre_titres: number | null
+          pays: string | null
+          pourcentage_ifi: number | null
+          regime_fiscal: string | null
+          rue_adresse: string | null
+          siret: string | null
+          type_activite: string | null
+          type_societe: string
+          updated_at: string
+          user_id: string
+          valeur_estimee: number | null
+          valeur_ifi: number | null
+        }
+        Insert: {
+          activite?: string | null
+          capital_social?: number | null
+          code_postal?: string | null
+          commune?: string | null
+          created_at?: string
+          date_creation?: string | null
+          denomination: string
+          forme_societe_civile?: string | null
+          holding?: string | null
+          id?: string
+          jour_cloture?: string | null
+          mois_cloture?: string | null
+          nombre_salaries?: number | null
+          nombre_titres?: number | null
+          pays?: string | null
+          pourcentage_ifi?: number | null
+          regime_fiscal?: string | null
+          rue_adresse?: string | null
+          siret?: string | null
+          type_activite?: string | null
+          type_societe: string
+          updated_at?: string
+          user_id: string
+          valeur_estimee?: number | null
+          valeur_ifi?: number | null
+        }
+        Update: {
+          activite?: string | null
+          capital_social?: number | null
+          code_postal?: string | null
+          commune?: string | null
+          created_at?: string
+          date_creation?: string | null
+          denomination?: string
+          forme_societe_civile?: string | null
+          holding?: string | null
+          id?: string
+          jour_cloture?: string | null
+          mois_cloture?: string | null
+          nombre_salaries?: number | null
+          nombre_titres?: number | null
+          pays?: string | null
+          pourcentage_ifi?: number | null
+          regime_fiscal?: string | null
+          rue_adresse?: string | null
+          siret?: string | null
+          type_activite?: string | null
+          type_societe?: string
+          updated_at?: string
+          user_id?: string
+          valeur_estimee?: number | null
+          valeur_ifi?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
