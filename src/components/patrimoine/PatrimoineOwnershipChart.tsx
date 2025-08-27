@@ -50,7 +50,7 @@ export const PatrimoineOwnershipChart = ({ assets }: PatrimoineOwnershipChartPro
         label: `Biens de ${userFirstName}`,
         value: userValue,
         percentage: totalValue > 0 ? (userValue / totalValue) * 100 : 0,
-        color: '#E879F9', // primary purple
+        color: '#ff55d2', // user color
         show: true
       }
     ];
@@ -60,7 +60,7 @@ export const PatrimoineOwnershipChart = ({ assets }: PatrimoineOwnershipChartPro
         label: `Biens de ${spouseFirstName}`,
         value: spouseValue,
         percentage: totalValue > 0 ? (spouseValue / totalValue) * 100 : 0,
-        color: '#06B6D4', // cyan
+        color: '#ff96e1', // spouse color
         show: true
       });
     }
@@ -109,7 +109,6 @@ export const PatrimoineOwnershipChart = ({ assets }: PatrimoineOwnershipChartPro
                   backgroundColor: category.color
                 }}
               >
-                {category.percentage > 15 && `${category.percentage.toFixed(1)}%`}
               </div>
             </div>
           ))}
