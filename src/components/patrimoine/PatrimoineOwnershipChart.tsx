@@ -24,24 +24,45 @@ export const PatrimoineOwnershipChart = ({ assets }: PatrimoineOwnershipChartPro
     let userValue = 0;
     let spouseValue = 0;
 
+    // Debug: log des assets pour comprendre le problème
+    console.log('=== DEBUG OWNERSHIP CALCULATION ===');
+    console.log('Assets:', assets);
+    console.log('User first name:', userFirstName);
+    console.log('Spouse first name:', spouseFirstName);
+
     assets.forEach(asset => {
       const estimatedValue = asset.valeur_estimee || 0;
+      
+      console.log(`Asset: ${asset.nature}, detenteur: "${asset.detenteur}", valeur_estimee: ${estimatedValue}, pourcentage_utilisateur: ${asset.pourcentage_utilisateur}, pourcentage_conjoint: ${asset.pourcentage_conjoint}`);
       
       if (asset.detenteur === 'user' || asset.detenteur === 'utilisateur' || !asset.detenteur) {
         // Biens propres de l'utilisateur
         userValue += estimatedValue;
+        console.log(`  -> Adding ${estimatedValue} to user (propre)`);
       } else if (asset.detenteur === 'spouse' || asset.detenteur === 'conjoint') {
         // Biens propres du conjoint
         spouseValue += estimatedValue;
+        console.log(`  -> Adding ${estimatedValue} to spouse (propre)`);
       } else if (asset.detenteur === 'common' || asset.detenteur === 'commun' || asset.detenteur === 'couple') {
         // Biens communs - répartir selon les quote-parts
         const userQuote = (asset.pourcentage_utilisateur || 50) / 100;
         const spouseQuote = (asset.pourcentage_conjoint || 50) / 100;
         
-        userValue += estimatedValue * userQuote;
-        spouseValue += estimatedValue * spouseQuote;
+        const userPortion = estimatedValue * userQuote;
+        const spousePortion = estimatedValue * spouseQuote;
+        
+        userValue += userPortion;
+        spouseValue += spousePortion;
+        console.log(`  -> Adding ${userPortion} to user (${userQuote * 100}% of ${estimatedValue})`);
+        console.log(`  -> Adding ${spousePortion} to spouse (${spouseQuote * 100}% of ${estimatedValue})`);
+      } else {
+        console.log(`  -> Unknown detenteur: "${asset.detenteur}"`);
       }
     });
+    
+    console.log('Final userValue:', userValue);
+    console.log('Final spouseValue:', spouseValue);
+    console.log('=== END DEBUG ===');
     
     const totalValue = userValue + spouseValue;
 
