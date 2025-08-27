@@ -36,25 +36,49 @@ export const PatrimoineOwnershipChart = ({ assets }: PatrimoineOwnershipChartPro
       console.log(`Asset: ${asset.nature}, detenteur: "${asset.detenteur}", valeur_estimee: ${estimatedValue}, pourcentage_utilisateur: ${asset.pourcentage_utilisateur}, pourcentage_conjoint: ${asset.pourcentage_conjoint}`);
       
       if (asset.detenteur === 'user' || asset.detenteur === 'utilisateur' || !asset.detenteur) {
-        // Biens propres de l'utilisateur
-        userValue += estimatedValue;
-        console.log(`  -> Adding ${estimatedValue} to user (propre)`);
+        if (asset.pourcentage_utilisateur || asset.pourcentage_conjoint) {
+          // Répartir selon les quotes définies
+          const userQuote = (asset.pourcentage_utilisateur ?? 100) / 100;
+          const spouseQuote = (asset.pourcentage_conjoint ?? 0) / 100;
+          const userPortion = estimatedValue * userQuote;
+          const spousePortion = estimatedValue * spouseQuote;
+          userValue += userPortion;
+          spouseValue += spousePortion;
+          console.log(`  -> Adding ${userPortion} to user (${userQuote * 100}% of ${estimatedValue}) with quotes`);
+          console.log(`  -> Adding ${spousePortion} to spouse (${spouseQuote * 100}% of ${estimatedValue}) with quotes`);
+        } else {
+          // Biens propres de l'utilisateur (100%)
+          userValue += estimatedValue;
+          console.log(`  -> Adding ${estimatedValue} to user (propre 100%)`);
+        }
       } else if (asset.detenteur === 'spouse' || asset.detenteur === 'conjoint') {
-        // Biens propres du conjoint
-        spouseValue += estimatedValue;
-        console.log(`  -> Adding ${estimatedValue} to spouse (propre)`);
+        if (asset.pourcentage_utilisateur || asset.pourcentage_conjoint) {
+          // Répartir selon les quotes définies
+          const userQuote = (asset.pourcentage_utilisateur ?? 0) / 100;
+          const spouseQuote = (asset.pourcentage_conjoint ?? 100) / 100;
+          const userPortion = estimatedValue * userQuote;
+          const spousePortion = estimatedValue * spouseQuote;
+          userValue += userPortion;
+          spouseValue += spousePortion;
+          console.log(`  -> Adding ${userPortion} to user (${userQuote * 100}% of ${estimatedValue}) with quotes`);
+          console.log(`  -> Adding ${spousePortion} to spouse (${spouseQuote * 100}% of ${estimatedValue}) with quotes`);
+        } else {
+          // Biens propres du conjoint (100%)
+          spouseValue += estimatedValue;
+          console.log(`  -> Adding ${estimatedValue} to spouse (propre 100%)`);
+        }
       } else if (asset.detenteur === 'common' || asset.detenteur === 'commun' || asset.detenteur === 'couple') {
         // Biens communs - répartir selon les quote-parts
-        const userQuote = (asset.pourcentage_utilisateur || 50) / 100;
-        const spouseQuote = (asset.pourcentage_conjoint || 50) / 100;
+        const userQuote = (asset.pourcentage_utilisateur ?? 50) / 100;
+        const spouseQuote = (asset.pourcentage_conjoint ?? 50) / 100;
         
         const userPortion = estimatedValue * userQuote;
         const spousePortion = estimatedValue * spouseQuote;
         
         userValue += userPortion;
         spouseValue += spousePortion;
-        console.log(`  -> Adding ${userPortion} to user (${userQuote * 100}% of ${estimatedValue})`);
-        console.log(`  -> Adding ${spousePortion} to spouse (${spouseQuote * 100}% of ${estimatedValue})`);
+        console.log(`  -> Adding ${userPortion} to user (${userQuote * 100}% of ${estimatedValue}) common asset`);
+        console.log(`  -> Adding ${spousePortion} to spouse (${spouseQuote * 100}% of ${estimatedValue}) common asset`);
       } else {
         console.log(`  -> Unknown detenteur: "${asset.detenteur}"`);
       }
