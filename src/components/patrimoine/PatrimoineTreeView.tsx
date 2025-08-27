@@ -5,6 +5,7 @@ import { getAssetCategory } from '@/constants/assetTypes';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 
 interface PatrimoineTreeViewProps {
   assets: Asset[];
@@ -13,6 +14,8 @@ interface PatrimoineTreeViewProps {
 
 export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewProps) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const { data: familyProfile } = useFamilyProfile();
+  const { data: maritalStatus } = useMaritalStatus();
 
   const totalValue = assets.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
 
@@ -49,12 +52,32 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewPr
     return totalValue > 0 ? ((assetValue / totalValue) * 100).toFixed(2) : '0.00';
   };
 
+  const formatDetenteur = (detenteur: string | undefined) => {
+    if (!detenteur) return familyProfile?.prenom || 'Utilisateur';
+    
+    switch (detenteur.toLowerCase()) {
+      case 'user':
+      case 'utilisateur':
+        return familyProfile?.prenom || 'Utilisateur';
+      case 'spouse':
+      case 'conjoint':
+        return maritalStatus?.prenom_conjoint || 'Conjoint';
+      case 'common':
+      case 'commun':
+      case 'couple':
+        return 'Commun';
+      default:
+        return detenteur;
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Catégorie / Actif</TableHead>
+            <TableHead className="text-center w-[120px]">Détenteur</TableHead>
             <TableHead className="text-center w-[120px]">Poids</TableHead>
             <TableHead className="text-center w-[150px]">Valeur</TableHead>
             <TableHead className="text-center w-[120px]">+/- Value</TableHead>
@@ -89,6 +112,9 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewPr
                     </Button>
                   </TableCell>
                   <TableCell className="text-center font-normal">
+                    <span className="text-muted-foreground">—</span>
+                  </TableCell>
+                  <TableCell className="text-center font-normal">
                     {categoryWeight}%
                   </TableCell>
                   <TableCell className="text-center font-normal">
@@ -115,6 +141,9 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewPr
                             </div>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell className="text-center font-normal">
+                        {formatDetenteur(asset.detenteur)}
                       </TableCell>
                       <TableCell className="text-center font-normal">
                         {assetWeight}%
