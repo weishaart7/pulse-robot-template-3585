@@ -6,11 +6,11 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 const FiscalOverviewCard = () => {
   const [activeTab, setActiveTab] = useState("income");
 
-  // Données aléatoires pour le graphique
+  // Données aléatoires pour le graphique - couleurs inversées de transmission
   const chartData = [
-    { name: 'IR', value: 9365, color: '#3b82f6' },
-    { name: 'Prélèvements sociaux', value: 2500, color: '#8b5cf6' },
-    { name: 'IFI', value: 0, color: '#06b6d4' }
+    { name: 'IR', value: 9365, color: '#05aaa4' },
+    { name: 'Prélèvements sociaux', value: 2500, color: '#caeffb' },
+    { name: 'IFI', value: 0, color: '#0b5563' }
   ];
 
   const incomeData = {
@@ -37,7 +37,7 @@ const FiscalOverviewCard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Graphique */}
           <div className="flex items-center justify-center">
-            <div className="relative w-64 h-64">
+            <div className="relative w-80 h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -45,8 +45,11 @@ const FiscalOverviewCard = () => {
                     data={chartData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
+                    innerRadius={120}
+                    outerRadius={140}
+                    paddingAngle={2}
+                    stroke="hsl(var(--background))"
+                    strokeWidth={2}
                   >
                     {chartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
