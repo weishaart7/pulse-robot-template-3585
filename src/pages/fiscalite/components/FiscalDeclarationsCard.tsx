@@ -43,14 +43,14 @@ const FiscalDeclarationsCard = () => {
                 <Button
                   key={itemIndex}
                   variant="ghost"
-                  className="w-full justify-start h-auto p-3 text-left"
+                  className="w-full justify-start h-auto p-3 text-left hover:bg-accent/50"
                 >
-                  <div className="flex items-start gap-3 w-full">
-                    <Badge variant="secondary" className="shrink-0">
+                  <div className="flex items-start gap-3 w-full overflow-hidden">
+                    <Badge variant="secondary" className="shrink-0 text-xs">
                       {item.code}
                     </Badge>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm leading-tight">
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                      <div className="font-medium text-sm leading-tight text-wrap break-words hyphens-auto">
                         {item.title}
                       </div>
                     </div>
