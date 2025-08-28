@@ -244,7 +244,7 @@ export const SocietesSynthese = () => {
             {societes.map((societe) => (
               <TableRow key={societe.id}>
                 <TableCell className="font-medium">{societe.denomination}</TableCell>
-                <TableCell>{societe.type_societe}</TableCell>
+                <TableCell>{societe.type_societe?.toUpperCase()}</TableCell>
                 <TableCell>{societe.date_creation ? new Date(societe.date_creation).toLocaleDateString('fr-FR') : '-'}</TableCell>
                 <TableCell>{societe.valeur_estimee ? formatCurrency(societe.valeur_estimee) : '-'}</TableCell>
                 <TableCell>{societe.capital_social ? formatCurrency(societe.capital_social) : '-'}</TableCell>
