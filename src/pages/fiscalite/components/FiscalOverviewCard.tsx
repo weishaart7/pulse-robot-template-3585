@@ -66,11 +66,11 @@ const FiscalOverviewCard = () => {
           {/* Onglets et détails */}
           <div>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="income" className="text-xs">
+              <TabsList className="grid w-full grid-cols-2 overflow-hidden">
+                <TabsTrigger value="income" className="text-xs px-2 text-wrap break-words hyphens-auto">
                   Impôts sur le revenu
                 </TabsTrigger>
-                <TabsTrigger value="wealth" className="text-xs">
+                <TabsTrigger value="wealth" className="text-xs px-2 text-wrap break-words hyphens-auto">
                   Impôts sur la fortune immobilière
                 </TabsTrigger>
               </TabsList>
