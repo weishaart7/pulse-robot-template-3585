@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { ArrowLeft } from 'lucide-react';
 import IFISidebar from './ifi/IFISidebar';
 import HypothesesSection from './ifi/HypothesesSection';
@@ -15,6 +16,35 @@ interface IFIInterfaceProps {
 
 const IFIInterface = ({ onClose }: IFIInterfaceProps) => {
   const [activeSection, setActiveSection] = useState('hypotheses');
+
+  const sections = [
+    'hypotheses',
+    'situations-particulieres', 
+    'immeubles-batis',
+    'immeubles-non-batis',
+    'biens-detenus-indirectement'
+  ];
+
+  const currentIndex = sections.indexOf(activeSection);
+  const isFirst = currentIndex === 0;
+  const isLast = currentIndex === sections.length - 1;
+
+  const handlePrevious = () => {
+    if (!isFirst) {
+      setActiveSection(sections[currentIndex - 1]);
+    }
+  };
+
+  const handleNext = () => {
+    if (!isLast) {
+      setActiveSection(sections[currentIndex + 1]);
+    }
+  };
+
+  const handleSave = () => {
+    // TODO: Logique de sauvegarde
+    onClose();
+  };
 
   const renderContent = () => {
     switch (activeSection) {
@@ -59,6 +89,34 @@ const IFIInterface = ({ onClose }: IFIInterfaceProps) => {
           <Card>
             <CardContent className="p-6">
               {renderContent()}
+              
+              {/* Navigation buttons */}
+              <Separator className="my-6" />
+              <div className="flex justify-between items-center">
+                <Button variant="outline" onClick={onClose}>
+                  Annuler
+                </Button>
+                
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={handlePrevious}
+                    disabled={isFirst}
+                  >
+                    Précédent
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleNext}
+                    disabled={isLast}
+                  >
+                    Suivant
+                  </Button>
+                  <Button onClick={handleSave}>
+                    Enregistrer
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
