@@ -9,6 +9,11 @@ import SituationsParticulieresSection from './ifi/SituationsParticulieresSection
 import ImmeublesBatisSection from './ifi/ImmeublesBatisSection';
 import ImmeublesNonBatisSection from './ifi/ImmeublesNonBatisSection';
 import BiensDetenusIndirectementSection from './ifi/BiensDetenusIndirectementSection';
+import BiensProfessionnelsExoneresSection from './ifi/BiensProfessionnelsExoneresSection';
+import PassifsDeductionsSection from './ifi/PassifsDeductionsSection';
+import IFIHorsFranceSection from './ifi/IFIHorsFranceSection';
+import BaseImposableSection from './ifi/BaseImposableSection';
+import BaremeSection from './ifi/BaremeSection';
 
 interface IFIInterfaceProps {
   onClose: () => void;
@@ -22,7 +27,12 @@ const IFIInterface = ({ onClose }: IFIInterfaceProps) => {
     'situations-particulieres', 
     'immeubles-batis',
     'immeubles-non-batis',
-    'biens-detenus-indirectement'
+    'biens-detenus-indirectement',
+    'biens-professionnels-exoneres',
+    'passifs-deductions',
+    'ifi-hors-france',
+    'base-imposable',
+    'bareme'
   ];
 
   const currentIndex = sections.indexOf(activeSection);
@@ -58,6 +68,16 @@ const IFIInterface = ({ onClose }: IFIInterfaceProps) => {
         return <ImmeublesNonBatisSection />;
       case 'biens-detenus-indirectement':
         return <BiensDetenusIndirectementSection />;
+      case 'biens-professionnels-exoneres':
+        return <BiensProfessionnelsExoneresSection />;
+      case 'passifs-deductions':
+        return <PassifsDeductionsSection />;
+      case 'ifi-hors-france':
+        return <IFIHorsFranceSection />;
+      case 'base-imposable':
+        return <BaseImposableSection />;
+      case 'bareme':
+        return <BaremeSection />;
       default:
         return <HypothesesSection />;
     }

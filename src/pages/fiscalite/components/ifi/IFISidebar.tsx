@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Settings, AlertCircle, Home, TreePine, Building } from 'lucide-react';
+import { Settings, AlertCircle, Home, TreePine, Building, Briefcase, Minus, Globe, Calculator, BarChart3 } from 'lucide-react';
 
 interface IFISidebarProps {
   activeSection: string;
@@ -15,6 +15,11 @@ const IFISidebar = ({ activeSection, onSectionChange }: IFISidebarProps) => {
     { id: 'immeubles-batis', label: 'Immeubles bâtis', icon: Home },
     { id: 'immeubles-non-batis', label: 'Immeubles non bâtis', icon: TreePine },
     { id: 'biens-detenus-indirectement', label: 'Biens détenus indirectement', icon: Building },
+    { id: 'biens-professionnels-exoneres', label: 'Biens professionnels exonérés', icon: Briefcase },
+    { id: 'passifs-deductions', label: 'Passifs et déductions', icon: Minus },
+    { id: 'ifi-hors-france', label: 'IFI hors de France', icon: Globe },
+    { id: 'base-imposable', label: 'Base imposable', icon: Calculator },
+    { id: 'bareme', label: 'Barème', icon: BarChart3 },
   ];
 
   return (
