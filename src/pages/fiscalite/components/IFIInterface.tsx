@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft } from 'lucide-react';
 import IFISidebar from './ifi/IFISidebar';
+import ResumeSection from './ifi/ResumeSection';
 import HypothesesSection from './ifi/HypothesesSection';
 import SituationsParticulieresSection from './ifi/SituationsParticulieresSection';
 import ImmeublesBatisSection from './ifi/ImmeublesBatisSection';
@@ -20,11 +21,11 @@ interface IFIInterfaceProps {
 }
 
 const IFIInterface = ({ onClose }: IFIInterfaceProps) => {
-  const [activeSection, setActiveSection] = useState('hypotheses');
+  const [activeSection, setActiveSection] = useState('resume');
 
   const sections = [
+    'resume',
     'hypotheses',
-    'situations-particulieres', 
     'immeubles-batis',
     'immeubles-non-batis',
     'biens-detenus-indirectement',
@@ -58,10 +59,10 @@ const IFIInterface = ({ onClose }: IFIInterfaceProps) => {
 
   const renderContent = () => {
     switch (activeSection) {
+      case 'resume':
+        return <ResumeSection />;
       case 'hypotheses':
         return <HypothesesSection />;
-      case 'situations-particulieres':
-        return <SituationsParticulieresSection />;
       case 'immeubles-batis':
         return <ImmeublesBatisSection />;
       case 'immeubles-non-batis':
@@ -79,7 +80,7 @@ const IFIInterface = ({ onClose }: IFIInterfaceProps) => {
       case 'bareme':
         return <BaremeSection />;
       default:
-        return <HypothesesSection />;
+        return <ResumeSection />;
     }
   };
 
