@@ -32,13 +32,13 @@ const IFISidebar = ({ activeSection, onSectionChange }: IFISidebarProps) => {
               key={section.id}
               variant="ghost"
               className={cn(
-                "w-full justify-start text-left h-auto p-3",
+                "w-full justify-start text-left h-auto p-3 overflow-hidden whitespace-normal",
                 activeSection === section.id && "bg-primary/10 text-primary border border-primary/20"
               )}
               onClick={() => onSectionChange(section.id)}
             >
               <Icon className="h-4 w-4 mr-3 shrink-0" />
-              <span className="text-sm font-medium break-words hyphens-auto leading-tight">{section.label}</span>
+              <span className="text-sm font-medium break-words hyphens-auto leading-tight flex-1 min-w-0">{section.label}</span>
             </Button>
           );
         })}
