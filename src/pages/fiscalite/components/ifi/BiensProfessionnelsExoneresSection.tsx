@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Briefcase, Plus } from 'lucide-react';
+import { Briefcase, Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,18 +19,14 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import BiensProfessionnelsExoneresForm from './BiensProfessionnelsExoneresForm';
-
-interface BiensProfessionnelsExoneres {
-  id: string;
-  designation: string;
-  categorie: string;
-  valeurTotale: number;
-  valeurDeclaree: number;
-}
+import { useIFIBiensProfessionnelsExoneres } from '@/hooks/useIFI';
+import { IFIBienProfessionnelExonere } from '@/types/ifi';
 
 const BiensProfessionnelsExoneresSection = () => {
-  const [biens, setBiens] = useState<BiensProfessionnelsExoneres[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingBien, setEditingBien] = useState<IFIBienProfessionnelExonere | null>(null);
+  
+  const { biens, loading, createBien, updateBien, deleteBien } = useIFIBiensProfessionnelsExoneres();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -39,16 +35,37 @@ const BiensProfessionnelsExoneresSection = () => {
     }).format(amount);
   };
 
-  const handleAddBien = (newBien: Omit<BiensProfessionnelsExoneres, 'id'>) => {
-    const bien: BiensProfessionnelsExoneres = {
-      ...newBien,
-      id: Date.now().toString(),
-    };
-    setBiens([...biens, bien]);
-    setIsDialogOpen(false);
+  const handleAddBien = async (newBien: Omit<IFIBienProfessionnelExonere, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    try {
+      if (editingBien?.id) {
+        await updateBien(editingBien.id, newBien);
+      } else {
+        await createBien(newBien);
+      }
+      setIsDialogOpen(false);
+      setEditingBien(null);
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+    }
   };
 
-  const totalValue = biens.reduce((sum, bien) => sum + bien.valeurTotale, 0);
+  const handleEdit = (bien: IFIBienProfessionnelExonere) => {
+    setEditingBien(bien);
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce bien ?')) {
+      await deleteBien(id);
+    }
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setEditingBien(null);
+  };
+
+  const totalValue = biens.reduce((sum, bien) => sum + (bien.valeur || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -72,41 +89,81 @@ const BiensProfessionnelsExoneresSection = () => {
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Ajouter un bien professionnel exonéré</DialogTitle>
+              <DialogTitle>
+                {editingBien ? 'Modifier le bien professionnel exonéré' : 'Ajouter un bien professionnel exonéré'}
+              </DialogTitle>
             </DialogHeader>
-            <BiensProfessionnelsExoneresForm onSubmit={handleAddBien} />
+            <BiensProfessionnelsExoneresForm 
+              onSubmit={handleAddBien} 
+            />
           </DialogContent>
         </Dialog>
       </div>
 
-      {biens.length > 0 && (
+      {(loading || biens.length > 0) && (
         <Card>
           <CardHeader>
             <CardTitle>Biens professionnels exonérés déclarés</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Désignation</TableHead>
-                  <TableHead>Catégorie</TableHead>
-                  <TableHead>Valeur totale</TableHead>
-                  <TableHead>Valeur déclarée</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {biens.map((bien) => (
-                  <TableRow key={bien.id}>
-                    <TableCell className="font-medium">{bien.designation}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{bien.categorie}</Badge>
-                    </TableCell>
-                    <TableCell>{formatCurrency(bien.valeurTotale)}</TableCell>
-                    <TableCell>{formatCurrency(bien.valeurDeclaree)}</TableCell>
+            {loading ? (
+              <div className="text-center py-8">Chargement des données...</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Désignation</TableHead>
+                    <TableHead>Catégorie</TableHead>
+                    <TableHead>Valeur totale</TableHead>
+                    <TableHead>Valeur déclarée</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {biens.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        Aucun bien professionnel exonéré enregistré
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    biens.map((bien) => {
+                      // Les biens professionnels exonérés peuvent avoir un abattement
+                      const valeurDeclaree = (bien.valeur || 0) * 0.7; // Exemple d'abattement de 30%
+                      
+                      return (
+                        <TableRow key={bien.id}>
+                          <TableCell className="font-medium">{bien.designation}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">Bien professionnel</Badge>
+                          </TableCell>
+                          <TableCell>{formatCurrency(bien.valeur || 0)}</TableCell>
+                          <TableCell>{formatCurrency(valeurDeclaree)}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEdit(bien)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDelete(bien.id!)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       )}

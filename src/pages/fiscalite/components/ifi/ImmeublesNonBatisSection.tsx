@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TreePine, Plus } from 'lucide-react';
+import { TreePine, Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,18 +19,14 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import ImmeublesNonBatisForm from './ImmeublesNonBatisForm';
-
-interface ImmeublesNonBatis {
-  id: string;
-  designation: string;
-  categorie: string;
-  valeurTotale: number;
-  valeurDeclaree: number;
-}
+import { useIFIImmeublesNonBatis } from '@/hooks/useIFI';
+import { IFIImmeableNonBati } from '@/types/ifi';
 
 const ImmeublesNonBatisSection = () => {
-  const [biens, setBiens] = useState<ImmeublesNonBatis[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingBien, setEditingBien] = useState<IFIImmeableNonBati | null>(null);
+  
+  const { biens, loading, createBien, updateBien, deleteBien } = useIFIImmeublesNonBatis();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -39,16 +35,37 @@ const ImmeublesNonBatisSection = () => {
     }).format(amount);
   };
 
-  const handleAddBien = (newBien: Omit<ImmeublesNonBatis, 'id'>) => {
-    const bien: ImmeublesNonBatis = {
-      ...newBien,
-      id: Date.now().toString(),
-    };
-    setBiens([...biens, bien]);
-    setIsDialogOpen(false);
+  const handleAddBien = async (newBien: Omit<IFIImmeableNonBati, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    try {
+      if (editingBien?.id) {
+        await updateBien(editingBien.id, newBien);
+      } else {
+        await createBien(newBien);
+      }
+      setIsDialogOpen(false);
+      setEditingBien(null);
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+    }
   };
 
-  const totalValue = biens.reduce((sum, bien) => sum + bien.valeurTotale, 0);
+  const handleEdit = (bien: IFIImmeableNonBati) => {
+    setEditingBien(bien);
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce bien ?')) {
+      await deleteBien(id);
+    }
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setEditingBien(null);
+  };
+
+  const totalValue = biens.reduce((sum, bien) => sum + (bien.valeur_totale || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -72,41 +89,76 @@ const ImmeublesNonBatisSection = () => {
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Ajouter un immeuble non bâti</DialogTitle>
+              <DialogTitle>
+                {editingBien ? 'Modifier l\'immeuble non bâti' : 'Ajouter un immeuble non bâti'}
+              </DialogTitle>
             </DialogHeader>
-            <ImmeublesNonBatisForm onSubmit={handleAddBien} />
+            <ImmeublesNonBatisForm 
+              onSubmit={handleAddBien} 
+            />
           </DialogContent>
         </Dialog>
       </div>
 
-      {biens.length > 0 && (
+      {(loading || biens.length > 0) && (
         <Card>
           <CardHeader>
             <CardTitle>Immeubles non bâtis déclarés</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Désignation</TableHead>
-                  <TableHead>Catégorie</TableHead>
-                  <TableHead>Valeur totale</TableHead>
-                  <TableHead>Valeur déclarée</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {biens.map((bien) => (
-                  <TableRow key={bien.id}>
-                    <TableCell className="font-medium">{bien.designation}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{bien.categorie}</Badge>
-                    </TableCell>
-                    <TableCell>{formatCurrency(bien.valeurTotale)}</TableCell>
-                    <TableCell>{formatCurrency(bien.valeurDeclaree)}</TableCell>
+            {loading ? (
+              <div className="text-center py-8">Chargement des données...</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Désignation</TableHead>
+                    <TableHead>Catégorie</TableHead>
+                    <TableHead>Valeur totale</TableHead>
+                    <TableHead>Valeur déclarée</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {biens.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        Aucun immeuble non bâti enregistré
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    biens.map((bien) => (
+                      <TableRow key={bien.id}>
+                        <TableCell className="font-medium">{bien.designation}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{bien.categorie}</Badge>
+                        </TableCell>
+                        <TableCell>{formatCurrency(bien.valeur_totale || 0)}</TableCell>
+                        <TableCell>{formatCurrency(bien.valeur_totale || 0)}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEdit(bien)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDelete(bien.id!)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       )}

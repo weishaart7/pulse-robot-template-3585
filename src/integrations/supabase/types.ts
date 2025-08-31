@@ -307,6 +307,423 @@ export type Database = {
         }
         Relationships: []
       }
+      ifi_biens_detenus_indirectement: {
+        Row: {
+          adresse_code_postal: string | null
+          adresse_pays: string | null
+          adresse_rue: string | null
+          adresse_ville: string | null
+          bien_en_indivision: boolean | null
+          categorie: string
+          created_at: string
+          denomination_societe: string | null
+          designation: string
+          id: string
+          nature_droits_detenus: string | null
+          pourcentage_capital: number | null
+          pourcentage_indivision: number | null
+          siren: string | null
+          updated_at: string
+          user_id: string
+          valeur_bien: number | null
+          valeur_venale_parts: number | null
+        }
+        Insert: {
+          adresse_code_postal?: string | null
+          adresse_pays?: string | null
+          adresse_rue?: string | null
+          adresse_ville?: string | null
+          bien_en_indivision?: boolean | null
+          categorie: string
+          created_at?: string
+          denomination_societe?: string | null
+          designation: string
+          id?: string
+          nature_droits_detenus?: string | null
+          pourcentage_capital?: number | null
+          pourcentage_indivision?: number | null
+          siren?: string | null
+          updated_at?: string
+          user_id: string
+          valeur_bien?: number | null
+          valeur_venale_parts?: number | null
+        }
+        Update: {
+          adresse_code_postal?: string | null
+          adresse_pays?: string | null
+          adresse_rue?: string | null
+          adresse_ville?: string | null
+          bien_en_indivision?: boolean | null
+          categorie?: string
+          created_at?: string
+          denomination_societe?: string | null
+          designation?: string
+          id?: string
+          nature_droits_detenus?: string | null
+          pourcentage_capital?: number | null
+          pourcentage_indivision?: number | null
+          siren?: string | null
+          updated_at?: string
+          user_id?: string
+          valeur_bien?: number | null
+          valeur_venale_parts?: number | null
+        }
+        Relationships: []
+      }
+      ifi_biens_professionnels_exoneres: {
+        Row: {
+          activite_entreprise: string | null
+          adresse_code_postal: string | null
+          adresse_pays: string | null
+          adresse_rue: string | null
+          adresse_ville: string | null
+          created_at: string
+          denomination_societe: string | null
+          designation: string
+          detenteur_groupe_familial: boolean | null
+          detenteur_redevable: boolean | null
+          detention_directe: boolean | null
+          detention_societe_interposee: boolean | null
+          exercice_entreprise_individuelle: boolean | null
+          exercice_gerant_commandite: boolean | null
+          exercice_gerant_majoritaire_sarl: boolean | null
+          exercice_societe_personne: boolean | null
+          exoneration_activite_principale: boolean | null
+          exoneration_fonction_droits: boolean | null
+          fonction_exercee: string | null
+          id: string
+          pourcentage_capital_detenu: number | null
+          pourcentage_detention: number | null
+          siren: string | null
+          updated_at: string
+          user_id: string
+          valeur: number | null
+        }
+        Insert: {
+          activite_entreprise?: string | null
+          adresse_code_postal?: string | null
+          adresse_pays?: string | null
+          adresse_rue?: string | null
+          adresse_ville?: string | null
+          created_at?: string
+          denomination_societe?: string | null
+          designation: string
+          detenteur_groupe_familial?: boolean | null
+          detenteur_redevable?: boolean | null
+          detention_directe?: boolean | null
+          detention_societe_interposee?: boolean | null
+          exercice_entreprise_individuelle?: boolean | null
+          exercice_gerant_commandite?: boolean | null
+          exercice_gerant_majoritaire_sarl?: boolean | null
+          exercice_societe_personne?: boolean | null
+          exoneration_activite_principale?: boolean | null
+          exoneration_fonction_droits?: boolean | null
+          fonction_exercee?: string | null
+          id?: string
+          pourcentage_capital_detenu?: number | null
+          pourcentage_detention?: number | null
+          siren?: string | null
+          updated_at?: string
+          user_id: string
+          valeur?: number | null
+        }
+        Update: {
+          activite_entreprise?: string | null
+          adresse_code_postal?: string | null
+          adresse_pays?: string | null
+          adresse_rue?: string | null
+          adresse_ville?: string | null
+          created_at?: string
+          denomination_societe?: string | null
+          designation?: string
+          detenteur_groupe_familial?: boolean | null
+          detenteur_redevable?: boolean | null
+          detention_directe?: boolean | null
+          detention_societe_interposee?: boolean | null
+          exercice_entreprise_individuelle?: boolean | null
+          exercice_gerant_commandite?: boolean | null
+          exercice_gerant_majoritaire_sarl?: boolean | null
+          exercice_societe_personne?: boolean | null
+          exoneration_activite_principale?: boolean | null
+          exoneration_fonction_droits?: boolean | null
+          fonction_exercee?: string | null
+          id?: string
+          pourcentage_capital_detenu?: number | null
+          pourcentage_detention?: number | null
+          siren?: string | null
+          updated_at?: string
+          user_id?: string
+          valeur?: number | null
+        }
+        Relationships: []
+      }
+      ifi_hors_france: {
+        Row: {
+          convention_fiscale: boolean | null
+          created_at: string
+          designation: string
+          id: string
+          impot_acquitte_etranger: number | null
+          pays: string
+          type_bien: string
+          updated_at: string
+          user_id: string
+          valeur: number | null
+        }
+        Insert: {
+          convention_fiscale?: boolean | null
+          created_at?: string
+          designation: string
+          id?: string
+          impot_acquitte_etranger?: number | null
+          pays: string
+          type_bien: string
+          updated_at?: string
+          user_id: string
+          valeur?: number | null
+        }
+        Update: {
+          convention_fiscale?: boolean | null
+          created_at?: string
+          designation?: string
+          id?: string
+          impot_acquitte_etranger?: number | null
+          pays?: string
+          type_bien?: string
+          updated_at?: string
+          user_id?: string
+          valeur?: number | null
+        }
+        Relationships: []
+      }
+      ifi_hypotheses: {
+        Row: {
+          actif: boolean | null
+          created_at: string
+          description: string | null
+          id: string
+          pourcentage: number | null
+          type_hypothese: string
+          updated_at: string
+          user_id: string
+          valeur: number | null
+        }
+        Insert: {
+          actif?: boolean | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          pourcentage?: number | null
+          type_hypothese: string
+          updated_at?: string
+          user_id: string
+          valeur?: number | null
+        }
+        Update: {
+          actif?: boolean | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          pourcentage?: number | null
+          type_hypothese?: string
+          updated_at?: string
+          user_id?: string
+          valeur?: number | null
+        }
+        Relationships: []
+      }
+      ifi_immeubles_batis: {
+        Row: {
+          adresse_code_postal: string | null
+          adresse_pays: string | null
+          adresse_rue: string | null
+          adresse_ville: string | null
+          bien_en_indivision: boolean | null
+          bien_mixte: boolean | null
+          categorie: string
+          created_at: string
+          date_acquisition: string | null
+          date_bail: string | null
+          designation: string
+          duree_bail: string | null
+          fraction_taxable: number | null
+          id: string
+          nature_droits_detenus: string | null
+          pourcentage_indivision: number | null
+          prix_acquisition: number | null
+          superficie_terrain: number | null
+          updated_at: string
+          user_id: string
+          valeur_totale: number | null
+        }
+        Insert: {
+          adresse_code_postal?: string | null
+          adresse_pays?: string | null
+          adresse_rue?: string | null
+          adresse_ville?: string | null
+          bien_en_indivision?: boolean | null
+          bien_mixte?: boolean | null
+          categorie: string
+          created_at?: string
+          date_acquisition?: string | null
+          date_bail?: string | null
+          designation: string
+          duree_bail?: string | null
+          fraction_taxable?: number | null
+          id?: string
+          nature_droits_detenus?: string | null
+          pourcentage_indivision?: number | null
+          prix_acquisition?: number | null
+          superficie_terrain?: number | null
+          updated_at?: string
+          user_id: string
+          valeur_totale?: number | null
+        }
+        Update: {
+          adresse_code_postal?: string | null
+          adresse_pays?: string | null
+          adresse_rue?: string | null
+          adresse_ville?: string | null
+          bien_en_indivision?: boolean | null
+          bien_mixte?: boolean | null
+          categorie?: string
+          created_at?: string
+          date_acquisition?: string | null
+          date_bail?: string | null
+          designation?: string
+          duree_bail?: string | null
+          fraction_taxable?: number | null
+          id?: string
+          nature_droits_detenus?: string | null
+          pourcentage_indivision?: number | null
+          prix_acquisition?: number | null
+          superficie_terrain?: number | null
+          updated_at?: string
+          user_id?: string
+          valeur_totale?: number | null
+        }
+        Relationships: []
+      }
+      ifi_immeubles_non_batis: {
+        Row: {
+          adresse_code_postal: string | null
+          adresse_pays: string | null
+          adresse_rue: string | null
+          adresse_ville: string | null
+          bien_en_indivision: boolean | null
+          bien_mixte: boolean | null
+          categorie: string
+          created_at: string
+          date_acquisition: string | null
+          date_bail: string | null
+          designation: string
+          duree_bail: string | null
+          fraction_taxable: number | null
+          id: string
+          nature: string | null
+          nature_droits_detenus: string | null
+          pourcentage_indivision: number | null
+          prix_acquisition: number | null
+          superficie_terrain: number | null
+          updated_at: string
+          user_id: string
+          valeur_totale: number | null
+        }
+        Insert: {
+          adresse_code_postal?: string | null
+          adresse_pays?: string | null
+          adresse_rue?: string | null
+          adresse_ville?: string | null
+          bien_en_indivision?: boolean | null
+          bien_mixte?: boolean | null
+          categorie: string
+          created_at?: string
+          date_acquisition?: string | null
+          date_bail?: string | null
+          designation: string
+          duree_bail?: string | null
+          fraction_taxable?: number | null
+          id?: string
+          nature?: string | null
+          nature_droits_detenus?: string | null
+          pourcentage_indivision?: number | null
+          prix_acquisition?: number | null
+          superficie_terrain?: number | null
+          updated_at?: string
+          user_id: string
+          valeur_totale?: number | null
+        }
+        Update: {
+          adresse_code_postal?: string | null
+          adresse_pays?: string | null
+          adresse_rue?: string | null
+          adresse_ville?: string | null
+          bien_en_indivision?: boolean | null
+          bien_mixte?: boolean | null
+          categorie?: string
+          created_at?: string
+          date_acquisition?: string | null
+          date_bail?: string | null
+          designation?: string
+          duree_bail?: string | null
+          fraction_taxable?: number | null
+          id?: string
+          nature?: string | null
+          nature_droits_detenus?: string | null
+          pourcentage_indivision?: number | null
+          prix_acquisition?: number | null
+          superficie_terrain?: number | null
+          updated_at?: string
+          user_id?: string
+          valeur_totale?: number | null
+        }
+        Relationships: []
+      }
+      ifi_passifs_deductions: {
+        Row: {
+          bien_concerne: string | null
+          commentaire: string | null
+          created_at: string
+          date_creation: string | null
+          designation: string
+          echeance: string | null
+          id: string
+          montant: number | null
+          taux_interet: number | null
+          type_passif: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bien_concerne?: string | null
+          commentaire?: string | null
+          created_at?: string
+          date_creation?: string | null
+          designation: string
+          echeance?: string | null
+          id?: string
+          montant?: number | null
+          taux_interet?: number | null
+          type_passif: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bien_concerne?: string | null
+          commentaire?: string | null
+          created_at?: string
+          date_creation?: string | null
+          designation?: string
+          echeance?: string | null
+          id?: string
+          montant?: number | null
+          taux_interet?: number | null
+          type_passif?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       liberalites: {
         Row: {
           beneficiaire: string
