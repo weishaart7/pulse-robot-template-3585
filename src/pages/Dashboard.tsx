@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AnimatedCard, CardBody, CardDescription as AnimatedDescription, CardTitle as AnimatedTitle, CardVisual, Visual2 } from '@/components/ui/animated-card-diagram';
 import BudgetStatisticsCard from '@/components/ui/budget-statistics-card';
 import { useRevenus, useCharges } from '@/hooks/useBudget';
 import { useFamilyProfile } from '@/hooks/useFamilyData';
@@ -11,6 +12,12 @@ const Dashboard = () => {
 
   const totalRevenus = revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0);
   const totalCharges = charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
+  const solde = totalRevenus - totalCharges;
+  
+  // Calcul du pourcentage pour la visualisation (épargne par rapport aux revenus)
+  const budgetPercentage = totalRevenus > 0 
+    ? Math.max(0, Math.min(100, ((solde / totalRevenus) * 100))) 
+    : 0;
 
   return (
     <div className="p-6">
@@ -52,26 +59,24 @@ const Dashboard = () => {
         </Card>
 
         {/* Budget */}
-        <Card className="h-40 relative overflow-hidden rounded-2xl border-0 shadow-sm" style={{ backgroundColor: '#E3F4FF' }}>
-          <CardContent className="p-6 h-full flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#1B3EB3' }}>
-                <svg className="w-4 h-4" style={{ color: '#E3F4FF' }} fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
-                </svg>
-              </div>
-              <button className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: '#1B3EB3' }}>
-                <span className="text-xs font-bold" style={{ color: '#E3F4FF' }}>+</span>
-              </button>
-            </div>
-            <div className="flex-1 flex flex-col justify-end">
-              <h3 className="text-xs font-medium mb-1" style={{ color: '#1B3EB3', opacity: 0.8 }}>Budget</h3>
-              <span className="text-3xl font-bold" style={{ color: '#1B3EB3' }}>
-                {(totalRevenus - totalCharges).toLocaleString('fr-FR')} €
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="h-40" style={{ backgroundColor: '#E3F4FF' }}>
+          <AnimatedCard style={{ backgroundColor: '#E3F4FF' }}>
+            <CardVisual>
+              <Visual2 
+                mainColor="#1B3EB3" 
+                secondaryColor="#E3F4FF" 
+                percentage={Math.round(budgetPercentage)}
+                amount={solde.toLocaleString('fr-FR') + ' €'}
+              />
+            </CardVisual>
+            <CardBody>
+              <AnimatedTitle style={{ color: '#1B3EB3', opacity: 0.8 }}>Budget</AnimatedTitle>
+              <AnimatedDescription style={{ color: '#1B3EB3' }}>
+                {solde.toLocaleString('fr-FR')} €
+              </AnimatedDescription>
+            </CardBody>
+          </AnimatedCard>
+        </div>
 
         {/* Fiscalité */}
         <Card className="h-40 relative overflow-hidden rounded-2xl border-0 shadow-sm" style={{ backgroundColor: '#61328A' }}>
