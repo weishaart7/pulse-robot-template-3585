@@ -4,36 +4,25 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft } from 'lucide-react';
 import IFISidebar from './ifi/IFISidebar';
-import ResumeSection from './ifi/ResumeSection';
 import HypothesesSection from './ifi/HypothesesSection';
-import SituationsParticulieresSection from './ifi/SituationsParticulieresSection';
-import ImmeublesBatisSection from './ifi/ImmeublesBatisSection';
-import ImmeublesNonBatisSection from './ifi/ImmeublesNonBatisSection';
-import BiensDetenusIndirectementSection from './ifi/BiensDetenusIndirectementSection';
-import BiensProfessionnelsExoneresSection from './ifi/BiensProfessionnelsExoneresSection';
-import PassifsDeductionsSection from './ifi/PassifsDeductionsSection';
-import IFIHorsFranceSection from './ifi/IFIHorsFranceSection';
-import BaseImposableSection from './ifi/BaseImposableSection';
-import BaremeSection from './ifi/BaremeSection';
+import ListeBiensIFISection from './ifi/ListeBiensIFISection';
+import BaremeIFISection from './ifi/BaremeIFISection';
+import ReductionsPlafonnementSection from './ifi/ReductionsPlafonnementSection';
+import MontantRedevableSection from './ifi/MontantRedevableSection';
 
 interface IFIInterfaceProps {
   onClose: () => void;
 }
 
 const IFIInterface = ({ onClose }: IFIInterfaceProps) => {
-  const [activeSection, setActiveSection] = useState('resume');
+  const [activeSection, setActiveSection] = useState('hypotheses');
 
   const sections = [
-    'resume',
     'hypotheses',
-    'immeubles-batis',
-    'immeubles-non-batis',
-    'biens-detenus-indirectement',
-    'biens-professionnels-exoneres',
-    'passifs-deductions',
-    'ifi-hors-france',
-    'base-imposable',
-    'bareme'
+    'liste-biens-ifi',
+    'bareme-ifi',
+    'reductions-plafonnement',
+    'montant-redevable'
   ];
 
   const currentIndex = sections.indexOf(activeSection);
@@ -59,28 +48,18 @@ const IFIInterface = ({ onClose }: IFIInterfaceProps) => {
 
   const renderContent = () => {
     switch (activeSection) {
-      case 'resume':
-        return <ResumeSection />;
       case 'hypotheses':
         return <HypothesesSection />;
-      case 'immeubles-batis':
-        return <ImmeublesBatisSection />;
-      case 'immeubles-non-batis':
-        return <ImmeublesNonBatisSection />;
-      case 'biens-detenus-indirectement':
-        return <BiensDetenusIndirectementSection />;
-      case 'biens-professionnels-exoneres':
-        return <BiensProfessionnelsExoneresSection />;
-      case 'passifs-deductions':
-        return <PassifsDeductionsSection />;
-      case 'ifi-hors-france':
-        return <IFIHorsFranceSection />;
-      case 'base-imposable':
-        return <BaseImposableSection />;
-      case 'bareme':
-        return <BaremeSection />;
+      case 'liste-biens-ifi':
+        return <ListeBiensIFISection />;
+      case 'bareme-ifi':
+        return <BaremeIFISection />;
+      case 'reductions-plafonnement':
+        return <ReductionsPlafonnementSection />;
+      case 'montant-redevable':
+        return <MontantRedevableSection />;
       default:
-        return <ResumeSection />;
+        return <HypothesesSection />;
     }
   };
 

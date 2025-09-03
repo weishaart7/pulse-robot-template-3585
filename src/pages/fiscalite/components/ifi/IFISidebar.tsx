@@ -10,16 +10,11 @@ interface IFISidebarProps {
 
 const IFISidebar = ({ activeSection, onSectionChange }: IFISidebarProps) => {
   const sections = [
-    { id: 'resume', label: 'Résumé', icon: FileText },
     { id: 'hypotheses', label: 'Hypothèses', icon: Settings },
-    { id: 'immeubles-batis', label: 'Immeubles bâtis', icon: Home },
-    { id: 'immeubles-non-batis', label: 'Immeubles non bâtis', icon: TreePine },
-    { id: 'biens-detenus-indirectement', label: 'Biens détenus indirectement', icon: Building },
-    { id: 'biens-professionnels-exoneres', label: 'Biens professionnels exonérés', icon: Briefcase },
-    { id: 'passifs-deductions', label: 'Passifs et déductions', icon: Minus },
-    { id: 'ifi-hors-france', label: 'IFI hors de France', icon: Globe },
-    { id: 'base-imposable', label: 'Base imposable', icon: Calculator },
-    { id: 'bareme', label: 'Barème', icon: BarChart3 },
+    { id: 'liste-biens-ifi', label: 'Liste des biens à l\'IFI', icon: FileText },
+    { id: 'bareme-ifi', label: 'Barème de l\'IFI', icon: BarChart3 },
+    { id: 'reductions-plafonnement', label: 'Réduction & Plafonnement de l\'IFI', icon: Calculator },
+    { id: 'montant-redevable', label: 'Montant redevable à l\'IFI', icon: AlertCircle },
   ];
 
   return (
