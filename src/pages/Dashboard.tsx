@@ -30,66 +30,49 @@ const Dashboard = () => {
         </div>
       </div>
       
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {/* Patrimoine total */}
-        <Card className="h-32 relative overflow-hidden" style={{ backgroundColor: '#FFF1E4' }}>
-          <CardContent className="p-4 h-full flex flex-col justify-between">
-            <h3 className="text-sm font-medium" style={{ color: '#895C32' }}>Patrimoine total</h3>
-            <div className="flex items-end">
-              <span className="text-2xl font-bold" style={{ color: '#895C32' }}>0 €</span>
-            </div>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Famille</CardTitle>
+            <CardDescription>
+              Gérez les informations de votre famille
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Contenu à venir...
+            </p>
           </CardContent>
         </Card>
-
-        {/* Budget */}
-        <Card className="h-32 relative overflow-hidden" style={{ backgroundColor: '#E3F4FF' }}>
-          <CardContent className="p-4 h-full flex flex-col justify-between">
-            <h3 className="text-sm font-medium" style={{ color: '#1B3EB3' }}>Budget</h3>
-            <div className="flex items-end">
-              <span className="text-2xl font-bold" style={{ color: '#1B3EB3' }}>
-                {(totalRevenus - totalCharges).toLocaleString('fr-FR')} €
-              </span>
-            </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Patrimoine</CardTitle>
+            <CardDescription>
+              Suivez l'évolution de votre patrimoine
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Contenu à venir...
+            </p>
           </CardContent>
         </Card>
-
-        {/* Fiscalité */}
-        <Card className="h-32 relative overflow-hidden" style={{ backgroundColor: '#61328A' }}>
-          <CardContent className="p-4 h-full flex flex-col justify-between">
-            <h3 className="text-sm font-medium" style={{ color: '#FFE3FE' }}>Fiscalité</h3>
-            <div className="flex items-end">
-              <span className="text-2xl font-bold" style={{ color: '#FFE3FE' }}>0 €</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Frais de succession */}
-        <Card className="h-32 relative overflow-hidden" style={{ backgroundColor: '#C8FFAC' }}>
-          <CardContent className="p-4 h-full flex flex-col justify-between">
-            <h3 className="text-sm font-medium" style={{ color: '#0F5D24' }}>Frais de succession</h3>
-            <div className="flex items-end">
-              <span className="text-2xl font-bold" style={{ color: '#0F5D24' }}>0 €</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Retraite */}
-        <Card className="h-32 relative overflow-hidden" style={{ backgroundColor: '#FDFFE3' }}>
-          <CardContent className="p-4 h-full flex flex-col justify-between">
-            <h3 className="text-sm font-medium" style={{ color: '#514A14' }}>Retraite</h3>
-            <div className="flex items-end">
-              <span className="text-2xl font-bold" style={{ color: '#514A14' }}>25 000 €/an</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Endettement */}
-        <Card className="h-32 relative overflow-hidden" style={{ backgroundColor: '#C4A9BA' }}>
-          <CardContent className="p-4 h-full flex flex-col justify-between">
-            <h3 className="text-sm font-medium" style={{ color: '#270A16' }}>Endettement</h3>
-            <div className="flex items-end">
-              <span className="text-2xl font-bold" style={{ color: '#270A16' }}>10%</span>
-            </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Budget</CardTitle>
+            <CardDescription>
+              Contrôlez vos finances au quotidien
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BudgetStatisticsCard 
+              totalRevenus={totalRevenus}
+              totalCharges={totalCharges}
+              revenusCount={revenus.length}
+              chargesCount={charges.length}
+            />
           </CardContent>
         </Card>
       </div>
