@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Plus } from 'lucide-react';
+import { FileText, Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AjouterBienForm } from './AjouterBienForm';
 import { AjouterPassifForm } from './AjouterPassifForm';
+import { useToast } from '@/hooks/use-toast';
 import { useIFIImmeubleBatis } from '@/hooks/useIFI';
 import { useIFIImmeublesNonBatis } from '@/hooks/useIFI';
 import { useIFIBiensDetenusIndirectement } from '@/hooks/useIFI';
@@ -14,11 +15,12 @@ import { useIFIBiensProfessionnelsExoneres } from '@/hooks/useIFI';
 const ListeBiensIFISection = () => {
   const [isAddBienDialogOpen, setIsAddBienDialogOpen] = useState(false);
   const [isAddPassifDialogOpen, setIsAddPassifDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   // Hooks pour récupérer les données depuis Supabase
-  const { biens: immeublesBatis, loading: loadingBatis, fetchBiens: fetchBatis } = useIFIImmeubleBatis();
-  const { biens: immeublesNonBatis, loading: loadingNonBatis, fetchBiens: fetchNonBatis } = useIFIImmeublesNonBatis();
-  const { biens: biensIndirects, loading: loadingIndirects, fetchBiens: fetchIndirects } = useIFIBiensDetenusIndirectement();
+  const { biens: immeublesBatis, loading: loadingBatis, fetchBiens: fetchBatis, deleteBien: deleteBatis } = useIFIImmeubleBatis();
+  const { biens: immeublesNonBatis, loading: loadingNonBatis, fetchBiens: fetchNonBatis, deleteBien: deleteNonBatis } = useIFIImmeublesNonBatis();
+  const { biens: biensIndirects, loading: loadingIndirects, fetchBiens: fetchIndirects, deleteBien: deleteIndirects } = useIFIBiensDetenusIndirectement();
   const { biens: biensExoneres, loading: loadingExoneres, fetchBiens: fetchExoneres } = useIFIBiensProfessionnelsExoneres();
 
   useEffect(() => {
@@ -38,15 +40,64 @@ const ListeBiensIFISection = () => {
     }).format(amount);
   };
 
+  const handleDeleteBien = async (bienId: string, type: 'batis' | 'non-batis' | 'indirects') => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce bien ?')) {
+      return;
+    }
+
+    try {
+      switch (type) {
+        case 'batis':
+          await deleteBatis(bienId);
+          break;
+        case 'non-batis':
+          await deleteNonBatis(bienId);
+          break;
+        case 'indirects':
+          await deleteIndirects(bienId);
+          break;
+      }
+      
+      toast({
+        title: "Succès",
+        description: "Le bien a été supprimé avec succès",
+      });
+      
+      // Refresh data
+      fetchBatis();
+      fetchNonBatis();
+      fetchIndirects();
+      fetchExoneres();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le bien",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditBien = (bienId: string, type: 'batis' | 'non-batis' | 'indirects') => {
+    // TODO: Implement edit functionality
+    toast({
+      title: "Information",
+      description: "La fonctionnalité de modification sera bientôt disponible",
+    });
+  };
+
   // Transformation des données pour le tableau
   const biensDirects = [
     ...immeublesBatis.map(bien => ({
+      id: bien.id,
+      type: bien.categorie === 'residence-principale' || bien.categorie === 'autre-immeuble-bati' ? 'batis' as const : 'non-batis' as const,
       libelle: bien.designation,
       categorie: bien.categorie === 'residence-principale' ? 'Résidence principale' : 'Autres immeubles bâtis',
       valeurTotale: bien.valeur_totale || 0,
       valeurDeclaree: bien.categorie === 'residence-principale' ? (bien.valeur_totale || 0) * 0.7 : bien.valeur_totale || 0
     })),
     ...immeublesNonBatis.map(bien => ({
+      id: bien.id,
+      type: 'non-batis' as const,
       libelle: bien.designation,
       categorie: bien.categorie,
       valeurTotale: bien.valeur_totale || 0,
@@ -55,6 +106,8 @@ const ListeBiensIFISection = () => {
   ];
 
   const biensIndirectsList = biensIndirects.map(bien => ({
+    id: bien.id,
+    type: 'indirects' as const,
     libelle: bien.designation,
     categorie: 'Fraction de la valeur des parts',
     valeurTotale: bien.valeur_bien || 0,
@@ -143,19 +196,21 @@ const ListeBiensIFISection = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-1/3">Libellé</TableHead>
-                  <TableHead className="w-1/3">Catégorie</TableHead>
+                  <TableHead className="w-1/4">Libellé</TableHead>
+                  <TableHead className="w-1/4">Catégorie</TableHead>
                   <TableHead className="w-1/6 text-right">Valeur totale</TableHead>
                   <TableHead className="w-1/6 text-right">Valeur déclarée</TableHead>
+                  <TableHead className="w-1/6 text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {biensDirects.length > 0 && (
                   <>
-                    <TableRow className="bg-muted/50 font-semibold">
+                     <TableRow className="bg-muted/50 font-semibold">
                       <TableCell colSpan={2}>Biens détenus directement</TableCell>
                       <TableCell className="text-right">{formatCurrency(biensDirects.reduce((sum, bien) => sum + bien.valeurTotale, 0))}</TableCell>
                       <TableCell className="text-right">{formatCurrency(biensDirects.reduce((sum, bien) => sum + bien.valeurDeclaree, 0))}</TableCell>
+                      <TableCell></TableCell>
                     </TableRow>
                     {biensDirects.map((bien, index) => (
                       <TableRow key={index} className="pl-4">
@@ -163,6 +218,25 @@ const ListeBiensIFISection = () => {
                         <TableCell>{bien.categorie}</TableCell>
                         <TableCell className="text-right">{formatCurrency(bien.valeurTotale)}</TableCell>
                         <TableCell className="text-right">{formatCurrency(bien.valeurDeclaree)}</TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditBien(bien.id, bien.type)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteBien(bien.id, bien.type)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </>
@@ -174,6 +248,7 @@ const ListeBiensIFISection = () => {
                       <TableCell colSpan={2}>Biens détenus indirectement</TableCell>
                       <TableCell className="text-right">{formatCurrency(biensIndirectsList.reduce((sum, bien) => sum + bien.valeurTotale, 0))}</TableCell>
                       <TableCell className="text-right">{formatCurrency(biensIndirectsList.reduce((sum, bien) => sum + bien.valeurDeclaree, 0))}</TableCell>
+                      <TableCell></TableCell>
                     </TableRow>
                     {biensIndirectsList.map((bien, index) => (
                       <TableRow key={index}>
@@ -181,6 +256,25 @@ const ListeBiensIFISection = () => {
                         <TableCell>{bien.categorie}</TableCell>
                         <TableCell className="text-right">{formatCurrency(bien.valeurTotale)}</TableCell>
                         <TableCell className="text-right">{formatCurrency(bien.valeurDeclaree)}</TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditBien(bien.id, bien.type)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteBien(bien.id, bien.type)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </>
@@ -191,22 +285,26 @@ const ListeBiensIFISection = () => {
                     <TableCell colSpan={2}>Total de l'actif brut</TableCell>
                     <TableCell className="text-right">{formatCurrency(totalActifBrut)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(totalValeurDeclaree)}</TableCell>
+                    <TableCell></TableCell>
                   </TableRow>
                 )}
 
                 {passifs.length > 0 && (
                   <>
                     <TableRow className="bg-muted/50 font-semibold">
-                      <TableCell colSpan={4}>Passifs & Déductions</TableCell>
+                      <TableCell colSpan={5}>Passifs & Déductions</TableCell>
                     </TableRow>
-                    {passifs.map((passif, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="pl-8">{passif.libelle}</TableCell>
-                        <TableCell>{passif.categorie}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(passif.montant)}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(passif.montant)}</TableCell>
-                      </TableRow>
-                    ))}
+                     {passifs.map((passif, index) => (
+                       <TableRow key={index}>
+                         <TableCell className="pl-8">{passif.libelle}</TableCell>
+                         <TableCell>{passif.categorie}</TableCell>
+                         <TableCell className="text-right">{formatCurrency(passif.montant)}</TableCell>
+                         <TableCell className="text-right">{formatCurrency(passif.montant)}</TableCell>
+                         <TableCell className="text-center">
+                           {/* TODO: Implement passif actions when available */}
+                         </TableCell>
+                       </TableRow>
+                     ))}
                   </>
                 )}
               </TableBody>
