@@ -20,7 +20,7 @@ const BaremeIFISection = () => {
   }, []);
 
   useEffect(() => {
-    // Calcul de la base imposable
+    // Calcul de la base imposable en utilisant les valeurs déclarées
     const biensDirects = [
       ...immeublesBatis.map(bien => ({
         valeurTotale: bien.valeur_totale || 0,
@@ -37,11 +37,12 @@ const BaremeIFISection = () => {
       valeurDeclaree: bien.valeur_bien || 0
     }));
 
-    const totalActifBrut = biensDirects.reduce((sum, bien) => sum + bien.valeurTotale, 0) + 
-                          biensIndirectsList.reduce((sum, bien) => sum + bien.valeurTotale, 0);
+    // Utilise les valeurs déclarées pour la base imposable
+    const totalValeurDeclaree = biensDirects.reduce((sum, bien) => sum + bien.valeurDeclaree, 0) + 
+                               biensIndirectsList.reduce((sum, bien) => sum + bien.valeurDeclaree, 0);
     
-    // Pour l'instant, pas de passifs implémentés, donc base imposable = actif brut
-    setBaseImposable(totalActifBrut);
+    // Pour l'instant, pas de passifs implémentés, donc base imposable = valeurs déclarées
+    setBaseImposable(totalValeurDeclaree);
   }, [immeublesBatis, immeublesNonBatis, biensIndirects]);
   
   const formatCurrency = (amount: number) => {
