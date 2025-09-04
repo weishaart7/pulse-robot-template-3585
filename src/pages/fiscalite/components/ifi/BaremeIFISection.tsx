@@ -1,11 +1,48 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BarChart3 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useIFIImmeubleBatis, useIFIImmeublesNonBatis, useIFIBiensDetenusIndirectement, useIFIBiensProfessionnelsExoneres } from '@/hooks/useIFI';
 
 const BaremeIFISection = () => {
-  // Exemple avec une base imposable de 1 500 000 €
-  const baseImposable = 1500000;
+  const { biens: immeublesBatis, loading: loadingBatis, fetchBiens: fetchBatis } = useIFIImmeubleBatis();
+  const { biens: immeublesNonBatis, loading: loadingNonBatis, fetchBiens: fetchNonBatis } = useIFIImmeublesNonBatis();
+  const { biens: biensIndirects, loading: loadingIndirects, fetchBiens: fetchIndirects } = useIFIBiensDetenusIndirectement();
+  const { biens: biensExoneres, loading: loadingExoneres, fetchBiens: fetchExoneres } = useIFIBiensProfessionnelsExoneres();
+  
+  const [baseImposable, setBaseImposable] = useState(0);
+
+  useEffect(() => {
+    fetchBatis();
+    fetchNonBatis();
+    fetchIndirects();
+    fetchExoneres();
+  }, []);
+
+  useEffect(() => {
+    // Calcul de la base imposable
+    const biensDirects = [
+      ...immeublesBatis.map(bien => ({
+        valeurTotale: bien.valeur_totale || 0,
+        valeurDeclaree: bien.categorie === 'residence-principale' ? (bien.valeur_totale || 0) * 0.7 : bien.valeur_totale || 0
+      })),
+      ...immeublesNonBatis.map(bien => ({
+        valeurTotale: bien.valeur_totale || 0,
+        valeurDeclaree: bien.valeur_totale || 0
+      }))
+    ];
+
+    const biensIndirectsList = biensIndirects.map(bien => ({
+      valeurTotale: bien.valeur_bien || 0,
+      valeurDeclaree: bien.valeur_bien || 0
+    }));
+
+    const totalActifBrut = biensDirects.reduce((sum, bien) => sum + bien.valeurTotale, 0) + 
+                          biensIndirectsList.reduce((sum, bien) => sum + bien.valeurTotale, 0);
+    
+    // Pour l'instant, pas de passifs implémentés, donc base imposable = actif brut
+    setBaseImposable(totalActifBrut);
+  }, [immeublesBatis, immeublesNonBatis, biensIndirects]);
   
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -137,6 +174,39 @@ const BaremeIFISection = () => {
     
   const montantAvantReduction = Math.max(0, ifiTheorique - decote);
 
+  const isLoading = loadingBatis || loadingNonBatis || loadingIndirects || loadingExoneres;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 mb-6">
+          <BarChart3 className="h-6 w-6 text-primary" />
+          <h2 className="text-xl font-semibold">Barème de l'IFI</h2>
+        </div>
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (baseImposable === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 mb-6">
+          <BarChart3 className="h-6 w-6 text-primary" />
+          <h2 className="text-xl font-semibold">Barème de l'IFI</h2>
+        </div>
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Aucun bien renseigné pour le calcul de l'IFI.</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Ajoutez vos biens dans la section "Liste des biens à l'IFI" pour voir le calcul.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-6">
@@ -207,14 +277,14 @@ const BaremeIFISection = () => {
       </Card>
 
       {decote > 0 && (
-        <Card className="bg-green-50 border-green-200">
+        <Card className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800">
           <CardContent className="pt-6">
             <div className="text-center">
-              <h4 className="font-semibold text-green-800 mb-2">Décote applicable</h4>
-              <p className="text-sm text-green-700">
+              <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">Décote applicable</h4>
+              <p className="text-sm text-green-700 dark:text-green-300">
                 Votre patrimoine étant compris entre 1,3M€ et 1,4M€, une décote de {formatCurrency(decote)} s'applique.
               </p>
-              <p className="text-xs text-green-600 mt-2">
+              <p className="text-xs text-green-600 dark:text-green-400 mt-2">
                 Formule: 17 500 € - (1,25% × {formatCurrency(baseImposable)}) = {formatCurrency(decote)}
               </p>
             </div>
