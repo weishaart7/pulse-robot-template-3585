@@ -92,7 +92,15 @@ const ListeBiensIFISection = () => {
             <DialogHeader>
               <DialogTitle>Ajouter un bien</DialogTitle>
             </DialogHeader>
-            <AjouterBienForm onClose={() => setIsAddBienDialogOpen(false)} />
+            <AjouterBienForm 
+              onClose={() => setIsAddBienDialogOpen(false)}
+              onBienAdded={() => {
+                fetchBatis();
+                fetchNonBatis();
+                fetchIndirects();
+                fetchExoneres();
+              }}
+            />
           </DialogContent>
         </Dialog>
 

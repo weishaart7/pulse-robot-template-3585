@@ -10,12 +10,20 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useIFIImmeubleBatis, useIFIImmeublesNonBatis, useIFIBiensDetenusIndirectement, useIFIBiensProfessionnelsExoneres } from '@/hooks/useIFI';
+import { useToast } from '@/hooks/use-toast';
 
 interface AjouterBienFormProps {
   onClose: () => void;
+  onBienAdded?: () => void;
 }
 
-export const AjouterBienForm = ({ onClose }: AjouterBienFormProps) => {
+export const AjouterBienForm = ({ onClose, onBienAdded }: AjouterBienFormProps) => {
+  const { toast } = useToast();
+  const { createBien: createImmeubleBati } = useIFIImmeubleBatis();
+  const { createBien: createImmeubleNonBati } = useIFIImmeublesNonBatis();
+  const { createBien: createBienIndirect } = useIFIBiensDetenusIndirectement();
+  const { createBien: createBienProfessionnel } = useIFIBiensProfessionnelsExoneres();
   const [categorie, setCategorie] = useState('');
   const [formData, setFormData] = useState({
     typologie: '',
@@ -53,11 +61,44 @@ export const AjouterBienForm = ({ onClose }: AjouterBienFormProps) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Logique de sauvegarde à implémenter
-    console.log('Bien ajouté:', { categorie, ...formData });
-    onClose();
+    
+    try {
+      if (categorie === 'immeubles-batis') {
+        await createImmeubleBati({
+          categorie: formData.typologie,
+          designation: formData.designation,
+          date_acquisition: formData.dateAcquisition ? formData.dateAcquisition.toISOString().split('T')[0] : null,
+          prix_acquisition: formData.prixAcquisition ? parseFloat(formData.prixAcquisition) : null,
+          adresse_rue: formData.adresseRue,
+          adresse_code_postal: formData.adresseCodePostal,
+          adresse_ville: formData.adresseVille,
+          adresse_pays: formData.adressePays,
+          superficie_terrain: formData.superficieTerrain ? parseFloat(formData.superficieTerrain) : null,
+          bien_mixte: formData.bienMixte,
+          fraction_taxable: formData.fractionTaxable ? parseFloat(formData.fractionTaxable) : null,
+          bien_en_indivision: formData.bienIndivision,
+          pourcentage_indivision: formData.pourcentageIndivision ? parseFloat(formData.pourcentageIndivision) : null,
+          nature_droits_detenus: formData.natureDroits,
+          valeur_totale: formData.valeurTotale ? parseFloat(formData.valeurTotale) : null
+        });
+      }
+      
+      toast({
+        title: "Bien ajouté",
+        description: "Le bien a été ajouté avec succès.",
+      });
+      
+      onBienAdded?.();
+      onClose();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de l'ajout du bien.",
+        variant: "destructive",
+      });
+    }
   };
 
   const renderImmeubleBatiFields = () => (
