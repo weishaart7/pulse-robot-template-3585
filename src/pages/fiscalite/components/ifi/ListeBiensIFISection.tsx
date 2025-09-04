@@ -67,8 +67,11 @@ const ListeBiensIFISection = () => {
   const totalActifBrut = biensDirects.reduce((sum, bien) => sum + bien.valeurTotale, 0) + 
                         biensIndirectsList.reduce((sum, bien) => sum + bien.valeurTotale, 0);
   
+  const totalValeurDeclaree = biensDirects.reduce((sum, bien) => sum + bien.valeurDeclaree, 0) + 
+                             biensIndirectsList.reduce((sum, bien) => sum + bien.valeurDeclaree, 0);
+  
   const totalPassifs = passifs.reduce((sum, passif) => sum + passif.montant, 0);
-  const baseImposable = totalActifBrut - totalPassifs;
+  const baseImposable = totalValeurDeclaree - totalPassifs;
 
   const isLoading = loadingBatis || loadingNonBatis || loadingIndirects || loadingExoneres;
   const hasAnyData = biensDirects.length > 0 || biensIndirectsList.length > 0 || passifs.length > 0;
@@ -187,7 +190,7 @@ const ListeBiensIFISection = () => {
                   <TableRow className="bg-primary/10 font-semibold">
                     <TableCell colSpan={2}>Total de l'actif brut</TableCell>
                     <TableCell className="text-right">{formatCurrency(totalActifBrut)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(totalActifBrut)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(totalValeurDeclaree)}</TableCell>
                   </TableRow>
                 )}
 
