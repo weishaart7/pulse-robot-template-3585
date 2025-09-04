@@ -272,6 +272,10 @@ const BaremeIFISection = () => {
                 <TableCell colSpan={3}>Montant de l'impôt avant réduction</TableCell>
                 <TableCell className="text-right">{formatCurrency(montantAvantReduction)}</TableCell>
               </TableRow>
+              <TableRow className="bg-blue-50 dark:bg-blue-950 border-t-2">
+                <TableCell colSpan={3} className="font-semibold">Patrimoine net après IFI</TableCell>
+                <TableCell className="text-right font-semibold">{formatCurrency(baseImposable - ifiTheorique)}</TableCell>
+              </TableRow>
             </TableBody>
           </Table>
         </CardContent>
