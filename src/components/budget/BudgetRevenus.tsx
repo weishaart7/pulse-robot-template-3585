@@ -48,10 +48,20 @@ export const BudgetRevenus = () => {
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{revenus.length}</div>
-          <p className="text-xs text-muted-foreground">
-            entrées enregistrées
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-2xl font-bold">{revenus.length}</div>
+              <p className="text-xs text-muted-foreground">
+                entrées enregistrées
+              </p>
+            </div>
+            {!showRevenusForm && (
+              <Button onClick={() => setShowRevenusForm(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nouveau revenu
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -62,24 +72,6 @@ export const BudgetRevenus = () => {
           onSubmit={handleSubmitRevenu} 
           onCancel={handleCancelRevenu} 
         />
-      )}
-
-      {/* Bouton d'ajout */}
-      {!showRevenusForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Ajouter un Revenu
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => setShowRevenusForm(true)} className="w-full">
-              <Plus className="h-4 w-4 mr-2" />
-              Nouveau revenu
-            </Button>
-          </CardContent>
-        </Card>
       )}
 
       {/* Liste des revenus */}
