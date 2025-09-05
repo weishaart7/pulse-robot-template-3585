@@ -48,10 +48,20 @@ export const BudgetCharges = () => {
           <TrendingDown className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{charges.length}</div>
-          <p className="text-xs text-muted-foreground">
-            entrées enregistrées
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-2xl font-bold">{charges.length}</div>
+              <p className="text-xs text-muted-foreground">
+                entrées enregistrées
+              </p>
+            </div>
+            {!showChargesForm && (
+              <Button onClick={() => setShowChargesForm(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nouvelle charge
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -62,24 +72,6 @@ export const BudgetCharges = () => {
           onSubmit={handleSubmitCharge} 
           onCancel={handleCancelCharge} 
         />
-      )}
-
-      {/* Bouton d'ajout */}
-      {!showChargesForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingDown className="h-5 w-5" />
-              Ajouter une Charge
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => setShowChargesForm(true)} className="w-full">
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle charge
-            </Button>
-          </CardContent>
-        </Card>
       )}
 
       {/* Liste des charges */}
