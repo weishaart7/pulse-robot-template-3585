@@ -24,7 +24,7 @@ export const BudgetList = ({
   if (loading) {
     return <div>Chargement...</div>;
   }
-  return <div className="space-y-6 mx-[30px]">
+  return <div className="space-y-6">
       {/* Liste des revenus */}
       {revenus.length > 0 && <Card>
           <CardHeader>
