@@ -396,11 +396,7 @@ export function FicheClientForm() {
                   Nationalité <span className="text-red-800">*</span>
                 </FormLabel>
                 <FormControl>
-                  <SelectMenu
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    placeholder="Sélectionnez votre nationalité"
-                  />
+                  <Input placeholder="Nationalité" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
