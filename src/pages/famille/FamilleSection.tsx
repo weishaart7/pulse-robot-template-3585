@@ -26,43 +26,43 @@ const FamilleSection = () => {
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="fiche-client" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Fiche client</CardTitle>
-              <CardDescription>
+        <TabsContent value="fiche-client" className="mt-8">
+          <Card className="border-0 bg-card/50">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl">Fiche client</CardTitle>
+              <CardDescription className="text-muted-foreground/80">
                 Informations personnelles du client principal
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               <FicheClientForm />
             </CardContent>
           </Card>
         </TabsContent>
         
-        <TabsContent value="situation-matrimoniale" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Situation matrimoniale</CardTitle>
-              <CardDescription>
+        <TabsContent value="situation-matrimoniale" className="mt-8">
+          <Card className="border-0 bg-card/50">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl">Situation matrimoniale</CardTitle>
+              <CardDescription className="text-muted-foreground/80">
                 Renseignez votre statut matrimonial et vos informations de couple
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               <SituationMatrimonialeForm />
             </CardContent>
           </Card>
         </TabsContent>
         
-        <TabsContent value="liens-familiaux" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Liens familiaux</CardTitle>
-              <CardDescription>
+        <TabsContent value="liens-familiaux" className="mt-8">
+          <Card className="border-0 bg-card/50">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl">Liens familiaux</CardTitle>
+              <CardDescription className="text-muted-foreground/80">
                 Gérez les membres de votre famille et leurs relations
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               <LiensFamiliauxForm />
             </CardContent>
           </Card>
