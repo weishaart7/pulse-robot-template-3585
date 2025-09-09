@@ -387,7 +387,7 @@ export function FicheClientForm() {
         </div>
 
         {/* Ligne 5 : Téléphone / Email */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
           <FormField
             control={form.control}
             name="telephone"
