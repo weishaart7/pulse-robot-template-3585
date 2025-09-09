@@ -183,7 +183,9 @@ export function FicheClientForm() {
             name="civilite"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm">Civilité *</FormLabel>
+                <FormLabel className="text-sm">
+                  Civilité <span className="text-red-800">*</span>
+                </FormLabel>
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
@@ -217,7 +219,9 @@ export function FicheClientForm() {
             name="nom"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm">Nom *</FormLabel>
+                <FormLabel className="text-sm">
+                  Nom <span className="text-red-800">*</span>
+                </FormLabel>
                 <FormControl>
                   <Input placeholder="Nom de famille" {...field} />
                 </FormControl>
@@ -231,7 +235,9 @@ export function FicheClientForm() {
             name="prenom"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm">Prénom *</FormLabel>
+                <FormLabel className="text-sm">
+                  Prénom <span className="text-red-800">*</span>
+                </FormLabel>
                 <FormControl>
                   <Input placeholder="Prénom" {...field} />
                 </FormControl>
@@ -245,7 +251,9 @@ export function FicheClientForm() {
             name="dateNaissance"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm">Date de naissance *</FormLabel>
+                <FormLabel className="text-sm">
+                  Date de naissance <span className="text-red-800">*</span>
+                </FormLabel>
                 <div className="flex gap-2">
                   <FormControl className="flex-1">
                     <Input
@@ -348,7 +356,9 @@ export function FicheClientForm() {
             name="communeNaissance"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm">Commune de naissance *</FormLabel>
+                <FormLabel className="text-sm">
+                  Commune de naissance <span className="text-red-800">*</span>
+                </FormLabel>
                 <FormControl>
                   <Input placeholder="Commune de naissance" {...field} />
                 </FormControl>
@@ -362,7 +372,9 @@ export function FicheClientForm() {
             name="paysNaissance"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm">Pays de naissance *</FormLabel>
+                <FormLabel className="text-sm">
+                  Pays de naissance <span className="text-red-800">*</span>
+                </FormLabel>
                 <FormControl>
                   <Input placeholder="Pays de naissance" {...field} />
                 </FormControl>
@@ -376,7 +388,9 @@ export function FicheClientForm() {
             name="nationalite"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm">Nationalité *</FormLabel>
+                <FormLabel className="text-sm">
+                  Nationalité <span className="text-red-800">*</span>
+                </FormLabel>
                 <FormControl>
                   <Input placeholder="Nationalité" {...field} />
                 </FormControl>
@@ -425,7 +439,9 @@ export function FicheClientForm() {
           name="capaciteJuridique"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm">Capacité juridique *</FormLabel>
+              <FormLabel className="text-sm">
+                Capacité juridique <span className="text-red-800">*</span>
+              </FormLabel>
               <Select onValueChange={field.onChange} value={field.value || 'normale'}>
                 <FormControl>
                   <SelectTrigger size="lg">
