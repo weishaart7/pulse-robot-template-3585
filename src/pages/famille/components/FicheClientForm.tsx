@@ -175,14 +175,14 @@ export function FicheClientForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Ligne 1 : Civilité */}
         <div className="grid grid-cols-1 gap-6">
           <FormField
             control={form.control}
             name="civilite"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-1">
                 <FormLabel className="text-sm">
                   Civilité <span className="text-red-800">*</span>
                 </FormLabel>
@@ -218,7 +218,7 @@ export function FicheClientForm() {
             control={form.control}
             name="nom"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-1">
                 <FormLabel className="text-sm">
                   Nom <span className="text-red-800">*</span>
                 </FormLabel>
@@ -234,7 +234,7 @@ export function FicheClientForm() {
             control={form.control}
             name="prenom"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-1">
                 <FormLabel className="text-sm">
                   Prénom <span className="text-red-800">*</span>
                 </FormLabel>
@@ -250,7 +250,7 @@ export function FicheClientForm() {
             control={form.control}
             name="dateNaissance"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-1">
                 <FormLabel className="text-sm">
                   Date de naissance <span className="text-red-800">*</span>
                 </FormLabel>
@@ -313,7 +313,7 @@ export function FicheClientForm() {
             control={form.control}
             name="profession"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-1">
                 <FormLabel className="text-sm">Profession</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
@@ -338,7 +338,7 @@ export function FicheClientForm() {
             control={form.control}
             name="professionLibre"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-1">
                 <FormLabel className="text-sm">Profession (libellé libre)</FormLabel>
                 <FormControl>
                   <Input placeholder="Description libre de la profession" {...field} />
@@ -355,7 +355,7 @@ export function FicheClientForm() {
             control={form.control}
             name="communeNaissance"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-1">
                 <FormLabel className="text-sm">
                   Commune de naissance <span className="text-red-800">*</span>
                 </FormLabel>
@@ -371,7 +371,7 @@ export function FicheClientForm() {
             control={form.control}
             name="paysNaissance"
             render={({ field }) => (
-              <FormItem className="max-w-xs">
+              <FormItem className="max-w-xs space-y-1">
                 <FormLabel className="text-sm">
                   Pays de naissance <span className="text-red-800">*</span>
                 </FormLabel>
@@ -391,7 +391,7 @@ export function FicheClientForm() {
             control={form.control}
             name="nationalite"
             render={({ field }) => (
-              <FormItem className="max-w-xs">
+              <FormItem className="max-w-xs space-y-1">
                 <FormLabel className="text-sm">
                   Nationalité <span className="text-red-800">*</span>
                 </FormLabel>
@@ -414,7 +414,7 @@ export function FicheClientForm() {
             control={form.control}
             name="telephone"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-1">
                 <FormLabel className="text-sm">Téléphone</FormLabel>
                 <FormControl>
                   <Input placeholder="Numéro de téléphone" {...field} />
@@ -428,7 +428,7 @@ export function FicheClientForm() {
             control={form.control}
             name="email"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-1">
                 <FormLabel className="text-sm">Adresse email</FormLabel>
                 <FormControl>
                   <Input placeholder="email@exemple.com" type="email" {...field} />
@@ -446,7 +446,7 @@ export function FicheClientForm() {
           control={form.control}
           name="capaciteJuridique"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="space-y-1">
               <FormLabel className="text-sm">
                 Capacité juridique <span className="text-red-800">*</span>
               </FormLabel>
@@ -474,7 +474,7 @@ export function FicheClientForm() {
         control={form.control}
         name="handicape"
         render={({ field }) => (
-          <FormItem>
+          <FormItem className="space-y-1">
             <FormControl>
               <Switch
                 checked={field.value}
