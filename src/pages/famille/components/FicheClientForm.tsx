@@ -419,29 +419,31 @@ export function FicheClientForm() {
       </div>
 
       {/* Capacité juridique */}
-      <FormField
-        control={form.control}
-        name="capaciteJuridique"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel className="text-sm">Capacité juridique *</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value || 'normale'}>
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner une capacité juridique" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value="normale">Normale</SelectItem>
-                <SelectItem value="curatelle">Majeur sous curatelle</SelectItem>
-                <SelectItem value="tutelle">Majeur sous tutelle</SelectItem>
-                <SelectItem value="sauvegarde">Majeur sous sauvegarde de justice</SelectItem>
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      <div className="max-w-md">
+        <FormField
+          control={form.control}
+          name="capaciteJuridique"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm">Capacité juridique *</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || 'normale'}>
+                <FormControl>
+                  <SelectTrigger size="lg">
+                    <SelectValue placeholder="Sélectionner une capacité juridique" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="normale">Normale</SelectItem>
+                  <SelectItem value="curatelle">Majeur sous curatelle</SelectItem>
+                  <SelectItem value="tutelle">Majeur sous tutelle</SelectItem>
+                  <SelectItem value="sauvegarde">Majeur sous sauvegarde de justice</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
 
       {/* Personne handicapée */}
       <FormField
