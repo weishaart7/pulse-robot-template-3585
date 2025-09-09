@@ -510,6 +510,49 @@ export const Synthese = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Carte des réserves et quotité disponible */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Répartition patrimoniale</CardTitle>
+          <CardDescription>
+            Réserve héréditaire et quotité disponible
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="text-center p-6 rounded-lg border bg-muted/50">
+              <div className="text-2xl font-bold text-foreground mb-2">
+                {formatCurrency(transmissionResult.reserve)}
+              </div>
+              <div className="text-sm font-medium text-muted-foreground">
+                Réserve héréditaire
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {transmissionResult.masseCalcul > 0 
+                  ? `${((transmissionResult.reserve / transmissionResult.masseCalcul) * 100).toFixed(1)}%`
+                  : '0%'
+                } de la masse de calcul
+              </div>
+            </div>
+            
+            <div className="text-center p-6 rounded-lg border bg-muted/50">
+              <div className="text-2xl font-bold text-foreground mb-2">
+                {formatCurrency(transmissionResult.quotiteDisponible)}
+              </div>
+              <div className="text-sm font-medium text-muted-foreground">
+                Quotité disponible
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {transmissionResult.masseCalcul > 0 
+                  ? `${((transmissionResult.quotiteDisponible / transmissionResult.masseCalcul) * 100).toFixed(1)}%`
+                  : '0%'
+                } de la masse de calcul
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
