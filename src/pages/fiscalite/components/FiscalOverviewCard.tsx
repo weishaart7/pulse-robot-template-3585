@@ -23,7 +23,7 @@ const FiscalOverviewCard = () => {
   };
 
   return (
-    <Card>
+    <Card className="border-0">
       <CardHeader>
         <CardTitle>Imposition totale</CardTitle>
         <div className="text-2xl font-bold">9 365 €</div>
