@@ -391,7 +391,7 @@ export function FicheClientForm() {
             control={form.control}
             name="nationalite"
             render={({ field }) => (
-              <FormItem className="max-w-xs space-y-1">
+              <FormItem className="space-y-1">
                 <FormLabel className="text-xs">
                   Nationalité <span className="text-red-800">*</span>
                 </FormLabel>
