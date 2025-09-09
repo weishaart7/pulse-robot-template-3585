@@ -538,16 +538,19 @@ export const Synthese = () => {
             
             <div className="text-center p-6 rounded-lg border bg-muted/50">
               <div className="text-2xl font-bold text-foreground mb-2">
-                {formatCurrency(transmissionResult.quotiteDisponible)}
+                {(() => {
+                  const partConjoint = transmissionResult.heirs
+                    .filter(heir => heir.lien.toLowerCase().includes('conjoint'))
+                    .reduce((sum, heir) => sum + heir.partFinale, 0);
+                  const partLibre = transmissionResult.masseCalcul - transmissionResult.reserve - partConjoint;
+                  return formatCurrency(Math.max(0, partLibre));
+                })()}
               </div>
               <div className="text-sm font-medium text-muted-foreground">
-                Quotité disponible
+                Part librement disponible
               </div>
               <div className="text-xs text-muted-foreground mt-1">
-                {transmissionResult.masseCalcul > 0 
-                  ? `${((transmissionResult.quotiteDisponible / transmissionResult.masseCalcul) * 100).toFixed(1)}%`
-                  : '0%'
-                } de la masse de calcul
+                Montant dont vous pouvez choisir l'affectation
               </div>
             </div>
           </div>
