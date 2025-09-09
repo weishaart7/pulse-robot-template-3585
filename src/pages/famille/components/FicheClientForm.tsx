@@ -371,12 +371,16 @@ export function FicheClientForm() {
             control={form.control}
             name="paysNaissance"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="max-w-xs">
                 <FormLabel className="text-sm">
                   Pays de naissance <span className="text-red-800">*</span>
                 </FormLabel>
                 <FormControl>
-                  <Input placeholder="Pays de naissance" {...field} />
+                  <SelectMenu
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Sélectionnez le pays de naissance"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
