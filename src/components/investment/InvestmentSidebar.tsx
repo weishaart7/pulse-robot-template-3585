@@ -148,7 +148,7 @@ export const InvestmentSidebar: React.FC<InvestmentSidebarProps> = ({
           <img 
             src="/lovable-uploads/885a3f23-323a-4a39-94ee-bfd6cb4f0eb5.png" 
             alt="iMerisinvest" 
-            className="h-12 w-auto object-contain"
+            className="h-16 w-auto object-contain"
           />
         </div>
       </div>
