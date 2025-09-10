@@ -1,77 +1,112 @@
-import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Home, Shield, Clock, Building, TrendingUp, DollarSign, FileText, Briefcase } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import React from 'react';
+import { Home, Shield, Clock, Building, TrendingUp, DollarSign, FileText, Briefcase } from 'lucide-react';
+import { Tree, TreeItem, TreeItemLabel } from '@/components/ui/tree';
+import { hotkeysCoreFeature, syncDataLoaderFeature } from '@headless-tree/core';
+import { useTree } from '@headless-tree/react';
 
-interface SidebarSection {
+interface NavigationItem {
+  name: string;
   id: string;
-  label: string;
-  icon: React.ElementType;
-  subsections?: { id: string; label: string }[];
+  icon?: React.ElementType;
+  children?: string[];
 }
 
-const sections: SidebarSection[] = [
-  {
+const navigationItems: Record<string, NavigationItem> = {
+  'root': {
+    name: 'Navigation',
+    id: 'root',
+    children: ['tableau-de-bord', 'assurance', 'retraite', 'immobilier', 'private-equity', 'financier', 'produits-structures', 'investir-societe'],
+  },
+  'tableau-de-bord': {
+    name: 'Tableau de bord',
     id: 'tableau-de-bord',
-    label: 'Tableau de bord',
     icon: Home,
   },
-  {
+  'assurance': {
+    name: 'Assurance',
     id: 'assurance',
-    label: 'Assurance',
     icon: Shield,
-    subsections: [
-      { id: 'assurance-vie', label: 'Assurance-vie' },
-      { id: 'assurance-vie-lux', label: 'Assurance-vie luxembourgeoise' },
-      { id: 'contrat-capitalisation', label: 'Contrat de capitalisation' },
-    ],
+    children: ['assurance-vie', 'assurance-vie-lux', 'contrat-capitalisation'],
   },
-  {
+  'assurance-vie': {
+    name: 'Assurance-vie',
+    id: 'assurance-vie',
+  },
+  'assurance-vie-lux': {
+    name: 'Assurance-vie luxembourgeoise',
+    id: 'assurance-vie-lux',
+  },
+  'contrat-capitalisation': {
+    name: 'Contrat de capitalisation',
+    id: 'contrat-capitalisation',
+  },
+  'retraite': {
+    name: 'Retraite',
     id: 'retraite',
-    label: 'Retraite',
     icon: Clock,
-    subsections: [
-      { id: 'per', label: 'PER' },
-    ],
+    children: ['per'],
   },
-  {
+  'per': {
+    name: 'PER',
+    id: 'per',
+  },
+  'immobilier': {
+    name: 'Immobilier',
     id: 'immobilier',
-    label: 'Immobilier',
     icon: Building,
-    subsections: [
-      { id: 'scpi', label: 'SCPI' },
-      { id: 'club-deal', label: 'Club deal' },
-    ],
+    children: ['scpi', 'club-deal'],
   },
-  {
+  'scpi': {
+    name: 'SCPI',
+    id: 'scpi',
+  },
+  'club-deal': {
+    name: 'Club deal',
+    id: 'club-deal',
+  },
+  'private-equity': {
+    name: 'Private Equity',
     id: 'private-equity',
-    label: 'Private Equity',
     icon: TrendingUp,
-    subsections: [
-      { id: 'gfi-gfa', label: 'GFI / GFA' },
-      { id: 'fonds-private-equity', label: 'Fonds de Private Equity' },
-      { id: 'investissements-alternatifs', label: 'Investissements alternatifs' },
-    ],
+    children: ['gfi-gfa', 'fonds-private-equity', 'investissements-alternatifs'],
   },
-  {
+  'gfi-gfa': {
+    name: 'GFI / GFA',
+    id: 'gfi-gfa',
+  },
+  'fonds-private-equity': {
+    name: 'Fonds de Private Equity',
+    id: 'fonds-private-equity',
+  },
+  'investissements-alternatifs': {
+    name: 'Investissements alternatifs',
+    id: 'investissements-alternatifs',
+  },
+  'financier': {
+    name: 'Financier',
     id: 'financier',
-    label: 'Financier',
     icon: DollarSign,
   },
-  {
+  'produits-structures': {
+    name: 'Produits structurés',
     id: 'produits-structures',
-    label: 'Produits structurés',
     icon: FileText,
   },
-  {
+  'investir-societe': {
+    name: 'Investir en société',
     id: 'investir-societe',
-    label: 'Investir en société',
     icon: Briefcase,
-    subsections: [
-      { id: '150-0-b-ter', label: '150 0-B Ter' },
-      { id: 'contrat-capitalisation-pm', label: 'Contrat de capitalisation PM' },
-    ],
+    children: ['150-0-b-ter', 'contrat-capitalisation-pm'],
   },
-];
+  '150-0-b-ter': {
+    name: '150 0-B Ter',
+    id: '150-0-b-ter',
+  },
+  'contrat-capitalisation-pm': {
+    name: 'Contrat de capitalisation PM',
+    id: 'contrat-capitalisation-pm',
+  },
+};
 
 interface InvestmentSidebarProps {
   activeSection: string;
@@ -82,85 +117,74 @@ export const InvestmentSidebar: React.FC<InvestmentSidebarProps> = ({
   activeSection,
   onSectionChange,
 }) => {
-  const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  const tree = useTree<NavigationItem>({
+    initialState: {
+      expandedItems: ['assurance', 'retraite', 'immobilier', 'private-equity', 'investir-societe'],
+      selectedItems: [activeSection],
+    },
+    indent: 16,
+    rootItemId: 'root',
+    getItemName: (item) => item.getItemData().name,
+    isItemFolder: (item) => (item.getItemData()?.children?.length ?? 0) > 0,
+    dataLoader: {
+      getItem: (itemId) => navigationItems[itemId],
+      getChildren: (itemId) => navigationItems[itemId].children ?? [],
+    },
+    features: [syncDataLoaderFeature, hotkeysCoreFeature],
+  });
 
-  const toggleSection = (sectionId: string) => {
-    if (expandedSections.includes(sectionId)) {
-      setExpandedSections(expandedSections.filter(id => id !== sectionId));
-    } else {
-      setExpandedSections([...expandedSections, sectionId]);
+  const handleItemClick = (item: any) => {
+    const itemData = item.getItemData();
+    if (!itemData.children) {
+      onSectionChange(itemData.id);
     }
-  };
-
-  const handleSectionClick = (section: SidebarSection) => {
-    if (section.subsections) {
-      toggleSection(section.id);
-    } else {
-      onSectionChange(section.id);
-    }
-  };
-
-  const handleSubsectionClick = (subsectionId: string) => {
-    onSectionChange(subsectionId);
   };
 
   return (
-    <div className="w-80 bg-background border-r border-border flex flex-col">
+    <div className="w-64 bg-background border-r border-border flex flex-col">
       {/* Logo */}
-      <div className="p-6 border-b border-border">
-        <div className="flex items-center gap-3">
+      <div className="p-4 border-b border-border">
+        <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <span className="text-primary-foreground font-bold text-sm">IL</span>
           </div>
-          <span className="font-semibold text-lg text-foreground">ImerisLabs</span>
+          <span className="font-semibold text-base text-foreground">ImerisLabs</span>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2">
-        {sections.map((section) => (
-          <div key={section.id}>
-            <button
-              onClick={() => handleSectionClick(section)}
-              className={cn(
-                "w-full flex items-center justify-between p-3 rounded-lg text-left transition-colors",
-                activeSection === section.id
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <section.icon className="w-5 h-5" />
-                <span className="font-medium">{section.label}</span>
-              </div>
-              {section.subsections && (
-                expandedSections.includes(section.id) ? 
-                  <ChevronDown className="w-4 h-4" /> : 
-                  <ChevronRight className="w-4 h-4" />
-              )}
-            </button>
-
-            {/* Subsections */}
-            {section.subsections && expandedSections.includes(section.id) && (
-              <div className="ml-6 mt-2 space-y-1">
-                {section.subsections.map((subsection) => (
-                  <button
-                    key={subsection.id}
-                    onClick={() => handleSubsectionClick(subsection.id)}
-                    className={cn(
-                      "w-full text-left p-2 rounded-md text-sm transition-colors",
-                      activeSection === subsection.id
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}
-                  >
-                    {subsection.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+      <nav className="flex-1 p-3">
+        <Tree
+          className="relative before:absolute before:inset-0 before:-ms-1 before:bg-[repeating-linear-gradient(to_right,transparent_0,transparent_calc(var(--tree-indent)-1px),var(--border)_calc(var(--tree-indent)-1px),var(--border)_calc(var(--tree-indent)))]"
+          indent={16}
+          tree={tree}
+          toggleIconType="plus-minus"
+        >
+          {tree.getItems().map((item) => {
+            const itemData = item.getItemData();
+            const isActive = activeSection === itemData.id;
+            
+            // Skip root item
+            if (itemData.id === 'root') return null;
+            
+            return (
+              <TreeItem 
+                key={item.getId()} 
+                item={item}
+                onClick={() => handleItemClick(item)}
+              >
+                <TreeItemLabel 
+                  className={`${isActive ? 'bg-primary/10 text-primary' : ''} ${itemData.icon ? '' : 'ml-6'}`}
+                >
+                  <div className="flex items-center gap-2">
+                    {itemData.icon && <itemData.icon className="w-4 h-4" />}
+                    <span>{itemData.name}</span>
+                  </div>
+                </TreeItemLabel>
+              </TreeItem>
+            );
+          })}
+        </Tree>
       </nav>
     </div>
   );
