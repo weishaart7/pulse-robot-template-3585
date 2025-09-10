@@ -1,5 +1,5 @@
-import React from 'react';
-import { Home, Shield, Clock, Building, TrendingUp, DollarSign, FileText, Briefcase } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { Tree, TreeItem, TreeItemLabel } from '@/components/ui/tree';
 import { hotkeysCoreFeature, syncDataLoaderFeature } from '@headless-tree/core';
 import { useTree } from '@headless-tree/react';
@@ -117,9 +117,11 @@ export const InvestmentSidebar: React.FC<InvestmentSidebarProps> = ({
   activeSection,
   onSectionChange,
 }) => {
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+
   const tree = useTree<NavigationItem>({
     initialState: {
-      expandedItems: [],
+      expandedItems: expandedItems,
       selectedItems: [activeSection],
     },
     indent: 16,
@@ -139,11 +141,14 @@ export const InvestmentSidebar: React.FC<InvestmentSidebarProps> = ({
       onSectionChange(itemData.id);
     } else {
       // Comportement accordion : fermer les autres sections ouvertes
-      const currentlyExpanded = tree.getState().expandedItems;
-      const newExpanded = currentlyExpanded.includes(itemData.id) 
-        ? currentlyExpanded.filter(id => id !== itemData.id)
-        : [itemData.id]; // Garder seulement cette section ouverte
-      tree.setState({ ...tree.getState(), expandedItems: newExpanded });
+      const isExpanded = expandedItems.includes(itemData.id);
+      if (isExpanded) {
+        // Fermer cette section
+        setExpandedItems(expandedItems.filter(id => id !== itemData.id));
+      } else {
+        // Ouvrir seulement cette section (fermer les autres)
+        setExpandedItems([itemData.id]);
+      }
     }
   };
 
@@ -162,40 +167,72 @@ export const InvestmentSidebar: React.FC<InvestmentSidebarProps> = ({
 
       {/* Navigation */}
       <nav className="flex-1 p-3">
-        <Tree
-          className="relative before:absolute before:inset-0 before:-ms-1 before:bg-[repeating-linear-gradient(to_right,transparent_0,transparent_calc(var(--tree-indent)-1px),var(--border)_calc(var(--tree-indent)-1px),var(--border)_calc(var(--tree-indent)))]"
-          indent={16}
-          tree={tree}
-          toggleIconType="plus-minus"
-        >
-          {tree.getItems().map((item) => {
-            const itemData = item.getItemData();
-            const isActive = activeSection === itemData.id;
-            
-            // Skip root item
-            if (itemData.id === 'root') return null;
+        <div className="space-y-1">
+          {navigationItems.root.children?.map((childId) => {
+            const itemData = navigationItems[childId];
             
             // Render spacers
-            if (itemData.id === 'spacer-1' || itemData.id === 'spacer-2') {
-              return <div key={item.getId()} className="h-4" />;
+            if (childId === 'spacer-1' || childId === 'spacer-2') {
+              return <div key={childId} className="h-4" />;
             }
             
+            const isActive = activeSection === itemData.id;
+            const hasChildren = itemData.children && itemData.children.length > 0;
+            const isExpanded = expandedItems.includes(itemData.id);
+            
             return (
-              <TreeItem 
-                key={item.getId()} 
-                item={item}
-                onClick={() => handleItemClick(item)}
-                className="mb-1"
-              >
-                <TreeItemLabel 
-                  className={`${isActive ? 'bg-primary/10 text-primary' : ''}`}
+              <div key={childId} className="mb-1">
+                <button
+                  onClick={() => {
+                    if (hasChildren) {
+                      handleItemClick({ getItemData: () => itemData });
+                    } else {
+                      onSectionChange(itemData.id);
+                    }
+                  }}
+                  className={`w-full flex items-center justify-between p-2 rounded-md text-sm transition-colors text-left ${
+                    isActive 
+                      ? 'bg-primary/10 text-primary' 
+                      : 'text-foreground hover:bg-muted'
+                  }`}
                 >
                   <span>{itemData.name}</span>
-                </TreeItemLabel>
-              </TreeItem>
+                  {hasChildren && (
+                    <ChevronDown 
+                      className={`w-4 h-4 transition-transform ${
+                        isExpanded ? 'rotate-0' : '-rotate-90'
+                      }`} 
+                    />
+                  )}
+                </button>
+                
+                {/* Sous-sections */}
+                {hasChildren && isExpanded && (
+                  <div className="ml-4 mt-1 space-y-1">
+                    {itemData.children?.map((subChildId) => {
+                      const subItemData = navigationItems[subChildId];
+                      const isSubActive = activeSection === subItemData.id;
+                      
+                      return (
+                        <button
+                          key={subChildId}
+                          onClick={() => onSectionChange(subItemData.id)}
+                          className={`w-full text-left p-2 rounded-md text-sm transition-colors ${
+                            isSubActive 
+                              ? 'bg-primary/10 text-primary' 
+                              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                          }`}
+                        >
+                          {subItemData.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
-        </Tree>
+        </div>
       </nav>
     </div>
   );
