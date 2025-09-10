@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import DashboardSection from "./pages/DashboardSection";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import InvestmentPlatform from "./pages/investment/InvestmentPlatform";
+import { InvestmentDashboard } from "./components/investment/InvestmentDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,7 +38,9 @@ const App = () => (
               <ProtectedRoute>
                 <InvestmentPlatform />
               </ProtectedRoute>
-            } />
+            }>
+              <Route index element={<InvestmentDashboard />} />
+            </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
