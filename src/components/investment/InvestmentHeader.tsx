@@ -26,14 +26,13 @@ export const InvestmentHeader = () => {
       </div>
 
       <div className="flex items-center gap-4">
-        <Button 
-          variant="default" 
+        <button 
           onClick={goToPatrimonialPlatform}
-          className="bg-amber-500 hover:bg-amber-600 text-white"
+          className="relative inline-flex items-center gap-1 rounded-md bg-zinc-950 px-2.5 py-1.5 text-sm text-zinc-50 outline outline-1 outline-[#fff2f21f] hover:bg-zinc-800 transition-colors"
         >
-          <ExternalLink className="w-4 h-4 mr-2" />
+          <ExternalLink className="w-4 h-4" />
           Accéder à ImerisLabs
-        </Button>
+        </button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
