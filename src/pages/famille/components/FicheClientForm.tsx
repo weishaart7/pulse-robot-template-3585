@@ -8,6 +8,7 @@ import { CalendarIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import ActionHubInput from '@/components/ui/action-hub-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -219,11 +220,15 @@ export function FicheClientForm() {
             name="nom"
             render={({ field }) => (
               <FormItem className="space-y-1">
-                <FormLabel className="text-xs">
-                  Nom <span className="text-red-800">*</span>
-                </FormLabel>
                 <FormControl>
-                  <Input placeholder="Nom de famille" {...field} />
+                  <ActionHubInput
+                    label="Nom"
+                    placeholder="Nom de famille"
+                    value={field.value}
+                    onChange={field.onChange}
+                    required
+                    historyEnabled={false}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -235,11 +240,15 @@ export function FicheClientForm() {
             name="prenom"
             render={({ field }) => (
               <FormItem className="space-y-1">
-                <FormLabel className="text-xs">
-                  Prénom <span className="text-red-800">*</span>
-                </FormLabel>
                 <FormControl>
-                  <Input placeholder="Prénom" {...field} />
+                  <ActionHubInput
+                    label="Prénom"
+                    placeholder="Prénom"
+                    value={field.value}
+                    onChange={field.onChange}
+                    required
+                    historyEnabled={false}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -339,9 +348,14 @@ export function FicheClientForm() {
             name="professionLibre"
             render={({ field }) => (
               <FormItem className="space-y-1">
-                <FormLabel className="text-xs">Profession (libellé libre)</FormLabel>
                 <FormControl>
-                  <Input placeholder="Description libre de la profession" {...field} />
+                  <ActionHubInput
+                    label="Profession (libellé libre)"
+                    placeholder="Description libre de la profession"
+                    value={field.value}
+                    onChange={field.onChange}
+                    historyEnabled={false}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -356,11 +370,15 @@ export function FicheClientForm() {
             name="communeNaissance"
             render={({ field }) => (
               <FormItem className="space-y-1">
-                <FormLabel className="text-xs">
-                  Commune de naissance <span className="text-red-800">*</span>
-                </FormLabel>
                 <FormControl>
-                  <Input placeholder="Commune de naissance" {...field} />
+                  <ActionHubInput
+                    label="Commune de naissance"
+                    placeholder="Commune de naissance"
+                    value={field.value}
+                    onChange={field.onChange}
+                    required
+                    historyEnabled={false}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -392,11 +410,15 @@ export function FicheClientForm() {
             name="nationalite"
             render={({ field }) => (
               <FormItem className="space-y-1">
-                <FormLabel className="text-xs">
-                  Nationalité <span className="text-red-800">*</span>
-                </FormLabel>
                 <FormControl>
-                  <Input placeholder="Nationalité" {...field} />
+                  <ActionHubInput
+                    label="Nationalité"
+                    placeholder="Nationalité"
+                    value={field.value}
+                    onChange={field.onChange}
+                    required
+                    historyEnabled={false}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -411,9 +433,14 @@ export function FicheClientForm() {
             name="telephone"
             render={({ field }) => (
               <FormItem className="space-y-1">
-                <FormLabel className="text-xs">Téléphone</FormLabel>
                 <FormControl>
-                  <Input placeholder="Numéro de téléphone" {...field} />
+                  <ActionHubInput
+                    label="Téléphone"
+                    placeholder="Numéro de téléphone"
+                    value={field.value}
+                    onChange={field.onChange}
+                    historyEnabled={false}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -425,9 +452,15 @@ export function FicheClientForm() {
             name="email"
             render={({ field }) => (
               <FormItem className="space-y-1">
-                <FormLabel className="text-xs">Adresse email</FormLabel>
                 <FormControl>
-                  <Input placeholder="email@exemple.com" type="email" {...field} />
+                  <ActionHubInput
+                    label="Adresse email"
+                    placeholder="email@exemple.com"
+                    type="email"
+                    value={field.value}
+                    onChange={field.onChange}
+                    historyEnabled={false}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -491,9 +524,14 @@ export function FicheClientForm() {
           name="adresse"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm">Adresse</FormLabel>
               <FormControl>
-                <Input placeholder="Numéro et nom de rue" {...field} />
+                <ActionHubInput
+                  label="Adresse"
+                  placeholder="Numéro et nom de rue"
+                  value={field.value}
+                  onChange={field.onChange}
+                  historyEnabled={false}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -505,9 +543,14 @@ export function FicheClientForm() {
           name="codePostal"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm">Code postal</FormLabel>
               <FormControl>
-                <Input placeholder="Code postal" {...field} />
+                <ActionHubInput
+                  label="Code postal"
+                  placeholder="Code postal"
+                  value={field.value}
+                  onChange={field.onChange}
+                  historyEnabled={false}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -519,9 +562,14 @@ export function FicheClientForm() {
           name="ville"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm">Ville</FormLabel>
               <FormControl>
-                <Input placeholder="Ville" {...field} />
+                <ActionHubInput
+                  label="Ville"
+                  placeholder="Ville"
+                  value={field.value}
+                  onChange={field.onChange}
+                  historyEnabled={false}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
