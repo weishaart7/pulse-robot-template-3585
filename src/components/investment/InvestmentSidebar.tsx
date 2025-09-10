@@ -144,11 +144,11 @@ export const InvestmentSidebar: React.FC<InvestmentSidebarProps> = ({
     <div className="w-64 bg-background border-r border-border flex flex-col">
       {/* Logo */}
       <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-center">
+        <div className="flex items-center justify-start">
           <img 
             src="/lovable-uploads/885a3f23-323a-4a39-94ee-bfd6cb4f0eb5.png" 
             alt="iMerisinvest" 
-            className="h-8 w-auto object-contain"
+            className="h-12 w-auto object-contain"
           />
         </div>
       </div>
