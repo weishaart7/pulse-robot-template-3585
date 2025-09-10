@@ -15,17 +15,23 @@ const navigationItems: Record<string, NavigationItem> = {
   'root': {
     name: 'Navigation',
     id: 'root',
-    children: ['tableau-de-bord', 'assurance', 'retraite', 'immobilier', 'private-equity', 'financier', 'produits-structures', 'investir-societe'],
+    children: ['tableau-de-bord', 'spacer-1', 'assurance', 'retraite', 'immobilier', 'private-equity', 'financier', 'produits-structures', 'spacer-2', 'investir-societe'],
   },
   'tableau-de-bord': {
     name: 'Tableau de bord',
     id: 'tableau-de-bord',
-    icon: Home,
+  },
+  'spacer-1': {
+    name: '',
+    id: 'spacer-1',
+  },
+  'spacer-2': {
+    name: '',
+    id: 'spacer-2',
   },
   'assurance': {
     name: 'Assurance',
     id: 'assurance',
-    icon: Shield,
     children: ['assurance-vie', 'assurance-vie-lux', 'contrat-capitalisation'],
   },
   'assurance-vie': {
@@ -43,7 +49,6 @@ const navigationItems: Record<string, NavigationItem> = {
   'retraite': {
     name: 'Retraite',
     id: 'retraite',
-    icon: Clock,
     children: ['per'],
   },
   'per': {
@@ -53,7 +58,6 @@ const navigationItems: Record<string, NavigationItem> = {
   'immobilier': {
     name: 'Immobilier',
     id: 'immobilier',
-    icon: Building,
     children: ['scpi', 'club-deal'],
   },
   'scpi': {
@@ -67,7 +71,6 @@ const navigationItems: Record<string, NavigationItem> = {
   'private-equity': {
     name: 'Private Equity',
     id: 'private-equity',
-    icon: TrendingUp,
     children: ['gfi-gfa', 'fonds-private-equity', 'investissements-alternatifs'],
   },
   'gfi-gfa': {
@@ -85,17 +88,14 @@ const navigationItems: Record<string, NavigationItem> = {
   'financier': {
     name: 'Financier',
     id: 'financier',
-    icon: DollarSign,
   },
   'produits-structures': {
     name: 'Produits structurés',
     id: 'produits-structures',
-    icon: FileText,
   },
   'investir-societe': {
     name: 'Investir en société',
     id: 'investir-societe',
-    icon: Briefcase,
     children: ['150-0-b-ter', 'contrat-capitalisation-pm'],
   },
   '150-0-b-ter': {
@@ -119,7 +119,7 @@ export const InvestmentSidebar: React.FC<InvestmentSidebarProps> = ({
 }) => {
   const tree = useTree<NavigationItem>({
     initialState: {
-      expandedItems: ['assurance', 'retraite', 'immobilier', 'private-equity', 'investir-societe'],
+      expandedItems: [],
       selectedItems: [activeSection],
     },
     indent: 16,
@@ -137,6 +137,13 @@ export const InvestmentSidebar: React.FC<InvestmentSidebarProps> = ({
     const itemData = item.getItemData();
     if (!itemData.children) {
       onSectionChange(itemData.id);
+    } else {
+      // Comportement accordion : fermer les autres sections ouvertes
+      const currentlyExpanded = tree.getState().expandedItems;
+      const newExpanded = currentlyExpanded.includes(itemData.id) 
+        ? currentlyExpanded.filter(id => id !== itemData.id)
+        : [itemData.id]; // Garder seulement cette section ouverte
+      tree.setState({ ...tree.getState(), expandedItems: newExpanded });
     }
   };
 
@@ -168,19 +175,22 @@ export const InvestmentSidebar: React.FC<InvestmentSidebarProps> = ({
             // Skip root item
             if (itemData.id === 'root') return null;
             
+            // Render spacers
+            if (itemData.id === 'spacer-1' || itemData.id === 'spacer-2') {
+              return <div key={item.getId()} className="h-4" />;
+            }
+            
             return (
               <TreeItem 
                 key={item.getId()} 
                 item={item}
                 onClick={() => handleItemClick(item)}
+                className="mb-1"
               >
                 <TreeItemLabel 
-                  className={`${isActive ? 'bg-primary/10 text-primary' : ''} ${itemData.icon ? '' : 'ml-6'}`}
+                  className={`${isActive ? 'bg-primary/10 text-primary' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    {itemData.icon && <itemData.icon className="w-4 h-4" />}
-                    <span>{itemData.name}</span>
-                  </div>
+                  <span>{itemData.name}</span>
                 </TreeItemLabel>
               </TreeItem>
             );
