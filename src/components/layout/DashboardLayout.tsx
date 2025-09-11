@@ -1,13 +1,21 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Navbar } from '@/components/layout/Navbar';
+import { DashboardSidebar } from '@/components/layout/DashboardSidebar';
+import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { cn } from '@/lib/utils';
+
 const DashboardLayout = () => {
-  return <div className={cn("flex flex-col bg-background w-full flex-1 mx-auto border-neutral-200 dark:border-neutral-700 overflow-hidden", "h-screen")}>
-      <Navbar />
-      <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 bg-muted">
-        <Outlet />
-      </main>
-    </div>;
+  return (
+    <div className={cn("flex bg-background w-full h-screen overflow-hidden")}>
+      <DashboardSidebar />
+      <div className="flex-1 flex flex-col">
+        <DashboardHeader />
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-6" style={{ backgroundColor: '#f0eeef' }}>
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
 };
+
 export default DashboardLayout;
