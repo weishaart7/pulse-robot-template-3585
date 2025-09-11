@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search } from 'lucide-react';
+import { Search, ArrowRight } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 
 interface SearchResult {
@@ -84,28 +85,37 @@ export function SearchBar() {
   };
 
   return (
-    <div ref={searchRef} className="relative flex-1 max-w-[400px] ml-auto">
-      <div className="flex items-center flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2 gap-2">
-        <Search className="h-4 w-4 text-gray-400" />
-        <input
-          type="text"
+    <div ref={searchRef} className="relative max-w-[400px]">
+      <div className="relative">
+        <Input
+          className="peer pe-9 ps-9"
           placeholder="Rechercher une section..."
+          type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="flex-1 outline-none text-sm placeholder:text-gray-400"
         />
+        <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center justify-center ps-3 text-muted-foreground/80 peer-disabled:opacity-50">
+          <Search size={16} strokeWidth={2} />
+        </div>
+        <button
+          className="absolute inset-y-0 end-0 flex h-full w-9 items-center justify-center rounded-e-lg text-muted-foreground/80 outline-offset-2 transition-colors hover:text-foreground focus:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
+          aria-label="Submit search"
+          type="submit"
+        >
+          <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
+        </button>
       </div>
 
       {isOpen && results.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
           {results.map((result, index) => (
             <div
               key={index}
               onClick={() => handleResultClick(result)}
-              className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+              className="flex items-center justify-between px-3 py-2 hover:bg-muted cursor-pointer border-b border-border last:border-b-0"
             >
-              <span className="text-sm text-gray-900">{result.title}</span>
-              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+              <span className="text-sm text-foreground">{result.title}</span>
+              <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
                 {result.section}
               </span>
             </div>
