@@ -192,7 +192,7 @@ export const InvestmentSidebar: React.FC<InvestmentSidebarProps> = ({
                   }}
                   className={`w-full flex items-center justify-between p-2 rounded-md text-sm transition-colors text-left ${
                     isActive 
-                      ? 'bg-primary/10 text-primary' 
+                      ? 'bg-foreground text-background font-bold' 
                       : 'text-foreground hover:bg-muted'
                   }`}
                 >
