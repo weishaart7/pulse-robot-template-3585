@@ -98,7 +98,7 @@ export function DashboardSidebar() {
   };
 
   return (
-    <div className="w-64 bg-muted flex flex-col">
+    <div className="w-64 bg-white flex flex-col">
       {/* Logo */}
       <div className="p-4">
         <img 
@@ -121,8 +121,8 @@ export function DashboardSidebar() {
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left",
                 isActive 
-                  ? "bg-background text-foreground font-medium" 
-                  : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
+                  ? "bg-gray-100 text-gray-900 font-medium" 
+                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
               )}
             >
               <Icon className="h-4 w-4 flex-shrink-0" />
