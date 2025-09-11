@@ -104,7 +104,7 @@ export function DashboardSidebar() {
         <img 
           src="/lovable-uploads/3f46b218-16fb-43cf-8206-7af4be7cbfd0.png" 
           alt="Merislabs Logo" 
-          className="h-16 w-auto object-contain" 
+          className="h-11 w-auto object-contain" 
         />
       </div>
 
