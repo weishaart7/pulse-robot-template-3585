@@ -16,9 +16,9 @@ const searchData: SearchResult[] = [
   { title: "Situation matrimoniale", section: "Famille", path: "/dashboard/famille" },
   
   // Patrimoine
-  { title: "Vue d'ensemble", section: "Patrimoine", path: "/dashboard/patrimoine" },
-  { title: "Répartition", section: "Patrimoine", path: "/dashboard/patrimoine" },
-  { title: "Graphiques", section: "Patrimoine", path: "/dashboard/patrimoine" },
+  { title: "Vue d'ensemble patrimoine", section: "Patrimoine", path: "/dashboard/patrimoine" },
+  { title: "Répartition patrimoine", section: "Patrimoine", path: "/dashboard/patrimoine" },
+  { title: "Graphiques patrimoine", section: "Patrimoine", path: "/dashboard/patrimoine" },
   
   // Budget
   { title: "Revenus", section: "Budget", path: "/dashboard/budget" },
