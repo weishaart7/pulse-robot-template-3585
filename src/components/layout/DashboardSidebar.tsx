@@ -102,7 +102,7 @@ export function DashboardSidebar() {
       {/* Logo */}
       <div className="px-3 py-4">
         <img 
-          src="/lovable-uploads/83e89a2d-1fa4-4a3c-9746-02115c67ec5f.png" 
+          src="/lovable-uploads/3f46b218-16fb-43cf-8206-7af4be7cbfd0.png" 
           alt="Merislabs Logo" 
           className="h-24 w-auto" 
         />
