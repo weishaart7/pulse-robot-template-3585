@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { CircleUserRound, Settings, Gift, CreditCard, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GlowEffect } from '@/components/ui/glow-effect';
+import { SearchBar } from './SearchBar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,9 +25,7 @@ export function DashboardHeader() {
 
   return (
     <header className="h-16 bg-background flex items-center justify-between px-6">
-      <div className="flex items-center">
-        <h1 className="text-lg font-semibold">Dashboard</h1>
-      </div>
+      <SearchBar />
       
       <div className="flex items-center gap-3">
         <div className="relative">
