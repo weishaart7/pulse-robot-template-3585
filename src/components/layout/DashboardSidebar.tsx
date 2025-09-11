@@ -100,11 +100,11 @@ export function DashboardSidebar() {
   return (
     <div className="w-64 bg-white flex flex-col">
       {/* Logo */}
-      <div className="p-4">
+      <div className="px-3 py-4">
         <img 
           src="/lovable-uploads/83e89a2d-1fa4-4a3c-9746-02115c67ec5f.png" 
           alt="Merislabs Logo" 
-          className="h-8 w-auto" 
+          className="h-12 w-auto" 
         />
       </div>
 
