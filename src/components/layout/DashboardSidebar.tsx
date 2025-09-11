@@ -98,9 +98,9 @@ export function DashboardSidebar() {
   };
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+    <div className="w-64 bg-white flex flex-col">
       {/* Logo */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4">
         <img 
           src="/lovable-uploads/66880016-e746-4cf1-ba6b-00cadbd6cc86.png" 
           alt="Merislabs Logo" 
