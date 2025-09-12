@@ -15,7 +15,7 @@ export function DashboardHeader() {
   const handleLogout = () => {
     logout();
   };
-  return <header className="h-16 flex items-center justify-between px-6 my-[5px]" style={{ backgroundColor: '#f0eeef' }}>
+  return <header className="h-16 bg-background flex items-center justify-between px-6 my-[5px]">
       <SearchBar />
       
       <div className="flex items-center gap-3">
