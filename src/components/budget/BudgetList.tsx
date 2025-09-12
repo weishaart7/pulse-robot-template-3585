@@ -57,10 +57,7 @@ export const BudgetList = ({
                 {revenus.map(revenu => (
                   <FullTable.Row key={revenu.id}>
                     <FullTable.Cell>
-                      <div>
-                        <div className="font-medium">{revenu.libelle}</div>
-                        <div className="text-sm text-muted-foreground">{revenu.nature}</div>
-                      </div>
+                      <div className="font-medium">{revenu.libelle}</div>
                     </FullTable.Cell>
                     <FullTable.Cell>{revenu.beneficiaire || '-'}</FullTable.Cell>
                     <FullTable.Cell>
