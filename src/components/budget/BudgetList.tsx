@@ -97,10 +97,10 @@ export const BudgetList = ({
               </FullTable.Body>
               <FullTable.Footer>
                 <FullTable.Row>
-                  <FullTable.Cell className="font-medium" colSpan={2}>
+                  <FullTable.Cell className="font-medium text-black dark:text-white" colSpan={2}>
                     Total
                   </FullTable.Cell>
-                  <FullTable.Cell className="font-medium">
+                  <FullTable.Cell className="font-medium text-black dark:text-white">
                     {revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0).toLocaleString('fr-FR', {
                       style: 'currency',
                       currency: 'EUR'

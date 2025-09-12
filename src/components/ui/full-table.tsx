@@ -43,11 +43,11 @@ FullTable.Row = ({ children }: { children: React.ReactNode }) => {
 };
 
 FullTable.Head = ({ children }: { children: React.ReactNode }) => {
-  return <th className="h-10 px-2 align-middle font-medium text-left last:text-right">{children}</th>;
+  return <th className="h-8 px-2 align-middle font-medium text-left last:text-right">{children}</th>;
 };
 
 FullTable.Cell = ({ children, className, colSpan }: { children: React.ReactNode, className?: string, colSpan?: number }) => {
-  return <td className={`px-2 py-2.5 align-middle last:text-right ${className || ""}`} colSpan={colSpan}>{children}</td>;
+  return <td className={`px-2 py-1.5 align-middle last:text-right ${className || ""}`} colSpan={colSpan}>{children}</td>;
 };
 
 FullTable.Footer = ({ children }: { children: React.ReactNode }) => {
