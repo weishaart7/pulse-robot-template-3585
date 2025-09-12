@@ -2,7 +2,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FullTable } from '@/components/ui/full-table';
-import { Trash2, Edit } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Trash2, Edit, MoreHorizontal } from 'lucide-react';
 import { Revenu, Charge } from '@/services/budgetService';
 interface BudgetListProps {
   revenus: Revenu[];
@@ -66,18 +72,46 @@ export const BudgetList = ({
                       }
                     </FullTable.Cell>
                     <FullTable.Cell>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => onEditRevenu(revenu)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => onDeleteRevenu(revenu.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="rounded-full shadow-none"
+                            aria-label="Open edit menu"
+                          >
+                            <MoreHorizontal size={16} strokeWidth={2} aria-hidden="true" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem onClick={() => onEditRevenu(revenu)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Modifier
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onDeleteRevenu(revenu.id)}>
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Supprimer
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </FullTable.Cell>
                   </FullTable.Row>
                 ))}
               </FullTable.Body>
+              <FullTable.Footer>
+                <FullTable.Row>
+                  <FullTable.Cell className="font-medium" colSpan={2}>
+                    Total
+                  </FullTable.Cell>
+                  <FullTable.Cell className="font-medium">
+                    {revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0).toLocaleString('fr-FR', {
+                      style: 'currency',
+                      currency: 'EUR'
+                    })}
+                  </FullTable.Cell>
+                  <FullTable.Cell> </FullTable.Cell>
+                </FullTable.Row>
+              </FullTable.Footer>
             </FullTable>
           </CardContent>
         </Card>}
