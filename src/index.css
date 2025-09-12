@@ -26,6 +26,11 @@
 
 @layer base {
   :root {
+    --ds-gray-900: hsla(0, 0%, 40%, 1);
+    --ds-gray-alpha-400: hsla(0, 0%, 0%, 0.08);
+    --ds-background-100: hsla(0, 0%, 100%, 1);
+    --ds-background-200: hsla(0, 0%, 98%, 1);
+    
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
@@ -74,6 +79,11 @@
   }
 
   .dark {
+    --ds-gray-900: hsla(0, 0%, 63%, 1);
+    --ds-gray-alpha-400: hsla(0, 0%, 100%, 0.14);
+    --ds-background-100: hsla(0, 0%, 4%, 1);
+    --ds-background-200: hsla(0, 0%, 0%, 1);
+    
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 

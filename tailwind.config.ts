@@ -20,6 +20,10 @@ export default {
 		},
 		extend: {
 			colors: {
+				"gray-900": "var(--ds-gray-900)",
+				"gray-alpha-400": "var(--ds-gray-alpha-400)",
+				"background-100": "var(--ds-background-100)",
+				"background-200": "var(--ds-background-200)",
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',

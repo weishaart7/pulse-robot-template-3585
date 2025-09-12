@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { FullTable } from '@/components/ui/full-table';
 import { Trash2, Edit } from 'lucide-react';
 import { Revenu, Charge } from '@/services/budgetService';
 interface BudgetListProps {
@@ -31,35 +32,53 @@ export const BudgetList = ({
             <CardTitle>Revenus ({revenus.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {revenus.map(revenu => <div key={revenu.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-medium">{revenu.libelle}</h4>
-                        {revenu.revenu_disponible && <Badge variant="secondary">Disponible</Badge>}
+            <FullTable>
+              <FullTable.Colgroup>
+                <FullTable.Col className="w-[40%]" />
+                <FullTable.Col className="w-[30%]" />
+                <FullTable.Col className="w-[20%]" />
+                <FullTable.Col className="w-[10%]" />
+              </FullTable.Colgroup>
+              <FullTable.Header>
+                <FullTable.Row>
+                  <FullTable.Head>Dénomination</FullTable.Head>
+                  <FullTable.Head>Bénéficiaire</FullTable.Head>
+                  <FullTable.Head>Montant</FullTable.Head>
+                  <FullTable.Head>Actions</FullTable.Head>
+                </FullTable.Row>
+              </FullTable.Header>
+              <FullTable.Body interactive striped>
+                {revenus.map(revenu => (
+                  <FullTable.Row key={revenu.id}>
+                    <FullTable.Cell>
+                      <div>
+                        <div className="font-medium">{revenu.libelle}</div>
+                        <div className="text-sm text-muted-foreground">{revenu.nature}</div>
                       </div>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        {revenu.nature}
-                      </p>
-                      {revenu.beneficiaire && <p className="text-sm text-muted-foreground mb-1">
-                          Bénéficiaire: {revenu.beneficiaire}
-                        </p>}
-                      {revenu.commentaire && <p className="text-sm text-muted-foreground">
-                          {revenu.commentaire}
-                        </p>}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => onEditRevenu(revenu)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => onDeleteRevenu(revenu.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>)}
-            </div>
+                    </FullTable.Cell>
+                    <FullTable.Cell>{revenu.beneficiaire || '-'}</FullTable.Cell>
+                    <FullTable.Cell>
+                      {revenu.montant ? 
+                        revenu.montant.toLocaleString('fr-FR', {
+                          style: 'currency',
+                          currency: 'EUR'
+                        }) : '-'
+                      }
+                    </FullTable.Cell>
+                    <FullTable.Cell>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => onEditRevenu(revenu)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => onDeleteRevenu(revenu.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </FullTable.Cell>
+                  </FullTable.Row>
+                ))}
+              </FullTable.Body>
+            </FullTable>
           </CardContent>
         </Card>}
 
