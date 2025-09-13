@@ -4,11 +4,11 @@ import { Badge } from '@/components/ui/badge';
 
 const TaxRateCard = () => {
   const taxBrackets = [
-    { rate: "0%", min: 0, max: 11294, color: "bg-slate-300" },
-    { rate: "11%", min: 11295, max: 28797, color: "bg-slate-400" },
-    { rate: "30%", min: 28798, max: 82341, color: "bg-primary", active: true },
-    { rate: "41%", min: 82342, max: 177106, color: "bg-slate-500" },
-    { rate: "45%", min: 177107, max: null, color: "bg-slate-600" }
+    { rate: "0%", min: 0, max: 11294, color: "#cbf3f0" },
+    { rate: "11%", min: 11295, max: 28797, color: "#cbf3f0" },
+    { rate: "30%", min: 28798, max: 82341, color: "#2ec4b6", active: true },
+    { rate: "41%", min: 82342, max: 177106, color: "#cbf3f0" },
+    { rate: "45%", min: 177107, max: null, color: "#cbf3f0" }
   ];
 
   const currentIncome = 54000;
@@ -17,6 +17,16 @@ const TaxRateCard = () => {
   );
 
   const marginBeforeNext = currentBracket?.max ? currentBracket.max - currentIncome : 0;
+
+  // Calculer la position proportionnelle de l'utilisateur dans son secteur
+  const getUserPositionInBracket = () => {
+    if (!currentBracket || currentBracket.max === null) return 0;
+    const bracketRange = currentBracket.max - currentBracket.min;
+    const userPositionInRange = currentIncome - currentBracket.min;
+    return (userPositionInRange / bracketRange) * 100;
+  };
+
+  const userPositionPercentage = getUserPositionInBracket();
 
   const statsCards = [
     { title: "Revenu imposable", value: "54 000 €" },
@@ -37,12 +47,21 @@ const TaxRateCard = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Barre de progression des tranches */}
             <div className="space-y-3">
-              <div className="flex h-6 rounded-lg overflow-hidden">
+              <div className="relative flex h-6 overflow-hidden">
                 {taxBrackets.map((bracket, index) => (
                   <div
                     key={index}
-                    className={`flex-1 ${bracket.color} ${bracket.active ? 'ring-2 ring-primary ring-offset-2' : ''}`}
-                  />
+                    className="flex-1 relative"
+                    style={{ backgroundColor: bracket.color }}
+                  >
+                    {/* Trait proportionnel pour l'utilisateur */}
+                    {bracket.active && (
+                      <div
+                        className="absolute top-0 bottom-0 w-0.5 bg-red-600"
+                        style={{ left: `${userPositionPercentage}%` }}
+                      />
+                    )}
+                  </div>
                 ))}
               </div>
               
