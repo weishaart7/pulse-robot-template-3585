@@ -214,7 +214,7 @@ export function FicheClientForm() {
         </div>
 
         {/* Ligne 2 : Nom / Prénom / Date de naissance */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 [&_input]:w-80 [&_button]:w-80 [&_.select-trigger]:w-80">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <FormField
             control={form.control}
             name="nom"
@@ -317,7 +317,7 @@ export function FicheClientForm() {
         </div>
 
         {/* Ligne 3 : Profession / Profession (libellé libre) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 [&_input]:w-80 [&_button]:w-80 [&_.select-trigger]:w-80">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
           <FormField
             control={form.control}
             name="profession"
@@ -364,7 +364,7 @@ export function FicheClientForm() {
         </div>
 
         {/* Ligne 4 : Commune de naissance / Pays de naissance / Nationalité */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 [&_input]:w-80 [&_button]:w-80 [&_.select-trigger]:w-80">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <FormField
             control={form.control}
             name="communeNaissance"
@@ -389,7 +389,7 @@ export function FicheClientForm() {
             control={form.control}
             name="paysNaissance"
             render={({ field }) => (
-              <FormItem className="space-y-1">
+              <FormItem className="max-w-xs space-y-1">
                 <FormLabel className="text-xs">
                   Pays de naissance <span className="text-red-800">*</span>
                 </FormLabel>
@@ -427,7 +427,7 @@ export function FicheClientForm() {
         </div>
 
         {/* Ligne 5 : Téléphone / Email */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 [&_input]:w-80 [&_button]:w-80 [&_.select-trigger]:w-80">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
           <FormField
             control={form.control}
             name="telephone"
@@ -470,7 +470,7 @@ export function FicheClientForm() {
       </div>
 
       {/* Capacité juridique */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 [&_input]:w-80 [&_button]:w-80 [&_.select-trigger]:w-80">
+      <div className="max-w-md">
         <FormField
           control={form.control}
           name="capaciteJuridique"
