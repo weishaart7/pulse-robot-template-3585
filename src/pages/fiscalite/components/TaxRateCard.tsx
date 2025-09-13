@@ -29,6 +29,12 @@ const TaxRateCard = () => {
   // Custom label component pour la rotation à 270°
   const CustomLabel = (props: any) => {
     const { x, y, width, height, payload } = props;
+    
+    // Vérification de sécurité pour éviter les erreurs
+    if (!payload || !payload.name || typeof x !== 'number' || typeof y !== 'number') {
+      return null;
+    }
+    
     return (
       <text 
         x={x + 8} 
@@ -62,34 +68,52 @@ const TaxRateCard = () => {
           {/* Graphique des tranches et détails */}
           <div className="lg:col-span-2 space-y-6">
             {/* Graphique avec barres verticales Recharts */}
-            <div className="h-48 w-full">
+            <div className="relative h-48 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={chartData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                  barCategoryGap="10%"
-                >
-                  <XAxis
-                    dataKey="name"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={false}
-                  />
-                  <YAxis hide />
-                  <Bar 
-                    dataKey="value" 
-                    radius={[0, 0, 0, 0]}
-                    label={<CustomLabel />}
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.isActive ? "#ff00b8" : "#81023a"}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
+                 <BarChart
+                   data={chartData}
+                   margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                   barCategoryGap="10%"
+                 >
+                   <XAxis
+                     dataKey="name"
+                     axisLine={false}
+                     tickLine={false}
+                     tick={false}
+                   />
+                   <YAxis hide />
+                   <Bar 
+                     dataKey="value" 
+                     radius={[0, 0, 0, 0]}
+                   >
+                     {chartData.map((entry, index) => (
+                       <Cell
+                         key={`cell-${index}`}
+                         fill={entry.isActive ? "#ff00b8" : "#81023a"}
+                       />
+                     ))}
+                   </Bar>
+                 </BarChart>
               </ResponsiveContainer>
+              
+              {/* Labels superposés avec rotation */}
+              <div className="absolute bottom-2 left-8 right-8 flex justify-between">
+                {taxBrackets.map((bracket, index) => (
+                  <div key={index} className="flex-1 flex justify-center">
+                    <div 
+                      className="text-xs font-medium origin-bottom"
+                      style={{
+                        color: "#81023a",
+                        transform: "rotate(-90deg)",
+                        transformOrigin: "center bottom",
+                        writingMode: "vertical-rl"
+                      }}
+                    >
+                      {bracket.rate}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Détails des seuils */}
