@@ -35,36 +35,43 @@ const TaxRateCard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Graphique des tranches et détails */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Barre de progression des tranches */}
+            {/* Graphique avec barres verticales */}
             <div className="space-y-3">
-              <div className="flex h-6 rounded-lg overflow-hidden">
+              <div className="flex items-end justify-between gap-2 h-32">
                 {taxBrackets.map((bracket, index) => (
-                  <div
-                    key={index}
-                    className={`flex-1 ${bracket.color} ${bracket.active ? 'ring-2 ring-primary ring-offset-2' : ''}`}
-                  />
-                ))}
-              </div>
-              
-              {/* Labels des taux */}
-              <div className="flex justify-between text-sm">
-                {taxBrackets.map((bracket, index) => (
-                  <div key={index} className="text-center flex-1">
-                    <div className={`font-medium ${bracket.active ? 'font-bold text-primary' : ''}`}>
-                      {bracket.rate}
+                  <div key={index} className="flex-1 flex flex-col items-center">
+                    <div className="relative w-full">
+                      <div
+                        className={`w-full rounded-t-lg transition-all duration-300 ${
+                          bracket.active 
+                            ? 'bg-gradient-to-t from-orange-500 to-orange-400 shadow-lg' 
+                            : 'bg-gradient-to-t from-pink-300 to-pink-200'
+                        }`}
+                        style={{
+                          height: `${20 + (parseInt(bracket.rate) * 2)}px`
+                        }}
+                      />
+                      {bracket.active && (
+                        <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
+                          <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                            <div className="w-0 h-0 border-l-[3px] border-l-transparent border-r-[3px] border-r-transparent border-b-[4px] border-b-orange-500 ml-0.5" />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
               
-              {/* Seuils en euros */}
-              <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                <span></span> {/* Pas de seuil pour 0% */}
-                <span>11 498 €</span>
-                <span>29 316 €</span>
-                <span>83 824 €</span>
-                <span>180 295 €</span>
-                <span></span> {/* Pas de seuil supérieur pour 45% */}
+              {/* Labels des taux */}
+              <div className="flex justify-between">
+                {taxBrackets.map((bracket, index) => (
+                  <div key={index} className="flex-1 text-center">
+                    <div className={`text-sm font-medium ${bracket.active ? 'font-bold text-orange-600' : 'text-muted-foreground'}`}>
+                      {bracket.rate}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
