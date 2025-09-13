@@ -1,15 +1,23 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
 
 const TaxRateCard = () => {
   const taxBrackets = [
-    { rate: "0%", min: 0, max: 11294, color: "bg-slate-300" },
-    { rate: "11%", min: 11295, max: 28797, color: "bg-slate-400" },
-    { rate: "30%", min: 28798, max: 82341, color: "bg-primary", active: true },
-    { rate: "41%", min: 82342, max: 177106, color: "bg-slate-500" },
-    { rate: "45%", min: 177107, max: null, color: "bg-slate-600" }
+    { rate: "0%", min: 0, max: 11294, active: false },
+    { rate: "11%", min: 11295, max: 28797, active: false },
+    { rate: "30%", min: 28798, max: 82341, active: true },
+    { rate: "41%", min: 82342, max: 177106, active: false },
+    { rate: "45%", min: 177107, max: null, active: false }
   ];
+
+  // Données pour le graphique Recharts
+  const chartData = taxBrackets.map((bracket, index) => ({
+    name: bracket.rate,
+    value: 1, // Toutes les barres ont la même hauteur
+    isActive: bracket.active
+  }));
 
   const currentIncome = 54000;
   const currentBracket = taxBrackets.find(bracket => 
@@ -17,6 +25,24 @@ const TaxRateCard = () => {
   );
 
   const marginBeforeNext = currentBracket?.max ? currentBracket.max - currentIncome : 0;
+
+  // Custom label component pour la rotation à 270°
+  const CustomLabel = (props: any) => {
+    const { x, y, width, height, payload } = props;
+    return (
+      <text 
+        x={x + 8} 
+        y={y + height - 8} 
+        fill="#81023a" 
+        fontSize="12"
+        fontWeight="500"
+        transform={`rotate(270, ${x + 8}, ${y + height - 8})`}
+        textAnchor="start"
+      >
+        {payload.name}
+      </text>
+    );
+  };
 
   const statsCards = [
     { title: "Revenu imposable", value: "54 000 €" },
@@ -35,44 +61,35 @@ const TaxRateCard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Graphique des tranches et détails */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Graphique avec barres verticales */}
-            <div className="space-y-3">
-              <div className="flex items-end justify-between gap-2 h-32">
-                {taxBrackets.map((bracket, index) => (
-                  <div key={index} className="flex-1 flex flex-col items-center">
-                    <div className="relative w-full">
-                      <div
-                        className={`w-full rounded-t-lg transition-all duration-300 ${
-                          bracket.active 
-                            ? 'bg-gradient-to-t from-orange-500 to-orange-400 shadow-lg' 
-                            : 'bg-gradient-to-t from-pink-300 to-pink-200'
-                        }`}
-                        style={{
-                          height: `${20 + (parseInt(bracket.rate) * 2)}px`
-                        }}
+            {/* Graphique avec barres verticales Recharts */}
+            <div className="h-48 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={chartData}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                  barCategoryGap="10%"
+                >
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={false}
+                  />
+                  <YAxis hide />
+                  <Bar 
+                    dataKey="value" 
+                    radius={[0, 0, 0, 0]}
+                    label={<CustomLabel />}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.isActive ? "#ff00b8" : "#81023a"}
                       />
-                      {bracket.active && (
-                        <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
-                          <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
-                            <div className="w-0 h-0 border-l-[3px] border-l-transparent border-r-[3px] border-r-transparent border-b-[4px] border-b-orange-500 ml-0.5" />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Labels des taux */}
-              <div className="flex justify-between">
-                {taxBrackets.map((bracket, index) => (
-                  <div key={index} className="flex-1 text-center">
-                    <div className={`text-sm font-medium ${bracket.active ? 'font-bold text-orange-600' : 'text-muted-foreground'}`}>
-                      {bracket.rate}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
 
             {/* Détails des seuils */}
