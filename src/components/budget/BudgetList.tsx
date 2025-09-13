@@ -119,40 +119,78 @@ export const BudgetList = ({
             <CardTitle>Charges ({charges.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {charges.map(charge => <div key={charge.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-medium">{charge.libelle}</h4>
-                        {charge.montant && <Badge variant="outline">
-                            {charge.montant.toLocaleString('fr-FR', {
+            <FullTable>
+              <FullTable.Colgroup>
+                <FullTable.Col className="w-[40%]" />
+                <FullTable.Col className="w-[30%]" />
+                <FullTable.Col className="w-[20%]" />
+                <FullTable.Col className="w-[10%]" />
+              </FullTable.Colgroup>
+              <FullTable.Header>
+                <FullTable.Row>
+                  <FullTable.Head>Dénomination</FullTable.Head>
+                  <FullTable.Head>Débiteur</FullTable.Head>
+                  <FullTable.Head>Montant</FullTable.Head>
+                  <FullTable.Head>Actions</FullTable.Head>
+                </FullTable.Row>
+              </FullTable.Header>
+              <FullTable.Body interactive striped>
+                {charges.map(charge => (
+                  <FullTable.Row key={charge.id}>
+                    <FullTable.Cell>
+                      <div className="font-medium">{charge.libelle}</div>
+                    </FullTable.Cell>
+                    <FullTable.Cell>{charge.debiteur || '-'}</FullTable.Cell>
+                    <FullTable.Cell>
+                      {charge.montant ? 
+                        charge.montant.toLocaleString('fr-FR', {
+                          style: 'currency',
+                          currency: 'EUR'
+                        }) : '-'
+                      }
+                    </FullTable.Cell>
+                    <FullTable.Cell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="rounded-full shadow-none"
+                            aria-label="Open edit menu"
+                          >
+                            <MoreHorizontal size={16} strokeWidth={2} aria-hidden="true" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem onClick={() => onEditCharge(charge)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Modifier
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onDeleteCharge(charge.id)}>
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Supprimer
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </FullTable.Cell>
+                  </FullTable.Row>
+                ))}
+              </FullTable.Body>
+              <FullTable.Footer>
+                <FullTable.Row>
+                  <FullTable.Cell className="font-medium text-black dark:text-white" colSpan={2}>
+                    Total
+                  </FullTable.Cell>
+                  <FullTable.Cell className="font-medium text-black dark:text-white">
+                    {charges.reduce((sum, charge) => sum + (charge.montant || 0), 0).toLocaleString('fr-FR', {
                       style: 'currency',
                       currency: 'EUR'
                     })}
-                          </Badge>}
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        {charge.nature}
-                      </p>
-                      {charge.debiteur && <p className="text-sm text-muted-foreground mb-1">
-                          Débiteur: {charge.debiteur}
-                        </p>}
-                      {charge.commentaire && <p className="text-sm text-muted-foreground">
-                          {charge.commentaire}
-                        </p>}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => onEditCharge(charge)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => onDeleteCharge(charge.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>)}
-            </div>
+                  </FullTable.Cell>
+                  <FullTable.Cell> </FullTable.Cell>
+                </FullTable.Row>
+              </FullTable.Footer>
+            </FullTable>
           </CardContent>
         </Card>}
 
