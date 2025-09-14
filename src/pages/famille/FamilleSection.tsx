@@ -1,32 +1,23 @@
-import React from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React, { useState } from 'react';
+import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FicheClientForm } from './components/FicheClientForm';
 import { SituationMatrimonialeForm } from './components/SituationMatrimonialeForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
 
 const FamilleSection = () => {
-  return (
-    <div className="space-y-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold tracking-tight">Famille</h2>
-        <p className="text-muted-foreground">
-          Gérez les informations et la composition de votre famille
-        </p>
-      </div>
-      
-      <Tabs defaultValue="fiche-client" className="w-full">
-        <TabsList variant="line" className="w-full">
-          <TabsTrigger value="fiche-client">Fiche client</TabsTrigger>
-          <TabsTrigger value="situation-matrimoniale">
-            Situation matrimoniale
-          </TabsTrigger>
-          <TabsTrigger value="liens-familiaux">
-            Liens familiaux
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="fiche-client" className="mt-6">
+  const [activeTab, setActiveTab] = useState('fiche-client');
+
+  const TABS = [
+    { id: 'fiche-client', label: 'Fiche client' },
+    { id: 'situation-matrimoniale', label: 'Situation matrimoniale' },
+    { id: 'liens-familiaux', label: 'Liens familiaux' }
+  ];
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'fiche-client':
+        return (
           <Card>
             <CardHeader>
               <CardTitle>Fiche client</CardTitle>
@@ -38,9 +29,9 @@ const FamilleSection = () => {
               <FicheClientForm />
             </CardContent>
           </Card>
-        </TabsContent>
-        
-        <TabsContent value="situation-matrimoniale" className="mt-6">
+        );
+      case 'situation-matrimoniale':
+        return (
           <Card>
             <CardHeader>
               <CardTitle>Situation matrimoniale</CardTitle>
@@ -52,9 +43,9 @@ const FamilleSection = () => {
               <SituationMatrimonialeForm />
             </CardContent>
           </Card>
-        </TabsContent>
-        
-        <TabsContent value="liens-familiaux" className="mt-6">
+        );
+      case 'liens-familiaux':
+        return (
           <Card>
             <CardHeader>
               <CardTitle>Liens familiaux</CardTitle>
@@ -66,8 +57,63 @@ const FamilleSection = () => {
               <LiensFamiliauxForm />
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        );
+      default:
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Fiche client</CardTitle>
+              <CardDescription>
+                Informations personnelles du client principal
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FicheClientForm />
+            </CardContent>
+          </Card>
+        );
+    }
+  };
+
+  return (
+    <div className="p-6">
+      <div className="mb-6">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Famille</h2>
+          <p className="text-muted-foreground">
+            Gérez les informations et la composition de votre famille
+          </p>
+        </div>
+      </div>
+
+      <div className="mb-6 flex justify-start">
+        <div className="rounded-[8px] bg-muted p-[2px]">
+          <AnimatedBackground
+            defaultValue="fiche-client"
+            onValueChange={(value) => setActiveTab(value || 'fiche-client')}
+            className="rounded-lg bg-background shadow-sm"
+            transition={{
+              ease: "easeInOut",
+              duration: 0.2,
+            }}
+          >
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                data-id={tab.id}
+                type="button"
+                className="inline-flex min-w-24 items-center justify-center px-3 py-2 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
+              >
+                {tab.label}
+              </button>
+            ))}
+          </AnimatedBackground>
+        </div>
+      </div>
+
+      <div className="mt-6">
+        {renderContent()}
+      </div>
     </div>
   );
 };
