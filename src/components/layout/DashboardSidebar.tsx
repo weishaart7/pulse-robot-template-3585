@@ -117,7 +117,7 @@ export function DashboardSidebar() {
 
       {/* Sections du bas */}
       <div className="p-4 space-y-1">
-        <button onClick={() => handleNavigation('/blog')} className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900">
+        <button onClick={() => handleNavigation('/dashboard/blog')} className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900">
           <BookOpen className="h-4 w-4 flex-shrink-0" />
           <span className="truncate">Blog</span>
         </button>
