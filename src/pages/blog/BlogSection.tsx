@@ -13,50 +13,22 @@ const BlogSection = () => {
   ];
 
   const renderContent = () => {
-    switch (activeTab) {
-      case 'derniers-articles':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Derniers articles</CardTitle>
-              <CardDescription>
-                Découvrez nos dernières publications et conseils
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DerniersArticles />
-            </CardContent>
-          </Card>
-        );
-      case 'fiches-memoire':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Fiches mémoire</CardTitle>
-              <CardDescription>
-                Consultez nos fiches pratiques et mémos essentiels
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <FichesMemoire />
-            </CardContent>
-          </Card>
-        );
-      default:
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Derniers articles</CardTitle>
-              <CardDescription>
-                Découvrez nos dernières publications et conseils
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DerniersArticles />
-            </CardContent>
-          </Card>
-        );
-    }
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Section en développement 🚧</CardTitle>
+          <CardDescription>
+            Cette section sera bientôt disponible
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Le contenu de la section Blog est en cours de développement. 
+            Revenez bientôt pour découvrir nos articles et fiches pratiques.
+          </p>
+        </CardContent>
+      </Card>
+    );
   };
 
   return (
@@ -70,30 +42,6 @@ const BlogSection = () => {
         </div>
       </div>
 
-      <div className="mb-6 flex justify-start">
-        <div className="rounded-[8px] bg-muted p-[2px]">
-          <AnimatedBackground
-            defaultValue="derniers-articles"
-            onValueChange={(value) => setActiveTab(value || 'derniers-articles')}
-            className="rounded-lg bg-background shadow-sm"
-            transition={{
-              ease: "easeInOut",
-              duration: 0.2,
-            }}
-          >
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                data-id={tab.id}
-                type="button"
-                className="inline-flex min-w-24 items-center justify-center px-3 py-2 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
-              >
-                {tab.label}
-              </button>
-            ))}
-          </AnimatedBackground>
-        </div>
-      </div>
 
       <div className="mt-6">
         {renderContent()}
