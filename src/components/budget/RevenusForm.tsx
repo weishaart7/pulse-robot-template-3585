@@ -58,21 +58,6 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
     return getNaturesByCategory(REVENUS_CATEGORIES, selectedCategory);
   }, [selectedCategory]);
 
-  // Options pour la recherche - inclut toutes les natures si une recherche est en cours
-  const natureOptionsForSearch = useMemo(() => {
-    const categoryNatures = availableNatures;
-    const allNatures = Object.values(REVENUS_CATEGORIES).flat();
-    
-    // Si pas de catégorie sélectionnée, retourner toutes les natures
-    if (!selectedCategory) {
-      return allNatures;
-    }
-    
-    // Si catégorie sélectionnée, commencer par les natures de la catégorie
-    // mais permettre la recherche dans toutes les natures
-    return categoryNatures.length > 0 ? [...new Set([...categoryNatures, ...allNatures])] : allNatures;
-  }, [selectedCategory, availableNatures]);
-
   const handleSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
@@ -95,19 +80,7 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
     label: cat
   }));
 
-  const natureOptions = useMemo(() => {
-    const categoryNatures = availableNatures;
-    const allNatures = Object.values(REVENUS_CATEGORIES).flat();
-    
-    // Si pas de catégorie sélectionnée, retourner toutes les natures
-    if (!selectedCategory) {
-      return allNatures;
-    }
-    
-    // Si catégorie sélectionnée, commencer par les natures de la catégorie
-    // mais permettre la recherche dans toutes les natures
-    return categoryNatures.length > 0 ? [...new Set([...categoryNatures, ...allNatures])] : allNatures;
-  }, [selectedCategory, availableNatures]);
+  const natureOptions = availableNatures;
 
   const beneficiaires = useMemo(() => {
     const userFullName = familyProfile?.prenom && familyProfile?.nom 

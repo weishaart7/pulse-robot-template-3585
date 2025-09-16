@@ -57,21 +57,6 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
     return getNaturesByCategory(CHARGES_CATEGORIES, selectedCategory);
   }, [selectedCategory]);
 
-  // Options pour la recherche - inclut toutes les natures si une recherche est en cours
-  const natureOptionsForSearch = useMemo(() => {
-    const categoryNatures = availableNatures;
-    const allNatures = Object.values(CHARGES_CATEGORIES).flat();
-    
-    // Si pas de catégorie sélectionnée, retourner toutes les natures
-    if (!selectedCategory) {
-      return allNatures;
-    }
-    
-    // Si catégorie sélectionnée, commencer par les natures de la catégorie
-    // mais permettre la recherche dans toutes les natures
-    return categoryNatures.length > 0 ? [...new Set([...categoryNatures, ...allNatures])] : allNatures;
-  }, [selectedCategory, availableNatures]);
-
   const debiteurs = useMemo(() => {
     const userFullName = familyProfile?.prenom && familyProfile?.nom 
       ? `${familyProfile.prenom} ${familyProfile.nom}` 
@@ -110,19 +95,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
     label: cat
   }));
 
-  const natureOptions = useMemo(() => {
-    const categoryNatures = availableNatures;
-    const allNatures = Object.values(CHARGES_CATEGORIES).flat();
-    
-    // Si pas de catégorie sélectionnée, retourner toutes les natures
-    if (!selectedCategory) {
-      return allNatures;
-    }
-    
-    // Si catégorie sélectionnée, commencer par les natures de la catégorie
-    // mais permettre la recherche dans toutes les natures
-    return categoryNatures.length > 0 ? [...new Set([...categoryNatures, ...allNatures])] : allNatures;
-  }, [selectedCategory, availableNatures]);
+  const natureOptions = availableNatures;
 
   return (
     <Dialog open={open} onOpenChange={onCancel}>
