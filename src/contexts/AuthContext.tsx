@@ -35,16 +35,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('Auth state change:', event, session?.user?.email);
+        // Removed sensitive logging - Auth state change logged securely
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
         
         // Gestion spécifique des événements de déconnexion
         if (event === 'SIGNED_OUT') {
-          console.log('User signed out, clearing session');
+          // User signed out - session cleared
         } else if (event === 'TOKEN_REFRESHED') {
-          console.log('Token refreshed successfully');
+          // Token refreshed successfully
         }
       }
     );
@@ -54,7 +54,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (error) {
         console.error('Error getting session:', error);
       }
-      console.log('Initial session check:', session?.user?.email);
+      // Initial session check completed
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);

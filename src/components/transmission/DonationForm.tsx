@@ -172,7 +172,7 @@ export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Handle form submission
-    console.log('Form data:', formData, 'Clauses:', selectedClauses, 'Selected assets:', selectedAssets, 'Beneficiaries:', beneficiaries);
+    // Financial calculation in progress - sensitive data not logged
     onOpenChange(false);
   };
 

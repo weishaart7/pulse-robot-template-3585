@@ -18,6 +18,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import SelectMenu from '@/components/ui/select-menu';
 import { cn } from '@/lib/utils';
 import { useFamilyProfile } from '@/hooks/useFamilyData';
+import { useSecureForm } from '@/hooks/useSecureForm';
+import { useAuth } from '@/contexts/AuthContext';
+import { sanitizeTextInput, isValidEmail, isValidDate } from '@/lib/security';
 
 
 const formSchema = z.object({
@@ -65,6 +68,13 @@ const professions = [
 
 export function FicheClientForm() {
   const { data, loading, saving, saveData } = useFamilyProfile();
+  const { user } = useAuth();
+  const { submitSecureForm } = useSecureForm({ 
+    formName: 'family_profile',
+    enableRateLimit: true,
+    maxAttempts: 5,
+    windowMs: 60000
+  });
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -120,45 +130,64 @@ export function FicheClientForm() {
 
   const onSubmit = async (formData: FormData) => {
     try {
-      console.log('Form data before save:', formData);
-      
-      // Convert string date to Date if needed
+      // Convert string date to Date if needed  
       let dateNaissance = formData.dateNaissance;
       if (typeof dateNaissance === 'string') {
         const [day, month, year] = dateNaissance.split('/');
         dateNaissance = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
       }
 
-      // Déterminer quelle profession utiliser
-      const finalProfession = formData.professionLibre?.trim() 
-        ? formData.professionLibre.trim() 
-        : formData.profession || '';
+      // Validate email if provided
+      if (formData.email && !isValidEmail(formData.email)) {
+        throw new Error('Format d\'email invalide');
+      }
 
-      console.log('Selected profession:', formData.profession);
-      console.log('Free profession:', formData.professionLibre);
-      console.log('Final profession to save:', finalProfession);
-
-      const supabaseData = {
-        civility: formData.civilite,
-        nom: formData.nom,
-        prenom: formData.prenom,
-        date_naissance: dateNaissance instanceof Date ? dateNaissance.toISOString().split('T')[0] : undefined,
-        profession: finalProfession,
-        commune_naissance: formData.communeNaissance,
-        pays_naissance: formData.paysNaissance,
-        nationalite: formData.nationalite,
-        capacite_juridique: formData.capaciteJuridique,
-        personne_handicapee: formData.handicape,
-        telephone: formData.telephone,
-        email: formData.email,
-        adresse_postale: formData.adresse,
-        code_postal: formData.codePostal,
-        ville: formData.ville,
-        pays: formData.pays,
+      // Sanitize and validate all form data
+      const sanitizedFormData = {
+        civilite: sanitizeTextInput(formData.civilite),
+        nom: sanitizeTextInput(formData.nom),
+        prenom: sanitizeTextInput(formData.prenom),
+        dateNaissance,
+        profession: sanitizeTextInput(formData.professionLibre?.trim() || formData.profession || ''),
+        communeNaissance: sanitizeTextInput(formData.communeNaissance),
+        paysNaissance: sanitizeTextInput(formData.paysNaissance),
+        nationalite: sanitizeTextInput(formData.nationalite),
+        capaciteJuridique: sanitizeTextInput(formData.capaciteJuridique),
+        handicape: formData.handicape,
+        telephone: sanitizeTextInput(formData.telephone),
+        email: sanitizeTextInput(formData.email),
+        adresse: sanitizeTextInput(formData.adresse),
+        codePostal: sanitizeTextInput(formData.codePostal),
+        ville: sanitizeTextInput(formData.ville),
+        pays: sanitizeTextInput(formData.pays),
       };
 
-      console.log('Data to save to Supabase:', supabaseData);
-      await saveData(supabaseData);
+      const supabaseData = {
+        civility: sanitizedFormData.civilite,
+        nom: sanitizedFormData.nom,
+        prenom: sanitizedFormData.prenom,
+        date_naissance: sanitizedFormData.dateNaissance instanceof Date ? sanitizedFormData.dateNaissance.toISOString().split('T')[0] : undefined,
+        profession: sanitizedFormData.profession,
+        commune_naissance: sanitizedFormData.communeNaissance,
+        pays_naissance: sanitizedFormData.paysNaissance,
+        nationalite: sanitizedFormData.nationalite,
+        capacite_juridique: sanitizedFormData.capaciteJuridique,
+        personne_handicapee: sanitizedFormData.handicape,
+        telephone: sanitizedFormData.telephone,
+        email: sanitizedFormData.email,
+        adresse_postale: sanitizedFormData.adresse,
+        code_postal: sanitizedFormData.codePostal,
+        ville: sanitizedFormData.ville,
+        pays: sanitizedFormData.pays,
+      };
+
+      await submitSecureForm(
+        supabaseData,
+        async (sanitizedData) => {
+          await saveData(sanitizedData);
+        },
+        user?.id
+      );
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
     }

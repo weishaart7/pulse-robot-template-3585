@@ -12,6 +12,9 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Revenu } from '@/services/budgetService';
 import { REVENUS_CATEGORIES, getNaturesByCategory } from '@/constants/budgetCategories';
 import { useFamilyData, useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
+import { useSecureForm } from '@/hooks/useSecureForm';
+import { useAuth } from '@/contexts/AuthContext';
+import { sanitizeTextInput, sanitizeNumericInput } from '@/lib/security';
 
 const formSchema = z.object({
   categorie: z.string().min(1, "La catégorie est requise"),
@@ -37,6 +40,13 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
   const { familyMembers } = useFamilyData();
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
+  const { user } = useAuth();
+  const { submitSecureForm } = useSecureForm({ 
+    formName: 'budget_revenus',
+    enableRateLimit: true,
+    maxAttempts: 10,
+    windowMs: 60000
+  });
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -71,14 +81,26 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
   const handleSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
-      await onSubmit({
-        nature: data.nature,
-        libelle: data.libelle,
-        beneficiaire: data.beneficiaire,
-        montant: parseFloat(data.montant),
+      const formData = {
+        nature: sanitizeTextInput(data.nature),
+        libelle: sanitizeTextInput(data.libelle),
+        beneficiaire: sanitizeTextInput(data.beneficiaire),
+        montant: sanitizeNumericInput(data.montant) || 0,
         revenu_disponible: false,
-        commentaire: data.commentaire,
-      });
+        commentaire: sanitizeTextInput(data.commentaire),
+      };
+
+      const success = await submitSecureForm(
+        formData,
+        async (sanitizedData) => {
+          await onSubmit(sanitizedData);
+        },
+        user?.id
+      );
+
+      if (success) {
+        onCancel(); // Close form on success
+      }
     } finally {
       setIsSubmitting(false);
     }

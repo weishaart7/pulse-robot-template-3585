@@ -12,6 +12,9 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Charge } from '@/services/budgetService';
 import { CHARGES_CATEGORIES, getNaturesByCategory } from '@/constants/budgetCategories';
 import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
+import { useSecureForm } from '@/hooks/useSecureForm';
+import { useAuth } from '@/contexts/AuthContext';
+import { sanitizeTextInput, sanitizeNumericInput } from '@/lib/security';
 
 const formSchema = z.object({
   categorie: z.string().min(1, "La catégorie est requise"),
@@ -36,6 +39,13 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
   const [isLibellePrefilled, setIsLibellePrefilled] = useState(false);
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
+  const { user } = useAuth();
+  const { submitSecureForm } = useSecureForm({ 
+    formName: 'budget_charges',
+    enableRateLimit: true,
+    maxAttempts: 10,
+    windowMs: 60000
+  });
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -116,13 +126,25 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
   const handleSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
-      await onSubmit({
-        nature: data.nature,
-        libelle: data.libelle,
-        debiteur: data.debiteur,
-        montant: parseFloat(data.montant),
-        commentaire: data.commentaire,
-      });
+      const formData = {
+        nature: sanitizeTextInput(data.nature),
+        libelle: sanitizeTextInput(data.libelle),
+        debiteur: sanitizeTextInput(data.debiteur),
+        montant: sanitizeNumericInput(data.montant) || 0,
+        commentaire: sanitizeTextInput(data.commentaire),
+      };
+
+      const success = await submitSecureForm(
+        formData,
+        async (sanitizedData) => {
+          await onSubmit(sanitizedData);
+        },
+        user?.id
+      );
+
+      if (success) {
+        onCancel(); // Close form on success
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -66,13 +66,11 @@ export const Synthese = () => {
 
       // Construire le graphe familial
       const family: FamilyGraph = buildFamilyGraph(familyProfile, maritalStatus, familyLinks || []);
-      console.log('Family graph construit:', family);
-      console.log('Nombre de personnes dans le graphe:', family.persons.length);
-      console.log('Liens familiaux trouvés:', familyLinks?.length || 0);
+      // Family structure analysis completed
       
       // Construire le patrimoine
       const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], charges || []);
-      console.log('Patrimoine construit:', patrimony);
+      // Asset portfolio analysis completed
       
       // Transformer les libéralités
       const liberalitesFormatted: Liberalite[] = (liberalites || []).map(lib => ({
@@ -136,7 +134,7 @@ export const Synthese = () => {
           const person = family.persons.find(p => p.id === heir.personId);
           const lienFamilial = person?.lienFamilial || heir.lien;
           
-          console.log(`Mapping lien pour ${heir.personId}: lienFamilial=${lienFamilial}, heir.lien=${heir.lien}`);
+          // Family link mapping in progress
           
           let dmtgLien: any = 'autre';
           if (lienFamilial === 'conjoint') dmtgLien = 'conjoint';
@@ -145,7 +143,7 @@ export const Synthese = () => {
           else if (lienFamilial === 'soeur' || lienFamilial === 'frère') dmtgLien = 'frere_soeur';
           else if (lienFamilial === 'neveu' || lienFamilial === 'nièce') dmtgLien = 'neveu_niece';
           
-          console.log(`Lien DMTG final: ${dmtgLien}`);
+          // DMTG link mapping completed
           
           return {
             id: heir.personId,
@@ -162,11 +160,11 @@ export const Synthese = () => {
       // Calculer la succession légale "à défaut de dispositions"
       const successionLegaleResult = calculateSuccessionLegale(family, hasTestament);
       setSuccessionLegale(successionLegaleResult);
-      console.log('Succession légale calculée:', successionLegaleResult);
+      // Legal succession calculation completed
 
       // Calculer les droits DMTG
       const dmtgResult = computeDMTG(dmtgContext);
-      console.log('Résultat DMTG:', dmtgResult);
+      // DMTG tax calculation completed
 
       // Combiner les résultats
       const combinedResult = {

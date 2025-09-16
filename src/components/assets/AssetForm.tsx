@@ -129,7 +129,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         setFamilyData(familyInfo);
       } catch (error) {
         console.error('Error loading family data:', error);
-        // Fallback to generic options
+        // Fallback to generic options - no sensitive data logged
         setDetenteurOptions(['Utilisateur']);
       }
     };

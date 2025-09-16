@@ -148,22 +148,21 @@ export function diagnoseFiscalCalculation(
  * Diagnostic simple pour test de référence
  */
 export function runFiscalDiagnostic() {
-  console.log('🔍 === DIAGNOSTIC FISCAL DMTG ===');
+  // Tax calculation system initialized
   
   const params = DMTG_PARAMS;
 
   // Test 1: Référence officielle
-  console.log('\n📋 Test 1: Enfant hérite 1,200,000€ (référence officielle)');
+  // Test case 1: Standard inheritance calculation
   const test1 = computeInheritanceForBeneficiary(1200000, 'enfant', 0, params);
-  console.log(`✅ Résultat attendu: 292,673€`);
-  console.log(`${test1.tax === 292673 ? '✅' : '❌'} Résultat obtenu: ${test1.tax.toLocaleString()}€`);
+  // Test validation completed
 
   // Test 2: Conjoint (exonération)
-  console.log('\n📋 Test 2: Conjoint (exonération totale)');
+  // Test case 2: Spouse exemption
   const test2 = computeInheritanceForBeneficiary(1000000, 'conjoint', 0, params);
-  console.log(`${test2.tax === 0 ? '✅' : '❌'} Conjoint - droits: ${test2.tax}€`);
+  // Spouse exemption test completed
 
-  console.log('\n🔍 === FIN DIAGNOSTIC ===');
+  // Diagnostic system validation completed
   
   return {
     test1: test1.tax === 292673,

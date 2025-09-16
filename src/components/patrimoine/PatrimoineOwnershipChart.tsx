@@ -25,15 +25,12 @@ export const PatrimoineOwnershipChart = ({ assets }: PatrimoineOwnershipChartPro
     let spouseValue = 0;
 
     // Debug: log des assets pour comprendre le problème
-    console.log('=== DEBUG OWNERSHIP CALCULATION ===');
-    console.log('Assets:', assets);
-    console.log('User first name:', userFirstName);
-    console.log('Spouse first name:', spouseFirstName);
+    // Ownership calculation for asset distribution
 
     assets.forEach(asset => {
       const estimatedValue = asset.valeur_estimee || 0;
       
-      console.log(`Asset: ${asset.nature}, detenteur: "${asset.detenteur}", valeur_estimee: ${estimatedValue}, pourcentage_utilisateur: ${asset.pourcentage_utilisateur}, pourcentage_conjoint: ${asset.pourcentage_conjoint}`);
+      // Asset ownership calculation in progress
       
       if (asset.detenteur === 'user' || asset.detenteur === 'utilisateur' || !asset.detenteur) {
         if (asset.pourcentage_utilisateur || asset.pourcentage_conjoint) {
@@ -44,12 +41,11 @@ export const PatrimoineOwnershipChart = ({ assets }: PatrimoineOwnershipChartPro
           const spousePortion = estimatedValue * spouseQuote;
           userValue += userPortion;
           spouseValue += spousePortion;
-          console.log(`  -> Adding ${userPortion} to user (${userQuote * 100}% of ${estimatedValue}) with quotes`);
-          console.log(`  -> Adding ${spousePortion} to spouse (${spouseQuote * 100}% of ${estimatedValue}) with quotes`);
+          // Asset distribution calculated with quotes
         } else {
           // Biens propres de l'utilisateur (100%)
           userValue += estimatedValue;
-          console.log(`  -> Adding ${estimatedValue} to user (propre 100%)`);
+          // Full asset added to user
         }
       } else if (asset.detenteur === 'spouse' || asset.detenteur === 'conjoint') {
         if (asset.pourcentage_utilisateur || asset.pourcentage_conjoint) {
@@ -60,12 +56,11 @@ export const PatrimoineOwnershipChart = ({ assets }: PatrimoineOwnershipChartPro
           const spousePortion = estimatedValue * spouseQuote;
           userValue += userPortion;
           spouseValue += spousePortion;
-          console.log(`  -> Adding ${userPortion} to user (${userQuote * 100}% of ${estimatedValue}) with quotes`);
-          console.log(`  -> Adding ${spousePortion} to spouse (${spouseQuote * 100}% of ${estimatedValue}) with quotes`);
+          // Asset distribution calculated for spouse ownership
         } else {
           // Biens propres du conjoint (100%)
           spouseValue += estimatedValue;
-          console.log(`  -> Adding ${estimatedValue} to spouse (propre 100%)`);
+          // Full asset added to spouse
         }
       } else if (asset.detenteur === 'common' || asset.detenteur === 'commun' || asset.detenteur === 'couple') {
         // Biens communs - répartir selon les quote-parts
@@ -77,16 +72,13 @@ export const PatrimoineOwnershipChart = ({ assets }: PatrimoineOwnershipChartPro
         
         userValue += userPortion;
         spouseValue += spousePortion;
-        console.log(`  -> Adding ${userPortion} to user (${userQuote * 100}% of ${estimatedValue}) common asset`);
-        console.log(`  -> Adding ${spousePortion} to spouse (${spouseQuote * 100}% of ${estimatedValue}) common asset`);
+        // Common asset distributed between spouses
       } else {
-        console.log(`  -> Unknown detenteur: "${asset.detenteur}"`);
+        // Unknown asset ownership type detected
       }
     });
     
-    console.log('Final userValue:', userValue);
-    console.log('Final spouseValue:', spouseValue);
-    console.log('=== END DEBUG ===');
+    // Ownership calculation completed
     
     const totalValue = userValue + spouseValue;
 
