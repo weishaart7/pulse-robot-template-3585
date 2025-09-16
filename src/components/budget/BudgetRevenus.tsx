@@ -55,24 +55,21 @@ export const BudgetRevenus = () => {
                 entrées enregistrées
               </p>
             </div>
-            {!showRevenusForm && (
-              <Button onClick={() => setShowRevenusForm(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Nouveau revenu
-              </Button>
-            )}
+            <Button onClick={() => setShowRevenusForm(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nouveau revenu
+            </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Formulaire d'ajout/modification */}
-      {showRevenusForm && (
-        <RevenusForm 
-          revenu={editingRevenu} 
-          onSubmit={handleSubmitRevenu} 
-          onCancel={handleCancelRevenu} 
-        />
-      )}
+      <RevenusForm 
+        revenu={editingRevenu} 
+        onSubmit={handleSubmitRevenu} 
+        onCancel={handleCancelRevenu}
+        open={showRevenusForm}
+      />
 
       {/* Liste des revenus */}
       <BudgetList 

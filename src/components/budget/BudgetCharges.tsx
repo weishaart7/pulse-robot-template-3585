@@ -55,24 +55,21 @@ export const BudgetCharges = () => {
                 entrées enregistrées
               </p>
             </div>
-            {!showChargesForm && (
-              <Button onClick={() => setShowChargesForm(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Nouvelle charge
-              </Button>
-            )}
+            <Button onClick={() => setShowChargesForm(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nouvelle charge
+            </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Formulaire d'ajout/modification */}
-      {showChargesForm && (
-        <ChargesForm 
-          charge={editingCharge} 
-          onSubmit={handleSubmitCharge} 
-          onCancel={handleCancelCharge} 
-        />
-      )}
+      <ChargesForm 
+        charge={editingCharge} 
+        onSubmit={handleSubmitCharge} 
+        onCancel={handleCancelCharge}
+        open={showChargesForm}
+      />
 
       {/* Liste des charges */}
       <BudgetList 
