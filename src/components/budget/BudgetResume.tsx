@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AnimatedBudgetCard } from '@/components/ui/animated-dashboard-card';
 import { useRevenus, useCharges } from '@/hooks/useBudget';
 
 export const BudgetResume = () => {
@@ -37,21 +38,11 @@ export const BudgetResume = () => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-medium text-muted-foreground">
-              Solde mensuel
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className={`text-2xl font-bold ${soldeMensuel >= 0 ? 'text-primary' : 'text-destructive'}`}>
-              {soldeMensuel >= 0 ? '+' : ''}{soldeMensuel.toLocaleString('fr-FR')} €
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Revenus - Dépenses
-            </p>
-          </CardContent>
-        </Card>
+        <AnimatedBudgetCard 
+          totalRevenus={totalRevenus}
+          totalCharges={totalCharges}
+          soldeMensuel={soldeMensuel}
+        />
 
         <Card>
           <CardHeader className="pb-2">
