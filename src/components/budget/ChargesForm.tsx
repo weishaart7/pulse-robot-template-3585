@@ -33,6 +33,7 @@ interface ChargesFormProps {
 
 export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCancel, open }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLibellePrefilled, setIsLibellePrefilled] = useState(false);
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
 
@@ -62,6 +63,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
   useEffect(() => {
     if (selectedNature && !form.getValues("libelle")) {
       form.setValue("libelle", selectedNature);
+      setIsLibellePrefilled(true);
     }
   }, [selectedNature, form]);
 
@@ -94,6 +96,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
         montant: "",
         commentaire: "",
       });
+      setIsLibellePrefilled(false);
     } else if (open && charge) {
       // Charger les données existantes pour modification
       form.reset({
@@ -106,6 +109,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
         montant: charge.montant?.toString() || "",
         commentaire: charge.commentaire || "",
       });
+      setIsLibellePrefilled(false);
     }
   }, [open, charge, form]);
 
@@ -194,7 +198,15 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
                 <FormItem>
                   <FormLabel>Libellé</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder={selectedNature || "Saisissez le libellé"} className="placeholder:text-muted-foreground/50" />
+                    <Input 
+                      {...field} 
+                      placeholder="Saisissez le libellé" 
+                      className={isLibellePrefilled && field.value === selectedNature ? "text-muted-foreground/50" : ""}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        setIsLibellePrefilled(false);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

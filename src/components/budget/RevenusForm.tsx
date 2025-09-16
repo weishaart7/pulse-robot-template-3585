@@ -33,6 +33,7 @@ interface RevenusFormProps {
 
 export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCancel, open }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLibellePrefilled, setIsLibellePrefilled] = useState(false);
   const { familyMembers } = useFamilyData();
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
@@ -63,6 +64,7 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
   useEffect(() => {
     if (selectedNature && !form.getValues("libelle")) {
       form.setValue("libelle", selectedNature);
+      setIsLibellePrefilled(true);
     }
   }, [selectedNature, form]);
 
@@ -121,6 +123,7 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
         montant: "",
         commentaire: "",
       });
+      setIsLibellePrefilled(false);
     } else if (open && revenu) {
       // Charger les données existantes pour modification
       form.reset({
@@ -133,6 +136,7 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
         montant: revenu.montant?.toString() || "",
         commentaire: revenu.commentaire || "",
       });
+      setIsLibellePrefilled(false);
     }
   }, [open, revenu, form]);
 
@@ -198,7 +202,15 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
                 <FormItem>
                   <FormLabel>Libellé</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder={selectedNature || "Saisissez le libellé"} className="placeholder:text-muted-foreground/50" />
+                    <Input 
+                      {...field} 
+                      placeholder="Saisissez le libellé" 
+                      className={isLibellePrefilled && field.value === selectedNature ? "text-muted-foreground/50" : ""}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        setIsLibellePrefilled(false);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
