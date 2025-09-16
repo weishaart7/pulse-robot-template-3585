@@ -5,7 +5,6 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -20,7 +19,6 @@ const formSchema = z.object({
   libelle: z.string().min(1, "Le libellé est requis"),
   beneficiaire: z.string().optional(),
   montant: z.string().min(1, "Le montant est requis"),
-  revenu_disponible: z.boolean().default(false),
   commentaire: z.string().optional(),
 });
 
@@ -47,7 +45,6 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
       libelle: revenu?.libelle || "",
       beneficiaire: revenu?.beneficiaire || "",
       montant: revenu?.montant?.toString() || "",
-      revenu_disponible: revenu?.revenu_disponible || false,
       commentaire: revenu?.commentaire || "",
     },
   });
@@ -67,7 +64,7 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
         libelle: data.libelle,
         beneficiaire: data.beneficiaire,
         montant: parseFloat(data.montant),
-        revenu_disponible: data.revenu_disponible,
+        revenu_disponible: false,
         commentaire: data.commentaire,
       });
     } finally {
@@ -189,21 +186,6 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
                     <Input {...field} type="number" step="0.01" placeholder="0.00" />
                   </FormControl>
                   <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="revenu_disponible"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                  <FormControl>
-                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>Revenu disponible</FormLabel>
-                  </div>
                 </FormItem>
               )}
             />
