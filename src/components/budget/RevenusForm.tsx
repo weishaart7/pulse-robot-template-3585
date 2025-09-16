@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -100,6 +100,33 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
 
     return [userFullName, spouseFullName, "Le couple"];
   }, [familyProfile, maritalStatus]);
+
+  // Réinitialiser le formulaire quand le dialogue s'ouvre/ferme
+  useEffect(() => {
+    if (open && !revenu) {
+      // Réinitialiser pour un nouveau revenu
+      form.reset({
+        categorie: "",
+        nature: "",
+        libelle: "",
+        beneficiaire: "",
+        montant: "",
+        commentaire: "",
+      });
+    } else if (open && revenu) {
+      // Charger les données existantes pour modification
+      form.reset({
+        categorie: Object.keys(REVENUS_CATEGORIES).find(cat => 
+          getNaturesByCategory(REVENUS_CATEGORIES, cat).includes(revenu.nature)
+        ) || "",
+        nature: revenu.nature || "",
+        libelle: revenu.libelle || "",
+        beneficiaire: revenu.beneficiaire || "",
+        montant: revenu.montant?.toString() || "",
+        commentaire: revenu.commentaire || "",
+      });
+    }
+  }, [open, revenu, form]);
 
   return (
     <Dialog open={open} onOpenChange={onCancel}>

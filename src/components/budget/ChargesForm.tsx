@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -73,6 +73,33 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
 
     return [userFullName, spouseFullName, "Le couple"];
   }, [familyProfile, maritalStatus]);
+
+  // Réinitialiser le formulaire quand le dialogue s'ouvre/ferme
+  useEffect(() => {
+    if (open && !charge) {
+      // Réinitialiser pour une nouvelle charge
+      form.reset({
+        categorie: "",
+        nature: "",
+        libelle: "",
+        debiteur: "",
+        montant: "",
+        commentaire: "",
+      });
+    } else if (open && charge) {
+      // Charger les données existantes pour modification
+      form.reset({
+        categorie: Object.keys(CHARGES_CATEGORIES).find(cat => 
+          getNaturesByCategory(CHARGES_CATEGORIES, cat).includes(charge.nature)
+        ) || "",
+        nature: charge.nature || "",
+        libelle: charge.libelle || "",
+        debiteur: charge.debiteur || "",
+        montant: charge.montant?.toString() || "",
+        commentaire: charge.commentaire || "",
+      });
+    }
+  }, [open, charge, form]);
 
   const handleSubmit = async (data: FormData) => {
     setIsSubmitting(true);
