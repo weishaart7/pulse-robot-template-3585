@@ -12,6 +12,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Charge } from '@/services/budgetService';
 import { CHARGES_CATEGORIES, getNaturesByCategory } from '@/constants/budgetCategories';
 import { DEBITEUR_OPTIONS } from '@/constants/budgetTypes';
+import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 
 const formSchema = z.object({
   categorie: z.string().min(1, "La catégorie est requise"),
@@ -33,6 +34,8 @@ interface ChargesFormProps {
 
 export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCancel, open }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { data: familyProfile } = useFamilyProfile();
+  const { data: maritalStatus } = useMaritalStatus();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -54,6 +57,28 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
     if (!selectedCategory) return [];
     return getNaturesByCategory(CHARGES_CATEGORIES, selectedCategory);
   }, [selectedCategory]);
+
+  const debiteurs = useMemo(() => {
+    const userFullName = familyProfile?.prenom && familyProfile?.nom 
+      ? `${familyProfile.prenom} ${familyProfile.nom}` 
+      : "Moi";
+
+    // Statuts qui permettent d'avoir un conjoint
+    const hasSpouse = maritalStatus?.statut_couple && 
+      ["Marié", "Pacsé", "Concubinage"].includes(maritalStatus.statut_couple);
+
+    if (!hasSpouse) {
+      // Si célibataire ou pas de conjoint, seul l'utilisateur
+      return [userFullName];
+    }
+
+    // Si marié/pacsé/concubinage, les 3 options
+    const spouseFullName = maritalStatus?.prenom_conjoint && maritalStatus?.nom_conjoint
+      ? `${maritalStatus.prenom_conjoint} ${maritalStatus.nom_conjoint}`
+      : "Conjoint";
+
+    return [userFullName, spouseFullName, "Le couple"];
+  }, [familyProfile, maritalStatus]);
 
   const handleSubmit = async (data: FormData) => {
     setIsSubmitting(true);
@@ -160,7 +185,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {DEBITEUR_OPTIONS.map((debiteur) => (
+                      {debiteurs.map((debiteur) => (
                         <SelectItem key={debiteur} value={debiteur}>
                           {debiteur}
                         </SelectItem>

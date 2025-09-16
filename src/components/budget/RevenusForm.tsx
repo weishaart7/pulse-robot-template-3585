@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Revenu } from '@/services/budgetService';
 import { REVENUS_CATEGORIES, getNaturesByCategory, searchInAllNatures } from '@/constants/budgetCategories';
-import { useFamilyData } from '@/hooks/useFamilyData';
+import { useFamilyData, useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 
 const formSchema = z.object({
   categorie: z.string().min(1, "La catégorie est requise"),
@@ -34,6 +34,8 @@ interface RevenusFormProps {
 export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCancel, open }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { familyMembers } = useFamilyData();
+  const { data: familyProfile } = useFamilyProfile();
+  const { data: maritalStatus } = useMaritalStatus();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -80,7 +82,27 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
 
   const natureOptions = availableNatures;
 
-  const beneficiaires = ["Moi", ...familyMembers.map(member => `${member.prenom} ${member.nom}`)];
+  const beneficiaires = useMemo(() => {
+    const userFullName = familyProfile?.prenom && familyProfile?.nom 
+      ? `${familyProfile.prenom} ${familyProfile.nom}` 
+      : "Moi";
+
+    // Statuts qui permettent d'avoir un conjoint
+    const hasSpouse = maritalStatus?.statut_couple && 
+      ["Marié", "Pacsé", "Concubinage"].includes(maritalStatus.statut_couple);
+
+    if (!hasSpouse) {
+      // Si célibataire ou pas de conjoint, seul l'utilisateur
+      return [userFullName];
+    }
+
+    // Si marié/pacsé/concubinage, les 3 options
+    const spouseFullName = maritalStatus?.prenom_conjoint && maritalStatus?.nom_conjoint
+      ? `${maritalStatus.prenom_conjoint} ${maritalStatus.nom_conjoint}`
+      : "Conjoint";
+
+    return [userFullName, spouseFullName, "Le couple"];
+  }, [familyProfile, maritalStatus]);
 
   return (
     <Dialog open={open} onOpenChange={onCancel}>
