@@ -62,8 +62,8 @@ export function AnimatedBudgetCard(props: BudgetCardProps) {
     return dots;
   };
 
-  const outerDots = generateDots(outerDotsCount!, 185, 203, 200);
-  const innerDots = generateDots(innerDotsCount!, 155, 203, 200);
+  const outerDots = generateDots(outerDotsCount!, 130, 160, 160);
+  const innerDots = generateDots(innerDotsCount!, 100, 160, 160);
 
   // Animation variants
   const containerVariants = {
@@ -118,8 +118,8 @@ export function AnimatedBudgetCard(props: BudgetCardProps) {
           <div className={`absolute inset-0 ${backgroundColor} backdrop-blur-[2px] rounded-lg`} />
 
           {/* Dots Container */}
-          <div className="relative w-[28rem] h-[28rem] mx-auto">
-            <svg className="w-full h-full" viewBox="0 0 448 448">
+          <div className="relative w-[20rem] h-[20rem] mx-auto">
+            <svg className="w-full h-full" viewBox="0 0 320 320">
               {/* Outer dots */}
               {outerDots.map((dot, index) => (
                 <motion.circle
@@ -152,7 +152,7 @@ export function AnimatedBudgetCard(props: BudgetCardProps) {
             </svg>
 
             {/* Center Text Overlay */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none -mt-24 -ml-12">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none -mt-16 -ml-8">
               <div className="text-center" style={{ zIndex: 20 }}>
                 <motion.div 
                   className="text-xl font-medium text-foreground mb-2"
