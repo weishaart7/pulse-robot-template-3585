@@ -51,11 +51,19 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
   });
 
   const selectedCategory = form.watch("categorie");
+  const selectedNature = form.watch("nature");
   
   const availableNatures = useMemo(() => {
     if (!selectedCategory) return [];
     return getNaturesByCategory(CHARGES_CATEGORIES, selectedCategory);
   }, [selectedCategory]);
+
+  // Pré-remplir le libellé avec la nature sélectionnée
+  useEffect(() => {
+    if (selectedNature && !form.getValues("libelle")) {
+      form.setValue("libelle", selectedNature);
+    }
+  }, [selectedNature, form]);
 
   const debiteurs = useMemo(() => {
     const userFullName = familyProfile?.prenom && familyProfile?.nom 
@@ -186,7 +194,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
                 <FormItem>
                   <FormLabel>Libellé</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} placeholder={selectedNature || "Saisissez le libellé"} className="placeholder:text-muted-foreground/50" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -6,8 +6,8 @@ export const BudgetResume = () => {
   const { revenus, loading: revenusLoading } = useRevenus();
   const { charges, loading: chargesLoading } = useCharges();
 
-  const totalRevenus = revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0);
-  const totalCharges = charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
+  const totalRevenus = Math.round(revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0));
+  const totalCharges = Math.round(charges.reduce((sum, charge) => sum + (charge.montant || 0), 0));
 
   if (revenusLoading || chargesLoading) {
     return (
@@ -25,14 +25,14 @@ export const BudgetResume = () => {
   }
 
   // Calculer les mensualités de crédits (charges liées aux crédits)
-  const mensualitesCredits = charges
+  const mensualitesCredits = Math.round(charges
     .filter(charge => charge.nature?.toLowerCase().includes('crédit') || charge.nature?.toLowerCase().includes('emprunt'))
-    .reduce((sum, charge) => sum + (charge.montant || 0), 0);
+    .reduce((sum, charge) => sum + (charge.montant || 0), 0));
 
   // Calculer les indicateurs
-  const soldeMensuel = totalRevenus - totalCharges;
+  const soldeMensuel = Math.round(totalRevenus - totalCharges);
   const tauxEndettement = totalRevenus > 0 ? (mensualitesCredits / totalRevenus) * 100 : 0;
-  const capaciteEndettement = (totalRevenus * 0.35) - mensualitesCredits;
+  const capaciteEndettement = Math.round((totalRevenus * 0.35) - mensualitesCredits);
 
   return (
     <div className="space-y-6">

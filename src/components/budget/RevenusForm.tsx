@@ -52,11 +52,19 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
   });
 
   const selectedCategory = form.watch("categorie");
+  const selectedNature = form.watch("nature");
   
   const availableNatures = useMemo(() => {
     if (!selectedCategory) return [];
     return getNaturesByCategory(REVENUS_CATEGORIES, selectedCategory);
   }, [selectedCategory]);
+
+  // Pré-remplir le libellé avec la nature sélectionnée
+  useEffect(() => {
+    if (selectedNature && !form.getValues("libelle")) {
+      form.setValue("libelle", selectedNature);
+    }
+  }, [selectedNature, form]);
 
   const handleSubmit = async (data: FormData) => {
     setIsSubmitting(true);
@@ -190,7 +198,7 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
                 <FormItem>
                   <FormLabel>Libellé</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} placeholder={selectedNature || "Saisissez le libellé"} className="placeholder:text-muted-foreground/50" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
