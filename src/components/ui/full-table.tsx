@@ -51,5 +51,5 @@ FullTable.Cell = ({ children, className, colSpan }: { children: React.ReactNode,
 };
 
 FullTable.Footer = ({ children }: { children: React.ReactNode }) => {
-  return <tfoot className="border-t border-gray-alpha-400"><tr className="h-2" />{children}</tfoot>;
+  return <tfoot className="border-t border-gray-alpha-400">{children}</tfoot>;
 };
