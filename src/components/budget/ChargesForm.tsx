@@ -11,7 +11,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Charge } from '@/services/budgetService';
 import { CHARGES_CATEGORIES, getNaturesByCategory } from '@/constants/budgetCategories';
-import { DEBITEUR_OPTIONS } from '@/constants/budgetTypes';
 import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 
 const formSchema = z.object({
@@ -63,16 +62,11 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
       ? `${familyProfile.prenom} ${familyProfile.nom}` 
       : "Moi";
 
-    // Statuts qui permettent d'avoir un conjoint
-    const hasSpouse = maritalStatus?.statut_couple && 
-      ["Marié", "Pacsé", "Concubinage"].includes(maritalStatus.statut_couple);
+    const statut = maritalStatus?.statut_couple || "";
+    const hasSpouse = ["Marié(e)", "Pacsé(e)", "Concubinage"].includes(statut);
 
-    if (!hasSpouse) {
-      // Si célibataire ou pas de conjoint, seul l'utilisateur
-      return [userFullName];
-    }
+    if (!hasSpouse) return [userFullName];
 
-    // Si marié/pacsé/concubinage, les 3 options
     const spouseFullName = maritalStatus?.prenom_conjoint && maritalStatus?.nom_conjoint
       ? `${maritalStatus.prenom_conjoint} ${maritalStatus.nom_conjoint}`
       : "Conjoint";
