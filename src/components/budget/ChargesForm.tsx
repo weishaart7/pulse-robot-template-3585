@@ -91,13 +91,13 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
               name="categorie"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Catégorie</FormLabel>
+                  <FormLabel className="text-xs">Catégorie</FormLabel>
                   <FormControl>
                     <Select value={field.value} onValueChange={(value) => {
                       field.onChange(value);
                       form.setValue("nature", ""); // Reset nature when category changes
                     }}>
-                      <SelectTrigger>
+                      <SelectTrigger size="lg">
                         <SelectValue placeholder="Sélectionner une catégorie" />
                       </SelectTrigger>
                       <SelectContent>
@@ -152,10 +152,10 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
               name="debiteur"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Débiteur</FormLabel>
+                  <FormLabel className="text-xs">Débiteur</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger size="lg">
                         <SelectValue placeholder="Sélectionnez le débiteur" />
                       </SelectTrigger>
                     </FormControl>

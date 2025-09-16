@@ -95,13 +95,13 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
               name="categorie"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Catégorie</FormLabel>
+                  <FormLabel className="text-xs">Catégorie</FormLabel>
                   <FormControl>
                     <Select value={field.value} onValueChange={(value) => {
                       field.onChange(value);
                       form.setValue("nature", ""); // Reset nature when category changes
                     }}>
-                      <SelectTrigger>
+                      <SelectTrigger size="lg">
                         <SelectValue placeholder="Sélectionner une catégorie" />
                       </SelectTrigger>
                       <SelectContent>
@@ -156,10 +156,10 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
               name="beneficiaire"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Bénéficiaire</FormLabel>
+                  <FormLabel className="text-xs">Bénéficiaire</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger size="lg">
                         <SelectValue placeholder="Sélectionnez le bénéficiaire" />
                       </SelectTrigger>
                     </FormControl>
