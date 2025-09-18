@@ -172,6 +172,45 @@ export type Database = {
         }
         Relationships: []
       }
+      emprunts: {
+        Row: {
+          capital_restant_du: number | null
+          created_at: string
+          duree_restante: number | null
+          id: string
+          libelle: string
+          mensualite: number | null
+          nature: string
+          taux_interet: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          capital_restant_du?: number | null
+          created_at?: string
+          duree_restante?: number | null
+          id?: string
+          libelle: string
+          mensualite?: number | null
+          nature: string
+          taux_interet?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          capital_restant_du?: number | null
+          created_at?: string
+          duree_restante?: number | null
+          id?: string
+          libelle?: string
+          mensualite?: number | null
+          nature?: string
+          taux_interet?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       family_links: {
         Row: {
           branche_familiale: string | null
@@ -855,6 +894,33 @@ export type Database = {
           regime_matrimonial?: string | null
           statut_couple?: string | null
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      passifs: {
+        Row: {
+          created_at: string
+          id: string
+          montant_du: number
+          nature: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          montant_du: number
+          nature: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          montant_du?: number
+          nature?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

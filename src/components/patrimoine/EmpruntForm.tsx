@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { EMPRUNT_NATURES } from '@/constants/assetTypes';
 import { ArrowLeft } from 'lucide-react';
+import { useEmprunts } from '@/hooks/usePassifs';
 
 interface EmpruntFormProps {
   onCancel: () => void;
@@ -19,19 +20,23 @@ export const EmpruntForm = ({ onCancel, onSubmit }: EmpruntFormProps) => {
   const [interets, setInterets] = useState('');
   const [mensualites, setMensualites] = useState('');
   const [dureeRestante, setDureeRestante] = useState('');
+  const { createEmprunt } = useEmprunts();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement emprunt creation logic
-    console.log('Emprunt data:', {
-      nature,
-      libelle,
-      capitalRestantDu,
-      interets,
-      mensualites,
-      dureeRestante
-    });
-    onSubmit();
+    try {
+      await createEmprunt({
+        nature,
+        libelle,
+        capital_restant_du: capitalRestantDu ? parseFloat(capitalRestantDu) : undefined,
+        taux_interet: interets ? parseFloat(interets) : undefined,
+        mensualite: mensualites ? parseFloat(mensualites) : undefined,
+        duree_restante: dureeRestante ? parseInt(dureeRestante) : undefined
+      });
+      onSubmit();
+    } catch (error) {
+      // Error handling is done in the hook
+    }
   };
 
   return (

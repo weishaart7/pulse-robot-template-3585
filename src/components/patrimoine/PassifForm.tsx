@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PASSIF_NATURES } from '@/constants/assetTypes';
 import { ArrowLeft } from 'lucide-react';
+import { usePassifs } from '@/hooks/usePassifs';
 
 interface PassifFormProps {
   onCancel: () => void;
@@ -15,15 +16,19 @@ interface PassifFormProps {
 export const PassifForm = ({ onCancel, onSubmit }: PassifFormProps) => {
   const [nature, setNature] = useState('');
   const [montantDu, setMontantDu] = useState('');
+  const { createPassif } = usePassifs();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement passif creation logic
-    console.log('Passif data:', {
-      nature,
-      montantDu
-    });
-    onSubmit();
+    try {
+      await createPassif({
+        nature,
+        montant_du: parseFloat(montantDu)
+      });
+      onSubmit();
+    } catch (error) {
+      // Error handling is done in the hook
+    }
   };
 
   return (
