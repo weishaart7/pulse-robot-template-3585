@@ -142,29 +142,29 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
                 
                 return (
                   <FullTable.Row key={asset.id}>
-                    <FullTable.Cell className="pl-12 bg-background-200">
+                    <FullTable.Cell className="pl-12 bg-background-200 py-1.5 border-t border-gray-alpha-400 border-l-0 border-r-0 border-b-0 first:border-t-0">
                       <div>
-                        <div className="font-normal">{asset.nature}</div>
+                        <div className="font-normal text-sm">{asset.nature}</div>
                         {asset.denomination && (
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-xs text-muted-foreground">
                             {asset.denomination}
                           </div>
                         )}
                       </div>
                     </FullTable.Cell>
-                     <FullTable.Cell className="bg-background-200">
-                       {formatDetenteur(asset.detenteur)}
-                     </FullTable.Cell>
-                     <FullTable.Cell className="bg-background-200">
-                       {assetWeight}%
-                     </FullTable.Cell>
-                     <FullTable.Cell className="bg-background-200">
-                       {asset.valeur_estimee ? formatCurrency(asset.valeur_estimee) : 'Non évalué'}
-                     </FullTable.Cell>
-                     <FullTable.Cell className="bg-background-200">
-                       <span className="text-muted-foreground">—</span>
-                     </FullTable.Cell>
-                      <FullTable.Cell className="bg-background-200">
+                    <FullTable.Cell className="bg-background-200 py-1.5 border-t border-gray-alpha-400 border-l-0 border-r-0 border-b-0 first:border-t-0">
+                      <span className="text-sm">{formatDetenteur(asset.detenteur)}</span>
+                    </FullTable.Cell>
+                    <FullTable.Cell className="bg-background-200 py-1.5 border-t border-gray-alpha-400 border-l-0 border-r-0 border-b-0 first:border-t-0">
+                      <span className="text-sm">{assetWeight}%</span>
+                    </FullTable.Cell>
+                    <FullTable.Cell className="bg-background-200 py-1.5 border-t border-gray-alpha-400 border-l-0 border-r-0 border-b-0 first:border-t-0">
+                      <span className="text-sm">{asset.valeur_estimee ? formatCurrency(asset.valeur_estimee) : 'Non évalué'}</span>
+                    </FullTable.Cell>
+                    <FullTable.Cell className="bg-background-200 py-1.5 border-t border-gray-alpha-400 border-l-0 border-r-0 border-b-0 first:border-t-0">
+                      <span className="text-muted-foreground text-sm">—</span>
+                    </FullTable.Cell>
+                    <FullTable.Cell className="bg-background-200 py-1.5 border-t border-gray-alpha-400 border-l-0 border-r-0 border-b-0 first:border-t-0">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
