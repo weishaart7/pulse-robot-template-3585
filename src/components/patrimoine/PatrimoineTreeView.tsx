@@ -128,7 +128,7 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
                   </Button>
                 </FullTable.Cell>
                 <FullTable.Cell>
-                  <span className="text-muted-foreground">—</span>
+                  {" "}
                 </FullTable.Cell>
                 <FullTable.Cell>
                   {categoryWeight}%
@@ -139,7 +139,7 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
                 <FullTable.Cell>
                   <span className="text-muted-foreground">—</span>
                 </FullTable.Cell>
-                <FullTable.Cell>—</FullTable.Cell>
+                <FullTable.Cell> </FullTable.Cell>
               </FullTable.Row>
 
               {/* Lignes des actifs de la catégorie */}
