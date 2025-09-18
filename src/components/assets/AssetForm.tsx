@@ -25,6 +25,7 @@ import { familyService } from '@/services/familyService';
 const assetSchema = z.object({
   nature: z.string().min(1, 'La nature est requise'),
   denomination: z.string().optional(),
+  etablissement: z.string().optional(),
   mode_detention: z.string().optional(),
   valeur_estimee: z.number().optional(),
   date_estimation: z.date().optional(),
@@ -141,6 +142,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
     defaultValues: {
       nature: '',
       denomination: '',
+      etablissement: '',
       mode_detention: '',
       detenteur: '',
       pourcentage_utilisateur: 50,
@@ -155,6 +157,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
       form.reset({
         nature: asset.nature,
         denomination: asset.denomination || '',
+        etablissement: asset.etablissement || '',
         mode_detention: asset.mode_detention || '',
         valeur_estimee: asset.valeur_estimee || undefined,
         date_estimation: asset.date_estimation ? new Date(asset.date_estimation) : undefined,
@@ -284,10 +287,20 @@ export const AssetForm: React.FC<AssetFormProps> = ({
 
                   <FormField control={form.control} name="denomination" render={({
                   field
-                }) => <FormItem className="md:col-span-2">
+                }) => <FormItem>
                         <FormLabel>Dénomination</FormLabel>
                         <FormControl>
-                          <Textarea {...field} rows={3} />
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>} />
+
+                  <FormField control={form.control} name="etablissement" render={({
+                  field
+                }) => <FormItem>
+                        <FormLabel>Établissement</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>} />

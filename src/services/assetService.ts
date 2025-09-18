@@ -5,6 +5,7 @@ export interface Asset {
   user_id?: string;
   nature: string;
   denomination?: string;
+  etablissement?: string;
   mode_detention?: string;
   valeur_estimee?: number;
   date_estimation?: string;
