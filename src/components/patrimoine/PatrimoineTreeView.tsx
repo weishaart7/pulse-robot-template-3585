@@ -213,7 +213,7 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
           <FullTable.Cell className="font-semibold text-foreground">
             —
           </FullTable.Cell>
-          <FullTable.Cell>—</FullTable.Cell>
+          <FullTable.Cell> </FullTable.Cell>
         </FullTable.Row>
       </FullTable.Body>
     </FullTable>
