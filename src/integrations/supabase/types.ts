@@ -83,6 +83,7 @@ export type Database = {
           date_estimation: string | null
           denomination: string | null
           detenteur: string | null
+          etablissement: string | null
           frais_acquisition: number | null
           id: string
           mode_detention: string | null
@@ -101,6 +102,7 @@ export type Database = {
           date_estimation?: string | null
           denomination?: string | null
           detenteur?: string | null
+          etablissement?: string | null
           frais_acquisition?: number | null
           id?: string
           mode_detention?: string | null
@@ -119,6 +121,7 @@ export type Database = {
           date_estimation?: string | null
           denomination?: string | null
           detenteur?: string | null
+          etablissement?: string | null
           frais_acquisition?: number | null
           id?: string
           mode_detention?: string | null
