@@ -24,15 +24,15 @@ const menuItems = [{
   href: '/dashboard/societes',
   icon: PiggyBank
 }, {
-  label: 'Retraite',
-  value: 'retraite',
-  href: '/dashboard/retraite',
-  icon: Calculator
-}, {
   label: 'Budget',
   value: 'budget',
   href: '/dashboard/budget',
   icon: DollarSign
+}, {
+  label: 'Retraite',
+  value: 'retraite',
+  href: '/dashboard/retraite',
+  icon: Calculator
 }, {
   label: 'Fiscalité',
   value: 'fiscalite',
