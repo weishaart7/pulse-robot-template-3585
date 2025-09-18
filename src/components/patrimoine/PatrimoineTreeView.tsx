@@ -1,17 +1,24 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { Asset } from '@/services/assetService';
 import { getAssetCategory } from '@/constants/assetTypes';
 import { Button } from '@/components/ui/button';
 import { FullTable } from '@/components/ui/full-table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 
 interface PatrimoineTreeViewProps {
   assets: Asset[];
   onAssetEdit: (asset: Asset) => void;
+  onAssetDelete?: (asset: Asset) => void;
 }
 
-export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewProps) => {
+export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: PatrimoineTreeViewProps) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
@@ -157,16 +164,32 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewPr
                      <FullTable.Cell className="bg-background-200">
                        <span className="text-muted-foreground">—</span>
                      </FullTable.Cell>
-                     <FullTable.Cell className="bg-background-200">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onAssetEdit(asset)}
-                        className="h-8 px-2"
-                      >
-                        Modifier
-                      </Button>
-                    </FullTable.Cell>
+                      <FullTable.Cell className="bg-background-200">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="rounded-full shadow-none"
+                              aria-label="Open edit menu"
+                            >
+                              <MoreHorizontal size={16} strokeWidth={2} aria-hidden="true" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => onAssetEdit(asset)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Modifier
+                            </DropdownMenuItem>
+                            {onAssetDelete && (
+                              <DropdownMenuItem onClick={() => onAssetDelete(asset)}>
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Supprimer
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </FullTable.Cell>
                   </FullTable.Row>
                 );
               })}

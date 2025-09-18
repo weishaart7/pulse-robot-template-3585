@@ -9,7 +9,7 @@ import { Asset, AssetCharge, assetService } from '@/services/assetService';
 export const PatrimoineActifs = () => {
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
-  const { assets, createAsset, updateAsset } = useAssets();
+  const { assets, createAsset, updateAsset, deleteAsset } = useAssets();
 
   const handleAssetSubmit = async (assetData: any, charges: AssetCharge[]) => {
     try {
@@ -78,6 +78,11 @@ export const PatrimoineActifs = () => {
         onAssetEdit={(asset) => {
           setEditingAsset(asset);
           setShowAssetForm(true);
+        }}
+        onAssetDelete={(asset) => {
+          if (asset.id) {
+            deleteAsset(asset.id);
+          }
         }}
       />
     </div>
