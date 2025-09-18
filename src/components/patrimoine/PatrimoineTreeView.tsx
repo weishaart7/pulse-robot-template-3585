@@ -3,7 +3,6 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Asset } from '@/services/assetService';
 import { getAssetCategory } from '@/constants/assetTypes';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { FullTable } from '@/components/ui/full-table';
 import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 
@@ -91,7 +90,7 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewPr
           <FullTable.Head>Actions</FullTable.Head>
         </FullTable.Row>
       </FullTable.Header>
-      <FullTable.Body striped interactive>
+      <FullTable.Body interactive>
         {Object.entries(assetsByCategory).map(([category, categoryAssets]) => {
           const categoryValue = categoryAssets.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
           const categoryWeight = calculateWeight(categoryValue);
@@ -113,9 +112,6 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewPr
                       <ChevronRight className="h-4 w-4" />
                     )}
                      {category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()}
-                    <Badge variant="secondary" className="ml-2 uppercase">
-                      {categoryAssets.length}
-                    </Badge>
                   </Button>
                 </FullTable.Cell>
                 <FullTable.Cell>
@@ -139,7 +135,7 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewPr
                 
                 return (
                   <FullTable.Row key={asset.id}>
-                    <FullTable.Cell className="pl-8">
+                    <FullTable.Cell className="pl-12 bg-background-200">
                       <div>
                         <div className="font-normal">{asset.nature}</div>
                         {asset.denomination && (
@@ -149,19 +145,19 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewPr
                         )}
                       </div>
                     </FullTable.Cell>
-                    <FullTable.Cell>
-                      {formatDetenteur(asset.detenteur)}
-                    </FullTable.Cell>
-                    <FullTable.Cell>
-                      {assetWeight}%
-                    </FullTable.Cell>
-                    <FullTable.Cell>
-                      {asset.valeur_estimee ? formatCurrency(asset.valeur_estimee) : 'Non évalué'}
-                    </FullTable.Cell>
-                    <FullTable.Cell>
-                      <span className="text-muted-foreground">—</span>
-                    </FullTable.Cell>
-                    <FullTable.Cell>
+                     <FullTable.Cell className="bg-background-200">
+                       {formatDetenteur(asset.detenteur)}
+                     </FullTable.Cell>
+                     <FullTable.Cell className="bg-background-200">
+                       {assetWeight}%
+                     </FullTable.Cell>
+                     <FullTable.Cell className="bg-background-200">
+                       {asset.valeur_estimee ? formatCurrency(asset.valeur_estimee) : 'Non évalué'}
+                     </FullTable.Cell>
+                     <FullTable.Cell className="bg-background-200">
+                       <span className="text-muted-foreground">—</span>
+                     </FullTable.Cell>
+                     <FullTable.Cell className="bg-background-200">
                       <Button
                         variant="ghost"
                         size="sm"
