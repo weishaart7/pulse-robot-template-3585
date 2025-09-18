@@ -98,7 +98,13 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
         </FullTable.Row>
       </FullTable.Header>
       <FullTable.Body interactive>
-        {Object.entries(assetsByCategory).map(([category, categoryAssets]) => {
+        {Object.entries(assetsByCategory)
+          .sort(([, assetsA], [, assetsB]) => {
+            const valueA = assetsA.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
+            const valueB = assetsB.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
+            return valueB - valueA; // Tri décroissant (plus haute valeur en premier)
+          })
+          .map(([category, categoryAssets]) => {
           const categoryValue = categoryAssets.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
           const categoryWeight = calculateWeight(categoryValue);
           const isExpanded = expandedCategories.has(category);
