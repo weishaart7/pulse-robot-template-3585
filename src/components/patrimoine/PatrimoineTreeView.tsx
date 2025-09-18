@@ -84,8 +84,8 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
         <FullTable.Col className="w-[12%]" />
         <FullTable.Col className="w-[6%]" />
         <FullTable.Col className="w-[10%]" />
-        <FullTable.Col className="w-[10%]" />
-        <FullTable.Col className="w-[17%]" />
+        <FullTable.Col className="w-[7%]" />
+        <FullTable.Col className="w-[20%]" />
       </FullTable.Colgroup>
       <FullTable.Header>
         <FullTable.Row>
