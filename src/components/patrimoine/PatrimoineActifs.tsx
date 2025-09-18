@@ -73,15 +73,13 @@ export const PatrimoineActifs = () => {
         </Button>
       </div>
       
-      <div className="bg-background rounded-lg border p-6">
-        <PatrimoineTreeView 
-          assets={assets}
-          onAssetEdit={(asset) => {
-            setEditingAsset(asset);
-            setShowAssetForm(true);
-          }}
-        />
-      </div>
+      <PatrimoineTreeView 
+        assets={assets}
+        onAssetEdit={(asset) => {
+          setEditingAsset(asset);
+          setShowAssetForm(true);
+        }}
+      />
     </div>
   );
 };
