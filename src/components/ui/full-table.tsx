@@ -42,42 +42,8 @@ FullTable.Row = ({ children, isTotal, className }: { children: React.ReactNode, 
   return <tr className={`[&_td:first-child]:rounded-l-[4px] [&_td:last-child]:rounded-r-[4px] transition-colors ${isTotal ? 'border-t border-t-border/30 [&_td]:pt-5' : ''} ${className || ''}`}>{children}</tr>;
 };
 
-FullTable.Head = ({ children, sortable, onSort, sortDirection }: { 
-  children: React.ReactNode, 
-  sortable?: boolean, 
-  onSort?: () => void, 
-  sortDirection?: 'asc' | 'desc' | null 
-}) => {
-  return (
-    <th className="h-8 px-2 align-middle font-medium text-left last:text-right">
-      {sortable ? (
-        <button 
-          onClick={onSort}
-          className="flex items-center gap-1 hover:text-primary transition-colors"
-        >
-          {children}
-          <div className="flex flex-col w-3 h-3">
-            <svg 
-              className={`w-2 h-2 -mb-0.5 ${sortDirection === 'asc' ? 'text-primary' : 'text-gray-400'}`} 
-              fill="currentColor" 
-              viewBox="0 0 8 8"
-            >
-              <path d="M4 0L0 4h8z"/>
-            </svg>
-            <svg 
-              className={`w-2 h-2 ${sortDirection === 'desc' ? 'text-primary' : 'text-gray-400'}`} 
-              fill="currentColor" 
-              viewBox="0 0 8 8"
-            >
-              <path d="M4 8L8 4H0z"/>
-            </svg>
-          </div>
-        </button>
-      ) : (
-        children
-      )}
-    </th>
-  );
+FullTable.Head = ({ children }: { children: React.ReactNode }) => {
+  return <th className="h-8 px-2 align-middle font-medium text-left last:text-right">{children}</th>;
 };
 
 FullTable.Cell = ({ children, className, colSpan }: { children: React.ReactNode, className?: string, colSpan?: number }) => {
