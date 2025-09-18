@@ -177,6 +177,19 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit }: PatrimoineTreeViewPr
             </React.Fragment>
           );
         })}
+        
+        <FullTable.Row isTotal>
+          <FullTable.Cell colSpan={3} className="font-semibold text-foreground">
+            Total
+          </FullTable.Cell>
+          <FullTable.Cell className="font-semibold text-foreground">
+            {formatCurrency(totalValue)}
+          </FullTable.Cell>
+          <FullTable.Cell className="font-semibold text-foreground">
+            —
+          </FullTable.Cell>
+          <FullTable.Cell>—</FullTable.Cell>
+        </FullTable.Row>
       </FullTable.Body>
     </FullTable>
   );
