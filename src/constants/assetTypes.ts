@@ -144,43 +144,46 @@ export const UNITE_OPTIONS = [
 ] as const;
 
 export const ASSET_CATEGORIES = {
-  "immobiliers": [
+  "actifs immobiliers": [
     "Résidence principale",
     "Résidences secondaires", 
     "Terrains",
-    "Autres biens d'usage",
+    "Terrains agricoles",
     "Immeubles locatifs (loués nus)",
     "Immeubles locatifs (LMNP)",
     "Immeubles locatifs (LMP)",
+    "Immeubles professionnels (hors LMP)",
+    "Autres immeubles de rapport",
     "Parts de SCI",
     "Parts de SCPI",
-    "Autres immeubles de rapport",
-    "Immeubles professionnels (hors LMP)",
-    "Terrains agricoles",
     "Parts de groupements fonciers",
-    "Bois & forêts",
     "Parts de GFA, GAF, GFV et GFR",
-    "Parts de sociétés d'épargne forestière"
+    "Bois & forêts",
+    "Parts de sociétés d'épargne forestière",
+    "Maison mobile (péniche, etc.)",
+    "Parking / Garage / Box",
+    "Autres biens d'usage"
   ],
-  "mobiliers corporels": [
+  "actifs mobiliers corporels": [
     "Meubles meublants",
     "Objets d'art et antiquités",
+    "Objets numériques (NFT, etc.)",
     "Autres placements divers"
   ],
-  "professionnels": [
+  "actifs professionnels": [
     "Droits sociaux",
     "Droits sociaux (Pacte Dutreil)",
     "Autres droits sociaux",
     "Entreprise individuelle",
-    "Autres biens professionnels",
     "Parts de holding",
-    "Compte courant d'associé"
+    "Compte courant d'associé",
+    "Autres biens professionnels"
   ],
-  "retraite et prévoyance": [
+  "épargne retraite et prévoyance": [
     "PER individuel",
     "PER entreprise collectif",
     "PER entreprise obligatoire",
-    "PERCO / PERCOI",
+    "PERCO/PERCOI",
     "PERP",
     "Contrat loi Madelin",
     "Contrat loi Madelin Agricole",
@@ -188,40 +191,48 @@ export const ASSET_CATEGORIES = {
     "Contrat 82",
     "Contrat Préfon-retraite",
     "Contrat retraite mutualiste du combattant",
+    "Régimes de retraite étrangers",
     "Temporaire décès",
     "Vie entière",
-    "Contrat prévoyance individuelle",
+    "Contrat prévoyance individuelle"
+  ],
+  "épargne et assurance-vie": [
     "Contrat d'assurance-vie",
     "Contrat vie-génération",
     "PEP assurance vie",
-    "Bons & contrats de capitalisation",
-    "PEE / PEI"
+    "Bons & contrats de capitalisation"
   ],
-  "financiers liquides": [
-    "PEL",
-    "CEL",
-    "PEP Bancaire",
+  "épargne salariale": [
+    "PEE",
+    "PEI",
+    "PERCO"
+  ],
+  "épargne bancaire / liquidités": [
     "Comptes courants",
     "Comptes sur livret (CSL)",
-    "LDDS",
     "Livret A",
     "Livret Bleu",
-    "LEP",
+    "Livret de développement durable et solidaire (LDDS)",
+    "Livret d'épargne populaire (LEP)",
     "Livret Jeune",
+    "CEL",
+    "PEL",
     "Compte à terme",
     "Bons de caisse",
+    "PEP Bancaire",
     "Autres dépôts",
     "Autres disponibilités"
   ],
-  "financiers investis": [
+  "valeurs mobilières et placements financiers": [
     "Compte-titres",
     "PEA",
     "PEA-PME",
-    "Portefeuille de valeurs numériques (cryptomonnaies)",
-    "Parts de SOFICA",
     "Parts de FIP",
-    "Parts de FCPI",
     "Parts de FIP Corse",
+    "Parts de FCPI",
+    "Parts de SOFICA",
+    "Portefeuille de valeurs numériques (cryptomonnaies)",
+    "Droits de propriété littéraire ou artistique",
     "Autres valeurs mobilières"
   ]
 } as const;
