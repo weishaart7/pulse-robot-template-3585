@@ -1,118 +1,74 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AssetForm } from '@/components/assets/AssetForm';
-import { PatrimoineSidebar } from '@/components/patrimoine/PatrimoineSidebar';
-import { PatrimoineMainContent } from '@/components/patrimoine/PatrimoineMainContent';
+import AnimatedBackground from '@/components/ui/animated-tabs';
+import { PatrimoineResume } from '@/components/patrimoine/PatrimoineResume';
+import { PatrimoineActifs } from '@/components/patrimoine/PatrimoineActifs';
+import { PatrimoinePassifs } from '@/components/patrimoine/PatrimoinePassifs';
 import { useAssets } from '@/hooks/useAssets';
-import { Asset, AssetCharge, assetService } from '@/services/assetService';
 
 export const PatrimoineSection = () => {
-  const [showAssetForm, setShowAssetForm] = useState(false);
-  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const { assets, createAsset, updateAsset, deleteAsset, loading } = useAssets();
+  const [activeTab, setActiveTab] = useState('resume');
+  const { assets } = useAssets();
 
-  const handleAssetSubmit = async (assetData: any, charges: AssetCharge[]) => {
-    try {
-      let savedAsset;
-      if (editingAsset) {
-        savedAsset = await updateAsset(editingAsset.id!, assetData);
-      } else {
-        savedAsset = await createAsset(assetData);
-      }
-      
-      // Save charges for the asset
-      if (charges.length > 0) {
-        await Promise.all(
-          charges.map(charge => {
-            const chargeData = {
-              ...charge,
-              asset_id: savedAsset.id
-            };
-            
-            // Remove temporary id for new charges
-            if (charge.id?.startsWith('temp-')) {
-              delete chargeData.id;
-            }
-            
-            return charge.id?.startsWith('temp-') 
-              ? assetService.createAssetCharge(chargeData)
-              : assetService.updateAssetCharge(charge.id!, chargeData);
-          })
-        );
-      }
-      
-      setShowAssetForm(false);
-      setEditingAsset(null);
-    } catch (error) {
-      console.error('Error saving asset:', error);
+  const TABS = [
+    { id: 'resume', label: 'Résumé' },
+    { id: 'actifs', label: 'Actifs' },
+    { id: 'passifs', label: 'Passifs' }
+  ];
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'resume':
+        return <PatrimoineResume />;
+      case 'actifs':
+        return <PatrimoineActifs />;
+      case 'passifs':
+        return <PatrimoinePassifs />;
+      default:
+        return <PatrimoineResume />;
     }
   };
-
-  const handleAssetDelete = async (assetId: string) => {
-    try {
-      await deleteAsset(assetId);
-      setShowAssetForm(false);
-      setEditingAsset(null);
-    } catch (error) {
-      console.error('Error deleting asset:', error);
-    }
-  };
-
-  if (showAssetForm) {
-    return (
-      <div className="p-6">
-        <AssetForm
-          asset={editingAsset || undefined}
-          onSubmit={handleAssetSubmit}
-          onDelete={editingAsset ? handleAssetDelete : undefined}
-          onCancel={() => {
-            setShowAssetForm(false);
-            setEditingAsset(null);
-          }}
-        />
-      </div>
-    );
-  }
-
-  if (assets.length === 0) {
-    return (
-      <div className="p-6">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold tracking-tight">Patrimoine</h2>
-          <p className="text-muted-foreground">
-            Gérez vos actifs patrimoniaux
-          </p>
-        </div>
-        <Card className="text-center p-8">
-          <CardHeader>
-            <CardTitle>Aucun actif enregistré</CardTitle>
-            <CardDescription>
-              Commencez par ajouter votre premier actif patrimonial
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => setShowAssetForm(true)} className="flex items-center gap-2">
-              Ajouter un actif
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
-    <div className="max-w-6xl mx-auto h-full">
-      <PatrimoineMainContent
-        assets={assets}
-        selectedCategory={selectedCategory}
-        onAssetEdit={(asset) => {
-          setEditingAsset(asset);
-          setShowAssetForm(true);
-        }}
-        onAddAsset={() => setShowAssetForm(true)}
-      />
+    <div className="p-6">
+      <div className="mb-6">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Patrimoine</h2>
+          <p className="text-muted-foreground">
+            Gérez vos actifs et passifs patrimoniaux
+          </p>
+        </div>
+      </div>
+
+      <div className="mb-6 flex justify-start">
+        <div className="rounded-[8px] bg-muted p-[2px]">
+          <AnimatedBackground
+            defaultValue="resume"
+            onValueChange={(value) => setActiveTab(value || 'resume')}
+            className="rounded-lg bg-background shadow-sm"
+            transition={{
+              ease: "easeInOut",
+              duration: 0.2,
+            }}
+          >
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                data-id={tab.id}
+                type="button"
+                className="inline-flex min-w-24 items-center justify-center px-3 py-2 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
+              >
+                {tab.label}
+              </button>
+            ))}
+          </AnimatedBackground>
+        </div>
+      </div>
+
+      <div className="mt-6">
+        {renderContent()}
+      </div>
     </div>
   );
 };

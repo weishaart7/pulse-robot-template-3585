@@ -3,23 +3,26 @@ export const ASSET_NATURES = [
   "Résidence principale",
   "Résidences secondaires", 
   "Terrains",
-  "Autres biens d'usage",
+  "Terrains agricoles",
   "Immeubles locatifs (loués nus)",
   "Immeubles locatifs (LMNP)",
   "Immeubles locatifs (LMP)",
+  "Immeubles professionnels (hors LMP)",
+  "Autres immeubles de rapport",
   "Parts de SCI",
   "Parts de SCPI",
-  "Autres immeubles de rapport",
-  "Immeubles professionnels (hors LMP)",
-  "Terrains agricoles",
   "Parts de groupements fonciers",
-  "Bois & forêts",
   "Parts de GFA, GAF, GFV et GFR",
+  "Bois & forêts",
   "Parts de sociétés d'épargne forestière",
+  "Maison mobile (péniche, etc.)",
+  "Parking / Garage / Box",
+  "Autres biens d'usage",
   
   // Actifs mobiliers corporels
   "Meubles meublants",
   "Objets d'art et antiquités",
+  "Objets numériques (NFT, etc.)",
   "Autres placements divers",
   
   // Actifs professionnels
@@ -27,15 +30,15 @@ export const ASSET_NATURES = [
   "Droits sociaux (Pacte Dutreil)",
   "Autres droits sociaux",
   "Entreprise individuelle",
-  "Autres biens professionnels",
   "Parts de holding",
   "Compte courant d'associé",
+  "Autres biens professionnels",
   
-  // Actifs financiers et d'épargne
+  // Retraite et prévoyance
   "PER individuel",
   "PER entreprise collectif",
   "PER entreprise obligatoire",
-  "PERCO / PERCOI",
+  "PERCO/PERCOI",
   "PERP",
   "Contrat loi Madelin",
   "Contrat loi Madelin Agricole",
@@ -43,6 +46,7 @@ export const ASSET_NATURES = [
   "Contrat 82",
   "Contrat Préfon-retraite",
   "Contrat retraite mutualiste du combattant",
+  "Régimes de retraite étrangers",
   "Temporaire décès",
   "Vie entière",
   "Contrat prévoyance individuelle",
@@ -50,21 +54,23 @@ export const ASSET_NATURES = [
   "Contrat vie-génération",
   "PEP assurance vie",
   "Bons & contrats de capitalisation",
-  "PEE / PEI",
+  "PEE",
+  "PEI",
+  "PERCO",
   
   // Actifs financiers liquides
-  "PEL",
-  "CEL",
-  "PEP Bancaire",
   "Comptes courants",
   "Comptes sur livret (CSL)",
-  "LDDS",
   "Livret A",
   "Livret Bleu",
-  "LEP",
+  "Livret de développement durable et solidaire (LDDS)",
+  "Livret d'épargne populaire (LEP)",
   "Livret Jeune",
+  "CEL",
+  "PEL",
   "Compte à terme",
   "Bons de caisse",
+  "PEP Bancaire",
   "Autres dépôts",
   "Autres disponibilités",
   
@@ -72,12 +78,41 @@ export const ASSET_NATURES = [
   "Compte-titres",
   "PEA",
   "PEA-PME",
-  "Portefeuille de valeurs numériques (cryptomonnaies)",
-  "Parts de SOFICA",
   "Parts de FIP",
-  "Parts de FCPI",
   "Parts de FIP Corse",
+  "Parts de FCPI",
+  "Parts de SOFICA",
+  "Portefeuille de valeurs numériques (cryptomonnaies)",
+  "Droits de propriété littéraire ou artistique",
   "Autres valeurs mobilières"
+];
+
+export const EMPRUNT_NATURES = [
+  "Crédit à la consommation",
+  "Crédit affecté (auto, travaux, etc.)",
+  "Crédit in fine (adossé à assurance-vie ou autres actifs)",
+  "Crédit Lombard (prêt gagé sur portefeuille-titres)",
+  "Crédit relais",
+  "Crédit renouvelable / revolving",
+  "Prêt immobilier (résidence principale)",
+  "Prêt immobilier (résidences secondaires)",
+  "Prêt immobilier locatif (investissement locatif)",
+  "Prêt pour acquisition de SCPI"
+];
+
+export const PASSIF_NATURES = [
+  "Autres dettes diverses",
+  "Avances sur contrats d'assurance-vie",
+  "Cotisations sociales non réglées",
+  "Dettes issues d'un divorce ou d'un partage de communauté", 
+  "Dettes successorales (droits de succession restant dus)",
+  "Emprunts familiaux ou privés",
+  "Emprunts participatifs",
+  "Engagements liés à produits d'investissement (appels de marge, etc.)",
+  "Impôt sur la fortune immobilière (IFI) restant dû",
+  "Impôt sur le revenu restant dû",
+  "Indemnités prud'homales ou litiges judiciaires en cours",
+  "Prêts entre particuliers contractés"
 ];
 
 export const CHARGE_TYPES = [
