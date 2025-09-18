@@ -20,13 +20,66 @@ interface PatrimoineTreeViewProps {
 
 export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: PatrimoineTreeViewProps) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null);
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
 
-  const totalValue = assets.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortedAssets = () => {
+    if (!sortConfig) return assets;
+
+    return [...assets].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortConfig.key) {
+        case 'nature':
+          aValue = a.nature;
+          bValue = b.nature;
+          break;
+        case 'detenteur':
+          aValue = formatDetenteur(a.detenteur);
+          bValue = formatDetenteur(b.detenteur);
+          break;
+        case 'valeur':
+          aValue = a.valeur_estimee || 0;
+          bValue = b.valeur_estimee || 0;
+          break;
+        case 'poids':
+          aValue = totalValue > 0 ? ((a.valeur_estimee || 0) / totalValue) * 100 : 0;
+          bValue = totalValue > 0 ? ((b.valeur_estimee || 0) / totalValue) * 100 : 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        const comparison = aValue.localeCompare(bValue);
+        return sortConfig.direction === 'asc' ? comparison : -comparison;
+      }
+
+      if (aValue < bValue) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  };
+
+  const sortedAssets = getSortedAssets();
+  const totalValue = sortedAssets.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
 
   // Grouper les actifs par catégorie
-  const assetsByCategory = assets.reduce((acc, asset) => {
+  const assetsByCategory = sortedAssets.reduce((acc, asset) => {
     const category = getAssetCategory(asset.nature);
     if (!acc[category]) {
       acc[category] = [];
@@ -87,16 +140,40 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
         <FullTable.Col className="w-[15%]" />
         <FullTable.Col className="w-[15%]" />
       </FullTable.Colgroup>
-      <FullTable.Header>
-        <FullTable.Row>
-          <FullTable.Head>Catégorie / Actif</FullTable.Head>
-          <FullTable.Head>Détenteur</FullTable.Head>
-          <FullTable.Head>Poids</FullTable.Head>
-          <FullTable.Head>Valeur</FullTable.Head>
-          <FullTable.Head>+/- Value</FullTable.Head>
-          <FullTable.Head>Actions</FullTable.Head>
-        </FullTable.Row>
-      </FullTable.Header>
+        <FullTable.Header>
+          <FullTable.Row>
+            <FullTable.Head 
+              sortable 
+              onSort={() => handleSort('nature')} 
+              sortDirection={sortConfig?.key === 'nature' ? sortConfig.direction : null}
+            >
+              Catégorie / Actif
+            </FullTable.Head>
+            <FullTable.Head 
+              sortable 
+              onSort={() => handleSort('detenteur')} 
+              sortDirection={sortConfig?.key === 'detenteur' ? sortConfig.direction : null}
+            >
+              Détenteur
+            </FullTable.Head>
+            <FullTable.Head 
+              sortable 
+              onSort={() => handleSort('poids')} 
+              sortDirection={sortConfig?.key === 'poids' ? sortConfig.direction : null}
+            >
+              Poids
+            </FullTable.Head>
+            <FullTable.Head 
+              sortable 
+              onSort={() => handleSort('valeur')} 
+              sortDirection={sortConfig?.key === 'valeur' ? sortConfig.direction : null}
+            >
+              Valeur
+            </FullTable.Head>
+            <FullTable.Head>+/- Value</FullTable.Head>
+            <FullTable.Head>Actions</FullTable.Head>
+          </FullTable.Row>
+        </FullTable.Header>
       <FullTable.Body interactive>
         {Object.entries(assetsByCategory).map(([category, categoryAssets]) => {
           const categoryValue = categoryAssets.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
