@@ -150,10 +150,10 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
                   <FullTable.Row key={asset.id} className="border-t border-gray-alpha-400 first:border-t-0">
                     <FullTable.Cell className="pl-12 bg-background-200 py-0.5">
                       <div>
-                        <div className="font-normal text-sm">{asset.nature}</div>
-                        {asset.denomination && (
+                        <div className="font-normal text-sm">{asset.denomination || asset.nature}</div>
+                        {asset.etablissement && (
                           <div className="text-xs text-muted-foreground">
-                            {asset.denomination}
+                            {asset.etablissement}
                           </div>
                         )}
                       </div>
