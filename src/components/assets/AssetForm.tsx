@@ -60,6 +60,8 @@ export const AssetForm: React.FC<AssetFormProps> = ({
     partnerFirstName?: string;
     hasPartner: boolean;
   }>({ hasPartner: false });
+  const [etablissementTemporary, setEtablissementTemporary] = useState(false);
+  const [etablissementClicked, setEtablissementClicked] = useState(false);
 
   // Mapping functions for detenteur values
   const mapDetenteurToDisplay = (dbValue: string, familyData: any): string => {
@@ -171,6 +173,19 @@ export const AssetForm: React.FC<AssetFormProps> = ({
       });
     }
   }, [asset, familyData, form]);
+
+  // Watch for nature changes and pre-fill etablissement
+  useEffect(() => {
+    const subscription = form.watch((values, { name }) => {
+      if (name === 'nature' && values.nature && !etablissementClicked) {
+        // Pre-fill etablissement with temporary text when nature is selected
+        form.setValue('etablissement', 'Préciser l\'établissement');
+        setEtablissementTemporary(true);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, etablissementClicked]);
+
   const handleSubmit = async (values: AssetFormValues) => {
     setIsLoading(true);
     try {
@@ -300,7 +315,26 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                 }) => <FormItem>
                         <FormLabel>Établissement</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input 
+                            {...field}
+                            className={cn(
+                              etablissementTemporary && !etablissementClicked && "text-xl font-semibold text-muted-foreground"
+                            )}
+                            onFocus={() => {
+                              if (etablissementTemporary && !etablissementClicked) {
+                                setEtablissementClicked(true);
+                                setEtablissementTemporary(false);
+                                form.setValue('etablissement', '');
+                              }
+                            }}
+                            onClick={() => {
+                              if (etablissementTemporary && !etablissementClicked) {
+                                setEtablissementClicked(true);
+                                setEtablissementTemporary(false);
+                                form.setValue('etablissement', '');
+                              }
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>} />
