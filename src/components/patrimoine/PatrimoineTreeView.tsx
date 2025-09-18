@@ -24,6 +24,25 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
 
+  const formatDetenteur = (detenteur: string | undefined) => {
+    if (!detenteur) return familyProfile?.prenom || 'Utilisateur';
+    
+    switch (detenteur.toLowerCase()) {
+      case 'user':
+      case 'utilisateur':
+        return familyProfile?.prenom || 'Utilisateur';
+      case 'spouse':
+      case 'conjoint':
+        return maritalStatus?.prenom_conjoint || 'Conjoint';
+      case 'common':
+      case 'commun':
+      case 'couple':
+        return 'Commun';
+      default:
+        return detenteur;
+    }
+  };
+
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -109,25 +128,6 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
 
   const calculateWeight = (assetValue: number) => {
     return totalValue > 0 ? ((assetValue / totalValue) * 100).toFixed(2) : '0.00';
-  };
-
-  const formatDetenteur = (detenteur: string | undefined) => {
-    if (!detenteur) return familyProfile?.prenom || 'Utilisateur';
-    
-    switch (detenteur.toLowerCase()) {
-      case 'user':
-      case 'utilisateur':
-        return familyProfile?.prenom || 'Utilisateur';
-      case 'spouse':
-      case 'conjoint':
-        return maritalStatus?.prenom_conjoint || 'Conjoint';
-      case 'common':
-      case 'commun':
-      case 'couple':
-        return 'Commun';
-      default:
-        return detenteur;
-    }
   };
 
   return (
