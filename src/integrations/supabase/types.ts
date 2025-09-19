@@ -982,6 +982,48 @@ export type Database = {
         }
         Relationships: []
       }
+      security_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          resource: string | null
+          severity: string | null
+          success: boolean
+          timestamp: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource?: string | null
+          severity?: string | null
+          success: boolean
+          timestamp?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource?: string | null
+          severity?: string | null
+          success?: boolean
+          timestamp?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       societes: {
         Row: {
           activite: string | null
@@ -1071,7 +1113,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      log_security_event: {
+        Args: {
+          p_action: string
+          p_details?: Json
+          p_resource?: string
+          p_severity?: string
+          p_success?: boolean
+          p_user_id?: string
+        }
+        Returns: undefined
+      }
+      validate_email: {
+        Args: { email: string }
+        Returns: boolean
+      }
+      validate_financial_amount: {
+        Args: { amount: number }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
