@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useErrorHandler } from './useErrorHandler';
-import { sanitizeObject, logSecurityEvent, rateLimiter } from '@/lib/security';
+import { sanitizeObject, logSecurityEvent, rateLimiter, logFinancialOperation } from '@/lib/security';
 
 export interface SecureFormOptions {
   formName: string;
@@ -15,7 +15,7 @@ export const useSecureForm = ({
   maxAttempts = 5, 
   windowMs = 60000 
 }: SecureFormOptions) => {
-  const { handleError } = useErrorHandler();
+  const { handleError, handleFinancialError } = useErrorHandler();
 
   const submitSecureForm = useCallback(
     async <T extends Record<string, any>>(
@@ -34,6 +34,7 @@ export const useSecureForm = ({
               userId,
               resource: formName,
               success: false,
+              severity: 'high',
               details: 'Rate limit exceeded for form submission'
             });
             return false;
@@ -49,8 +50,20 @@ export const useSecureForm = ({
           userId,
           resource: formName,
           success: true,
+          severity: 'medium',
           details: `Form ${formName} submitted successfully`
         });
+
+        // Log financial operations specifically
+        if (['emprunt', 'passif', 'asset', 'charge', 'revenu'].some(type => formName.includes(type))) {
+          const amount = sanitizedData.montant || sanitizedData.valeur_estimee || sanitizedData.capital_restant_du;
+          logFinancialOperation({
+            type: formName,
+            amount: typeof amount === 'number' ? amount : undefined,
+            userId,
+            success: true,
+          });
+        }
 
         // Submit sanitized data
         await submitFunction(sanitizedData);
@@ -63,14 +76,21 @@ export const useSecureForm = ({
           userId,
           resource: formName,
           success: false,
+          severity: 'high',
           details: `Form ${formName} submission failed: ${error instanceof Error ? error.message : 'Unknown error'}`
         });
 
-        handleError(error, `Erreur lors de la soumission du formulaire ${formName}`);
+        // Use financial error handler for financial forms
+        if (['emprunt', 'passif', 'asset', 'charge', 'revenu'].some(type => formName.includes(type))) {
+          const amount = formData.montant || formData.valeur_estimee || formData.capital_restant_du;
+          handleFinancialError(error, formName, typeof amount === 'number' ? amount : undefined, userId);
+        } else {
+          handleError(error, `Erreur lors de la soumission du formulaire ${formName}`, userId);
+        }
         return false;
       }
     },
-    [formName, enableRateLimit, maxAttempts, windowMs, handleError]
+    [formName, enableRateLimit, maxAttempts, windowMs, handleError, handleFinancialError]
   );
 
   const logDataAccess = useCallback(
@@ -80,6 +100,7 @@ export const useSecureForm = ({
         userId,
         resource: formName,
         success: true,
+        severity: 'low',
         details: details || `Data accessed for ${formName}`
       });
     },
@@ -93,6 +114,7 @@ export const useSecureForm = ({
         userId,
         resource: formName,
         success: true,
+        severity: 'medium',
         details: details || `Data modified for ${formName}`
       });
     },
