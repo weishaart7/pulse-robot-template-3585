@@ -1,7 +1,7 @@
 // Security utilities for input sanitization and validation
 
 /**
- * Sanitizes text input to prevent XSS attacks
+ * Enhanced text sanitization to prevent XSS attacks
  */
 export function sanitizeTextInput(input: string | null | undefined): string {
   if (!input) return '';
@@ -12,7 +12,27 @@ export function sanitizeTextInput(input: string | null | undefined): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#x27;')
     .replace(/\//g, '&#x2F;')
+    .replace(/javascript:/gi, '') // Remove javascript: protocols
+    .replace(/on\w+\s*=/gi, '') // Remove event handlers
+    .replace(/data:/gi, '') // Remove data: URLs
     .trim();
+}
+
+/**
+ * Validate and sanitize financial amounts
+ */
+export function sanitizeFinancialAmount(input: number | string | null | undefined): number | null {
+  if (input === null || input === undefined || input === '') return null;
+  
+  const num = typeof input === 'string' ? parseFloat(input.replace(',', '.')) : input;
+  
+  if (isNaN(num) || !isFinite(num)) return null;
+  
+  // Reasonable financial limits
+  if (num < 0 || num > 999999999999) return null;
+  
+  // Round to 2 decimal places for financial precision
+  return Math.round(num * 100) / 100;
 }
 
 /**
@@ -99,25 +119,88 @@ class RateLimiter {
 export const rateLimiter = new RateLimiter();
 
 /**
- * Audit logging for sensitive operations
+ * Enhanced audit logging for sensitive operations
  */
-export function logSecurityEvent(event: {
+export interface SecurityEvent {
   action: string;
   userId?: string;
   resource?: string;
   success: boolean;
   details?: string;
-}): void {
+  ip?: string;
+  userAgent?: string;
+  sessionId?: string;
+  severity?: 'low' | 'medium' | 'high' | 'critical';
+}
+
+export function logSecurityEvent(event: SecurityEvent): void {
   const logEntry = {
     timestamp: new Date().toISOString(),
+    severity: event.severity || 'medium',
+    ip: event.ip || getClientIP(),
+    userAgent: event.userAgent || navigator?.userAgent || 'unknown',
+    sessionId: event.sessionId || generateSessionId(),
     ...event,
   };
   
-  // In production, this should send to a secure logging service
-  console.info('[SECURITY_AUDIT]', logEntry);
+  // Enhanced logging with severity levels
+  const logLevel = event.success ? 'info' : 'warn';
+  const logMessage = `[SECURITY_AUDIT][${event.severity?.toUpperCase()}] ${event.action}`;
   
-  // For critical security events, you might want to send to an external service
-  if (!event.success && ['login', 'data_access', 'data_modification'].includes(event.action)) {
-    // Could integrate with services like Sentry, LogRocket, etc.
+  console[logLevel](logMessage, logEntry);
+  
+  // Store critical events for potential external logging
+  if (event.severity === 'critical' || (!event.success && ['login', 'data_access', 'data_modification', 'financial_operation'].includes(event.action))) {
+    storeSecurityEvent(logEntry);
+  }
+}
+
+/**
+ * Log financial operations with enhanced details
+ */
+export function logFinancialOperation(operation: {
+  type: string;
+  amount?: number;
+  currency?: string;
+  userId?: string;
+  accountType?: string;
+  success: boolean;
+  errorCode?: string;
+}): void {
+  logSecurityEvent({
+    action: 'financial_operation',
+    userId: operation.userId,
+    resource: operation.accountType || 'financial_data',
+    success: operation.success,
+    severity: 'high',
+    details: JSON.stringify({
+      type: operation.type,
+      amount: operation.amount,
+      currency: operation.currency,
+      errorCode: operation.errorCode,
+    }),
+  });
+}
+
+// Helper functions
+function getClientIP(): string {
+  // In a real application, you would get this from headers or request context
+  return 'client-ip-unknown';
+}
+
+function generateSessionId(): string {
+  return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+function storeSecurityEvent(event: any): void {
+  // Store in localStorage for now, in production you'd send to external service
+  try {
+    const stored = JSON.parse(localStorage.getItem('security_events') || '[]');
+    stored.push(event);
+    // Keep only last 100 events
+    if (stored.length > 100) stored.splice(0, stored.length - 100);
+    localStorage.setItem('security_events', JSON.stringify(stored));
+  } catch (error) {
+    console.error('Failed to store security event:', error);
   }
 }
