@@ -2,13 +2,38 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { useRetraiteData } from '@/hooks/useRetraiteData';
 
 export const Carriere = () => {
+  const { data, loading, updateRetraiteData } = useRetraiteData();
   const [salaireAnnuelMoyen, setSalaireAnnuelMoyen] = useState<string>('');
   const [trimestresValides, setTrimestresValides] = useState<string>('');
   const [trimestresRequis] = useState<number>(172); // Valeur par défaut
   const [pensionBaseBrute, setPensionBaseBrute] = useState<number>(0);
   const [decoteSurcote, setDecoteSurcote] = useState<number>(0);
+
+  // Chargement des données depuis Supabase
+  useEffect(() => {
+    if (!loading && data) {
+      if (data.salaire_annuel_moyen) {
+        setSalaireAnnuelMoyen(data.salaire_annuel_moyen.toString());
+      }
+      if (data.trimestres_valides) {
+        setTrimestresValides(data.trimestres_valides.toString());
+      }
+    }
+  }, [data, loading]);
+
+  // Sauvegarde automatique du salaire
+  useEffect(() => {
+    const salaire = parseFloat(salaireAnnuelMoyen);
+    if (salaire && salaire > 0 && !loading) {
+      const timer = setTimeout(() => {
+        updateRetraiteData({ salaire_annuel_moyen: salaire });
+      }, 1000); // Délai de 1 seconde après la dernière modification
+      return () => clearTimeout(timer);
+    }
+  }, [salaireAnnuelMoyen, updateRetraiteData, loading]);
 
   // Calcul de la pension de base brute
   useEffect(() => {

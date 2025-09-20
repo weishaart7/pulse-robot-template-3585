@@ -943,6 +943,45 @@ export type Database = {
         }
         Relationships: []
       }
+      retraite_data: {
+        Row: {
+          autres_epargnes: number | null
+          created_at: string
+          epargne_assurance_vie: number | null
+          epargne_per: number | null
+          id: string
+          salaire_annuel_moyen: number | null
+          trimestres_requis: number | null
+          trimestres_valides: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          autres_epargnes?: number | null
+          created_at?: string
+          epargne_assurance_vie?: number | null
+          epargne_per?: number | null
+          id?: string
+          salaire_annuel_moyen?: number | null
+          trimestres_requis?: number | null
+          trimestres_valides?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          autres_epargnes?: number | null
+          created_at?: string
+          epargne_assurance_vie?: number | null
+          epargne_per?: number | null
+          id?: string
+          salaire_annuel_moyen?: number | null
+          trimestres_requis?: number | null
+          trimestres_valides?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       revenus: {
         Row: {
           beneficiaire: string | null

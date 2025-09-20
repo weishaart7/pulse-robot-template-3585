@@ -2,11 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { useRetraiteData } from '@/hooks/useRetraiteData';
 
 export const Trimestres = () => {
+  const { data, loading, updateRetraiteData } = useRetraiteData();
   const [trimestresValides, setTrimestresValides] = useState<string>('');
   const [trimestresRequis] = useState<number>(172); // Valeur par défaut, sera récupérable depuis la fiche client
   const [ageTauxPlein, setAgeTauxPlein] = useState<string>('');
+
+  // Chargement des données depuis Supabase
+  useEffect(() => {
+    if (!loading && data) {
+      if (data.trimestres_valides) {
+        setTrimestresValides(data.trimestres_valides.toString());
+      }
+    }
+  }, [data, loading]);
+
+  // Sauvegarde automatique des trimestres
+  useEffect(() => {
+    const trimValides = parseInt(trimestresValides);
+    if (trimValides && trimValides > 0 && !loading) {
+      const timer = setTimeout(() => {
+        updateRetraiteData({ trimestres_valides: trimValides });
+      }, 1000); // Délai de 1 seconde après la dernière modification
+      return () => clearTimeout(timer);
+    }
+  }, [trimestresValides, updateRetraiteData, loading]);
 
   // Calcul de l'âge du taux plein
   useEffect(() => {
