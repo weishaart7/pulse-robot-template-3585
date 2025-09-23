@@ -1,14 +1,14 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-export const PremierDeces = () => {
+export const AssuranceVie = () => {
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>1er Décès</CardTitle>
+          <CardTitle>Assurance-vie</CardTitle>
           <CardDescription>
-            Simulation et planification du premier décès
+            Gestion et optimisation des contrats d'assurance-vie
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -16,8 +16,8 @@ export const PremierDeces = () => {
             <div className="text-4xl mb-4">🚧</div>
             <h3 className="text-lg font-semibold mb-2">Section à venir</h3>
             <p className="text-muted-foreground">
-              Cette section permettra de simuler les conséquences du premier décès 
-              et d'optimiser la transmission du patrimoine.
+              Cette section permettra de gérer vos contrats d'assurance-vie 
+              et d'optimiser leur transmission fiscale.
             </p>
           </div>
         </CardContent>

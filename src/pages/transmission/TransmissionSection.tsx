@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Synthese } from '@/components/transmission/Synthese';
 import { Liberalites } from '@/components/transmission/Liberalites';
-import { PremierDeces } from '@/components/transmission/PremierDeces';
-import { DeuxiemeDeces } from '@/components/transmission/DeuxiemeDeces';
+import { AssuranceVie } from '@/components/transmission/AssuranceVie';
+import { ProcessusCalcul } from '@/components/transmission/ProcessusCalcul';
 
 export const TransmissionSection = () => {
   const [activeTab, setActiveTab] = useState('synthese');
@@ -11,8 +11,8 @@ export const TransmissionSection = () => {
   const TABS = [
     { id: 'synthese', label: 'Synthèse' },
     { id: 'liberalites', label: 'Libéralités' },
-    { id: 'premier-deces', label: '1er Décès' },
-    { id: 'deuxieme-deces', label: '2ème Décès' }
+    { id: 'assurance-vie', label: 'Assurance-vie' },
+    { id: 'processus-calcul', label: 'Processus de calcul' }
   ];
 
   const renderContent = () => {
@@ -21,10 +21,10 @@ export const TransmissionSection = () => {
         return <Synthese />;
       case 'liberalites':
         return <Liberalites />;
-      case 'premier-deces':
-        return <PremierDeces />;
-      case 'deuxieme-deces':
-        return <DeuxiemeDeces />;
+      case 'assurance-vie':
+        return <AssuranceVie />;
+      case 'processus-calcul':
+        return <ProcessusCalcul />;
       default:
         return <Synthese />;
     }
