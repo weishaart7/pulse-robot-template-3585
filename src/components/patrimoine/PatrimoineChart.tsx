@@ -11,13 +11,13 @@ interface PatrimoineChartProps {
 }
 
 const CATEGORY_COLORS = {
-  'immobiliers': '#0B5563',
-  'financiers liquides': '#544343', 
-  'financiers investis': '#D8D8F6',
-  'retraite et prévoyance': '#838E3E',
-  'mobiliers corporels': '#f59e0b',
-  'professionnels': '#8b5cf6',
-  'autres': '#6b7280'
+  'immobiliers': '#3B82F6', // Bleu moderne
+  'financiers liquides': '#10B981', // Vert émeraude
+  'financiers investis': '#8B5CF6', // Violet
+  'retraite et prévoyance': '#F59E0B', // Orange
+  'mobiliers corporels': '#EF4444', // Rouge
+  'professionnels': '#06B6D4', // Cyan
+  'autres': '#6B7280' // Gris neutre
 };
 
 export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartProps) => {
