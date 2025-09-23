@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, Building2, PiggyBank, Calculator, DollarSign, FileText, TrendingUp, ChevronDown, BarChart3, BookOpen, Sparkles } from 'lucide-react';
+import { Home, Users, Building2, Building, PiggyBank, Calculator, DollarSign, FileText, TrendingUp, ChevronDown, BarChart3, BookOpen, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 const menuItems = [{
@@ -18,6 +18,11 @@ const menuItems = [{
   value: 'patrimoine',
   href: '/dashboard/patrimoine',
   icon: Building2
+}, {
+  label: 'Immobilier',
+  value: 'immobilier',
+  href: '/dashboard/immobilier',
+  icon: Building
 }, {
   label: 'Sociétés',
   value: 'societes',
@@ -90,7 +95,7 @@ export function DashboardSidebar() {
         </div>
 
         {/* Menu principal (Famille à Transmission) */}
-        {menuItems.slice(1, 8).map(item => {
+        {menuItems.slice(1, 9).map(item => {
           const Icon = item.icon;
           const isActive = currentValue === item.value;
           return <button key={item.value} onClick={() => handleNavigation(item.href)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive ? "bg-gray-100 text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900")}>
@@ -105,7 +110,7 @@ export function DashboardSidebar() {
         </div>
 
         {/* Stratégies */}
-        {menuItems.slice(8).map(item => {
+        {menuItems.slice(9).map(item => {
           const Icon = item.icon;
           const isActive = currentValue === item.value;
           return <button key={item.value} onClick={() => handleNavigation(item.href)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive ? "bg-gray-100 text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900")}>

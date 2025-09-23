@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import FamilleSection from './famille/FamilleSection';
 import { PatrimoineSection } from './patrimoine/PatrimoineSection';
+import { ImmobilierSection } from './immobilier/ImmobilierSection';
 import { BudgetSection } from './budget/BudgetSection';
 import { TransmissionSection } from './transmission/TransmissionSection';
 import { SocietesSection } from './societes/SocietesSection';
@@ -17,6 +18,7 @@ const DashboardSection = () => {
     const titles: { [key: string]: string } = {
       famille: 'Famille',
       patrimoine: 'Patrimoine',
+      immobilier: 'Immobilier',
       societes: 'Sociétés',
       retraite: 'Retraite',
       budget: 'Budget',
@@ -32,6 +34,7 @@ const DashboardSection = () => {
     const descriptions: { [key: string]: string } = {
       famille: 'Gérez les informations et la composition de votre famille',
       patrimoine: 'Suivez l\'évolution et la répartition de votre patrimoine',
+      immobilier: 'Gérez et optimisez votre patrimoine immobilier',
       societes: 'Administrez vos participations et structures sociétaires',
       retraite: 'Planifiez et optimisez votre retraite',
       budget: 'Contrôlez vos revenus, dépenses et objectifs financiers',
@@ -51,6 +54,11 @@ const DashboardSection = () => {
   // Si la section est "patrimoine", afficher le composant spécialisé
   if (section === 'patrimoine') {
     return <PatrimoineSection />;
+  }
+  
+  // Si la section est "immobilier", afficher le composant spécialisé
+  if (section === 'immobilier') {
+    return <ImmobilierSection />;
   }
   
   // Si la section est "budget", afficher le composant spécialisé
