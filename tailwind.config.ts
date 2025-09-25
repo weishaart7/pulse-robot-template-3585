@@ -62,6 +62,26 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
+				// Custom colors for Pulse Robot
+				pulse: {
+					"50": "#f0fdff",
+					"100": "#ccf7fe",
+					"200": "#99effd",
+					"300": "#5de2fa",
+					"400": "#22ccf1",
+					"500": "#ade8f4", // Primary blue
+					"600": "#0891b2",
+					"700": "#0e7490",
+					"800": "#155e75",
+					"900": "#164e63",
+					"950": "#083344",
+				},
+				dark: {
+					"900": "#121212", // Almost black
+					"800": "#1e1e1e",
+					"700": "#2d2d2d",
+					"600": "#3d3d3d",
+				},
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
