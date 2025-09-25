@@ -13,8 +13,12 @@ import MadeByHumans from "@/components/MadeByHumans";
 import Footer from "@/components/Footer";
 
 const Index = () => {
+  console.log('🏠 Index page rendering');
+  
   // Initialize intersection observer to detect when elements enter viewport
   useEffect(() => {
+    console.log('🏠 Index useEffect - setting up intersection observer');
+    
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {

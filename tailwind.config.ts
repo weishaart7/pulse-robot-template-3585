@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -20,10 +19,6 @@ export default {
 		},
 		extend: {
 			colors: {
-				"gray-900": "var(--ds-gray-900)",
-				"gray-alpha-400": "var(--ds-gray-alpha-400)",
-				"background-100": "var(--ds-background-100)",
-				"background-200": "var(--ds-background-200)",
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
@@ -66,26 +61,6 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				},
-				// Custom colors for Pulse Robot
-				pulse: {
-					"50": "#f0fdff",
-					"100": "#ccf7fe",
-					"200": "#99effd",
-					"300": "#5de2fa",
-					"400": "#22ccf1",
-					"500": "#ade8f4", // Primary blue
-					"600": "#0891b2",
-					"700": "#0e7490",
-					"800": "#155e75",
-					"900": "#164e63",
-					"950": "#083344",
-				},
-				dark: {
-					"900": "#121212", // Almost black
-					"800": "#1e1e1e",
-					"700": "#2d2d2d",
-					"600": "#3d3d3d",
 				},
 			},
 			borderRadius: {

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { AppLoadingScreen } from '@/components/layout/AppLoadingScreen';
 
 interface AuthContextType {
   user: User | null;
@@ -27,24 +28,28 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  console.log('🔐 AuthProvider rendering');
+  
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('🔐 Setting up auth listener');
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        // Removed sensitive logging - Auth state change logged securely
+        console.log('🔐 Auth state change:', event, session ? 'session exists' : 'no session');
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
         
         // Gestion spécifique des événements de déconnexion
         if (event === 'SIGNED_OUT') {
-          // User signed out - session cleared
+          console.log('🔐 User signed out');
         } else if (event === 'TOKEN_REFRESHED') {
-          // Token refreshed successfully
+          console.log('🔐 Token refreshed');
         }
       }
     );
@@ -52,15 +57,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
-        console.error('Error getting session:', error);
+        console.error('🔐 Error getting session:', error);
+      } else {
+        console.log('🔐 Initial session check:', session ? 'session exists' : 'no session');
       }
-      // Initial session check completed
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('🔐 Cleaning up auth listener');
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
@@ -115,6 +124,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     loading
   };
+
+  console.log('🔐 AuthProvider value:', { user: !!user, session: !!session, loading });
+
+  if (loading) {
+    console.log('🔐 Still loading, showing loading screen');
+    return <AppLoadingScreen />;
+  }
 
   return (
     <AuthContext.Provider value={value}>
