@@ -138,21 +138,35 @@ export function logSecurityEvent(event: SecurityEvent): void {
     timestamp: new Date().toISOString(),
     severity: event.severity || 'medium',
     ip: event.ip || getClientIP(),
-    userAgent: event.userAgent || navigator?.userAgent || 'unknown',
+    userAgent: event.userAgent?.substring(0, 200) || 'unknown', // Limit user agent length
     sessionId: event.sessionId || generateSessionId(),
     ...event,
   };
   
-  // Enhanced logging with severity levels
-  const logLevel = event.success ? 'info' : 'warn';
-  const logMessage = `[SECURITY_AUDIT][${event.severity?.toUpperCase()}] ${event.action}`;
-  
-  console[logLevel](logMessage, logEntry);
-  
-  // Store critical events for potential external logging
-  if (event.severity === 'critical' || (!event.success && ['login', 'data_access', 'data_modification', 'financial_operation'].includes(event.action))) {
-    storeSecurityEvent(logEntry);
+  // SECURITY: Only log to console in development mode
+  if (process.env.NODE_ENV === 'development') {
+    const logLevel = event.success ? 'info' : 'warn';
+    const logMessage = `[SECURITY_AUDIT][${event.severity?.toUpperCase()}] ${event.action}`;
+    console[logLevel](logMessage, {
+      action: event.action,
+      success: event.success,
+      severity: event.severity,
+      timestamp: logEntry.timestamp
+    }); // Only log non-sensitive information
   }
+  
+  // SECURITY: Only store non-sensitive events client-side
+  const isSensitiveEvent = ['login', 'logout', 'financial_operation', 'data_modification'].includes(event.action);
+  
+  if (!isSensitiveEvent) {
+    // Store critical events for potential external logging
+    if (event.severity === 'critical' || (!event.success && ['data_access'].includes(event.action))) {
+      storeSecurityEvent(logEntry);
+    }
+  }
+  
+  // TODO: Implement server-side logging for ALL events via Supabase function
+  // This would store events in the security_audit_log table securely
 }
 
 /**
@@ -193,12 +207,24 @@ function generateSessionId(): string {
 }
 
 function storeSecurityEvent(event: any): void {
-  // Store in localStorage for now, in production you'd send to external service
+  // SECURITY: Store only non-sensitive events in localStorage
+  // Sensitive events should be logged server-side via Supabase functions
   try {
     const stored = JSON.parse(localStorage.getItem('security_events') || '[]');
-    stored.push(event);
-    // Keep only last 100 events
-    if (stored.length > 100) stored.splice(0, stored.length - 100);
+    
+    // Sanitize event data before storing
+    const sanitizedEvent = {
+      timestamp: event.timestamp,
+      action: event.action,
+      success: event.success,
+      severity: event.severity,
+      resource: event.resource,
+      // Don't store: userId, details, ip, userAgent, sessionId
+    };
+    
+    stored.push(sanitizedEvent);
+    // Keep only last 50 events to prevent storage bloat
+    if (stored.length > 50) stored.splice(0, stored.length - 50);
     localStorage.setItem('security_events', JSON.stringify(stored));
   } catch (error) {
     console.error('Failed to store security event:', error);

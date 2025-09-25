@@ -9,8 +9,7 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
     headers: {
-      // Security headers
-      'X-Frame-Options': 'DENY',
+      // Security headers - X-Frame-Options removed to allow iframe embedding in Lovable editor
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
       'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',

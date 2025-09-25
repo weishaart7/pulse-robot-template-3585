@@ -28,28 +28,29 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  console.log('🔐 AuthProvider rendering');
+  // Only log in development mode for security
+  const isDev = process.env.NODE_ENV === 'development';
   
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🔐 Setting up auth listener');
+    if (isDev) console.log('🔐 Setting up auth listener');
     
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('🔐 Auth state change:', event, session ? 'session exists' : 'no session');
+        if (isDev) console.log('🔐 Auth state change:', event, session ? 'session exists' : 'no session');
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Gestion spécifique des événements de déconnexion
+        // Handle specific auth events without exposing sensitive data
         if (event === 'SIGNED_OUT') {
-          console.log('🔐 User signed out');
+          if (isDev) console.log('🔐 User signed out');
         } else if (event === 'TOKEN_REFRESHED') {
-          console.log('🔐 Token refreshed');
+          if (isDev) console.log('🔐 Token refreshed');
         }
       }
     );
@@ -57,8 +58,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
-        console.error('🔐 Error getting session:', error);
-      } else {
+        console.error('🔐 Error getting session:', error.message); // Only log error message, not full error object
+      } else if (isDev) {
         console.log('🔐 Initial session check:', session ? 'session exists' : 'no session');
       }
       setSession(session);
@@ -67,10 +68,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
 
     return () => {
-      console.log('🔐 Cleaning up auth listener');
+      if (isDev) console.log('🔐 Cleaning up auth listener');
       subscription.unsubscribe();
     };
-  }, []);
+  }, [isDev]);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
@@ -125,10 +126,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading
   };
 
-  console.log('🔐 AuthProvider value:', { user: !!user, session: !!session, loading });
+  if (isDev) {
+    console.log('🔐 AuthProvider value:', { user: !!user, session: !!session, loading });
+  }
 
   if (loading) {
-    console.log('🔐 Still loading, showing loading screen');
+    if (isDev) console.log('🔐 Still loading, showing loading screen');
     return <AppLoadingScreen />;
   }
 

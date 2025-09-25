@@ -1152,6 +1152,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       log_security_event: {
         Args: {
           p_action: string
