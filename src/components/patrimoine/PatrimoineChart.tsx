@@ -20,6 +20,16 @@ const CATEGORY_COLORS = {
   'autres': '#6B7280' // Gris neutre
 };
 
+const CATEGORY_GRADIENTS = {
+  'immobiliers': 'url(#gradient-immobiliers)',
+  'financiers liquides': 'url(#gradient-financiers-liquides)', 
+  'financiers investis': 'url(#gradient-financiers-investis)',
+  'retraite et prévoyance': 'url(#gradient-retraite)',
+  'mobiliers corporels': 'url(#gradient-mobiliers)',
+  'professionnels': 'url(#gradient-professionnels)',
+  'autres': 'url(#gradient-autres)'
+};
+
 export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartProps) => {
   const [viewMode, setViewMode] = useState<'category' | 'weight'>('category');
   const [hoveredCategory, setHoveredCategory] = useState<{ name: string; value: number; percentage: string } | null>(null);
@@ -76,12 +86,27 @@ export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartPro
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       const percentage = totalValue > 0 ? (data.value / totalValue * 100).toFixed(1) : '0';
+      const category = data.name.toLowerCase().replace(/\s+/g, ' ');
+      const colorKey = Object.keys(CATEGORY_COLORS).find(key => 
+        category.includes(key.replace(/[\s-]/g, ' '))
+      );
+      const accentColor = colorKey ? CATEGORY_COLORS[colorKey as keyof typeof CATEGORY_COLORS] : '#6B7280';
       
       return (
-        <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
-          <p className="font-medium text-lg">{data.name}</p>
-          <p className="text-primary font-semibold text-xl">{formatCurrency(data.value)}</p>
-          <p className="text-muted-foreground font-medium">{percentage}% du patrimoine</p>
+        <div className="bg-card/95 backdrop-blur-sm border border-border rounded-xl p-4 shadow-2xl">
+          <div className="flex items-center gap-2 mb-2">
+            <div 
+              className="w-4 h-4 rounded-full shadow-sm"
+              style={{ backgroundColor: accentColor }}
+            />
+            <p className="font-semibold text-lg text-foreground">{data.name}</p>
+          </div>
+          <p className="font-bold text-2xl mb-1" style={{ color: accentColor }}>
+            {formatCurrency(data.value)}
+          </p>
+          <p className="text-muted-foreground font-medium">
+            {percentage}% du patrimoine total
+          </p>
         </div>
       );
     }
@@ -109,38 +134,81 @@ export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartPro
 
       {/* Container du graphique avec centrage */}
       <div className="flex flex-col items-center space-y-4">
-        {/* Graphique donut moderne */}
+        {/* Graphique donut moderne avec gradients */}
         <div className="relative w-64 h-64">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
+              <defs>
+                <linearGradient id="gradient-immobiliers" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#60A5FA" />
+                  <stop offset="100%" stopColor="#1E40AF" />
+                </linearGradient>
+                <linearGradient id="gradient-financiers-liquides" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#34D399" />
+                  <stop offset="100%" stopColor="#047857" />
+                </linearGradient>
+                <linearGradient id="gradient-financiers-investis" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#A78BFA" />
+                  <stop offset="100%" stopColor="#6D28D9" />
+                </linearGradient>
+                <linearGradient id="gradient-retraite" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#FBBF24" />
+                  <stop offset="100%" stopColor="#D97706" />
+                </linearGradient>
+                <linearGradient id="gradient-mobiliers" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#F87171" />
+                  <stop offset="100%" stopColor="#DC2626" />
+                </linearGradient>
+                <linearGradient id="gradient-professionnels" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#22D3EE" />
+                  <stop offset="100%" stopColor="#0891B2" />
+                </linearGradient>
+                <linearGradient id="gradient-autres" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#9CA3AF" />
+                  <stop offset="100%" stopColor="#4B5563" />
+                </linearGradient>
+              </defs>
               <Pie
                 data={chartData}
                 cx="50%"
                 cy="50%"
                 outerRadius={115}
                 innerRadius={87}
-                paddingAngle={0}
+                paddingAngle={2}
                 dataKey="value"
                 startAngle={90}
                 endAngle={450}
                 stroke="hsl(var(--background))"
-                strokeWidth={3}
+                strokeWidth={2}
               >
-                {chartData.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={entry.color}
-                    onMouseEnter={() => {
-                      const percentage = totalValue > 0 ? ((entry.value / totalValue) * 100).toFixed(1) : '0';
-                      setHoveredCategory({
-                        name: entry.name,
-                        value: entry.value,
-                        percentage
-                      });
-                    }}
-                    onMouseLeave={() => setHoveredCategory(null)}
-                  />
-                ))}
+                {chartData.map((entry, index) => {
+                  const category = entry.name.toLowerCase().replace(/\s+/g, ' ');
+                  const gradientKey = Object.keys(CATEGORY_GRADIENTS).find(key => 
+                    category.includes(key.replace(/[\s-]/g, ' '))
+                  );
+                  const isHovered = hoveredCategory?.name === entry.name;
+                  
+                  return (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={gradientKey ? CATEGORY_GRADIENTS[gradientKey as keyof typeof CATEGORY_GRADIENTS] : entry.color}
+                      style={{
+                        filter: isHovered ? 'brightness(1.1) drop-shadow(0 4px 8px rgba(0,0,0,0.2))' : 'none',
+                        transition: 'all 0.3s ease',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={() => {
+                        const percentage = totalValue > 0 ? ((entry.value / totalValue) * 100).toFixed(1) : '0';
+                        setHoveredCategory({
+                          name: entry.name,
+                          value: entry.value,
+                          percentage
+                        });
+                      }}
+                      onMouseLeave={() => setHoveredCategory(null)}
+                    />
+                  );
+                })}
               </Pie>
               <Tooltip content={<CustomTooltip />} />
             </PieChart>
