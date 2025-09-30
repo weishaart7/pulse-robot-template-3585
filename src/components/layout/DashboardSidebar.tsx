@@ -76,7 +76,7 @@ export function DashboardSidebar() {
   const toggleGroup = (groupId: string) => {
     setExpandedGroups(prev => prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId]);
   };
-  return <div className="w-64 bg-white flex flex-col">
+  return <div className="w-64 flex flex-col" style={{ backgroundColor: '#fbfdef' }}>
       {/* Logo */}
       <div className="px-3 py-4 mx-[19px]">
         <img src="/lovable-uploads/3f46b218-16fb-43cf-8206-7af4be7cbfd0.png" alt="Merislabs Logo" className="h-7 w-auto object-contain" />
