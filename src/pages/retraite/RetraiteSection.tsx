@@ -12,7 +12,7 @@ export const RetraiteSection = () => {
     { id: 'synthese', label: 'Synthèse' },
     { id: 'carriere', label: 'Carrière' },
     { id: 'epargne', label: 'Épargne retraite' },
-    { id: 'trimestres', label: 'Trimestres' }
+    { id: 'optimisation', label: 'Optimisation' }
   ];
 
   const renderContent = () => {
@@ -23,7 +23,7 @@ export const RetraiteSection = () => {
         return <Carriere />;
       case 'epargne':
         return <EpargneRetraite />;
-      case 'trimestres':
+      case 'optimisation':
         return <Trimestres />;
       default:
         return <Synthese />;
