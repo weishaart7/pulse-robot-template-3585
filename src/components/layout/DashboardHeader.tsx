@@ -15,12 +15,12 @@ export function DashboardHeader() {
   const handleLogout = () => {
     logout();
   };
-  return <header className="h-16 flex items-center justify-between px-6 my-[5px]" style={{ backgroundColor: '#fbfdef' }}>
+  return <header className="h-16 bg-background flex items-center justify-between px-6 my-[5px]">
       <SearchBar />
       
       <div className="flex items-center gap-3">
         <div className="relative">
-          <GlowEffect colors={['#c2f94f', '#fbfdef', '#e5faa3', '#d4eb8d']} mode="colorShift" blur="soft" duration={3} scale={0.9} />
+          <GlowEffect colors={['#FF5733', '#33FF57', '#3357FF', '#F1C40F']} mode="colorShift" blur="soft" duration={3} scale={0.9} />
           <button onClick={() => navigate('/investment')} className="relative inline-flex items-center gap-1 rounded-md bg-zinc-950 px-2.5 py-1.5 text-sm text-zinc-50 outline outline-1 outline-[#fff2f21f] hover:bg-zinc-800 transition-colors">
             Accéder à Imeris Invest
           </button>

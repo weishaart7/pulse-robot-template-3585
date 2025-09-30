@@ -14,7 +14,7 @@ const Dashboard = () => {
 
   return (
     <div className="p-6">
-      <div className="mb-6 bg-card rounded-lg p-6 border border-gray-200">
+      <div className="mb-6 bg-card rounded-lg p-6">
         <div className="flex justify-between items-start">
           <h2 className="text-base text-foreground/70 font-medium">Bonjour {familyProfile?.prenom || '(Prénom)'}.</h2>
           
@@ -23,7 +23,7 @@ const Dashboard = () => {
             <p className="text-muted-foreground text-xs mb-4 leading-relaxed">
               Notre équipe interne de conseillers financiers, de conseillers patrimoniaux et partenaires est à vos côtés pour vous accompagner sereinement, qu'il s'agisse de questions simples ou de décisions stratégiques.
             </p>
-            <button className="px-4 py-2 rounded-md text-xs font-medium transition-colors" style={{ backgroundColor: '#000000', color: '#fbfdef' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1a1a1a'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#000000'}>
+            <button className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-xs font-medium hover:bg-primary/90 transition-colors">
               Planifier un rendez-vous
             </button>
           </div>
@@ -31,7 +31,7 @@ const Dashboard = () => {
       </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
+        <Card className="border-0">
           <CardHeader>
             <CardTitle className="text-xl">Patrimoine</CardTitle>
             <CardDescription>
@@ -45,7 +45,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="border-0">
           <CardHeader>
             <CardTitle className="text-xl">Budget</CardTitle>
             <CardDescription>
@@ -62,7 +62,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="border-0">
           <CardHeader>
             <CardTitle className="text-xl">Fiscalité</CardTitle>
             <CardDescription>
@@ -76,7 +76,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="border-0">
           <CardHeader>
             <CardTitle className="text-xl">Transmission</CardTitle>
             <CardDescription>
@@ -90,7 +90,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="border-0">
           <CardHeader>
             <CardTitle className="text-xl">Retraite</CardTitle>
             <CardDescription>

@@ -106,7 +106,7 @@ export const BudgetResume = () => {
   };
   return <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
+        <Card className="border-0">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-medium text-muted-foreground">Solde mensuel annualisé</CardTitle>
           </CardHeader>
@@ -122,7 +122,7 @@ export const BudgetResume = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-0">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-medium text-muted-foreground">
               Taux d'endettement
@@ -139,7 +139,7 @@ export const BudgetResume = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-0">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-medium text-muted-foreground">
               Capacité d'endettement
@@ -160,7 +160,7 @@ export const BudgetResume = () => {
       {/* Répartition par catégories */}
       <div className="grid gap-6 md:grid-cols-2 mt-6">
         {/* Répartition des revenus par catégories */}
-        <Card>
+        <Card className="border-0">
           <CardHeader>
             <CardTitle>Répartition des revenus par catégories</CardTitle>
             <CardDescription>
@@ -205,7 +205,7 @@ export const BudgetResume = () => {
         </Card>
 
         {/* Répartition des charges par catégories */}
-        <Card>
+        <Card className="border-0">
           <CardHeader>
             <CardTitle>Répartition des charges par catégories</CardTitle>
             <CardDescription>
@@ -251,7 +251,7 @@ export const BudgetResume = () => {
       </div>
 
       {/* Saisonnalité */}
-      <Card className="mt-6">
+      <Card className="mt-6 border-0">
         <CardHeader>
           <CardTitle>Saisonnalité</CardTitle>
         </CardHeader>
