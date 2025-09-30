@@ -43,7 +43,7 @@ export const PatrimoineResume = () => {
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Graphique à gauche */}
-            <div className="flex items-center justify-center">
+            <div>
               <PatrimoineChart 
                 assets={assets} 
                 selectedCategory={null}
