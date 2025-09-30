@@ -138,7 +138,7 @@ export function SearchBar() {
   };
   return <div ref={searchRef} className="relative max-w-[400px]">
       <div className="relative">
-        <Input placeholder="Rechercher une section..." type="search" value={query} onChange={e => setQuery(e.target.value)} className="peer pe-9 ps-9 mx-0 px-0 py-[22px]" />
+        <Input placeholder="Rechercher une section..." type="search" value={query} onChange={e => setQuery(e.target.value)} className="peer pe-9 ps-9 mx-0 px-0 h-[34px]" />
         <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center justify-center ps-3 text-muted-foreground/80 peer-disabled:opacity-50">
           <Search size={16} strokeWidth={2} />
         </div>
