@@ -73,9 +73,35 @@ export const BudgetResume = () => {
   }).filter(cat => cat.count > 0);
   const totalRevenusCat = revenusParCategorie.reduce((sum, cat) => sum + cat.total, 0);
   const totalChargesCat = chargesParCategorie.reduce((sum, cat) => sum + cat.total, 0);
-  const getColorForCategory = (index: number) => {
-    const colors = ['#76ff61', '#ffbe98', '#15eae2', '#c698f5', '#0b5563', '#caeffb', '#05aaa4', '#ff6b6b', '#4ecdc4', '#45b7d1'];
-    return colors[index % colors.length];
+  
+  const REVENUS_COLORS: Record<string, string> = {
+    'Revenus du travail': '#c0ff35',
+    'Revenus du patrimoine': '#0b3319',
+    'Retraites, pensions & rentes': '#f9fba5',
+    'Aides sociales & allocations': '#79e230',
+    'Indemnités & remboursements': '#39a325',
+    'Autres revenus': '#15751e'
+  };
+
+  const CHARGES_COLORS: Record<string, string> = {
+    'Emprunts & Crédits': '#2d00f7',
+    'Logement & Habitation': '#6a00f4',
+    'Transports & Mobilité': '#8900f2',
+    'Alimentation & Vie courante': '#bc00dd',
+    'Santé & Bien-être': '#e500a4',
+    'Famille, Enfants & Éducation': '#f20089',
+    'Impôts, Cotisations & Assurances': '#f20089',
+    'Épargne & Investissements': '#f20089',
+    'Loisirs, Culture & Numérique': '#f20089',
+    'Solidarité, Pensions & Divers': '#ffb600'
+  };
+
+  const getColorForRevenu = (categorie: string) => {
+    return REVENUS_COLORS[categorie] || '#76ff61';
+  };
+
+  const getColorForCharge = (categorie: string) => {
+    return CHARGES_COLORS[categorie] || '#2d00f7';
   };
   return <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -144,7 +170,7 @@ export const BudgetResume = () => {
                   name: cat.categorie,
                   value: cat.total
                 }))} cx="50%" cy="50%" innerRadius={70} outerRadius={85} paddingAngle={2} dataKey="value" stroke="hsl(var(--background))" strokeWidth={2}>
-                      {revenusParCategorie.map((entry, index) => <Cell key={`cell-${index}`} fill={getColorForCategory(index)} />)}
+                      {revenusParCategorie.map((entry, index) => <Cell key={`cell-${index}`} fill={getColorForRevenu(entry.categorie)} />)}
                     </Pie>
                     <Tooltip formatter={(value: number) => formatCurrency(value)} />
                     <Legend verticalAlign="bottom" height={36} wrapperStyle={{
@@ -188,7 +214,7 @@ export const BudgetResume = () => {
                   name: cat.categorie,
                   value: cat.total
                 }))} cx="50%" cy="50%" innerRadius={70} outerRadius={85} paddingAngle={2} dataKey="value" stroke="hsl(var(--background))" strokeWidth={2}>
-                      {chargesParCategorie.map((entry, index) => <Cell key={`cell-${index}`} fill={getColorForCategory(index)} />)}
+                      {chargesParCategorie.map((entry, index) => <Cell key={`cell-${index}`} fill={getColorForCharge(entry.categorie)} />)}
                     </Pie>
                     <Tooltip formatter={(value: number) => formatCurrency(value)} />
                     <Legend verticalAlign="bottom" height={36} wrapperStyle={{
