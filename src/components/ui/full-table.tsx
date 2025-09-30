@@ -2,7 +2,7 @@ import React from "react";
 
 export const FullTable = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div className="w-full overflow-auto min-w-[248px] p-6 rounded-lg relative border border-gray-alpha-400 bg-background-100">
+    <div className="w-full overflow-auto min-w-[248px] p-6 rounded-lg relative border border-gray-alpha-400 bg-white">
       <table className="w-full border-collapse text-sm font-sans text-gray-900">
         {children}
       </table>
