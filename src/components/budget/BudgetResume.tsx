@@ -4,22 +4,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { useRevenus, useCharges } from '@/hooks/useBudget';
 import { REVENUS_CATEGORIES, CHARGES_CATEGORIES } from '@/constants/budgetCategories';
-
 export const BudgetResume = () => {
-  const { revenus, loading: revenusLoading, fetchRevenus } = useRevenus();
-  const { charges, loading: chargesLoading, fetchCharges } = useCharges();
-
+  const {
+    revenus,
+    loading: revenusLoading,
+    fetchRevenus
+  } = useRevenus();
+  const {
+    charges,
+    loading: chargesLoading,
+    fetchCharges
+  } = useCharges();
   useEffect(() => {
     fetchRevenus();
     fetchCharges();
   }, []);
-
   const totalRevenus = Math.round(revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0));
   const totalCharges = Math.round(charges.reduce((sum, charge) => sum + (charge.montant || 0), 0));
-
   if (revenusLoading || chargesLoading) {
-    return (
-      <div className="space-y-6">
+    return <div className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Résumé du Budget</CardTitle>
@@ -28,26 +31,22 @@ export const BudgetResume = () => {
             <p className="text-muted-foreground">Chargement des données...</p>
           </CardContent>
         </Card>
-      </div>
-    );
+      </div>;
   }
 
   // Calculer les mensualités de crédits (charges liées aux crédits)
-  const mensualitesCredits = Math.round(charges
-    .filter(charge => charge.nature?.toLowerCase().includes('crédit') || charge.nature?.toLowerCase().includes('emprunt'))
-    .reduce((sum, charge) => sum + (charge.montant || 0), 0));
+  const mensualitesCredits = Math.round(charges.filter(charge => charge.nature?.toLowerCase().includes('crédit') || charge.nature?.toLowerCase().includes('emprunt')).reduce((sum, charge) => sum + (charge.montant || 0), 0));
 
   // Calculer les indicateurs
   const soldeMensuel = Math.round(totalRevenus - totalCharges);
-  const tauxEndettement = totalRevenus > 0 ? (mensualitesCredits / totalRevenus) * 100 : 0;
-  const capaciteEndettement = Math.round((totalRevenus * 0.35) - mensualitesCredits);
-
+  const tauxEndettement = totalRevenus > 0 ? mensualitesCredits / totalRevenus * 100 : 0;
+  const capaciteEndettement = Math.round(totalRevenus * 0.35 - mensualitesCredits);
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(amount);
   };
 
@@ -72,23 +71,17 @@ export const BudgetResume = () => {
       count: chargesCategorie.length
     };
   }).filter(cat => cat.count > 0);
-
   const totalRevenusCat = revenusParCategorie.reduce((sum, cat) => sum + cat.total, 0);
   const totalChargesCat = chargesParCategorie.reduce((sum, cat) => sum + cat.total, 0);
-
   const getColorForCategory = (index: number) => {
     const colors = ['#76ff61', '#ffbe98', '#15eae2', '#c698f5', '#0b5563', '#caeffb', '#05aaa4', '#ff6b6b', '#4ecdc4', '#45b7d1'];
     return colors[index % colors.length];
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-medium text-muted-foreground">
-              Solde mensuel
-            </CardTitle>
+            <CardTitle className="text-base font-medium text-muted-foreground">Solde mensuel annualisé</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <div className={`text-2xl font-bold ${soldeMensuel >= 0 ? 'text-primary' : 'text-destructive'}`}>
@@ -144,42 +137,26 @@ export const BudgetResume = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {revenusParCategorie.length > 0 ? (
-              <div className="relative h-64">
+            {revenusParCategorie.length > 0 ? <div className="relative h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie
-                      data={revenusParCategorie.map(cat => ({
-                        name: cat.categorie,
-                        value: cat.total
-                      }))}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={70}
-                      outerRadius={85}
-                      paddingAngle={2}
-                      dataKey="value"
-                      stroke="hsl(var(--background))"
-                      strokeWidth={2}
-                    >
-                      {revenusParCategorie.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={getColorForCategory(index)} 
-                        />
-                      ))}
+                    <Pie data={revenusParCategorie.map(cat => ({
+                  name: cat.categorie,
+                  value: cat.total
+                }))} cx="50%" cy="50%" innerRadius={70} outerRadius={85} paddingAngle={2} dataKey="value" stroke="hsl(var(--background))" strokeWidth={2}>
+                      {revenusParCategorie.map((entry, index) => <Cell key={`cell-${index}`} fill={getColorForCategory(index)} />)}
                     </Pie>
                     <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                    <Legend 
-                      verticalAlign="bottom" 
-                      height={36}
-                      wrapperStyle={{ fontSize: '12px' }}
-                    />
+                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{
+                  fontSize: '12px'
+                }} />
                   </PieChart>
                 </ResponsiveContainer>
                 
                 {/* Valeur totale au centre */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ paddingBottom: '36px' }}>
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{
+              paddingBottom: '36px'
+            }}>
                   <div className="text-center">
                     <div className="text-xl font-bold text-foreground">
                       {formatCurrency(totalRevenusCat)}
@@ -189,12 +166,9 @@ export const BudgetResume = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
+              </div> : <div className="text-center text-muted-foreground py-8">
                 Aucun revenu pour le moment
-              </div>
-            )}
+              </div>}
           </CardContent>
         </Card>
 
@@ -207,42 +181,26 @@ export const BudgetResume = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {chargesParCategorie.length > 0 ? (
-              <div className="relative h-64">
+            {chargesParCategorie.length > 0 ? <div className="relative h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie
-                      data={chargesParCategorie.map(cat => ({
-                        name: cat.categorie,
-                        value: cat.total
-                      }))}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={70}
-                      outerRadius={85}
-                      paddingAngle={2}
-                      dataKey="value"
-                      stroke="hsl(var(--background))"
-                      strokeWidth={2}
-                    >
-                      {chargesParCategorie.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={getColorForCategory(index)} 
-                        />
-                      ))}
+                    <Pie data={chargesParCategorie.map(cat => ({
+                  name: cat.categorie,
+                  value: cat.total
+                }))} cx="50%" cy="50%" innerRadius={70} outerRadius={85} paddingAngle={2} dataKey="value" stroke="hsl(var(--background))" strokeWidth={2}>
+                      {chargesParCategorie.map((entry, index) => <Cell key={`cell-${index}`} fill={getColorForCategory(index)} />)}
                     </Pie>
                     <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                    <Legend 
-                      verticalAlign="bottom" 
-                      height={36}
-                      wrapperStyle={{ fontSize: '12px' }}
-                    />
+                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{
+                  fontSize: '12px'
+                }} />
                   </PieChart>
                 </ResponsiveContainer>
                 
                 {/* Valeur totale au centre */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ paddingBottom: '36px' }}>
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{
+              paddingBottom: '36px'
+            }}>
                   <div className="text-center">
                     <div className="text-xl font-bold text-foreground">
                       {formatCurrency(totalChargesCat)}
@@ -252,12 +210,9 @@ export const BudgetResume = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
+              </div> : <div className="text-center text-muted-foreground py-8">
                 Aucune charge pour le moment
-              </div>
-            )}
+              </div>}
           </CardContent>
         </Card>
       </div>
@@ -273,6 +228,5 @@ export const BudgetResume = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
