@@ -8,14 +8,16 @@ interface PatrimoineChartProps {
   selectedCategory: string | null;
 }
 
-const CATEGORY_COLORS = {
-  'immobiliers': '#05E8A4', // Actifs immobiliers
-  'mobiliers corporels': '#2609D6', // Actifs mobiliers corporels
-  'professionnels': '#D5B7FF', // Actifs professionnels
-  'retraite et prévoyance': '#7B0700', // Épargne retraite et prévoyance
-  'financiers investis': '#89FC00', // Valeurs mobilières et placements financiers
-  'financiers liquides': '#314A46', // Épargne bancaire / liquidités
-  'autres': '#FF8B55' // Épargne salariale
+const CATEGORY_COLORS: Record<string, string> = {
+  'actifs immobiliers': '#05E8A4',
+  'actifs mobiliers corporels': '#2609D6',
+  'actifs professionnels': '#D5B7FF',
+  'épargne retraite et prévoyance': '#7B0700',
+  'épargne et assurance-vie': '#FF0095',
+  'épargne salariale': '#FF8B55',
+  'épargne bancaire / liquidités': '#314A46',
+  'valeurs mobilières et placements financiers': '#89FC00',
+  'autres': '#FF8B55'
 };
 
 
@@ -38,7 +40,7 @@ export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartPro
       .map(item => ({
         name: item.category.charAt(0).toUpperCase() + item.category.slice(1),
         value: item.value,
-        color: CATEGORY_COLORS[item.category as keyof typeof CATEGORY_COLORS] || CATEGORY_COLORS.autres,
+        color: CATEGORY_COLORS[item.category] || '#FF8B55',
         assets: item.assets
       }))
       .sort((a, b) => b.value - a.value);
