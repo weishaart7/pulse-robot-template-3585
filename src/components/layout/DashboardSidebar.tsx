@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, Building2, Building, PiggyBank, Calculator, DollarSign, FileText, TrendingUp, ChevronDown, BarChart3, BookOpen, Sparkles, Calendar } from 'lucide-react';
+import { Home, Users, Building2, Building, PiggyBank, Calculator, DollarSign, FileText, TrendingUp, ChevronDown, BarChart3, BookOpen, Sparkles, Calendar, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 const menuItems = [{
@@ -134,6 +134,10 @@ export function DashboardSidebar() {
         <button onClick={() => handleNavigation('/nouveautes')} className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900">
           <Sparkles className="h-4 w-4 flex-shrink-0" />
           <span className="truncate">Nouveautés</span>
+        </button>
+        <button onClick={() => handleNavigation('/suggestion')} className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900">
+          <MessageSquare className="h-4 w-4 flex-shrink-0" />
+          <span className="truncate">Faire une suggestion</span>
         </button>
       </div>
     </div>;
