@@ -88,7 +88,11 @@ export function DashboardSidebar() {
         {menuItems.slice(0, 1).map(item => {
           const Icon = item.icon;
           const isActive = currentValue === item.value;
-          return <button key={item.value} onClick={() => handleNavigation(item.href)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive ? "font-medium" : "hover:bg-[#e5faa3]")} style={{
+          return <button key={item.value} onClick={() => handleNavigation(item.href)} onMouseEnter={(e) => {
+                if (!isActive) e.currentTarget.style.backgroundColor = '#e5faa3';
+              }} onMouseLeave={(e) => {
+                if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
+              }} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive && "font-medium")} style={{
                 backgroundColor: isActive ? '#c2f94f' : 'transparent',
                 color: '#1e3a4a'
               }}>
@@ -106,7 +110,11 @@ export function DashboardSidebar() {
         {menuItems.slice(1, 9).map(item => {
           const Icon = item.icon;
           const isActive = currentValue === item.value;
-          return <button key={item.value} onClick={() => handleNavigation(item.href)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive ? "font-medium" : "hover:bg-[#e5faa3]")} style={{
+          return <button key={item.value} onClick={() => handleNavigation(item.href)} onMouseEnter={(e) => {
+                if (!isActive) e.currentTarget.style.backgroundColor = '#e5faa3';
+              }} onMouseLeave={(e) => {
+                if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
+              }} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive && "font-medium")} style={{
                 backgroundColor: isActive ? '#c2f94f' : 'transparent',
                 color: '#1e3a4a'
               }}>
@@ -124,7 +132,11 @@ export function DashboardSidebar() {
         {menuItems.slice(9).map(item => {
           const Icon = item.icon;
           const isActive = currentValue === item.value;
-          return <button key={item.value} onClick={() => handleNavigation(item.href)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive ? "font-medium" : "hover:bg-[#e5faa3]")} style={{
+          return <button key={item.value} onClick={() => handleNavigation(item.href)} onMouseEnter={(e) => {
+                if (!isActive) e.currentTarget.style.backgroundColor = '#e5faa3';
+              }} onMouseLeave={(e) => {
+                if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
+              }} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive && "font-medium")} style={{
                 backgroundColor: isActive ? '#c2f94f' : 'transparent',
                 color: '#1e3a4a'
               }}>
