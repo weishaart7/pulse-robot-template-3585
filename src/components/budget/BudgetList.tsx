@@ -39,7 +39,7 @@ export const BudgetList = ({
       {/* Liste des revenus */}
       {revenus.length > 0 && <Card>
           <CardHeader>
-            <CardTitle>Revenus ({revenus.length})</CardTitle>
+            <CardTitle>Revenus</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
@@ -116,7 +116,7 @@ export const BudgetList = ({
       {/* Liste des charges */}
       {charges.length > 0 && <Card>
           <CardHeader>
-            <CardTitle>Charges ({charges.length})</CardTitle>
+            <CardTitle>Charges</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
