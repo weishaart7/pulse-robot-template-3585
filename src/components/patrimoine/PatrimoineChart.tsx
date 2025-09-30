@@ -187,15 +187,22 @@ export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartPro
                     category.includes(key.replace(/[\s-]/g, ' '))
                   );
                   const isHovered = hoveredCategory?.name === entry.name;
+                  const isOtherHovered = hoveredCategory && hoveredCategory.name !== entry.name;
                   
                   return (
                     <Cell 
                       key={`cell-${index}`} 
                       fill={gradientKey ? CATEGORY_GRADIENTS[gradientKey as keyof typeof CATEGORY_GRADIENTS] : entry.color}
                       style={{
-                        filter: isHovered ? 'brightness(1.1) drop-shadow(0 4px 8px rgba(0,0,0,0.2))' : 'none',
-                        transition: 'all 0.3s ease',
-                        cursor: 'pointer'
+                        filter: isHovered 
+                          ? 'brightness(1.15) drop-shadow(0 8px 16px rgba(0,0,0,0.25))' 
+                          : isOtherHovered 
+                          ? 'brightness(0.7) opacity(0.6)' 
+                          : 'none',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        cursor: 'pointer',
+                        transform: isHovered ? 'scale(1.02)' : 'scale(1)',
+                        transformOrigin: 'center'
                       }}
                       onMouseEnter={() => {
                         const percentage = totalValue > 0 ? ((entry.value / totalValue) * 100).toFixed(1) : '0';
