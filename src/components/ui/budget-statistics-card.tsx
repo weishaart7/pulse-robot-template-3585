@@ -35,7 +35,7 @@ export default function BudgetStatisticsCard({
     <Card className="w-full">
       <CardHeader className="border-0 min-h-auto py-5">
         <CardTitle className="flex items-center gap-2.5">
-          <DollarSign className="w-5 h-5" style={{ color: '#c2f94f' }} />
+          <DollarSign className="w-5 h-5" style={{ color: '#1e3a4a' }} />
           <span className="text-sm font-semibold text-foreground">Revenu disponible</span>
         </CardTitle>
         <CardToolbar>
