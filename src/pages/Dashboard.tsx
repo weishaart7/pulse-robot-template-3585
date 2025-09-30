@@ -23,7 +23,7 @@ const Dashboard = () => {
             <p className="text-muted-foreground text-xs mb-4 leading-relaxed">
               Notre équipe interne de conseillers financiers, de conseillers patrimoniaux et partenaires est à vos côtés pour vous accompagner sereinement, qu'il s'agisse de questions simples ou de décisions stratégiques.
             </p>
-            <button className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-xs font-medium hover:bg-primary/90 transition-colors">
+            <button className="px-4 py-2 rounded-md text-xs font-medium transition-colors" style={{ backgroundColor: '#c2f94f', color: '#1e3a4a' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#b3e840'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#c2f94f'}>
               Planifier un rendez-vous
             </button>
           </div>
