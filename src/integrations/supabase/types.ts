@@ -78,6 +78,7 @@ export type Database = {
       }
       assets: {
         Row: {
+          attachement_emotionnel: number | null
           created_at: string
           date_acquisition: string | null
           date_estimation: string | null
@@ -88,15 +89,18 @@ export type Database = {
           id: string
           mode_detention: string | null
           nature: string
+          origine_actif: string[] | null
           pourcentage_conjoint: number | null
           pourcentage_utilisateur: number | null
           revalorisation_annuelle: number | null
+          situation_particuliere: string[] | null
           updated_at: string
           user_id: string
           valeur_acquisition: number | null
           valeur_estimee: number | null
         }
         Insert: {
+          attachement_emotionnel?: number | null
           created_at?: string
           date_acquisition?: string | null
           date_estimation?: string | null
@@ -107,15 +111,18 @@ export type Database = {
           id?: string
           mode_detention?: string | null
           nature: string
+          origine_actif?: string[] | null
           pourcentage_conjoint?: number | null
           pourcentage_utilisateur?: number | null
           revalorisation_annuelle?: number | null
+          situation_particuliere?: string[] | null
           updated_at?: string
           user_id: string
           valeur_acquisition?: number | null
           valeur_estimee?: number | null
         }
         Update: {
+          attachement_emotionnel?: number | null
           created_at?: string
           date_acquisition?: string | null
           date_estimation?: string | null
@@ -126,9 +133,11 @@ export type Database = {
           id?: string
           mode_detention?: string | null
           nature?: string
+          origine_actif?: string[] | null
           pourcentage_conjoint?: number | null
           pourcentage_utilisateur?: number | null
           revalorisation_annuelle?: number | null
+          situation_particuliere?: string[] | null
           updated_at?: string
           user_id?: string
           valeur_acquisition?: number | null

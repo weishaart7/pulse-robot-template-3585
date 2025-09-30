@@ -16,6 +16,9 @@ export interface Asset {
   valeur_acquisition?: number;
   frais_acquisition?: number;
   date_acquisition?: string;
+  origine_actif?: string[];
+  situation_particuliere?: string[];
+  attachement_emotionnel?: number;
   created_at?: string;
   updated_at?: string;
 }

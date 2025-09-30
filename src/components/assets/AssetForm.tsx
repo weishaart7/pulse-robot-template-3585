@@ -7,20 +7,55 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Slider } from '@/components/ui/slider';
 import { DateInput } from '@/components/ui/date-input';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { cn } from '@/lib/utils';
 import { Asset, AssetCharge } from '@/services/assetService';
 import { ChargeForm } from './ChargeForm';
-import { ASSET_NATURES } from '@/constants/assetTypes';
+import { ASSET_NATURES, ASSET_CATEGORIES, getAssetCategory } from '@/constants/assetTypes';
 import { familyService } from '@/services/familyService';
+
+// Constantes pour les nouveaux champs
+const ORIGINE_ACTIF_OPTIONS = [
+  'Acquisition à titre gratuite',
+  'Acquisition à titre onéreuse',
+  'Acquisition par occupation',
+  'Création',
+  'Découverte',
+  'Donation',
+  'Échange',
+  'Héritage',
+  'Présent d\'usage'
+] as const;
+
+const SITUATION_PARTICULIERE_OPTIONS = [
+  'Antichrèse',
+  'Gage',
+  'Hypothèque',
+  'Indivision',
+  'Nantissement',
+  'Non',
+  'Saisie conservatoire'
+] as const;
+
+// Types d'actifs qui nécessitent le champ "Établissement"
+const NATURES_WITH_ETABLISSEMENT = [
+  'Objets numériques (NFT, etc.)',
+  ...ASSET_CATEGORIES['épargne retraite et prévoyance'],
+  ...ASSET_CATEGORIES['épargne et assurance-vie'],
+  ...ASSET_CATEGORIES['épargne salariale'],
+  ...ASSET_CATEGORIES['épargne bancaire / liquidités'],
+  ...ASSET_CATEGORIES['valeurs mobilières et placements financiers']
+];
 
 const assetSchema = z.object({
   nature: z.string().min(1, 'La nature est requise'),
@@ -35,7 +70,10 @@ const assetSchema = z.object({
   pourcentage_conjoint: z.number().optional(),
   valeur_acquisition: z.number().optional(),
   frais_acquisition: z.number().optional(),
-  date_acquisition: z.date().optional()
+  date_acquisition: z.date().optional(),
+  origine_actif: z.array(z.string()).optional(),
+  situation_particuliere: z.array(z.string()).optional(),
+  attachement_emotionnel: z.number().min(0).max(10).optional()
 });
 type AssetFormValues = z.infer<typeof assetSchema>;
 interface AssetFormProps {
@@ -146,7 +184,10 @@ export const AssetForm: React.FC<AssetFormProps> = ({
       mode_detention: '',
       detenteur: '',
       pourcentage_utilisateur: 50,
-      pourcentage_conjoint: 50
+      pourcentage_conjoint: 50,
+      origine_actif: ['Acquisition à titre onéreuse'],
+      situation_particuliere: ['Non'],
+      attachement_emotionnel: 0
     }
   });
 
@@ -167,7 +208,10 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         pourcentage_conjoint: asset.pourcentage_conjoint || 50,
         valeur_acquisition: asset.valeur_acquisition || undefined,
         frais_acquisition: asset.frais_acquisition || undefined,
-        date_acquisition: asset.date_acquisition ? new Date(asset.date_acquisition) : undefined
+        date_acquisition: asset.date_acquisition ? new Date(asset.date_acquisition) : undefined,
+        origine_actif: (asset as any).origine_actif || ['Acquisition à titre onéreuse'],
+        situation_particuliere: (asset as any).situation_particuliere || ['Non'],
+        attachement_emotionnel: (asset as any).attachement_emotionnel || 0
       });
     }
   }, [asset, familyData, form]);
@@ -295,17 +339,102 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                         <FormMessage />
                       </FormItem>} />
 
-                  <FormField control={form.control} name="etablissement" render={({
-                  field
-                }) => <FormItem>
-                        <FormLabel>Établissement</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>} />
+                  {/* Champ Établissement conditionnel */}
+                  {NATURES_WITH_ETABLISSEMENT.includes(form.watch('nature')) && (
+                    <FormField control={form.control} name="etablissement" render={({
+                      field
+                    }) => <FormItem>
+                          <FormLabel>Établissement</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>} />
+                  )}
 
                 </div>
+
+                {/* Origine de l'actif */}
+                <FormField
+                  control={form.control}
+                  name="origine_actif"
+                  render={() => (
+                    <FormItem>
+                      <FormLabel>Origine de l'actif</FormLabel>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {ORIGINE_ACTIF_OPTIONS.map((option) => (
+                          <FormField
+                            key={option}
+                            control={form.control}
+                            name="origine_actif"
+                            render={({ field }) => (
+                              <FormItem className="flex items-start space-x-2 space-y-0">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(option)}
+                                    onCheckedChange={(checked) => {
+                                      const currentValue = field.value || [];
+                                      if (checked) {
+                                        field.onChange([...currentValue, option]);
+                                      } else {
+                                        field.onChange(currentValue.filter((val) => val !== option));
+                                      }
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="text-sm font-normal cursor-pointer">
+                                  {option}
+                                </FormLabel>
+                              </FormItem>
+                            )}
+                          />
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Situation particulière */}
+                <FormField
+                  control={form.control}
+                  name="situation_particuliere"
+                  render={() => (
+                    <FormItem>
+                      <FormLabel>Situation particulière</FormLabel>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {SITUATION_PARTICULIERE_OPTIONS.map((option) => (
+                          <FormField
+                            key={option}
+                            control={form.control}
+                            name="situation_particuliere"
+                            render={({ field }) => (
+                              <FormItem className="flex items-start space-x-2 space-y-0">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(option)}
+                                    onCheckedChange={(checked) => {
+                                      const currentValue = field.value || [];
+                                      if (checked) {
+                                        field.onChange([...currentValue, option]);
+                                      } else {
+                                        field.onChange(currentValue.filter((val) => val !== option));
+                                      }
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="text-sm font-normal cursor-pointer">
+                                  {option}
+                                </FormLabel>
+                              </FormItem>
+                            )}
+                          />
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               <Separator />
@@ -451,6 +580,42 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                         </div>
                       </Card>)}
                   </div>}
+              </div>
+
+              <Separator />
+
+              {/* Section 4: Attachement émotionnel */}
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="attachement_emotionnel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Attachement émotionnel</FormLabel>
+                      <FormDescription>
+                        De 0 (aucun attachement) à 10 (attachement très fort)
+                      </FormDescription>
+                      <FormControl>
+                        <div className="space-y-2">
+                          <Slider
+                            min={0}
+                            max={10}
+                            step={0.5}
+                            value={[field.value || 0]}
+                            onValueChange={(vals) => field.onChange(vals[0])}
+                            className="w-full"
+                          />
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Aucun</span>
+                            <span className="font-medium text-foreground">{field.value || 0} / 10</span>
+                            <span>Très fort</span>
+                          </div>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               <div className="flex justify-between">
