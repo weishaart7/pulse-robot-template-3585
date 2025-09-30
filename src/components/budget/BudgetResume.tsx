@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { useRevenus, useCharges } from '@/hooks/useBudget';
 import { REVENUS_CATEGORIES, CHARGES_CATEGORIES } from '@/constants/budgetCategories';
 
@@ -145,7 +145,7 @@ export const BudgetResume = () => {
           </CardHeader>
           <CardContent>
             {revenusParCategorie.length > 0 ? (
-              <div className="relative h-80">
+              <div className="relative h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -155,8 +155,8 @@ export const BudgetResume = () => {
                       }))}
                       cx="50%"
                       cy="50%"
-                      innerRadius={95}
-                      outerRadius={110}
+                      innerRadius={70}
+                      outerRadius={85}
                       paddingAngle={2}
                       dataKey="value"
                       stroke="hsl(var(--background))"
@@ -170,16 +170,21 @@ export const BudgetResume = () => {
                       ))}
                     </Pie>
                     <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                    <Legend 
+                      verticalAlign="bottom" 
+                      height={36}
+                      wrapperStyle={{ fontSize: '12px' }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
                 
                 {/* Valeur totale au centre */}
-                <div className="absolute inset-0 flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ paddingBottom: '36px' }}>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-foreground">
+                    <div className="text-xl font-bold text-foreground">
                       {formatCurrency(totalRevenusCat)}
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-xs text-muted-foreground">
                       Total revenus
                     </div>
                   </div>
@@ -203,7 +208,7 @@ export const BudgetResume = () => {
           </CardHeader>
           <CardContent>
             {chargesParCategorie.length > 0 ? (
-              <div className="relative h-80">
+              <div className="relative h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -213,8 +218,8 @@ export const BudgetResume = () => {
                       }))}
                       cx="50%"
                       cy="50%"
-                      innerRadius={95}
-                      outerRadius={110}
+                      innerRadius={70}
+                      outerRadius={85}
                       paddingAngle={2}
                       dataKey="value"
                       stroke="hsl(var(--background))"
@@ -228,16 +233,21 @@ export const BudgetResume = () => {
                       ))}
                     </Pie>
                     <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                    <Legend 
+                      verticalAlign="bottom" 
+                      height={36}
+                      wrapperStyle={{ fontSize: '12px' }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
                 
                 {/* Valeur totale au centre */}
-                <div className="absolute inset-0 flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ paddingBottom: '36px' }}>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-foreground">
+                    <div className="text-xl font-bold text-foreground">
                       {formatCurrency(totalChargesCat)}
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-xs text-muted-foreground">
                       Total charges
                     </div>
                   </div>
