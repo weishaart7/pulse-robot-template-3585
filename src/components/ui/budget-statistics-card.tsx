@@ -35,7 +35,7 @@ export default function BudgetStatisticsCard({
     <Card className="w-full">
       <CardHeader className="border-0 min-h-auto py-5">
         <CardTitle className="flex items-center gap-2.5">
-          <DollarSign className="w-5 h-5 text-primary" />
+          <DollarSign className="w-5 h-5" style={{ color: '#c2f94f' }} />
           <span className="text-sm font-semibold text-foreground">Revenu disponible</span>
         </CardTitle>
         <CardToolbar>
@@ -76,12 +76,13 @@ export default function BudgetStatisticsCard({
               key={i}
               className={cn(
                 `inline-block w-3 h-4 rounded-sm border transition-colors`,
-                i < filledBars 
-                  ? difference >= 0 
-                    ? 'bg-primary border-primary' 
-                    : 'bg-destructive border-destructive'
-                  : 'bg-muted border-muted',
+                i >= filledBars && 'bg-muted border-muted'
               )}
+              style={i < filledBars ? (
+                difference >= 0 
+                  ? { backgroundColor: '#c2f94f', borderColor: '#c2f94f' }
+                  : { backgroundColor: 'hsl(var(--destructive))', borderColor: 'hsl(var(--destructive))' }
+              ) : undefined}
             />
           ))}
         </div>
