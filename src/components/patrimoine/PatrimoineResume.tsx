@@ -35,28 +35,23 @@ export const PatrimoineResume = () => {
 
   return (
     <div className="space-y-6">
-      {/* Carte Graphique */}
+      {/* Carte Répartition avec graphique et synthèse */}
       <Card>
         <CardHeader>
           <CardTitle>Répartition du patrimoine</CardTitle>
         </CardHeader>
         <CardContent>
-          <PatrimoineChart 
-            assets={assets} 
-            selectedCategory={null}
-          />
-        </CardContent>
-      </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Graphique à gauche */}
+            <div className="flex items-center justify-center">
+              <PatrimoineChart 
+                assets={assets} 
+                selectedCategory={null}
+              />
+            </div>
 
-      {/* Ligne avec deux cartes côte à côte */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Carte Synthèse financière */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Synthèse financière</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+            {/* Synthèse à droite */}
+            <div className="flex flex-col justify-center space-y-4">
               <div className="flex items-start gap-4 p-4 rounded-lg border bg-card">
                 <div className="p-2 rounded-lg bg-green-100">
                   <TrendingUp className="h-5 w-5 text-green-600" />
@@ -93,13 +88,40 @@ export const PatrimoineResume = () => {
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </CardContent>
+      </Card>
 
+      {/* Ligne avec trois cartes */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Carte Patrimoine par tête */}
         <Card>
           <CardHeader>
             <CardTitle>Patrimoine par tête</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground text-center py-8">
+              Contenu à venir
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Carte vide 1 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Carte 2</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground text-center py-8">
+              Contenu à venir
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Carte vide 2 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Carte 3</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground text-center py-8">
