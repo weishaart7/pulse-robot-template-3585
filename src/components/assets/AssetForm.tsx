@@ -252,7 +252,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                         <FormLabel>Mode de détention</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger size="lg">
                               <SelectValue placeholder="Choisir un mode de détention" />
                             </SelectTrigger>
                           </FormControl>
