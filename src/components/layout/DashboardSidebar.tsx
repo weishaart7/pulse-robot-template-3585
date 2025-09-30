@@ -54,7 +54,7 @@ const menuItems = [{
   href: '/dashboard/strategies',
   icon: BarChart3
 }, {
-  label: 'Mon agenda',
+  label: 'Agenda',
   value: 'agenda',
   href: '/dashboard/agenda',
   icon: Calendar
