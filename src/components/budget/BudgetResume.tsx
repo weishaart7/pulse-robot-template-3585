@@ -174,7 +174,8 @@ export const BudgetResume = () => {
                     </Pie>
                     <Tooltip formatter={(value: number) => formatCurrency(value)} />
                     <Legend verticalAlign="bottom" height={36} wrapperStyle={{
-                  fontSize: '12px'
+                  fontSize: '12px',
+                  color: 'hsl(var(--foreground))'
                 }} />
                   </PieChart>
                 </ResponsiveContainer>
@@ -218,7 +219,8 @@ export const BudgetResume = () => {
                     </Pie>
                     <Tooltip formatter={(value: number) => formatCurrency(value)} />
                     <Legend verticalAlign="bottom" height={36} wrapperStyle={{
-                  fontSize: '12px'
+                  fontSize: '12px',
+                  color: 'hsl(var(--foreground))'
                 }} />
                   </PieChart>
                 </ResponsiveContainer>
