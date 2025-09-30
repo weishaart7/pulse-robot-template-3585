@@ -35,52 +35,6 @@ export const PatrimoineResume = () => {
 
   return (
     <div className="space-y-6">
-      {/* Carte Synthèse financière */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Synthèse financière</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-start gap-4 p-4 rounded-lg border bg-card">
-              <div className="p-2 rounded-lg bg-green-100">
-                <TrendingUp className="h-5 w-5 text-green-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Actifs</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {formatCurrency(financialSummary.totalActifs)}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4 p-4 rounded-lg border bg-card">
-              <div className="p-2 rounded-lg bg-red-100">
-                <TrendingDown className="h-5 w-5 text-red-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Passifs</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {formatCurrency(financialSummary.totalPassifs)}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4 p-4 rounded-lg border bg-card">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Wallet className="h-5 w-5 text-primary" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Patrimoine net</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {formatCurrency(financialSummary.patrimoineNet)}
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Carte Graphique */}
       <Card>
         <CardHeader>
@@ -94,17 +48,66 @@ export const PatrimoineResume = () => {
         </CardContent>
       </Card>
 
-      {/* Carte Patrimoine par tête */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Patrimoine par tête</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-center py-8">
-            Contenu à venir
-          </p>
-        </CardContent>
-      </Card>
+      {/* Ligne avec deux cartes côte à côte */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Carte Synthèse financière */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Synthèse financière</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-start gap-4 p-4 rounded-lg border bg-card">
+                <div className="p-2 rounded-lg bg-green-100">
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Actifs</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {formatCurrency(financialSummary.totalActifs)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4 p-4 rounded-lg border bg-card">
+                <div className="p-2 rounded-lg bg-red-100">
+                  <TrendingDown className="h-5 w-5 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Passifs</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {formatCurrency(financialSummary.totalPassifs)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4 p-4 rounded-lg border bg-card">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Wallet className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Patrimoine net</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {formatCurrency(financialSummary.patrimoineNet)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Carte Patrimoine par tête */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Patrimoine par tête</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground text-center py-8">
+              Contenu à venir
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
