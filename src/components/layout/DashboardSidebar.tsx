@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, Building2, Building, PiggyBank, Calculator, DollarSign, FileText, TrendingUp, ChevronDown, BarChart3, BookOpen, Sparkles } from 'lucide-react';
+import { Home, Users, Building2, Building, PiggyBank, Calculator, DollarSign, FileText, TrendingUp, ChevronDown, BarChart3, BookOpen, Sparkles, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 const menuItems = [{
@@ -53,6 +53,11 @@ const menuItems = [{
   value: 'strategies',
   href: '/dashboard/strategies',
   icon: BarChart3
+}, {
+  label: 'Mon agenda',
+  value: 'agenda',
+  href: '/dashboard/agenda',
+  icon: Calendar
 }];
 export function DashboardSidebar() {
   const location = useLocation();
@@ -109,7 +114,7 @@ export function DashboardSidebar() {
           <Separator className="bg-gray-200 h-px" />
         </div>
 
-        {/* Stratégies */}
+        {/* Stratégies et Mon agenda */}
         {menuItems.slice(9).map(item => {
           const Icon = item.icon;
           const isActive = currentValue === item.value;
