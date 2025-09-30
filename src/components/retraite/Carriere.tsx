@@ -11,6 +11,7 @@ export const Carriere = () => {
   const [trimestresRequis] = useState<number>(172); // Valeur par défaut
   const [pensionBaseBrute, setPensionBaseBrute] = useState<number>(0);
   const [decoteSurcote, setDecoteSurcote] = useState<number>(0);
+  const [ageTauxPlein, setAgeTauxPlein] = useState<string>('');
 
   // Chargement des données depuis Supabase
   useEffect(() => {
@@ -34,6 +35,17 @@ export const Carriere = () => {
       return () => clearTimeout(timer);
     }
   }, [salaireAnnuelMoyen, updateRetraiteData, loading]);
+
+  // Sauvegarde automatique des trimestres
+  useEffect(() => {
+    const trimValides = parseInt(trimestresValides);
+    if (trimValides && trimValides > 0 && !loading) {
+      const timer = setTimeout(() => {
+        updateRetraiteData({ trimestres_valides: trimValides });
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [trimestresValides, updateRetraiteData, loading]);
 
   // Calcul de la pension de base brute
   useEffect(() => {
@@ -67,6 +79,18 @@ export const Carriere = () => {
     }
   }, [trimestresValides, trimestresRequis]);
 
+  // Calcul de l'âge du taux plein
+  useEffect(() => {
+    const trimValides = parseInt(trimestresValides) || 0;
+    
+    if (trimValides >= trimestresRequis) {
+      setAgeTauxPlein('Taux plein atteint avec les trimestres validés');
+    } else {
+      // Âge automatique à 67 ans (calculable avec date de naissance depuis fiche client)
+      setAgeTauxPlein('67 ans (âge automatique du taux plein)');
+    }
+  }, [trimestresValides, trimestresRequis]);
+
   return (
     <div className="space-y-6">
       <Card>
@@ -88,6 +112,87 @@ export const Carriere = () => {
                 onChange={(e) => setSalaireAnnuelMoyen(e.target.value)}
               />
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Gestion des trimestres</CardTitle>
+          <CardDescription>
+            Suivez vos trimestres validés et calculez l'âge du taux plein
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="trimestres-valides">Trimestres validés</Label>
+              <Input
+                id="trimestres-valides"
+                type="number"
+                placeholder="Ex: 160"
+                value={trimestresValides}
+                onChange={(e) => setTrimestresValides(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="trimestres-requis">Trimestres requis</Label>
+              <Input
+                id="trimestres-requis"
+                type="number"
+                value={trimestresRequis}
+                disabled
+                className="bg-muted"
+              />
+              <p className="text-sm text-muted-foreground">
+                Valeur fixée selon votre date de naissance
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <Label>Âge du taux plein</Label>
+              <div className="text-lg font-semibold text-primary mt-2">
+                {ageTauxPlein}
+              </div>
+            </div>
+
+            {trimestresValides && (
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-primary">
+                    {trimestresValides}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Trimestres validés
+                  </div>
+                </div>
+
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold">
+                    {trimestresRequis}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Trimestres requis
+                  </div>
+                </div>
+
+                <div className="text-center p-4 border rounded-lg">
+                  <div className={`text-2xl font-bold ${
+                    parseInt(trimestresValides) >= trimestresRequis 
+                      ? 'text-green-600' 
+                      : 'text-orange-600'
+                  }`}>
+                    {Math.max(0, trimestresRequis - parseInt(trimestresValides))}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Trimestres manquants
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
