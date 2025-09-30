@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { useRevenus, useCharges } from '@/hooks/useBudget';
 import { REVENUS_CATEGORIES, CHARGES_CATEGORIES } from '@/constants/budgetCategories';
+import { SlidingNumber } from '@/components/ui/sliding-number';
 export const BudgetResume = () => {
   const {
     revenus,
@@ -110,8 +111,10 @@ export const BudgetResume = () => {
             <CardTitle className="text-base font-medium text-muted-foreground">Solde mensuel annualisé</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className={`text-2xl font-bold ${soldeMensuel >= 0 ? 'text-primary' : 'text-destructive'}`}>
-              {soldeMensuel >= 0 ? '+' : ''}{soldeMensuel.toLocaleString('fr-FR')} €
+            <div className={`text-2xl font-bold flex items-center gap-1 ${soldeMensuel >= 0 ? 'text-primary' : 'text-destructive'}`}>
+              {soldeMensuel >= 0 ? '+' : ''}
+              <SlidingNumber value={soldeMensuel} />
+              <span className="ml-1">€</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Revenus - Dépenses
@@ -126,8 +129,9 @@ export const BudgetResume = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className={`text-2xl font-bold ${tauxEndettement <= 33 ? 'text-primary' : tauxEndettement <= 40 ? 'text-warning' : 'text-destructive'}`}>
-              {tauxEndettement.toFixed(1)}%
+            <div className={`text-2xl font-bold flex items-center gap-1 ${tauxEndettement <= 33 ? 'text-primary' : tauxEndettement <= 40 ? 'text-warning' : 'text-destructive'}`}>
+              <SlidingNumber value={parseFloat(tauxEndettement.toFixed(1))} />
+              <span>%</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {mensualitesCredits.toLocaleString('fr-FR')} € / {totalRevenus.toLocaleString('fr-FR')} €
@@ -142,8 +146,9 @@ export const BudgetResume = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className={`text-2xl font-bold ${capaciteEndettement >= 0 ? 'text-primary' : 'text-destructive'}`}>
-              {capaciteEndettement.toLocaleString('fr-FR')} €
+            <div className={`text-2xl font-bold flex items-center gap-1 ${capaciteEndettement >= 0 ? 'text-primary' : 'text-destructive'}`}>
+              <SlidingNumber value={capaciteEndettement} />
+              <span className="ml-1">€</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Maximum à 35% des revenus
