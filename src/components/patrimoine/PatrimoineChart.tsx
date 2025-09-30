@@ -9,13 +9,13 @@ interface PatrimoineChartProps {
 }
 
 const CATEGORY_COLORS = {
-  'immobiliers': '#3B82F6', // Bleu moderne
-  'financiers liquides': '#10B981', // Vert émeraude
-  'financiers investis': '#8B5CF6', // Violet
-  'retraite et prévoyance': '#F59E0B', // Orange
-  'mobiliers corporels': '#EF4444', // Rouge
-  'professionnels': '#06B6D4', // Cyan
-  'autres': '#6B7280' // Gris neutre
+  'immobiliers': '#05E8A4', // Actifs immobiliers
+  'financiers liquides': '#314A46', // Épargne bancaire / liquidités
+  'financiers investis': '#89FC00', // Valeurs mobilières et placements financiers
+  'retraite et prévoyance': '#7B0700', // Épargne retraite et prévoyance
+  'mobiliers corporels': '#2609D6', // Actifs mobiliers corporels
+  'professionnels': '#D5B7FF', // Actifs professionnels
+  'autres': '#FF8B55' // Épargne salariale
 };
 
 

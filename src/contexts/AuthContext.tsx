@@ -40,30 +40,83 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         if (isDev) console.log('🔐 Auth state change:', event, session ? 'session exists' : 'no session');
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
         
-        // Handle specific auth events without exposing sensitive data
-        if (event === 'SIGNED_OUT') {
+        // Handle token expiration and refresh
+        if (event === 'TOKEN_REFRESHED' && session) {
+          if (isDev) console.log('🔐 Token successfully refreshed');
+          setSession(session);
+          setUser(session.user);
+        } else if (event === 'SIGNED_OUT') {
           if (isDev) console.log('🔐 User signed out');
-        } else if (event === 'TOKEN_REFRESHED') {
-          if (isDev) console.log('🔐 Token refreshed');
+          setSession(null);
+          setUser(null);
+        } else if (session) {
+          // Validate session token
+          const now = Math.floor(Date.now() / 1000);
+          const expiresAt = session.expires_at || 0;
+          
+          if (expiresAt < now) {
+            if (isDev) console.log('🔐 Session expired, attempting refresh...');
+            // Token is expired, try to refresh
+            const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession();
+            if (error) {
+              console.error('🔐 Failed to refresh session:', error.message);
+              setSession(null);
+              setUser(null);
+            } else if (refreshedSession) {
+              if (isDev) console.log('🔐 Session refreshed successfully');
+              setSession(refreshedSession);
+              setUser(refreshedSession.user);
+            }
+          } else {
+            setSession(session);
+            setUser(session.user);
+          }
+        } else {
+          setSession(null);
+          setUser(null);
         }
+        
+        setLoading(false);
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
+    // THEN check for existing session with validation
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (error) {
-        console.error('🔐 Error getting session:', error.message); // Only log error message, not full error object
-      } else if (isDev) {
-        console.log('🔐 Initial session check:', session ? 'session exists' : 'no session');
+        console.error('🔐 Error getting session:', error.message);
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
       }
-      setSession(session);
-      setUser(session?.user ?? null);
+      
+      if (session) {
+        // Validate token expiration
+        const now = Math.floor(Date.now() / 1000);
+        const expiresAt = session.expires_at || 0;
+        
+        if (expiresAt < now) {
+          if (isDev) console.log('🔐 Initial session expired, refreshing...');
+          const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError) {
+            console.error('🔐 Failed to refresh initial session:', refreshError.message);
+            setSession(null);
+            setUser(null);
+          } else if (refreshedSession) {
+            if (isDev) console.log('🔐 Initial session refreshed successfully');
+            setSession(refreshedSession);
+            setUser(refreshedSession.user);
+          }
+        } else {
+          if (isDev) console.log('🔐 Initial session valid');
+          setSession(session);
+          setUser(session.user);
+        }
+      }
+      
       setLoading(false);
     });
 
