@@ -76,9 +76,9 @@ export function DashboardSidebar() {
   const toggleGroup = (groupId: string) => {
     setExpandedGroups(prev => prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId]);
   };
-  return <div className="w-64 bg-white flex flex-col">
+  return <div className="w-64 flex flex-col" style={{ backgroundColor: '#640311' }}>
       {/* Logo */}
-      <div className="px-3 py-4 mx-[19px]">
+      <div className="px-3 py-4 mx-[19px]" style={{ backgroundColor: '#640311' }}>
         <img src="/lovable-uploads/3f46b218-16fb-43cf-8206-7af4be7cbfd0.png" alt="Merislabs Logo" className="h-7 w-auto object-contain" />
       </div>
 
@@ -88,7 +88,7 @@ export function DashboardSidebar() {
         {menuItems.slice(0, 1).map(item => {
           const Icon = item.icon;
           const isActive = currentValue === item.value;
-          return <button key={item.value} onClick={() => handleNavigation(item.href)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive ? "bg-gray-100 text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900")}>
+          return <button key={item.value} onClick={() => handleNavigation(item.href)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive ? "bg-[#FF002F]/20 font-medium" : "hover:bg-[#FF002F]/10")} style={{ color: '#FF002F' }}>
                 <Icon className="h-4 w-4 flex-shrink-0" />
                 <span className="truncate">{item.label}</span>
               </button>;
@@ -96,14 +96,14 @@ export function DashboardSidebar() {
         
         {/* Séparateur après Vue d'ensemble */}
         <div className="py-2 px-4">
-          <Separator className="bg-gray-200 h-px" />
+          <Separator className="h-px" style={{ backgroundColor: '#FF002F', opacity: 0.3 }} />
         </div>
 
         {/* Menu principal (Famille à Transmission) */}
         {menuItems.slice(1, 9).map(item => {
           const Icon = item.icon;
           const isActive = currentValue === item.value;
-          return <button key={item.value} onClick={() => handleNavigation(item.href)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive ? "bg-gray-100 text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900")}>
+          return <button key={item.value} onClick={() => handleNavigation(item.href)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive ? "bg-[#FF002F]/20 font-medium" : "hover:bg-[#FF002F]/10")} style={{ color: '#FF002F' }}>
                 <Icon className="h-4 w-4 flex-shrink-0" />
                 <span className="truncate">{item.label}</span>
               </button>;
@@ -111,14 +111,14 @@ export function DashboardSidebar() {
 
         {/* Séparateur avant Stratégies */}
         <div className="py-2 px-4">
-          <Separator className="bg-gray-200 h-px" />
+          <Separator className="h-px" style={{ backgroundColor: '#FF002F', opacity: 0.3 }} />
         </div>
 
         {/* Stratégies et Mon agenda */}
         {menuItems.slice(9).map(item => {
           const Icon = item.icon;
           const isActive = currentValue === item.value;
-          return <button key={item.value} onClick={() => handleNavigation(item.href)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive ? "bg-gray-100 text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900")}>
+          return <button key={item.value} onClick={() => handleNavigation(item.href)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive ? "bg-[#FF002F]/20 font-medium" : "hover:bg-[#FF002F]/10")} style={{ color: '#FF002F' }}>
                 <Icon className="h-4 w-4 flex-shrink-0" />
                 <span className="truncate">{item.label}</span>
               </button>;
@@ -127,11 +127,11 @@ export function DashboardSidebar() {
 
       {/* Sections du bas */}
       <div className="p-4 space-y-1">
-        <button onClick={() => handleNavigation('/dashboard/blog')} className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900">
+        <button onClick={() => handleNavigation('/dashboard/blog')} className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left hover:bg-[#FF002F]/10" style={{ color: '#FF002F' }}>
           <BookOpen className="h-4 w-4 flex-shrink-0" />
           <span className="truncate">Blog</span>
         </button>
-        <button onClick={() => handleNavigation('/nouveautes')} className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900">
+        <button onClick={() => handleNavigation('/nouveautes')} className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left hover:bg-[#FF002F]/10" style={{ color: '#FF002F' }}>
           <Sparkles className="h-4 w-4 flex-shrink-0" />
           <span className="truncate">Nouveautés</span>
         </button>

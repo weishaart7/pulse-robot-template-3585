@@ -15,20 +15,20 @@ export function DashboardHeader() {
   const handleLogout = () => {
     logout();
   };
-  return <header className="h-16 bg-background flex items-center justify-between px-6 my-[5px]">
+  return <header className="h-16 flex items-center justify-between px-6 my-[5px]" style={{ backgroundColor: '#640311' }}>
       <SearchBar />
       
       <div className="flex items-center gap-3">
         <div className="relative">
           <GlowEffect colors={['#FF5733', '#33FF57', '#3357FF', '#F1C40F']} mode="colorShift" blur="soft" duration={3} scale={0.9} />
-          <button onClick={() => navigate('/investment')} className="relative inline-flex items-center gap-1 rounded-md bg-zinc-950 px-2.5 py-1.5 text-sm text-zinc-50 outline outline-1 outline-[#fff2f21f] hover:bg-zinc-800 transition-colors">
+          <button onClick={() => navigate('/investment')} className="relative inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm outline outline-1 outline-[#FF002F]/20 hover:bg-[#FF002F]/10 transition-colors" style={{ backgroundColor: '#640311', color: '#FF002F' }}>
             Accéder à Imeris Invest
           </button>
         </div>
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="icon" variant="outline" aria-label="Menu utilisateur">
+            <Button size="icon" variant="outline" aria-label="Menu utilisateur" className="border-[#FF002F]/30 hover:bg-[#FF002F]/10" style={{ color: '#FF002F' }}>
               <CircleUserRound size={16} strokeWidth={2} aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
