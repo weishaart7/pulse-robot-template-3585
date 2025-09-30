@@ -33,20 +33,6 @@ const Dashboard = () => {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card className="border-0">
           <CardHeader>
-            <CardTitle className="text-xl">Famille</CardTitle>
-            <CardDescription>
-              Gérez les informations de votre famille
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Contenu à venir...
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0">
-          <CardHeader>
             <CardTitle className="text-xl">Patrimoine</CardTitle>
             <CardDescription>
               Suivez l'évolution de votre patrimoine
@@ -73,6 +59,48 @@ const Dashboard = () => {
               revenusCount={revenus.length}
               chargesCount={charges.length}
             />
+          </CardContent>
+        </Card>
+        
+        <Card className="border-0">
+          <CardHeader>
+            <CardTitle className="text-xl">Fiscalité</CardTitle>
+            <CardDescription>
+              Optimisez votre situation fiscale
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Contenu à venir...
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-0">
+          <CardHeader>
+            <CardTitle className="text-xl">Transmission</CardTitle>
+            <CardDescription>
+              Préparez la transmission de votre patrimoine
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Contenu à venir...
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-0">
+          <CardHeader>
+            <CardTitle className="text-xl">Retraite</CardTitle>
+            <CardDescription>
+              Anticipez votre retraite sereinement
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Contenu à venir...
+            </p>
           </CardContent>
         </Card>
       </div>
