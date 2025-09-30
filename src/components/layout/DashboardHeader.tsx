@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { CircleUserRound, Settings, Gift, CreditCard, LogOut } from 'lucide-react';
+import { CircleUserRound, Settings, Gift, CreditCard, LogOut, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GlowEffect } from '@/components/ui/glow-effect';
 import { SearchBar } from './SearchBar';
@@ -15,20 +15,21 @@ export function DashboardHeader() {
   const handleLogout = () => {
     logout();
   };
-  return <header className="h-16 flex items-center justify-between px-6 my-[5px]" style={{ backgroundColor: '#640311' }}>
+  return <header className="h-16 flex items-center justify-between px-6 shadow-md" style={{ backgroundColor: '#640311' }}>
       <SearchBar />
       
       <div className="flex items-center gap-3">
         <div className="relative">
-          <GlowEffect colors={['#FF5733', '#33FF57', '#3357FF', '#F1C40F']} mode="colorShift" blur="soft" duration={3} scale={0.9} />
-          <button onClick={() => navigate('/investment')} className="relative inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm outline outline-1 outline-[#FF002F]/20 hover:bg-[#FF002F]/10 transition-colors" style={{ backgroundColor: '#640311', color: '#FF002F' }}>
-            Accéder à Imeris Invest
+          <GlowEffect colors={['#FF002F', '#FF4060', '#FF0040', '#FF1A40']} mode="colorShift" blur="soft" duration={3} scale={0.9} />
+          <button onClick={() => navigate('/investment')} className="relative inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium outline outline-1 outline-[#FF002F]/30 hover:bg-[#FF002F]/10 hover:outline-[#FF002F]/50 transition-all duration-200 shadow-sm" style={{ backgroundColor: 'rgba(100, 3, 17, 0.5)', color: '#FF002F' }}>
+            <TrendingUp className="h-4 w-4" />
+            <span>Accéder à Imeris Invest</span>
           </button>
         </div>
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="icon" variant="outline" aria-label="Menu utilisateur" className="border-[#FF002F]/30 hover:bg-[#FF002F]/10" style={{ color: '#FF002F' }}>
+            <Button size="icon" variant="outline" aria-label="Menu utilisateur" className="border-[#FF002F]/30 hover:bg-[#FF002F]/10 hover:border-[#FF002F]/50 transition-all duration-200 shadow-sm" style={{ backgroundColor: 'rgba(100, 3, 17, 0.3)', color: '#FF002F' }}>
               <CircleUserRound size={16} strokeWidth={2} aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>

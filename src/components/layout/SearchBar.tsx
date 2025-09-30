@@ -138,11 +138,11 @@ export function SearchBar() {
   };
   return <div ref={searchRef} className="relative max-w-[400px]">
       <div className="relative">
-        <Input placeholder="Rechercher une section..." type="search" value={query} onChange={e => setQuery(e.target.value)} className="peer pe-9 ps-9 mx-0 px-0 py-[22px] border-[#FF002F]/30 placeholder:text-[#FF002F]/60 focus:border-[#FF002F]" style={{ backgroundColor: '#640311', color: '#FF002F' }} />
-        <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center justify-center ps-3 peer-disabled:opacity-50" style={{ color: '#FF002F' }}>
+        <Input placeholder="Rechercher une section..." type="search" value={query} onChange={e => setQuery(e.target.value)} className="peer pe-9 ps-9 mx-0 px-0 py-[22px] border-[#FF002F]/20 placeholder:text-[#FF002F]/50 focus:border-[#FF002F]/60 focus:ring-2 focus:ring-[#FF002F]/20 transition-all duration-200 rounded-lg shadow-sm" style={{ backgroundColor: 'rgba(100, 3, 17, 0.5)', color: '#FF002F' }} />
+        <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center justify-center ps-3 peer-disabled:opacity-50 transition-colors duration-200" style={{ color: 'rgba(255, 0, 47, 0.7)' }}>
           <Search size={16} strokeWidth={2} />
         </div>
-        <button className="absolute inset-y-0 end-0 flex h-full w-9 items-center justify-center rounded-e-lg outline-offset-2 transition-colors hover:opacity-80 focus:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50" aria-label="Submit search" type="submit" style={{ color: '#FF002F' }}>
+        <button className="absolute inset-y-0 end-0 flex h-full w-9 items-center justify-center rounded-e-lg outline-offset-2 transition-all duration-200 hover:opacity-80 hover:scale-110 focus:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50" aria-label="Submit search" type="submit" style={{ color: 'rgba(255, 0, 47, 0.8)' }}>
           <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
         </button>
       </div>
