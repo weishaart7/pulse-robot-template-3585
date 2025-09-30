@@ -14,7 +14,7 @@ const Dashboard = () => {
 
   return (
     <div className="p-6">
-      <div className="mb-6 bg-card rounded-lg p-6">
+      <div className="mb-6 bg-card rounded-lg p-6 border border-gray-200">
         <div className="flex justify-between items-start">
           <h2 className="text-base text-foreground/70 font-medium">Bonjour {familyProfile?.prenom || '(Prénom)'}.</h2>
           
