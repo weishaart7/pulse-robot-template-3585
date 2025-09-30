@@ -99,6 +99,7 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
       );
 
       if (success) {
+        form.reset();
         onCancel(); // Close form on success
       }
     } finally {
@@ -146,6 +147,7 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
         commentaire: "",
       });
       setIsLibellePrefilled(false);
+      setIsSubmitting(false);
     } else if (open && revenu) {
       // Charger les données existantes pour modification
       form.reset({
@@ -159,11 +161,16 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
         commentaire: revenu.commentaire || "",
       });
       setIsLibellePrefilled(false);
+      setIsSubmitting(false);
+    } else if (!open) {
+      // Nettoyer complètement quand le Dialog se ferme
+      setIsSubmitting(false);
+      setIsLibellePrefilled(false);
     }
   }, [open, revenu, form]);
 
   return (
-    <Dialog open={open} onOpenChange={onCancel}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()} modal={true}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{revenu ? 'Modifier le revenu' : 'Ajouter un revenu'}</DialogTitle>

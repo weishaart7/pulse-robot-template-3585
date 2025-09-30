@@ -107,6 +107,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
         commentaire: "",
       });
       setIsLibellePrefilled(false);
+      setIsSubmitting(false);
     } else if (open && charge) {
       // Charger les données existantes pour modification
       form.reset({
@@ -119,6 +120,11 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
         montant: charge.montant?.toString() || "",
         commentaire: charge.commentaire || "",
       });
+      setIsLibellePrefilled(false);
+      setIsSubmitting(false);
+    } else if (!open) {
+      // Nettoyer complètement quand le Dialog se ferme
+      setIsSubmitting(false);
       setIsLibellePrefilled(false);
     }
   }, [open, charge, form]);
@@ -143,6 +149,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
       );
 
       if (success) {
+        form.reset();
         onCancel(); // Close form on success
       }
     } finally {
@@ -159,7 +166,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
   const natureOptions = availableNatures;
 
   return (
-    <Dialog open={open} onOpenChange={onCancel}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()} modal={true}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{charge ? 'Modifier la charge' : 'Ajouter une charge'}</DialogTitle>
