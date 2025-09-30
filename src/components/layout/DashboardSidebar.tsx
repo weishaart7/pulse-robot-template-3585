@@ -88,7 +88,10 @@ export function DashboardSidebar() {
         {menuItems.slice(0, 1).map(item => {
           const Icon = item.icon;
           const isActive = currentValue === item.value;
-          return <button key={item.value} onClick={() => handleNavigation(item.href)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive ? "bg-gray-100 text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900")}>
+          return <button key={item.value} onClick={() => handleNavigation(item.href)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive ? "font-medium" : "hover:bg-[#e5faa3]")} style={{
+                backgroundColor: isActive ? '#c2f94f' : 'transparent',
+                color: '#1e3a4a'
+              }}>
                 <Icon className="h-4 w-4 flex-shrink-0" />
                 <span className="truncate">{item.label}</span>
               </button>;
@@ -103,7 +106,10 @@ export function DashboardSidebar() {
         {menuItems.slice(1, 9).map(item => {
           const Icon = item.icon;
           const isActive = currentValue === item.value;
-          return <button key={item.value} onClick={() => handleNavigation(item.href)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive ? "bg-gray-100 text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900")}>
+          return <button key={item.value} onClick={() => handleNavigation(item.href)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive ? "font-medium" : "hover:bg-[#e5faa3]")} style={{
+                backgroundColor: isActive ? '#c2f94f' : 'transparent',
+                color: '#1e3a4a'
+              }}>
                 <Icon className="h-4 w-4 flex-shrink-0" />
                 <span className="truncate">{item.label}</span>
               </button>;
@@ -118,7 +124,10 @@ export function DashboardSidebar() {
         {menuItems.slice(9).map(item => {
           const Icon = item.icon;
           const isActive = currentValue === item.value;
-          return <button key={item.value} onClick={() => handleNavigation(item.href)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive ? "bg-gray-100 text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900")}>
+          return <button key={item.value} onClick={() => handleNavigation(item.href)} className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left", isActive ? "font-medium" : "hover:bg-[#e5faa3]")} style={{
+                backgroundColor: isActive ? '#c2f94f' : 'transparent',
+                color: '#1e3a4a'
+              }}>
                 <Icon className="h-4 w-4 flex-shrink-0" />
                 <span className="truncate">{item.label}</span>
               </button>;
@@ -127,15 +136,15 @@ export function DashboardSidebar() {
 
       {/* Sections du bas */}
       <div className="p-4 space-y-1">
-        <button onClick={() => handleNavigation('/dashboard/blog')} className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900">
+        <button onClick={() => handleNavigation('/dashboard/blog')} className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left hover:bg-[#e5faa3]" style={{ color: '#1e3a4a' }}>
           <BookOpen className="h-4 w-4 flex-shrink-0" />
           <span className="truncate">Blog</span>
         </button>
-        <button onClick={() => handleNavigation('/nouveautes')} className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900">
+        <button onClick={() => handleNavigation('/nouveautes')} className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left hover:bg-[#e5faa3]" style={{ color: '#1e3a4a' }}>
           <Sparkles className="h-4 w-4 flex-shrink-0" />
           <span className="truncate">Nouveautés</span>
         </button>
-        <button onClick={() => handleNavigation('/suggestion')} className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900">
+        <button onClick={() => handleNavigation('/suggestion')} className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left hover:bg-[#e5faa3]" style={{ color: '#1e3a4a' }}>
           <MessageSquare className="h-4 w-4 flex-shrink-0" />
           <span className="truncate">Faire une suggestion</span>
         </button>
