@@ -111,7 +111,7 @@ export const BudgetResume = () => {
             <CardTitle className="text-base font-medium text-muted-foreground">Solde mensuel annualisé</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className={`text-2xl font-bold flex items-center gap-1 ${soldeMensuel >= 0 ? 'text-primary' : 'text-destructive'}`}>
+            <div className="text-2xl font-bold flex items-center gap-1 text-black">
               {soldeMensuel >= 0 ? '+' : ''}
               <SlidingNumber value={soldeMensuel} />
               <span className="ml-1">€</span>
@@ -129,7 +129,7 @@ export const BudgetResume = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className={`text-2xl font-bold flex items-center gap-1 ${tauxEndettement <= 33 ? 'text-primary' : tauxEndettement <= 40 ? 'text-warning' : 'text-destructive'}`}>
+            <div className="text-2xl font-bold flex items-center gap-1 text-black">
               <SlidingNumber value={parseFloat(tauxEndettement.toFixed(1))} />
               <span>%</span>
             </div>
@@ -146,7 +146,7 @@ export const BudgetResume = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className={`text-2xl font-bold flex items-center gap-1 ${capaciteEndettement >= 0 ? 'text-primary' : 'text-destructive'}`}>
+            <div className="text-2xl font-bold flex items-center gap-1 text-black">
               <SlidingNumber value={capaciteEndettement} />
               <span className="ml-1">€</span>
             </div>
