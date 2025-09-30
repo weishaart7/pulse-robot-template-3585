@@ -14,7 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Separator } from '@/components/ui/separator';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
 import { DateInput } from '@/components/ui/date-input';
 import { SearchableSelect } from '@/components/ui/searchable-select';
@@ -355,86 +354,54 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                 </div>
 
                 {/* Origine de l'actif */}
-                <FormField
-                  control={form.control}
-                  name="origine_actif"
-                  render={() => (
-                    <FormItem>
+                <FormField control={form.control} name="origine_actif" render={({
+                  field
+                }) => <FormItem>
                       <FormLabel>Origine de l'actif</FormLabel>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {ORIGINE_ACTIF_OPTIONS.map((option) => (
-                          <FormField
-                            key={option}
-                            control={form.control}
-                            name="origine_actif"
-                            render={({ field }) => (
-                              <FormItem className="flex items-start space-x-2 space-y-0">
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(option)}
-                                    onCheckedChange={(checked) => {
-                                      const currentValue = field.value || [];
-                                      if (checked) {
-                                        field.onChange([...currentValue, option]);
-                                      } else {
-                                        field.onChange(currentValue.filter((val) => val !== option));
-                                      }
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormLabel className="text-sm font-normal cursor-pointer">
-                                  {option}
-                                </FormLabel>
-                              </FormItem>
-                            )}
-                          />
-                        ))}
-                      </div>
+                      <Select 
+                        onValueChange={(value) => field.onChange([value])} 
+                        value={field.value?.[0] || 'Acquisition à titre onéreuse'}
+                      >
+                        <FormControl>
+                          <SelectTrigger size="lg">
+                            <SelectValue placeholder="Choisir l'origine de l'actif" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {ORIGINE_ACTIF_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    </FormItem>} />
 
                 {/* Situation particulière */}
-                <FormField
-                  control={form.control}
-                  name="situation_particuliere"
-                  render={() => (
-                    <FormItem>
+                <FormField control={form.control} name="situation_particuliere" render={({
+                  field
+                }) => <FormItem>
                       <FormLabel>Situation particulière</FormLabel>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {SITUATION_PARTICULIERE_OPTIONS.map((option) => (
-                          <FormField
-                            key={option}
-                            control={form.control}
-                            name="situation_particuliere"
-                            render={({ field }) => (
-                              <FormItem className="flex items-start space-x-2 space-y-0">
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(option)}
-                                    onCheckedChange={(checked) => {
-                                      const currentValue = field.value || [];
-                                      if (checked) {
-                                        field.onChange([...currentValue, option]);
-                                      } else {
-                                        field.onChange(currentValue.filter((val) => val !== option));
-                                      }
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormLabel className="text-sm font-normal cursor-pointer">
-                                  {option}
-                                </FormLabel>
-                              </FormItem>
-                            )}
-                          />
-                        ))}
-                      </div>
+                      <Select 
+                        onValueChange={(value) => field.onChange([value])} 
+                        value={field.value?.[0] || 'Non'}
+                      >
+                        <FormControl>
+                          <SelectTrigger size="lg">
+                            <SelectValue placeholder="Choisir la situation particulière" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {SITUATION_PARTICULIERE_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    </FormItem>} />
               </div>
 
               <Separator />
