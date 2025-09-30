@@ -53,12 +53,9 @@ const Dashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <BudgetStatisticsCard 
-              totalRevenus={totalRevenus}
-              totalCharges={totalCharges}
-              revenusCount={revenus.length}
-              chargesCount={charges.length}
-            />
+            <p className="text-sm text-muted-foreground">
+              Contenu à venir...
+            </p>
           </CardContent>
         </Card>
         
