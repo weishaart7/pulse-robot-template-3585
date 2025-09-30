@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FullTable } from '@/components/ui/full-table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +31,10 @@ export const BudgetList = ({
   if (loading) {
     return <div>Chargement...</div>;
   }
+
+  const totalRevenus = revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0);
+  const totalCharges = charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
+
   return <div className="space-y-6">
       {/* Liste des revenus */}
       {revenus.length > 0 && <Card>
@@ -38,37 +42,36 @@ export const BudgetList = ({
             <CardTitle>Revenus ({revenus.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <FullTable>
-              <FullTable.Colgroup>
-                <FullTable.Col className="w-[40%]" />
-                <FullTable.Col className="w-[30%]" />
-                <FullTable.Col className="w-[20%]" />
-                <FullTable.Col className="w-[10%]" />
-              </FullTable.Colgroup>
-              <FullTable.Header>
-                <FullTable.Row>
-                  <FullTable.Head>Dénomination</FullTable.Head>
-                  <FullTable.Head>Bénéficiaire</FullTable.Head>
-                  <FullTable.Head>Montant</FullTable.Head>
-                  <FullTable.Head>Actions</FullTable.Head>
-                </FullTable.Row>
-              </FullTable.Header>
-              <FullTable.Body interactive striped>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Dénomination</TableHead>
+                  <TableHead>Bénéficiaire</TableHead>
+                  <TableHead className="text-right">Montant</TableHead>
+                  <TableHead className="text-right">%</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {revenus.map(revenu => (
-                  <FullTable.Row key={revenu.id}>
-                    <FullTable.Cell>
-                      <div className="font-medium">{revenu.libelle}</div>
-                    </FullTable.Cell>
-                    <FullTable.Cell>{revenu.beneficiaire || '-'}</FullTable.Cell>
-                    <FullTable.Cell>
+                  <TableRow key={revenu.id}>
+                    <TableCell className="font-medium">{revenu.libelle}</TableCell>
+                    <TableCell>{revenu.beneficiaire || '-'}</TableCell>
+                    <TableCell className="text-right">
                       {revenu.montant ? 
                         revenu.montant.toLocaleString('fr-FR', {
                           style: 'currency',
                           currency: 'EUR'
                         }) : '-'
                       }
-                    </FullTable.Cell>
-                    <FullTable.Cell>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {totalRevenus > 0 && revenu.montant 
+                        ? ((revenu.montant / totalRevenus) * 100).toFixed(1) + '%'
+                        : '-'
+                      }
+                    </TableCell>
+                    <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -91,25 +94,22 @@ export const BudgetList = ({
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </FullTable.Cell>
-                  </FullTable.Row>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </FullTable.Body>
-              <FullTable.Footer>
-                <FullTable.Row>
-                  <FullTable.Cell className="font-medium text-black dark:text-white" colSpan={2}>
-                    Total
-                  </FullTable.Cell>
-                  <FullTable.Cell className="font-medium text-black dark:text-white">
-                    {revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0).toLocaleString('fr-FR', {
+                <TableRow className="font-bold bg-muted/50">
+                  <TableCell colSpan={2}>Total</TableCell>
+                  <TableCell className="text-right">
+                    {totalRevenus.toLocaleString('fr-FR', {
                       style: 'currency',
                       currency: 'EUR'
                     })}
-                  </FullTable.Cell>
-                  <FullTable.Cell> </FullTable.Cell>
-                </FullTable.Row>
-              </FullTable.Footer>
-            </FullTable>
+                  </TableCell>
+                  <TableCell className="text-right">100%</TableCell>
+                  <TableCell></TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>}
 
@@ -119,37 +119,36 @@ export const BudgetList = ({
             <CardTitle>Charges ({charges.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <FullTable>
-              <FullTable.Colgroup>
-                <FullTable.Col className="w-[40%]" />
-                <FullTable.Col className="w-[30%]" />
-                <FullTable.Col className="w-[20%]" />
-                <FullTable.Col className="w-[10%]" />
-              </FullTable.Colgroup>
-              <FullTable.Header>
-                <FullTable.Row>
-                  <FullTable.Head>Dénomination</FullTable.Head>
-                  <FullTable.Head>Débiteur</FullTable.Head>
-                  <FullTable.Head>Montant</FullTable.Head>
-                  <FullTable.Head>Actions</FullTable.Head>
-                </FullTable.Row>
-              </FullTable.Header>
-              <FullTable.Body interactive striped>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Dénomination</TableHead>
+                  <TableHead>Débiteur</TableHead>
+                  <TableHead className="text-right">Montant</TableHead>
+                  <TableHead className="text-right">%</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {charges.map(charge => (
-                  <FullTable.Row key={charge.id}>
-                    <FullTable.Cell>
-                      <div className="font-medium">{charge.libelle}</div>
-                    </FullTable.Cell>
-                    <FullTable.Cell>{charge.debiteur || '-'}</FullTable.Cell>
-                    <FullTable.Cell>
+                  <TableRow key={charge.id}>
+                    <TableCell className="font-medium">{charge.libelle}</TableCell>
+                    <TableCell>{charge.debiteur || '-'}</TableCell>
+                    <TableCell className="text-right">
                       {charge.montant ? 
                         charge.montant.toLocaleString('fr-FR', {
                           style: 'currency',
                           currency: 'EUR'
                         }) : '-'
                       }
-                    </FullTable.Cell>
-                    <FullTable.Cell>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {totalCharges > 0 && charge.montant 
+                        ? ((charge.montant / totalCharges) * 100).toFixed(1) + '%'
+                        : '-'
+                      }
+                    </TableCell>
+                    <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -172,25 +171,22 @@ export const BudgetList = ({
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </FullTable.Cell>
-                  </FullTable.Row>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </FullTable.Body>
-              <FullTable.Footer>
-                <FullTable.Row>
-                  <FullTable.Cell className="font-medium text-black dark:text-white" colSpan={2}>
-                    Total
-                  </FullTable.Cell>
-                  <FullTable.Cell className="font-medium text-black dark:text-white">
-                    {charges.reduce((sum, charge) => sum + (charge.montant || 0), 0).toLocaleString('fr-FR', {
+                <TableRow className="font-bold bg-muted/50">
+                  <TableCell colSpan={2}>Total</TableCell>
+                  <TableCell className="text-right">
+                    {totalCharges.toLocaleString('fr-FR', {
                       style: 'currency',
                       currency: 'EUR'
                     })}
-                  </FullTable.Cell>
-                  <FullTable.Cell> </FullTable.Cell>
-                </FullTable.Row>
-              </FullTable.Footer>
-            </FullTable>
+                  </TableCell>
+                  <TableCell className="text-right">100%</TableCell>
+                  <TableCell></TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>}
 
