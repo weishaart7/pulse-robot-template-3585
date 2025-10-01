@@ -84,9 +84,10 @@ export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartPro
             verticalAlign="bottom" 
             height={36}
             wrapperStyle={{
-              fontSize: '12px',
-              color: '#000000'
+              fontSize: '12px'
             }}
+            iconType="square"
+            formatter={(value) => <span style={{ color: '#000000' }}>{value}</span>}
           />
         </PieChart>
       </ResponsiveContainer>
