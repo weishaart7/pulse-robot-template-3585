@@ -46,6 +46,8 @@ export const PatrimoineResume = () => {
             <div>
               <PatrimoineChart 
                 assets={assets} 
+                passifs={passifs}
+                emprunts={emprunts}
                 selectedCategory={null}
               />
             </div>

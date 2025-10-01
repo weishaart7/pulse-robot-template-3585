@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus } from 'lucide-react';
+import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 
 interface PatrimoineMainContentProps {
   assets: Asset[];
@@ -22,6 +23,8 @@ export const PatrimoineMainContent = ({
   onAddAsset 
 }: PatrimoineMainContentProps) => {
   const [activeTab, setActiveTab] = useState<'actifs' | 'passifs'>('actifs');
+  const { passifs } = usePassifs();
+  const { emprunts } = useEmprunts();
   
   return (
     <div className="flex-1 p-6 space-y-6">
@@ -46,6 +49,8 @@ export const PatrimoineMainContent = ({
               <div>
                 <PatrimoineChart 
                   assets={assets} 
+                  passifs={passifs}
+                  emprunts={emprunts}
                   selectedCategory={selectedCategory}
                 />
               </div>

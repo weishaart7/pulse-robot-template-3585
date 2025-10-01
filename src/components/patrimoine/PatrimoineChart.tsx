@@ -1,10 +1,13 @@
 import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Asset } from '@/services/assetService';
+import { Passif, Emprunt } from '@/services/passifService';
 import { getAssetCategory } from '@/constants/assetTypes';
 
 interface PatrimoineChartProps {
   assets: Asset[];
+  passifs: Passif[];
+  emprunts: Emprunt[];
   selectedCategory: string | null;
 }
 
@@ -21,9 +24,9 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 
-export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartProps) => {
+export const PatrimoineChart = ({ assets, passifs, emprunts, selectedCategory }: PatrimoineChartProps) => {
   const chartData = useMemo(() => {
-    // Vue par catégorie
+    // Vue par catégorie pour les actifs
     const categoryData = assets.reduce((acc, asset) => {
       const category = getAssetCategory(asset.nature);
       const value = asset.valeur_estimee || 0;
@@ -36,17 +39,42 @@ export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartPro
       return acc;
     }, {} as Record<string, { category: string; value: number; assets: Asset[] }>);
 
-    return Object.values(categoryData)
+    const actifData = Object.values(categoryData)
       .map(item => ({
         name: item.category.charAt(0).toUpperCase() + item.category.slice(1),
         value: item.value,
         color: CATEGORY_COLORS[item.category] || '#FF8B55',
-        assets: item.assets
-      }))
-      .sort((a, b) => b.value - a.value);
-  }, [assets]);
+        assets: item.assets,
+        type: 'actif'
+      }));
 
-  const totalValue = chartData.reduce((sum, item) => sum + item.value, 0);
+    // Ajouter les passifs
+    const totalPassifs = 
+      passifs.reduce((sum, passif) => sum + (passif.montant_du || 0), 0) +
+      emprunts.reduce((sum, emprunt) => sum + (emprunt.capital_restant_du || 0), 0);
+
+    if (totalPassifs > 0) {
+      actifData.push({
+        name: 'Passifs',
+        value: totalPassifs,
+        color: '#EF4444',
+        assets: [],
+        type: 'passif'
+      });
+    }
+
+    return actifData.sort((a, b) => b.value - a.value);
+  }, [assets, passifs, emprunts]);
+
+  const totalActifs = chartData
+    .filter(item => item.type === 'actif')
+    .reduce((sum, item) => sum + item.value, 0);
+  
+  const totalPassifs = chartData
+    .filter(item => item.type === 'passif')
+    .reduce((sum, item) => sum + item.value, 0);
+  
+  const patrimoineNet = totalActifs - totalPassifs;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -98,11 +126,11 @@ export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartPro
         style={{ paddingBottom: '36px' }}
       >
         <div className="text-center">
-          <div className="text-xl font-bold text-foreground">
-            {formatCurrency(totalValue)}
+          <div className="text-xl font-bold text-primary">
+            {formatCurrency(patrimoineNet)}
           </div>
           <div className="text-xs text-muted-foreground">
-            Patrimoine total
+            Patrimoine net
           </div>
         </div>
       </div>
