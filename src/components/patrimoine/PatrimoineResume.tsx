@@ -51,38 +51,38 @@ export const PatrimoineResume = () => {
             </div>
 
             {/* Synthèse à droite */}
-            <div className="flex flex-col justify-center space-y-4">
-              <div className="flex items-start gap-4 p-4 rounded-lg border bg-card">
-                <div className="p-2 rounded-lg bg-green-100">
-                  <TrendingUp className="h-5 w-5 text-green-600" />
+            <div className="flex flex-col justify-center space-y-6">
+              <div className="group flex items-start gap-4 p-6 rounded-xl border bg-gradient-to-br from-green-50 to-transparent hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+                <div className="p-3 rounded-xl bg-green-500 shadow-md group-hover:scale-110 transition-transform duration-300">
+                  <TrendingUp className="h-6 w-6 text-white" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Actifs</p>
-                  <p className="text-2xl font-bold text-foreground">
+                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-1">Actifs</p>
+                  <p className="text-3xl font-bold text-foreground">
                     {formatCurrency(financialSummary.totalActifs)}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-4 p-4 rounded-lg border bg-card">
-                <div className="p-2 rounded-lg bg-red-100">
-                  <TrendingDown className="h-5 w-5 text-red-600" />
+              <div className="group flex items-start gap-4 p-6 rounded-xl border bg-gradient-to-br from-red-50 to-transparent hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+                <div className="p-3 rounded-xl bg-red-500 shadow-md group-hover:scale-110 transition-transform duration-300">
+                  <TrendingDown className="h-6 w-6 text-white" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Passifs</p>
-                  <p className="text-2xl font-bold text-foreground">
+                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-1">Passifs</p>
+                  <p className="text-3xl font-bold text-foreground">
                     {formatCurrency(financialSummary.totalPassifs)}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-4 p-4 rounded-lg border bg-card">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Wallet className="h-5 w-5 text-primary" />
+              <div className="group flex items-start gap-4 p-6 rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent hover:shadow-xl hover:border-primary/40 transition-all duration-300 hover:scale-[1.02]">
+                <div className="p-3 rounded-xl bg-primary shadow-md group-hover:scale-110 transition-transform duration-300">
+                  <Wallet className="h-6 w-6 text-white" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Patrimoine net</p>
-                  <p className="text-2xl font-bold text-foreground">
+                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-1">Patrimoine net</p>
+                  <p className="text-3xl font-bold text-primary">
                     {formatCurrency(financialSummary.patrimoineNet)}
                   </p>
                 </div>
