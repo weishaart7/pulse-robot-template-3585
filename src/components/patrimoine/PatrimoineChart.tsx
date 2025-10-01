@@ -126,7 +126,7 @@ export const PatrimoineChart = ({ assets, passifs, emprunts, selectedCategory }:
         style={{ paddingBottom: '36px' }}
       >
         <div className="text-center">
-          <div className="text-xl font-bold text-primary">
+          <div className="text-xl font-bold text-foreground">
             {formatCurrency(patrimoineNet)}
           </div>
           <div className="text-xs text-muted-foreground">
