@@ -85,7 +85,7 @@ export const PatrimoineChart = ({ assets, selectedCategory }: PatrimoineChartPro
             height={36}
             wrapperStyle={{
               fontSize: '12px',
-              color: 'black'
+              color: '#000000'
             }}
           />
         </PieChart>
