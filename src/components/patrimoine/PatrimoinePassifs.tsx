@@ -5,10 +5,15 @@ import { EmpruntForm } from './EmpruntForm';
 import { PassifForm } from './PassifForm';
 import { Plus, Trash2 } from 'lucide-react';
 import { useEmprunts, usePassifs } from '@/hooks/usePassifs';
+import { PassifDetailsDialog } from './PassifDetailsDialog';
+import { Emprunt, Passif } from '@/services/passifService';
 
 export const PatrimoinePassifs = () => {
   const [showEmpruntForm, setShowEmpruntForm] = useState(false);
   const [showPassifForm, setShowPassifForm] = useState(false);
+  const [selectedPassif, setSelectedPassif] = useState<Emprunt | Passif | null>(null);
+  const [passifType, setPassifType] = useState<'emprunt' | 'passif'>('emprunt');
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const { emprunts, loading: empruntsLoading, deleteEmprunt } = useEmprunts();
   const { passifs, loading: passifsLoading, deletePassif } = usePassifs();
 
@@ -67,7 +72,15 @@ export const PatrimoinePassifs = () => {
             ) : (
               <div className="space-y-2">
                 {emprunts.map((emprunt) => (
-                  <div key={emprunt.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div 
+                    key={emprunt.id} 
+                    className="flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
+                    onClick={() => {
+                      setSelectedPassif(emprunt);
+                      setPassifType('emprunt');
+                      setDetailsOpen(true);
+                    }}
+                  >
                     <div>
                       <p className="font-medium">{emprunt.libelle}</p>
                       <p className="text-sm text-muted-foreground">
@@ -79,7 +92,10 @@ export const PatrimoinePassifs = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => deleteEmprunt(emprunt.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteEmprunt(emprunt.id);
+                      }}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -106,7 +122,15 @@ export const PatrimoinePassifs = () => {
             ) : (
               <div className="space-y-2">
                 {passifs.map((passif) => (
-                  <div key={passif.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div 
+                    key={passif.id} 
+                    className="flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
+                    onClick={() => {
+                      setSelectedPassif(passif);
+                      setPassifType('passif');
+                      setDetailsOpen(true);
+                    }}
+                  >
                     <div>
                       <p className="font-medium">{passif.nature}</p>
                       <p className="text-sm text-muted-foreground">
@@ -116,7 +140,10 @@ export const PatrimoinePassifs = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => deletePassif(passif.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deletePassif(passif.id);
+                      }}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -127,6 +154,13 @@ export const PatrimoinePassifs = () => {
           </CardContent>
         </Card>
       </div>
+
+      <PassifDetailsDialog 
+        passif={selectedPassif}
+        type={passifType}
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+      />
     </div>
   );
 };

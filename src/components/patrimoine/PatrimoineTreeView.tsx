@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
+import { AssetDetailsDialog } from './AssetDetailsDialog';
 
 interface PatrimoineTreeViewProps {
   assets: Asset[];
@@ -20,6 +21,8 @@ interface PatrimoineTreeViewProps {
 
 export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: PatrimoineTreeViewProps) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
 
@@ -78,6 +81,7 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
   };
 
   return (
+    <>
     <FullTable>
       <FullTable.Colgroup>
         <FullTable.Col className="w-[45%]" />
@@ -147,7 +151,14 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
                 const assetWeight = calculateWeight(asset.valeur_estimee || 0);
                 
                 return (
-                  <FullTable.Row key={asset.id} className="border-t border-gray-alpha-400 first:border-t-0">
+                  <FullTable.Row 
+                    key={asset.id} 
+                    className="border-t border-gray-alpha-400 first:border-t-0 cursor-pointer hover:bg-muted/50"
+                    onClick={() => {
+                      setSelectedAsset(asset);
+                      setDetailsOpen(true);
+                    }}
+                  >
                     <FullTable.Cell className="pl-12 bg-background-200 py-0.5">
                       <div>
                         <div className="font-normal text-sm">{asset.denomination || asset.nature}</div>
@@ -178,17 +189,24 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
                               variant="ghost"
                               className="rounded-full shadow-none"
                               aria-label="Open edit menu"
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <MoreHorizontal size={16} strokeWidth={2} aria-hidden="true" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => onAssetEdit(asset)}>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              onAssetEdit(asset);
+                            }}>
                               <Edit className="h-4 w-4 mr-2" />
                               Modifier
                             </DropdownMenuItem>
                             {onAssetDelete && (
-                              <DropdownMenuItem onClick={() => onAssetDelete(asset)}>
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                onAssetDelete(asset);
+                              }}>
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Supprimer
                               </DropdownMenuItem>
@@ -217,5 +235,12 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
         </FullTable.Row>
       </FullTable.Body>
     </FullTable>
+
+    <AssetDetailsDialog 
+      asset={selectedAsset}
+      open={detailsOpen}
+      onOpenChange={setDetailsOpen}
+    />
+    </>
   );
 };

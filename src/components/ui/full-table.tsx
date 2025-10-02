@@ -38,8 +38,8 @@ FullTable.Body = ({ children, striped, interactive, virtualize }: {
   );
 };
 
-FullTable.Row = ({ children, isTotal, className }: { children: React.ReactNode, isTotal?: boolean, className?: string }) => {
-  return <tr className={`[&_td:first-child]:rounded-l-[4px] [&_td:last-child]:rounded-r-[4px] transition-colors ${isTotal ? 'border-t border-t-border/30 [&_td]:pt-5' : ''} ${className || ''}`}>{children}</tr>;
+FullTable.Row = ({ children, isTotal, className, onClick }: { children: React.ReactNode, isTotal?: boolean, className?: string, onClick?: () => void }) => {
+  return <tr className={`[&_td:first-child]:rounded-l-[4px] [&_td:last-child]:rounded-r-[4px] transition-colors ${isTotal ? 'border-t border-t-border/30 [&_td]:pt-5' : ''} ${className || ''}`} onClick={onClick}>{children}</tr>;
 };
 
 FullTable.Head = ({ children }: { children: React.ReactNode }) => {
