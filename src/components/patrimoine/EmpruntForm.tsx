@@ -40,20 +40,25 @@ export const EmpruntForm = ({ emprunt, onCancel, onSubmit }: EmpruntFormProps) =
         const options: string[] = [];
         const familyInfo = { hasPartner: false, userFirstName: '', partnerFirstName: '' };
         
+        // Add user's first name
         if (familyProfile?.prenom) {
           options.push(familyProfile.prenom);
           familyInfo.userFirstName = familyProfile.prenom;
         }
 
-        if (maritalStatus?.statut_couple && 
-            ['marie', 'pacs', 'concubinage'].includes(maritalStatus.statut_couple.toLowerCase())) {
+        // Check if user has partner (married, pacsé or concubinage)
+        const hasPartner = maritalStatus?.statut_couple && 
+            ['Marié(e)', 'Pacsé(e)', 'Concubinage', 'MARIE', 'PACS', 'PACSE', 'CONCUBINAGE'].includes(maritalStatus.statut_couple) &&
+            maritalStatus.prenom_conjoint;
+
+        if (hasPartner) {
+          options.push(maritalStatus.prenom_conjoint);
           familyInfo.hasPartner = true;
-          
-          if (maritalStatus.prenom_conjoint) {
-            options.push(maritalStatus.prenom_conjoint);
-            familyInfo.partnerFirstName = maritalStatus.prenom_conjoint;
-          }
-          
+          familyInfo.partnerFirstName = maritalStatus.prenom_conjoint;
+        }
+
+        // Always add "Le couple" option if there's a partner
+        if (familyInfo.hasPartner) {
           options.push('Le couple');
         }
 
