@@ -101,15 +101,17 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
     <>
     <FullTable variant="categorized">
       <FullTable.Colgroup>
-        <FullTable.Col className="w-[45%]" />
+        <FullTable.Col className="w-[35%]" />
         <FullTable.Col className="w-[15%]" />
         <FullTable.Col className="w-[15%]" />
         <FullTable.Col className="w-[15%]" />
-        <FullTable.Col className="w-[10%]" />
+        <FullTable.Col className="w-[12%]" />
+        <FullTable.Col className="w-[8%]" />
       </FullTable.Colgroup>
       <FullTable.Header>
         <FullTable.Row>
           <FullTable.Head>Nom</FullTable.Head>
+          <FullTable.Head>Détenteur</FullTable.Head>
           <FullTable.Head>Répartition</FullTable.Head>
           <FullTable.Head>Valeur</FullTable.Head>
           <FullTable.Head>+/- value Tout</FullTable.Head>
@@ -148,6 +150,9 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
                   </Button>
                 </FullTable.Cell>
                 <FullTable.Cell>
+                  <span className="text-muted-foreground">—</span>
+                </FullTable.Cell>
+                <FullTable.Cell>
                   <span className="font-semibold">{categoryWeight} %</span>
                 </FullTable.Cell>
                 <FullTable.Cell>
@@ -184,6 +189,9 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
                           )}
                         </div>
                       </div>
+                    </FullTable.Cell>
+                    <FullTable.Cell className="py-2.5">
+                      <span className="text-sm text-muted-foreground">{formatDetenteur(asset.detenteur)}</span>
                     </FullTable.Cell>
                     <FullTable.Cell className="py-2.5">
                       <span className="text-sm text-muted-foreground">{assetWeight} %</span>
@@ -235,7 +243,7 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
         })}
         
         <FullTable.Row isTotal>
-          <FullTable.Cell colSpan={2} className="font-bold text-foreground text-base">
+          <FullTable.Cell colSpan={3} className="font-bold text-foreground text-base">
             Total
           </FullTable.Cell>
           <FullTable.Cell className="font-bold text-foreground text-base">

@@ -71,7 +71,7 @@ FullTable.Head = ({
 }: {
   children: React.ReactNode;
 }) => {
-  return <th className="h-8 px-2 align-middle font-medium first:text-left text-center last:text-right py-[10px]">{children}</th>;
+  return <th className="h-8 px-2 align-middle font-medium text-left py-[10px]">{children}</th>;
 };
 FullTable.Cell = ({
   children,
@@ -82,7 +82,7 @@ FullTable.Cell = ({
   className?: string;
   colSpan?: number;
 }) => {
-  return <td className={`px-2 py-1.5 align-middle last:text-right ${className || ""}`} colSpan={colSpan}>{children}</td>;
+  return <td className={`px-2 py-1.5 align-middle ${className || ""}`} colSpan={colSpan}>{children}</td>;
 };
 FullTable.Footer = ({
   children
