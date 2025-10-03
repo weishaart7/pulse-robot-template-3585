@@ -80,24 +80,36 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
     }
   };
 
+  // Couleurs par catégorie
+  const categoryColors: Record<string, string> = {
+    'IMMOBILIER': 'bg-red-500',
+    'FINANCIER': 'bg-pink-500',
+    'EPARGNE': 'bg-purple-500',
+    'PROFESSIONNEL': 'bg-blue-500',
+    'MOBILIER': 'bg-green-500',
+    'AUTRES': 'bg-orange-500',
+  };
+
+  const getCategoryColor = (category: string) => {
+    return categoryColors[category.toUpperCase()] || 'bg-primary';
+  };
+
   return (
     <>
-    <FullTable>
+    <FullTable variant="categorized">
       <FullTable.Colgroup>
         <FullTable.Col className="w-[45%]" />
-        <FullTable.Col className="w-[12%]" />
-        <FullTable.Col className="w-[6%]" />
+        <FullTable.Col className="w-[15%]" />
+        <FullTable.Col className="w-[15%]" />
+        <FullTable.Col className="w-[15%]" />
         <FullTable.Col className="w-[10%]" />
-        <FullTable.Col className="w-[7%]" />
-        <FullTable.Col className="w-[20%]" />
       </FullTable.Colgroup>
       <FullTable.Header>
         <FullTable.Row>
-          <FullTable.Head>Catégorie / Actif</FullTable.Head>
-          <FullTable.Head>Détenteur</FullTable.Head>
-          <FullTable.Head>Poids</FullTable.Head>
+          <FullTable.Head>Nom</FullTable.Head>
+          <FullTable.Head>Répartition</FullTable.Head>
           <FullTable.Head>Valeur</FullTable.Head>
-          <FullTable.Head>+/- Value</FullTable.Head>
+          <FullTable.Head>+/- value Tout</FullTable.Head>
           <FullTable.Head>Actions</FullTable.Head>
         </FullTable.Row>
       </FullTable.Header>
@@ -116,29 +128,27 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
           return (
             <React.Fragment key={category}>
               {/* Ligne de catégorie */}
-              <FullTable.Row>
+              <FullTable.Row isCategory>
                 <FullTable.Cell>
                   <Button
                     variant="ghost"
-                    className="p-0 h-auto font-normal flex items-center gap-2"
+                    className="p-0 h-auto font-medium flex items-center gap-3 hover:bg-transparent"
                     onClick={() => toggleCategory(category)}
                   >
                     {isExpanded ? (
-                      <ChevronDown className="h-4 w-4" />
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
                     ) : (
-                      <ChevronRight className="h-4 w-4" />
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     )}
-                     {category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()}
+                    <div className={`w-2 h-2 rounded-full ${getCategoryColor(category)}`} />
+                    <span className="text-foreground">{category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()}</span>
                   </Button>
                 </FullTable.Cell>
                 <FullTable.Cell>
-                  {" "}
+                  <span className="font-semibold">{categoryWeight} %</span>
                 </FullTable.Cell>
                 <FullTable.Cell>
-                  {categoryWeight}%
-                </FullTable.Cell>
-                <FullTable.Cell>
-                  {formatCurrency(categoryValue)}
+                  <span className="font-semibold">{formatCurrency(categoryValue)}</span>
                 </FullTable.Cell>
                 <FullTable.Cell>
                   <span className="text-muted-foreground">—</span>
@@ -153,41 +163,41 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
                 return (
                   <FullTable.Row 
                     key={asset.id} 
-                    className="border-t border-gray-alpha-400 first:border-t-0 cursor-pointer hover:bg-muted/50"
+                    className="border-t border-border/30 cursor-pointer hover:bg-muted/30"
                     onClick={() => {
                       setSelectedAsset(asset);
                       setDetailsOpen(true);
                     }}
                   >
-                    <FullTable.Cell className="pl-12 bg-background-200 py-0.5">
-                      <div>
-                        <div className="font-normal text-sm">{asset.denomination || asset.nature}</div>
-                        {asset.etablissement && (
-                          <div className="text-xs text-muted-foreground">
-                            {asset.etablissement}
-                          </div>
-                        )}
+                    <FullTable.Cell className="pl-14 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-1.5 h-1.5 rounded-full ${getCategoryColor(category)} opacity-60`} />
+                        <div className="flex-1">
+                          <div className="font-normal text-sm text-foreground">{asset.denomination || asset.nature}</div>
+                          {asset.etablissement && (
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              {asset.etablissement}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </FullTable.Cell>
-                    <FullTable.Cell className="bg-background-200 py-0.5">
-                      <span className="text-sm">{formatDetenteur(asset.detenteur)}</span>
+                    <FullTable.Cell className="py-2.5">
+                      <span className="text-sm text-muted-foreground">{assetWeight} %</span>
                     </FullTable.Cell>
-                    <FullTable.Cell className="bg-background-200 py-0.5">
-                      <span className="text-sm">{assetWeight}%</span>
+                    <FullTable.Cell className="py-2.5">
+                      <span className="text-sm text-foreground">{asset.valeur_estimee ? formatCurrency(asset.valeur_estimee) : 'Non évalué'}</span>
                     </FullTable.Cell>
-                    <FullTable.Cell className="bg-background-200 py-0.5">
-                      <span className="text-sm">{asset.valeur_estimee ? formatCurrency(asset.valeur_estimee) : 'Non évalué'}</span>
-                    </FullTable.Cell>
-                    <FullTable.Cell className="bg-background-200 py-0.5">
+                    <FullTable.Cell className="py-2.5">
                       <span className="text-muted-foreground text-sm">—</span>
                     </FullTable.Cell>
-                    <FullTable.Cell className="bg-background-200 py-0.5">
+                    <FullTable.Cell className="py-2.5">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="rounded-full shadow-none"
+                              className="rounded-full shadow-none h-8 w-8"
                               aria-label="Open edit menu"
                               onClick={(e) => e.stopPropagation()}
                             >
@@ -222,10 +232,10 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
         })}
         
         <FullTable.Row isTotal>
-          <FullTable.Cell colSpan={3} className="font-semibold text-foreground">
+          <FullTable.Cell colSpan={2} className="font-bold text-foreground text-base">
             Total
           </FullTable.Cell>
-          <FullTable.Cell className="font-semibold text-foreground">
+          <FullTable.Cell className="font-bold text-foreground text-base">
             {formatCurrency(totalValue)}
           </FullTable.Cell>
           <FullTable.Cell className="font-semibold text-foreground">

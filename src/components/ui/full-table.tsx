@@ -1,9 +1,15 @@
 import React from "react";
 
-export const FullTable = ({ children }: { children: React.ReactNode }) => {
+export const FullTable = ({ children, variant = "default" }: { children: React.ReactNode; variant?: "default" | "categorized" }) => {
   return (
-    <div className="w-full overflow-auto min-w-[248px] p-6 rounded-lg relative border border-gray-alpha-400 bg-white">
-      <table className="w-full border-collapse text-sm font-sans text-gray-900">
+    <div className={`w-full overflow-auto min-w-[248px] rounded-lg relative ${
+      variant === "categorized" 
+        ? "bg-card border border-border" 
+        : "p-6 border border-gray-alpha-400 bg-white"
+    }`}>
+      <table className={`w-full border-collapse text-sm font-sans ${
+        variant === "categorized" ? "text-foreground" : "text-gray-900"
+      }`}>
         {children}
       </table>
     </div>
@@ -38,8 +44,8 @@ FullTable.Body = ({ children, striped, interactive, virtualize }: {
   );
 };
 
-FullTable.Row = ({ children, isTotal, className, onClick }: { children: React.ReactNode, isTotal?: boolean, className?: string, onClick?: () => void }) => {
-  return <tr className={`[&_td:first-child]:rounded-l-[4px] [&_td:last-child]:rounded-r-[4px] transition-colors ${isTotal ? 'border-t border-t-border/30 [&_td]:pt-5' : ''} ${className || ''}`} onClick={onClick}>{children}</tr>;
+FullTable.Row = ({ children, isTotal, isCategory, className, onClick }: { children: React.ReactNode, isTotal?: boolean, isCategory?: boolean, className?: string, onClick?: () => void }) => {
+  return <tr className={`transition-colors ${isCategory ? 'bg-muted/50 [&_td]:py-3 [&_td]:font-medium' : '[&_td:first-child]:rounded-l-[4px] [&_td:last-child]:rounded-r-[4px]'} ${isTotal ? 'border-t border-t-border/30 [&_td]:pt-5' : ''} ${className || ''}`} onClick={onClick}>{children}</tr>;
 };
 
 FullTable.Head = ({ children }: { children: React.ReactNode }) => {
