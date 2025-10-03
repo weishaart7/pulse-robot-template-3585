@@ -25,7 +25,7 @@ const FamilleSection = () => {
                 Informations personnelles du client principal
               </CardDescription>
             </CardHeader>
-            <CardContent className="max-h-[calc(100vh-300px)] overflow-y-auto">
+            <CardContent>
               <FicheClientForm />
             </CardContent>
           </Card>
@@ -39,7 +39,7 @@ const FamilleSection = () => {
                 Renseignez votre statut matrimonial et vos informations de couple
               </CardDescription>
             </CardHeader>
-            <CardContent className="max-h-[calc(100vh-300px)] overflow-y-auto">
+            <CardContent>
               <SituationMatrimonialeForm />
             </CardContent>
           </Card>
@@ -53,7 +53,7 @@ const FamilleSection = () => {
                 Gérez les membres de votre famille et leurs relations
               </CardDescription>
             </CardHeader>
-            <CardContent className="max-h-[calc(100vh-300px)] overflow-y-auto">
+            <CardContent>
               <LiensFamiliauxForm />
             </CardContent>
           </Card>
@@ -67,7 +67,7 @@ const FamilleSection = () => {
                 Informations personnelles du client principal
               </CardDescription>
             </CardHeader>
-            <CardContent className="max-h-[calc(100vh-300px)] overflow-y-auto">
+            <CardContent>
               <FicheClientForm />
             </CardContent>
           </Card>
