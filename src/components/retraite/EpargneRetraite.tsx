@@ -16,13 +16,13 @@ export const EpargneRetraite = () => {
   // Chargement des données depuis Supabase
   useEffect(() => {
     if (!loading && data) {
-      if (data.epargne_per !== undefined) {
+      if (data.epargne_per !== undefined && data.epargne_per !== null) {
         setEpargnePer(data.epargne_per.toString());
       }
-      if (data.epargne_assurance_vie !== undefined) {
+      if (data.epargne_assurance_vie !== undefined && data.epargne_assurance_vie !== null) {
         setEpargneAssuranceVie(data.epargne_assurance_vie.toString());
       }
-      if (data.autres_epargnes !== undefined) {
+      if (data.autres_epargnes !== undefined && data.autres_epargnes !== null) {
         setAutresEpargnes(data.autres_epargnes.toString());
       }
     }

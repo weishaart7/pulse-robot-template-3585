@@ -19,10 +19,10 @@ export const Carriere = () => {
   // Chargement des données depuis Supabase
   useEffect(() => {
     if (!loading && data) {
-      if (data.salaire_annuel_moyen !== undefined) {
+      if (data.salaire_annuel_moyen !== undefined && data.salaire_annuel_moyen !== null) {
         setSalaireAnnuelMoyen(data.salaire_annuel_moyen.toString());
       }
-      if (data.trimestres_valides !== undefined) {
+      if (data.trimestres_valides !== undefined && data.trimestres_valides !== null) {
         setTrimestresValides(data.trimestres_valides.toString());
       }
     }
