@@ -82,16 +82,19 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
 
   // Couleurs par catégorie
   const categoryColors: Record<string, string> = {
-    'IMMOBILIER': '#05E8A4',
-    'FINANCIER': '#89FC00',
-    'EPARGNE': '#FF0095',
-    'PROFESSIONNEL': '#D5B7FF',
-    'MOBILIER': '#2609D6',
-    'AUTRES': '#FF8B55',
+    'actifs immobiliers': '#05E8A4',
+    'actifs mobiliers corporels': '#2609D6',
+    'actifs professionnels': '#D5B7FF',
+    'épargne retraite et prévoyance': '#7B0700',
+    'épargne et assurance-vie': '#FF0095',
+    'épargne salariale': '#FF8B55',
+    'épargne bancaire / liquidités': '#314A46',
+    'valeurs mobilières et placements financiers': '#89FC00',
+    'autres': '#FF8B55',
   };
 
   const getCategoryColor = (category: string) => {
-    return categoryColors[category.toUpperCase()] || '#000000';
+    return categoryColors[category.toLowerCase()] || '#000000';
   };
 
   return (
