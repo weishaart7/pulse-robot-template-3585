@@ -10,19 +10,20 @@ import { usePassifs } from '@/hooks/usePassifs';
 import { familyService } from '@/services/familyService';
 
 interface PassifFormProps {
+  passif?: any;
   onCancel: () => void;
   onSubmit: () => void;
 }
 
-export const PassifForm = ({ onCancel, onSubmit }: PassifFormProps) => {
-  const [nature, setNature] = useState('');
-  const [montantDu, setMontantDu] = useState('');
+export const PassifForm = ({ passif, onCancel, onSubmit }: PassifFormProps) => {
+  const [nature, setNature] = useState(passif?.nature || '');
+  const [montantDu, setMontantDu] = useState(passif?.montant_du?.toString() || '');
   const [detenteur, setDetenteur] = useState('');
-  const [pourcentageUtilisateur, setPourcentageUtilisateur] = useState(50);
-  const [pourcentageConjoint, setPourcentageConjoint] = useState(50);
+  const [pourcentageUtilisateur, setPourcentageUtilisateur] = useState(passif?.pourcentage_utilisateur || 50);
+  const [pourcentageConjoint, setPourcentageConjoint] = useState(passif?.pourcentage_conjoint || 50);
   const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
   const [familyData, setFamilyData] = useState({ hasPartner: false, userFirstName: '', partnerFirstName: '' });
-  const { createPassif } = usePassifs();
+  const { createPassif, updatePassif } = usePassifs();
 
   useEffect(() => {
     const loadFamilyData = async () => {
@@ -54,13 +55,36 @@ export const PassifForm = ({ onCancel, onSubmit }: PassifFormProps) => {
 
         setDetenteurOptions(options);
         setFamilyData(familyInfo);
+
+        // Map detenteur from DB to display value if editing
+        if (passif?.detenteur) {
+          const displayValue = mapDetenteurFromDb(passif.detenteur, familyInfo);
+          setDetenteur(displayValue);
+        }
       } catch (error) {
         console.error('Error loading family data:', error);
       }
     };
 
     loadFamilyData();
-  }, []);
+  }, [passif]);
+
+  const mapDetenteurFromDb = (dbValue: string, familyInfo: any): string => {
+    switch (dbValue) {
+      case 'user':
+      case 'utilisateur':
+        return familyInfo.userFirstName || 'Vous';
+      case 'spouse':
+      case 'conjoint':
+        return familyInfo.partnerFirstName || 'Conjoint';
+      case 'common':
+      case 'commun':
+      case 'couple':
+        return 'Le couple';
+      default:
+        return dbValue;
+    }
+  };
 
   const mapDetenteurToDb = (displayValue: string): string => {
     if (displayValue === familyData.userFirstName || displayValue === 'Vous') {
@@ -92,7 +116,11 @@ export const PassifForm = ({ onCancel, onSubmit }: PassifFormProps) => {
         }
       }
 
-      await createPassif(passifData);
+      if (passif?.id) {
+        await updatePassif(passif.id, passifData);
+      } else {
+        await createPassif(passifData);
+      }
       onSubmit();
     } catch (error) {
       // Error handling is done in the hook
@@ -106,7 +134,7 @@ export const PassifForm = ({ onCancel, onSubmit }: PassifFormProps) => {
           <Button variant="ghost" size="sm" onClick={onCancel}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <CardTitle>Ajouter un passif</CardTitle>
+          <CardTitle>{passif ? 'Modifier' : 'Ajouter'} un passif</CardTitle>
         </div>
       </CardHeader>
       <CardContent>
@@ -203,7 +231,7 @@ export const PassifForm = ({ onCancel, onSubmit }: PassifFormProps) => {
               Annuler
             </Button>
             <Button type="submit" disabled={!nature || !montantDu}>
-              Ajouter le passif
+              {passif ? 'Modifier' : 'Ajouter'} le passif
             </Button>
           </div>
         </form>

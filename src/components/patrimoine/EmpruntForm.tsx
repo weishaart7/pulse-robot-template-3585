@@ -10,23 +10,24 @@ import { useEmprunts } from '@/hooks/usePassifs';
 import { familyService } from '@/services/familyService';
 
 interface EmpruntFormProps {
+  emprunt?: any;
   onCancel: () => void;
   onSubmit: () => void;
 }
 
-export const EmpruntForm = ({ onCancel, onSubmit }: EmpruntFormProps) => {
-  const [nature, setNature] = useState('');
-  const [libelle, setLibelle] = useState('');
-  const [capitalRestantDu, setCapitalRestantDu] = useState('');
-  const [interets, setInterets] = useState('');
-  const [mensualites, setMensualites] = useState('');
-  const [dureeRestante, setDureeRestante] = useState('');
+export const EmpruntForm = ({ emprunt, onCancel, onSubmit }: EmpruntFormProps) => {
+  const [nature, setNature] = useState(emprunt?.nature || '');
+  const [libelle, setLibelle] = useState(emprunt?.libelle || '');
+  const [capitalRestantDu, setCapitalRestantDu] = useState(emprunt?.capital_restant_du?.toString() || '');
+  const [interets, setInterets] = useState(emprunt?.taux_interet?.toString() || '');
+  const [mensualites, setMensualites] = useState(emprunt?.mensualite?.toString() || '');
+  const [dureeRestante, setDureeRestante] = useState(emprunt?.duree_restante?.toString() || '');
   const [detenteur, setDetenteur] = useState('');
-  const [pourcentageUtilisateur, setPourcentageUtilisateur] = useState(50);
-  const [pourcentageConjoint, setPourcentageConjoint] = useState(50);
+  const [pourcentageUtilisateur, setPourcentageUtilisateur] = useState(emprunt?.pourcentage_utilisateur || 50);
+  const [pourcentageConjoint, setPourcentageConjoint] = useState(emprunt?.pourcentage_conjoint || 50);
   const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
   const [familyData, setFamilyData] = useState({ hasPartner: false, userFirstName: '', partnerFirstName: '' });
-  const { createEmprunt } = useEmprunts();
+  const { createEmprunt, updateEmprunt } = useEmprunts();
 
   useEffect(() => {
     const loadFamilyData = async () => {
@@ -58,13 +59,36 @@ export const EmpruntForm = ({ onCancel, onSubmit }: EmpruntFormProps) => {
 
         setDetenteurOptions(options);
         setFamilyData(familyInfo);
+
+        // Map detenteur from DB to display value if editing
+        if (emprunt?.detenteur) {
+          const displayValue = mapDetenteurFromDb(emprunt.detenteur, familyInfo);
+          setDetenteur(displayValue);
+        }
       } catch (error) {
         console.error('Error loading family data:', error);
       }
     };
 
     loadFamilyData();
-  }, []);
+  }, [emprunt]);
+
+  const mapDetenteurFromDb = (dbValue: string, familyInfo: any): string => {
+    switch (dbValue) {
+      case 'user':
+      case 'utilisateur':
+        return familyInfo.userFirstName || 'Vous';
+      case 'spouse':
+      case 'conjoint':
+        return familyInfo.partnerFirstName || 'Conjoint';
+      case 'common':
+      case 'commun':
+      case 'couple':
+        return 'Le couple';
+      default:
+        return dbValue;
+    }
+  };
 
   const mapDetenteurToDb = (displayValue: string): string => {
     if (displayValue === familyData.userFirstName || displayValue === 'Vous') {
@@ -100,7 +124,11 @@ export const EmpruntForm = ({ onCancel, onSubmit }: EmpruntFormProps) => {
         }
       }
 
-      await createEmprunt(empruntData);
+      if (emprunt?.id) {
+        await updateEmprunt(emprunt.id, empruntData);
+      } else {
+        await createEmprunt(empruntData);
+      }
       onSubmit();
     } catch (error) {
       // Error handling is done in the hook
@@ -114,7 +142,7 @@ export const EmpruntForm = ({ onCancel, onSubmit }: EmpruntFormProps) => {
           <Button variant="ghost" size="sm" onClick={onCancel}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <CardTitle>Ajouter un emprunt</CardTitle>
+          <CardTitle>{emprunt ? 'Modifier' : 'Ajouter'} un emprunt</CardTitle>
         </div>
       </CardHeader>
       <CardContent>
@@ -263,7 +291,7 @@ export const EmpruntForm = ({ onCancel, onSubmit }: EmpruntFormProps) => {
               Annuler
             </Button>
             <Button type="submit" disabled={!nature}>
-              Ajouter l'emprunt
+              {emprunt ? 'Modifier' : 'Ajouter'} l'emprunt
             </Button>
           </div>
         </form>

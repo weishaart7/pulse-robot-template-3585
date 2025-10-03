@@ -17,29 +17,45 @@ import {
 export const PatrimoinePassifs = () => {
   const [showEmpruntForm, setShowEmpruntForm] = useState(false);
   const [showPassifForm, setShowPassifForm] = useState(false);
+  const [editingEmprunt, setEditingEmprunt] = useState<Emprunt | null>(null);
+  const [editingPassif, setEditingPassif] = useState<Passif | null>(null);
   const [selectedPassif, setSelectedPassif] = useState<Emprunt | Passif | null>(null);
   const [passifType, setPassifType] = useState<'emprunt' | 'passif'>('emprunt');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const { emprunts, loading: empruntsLoading, deleteEmprunt } = useEmprunts();
   const { passifs, loading: passifsLoading, deletePassif } = usePassifs();
 
-  if (showEmpruntForm) {
+  if (showEmpruntForm || editingEmprunt) {
     return (
       <div className="space-y-6">
         <EmpruntForm
-          onCancel={() => setShowEmpruntForm(false)}
-          onSubmit={() => setShowEmpruntForm(false)}
+          emprunt={editingEmprunt || undefined}
+          onCancel={() => {
+            setShowEmpruntForm(false);
+            setEditingEmprunt(null);
+          }}
+          onSubmit={() => {
+            setShowEmpruntForm(false);
+            setEditingEmprunt(null);
+          }}
         />
       </div>
     );
   }
 
-  if (showPassifForm) {
+  if (showPassifForm || editingPassif) {
     return (
       <div className="space-y-6">
         <PassifForm
-          onCancel={() => setShowPassifForm(false)}
-          onSubmit={() => setShowPassifForm(false)}
+          passif={editingPassif || undefined}
+          onCancel={() => {
+            setShowPassifForm(false);
+            setEditingPassif(null);
+          }}
+          onSubmit={() => {
+            setShowPassifForm(false);
+            setEditingPassif(null);
+          }}
         />
       </div>
     );
@@ -110,9 +126,7 @@ export const PatrimoinePassifs = () => {
                       <DropdownMenuContent>
                         <DropdownMenuItem onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedPassif(emprunt);
-                          setPassifType('emprunt');
-                          setDetailsOpen(true);
+                          setEditingEmprunt(emprunt);
                         }}>
                           <Edit className="h-4 w-4 mr-2" />
                           Modifier
@@ -182,9 +196,7 @@ export const PatrimoinePassifs = () => {
                       <DropdownMenuContent>
                         <DropdownMenuItem onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedPassif(passif);
-                          setPassifType('passif');
-                          setDetailsOpen(true);
+                          setEditingPassif(passif);
                         }}>
                           <Edit className="h-4 w-4 mr-2" />
                           Modifier
