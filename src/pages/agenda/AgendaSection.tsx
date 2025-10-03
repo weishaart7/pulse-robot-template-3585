@@ -160,8 +160,8 @@ export function AgendaSection() {
       <Separator orientation="vertical" className="h-auto" />
 
       {/* Résumé des événements - Droite */}
-      <div className="w-80">
-        <Card className="h-full">
+      <div className="w-80 min-w-0">
+        <Card className="h-full overflow-hidden">
           <CardHeader>
             <CardTitle className="text-lg">Événements à venir</CardTitle>
           </CardHeader>
@@ -182,7 +182,7 @@ export function AgendaSection() {
                               {format(dayData.day, "d")}
                             </span>
                           </div>
-                          <span className="text-foreground">
+                          <span className="text-foreground truncate">
                             {format(dayData.day, "EEEE", { locale: fr })}
                           </span>
                         </div>
@@ -192,10 +192,10 @@ export function AgendaSection() {
                               key={event.id}
                               className="flex items-start gap-2 p-2 rounded-md hover:bg-accent cursor-pointer transition-colors"
                             >
-                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                              <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
                                 {event.time}
                               </span>
-                              <span className="text-sm">{event.name}</span>
+                              <span className="text-sm break-words overflow-hidden">{event.name}</span>
                             </div>
                           ))}
                         </div>
