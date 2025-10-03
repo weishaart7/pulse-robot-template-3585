@@ -3,12 +3,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PatrimoineChart } from './PatrimoineChart';
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
-import { TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
+import { TrendingUp, TrendingDown, Wallet, User, Users } from 'lucide-react';
 
 export const PatrimoineResume = () => {
   const { assets } = useAssets();
   const { passifs } = usePassifs();
   const { emprunts } = useEmprunts();
+  const { data: familyProfile } = useFamilyProfile();
+  const { data: maritalStatus } = useMaritalStatus();
+
+  const isInCouple = useMemo(() => {
+    return maritalStatus?.statut_couple && 
+           ['marie', 'pacs', 'concubinage'].includes(maritalStatus.statut_couple.toLowerCase());
+  }, [maritalStatus]);
 
   const financialSummary = useMemo(() => {
     const totalActifs = assets.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
@@ -23,6 +31,50 @@ export const PatrimoineResume = () => {
       patrimoineNet
     };
   }, [assets, passifs, emprunts]);
+
+  const patrimoineParPersonne = useMemo(() => {
+    const userFirstName = familyProfile?.prenom || 'Vous';
+    const spouseFirstName = maritalStatus?.prenom_conjoint || 'Conjoint';
+
+    let userValue = 0;
+    let spouseValue = 0;
+
+    assets.forEach(asset => {
+      const estimatedValue = asset.valeur_estimee || 0;
+      
+      if (!isInCouple) {
+        // Pas de conjoint → 100% utilisateur
+        userValue += estimatedValue;
+      } else {
+        // Conjoint existe
+        if (asset.detenteur === 'user' || asset.detenteur === 'utilisateur' || !asset.detenteur) {
+          // Biens propres de l'utilisateur → 100% utilisateur
+          userValue += estimatedValue;
+        } else if (asset.detenteur === 'spouse' || asset.detenteur === 'conjoint') {
+          // Biens propres du conjoint → 100% conjoint
+          spouseValue += estimatedValue;
+        } else if (asset.detenteur === 'common' || asset.detenteur === 'commun' || asset.detenteur === 'couple') {
+          // Biens communs → répartir selon les quote-parts
+          const userQuote = (asset.pourcentage_utilisateur ?? 50) / 100;
+          const spouseQuote = (asset.pourcentage_conjoint ?? 50) / 100;
+          
+          userValue += estimatedValue * userQuote;
+          spouseValue += estimatedValue * spouseQuote;
+        }
+      }
+    });
+
+    const totalValue = userValue + spouseValue;
+
+    return {
+      userFirstName,
+      spouseFirstName,
+      userValue,
+      spouseValue,
+      totalValue,
+      showSpouse: isInCouple && spouseValue > 0
+    };
+  }, [assets, familyProfile, maritalStatus, isInCouple]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -101,10 +153,83 @@ export const PatrimoineResume = () => {
           <CardHeader>
             <CardTitle>Patrimoine par tête</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground text-center py-8">
-              Contenu à venir
-            </p>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-4 p-4 rounded-lg border bg-card">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <User className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
+                  {patrimoineParPersonne.userFirstName}
+                </p>
+                <p className="text-xl font-semibold text-foreground">
+                  {formatCurrency(patrimoineParPersonne.userValue)}
+                </p>
+              </div>
+            </div>
+
+            {patrimoineParPersonne.showSpouse && (
+              <div className="flex items-center gap-4 p-4 rounded-lg border bg-card">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
+                    {patrimoineParPersonne.spouseFirstName}
+                  </p>
+                  <p className="text-xl font-semibold text-foreground">
+                    {formatCurrency(patrimoineParPersonne.spouseValue)}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Graphique à barres */}
+            <div className="space-y-2 pt-2">
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-muted-foreground">{patrimoineParPersonne.userFirstName}</span>
+                  <span className="font-medium">
+                    {patrimoineParPersonne.totalValue > 0 
+                      ? Math.round((patrimoineParPersonne.userValue / patrimoineParPersonne.totalValue) * 100) 
+                      : 0}%
+                  </span>
+                </div>
+                <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
+                  <div
+                    className="h-2 bg-primary transition-all duration-500 ease-out rounded-full"
+                    style={{
+                      width: `${patrimoineParPersonne.totalValue > 0 
+                        ? (patrimoineParPersonne.userValue / patrimoineParPersonne.totalValue) * 100 
+                        : 0}%`
+                    }}
+                  />
+                </div>
+              </div>
+
+              {patrimoineParPersonne.showSpouse && (
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-muted-foreground">{patrimoineParPersonne.spouseFirstName}</span>
+                    <span className="font-medium">
+                      {patrimoineParPersonne.totalValue > 0 
+                        ? Math.round((patrimoineParPersonne.spouseValue / patrimoineParPersonne.totalValue) * 100) 
+                        : 0}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
+                    <div
+                      className="h-2 bg-primary transition-all duration-500 ease-out rounded-full"
+                      style={{
+                        width: `${patrimoineParPersonne.totalValue > 0 
+                          ? (patrimoineParPersonne.spouseValue / patrimoineParPersonne.totalValue) * 100 
+                          : 0}%`
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
