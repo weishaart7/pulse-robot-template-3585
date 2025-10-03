@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { FullScreenCalendar } from "@/components/ui/fullscreen-calendar";
 import { format, isSameMonth, compareAsc } from "date-fns";
 import { fr } from "date-fns/locale";
+import { EventDialog } from "@/components/agenda/EventDialog";
+import { useToast } from "@/hooks/use-toast";
 
 // Données d'exemple
 const dummyEvents = [
@@ -127,9 +130,62 @@ const dummyEvents = [
   },
 ];
 
+interface Event {
+  id: number;
+  name: string;
+  time: string;
+  datetime: string;
+}
+
+interface CalendarData {
+  day: Date;
+  events: Event[];
+}
+
 export function AgendaSection() {
+  const [events, setEvents] = useState(dummyEvents);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const { toast } = useToast();
+
+  const handleEventClick = (event: Event) => {
+    setSelectedEvent(event);
+    setDialogOpen(true);
+  };
+
+  const handleUpdateEvent = (eventId: number, updatedEvent: Partial<Event>) => {
+    setEvents((prevEvents) =>
+      prevEvents.map((dayData) => ({
+        ...dayData,
+        events: dayData.events.map((evt) =>
+          evt.id === eventId ? { ...evt, ...updatedEvent } : evt
+        ),
+      }))
+    );
+    toast({
+      title: "Événement modifié",
+      description: "L'événement a été mis à jour avec succès.",
+    });
+  };
+
+  const handleDeleteEvent = (eventId: number) => {
+    setEvents((prevEvents) =>
+      prevEvents
+        .map((dayData) => ({
+          ...dayData,
+          events: dayData.events.filter((evt) => evt.id !== eventId),
+        }))
+        .filter((dayData) => dayData.events.length > 0)
+    );
+    toast({
+      title: "Événement supprimé",
+      description: "L'événement a été supprimé avec succès.",
+      variant: "destructive",
+    });
+  };
+
   // Organiser les événements par mois
-  const eventsByMonth = dummyEvents.reduce((acc, dayData) => {
+  const eventsByMonth = events.reduce((acc, dayData) => {
     const monthKey = format(dayData.day, "MMMM yyyy", { locale: fr });
     if (!acc[monthKey]) {
       acc[monthKey] = [];
@@ -146,15 +202,16 @@ export function AgendaSection() {
   });
 
   return (
-    <div className="flex h-full gap-4 p-6">
-      {/* Calendrier principal - Gauche */}
-      <div className="flex-1">
-        <Card className="h-full">
-          <CardContent className="p-0 h-full">
-            <FullScreenCalendar data={dummyEvents} />
-          </CardContent>
-        </Card>
-      </div>
+    <>
+      <div className="flex h-full gap-4 p-6">
+        {/* Calendrier principal - Gauche */}
+        <div className="flex-1">
+          <Card className="h-full">
+            <CardContent className="p-0 h-full">
+              <FullScreenCalendar data={events} onEventClick={handleEventClick} />
+            </CardContent>
+          </Card>
+        </div>
 
       {/* Séparateur */}
       <Separator orientation="vertical" className="h-auto" />
@@ -190,6 +247,7 @@ export function AgendaSection() {
                           {dayData.events.map((event) => (
                             <div
                               key={event.id}
+                              onClick={() => handleEventClick(event)}
                               className="flex items-start gap-2 p-2 rounded-md hover:bg-accent cursor-pointer transition-colors"
                             >
                               <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
@@ -207,6 +265,15 @@ export function AgendaSection() {
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+
+      <EventDialog
+        event={selectedEvent}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onUpdate={handleUpdateEvent}
+        onDelete={handleDeleteEvent}
+      />
+    </>
   );
 }
