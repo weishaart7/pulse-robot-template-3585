@@ -20,65 +20,33 @@ export const PatrimoineOwnershipChart = ({ assets }: PatrimoineOwnershipChartPro
     const userFirstName = familyProfile?.prenom || 'Vous';
     const spouseFirstName = maritalStatus?.prenom_conjoint || 'Conjoint';
 
-    // Calculer les valeurs selon le détenteur et les quote-parts
     let userValue = 0;
     let spouseValue = 0;
-
-    // Debug: log des assets pour comprendre le problème
-    // Ownership calculation for asset distribution
 
     assets.forEach(asset => {
       const estimatedValue = asset.valeur_estimee || 0;
       
-      // Asset ownership calculation in progress
-      
-      if (asset.detenteur === 'user' || asset.detenteur === 'utilisateur' || !asset.detenteur) {
-        if (asset.pourcentage_utilisateur || asset.pourcentage_conjoint) {
-          // Répartir selon les quotes définies
-          const userQuote = (asset.pourcentage_utilisateur ?? 100) / 100;
-          const spouseQuote = (asset.pourcentage_conjoint ?? 0) / 100;
-          const userPortion = estimatedValue * userQuote;
-          const spousePortion = estimatedValue * spouseQuote;
-          userValue += userPortion;
-          spouseValue += spousePortion;
-          // Asset distribution calculated with quotes
-        } else {
-          // Biens propres de l'utilisateur (100%)
-          userValue += estimatedValue;
-          // Full asset added to user
-        }
-      } else if (asset.detenteur === 'spouse' || asset.detenteur === 'conjoint') {
-        if (asset.pourcentage_utilisateur || asset.pourcentage_conjoint) {
-          // Répartir selon les quotes définies
-          const userQuote = (asset.pourcentage_utilisateur ?? 0) / 100;
-          const spouseQuote = (asset.pourcentage_conjoint ?? 100) / 100;
-          const userPortion = estimatedValue * userQuote;
-          const spousePortion = estimatedValue * spouseQuote;
-          userValue += userPortion;
-          spouseValue += spousePortion;
-          // Asset distribution calculated for spouse ownership
-        } else {
-          // Biens propres du conjoint (100%)
-          spouseValue += estimatedValue;
-          // Full asset added to spouse
-        }
-      } else if (asset.detenteur === 'common' || asset.detenteur === 'commun' || asset.detenteur === 'couple') {
-        // Biens communs - répartir selon les quote-parts
-        const userQuote = (asset.pourcentage_utilisateur ?? 50) / 100;
-        const spouseQuote = (asset.pourcentage_conjoint ?? 50) / 100;
-        
-        const userPortion = estimatedValue * userQuote;
-        const spousePortion = estimatedValue * spouseQuote;
-        
-        userValue += userPortion;
-        spouseValue += spousePortion;
-        // Common asset distributed between spouses
+      if (!isInCouple) {
+        // Pas de conjoint → 100% utilisateur
+        userValue += estimatedValue;
       } else {
-        // Unknown asset ownership type detected
+        // Conjoint existe
+        if (asset.detenteur === 'user' || asset.detenteur === 'utilisateur' || !asset.detenteur) {
+          // Détenteur = utilisateur seul → 100% utilisateur
+          userValue += estimatedValue;
+        } else if (asset.detenteur === 'spouse' || asset.detenteur === 'conjoint') {
+          // Détenteur = conjoint seul → 100% conjoint
+          spouseValue += estimatedValue;
+        } else if (asset.detenteur === 'common' || asset.detenteur === 'commun' || asset.detenteur === 'couple') {
+          // Détenteur = couple → répartir selon les quote-parts
+          const userQuote = (asset.pourcentage_utilisateur ?? 50) / 100;
+          const spouseQuote = (asset.pourcentage_conjoint ?? 50) / 100;
+          
+          userValue += estimatedValue * userQuote;
+          spouseValue += estimatedValue * spouseQuote;
+        }
       }
     });
-    
-    // Ownership calculation completed
     
     const totalValue = userValue + spouseValue;
 
