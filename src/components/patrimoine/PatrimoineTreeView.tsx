@@ -82,16 +82,16 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
 
   // Couleurs par catégorie
   const categoryColors: Record<string, string> = {
-    'IMMOBILIER': 'bg-[#05E8A4]',
-    'FINANCIER': 'bg-[#89FC00]',
-    'EPARGNE': 'bg-[#FF0095]',
-    'PROFESSIONNEL': 'bg-[#D5B7FF]',
-    'MOBILIER': 'bg-[#2609D6]',
-    'AUTRES': 'bg-[#FF8B55]',
+    'IMMOBILIER': '#05E8A4',
+    'FINANCIER': '#89FC00',
+    'EPARGNE': '#FF0095',
+    'PROFESSIONNEL': '#D5B7FF',
+    'MOBILIER': '#2609D6',
+    'AUTRES': '#FF8B55',
   };
 
   const getCategoryColor = (category: string) => {
-    return categoryColors[category.toUpperCase()] || 'bg-primary';
+    return categoryColors[category.toUpperCase()] || '#000000';
   };
 
   return (
@@ -140,7 +140,7 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
                     ) : (
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     )}
-                    <div className={`w-2 h-2 rounded-full ${getCategoryColor(category)}`} />
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getCategoryColor(category) }} />
                     <span className="text-foreground">{category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()}</span>
                   </Button>
                 </FullTable.Cell>
@@ -171,7 +171,7 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
                   >
                     <FullTable.Cell className="pl-14 py-2.5">
                       <div className="flex items-center gap-2">
-                        <div className={`w-1.5 h-1.5 rounded-full ${getCategoryColor(category)} opacity-60`} />
+                        <div className="w-1.5 h-1.5 rounded-full opacity-60" style={{ backgroundColor: getCategoryColor(category) }} />
                         <div className="flex-1">
                           <div className="font-normal text-sm text-foreground">{asset.denomination || asset.nature}</div>
                           {asset.etablissement && (
