@@ -412,29 +412,45 @@ export function AgendaSection() {
                     .map((dayData) => (
                       <div key={dayData.day.toString()} className="space-y-2">
                         <div className="flex items-center gap-2 text-sm font-medium">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg border bg-muted">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg border bg-muted flex-shrink-0">
                             <span className="text-base font-bold">
                               {format(dayData.day, "d")}
                             </span>
                           </div>
-                          <span className="text-foreground truncate">
-                            {format(dayData.day, "EEEE", { locale: fr })}
-                          </span>
+                          {dayData.events.length === 1 ? (
+                            <span className="text-foreground truncate">
+                              {dayData.events[0].name}
+                            </span>
+                          ) : (
+                            <span className="text-foreground">
+                              {dayData.events.length} événements
+                            </span>
+                          )}
                         </div>
-                        <div className="ml-12 space-y-2">
-                          {dayData.events.map((event) => (
-                            <div
-                              key={event.id}
-                              onClick={() => handleEventClick(event)}
-                              className="flex items-start gap-2 p-2 rounded-md hover:bg-accent cursor-pointer transition-colors"
-                            >
-                              <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
-                                {event.time}
-                              </span>
-                              <span className="text-sm break-words overflow-hidden">{event.name}</span>
-                            </div>
-                          ))}
-                        </div>
+                        {dayData.events.length > 1 && (
+                          <div className="ml-12 space-y-2">
+                            {dayData.events
+                              .sort((a, b) => {
+                                // Trier par horaire d'abord
+                                const timeCompare = a.time.localeCompare(b.time);
+                                if (timeCompare !== 0) return timeCompare;
+                                // Si même horaire, trier alphabétiquement par nom
+                                return a.name.localeCompare(b.name);
+                              })
+                              .map((event) => (
+                                <div
+                                  key={event.id}
+                                  onClick={() => handleEventClick(event)}
+                                  className="flex items-start gap-2 p-2 rounded-md hover:bg-accent cursor-pointer transition-colors"
+                                >
+                                  <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
+                                    {event.time}
+                                  </span>
+                                  <span className="text-sm break-words overflow-hidden">{event.name}</span>
+                                </div>
+                              ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                 </div>
