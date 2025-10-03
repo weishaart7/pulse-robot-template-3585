@@ -152,7 +152,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
           )}
 
           {/* Propriété */}
-          {(asset.pourcentage_utilisateur || asset.pourcentage_conjoint || asset.mode_detention) && (
+          {(asset.detenteur === 'common' || asset.detenteur === 'commun' || asset.detenteur === 'couple') && (asset.pourcentage_utilisateur || asset.pourcentage_conjoint || asset.mode_detention) && (
             <>
               <Separator />
               <div>
