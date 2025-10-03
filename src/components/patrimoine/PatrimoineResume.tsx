@@ -38,6 +38,14 @@ export const PatrimoineResume = () => {
     const userFirstName = familyProfile?.prenom || 'Vous';
     const spouseFirstName = maritalStatus?.prenom_conjoint || 'Conjoint';
     
+    console.log('🔍 PatrimoineResume Debug:', {
+      isInCouple,
+      maritalStatus: maritalStatus?.statut_couple,
+      assetsCount: assets.length,
+      passifsCount: passifs.length,
+      empruntsCount: emprunts.length
+    });
+    
     let userOwnValue = 0;
     let userSharedValue = 0;
     let spouseOwnValue = 0;
@@ -53,6 +61,15 @@ export const PatrimoineResume = () => {
       const estimatedValue = asset.valeur_estimee || 0;
       const detenteur = asset.detenteur?.toLowerCase();
       
+      console.log('📊 Asset:', {
+        denomination: asset.denomination,
+        detenteur: asset.detenteur,
+        detenteurLower: detenteur,
+        valeur: estimatedValue,
+        pourcentageUser: asset.pourcentage_utilisateur,
+        pourcentageConjoint: asset.pourcentage_conjoint
+      });
+      
       if (!isInCouple) {
         userOwnValue += estimatedValue;
       } else {
@@ -60,7 +77,7 @@ export const PatrimoineResume = () => {
           userOwnValue += estimatedValue;
         } else if (detenteur === 'spouse' || detenteur === 'conjoint') {
           spouseOwnValue += estimatedValue;
-        } else if (detenteur === 'common' || detenteur === 'commun' || detenteur === 'couple') {
+        } else if (detenteur === 'common' || detenteur === 'commun' || detenteur === 'couple' || detenteur === 'le couple') {
           const userQuote = (asset.pourcentage_utilisateur ?? 50) / 100;
           const spouseQuote = (asset.pourcentage_conjoint ?? 50) / 100;
           userSharedValue += estimatedValue * userQuote;
@@ -74,6 +91,13 @@ export const PatrimoineResume = () => {
       const montant = passif.montant_du || 0;
       const detenteur = passif.detenteur?.toLowerCase();
       
+      console.log('💸 Passif:', {
+        nature: passif.nature,
+        detenteur: passif.detenteur,
+        detenteurLower: detenteur,
+        montant
+      });
+      
       if (!isInCouple) {
         userOwnPassifs += montant;
       } else {
@@ -81,7 +105,7 @@ export const PatrimoineResume = () => {
           userOwnPassifs += montant;
         } else if (detenteur === 'spouse' || detenteur === 'conjoint') {
           spouseOwnPassifs += montant;
-        } else if (detenteur === 'common' || detenteur === 'commun' || detenteur === 'couple') {
+        } else if (detenteur === 'common' || detenteur === 'commun' || detenteur === 'couple' || detenteur === 'le couple') {
           const userQuote = (passif.pourcentage_utilisateur ?? 50) / 100;
           const spouseQuote = (passif.pourcentage_conjoint ?? 50) / 100;
           userSharedPassifs += montant * userQuote;
@@ -95,6 +119,13 @@ export const PatrimoineResume = () => {
       const montant = emprunt.capital_restant_du || 0;
       const detenteur = emprunt.detenteur?.toLowerCase();
       
+      console.log('🏦 Emprunt:', {
+        libelle: emprunt.libelle,
+        detenteur: emprunt.detenteur,
+        detenteurLower: detenteur,
+        montant
+      });
+      
       if (!isInCouple) {
         userOwnPassifs += montant;
       } else {
@@ -102,7 +133,7 @@ export const PatrimoineResume = () => {
           userOwnPassifs += montant;
         } else if (detenteur === 'spouse' || detenteur === 'conjoint') {
           spouseOwnPassifs += montant;
-        } else if (detenteur === 'common' || detenteur === 'commun' || detenteur === 'couple') {
+        } else if (detenteur === 'common' || detenteur === 'commun' || detenteur === 'couple' || detenteur === 'le couple') {
           const userQuote = (emprunt.pourcentage_utilisateur ?? 50) / 100;
           const spouseQuote = (emprunt.pourcentage_conjoint ?? 50) / 100;
           userSharedPassifs += montant * userQuote;
@@ -119,6 +150,17 @@ export const PatrimoineResume = () => {
     const userValue = userActifs - userPassifs;
     const spouseValue = spouseActifs - spousePassifs;
     const totalValue = userValue + spouseValue;
+    
+    console.log('💰 Résultats finaux:', {
+      userActifs,
+      userPassifs,
+      userValue,
+      spouseActifs,
+      spousePassifs,
+      spouseValue,
+      totalValue,
+      showSpouse: isInCouple
+    });
     
     return {
       userFirstName,
