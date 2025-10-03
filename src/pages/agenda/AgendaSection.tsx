@@ -145,7 +145,7 @@ interface CalendarData {
 }
 
 export function AgendaSection() {
-  const [events, setEvents] = useState(dummyEvents);
+  const [events, setEvents] = useState<CalendarData[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
