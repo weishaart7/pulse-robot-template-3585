@@ -155,7 +155,7 @@ export const EmpruntForm = ({ emprunt, onCancel, onSubmit }: EmpruntFormProps) =
           <div className="space-y-2">
             <Label htmlFor="nature">Nature de l'emprunt</Label>
             <Select value={nature} onValueChange={setNature} required>
-              <SelectTrigger>
+              <SelectTrigger size="lg">
                 <SelectValue placeholder="Sélectionnez la nature de l'emprunt" />
               </SelectTrigger>
               <SelectContent>
@@ -234,7 +234,7 @@ export const EmpruntForm = ({ emprunt, onCancel, onSubmit }: EmpruntFormProps) =
                 <div className="space-y-2">
                   <Label htmlFor="detenteur">Détenteur</Label>
                   <Select value={detenteur} onValueChange={setDetenteur}>
-                    <SelectTrigger>
+                    <SelectTrigger size="lg">
                       <SelectValue placeholder="Choisir un détenteur" />
                     </SelectTrigger>
                     <SelectContent>
