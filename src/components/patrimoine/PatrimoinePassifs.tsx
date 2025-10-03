@@ -3,10 +3,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmpruntForm } from './EmpruntForm';
 import { PassifForm } from './PassifForm';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { useEmprunts, usePassifs } from '@/hooks/usePassifs';
 import { PassifDetailsDialog } from './PassifDetailsDialog';
 import { Emprunt, Passif } from '@/services/passifService';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export const PatrimoinePassifs = () => {
   const [showEmpruntForm, setShowEmpruntForm] = useState(false);
@@ -89,16 +95,40 @@ export const PatrimoinePassifs = () => {
                         {emprunt.mensualite && ` • Mensualité: ${emprunt.mensualite.toLocaleString('fr-FR')}€`}
                       </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteEmprunt(emprunt.id);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="rounded-full shadow-none"
+                          aria-label="Open menu"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreHorizontal size={16} strokeWidth={2} aria-hidden="true" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPassif(emprunt);
+                          setPassifType('emprunt');
+                          setDetailsOpen(true);
+                        }}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Modifier
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteEmprunt(emprunt.id);
+                          }}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Supprimer
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 ))}
               </div>
@@ -137,16 +167,40 @@ export const PatrimoinePassifs = () => {
                         Montant dû: {passif.montant_du.toLocaleString('fr-FR')}€
                       </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deletePassif(passif.id);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="rounded-full shadow-none"
+                          aria-label="Open menu"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreHorizontal size={16} strokeWidth={2} aria-hidden="true" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPassif(passif);
+                          setPassifType('passif');
+                          setDetailsOpen(true);
+                        }}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Modifier
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deletePassif(passif.id);
+                          }}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Supprimer
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 ))}
               </div>
