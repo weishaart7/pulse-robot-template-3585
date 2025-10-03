@@ -218,7 +218,7 @@ export const PatrimoineResume = () => {
                 </div>
                 <div className="flex-1">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Actifs</p>
-                  <p className="text-2xl font-semibold text-foreground">
+                  <p className="text-2xl font-bold text-black">
                     {formatCurrency(financialSummary.totalActifs)}
                   </p>
                 </div>
@@ -230,7 +230,7 @@ export const PatrimoineResume = () => {
                 </div>
                 <div className="flex-1">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Passifs</p>
-                  <p className="text-2xl font-semibold text-foreground">
+                  <p className="text-2xl font-bold text-black">
                     {formatCurrency(financialSummary.totalPassifs)}
                   </p>
                 </div>
@@ -242,7 +242,7 @@ export const PatrimoineResume = () => {
                 </div>
                 <div className="flex-1">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Patrimoine net</p>
-                  <p className="text-2xl font-semibold text-primary">
+                  <p className="text-2xl font-bold text-black">
                     {formatCurrency(financialSummary.patrimoineNet)}
                   </p>
                 </div>
@@ -268,7 +268,7 @@ export const PatrimoineResume = () => {
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
                   {patrimoineParPersonne.userFirstName}
                 </p>
-                <p className="text-xl font-bold text-foreground">
+                <p className="text-2xl font-bold text-black">
                   {formatCurrency(patrimoineParPersonne.userValue)}
                 </p>
                 {patrimoineParPersonne.showSpouse && (
@@ -290,7 +290,7 @@ export const PatrimoineResume = () => {
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
                     {patrimoineParPersonne.spouseFirstName}
                   </p>
-                  <p className="text-xl font-bold text-foreground">
+                  <p className="text-2xl font-bold text-black">
                     {formatCurrency(patrimoineParPersonne.spouseValue)}
                   </p>
                   <div className="mt-2 space-y-1 text-xs text-muted-foreground">
