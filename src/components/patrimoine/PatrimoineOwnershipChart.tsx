@@ -31,13 +31,15 @@ export const PatrimoineOwnershipChart = ({ assets }: PatrimoineOwnershipChartPro
         userValue += estimatedValue;
       } else {
         // Conjoint existe
-        if (asset.detenteur === 'user' || asset.detenteur === 'utilisateur' || !asset.detenteur) {
+        const detenteur = asset.detenteur?.toLowerCase();
+        
+        if (detenteur === 'user' || detenteur === 'utilisateur' || !detenteur) {
           // Détenteur = utilisateur seul → 100% utilisateur
           userValue += estimatedValue;
-        } else if (asset.detenteur === 'spouse' || asset.detenteur === 'conjoint') {
+        } else if (detenteur === 'spouse' || detenteur === 'conjoint') {
           // Détenteur = conjoint seul → 100% conjoint
           spouseValue += estimatedValue;
-        } else if (asset.detenteur === 'common' || asset.detenteur === 'commun' || asset.detenteur === 'couple') {
+        } else if (detenteur === 'common' || detenteur === 'commun' || detenteur === 'couple') {
           // Détenteur = couple → répartir selon les quote-parts
           const userQuote = (asset.pourcentage_utilisateur ?? 50) / 100;
           const spouseQuote = (asset.pourcentage_conjoint ?? 50) / 100;

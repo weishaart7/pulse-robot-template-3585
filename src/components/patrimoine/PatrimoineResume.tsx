@@ -46,13 +46,15 @@ export const PatrimoineResume = () => {
         userValue += estimatedValue;
       } else {
         // Conjoint existe
-        if (asset.detenteur === 'user' || asset.detenteur === 'utilisateur' || !asset.detenteur) {
+        const detenteur = asset.detenteur?.toLowerCase();
+        
+        if (detenteur === 'user' || detenteur === 'utilisateur' || !detenteur) {
           // Biens propres de l'utilisateur → 100% utilisateur
           userValue += estimatedValue;
-        } else if (asset.detenteur === 'spouse' || asset.detenteur === 'conjoint') {
+        } else if (detenteur === 'spouse' || detenteur === 'conjoint') {
           // Biens propres du conjoint → 100% conjoint
           spouseValue += estimatedValue;
-        } else if (asset.detenteur === 'common' || asset.detenteur === 'commun' || asset.detenteur === 'couple') {
+        } else if (detenteur === 'common' || detenteur === 'commun' || detenteur === 'couple') {
           // Biens communs → répartir selon les quote-parts
           const userQuote = (asset.pourcentage_utilisateur ?? 50) / 100;
           const spouseQuote = (asset.pourcentage_conjoint ?? 50) / 100;

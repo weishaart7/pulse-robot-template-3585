@@ -194,6 +194,22 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   useEffect(() => {
     if (asset && familyData.userFirstName) {
       const displayDetenteur = mapDetenteurToDisplay(asset.detenteur || '', familyData);
+      
+      // Determine percentages based on detenteur
+      let userPercentage = 50;
+      let spousePercentage = 50;
+      
+      if (displayDetenteur === familyData.userFirstName || displayDetenteur === 'Vous') {
+        userPercentage = 100;
+        spousePercentage = 0;
+      } else if (displayDetenteur === familyData.partnerFirstName || displayDetenteur === 'Conjoint') {
+        userPercentage = 0;
+        spousePercentage = 100;
+      } else if (displayDetenteur === 'Le couple') {
+        userPercentage = asset.pourcentage_utilisateur || 50;
+        spousePercentage = asset.pourcentage_conjoint || 50;
+      }
+      
       form.reset({
         nature: asset.nature,
         denomination: asset.denomination || '',
@@ -203,8 +219,8 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         date_estimation: asset.date_estimation ? new Date(asset.date_estimation) : undefined,
         revalorisation_annuelle: asset.revalorisation_annuelle || undefined,
         detenteur: displayDetenteur,
-        pourcentage_utilisateur: asset.pourcentage_utilisateur || 50,
-        pourcentage_conjoint: asset.pourcentage_conjoint || 50,
+        pourcentage_utilisateur: userPercentage,
+        pourcentage_conjoint: spousePercentage,
         valeur_acquisition: asset.valeur_acquisition || undefined,
         frais_acquisition: asset.frais_acquisition || undefined,
         date_acquisition: asset.date_acquisition ? new Date(asset.date_acquisition) : undefined,
@@ -214,15 +230,56 @@ export const AssetForm: React.FC<AssetFormProps> = ({
       });
     }
   }, [asset, familyData, form]);
+  
+  // Auto-adjust percentages when detenteur changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'detenteur' && value.detenteur) {
+        const detenteur = value.detenteur;
+        
+        if (detenteur === familyData.userFirstName || detenteur === 'Vous') {
+          form.setValue('pourcentage_utilisateur', 100);
+          form.setValue('pourcentage_conjoint', 0);
+        } else if (detenteur === familyData.partnerFirstName || detenteur === 'Conjoint') {
+          form.setValue('pourcentage_utilisateur', 0);
+          form.setValue('pourcentage_conjoint', 100);
+        } else if (detenteur === 'Le couple') {
+          // Keep current values or reset to 50/50 if they are 100/0 or 0/100
+          const currentUser = form.getValues('pourcentage_utilisateur');
+          const currentSpouse = form.getValues('pourcentage_conjoint');
+          if ((currentUser === 100 && currentSpouse === 0) || (currentUser === 0 && currentSpouse === 100)) {
+            form.setValue('pourcentage_utilisateur', 50);
+            form.setValue('pourcentage_conjoint', 50);
+          }
+        }
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form, familyData]);
   const handleSubmit = async (values: AssetFormValues) => {
     setIsLoading(true);
     try {
       // Convert display values to database values
       const dbDetenteur = mapDetenteurToDb(values.detenteur || '', familyData);
       
+      // Adjust percentages based on detenteur
+      let finalUserPercentage = values.pourcentage_utilisateur;
+      let finalSpousePercentage = values.pourcentage_conjoint;
+      
+      if (dbDetenteur === 'user') {
+        finalUserPercentage = 100;
+        finalSpousePercentage = 0;
+      } else if (dbDetenteur === 'spouse') {
+        finalUserPercentage = 0;
+        finalSpousePercentage = 100;
+      }
+      
       const formattedValues = {
         ...values,
         detenteur: dbDetenteur,
+        pourcentage_utilisateur: finalUserPercentage,
+        pourcentage_conjoint: finalSpousePercentage,
         date_estimation: values.date_estimation ? format(values.date_estimation, 'yyyy-MM-dd') : undefined,
         date_acquisition: values.date_acquisition ? format(values.date_acquisition, 'yyyy-MM-dd') : undefined
       };
