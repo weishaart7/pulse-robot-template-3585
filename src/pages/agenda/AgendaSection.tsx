@@ -418,7 +418,10 @@ export function AgendaSection() {
                             </span>
                           </div>
                           {dayData.events.length === 1 ? (
-                            <span className="text-foreground truncate">
+                            <span 
+                              className="text-foreground truncate cursor-pointer hover:text-primary transition-colors"
+                              onClick={() => handleEventClick(dayData.events[0])}
+                            >
                               {dayData.events[0].name}
                             </span>
                           ) : (
