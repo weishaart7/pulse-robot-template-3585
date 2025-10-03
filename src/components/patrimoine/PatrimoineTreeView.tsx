@@ -82,12 +82,12 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
 
   // Couleurs par catégorie
   const categoryColors: Record<string, string> = {
-    'IMMOBILIER': 'bg-red-500',
-    'FINANCIER': 'bg-pink-500',
-    'EPARGNE': 'bg-purple-500',
-    'PROFESSIONNEL': 'bg-blue-500',
-    'MOBILIER': 'bg-green-500',
-    'AUTRES': 'bg-orange-500',
+    'IMMOBILIER': 'bg-[#05E8A4]',
+    'FINANCIER': 'bg-[#89FC00]',
+    'EPARGNE': 'bg-[#FF0095]',
+    'PROFESSIONNEL': 'bg-[#D5B7FF]',
+    'MOBILIER': 'bg-[#2609D6]',
+    'AUTRES': 'bg-[#FF8B55]',
   };
 
   const getCategoryColor = (category: string) => {
