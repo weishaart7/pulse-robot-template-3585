@@ -5,6 +5,8 @@ import { FullScreenCalendar } from "@/components/ui/fullscreen-calendar";
 import { format, isSameMonth, compareAsc } from "date-fns";
 import { fr } from "date-fns/locale";
 import { EventDialog } from "@/components/agenda/EventDialog";
+import { AddEventDialog } from "@/components/agenda/AddEventDialog";
+import { SearchDialog } from "@/components/agenda/SearchDialog";
 import { useToast } from "@/hooks/use-toast";
 
 // Données d'exemple
@@ -146,6 +148,8 @@ export function AgendaSection() {
   const [events, setEvents] = useState(dummyEvents);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const handleEventClick = (event: Event) => {
@@ -184,6 +188,50 @@ export function AgendaSection() {
     });
   };
 
+  const handleAddEvent = ({
+    name,
+    time,
+    date,
+  }: {
+    name: string;
+    time: string;
+    date: Date;
+  }) => {
+    const newEvent: Event = {
+      id: Math.max(...events.flatMap((d) => d.events.map((e) => e.id)), 0) + 1,
+      name,
+      time,
+      datetime: `${format(date, "yyyy-MM-dd")}T${time}`,
+    };
+
+    setEvents((prevEvents) => {
+      const existingDayIndex = prevEvents.findIndex(
+        (dayData) =>
+          format(dayData.day, "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
+      );
+
+      if (existingDayIndex >= 0) {
+        // Ajouter à un jour existant
+        const updated = [...prevEvents];
+        updated[existingDayIndex] = {
+          ...updated[existingDayIndex],
+          events: [...updated[existingDayIndex].events, newEvent],
+        };
+        return updated;
+      } else {
+        // Créer un nouveau jour
+        return [...prevEvents, { day: date, events: [newEvent] }].sort((a, b) =>
+          compareAsc(a.day, b.day)
+        );
+      }
+    });
+
+    toast({
+      title: "Événement ajouté",
+      description: "Le nouvel événement a été créé avec succès.",
+    });
+  };
+
   // Organiser les événements par mois
   const eventsByMonth = events.reduce((acc, dayData) => {
     const monthKey = format(dayData.day, "MMMM yyyy", { locale: fr });
@@ -208,7 +256,12 @@ export function AgendaSection() {
         <div className="flex-1">
           <Card className="h-full">
             <CardContent className="p-0 h-full">
-              <FullScreenCalendar data={events} onEventClick={handleEventClick} />
+              <FullScreenCalendar
+                data={events}
+                onEventClick={handleEventClick}
+                onSearchClick={() => setSearchDialogOpen(true)}
+                onAddClick={() => setAddDialogOpen(true)}
+              />
             </CardContent>
           </Card>
         </div>
@@ -273,6 +326,19 @@ export function AgendaSection() {
         onOpenChange={setDialogOpen}
         onUpdate={handleUpdateEvent}
         onDelete={handleDeleteEvent}
+      />
+
+      <AddEventDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        onAdd={handleAddEvent}
+      />
+
+      <SearchDialog
+        open={searchDialogOpen}
+        onOpenChange={setSearchDialogOpen}
+        events={events}
+        onEventClick={handleEventClick}
       />
     </>
   );

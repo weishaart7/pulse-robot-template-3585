@@ -43,6 +43,8 @@ interface CalendarData {
 interface FullScreenCalendarProps {
   data: CalendarData[]
   onEventClick?: (event: Event) => void
+  onSearchClick?: () => void
+  onAddClick?: () => void
 }
 
 const colStartClasses = [
@@ -55,7 +57,7 @@ const colStartClasses = [
   "col-start-7",
 ]
 
-export function FullScreenCalendar({ data, onEventClick }: FullScreenCalendarProps) {
+export function FullScreenCalendar({ data, onEventClick, onSearchClick, onAddClick }: FullScreenCalendarProps) {
   const today = startOfToday()
   const [selectedDay, setSelectedDay] = React.useState(today)
   const [currentMonth, setCurrentMonth] = React.useState(
@@ -110,7 +112,12 @@ export function FullScreenCalendar({ data, onEventClick }: FullScreenCalendarPro
         </div>
 
         <div className="flex flex-col items-center gap-4 md:flex-row md:gap-6">
-          <Button variant="outline" size="icon" className="hidden lg:flex">
+          <Button
+            variant="outline"
+            size="icon"
+            className="hidden lg:flex"
+            onClick={onSearchClick}
+          >
             <SearchIcon size={16} strokeWidth={2} aria-hidden="true" />
           </Button>
 
@@ -150,7 +157,7 @@ export function FullScreenCalendar({ data, onEventClick }: FullScreenCalendarPro
             className="block w-full md:hidden"
           />
 
-          <Button className="w-full gap-2 md:w-auto">
+          <Button className="w-full gap-2 md:w-auto" onClick={onAddClick}>
             <PlusCircleIcon size={16} strokeWidth={2} aria-hidden="true" />
             <span>New Event</span>
           </Button>
