@@ -68,7 +68,7 @@ export const PatrimoineResume = () => {
       userValue,
       spouseValue,
       totalValue,
-      showSpouse: isInCouple && spouseValue > 0
+      showSpouse: isInCouple
     };
   }, [assets, familyProfile, maritalStatus, isInCouple]);
   const formatCurrency = (value: number) => {
