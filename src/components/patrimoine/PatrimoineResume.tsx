@@ -43,23 +43,24 @@ export const PatrimoineResume = () => {
     let spouseOwnValue = 0;
     let spouseSharedValue = 0;
     
+    let userOwnPassifs = 0;
+    let userSharedPassifs = 0;
+    let spouseOwnPassifs = 0;
+    let spouseSharedPassifs = 0;
+    
+    // Traitement des actifs
     assets.forEach(asset => {
       const estimatedValue = asset.valeur_estimee || 0;
       const detenteur = asset.detenteur?.toLowerCase();
       
       if (!isInCouple) {
-        // Pas de conjoint → 100% utilisateur
         userOwnValue += estimatedValue;
       } else {
-        // Conjoint existe
         if (detenteur === 'user' || detenteur === 'utilisateur' || !detenteur) {
-          // Biens propres de l'utilisateur → 100% utilisateur
           userOwnValue += estimatedValue;
         } else if (detenteur === 'spouse' || detenteur === 'conjoint') {
-          // Biens propres du conjoint → 100% conjoint
           spouseOwnValue += estimatedValue;
         } else if (detenteur === 'common' || detenteur === 'commun' || detenteur === 'couple') {
-          // Biens communs → répartir selon les quote-parts
           const userQuote = (asset.pourcentage_utilisateur ?? 50) / 100;
           const spouseQuote = (asset.pourcentage_conjoint ?? 50) / 100;
           userSharedValue += estimatedValue * userQuote;
@@ -68,8 +69,55 @@ export const PatrimoineResume = () => {
       }
     });
     
-    const userValue = userOwnValue + userSharedValue;
-    const spouseValue = spouseOwnValue + spouseSharedValue;
+    // Traitement des passifs
+    passifs.forEach(passif => {
+      const montant = passif.montant_du || 0;
+      const detenteur = passif.detenteur?.toLowerCase();
+      
+      if (!isInCouple) {
+        userOwnPassifs += montant;
+      } else {
+        if (detenteur === 'user' || detenteur === 'utilisateur' || !detenteur) {
+          userOwnPassifs += montant;
+        } else if (detenteur === 'spouse' || detenteur === 'conjoint') {
+          spouseOwnPassifs += montant;
+        } else if (detenteur === 'common' || detenteur === 'commun' || detenteur === 'couple') {
+          const userQuote = (passif.pourcentage_utilisateur ?? 50) / 100;
+          const spouseQuote = (passif.pourcentage_conjoint ?? 50) / 100;
+          userSharedPassifs += montant * userQuote;
+          spouseSharedPassifs += montant * spouseQuote;
+        }
+      }
+    });
+    
+    // Traitement des emprunts
+    emprunts.forEach(emprunt => {
+      const montant = emprunt.capital_restant_du || 0;
+      const detenteur = emprunt.detenteur?.toLowerCase();
+      
+      if (!isInCouple) {
+        userOwnPassifs += montant;
+      } else {
+        if (detenteur === 'user' || detenteur === 'utilisateur' || !detenteur) {
+          userOwnPassifs += montant;
+        } else if (detenteur === 'spouse' || detenteur === 'conjoint') {
+          spouseOwnPassifs += montant;
+        } else if (detenteur === 'common' || detenteur === 'commun' || detenteur === 'couple') {
+          const userQuote = (emprunt.pourcentage_utilisateur ?? 50) / 100;
+          const spouseQuote = (emprunt.pourcentage_conjoint ?? 50) / 100;
+          userSharedPassifs += montant * userQuote;
+          spouseSharedPassifs += montant * spouseQuote;
+        }
+      }
+    });
+    
+    // Calcul du patrimoine NET
+    const userActifs = userOwnValue + userSharedValue;
+    const spouseActifs = spouseOwnValue + spouseSharedValue;
+    const userPassifs = userOwnPassifs + userSharedPassifs;
+    const spousePassifs = spouseOwnPassifs + spouseSharedPassifs;
+    const userValue = userActifs - userPassifs;
+    const spouseValue = spouseActifs - spousePassifs;
     const totalValue = userValue + spouseValue;
     
     return {
@@ -81,10 +129,14 @@ export const PatrimoineResume = () => {
       userSharedValue,
       spouseOwnValue,
       spouseSharedValue,
+      userActifs,
+      spouseActifs,
+      userPassifs,
+      spousePassifs,
       totalValue,
       showSpouse: isInCouple
     };
-  }, [assets, familyProfile, maritalStatus, isInCouple]);
+  }, [assets, passifs, emprunts, familyProfile, maritalStatus, isInCouple]);
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -164,13 +216,15 @@ export const PatrimoineResume = () => {
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
                   {patrimoineParPersonne.userFirstName}
                 </p>
-                <p className="text-xl font-semibold text-foreground">
+                <p className="text-xl font-bold text-foreground">
                   {formatCurrency(patrimoineParPersonne.userValue)}
                 </p>
-                {patrimoineParPersonne.showSpouse && (patrimoineParPersonne.userOwnValue > 0 || patrimoineParPersonne.userSharedValue > 0) && (
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {patrimoineParPersonne.userOwnValue > 0 && <div>Biens propres : {formatCurrency(patrimoineParPersonne.userOwnValue)}</div>}
-                    {patrimoineParPersonne.userSharedValue > 0 && <div>Part biens communs : {formatCurrency(patrimoineParPersonne.userSharedValue)}</div>}
+                {patrimoineParPersonne.showSpouse && (
+                  <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                    <div>Actifs : {formatCurrency(patrimoineParPersonne.userActifs)}</div>
+                    {patrimoineParPersonne.userOwnValue > 0 && <div className="ml-4">• Biens propres : {formatCurrency(patrimoineParPersonne.userOwnValue)}</div>}
+                    {patrimoineParPersonne.userSharedValue > 0 && <div className="ml-4">• Part biens communs : {formatCurrency(patrimoineParPersonne.userSharedValue)}</div>}
+                    {patrimoineParPersonne.userPassifs > 0 && <div className="text-destructive">Passifs : {formatCurrency(patrimoineParPersonne.userPassifs)}</div>}
                   </div>
                 )}
               </div>
@@ -184,15 +238,15 @@ export const PatrimoineResume = () => {
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
                     {patrimoineParPersonne.spouseFirstName}
                   </p>
-                  <p className="text-xl font-semibold text-foreground">
+                  <p className="text-xl font-bold text-foreground">
                     {formatCurrency(patrimoineParPersonne.spouseValue)}
                   </p>
-                  {(patrimoineParPersonne.spouseOwnValue > 0 || patrimoineParPersonne.spouseSharedValue > 0) && (
-                    <div className="mt-1 text-xs text-muted-foreground">
-                      {patrimoineParPersonne.spouseOwnValue > 0 && <div>Biens propres : {formatCurrency(patrimoineParPersonne.spouseOwnValue)}</div>}
-                      {patrimoineParPersonne.spouseSharedValue > 0 && <div>Part biens communs : {formatCurrency(patrimoineParPersonne.spouseSharedValue)}</div>}
-                    </div>
-                  )}
+                  <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                    <div>Actifs : {formatCurrency(patrimoineParPersonne.spouseActifs)}</div>
+                    {patrimoineParPersonne.spouseOwnValue > 0 && <div className="ml-4">• Biens propres : {formatCurrency(patrimoineParPersonne.spouseOwnValue)}</div>}
+                    {patrimoineParPersonne.spouseSharedValue > 0 && <div className="ml-4">• Part biens communs : {formatCurrency(patrimoineParPersonne.spouseSharedValue)}</div>}
+                    {patrimoineParPersonne.spousePassifs > 0 && <div className="text-destructive">Passifs : {formatCurrency(patrimoineParPersonne.spousePassifs)}</div>}
+                  </div>
                 </div>
               </div>}
 
