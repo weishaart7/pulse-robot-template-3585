@@ -218,7 +218,7 @@ export const PatrimoineResume = () => {
         {/* Carte vide 2 */}
         <Card>
           <CardHeader>
-            <CardTitle>Carte 3</CardTitle>
+            <CardTitle>Objectifs</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground text-center py-8">
