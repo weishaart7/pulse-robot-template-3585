@@ -204,7 +204,7 @@ export function FicheClientForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-h-[calc(100vh-300px)] overflow-y-auto pr-2">
       <div className="space-y-5">
         {/* Ligne 1 : Civilité */}
         <div className="grid grid-cols-1 gap-6">

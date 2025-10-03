@@ -178,7 +178,7 @@ export const SituationMatrimonialeForm = () => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-h-[calc(100vh-300px)] overflow-y-auto pr-2">
         {/* Sélection du statut principal */}
         <FormField
           control={form.control}
