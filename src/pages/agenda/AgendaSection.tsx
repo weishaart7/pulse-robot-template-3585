@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { FullScreenCalendar } from "@/components/ui/fullscreen-calendar";
-import { format, isSameMonth, compareAsc } from "date-fns";
+import { format, isSameMonth, compareAsc, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { EventDialog } from "@/components/agenda/EventDialog";
 import { AddEventDialog } from "@/components/agenda/AddEventDialog";
 import { SearchDialog } from "@/components/agenda/SearchDialog";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Données d'exemple
 const dummyEvents = [
@@ -150,45 +152,159 @@ export function AgendaSection() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Charger les événements depuis Supabase
+  useEffect(() => {
+    if (user) {
+      loadEvents();
+    }
+  }, [user]);
+
+  const loadEvents = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("agenda_events")
+        .select("*")
+        .order("event_date", { ascending: true });
+
+      if (error) throw error;
+
+      if (data) {
+        // Transformer les données pour correspondre au format CalendarData
+        const groupedEvents = data.reduce((acc, event) => {
+          const date = parseISO(event.event_date);
+          const dateKey = format(date, "yyyy-MM-dd");
+          
+          if (!acc[dateKey]) {
+            acc[dateKey] = {
+              day: date,
+              events: [],
+            };
+          }
+          
+          acc[dateKey].events.push({
+            id: parseInt(event.id.split("-")[0], 16), // Générer un ID numérique à partir de l'UUID
+            name: event.name,
+            time: event.event_time,
+            datetime: event.datetime,
+            dbId: event.id, // Garder l'UUID pour les opérations DB
+          } as Event & { dbId: string });
+          
+          return acc;
+        }, {} as Record<string, CalendarData>);
+
+        setEvents(Object.values(groupedEvents));
+      }
+    } catch (error) {
+      console.error("Error loading events:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les événements",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEventClick = (event: Event) => {
     setSelectedEvent(event);
     setDialogOpen(true);
   };
 
-  const handleUpdateEvent = (eventId: number, updatedEvent: Partial<Event>) => {
-    setEvents((prevEvents) =>
-      prevEvents.map((dayData) => ({
-        ...dayData,
-        events: dayData.events.map((evt) =>
-          evt.id === eventId ? { ...evt, ...updatedEvent } : evt
-        ),
-      }))
-    );
-    toast({
-      title: "Événement modifié",
-      description: "L'événement a été mis à jour avec succès.",
-    });
-  };
+  const handleUpdateEvent = async (eventId: number, updatedEvent: Partial<Event>) => {
+    try {
+      // Trouver l'UUID de l'événement
+      const event = events
+        .flatMap((d) => d.events)
+        .find((e) => e.id === eventId) as Event & { dbId?: string };
+      
+      if (!event?.dbId) {
+        throw new Error("Event ID not found");
+      }
 
-  const handleDeleteEvent = (eventId: number) => {
-    setEvents((prevEvents) =>
-      prevEvents
-        .map((dayData) => ({
+      const { error } = await supabase
+        .from("agenda_events")
+        .update({
+          name: updatedEvent.name,
+          event_time: updatedEvent.time,
+        })
+        .eq("id", event.dbId);
+
+      if (error) throw error;
+
+      // Mettre à jour l'état local
+      setEvents((prevEvents) =>
+        prevEvents.map((dayData) => ({
           ...dayData,
-          events: dayData.events.filter((evt) => evt.id !== eventId),
+          events: dayData.events.map((evt) =>
+            evt.id === eventId ? { ...evt, ...updatedEvent } : evt
+          ),
         }))
-        .filter((dayData) => dayData.events.length > 0)
-    );
-    toast({
-      title: "Événement supprimé",
-      description: "L'événement a été supprimé avec succès.",
-      variant: "destructive",
-    });
+      );
+
+      toast({
+        title: "Événement modifié",
+        description: "L'événement a été mis à jour avec succès.",
+      });
+    } catch (error) {
+      console.error("Error updating event:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier l'événement",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleAddEvent = ({
+  const handleDeleteEvent = async (eventId: number) => {
+    try {
+      // Trouver l'UUID de l'événement
+      const event = events
+        .flatMap((d) => d.events)
+        .find((e) => e.id === eventId) as Event & { dbId?: string };
+      
+      if (!event?.dbId) {
+        throw new Error("Event ID not found");
+      }
+
+      const { error } = await supabase
+        .from("agenda_events")
+        .delete()
+        .eq("id", event.dbId);
+
+      if (error) throw error;
+
+      // Mettre à jour l'état local
+      setEvents((prevEvents) =>
+        prevEvents
+          .map((dayData) => ({
+            ...dayData,
+            events: dayData.events.filter((evt) => evt.id !== eventId),
+          }))
+          .filter((dayData) => dayData.events.length > 0)
+      );
+
+      toast({
+        title: "Événement supprimé",
+        description: "L'événement a été supprimé avec succès.",
+        variant: "destructive",
+      });
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer l'événement",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddEvent = async ({
     name,
     time,
     date,
@@ -197,39 +313,40 @@ export function AgendaSection() {
     time: string;
     date: Date;
   }) => {
-    const newEvent: Event = {
-      id: Math.max(...events.flatMap((d) => d.events.map((e) => e.id)), 0) + 1,
-      name,
-      time,
-      datetime: `${format(date, "yyyy-MM-dd")}T${time}`,
-    };
-
-    setEvents((prevEvents) => {
-      const existingDayIndex = prevEvents.findIndex(
-        (dayData) =>
-          format(dayData.day, "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
-      );
-
-      if (existingDayIndex >= 0) {
-        // Ajouter à un jour existant
-        const updated = [...prevEvents];
-        updated[existingDayIndex] = {
-          ...updated[existingDayIndex],
-          events: [...updated[existingDayIndex].events, newEvent],
-        };
-        return updated;
-      } else {
-        // Créer un nouveau jour
-        return [...prevEvents, { day: date, events: [newEvent] }].sort((a, b) =>
-          compareAsc(a.day, b.day)
-        );
+    try {
+      if (!user) {
+        throw new Error("User not authenticated");
       }
-    });
 
-    toast({
-      title: "Événement ajouté",
-      description: "Le nouvel événement a été créé avec succès.",
-    });
+      const { data, error } = await supabase
+        .from("agenda_events")
+        .insert({
+          user_id: user.id,
+          name,
+          event_date: format(date, "yyyy-MM-dd"),
+          event_time: time,
+          datetime: `${format(date, "yyyy-MM-dd")}T${time}`,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Recharger les événements
+      await loadEvents();
+
+      toast({
+        title: "Événement ajouté",
+        description: "Le nouvel événement a été créé avec succès.",
+      });
+    } catch (error) {
+      console.error("Error adding event:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ajouter l'événement",
+        variant: "destructive",
+      });
+    }
   };
 
   // Organiser les événements par mois
@@ -248,6 +365,14 @@ export function AgendaSection() {
     const dateB = new Date(b);
     return compareAsc(dateA, dateB);
   });
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center p-6">
+        <p className="text-muted-foreground">Chargement...</p>
+      </div>
+    );
+  }
 
   return (
     <>

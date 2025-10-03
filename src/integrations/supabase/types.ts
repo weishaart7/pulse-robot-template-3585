@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      agenda_events: {
+        Row: {
+          created_at: string
+          datetime: string
+          event_date: string
+          event_time: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          datetime: string
+          event_date: string
+          event_time: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          datetime?: string
+          event_date?: string
+          event_time?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       asset_charges: {
         Row: {
           asset_id: string
