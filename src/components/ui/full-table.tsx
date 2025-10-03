@@ -71,7 +71,7 @@ FullTable.Head = ({
 }: {
   children: React.ReactNode;
 }) => {
-  return <th className="h-8 px-2 align-middle font-medium text-left last:text-right py-[10px]">{children}</th>;
+  return <th className="h-8 px-2 align-middle font-medium first:text-left text-center last:text-right py-[10px]">{children}</th>;
 };
 FullTable.Cell = ({
   children,
