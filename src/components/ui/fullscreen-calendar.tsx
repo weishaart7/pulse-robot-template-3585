@@ -16,6 +16,7 @@ import {
   startOfToday,
   startOfWeek,
 } from "date-fns"
+import { fr } from "date-fns/locale"
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -93,7 +94,7 @@ export function FullScreenCalendar({ data, onEventClick, onSearchClick, onAddCli
           <div className="flex items-center gap-4">
             <div className="hidden w-20 flex-col items-center justify-center rounded-lg border bg-muted p-0.5 md:flex">
               <h1 className="p-1 text-xs uppercase text-muted-foreground">
-                {format(today, "MMM")}
+                {format(today, "MMM", { locale: fr })}
               </h1>
               <div className="flex w-full items-center justify-center rounded-lg border bg-background p-0.5 text-lg font-bold">
                 <span>{format(today, "d")}</span>
@@ -101,11 +102,11 @@ export function FullScreenCalendar({ data, onEventClick, onSearchClick, onAddCli
             </div>
             <div className="flex flex-col">
               <h2 className="text-lg font-semibold text-foreground">
-                {format(firstDayCurrentMonth, "MMMM, yyyy")}
+                {format(firstDayCurrentMonth, "MMMM yyyy", { locale: fr })}
               </h2>
               <p className="text-sm text-muted-foreground">
-                {format(firstDayCurrentMonth, "MMM d, yyyy")} -{" "}
-                {format(endOfMonth(firstDayCurrentMonth), "MMM d, yyyy")}
+                {format(firstDayCurrentMonth, "d MMM yyyy", { locale: fr })} -{" "}
+                {format(endOfMonth(firstDayCurrentMonth), "d MMM yyyy", { locale: fr })}
               </p>
             </div>
           </div>
@@ -138,7 +139,7 @@ export function FullScreenCalendar({ data, onEventClick, onSearchClick, onAddCli
               className="w-full rounded-none shadow-none first:rounded-s-lg last:rounded-e-lg focus-visible:z-10 md:w-auto"
               variant="outline"
             >
-              Today
+              Aujourd'hui
             </Button>
             <Button
               onClick={nextMonth}
@@ -159,7 +160,7 @@ export function FullScreenCalendar({ data, onEventClick, onSearchClick, onAddCli
 
           <Button className="w-full gap-2 md:w-auto" onClick={onAddClick}>
             <PlusCircleIcon size={16} strokeWidth={2} aria-hidden="true" />
-            <span>New Event</span>
+            <span>Nouvel événement</span>
           </Button>
         </div>
       </div>
@@ -168,13 +169,13 @@ export function FullScreenCalendar({ data, onEventClick, onSearchClick, onAddCli
       <div className="lg:flex lg:flex-auto lg:flex-col">
         {/* Week Days Header */}
         <div className="grid grid-cols-7 border text-center text-xs font-semibold leading-6 lg:flex-none">
-          <div className="border-r py-2.5">Sun</div>
-          <div className="border-r py-2.5">Mon</div>
-          <div className="border-r py-2.5">Tue</div>
-          <div className="border-r py-2.5">Wed</div>
-          <div className="border-r py-2.5">Thu</div>
-          <div className="border-r py-2.5">Fri</div>
-          <div className="py-2.5">Sat</div>
+          <div className="border-r py-2.5">Dim</div>
+          <div className="border-r py-2.5">Lun</div>
+          <div className="border-r py-2.5">Mar</div>
+          <div className="border-r py-2.5">Mer</div>
+          <div className="border-r py-2.5">Jeu</div>
+          <div className="border-r py-2.5">Ven</div>
+          <div className="py-2.5">Sam</div>
         </div>
 
         {/* Calendar Days */}
@@ -300,7 +301,7 @@ export function FullScreenCalendar({ data, onEventClick, onSearchClick, onAddCli
                           ))}
                           {day.events.length > 1 && (
                             <div className="text-xs text-muted-foreground">
-                              + {day.events.length - 1} more
+                              + {day.events.length - 1} de plus
                             </div>
                           )}
                         </div>
