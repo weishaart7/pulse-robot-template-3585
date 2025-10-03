@@ -10,6 +10,7 @@ import { SocietesSection } from './societes/SocietesSection';
 import { RetraiteSection } from './retraite/RetraiteSection';
 import FiscaliteSection from './fiscalite/FiscaliteSection';
 import BlogSection from './blog/BlogSection';
+import { AgendaSection } from './agenda/AgendaSection';
 
 const DashboardSection = () => {
   const { section } = useParams();
@@ -25,7 +26,8 @@ const DashboardSection = () => {
       fiscalite: 'Fiscalité',
       transmission: 'Transmission',
       blog: 'Blog',
-      strategies: 'Stratégies'
+      strategies: 'Stratégies',
+      agenda: 'Agenda'
     };
     return titles[section] || 'Section inconnue';
   };
@@ -41,7 +43,8 @@ const DashboardSection = () => {
       fiscalite: 'Optimisez votre situation fiscale',
       transmission: 'Préparez la transmission de votre patrimoine',
       blog: 'Articles, conseils et fiches pratiques pour gérer votre patrimoine',
-      strategies: 'Définissez vos stratégies d\'investissement'
+      strategies: 'Définissez vos stratégies d\'investissement',
+      agenda: 'Gérez vos rendez-vous et événements'
     };
     return descriptions[section] || 'Description non disponible';
   };
@@ -89,6 +92,11 @@ const DashboardSection = () => {
   // Si la section est "blog", afficher le composant spécialisé
   if (section === 'blog') {
     return <BlogSection />;
+  }
+  
+  // Si la section est "agenda", afficher le composant spécialisé
+  if (section === 'agenda') {
+    return <AgendaSection />;
   }
 
   return (
