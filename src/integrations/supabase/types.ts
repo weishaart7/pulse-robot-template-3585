@@ -185,11 +185,14 @@ export type Database = {
         Row: {
           capital_restant_du: number | null
           created_at: string
+          detenteur: string | null
           duree_restante: number | null
           id: string
           libelle: string
           mensualite: number | null
           nature: string
+          pourcentage_conjoint: number | null
+          pourcentage_utilisateur: number | null
           taux_interet: number | null
           updated_at: string
           user_id: string
@@ -197,11 +200,14 @@ export type Database = {
         Insert: {
           capital_restant_du?: number | null
           created_at?: string
+          detenteur?: string | null
           duree_restante?: number | null
           id?: string
           libelle: string
           mensualite?: number | null
           nature: string
+          pourcentage_conjoint?: number | null
+          pourcentage_utilisateur?: number | null
           taux_interet?: number | null
           updated_at?: string
           user_id: string
@@ -209,11 +215,14 @@ export type Database = {
         Update: {
           capital_restant_du?: number | null
           created_at?: string
+          detenteur?: string | null
           duree_restante?: number | null
           id?: string
           libelle?: string
           mensualite?: number | null
           nature?: string
+          pourcentage_conjoint?: number | null
+          pourcentage_utilisateur?: number | null
           taux_interet?: number | null
           updated_at?: string
           user_id?: string
@@ -910,25 +919,34 @@ export type Database = {
       passifs: {
         Row: {
           created_at: string
+          detenteur: string | null
           id: string
           montant_du: number
           nature: string
+          pourcentage_conjoint: number | null
+          pourcentage_utilisateur: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          detenteur?: string | null
           id?: string
           montant_du: number
           nature: string
+          pourcentage_conjoint?: number | null
+          pourcentage_utilisateur?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          detenteur?: string | null
           id?: string
           montant_du?: number
           nature?: string
+          pourcentage_conjoint?: number | null
+          pourcentage_utilisateur?: number | null
           updated_at?: string
           user_id?: string
         }

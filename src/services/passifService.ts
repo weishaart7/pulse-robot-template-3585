@@ -9,6 +9,9 @@ export interface Emprunt {
   taux_interet?: number;
   mensualite?: number;
   duree_restante?: number;
+  detenteur?: string;
+  pourcentage_utilisateur?: number;
+  pourcentage_conjoint?: number;
   created_at: string;
   updated_at: string;
 }
@@ -18,6 +21,9 @@ export interface Passif {
   user_id: string;
   nature: string;
   montant_du: number;
+  detenteur?: string;
+  pourcentage_utilisateur?: number;
+  pourcentage_conjoint?: number;
   created_at: string;
   updated_at: string;
 }
