@@ -22,7 +22,17 @@ export const PatrimoineResume = () => {
     data: maritalStatus
   } = useMaritalStatus();
   const isInCouple = useMemo(() => {
-    return maritalStatus?.statut_couple && ['marie', 'pacs', 'concubinage'].includes(maritalStatus.statut_couple.toLowerCase());
+    const raw = maritalStatus?.statut_couple;
+    if (!raw) return false;
+    const s = raw
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z ]/g, '');
+    if (s.includes('mari')) return true; // "marié", "marie(e)"
+    if (s.includes('pacs')) return true; // "pacsé", "pacs(e)"
+    if (s.includes('concubin')) return true; // "concubinage"
+    return false;
   }, [maritalStatus]);
   const financialSummary = useMemo(() => {
     const totalActifs = assets.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
