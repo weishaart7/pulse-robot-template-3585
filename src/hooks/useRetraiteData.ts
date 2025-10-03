@@ -15,6 +15,7 @@ interface RetraiteData {
 export const useRetraiteData = () => {
   const [data, setData] = useState<RetraiteData>({});
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
   // Chargement initial des données
@@ -48,7 +49,8 @@ export const useRetraiteData = () => {
     }
   };
 
-  const updateRetraiteData = async (updates: Partial<RetraiteData>) => {
+  const saveRetraiteData = async (updates: Partial<RetraiteData>) => {
+    setSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -57,11 +59,8 @@ export const useRetraiteData = () => {
           description: "Vous devez être connecté pour sauvegarder les données.",
           variant: "destructive",
         });
-        return;
+        return false;
       }
-
-      const newData = { ...data, ...updates };
-      setData(newData);
 
       if (data.id) {
         // Mise à jour d'un enregistrement existant
@@ -78,7 +77,7 @@ export const useRetraiteData = () => {
             description: "Impossible de sauvegarder les données de retraite.",
             variant: "destructive",
           });
-          return;
+          return false;
         }
       } else {
         // Création d'un nouvel enregistrement
@@ -95,7 +94,7 @@ export const useRetraiteData = () => {
             description: "Impossible de créer les données de retraite.",
             variant: "destructive",
           });
-          return;
+          return false;
         }
 
         if (newRecord) {
@@ -105,8 +104,9 @@ export const useRetraiteData = () => {
 
       toast({
         title: "Données sauvegardées",
-        description: "Vos informations de retraite ont été automatiquement sauvegardées.",
+        description: "Vos informations de retraite ont été sauvegardées avec succès.",
       });
+      return true;
     } catch (error) {
       console.error('Error saving retirement data:', error);
       toast({
@@ -114,12 +114,16 @@ export const useRetraiteData = () => {
         description: "Une erreur est survenue lors de la sauvegarde.",
         variant: "destructive",
       });
+      return false;
+    } finally {
+      setSaving(false);
     }
   };
 
   return {
     data,
     loading,
-    updateRetraiteData,
+    saving,
+    saveRetraiteData,
   };
 };

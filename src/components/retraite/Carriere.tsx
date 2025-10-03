@@ -2,13 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Save } from 'lucide-react';
 import { useRetraiteData } from '@/hooks/useRetraiteData';
 
 export const Carriere = () => {
-  const { data, loading, updateRetraiteData } = useRetraiteData();
+  const { data, loading, saving, saveRetraiteData } = useRetraiteData();
   const [salaireAnnuelMoyen, setSalaireAnnuelMoyen] = useState<string>('');
   const [trimestresValides, setTrimestresValides] = useState<string>('');
-  const [trimestresRequis] = useState<number>(172); // Valeur par défaut
+  const [trimestresRequis] = useState<number>(172);
+  const [hasChanges, setHasChanges] = useState(false);
   const [pensionBaseBrute, setPensionBaseBrute] = useState<number>(0);
   const [decoteSurcote, setDecoteSurcote] = useState<number>(0);
   const [ageTauxPlein, setAgeTauxPlein] = useState<string>('');
@@ -16,36 +19,21 @@ export const Carriere = () => {
   // Chargement des données depuis Supabase
   useEffect(() => {
     if (!loading && data) {
-      if (data.salaire_annuel_moyen) {
+      if (data.salaire_annuel_moyen !== undefined) {
         setSalaireAnnuelMoyen(data.salaire_annuel_moyen.toString());
       }
-      if (data.trimestres_valides) {
+      if (data.trimestres_valides !== undefined) {
         setTrimestresValides(data.trimestres_valides.toString());
       }
     }
   }, [data, loading]);
 
-  // Sauvegarde automatique du salaire
+  // Détection des changements
   useEffect(() => {
-    const salaire = parseFloat(salaireAnnuelMoyen);
-    if (salaire && salaire > 0 && !loading) {
-      const timer = setTimeout(() => {
-        updateRetraiteData({ salaire_annuel_moyen: salaire });
-      }, 1000); // Délai de 1 seconde après la dernière modification
-      return () => clearTimeout(timer);
-    }
-  }, [salaireAnnuelMoyen, updateRetraiteData, loading]);
-
-  // Sauvegarde automatique des trimestres
-  useEffect(() => {
-    const trimValides = parseInt(trimestresValides);
-    if (trimValides && trimValides > 0 && !loading) {
-      const timer = setTimeout(() => {
-        updateRetraiteData({ trimestres_valides: trimValides });
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [trimestresValides, updateRetraiteData, loading]);
+    const salaireDifferent = parseFloat(salaireAnnuelMoyen) !== (data.salaire_annuel_moyen || 0);
+    const trimestresDifferent = parseInt(trimestresValides) !== (data.trimestres_valides || 0);
+    setHasChanges(salaireDifferent || trimestresDifferent);
+  }, [salaireAnnuelMoyen, trimestresValides, data]);
 
   // Calcul de la pension de base brute
   useEffect(() => {
@@ -91,8 +79,32 @@ export const Carriere = () => {
     }
   }, [trimestresValides, trimestresRequis]);
 
+  const handleSave = async () => {
+    const updates = {
+      salaire_annuel_moyen: parseFloat(salaireAnnuelMoyen) || 0,
+      trimestres_valides: parseInt(trimestresValides) || 0,
+    };
+    
+    const success = await saveRetraiteData(updates);
+    if (success) {
+      setHasChanges(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {hasChanges && (
+        <div className="flex justify-end">
+          <Button 
+            onClick={handleSave} 
+            disabled={saving}
+            className="gap-2"
+          >
+            <Save className="h-4 w-4" />
+            {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+          </Button>
+        </div>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Informations de carrière</CardTitle>

@@ -2,61 +2,52 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Save } from 'lucide-react';
 import { useRetraiteData } from '@/hooks/useRetraiteData';
 
 export const EpargneRetraite = () => {
-  const { data, loading, updateRetraiteData } = useRetraiteData();
+  const { data, loading, saving, saveRetraiteData } = useRetraiteData();
   const [epargnePer, setEpargnePer] = useState<string>('');
   const [epargneAssuranceVie, setEpargneAssuranceVie] = useState<string>('');
   const [autresEpargnes, setAutresEpargnes] = useState<string>('');
+  const [hasChanges, setHasChanges] = useState(false);
 
   // Chargement des données depuis Supabase
   useEffect(() => {
     if (!loading && data) {
-      if (data.epargne_per) {
+      if (data.epargne_per !== undefined) {
         setEpargnePer(data.epargne_per.toString());
       }
-      if (data.epargne_assurance_vie) {
+      if (data.epargne_assurance_vie !== undefined) {
         setEpargneAssuranceVie(data.epargne_assurance_vie.toString());
       }
-      if (data.autres_epargnes) {
+      if (data.autres_epargnes !== undefined) {
         setAutresEpargnes(data.autres_epargnes.toString());
       }
     }
   }, [data, loading]);
 
-  // Sauvegarde automatique PER
+  // Détection des changements
   useEffect(() => {
-    const per = parseFloat(epargnePer);
-    if (per && per > 0 && !loading) {
-      const timer = setTimeout(() => {
-        updateRetraiteData({ epargne_per: per });
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [epargnePer, updateRetraiteData, loading]);
+    const perDifferent = parseFloat(epargnePer) !== (data.epargne_per || 0);
+    const avDifferent = parseFloat(epargneAssuranceVie) !== (data.epargne_assurance_vie || 0);
+    const autresDifferent = parseFloat(autresEpargnes) !== (data.autres_epargnes || 0);
+    setHasChanges(perDifferent || avDifferent || autresDifferent);
+  }, [epargnePer, epargneAssuranceVie, autresEpargnes, data]);
 
-  // Sauvegarde automatique assurance vie
-  useEffect(() => {
-    const assuranceVie = parseFloat(epargneAssuranceVie);
-    if (assuranceVie && assuranceVie > 0 && !loading) {
-      const timer = setTimeout(() => {
-        updateRetraiteData({ epargne_assurance_vie: assuranceVie });
-      }, 1000);
-      return () => clearTimeout(timer);
+  const handleSave = async () => {
+    const updates = {
+      epargne_per: parseFloat(epargnePer) || 0,
+      epargne_assurance_vie: parseFloat(epargneAssuranceVie) || 0,
+      autres_epargnes: parseFloat(autresEpargnes) || 0,
+    };
+    
+    const success = await saveRetraiteData(updates);
+    if (success) {
+      setHasChanges(false);
     }
-  }, [epargneAssuranceVie, updateRetraiteData, loading]);
-
-  // Sauvegarde automatique autres épargnes
-  useEffect(() => {
-    const autres = parseFloat(autresEpargnes);
-    if (autres && autres > 0 && !loading) {
-      const timer = setTimeout(() => {
-        updateRetraiteData({ autres_epargnes: autres });
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [autresEpargnes, updateRetraiteData, loading]);
+  };
 
   const totalEpargne = (parseFloat(epargnePer) || 0) + 
                       (parseFloat(epargneAssuranceVie) || 0) + 
@@ -64,6 +55,19 @@ export const EpargneRetraite = () => {
 
   return (
     <div className="space-y-6">
+      {hasChanges && (
+        <div className="flex justify-end">
+          <Button 
+            onClick={handleSave} 
+            disabled={saving}
+            className="gap-2"
+          >
+            <Save className="h-4 w-4" />
+            {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+          </Button>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Épargne retraite</CardTitle>
