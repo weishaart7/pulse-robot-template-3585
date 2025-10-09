@@ -57,7 +57,7 @@ const residenceSchema = z.object({
   financement_taux_credit: z.number().min(0).optional().or(z.literal('')),
   financement_taux_assurance: z.number().min(0).optional().or(z.literal('')),
   type_location: z.enum(['Location nue', 'Location meublée non professionnelle (LMNP)', 'Location meublée professionnelle (LMP)']).optional(),
-  regime_location: z.enum(['Régime micro', 'Régime réel', 'Régime micro BIC', 'Régime BIC réel']).optional(),
+  regime_location: z.enum(['Micro-foncier', 'Réel', 'Micro-BIC', 'BIC']).optional(),
 });
 
 type ResidenceFormValues = z.infer<typeof residenceSchema>;
@@ -655,7 +655,7 @@ export const ImmobilierPropertyDialog: React.FC<ImmobilierPropertyDialogProps> =
                             <FormLabel>Type de location</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
-                                <SelectTrigger>
+                                <SelectTrigger size="lg">
                                   <SelectValue placeholder="Sélectionner un type" />
                                 </SelectTrigger>
                               </FormControl>
@@ -674,7 +674,7 @@ export const ImmobilierPropertyDialog: React.FC<ImmobilierPropertyDialogProps> =
                         )}
                       />
 
-                      {form.watch('type_location') && (
+                       {form.watch('type_location') && (
                         <FormField
                           control={form.control}
                           name="regime_location"
@@ -683,20 +683,25 @@ export const ImmobilierPropertyDialog: React.FC<ImmobilierPropertyDialogProps> =
                               <FormLabel>Régime fiscal</FormLabel>
                               <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
-                                  <SelectTrigger>
+                                  <SelectTrigger size="lg">
                                     <SelectValue placeholder="Sélectionner un régime" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  {form.watch('type_location') === 'Location nue' ? (
+                                  {asset?.nature === 'Immeubles locatifs (loués nus)' ? (
                                     <>
-                                      <SelectItem value="Régime micro">Régime micro</SelectItem>
-                                      <SelectItem value="Régime réel">Régime réel</SelectItem>
+                                      <SelectItem value="Micro-foncier">Micro-foncier</SelectItem>
+                                      <SelectItem value="Réel">Réel</SelectItem>
+                                    </>
+                                  ) : (asset?.nature === 'Immeubles locatifs (LMNP)' || asset?.nature === 'Immeubles professionnels (hors LMP)') ? (
+                                    <>
+                                      <SelectItem value="Micro-BIC">Micro-BIC</SelectItem>
+                                      <SelectItem value="BIC">BIC</SelectItem>
                                     </>
                                   ) : (
                                     <>
-                                      <SelectItem value="Régime micro BIC">Régime micro BIC</SelectItem>
-                                      <SelectItem value="Régime BIC réel">Régime BIC réel</SelectItem>
+                                      <SelectItem value="Micro-BIC">Micro-BIC</SelectItem>
+                                      <SelectItem value="BIC">BIC</SelectItem>
                                     </>
                                   )}
                                 </SelectContent>
