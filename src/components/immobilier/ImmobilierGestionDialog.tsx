@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { Asset } from '@/services/assetService';
 import AnimatedBackground from '@/components/ui/animated-tabs';
+import { RevenuForm } from './RevenuForm';
 
 interface ImmobilierGestionDialogProps {
   asset: Asset | null;
@@ -14,6 +15,7 @@ interface ImmobilierGestionDialogProps {
 
 export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: ImmobilierGestionDialogProps) => {
   const [activeTab, setActiveTab] = useState('revenus');
+  const [revenuFormOpen, setRevenuFormOpen] = useState(false);
 
   const TABS = [
     { id: 'revenus', label: 'Revenus' },
@@ -33,7 +35,7 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
                     Gérez les revenus générés par ce bien
                   </CardDescription>
                 </div>
-                <Button size="sm">
+                <Button size="sm" onClick={() => setRevenuFormOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Ajouter un revenu
                 </Button>
@@ -84,43 +86,56 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            Gestion de {asset?.denomination || 'ce bien'}
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Gestion de {asset?.denomination || 'ce bien'}
+            </DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-6">
-          <div className="flex justify-start">
-            <div className="rounded-[8px] bg-muted p-[2px]">
-              <AnimatedBackground
-                defaultValue="revenus"
-                onValueChange={(value) => setActiveTab(value || 'revenus')}
-                className="rounded-lg bg-background shadow-sm"
-                transition={{
-                  ease: "easeInOut",
-                  duration: 0.2,
-                }}
-              >
-                {TABS.map((tab) => (
-                  <button
-                    key={tab.id}
-                    data-id={tab.id}
-                    type="button"
-                    className="inline-flex min-w-24 items-center justify-center px-3 py-2 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </AnimatedBackground>
+          <div className="space-y-6">
+            <div className="flex justify-start">
+              <div className="rounded-[8px] bg-muted p-[2px]">
+                <AnimatedBackground
+                  defaultValue="revenus"
+                  onValueChange={(value) => setActiveTab(value || 'revenus')}
+                  className="rounded-lg bg-background shadow-sm"
+                  transition={{
+                    ease: "easeInOut",
+                    duration: 0.2,
+                  }}
+                >
+                  {TABS.map((tab) => (
+                    <button
+                      key={tab.id}
+                      data-id={tab.id}
+                      type="button"
+                      className="inline-flex min-w-24 items-center justify-center px-3 py-2 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </AnimatedBackground>
+              </div>
             </div>
-          </div>
 
-          {renderContent()}
-        </div>
-      </DialogContent>
-    </Dialog>
+            {renderContent()}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {asset && (
+        <RevenuForm
+          assetId={asset.id}
+          open={revenuFormOpen}
+          onOpenChange={setRevenuFormOpen}
+          onSuccess={() => {
+            // TODO: Refresh revenue list
+          }}
+        />
+      )}
+    </>
   );
 };
