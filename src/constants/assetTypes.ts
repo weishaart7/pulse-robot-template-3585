@@ -19,10 +19,16 @@ export const ASSET_NATURES = [
   "Parking / Garage / Box",
   "Autres biens d'usage",
   
-  // Actifs mobiliers corporels
+  // Actifs corporels
   "Meubles meublants",
   "Objets d'art et antiquités",
-  "Objets numériques (NFT, etc.)",
+  "Véhicules motorisés",
+  "Montres",
+  "Objets de collection",
+  "Bijoux et pierres précieuses",
+  "Sacs et accessoires de luxe",
+  "Matériel informatique ou audiovisuel haut de gamme",
+  "Matériel sportif de valeur",
   "Autres placements divers",
   
   // Actifs professionnels
@@ -83,6 +89,7 @@ export const ASSET_NATURES = [
   "Parts de FCPI",
   "Parts de SOFICA",
   "Portefeuille de valeurs numériques (cryptomonnaies)",
+  "Objets numériques (NFT, etc.)",
   "Droits de propriété littéraire ou artistique",
   "Autres valeurs mobilières"
 ];
@@ -164,10 +171,16 @@ export const ASSET_CATEGORIES = {
     "Parking / Garage / Box",
     "Autres biens d'usage"
   ],
-  "actifs mobiliers corporels": [
+  "actifs corporels": [
     "Meubles meublants",
     "Objets d'art et antiquités",
-    "Objets numériques (NFT, etc.)",
+    "Véhicules motorisés",
+    "Montres",
+    "Objets de collection",
+    "Bijoux et pierres précieuses",
+    "Sacs et accessoires de luxe",
+    "Matériel informatique ou audiovisuel haut de gamme",
+    "Matériel sportif de valeur",
     "Autres placements divers"
   ],
   "actifs professionnels": [
@@ -232,6 +245,7 @@ export const ASSET_CATEGORIES = {
     "Parts de FCPI",
     "Parts de SOFICA",
     "Portefeuille de valeurs numériques (cryptomonnaies)",
+    "Objets numériques (NFT, etc.)",
     "Droits de propriété littéraire ou artistique",
     "Autres valeurs mobilières"
   ]
