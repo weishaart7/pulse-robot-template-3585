@@ -2,13 +2,31 @@ import React, { useState } from 'react';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Building2 } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 import { useImmobilierAssets } from '@/hooks/useImmobilierAssets';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ImmobilierPropertyDialog } from '@/components/immobilier/ImmobilierPropertyDialog';
+import { Asset } from '@/services/assetService';
 
 export const ImmobilierSection = () => {
   const [activeTab, setActiveTab] = useState('biens');
-  const { assets, isLoading } = useImmobilierAssets();
+  const { assets, isLoading, refetch } = useImmobilierAssets();
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const handleManageInfo = (asset: Asset) => {
+    setSelectedAsset(asset);
+    setDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setSelectedAsset(null);
+  };
+
+  const handleUpdate = () => {
+    refetch();
+  };
 
   const TABS = [
     { id: 'biens', label: 'Vue d\'ensemble' },
@@ -71,10 +89,8 @@ export const ImmobilierSection = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Dénomination</TableHead>
-                        <TableHead>Nature</TableHead>
-                        <TableHead>Mode de détention</TableHead>
-                        <TableHead>Détenteur</TableHead>
-                        <TableHead className="text-right">Valeur estimée</TableHead>
+                        <TableHead>Catégorie</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -84,20 +100,14 @@ export const ImmobilierSection = () => {
                             {asset.denomination || 'Sans dénomination'}
                           </TableCell>
                           <TableCell>{asset.nature}</TableCell>
-                          <TableCell>{asset.mode_detention || '-'}</TableCell>
-                          <TableCell>
-                            {asset.detenteur === 'user' ? 'Vous' : 
-                             asset.detenteur === 'spouse' ? 'Conjoint' :
-                             asset.detenteur === 'common' ? 'Le couple' :
-                             asset.detenteur || '-'}
-                          </TableCell>
                           <TableCell className="text-right">
-                            {asset.valeur_estimee 
-                              ? new Intl.NumberFormat('fr-FR', { 
-                                  style: 'currency', 
-                                  currency: 'EUR' 
-                                }).format(asset.valeur_estimee)
-                              : '-'}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleManageInfo(asset)}
+                            >
+                              Gérer les informations
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -172,6 +182,13 @@ export const ImmobilierSection = () => {
       <div className="mt-6">
         {renderContent()}
       </div>
+
+      <ImmobilierPropertyDialog
+        asset={selectedAsset}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onUpdate={handleUpdate}
+      />
     </div>
   );
 };

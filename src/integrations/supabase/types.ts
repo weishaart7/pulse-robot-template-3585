@@ -119,15 +119,25 @@ export type Database = {
           detenteur: string | null
           etablissement: string | null
           frais_acquisition: number | null
+          frais_agence: number | null
+          frais_bancaires: number | null
+          frais_hypotheque: number | null
+          frais_notaire: number | null
           id: string
           mode_detention: string | null
+          montant_immeuble: number | null
           nature: string
           origine_actif: string[] | null
           pourcentage_conjoint: number | null
           pourcentage_utilisateur: number | null
           revalorisation_annuelle: number | null
           situation_particuliere: string[] | null
+          statut_bien: string | null
+          surface_m2: number | null
           transfert_immobilier: boolean | null
+          travaux_construction: number | null
+          travaux_renovation: number | null
+          typologie_bien: string | null
           updated_at: string
           user_id: string
           valeur_acquisition: number | null
@@ -142,15 +152,25 @@ export type Database = {
           detenteur?: string | null
           etablissement?: string | null
           frais_acquisition?: number | null
+          frais_agence?: number | null
+          frais_bancaires?: number | null
+          frais_hypotheque?: number | null
+          frais_notaire?: number | null
           id?: string
           mode_detention?: string | null
+          montant_immeuble?: number | null
           nature: string
           origine_actif?: string[] | null
           pourcentage_conjoint?: number | null
           pourcentage_utilisateur?: number | null
           revalorisation_annuelle?: number | null
           situation_particuliere?: string[] | null
+          statut_bien?: string | null
+          surface_m2?: number | null
           transfert_immobilier?: boolean | null
+          travaux_construction?: number | null
+          travaux_renovation?: number | null
+          typologie_bien?: string | null
           updated_at?: string
           user_id: string
           valeur_acquisition?: number | null
@@ -165,15 +185,25 @@ export type Database = {
           detenteur?: string | null
           etablissement?: string | null
           frais_acquisition?: number | null
+          frais_agence?: number | null
+          frais_bancaires?: number | null
+          frais_hypotheque?: number | null
+          frais_notaire?: number | null
           id?: string
           mode_detention?: string | null
+          montant_immeuble?: number | null
           nature?: string
           origine_actif?: string[] | null
           pourcentage_conjoint?: number | null
           pourcentage_utilisateur?: number | null
           revalorisation_annuelle?: number | null
           situation_particuliere?: string[] | null
+          statut_bien?: string | null
+          surface_m2?: number | null
           transfert_immobilier?: boolean | null
+          travaux_construction?: number | null
+          travaux_renovation?: number | null
+          typologie_bien?: string | null
           updated_at?: string
           user_id?: string
           valeur_acquisition?: number | null

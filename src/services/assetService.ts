@@ -19,6 +19,17 @@ export interface Asset {
   origine_actif?: string[];
   situation_particuliere?: string[];
   attachement_emotionnel?: number;
+  transfert_immobilier?: boolean;
+  typologie_bien?: string;
+  surface_m2?: number;
+  statut_bien?: string;
+  montant_immeuble?: number;
+  frais_agence?: number;
+  frais_notaire?: number;
+  frais_bancaires?: number;
+  frais_hypotheque?: number;
+  travaux_renovation?: number;
+  travaux_construction?: number;
   created_at?: string;
   updated_at?: string;
 }
