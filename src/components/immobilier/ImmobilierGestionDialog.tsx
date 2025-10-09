@@ -3,9 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2 } from 'lucide-react';
-import { Asset, AssetRevenu, assetService } from '@/services/assetService';
+import { Asset, AssetRevenu, AssetCharge, assetService } from '@/services/assetService';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { RevenuForm } from './RevenuForm';
+import { ChargeForm } from './ChargeForm';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
@@ -19,12 +20,19 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('revenus');
   const [revenuFormOpen, setRevenuFormOpen] = useState(false);
+  const [chargeFormOpen, setChargeFormOpen] = useState(false);
   const [revenus, setRevenus] = useState<AssetRevenu[]>([]);
+  const [charges, setCharges] = useState<AssetCharge[]>([]);
   const [isLoadingRevenus, setIsLoadingRevenus] = useState(false);
+  const [isLoadingCharges, setIsLoadingCharges] = useState(false);
 
   useEffect(() => {
-    if (asset && open && activeTab === 'revenus') {
-      fetchRevenus();
+    if (asset && open) {
+      if (activeTab === 'revenus') {
+        fetchRevenus();
+      } else if (activeTab === 'charges') {
+        fetchCharges();
+      }
     }
   }, [asset, open, activeTab]);
 
@@ -47,6 +55,25 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
     }
   };
 
+  const fetchCharges = async () => {
+    if (!asset?.id) return;
+    
+    setIsLoadingCharges(true);
+    try {
+      const data = await assetService.getAssetCharges(asset.id);
+      setCharges(data);
+    } catch (error) {
+      console.error('Error fetching charges:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les charges.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingCharges(false);
+    }
+  };
+
   const handleDeleteRevenu = async (id: string) => {
     try {
       await assetService.deleteAssetRevenu(id);
@@ -60,6 +87,24 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
       toast({
         title: "Erreur",
         description: "Impossible de supprimer le revenu.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteCharge = async (id: string) => {
+    try {
+      await assetService.deleteAssetCharge(id);
+      toast({
+        title: "Charge supprimée",
+        description: "La charge a été supprimée avec succès.",
+      });
+      fetchCharges();
+    } catch (error) {
+      console.error('Error deleting charge:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la charge.",
         variant: "destructive",
       });
     }
@@ -150,20 +195,59 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
                     Gérez les charges liées à ce bien
                   </CardDescription>
                 </div>
-                <Button size="sm">
+                <Button size="sm" onClick={() => setChargeFormOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Ajouter une charge
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12">
-                <div className="text-4xl mb-4">📋</div>
-                <h3 className="text-lg font-semibold mb-2">Aucune charge pour le moment</h3>
-                <p className="text-muted-foreground">
-                  Commencez par ajouter les charges associées à ce bien immobilier.
-                </p>
-              </div>
+              {isLoadingCharges ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">Chargement...</p>
+                </div>
+              ) : charges.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-4xl mb-4">📋</div>
+                  <h3 className="text-lg font-semibold mb-2">Aucune charge pour le moment</h3>
+                  <p className="text-muted-foreground">
+                    Commencez par ajouter les charges associées à ce bien immobilier.
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nature</TableHead>
+                      <TableHead>Montant</TableHead>
+                      <TableHead>Périodicité</TableHead>
+                      <TableHead>Date début</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {charges.map((charge) => (
+                      <TableRow key={charge.id}>
+                        <TableCell>{charge.type_charge}</TableCell>
+                        <TableCell>{charge.montant.toLocaleString('fr-FR')} {charge.unite}</TableCell>
+                        <TableCell>{charge.periodicite}</TableCell>
+                        <TableCell>
+                          {new Date(charge.date_debut).toLocaleDateString('fr-FR')}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => charge.id && handleDeleteCharge(charge.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         );
@@ -214,12 +298,20 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
       </Dialog>
 
       {asset && (
-        <RevenuForm
-          assetId={asset.id}
-          open={revenuFormOpen}
-          onOpenChange={setRevenuFormOpen}
-          onSuccess={fetchRevenus}
-        />
+        <>
+          <RevenuForm
+            assetId={asset.id}
+            open={revenuFormOpen}
+            onOpenChange={setRevenuFormOpen}
+            onSuccess={fetchRevenus}
+          />
+          <ChargeForm
+            assetId={asset.id}
+            open={chargeFormOpen}
+            onOpenChange={setChargeFormOpen}
+            onSuccess={fetchCharges}
+          />
+        </>
       )}
     </>
   );
