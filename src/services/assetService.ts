@@ -30,6 +30,14 @@ export interface Asset {
   frais_hypotheque?: number;
   travaux_renovation?: number;
   travaux_construction?: number;
+  meubles?: number;
+  financement_actif?: boolean;
+  financement_duree_mois?: number;
+  financement_apport?: number;
+  financement_taux_credit?: number;
+  financement_taux_assurance?: number;
+  type_location?: string;
+  regime_location?: string;
   created_at?: string;
   updated_at?: string;
 }

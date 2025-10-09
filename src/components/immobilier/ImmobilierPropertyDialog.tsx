@@ -50,6 +50,14 @@ const residenceSchema = z.object({
   frais_hypotheque: z.number().min(0).optional().or(z.literal('')),
   travaux_renovation: z.number().min(0).optional().or(z.literal('')),
   travaux_construction: z.number().min(0).optional().or(z.literal('')),
+  meubles: z.number().min(0).optional().or(z.literal('')),
+  financement_actif: z.boolean().optional(),
+  financement_duree_mois: z.number().min(0).optional().or(z.literal('')),
+  financement_apport: z.number().min(0).optional().or(z.literal('')),
+  financement_taux_credit: z.number().min(0).optional().or(z.literal('')),
+  financement_taux_assurance: z.number().min(0).optional().or(z.literal('')),
+  type_location: z.enum(['Location nue', 'Location meublée non professionnelle (LMNP)', 'Location meublée professionnelle (LMP)']).optional(),
+  regime_location: z.enum(['Régime micro', 'Régime réel', 'Régime micro BIC', 'Régime BIC réel']).optional(),
 });
 
 type ResidenceFormValues = z.infer<typeof residenceSchema>;
@@ -69,6 +77,14 @@ export const ImmobilierPropertyDialog: React.FC<ImmobilierPropertyDialogProps> =
 }) => {
   const { toast } = useToast();
   const isResidence = asset?.nature === 'Résidence principale' || asset?.nature === 'Résidences secondaires';
+  const isRentalProperty = asset?.nature && [
+    'Immeubles locatifs (loués nus)',
+    'Immeubles locatifs (LMNP)',
+    'Immeubles locatifs (LMP)',
+    'Immeubles professionnels (hors LMP)',
+    'Autres immeubles de rapport',
+    'Parking / Garage / Box'
+  ].includes(asset.nature);
 
   const form = useForm<ResidenceFormValues>({
     resolver: zodResolver(residenceSchema),
@@ -85,6 +101,14 @@ export const ImmobilierPropertyDialog: React.FC<ImmobilierPropertyDialogProps> =
       frais_hypotheque: asset?.frais_hypotheque ? Number(asset.frais_hypotheque) : '',
       travaux_renovation: asset?.travaux_renovation ? Number(asset.travaux_renovation) : '',
       travaux_construction: asset?.travaux_construction ? Number(asset.travaux_construction) : '',
+      meubles: asset?.meubles ? Number(asset.meubles) : '',
+      financement_actif: asset?.financement_actif || false,
+      financement_duree_mois: asset?.financement_duree_mois ? Number(asset.financement_duree_mois) : '',
+      financement_apport: asset?.financement_apport ? Number(asset.financement_apport) : '',
+      financement_taux_credit: asset?.financement_taux_credit ? Number(asset.financement_taux_credit) : '',
+      financement_taux_assurance: asset?.financement_taux_assurance ? Number(asset.financement_taux_assurance) : '',
+      type_location: asset?.type_location as any,
+      regime_location: asset?.regime_location as any,
     },
   });
 
@@ -103,6 +127,14 @@ export const ImmobilierPropertyDialog: React.FC<ImmobilierPropertyDialogProps> =
         frais_hypotheque: asset.frais_hypotheque ? Number(asset.frais_hypotheque) : '',
         travaux_renovation: asset.travaux_renovation ? Number(asset.travaux_renovation) : '',
         travaux_construction: asset.travaux_construction ? Number(asset.travaux_construction) : '',
+        meubles: asset.meubles ? Number(asset.meubles) : '',
+        financement_actif: asset.financement_actif || false,
+        financement_duree_mois: asset.financement_duree_mois ? Number(asset.financement_duree_mois) : '',
+        financement_apport: asset.financement_apport ? Number(asset.financement_apport) : '',
+        financement_taux_credit: asset.financement_taux_credit ? Number(asset.financement_taux_credit) : '',
+        financement_taux_assurance: asset.financement_taux_assurance ? Number(asset.financement_taux_assurance) : '',
+        type_location: asset.type_location as any,
+        regime_location: asset.regime_location as any,
       });
     }
   }, [asset, form]);
@@ -138,6 +170,14 @@ export const ImmobilierPropertyDialog: React.FC<ImmobilierPropertyDialogProps> =
         frais_hypotheque: data.frais_hypotheque || null,
         travaux_renovation: data.travaux_renovation || null,
         travaux_construction: data.travaux_construction || null,
+        meubles: data.meubles || null,
+        financement_actif: data.financement_actif || false,
+        financement_duree_mois: data.financement_duree_mois || null,
+        financement_apport: data.financement_apport || null,
+        financement_taux_credit: data.financement_taux_credit || null,
+        financement_taux_assurance: data.financement_taux_assurance || null,
+        type_location: data.type_location || null,
+        regime_location: data.regime_location || null,
       };
 
       const { error } = await supabase
@@ -174,7 +214,7 @@ export const ImmobilierPropertyDialog: React.FC<ImmobilierPropertyDialogProps> =
           <DialogDescription>Catégorie: {asset.nature}</DialogDescription>
         </DialogHeader>
 
-        {isResidence ? (
+        {isResidence || isRentalProperty ? (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               <Card>
@@ -282,28 +322,30 @@ export const ImmobilierPropertyDialog: React.FC<ImmobilierPropertyDialogProps> =
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="statut_bien"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Statut</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sélectionner un statut" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Usage personnel">Usage personnel</SelectItem>
-                            <SelectItem value="En rénovation">En rénovation</SelectItem>
-                            <SelectItem value="En vente">En vente</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {isResidence && (
+                    <FormField
+                      control={form.control}
+                      name="statut_bien"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Statut</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Sélectionner un statut" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Usage personnel">Usage personnel</SelectItem>
+                              <SelectItem value="En rénovation">En rénovation</SelectItem>
+                              <SelectItem value="En vente">En vente</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </CardContent>
               </Card>
 
@@ -458,8 +500,216 @@ export const ImmobilierPropertyDialog: React.FC<ImmobilierPropertyDialogProps> =
                       </FormItem>
                     )}
                   />
+
+                  {isRentalProperty && (
+                    <FormField
+                      control={form.control}
+                      name="meubles"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Meubles (€)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="Meubles"
+                              {...field}
+                              value={field.value || ''}
+                              onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : '')}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </CardContent>
               </Card>
+
+              {isRentalProperty && (
+                <>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Financement</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="financement_actif"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">Financement actif</FormLabel>
+                            </div>
+                            <FormControl>
+                              <input
+                                type="checkbox"
+                                checked={field.value}
+                                onChange={field.onChange}
+                                className="h-4 w-4"
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      {form.watch('financement_actif') && (
+                        <>
+                          <FormField
+                            control={form.control}
+                            name="financement_duree_mois"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Durée (mois)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    placeholder="Durée en mois"
+                                    {...field}
+                                    value={field.value || ''}
+                                    onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : '')}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="financement_apport"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Apport (€)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="Apport"
+                                    {...field}
+                                    value={field.value || ''}
+                                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : '')}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="financement_taux_credit"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Taux du crédit (%)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="Taux du crédit"
+                                    {...field}
+                                    value={field.value || ''}
+                                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : '')}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="financement_taux_assurance"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Taux assurance du crédit (%)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="Taux assurance"
+                                    {...field}
+                                    value={field.value || ''}
+                                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : '')}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Type de location</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="type_location"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Type de location</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Sélectionner un type" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="Location nue">Location nue</SelectItem>
+                                <SelectItem value="Location meublée non professionnelle (LMNP)">
+                                  Location meublée non professionnelle (LMNP)
+                                </SelectItem>
+                                <SelectItem value="Location meublée professionnelle (LMP)">
+                                  Location meublée professionnelle (LMP)
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {form.watch('type_location') && (
+                        <FormField
+                          control={form.control}
+                          name="regime_location"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Régime fiscal</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Sélectionner un régime" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {form.watch('type_location') === 'Location nue' ? (
+                                    <>
+                                      <SelectItem value="Régime micro">Régime micro</SelectItem>
+                                      <SelectItem value="Régime réel">Régime réel</SelectItem>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <SelectItem value="Régime micro BIC">Régime micro BIC</SelectItem>
+                                      <SelectItem value="Régime BIC réel">Régime BIC réel</SelectItem>
+                                    </>
+                                  )}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
+              )}
 
               <div className="flex justify-end gap-3">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

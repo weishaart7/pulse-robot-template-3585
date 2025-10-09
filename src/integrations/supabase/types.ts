@@ -118,18 +118,25 @@ export type Database = {
           denomination: string | null
           detenteur: string | null
           etablissement: string | null
+          financement_actif: boolean | null
+          financement_apport: number | null
+          financement_duree_mois: number | null
+          financement_taux_assurance: number | null
+          financement_taux_credit: number | null
           frais_acquisition: number | null
           frais_agence: number | null
           frais_bancaires: number | null
           frais_hypotheque: number | null
           frais_notaire: number | null
           id: string
+          meubles: number | null
           mode_detention: string | null
           montant_immeuble: number | null
           nature: string
           origine_actif: string[] | null
           pourcentage_conjoint: number | null
           pourcentage_utilisateur: number | null
+          regime_location: string | null
           revalorisation_annuelle: number | null
           situation_particuliere: string[] | null
           statut_bien: string | null
@@ -137,6 +144,7 @@ export type Database = {
           transfert_immobilier: boolean | null
           travaux_construction: number | null
           travaux_renovation: number | null
+          type_location: string | null
           typologie_bien: string | null
           updated_at: string
           user_id: string
@@ -151,18 +159,25 @@ export type Database = {
           denomination?: string | null
           detenteur?: string | null
           etablissement?: string | null
+          financement_actif?: boolean | null
+          financement_apport?: number | null
+          financement_duree_mois?: number | null
+          financement_taux_assurance?: number | null
+          financement_taux_credit?: number | null
           frais_acquisition?: number | null
           frais_agence?: number | null
           frais_bancaires?: number | null
           frais_hypotheque?: number | null
           frais_notaire?: number | null
           id?: string
+          meubles?: number | null
           mode_detention?: string | null
           montant_immeuble?: number | null
           nature: string
           origine_actif?: string[] | null
           pourcentage_conjoint?: number | null
           pourcentage_utilisateur?: number | null
+          regime_location?: string | null
           revalorisation_annuelle?: number | null
           situation_particuliere?: string[] | null
           statut_bien?: string | null
@@ -170,6 +185,7 @@ export type Database = {
           transfert_immobilier?: boolean | null
           travaux_construction?: number | null
           travaux_renovation?: number | null
+          type_location?: string | null
           typologie_bien?: string | null
           updated_at?: string
           user_id: string
@@ -184,18 +200,25 @@ export type Database = {
           denomination?: string | null
           detenteur?: string | null
           etablissement?: string | null
+          financement_actif?: boolean | null
+          financement_apport?: number | null
+          financement_duree_mois?: number | null
+          financement_taux_assurance?: number | null
+          financement_taux_credit?: number | null
           frais_acquisition?: number | null
           frais_agence?: number | null
           frais_bancaires?: number | null
           frais_hypotheque?: number | null
           frais_notaire?: number | null
           id?: string
+          meubles?: number | null
           mode_detention?: string | null
           montant_immeuble?: number | null
           nature?: string
           origine_actif?: string[] | null
           pourcentage_conjoint?: number | null
           pourcentage_utilisateur?: number | null
+          regime_location?: string | null
           revalorisation_annuelle?: number | null
           situation_particuliere?: string[] | null
           statut_bien?: string | null
@@ -203,6 +226,7 @@ export type Database = {
           transfert_immobilier?: boolean | null
           travaux_construction?: number | null
           travaux_renovation?: number | null
+          type_location?: string | null
           typologie_bien?: string | null
           updated_at?: string
           user_id?: string
