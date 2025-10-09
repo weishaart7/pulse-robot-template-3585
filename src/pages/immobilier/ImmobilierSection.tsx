@@ -6,9 +6,9 @@ export const ImmobilierSection = () => {
   const [activeTab, setActiveTab] = useState('biens');
 
   const TABS = [
-    { id: 'biens', label: 'Mes biens' },
-    { id: 'valorisation', label: 'Valorisation' },
-    { id: 'revenus', label: 'Revenus locatifs' },
+    { id: 'biens', label: 'Vue d\'ensemble' },
+    { id: 'valorisation', label: 'Mes biens' },
+    { id: 'revenus', label: 'Gestion des biens' },
     { id: 'fiscalite', label: 'Fiscalité' }
   ];
 
