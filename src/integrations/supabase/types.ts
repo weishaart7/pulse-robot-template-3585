@@ -109,6 +109,45 @@ export type Database = {
           },
         ]
       }
+      asset_revenus: {
+        Row: {
+          asset_id: string
+          commentaire: string | null
+          created_at: string
+          date_debut: string
+          date_fin: string | null
+          id: string
+          montant: number
+          nature: string
+          periodicite: string
+          updated_at: string
+        }
+        Insert: {
+          asset_id: string
+          commentaire?: string | null
+          created_at?: string
+          date_debut?: string
+          date_fin?: string | null
+          id?: string
+          montant: number
+          nature: string
+          periodicite: string
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string
+          commentaire?: string | null
+          created_at?: string
+          date_debut?: string
+          date_fin?: string | null
+          id?: string
+          montant?: number
+          nature?: string
+          periodicite?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       assets: {
         Row: {
           attachement_emotionnel: number | null

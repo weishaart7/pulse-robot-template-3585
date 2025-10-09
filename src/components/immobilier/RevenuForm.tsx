@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { assetService } from '@/services/assetService';
 
 interface RevenuFormProps {
   assetId: string;
@@ -27,8 +28,13 @@ export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess }: RevenuFor
     setIsSubmitting(true);
 
     try {
-      // TODO: Implement API call to save revenue
-      console.log('Saving revenue:', { assetId, ...formData });
+      await assetService.createAssetRevenu({
+        asset_id: assetId,
+        nature: formData.nature,
+        montant: parseFloat(formData.montant),
+        periodicite: formData.periodicite as 'Mensuelle' | 'Trimestrielle' | 'Annuelle',
+        date_debut: new Date().toISOString().split('T')[0],
+      });
       
       toast({
         title: "Revenu ajouté",
@@ -43,6 +49,7 @@ export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess }: RevenuFor
         periodicite: 'Mensuelle'
       });
     } catch (error) {
+      console.error('Error creating revenu:', error);
       toast({
         title: "Erreur",
         description: "Une erreur est survenue lors de l'ajout du revenu.",

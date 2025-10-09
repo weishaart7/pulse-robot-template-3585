@@ -60,6 +60,19 @@ export interface AssetCharge {
   updated_at?: string;
 }
 
+export interface AssetRevenu {
+  id?: string;
+  asset_id: string;
+  nature: string;
+  montant: number;
+  periodicite: 'Mensuelle' | 'Trimestrielle' | 'Annuelle';
+  date_debut: string;
+  date_fin?: string;
+  commentaire?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export const assetService = {
   async getAssets() {
     const { data, error } = await supabase
@@ -218,6 +231,99 @@ export const assetService = {
 
     const { error } = await supabase
       .from('asset_charges')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  async getAssetRevenus(assetId: string): Promise<AssetRevenu[]> {
+    const { data, error } = await supabase
+      .from('asset_revenus')
+      .select('*')
+      .eq('asset_id', assetId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data as AssetRevenu[];
+  },
+
+  async createAssetRevenu(revenu: Omit<AssetRevenu, 'id' | 'created_at' | 'updated_at'>): Promise<AssetRevenu> {
+    const { data, error } = await supabase
+      .from('asset_revenus')
+      .insert(revenu)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as AssetRevenu;
+  },
+
+  async updateAssetRevenu(id: string, revenu: Partial<AssetRevenu>): Promise<AssetRevenu> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // First get the revenu to find the asset_id
+    const { data: existingRevenu, error: fetchError } = await supabase
+      .from('asset_revenus')
+      .select('asset_id')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existingRevenu) {
+      throw new Error('Asset revenu not found');
+    }
+
+    // Verify user owns the asset
+    const { data: asset, error: assetError } = await supabase
+      .from('assets')
+      .select('user_id')
+      .eq('id', existingRevenu.asset_id)
+      .single();
+
+    if (assetError || !asset || asset.user_id !== user.id) {
+      throw new Error('Unauthorized: Asset not found or access denied');
+    }
+
+    const { data, error } = await supabase
+      .from('asset_revenus')
+      .update(revenu)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as AssetRevenu;
+  },
+
+  async deleteAssetRevenu(id: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // First get the revenu to find the asset_id
+    const { data: existingRevenu, error: fetchError } = await supabase
+      .from('asset_revenus')
+      .select('asset_id')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existingRevenu) {
+      throw new Error('Asset revenu not found');
+    }
+
+    // Verify user owns the asset
+    const { data: asset, error: assetError } = await supabase
+      .from('assets')
+      .select('user_id')
+      .eq('id', existingRevenu.asset_id)
+      .single();
+
+    if (assetError || !asset || asset.user_id !== user.id) {
+      throw new Error('Unauthorized: Asset not found or access denied');
+    }
+
+    const { error } = await supabase
+      .from('asset_revenus')
       .delete()
       .eq('id', id);
 
