@@ -154,7 +154,13 @@ export const ImmobilierPropertyDialog: React.FC<ImmobilierPropertyDialogProps> =
   }, [form]);
 
   const handleSubmit = async (data: ResidenceFormValues) => {
-    if (!asset) return;
+    console.log('🔵 handleSubmit called with data:', data);
+    console.log('🔵 Asset:', asset);
+    
+    if (!asset) {
+      console.error('❌ No asset found');
+      return;
+    }
 
     try {
       const updateData: Record<string, any> = {
@@ -180,12 +186,20 @@ export const ImmobilierPropertyDialog: React.FC<ImmobilierPropertyDialogProps> =
         regime_location: data.regime_location || null,
       };
 
+      console.log('🔵 Update data prepared:', updateData);
+      console.log('🔵 Updating asset with ID:', asset.id);
+
       const { error } = await supabase
         .from('assets')
         .update(updateData)
         .eq('id', asset.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Supabase error:', error);
+        throw error;
+      }
+
+      console.log('✅ Update successful');
 
       toast({
         title: 'Succès',
@@ -195,7 +209,7 @@ export const ImmobilierPropertyDialog: React.FC<ImmobilierPropertyDialogProps> =
       onUpdate();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error updating asset:', error);
+      console.error('❌ Error updating asset:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible de mettre à jour les informations',
@@ -720,7 +734,12 @@ export const ImmobilierPropertyDialog: React.FC<ImmobilierPropertyDialogProps> =
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                   Annuler
                 </Button>
-                <Button type="submit">Enregistrer</Button>
+                <Button 
+                  type="submit"
+                  onClick={() => console.log('🔵 Button clicked, form errors:', form.formState.errors)}
+                >
+                  Enregistrer
+                </Button>
               </div>
             </form>
           </Form>
