@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 
 export const ImmobilierSection = () => {
   const [activeTab, setActiveTab] = useState('biens');
@@ -38,17 +40,25 @@ export const ImmobilierSection = () => {
         return (
           <Card>
             <CardHeader>
-              <CardTitle>Valorisation des biens</CardTitle>
-              <CardDescription>
-                Suivi de la valeur de votre patrimoine immobilier
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Mes biens</CardTitle>
+                  <CardDescription>
+                    Gérez votre portefeuille immobilier
+                  </CardDescription>
+                </div>
+                <Button onClick={() => console.log('Ajouter un bien')}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Ajouter un bien
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-center py-12">
-                <div className="text-4xl mb-4">📈</div>
-                <h3 className="text-lg font-semibold mb-2">Section à venir</h3>
+                <div className="text-4xl mb-4">🏘️</div>
+                <h3 className="text-lg font-semibold mb-2">Aucun bien pour le moment</h3>
                 <p className="text-muted-foreground">
-                  Outils de valorisation et d'évaluation de vos biens immobiliers.
+                  Commencez par ajouter votre premier bien immobilier.
                 </p>
               </div>
             </CardContent>
