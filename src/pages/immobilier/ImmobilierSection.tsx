@@ -8,8 +8,7 @@ export const ImmobilierSection = () => {
   const TABS = [
     { id: 'biens', label: 'Vue d\'ensemble' },
     { id: 'valorisation', label: 'Mes biens' },
-    { id: 'revenus', label: 'Gestion des biens' },
-    { id: 'fiscalite', label: 'Fiscalité' }
+    { id: 'revenus', label: 'Gestion des biens' }
   ];
 
   const renderContent = () => {
@@ -70,26 +69,6 @@ export const ImmobilierSection = () => {
                 <h3 className="text-lg font-semibold mb-2">Section à venir</h3>
                 <p className="text-muted-foreground">
                   Suivi et optimisation de vos revenus locatifs.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      case 'fiscalite':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Fiscalité immobilière</CardTitle>
-              <CardDescription>
-                Optimisation fiscale de votre patrimoine immobilier
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <div className="text-4xl mb-4">🧾</div>
-                <h3 className="text-lg font-semibold mb-2">Section à venir</h3>
-                <p className="text-muted-foreground">
-                  Outils d'optimisation fiscale pour vos investissements immobiliers.
                 </p>
               </div>
             </CardContent>
