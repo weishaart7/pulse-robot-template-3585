@@ -22,6 +22,7 @@ import { Asset, AssetCharge } from '@/services/assetService';
 import { ChargeForm } from './ChargeForm';
 import { ASSET_NATURES, ASSET_CATEGORIES, getAssetCategory } from '@/constants/assetTypes';
 import { familyService } from '@/services/familyService';
+import { Checkbox } from '@/components/ui/checkbox';
 
 // Constantes pour les nouveaux champs
 const ORIGINE_ACTIF_OPTIONS = [
@@ -72,7 +73,8 @@ const assetSchema = z.object({
   date_acquisition: z.date().optional(),
   origine_actif: z.array(z.string()).optional(),
   situation_particuliere: z.array(z.string()).optional(),
-  attachement_emotionnel: z.number().min(0).max(10).optional()
+  attachement_emotionnel: z.number().min(0).max(10).optional(),
+  transfert_immobilier: z.boolean().optional()
 });
 type AssetFormValues = z.infer<typeof assetSchema>;
 interface AssetFormProps {
@@ -186,7 +188,8 @@ export const AssetForm: React.FC<AssetFormProps> = ({
       pourcentage_conjoint: 50,
       origine_actif: ['Acquisition à titre onéreuse'],
       situation_particuliere: ['Non'],
-      attachement_emotionnel: 0
+      attachement_emotionnel: 0,
+      transfert_immobilier: false
     }
   });
 
@@ -226,7 +229,8 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         date_acquisition: asset.date_acquisition ? new Date(asset.date_acquisition) : undefined,
         origine_actif: (asset as any).origine_actif || ['Acquisition à titre onéreuse'],
         situation_particuliere: (asset as any).situation_particuliere || ['Non'],
-        attachement_emotionnel: (asset as any).attachement_emotionnel || 0
+        attachement_emotionnel: (asset as any).attachement_emotionnel || 0,
+        transfert_immobilier: (asset as any).transfert_immobilier || false
       });
     }
   }, [asset, familyData, form]);
@@ -640,6 +644,32 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                     </FormItem>
                   )}
                 />
+
+                {/* Checkbox Transfert dans Immobilier - visible seulement pour actifs immobiliers */}
+                {getAssetCategory(form.watch('nature')) === 'actifs immobiliers' && (
+                  <FormField
+                    control={form.control}
+                    name="transfert_immobilier"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>
+                            Transfert dans Immobilier
+                          </FormLabel>
+                          <FormDescription>
+                            Ce bien apparaîtra dans la section "Immobilier" → "Mes biens"
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
 
               <div className="flex justify-between">

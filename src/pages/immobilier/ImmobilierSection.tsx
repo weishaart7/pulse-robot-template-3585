@@ -2,10 +2,13 @@ import React, { useState } from 'react';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Building2 } from 'lucide-react';
+import { useImmobilierAssets } from '@/hooks/useImmobilierAssets';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export const ImmobilierSection = () => {
   const [activeTab, setActiveTab] = useState('biens');
+  const { assets, isLoading } = useImmobilierAssets();
 
   const TABS = [
     { id: 'biens', label: 'Vue d\'ensemble' },
@@ -44,23 +47,64 @@ export const ImmobilierSection = () => {
                 <div>
                   <CardTitle>Mes biens</CardTitle>
                   <CardDescription>
-                    Gérez votre portefeuille immobilier
+                    Biens immobiliers transférés depuis la section Patrimoine
                   </CardDescription>
                 </div>
-                <Button onClick={() => console.log('Ajouter un bien')}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Ajouter un bien
-                </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12">
-                <div className="text-4xl mb-4">🏘️</div>
-                <h3 className="text-lg font-semibold mb-2">Aucun bien pour le moment</h3>
-                <p className="text-muted-foreground">
-                  Commencez par ajouter votre premier bien immobilier.
-                </p>
-              </div>
+              {isLoading ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">Chargement...</p>
+                </div>
+              ) : assets.length === 0 ? (
+                <div className="text-center py-12">
+                  <Building2 className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Aucun bien pour le moment</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Pour ajouter un bien ici, allez dans Patrimoine → Actifs et cochez "Transfert dans Immobilier" lors de l'ajout d'un actif immobilier.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Dénomination</TableHead>
+                        <TableHead>Nature</TableHead>
+                        <TableHead>Mode de détention</TableHead>
+                        <TableHead>Détenteur</TableHead>
+                        <TableHead className="text-right">Valeur estimée</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {assets.map((asset) => (
+                        <TableRow key={asset.id}>
+                          <TableCell className="font-medium">
+                            {asset.denomination || 'Sans dénomination'}
+                          </TableCell>
+                          <TableCell>{asset.nature}</TableCell>
+                          <TableCell>{asset.mode_detention || '-'}</TableCell>
+                          <TableCell>
+                            {asset.detenteur === 'user' ? 'Vous' : 
+                             asset.detenteur === 'spouse' ? 'Conjoint' :
+                             asset.detenteur === 'common' ? 'Le couple' :
+                             asset.detenteur || '-'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {asset.valeur_estimee 
+                              ? new Intl.NumberFormat('fr-FR', { 
+                                  style: 'currency', 
+                                  currency: 'EUR' 
+                                }).format(asset.valeur_estimee)
+                              : '-'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </CardContent>
           </Card>
         );

@@ -127,6 +127,7 @@ export type Database = {
           pourcentage_utilisateur: number | null
           revalorisation_annuelle: number | null
           situation_particuliere: string[] | null
+          transfert_immobilier: boolean | null
           updated_at: string
           user_id: string
           valeur_acquisition: number | null
@@ -149,6 +150,7 @@ export type Database = {
           pourcentage_utilisateur?: number | null
           revalorisation_annuelle?: number | null
           situation_particuliere?: string[] | null
+          transfert_immobilier?: boolean | null
           updated_at?: string
           user_id: string
           valeur_acquisition?: number | null
@@ -171,6 +173,7 @@ export type Database = {
           pourcentage_utilisateur?: number | null
           revalorisation_annuelle?: number | null
           situation_particuliere?: string[] | null
+          transfert_immobilier?: boolean | null
           updated_at?: string
           user_id?: string
           valeur_acquisition?: number | null
