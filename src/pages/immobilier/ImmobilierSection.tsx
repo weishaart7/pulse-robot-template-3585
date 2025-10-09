@@ -101,13 +101,27 @@ export const ImmobilierSection = () => {
                           </TableCell>
                           <TableCell>{asset.nature}</TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleManageInfo(asset)}
-                            >
-                              Gérer les informations
-                            </Button>
+                            <div className="flex gap-2 justify-end">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleManageInfo(asset)}
+                              >
+                                Informations
+                              </Button>
+                              {['Immeubles locatifs (loués nus)', 'Immeubles locatifs (LMNP)', 'Immeubles locatifs (LMP)', 'Immeubles professionnels (hors LMP)'].includes(asset.nature || '') && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    // TODO: Implement management functionality
+                                    console.log('Gérer clicked for', asset.id);
+                                  }}
+                                >
+                                  Gérer
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
