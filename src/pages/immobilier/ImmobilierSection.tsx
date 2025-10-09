@@ -6,6 +6,7 @@ import { Building2 } from 'lucide-react';
 import { useImmobilierAssets } from '@/hooks/useImmobilierAssets';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ImmobilierPropertyDialog } from '@/components/immobilier/ImmobilierPropertyDialog';
+import { ImmobilierGestionDialog } from '@/components/immobilier/ImmobilierGestionDialog';
 import { Asset } from '@/services/assetService';
 
 export const ImmobilierSection = () => {
@@ -13,6 +14,8 @@ export const ImmobilierSection = () => {
   const { assets, isLoading, refetch } = useImmobilierAssets();
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [gestionDialogOpen, setGestionDialogOpen] = useState(false);
+  const [selectedAssetForGestion, setSelectedAssetForGestion] = useState<Asset | null>(null);
 
   const handleManageInfo = (asset: Asset) => {
     setSelectedAsset(asset);
@@ -26,6 +29,11 @@ export const ImmobilierSection = () => {
 
   const handleUpdate = () => {
     refetch();
+  };
+
+  const handleGestion = (asset: Asset) => {
+    setSelectedAssetForGestion(asset);
+    setGestionDialogOpen(true);
   };
 
   const TABS = [
@@ -113,10 +121,7 @@ export const ImmobilierSection = () => {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => {
-                                    // TODO: Implement management functionality
-                                    console.log('Gérer clicked for', asset.id);
-                                  }}
+                                  onClick={() => handleGestion(asset)}
                                 >
                                   Gérer
                                 </Button>
@@ -202,6 +207,12 @@ export const ImmobilierSection = () => {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onUpdate={handleUpdate}
+      />
+
+      <ImmobilierGestionDialog
+        asset={selectedAssetForGestion}
+        open={gestionDialogOpen}
+        onOpenChange={setGestionDialogOpen}
       />
     </div>
   );
