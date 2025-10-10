@@ -38,11 +38,11 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 const residenceSchema = z.object({
-  typologie_bien: z.enum(['Appartement', 'Maison']).optional(),
+  typologie_bien: z.enum(['Appartement', 'Maison']).nullable().optional(),
   surface_m2: z.number().min(0).optional().or(z.literal('')),
   date_acquisition: z.date().optional(),
   valeur_estimee: z.number().min(0).optional().or(z.literal('')),
-  statut_bien: z.enum(['Usage personnel', 'En rénovation', 'En vente']).optional(),
+  statut_bien: z.enum(['Usage personnel', 'En rénovation', 'En vente']).nullable().optional(),
   montant_immeuble: z.number().min(0).optional().or(z.literal('')),
   frais_agence: z.number().min(0).optional().or(z.literal('')),
   frais_notaire: z.number().min(0).optional().or(z.literal('')),
@@ -89,11 +89,11 @@ export const ImmobilierPropertyDialog: React.FC<ImmobilierPropertyDialogProps> =
   const form = useForm<ResidenceFormValues>({
     resolver: zodResolver(residenceSchema),
     defaultValues: {
-      typologie_bien: asset?.typologie_bien as 'Appartement' | 'Maison' | undefined,
+      typologie_bien: (asset?.typologie_bien ?? undefined) as 'Appartement' | 'Maison' | undefined,
       surface_m2: asset?.surface_m2 ? Number(asset.surface_m2) : '',
       date_acquisition: asset?.date_acquisition ? new Date(asset.date_acquisition) : undefined,
       valeur_estimee: asset?.valeur_estimee ? Number(asset.valeur_estimee) : '',
-      statut_bien: asset?.statut_bien as 'Usage personnel' | 'En rénovation' | 'En vente' | undefined,
+      statut_bien: (asset?.statut_bien ?? undefined) as 'Usage personnel' | 'En rénovation' | 'En vente' | undefined,
       montant_immeuble: asset?.montant_immeuble ? Number(asset.montant_immeuble) : '',
       frais_agence: asset?.frais_agence ? Number(asset.frais_agence) : '',
       frais_notaire: asset?.frais_notaire ? Number(asset.frais_notaire) : '',
@@ -115,11 +115,11 @@ export const ImmobilierPropertyDialog: React.FC<ImmobilierPropertyDialogProps> =
   React.useEffect(() => {
     if (asset) {
       form.reset({
-        typologie_bien: asset.typologie_bien as 'Appartement' | 'Maison' | undefined,
+        typologie_bien: (asset.typologie_bien ?? undefined) as 'Appartement' | 'Maison' | undefined,
         surface_m2: asset.surface_m2 ? Number(asset.surface_m2) : '',
         date_acquisition: asset.date_acquisition ? new Date(asset.date_acquisition) : undefined,
         valeur_estimee: asset.valeur_estimee ? Number(asset.valeur_estimee) : '',
-        statut_bien: asset.statut_bien as 'Usage personnel' | 'En rénovation' | 'En vente' | undefined,
+        statut_bien: (asset.statut_bien ?? undefined) as 'Usage personnel' | 'En rénovation' | 'En vente' | undefined,
         montant_immeuble: asset.montant_immeuble ? Number(asset.montant_immeuble) : '',
         frais_agence: asset.frais_agence ? Number(asset.frais_agence) : '',
         frais_notaire: asset.frais_notaire ? Number(asset.frais_notaire) : '',
