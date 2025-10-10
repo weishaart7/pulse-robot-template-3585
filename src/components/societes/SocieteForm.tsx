@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface SocieteFormData {
   denomination: string;
@@ -27,6 +28,8 @@ interface SocieteFormData {
   activite?: string;
   holding?: string;
   formeSocieteCivile?: string;
+  transfertVersActifs?: boolean;
+  natureActif?: string;
 }
 
 interface SocieteFormProps {
@@ -123,7 +126,8 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProp
     valeurIFI: 0,
     activite: '',
     holding: 'Non',
-    formeSocieteCivile: ''
+    formeSocieteCivile: '',
+    transfertVersActifs: true
   });
 
   useEffect(() => {
@@ -132,7 +136,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProp
     }
   }, [initialData]);
 
-  const handleInputChange = (field: keyof SocieteFormData, value: string | number) => {
+  const handleInputChange = (field: keyof SocieteFormData, value: string | number | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -141,7 +145,18 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProp
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    // Determine asset nature based on holding and type
+    let natureActif = '';
+    if (formData.holding === 'Animatrice' || formData.holding === 'Passive') {
+      natureActif = 'Parts de holding';
+    } else if (formData.typeSociete === 'sarl') {
+      natureActif = 'Droits sociaux';
+    } else {
+      natureActif = 'Autres biens professionnels';
+    }
+    
+    onSubmit({ ...formData, natureActif });
   };
 
   const getDefaultRegimeFiscal = (typeSociete: string) => {
@@ -434,6 +449,17 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProp
             value={formData.valeurIFI || ''}
             onChange={(e) => handleInputChange('valeurIFI', Number(e.target.value))}
           />
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="transfertVersActifs"
+            checked={formData.transfertVersActifs}
+            onCheckedChange={(checked) => handleInputChange('transfertVersActifs', checked as boolean)}
+          />
+          <Label htmlFor="transfertVersActifs" className="cursor-pointer">
+            Transférer vers la liste d'actif
+          </Label>
         </div>
       </div>
 
