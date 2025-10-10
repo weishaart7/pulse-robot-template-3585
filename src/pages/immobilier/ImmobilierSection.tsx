@@ -7,6 +7,7 @@ import { useImmobilierAssets } from '@/hooks/useImmobilierAssets';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ImmobilierPropertyDialog } from '@/components/immobilier/ImmobilierPropertyDialog';
 import { ImmobilierGestionDialog } from '@/components/immobilier/ImmobilierGestionDialog';
+import { ImmobilierOverview } from '@/components/immobilier/ImmobilierOverview';
 import { Asset } from '@/services/assetService';
 
 export const ImmobilierSection = () => {
@@ -48,20 +49,13 @@ export const ImmobilierSection = () => {
         return (
           <Card>
             <CardHeader>
-              <CardTitle>Mes biens immobiliers</CardTitle>
+              <CardTitle>Vue d'ensemble</CardTitle>
               <CardDescription>
-                Gérez votre portefeuille immobilier
+                Statistiques de votre portefeuille immobilier
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12">
-                <div className="text-4xl mb-4">🏠</div>
-                <h3 className="text-lg font-semibold mb-2">Section à venir</h3>
-                <p className="text-muted-foreground">
-                  Cette section permettra de gérer vos biens immobiliers, 
-                  leur valorisation et leurs revenus.
-                </p>
-              </div>
+              <ImmobilierOverview assets={assets} />
             </CardContent>
           </Card>
         );
