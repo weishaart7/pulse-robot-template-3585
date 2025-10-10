@@ -106,10 +106,24 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
 
         const cashflowMensuel = totalRevenusMensuels - totalChargesMensuelles;
 
-        const plusValueBrute = totalValeurActuelle - totalInvestissement - totalCapitalRestantDu;
+        // Calcul de la plus-value brute selon la formule :
+        // Valeur estimée - (Montant immeuble + Frais agence + Frais notaire + Frais bancaires + Frais hypothèque + Travaux rénovation + Travaux construction + Meubles)
+        let totalCoutAcquisition = 0;
+        for (const asset of assets) {
+          totalCoutAcquisition += (asset.montant_immeuble || 0)
+            + (asset.frais_agence || 0)
+            + (asset.frais_notaire || 0)
+            + (asset.frais_bancaires || 0)
+            + (asset.frais_hypotheque || 0)
+            + (asset.travaux_renovation || 0)
+            + (asset.travaux_construction || 0)
+            + (asset.meubles || 0);
+        }
         
-        const tauxPlusValue = totalInvestissement > 0
-          ? (plusValueBrute / totalInvestissement) * 100
+        const plusValueBrute = totalValeurActuelle - totalCoutAcquisition;
+        
+        const tauxPlusValue = totalCoutAcquisition > 0
+          ? (plusValueBrute / totalCoutAcquisition) * 100
           : 0;
 
         setMetrics({
