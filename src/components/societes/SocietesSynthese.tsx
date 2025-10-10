@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { SocieteForm } from './SocieteForm';
 import { societeService, type Societe } from '@/services/societeService';
+import { useAssets } from '@/hooks/useAssets';
 import { toast } from 'sonner';
 
 // Form data interface that matches the form structure
@@ -30,6 +31,8 @@ interface SocieteFormData {
   activite?: string;
   holding?: string;
   formeSocieteCivile?: string;
+  transfertVersActifs?: boolean;
+  natureActif?: string;
 }
 
 export const SocietesSynthese = () => {
@@ -38,6 +41,8 @@ export const SocietesSynthese = () => {
   const [editingSociete, setEditingSociete] = useState<SocieteFormData | null>(null);
   const [editingSocieteId, setEditingSocieteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  const { createAsset } = useAssets();
 
   // Load societes on mount
   useEffect(() => {
@@ -79,7 +84,8 @@ export const SocietesSynthese = () => {
     valeurIFI: societe.valeur_ifi || 0,
     activite: societe.activite,
     holding: societe.holding,
-    formeSocieteCivile: societe.forme_societe_civile
+    formeSocieteCivile: societe.forme_societe_civile,
+    transfertVersActifs: true
   });
 
   // Convert form format to database format
@@ -134,16 +140,36 @@ export const SocietesSynthese = () => {
     try {
       const societeData = formDataToSociete(data);
       
+      let savedSociete: Societe;
+      
       if (editingSocieteId) {
-        const updatedSociete = await societeService.update(editingSocieteId, societeData);
+        savedSociete = await societeService.update(editingSocieteId, societeData);
         setSocietes(prev => prev.map(s => 
-          s.id === editingSocieteId ? updatedSociete : s
+          s.id === editingSocieteId ? savedSociete : s
         ));
         toast.success('Société modifiée avec succès');
       } else {
-        const newSociete = await societeService.create(societeData);
-        setSocietes(prev => [...prev, newSociete]);
+        savedSociete = await societeService.create(societeData);
+        setSocietes(prev => [...prev, savedSociete]);
         toast.success('Société ajoutée avec succès');
+      }
+      
+      // Create asset if transfertVersActifs is checked
+      if (data.transfertVersActifs && data.natureActif) {
+        try {
+          await createAsset({
+            nature: data.natureActif,
+            denomination: data.denomination,
+            valeur_estimee: data.valeurEstimee || 0,
+            date_estimation: new Date().toISOString().split('T')[0],
+            detenteur: 'user',
+            mode_detention: 'Pleine propriété'
+          });
+          toast.success('Actif créé avec succès');
+        } catch (assetError) {
+          console.error('Error creating asset:', assetError);
+          toast.error('Société créée mais erreur lors de la création de l\'actif');
+        }
       }
       
       setShowForm(false);
