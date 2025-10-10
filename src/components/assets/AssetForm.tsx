@@ -62,6 +62,7 @@ const assetSchema = z.object({
   denomination: z.string().optional(),
   etablissement: z.string().optional(),
   mode_detention: z.string().optional(),
+  beneficiaire_autre_partie: z.string().optional(),
   valeur_estimee: z.number().optional(),
   date_estimation: z.date().optional(),
   revalorisation_annuelle: z.number().optional(),
@@ -94,6 +95,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const [editingCharge, setEditingCharge] = useState<AssetCharge | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
+  const [familyMembers, setFamilyMembers] = useState<Array<{ id?: string; nom: string; prenom?: string }>>([]);
   const [familyData, setFamilyData] = useState<{
     userFirstName?: string;
     partnerFirstName?: string;
@@ -135,9 +137,10 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   useEffect(() => {
     const loadFamilyData = async () => {
       try {
-        const [familyProfile, maritalStatus] = await Promise.all([
+        const [familyProfile, maritalStatus, familyLinks] = await Promise.all([
           familyService.getFamilyProfile(),
-          familyService.getMaritalStatus()
+          familyService.getMaritalStatus(),
+          familyService.getFamilyLinks()
         ]);
 
         const options: string[] = [];
@@ -167,6 +170,9 @@ export const AssetForm: React.FC<AssetFormProps> = ({
 
         setDetenteurOptions(options);
         setFamilyData(familyInfo);
+        
+        // Set family members for beneficiary selection
+        setFamilyMembers(familyLinks || []);
       } catch (error) {
         console.error('Error loading family data:', error);
         // Fallback to generic options - no sensitive data logged
@@ -218,6 +224,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         denomination: asset.denomination || '',
         etablissement: asset.etablissement || '',
         mode_detention: asset.mode_detention || '',
+        beneficiaire_autre_partie: (asset as any).beneficiaire_autre_partie || '',
         valeur_estimee: asset.valeur_estimee || undefined,
         date_estimation: asset.date_estimation ? new Date(asset.date_estimation) : undefined,
         revalorisation_annuelle: asset.revalorisation_annuelle || undefined,
@@ -368,6 +375,35 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                         </Select>
                         <FormMessage />
                       </FormItem>} />
+
+                  {/* Champ bénéficiaire de l'autre partie - conditionnel si démembrement */}
+                  {(form.watch('mode_detention') === 'Usufruit' || form.watch('mode_detention') === 'Nue-propriété') && (
+                    <FormField control={form.control} name="beneficiaire_autre_partie" render={({
+                      field
+                    }) => <FormItem>
+                          <FormLabel>
+                            {form.watch('mode_detention') === 'Usufruit' ? 'Nu-propriétaire' : 'Usufruitier'}
+                          </FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger size="lg">
+                                <SelectValue placeholder="Choisir une personne" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="bg-background z-50">
+                              {familyMembers.map((member) => (
+                                <SelectItem key={member.id || member.nom} value={member.id || ''}>
+                                  {member.prenom ? `${member.prenom} ${member.nom}` : member.nom}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            Sélectionnez le bénéficiaire parmi les personnes renseignées dans la section Famille
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>} />
+                  )}
 
                   <FormField control={form.control} name="valeur_estimee" render={({
                   field
