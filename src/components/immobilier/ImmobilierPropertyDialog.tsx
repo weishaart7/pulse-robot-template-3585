@@ -56,8 +56,8 @@ const residenceSchema = z.object({
   financement_apport: z.number().min(0).optional().or(z.literal('')),
   financement_taux_credit: z.number().min(0).optional().or(z.literal('')),
   financement_taux_assurance: z.number().min(0).optional().or(z.literal('')),
-  type_location: z.enum(['Location nue', 'Location meublée non professionnelle (LMNP)', 'Location meublée professionnelle (LMP)']).optional(),
-  regime_location: z.enum(['Micro-foncier', 'Réel', 'Micro-BIC', 'BIC']).optional(),
+  type_location: z.enum(['Location nue', 'Location meublée non professionnelle (LMNP)', 'Location meublée professionnelle (LMP)']).nullable().optional(),
+  regime_location: z.enum(['Micro-foncier', 'Réel', 'Micro-BIC', 'BIC']).nullable().optional(),
 });
 
 type ResidenceFormValues = z.infer<typeof residenceSchema>;
