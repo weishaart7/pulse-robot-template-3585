@@ -3,16 +3,38 @@ import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DerniersArticles } from './components/DerniersArticles';
 import { FichesMemoire } from './components/FichesMemoire';
+import { AdminArticleList } from '@/components/blog/AdminArticleList';
+import { useUserRole } from '@/hooks/useUserRole';
+import { Shield } from 'lucide-react';
 
 const BlogSection = () => {
   const [activeTab, setActiveTab] = useState('derniers-articles');
+  const { isAdmin, isLoading } = useUserRole();
 
-  const TABS = [
-    { id: 'derniers-articles', label: 'Derniers articles' },
-    { id: 'fiches-memoire', label: 'Fiches mémoire' }
-  ];
+  const TABS = isAdmin
+    ? [
+        { id: 'admin', label: 'Administration' },
+        { id: 'derniers-articles', label: 'Derniers articles' },
+        { id: 'fiches-memoire', label: 'Fiches mémoire' }
+      ]
+    : [
+        { id: 'derniers-articles', label: 'Derniers articles' },
+        { id: 'fiches-memoire', label: 'Fiches mémoire' }
+      ];
 
   const renderContent = () => {
+    if (activeTab === 'admin' && isAdmin) {
+      return <AdminArticleList />;
+    }
+    
+    if (activeTab === 'derniers-articles') {
+      return <DerniersArticles />;
+    }
+    
+    if (activeTab === 'fiches-memoire') {
+      return <FichesMemoire />;
+    }
+    
     return (
       <Card>
         <CardHeader>
@@ -31,14 +53,32 @@ const BlogSection = () => {
     );
   };
 
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
       <div className="mb-6">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Blog</h2>
-          <p className="text-muted-foreground">
-            Articles, conseils et fiches pratiques pour gérer votre patrimoine
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Blog</h2>
+            <p className="text-muted-foreground">
+              Articles, conseils et fiches pratiques pour gérer votre patrimoine
+            </p>
+          </div>
+          {isAdmin && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-md">
+              <Shield className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-primary">Mode Administrateur</span>
+            </div>
+          )}
         </div>
       </div>
 
