@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import DashboardSection from "./pages/DashboardSection";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import InvestmentPlatform from "./pages/investment/InvestmentPlatform";
+import NouveautesSection from "./pages/nouveautes/NouveautesSection";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,11 @@ const App = () => {
                   <Route index element={<Dashboard />} />
                   <Route path=":section" element={<DashboardSection />} />
                 </Route>
+                <Route path="/nouveautes" element={
+                  <ProtectedRoute>
+                    <NouveautesSection />
+                  </ProtectedRoute>
+                } />
                 <Route path="/investment" element={
                   <ProtectedRoute>
                     <InvestmentPlatform />
