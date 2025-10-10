@@ -10,6 +10,7 @@ interface ImmobilierOverviewProps {
 
 interface AssetMetrics {
   nombreBiens: number;
+  valeurTotaleBiens: number;
   rentabiliteBrute: number;
   rentabiliteNette: number;
   cashflowMensuel: number;
@@ -20,6 +21,7 @@ interface AssetMetrics {
 export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }) => {
   const [metrics, setMetrics] = useState<AssetMetrics>({
     nombreBiens: 0,
+    valeurTotaleBiens: 0,
     rentabiliteBrute: 0,
     rentabiliteNette: 0,
     cashflowMensuel: 0,
@@ -128,6 +130,7 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
 
         setMetrics({
           nombreBiens: assets.length,
+          valeurTotaleBiens: totalValeurActuelle,
           rentabiliteBrute,
           rentabiliteNette,
           cashflowMensuel,
@@ -194,6 +197,21 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
           <div className="text-2xl font-bold">{metrics.nombreBiens}</div>
           <p className="text-xs text-muted-foreground">
             en portefeuille
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            Valeur totale
+          </CardTitle>
+          <DollarSign className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatCurrency(metrics.valeurTotaleBiens)}</div>
+          <p className="text-xs text-muted-foreground">
+            somme des valeurs estimées
           </p>
         </CardContent>
       </Card>
