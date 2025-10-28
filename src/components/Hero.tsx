@@ -7,8 +7,6 @@ const Hero = () => {
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-primary">
       {/* Diagonal background elements - Duolingo style */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-1/2 right-0 w-full h-full bg-background transform rotate-12 origin-top-right"></div>
-        
         {/* Decorative sparkles */}
         <Sparkles className="absolute top-20 right-1/4 w-8 h-8 text-secondary animate-pulse-slow" />
         <Sparkles className="absolute top-40 right-1/3 w-6 h-6 text-accent animate-pulse-slow" style={{ animationDelay: '200ms' }} />
