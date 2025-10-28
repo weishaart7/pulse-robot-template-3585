@@ -71,7 +71,9 @@ const Index = () => {
         <section className="relative py-20 overflow-hidden bg-primary">
           <Features />
         </section>
-        <Testimonials />
+        <section className="relative py-20 overflow-hidden bg-primary">
+          <Testimonials />
+        </section>
         <Newsletter />
       </main>
       <Footer />
