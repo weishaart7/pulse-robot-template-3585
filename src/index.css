@@ -44,7 +44,7 @@
     --primary: 236 96% 11%; /* #010537 - Deep navy blue */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 143 100% 46%; /* #00eb5b - Bright green */
+    --secondary: 143 86% 57%; /* #32EF7B - Bright green */
     --secondary-foreground: 0 0% 100%;
 
     --muted: 220 20% 95%;
@@ -99,7 +99,7 @@
     --primary: 236 96% 11%; /* #010537 - Deep navy stays consistent */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 143 100% 46%; /* #00eb5b - Bright green */
+    --secondary: 143 86% 57%; /* #32EF7B - Bright green */
     --secondary-foreground: 0 0% 100%;
 
     --muted: 220 40% 18%;
