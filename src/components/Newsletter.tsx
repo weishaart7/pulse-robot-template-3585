@@ -1,13 +1,16 @@
 import React, { useState } from "react";
 import { toast } from "@/components/ui/use-toast";
+import { Sparkles } from "lucide-react";
+
 const Newsletter = () => {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
       toast({
-        title: "Please enter your email address",
+        title: "Veuillez entrer votre adresse email",
         variant: "destructive"
       });
       return;
@@ -17,38 +20,48 @@ const Newsletter = () => {
     // Simulate API call
     setTimeout(() => {
       toast({
-        title: "Thank you for subscribing!",
-        description: "You'll receive updates about Atlas soon."
+        title: "Merci de vous être inscrit !",
+        description: "Vous recevrez bientôt nos actualités."
       });
       setEmail("");
       setIsSubmitting(false);
     }, 1000);
   };
-  return <section id="newsletter" className="bg-white py-0">
-      <div className="section-container opacity-0 animate-on-scroll">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="pulse-chip">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-pulse-500 text-white mr-2">05</span>
-              <span>Newsletter</span>
-            </div>
-          </div>
-          
-          <h2 className="text-5xl font-display font-bold mb-4 text-left">Subscribe to the newsletter</h2>
-          <p className="text-xl text-gray-700 mb-10 text-left">
-            Be first to hear about breakthroughs, partnerships, and deployment opportunities
-          </p>
-          
-          <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-            <div className="relative flex-grow">
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email address" className="w-full px-6 py-4 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pulse-500 text-gray-700" required />
-            </div>
-            <button type="submit" disabled={isSubmitting} className="bg-pulse-500 hover:bg-pulse-600 text-white font-medium py-4 px-10 rounded-full transition-all duration-300 md:ml-4">
-              {isSubmitting ? "Submitting..." : "Submit"}
-            </button>
-          </form>
-        </div>
+  
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+      {/* Decorative sparkles */}
+      <Sparkles className="absolute top-10 right-1/4 w-6 h-6 text-secondary animate-pulse-slow" />
+      <Sparkles className="absolute top-32 left-1/4 w-5 h-5 text-accent animate-pulse-slow" style={{ animationDelay: '300ms' }} />
+      <Sparkles className="absolute bottom-10 right-1/3 w-7 h-7 text-secondary/60 animate-pulse-slow" style={{ animationDelay: '600ms' }} />
+      
+      <div className="max-w-4xl mx-auto text-center">
+        <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary-foreground mb-6 tracking-tight lowercase">
+          restez informé
+        </h2>
+        <p className="text-lg sm:text-xl text-primary-foreground/90 mb-12">
+          Recevez les dernières actualités et conseils patrimoniaux
+        </p>
+        
+        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center max-w-2xl mx-auto">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Votre adresse email"
+            className="flex-1 px-6 py-4 rounded-2xl border-2 border-secondary/20 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all"
+            required
+          />
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="bg-secondary hover:bg-secondary/90 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 hover:shadow-2xl hover:shadow-secondary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? "Envoi..." : "S'inscrire"}
+          </button>
+        </form>
       </div>
-    </section>;
+    </div>
+  );
 };
 export default Newsletter;
