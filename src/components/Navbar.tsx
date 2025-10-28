@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -22,17 +22,11 @@ const Navbar = () => {
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
-    // Prevent background scrolling when menu is open
     document.body.style.overflow = !isMenuOpen ? 'hidden' : '';
   };
 
   const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-    
-    // Close mobile menu if open
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     if (isMenuOpen) {
       setIsMenuOpen(false);
       document.body.style.overflow = '';
@@ -42,13 +36,13 @@ const Navbar = () => {
   return (
     <header
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 py-2 sm:py-3 md:py-4 transition-all duration-300",
+        "fixed top-0 left-0 right-0 z-50 py-4 transition-all duration-300",
         isScrolled 
-          ? "bg-white/80 backdrop-blur-md shadow-sm" 
-          : "bg-transparent"
+          ? "bg-primary/95 backdrop-blur-md shadow-lg" 
+          : "bg-primary"
       )}
     >
-      <div className="container flex items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="container flex items-center justify-between px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <a 
           href="#" 
           className="flex items-center space-x-2"
@@ -56,142 +50,142 @@ const Navbar = () => {
             e.preventDefault();
             scrollToTop();
           }}
-          aria-label="Pulse Robot"
+          aria-label="Pulse"
         >
           <img 
             src="/logo.svg" 
-            alt="Pulse Robot Logo" 
-            className="h-7 sm:h-8" 
+            alt="Logo" 
+            className="h-8 sm:h-10 w-8 sm:w-10 brightness-0 invert" 
           />
+          <span className="font-display text-xl sm:text-2xl font-bold text-primary-foreground">
+            PULSE
+          </span>
         </a>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex space-x-8">
-          <a 
-            href="#" 
-            className="nav-link"
-            onClick={(e) => {
-              e.preventDefault();
-              scrollToTop();
-            }}
-          >
-            Home
+        <nav className="hidden md:flex items-center space-x-8">
+          <a href="#features" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium">
+            Fonctionnalités
           </a>
-          <a href="#features" className="nav-link">About</a>
-          <a href="#details" className="nav-link">Contact</a>
-        </nav>
+          <a href="#showcase" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium">
+            Découvrir
+          </a>
+          <a href="#testimonials" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium">
+            Témoignages
+          </a>
 
-        {/* Login/Dashboard Button - Desktop */}
-        <div className="hidden md:flex items-center">
           {isAuthenticated ? (
-            <div className="flex items-center gap-2">
-              <button 
+            <>
+              <Button 
                 onClick={() => navigate('/dashboard')}
-                className="bg-secondary text-secondary-foreground hover:bg-secondary/80 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                variant="outline" 
+                className="bg-background text-primary hover:bg-background/90 border-primary-foreground/20"
               >
-                Tableau de bord
-              </button>
-              <button 
+                Dashboard
+              </Button>
+              <Button 
                 onClick={logout}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                variant="ghost"
+                className="text-primary-foreground hover:bg-primary-foreground/10"
               >
                 Déconnexion
-              </button>
-            </div>
+              </Button>
+            </>
           ) : (
-            <button 
+            <Button 
               onClick={() => navigate('/login')}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              className="bg-background text-primary hover:bg-background/90 font-bold rounded-2xl"
             >
               Se connecter
-            </button>
+            </Button>
           )}
-        </div>
+        </nav>
 
-        {/* Mobile menu button - increased touch target */}
-        <button 
-          className="md:hidden text-gray-700 p-3 focus:outline-none" 
+        {/* Mobile menu button */}
+        <button
           onClick={toggleMenu}
-          aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+          className="md:hidden relative z-50 p-2"
+          aria-label="Toggle menu"
         >
-          {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          <div className="w-6 h-5 flex flex-col justify-between">
+            <span className={`block h-0.5 w-full bg-primary-foreground transition-all duration-300 ${
+              isMenuOpen ? 'rotate-45 translate-y-2' : ''
+            }`} />
+            <span className={`block h-0.5 w-full bg-primary-foreground transition-all duration-300 ${
+              isMenuOpen ? 'opacity-0' : ''
+            }`} />
+            <span className={`block h-0.5 w-full bg-primary-foreground transition-all duration-300 ${
+              isMenuOpen ? '-rotate-45 -translate-y-2' : ''
+            }`} />
+          </div>
         </button>
       </div>
 
-      {/* Mobile Navigation - improved for better touch experience */}
-      <div className={cn(
-        "fixed inset-0 z-40 bg-white flex flex-col pt-16 px-6 md:hidden transition-all duration-300 ease-in-out",
-        isMenuOpen ? "opacity-100 translate-x-0" : "opacity-0 translate-x-full pointer-events-none"
-      )}>
-        <nav className="flex flex-col space-y-8 items-center mt-8">
-          <a 
-            href="#" 
-            className="text-xl font-medium py-3 px-6 w-full text-center rounded-lg hover:bg-gray-100" 
-            onClick={(e) => {
-              e.preventDefault();
-              scrollToTop();
-              setIsMenuOpen(false);
-              document.body.style.overflow = '';
-            }}
-          >
-            Home
-          </a>
+      {/* Mobile Navigation Menu */}
+      <div className={`md:hidden fixed inset-0 bg-primary z-40 transition-transform duration-300 ${
+        isMenuOpen ? 'translate-x-0' : 'translate-x-full'
+      }`}>
+        <div className="flex flex-col items-center justify-center h-full space-y-8 text-center">
           <a 
             href="#features" 
-            className="text-xl font-medium py-3 px-6 w-full text-center rounded-lg hover:bg-gray-100" 
-            onClick={() => {
-              setIsMenuOpen(false);
-              document.body.style.overflow = '';
-            }}
+            onClick={toggleMenu}
+            className="text-2xl font-medium text-primary-foreground hover:text-primary-foreground/80 transition-colors"
           >
-            About
+            Fonctionnalités
           </a>
           <a 
-            href="#details" 
-            className="text-xl font-medium py-3 px-6 w-full text-center rounded-lg hover:bg-gray-100" 
-            onClick={() => {
-              setIsMenuOpen(false);
-              document.body.style.overflow = '';
-            }}
+            href="#showcase" 
+            onClick={toggleMenu}
+            className="text-2xl font-medium text-primary-foreground hover:text-primary-foreground/80 transition-colors"
           >
-            Contact
+            Découvrir
           </a>
+          <a 
+            href="#testimonials" 
+            onClick={toggleMenu}
+            className="text-2xl font-medium text-primary-foreground hover:text-primary-foreground/80 transition-colors"
+          >
+            Témoignages
+          </a>
+
           {isAuthenticated ? (
-            <div className="flex flex-col gap-4 w-full">
-              <button 
-                className="bg-secondary text-secondary-foreground hover:bg-secondary/80 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            <>
+              <Button 
                 onClick={() => {
+                  toggleMenu();
                   navigate('/dashboard');
-                  setIsMenuOpen(false);
-                  document.body.style.overflow = '';
                 }}
+                variant="outline"
+                size="lg"
+                className="w-48 bg-background text-primary hover:bg-background/90 border-primary-foreground/20"
               >
-                Tableau de bord
-              </button>
-              <button 
-                className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                Dashboard
+              </Button>
+              <Button 
                 onClick={() => {
+                  toggleMenu();
                   logout();
-                  setIsMenuOpen(false);
-                  document.body.style.overflow = '';
                 }}
+                variant="ghost"
+                size="lg"
+                className="w-48 text-primary-foreground hover:bg-primary-foreground/10"
               >
                 Déconnexion
-              </button>
-            </div>
+              </Button>
+            </>
           ) : (
-            <button 
-              className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-colors mt-4"
+            <Button 
               onClick={() => {
+                toggleMenu();
                 navigate('/login');
-                setIsMenuOpen(false);
-                document.body.style.overflow = '';
               }}
+              size="lg"
+              className="w-48 bg-background text-primary hover:bg-background/90 font-bold rounded-2xl"
             >
               Se connecter
-            </button>
+            </Button>
           )}
-        </nav>
+        </div>
       </div>
     </header>
   );

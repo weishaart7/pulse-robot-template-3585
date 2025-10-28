@@ -1,101 +1,66 @@
-import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import { MoveRight, PhoneCall } from "lucide-react";
+import React from "react";
 import { Button } from "@/components/ui/button";
-import { Particles } from "@/components/ui/particles";
-import StatsSection from "@/components/ui/stats-section";
-const Hero = () => {
-  const [titleNumber, setTitleNumber] = useState(0);
-  const titles = useMemo(() => ["incroyable", "nouveau", "merveilleux", "magnifique", "intelligent"], []);
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (titleNumber === titles.length - 1) {
-        setTitleNumber(0);
-      } else {
-        setTitleNumber(titleNumber + 1);
-      }
-    }, 2000);
-    return () => clearTimeout(timeoutId);
-  }, [titleNumber, titles]);
-  return <section className="overflow-hidden relative" id="hero" style={{
-    padding: '120px 20px 60px'
-  }}>
-      <Particles
-        className="absolute inset-0"
-        quantity={100}
-        ease={80}
-        color="#ffffff"
-        refresh
-      />
-      
-      <div className="container px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col lg:flex-row gap-6 lg:gap-12 items-center">
-          {/* Left side - New animated content */}
-          <div className="w-full lg:w-1/2">
-            <div className="flex gap-8 py-20 lg:py-40 items-center justify-center flex-col">
-              <div className="flex gap-4 flex-col">
-                <h1 className="text-5xl md:text-7xl max-w-2xl tracking-tighter text-center font-regular">
-                  <span className="text-spektr-cyan-50">Essayez quelque chose</span>
-                  <span className="relative flex w-full justify-center overflow-hidden text-center md:pb-4 md:pt-1">
-                    &nbsp;
-                    {titles.map((title, index) => <motion.span key={index} className="absolute font-semibold" initial={{
-                    opacity: 0,
-                    y: "-100"
-                  }} transition={{
-                    type: "spring",
-                    stiffness: 50
-                  }} animate={titleNumber === index ? {
-                    y: 0,
-                    opacity: 1
-                  } : {
-                    y: titleNumber > index ? -150 : 150,
-                    opacity: 0
-                  }}>
-                        {title}
-                      </motion.span>)}
-                  </span>
-                </h1>
+import { Sparkles } from "lucide-react";
 
-                <p className="text-lg md:text-xl leading-relaxed tracking-tight text-muted-foreground max-w-2xl text-center">
-                  Gérer une petite entreprise aujourd'hui est déjà difficile. Évitez
-                  d'autres complications en abandonnant les méthodes commerciales
-                  obsolètes et fastidieuses. Notre objectif est de rationaliser le
-                  commerce des PME, le rendant plus facile et plus rapide que jamais.
-                </p>
-              </div>
-              <div className="flex flex-row gap-3">
-                <Button size="lg" className="gap-4" variant="outline">
-                  Planifier un appel <PhoneCall className="w-4 h-4" />
-                </Button>
-                <Button size="lg" className="gap-4">
-                  S'inscrire ici <MoveRight className="w-4 h-4" />
-                </Button>
-              </div>
+const Hero = () => {
+  return (
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-primary">
+      {/* Diagonal background elements - Duolingo style */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-1/2 right-0 w-full h-full bg-background transform rotate-12 origin-top-right"></div>
+        
+        {/* Decorative sparkles */}
+        <Sparkles className="absolute top-20 right-1/4 w-8 h-8 text-secondary animate-pulse-slow" />
+        <Sparkles className="absolute top-40 right-1/3 w-6 h-6 text-accent animate-pulse-slow" style={{ animationDelay: '200ms' }} />
+        <Sparkles className="absolute bottom-1/3 right-1/2 w-5 h-5 text-secondary/60 animate-pulse-slow" style={{ animationDelay: '500ms' }} />
+      </div>
+
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="grid lg:grid-cols-2 gap-12 items-center max-w-7xl mx-auto">
+          {/* Left side - Text content */}
+          <div className="text-left space-y-8">
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-primary-foreground lowercase leading-tight">
+              gérez votre patrimoine
+              <br />
+              <span className="text-primary-foreground">de façon simple</span>
+            </h1>
+            
+            <p className="text-lg sm:text-xl text-primary-foreground/90 max-w-xl">
+              Atteignez vos objectifs patrimoniaux avec la plateforme #1 de gestion de patrimoine
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button 
+                size="lg" 
+                className="bg-background text-primary hover:bg-background/90 text-lg font-bold rounded-2xl px-8 py-6"
+              >
+                Démarrer mon essai gratuit
+              </Button>
             </div>
+
+            <p className="text-sm text-primary-foreground/70">
+              sans engagement. annulez à tout moment.
+            </p>
           </div>
-          
-          {/* Right side - Original image */}
-          <div className="w-full lg:w-1/2 relative mt-6 lg:mt-0">
-            <div className="absolute inset-0 bg-dark-900 rounded-2xl sm:rounded-3xl -z-10 shadow-xl"></div>
-            <div className="relative transition-all duration-500 ease-out overflow-hidden rounded-2xl sm:rounded-3xl shadow-2xl">
-              <img src="/lovable-uploads/5663820f-6c97-4492-9210-9eaa1a8dc415.png" alt="Atlas Robot" className="w-full h-auto object-cover transition-transform duration-500 ease-out" style={{
-              transformStyle: 'preserve-3d'
-            }} />
-              <div className="absolute inset-0" style={{
-              backgroundImage: 'url("/hero-image.jpg")',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              mixBlendMode: 'overlay',
-              opacity: 0.5
-            }}></div>
+
+          {/* Right side - Mascot/Character area */}
+          <div className="relative flex justify-center lg:justify-end">
+            <div className="relative w-full max-w-md aspect-square">
+              {/* Colorful blob background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-secondary via-accent to-secondary rounded-full blur-3xl opacity-60 animate-float"></div>
+              
+              {/* Character placeholder - you can replace with your own mascot */}
+              <div className="relative z-10 w-full h-full flex items-center justify-center">
+                <div className="w-72 h-72 rounded-full bg-gradient-to-br from-secondary to-accent flex items-center justify-center shadow-2xl animate-float">
+                  <span className="text-6xl">🤖</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-
-        <StatsSection />
       </div>
-      
-      <div className="hidden lg:block absolute bottom-0 left-1/4 w-64 h-64 bg-pulse-100/30 rounded-full blur-3xl -z-10"></div>
-    </section>;
+    </section>
+  );
 };
+
 export default Hero;
