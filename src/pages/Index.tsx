@@ -67,7 +67,9 @@ const Index = () => {
         <Hero />
         <StatsSection />
         <PricingComparison />
-        <ImageShowcaseSection />
+        <section className="relative py-20 overflow-hidden bg-primary">
+          <ImageShowcaseSection />
+        </section>
         <section className="relative py-20 overflow-hidden bg-primary">
           <Features />
         </section>
