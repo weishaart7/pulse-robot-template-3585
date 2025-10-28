@@ -33,15 +33,15 @@
     
     /* Duolingo-inspired color scheme - light mode */
     --background: 0 0% 100%;
-    --foreground: 220 30% 10%;
+    --foreground: 236 96% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 30% 10%;
+    --card-foreground: 236 96% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 30% 10%;
+    --popover-foreground: 236 96% 11%;
 
-    --primary: 220 90% 20%; /* Deep navy blue */
+    --primary: 236 96% 11%; /* #010537 - Deep navy blue */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 160 60% 50%; /* Bright teal/green */
@@ -87,16 +87,16 @@
     --ds-background-200: hsla(0, 0%, 0%, 1);
     
     /* Duolingo-inspired dark mode - deep navy background */
-    --background: 220 60% 8%; /* Very dark navy blue */
+    --background: 236 96% 11%; /* #010537 - Very dark navy blue */
     --foreground: 0 0% 98%;
 
-    --card: 220 50% 12%;
+    --card: 236 80% 15%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 220 50% 12%;
+    --popover: 236 80% 15%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 220 90% 20%; /* Deep navy stays consistent */
+    --primary: 236 96% 11%; /* #010537 - Deep navy stays consistent */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 160 60% 50%; /* Bright teal/green */
