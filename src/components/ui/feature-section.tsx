@@ -117,7 +117,7 @@ export const FeatureGrid = React.forwardRef<HTMLDivElement, FeatureGridProps>(({
         duration: 0.5
       }} className="mt-12">
             <Button asChild size="lg" className="px-6">
-              
+              <a href={buttonHref}>{buttonText}</a>
             </Button>
           </motion.div>
         </motion.div>
