@@ -1,47 +1,61 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
+import { ContainerScroll } from "@/components/ui/container-scroll-animation";
+
 const Hero = () => {
-  return <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-primary">
-      {/* Diagonal background elements - Duolingo style */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* Decorative sparkles */}
-        
-        
-        <Sparkles className="absolute bottom-1/3 right-1/2 w-5 h-5 text-secondary/60 animate-pulse-slow" style={{
-        animationDelay: '500ms'
-      }} />
-      </div>
-
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center max-w-7xl mx-auto">
-          {/* Left side - Text content */}
-          <div className="text-left space-y-8">
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-primary-foreground lowercase leading-tight">
-              Gérez votre patrimoine
-              <br />
-              <span className="text-primary-foreground">de façon simple</span>
-            </h1>
-            
-            <p className="text-lg sm:text-xl text-primary-foreground/90 max-w-xl">
-              Atteignez vos objectifs patrimoniaux avec la plateforme #1 de gestion de patrimoine
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-background text-primary hover:bg-background/90 text-lg font-bold rounded-2xl px-8 py-6">
-                Démarrer mon essai gratuit
-              </Button>
-            </div>
-
-            <p className="text-sm text-primary-foreground/70">
-              Sans engagement. Annulez à tout moment.
-            </p>
-          </div>
-
-          {/* Right side - Mascot/Character area */}
+  return (
+    <section className="relative bg-background">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-32">
+        <div className="max-w-4xl mx-auto text-center space-y-8">
+          {/* Hero heading */}
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-semibold text-foreground leading-tight tracking-tight">
+            Gestion de patrimoine intelligente pour professionnels
+          </h1>
           
+          {/* Hero description */}
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto">
+            Gérez votre patrimoine, optimisez votre fiscalité, et planifiez votre transmission—tout dans une plateforme unifiée.
+          </p>
+
+          {/* CTA buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
+            <Button 
+              size="lg" 
+              className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-8"
+            >
+              Commencer
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline"
+              className="font-medium px-8"
+            >
+              Réserver une démo
+            </Button>
+          </div>
         </div>
       </div>
-    </section>;
+
+      {/* Scroll Animation Container */}
+      <ContainerScroll
+        titleComponent={
+          <h2 className="text-4xl font-semibold text-foreground">
+            Une plateforme complète <br />
+            <span className="text-4xl md:text-[6rem] font-bold mt-1 leading-none">
+              pour votre patrimoine
+            </span>
+          </h2>
+        }
+      >
+        <img
+          src="/hero-image.jpg"
+          alt="Dashboard de gestion patrimoniale"
+          className="mx-auto rounded-2xl object-cover h-full object-left-top"
+          draggable={false}
+        />
+      </ContainerScroll>
+    </section>
+  );
 };
+
 export default Hero;
