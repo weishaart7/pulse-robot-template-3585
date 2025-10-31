@@ -1,24 +1,28 @@
 import React from 'react';
 import { Grid2x2PlusIcon, MenuIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Sheet, SheetContent, SheetFooter } from '@/components/ui/sheet';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function FloatingHeader() {
 	const [open, setOpen] = React.useState(false);
+	const navigate = useNavigate();
+	const { user } = useAuth();
 
 	const links = [
 		{
-			label: 'Features',
-			href: '#',
+			label: 'Fonctionnalités',
+			href: '#features',
 		},
 		{
-			label: 'Pricing',
-			href: '#',
+			label: 'Tarifs',
+			href: '#pricing',
 		},
 		{
-			label: 'About',
-			href: '#',
+			label: 'À propos',
+			href: '#about',
 		},
 	];
 
@@ -31,10 +35,10 @@ export function FloatingHeader() {
 			)}
 		>
 			<nav className="mx-auto flex items-center justify-between p-1.5">
-				<div className="hover:bg-accent flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 duration-100">
-					<Grid2x2PlusIcon className="size-5" />
-					<p className="font-mono text-base font-bold">Asme</p>
-				</div>
+				<a href="/" className="hover:bg-accent flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 duration-100">
+					<img src="/logo.svg" alt="Logo" className="size-5" />
+					<p className="font-mono text-base font-bold">PatrimonIA</p>
+				</a>
 				<div className="hidden items-center gap-1 lg:flex">
 					{links.map((link) => (
 						<a
@@ -47,7 +51,20 @@ export function FloatingHeader() {
 					))}
 				</div>
 				<div className="flex items-center gap-2">
-					<Button size="sm">Login</Button>
+					{user ? (
+						<Button size="sm" onClick={() => navigate('/dashboard')}>
+							Dashboard
+						</Button>
+					) : (
+						<>
+							<Button size="sm" variant="outline" onClick={() => navigate('/login')}>
+								Connexion
+							</Button>
+							<Button size="sm" onClick={() => navigate('/login')}>
+								S'inscrire
+							</Button>
+						</>
+					)}
 					<Sheet open={open} onOpenChange={setOpen}>
 						<Button
 							size="icon"
@@ -77,8 +94,29 @@ export function FloatingHeader() {
 								))}
 							</div>
 							<SheetFooter>
-								<Button variant="outline">Sign In</Button>
-								<Button>Get Started</Button>
+								{user ? (
+									<Button onClick={() => {
+										setOpen(false);
+										navigate('/dashboard');
+									}}>
+										Dashboard
+									</Button>
+								) : (
+									<>
+										<Button variant="outline" onClick={() => {
+											setOpen(false);
+											navigate('/login');
+										}}>
+											Connexion
+										</Button>
+										<Button onClick={() => {
+											setOpen(false);
+											navigate('/login');
+										}}>
+											S'inscrire
+										</Button>
+									</>
+								)}
 							</SheetFooter>
 						</SheetContent>
 					</Sheet>
