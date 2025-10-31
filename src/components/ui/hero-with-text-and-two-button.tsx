@@ -1,11 +1,9 @@
 import { MoveRight, PhoneCall } from "lucide-react";
-import { Button } from "@/components/ui/button"
-
+import { Button } from "@/components/ui/button";
 function Hero1() {
-  return (
-    <div className="w-full">
+  return <div className="w-full">
       <div className="container mx-auto">
-        <div className="flex gap-8 py-20 lg:py-40 items-center justify-center flex-col">
+        <div className="flex gap-8 py-20 items-center justify-center flex-col mx-[47px] my-0 px-0 lg:py-[65px]">
           <div>
             <Button variant="secondary" size="sm" className="gap-4">
               Read our launch article <MoveRight className="w-4 h-4" />
@@ -31,8 +29,6 @@ function Hero1() {
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 }
-
 export { Hero1 };
