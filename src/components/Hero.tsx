@@ -14,8 +14,8 @@ const Hero = () => {
       ctaText="Commencer"
       ctaHref="#"
       bottomImage={{
-        light: "/hero-image.jpg",
-        dark: "/hero-image.jpg",
+        light: "/dashboard-preview.png",
+        dark: "/dashboard-preview.png",
       }}
       gridOptions={{
         angle: 65,
