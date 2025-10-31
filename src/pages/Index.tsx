@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
@@ -9,49 +8,40 @@ import Features from "@/components/Features";
 import Testimonials from "@/components/Testimonials";
 import Newsletter from "@/components/Newsletter";
 import Footer from "@/components/Footer";
-
 const Index = () => {
   console.log('🏠 Index page rendering');
-  
+
   // Initialize intersection observer to detect when elements enter viewport
   useEffect(() => {
     console.log('🏠 Index useEffect - setting up intersection observer');
-    
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("animate-fade-in");
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-    
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("animate-fade-in");
+          observer.unobserve(entry.target);
+        }
+      });
+    }, {
+      threshold: 0.1
+    });
     const elements = document.querySelectorAll(".animate-on-scroll");
-    elements.forEach((el) => observer.observe(el));
-    
+    elements.forEach(el => observer.observe(el));
     return () => {
-      elements.forEach((el) => observer.unobserve(el));
+      elements.forEach(el => observer.unobserve(el));
     };
   }, []);
-
   useEffect(() => {
     // This helps ensure smooth scrolling for the anchor links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
       anchor.addEventListener('click', function (e) {
         e.preventDefault();
-        
         const targetId = this.getAttribute('href')?.substring(1);
         if (!targetId) return;
-        
         const targetElement = document.getElementById(targetId);
         if (!targetElement) return;
-        
+
         // Increased offset to account for mobile nav
         const offset = window.innerWidth < 768 ? 100 : 80;
-        
         window.scrollTo({
           top: targetElement.offsetTop - offset,
           behavior: 'smooth'
@@ -59,23 +49,11 @@ const Index = () => {
       });
     });
   }, []);
-
-  return (
-    <div className="min-h-screen bg-[#f3f3f3]">
+  return <div className="min-h-screen bg-[#f3f3f3]">
       <Navbar />
       <main className="space-y-0">
         <Hero />
-        <section className="relative py-24 sm:py-32 bg-gradient-to-b from-background via-background/95 to-muted/20 overflow-hidden">
-          {/* Decorative elements */}
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl -z-10" />
-          
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="animate-on-scroll opacity-0">
-              <StatsSection />
-            </div>
-          </div>
-        </section>
+        
         <section className="py-20 bg-muted/30">
           <ImageShowcaseSection />
         </section>
@@ -93,8 +71,6 @@ const Index = () => {
         </section>
       </main>
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
