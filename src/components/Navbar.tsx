@@ -55,22 +55,22 @@ const Navbar = () => {
           <img 
             src="/logo.svg" 
             alt="Logo" 
-            className="h-8 sm:h-10 w-8 sm:w-10 brightness-0 invert" 
+            className="h-8 sm:h-10 w-8 sm:w-10" 
           />
-          <span className="font-display text-xl sm:text-2xl font-bold text-primary-foreground">
+          <span className="font-display text-xl sm:text-2xl font-bold text-gray-900">
             PULSE
           </span>
         </a>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
-          <a href="#features" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium">
+          <a href="#features" className="text-gray-700 hover:text-gray-900 transition-colors font-medium">
             Fonctionnalités
           </a>
-          <a href="#showcase" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium">
+          <a href="#showcase" className="text-gray-700 hover:text-gray-900 transition-colors font-medium">
             Découvrir
           </a>
-          <a href="#testimonials" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium">
+          <a href="#testimonials" className="text-gray-700 hover:text-gray-900 transition-colors font-medium">
             Témoignages
           </a>
 
@@ -79,14 +79,14 @@ const Navbar = () => {
               <Button 
                 onClick={() => navigate('/dashboard')}
                 variant="outline" 
-                className="bg-background text-primary hover:bg-background/90 border-primary-foreground/20"
+                className="bg-white text-gray-900 hover:bg-gray-100 border-gray-300"
               >
                 Dashboard
               </Button>
               <Button 
                 onClick={logout}
                 variant="ghost"
-                className="text-primary-foreground hover:bg-primary-foreground/10"
+                className="text-gray-700 hover:bg-gray-200"
               >
                 Déconnexion
               </Button>
@@ -94,7 +94,7 @@ const Navbar = () => {
           ) : (
             <Button 
               onClick={() => navigate('/login')}
-              className="bg-background text-primary hover:bg-background/90 font-bold rounded-2xl"
+              className="bg-gray-900 text-white hover:bg-gray-800 font-bold rounded-2xl"
             >
               Se connecter
             </Button>
@@ -108,13 +108,13 @@ const Navbar = () => {
           aria-label="Toggle menu"
         >
           <div className="w-6 h-5 flex flex-col justify-between">
-            <span className={`block h-0.5 w-full bg-primary-foreground transition-all duration-300 ${
+            <span className={`block h-0.5 w-full bg-gray-900 transition-all duration-300 ${
               isMenuOpen ? 'rotate-45 translate-y-2' : ''
             }`} />
-            <span className={`block h-0.5 w-full bg-primary-foreground transition-all duration-300 ${
+            <span className={`block h-0.5 w-full bg-gray-900 transition-all duration-300 ${
               isMenuOpen ? 'opacity-0' : ''
             }`} />
-            <span className={`block h-0.5 w-full bg-primary-foreground transition-all duration-300 ${
+            <span className={`block h-0.5 w-full bg-gray-900 transition-all duration-300 ${
               isMenuOpen ? '-rotate-45 -translate-y-2' : ''
             }`} />
           </div>
@@ -129,21 +129,21 @@ const Navbar = () => {
           <a 
             href="#features" 
             onClick={toggleMenu}
-            className="text-2xl font-medium text-primary-foreground hover:text-primary-foreground/80 transition-colors"
+            className="text-2xl font-medium text-gray-900 hover:text-gray-700 transition-colors"
           >
             Fonctionnalités
           </a>
           <a 
             href="#showcase" 
             onClick={toggleMenu}
-            className="text-2xl font-medium text-primary-foreground hover:text-primary-foreground/80 transition-colors"
+            className="text-2xl font-medium text-gray-900 hover:text-gray-700 transition-colors"
           >
             Découvrir
           </a>
           <a 
             href="#testimonials" 
             onClick={toggleMenu}
-            className="text-2xl font-medium text-primary-foreground hover:text-primary-foreground/80 transition-colors"
+            className="text-2xl font-medium text-gray-900 hover:text-gray-700 transition-colors"
           >
             Témoignages
           </a>
@@ -157,7 +157,7 @@ const Navbar = () => {
                 }}
                 variant="outline"
                 size="lg"
-                className="w-48 bg-background text-primary hover:bg-background/90 border-primary-foreground/20"
+                className="w-48 bg-white text-gray-900 hover:bg-gray-100 border-gray-300"
               >
                 Dashboard
               </Button>
@@ -168,7 +168,7 @@ const Navbar = () => {
                 }}
                 variant="ghost"
                 size="lg"
-                className="w-48 text-primary-foreground hover:bg-primary-foreground/10"
+                className="w-48 text-gray-700 hover:bg-gray-200"
               >
                 Déconnexion
               </Button>
@@ -180,7 +180,7 @@ const Navbar = () => {
                 navigate('/login');
               }}
               size="lg"
-              className="w-48 bg-background text-primary hover:bg-background/90 font-bold rounded-2xl"
+              className="w-48 bg-gray-900 text-white hover:bg-gray-800 font-bold rounded-2xl"
             >
               Se connecter
             </Button>
