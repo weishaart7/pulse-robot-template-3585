@@ -1,10 +1,11 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 
 const Hero = () => {
   return (
-    <section className="relative pt-32 pb-20 bg-background">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="relative bg-background">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-32">
         <div className="max-w-4xl mx-auto text-center space-y-8">
           {/* Hero heading */}
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-semibold text-foreground leading-tight tracking-tight">
@@ -33,18 +34,26 @@ const Hero = () => {
             </Button>
           </div>
         </div>
-
-        {/* Dashboard preview image */}
-        <div className="mt-16 max-w-6xl mx-auto">
-          <div className="relative rounded-xl overflow-hidden shadow-2xl border border-border">
-            <img 
-              src="/hero-image.jpg" 
-              alt="Dashboard de gestion patrimoniale" 
-              className="w-full h-auto"
-            />
-          </div>
-        </div>
       </div>
+
+      {/* Scroll Animation Container */}
+      <ContainerScroll
+        titleComponent={
+          <h2 className="text-4xl font-semibold text-foreground">
+            Une plateforme complète <br />
+            <span className="text-4xl md:text-[6rem] font-bold mt-1 leading-none">
+              pour votre patrimoine
+            </span>
+          </h2>
+        }
+      >
+        <img
+          src="/hero-image.jpg"
+          alt="Dashboard de gestion patrimoniale"
+          className="mx-auto rounded-2xl object-cover h-full object-left-top"
+          draggable={false}
+        />
+      </ContainerScroll>
     </section>
   );
 };
