@@ -103,23 +103,7 @@ export const FeatureGrid = React.forwardRef<HTMLDivElement, FeatureGridProps>(({
           </div>
 
           {/* Button */}
-          <motion.div initial={{
-        opacity: 0,
-        y: 20
-      }} whileInView={{
-        opacity: 1,
-        y: 0
-      }} viewport={{
-        once: true,
-        amount: 0.5
-      }} transition={{
-        delay: 0.5,
-        duration: 0.5
-      }} className="mt-12">
-            <Button asChild size="lg" className="px-6">
-              <a href={buttonHref}>{buttonText}</a>
-            </Button>
-          </motion.div>
+          
         </motion.div>
       </section>;
 });
