@@ -56,12 +56,15 @@ const PricingComparison = () => {
     <section className="py-16 md:py-24 bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12 space-y-4">
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground lowercase">
-            Sans engagement. Annulez à tout moment.
+          <h2 className="text-4xl md:text-5xl font-semibold text-foreground">
+            Tarification simple et transparente
           </h2>
+          <p className="text-lg text-muted-foreground">
+            Sans engagement. Annulez à tout moment.
+          </p>
           <Button 
             size="lg" 
-            className="bg-primary text-primary-foreground hover:bg-primary/90 text-lg font-bold rounded-2xl px-8 py-6"
+            className="mt-4"
           >
             Essayer 1 semaine gratuite
           </Button>
@@ -73,22 +76,22 @@ const PricingComparison = () => {
               key={plan.name} 
               className={`relative ${
                 plan.highlighted 
-                  ? 'border-secondary border-2 shadow-xl scale-105' 
+                  ? 'border-primary border-2 shadow-lg' 
                   : 'border-border'
               }`}
             >
               {plan.highlighted && (
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-secondary text-primary px-4 py-1 rounded-full text-sm font-bold">
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-semibold">
                   Populaire
                 </div>
               )}
               <CardHeader className="text-center pb-8 pt-8">
-                <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
+                <CardTitle className="text-2xl font-semibold">{plan.name}</CardTitle>
                 <CardDescription className="text-muted-foreground">
                   {plan.description}
                 </CardDescription>
                 <div className="mt-4">
-                  <span className="text-4xl font-bold text-foreground">{plan.price}</span>
+                  <span className="text-4xl font-semibold text-foreground">{plan.price}</span>
                   {plan.period && (
                     <span className="text-muted-foreground">{plan.period}</span>
                   )}
@@ -97,7 +100,7 @@ const PricingComparison = () => {
               <CardContent className="space-y-4">
                 {plan.features.map((feature, index) => (
                   <div key={index} className="flex items-start gap-3">
-                    <Check className="w-5 h-5 text-secondary shrink-0 mt-0.5" />
+                    <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                     <span className="text-sm text-foreground">{feature}</span>
                   </div>
                 ))}

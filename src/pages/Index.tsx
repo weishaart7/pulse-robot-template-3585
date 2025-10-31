@@ -65,18 +65,22 @@ const Index = () => {
       <Navbar />
       <main className="space-y-0">
         <Hero />
-        <StatsSection />
-        <PricingComparison />
-        <section className="relative py-20 overflow-hidden bg-primary">
+        <section className="py-20 bg-background">
+          <StatsSection />
+        </section>
+        <section className="py-20 bg-muted/30">
           <ImageShowcaseSection />
         </section>
-        <section className="relative py-20 overflow-hidden bg-primary">
+        <section className="py-20 bg-background">
           <Features />
         </section>
-        <section className="relative py-20 overflow-hidden bg-primary">
+        <section className="py-20 bg-muted/30">
+          <PricingComparison />
+        </section>
+        <section className="py-20 bg-background">
           <Testimonials />
         </section>
-        <section className="relative py-20 overflow-hidden bg-primary">
+        <section className="py-20 bg-muted/30">
           <Newsletter />
         </section>
       </main>
