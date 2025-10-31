@@ -1,16 +1,16 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
-
 const Hero = () => {
-  return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-primary">
+  return <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-primary">
       {/* Diagonal background elements - Duolingo style */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Decorative sparkles */}
-        <Sparkles className="absolute top-20 right-1/4 w-8 h-8 text-secondary animate-pulse-slow" />
-        <Sparkles className="absolute top-40 right-1/3 w-6 h-6 text-accent animate-pulse-slow" style={{ animationDelay: '200ms' }} />
-        <Sparkles className="absolute bottom-1/3 right-1/2 w-5 h-5 text-secondary/60 animate-pulse-slow" style={{ animationDelay: '500ms' }} />
+        
+        
+        <Sparkles className="absolute bottom-1/3 right-1/2 w-5 h-5 text-secondary/60 animate-pulse-slow" style={{
+        animationDelay: '500ms'
+      }} />
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -28,10 +28,7 @@ const Hero = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button 
-                size="lg" 
-                className="bg-background text-primary hover:bg-background/90 text-lg font-bold rounded-2xl px-8 py-6"
-              >
+              <Button size="lg" className="bg-background text-primary hover:bg-background/90 text-lg font-bold rounded-2xl px-8 py-6">
                 Démarrer mon essai gratuit
               </Button>
             </div>
@@ -57,8 +54,6 @@ const Hero = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default Hero;

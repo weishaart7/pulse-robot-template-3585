@@ -1,7 +1,5 @@
-
 import React, { useRef } from "react";
 import { Sparkles } from "lucide-react";
-
 interface TestimonialProps {
   content: string;
   author: string;
@@ -9,7 +7,6 @@ interface TestimonialProps {
   gradient: string;
   backgroundImage?: string;
 }
-
 const testimonials: TestimonialProps[] = [{
   content: "Atlas transformed our production line, handling repetitive tasks while our team focuses on innovation. 30% increase in output within three months.",
   author: "Sarah Chen",
@@ -35,15 +32,13 @@ const testimonials: TestimonialProps[] = [{
   gradient: "from-orange-600 via-red-500 to-purple-600",
   backgroundImage: "/background-section1.png"
 }];
-
 const TestimonialCard = ({
   content,
   author,
   role,
   backgroundImage = "/background-section1.png"
 }: TestimonialProps) => {
-  return (
-    <div className="bg-background rounded-3xl p-8 h-full flex flex-col justify-between border-2 border-secondary/20 hover:border-secondary transition-all duration-300 hover:shadow-2xl hover:shadow-secondary/20 hover:-translate-y-2 relative overflow-hidden">
+  return <div className="bg-background rounded-3xl p-8 h-full flex flex-col justify-between border-2 border-secondary/20 hover:border-secondary transition-all duration-300 hover:shadow-2xl hover:shadow-secondary/20 hover:-translate-y-2 relative overflow-hidden">
       <div className="absolute top-4 right-4 w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center">
         <span className="text-3xl">💬</span>
       </div>
@@ -55,19 +50,17 @@ const TestimonialCard = ({
           <p className="text-foreground/70">{role}</p>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 const Testimonials = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
-
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+  return <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
       {/* Decorative sparkles */}
       <Sparkles className="absolute top-10 left-1/4 w-6 h-6 text-secondary animate-pulse-slow" />
-      <Sparkles className="absolute top-32 right-1/4 w-5 h-5 text-accent animate-pulse-slow" style={{ animationDelay: '300ms' }} />
-      <Sparkles className="absolute bottom-20 left-1/3 w-7 h-7 text-secondary/60 animate-pulse-slow" style={{ animationDelay: '600ms' }} />
+      
+      <Sparkles className="absolute bottom-20 left-1/3 w-7 h-7 text-secondary/60 animate-pulse-slow" style={{
+      animationDelay: '600ms'
+    }} />
       
       <div className="text-center mb-16">
         <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary-foreground mb-6 tracking-tight lowercase">
@@ -79,19 +72,8 @@ const Testimonials = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-        {testimonials.map((testimonial, index) => (
-          <TestimonialCard
-            key={index}
-            content={testimonial.content}
-            author={testimonial.author}
-            role={testimonial.role}
-            gradient={testimonial.gradient}
-            backgroundImage={testimonial.backgroundImage}
-          />
-        ))}
+        {testimonials.map((testimonial, index) => <TestimonialCard key={index} content={testimonial.content} author={testimonial.author} role={testimonial.role} gradient={testimonial.gradient} backgroundImage={testimonial.backgroundImage} />)}
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Testimonials;
