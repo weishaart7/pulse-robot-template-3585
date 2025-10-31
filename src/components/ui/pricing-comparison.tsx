@@ -57,7 +57,7 @@ const PricingComparison = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12 space-y-4">
           <h2 className="text-4xl md:text-5xl font-bold text-foreground lowercase">
-            sans engagement. annulez à tout moment.
+            Sans engagement. Annulez à tout moment.
           </h2>
           <Button 
             size="lg" 

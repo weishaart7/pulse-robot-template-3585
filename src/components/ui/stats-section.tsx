@@ -9,7 +9,7 @@ export default function StatsSection() {
               100+
             </div>
             <p className="text-muted-foreground text-lg">
-              fonctionnalités disponibles
+              Fonctionnalités disponibles
             </p>
           </div>
 
@@ -19,7 +19,7 @@ export default function StatsSection() {
               #1
             </div>
             <p className="text-muted-foreground text-lg">
-              plateforme de gestion patrimoniale
+              Plateforme de gestion patrimoniale
             </p>
           </div>
 
@@ -29,7 +29,7 @@ export default function StatsSection() {
               15M+
             </div>
             <p className="text-muted-foreground text-lg">
-              d&apos;encours sous gestion
+              D&apos;encours sous gestion
             </p>
           </div>
         </div>

@@ -71,7 +71,7 @@ const Testimonials = () => {
       
       <div className="text-center mb-16">
         <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary-foreground mb-6 tracking-tight lowercase">
-          ce que nos clients disent
+          Ce que nos clients disent
         </h2>
         <p className="text-lg sm:text-xl text-primary-foreground/90 max-w-3xl mx-auto">
           Ils nous font confiance pour gérer leur patrimoine

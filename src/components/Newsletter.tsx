@@ -37,7 +37,7 @@ const Newsletter = () => {
       
       <div className="max-w-4xl mx-auto text-center">
         <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary-foreground mb-6 tracking-tight lowercase">
-          restez informé
+          Restez informé
         </h2>
         <p className="text-lg sm:text-xl text-primary-foreground/90 mb-12">
           Recevez les dernières actualités et conseils patrimoniaux

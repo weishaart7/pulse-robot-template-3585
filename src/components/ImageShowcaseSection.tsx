@@ -12,7 +12,7 @@ const ImageShowcaseSection = () => {
       
       <div className="max-w-4xl mx-auto text-center mb-12">
         <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary-foreground mb-6 tracking-tight lowercase">
-          découvrez le futur aujourd'hui
+          Découvrez le futur aujourd'hui
         </h2>
         <p className="text-lg sm:text-xl text-primary-foreground/90">
           Notre robot humanoïde révolutionnaire transforme votre quotidien

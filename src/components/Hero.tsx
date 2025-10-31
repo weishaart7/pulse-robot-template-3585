@@ -18,7 +18,7 @@ const Hero = () => {
           {/* Left side - Text content */}
           <div className="text-left space-y-8">
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-primary-foreground lowercase leading-tight">
-              gérez votre patrimoine
+              Gérez votre patrimoine
               <br />
               <span className="text-primary-foreground">de façon simple</span>
             </h1>
@@ -37,7 +37,7 @@ const Hero = () => {
             </div>
 
             <p className="text-sm text-primary-foreground/70">
-              sans engagement. annulez à tout moment.
+              Sans engagement. Annulez à tout moment.
             </p>
           </div>
 
