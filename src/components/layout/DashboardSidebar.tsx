@@ -79,7 +79,12 @@ export function DashboardSidebar() {
   return <div className="w-64 bg-white flex flex-col">
       {/* Logo */}
       <div className="px-3 py-4 mx-[19px]">
-        <img src="/lovable-uploads/3f46b218-16fb-43cf-8206-7af4be7cbfd0.png" alt="Merislabs Logo" className="h-7 w-auto object-contain" />
+        <img 
+          src="/lovable-uploads/3f46b218-16fb-43cf-8206-7af4be7cbfd0.png" 
+          alt="Merislabs Logo" 
+          className="h-7 w-auto object-contain cursor-pointer" 
+          onClick={() => navigate('/')}
+        />
       </div>
 
       {/* Navigation */}
