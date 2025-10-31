@@ -28,12 +28,7 @@ const Hero = () => {
       </div>
 
       {/* Scroll Animation Container */}
-      <ContainerScroll titleComponent={<h2 className="text-4xl font-semibold text-foreground">
-            Une plateforme complète <br />
-            
-          </h2>}>
-        <img src="/hero-image.jpg" alt="Dashboard de gestion patrimoniale" className="mx-auto rounded-2xl object-cover h-full object-left-top" draggable={false} />
-      </ContainerScroll>
+      
     </section>;
 };
 export default Hero;
