@@ -63,9 +63,9 @@ const Index = () => {
                 Conçu{' '}
                 <span className="relative inline-block">
                   pour vous
-                  <svg viewBox="0 0 120 6" className="absolute left-0 bottom-0 -mb-1 w-full" aria-hidden="true">
-                    <path d="M1 4.5C25.46 1.63 78.43 1.39 119 4.5" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                  </svg>
+                <svg viewBox="0 0 120 6" className="absolute left-0 bottom-0 -mb-1 w-full" aria-hidden="true">
+                  <path d="M1 4.5C25.46 1.63 78.43 1.39 119 4.5" stroke="hsl(var(--secondary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                </svg>
                 </span>
               </>} subtitle="Gérez et optimisez votre patrimoine avec des outils professionnels adaptés à vos besoins." illustrationSrc="/lovable-uploads/22d31f51-c174-40a7-bd95-00e4ad00eaf3.png" illustrationAlt="Illustration PatrimonIA" categories={[{
           icon: <PieChart size={24} />,
