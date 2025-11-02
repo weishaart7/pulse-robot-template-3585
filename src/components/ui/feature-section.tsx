@@ -88,7 +88,7 @@ export const FeatureGrid = React.forwardRef<HTMLDivElement, FeatureGridProps>(({
     }} variants={containerVariants}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
             {categories.map((category, index) => <motion.div key={index} variants={itemVariants} className="flex flex-col items-start">
-                <div className="mb-3 text-primary">{category.icon}</div>
+                <div className="mb-3 text-secondary">{category.icon}</div>
                 <h3 className="font-semibold text-foreground mb-2">
                   {category.title}
                 </h3>
