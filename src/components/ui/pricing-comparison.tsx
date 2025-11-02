@@ -76,7 +76,7 @@ const PricingComparison = () => {
               key={plan.name} 
               className={`relative ${
                 plan.highlighted 
-                  ? 'border-primary border-2 shadow-lg' 
+                  ? 'border-secondary border-2 shadow-lg' 
                   : 'border-border'
               }`}
             >
