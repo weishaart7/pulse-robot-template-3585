@@ -50,15 +50,15 @@ const Index = () => {
       });
     });
   }, []);
-  return <div className="min-h-screen bg-white">
+  return <div className="min-h-screen bg-[#f3f3f3]">
       <Navbar />
       <main className="space-y-0">
         <Hero />
         
-        <section className="py-32 bg-white">
+        <section className="py-20 bg-muted/30">
           <ImageShowcaseSection />
         </section>
-        <section className="py-32 bg-[#f5f5f7]">
+        <section className="py-20 bg-background">
           <FeatureGrid title={<>
                 Conçu{' '}
                 <span className="relative inline-block">
@@ -129,13 +129,13 @@ const Index = () => {
           }]
         }]} buttonText="Découvrir toutes les fonctionnalités" buttonHref="#features" />
         </section>
-        <section className="py-32 bg-white">
+        <section className="py-20 bg-muted/30">
           <PricingComparison />
         </section>
-        <section className="py-32 bg-[#f5f5f7]">
+        <section className="py-20 bg-background">
           <Testimonials />
         </section>
-        <section className="py-32 bg-white">
+        <section className="py-20 bg-muted/30">
           <Newsletter />
         </section>
       </main>
