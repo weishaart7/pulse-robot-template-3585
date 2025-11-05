@@ -56,9 +56,7 @@ const Index = () => {
       <main className="space-y-0">
         <Hero />
         
-        <section className="py-20 bg-muted/30">
-          <ImageShowcaseSection />
-        </section>
+        
         <section className="py-20 bg-background">
           <Features />
         </section>
