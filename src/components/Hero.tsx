@@ -3,7 +3,7 @@ import { Hero1 } from "@/components/ui/hero-with-text-and-two-button";
 
 const Hero = () => {
   return (
-    <div className="bg-[#f3f3f3]">
+    <div className="bg-white">
       <Hero1 />
     </div>
   );

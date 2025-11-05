@@ -53,18 +53,18 @@ const PricingComparison = () => {
   ];
 
   return (
-    <section className="py-16 md:py-24 bg-background">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12 space-y-4">
-          <h2 className="text-4xl md:text-5xl font-semibold text-foreground">
+    <section className="py-16 md:py-24 bg-white">
+      <div className="container mx-auto px-6 sm:px-8 lg:px-12">
+        <div className="text-center mb-16 space-y-6">
+          <h2 className="text-5xl md:text-6xl font-semibold text-gray-900 tracking-tight">
             Tarification simple et transparente
           </h2>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-xl md:text-2xl text-gray-600 font-normal">
             Sans engagement. Annulez à tout moment.
           </p>
           <Button 
             size="lg" 
-            className="mt-4"
+            className="mt-6 rounded-full px-8 py-6 text-base bg-secondary hover:bg-secondary/90 text-white font-medium"
           >
             Essayer 1 semaine gratuite
           </Button>
