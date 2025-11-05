@@ -52,8 +52,8 @@ const Features = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-left mb-12">
-        <h2 className="text-6xl font-regular tracking-tighter text-foreground mb-4 text-center">
-          Tous les outils pour gérer votre patrimoine.
+        <h2 className="text-6xl font-regular tracking-tighter text-muted-foreground mb-4 text-center">
+          Tous les <span className="text-foreground font-bold">outils</span> pour gérer votre patrimoine.
         </h2>
         <p className="text-lg text-muted-foreground">
           Patrimoine • Immobilier • Budget • Retraite • Fiscalité • Transmission • Sociétés
