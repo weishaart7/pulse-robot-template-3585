@@ -7,7 +7,7 @@ import PricingComparison from "@/components/ui/pricing-comparison";
 import ImageShowcaseSection from "@/components/ImageShowcaseSection";
 import { FeatureGrid } from "@/components/ui/feature-section";
 import { PieChart, TrendingUp, Shield, Building, Users, FileText } from "lucide-react";
-import Testimonials from "@/components/Testimonials";
+import Testimonials from "@/components/ui/testimonials";
 import Newsletter from "@/components/Newsletter";
 import { StickyFooter } from "@/components/ui/sticky-footer";
 const Index = () => {
