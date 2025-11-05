@@ -9,7 +9,7 @@ import { FeatureGrid } from "@/components/ui/feature-section";
 import { PieChart, TrendingUp, Shield, Building, Users, FileText } from "lucide-react";
 import Testimonials from "@/components/Testimonials";
 import Newsletter from "@/components/Newsletter";
-import Footer from "@/components/Footer";
+import { StickyFooter } from "@/components/ui/sticky-footer";
 const Index = () => {
   console.log('🏠 Index page rendering');
 
@@ -72,7 +72,7 @@ const Index = () => {
           <Newsletter />
         </section>
       </main>
-      <Footer />
+      <StickyFooter />
     </div>;
 };
 export default Index;
