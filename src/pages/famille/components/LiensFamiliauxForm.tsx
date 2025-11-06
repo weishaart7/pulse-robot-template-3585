@@ -4,7 +4,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { Plus, Trash2, Edit, Loader2, CalendarIcon } from 'lucide-react';
-
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -22,7 +21,6 @@ import { FamilyLink } from '@/services/familyService';
 import { FamilyTree } from '@/components/FamilyTree';
 import { useFamilyLinkLogic } from '@/hooks/useFamilyLinkLogic';
 import { DynamicFamilyForm } from '@/components/family/DynamicFamilyForm';
-
 const membreFamilleSchema = z.object({
   lien_familial: z.string().min(1, 'Le lien familial est obligatoire'),
   civilite: z.string().optional(),
@@ -37,21 +35,28 @@ const membreFamilleSchema = z.object({
   enfant_renoncant_de: z.string().optional(),
   branche_familiale: z.string().optional(),
   enfant_de: z.string().optional(),
-  exoneration_succession: z.boolean().default(false),
+  exoneration_succession: z.boolean().default(false)
 });
-
 type MembreFamille = z.infer<typeof membreFamilleSchema>;
-
 export function LiensFamiliauxForm() {
-  const { data: familyLinks, loading, saving, addLink, updateLink, deleteLink } = useFamilyLinks();
-  const { data: familyProfile } = useFamilyProfile();
-  const { data: maritalStatus } = useMaritalStatus();
+  const {
+    data: familyLinks,
+    loading,
+    saving,
+    addLink,
+    updateLink,
+    deleteLink
+  } = useFamilyLinks();
+  const {
+    data: familyProfile
+  } = useFamilyProfile();
+  const {
+    data: maritalStatus
+  } = useMaritalStatus();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<FamilyLink | null>(null);
   const [selectedLinkType, setSelectedLinkType] = useState<string>('');
-  
   const familyLinkLogic = useFamilyLinkLogic(familyLinks, familyProfile, maritalStatus);
-  
   const memberForm = useForm<MembreFamille>({
     resolver: zodResolver(membreFamilleSchema),
     defaultValues: {
@@ -59,10 +64,9 @@ export function LiensFamiliauxForm() {
       handicap: false,
       enfant_adopte: 'Non',
       enfant_renoncant: false,
-      exoneration_succession: false,
-    },
+      exoneration_succession: false
+    }
   });
-
   const handleAddMember = () => {
     setEditingMember(null);
     setSelectedLinkType('');
@@ -71,11 +75,10 @@ export function LiensFamiliauxForm() {
       handicap: false,
       enfant_adopte: 'Non',
       enfant_renoncant: false,
-      exoneration_succession: false,
+      exoneration_succession: false
     });
     setDialogOpen(true);
   };
-
   const handleEditMember = (member: FamilyLink) => {
     setEditingMember(member);
     setSelectedLinkType(member.lien_familial);
@@ -93,11 +96,10 @@ export function LiensFamiliauxForm() {
       enfant_renoncant_de: member.enfant_renoncant_de || '',
       branche_familiale: member.branche_familiale || '',
       enfant_de: member.enfant_de || '',
-      exoneration_succession: member.exoneration_succession || false,
+      exoneration_succession: member.exoneration_succession || false
     });
     setDialogOpen(true);
   };
-
   const handleDeleteMember = async (id: string) => {
     try {
       await deleteLink(id);
@@ -105,7 +107,6 @@ export function LiensFamiliauxForm() {
       console.error('Erreur lors de la suppression:', error);
     }
   };
-
   const handleMemberSubmit = async (data: MembreFamille) => {
     try {
       const memberData = {
@@ -122,16 +123,15 @@ export function LiensFamiliauxForm() {
         enfant_renoncant_de: data.enfant_renoncant_de,
         branche_familiale: data.branche_familiale,
         enfant_de: data.enfant_de,
-        parent_de: data.enfant_de, // Copy for backward compatibility
-        exoneration_succession: data.exoneration_succession,
+        parent_de: data.enfant_de,
+        // Copy for backward compatibility
+        exoneration_succession: data.exoneration_succession
       };
-
       if (editingMember) {
         await updateLink(editingMember.id!, memberData);
       } else {
         await addLink(memberData);
       }
-
       setDialogOpen(false);
       setEditingMember(null);
       setSelectedLinkType('');
@@ -140,21 +140,15 @@ export function LiensFamiliauxForm() {
       console.error('Erreur lors de la sauvegarde du membre:', error);
     }
   };
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
+    return <div className="flex items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin" />
         <span className="ml-2">Chargement des données...</span>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Liste des membres existants */}
-      {familyLinks.length > 0 && (
-        <Card>
+      {familyLinks.length > 0 && <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <span>Membres de la famille</span>
@@ -174,18 +168,14 @@ export function LiensFamiliauxForm() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {familyLinks.map((member) => (
-                  <TableRow key={member.id}>
+                {familyLinks.map(member => <TableRow key={member.id}>
                     <TableCell>
                       <Badge variant="outline">{member.lien_familial}</Badge>
                     </TableCell>
                     <TableCell className="font-medium">{member.nom}</TableCell>
                     <TableCell>{member.prenom || '-'}</TableCell>
                     <TableCell>
-                      {member.date_naissance ? 
-                        format(new Date(member.date_naissance), 'dd/MM/yyyy') : 
-                        '-'
-                      }
+                      {member.date_naissance ? format(new Date(member.date_naissance), 'dd/MM/yyyy') : '-'}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 flex-wrap">
@@ -198,31 +188,19 @@ export function LiensFamiliauxForm() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditMember(member)}
-                          disabled={saving}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => handleEditMember(member)} disabled={saving}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteMember(member.id!)}
-                          disabled={saving}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => handleDeleteMember(member.id!)} disabled={saving}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
-                  </TableRow>
-                ))}
+                  </TableRow>)}
               </TableBody>
             </Table>
           </CardContent>
-        </Card>
-      )}
+        </Card>}
 
       {/* Bouton d'ajout avec Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -243,72 +221,45 @@ export function LiensFamiliauxForm() {
             <Form {...memberForm}>
               <form onSubmit={memberForm.handleSubmit(handleMemberSubmit)} className="space-y-6">
                 {/* Sélection du lien familial */}
-                <FormField
-                  control={memberForm.control}
-                  name="lien_familial"
-                  render={({ field }) => (
-                    <FormItem>
+                <FormField control={memberForm.control} name="lien_familial" render={({
+                field
+              }) => <FormItem>
                       <FormLabel>Lien familial *</FormLabel>
-                      <Select 
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          setSelectedLinkType(value);
-                        }} 
-                        defaultValue={field.value}
-                      >
+                      <Select onValueChange={value => {
+                  field.onChange(value);
+                  setSelectedLinkType(value);
+                }} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger size="lg">
                             <SelectValue placeholder="Sélectionner un lien" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {familyLinkLogic.availableLinks.map((linkOption) => (
-                            <SelectItem 
-                              key={linkOption.value} 
-                              value={linkOption.value}
-                            >
+                          {familyLinkLogic.availableLinks.map(linkOption => <SelectItem key={linkOption.value} value={linkOption.value}>
                               {linkOption.label}
-                            </SelectItem>
-                          ))}
+                            </SelectItem>)}
                         </SelectContent>
                       </Select>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    </FormItem>} />
 
                 {/* Formulaire dynamique selon le type */}
-                {(selectedLinkType || editingMember) && (
-                  <DynamicFamilyForm 
-                    linkType={selectedLinkType || editingMember?.lien_familial || ''}
-                    parentOptions={familyLinkLogic.getParentOptions(selectedLinkType || editingMember?.lien_familial || '')}
-                    parentsForRenunciation={familyLinkLogic.getParentsForRenunciation()}
-                  />
-                )}
+                {(selectedLinkType || editingMember) && <DynamicFamilyForm linkType={selectedLinkType || editingMember?.lien_familial || ''} parentOptions={familyLinkLogic.getParentOptions(selectedLinkType || editingMember?.lien_familial || '')} parentsForRenunciation={familyLinkLogic.getParentsForRenunciation()} />}
 
                 {/* Boutons */}
                 <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setDialogOpen(false);
-                      setEditingMember(null);
-                      memberForm.reset();
-                    }}
-                    disabled={saving}
-                  >
+                  <Button type="button" variant="outline" onClick={() => {
+                  setDialogOpen(false);
+                  setEditingMember(null);
+                  memberForm.reset();
+                }} disabled={saving}>
                     Annuler
                   </Button>
                   <Button type="submit" disabled={saving}>
-                    {saving ? (
-                      <>
+                    {saving ? <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Enregistrement...
-                      </>
-                    ) : (
-                      editingMember ? 'Modifier' : 'Ajouter'
-                    )}
+                      </> : editingMember ? 'Modifier' : 'Ajouter'}
                   </Button>
                 </div>
               </form>
@@ -318,21 +269,6 @@ export function LiensFamiliauxForm() {
       </Dialog>
 
       {/* Placeholder pour l'arbre familial */}
-      {familyLinks.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Arbre familial</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <FamilyTree 
-              familyProfile={familyProfile}
-              maritalStatus={maritalStatus}
-              familyMembers={familyLinks}
-              onEditMember={handleEditMember}
-            />
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
+      {familyLinks.length > 0}
+    </div>;
 }
