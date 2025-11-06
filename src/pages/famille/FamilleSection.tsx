@@ -9,6 +9,7 @@ import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
 import { useFamilyProfile } from '@/hooks/useFamilyData';
 
 const FamilleSection = () => {
+  const [activeTab, setActiveTab] = useState('fiche-client');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { data: familyProfile } = useFamilyProfile();
 
@@ -17,6 +18,43 @@ const FamilleSection = () => {
     { id: 'situation-matrimoniale', label: 'Situation de couple' },
     { id: 'liens-familiaux', label: 'Liens familiaux' }
   ];
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'fiche-client':
+        return null; // La carte s'affiche toujours au-dessus
+      case 'situation-matrimoniale':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Situation de couple</CardTitle>
+              <CardDescription>
+                Renseignez votre statut de couple et vos informations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SituationMatrimonialeForm />
+            </CardContent>
+          </Card>
+        );
+      case 'liens-familiaux':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Liens familiaux</CardTitle>
+              <CardDescription>
+                Gérez les membres de votre famille et leurs relations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LiensFamiliauxForm />
+            </CardContent>
+          </Card>
+        );
+      default:
+        return null;
+    }
+  };
 
   const clientName = familyProfile?.prenom && familyProfile?.nom 
     ? `${familyProfile.prenom} ${familyProfile.nom}` 
@@ -40,6 +78,7 @@ const FamilleSection = () => {
         <div className="rounded-[8px] bg-muted p-[2px]">
           <AnimatedBackground
             defaultValue="fiche-client"
+            onValueChange={(value) => setActiveTab(value || 'fiche-client')}
             className="rounded-lg bg-background shadow-sm"
             transition={{
               ease: "easeInOut",
@@ -71,6 +110,13 @@ const FamilleSection = () => {
           onClick={() => setIsDialogOpen(true)}
         />
       </div>
+
+      {/* Contenu des onglets */}
+      {activeTab !== 'fiche-client' && (
+        <div className="mt-6">
+          {renderContent()}
+        </div>
+      )}
 
       {/* Dialog pour modifier les informations */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
