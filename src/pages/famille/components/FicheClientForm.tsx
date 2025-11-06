@@ -143,23 +143,28 @@ export function FicheClientForm() {
       }
 
       // Sanitize and validate all form data
+      // Détermine la profession finale : si professionLibre est rempli, on l'utilise, sinon on prend profession du select
+      const professionFinale = formData.professionLibre?.trim() 
+        ? formData.professionLibre.trim() 
+        : (formData.profession || '');
+      
       const sanitizedFormData = {
-        civilite: sanitizeTextInput(formData.civilite),
-        nom: sanitizeTextInput(formData.nom),
-        prenom: sanitizeTextInput(formData.prenom),
+        civilite: formData.civilite,
+        nom: formData.nom,
+        prenom: formData.prenom,
         dateNaissance,
-        profession: sanitizeTextInput(formData.professionLibre?.trim() || formData.profession || ''),
-        communeNaissance: sanitizeTextInput(formData.communeNaissance),
-        paysNaissance: sanitizeTextInput(formData.paysNaissance),
-        nationalite: sanitizeTextInput(formData.nationalite),
-        capaciteJuridique: sanitizeTextInput(formData.capaciteJuridique),
+        profession: professionFinale,
+        communeNaissance: formData.communeNaissance,
+        paysNaissance: formData.paysNaissance,
+        nationalite: formData.nationalite,
+        capaciteJuridique: formData.capaciteJuridique,
         handicape: formData.handicape,
-        telephone: sanitizeTextInput(formData.telephone),
-        email: sanitizeTextInput(formData.email),
-        adresse: sanitizeTextInput(formData.adresse),
-        codePostal: sanitizeTextInput(formData.codePostal),
-        ville: sanitizeTextInput(formData.ville),
-        pays: sanitizeTextInput(formData.pays),
+        telephone: formData.telephone || '',
+        email: formData.email || '',
+        adresse: formData.adresse || '',
+        codePostal: formData.codePostal || '',
+        ville: formData.ville || '',
+        pays: formData.pays || '',
       };
 
       const supabaseData = {
