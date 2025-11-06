@@ -34,7 +34,7 @@ export function ClientInfoCard({ name, role, status, avatar, tags = [], isVerifi
             )}
           ></div>
           {status === "online" && (
-            <div className="absolute inset-0 h-3 w-3 rounded-full bg-primary animate-ping opacity-30"></div>
+            <div className="absolute inset-0 h-3 w-3 rounded-full bg-primary animate-[ping_3s_ease-in-out_infinite] opacity-40"></div>
           )}
         </div>
       </div>
