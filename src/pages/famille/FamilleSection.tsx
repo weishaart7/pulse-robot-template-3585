@@ -61,7 +61,7 @@ const FamilleSection = () => {
       </div>
 
       {/* Carte d'information client */}
-      <div className="mt-6 flex justify-center">
+      <div className="mt-6 flex justify-start">
         <ClientInfoCard
           name={clientName}
           role={clientRole}
