@@ -99,17 +99,19 @@ const FamilleSection = () => {
         </div>
       </div>
 
-      {/* Carte d'information client */}
-      <div className="mt-6 flex justify-start">
-        <ClientInfoCard
-          name={clientName}
-          role={clientRole}
-          status="online"
-          email={clientEmail}
-          tags={tags}
-          onClick={() => setIsDialogOpen(true)}
-        />
-      </div>
+      {/* Carte d'information client - uniquement sur l'onglet Fiche client */}
+      {activeTab === 'fiche-client' && (
+        <div className="mt-6 flex justify-start">
+          <ClientInfoCard
+            name={clientName}
+            role={clientRole}
+            status="online"
+            email={clientEmail}
+            tags={tags}
+            onClick={() => setIsDialogOpen(true)}
+          />
+        </div>
+      )}
 
       {/* Contenu des onglets */}
       {activeTab !== 'fiche-client' && (
