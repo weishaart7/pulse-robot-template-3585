@@ -1,16 +1,14 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, TrendingDown } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useCharges } from '@/hooks/useBudget';
 import { ChargesForm } from '@/components/budget/ChargesForm';
 import { BudgetList } from '@/components/budget/BudgetList';
 import { Charge } from '@/services/budgetService';
-
 export const BudgetCharges = () => {
   const [showChargesForm, setShowChargesForm] = useState(false);
   const [editingCharge, setEditingCharge] = useState<Charge | undefined>();
-
   const {
     charges,
     loading: chargesLoading,
@@ -18,7 +16,6 @@ export const BudgetCharges = () => {
     updateCharge,
     deleteCharge
   } = useCharges();
-
   const handleSubmitCharge = async (data: Omit<Charge, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (editingCharge) {
       await updateCharge(editingCharge.id, data);
@@ -28,24 +25,20 @@ export const BudgetCharges = () => {
     }
     setShowChargesForm(false);
   };
-
   const handleEditCharge = (charge: Charge) => {
     setEditingCharge(charge);
     setShowChargesForm(true);
   };
-
   const handleCancelCharge = () => {
     setShowChargesForm(false);
     setEditingCharge(undefined);
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Résumé des charges */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total des Charges</CardTitle>
-          <TrendingDown className="h-4 w-4 text-muted-foreground" />
+          
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
@@ -64,23 +57,9 @@ export const BudgetCharges = () => {
       </Card>
 
       {/* Formulaire d'ajout/modification */}
-      <ChargesForm 
-        charge={editingCharge} 
-        onSubmit={handleSubmitCharge} 
-        onCancel={handleCancelCharge}
-        open={showChargesForm}
-      />
+      <ChargesForm charge={editingCharge} onSubmit={handleSubmitCharge} onCancel={handleCancelCharge} open={showChargesForm} />
 
       {/* Liste des charges */}
-      <BudgetList 
-        revenus={[]} 
-        charges={charges} 
-        onEditRevenu={() => {}} 
-        onDeleteRevenu={() => {}} 
-        onEditCharge={handleEditCharge} 
-        onDeleteCharge={deleteCharge} 
-        loading={chargesLoading}
-      />
-    </div>
-  );
+      <BudgetList revenus={[]} charges={charges} onEditRevenu={() => {}} onDeleteRevenu={() => {}} onEditCharge={handleEditCharge} onDeleteCharge={deleteCharge} loading={chargesLoading} />
+    </div>;
 };
