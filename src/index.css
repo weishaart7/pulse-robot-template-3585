@@ -51,7 +51,7 @@
     --muted-foreground: 220 20% 45%;
 
     --accent: 143 86% 57%; /* Green accent - même vert que la landing page */
-    --accent-foreground: 0 0% 100%;
+    --accent-foreground: 236 96% 11%; /* Texte noir sur fond vert */
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
@@ -106,7 +106,7 @@
     --muted-foreground: 220 20% 70%;
 
     --accent: 143 86% 57%; /* Green accent - même vert que la landing page */
-    --accent-foreground: 0 0% 100%;
+    --accent-foreground: 236 96% 11%; /* Texte noir sur fond vert */
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
