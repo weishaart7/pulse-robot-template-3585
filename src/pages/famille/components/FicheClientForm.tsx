@@ -171,7 +171,7 @@ export function FicheClientForm() {
         civility: sanitizedFormData.civilite,
         nom: sanitizedFormData.nom,
         prenom: sanitizedFormData.prenom,
-        date_naissance: sanitizedFormData.dateNaissance instanceof Date ? sanitizedFormData.dateNaissance.toISOString().split('T')[0] : undefined,
+        date_naissance: sanitizedFormData.dateNaissance instanceof Date ? format(sanitizedFormData.dateNaissance, 'yyyy-MM-dd') : undefined,
         profession: sanitizedFormData.profession,
         commune_naissance: sanitizedFormData.communeNaissance,
         pays_naissance: sanitizedFormData.paysNaissance,
