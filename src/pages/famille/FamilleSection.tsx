@@ -10,7 +10,7 @@ const FamilleSection = () => {
 
   const TABS = [
     { id: 'fiche-client', label: 'Fiche client' },
-    { id: 'situation-matrimoniale', label: 'Situation matrimoniale' },
+    { id: 'situation-matrimoniale', label: 'Situation de couple' },
     { id: 'liens-familiaux', label: 'Liens familiaux' }
   ];
 
@@ -34,9 +34,9 @@ const FamilleSection = () => {
         return (
           <Card>
             <CardHeader>
-              <CardTitle>Situation matrimoniale</CardTitle>
+              <CardTitle>Situation de couple</CardTitle>
               <CardDescription>
-                Renseignez votre statut matrimonial et vos informations de couple
+                Renseignez votre statut de couple et vos informations
               </CardDescription>
             </CardHeader>
             <CardContent>
