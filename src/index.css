@@ -50,7 +50,7 @@
     --muted: 220 20% 95%;
     --muted-foreground: 220 20% 45%;
 
-    --accent: 270 70% 65%; /* Purple accent */
+    --accent: 200 80% 55%; /* Blue accent - cohérent avec le site */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
@@ -105,7 +105,7 @@
     --muted: 220 40% 18%;
     --muted-foreground: 220 20% 70%;
 
-    --accent: 270 70% 65%; /* Purple accent */
+    --accent: 200 80% 55%; /* Blue accent - cohérent avec le site */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
