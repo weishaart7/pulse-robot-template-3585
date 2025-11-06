@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ClientInfoCard } from '@/components/ui/info-card';
 import { FicheClientForm } from './components/FicheClientForm';
 import { SituationMatrimonialeForm } from './components/SituationMatrimonialeForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
+import { useFamilyProfile } from '@/hooks/useFamilyData';
 
 const FamilleSection = () => {
   const [activeTab, setActiveTab] = useState('fiche-client');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { data: familyProfile } = useFamilyProfile();
 
   const TABS = [
     { id: 'fiche-client', label: 'Fiche client' },
@@ -75,6 +80,13 @@ const FamilleSection = () => {
     }
   };
 
+  const clientName = familyProfile?.prenom && familyProfile?.nom 
+    ? `${familyProfile.prenom} ${familyProfile.nom}` 
+    : 'Client';
+  const clientRole = familyProfile?.profession || 'Non renseigné';
+  const clientEmail = familyProfile?.email;
+  const tags = familyProfile?.nationalite ? [familyProfile.nationalite] : [];
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -85,6 +97,28 @@ const FamilleSection = () => {
           </p>
         </div>
       </div>
+
+      {/* Carte d'information client */}
+      <div className="mb-6 flex justify-center">
+        <ClientInfoCard
+          name={clientName}
+          role={clientRole}
+          status="online"
+          email={clientEmail}
+          tags={tags}
+          onClick={() => setIsDialogOpen(true)}
+        />
+      </div>
+
+      {/* Dialog pour modifier les informations */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Modifier les informations client</DialogTitle>
+          </DialogHeader>
+          <FicheClientForm />
+        </DialogContent>
+      </Dialog>
 
       <div className="mb-6 flex justify-start">
         <div className="rounded-[8px] bg-muted p-[2px]">
