@@ -10,11 +10,11 @@ type ClientCardProps = {
   avatar?: string
   tags?: string[]
   isVerified?: boolean
-  email?: string
+  age?: number
   onClick?: () => void
 }
 
-export function ClientInfoCard({ name, role, status, avatar, tags = [], isVerified, email, onClick }: ClientCardProps) {
+export function ClientInfoCard({ name, role, status, avatar, tags = [], isVerified, age, onClick }: ClientCardProps) {
   return (
     <div 
       onClick={onClick}
@@ -76,9 +76,9 @@ export function ClientInfoCard({ name, role, status, avatar, tags = [], isVerifi
           {role}
         </p>
 
-        {email && (
+        {age !== undefined && (
           <p className="mt-2 text-xs text-muted-foreground transition-all duration-300 group-hover:text-primary group-hover:font-medium">
-            {email}
+            {age} ans
           </p>
         )}
       </div>

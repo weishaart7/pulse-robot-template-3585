@@ -60,7 +60,9 @@ const FamilleSection = () => {
     ? `${familyProfile.prenom} ${familyProfile.nom}` 
     : 'Client';
   const clientRole = familyProfile?.profession || 'Non renseigné';
-  const clientEmail = familyProfile?.email;
+  const clientAge = familyProfile?.date_naissance 
+    ? Math.floor((new Date().getTime() - new Date(familyProfile.date_naissance).getTime()) / (1000 * 60 * 60 * 24 * 365.25))
+    : undefined;
   const tags = familyProfile?.nationalite ? [familyProfile.nationalite] : [];
 
   return (
@@ -106,7 +108,7 @@ const FamilleSection = () => {
             name={clientName}
             role={clientRole}
             status="online"
-            email={clientEmail}
+            age={clientAge}
             tags={tags}
             onClick={() => setIsDialogOpen(true)}
           />
