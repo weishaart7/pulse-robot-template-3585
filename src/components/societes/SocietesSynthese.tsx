@@ -212,7 +212,7 @@ export const SocietesSynthese = () => {
               Ajouter une société
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Ajouter une société</DialogTitle>
             </DialogHeader>
@@ -238,7 +238,7 @@ export const SocietesSynthese = () => {
               Ajouter une société
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingSociete ? 'Modifier la société' : 'Ajouter une société'}
