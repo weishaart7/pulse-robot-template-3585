@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ClientInfoCard } from '@/components/ui/info-card';
 import { FicheClientForm } from './components/FicheClientForm';
 import { SituationMatrimonialeForm } from './components/SituationMatrimonialeForm';
@@ -77,6 +77,7 @@ const FamilleSection = () => {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Modifier les informations client</DialogTitle>
+            <DialogDescription>Modifiez les informations, puis enregistrez.</DialogDescription>
           </DialogHeader>
           <FicheClientForm />
         </DialogContent>
