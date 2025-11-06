@@ -98,7 +98,7 @@ export function ClientInfoCard({ name, role, status, avatar, tags = [], isVerifi
       )}
 
       {/* Animated border on hover */}
-      <div className="absolute inset-0 rounded-3xl border border-primary opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+      <div className="absolute inset-0 rounded-3xl border-2 border-primary opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
     </div>
   )
 }
