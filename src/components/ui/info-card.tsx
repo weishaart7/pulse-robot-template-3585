@@ -48,7 +48,7 @@ export function ClientInfoCard({ name, role, status, avatar, tags = [], isVerifi
 
       {/* Profile Photo with enhanced hover effects */}
       <div className="mb-4 flex justify-center relative z-10">
-        <div className="relative group-hover:animate-pulse">
+        <div className="relative">
           <div className="h-28 w-28 overflow-hidden rounded-full bg-muted p-1 shadow-[inset_6px_6px_12px_rgba(0,0,0,0.1),inset_-6px_-6px_12px_rgba(255,255,255,0.9)] dark:shadow-[inset_6px_6px_12px_rgba(0,0,0,0.3),inset_-6px_-6px_12px_rgba(255,255,255,0.1)] transition-all duration-500 group-hover:shadow-[inset_8px_8px_16px_rgba(0,0,0,0.15),inset_-8px_-8px_16px_rgba(255,255,255,1)] dark:group-hover:shadow-[inset_8px_8px_16px_rgba(0,0,0,0.4),inset_-8px_-8px_16px_rgba(255,255,255,0.15)] group-hover:scale-110">
             {avatar ? (
               <img
@@ -62,8 +62,8 @@ export function ClientInfoCard({ name, role, status, avatar, tags = [], isVerifi
               </div>
             )}
           </div>
-          {/* Glowing ring on hover */}
-          <div className="absolute inset-0 rounded-full border-2 border-primary opacity-0 group-hover:opacity-100 transition-all duration-500 animate-pulse"></div>
+          {/* Glowing ring on hover with gentle pulse - green color */}
+          <div className="absolute inset-0 rounded-full border-2 border-primary opacity-100 transition-all duration-500 animate-[pulse_3s_ease-in-out_infinite]"></div>
         </div>
       </div>
 
