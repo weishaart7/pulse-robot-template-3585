@@ -14,6 +14,7 @@ import DashboardSection from "./pages/DashboardSection";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import InvestmentPlatform from "./pages/investment/InvestmentPlatform";
 import NouveautesSection from "./pages/nouveautes/NouveautesSection";
+import { SocieteFormPage } from "./pages/societes/SocieteFormPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,11 @@ const App = () => {
                 <Route path="/investment" element={
                   <ProtectedRoute>
                     <InvestmentPlatform />
+                  </ProtectedRoute>
+                } />
+                <Route path="/societes/form" element={
+                  <ProtectedRoute>
+                    <SocieteFormPage />
                   </ProtectedRoute>
                 } />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -1,50 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Edit, Trash2, LayoutGrid, Table as TableIcon, Building2 } from 'lucide-react';
-import { SocieteForm } from './SocieteForm';
 import { societeService, type Societe } from '@/services/societeService';
-import { useAssets } from '@/hooks/useAssets';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 
-// Form data interface that matches the form structure
-interface SocieteFormData {
-  denomination: string;
-  typeSociete: string;
-  dateCreation: string;
-  valeurEstimee: number;
-  pourcentageIFI: number;
-  capitalSocial: number;
-  nombreTitres: number;
-  nombreSalaries: number;
-  jourCloture: string;
-  moisCloture: string;
-  siret: string;
-  rueAdresse: string;
-  codePostal: string;
-  commune: string;
-  pays: string;
-  typeActivite: string;
-  regimeFiscal: string;
-  valeurIFI: number;
-  activite?: string;
-  holding?: string;
-  formeSocieteCivile?: string;
-  transfertVersActifs?: boolean;
-  natureActif?: string;
-}
-
 export const SocietesMesSocietes = () => {
+  const navigate = useNavigate();
   const [societes, setSocietes] = useState<Societe[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [editingSociete, setEditingSociete] = useState<SocieteFormData | null>(null);
-  const [editingSocieteId, setEditingSocieteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards');
-  
-  const { createAsset } = useAssets();
 
   // Load societes on mount
   useEffect(() => {
@@ -64,67 +31,12 @@ export const SocietesMesSocietes = () => {
     }
   };
 
-  // Convert database format to form format
-  const societeToFormData = (societe: Societe): SocieteFormData => ({
-    denomination: societe.denomination,
-    typeSociete: societe.type_societe,
-    dateCreation: societe.date_creation || '',
-    valeurEstimee: societe.valeur_estimee || 0,
-    pourcentageIFI: societe.pourcentage_ifi || 0,
-    capitalSocial: societe.capital_social || 0,
-    nombreTitres: societe.nombre_titres || 0,
-    nombreSalaries: societe.nombre_salaries || 0,
-    jourCloture: societe.jour_cloture || '',
-    moisCloture: societe.mois_cloture || '',
-    siret: societe.siret || '',
-    rueAdresse: societe.rue_adresse || '',
-    codePostal: societe.code_postal || '',
-    commune: societe.commune || '',
-    pays: societe.pays || '',
-    typeActivite: societe.type_activite || '',
-    regimeFiscal: societe.regime_fiscal || '',
-    valeurIFI: societe.valeur_ifi || 0,
-    activite: societe.activite,
-    holding: societe.holding,
-    formeSocieteCivile: societe.forme_societe_civile,
-    transfertVersActifs: true
-  });
-
-  // Convert form format to database format
-  const formDataToSociete = (formData: SocieteFormData) => ({
-    denomination: formData.denomination,
-    type_societe: formData.typeSociete,
-    date_creation: formData.dateCreation || undefined,
-    valeur_estimee: formData.valeurEstimee || undefined,
-    pourcentage_ifi: formData.pourcentageIFI || undefined,
-    capital_social: formData.capitalSocial || undefined,
-    nombre_titres: formData.nombreTitres || undefined,
-    nombre_salaries: formData.nombreSalaries || undefined,
-    jour_cloture: formData.jourCloture || undefined,
-    mois_cloture: formData.moisCloture || undefined,
-    siret: formData.siret || undefined,
-    rue_adresse: formData.rueAdresse || undefined,
-    code_postal: formData.codePostal || undefined,
-    commune: formData.commune || undefined,
-    pays: formData.pays || undefined,
-    type_activite: formData.typeActivite || undefined,
-    regime_fiscal: formData.regimeFiscal || undefined,
-    valeur_ifi: formData.valeurIFI || undefined,
-    activite: formData.activite || undefined,
-    holding: formData.holding || undefined,
-    forme_societe_civile: formData.formeSocieteCivile || undefined
-  });
-
   const handleAddSociete = () => {
-    setEditingSociete(null);
-    setEditingSocieteId(null);
-    setShowForm(true);
+    navigate('/societes/form');
   };
 
-  const handleEditSociete = (societe: Societe) => {
-    setEditingSociete(societeToFormData(societe));
-    setEditingSocieteId(societe.id);
-    setShowForm(true);
+  const handleEditSociete = (societeId: string) => {
+    navigate(`/societes/form?id=${societeId}`);
   };
 
   const handleDeleteSociete = async (id: string) => {
@@ -135,51 +47,6 @@ export const SocietesMesSocietes = () => {
     } catch (error) {
       console.error('Error deleting societe:', error);
       toast.error('Erreur lors de la suppression de la société');
-    }
-  };
-
-  const handleSubmitSociete = async (data: SocieteFormData) => {
-    try {
-      const societeData = formDataToSociete(data);
-      
-      let savedSociete: Societe;
-      
-      if (editingSocieteId) {
-        savedSociete = await societeService.update(editingSocieteId, societeData);
-        setSocietes(prev => prev.map(s => 
-          s.id === editingSocieteId ? savedSociete : s
-        ));
-        toast.success('Société modifiée avec succès');
-      } else {
-        savedSociete = await societeService.create(societeData);
-        setSocietes(prev => [...prev, savedSociete]);
-        toast.success('Société ajoutée avec succès');
-      }
-      
-      // Create asset if transfertVersActifs is checked
-      if (data.transfertVersActifs && data.natureActif) {
-        try {
-          await createAsset({
-            nature: data.natureActif,
-            denomination: data.denomination,
-            valeur_estimee: data.valeurEstimee || 0,
-            date_estimation: new Date().toISOString().split('T')[0],
-            detenteur: 'user',
-            mode_detention: 'Pleine propriété'
-          });
-          toast.success('Actif créé avec succès');
-        } catch (assetError) {
-          console.error('Error creating asset:', assetError);
-          toast.error('Société créée mais erreur lors de la création de l\'actif');
-        }
-      }
-      
-      setShowForm(false);
-      setEditingSociete(null);
-      setEditingSocieteId(null);
-    } catch (error) {
-      console.error('Error saving societe:', error);
-      toast.error('Erreur lors de la sauvegarde de la société');
     }
   };
 
@@ -207,24 +74,10 @@ export const SocietesMesSocietes = () => {
         <p className="text-muted-foreground mb-6">
           Commencez par ajouter votre première société pour suivre vos participations.
         </p>
-        <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogTrigger asChild>
-            <Button onClick={handleAddSociete} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Ajouter une société
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Ajouter une société</DialogTitle>
-            </DialogHeader>
-            <SocieteForm
-              onSubmit={handleSubmitSociete}
-              onCancel={() => setShowForm(false)}
-              initialData={editingSociete}
-            />
-          </DialogContent>
-        </Dialog>
+        <Button onClick={handleAddSociete} className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Ajouter une société
+        </Button>
       </div>
     );
   }
@@ -252,26 +105,10 @@ export const SocietesMesSocietes = () => {
               <TableIcon className="h-4 w-4" />
             </Button>
           </div>
-          <Dialog open={showForm} onOpenChange={setShowForm}>
-            <DialogTrigger asChild>
-              <Button onClick={handleAddSociete} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Ajouter une société
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingSociete ? 'Modifier la société' : 'Ajouter une société'}
-                </DialogTitle>
-              </DialogHeader>
-              <SocieteForm
-                onSubmit={handleSubmitSociete}
-                onCancel={() => setShowForm(false)}
-                initialData={editingSociete}
-              />
-            </DialogContent>
-          </Dialog>
+          <Button onClick={handleAddSociete} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Ajouter une société
+          </Button>
         </div>
       </div>
 
@@ -303,7 +140,7 @@ export const SocietesMesSocietes = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleEditSociete(societe)}
+                        onClick={() => handleEditSociete(societe.id)}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -382,7 +219,7 @@ export const SocietesMesSocietes = () => {
                     variant="outline"
                     size="sm"
                     className="flex-1"
-                    onClick={() => handleEditSociete(societe)}
+                    onClick={() => handleEditSociete(societe.id)}
                   >
                     <Edit className="h-3.5 w-3.5 mr-1.5" />
                     Modifier

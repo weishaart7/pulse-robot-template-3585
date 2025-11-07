@@ -48,6 +48,24 @@ export const societeService = {
     return data || [];
   },
 
+  async getById(id: string): Promise<Societe> {
+    const { user } = await secureService.getCurrentUserSecure();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase
+      .from('societes')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    
+    // Log access to sensitive financial data
+    await secureService.logFinancialDataAccess(user.id, 'societes', 1);
+    
+    return data;
+  },
+
   async create(societe: Omit<Societe, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Societe> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
