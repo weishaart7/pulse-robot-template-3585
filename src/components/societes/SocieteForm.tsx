@@ -252,7 +252,31 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProp
     }
   };
 
+  const mapFormeJuridiqueToType = (formeJuridique?: string): string => {
+    if (!formeJuridique) return '';
+    
+    const mapping: { [key: string]: string } = {
+      '5499': 'sarl', // SARL
+      '5498': 'sarl-familiale', // SARL familiale
+      '5710': 'sas', // SAS
+      '5720': 'sas', // SASU (mapped to SAS)
+      '5306': 'sa-conseil-administration', // SA à conseil d'administration
+      '5307': 'sa-directoire', // SA à directoire
+      '5385': 'eurl', // EURL
+      '5202': 'snc', // SNC
+      '6540': 'societe-civile', // Société civile
+      '6541': 'sci', // SCI
+      '6543': 'societe-civile-professionnelle', // SCP
+      '5470': 'selarl', // SELARL
+      '1000': 'entreprise-individuelle', // Entrepreneur individuel
+    };
+    
+    return mapping[formeJuridique] || '';
+  };
+
   const fillFormWithSireneData = (data: SireneData) => {
+    const mappedType = mapFormeJuridiqueToType(data.formeJuridique);
+    
     setFormData(prev => ({
       ...prev,
       denomination: data.denomination || prev.denomination,
@@ -262,6 +286,8 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProp
       codePostal: data.codePostal || prev.codePostal,
       commune: data.commune || prev.commune,
       capitalSocial: data.capitalSocial || prev.capitalSocial,
+      typeSociete: mappedType || prev.typeSociete,
+      regimeFiscal: mappedType ? getDefaultRegimeFiscal(mappedType) : prev.regimeFiscal,
     }));
     setSearchResults([]);
     setSearchQuery('');
