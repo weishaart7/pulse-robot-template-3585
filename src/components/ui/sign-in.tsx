@@ -70,6 +70,15 @@ export const SignInPage: React.FC<SignInPageProps> = ({
 
   return (
     <div className="h-[100dvh] flex flex-col md:flex-row w-[100dvw]">
+      {/* Logo en haut à gauche */}
+      <div className="absolute top-6 left-8 z-10">
+        <img 
+          src="/lovable-uploads/3f46b218-16fb-43cf-8206-7af4be7cbfd0.png" 
+          alt="Logo" 
+          className="h-8 w-auto object-contain" 
+        />
+      </div>
+      
       {/* Left column: sign-in form */}
       <section className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
