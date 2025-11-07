@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Building2, LayoutGrid, Table as TableIcon, Home } from 'lucide-react';
 import { useImmobilierAssets } from '@/hooks/useImmobilierAssets';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/base-badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ImmobilierPropertyDialog } from '@/components/immobilier/ImmobilierPropertyDialog';
 import { ImmobilierGestionDialog } from '@/components/immobilier/ImmobilierGestionDialog';
@@ -144,7 +144,7 @@ export const ImmobilierSection = () => {
                             </div>
                           </div>
                           {asset.nature?.toLowerCase().includes('résidence principale') && (
-                            <Badge className="bg-primary/20 text-primary border-primary/30 hover:bg-primary/20">
+                            <Badge variant="success" appearance="outline" size="sm">
                               Résidence Principale
                             </Badge>
                           )}
