@@ -120,8 +120,8 @@ export const ImmobilierSection = () => {
                       <div className="relative z-10">
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-3">
-                            <div className="h-12 w-12 rounded-full bg-secondary/10 flex items-center justify-center">
-                              <Building2 className="h-6 w-6 text-secondary" />
+                            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Building2 className="h-6 w-6 text-primary" />
                             </div>
                           </div>
                         </div>
