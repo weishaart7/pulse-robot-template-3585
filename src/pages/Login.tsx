@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { SignInPage, Testimonial } from '@/components/ui/sign-in';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -115,82 +112,53 @@ const Login = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">
-            {isSignUp ? 'Créer un compte' : 'Connexion'}
-          </CardTitle>
-          <CardDescription className="text-center">
-            {isSignUp 
-              ? 'Créez votre compte pour accéder au tableau de bord'
-              : 'Connectez-vous à votre compte pour accéder au tableau de bord'
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="votre@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={errors.email ? 'border-destructive' : ''}
-              />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email}</p>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={errors.password ? 'border-destructive' : ''}
-              />
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password}</p>
-              )}
-            </div>
+  const sampleTestimonials: Testimonial[] = [
+    {
+      avatarSrc: "https://randomuser.me/api/portraits/women/57.jpg",
+      name: "Sophie Martin",
+      handle: "@sophiefinance",
+      text: "Une plateforme exceptionnelle pour gérer mon patrimoine. Interface intuitive et fonctionnalités puissantes."
+    },
+    {
+      avatarSrc: "https://randomuser.me/api/portraits/men/64.jpg",
+      name: "Thomas Dubois",
+      handle: "@thomasinvest",
+      text: "Cet outil a transformé ma gestion patrimoniale. Design épuré et analyses précises."
+    },
+    {
+      avatarSrc: "https://randomuser.me/api/portraits/men/32.jpg",
+      name: "Pierre Laurent",
+      handle: "@pierregestion",
+      text: "J'ai testé plusieurs plateformes, mais celle-ci se démarque vraiment. Fiable et efficace."
+    },
+  ];
 
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isLoading}
-            >
-              {isLoading 
-                ? (isSignUp ? 'Création...' : 'Connexion...') 
-                : (isSignUp ? 'Créer un compte' : 'Se connecter')
-              }
-            </Button>
-          </form>
-          
-          <div className="mt-4 text-center">
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setErrors({});
-              }}
-              className="text-sm"
-            >
-              {isSignUp 
-                ? 'Déjà un compte ? Se connecter'
-                : 'Pas de compte ? Créer un compte'
-              }
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+  return (
+    <SignInPage
+      title={<span className="font-light text-foreground tracking-tighter">Connexion</span>}
+      description="Connectez-vous à votre compte pour accéder au tableau de bord"
+      heroImageSrc="https://images.unsplash.com/photo-1642615835477-d303d7dc9ee9?w=2160&q=80"
+      testimonials={sampleTestimonials}
+      onSignIn={handleSubmit}
+      onResetPassword={() => {
+        toast({
+          title: "Réinitialisation du mot de passe",
+          description: "Cette fonctionnalité sera bientôt disponible",
+        });
+      }}
+      onCreateAccount={() => {
+        setIsSignUp(!isSignUp);
+        setErrors({});
+      }}
+      isLoading={isLoading}
+      emailValue={email}
+      passwordValue={password}
+      onEmailChange={setEmail}
+      onPasswordChange={setPassword}
+      emailError={errors.email}
+      passwordError={errors.password}
+      isSignUp={isSignUp}
+    />
   );
 };
 
