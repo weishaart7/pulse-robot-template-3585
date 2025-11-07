@@ -148,7 +148,7 @@ export const ImmobilierSection = () => {
                           {asset.denomination || 'Sans dénomination'}
                         </h3>
                         
-                        <p className="text-sm text-muted-foreground mb-4">
+                        <p className="text-xs text-muted-foreground mb-4 truncate">
                           {asset.nature}
                         </p>
                         
