@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Building2, LayoutGrid, Table as TableIcon } from 'lucide-react';
+import { Building2, LayoutGrid, Table as TableIcon, Home } from 'lucide-react';
 import { useImmobilierAssets } from '@/hooks/useImmobilierAssets';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ImmobilierPropertyDialog } from '@/components/immobilier/ImmobilierPropertyDialog';
@@ -104,7 +104,13 @@ export const ImmobilierSection = () => {
                 </div>
               ) : viewMode === 'cards' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {assets.map((asset) => (
+                  {assets.map((asset) => {
+                    const isHouse = asset.typologie_bien?.toLowerCase().includes('maison') || 
+                                   asset.denomination?.toLowerCase().includes('maison') ||
+                                   asset.nature?.toLowerCase().includes('maison');
+                    const IconComponent = isHouse ? Home : Building2;
+                    
+                    return (
                     <div
                       key={asset.id}
                       className="group relative rounded-3xl border border-border/50 bg-card p-6 shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer overflow-hidden"
@@ -121,7 +127,7 @@ export const ImmobilierSection = () => {
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-3">
                             <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                              <Building2 className="h-6 w-6 text-primary" />
+                              <IconComponent className="h-6 w-6 text-primary" />
                             </div>
                           </div>
                         </div>
@@ -157,7 +163,8 @@ export const ImmobilierSection = () => {
                         </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="rounded-md border">
