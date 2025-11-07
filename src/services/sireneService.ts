@@ -43,9 +43,9 @@ export interface SireneData {
 class SireneService {
   private baseUrl = 'https://recherche-entreprises.api.gouv.fr';
 
-  async searchBySiret(siret: string): Promise<SireneData | null> {
+  async searchBySiren(siren: string): Promise<SireneData | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/search?q=${siret}&per_page=1`);
+      const response = await fetch(`${this.baseUrl}/search?q=${siren}&per_page=1`);
       if (!response.ok) {
         throw new Error('Erreur lors de la recherche');
       }
@@ -57,7 +57,7 @@ class SireneService {
 
       return this.mapToSireneData(data.results[0]);
     } catch (error) {
-      console.error('Error searching by SIRET:', error);
+      console.error('Error searching by SIREN:', error);
       throw error;
     }
   }

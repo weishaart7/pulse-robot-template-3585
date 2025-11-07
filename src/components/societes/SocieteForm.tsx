@@ -216,7 +216,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProp
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
-      toast.error('Veuillez saisir un SIRET ou une dénomination');
+      toast.error('Veuillez saisir un SIREN ou une dénomination');
       return;
     }
 
@@ -224,16 +224,16 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProp
     setSearchResults([]);
 
     try {
-      // Check if query is a SIRET (14 digits)
-      const isSiret = /^\d{14}$/.test(searchQuery.trim());
+      // Check if query is a SIREN (9 digits)
+      const isSiren = /^\d{9}$/.test(searchQuery.trim());
 
-      if (isSiret) {
-        const result = await sireneService.searchBySiret(searchQuery.trim());
+      if (isSiren) {
+        const result = await sireneService.searchBySiren(searchQuery.trim());
         if (result) {
           fillFormWithSireneData(result);
           toast.success('Données récupérées avec succès');
         } else {
-          toast.error('Aucune entreprise trouvée avec ce SIRET');
+          toast.error('Aucune entreprise trouvée avec ce SIREN');
         }
       } else {
         const results = await sireneService.searchByDenomination(searchQuery.trim());
@@ -277,13 +277,13 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProp
             Rechercher une entreprise
           </CardTitle>
           <CardDescription>
-            Recherchez par SIRET (14 chiffres) ou par dénomination sociale
+            Recherchez par SIREN (9 chiffres) ou par dénomination sociale
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
             <Input
-              placeholder="SIRET ou dénomination sociale"
+              placeholder="SIREN ou dénomination sociale"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleSearch())}
