@@ -5,6 +5,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Search, Building2 } from 'lucide-react';
+import { sireneService, type SireneData } from '@/services/sireneService';
+import { toast } from 'sonner';
 
 interface SocieteFormData {
   denomination: string;
@@ -130,6 +134,10 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProp
     transfertVersActifs: true
   });
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SireneData[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
   useEffect(() => {
     if (initialData) {
       setFormData(initialData);
@@ -178,8 +186,117 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProp
     return ['selarl', 'snc', 'societe-civile-professionnelle'].includes(typeSociete);
   };
 
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      toast.error('Veuillez saisir un SIRET ou une dénomination');
+      return;
+    }
+
+    setIsSearching(true);
+    setSearchResults([]);
+
+    try {
+      // Check if query is a SIRET (14 digits)
+      const isSiret = /^\d{14}$/.test(searchQuery.trim());
+
+      if (isSiret) {
+        const result = await sireneService.searchBySiret(searchQuery.trim());
+        if (result) {
+          fillFormWithSireneData(result);
+          toast.success('Données récupérées avec succès');
+        } else {
+          toast.error('Aucune entreprise trouvée avec ce SIRET');
+        }
+      } else {
+        const results = await sireneService.searchByDenomination(searchQuery.trim());
+        if (results.length > 0) {
+          setSearchResults(results);
+          toast.success(`${results.length} entreprise(s) trouvée(s)`);
+        } else {
+          toast.error('Aucune entreprise trouvée');
+        }
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      toast.error('Erreur lors de la recherche');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const fillFormWithSireneData = (data: SireneData) => {
+    setFormData(prev => ({
+      ...prev,
+      denomination: data.denomination || prev.denomination,
+      siret: data.siret || prev.siret,
+      dateCreation: data.dateCreation || prev.dateCreation,
+      rueAdresse: data.adresse || prev.rueAdresse,
+      codePostal: data.codePostal || prev.codePostal,
+      commune: data.commune || prev.commune,
+      capitalSocial: data.capitalSocial || prev.capitalSocial,
+    }));
+    setSearchResults([]);
+    setSearchQuery('');
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Search Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            Rechercher une entreprise
+          </CardTitle>
+          <CardDescription>
+            Recherchez par SIRET (14 chiffres) ou par dénomination sociale
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Input
+              placeholder="SIRET ou dénomination sociale"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleSearch())}
+            />
+            <Button
+              type="button"
+              onClick={handleSearch}
+              disabled={isSearching}
+            >
+              {isSearching ? 'Recherche...' : 'Rechercher'}
+            </Button>
+          </div>
+
+          {searchResults.length > 0 && (
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {searchResults.map((result, index) => (
+                <Card
+                  key={index}
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => fillFormWithSireneData(result)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Building2 className="h-5 w-5 mt-0.5 text-muted-foreground" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium">{result.denomination}</p>
+                        <p className="text-sm text-muted-foreground">SIRET: {result.siret}</p>
+                        {result.adresse && (
+                          <p className="text-sm text-muted-foreground">
+                            {result.adresse}, {result.codePostal} {result.commune}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
       <div className="grid gap-4">
         <div>
           <Label htmlFor="denomination">Dénomination sociale *</Label>
