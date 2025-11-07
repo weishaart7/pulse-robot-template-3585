@@ -51,6 +51,8 @@ export const SocieteFormPage = () => {
     loadSocietes();
     if (societeId) {
       loadSociete(societeId);
+    } else {
+      setInitialData(null);
     }
   }, [societeId]);
 
