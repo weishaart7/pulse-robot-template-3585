@@ -2,23 +2,27 @@ import React, { useState } from 'react';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { SocietesSynthese } from '@/components/societes/SocietesSynthese';
 import { SocietesStrategies } from '@/components/societes/SocietesStrategies';
+import { SocietesMesSocietes } from '@/components/societes/SocietesMesSocietes';
 
 export const SocietesSection = () => {
-  const [activeTab, setActiveTab] = useState('synthese');
+  const [activeTab, setActiveTab] = useState('mes_societes');
 
   const TABS = [
+    { id: 'mes_societes', label: 'Mes sociétés' },
     { id: 'synthese', label: 'Synthèse' },
     { id: 'strategies', label: 'Stratégies' }
   ];
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'mes_societes':
+        return <SocietesMesSocietes />;
       case 'synthese':
         return <SocietesSynthese />;
       case 'strategies':
         return <SocietesStrategies />;
       default:
-        return <SocietesSynthese />;
+        return <SocietesMesSocietes />;
     }
   };
 
@@ -36,8 +40,8 @@ export const SocietesSection = () => {
       <div className="mb-6 flex justify-start">
         <div className="rounded-[8px] bg-muted p-[2px]">
           <AnimatedBackground
-            defaultValue="synthese"
-            onValueChange={(value) => setActiveTab(value || 'synthese')}
+            defaultValue="mes_societes"
+            onValueChange={(value) => setActiveTab(value || 'mes_societes')}
             className="rounded-lg bg-background shadow-sm"
             transition={{
               ease: "easeInOut",
