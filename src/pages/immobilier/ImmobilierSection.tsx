@@ -135,7 +135,7 @@ export const ImmobilierSection = () => {
                         </p>
                         
                         {asset.valeur_estimee && (
-                          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 text-secondary text-sm font-medium">
+                          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
                             {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(asset.valeur_estimee)}
                           </div>
                         )}
