@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SocieteForm } from '@/components/societes/SocieteForm';
 import { societeService, type Societe } from '@/services/societeService';
 import { useAssets } from '@/hooks/useAssets';
 import { toast } from 'sonner';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ChevronRight, ChevronLeft, Building2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SidebarProvider, Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
+import { cn } from '@/lib/utils';
 
 interface SocieteFormData {
   denomination: string;
@@ -39,13 +41,58 @@ export const SocieteFormPage = () => {
   const societeId = searchParams.get('id');
   const [initialData, setInitialData] = useState<SocieteFormData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [societes, setSocietes] = useState<Societe[]>([]);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { createAsset } = useAssets();
 
   useEffect(() => {
+    loadSocietes();
     if (societeId) {
       loadSociete(societeId);
     }
   }, [societeId]);
+
+  const loadSocietes = async () => {
+    try {
+      const data = await societeService.getAll();
+      setSocietes(data);
+    } catch (error) {
+      console.error('Error loading societes:', error);
+    }
+  };
+
+  const checkScrollButtons = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+    }
+  };
+
+  useEffect(() => {
+    checkScrollButtons();
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', checkScrollButtons);
+      window.addEventListener('resize', checkScrollButtons);
+      return () => {
+        container.removeEventListener('scroll', checkScrollButtons);
+        window.removeEventListener('resize', checkScrollButtons);
+      };
+    }
+  }, [societes]);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = 200;
+      scrollContainerRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   const loadSociete = async (id: string) => {
     try {
@@ -153,37 +200,129 @@ export const SocieteFormPage = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-8">
-        <div className="text-center">
-          <p className="text-muted-foreground">Chargement...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Chargement...</p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-8 max-w-4xl">
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          onClick={handleCancel}
-          className="mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Retour
-        </Button>
-        <h1 className="text-2xl font-bold">
-          {societeId ? 'Modifier la société' : 'Ajouter une société'}
-        </h1>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">
+        {/* Sidebar */}
+        <Sidebar className="border-r">
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton className="bg-muted">
+                      <FileText className="h-4 w-4" />
+                      <span>Informations générales</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col">
+          {/* Top Banner with Companies List */}
+          <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex items-center gap-2 px-4 h-14">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCancel}
+                className="shrink-0"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              
+              {societes.length > 0 && (
+                <>
+                  <div className="h-8 w-px bg-border" />
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => scroll('left')}
+                    disabled={!canScrollLeft}
+                    className="shrink-0 h-8 w-8 p-0"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+
+                  <div 
+                    ref={scrollContainerRef}
+                    className="flex-1 overflow-x-auto scrollbar-hide"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  >
+                    <div className="flex gap-2 items-center">
+                      {societes.map((societe) => (
+                        <button
+                          key={societe.id}
+                          onClick={() => navigate(`/societes/form?id=${societe.id}`)}
+                          className={cn(
+                            "shrink-0 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2",
+                            societeId === societe.id
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          <Building2 className="h-3.5 w-3.5" />
+                          {societe.denomination}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => navigate('/societes/form')}
+                        className={cn(
+                          "shrink-0 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
+                          !societeId
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        + Nouvelle société
+                      </button>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => scroll('right')}
+                    disabled={!canScrollRight}
+                    className="shrink-0 h-8 w-8 p-0"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Form Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-4xl mx-auto">
+              <h1 className="text-2xl font-bold mb-6">
+                {societeId ? 'Modifier la société' : 'Ajouter une société'}
+              </h1>
+              
+              <div className="bg-background rounded-lg p-6 border">
+                <SocieteForm
+                  onSubmit={handleSubmit}
+                  onCancel={handleCancel}
+                  initialData={initialData}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      
-      <div className="bg-background rounded-lg p-6 border">
-        <SocieteForm
-          onSubmit={handleSubmit}
-          onCancel={handleCancel}
-          initialData={initialData}
-        />
-      </div>
-    </div>
+    </SidebarProvider>
   );
 };
