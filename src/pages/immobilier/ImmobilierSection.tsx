@@ -104,7 +104,19 @@ export const ImmobilierSection = () => {
                 </div>
               ) : viewMode === 'cards' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {assets.map((asset) => {
+                  {[...assets]
+                    .sort((a, b) => {
+                      // Résidence principale en premier
+                      const aIsResidencePrincipale = a.nature?.toLowerCase().includes('résidence principale');
+                      const bIsResidencePrincipale = b.nature?.toLowerCase().includes('résidence principale');
+                      
+                      if (aIsResidencePrincipale && !bIsResidencePrincipale) return -1;
+                      if (!aIsResidencePrincipale && bIsResidencePrincipale) return 1;
+                      
+                      // Ensuite par valeur décroissante
+                      return (b.valeur_estimee || 0) - (a.valeur_estimee || 0);
+                    })
+                    .map((asset) => {
                     const isHouse = asset.typologie_bien?.toLowerCase().includes('maison') || 
                                    asset.denomination?.toLowerCase().includes('maison') ||
                                    asset.nature?.toLowerCase().includes('maison');
