@@ -141,6 +141,34 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProp
   useEffect(() => {
     if (initialData) {
       setFormData(initialData);
+    } else {
+      // Reset form when initialData is null (new society)
+      setFormData({
+        denomination: '',
+        typeSociete: '',
+        dateCreation: '',
+        valeurEstimee: 0,
+        pourcentageIFI: 0,
+        capitalSocial: 0,
+        nombreTitres: 0,
+        nombreSalaries: 0,
+        jourCloture: '31',
+        moisCloture: 'Décembre',
+        siret: '',
+        rueAdresse: '',
+        codePostal: '',
+        commune: '',
+        pays: 'France',
+        typeActivite: '',
+        regimeFiscal: '',
+        valeurIFI: 0,
+        activite: '',
+        holding: 'Non',
+        formeSocieteCivile: '',
+        transfertVersActifs: true
+      });
+      setSearchQuery('');
+      setSearchResults([]);
     }
   }, [initialData]);
 
