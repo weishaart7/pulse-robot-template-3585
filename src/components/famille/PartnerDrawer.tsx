@@ -18,12 +18,11 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { MatrimonialRegimeOptions } from "@/components/famille/MatrimonialRegimeOptions";
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Schéma de validation du formulaire
@@ -192,21 +191,21 @@ export function PartnerDrawer({ open, onOpenChange }: PartnerDrawerProps) {
   };
 
   if (loading) {
-  return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="h-[85vh] max-w-[95vw] mx-auto">
-        <div className="flex items-center justify-center h-full">
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-6xl h-[85vh]">
+          <div className="flex items-center justify-center h-full">
             <Loader2 className="h-8 w-8 animate-spin" />
             <span className="ml-2">Chargement...</span>
           </div>
-        </DrawerContent>
-      </Drawer>
+        </DialogContent>
+      </Dialog>
     );
   }
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="h-[85vh] max-w-[95vw] mx-auto">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-6xl h-[85vh] p-0">
         <div className="flex h-full">
           {/* Sidebar - 1/5 width */}
           <div className="w-1/5 border-r bg-muted/50 p-4">
@@ -230,16 +229,9 @@ export function PartnerDrawer({ open, onOpenChange }: PartnerDrawerProps) {
 
           {/* Main content - 4/5 width */}
           <div className="flex-1 flex flex-col">
-            <DrawerHeader className="border-b">
-              <div className="flex items-center justify-between">
-                <DrawerTitle>Situation de couple</DrawerTitle>
-                <DrawerClose asChild>
-                  <Button variant="ghost" size="icon">
-                    <X className="h-4 w-4" />
-                  </Button>
-                </DrawerClose>
-              </div>
-            </DrawerHeader>
+            <DialogHeader className="border-b px-6 py-4">
+              <DialogTitle>Situation de couple</DialogTitle>
+            </DialogHeader>
 
             <ScrollArea className="flex-1 p-6">
               <Form {...form}>
@@ -683,7 +675,7 @@ export function PartnerDrawer({ open, onOpenChange }: PartnerDrawerProps) {
             </ScrollArea>
           </div>
         </div>
-      </DrawerContent>
-    </Drawer>
+      </DialogContent>
+    </Dialog>
   );
 }
