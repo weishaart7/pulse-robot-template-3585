@@ -192,10 +192,10 @@ export function PartnerDrawer({ open, onOpenChange }: PartnerDrawerProps) {
   };
 
   if (loading) {
-    return (
-      <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="h-[90vh]">
-          <div className="flex items-center justify-center h-full">
+  return (
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="h-[85vh] max-w-[95vw] mx-auto">
+        <div className="flex items-center justify-center h-full">
             <Loader2 className="h-8 w-8 animate-spin" />
             <span className="ml-2">Chargement...</span>
           </div>
@@ -206,7 +206,7 @@ export function PartnerDrawer({ open, onOpenChange }: PartnerDrawerProps) {
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="h-[90vh]">
+      <DrawerContent className="h-[85vh] max-w-[95vw] mx-auto">
         <div className="flex h-full">
           {/* Sidebar - 1/5 width */}
           <div className="w-1/5 border-r bg-muted/50 p-4">
