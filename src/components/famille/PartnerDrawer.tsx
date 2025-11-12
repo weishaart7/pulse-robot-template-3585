@@ -205,10 +205,10 @@ export function PartnerDrawer({ open, onOpenChange }: PartnerDrawerProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl h-[85vh] p-0">
+      <DialogContent className="max-w-6xl h-[85vh] p-0 overflow-hidden">
         <div className="flex h-full">
           {/* Sidebar - 1/5 width */}
-          <div className="w-1/5 border-r bg-muted/50 p-4">
+          <div className="w-1/5 border-r bg-muted/50 p-4 rounded-l-lg">
             <div className="space-y-2">
               {getSidebarSections().map((section) => (
                 <button
