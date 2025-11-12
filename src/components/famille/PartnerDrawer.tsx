@@ -228,7 +228,7 @@ export function PartnerDrawer({ open, onOpenChange }: PartnerDrawerProps) {
           </div>
 
           {/* Main content - 4/5 width */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col rounded-r-lg">
             <DialogHeader className="px-6 py-4">
               <DialogTitle>Situation de couple</DialogTitle>
             </DialogHeader>
