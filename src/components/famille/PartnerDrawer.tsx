@@ -208,7 +208,7 @@ export function PartnerDrawer({ open, onOpenChange }: PartnerDrawerProps) {
       <DialogContent className="max-w-6xl h-[85vh] p-0 overflow-hidden">
         <div className="flex h-full">
           {/* Sidebar - 1/5 width */}
-          <div className="w-1/5 border-r bg-muted/50 p-4 rounded-l-lg">
+          <div className="w-1/5 bg-muted/50 p-4 rounded-l-lg">
             <div className="space-y-2">
               {getSidebarSections().map((section) => (
                 <button
@@ -229,7 +229,7 @@ export function PartnerDrawer({ open, onOpenChange }: PartnerDrawerProps) {
 
           {/* Main content - 4/5 width */}
           <div className="flex-1 flex flex-col">
-            <DialogHeader className="border-b px-6 py-4">
+            <DialogHeader className="px-6 py-4">
               <DialogTitle>Situation de couple</DialogTitle>
             </DialogHeader>
 
