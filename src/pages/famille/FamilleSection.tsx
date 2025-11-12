@@ -4,14 +4,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ClientInfoCard } from '@/components/ui/info-card';
 import { FicheClientForm } from './components/FicheClientForm';
-import { SituationMatrimonialeForm } from './components/SituationMatrimonialeForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
-import { useFamilyProfile } from '@/hooks/useFamilyData';
+import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
+import { PartnerInfoCard } from '@/components/famille/PartnerInfoCard';
+import { PartnerDrawer } from '@/components/famille/PartnerDrawer';
 
 const FamilleSection = () => {
   const [activeTab, setActiveTab] = useState('fiche-client');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isPartnerDrawerOpen, setIsPartnerDrawerOpen] = useState(false);
+  const [isSingle, setIsSingle] = useState(false);
   const { data: familyProfile } = useFamilyProfile();
+  const { data: maritalData, saveData: saveMaritalData } = useMaritalStatus();
 
   const TABS = [
     { id: 'fiche-client', label: 'Fiche client' },
@@ -19,24 +23,32 @@ const FamilleSection = () => {
     { id: 'liens-familiaux', label: 'Liens familiaux' }
   ];
 
+  const handleToggleSingle = async (checked: boolean) => {
+    setIsSingle(checked);
+    if (checked) {
+      await saveMaritalData({ statut_couple: 'Célibataire', parent_isole: false } as any);
+    }
+  };
+
+  const hasPartner = maritalData?.statut_couple && 
+    ['Concubinage', 'Pacsé(e)', 'Marié(e)'].includes(maritalData.statut_couple as string);
+  
+  const partnerName = maritalData?.prenom_conjoint && maritalData?.nom_conjoint
+    ? `${maritalData.prenom_conjoint} ${maritalData.nom_conjoint}`
+    : undefined;
+  
+  const relationStatus = maritalData?.statut_couple as string;
+  
+  const partnerAge = maritalData?.date_naissance_conjoint
+    ? Math.floor((new Date().getTime() - new Date(maritalData.date_naissance_conjoint as string).getTime()) / (1000 * 60 * 60 * 24 * 365.25))
+    : undefined;
+
   const renderContent = () => {
     switch (activeTab) {
       case 'fiche-client':
-        return null; // La carte s'affiche toujours au-dessus
+        return null;
       case 'situation-matrimoniale':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Situation de couple</CardTitle>
-              <CardDescription>
-                Renseignez votre statut de couple et vos informations
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SituationMatrimonialeForm />
-            </CardContent>
-          </Card>
-        );
+        return null;
       case 'liens-familiaux':
         return (
           <Card>
@@ -115,8 +127,24 @@ const FamilleSection = () => {
         </div>
       )}
 
+      {/* Carte partenaire - uniquement sur l'onglet Situation de couple */}
+      {activeTab === 'situation-matrimoniale' && (
+        <div className="mt-6 flex justify-start">
+          <PartnerInfoCard
+            hasPartner={hasPartner}
+            partnerName={partnerName}
+            relationStatus={relationStatus}
+            partnerAge={partnerAge}
+            isSingle={isSingle}
+            onToggleSingle={handleToggleSingle}
+            onAddPartner={() => setIsPartnerDrawerOpen(true)}
+            onEditPartner={() => setIsPartnerDrawerOpen(true)}
+          />
+        </div>
+      )}
+
       {/* Contenu des onglets */}
-      {activeTab !== 'fiche-client' && (
+      {activeTab !== 'fiche-client' && activeTab !== 'situation-matrimoniale' && (
         <div className="mt-6">
           {renderContent()}
         </div>
@@ -132,6 +160,12 @@ const FamilleSection = () => {
           <FicheClientForm />
         </DialogContent>
       </Dialog>
+
+      {/* Drawer pour modifier le partenaire */}
+      <PartnerDrawer
+        open={isPartnerDrawerOpen}
+        onOpenChange={setIsPartnerDrawerOpen}
+      />
     </div>
   );
 };
