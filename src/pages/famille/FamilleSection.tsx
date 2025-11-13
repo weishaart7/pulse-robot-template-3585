@@ -10,7 +10,7 @@ import { PartnerInfoCard } from '@/components/famille/PartnerInfoCard';
 import { PartnerDrawer } from '@/components/famille/PartnerDrawer';
 
 const FamilleSection = () => {
-  const [activeTab, setActiveTab] = useState('fiche-client');
+  const [activeTab, setActiveTab] = useState('ma-famille');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPartnerDrawerOpen, setIsPartnerDrawerOpen] = useState(false);
   const [isSingle, setIsSingle] = useState(false);
@@ -18,8 +18,7 @@ const FamilleSection = () => {
   const { data: maritalData, saveData: saveMaritalData } = useMaritalStatus();
 
   const TABS = [
-    { id: 'fiche-client', label: 'Fiche client' },
-    { id: 'situation-matrimoniale', label: 'Situation de couple' },
+    { id: 'ma-famille', label: 'Ma famille' },
     { id: 'liens-familiaux', label: 'Liens familiaux' }
   ];
 
@@ -45,10 +44,29 @@ const FamilleSection = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'fiche-client':
-        return null;
-      case 'situation-matrimoniale':
-        return null;
+      case 'ma-famille':
+        return (
+          <div className="grid gap-6 md:grid-cols-2">
+            <ClientInfoCard 
+              name={clientName}
+              role={clientRole}
+              status="online"
+              age={clientAge}
+              tags={tags}
+              onClick={() => setIsDialogOpen(true)}
+            />
+            <PartnerInfoCard 
+              hasPartner={hasPartner}
+              partnerName={partnerName}
+              partnerAge={partnerAge}
+              relationStatus={relationStatus}
+              isSingle={isSingle}
+              onToggleSingle={handleToggleSingle}
+              onAddPartner={() => setIsPartnerDrawerOpen(true)}
+              onEditPartner={() => setIsPartnerDrawerOpen(true)}
+            />
+          </div>
+        );
       case 'liens-familiaux':
         return (
           <Card>
@@ -91,8 +109,8 @@ const FamilleSection = () => {
       <div className="mb-6 flex justify-start">
         <div className="rounded-[8px] bg-muted p-[2px]">
           <AnimatedBackground
-            defaultValue="fiche-client"
-            onValueChange={(value) => setActiveTab(value || 'fiche-client')}
+            defaultValue="ma-famille"
+            onValueChange={(value) => setActiveTab(value || 'ma-famille')}
             className="rounded-lg bg-background shadow-sm"
             transition={{
               ease: "easeInOut",
