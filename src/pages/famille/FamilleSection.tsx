@@ -236,10 +236,10 @@ const FamilleSection = () => {
         <AnimatedBackground
           defaultValue="ma-famille"
           onValueChange={(value) => setActiveTab(value || 'ma-famille')}
-          className="rounded-lg bg-background shadow-sm"
+          className="rounded-xl bg-card shadow-md border border-border/50 p-2"
           transition={{
             ease: "easeInOut",
-            duration: 0.2,
+            duration: 0.3,
           }}
         >
           <div className="flex flex-wrap gap-2">
@@ -248,7 +248,10 @@ const FamilleSection = () => {
                 key={tab.id}
                 data-id={tab.id}
                 type="button"
-                className="px-6 py-3 rounded-lg font-medium transition-colors text-sm relative z-10 data-[active=true]:text-primary-foreground"
+                className="px-8 py-3.5 rounded-lg font-semibold transition-all duration-300 text-sm relative z-10 
+                data-[active=true]:text-primary-foreground data-[active=true]:shadow-lg
+                hover:scale-105 hover:shadow-sm
+                text-muted-foreground data-[active=true]:text-background"
               >
                 {tab.label}
               </button>
