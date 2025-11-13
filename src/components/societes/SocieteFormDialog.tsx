@@ -180,13 +180,7 @@ export const SocieteFormDialog = ({ open, onOpenChange, societeId, onSuccess }: 
         </DialogDescription>
         <div className="flex h-full">
           {/* Sidebar - 1/5 width */}
-          <div 
-            className="w-1/5 bg-muted/50 p-4 rounded-l-lg overflow-y-scroll" 
-            style={{ 
-              scrollbarWidth: 'thin',
-              scrollbarColor: 'hsl(var(--muted-foreground) / 0.3) transparent'
-            }}
-          >
+          <div className="w-1/5 bg-muted/50 p-4 rounded-l-lg overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
             <div className="space-y-2">
               <div className="flex items-center gap-2 mb-4">
                 <Building2 className="h-5 w-5 text-muted-foreground" />
@@ -235,13 +229,7 @@ export const SocieteFormDialog = ({ open, onOpenChange, societeId, onSuccess }: 
               </p>
             </div>
 
-            <div 
-              className="flex-1 overflow-y-scroll px-6 py-4" 
-              style={{ 
-                scrollbarWidth: 'thin',
-                scrollbarColor: 'hsl(var(--muted-foreground) / 0.3) transparent'
-              }}
-            >
+            <div className="flex-1 overflow-y-auto px-6 py-4" style={{ scrollbarWidth: 'thin' }}>
               {loading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-center">
