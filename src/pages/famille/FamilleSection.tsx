@@ -226,6 +226,13 @@ const FamilleSection = () => {
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f6f5f6' }}>
       <div className="w-full mx-auto p-6 space-y-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold tracking-tight">Famille</h1>
+          <p className="text-muted-foreground mt-1">
+            Gérez les informations et la composition de votre famille
+          </p>
+        </div>
+        
         <AnimatedBackground
           defaultValue="ma-famille"
           onValueChange={(value) => setActiveTab(value || 'ma-famille')}
