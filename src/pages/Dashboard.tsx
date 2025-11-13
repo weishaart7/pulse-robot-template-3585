@@ -79,9 +79,26 @@ const Dashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Contenu à venir...
-            </p>
+            <div className="space-y-4">
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">Imposition totale</div>
+                <div className="text-3xl font-bold text-foreground">9 365 €</div>
+              </div>
+              <div className="grid grid-cols-3 gap-4 pt-4 border-t">
+                <div>
+                  <div className="text-xs text-muted-foreground">IR et PS</div>
+                  <div className="text-sm font-semibold">9 365 €</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">IFI</div>
+                  <div className="text-sm font-semibold">0 €</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Autres</div>
+                  <div className="text-sm font-semibold">0 €</div>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
         
