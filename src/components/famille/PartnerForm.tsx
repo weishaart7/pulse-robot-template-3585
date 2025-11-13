@@ -26,17 +26,10 @@ const formSchema = z.object({
   prenomPartenaire: z.string().optional(),
   dateNaissancePartenaire: z.date().optional(),
   lieuNaissancePartenaire: z.string().optional(),
-  paysNaissance: z.string().optional(),
   professionCSP: z.string().optional(),
   professionLibelle: z.string().optional(),
   nationalitePartenaire: z.string().optional(),
   personneHandicapee: z.boolean().default(false),
-  telephone: z.string().optional(),
-  email: z.string().email('Adresse email invalide').optional().or(z.literal('')),
-  adresse: z.string().optional(),
-  codePostal: z.string().optional(),
-  ville: z.string().optional(),
-  pays: z.string().optional(),
   
   mariagePrecedentPersonne: z.boolean().default(false),
   mariagePrecedentConjoint: z.boolean().default(false),
@@ -58,16 +51,9 @@ export function PartnerForm() {
       nomPartenaire: "",
       prenomPartenaire: "",
       lieuNaissancePartenaire: "",
-      paysNaissance: "",
       professionCSP: "",
       professionLibelle: "",
       nationalitePartenaire: "",
-      telephone: "",
-      email: "",
-      adresse: "",
-      codePostal: "",
-      ville: "",
-      pays: "",
       mariagePrecedentPersonne: false,
       mariagePrecedentConjoint: false,
     },
@@ -88,17 +74,10 @@ export function PartnerForm() {
         prenomPartenaire: maritalData.prenom_conjoint || "",
         dateNaissancePartenaire: maritalData.date_naissance_conjoint ? new Date(maritalData.date_naissance_conjoint) : undefined,
         lieuNaissancePartenaire: maritalData.lieu_naissance_conjoint || "",
-        paysNaissance: maritalData.pays_naissance_conjoint || "",
         professionCSP: maritalData.profession_csp_conjoint || "",
         professionLibelle: maritalData.profession_conjoint || "",
         nationalitePartenaire: maritalData.nationalite_conjoint || "",
         personneHandicapee: maritalData.personne_handicapee_conjoint || false,
-        telephone: maritalData.telephone_conjoint || "",
-        email: maritalData.email_conjoint || "",
-        adresse: maritalData.adresse_conjoint || "",
-        codePostal: maritalData.code_postal_conjoint || "",
-        ville: maritalData.ville_conjoint || "",
-        pays: maritalData.pays_conjoint || "",
         mariagePrecedentPersonne: maritalData.mariage_precedent_personne || false,
         mariagePrecedentConjoint: maritalData.mariage_precedent_conjoint || false,
       });
@@ -115,17 +94,10 @@ export function PartnerForm() {
         prenom_conjoint: formData.prenomPartenaire,
         date_naissance_conjoint: formData.dateNaissancePartenaire?.toISOString().split('T')[0],
         lieu_naissance_conjoint: formData.lieuNaissancePartenaire,
-        pays_naissance_conjoint: formData.paysNaissance,
         profession_csp_conjoint: formData.professionCSP,
         profession_conjoint: formData.professionLibelle,
         nationalite_conjoint: formData.nationalitePartenaire,
         personne_handicapee_conjoint: formData.personneHandicapee,
-        telephone_conjoint: formData.telephone,
-        email_conjoint: formData.email,
-        adresse_conjoint: formData.adresse,
-        code_postal_conjoint: formData.codePostal,
-        ville_conjoint: formData.ville,
-        pays_conjoint: formData.pays,
         mariage_precedent_personne: formData.mariagePrecedentPersonne,
         mariage_precedent_conjoint: formData.mariagePrecedentConjoint,
       };
@@ -294,20 +266,6 @@ export function PartnerForm() {
 
                 <FormField
                   control={form.control}
-                  name="paysNaissance"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Pays de naissance</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Pays de naissance" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
                   name="nationalitePartenaire"
                   render={({ field }) => (
                     <FormItem>
@@ -347,94 +305,6 @@ export function PartnerForm() {
                     </FormItem>
                   )}
                 />
-
-                <FormField
-                  control={form.control}
-                  name="telephone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Téléphone</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Téléphone" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="Email" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="adresse"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Adresse postale</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Adresse" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="codePostal"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Code postal</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Code postal" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="ville"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Ville</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ville" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="pays"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Pays</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Pays" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
               </div>
 
               <FormField

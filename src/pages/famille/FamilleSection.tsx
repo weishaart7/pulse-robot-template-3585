@@ -224,7 +224,7 @@ const FamilleSection = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen" style={{ backgroundColor: '#f6f5f6' }}>
       <div className="w-full mx-auto p-6 space-y-6">
         <AnimatedBackground
           defaultValue="ma-famille"
