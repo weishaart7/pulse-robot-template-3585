@@ -177,17 +177,13 @@ export function PartnerDrawer({ open, onOpenChange }: PartnerDrawerProps) {
   };
 
   const getSidebarSections = () => {
-    const sections = [{ id: "partenaire", label: "Partenaire" }];
-    
-    if (statutCouple === "Concubinage") {
-      sections.push({ id: "concubinage", label: "Informations du concubinage" });
-    } else if (statutCouple === "Pacsé(e)") {
-      sections.push({ id: "pacs", label: "Informations du PACS" });
-    } else if (statutCouple === "Marié(e)") {
-      sections.push({ id: "mariage", label: "Informations du mariage" });
-    }
-    
+    const sections = [
+      { id: 'partenaire', label: 'Informations personnelles' },
+      { id: 'historique', label: 'Historique matrimonial' },
+    ];
+
     return sections;
+  };
   };
 
   if (loading) {
