@@ -1,9 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2, User, MapPin } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -66,7 +66,10 @@ const professions = [
   'Autre',
 ];
 
+type Section = 'informations-generales' | 'coordonnees';
+
 export function FicheClientForm() {
+  const [activeSection, setActiveSection] = useState<Section>('informations-generales');
   const { data, loading, saving, saveData } = useFamilyProfile();
   const { user } = useAuth();
   const { submitSecureForm } = useSecureForm({ 
@@ -207,89 +210,121 @@ export function FicheClientForm() {
     );
   }
 
+  const sections = [
+    { id: 'informations-generales' as Section, label: 'Informations générales', icon: User },
+    { id: 'coordonnees' as Section, label: 'Coordonnées', icon: MapPin },
+  ];
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      <div className="space-y-5">
-        {/* Ligne 1 : Civilité */}
-        <div className="grid grid-cols-1 gap-6">
-          <FormField
-            control={form.control}
-            name="civilite"
-            render={({ field }) => (
-              <FormItem className="space-y-1">
-                <FormLabel className="text-xs">
-                  Civilité <span className="text-red-800">*</span>
-                </FormLabel>
-                <FormControl>
-                  <RadioGroup
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    className="flex flex-row space-x-4"
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <div className="flex gap-6">
+          {/* Sidebar */}
+          <div className="w-56 flex-shrink-0">
+            <nav className="space-y-1">
+              {sections.map((section) => {
+                const Icon = section.icon;
+                return (
+                  <button
+                    key={section.id}
+                    type="button"
+                    onClick={() => setActiveSection(section.id)}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all",
+                      activeSection === section.id
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
                   >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="M" id="m" />
-                      <label htmlFor="m">M.</label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Mme" id="mme" />
-                      <label htmlFor="mme">Mme</label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Autre" id="autre" />
-                      <label htmlFor="autre">Autre</label>
-                    </div>
-                  </RadioGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+                    <Icon className="h-4 w-4" />
+                    {section.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
 
-        {/* Ligne 2 : Nom / Prénom / Date de naissance */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <FormField
-            control={form.control}
-            name="nom"
-            render={({ field }) => (
-              <FormItem className="space-y-1">
-                <FormControl>
-                  <ActionHubInput
-                    label="Nom"
-                    placeholder="Nom de famille"
-                    value={field.value}
-                    onChange={field.onChange}
-                    required
-                    historyEnabled={false}
+          {/* Content */}
+          <div className="flex-1 space-y-6">
+            {activeSection === 'informations-generales' && (
+              <div className="space-y-5">
+                {/* Civilité */}
+                <FormField
+                  control={form.control}
+                  name="civilite"
+                  render={({ field }) => (
+                    <FormItem className="space-y-1">
+                      <FormLabel className="text-xs">
+                        Civilité <span className="text-red-800">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          className="flex flex-row space-x-4"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="M" id="m" />
+                            <label htmlFor="m">M.</label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="Mme" id="mme" />
+                            <label htmlFor="mme">Mme</label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="Autre" id="autre" />
+                            <label htmlFor="autre">Autre</label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Nom / Prénom / Date de naissance */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="nom"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormControl>
+                          <ActionHubInput
+                            label="Nom"
+                            placeholder="Nom de famille"
+                            value={field.value}
+                            onChange={field.onChange}
+                            required
+                            historyEnabled={false}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
-          <FormField
-            control={form.control}
-            name="prenom"
-            render={({ field }) => (
-              <FormItem className="space-y-1">
-                <FormControl>
-                  <ActionHubInput
-                    label="Prénom"
-                    placeholder="Prénom"
-                    value={field.value}
-                    onChange={field.onChange}
-                    required
-                    historyEnabled={false}
+                  <FormField
+                    control={form.control}
+                    name="prenom"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormControl>
+                          <ActionHubInput
+                            label="Prénom"
+                            placeholder="Prénom"
+                            value={field.value}
+                            onChange={field.onChange}
+                            required
+                            historyEnabled={false}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
-          <FormField
+                  <FormField
             control={form.control}
             name="dateNaissance"
             render={({ field }) => (
@@ -397,251 +432,259 @@ export function FicheClientForm() {
           />
         </div>
 
-        {/* Ligne 4 : Commune de naissance / Pays de naissance / Nationalité */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <FormField
-            control={form.control}
-            name="communeNaissance"
-            render={({ field }) => (
-              <FormItem className="space-y-1">
-                <FormControl>
-                  <ActionHubInput
-                    label="Commune de naissance"
-                    placeholder="Commune de naissance"
-                    value={field.value}
-                    onChange={field.onChange}
-                    required
-                    historyEnabled={false}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="communeNaissance"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormControl>
+                          <ActionHubInput
+                            label="Commune de naissance"
+                            placeholder="Commune de naissance"
+                            value={field.value}
+                            onChange={field.onChange}
+                            required
+                            historyEnabled={false}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
-          <FormField
-            control={form.control}
-            name="paysNaissance"
-            render={({ field }) => (
-              <FormItem className="max-w-xs space-y-1">
-                <FormLabel className="text-xs">
-                  Pays de naissance <span className="text-red-800">*</span>
-                </FormLabel>
-                <FormControl>
-                  <SelectMenu
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    placeholder="Sélectionnez le pays de naissance"
+                  <FormField
+                    control={form.control}
+                    name="paysNaissance"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormLabel className="text-xs">
+                          Pays de naissance <span className="text-red-800">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <SelectMenu
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            placeholder="Sélectionnez le pays de naissance"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
-          <FormField
-            control={form.control}
-            name="nationalite"
-            render={({ field }) => (
-              <FormItem className="space-y-1">
-                <FormControl>
-                  <ActionHubInput
-                    label="Nationalité"
-                    placeholder="Nationalité"
-                    value={field.value}
-                    onChange={field.onChange}
-                    required
-                    historyEnabled={false}
+                  <FormField
+                    control={form.control}
+                    name="nationalite"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormControl>
+                          <ActionHubInput
+                            label="Nationalité"
+                            placeholder="Nationalité"
+                            value={field.value}
+                            onChange={field.onChange}
+                            required
+                            historyEnabled={false}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+                </div>
+
+                {/* Capacité juridique */}
+                <div className="max-w-md">
+                  <FormField
+                    control={form.control}
+                    name="capaciteJuridique"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormLabel className="text-xs">Capacité juridique</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionner la capacité juridique" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="normale">Normale</SelectItem>
+                            <SelectItem value="curatelle">Curatelle</SelectItem>
+                            <SelectItem value="tutelle">Tutelle</SelectItem>
+                            <SelectItem value="sauvegarde">Sauvegarde de justice</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Personne handicapée */}
+                <FormField
+                  control={form.control}
+                  name="handicape"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-4 max-w-md">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-sm">Personne handicapée</FormLabel>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
             )}
-          />
+
+            {activeSection === 'coordonnees' && (
+              <div className="space-y-5">
+                <h3 className="text-lg font-semibold">Coordonnées</h3>
+
+                {/* Téléphone / Email */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="telephone"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormControl>
+                          <ActionHubInput
+                            label="Téléphone"
+                            placeholder="Numéro de téléphone"
+                            value={field.value}
+                            onChange={field.onChange}
+                            historyEnabled={false}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormControl>
+                          <ActionHubInput
+                            label="Adresse email"
+                            placeholder="email@exemple.com"
+                            type="email"
+                            value={field.value}
+                            onChange={field.onChange}
+                            historyEnabled={false}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Adresse */}
+                <FormField
+                  control={form.control}
+                  name="adresse"
+                  render={({ field }) => (
+                    <FormItem className="space-y-1">
+                      <FormControl>
+                        <ActionHubInput
+                          label="Adresse postale"
+                          placeholder="Adresse complète"
+                          value={field.value}
+                          onChange={field.onChange}
+                          historyEnabled={false}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Code postal / Ville / Pays */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="codePostal"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormControl>
+                          <ActionHubInput
+                            label="Code postal"
+                            placeholder="Code postal"
+                            value={field.value}
+                            onChange={field.onChange}
+                            historyEnabled={false}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="ville"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormControl>
+                          <ActionHubInput
+                            label="Ville"
+                            placeholder="Ville"
+                            value={field.value}
+                            onChange={field.onChange}
+                            historyEnabled={false}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="pays"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormControl>
+                          <ActionHubInput
+                            label="Pays"
+                            placeholder="Pays"
+                            value={field.value}
+                            onChange={field.onChange}
+                            historyEnabled={false}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Bouton Enregistrer */}
+            <div className="flex justify-end pt-4 border-t">
+              <Button type="submit" disabled={saving}>
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enregistrement...
+                  </>
+                ) : (
+                  'Enregistrer'
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
-
-        {/* Ligne 5 : Téléphone / Email */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
-          <FormField
-            control={form.control}
-            name="telephone"
-            render={({ field }) => (
-              <FormItem className="space-y-1">
-                <FormControl>
-                  <ActionHubInput
-                    label="Téléphone"
-                    placeholder="Numéro de téléphone"
-                    value={field.value}
-                    onChange={field.onChange}
-                    historyEnabled={false}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem className="space-y-1">
-                <FormControl>
-                  <ActionHubInput
-                    label="Adresse email"
-                    placeholder="email@exemple.com"
-                    type="email"
-                    value={field.value}
-                    onChange={field.onChange}
-                    historyEnabled={false}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-      </div>
-
-      {/* Capacité juridique */}
-      <div className="max-w-md">
-        <FormField
-          control={form.control}
-          name="capaciteJuridique"
-          render={({ field }) => (
-            <FormItem className="space-y-1">
-              <FormLabel className="text-xs">
-                Capacité juridique <span className="text-red-800">*</span>
-              </FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || 'normale'}>
-                <FormControl>
-                  <SelectTrigger size="lg">
-                    <SelectValue placeholder="Sélectionner une capacité juridique" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="normale">Normale</SelectItem>
-                  <SelectItem value="curatelle">Majeur sous curatelle</SelectItem>
-                  <SelectItem value="tutelle">Majeur sous tutelle</SelectItem>
-                  <SelectItem value="sauvegarde">Majeur sous sauvegarde de justice</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-
-      {/* Personne handicapée */}
-      <FormField
-        control={form.control}
-        name="handicape"
-        render={({ field }) => (
-          <FormItem className="space-y-1">
-            <FormControl>
-              <Switch
-                checked={field.value}
-                onCheckedChange={field.onChange}
-                label="Personne handicapée"
-              />
-            </FormControl>
-          </FormItem>
-        )}
-      />
-
-      {/* Coordonnées */}
-      <div className="space-y-4 mt-8 pt-6 border-t border-border">
-        <h3 className="text-base font-semibold text-foreground">Coordonnées</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <FormField
-          control={form.control}
-          name="adresse"
-          render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <ActionHubInput
-                  label="Adresse"
-                  placeholder="Numéro et nom de rue"
-                  value={field.value}
-                  onChange={field.onChange}
-                  historyEnabled={false}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="codePostal"
-          render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <ActionHubInput
-                  label="Code postal"
-                  placeholder="Code postal"
-                  value={field.value}
-                  onChange={field.onChange}
-                  historyEnabled={false}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="ville"
-          render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <ActionHubInput
-                  label="Ville"
-                  placeholder="Ville"
-                  value={field.value}
-                  onChange={field.onChange}
-                  historyEnabled={false}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="pays"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm">Pays</FormLabel>
-              <FormControl>
-                <SelectMenu
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  placeholder="Sélectionnez votre pays"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        </div>
-      </div>
-
-      <div className="flex justify-end">
-        <Button type="submit" disabled={saving}>
-          {saving ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Enregistrement...
-            </>
-          ) : (
-            'Enregistrer'
-          )}
-        </Button>
-      </div>
       </form>
     </Form>
   );
