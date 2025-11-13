@@ -71,32 +71,67 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card className="border-0">
-          <CardHeader>
+        <Card className="border-0 overflow-hidden">
+          <CardHeader className="pb-4">
             <CardTitle className="text-xl">Fiscalité</CardTitle>
             <CardDescription>
               Optimisez votre situation fiscale
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">Imposition totale</div>
-                <div className="text-3xl font-bold text-foreground">9 365 €</div>
+          <CardContent className="space-y-6">
+            {/* Montant principal avec fond coloré */}
+            <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-lg p-6 border border-primary/20">
+              <div className="flex items-baseline gap-2 mb-2">
+                <div className="text-sm font-medium text-muted-foreground">Imposition totale</div>
               </div>
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t">
-                <div>
-                  <div className="text-xs text-muted-foreground">IR et PS</div>
-                  <div className="text-sm font-semibold">9 365 €</div>
+              <div className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                9 365 €
+              </div>
+              <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary/60" />
+                <span>Année fiscale 2024</span>
+              </div>
+            </div>
+
+            {/* Répartition détaillée */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-[#05aaa4]/10 flex items-center justify-center">
+                    <div className="h-2 w-2 rounded-full bg-[#05aaa4]" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium">IR et Prélèvements sociaux</div>
+                    <div className="text-xs text-muted-foreground">Impôt sur le revenu</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">IFI</div>
-                  <div className="text-sm font-semibold">0 €</div>
+                <div className="text-lg font-bold">9 365 €</div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-[#0b5563]/10 flex items-center justify-center">
+                    <div className="h-2 w-2 rounded-full bg-[#0b5563]" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium">IFI</div>
+                    <div className="text-xs text-muted-foreground">Impôt sur la fortune immobilière</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Autres</div>
-                  <div className="text-sm font-semibold">0 €</div>
+                <div className="text-lg font-bold text-muted-foreground">0 €</div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                    <div className="h-2 w-2 rounded-full bg-muted-foreground/50" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium">Autres impôts</div>
+                    <div className="text-xs text-muted-foreground">Taxes diverses</div>
+                  </div>
                 </div>
+                <div className="text-lg font-bold text-muted-foreground">0 €</div>
               </div>
             </div>
           </CardContent>
