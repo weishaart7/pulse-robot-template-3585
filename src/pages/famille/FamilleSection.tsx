@@ -225,41 +225,40 @@ const FamilleSection = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f6f5f6' }}>
-      <div className="w-full mx-auto p-6 space-y-6">
+      <div className="p-6">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold tracking-tight">Famille</h1>
-          <p className="text-muted-foreground mt-1">
+          <h2 className="text-2xl font-bold tracking-tight">Famille</h2>
+          <p className="text-muted-foreground">
             Gérez les informations et la composition de votre famille
           </p>
         </div>
         
-        <AnimatedBackground
-          defaultValue="ma-famille"
-          onValueChange={(value) => setActiveTab(value || 'ma-famille')}
-          className="rounded-xl bg-card shadow-md border border-border/50 p-2"
-          transition={{
-            ease: "easeInOut",
-            duration: 0.3,
-          }}
-        >
-          <div className="flex flex-wrap gap-2">
+        <div className="mb-6 flex justify-start">
+          <div className="rounded-[8px] bg-muted p-[2px]">
+            <AnimatedBackground
+            defaultValue="ma-famille"
+            onValueChange={(value) => setActiveTab(value || 'ma-famille')}
+            className="rounded-lg bg-background shadow-sm"
+            transition={{
+              ease: "easeInOut",
+              duration: 0.2,
+            }}
+          >
             {TABS.map((tab) => (
               <button
                 key={tab.id}
                 data-id={tab.id}
                 type="button"
-                className="px-8 py-3.5 rounded-lg font-semibold transition-all duration-300 text-sm relative z-10 
-                data-[active=true]:text-primary-foreground data-[active=true]:shadow-lg
-                hover:scale-105 hover:shadow-sm
-                text-muted-foreground data-[active=true]:text-background"
+                className="inline-flex min-w-24 items-center justify-center px-3 py-2 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
               >
                 {tab.label}
               </button>
             ))}
+            </AnimatedBackground>
           </div>
-        </AnimatedBackground>
+        </div>
 
-        <div className="w-full">
+        <div className="mt-6">
           {renderContent()}
         </div>
       </div>
