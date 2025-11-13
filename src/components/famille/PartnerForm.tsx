@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, Heart, User, MapPin, Users } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -37,10 +37,13 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+type Section = 'informations-generales' | 'coordonnees' | 'informations-mariage';
+
 export function PartnerForm() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: maritalData, loading, saving, saveData } = useMaritalStatus();
+  const [activeSection, setActiveSection] = useState<Section>('informations-generales');
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
