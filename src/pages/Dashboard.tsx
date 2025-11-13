@@ -6,20 +6,28 @@ import { useFamilyProfile } from '@/hooks/useFamilyData';
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { PatrimoineChart } from '@/components/patrimoine/PatrimoineChart';
-
 const Dashboard = () => {
-  const { revenus } = useRevenus();
-  const { charges } = useCharges();
-  const { data: familyProfile } = useFamilyProfile();
-  const { assets } = useAssets();
-  const { passifs } = usePassifs();
-  const { emprunts } = useEmprunts();
-
+  const {
+    revenus
+  } = useRevenus();
+  const {
+    charges
+  } = useCharges();
+  const {
+    data: familyProfile
+  } = useFamilyProfile();
+  const {
+    assets
+  } = useAssets();
+  const {
+    passifs
+  } = usePassifs();
+  const {
+    emprunts
+  } = useEmprunts();
   const totalRevenus = revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0);
   const totalCharges = charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
-
-  return (
-    <div className="p-6">
+  return <div className="p-6">
       <div className="mb-6 bg-card rounded-lg p-6">
         <div className="flex justify-between items-start">
           <h2 className="text-base text-foreground/70 font-medium">Bonjour {familyProfile?.prenom || '(Prénom)'}.</h2>
@@ -45,12 +53,7 @@ const Dashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <PatrimoineChart 
-              assets={assets}
-              passifs={passifs}
-              emprunts={emprunts}
-              selectedCategory={null}
-            />
+            <PatrimoineChart assets={assets} passifs={passifs} emprunts={emprunts} selectedCategory={null} />
           </CardContent>
         </Card>
         
@@ -62,12 +65,7 @@ const Dashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <BudgetStatisticsCard 
-              totalRevenus={totalRevenus}
-              totalCharges={totalCharges}
-              revenusCount={revenus.length}
-              chargesCount={charges.length}
-            />
+            <BudgetStatisticsCard totalRevenus={totalRevenus} totalCharges={totalCharges} revenusCount={revenus.length} chargesCount={charges.length} />
           </CardContent>
         </Card>
         
@@ -80,17 +78,14 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Montant principal avec fond coloré */}
-            <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-lg p-6 border border-primary/20">
+            <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-lg p-6 border border-primary/20 py-[10px]">
               <div className="flex items-baseline gap-2 mb-2">
                 <div className="text-sm font-medium text-muted-foreground">Imposition totale</div>
               </div>
               <div className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                 9 365 €
               </div>
-              <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary/60" />
-                <span>Année fiscale 2024</span>
-              </div>
+              
             </div>
 
             {/* Répartition détaillée */}
@@ -165,8 +160,6 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Dashboard;
