@@ -3,11 +3,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import BudgetStatisticsCard from '@/components/ui/budget-statistics-card';
 import { useRevenus, useCharges } from '@/hooks/useBudget';
 import { useFamilyProfile } from '@/hooks/useFamilyData';
+import { useAssets } from '@/hooks/useAssets';
+import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
+import { PatrimoineChart } from '@/components/patrimoine/PatrimoineChart';
 
 const Dashboard = () => {
   const { revenus } = useRevenus();
   const { charges } = useCharges();
   const { data: familyProfile } = useFamilyProfile();
+  const { assets } = useAssets();
+  const { passifs } = usePassifs();
+  const { emprunts } = useEmprunts();
 
   const totalRevenus = revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0);
   const totalCharges = charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
@@ -39,9 +45,12 @@ const Dashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Contenu à venir...
-            </p>
+            <PatrimoineChart 
+              assets={assets}
+              passifs={passifs}
+              emprunts={emprunts}
+              selectedCategory={null}
+            />
           </CardContent>
         </Card>
         
