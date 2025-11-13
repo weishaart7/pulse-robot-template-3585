@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Plus, Edit, Trash2, LayoutGrid, Table as TableIcon, Building2 } from 'lucide-react';
 import { societeService, type Societe } from '@/services/societeService';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
+import { SocieteFormDialog } from '@/components/societes/SocieteFormDialog';
 
 export const SocietesMesSocietes = () => {
-  const navigate = useNavigate();
   const [societes, setSocietes] = useState<Societe[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingSocieteId, setEditingSocieteId] = useState<string | null>(null);
 
   // Load societes on mount
   useEffect(() => {
@@ -32,11 +33,13 @@ export const SocietesMesSocietes = () => {
   };
 
   const handleAddSociete = () => {
-    navigate('/societes/form');
+    setEditingSocieteId(null);
+    setDialogOpen(true);
   };
 
   const handleEditSociete = (societeId: string) => {
-    navigate(`/societes/form?id=${societeId}`);
+    setEditingSocieteId(societeId);
+    setDialogOpen(true);
   };
 
   const handleDeleteSociete = async (id: string) => {
@@ -237,6 +240,13 @@ export const SocietesMesSocietes = () => {
           ))}
         </div>
       )}
+
+      <SocieteFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        societeId={editingSocieteId}
+        onSuccess={loadSocietes}
+      />
     </div>
   );
 };
