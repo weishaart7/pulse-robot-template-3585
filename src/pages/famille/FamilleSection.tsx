@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
 import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
-import { PartnerDrawer } from "@/components/famille/PartnerDrawer";
+import { PartnerForm } from "@/components/famille/PartnerForm";
 import { RelationInfoDialog } from "@/components/famille/RelationInfoDialog";
 import { User, Plus } from 'lucide-react';
 
@@ -254,22 +254,27 @@ const FamilleSection = () => {
         </div>
       </div>
 
-      {/* Dialog pour modifier les informations */}
+      {/* Dialog pour modifier les informations client */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Modifier les informations client</DialogTitle>
+            <DialogTitle>Modifier les informations</DialogTitle>
             <DialogDescription>Modifiez les informations, puis enregistrez.</DialogDescription>
           </DialogHeader>
           <FicheClientForm />
         </DialogContent>
       </Dialog>
 
-      {/* Drawer pour modifier le partenaire */}
-      <PartnerDrawer
-        open={isPartnerDrawerOpen}
-        onOpenChange={setIsPartnerDrawerOpen}
-      />
+      {/* Dialog pour modifier le partenaire */}
+      <Dialog open={isPartnerDrawerOpen} onOpenChange={setIsPartnerDrawerOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Modifier les informations du partenaire</DialogTitle>
+            <DialogDescription>Modifiez les informations, puis enregistrez.</DialogDescription>
+          </DialogHeader>
+          <PartnerForm />
+        </DialogContent>
+      </Dialog>
 
       <RelationInfoDialog
         open={isRelationInfoOpen}
