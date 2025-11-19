@@ -1231,7 +1231,7 @@ export type Database = {
           created_at: string
           details: Json | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           resource: string | null
           severity: string | null
           success: boolean
@@ -1244,7 +1244,7 @@ export type Database = {
           created_at?: string
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           resource?: string | null
           severity?: string | null
           success: boolean
@@ -1257,7 +1257,7 @@ export type Database = {
           created_at?: string
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           resource?: string | null
           severity?: string | null
           success?: boolean
@@ -1384,10 +1384,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin_user: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_admin_user: { Args: never; Returns: boolean }
       log_security_event: {
         Args: {
           p_action: string
@@ -1399,14 +1396,8 @@ export type Database = {
         }
         Returns: undefined
       }
-      validate_email: {
-        Args: { email: string }
-        Returns: boolean
-      }
-      validate_financial_amount: {
-        Args: { amount: number }
-        Returns: boolean
-      }
+      validate_email: { Args: { email: string }; Returns: boolean }
+      validate_financial_amount: { Args: { amount: number }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
