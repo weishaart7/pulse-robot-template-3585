@@ -129,6 +129,7 @@ export const PASSIF_NATURES = [
   "Impôt sur la fortune immobilière (IFI) restant dû",
   "Impôt sur le revenu restant dû",
   "Indemnités prud'homales ou litiges judiciaires en cours",
+  "Prêt patronal",
   "Prêts entre particuliers contractés"
 ];
 
