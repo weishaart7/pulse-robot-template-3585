@@ -152,35 +152,46 @@ export function PartnerForm() {
     );
   }
 
+  const sections = [
+    { id: 'informations-generales' as Section, label: 'Informations générales', icon: User },
+    { id: 'coordonnees' as Section, label: 'Coordonnées', icon: MapPin },
+  ];
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Navigation entre les sections du formulaire */}
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <Button
-            type="button"
-            variant={activeSection === "informations-generales" ? "default" : "outline"}
-            className="flex items-center justify-start gap-2"
-            onClick={() => setActiveSection("informations-generales")}
-          >
-            <User className="h-4 w-4" />
-            <span className="truncate">Informations générales</span>
-          </Button>
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <div className="flex gap-6">
+          {/* Sidebar */}
+          <div className="w-56 flex-shrink-0">
+            <nav className="space-y-1">
+              {sections.map((section) => {
+                const Icon = section.icon;
+                return (
+                  <button
+                    key={section.id}
+                    type="button"
+                    onClick={() => setActiveSection(section.id)}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all",
+                      activeSection === section.id
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {section.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
 
-          <Button
-            type="button"
-            variant={activeSection === "coordonnees" ? "default" : "outline"}
-            className="flex items-center justify-start gap-2"
-            onClick={() => setActiveSection("coordonnees")}
-          >
-            <MapPin className="h-4 w-4" />
-            <span className="truncate">Coordonnées familiales</span>
-          </Button>
-        </div>
+          {/* Content */}
+          <div className="flex-1 space-y-6">
 
-        {/* Section Informations générales */}
-        {activeSection === "informations-generales" && (
-          <>
+            {/* Section Informations générales */}
+            {activeSection === "informations-generales" && (
+              <div className="space-y-5">
             <FormField
               control={form.control}
               name="statutCouple"
@@ -385,12 +396,12 @@ export function PartnerForm() {
                 </CardContent>
               </Card>
             )}
-          </>
-        )}
+              </div>
+            )}
 
-        {/* Section Coordonnées */}
-        {activeSection === "coordonnees" && (
-          <div className="space-y-6">
+            {/* Section Coordonnées */}
+            {activeSection === "coordonnees" && (
+              <div className="space-y-5">
             {/* Téléphone / Email */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
@@ -481,21 +492,22 @@ export function PartnerForm() {
                 )}
               />
             </div>
-          </div>
-        )}
-
-
-        <div className="flex justify-end pt-6">
-          <Button type="submit" disabled={saving}>
-            {saving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Enregistrement...
-              </>
-            ) : (
-              "Enregistrer"
+              </div>
             )}
-          </Button>
+
+            <div className="flex justify-end">
+              <Button type="submit" disabled={saving}>
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enregistrement...
+                  </>
+                ) : (
+                  "Enregistrer"
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
       </form>
     </Form>
