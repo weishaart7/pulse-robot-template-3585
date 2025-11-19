@@ -17,9 +17,19 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
+// Type étendu pour inclure les nouveaux champs coordonnées
+type ExtendedMaritalStatus = {
+  telephone_conjoint?: string | null;
+  email_conjoint?: string | null;
+  adresse_conjoint?: string | null;
+  code_postal_conjoint?: string | null;
+  ville_conjoint?: string | null;
+  pays_conjoint?: string | null;
+  [key: string]: any;
+};
+
 const formSchema = z.object({
   statutCouple: z.enum(['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)']).optional(),
-  parentIsole: z.boolean().default(false),
   
   civilitePartenaire: z.string().optional(),
   nomPartenaire: z.string().optional(),
@@ -30,6 +40,13 @@ const formSchema = z.object({
   professionLibelle: z.string().optional(),
   nationalitePartenaire: z.string().optional(),
   personneHandicapee: z.boolean().default(false),
+  
+  telephonePartenaire: z.string().optional(),
+  emailPartenaire: z.string().email('Adresse email invalide').optional().or(z.literal('')),
+  adressePartenaire: z.string().optional(),
+  codePostalPartenaire: z.string().optional(),
+  villePartenaire: z.string().optional(),
+  paysPartenaire: z.string().optional(),
   
   mariagePrecedentPersonne: z.boolean().default(false),
   mariagePrecedentConjoint: z.boolean().default(false),
@@ -48,7 +65,6 @@ export function PartnerForm() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      parentIsole: false,
       personneHandicapee: false,
       civilitePartenaire: "",
       nomPartenaire: "",
@@ -57,6 +73,12 @@ export function PartnerForm() {
       professionCSP: "",
       professionLibelle: "",
       nationalitePartenaire: "",
+      telephonePartenaire: "",
+      emailPartenaire: "",
+      adressePartenaire: "",
+      codePostalPartenaire: "",
+      villePartenaire: "",
+      paysPartenaire: "",
       mariagePrecedentPersonne: false,
       mariagePrecedentConjoint: false,
     },
@@ -69,20 +91,26 @@ export function PartnerForm() {
 
   useEffect(() => {
     if (maritalData) {
+      const data = maritalData as ExtendedMaritalStatus;
       form.reset({
-        statutCouple: maritalData.statut_couple as any,
-        parentIsole: maritalData.parent_isole || false,
-        civilitePartenaire: maritalData.civilite_conjoint || "",
-        nomPartenaire: maritalData.nom_conjoint || "",
-        prenomPartenaire: maritalData.prenom_conjoint || "",
-        dateNaissancePartenaire: maritalData.date_naissance_conjoint ? new Date(maritalData.date_naissance_conjoint) : undefined,
-        lieuNaissancePartenaire: maritalData.lieu_naissance_conjoint || "",
-        professionCSP: maritalData.profession_csp_conjoint || "",
-        professionLibelle: maritalData.profession_conjoint || "",
-        nationalitePartenaire: maritalData.nationalite_conjoint || "",
-        personneHandicapee: maritalData.personne_handicapee_conjoint || false,
-        mariagePrecedentPersonne: maritalData.mariage_precedent_personne || false,
-        mariagePrecedentConjoint: maritalData.mariage_precedent_conjoint || false,
+        statutCouple: data.statut_couple as any,
+        civilitePartenaire: data.civilite_conjoint || "",
+        nomPartenaire: data.nom_conjoint || "",
+        prenomPartenaire: data.prenom_conjoint || "",
+        dateNaissancePartenaire: data.date_naissance_conjoint ? new Date(data.date_naissance_conjoint) : undefined,
+        lieuNaissancePartenaire: data.lieu_naissance_conjoint || "",
+        professionCSP: data.profession_csp_conjoint || "",
+        professionLibelle: data.profession_conjoint || "",
+        nationalitePartenaire: data.nationalite_conjoint || "",
+        personneHandicapee: data.personne_handicapee_conjoint || false,
+        telephonePartenaire: data.telephone_conjoint || "",
+        emailPartenaire: data.email_conjoint || "",
+        adressePartenaire: data.adresse_conjoint || "",
+        codePostalPartenaire: data.code_postal_conjoint || "",
+        villePartenaire: data.ville_conjoint || "",
+        paysPartenaire: data.pays_conjoint || "",
+        mariagePrecedentPersonne: data.mariage_precedent_personne || false,
+        mariagePrecedentConjoint: data.mariage_precedent_conjoint || false,
       });
     }
   }, [maritalData, form]);
@@ -91,7 +119,6 @@ export function PartnerForm() {
     try {
       const supabaseData = {
         statut_couple: formData.statutCouple,
-        parent_isole: formData.parentIsole,
         civilite_conjoint: formData.civilitePartenaire,
         nom_conjoint: formData.nomPartenaire,
         prenom_conjoint: formData.prenomPartenaire,
@@ -101,6 +128,12 @@ export function PartnerForm() {
         profession_conjoint: formData.professionLibelle,
         nationalite_conjoint: formData.nationalitePartenaire,
         personne_handicapee_conjoint: formData.personneHandicapee,
+        telephone_conjoint: formData.telephonePartenaire,
+        email_conjoint: formData.emailPartenaire,
+        adresse_conjoint: formData.adressePartenaire,
+        code_postal_conjoint: formData.codePostalPartenaire,
+        ville_conjoint: formData.villePartenaire,
+        pays_conjoint: formData.paysPartenaire,
         mariage_precedent_personne: formData.mariagePrecedentPersonne,
         mariage_precedent_conjoint: formData.mariagePrecedentConjoint,
       };
@@ -160,7 +193,7 @@ export function PartnerForm() {
             onClick={() => setActiveSection("informations-mariage")}
           >
             <Heart className="h-4 w-4" />
-            <span className="truncate">Historique matrimonial</span>
+            <span className="truncate">Informations du mariage</span>
           </Button>
         </div>
 
@@ -374,39 +407,107 @@ export function PartnerForm() {
           </>
         )}
 
-        {/* Section Coordonnées familiales */}
+        {/* Section Coordonnées */}
         {activeSection === "coordonnees" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Coordonnées familiales</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="space-y-6">
+            {/* Téléphone / Email */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
-                name="parentIsole"
+                name="telephonePartenaire"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormItem>
+                    <FormLabel>Téléphone</FormLabel>
                     <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
+                      <Input placeholder="Numéro de téléphone" {...field} />
                     </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Parent isolé</FormLabel>
-                    </div>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
-            </CardContent>
-          </Card>
+
+              <FormField
+                control={form.control}
+                name="emailPartenaire"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Adresse email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="email@exemple.com" type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Adresse */}
+            <FormField
+              control={form.control}
+              name="adressePartenaire"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Adresse postale</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Adresse complète" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Code postal / Ville / Pays */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <FormField
+                control={form.control}
+                name="codePostalPartenaire"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Code postal</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Code postal" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="villePartenaire"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ville</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ville" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="paysPartenaire"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pays</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Pays" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
         )}
 
-        {/* Section Historique matrimonial */}
+        {/* Section Informations du mariage */}
         {activeSection === "informations-mariage" && (
           <Card>
             <CardHeader>
-              <CardTitle>Historique matrimonial</CardTitle>
+              <CardTitle>Informations du mariage</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
