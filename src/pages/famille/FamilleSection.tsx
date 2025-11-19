@@ -60,8 +60,8 @@ const FamilleSection = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'ma-famille':
-        const clientSexe = familyProfile?.civility?.toLowerCase().includes('m.') ? 'M' : 'F';
-        const partnerSexe = maritalData?.civilite_conjoint?.toLowerCase().includes('m.') ? 'M' : 'F';
+        const clientSexe = familyProfile?.civility?.toLowerCase() === 'mme' ? 'F' : 'M';
+        const partnerSexe = maritalData?.civilite_conjoint?.toLowerCase() === 'mme' ? 'F' : 'M';
         
         return (
           <>
