@@ -50,6 +50,8 @@ const formSchema = z.object({
   ]).default('Communauté réduite aux acquêts (option sans contrat de mariage)'),
   dateMariage: z.date().optional(),
   lieuMariage: z.string().optional(),
+  mariagePrecedentPersonne: z.boolean().default(false),
+  mariagePrecedentConjoint: z.boolean().default(false),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -75,6 +77,8 @@ export const SituationMatrimonialeForm = () => {
       conventionPacs: 'Régime de la séparation des biens',
       regimeMatrimonial: 'Communauté réduite aux acquêts (option sans contrat de mariage)',
       lieuMariage: "",
+      mariagePrecedentPersonne: false,
+      mariagePrecedentConjoint: false,
     },
   });
 
@@ -117,6 +121,8 @@ export const SituationMatrimonialeForm = () => {
         regimeMatrimonial: dataAny.regime_matrimonial || 'Communauté réduite aux acquêts (option sans contrat de mariage)',
         dateMariage: dataAny.date_mariage ? new Date(dataAny.date_mariage) : undefined,
         lieuMariage: dataAny.lieu_mariage || '',
+        mariagePrecedentPersonne: dataAny.mariage_precedent_personne || false,
+        mariagePrecedentConjoint: dataAny.mariage_precedent_conjoint || false,
       };
       form.reset(formattedData);
     }
@@ -150,6 +156,8 @@ export const SituationMatrimonialeForm = () => {
         regime_matrimonial: formData.regimeMatrimonial,
         date_mariage: formData.dateMariage ? formData.dateMariage.toISOString().split('T')[0] : undefined,
         lieu_mariage: formData.lieuMariage,
+        mariage_precedent_personne: formData.mariagePrecedentPersonne,
+        mariage_precedent_conjoint: formData.mariagePrecedentConjoint,
       };
 
       await saveData(supabaseData);
@@ -555,6 +563,48 @@ export const SituationMatrimonialeForm = () => {
                           </FormItem>
                         )}
                       />
+                    </div>
+
+                    {/* Historique matrimonial */}
+                    <div className="space-y-4 mt-4">
+                      <h5 className="text-sm font-medium">Historique matrimonial</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="mariagePrecedentPersonne"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel>Mariage précédent pour vous</FormLabel>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="mariagePrecedentConjoint"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel>Mariage précédent pour le conjoint</FormLabel>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
