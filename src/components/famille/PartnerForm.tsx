@@ -131,188 +131,259 @@ export function PartnerForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="statutCouple"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Statut matrimonial</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choisir un statut" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="Célibataire">Célibataire</SelectItem>
-                  <SelectItem value="Concubinage">Concubinage</SelectItem>
-                  <SelectItem value="Pacsé(e)">Pacsé(e)</SelectItem>
-                  <SelectItem value="Marié(e)">Marié(e)</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Navigation entre les sections du formulaire */}
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <Button
+            type="button"
+            variant={activeSection === "informations-generales" ? "default" : "outline"}
+            className="flex items-center justify-start gap-2"
+            onClick={() => setActiveSection("informations-generales")}
+          >
+            <User className="h-4 w-4" />
+            <span className="truncate">Informations générales</span>
+          </Button>
 
-        {(statutCouple === 'Concubinage' || statutCouple === 'Pacsé(e)' || statutCouple === 'Marié(e)') && (
+          <Button
+            type="button"
+            variant={activeSection === "coordonnees" ? "default" : "outline"}
+            className="flex items-center justify-start gap-2"
+            onClick={() => setActiveSection("coordonnees")}
+          >
+            <MapPin className="h-4 w-4" />
+            <span className="truncate">Coordonnées familiales</span>
+          </Button>
+
+          <Button
+            type="button"
+            variant={activeSection === "informations-mariage" ? "default" : "outline"}
+            className="flex items-center justify-start gap-2"
+            onClick={() => setActiveSection("informations-mariage")}
+          >
+            <Heart className="h-4 w-4" />
+            <span className="truncate">Historique matrimonial</span>
+          </Button>
+        </div>
+
+        {/* Section Informations générales */}
+        {activeSection === "informations-generales" && (
+          <>
+            <FormField
+              control={form.control}
+              name="statutCouple"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Statut matrimonial</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choisir un statut" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Célibataire">Célibataire</SelectItem>
+                      <SelectItem value="Concubinage">Concubinage</SelectItem>
+                      <SelectItem value="Pacsé(e)">Pacsé(e)</SelectItem>
+                      <SelectItem value="Marié(e)">Marié(e)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {(statutCouple === "Concubinage" ||
+              statutCouple === "Pacsé(e)" ||
+              statutCouple === "Marié(e)") && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Informations du conjoint/partenaire</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="civilitePartenaire"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Civilité</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Sélectionner" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="M.">M.</SelectItem>
+                              <SelectItem value="Mme">Mme</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="nomPartenaire"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nom</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Nom" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="prenomPartenaire"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Prénom</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Prénom" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="dateNaissancePartenaire"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Date de naissance</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "dd/MM/yyyy")
+                                  ) : (
+                                    <span>Sélectionner une date</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date > new Date()}
+                                initialFocus
+                                className="p-3 pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="lieuNaissancePartenaire"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Commune de naissance</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Commune de naissance" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="nationalitePartenaire"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nationalité</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Nationalité" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="professionCSP"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Profession (CSP)</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Catégorie socio-professionnelle"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="professionLibelle"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Profession (Libellé)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Intitulé du poste" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="personneHandicapee"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Personne handicapée</FormLabel>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
+
+        {/* Section Coordonnées familiales */}
+        {activeSection === "coordonnees" && (
           <Card>
             <CardHeader>
-              <CardTitle>Informations du conjoint/partenaire</CardTitle>
+              <CardTitle>Coordonnées familiales</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="civilitePartenaire"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Civilité</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="M.">M.</SelectItem>
-                          <SelectItem value="Mme">Mme</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="nomPartenaire"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nom</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Nom" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="prenomPartenaire"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Prénom</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Prénom" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="dateNaissancePartenaire"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date de naissance</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "dd/MM/yyyy")
-                              ) : (
-                                <span>Sélectionner une date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) => date > new Date()}
-                            initialFocus
-                            className="p-3 pointer-events-auto"
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="lieuNaissancePartenaire"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Commune de naissance</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Commune de naissance" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="nationalitePartenaire"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nationalité</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Nationalité" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="professionCSP"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Profession (CSP)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Catégorie socio-professionnelle" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="professionLibelle"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Profession (Libellé)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Intitulé du poste" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
               <FormField
                 control={form.control}
-                name="personneHandicapee"
+                name="parentIsole"
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                     <FormControl>
@@ -322,9 +393,7 @@ export function PartnerForm() {
                       />
                     </FormControl>
                     <div className="space-y-1 leading-none">
-                      <FormLabel>
-                        Personne handicapée
-                      </FormLabel>
+                      <FormLabel>Parent isolé</FormLabel>
                     </div>
                   </FormItem>
                 )}
@@ -333,54 +402,53 @@ export function PartnerForm() {
           </Card>
         )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Historique matrimonial</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="mariagePrecedentPersonne"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>
-                        Mariage précédent pour vous
-                      </FormLabel>
-                    </div>
-                  </FormItem>
-                )}
-              />
+        {/* Section Historique matrimonial */}
+        {activeSection === "informations-mariage" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Historique matrimonial</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="mariagePrecedentPersonne"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Mariage précédent pour vous</FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="mariagePrecedentConjoint"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>
-                        Mariage précédent pour le conjoint
-                      </FormLabel>
-                    </div>
-                  </FormItem>
-                )}
-              />
-            </div>
-          </CardContent>
-        </Card>
+                <FormField
+                  control={form.control}
+                  name="mariagePrecedentConjoint"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Mariage précédent pour le conjoint</FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="flex justify-end pt-6">
           <Button type="submit" disabled={saving}>
