@@ -47,14 +47,11 @@ const formSchema = z.object({
   codePostalPartenaire: z.string().optional(),
   villePartenaire: z.string().optional(),
   paysPartenaire: z.string().optional(),
-  
-  mariagePrecedentPersonne: z.boolean().default(false),
-  mariagePrecedentConjoint: z.boolean().default(false),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
-type Section = 'informations-generales' | 'coordonnees' | 'informations-mariage';
+type Section = 'informations-generales' | 'coordonnees';
 
 export function PartnerForm() {
   const { user } = useAuth();
@@ -79,8 +76,6 @@ export function PartnerForm() {
       codePostalPartenaire: "",
       villePartenaire: "",
       paysPartenaire: "",
-      mariagePrecedentPersonne: false,
-      mariagePrecedentConjoint: false,
     },
   });
 
@@ -109,8 +104,6 @@ export function PartnerForm() {
         codePostalPartenaire: data.code_postal_conjoint || "",
         villePartenaire: data.ville_conjoint || "",
         paysPartenaire: data.pays_conjoint || "",
-        mariagePrecedentPersonne: data.mariage_precedent_personne || false,
-        mariagePrecedentConjoint: data.mariage_precedent_conjoint || false,
       });
     }
   }, [maritalData, form]);
@@ -134,8 +127,6 @@ export function PartnerForm() {
         code_postal_conjoint: formData.codePostalPartenaire,
         ville_conjoint: formData.villePartenaire,
         pays_conjoint: formData.paysPartenaire,
-        mariage_precedent_personne: formData.mariagePrecedentPersonne,
-        mariage_precedent_conjoint: formData.mariagePrecedentConjoint,
       };
 
       await saveData(supabaseData);
@@ -165,7 +156,7 @@ export function PartnerForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {/* Navigation entre les sections du formulaire */}
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <Button
             type="button"
             variant={activeSection === "informations-generales" ? "default" : "outline"}
@@ -184,16 +175,6 @@ export function PartnerForm() {
           >
             <MapPin className="h-4 w-4" />
             <span className="truncate">Coordonnées familiales</span>
-          </Button>
-
-          <Button
-            type="button"
-            variant={activeSection === "informations-mariage" ? "default" : "outline"}
-            className="flex items-center justify-start gap-2"
-            onClick={() => setActiveSection("informations-mariage")}
-          >
-            <Heart className="h-4 w-4" />
-            <span className="truncate">Informations du mariage</span>
           </Button>
         </div>
 
@@ -503,53 +484,6 @@ export function PartnerForm() {
           </div>
         )}
 
-        {/* Section Informations du mariage */}
-        {activeSection === "informations-mariage" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Informations du mariage</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="mariagePrecedentPersonne"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>Mariage précédent pour vous</FormLabel>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="mariagePrecedentConjoint"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>Mariage précédent pour le conjoint</FormLabel>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         <div className="flex justify-end pt-6">
           <Button type="submit" disabled={saving}>
