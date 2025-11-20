@@ -5,12 +5,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMaritalStatus } from "@/hooks/useFamilyData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, Heart, FileText, Gift, History } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -21,7 +20,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const formSchema = z.object({
@@ -51,9 +49,12 @@ type RelationInfoDialogProps = {
   relationStatus: string;
 };
 
+type Section = 'informations-generales' | 'clauses-contrat' | 'donation' | 'historique';
+
 export function RelationInfoDialog({ open, onOpenChange, relationStatus }: RelationInfoDialogProps) {
   const { toast } = useToast();
   const { data: maritalData, saving, saveData } = useMaritalStatus();
+  const [activeSection, setActiveSection] = useState<Section>('informations-generales');
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -77,7 +78,7 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
         regimeMatrimonial: (maritalData.regime_matrimonial as any) || 'Communauté réduite aux acquêts (option sans contrat de mariage)',
         dateMariage: maritalData.date_mariage ? new Date(maritalData.date_mariage) : undefined,
         lieuMariage: maritalData.lieu_mariage || "",
-        pasDeContrat: false, // This will need to be mapped from maritalData when the field is added to DB
+        pasDeContrat: false,
         donationDernierVivantPersonne: false,
         donationDernierVivantConjoint: false,
         mariagePrecedentPersonne: maritalData.mariage_precedent_personne || false,
@@ -127,217 +128,171 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
   const regimeMatrimonial = form.watch("regimeMatrimonial");
   const pasDeContrat = form.watch("pasDeContrat");
 
+  const sections = relationStatus === "Marié(e)" ? [
+    { id: 'informations-generales' as Section, label: 'Informations générales', icon: Heart },
+    { id: 'clauses-contrat' as Section, label: 'Clauses du contrat', icon: FileText },
+    { id: 'donation' as Section, label: 'Donation au dernier vivant', icon: Gift },
+    { id: 'historique' as Section, label: 'Historique matrimonial', icon: History },
+  ] : [];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>{getTitle()}</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {relationStatus === "Pacsé(e)" && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Informations du PACS</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="conventionPacs"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Convention de PACS</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger size="lg">
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="Régime de la séparation des biens">Régime de la séparation des biens</SelectItem>
-                              <SelectItem value="Indivision">Indivision</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex gap-6 flex-1 overflow-hidden">{relationStatus === "Marié(e)" && (
+                <>
+                  {/* Sidebar */}
+                  <div className="w-56 flex-shrink-0">
+                    <nav className="space-y-1">
+                      {sections.map((section) => {
+                        const Icon = section.icon;
+                        return (
+                          <button
+                            key={section.id}
+                            type="button"
+                            onClick={() => setActiveSection(section.id)}
+                            className={cn(
+                              "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all",
+                              activeSection === section.id
+                                ? "bg-primary text-primary-foreground shadow-sm"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            )}
+                          >
+                            <Icon className="h-4 w-4" />
+                            {section.label}
+                          </button>
+                        );
+                      })}
+                    </nav>
+                  </div>
 
-                    <FormField
-                      control={form.control}
-                      name="datePacs"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Date du PACS</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(field.value, "dd/MM/yyyy")
-                                  ) : (
-                                    <span>Sélectionner une date</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) => date > new Date()}
-                                initialFocus
-                                className="p-3 pointer-events-auto"
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-              )}
+                  {/* Content */}
+                  <div className="flex-1 overflow-y-auto pr-2">
+                    {activeSection === 'informations-generales' && (
+                      <div className="space-y-5">{/* Date et lieu */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="dateMariage"
+                            render={({ field }) => (
+                              <FormItem className="space-y-1">
+                                <FormLabel className="text-xs">Date du mariage</FormLabel>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <FormControl>
+                                      <Button
+                                        variant="outline"
+                                        className={cn(
+                                          "w-full pl-3 text-left font-normal",
+                                          !field.value && "text-muted-foreground"
+                                        )}
+                                      >
+                                        {field.value ? (
+                                          format(field.value, "dd/MM/yyyy")
+                                        ) : (
+                                          <span>Sélectionner une date</span>
+                                        )}
+                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                      </Button>
+                                    </FormControl>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                      mode="single"
+                                      selected={field.value}
+                                      onSelect={field.onChange}
+                                      disabled={(date) => date > new Date()}
+                                      initialFocus
+                                      className="p-3 pointer-events-auto"
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
 
-              {relationStatus === "Marié(e)" && (
-                <div className="space-y-6">
-                  {/* Section Informations générales */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Informations générales</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="lieuMariage"
+                            render={({ field }) => (
+                              <FormItem className="space-y-1">
+                                <FormLabel className="text-xs">Lieu du mariage</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Lieu du mariage" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        {/* Régime matrimonial */}
                         <FormField
                           control={form.control}
-                          name="dateMariage"
+                          name="regimeMatrimonial"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Date du mariage</FormLabel>
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <FormControl>
-                                    <Button
-                                      variant="outline"
-                                      className={cn(
-                                        "w-full pl-3 text-left font-normal",
-                                        !field.value && "text-muted-foreground"
-                                      )}
-                                    >
-                                      {field.value ? (
-                                        format(field.value, "dd/MM/yyyy")
-                                      ) : (
-                                        <span>Sélectionner une date</span>
-                                      )}
-                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                    </Button>
-                                  </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                  <Calendar
-                                    mode="single"
-                                    selected={field.value}
-                                    onSelect={field.onChange}
-                                    disabled={(date) => date > new Date()}
-                                    initialFocus
-                                    className="p-3 pointer-events-auto"
-                                  />
-                                </PopoverContent>
-                              </Popover>
+                            <FormItem className="space-y-1">
+                              <FormLabel className="text-xs">Régime matrimonial</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger size="lg">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="Communauté réduite aux acquêts (option sans contrat de mariage)">
+                                    Communauté réduite aux acquêts (option sans contrat de mariage)
+                                  </SelectItem>
+                                  <SelectItem value="Communauté de meubles et d'acquêts">
+                                    Communauté de meubles et d'acquêts
+                                  </SelectItem>
+                                  <SelectItem value="Communauté universelle">
+                                    Communauté universelle
+                                  </SelectItem>
+                                  <SelectItem value="Séparation de biens">
+                                    Séparation de biens
+                                  </SelectItem>
+                                  <SelectItem value="Participation aux acquêts">
+                                    Participation aux acquêts
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
 
+                        {/* Pas de contrat */}
                         <FormField
                           control={form.control}
-                          name="lieuMariage"
+                          name="pasDeContrat"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Lieu du mariage</FormLabel>
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                               <FormControl>
-                                <Input placeholder="Lieu du mariage" {...field} />
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
                               </FormControl>
-                              <FormMessage />
+                              <div className="space-y-1 leading-none">
+                                <FormLabel className="text-xs">
+                                  Pas de contrat de mariage
+                                </FormLabel>
+                              </div>
                             </FormItem>
                           )}
                         />
                       </div>
+                    )}
 
-                      <FormField
-                        control={form.control}
-                        name="regimeMatrimonial"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Régime matrimonial</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger size="lg">
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Communauté réduite aux acquêts (option sans contrat de mariage)">
-                                  Communauté réduite aux acquêts (option sans contrat de mariage)
-                                </SelectItem>
-                                <SelectItem value="Communauté de meubles et d'acquêts">
-                                  Communauté de meubles et d'acquêts
-                                </SelectItem>
-                                <SelectItem value="Communauté universelle">
-                                  Communauté universelle
-                                </SelectItem>
-                                <SelectItem value="Séparation de biens">
-                                  Séparation de biens
-                                </SelectItem>
-                                <SelectItem value="Participation aux acquêts">
-                                  Participation aux acquêts
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="pasDeContrat"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>
-                                Pas de contrat de mariage
-                              </FormLabel>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
-                    </CardContent>
-                  </Card>
-
-                  {/* Section Clauses du contrat - conditionnelle */}
-                  {!pasDeContrat && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Clauses du contrat</CardTitle>
-                      </CardHeader>
-                      <CardContent>
+                    {activeSection === 'clauses-contrat' && !pasDeContrat && (
+                      <div className="space-y-5">
                         <MatrimonialRegimeOptions
                           regimeType={
                             regimeMatrimonial === 'Communauté réduite aux acquêts (option sans contrat de mariage)' ? 'communaute_reduite' :
@@ -348,144 +303,205 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
                             'communaute_reduite'
                           }
                         />
-                      </CardContent>
-                    </Card>
-                  )}
+                      </div>
+                    )}
 
-                  {/* Section Donation au dernier vivant */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Donation au dernier vivant</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="donationDernierVivantPersonne"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>
-                                Donation au dernier vivant en faveur du conjoint
-                              </FormLabel>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
+                    {activeSection === 'clauses-contrat' && pasDeContrat && (
+                      <div className="flex items-center justify-center h-full text-muted-foreground">
+                        <p>Pas de contrat de mariage sélectionné</p>
+                      </div>
+                    )}
 
-                      <FormField
-                        control={form.control}
-                        name="donationDernierVivantConjoint"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>
-                                Donation au dernier vivant reçue du conjoint
-                              </FormLabel>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
-                    </CardContent>
-                  </Card>
+                    {activeSection === 'donation' && (
+                      <div className="space-y-5">
+                        <FormField
+                          control={form.control}
+                          name="donationDernierVivantPersonne"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel className="text-xs">
+                                  Donation au dernier vivant en faveur du conjoint
+                                </FormLabel>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
 
-                  {/* Section Historique matrimonial */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Historique matrimonial</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="mariagePrecedentPersonne"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>
-                                Mariage précédent
-                              </FormLabel>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
+                        <FormField
+                          control={form.control}
+                          name="donationDernierVivantConjoint"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel className="text-xs">
+                                  Donation au dernier vivant reçue du conjoint
+                                </FormLabel>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
 
-                      <FormField
-                        control={form.control}
-                        name="mariagePrecedentConjoint"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    {activeSection === 'historique' && (
+                      <div className="space-y-5">
+                        <FormField
+                          control={form.control}
+                          name="mariagePrecedentPersonne"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel className="text-xs">
+                                  Mariage précédent
+                                </FormLabel>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="mariagePrecedentConjoint"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel className="text-xs">
+                                  Mariage précédent du conjoint
+                                </FormLabel>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {relationStatus === "Pacsé(e)" && (
+                <div className="space-y-5">
+                  <FormField
+                    control={form.control}
+                    name="conventionPacs"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormLabel className="text-xs">Convention de PACS</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger size="lg">
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Régime de la séparation des biens">Régime de la séparation des biens</SelectItem>
+                            <SelectItem value="Indivision">Indivision</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="datePacs"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormLabel className="text-xs">Date du PACS</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
                             <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "dd/MM/yyyy")
+                                ) : (
+                                  <span>Sélectionner une date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
                             </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>
-                                Mariage précédent du conjoint
-                              </FormLabel>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
-                    </CardContent>
-                  </Card>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              disabled={(date) => date > new Date()}
+                              initialFocus
+                              className="p-3 pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               )}
 
               {relationStatus === "Concubinage" && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Informations du concubinage</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      Le concubinage est une union de fait, caractérisée par une vie commune présentant un caractère de stabilité et de continuité.
-                    </p>
-                  </CardContent>
-                </Card>
+                <div className="space-y-5">
+                  <p className="text-sm text-muted-foreground">
+                    Le concubinage est une union de fait, caractérisée par une vie commune présentant un caractère de stabilité et de continuité.
+                  </p>
+                </div>
               )}
+            </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  disabled={saving}
-                >
-                  Annuler
-                </Button>
-                <Button type="submit" disabled={saving}>
-                  {saving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Enregistrement...
-                    </>
-                  ) : (
-                    "Enregistrer"
-                  )}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </ScrollArea>
+            {/* Buttons */}
+            <div className="flex justify-end gap-2 pt-4 border-t mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={saving}
+              >
+                Annuler
+              </Button>
+              <Button type="submit" disabled={saving}>
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enregistrement...
+                  </>
+                ) : (
+                  "Enregistrer"
+                )}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
