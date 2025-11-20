@@ -671,7 +671,7 @@ export function FicheClientForm() {
             )}
 
             {/* Bouton Enregistrer */}
-            <div className="flex justify-end pt-4 border-t">
+            <div className="flex justify-end pt-4">
               <Button type="submit" disabled={saving}>
                 {saving ? (
                   <>
