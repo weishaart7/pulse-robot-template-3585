@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const formSchema = z.object({
   conventionPacs: z.enum(['Régime de la séparation des biens', 'Indivision']).default('Régime de la séparation des biens'),
@@ -35,6 +36,11 @@ const formSchema = z.object({
   ]).default('Communauté réduite aux acquêts (option sans contrat de mariage)'),
   dateMariage: z.date().optional(),
   lieuMariage: z.string().optional(),
+  pasDeContrat: z.boolean().default(false),
+  donationDernierVivantPersonne: z.boolean().default(false),
+  donationDernierVivantConjoint: z.boolean().default(false),
+  mariagePrecedentPersonne: z.boolean().default(false),
+  mariagePrecedentConjoint: z.boolean().default(false),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -55,6 +61,11 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
       conventionPacs: 'Régime de la séparation des biens',
       regimeMatrimonial: 'Communauté réduite aux acquêts (option sans contrat de mariage)',
       lieuMariage: "",
+      pasDeContrat: false,
+      donationDernierVivantPersonne: false,
+      donationDernierVivantConjoint: false,
+      mariagePrecedentPersonne: false,
+      mariagePrecedentConjoint: false,
     },
   });
 
@@ -66,6 +77,11 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
         regimeMatrimonial: (maritalData.regime_matrimonial as any) || 'Communauté réduite aux acquêts (option sans contrat de mariage)',
         dateMariage: maritalData.date_mariage ? new Date(maritalData.date_mariage) : undefined,
         lieuMariage: maritalData.lieu_mariage || "",
+        pasDeContrat: false, // This will need to be mapped from maritalData when the field is added to DB
+        donationDernierVivantPersonne: false,
+        donationDernierVivantConjoint: false,
+        mariagePrecedentPersonne: maritalData.mariage_precedent_personne || false,
+        mariagePrecedentConjoint: maritalData.mariage_precedent_conjoint || false,
       });
     }
   }, [maritalData, form]);
@@ -109,6 +125,7 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
   };
 
   const regimeMatrimonial = form.watch("regimeMatrimonial");
+  const pasDeContrat = form.watch("pasDeContrat");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -194,9 +211,10 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
 
               {relationStatus === "Marié(e)" && (
                 <div className="space-y-6">
+                  {/* Section Informations générales */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Informations du mariage</CardTitle>
+                      <CardTitle>Informations générales</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -290,19 +308,145 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
                           </FormItem>
                         )}
                       />
+
+                      <FormField
+                        control={form.control}
+                        name="pasDeContrat"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>
+                                Pas de contrat de mariage
+                              </FormLabel>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
                     </CardContent>
                   </Card>
 
-                  <MatrimonialRegimeOptions
-                    regimeType={
-                      regimeMatrimonial === 'Communauté réduite aux acquêts (option sans contrat de mariage)' ? 'communaute_reduite' :
-                      regimeMatrimonial === 'Communauté de meubles et d\'acquêts' ? 'communaute_meubles' :
-                      regimeMatrimonial === 'Communauté universelle' ? 'communaute_universelle' :
-                      regimeMatrimonial === 'Séparation de biens' ? 'separation_biens' :
-                      regimeMatrimonial === 'Participation aux acquêts' ? 'participation_acquets' :
-                      'communaute_reduite'
-                    }
-                  />
+                  {/* Section Clauses du contrat - conditionnelle */}
+                  {!pasDeContrat && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Clauses du contrat</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <MatrimonialRegimeOptions
+                          regimeType={
+                            regimeMatrimonial === 'Communauté réduite aux acquêts (option sans contrat de mariage)' ? 'communaute_reduite' :
+                            regimeMatrimonial === 'Communauté de meubles et d\'acquêts' ? 'communaute_meubles' :
+                            regimeMatrimonial === 'Communauté universelle' ? 'communaute_universelle' :
+                            regimeMatrimonial === 'Séparation de biens' ? 'separation_biens' :
+                            regimeMatrimonial === 'Participation aux acquêts' ? 'participation_acquets' :
+                            'communaute_reduite'
+                          }
+                        />
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Section Donation au dernier vivant */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Donation au dernier vivant</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="donationDernierVivantPersonne"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>
+                                Donation au dernier vivant en faveur du conjoint
+                              </FormLabel>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="donationDernierVivantConjoint"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>
+                                Donation au dernier vivant reçue du conjoint
+                              </FormLabel>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {/* Section Historique matrimonial */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Historique matrimonial</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="mariagePrecedentPersonne"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>
+                                Mariage précédent
+                              </FormLabel>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="mariagePrecedentConjoint"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>
+                                Mariage précédent du conjoint
+                              </FormLabel>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                  </Card>
                 </div>
               )}
 
