@@ -463,17 +463,19 @@ export function FicheClientForm() {
                     control={form.control}
                     name="paysNaissance"
                     render={({ field }) => (
-                      <FormItem className="space-y-1">
-                        <FormLabel className="text-xs">
-                          Pays de naissance <span className="text-red-800">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <SelectMenu
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            placeholder="Sélectionnez le pays de naissance"
-                          />
-                        </FormControl>
+                      <FormItem>
+                        <div className="relative w-full flex flex-col gap-1">
+                          <FormLabel className="text-xs">
+                            Pays de naissance <span className="text-red-800">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <SelectMenu
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              placeholder="Sélectionnez le pays de naissance"
+                            />
+                          </FormControl>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
