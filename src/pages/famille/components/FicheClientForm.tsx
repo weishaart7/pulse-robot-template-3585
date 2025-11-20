@@ -508,7 +508,7 @@ export function FicheClientForm() {
                     control={form.control}
                     name="capaciteJuridique"
                     render={({ field }) => (
-                      <FormItem className="max-w-xs">
+                      <FormItem className="max-w-md">
                         <div className="relative w-full flex flex-col gap-1">
                           <FormLabel className="text-xs">Capacité juridique</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
