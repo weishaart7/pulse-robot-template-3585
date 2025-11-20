@@ -395,22 +395,24 @@ export function FicheClientForm() {
             control={form.control}
             name="profession"
             render={({ field }) => (
-              <FormItem className="space-y-1">
-                <FormLabel className="text-xs">Profession</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger size="lg">
-                      <SelectValue placeholder="Sélectionner une profession" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {professions.map((profession) => (
-                      <SelectItem key={profession} value={profession}>
-                        {profession}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <FormItem>
+                <div className="relative w-full flex flex-col gap-1">
+                  <FormLabel className="text-xs">Profession</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger size="lg">
+                        <SelectValue placeholder="Sélectionner une profession" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {professions.map((profession) => (
+                        <SelectItem key={profession} value={profession}>
+                          {profession}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
