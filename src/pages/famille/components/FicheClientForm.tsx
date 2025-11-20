@@ -508,21 +508,23 @@ export function FicheClientForm() {
                     control={form.control}
                     name="capaciteJuridique"
                     render={({ field }) => (
-                      <FormItem className="space-y-1">
-                        <FormLabel className="text-xs">Capacité juridique</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sélectionner la capacité juridique" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="normale">Normale</SelectItem>
-                            <SelectItem value="curatelle">Curatelle</SelectItem>
-                            <SelectItem value="tutelle">Tutelle</SelectItem>
-                            <SelectItem value="sauvegarde">Sauvegarde de justice</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <FormItem>
+                        <div className="relative w-full flex flex-col gap-1">
+                          <FormLabel className="text-xs">Capacité juridique</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger size="lg">
+                                <SelectValue placeholder="Sélectionner la capacité juridique" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="normale">Normale</SelectItem>
+                              <SelectItem value="curatelle">Curatelle</SelectItem>
+                              <SelectItem value="tutelle">Tutelle</SelectItem>
+                              <SelectItem value="sauvegarde">Sauvegarde de justice</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
