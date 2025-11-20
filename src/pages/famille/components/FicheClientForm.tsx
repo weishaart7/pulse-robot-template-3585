@@ -329,33 +329,35 @@ export function FicheClientForm() {
             control={form.control}
             name="dateNaissance"
             render={({ field }) => (
-              <FormItem className="space-y-1">
-                <FormLabel className="text-xs">
-                  Date de naissance <span className="text-red-800">*</span>
-                </FormLabel>
-                <FormControl>
+              <FormItem>
+                <div className="relative w-full flex flex-col gap-1">
+                  <FormLabel className="text-xs">
+                    Date de naissance <span className="text-red-800">*</span>
+                  </FormLabel>
                   <div className="flex gap-2">
-                    <Input
-                      placeholder="JJ/MM/AAAA"
-                      value={field.value instanceof Date ? format(field.value, 'dd/MM/yyyy') : field.value || ''}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                          try {
-                            const [day, month, year] = value.split('/');
-                            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                            if (!isNaN(date.getTime())) {
-                              field.onChange(date);
-                              return;
+                    <FormControl>
+                      <Input
+                        placeholder="JJ/MM/AAAA"
+                        value={field.value instanceof Date ? format(field.value, 'dd/MM/yyyy') : field.value || ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                            try {
+                              const [day, month, year] = value.split('/');
+                              const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                              if (!isNaN(date.getTime())) {
+                                field.onChange(date);
+                                return;
+                              }
+                            } catch (error) {
+                              // Invalid date, keep as string
                             }
-                          } catch (error) {
-                            // Invalid date, keep as string
                           }
-                        }
-                        field.onChange(value);
-                      }}
-                      className="flex-1"
-                    />
+                          field.onChange(value);
+                        }}
+                        className="flex-1"
+                      />
+                    </FormControl>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
@@ -380,7 +382,7 @@ export function FicheClientForm() {
                       </PopoverContent>
                     </Popover>
                   </div>
-                </FormControl>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
