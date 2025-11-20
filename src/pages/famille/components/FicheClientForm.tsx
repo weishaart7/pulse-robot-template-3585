@@ -333,8 +333,8 @@ export function FicheClientForm() {
                 <FormLabel className="text-xs">
                   Date de naissance <span className="text-red-800">*</span>
                 </FormLabel>
-                <div className="flex gap-2">
-                  <FormControl className="flex-1">
+                <FormControl>
+                  <div className="flex gap-2">
                     <Input
                       placeholder="JJ/MM/AAAA"
                       value={field.value instanceof Date ? format(field.value, 'dd/MM/yyyy') : field.value || ''}
@@ -354,32 +354,33 @@ export function FicheClientForm() {
                         }
                         field.onChange(value);
                       }}
+                      className="flex-1"
                     />
-                  </FormControl>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="shrink-0"
-                      >
-                        <CalendarIcon className="h-4 w-4" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value instanceof Date ? field.value : undefined}
-                        onSelect={(date) => date && field.onChange(date)}
-                        disabled={(date) =>
-                          date > new Date() || date < new Date('1900-01-01')
-                        }
-                        initialFocus
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="shrink-0"
+                        >
+                          <CalendarIcon className="h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value instanceof Date ? field.value : undefined}
+                          onSelect={(date) => date && field.onChange(date)}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date('1900-01-01')
+                          }
+                          initialFocus
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
