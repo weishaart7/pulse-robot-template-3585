@@ -503,7 +503,7 @@ export function FicheClientForm() {
                 </div>
 
                 {/* Capacité juridique */}
-                <div className="max-w-md">
+                <div className="max-w-xs">
                   <FormField
                     control={form.control}
                     name="capaciteJuridique"
