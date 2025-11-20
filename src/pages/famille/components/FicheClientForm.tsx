@@ -7,6 +7,7 @@ import { CalendarIcon, Loader2, User, MapPin } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import ActionHubInput from '@/components/ui/action-hub-input';
 import { Textarea } from '@/components/ui/textarea';
@@ -220,7 +221,7 @@ export function FicheClientForm() {
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <div className="flex gap-6">
           {/* Sidebar */}
-          <div className="w-56 flex-shrink-0">
+          <div className="w-56 flex-shrink-0 pr-6 border-r border-border">
             <nav className="space-y-1">
               {sections.map((section) => {
                 const Icon = section.icon;
