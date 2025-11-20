@@ -536,7 +536,7 @@ export function FicheClientForm() {
                     render={({ field }) => (
                       <FormItem className="pt-5">
                         <FormControl>
-                          <label className="flex gap-3 items-center cursor-pointer">
+                          <label className="flex gap-3 items-center cursor-pointer relative">
                             <input 
                               type="checkbox" 
                               className="hidden peer" 
