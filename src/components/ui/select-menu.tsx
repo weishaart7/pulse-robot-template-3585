@@ -65,11 +65,11 @@ export default function SelectMenu({ value, onValueChange, placeholder = "Sélec
       onOpenChange={handleOpenChange}
     >
       <div className={cn("w-full", className)}>
-        <Select.Trigger className="w-full inline-flex items-center justify-between px-3 py-2 text-sm bg-background border border-input rounded-md shadow-sm outline-none focus:ring-offset-2 focus:ring-ring focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50">
+        <Select.Trigger className="w-full inline-flex items-center justify-between h-9 px-3 py-2 text-sm bg-background border border-input rounded-lg shadow-sm shadow-black/5 transition-shadow outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 text-foreground data-placeholder:text-muted-foreground">
           <Select.Value placeholder={placeholder}>
             {value}
           </Select.Value>
-          <Select.Icon className="text-muted-foreground">
+          <Select.Icon className="text-muted-foreground opacity-60">
             <ChevronDown className="w-4 h-4" />
           </Select.Icon>
         </Select.Trigger>
