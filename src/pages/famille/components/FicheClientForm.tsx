@@ -69,7 +69,7 @@ const professions = [
 
 type Section = 'informations-generales' | 'coordonnees';
 
-export function FicheClientForm() {
+export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) {
   const [activeSection, setActiveSection] = useState<Section>('informations-generales');
   const { data, loading, saving, saveData } = useFamilyProfile();
   const { user } = useAuth();
@@ -197,6 +197,7 @@ export function FicheClientForm() {
         },
         user?.id
       );
+      onSuccess?.();
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
     }

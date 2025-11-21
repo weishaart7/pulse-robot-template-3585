@@ -299,7 +299,7 @@ const FamilleSection = () => {
             <DialogTitle>Modifier les informations</DialogTitle>
             <DialogDescription>Modifiez les informations, puis enregistrez.</DialogDescription>
           </DialogHeader>
-          <FicheClientForm />
+          <FicheClientForm onSuccess={() => setIsDialogOpen(false)} />
         </DialogContent>
       </Dialog>
 
@@ -310,7 +310,7 @@ const FamilleSection = () => {
             <DialogTitle>Modifier les informations du partenaire</DialogTitle>
             <DialogDescription>Modifiez les informations, puis enregistrez.</DialogDescription>
           </DialogHeader>
-          <PartnerForm />
+          <PartnerForm onSuccess={() => setIsPartnerDrawerOpen(false)} />
         </DialogContent>
       </Dialog>
 
