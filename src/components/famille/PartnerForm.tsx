@@ -53,7 +53,7 @@ type FormData = z.infer<typeof formSchema>;
 
 type Section = 'informations-generales' | 'coordonnees';
 
-export function PartnerForm() {
+export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: maritalData, loading, saving, saveData } = useMaritalStatus();
@@ -134,6 +134,7 @@ export function PartnerForm() {
         title: "Succès",
         description: "Les informations ont été sauvegardées avec succès.",
       });
+      onSuccess?.();
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
       toast({
