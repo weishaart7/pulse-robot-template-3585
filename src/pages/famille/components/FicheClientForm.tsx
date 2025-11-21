@@ -220,7 +220,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="flex gap-6">
+        <div className="flex gap-6 mt-6">
           {/* Sidebar */}
           <div className="w-56 flex-shrink-0 pr-6 border-r border-border">
             <nav className="space-y-1">
