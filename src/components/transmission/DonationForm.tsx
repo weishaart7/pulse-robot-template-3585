@@ -169,11 +169,17 @@ export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
     }
   }, [open]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    // Financial calculation in progress - sensitive data not logged
-    onOpenChange(false);
+    
+    try {
+      // TODO: Implement actual save logic when backend is ready
+      // await saveDonation(formData, selectedAssets, beneficiaries);
+      
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error saving donation:', error);
+    }
   };
 
   return (

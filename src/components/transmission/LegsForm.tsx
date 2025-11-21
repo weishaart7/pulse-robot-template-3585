@@ -321,7 +321,14 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange }) => {
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
             </Button>
-            <Button disabled={totalPourcentage > 100}>
+            <Button 
+              disabled={totalPourcentage > 100}
+              onClick={() => {
+                // TODO: Implement actual save logic when backend is ready
+                // saveLeg(formData);
+                onOpenChange(false);
+              }}
+            >
               Enregistrer le legs
             </Button>
           </div>
