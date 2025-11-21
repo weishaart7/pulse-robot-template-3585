@@ -330,55 +330,57 @@ export function FicheClientForm() {
             name="dateNaissance"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs">
-                  Date de naissance <span className="text-red-800">*</span>
-                </FormLabel>
-                <div className="flex items-center gap-2">
-                  <FormControl>
-                    <Input
-                      placeholder="JJ/MM/AAAA"
-                      value={field.value instanceof Date ? format(field.value, 'dd/MM/yyyy') : field.value || ''}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                          try {
-                            const [day, month, year] = value.split('/');
-                            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                            if (!isNaN(date.getTime())) {
-                              field.onChange(date);
-                              return;
+                <div className="relative w-full flex flex-col gap-1">
+                  <FormLabel className="text-xs">
+                    Date de naissance <span className="text-red-800">*</span>
+                  </FormLabel>
+                  <div className="flex items-center gap-2">
+                    <FormControl>
+                      <Input
+                        placeholder="JJ/MM/AAAA"
+                        value={field.value instanceof Date ? format(field.value, 'dd/MM/yyyy') : field.value || ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                            try {
+                              const [day, month, year] = value.split('/');
+                              const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                              if (!isNaN(date.getTime())) {
+                                field.onChange(date);
+                                return;
+                              }
+                            } catch (error) {
+                              // Invalid date, keep as string
                             }
-                          } catch (error) {
-                            // Invalid date, keep as string
                           }
-                        }
-                        field.onChange(value);
-                      }}
-                    />
-                  </FormControl>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-10 w-10 shrink-0"
-                      >
-                        <CalendarIcon className="h-4 w-4" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value instanceof Date ? field.value : undefined}
-                        onSelect={(date) => date && field.onChange(date)}
-                        disabled={(date) =>
-                          date > new Date() || date < new Date('1900-01-01')
-                        }
-                        initialFocus
-                        className="p-3 pointer-events-auto"
+                          field.onChange(value);
+                        }}
                       />
-                    </PopoverContent>
-                  </Popover>
+                    </FormControl>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-10 w-10 shrink-0"
+                        >
+                          <CalendarIcon className="h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value instanceof Date ? field.value : undefined}
+                          onSelect={(date) => date && field.onChange(date)}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date('1900-01-01')
+                          }
+                          initialFocus
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </div>
                 <FormMessage />
               </FormItem>
