@@ -334,7 +334,7 @@ export function FicheClientForm() {
                   <FormLabel className="text-xs">
                     Date de naissance <span className="text-red-800">*</span>
                   </FormLabel>
-                  <div className="relative flex items-center">
+                  <div className="flex items-center gap-2">
                     <FormControl>
                       <Input
                         placeholder="JJ/MM/AAAA"
@@ -355,7 +355,6 @@ export function FicheClientForm() {
                           }
                           field.onChange(value);
                         }}
-                        className="pr-12"
                       />
                     </FormControl>
                     <Popover>
@@ -363,7 +362,7 @@ export function FicheClientForm() {
                         <Button
                           variant="outline"
                           size="icon"
-                          className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-md"
+                          className="h-10 w-10 shrink-0"
                         >
                           <CalendarIcon className="h-4 w-4" />
                         </Button>
