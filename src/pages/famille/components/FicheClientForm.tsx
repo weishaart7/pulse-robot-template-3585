@@ -231,7 +231,7 @@ export function FicheClientForm() {
                     type="button"
                     onClick={() => setActiveSection(section.id)}
                     className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all",
+                      "w-full flex items-center justify-start gap-3 px-4 py-3 text-sm font-medium text-left rounded-lg transition-all",
                       activeSection === section.id
                         ? "bg-primary text-primary-foreground shadow-sm"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
