@@ -22,6 +22,7 @@ import { useFamilyProfile } from '@/hooks/useFamilyData';
 import { useSecureForm } from '@/hooks/useSecureForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { sanitizeTextInput, isValidEmail, isValidDate } from '@/lib/security';
+import { Sidebar, SidebarBody, SidebarLink } from '@/components/ui/sidebar-form';
 
 
 const formSchema = z.object({
@@ -217,34 +218,32 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
     { id: 'coordonnees' as Section, label: 'Coordonnées', icon: MapPin },
   ];
 
+  const sidebarLinks = sections.map((section) => ({
+    label: section.label,
+    id: section.id,
+    icon: <section.icon className="h-5 w-5 flex-shrink-0" />
+  }));
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <div className="flex gap-6 mt-6">
-          {/* Sidebar */}
-          <div className="w-56 flex-shrink-0 pr-6 border-r border-border">
-            <nav className="space-y-1">
-              {sections.map((section) => {
-                const Icon = section.icon;
-                return (
-                  <button
-                    key={section.id}
-                    type="button"
-                    onClick={() => setActiveSection(section.id)}
-                    className={cn(
-                      "w-full flex items-center justify-start gap-3 px-4 py-3 text-sm font-medium text-left rounded-lg transition-all",
-                      activeSection === section.id
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {section.label}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
+          <Sidebar>
+            <SidebarBody className="justify-start gap-4">
+              <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+                <div className="mt-4 flex flex-col gap-2">
+                  {sidebarLinks.map((link) => (
+                    <SidebarLink
+                      key={link.id}
+                      link={link}
+                      isActive={activeSection === link.id}
+                      onClick={() => setActiveSection(link.id as Section)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </SidebarBody>
+          </Sidebar>
 
           {/* Content */}
           <div className="flex-1 space-y-6">
