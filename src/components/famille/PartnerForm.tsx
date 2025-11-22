@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import SelectMenu from "@/components/ui/select-menu";
 import { CalendarIcon, Loader2, User, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -432,11 +433,17 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                         control={form.control}
                         name="paysNaissancePartenaire"
                         render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-xs">Pays de naissance</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Pays de naissance" {...field} />
-                            </FormControl>
+                          <FormItem>
+                            <div className="relative w-full flex flex-col gap-1">
+                              <FormLabel className="text-xs">Pays de naissance</FormLabel>
+                              <FormControl>
+                                <SelectMenu
+                                  value={field.value}
+                                  onValueChange={field.onChange}
+                                  placeholder="Sélectionnez le pays de naissance"
+                                />
+                              </FormControl>
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )}
