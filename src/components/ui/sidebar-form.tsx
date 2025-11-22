@@ -169,7 +169,8 @@ export const SidebarLink = ({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex items-center justify-start gap-2 group/sidebar py-2 px-3 rounded-lg transition-all",
+        "flex items-center gap-2 group/sidebar py-2 rounded-lg transition-all",
+        open ? "justify-start px-3" : "justify-center px-2",
         isActive && "bg-primary text-primary-foreground",
         !isActive && "hover:bg-muted",
         className
@@ -177,18 +178,20 @@ export const SidebarLink = ({
       {...props}
     >
       {link.icon}
-      <motion.span
-        animate={{
-          display: animate ? (open ? "inline-block" : "none") : "inline-block",
-          opacity: animate ? (open ? 1 : 0) : 1,
-        }}
-        className={cn(
-          "text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0",
-          isActive ? "text-primary-foreground font-medium" : "text-foreground"
-        )}
-      >
-        {link.label}
-      </motion.span>
+      {open && (
+        <motion.span
+          animate={{
+            display: animate ? (open ? "inline-block" : "none") : "inline-block",
+            opacity: animate ? (open ? 1 : 0) : 1,
+          }}
+          className={cn(
+            "text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0",
+            isActive ? "text-primary-foreground font-medium" : "text-foreground"
+          )}
+        >
+          {link.label}
+        </motion.span>
+      )}
     </button>
   );
 };
