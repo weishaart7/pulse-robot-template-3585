@@ -7,6 +7,7 @@ import { useMaritalStatus } from "@/hooks/useFamilyData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -36,7 +37,7 @@ type ExtendedMaritalStatus = {
 const formSchema = z.object({
   statutCouple: z.enum(['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)']).optional(),
   
-  civilitePartenaire: z.string().optional(),
+  civilitePartenaire: z.enum(['M.', 'Mme']).optional(),
   nomPartenaire: z.string().optional(),
   prenomPartenaire: z.string().optional(),
   dateNaissancePartenaire: z.date().optional(),
@@ -44,6 +45,7 @@ const formSchema = z.object({
   professionCSP: z.string().optional(),
   professionLibelle: z.string().optional(),
   nationalitePartenaire: z.string().optional(),
+  capaciteJuridique: z.enum(['normale', 'curatelle', 'tutelle', 'sauvegarde']).default('normale'),
   personneHandicapee: z.boolean().default(false),
   
   telephonePartenaire: z.string().optional(),
@@ -68,7 +70,8 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       personneHandicapee: false,
-      civilitePartenaire: "",
+      capaciteJuridique: 'normale',
+      civilitePartenaire: undefined,
       nomPartenaire: "",
       prenomPartenaire: "",
       lieuNaissancePartenaire: "",
@@ -94,7 +97,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
       const data = maritalData as ExtendedMaritalStatus;
       form.reset({
         statutCouple: data.statut_couple as any,
-        civilitePartenaire: data.civilite_conjoint || "",
+        civilitePartenaire: data.civilite_conjoint as any,
         nomPartenaire: data.nom_conjoint || "",
         prenomPartenaire: data.prenom_conjoint || "",
         dateNaissancePartenaire: data.date_naissance_conjoint ? new Date(data.date_naissance_conjoint) : undefined,
@@ -102,6 +105,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
         professionCSP: data.profession_csp_conjoint || "",
         professionLibelle: data.profession_conjoint || "",
         nationalitePartenaire: data.nationalite_conjoint || "",
+        capaciteJuridique: 'normale',
         personneHandicapee: data.personne_handicapee_conjoint || false,
         telephonePartenaire: data.telephone_conjoint || "",
         emailPartenaire: data.email_conjoint || "",
@@ -229,19 +233,24 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                       control={form.control}
                       name="civilitePartenaire"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="space-y-1">
                           <FormLabel className="text-xs">Civilité</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value || ""}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Sélectionner" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="M.">M.</SelectItem>
-                              <SelectItem value="Mme">Mme</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={field.onChange}
+                              value={field.value}
+                              className="flex flex-row space-x-4"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="M." id="m-partenaire" />
+                                <label htmlFor="m-partenaire">M.</label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="Mme" id="mme-partenaire" />
+                                <label htmlFor="mme-partenaire">Mme</label>
+                              </div>
+                            </RadioGroup>
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -282,37 +291,56 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                         name="dateNaissancePartenaire"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs">Date de naissance</FormLabel>
-                            <Popover>
-                              <PopoverTrigger asChild>
+                            <div className="relative w-full flex flex-col gap-1">
+                              <FormLabel className="text-xs">Date de naissance</FormLabel>
+                              <div className="flex items-center gap-2">
                                 <FormControl>
-                                  <Button
-                                    variant="outline"
-                                    className={cn(
-                                      "w-full pl-3 text-left font-normal",
-                                      !field.value && "text-muted-foreground"
-                                    )}
-                                  >
-                                    {field.value ? (
-                                      format(field.value, "dd/MM/yyyy")
-                                    ) : (
-                                      <span>Sélectionner une date</span>
-                                    )}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                  </Button>
+                                  <Input
+                                    placeholder="JJ/MM/AAAA"
+                                    value={field.value instanceof Date ? format(field.value, 'dd/MM/yyyy') : field.value || ''}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      if (value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                                        try {
+                                          const [day, month, year] = value.split('/');
+                                          const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                                          if (!isNaN(date.getTime())) {
+                                            field.onChange(date);
+                                            return;
+                                          }
+                                        } catch (error) {
+                                          // Invalid date, keep as string
+                                        }
+                                      }
+                                      field.onChange(value);
+                                    }}
+                                  />
                                 </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={field.value}
-                                  onSelect={field.onChange}
-                                  disabled={(date) => date > new Date()}
-                                  initialFocus
-                                  className="p-3 pointer-events-auto"
-                                />
-                              </PopoverContent>
-                            </Popover>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-10 w-10 shrink-0"
+                                    >
+                                      <CalendarIcon className="h-4 w-4" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                      mode="single"
+                                      selected={field.value instanceof Date ? field.value : undefined}
+                                      onSelect={(date) => date && field.onChange(date)}
+                                      disabled={(date) =>
+                                        date > new Date() || date < new Date('1900-01-01')
+                                      }
+                                      initialFocus
+                                      className="p-3 pointer-events-auto"
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -384,24 +412,58 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                       />
                     </div>
 
-                    {/* Personne handicapée */}
-                    <FormField
-                      control={form.control}
-                      name="personneHandicapee"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel className="text-xs">Personne handicapée</FormLabel>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
+                    {/* Capacité juridique et Personne handicapée sur la même ligne */}
+                    <div className="flex items-center gap-6">
+                      <FormField
+                        control={form.control}
+                        name="capaciteJuridique"
+                        render={({ field }) => (
+                          <FormItem className="w-80">
+                            <div className="relative w-full flex flex-col gap-1">
+                              <FormLabel className="text-xs">Capacité juridique</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger size="lg">
+                                    <SelectValue placeholder="Sélectionner la capacité juridique" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="normale">Normale</SelectItem>
+                                  <SelectItem value="curatelle">Curatelle</SelectItem>
+                                  <SelectItem value="tutelle">Tutelle</SelectItem>
+                                  <SelectItem value="sauvegarde">Sauvegarde de justice</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="personneHandicapee"
+                        render={({ field }) => (
+                          <FormItem className="pt-5">
+                            <FormControl>
+                              <label className="flex gap-3 items-center cursor-pointer relative">
+                                <input 
+                                  type="checkbox" 
+                                  className="hidden peer" 
+                                  checked={field.value}
+                                  onChange={field.onChange}
+                                />
+                                <span className="w-5 h-5 border border-input rounded relative flex items-center justify-center peer-checked:border-primary"></span>
+                                <svg className="absolute hidden peer-checked:inline left-1 top-1/2 transform -translate-y-1/2" width="11" height="8" viewBox="0 0 11 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="m10.092.952-.005-.006-.006-.005A.45.45 0 0 0 9.43.939L4.162 6.23 1.585 3.636a.45.45 0 0 0-.652 0 .47.47 0 0 0 0 .657l.002.002L3.58 6.958a.8.8 0 0 0 .567.242.78.78 0 0 0 .567-.242l5.333-5.356a.474.474 0 0 0 .044-.65Zm-5.86 5.349V6.3Z" fill="currentColor" stroke="currentColor" strokeWidth=".4" className="text-primary"/>
+                                </svg>
+                                <span className="text-foreground select-none text-sm">Personne handicapée</span>
+                              </label>
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   </>
                 )}
               </div>
