@@ -12,10 +12,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { CalendarIcon, Loader2, Heart, User, MapPin, Users } from "lucide-react";
+import { CalendarIcon, Loader2, User, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Sidebar,
+  SidebarBody,
+  SidebarLink,
+  useSidebar,
+} from "@/components/ui/sidebar-form";
 
 // Type étendu pour inclure les nouveaux champs coordonnées
 type ExtendedMaritalStatus = {
@@ -154,41 +160,31 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
   }
 
   const sections = [
-    { id: 'informations-generales' as Section, label: 'Informations générales', icon: User },
-    { id: 'coordonnees' as Section, label: 'Coordonnées', icon: MapPin },
+    { id: 'informations-generales' as Section, label: 'Informations générales', icon: <User className="h-4 w-4" /> },
+    { id: 'coordonnees' as Section, label: 'Coordonnées', icon: <MapPin className="h-4 w-4" /> },
   ];
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="flex gap-6">
-          {/* Sidebar */}
-          <div className="w-56 flex-shrink-0">
-            <nav className="space-y-1">
-              {sections.map((section) => {
-                const Icon = section.icon;
-                return (
-                  <button
+      <form onSubmit={form.handleSubmit(onSubmit)} className="h-full">
+        <div className="flex gap-6 min-h-0">
+          <Sidebar>
+            <SidebarBody>
+              <div className="flex flex-col gap-2">
+                {sections.map((section) => (
+                  <SidebarLink
                     key={section.id}
-                    type="button"
+                    link={section}
+                    isActive={activeSection === section.id}
                     onClick={() => setActiveSection(section.id)}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all",
-                      activeSection === section.id
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {section.label}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
+                  />
+                ))}
+              </div>
+            </SidebarBody>
+          </Sidebar>
 
-          {/* Content */}
-          <div className="flex-1 space-y-6">
+          <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+            <div className="space-y-6 pb-6">
 
             {/* Section Informations générales */}
             {activeSection === "informations-generales" && (
@@ -507,6 +503,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                   "Enregistrer"
                 )}
               </Button>
+            </div>
             </div>
           </div>
         </div>
