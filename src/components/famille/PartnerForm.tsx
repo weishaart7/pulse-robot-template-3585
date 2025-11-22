@@ -159,31 +159,39 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
   }
 
   const sections = [
-    { id: 'informations-generales' as Section, label: 'Informations générales', icon: <User className="h-4 w-4" /> },
-    { id: 'coordonnees' as Section, label: 'Coordonnées', icon: <MapPin className="h-4 w-4" /> },
+    { id: 'informations-generales' as Section, label: 'Informations générales', icon: User },
+    { id: 'coordonnees' as Section, label: 'Coordonnées', icon: MapPin },
   ];
+
+  const sidebarLinks = sections.map((section) => ({
+    label: section.label,
+    id: section.id,
+    icon: <section.icon className="h-5 w-5 flex-shrink-0" />
+  }));
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="h-full">
-        <div className="flex gap-6 min-h-0">
+        <div className="flex gap-6 mt-6 min-h-0">
           <Sidebar>
-            <SidebarBody>
-              <div className="flex flex-col gap-2">
-                {sections.map((section) => (
-                  <SidebarLink
-                    key={section.id}
-                    link={section}
-                    isActive={activeSection === section.id}
-                    onClick={() => setActiveSection(section.id)}
-                  />
-                ))}
+            <SidebarBody className="justify-start gap-4">
+              <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+                <div className="mt-4 flex flex-col gap-2">
+                  {sidebarLinks.map((link) => (
+                    <SidebarLink
+                      key={link.id}
+                      link={link}
+                      isActive={activeSection === link.id}
+                      onClick={() => setActiveSection(link.id as Section)}
+                    />
+                  ))}
+                </div>
               </div>
             </SidebarBody>
           </Sidebar>
 
-          <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-            <div className="space-y-6 pb-6">
+          {/* Content */}
+          <div className="flex-1 space-y-6">
 
             {/* Section Informations générales */}
             {activeSection === "informations-generales" && (
@@ -506,7 +514,6 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                   "Enregistrer"
                 )}
               </Button>
-            </div>
             </div>
           </div>
         </div>
