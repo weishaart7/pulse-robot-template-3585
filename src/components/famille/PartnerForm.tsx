@@ -37,11 +37,12 @@ type ExtendedMaritalStatus = {
 const formSchema = z.object({
   statutCouple: z.enum(['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)']).optional(),
   
-  civilitePartenaire: z.enum(['M.', 'Mme']).optional(),
+  civilitePartenaire: z.enum(['M.', 'Mme', 'Autre']).optional(),
   nomPartenaire: z.string().optional(),
   prenomPartenaire: z.string().optional(),
   dateNaissancePartenaire: z.date().optional(),
   lieuNaissancePartenaire: z.string().optional(),
+  paysNaissancePartenaire: z.string().optional(),
   professionCSP: z.string().optional(),
   professionLibelle: z.string().optional(),
   nationalitePartenaire: z.string().optional(),
@@ -75,6 +76,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
       nomPartenaire: "",
       prenomPartenaire: "",
       lieuNaissancePartenaire: "",
+      paysNaissancePartenaire: "",
       professionCSP: "",
       professionLibelle: "",
       nationalitePartenaire: "",
@@ -102,6 +104,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
         prenomPartenaire: data.prenom_conjoint || "",
         dateNaissancePartenaire: data.date_naissance_conjoint ? new Date(data.date_naissance_conjoint) : undefined,
         lieuNaissancePartenaire: data.lieu_naissance_conjoint || "",
+        paysNaissancePartenaire: "",
         professionCSP: data.profession_csp_conjoint || "",
         professionLibelle: data.profession_conjoint || "",
         nationalitePartenaire: data.nationalite_conjoint || "",
@@ -205,20 +208,22 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                   name="statutCouple"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs">Statut matrimonial</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choisir un statut" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Célibataire">Célibataire</SelectItem>
-                          <SelectItem value="Concubinage">Concubinage</SelectItem>
-                          <SelectItem value="Pacsé(e)">Pacsé(e)</SelectItem>
-                          <SelectItem value="Marié(e)">Marié(e)</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="relative w-full flex flex-col gap-1">
+                        <FormLabel className="text-xs">Statut matrimonial</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger size="lg">
+                              <SelectValue placeholder="Choisir un statut" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Célibataire">Célibataire</SelectItem>
+                            <SelectItem value="Concubinage">Concubinage</SelectItem>
+                            <SelectItem value="Pacsé(e)">Pacsé(e)</SelectItem>
+                            <SelectItem value="Marié(e)">Marié(e)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -248,6 +253,10 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                               <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="Mme" id="mme-partenaire" />
                                 <label htmlFor="mme-partenaire">Mme</label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="Autre" id="autre-partenaire" />
+                                <label htmlFor="autre-partenaire">Autre</label>
                               </div>
                             </RadioGroup>
                           </FormControl>
@@ -381,8 +390,8 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                       />
                     </div>
 
-                    {/* Commune / Nationalité */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
+                    {/* Commune / Pays de naissance / Nationalité */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <FormField
                         control={form.control}
                         name="lieuNaissancePartenaire"
@@ -391,6 +400,20 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                             <FormLabel className="text-xs">Commune de naissance</FormLabel>
                             <FormControl>
                               <Input placeholder="Commune de naissance" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="paysNaissancePartenaire"
+                        render={({ field }) => (
+                          <FormItem className="space-y-1">
+                            <FormLabel className="text-xs">Pays de naissance</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Pays de naissance" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
