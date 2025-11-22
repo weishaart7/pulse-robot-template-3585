@@ -61,6 +61,18 @@ type FormData = z.infer<typeof formSchema>;
 
 type Section = 'informations-generales' | 'coordonnees';
 
+const professions = [
+  'Agriculteur exploitant',
+  'Artisan, commerçant, chef d\'entreprise',
+  'Cadre, profession intellectuelle supérieure',
+  'Profession intermédiaire',
+  'Employé',
+  'Ouvrier',
+  'Retraité',
+  'Sans activité professionnelle',
+  'Autre',
+];
+
 export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -362,14 +374,24 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                         control={form.control}
                         name="professionCSP"
                         render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-xs">Profession (CSP)</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Catégorie socio-professionnelle"
-                                {...field}
-                              />
-                            </FormControl>
+                          <FormItem>
+                            <div className="relative w-full flex flex-col gap-1">
+                              <FormLabel className="text-xs">Profession (CSP)</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger size="lg">
+                                    <SelectValue placeholder="Sélectionner une profession" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {professions.map((profession) => (
+                                    <SelectItem key={profession} value={profession}>
+                                      {profession}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )}
