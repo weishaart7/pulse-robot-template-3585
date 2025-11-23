@@ -319,14 +319,14 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
                     )}
 
                     {activeSection === 'donation' && (
-                      <div className="space-y-6">
-                        <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                              <Gift className="h-5 w-5 text-primary" />
+                      <div className="space-y-4">
+                        <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+                          <div className="flex items-center gap-2.5 mb-3">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Gift className="h-4 w-4 text-primary" />
                             </div>
                             <div>
-                              <h3 className="font-semibold text-foreground">Donation au dernier vivant en faveur du conjoint</h3>
+                              <h3 className="font-medium text-sm text-foreground">Donation au dernier vivant en faveur du conjoint</h3>
                               <p className="text-xs text-muted-foreground">Donation consentie par vous au profit de votre conjoint</p>
                             </div>
                           </div>
@@ -397,13 +397,13 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
                           </div>
                         </div>
 
-                        <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                              <Gift className="h-5 w-5 text-primary" />
+                        <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+                          <div className="flex items-center gap-2.5 mb-3">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Gift className="h-4 w-4 text-primary" />
                             </div>
                             <div>
-                              <h3 className="font-semibold text-foreground">Donation au dernier vivant reçue du conjoint</h3>
+                              <h3 className="font-medium text-sm text-foreground">Donation au dernier vivant reçue du conjoint</h3>
                               <p className="text-xs text-muted-foreground">Donation reçue de votre conjoint à votre profit</p>
                             </div>
                           </div>
