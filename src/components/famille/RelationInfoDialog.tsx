@@ -36,7 +36,9 @@ const formSchema = z.object({
   lieuMariage: z.string().optional(),
   pasDeContrat: z.boolean().default(false),
   donationDernierVivantPersonne: z.boolean().default(false),
+  dateDonationPersonne: z.date().optional(),
   donationDernierVivantConjoint: z.boolean().default(false),
+  dateDonationConjoint: z.date().optional(),
   mariagePrecedentPersonne: z.boolean().default(false),
   mariagePrecedentConjoint: z.boolean().default(false),
 });
@@ -64,7 +66,9 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
       lieuMariage: "",
       pasDeContrat: false,
       donationDernierVivantPersonne: false,
+      dateDonationPersonne: undefined,
       donationDernierVivantConjoint: false,
+      dateDonationConjoint: undefined,
       mariagePrecedentPersonne: false,
       mariagePrecedentConjoint: false,
     },
@@ -80,7 +84,9 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
         lieuMariage: maritalData.lieu_mariage || "",
         pasDeContrat: false,
         donationDernierVivantPersonne: false,
+        dateDonationPersonne: undefined,
         donationDernierVivantConjoint: false,
+        dateDonationConjoint: undefined,
         mariagePrecedentPersonne: maritalData.mariage_precedent_personne || false,
         mariagePrecedentConjoint: maritalData.mariage_precedent_conjoint || false,
       });
@@ -313,46 +319,160 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
                     )}
 
                     {activeSection === 'donation' && (
-                      <div className="space-y-5">
-                        <FormField
-                          control={form.control}
-                          name="donationDernierVivantPersonne"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
-                              <div className="space-y-1 leading-none">
-                                <FormLabel className="text-xs">
-                                  Donation au dernier vivant en faveur du conjoint
-                                </FormLabel>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
+                      <div className="space-y-6">
+                        <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Gift className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-foreground">Donation au dernier vivant en faveur du conjoint</h3>
+                              <p className="text-xs text-muted-foreground">Donation consentie par vous au profit de votre conjoint</p>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-4">
+                            <FormField
+                              control={form.control}
+                              name="donationDernierVivantPersonne"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                  <div className="space-y-1 leading-none">
+                                    <FormLabel className="text-sm font-medium">
+                                      J'ai consenti une donation au dernier vivant en faveur de mon conjoint
+                                    </FormLabel>
+                                  </div>
+                                </FormItem>
+                              )}
+                            />
 
-                        <FormField
-                          control={form.control}
-                          name="donationDernierVivantConjoint"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
-                              <div className="space-y-1 leading-none">
-                                <FormLabel className="text-xs">
-                                  Donation au dernier vivant reçue du conjoint
-                                </FormLabel>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
+                            {form.watch("donationDernierVivantPersonne") && (
+                              <FormField
+                                control={form.control}
+                                name="dateDonationPersonne"
+                                render={({ field }) => (
+                                  <FormItem className="ml-9">
+                                    <FormLabel className="text-xs">Date de l'acte de donation</FormLabel>
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <FormControl>
+                                          <Button
+                                            variant="outline"
+                                            className={cn(
+                                              "w-full pl-3 text-left font-normal",
+                                              !field.value && "text-muted-foreground"
+                                            )}
+                                          >
+                                            {field.value ? (
+                                              format(field.value, "dd/MM/yyyy")
+                                            ) : (
+                                              <span>Sélectionner la date de l'acte</span>
+                                            )}
+                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                          </Button>
+                                        </FormControl>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                          mode="single"
+                                          selected={field.value}
+                                          onSelect={field.onChange}
+                                          disabled={(date) => date > new Date()}
+                                          initialFocus
+                                          className="p-3 pointer-events-auto"
+                                        />
+                                      </PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Gift className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-foreground">Donation au dernier vivant reçue du conjoint</h3>
+                              <p className="text-xs text-muted-foreground">Donation reçue de votre conjoint à votre profit</p>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-4">
+                            <FormField
+                              control={form.control}
+                              name="donationDernierVivantConjoint"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                  <div className="space-y-1 leading-none">
+                                    <FormLabel className="text-sm font-medium">
+                                      J'ai reçu une donation au dernier vivant de la part de mon conjoint
+                                    </FormLabel>
+                                  </div>
+                                </FormItem>
+                              )}
+                            />
+
+                            {form.watch("donationDernierVivantConjoint") && (
+                              <FormField
+                                control={form.control}
+                                name="dateDonationConjoint"
+                                render={({ field }) => (
+                                  <FormItem className="ml-9">
+                                    <FormLabel className="text-xs">Date de l'acte de donation</FormLabel>
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <FormControl>
+                                          <Button
+                                            variant="outline"
+                                            className={cn(
+                                              "w-full pl-3 text-left font-normal",
+                                              !field.value && "text-muted-foreground"
+                                            )}
+                                          >
+                                            {field.value ? (
+                                              format(field.value, "dd/MM/yyyy")
+                                            ) : (
+                                              <span>Sélectionner la date de l'acte</span>
+                                            )}
+                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                          </Button>
+                                        </FormControl>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                          mode="single"
+                                          selected={field.value}
+                                          onSelect={field.onChange}
+                                          disabled={(date) => date > new Date()}
+                                          initialFocus
+                                          className="p-3 pointer-events-auto"
+                                        />
+                                      </PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            )}
+                          </div>
+                        </div>
                       </div>
                     )}
 
