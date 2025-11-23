@@ -163,14 +163,14 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
                             type="button"
                             onClick={() => setActiveSection(section.id)}
                             className={cn(
-                              "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all",
+                              "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all text-left",
                               activeSection === section.id
                                 ? "bg-primary text-primary-foreground shadow-sm"
                                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
                             )}
                           >
-                            <Icon className="h-4 w-4" />
-                            {section.label}
+                            <Icon className="h-4 w-4 flex-shrink-0" />
+                            <span className="flex-1">{section.label}</span>
                           </button>
                         );
                       })}
