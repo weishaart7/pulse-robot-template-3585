@@ -332,7 +332,7 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
                           </div>
                           
                           <div className="space-y-4">
-                            <div className="flex items-start gap-4">
+                            <div className="flex items-center gap-4">
                               <FormField
                                 control={form.control}
                                 name="donationDernierVivantPersonne"
@@ -411,7 +411,7 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
                           </div>
                           
                           <div className="space-y-4">
-                            <div className="flex items-start gap-4">
+                            <div className="flex items-center gap-4">
                               <FormField
                                 control={form.control}
                                 name="donationDernierVivantConjoint"
