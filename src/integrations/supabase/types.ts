@@ -1037,6 +1037,7 @@ export type Database = {
           nombre_enfants_charges: number | null
           parent_isole: boolean | null
           pays_conjoint: string | null
+          pays_naissance_conjoint: string | null
           personne_handicapee_conjoint: boolean | null
           prenom_conjoint: string | null
           profession_conjoint: string | null
@@ -1081,6 +1082,7 @@ export type Database = {
           nombre_enfants_charges?: number | null
           parent_isole?: boolean | null
           pays_conjoint?: string | null
+          pays_naissance_conjoint?: string | null
           personne_handicapee_conjoint?: boolean | null
           prenom_conjoint?: string | null
           profession_conjoint?: string | null
@@ -1125,6 +1127,7 @@ export type Database = {
           nombre_enfants_charges?: number | null
           parent_isole?: boolean | null
           pays_conjoint?: string | null
+          pays_naissance_conjoint?: string | null
           personne_handicapee_conjoint?: boolean | null
           prenom_conjoint?: string | null
           profession_conjoint?: string | null
