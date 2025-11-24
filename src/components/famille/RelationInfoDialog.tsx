@@ -40,11 +40,11 @@ const formSchema = z.object({
   donationDernierVivantConjoint: z.boolean().default(false),
   dateDonationConjoint: z.date().optional(),
   mariagePrecedentPersonne: z.boolean().default(false),
-  dureeMariagePrecedentPersonneAnnees: z.number().optional(),
-  dureeMariagePrecedentPersonneMois: z.number().optional(),
+  dureeMariagePrecedentPersonneAnnees: z.number().min(0).max(100).optional().nullable(),
+  dureeMariagePrecedentPersonneMois: z.number().min(0).max(11).optional().nullable(),
   mariagePrecedentConjoint: z.boolean().default(false),
-  dureeMariagePrecedentConjointAnnees: z.number().optional(),
-  dureeMariagePrecedentConjointMois: z.number().optional(),
+  dureeMariagePrecedentConjointAnnees: z.number().min(0).max(100).optional().nullable(),
+  dureeMariagePrecedentConjointMois: z.number().min(0).max(11).optional().nullable(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -118,11 +118,11 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
         donation_dernier_vivant_conjoint: data.donationDernierVivantConjoint,
         date_donation_conjoint: data.dateDonationConjoint?.toISOString().split('T')[0],
         mariage_precedent_personne: data.mariagePrecedentPersonne,
-        duree_mariage_precedent_personne_annees: data.dureeMariagePrecedentPersonneAnnees,
-        duree_mariage_precedent_personne_mois: data.dureeMariagePrecedentPersonneMois,
+        duree_mariage_precedent_personne_annees: data.dureeMariagePrecedentPersonneAnnees ?? null,
+        duree_mariage_precedent_personne_mois: data.dureeMariagePrecedentPersonneMois ?? null,
         mariage_precedent_conjoint: data.mariagePrecedentConjoint,
-        duree_mariage_precedent_conjoint_annees: data.dureeMariagePrecedentConjointAnnees,
-        duree_mariage_precedent_conjoint_mois: data.dureeMariagePrecedentConjointMois,
+        duree_mariage_precedent_conjoint_annees: data.dureeMariagePrecedentConjointAnnees ?? null,
+        duree_mariage_precedent_conjoint_mois: data.dureeMariagePrecedentConjointMois ?? null,
       } as any);
       
       toast({
@@ -132,6 +132,7 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
       
       onOpenChange(false);
     } catch (error) {
+      console.error('Erreur de sauvegarde:', error);
       toast({
         title: "Erreur",
         description: "Une erreur s'est produite lors de l'enregistrement.",
@@ -550,10 +551,18 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
                                           <Input
                                             type="number"
                                             min="0"
+                                            max="100"
                                             placeholder="Ex: 5"
-                                            {...field}
                                             value={field.value ?? ''}
-                                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                            onChange={(e) => {
+                                              const val = e.target.value;
+                                              if (val === '') {
+                                                field.onChange(null);
+                                              } else {
+                                                const num = parseInt(val);
+                                                field.onChange(isNaN(num) ? null : num);
+                                              }
+                                            }}
                                           />
                                         </FormControl>
                                         <FormMessage />
@@ -572,9 +581,16 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
                                             min="0"
                                             max="11"
                                             placeholder="Ex: 3"
-                                            {...field}
                                             value={field.value ?? ''}
-                                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                            onChange={(e) => {
+                                              const val = e.target.value;
+                                              if (val === '') {
+                                                field.onChange(null);
+                                              } else {
+                                                const num = parseInt(val);
+                                                field.onChange(isNaN(num) ? null : num);
+                                              }
+                                            }}
                                           />
                                         </FormControl>
                                         <FormMessage />
@@ -633,10 +649,18 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
                                           <Input
                                             type="number"
                                             min="0"
+                                            max="100"
                                             placeholder="Ex: 5"
-                                            {...field}
                                             value={field.value ?? ''}
-                                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                            onChange={(e) => {
+                                              const val = e.target.value;
+                                              if (val === '') {
+                                                field.onChange(null);
+                                              } else {
+                                                const num = parseInt(val);
+                                                field.onChange(isNaN(num) ? null : num);
+                                              }
+                                            }}
                                           />
                                         </FormControl>
                                         <FormMessage />
@@ -655,9 +679,16 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
                                             min="0"
                                             max="11"
                                             placeholder="Ex: 3"
-                                            {...field}
                                             value={field.value ?? ''}
-                                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                            onChange={(e) => {
+                                              const val = e.target.value;
+                                              if (val === '') {
+                                                field.onChange(null);
+                                              } else {
+                                                const num = parseInt(val);
+                                                field.onChange(isNaN(num) ? null : num);
+                                              }
+                                            }}
                                           />
                                         </FormControl>
                                         <FormMessage />
