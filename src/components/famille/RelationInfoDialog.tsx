@@ -40,7 +40,11 @@ const formSchema = z.object({
   donationDernierVivantConjoint: z.boolean().default(false),
   dateDonationConjoint: z.date().optional(),
   mariagePrecedentPersonne: z.boolean().default(false),
+  dureeMariagePrecedentPersonneAnnees: z.number().optional(),
+  dureeMariagePrecedentPersonneMois: z.number().optional(),
   mariagePrecedentConjoint: z.boolean().default(false),
+  dureeMariagePrecedentConjointAnnees: z.number().optional(),
+  dureeMariagePrecedentConjointMois: z.number().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -70,7 +74,11 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
       donationDernierVivantConjoint: false,
       dateDonationConjoint: undefined,
       mariagePrecedentPersonne: false,
+      dureeMariagePrecedentPersonneAnnees: undefined,
+      dureeMariagePrecedentPersonneMois: undefined,
       mariagePrecedentConjoint: false,
+      dureeMariagePrecedentConjointAnnees: undefined,
+      dureeMariagePrecedentConjointMois: undefined,
     },
   });
 
@@ -88,7 +96,11 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
         donationDernierVivantConjoint: false,
         dateDonationConjoint: undefined,
         mariagePrecedentPersonne: maritalData.mariage_precedent_personne || false,
+        dureeMariagePrecedentPersonneAnnees: undefined,
+        dureeMariagePrecedentPersonneMois: undefined,
         mariagePrecedentConjoint: maritalData.mariage_precedent_conjoint || false,
+        dureeMariagePrecedentConjointAnnees: undefined,
+        dureeMariagePrecedentConjointMois: undefined,
       });
     }
   }, [maritalData, form]);
@@ -481,46 +493,172 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
                     )}
 
                     {activeSection === 'historique' && (
-                      <div className="space-y-5">
-                        <FormField
-                          control={form.control}
-                          name="mariagePrecedentPersonne"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
-                              <div className="space-y-1 leading-none">
-                                <FormLabel className="text-xs">
-                                  Mariage précédent
-                                </FormLabel>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
+                      <div className="space-y-4">
+                        {/* Votre mariage précédent */}
+                        <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+                          <div className="flex items-center gap-2.5 mb-3">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <History className="h-4 w-4 text-primary" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium text-sm text-foreground">Votre mariage précédent</h3>
+                              <p className="text-xs text-muted-foreground">Informations sur votre précédent mariage</p>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-4">
+                            <FormField
+                              control={form.control}
+                              name="mariagePrecedentPersonne"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                  <div className="space-y-1 leading-none">
+                                    <FormLabel className="text-sm font-medium">
+                                      J'ai été marié(e) précédemment
+                                    </FormLabel>
+                                  </div>
+                                </FormItem>
+                              )}
+                            />
 
-                        <FormField
-                          control={form.control}
-                          name="mariagePrecedentConjoint"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
-                              <div className="space-y-1 leading-none">
-                                <FormLabel className="text-xs">
-                                  Mariage précédent du conjoint
-                                </FormLabel>
+                            {form.watch("mariagePrecedentPersonne") && (
+                              <div className="pl-7">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <FormField
+                                    control={form.control}
+                                    name="dureeMariagePrecedentPersonneAnnees"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel className="text-xs text-muted-foreground">Durée (années)</FormLabel>
+                                        <FormControl>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            placeholder="Ex: 5"
+                                            {...field}
+                                            value={field.value ?? ''}
+                                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={form.control}
+                                    name="dureeMariagePrecedentPersonneMois"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel className="text-xs text-muted-foreground">Durée (mois)</FormLabel>
+                                        <FormControl>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            max="11"
+                                            placeholder="Ex: 3"
+                                            {...field}
+                                            value={field.value ?? ''}
+                                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
                               </div>
-                            </FormItem>
-                          )}
-                        />
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Mariage précédent du conjoint */}
+                        <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+                          <div className="flex items-center gap-2.5 mb-3">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <History className="h-4 w-4 text-primary" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium text-sm text-foreground">Mariage précédent du conjoint</h3>
+                              <p className="text-xs text-muted-foreground">Informations sur le précédent mariage de votre conjoint</p>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-4">
+                            <FormField
+                              control={form.control}
+                              name="mariagePrecedentConjoint"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                  <div className="space-y-1 leading-none">
+                                    <FormLabel className="text-sm font-medium">
+                                      Mon conjoint a été marié(e) précédemment
+                                    </FormLabel>
+                                  </div>
+                                </FormItem>
+                              )}
+                            />
+
+                            {form.watch("mariagePrecedentConjoint") && (
+                              <div className="pl-7">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <FormField
+                                    control={form.control}
+                                    name="dureeMariagePrecedentConjointAnnees"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel className="text-xs text-muted-foreground">Durée (années)</FormLabel>
+                                        <FormControl>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            placeholder="Ex: 5"
+                                            {...field}
+                                            value={field.value ?? ''}
+                                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={form.control}
+                                    name="dureeMariagePrecedentConjointMois"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel className="text-xs text-muted-foreground">Durée (mois)</FormLabel>
+                                        <FormControl>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            max="11"
+                                            placeholder="Ex: 3"
+                                            {...field}
+                                            value={field.value ?? ''}
+                                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
