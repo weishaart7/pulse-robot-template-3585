@@ -1008,13 +1008,22 @@ export type Database = {
           adresse_conjoint: string | null
           adresse_notaire: string | null
           civilite_conjoint: string | null
+          clauses_contrat: Json | null
           code_postal_conjoint: string | null
           contrat_mariage: string | null
           convention_pacs: string | null
           created_at: string | null
+          date_donation_conjoint: string | null
+          date_donation_personne: string | null
           date_mariage: string | null
           date_naissance_conjoint: string | null
           date_pacs: string | null
+          donation_dernier_vivant_conjoint: boolean | null
+          donation_dernier_vivant_personne: boolean | null
+          duree_mariage_precedent_conjoint_annees: number | null
+          duree_mariage_precedent_conjoint_mois: number | null
+          duree_mariage_precedent_personne_annees: number | null
+          duree_mariage_precedent_personne_mois: number | null
           email_conjoint: string | null
           id: string
           lieu_mariage: string | null
@@ -1043,13 +1052,22 @@ export type Database = {
           adresse_conjoint?: string | null
           adresse_notaire?: string | null
           civilite_conjoint?: string | null
+          clauses_contrat?: Json | null
           code_postal_conjoint?: string | null
           contrat_mariage?: string | null
           convention_pacs?: string | null
           created_at?: string | null
+          date_donation_conjoint?: string | null
+          date_donation_personne?: string | null
           date_mariage?: string | null
           date_naissance_conjoint?: string | null
           date_pacs?: string | null
+          donation_dernier_vivant_conjoint?: boolean | null
+          donation_dernier_vivant_personne?: boolean | null
+          duree_mariage_precedent_conjoint_annees?: number | null
+          duree_mariage_precedent_conjoint_mois?: number | null
+          duree_mariage_precedent_personne_annees?: number | null
+          duree_mariage_precedent_personne_mois?: number | null
           email_conjoint?: string | null
           id?: string
           lieu_mariage?: string | null
@@ -1078,13 +1096,22 @@ export type Database = {
           adresse_conjoint?: string | null
           adresse_notaire?: string | null
           civilite_conjoint?: string | null
+          clauses_contrat?: Json | null
           code_postal_conjoint?: string | null
           contrat_mariage?: string | null
           convention_pacs?: string | null
           created_at?: string | null
+          date_donation_conjoint?: string | null
+          date_donation_personne?: string | null
           date_mariage?: string | null
           date_naissance_conjoint?: string | null
           date_pacs?: string | null
+          donation_dernier_vivant_conjoint?: boolean | null
+          donation_dernier_vivant_personne?: boolean | null
+          duree_mariage_precedent_conjoint_annees?: number | null
+          duree_mariage_precedent_conjoint_mois?: number | null
+          duree_mariage_precedent_personne_annees?: number | null
+          duree_mariage_precedent_personne_mois?: number | null
           email_conjoint?: string | null
           id?: string
           lieu_mariage?: string | null
