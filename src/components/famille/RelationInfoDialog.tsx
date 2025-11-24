@@ -91,16 +91,16 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
         dateMariage: maritalData.date_mariage ? new Date(maritalData.date_mariage) : undefined,
         lieuMariage: maritalData.lieu_mariage || "",
         pasDeContrat: false,
-        donationDernierVivantPersonne: false,
-        dateDonationPersonne: undefined,
-        donationDernierVivantConjoint: false,
-        dateDonationConjoint: undefined,
+        donationDernierVivantPersonne: (maritalData as any).donation_dernier_vivant_personne || false,
+        dateDonationPersonne: (maritalData as any).date_donation_personne ? new Date((maritalData as any).date_donation_personne) : undefined,
+        donationDernierVivantConjoint: (maritalData as any).donation_dernier_vivant_conjoint || false,
+        dateDonationConjoint: (maritalData as any).date_donation_conjoint ? new Date((maritalData as any).date_donation_conjoint) : undefined,
         mariagePrecedentPersonne: maritalData.mariage_precedent_personne || false,
-        dureeMariagePrecedentPersonneAnnees: undefined,
-        dureeMariagePrecedentPersonneMois: undefined,
+        dureeMariagePrecedentPersonneAnnees: (maritalData as any).duree_mariage_precedent_personne_annees,
+        dureeMariagePrecedentPersonneMois: (maritalData as any).duree_mariage_precedent_personne_mois,
         mariagePrecedentConjoint: maritalData.mariage_precedent_conjoint || false,
-        dureeMariagePrecedentConjointAnnees: undefined,
-        dureeMariagePrecedentConjointMois: undefined,
+        dureeMariagePrecedentConjointAnnees: (maritalData as any).duree_mariage_precedent_conjoint_annees,
+        dureeMariagePrecedentConjointMois: (maritalData as any).duree_mariage_precedent_conjoint_mois,
       });
     }
   }, [maritalData, form]);
@@ -113,7 +113,17 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
         regime_matrimonial: data.regimeMatrimonial,
         date_mariage: data.dateMariage?.toISOString().split('T')[0],
         lieu_mariage: data.lieuMariage,
-      });
+        donation_dernier_vivant_personne: data.donationDernierVivantPersonne,
+        date_donation_personne: data.dateDonationPersonne?.toISOString().split('T')[0],
+        donation_dernier_vivant_conjoint: data.donationDernierVivantConjoint,
+        date_donation_conjoint: data.dateDonationConjoint?.toISOString().split('T')[0],
+        mariage_precedent_personne: data.mariagePrecedentPersonne,
+        duree_mariage_precedent_personne_annees: data.dureeMariagePrecedentPersonneAnnees,
+        duree_mariage_precedent_personne_mois: data.dureeMariagePrecedentPersonneMois,
+        mariage_precedent_conjoint: data.mariagePrecedentConjoint,
+        duree_mariage_precedent_conjoint_annees: data.dureeMariagePrecedentConjointAnnees,
+        duree_mariage_precedent_conjoint_mois: data.dureeMariagePrecedentConjointMois,
+      } as any);
       
       toast({
         title: "Succès",
