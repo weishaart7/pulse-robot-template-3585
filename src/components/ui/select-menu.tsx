@@ -17,7 +17,7 @@ interface SelectMenuProps {
   className?: string;
 }
 
-// Liste complète des pays (en dehors du composant pour éviter les recréations)
+// Liste complète des pays (définie en dehors du composant pour éviter les recréations)
 const ALL_COUNTRIES = [
   "Afghanistan",
   "Afrique du Sud",
@@ -246,36 +246,35 @@ export default function SelectMenu({
   return (
     <Select value={value} onValueChange={onValueChange} onOpenChange={handleOpenChange}>
       <div className={cn("w-full", className)}>
-        <SelectTrigger size="lg">
+        <SelectTrigger size="lg" className="bg-background">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent
           position="popper"
-          className="w-[var(--radix-select-trigger-width)] p-0"
+          className="w-[var(--radix-select-trigger-width)] max-h-64 p-0"
         >
-          <div className="sticky top-0 z-10 flex items-center border-b border-border bg-popover">
-            <Search className="h-4 w-4 mx-3 text-muted-foreground" />
+          <div className="sticky top-0 z-10 flex items-center border-b border-border bg-popover px-2 py-1.5">
+            <Search className="h-4 w-4 mr-2 text-muted-foreground" />
             <input
               type="text"
               placeholder="Rechercher un pays..."
               value={searchValue}
               onChange={handleSearch}
-              className="p-2 text-popover-foreground w-full rounded-md outline-none bg-popover"
+              className="w-full rounded-md bg-popover text-popover-foreground text-sm outline-none placeholder:text-muted-foreground"
             />
           </div>
-          <div className="max-h-64 overflow-y-auto">
-            {countries.length < 1 ? (
-              <div className="px-3 py-2 text-muted-foreground bg-popover">
-                Aucun pays trouvé.
-              </div>
-            ) : (
-              countries.map((item) => (
-                <SelectItem key={item} value={item}>
-                  {item}
-                </SelectItem>
-              ))
-            )}
-          </div>
+
+          {countries.length < 1 ? (
+            <div className="px-3 py-2 text-muted-foreground bg-popover">
+              Aucun pays trouvé.
+            </div>
+          ) : (
+            countries.map((item) => (
+              <SelectItem key={item} value={item}>
+                {item}
+              </SelectItem>
+            ))
+          )}
         </SelectContent>
       </div>
     </Select>
