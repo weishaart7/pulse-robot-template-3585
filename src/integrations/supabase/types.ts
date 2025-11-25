@@ -488,6 +488,7 @@ export type Database = {
           id: string
           nationalite: string | null
           nom: string | null
+          nom_jeune_fille: string | null
           pays: string | null
           pays_naissance: string | null
           personne_handicapee: boolean | null
@@ -510,6 +511,7 @@ export type Database = {
           id?: string
           nationalite?: string | null
           nom?: string | null
+          nom_jeune_fille?: string | null
           pays?: string | null
           pays_naissance?: string | null
           personne_handicapee?: boolean | null
@@ -532,6 +534,7 @@ export type Database = {
           id?: string
           nationalite?: string | null
           nom?: string | null
+          nom_jeune_fille?: string | null
           pays?: string | null
           pays_naissance?: string | null
           personne_handicapee?: boolean | null
@@ -1033,6 +1036,7 @@ export type Database = {
           mariage_precedent_personne: boolean | null
           nationalite_conjoint: string | null
           nom_conjoint: string | null
+          nom_jeune_fille_conjoint: string | null
           nom_notaire: string | null
           nombre_enfants_charges: number | null
           parent_isole: boolean | null
@@ -1078,6 +1082,7 @@ export type Database = {
           mariage_precedent_personne?: boolean | null
           nationalite_conjoint?: string | null
           nom_conjoint?: string | null
+          nom_jeune_fille_conjoint?: string | null
           nom_notaire?: string | null
           nombre_enfants_charges?: number | null
           parent_isole?: boolean | null
@@ -1123,6 +1128,7 @@ export type Database = {
           mariage_precedent_personne?: boolean | null
           nationalite_conjoint?: string | null
           nom_conjoint?: string | null
+          nom_jeune_fille_conjoint?: string | null
           nom_notaire?: string | null
           nombre_enfants_charges?: number | null
           parent_isole?: boolean | null

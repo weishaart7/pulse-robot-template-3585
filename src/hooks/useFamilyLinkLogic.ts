@@ -127,19 +127,25 @@ export const useFamilyLinkLogic = (
   const getParentOptions = (linkType: string) => {
     const options: { value: string; label: string }[] = [];
 
-    // Always add user as default option
-    options.push({ value: 'user', label: userDisplayName });
+    // For direct descendants (Petit-enfant, Arrière petit-enfant, etc.), 
+    // only show appropriate family members, not the user/spouse
+    const isDescendant = ['Petit-enfant', 'Arrière petit-enfant', 'Petit neveu/nièce', 'Cousin/Cousine'].includes(linkType);
+    
+    if (!isDescendant) {
+      // Always add user as default option for direct links
+      options.push({ value: 'user', label: userDisplayName });
 
-    // Add spouse if married/pacsed/concubinage
-    if (isMarriedOrPacsed && spouseDisplayName) {
-      options.push({ value: 'spouse', label: spouseDisplayName });
-      
-      // For "Enfant" link type, add combined parent option
-      if (linkType === 'Enfant') {
-        options.push({ 
-          value: 'both_parents', 
-          label: `${userDisplayName} & ${spouseDisplayName}` 
-        });
+      // Add spouse if married/pacsed/concubinage
+      if (isMarriedOrPacsed && spouseDisplayName) {
+        options.push({ value: 'spouse', label: spouseDisplayName });
+        
+        // For "Enfant" link type, add combined parent option
+        if (linkType === 'Enfant') {
+          options.push({ 
+            value: 'both_parents', 
+            label: `${userDisplayName} & ${spouseDisplayName}` 
+          });
+        }
       }
     }
 

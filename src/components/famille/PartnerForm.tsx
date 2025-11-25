@@ -40,6 +40,7 @@ const formSchema = z.object({
   
   civilitePartenaire: z.enum(['M.', 'Mme', 'Autre']).optional(),
   nomPartenaire: z.string().optional(),
+  nomJeuneFillePartenaire: z.string().optional(),
   prenomPartenaire: z.string().optional(),
   dateNaissancePartenaire: z.date().optional(),
   lieuNaissancePartenaire: z.string().optional(),
@@ -87,6 +88,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
       capaciteJuridique: 'normale',
       civilitePartenaire: undefined,
       nomPartenaire: "",
+      nomJeuneFillePartenaire: "",
       prenomPartenaire: "",
       lieuNaissancePartenaire: "",
       paysNaissancePartenaire: "",
@@ -114,6 +116,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
         statutCouple: data.statut_couple as any,
         civilitePartenaire: data.civilite_conjoint as any,
         nomPartenaire: data.nom_conjoint || "",
+        nomJeuneFillePartenaire: (data as any).nom_jeune_fille_conjoint || "",
         prenomPartenaire: data.prenom_conjoint || "",
         dateNaissancePartenaire: data.date_naissance_conjoint ? new Date(data.date_naissance_conjoint) : undefined,
         lieuNaissancePartenaire: data.lieu_naissance_conjoint || "",
@@ -139,6 +142,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
         statut_couple: formData.statutCouple,
         civilite_conjoint: formData.civilitePartenaire,
         nom_conjoint: formData.nomPartenaire,
+        nom_jeune_fille_conjoint: formData.nomJeuneFillePartenaire,
         prenom_conjoint: formData.prenomPartenaire,
         date_naissance_conjoint: formData.dateNaissancePartenaire?.toISOString().split('T')[0],
         lieu_naissance_conjoint: formData.lieuNaissancePartenaire,
@@ -279,7 +283,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                       )}
                     />
 
-                    {/* Nom / Prénom / Date de naissance */}
+                    {/* Nom / Nom de jeune fille / Prénom / Date de naissance */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <FormField
                         control={form.control}
@@ -294,6 +298,22 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                           </FormItem>
                         )}
                       />
+
+                      {form.watch('civilitePartenaire') === 'Mme' && (
+                        <FormField
+                          control={form.control}
+                          name="nomJeuneFillePartenaire"
+                          render={({ field }) => (
+                            <FormItem className="space-y-1">
+                              <FormLabel className="text-xs">Nom de jeune fille</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Nom de jeune fille" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
 
                       <FormField
                         control={form.control}
@@ -441,7 +461,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                                 <SelectMenu
                                   value={field.value}
                                   onValueChange={field.onChange}
-                                  placeholder="Sélectionnez le pays de naissance"
+                                  placeholder="Sélectionner un pays"
                                 />
                               </FormControl>
                             </div>
