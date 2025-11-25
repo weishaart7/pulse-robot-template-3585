@@ -15,8 +15,8 @@ const FamilleSection = () => {
   const [isPartnerDrawerOpen, setIsPartnerDrawerOpen] = useState(false);
   const [isSingle, setIsSingle] = useState(false);
   const [isRelationInfoOpen, setIsRelationInfoOpen] = useState(false);
-  const { data: familyProfile } = useFamilyProfile();
-  const { data: maritalData, saveData: saveMaritalData } = useMaritalStatus();
+  const { data: familyProfile, refetch: refetchProfile } = useFamilyProfile();
+  const { data: maritalData, saveData: saveMaritalData, refetch: refetchMarital } = useMaritalStatus();
 
   const TABS = [
     { id: 'ma-famille', label: 'Ma famille' },
@@ -299,7 +299,10 @@ const FamilleSection = () => {
             <DialogTitle>Modifier les informations</DialogTitle>
             <DialogDescription>Modifiez les informations, puis enregistrez.</DialogDescription>
           </DialogHeader>
-          <FicheClientForm onSuccess={() => setIsDialogOpen(false)} />
+          <FicheClientForm onSuccess={() => {
+            setIsDialogOpen(false);
+            refetchProfile();
+          }} />
         </DialogContent>
       </Dialog>
 
@@ -310,7 +313,10 @@ const FamilleSection = () => {
             <DialogTitle>Modifier les informations du partenaire</DialogTitle>
             <DialogDescription>Modifiez les informations, puis enregistrez.</DialogDescription>
           </DialogHeader>
-          <PartnerForm onSuccess={() => setIsPartnerDrawerOpen(false)} />
+          <PartnerForm onSuccess={() => {
+            setIsPartnerDrawerOpen(false);
+            refetchMarital();
+          }} />
         </DialogContent>
       </Dialog>
 

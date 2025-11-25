@@ -30,6 +30,7 @@ const formSchema = z.object({
     required_error: 'Veuillez sélectionner une civilité',
   }),
   nom: z.string().min(1, 'Le nom est obligatoire'),
+  nomJeuneFille: z.string().optional(),
   prenom: z.string().min(1, 'Le prénom est obligatoire'),
   dateNaissance: z.union([
     z.date(),
@@ -86,6 +87,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
     defaultValues: {
       civilite: undefined,
       nom: '',
+      nomJeuneFille: '',
       prenom: '',
       dateNaissance: undefined,
       profession: '',
@@ -113,6 +115,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
       const formattedData = {
         civilite: (data.civility as 'M' | 'Mme' | 'Autre') || undefined,
         nom: data.nom || '',
+        nomJeuneFille: (data as any).nom_jeune_fille || '',
         prenom: data.prenom || '',
         dateNaissance: data.date_naissance ? new Date(data.date_naissance) : undefined,
         profession: isPredefinedProfession ? data.profession : '',
@@ -156,6 +159,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
       const sanitizedFormData = {
         civilite: formData.civilite,
         nom: formData.nom,
+        nomJeuneFille: formData.nomJeuneFille,
         prenom: formData.prenom,
         dateNaissance,
         profession: professionFinale,
@@ -175,6 +179,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
       const supabaseData = {
         civility: sanitizedFormData.civilite,
         nom: sanitizedFormData.nom,
+        nom_jeune_fille: sanitizedFormData.nomJeuneFille,
         prenom: sanitizedFormData.prenom,
         date_naissance: sanitizedFormData.dateNaissance instanceof Date ? format(sanitizedFormData.dateNaissance, 'yyyy-MM-dd') : undefined,
         profession: sanitizedFormData.profession,
@@ -283,7 +288,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                   )}
                 />
 
-                {/* Nom / Prénom / Date de naissance */}
+                {/* Nom / Nom de jeune fille / Prénom / Date de naissance */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <FormField
                     control={form.control}
@@ -304,6 +309,27 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                       </FormItem>
                     )}
                   />
+
+                  {form.watch('civilite') === 'Mme' && (
+                    <FormField
+                      control={form.control}
+                      name="nomJeuneFille"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1">
+                          <FormControl>
+                            <ActionHubInput
+                              label="Nom de jeune fille"
+                              placeholder="Nom de jeune fille"
+                              value={field.value}
+                              onChange={field.onChange}
+                              historyEnabled={false}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   <FormField
                     control={form.control}
@@ -471,7 +497,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                             <SelectMenu
                               value={field.value}
                               onValueChange={field.onChange}
-                              placeholder="Sélectionnez le pays de naissance"
+                              placeholder="Sélectionner un pays"
                             />
                           </FormControl>
                         </div>
