@@ -77,21 +77,21 @@ export default function SelectMenu({ value, onValueChange, placeholder = "Sélec
           <Select.Content
             position="popper"
             avoidCollisions={false}
-            className="w-[var(--radix-select-trigger-width)] overflow-hidden mt-1 bg-background border border-border rounded-lg shadow-lg text-sm z-50"
+            className="w-[var(--radix-select-trigger-width)] overflow-hidden mt-1 bg-popover border border-border rounded-lg shadow-lg text-sm z-[100]"
           >
-            <div className="flex items-center border-b border-border">
+            <div className="flex items-center border-b border-border bg-popover">
               <Search className="h-4 w-4 mx-3 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Rechercher un pays..."
                 value={searchValue}
-                className="p-2 text-foreground w-full rounded-md outline-none bg-transparent"
+                className="p-2 text-popover-foreground w-full rounded-md outline-none bg-popover"
                 onChange={handleSearch}
               />
             </div>
-            <Select.Viewport className="max-h-64 mt-1 overflow-y-auto">
+            <Select.Viewport className="max-h-64 mt-1 overflow-y-auto bg-popover">
               {countries.length < 1 ? (
-                <div className="px-3 py-2 text-muted-foreground">Aucun pays trouvé.</div>
+                <div className="px-3 py-2 text-muted-foreground bg-popover">Aucun pays trouvé.</div>
               ) : (
                 countries.map((item, idx) => (
                   <SelectItem key={idx} value={item}>
@@ -113,7 +113,7 @@ const SelectItem = React.forwardRef<
 >(({ children, className, ...props }, forwardedRef) => {
   return (
     <Select.Item
-      className="flex items-center justify-between px-3 cursor-default py-2 duration-150 text-foreground data-[state=checked]:text-primary data-[state=checked]:bg-primary/10 data-[highlighted]:text-primary data-[highlighted]:bg-primary/10 outline-none"
+      className="flex items-center justify-between px-3 cursor-pointer py-2 duration-150 text-popover-foreground bg-popover data-[state=checked]:text-primary data-[state=checked]:bg-primary/10 data-[highlighted]:text-primary data-[highlighted]:bg-primary/10 hover:bg-accent hover:text-accent-foreground outline-none"
       {...props}
       ref={forwardedRef}
     >
