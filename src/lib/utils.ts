@@ -7,5 +7,6 @@ export function cn(...inputs: ClassValue[]) {
 
 export function capitalizeFirst(value: string): string {
   if (!value) return value;
-  return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+  // Ne force pas le lowercase pour préserver les noms composés, acronymes, etc.
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }

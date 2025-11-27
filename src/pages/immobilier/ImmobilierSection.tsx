@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,24 +19,39 @@ export const ImmobilierSection = () => {
   const [selectedAssetForGestion, setSelectedAssetForGestion] = useState<Asset | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
-  const handleManageInfo = (asset: Asset) => {
+  const handleManageInfo = useCallback((asset: Asset) => {
     setSelectedAsset(asset);
     setDialogOpen(true);
-  };
+  }, []);
 
-  const handleDialogClose = () => {
+  const handleDialogClose = useCallback(() => {
     setDialogOpen(false);
     setSelectedAsset(null);
-  };
+  }, []);
 
-  const handleUpdate = () => {
+  const handleUpdate = useCallback(() => {
     refetch();
-  };
+  }, [refetch]);
 
-  const handleGestion = (asset: Asset) => {
+  const handleGestion = useCallback((asset: Asset) => {
     setSelectedAssetForGestion(asset);
     setGestionDialogOpen(true);
-  };
+  }, []);
+
+  // Tri optimisé des assets
+  const sortedAssets = useMemo(() => {
+    return [...assets].sort((a, b) => {
+      // Résidence principale en premier
+      const aIsResidencePrincipale = a.nature?.toLowerCase().includes('résidence principale');
+      const bIsResidencePrincipale = b.nature?.toLowerCase().includes('résidence principale');
+      
+      if (aIsResidencePrincipale && !bIsResidencePrincipale) return -1;
+      if (!aIsResidencePrincipale && bIsResidencePrincipale) return 1;
+      
+      // Ensuite par valeur décroissante
+      return (b.valeur_estimee || 0) - (a.valeur_estimee || 0);
+    });
+  }, [assets]);
 
   const TABS = [
     { id: 'biens', label: 'Vue d\'ensemble' },
@@ -104,19 +119,7 @@ export const ImmobilierSection = () => {
                 </div>
               ) : viewMode === 'cards' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[...assets]
-                    .sort((a, b) => {
-                      // Résidence principale en premier
-                      const aIsResidencePrincipale = a.nature?.toLowerCase().includes('résidence principale');
-                      const bIsResidencePrincipale = b.nature?.toLowerCase().includes('résidence principale');
-                      
-                      if (aIsResidencePrincipale && !bIsResidencePrincipale) return -1;
-                      if (!aIsResidencePrincipale && bIsResidencePrincipale) return 1;
-                      
-                      // Ensuite par valeur décroissante
-                      return (b.valeur_estimee || 0) - (a.valeur_estimee || 0);
-                    })
-                    .map((asset) => {
+                  {sortedAssets.map((asset) => {
                     const isHouse = asset.typologie_bien?.toLowerCase().includes('maison') || 
                                    asset.denomination?.toLowerCase().includes('maison') ||
                                    asset.nature?.toLowerCase().includes('maison');
