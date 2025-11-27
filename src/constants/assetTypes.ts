@@ -62,7 +62,6 @@ export const ASSET_NATURES = [
   "Bons & contrats de capitalisation",
   "PEE",
   "PEI",
-  "PERCO",
   
   // Actifs financiers liquides
   "Comptes courants",
@@ -228,8 +227,7 @@ export const ASSET_CATEGORIES = {
   ],
   "épargne salariale": [
     "PEE",
-    "PEI",
-    "PERCO"
+    "PEI"
   ],
   "épargne bancaire / liquidités": [
     "Comptes courants",
