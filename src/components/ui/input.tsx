@@ -1,8 +1,26 @@
-import { cn } from "@/lib/utils";
+import { cn, capitalizeFirst } from "@/lib/utils";
 import * as React from "react";
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => {
+  ({ className, type, onChange, ...props }, ref) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (type === "text" || !type) {
+        const cursorPosition = e.target.selectionStart;
+        const capitalizedValue = capitalizeFirst(e.target.value);
+        e.target.value = capitalizedValue;
+        
+        if (cursorPosition !== null) {
+          setTimeout(() => {
+            e.target.setSelectionRange(cursorPosition, cursorPosition);
+          }, 0);
+        }
+      }
+      
+      if (onChange) {
+        onChange(e);
+      }
+    };
+
     return (
       <input
         type={type}
@@ -15,6 +33,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className,
         )}
         ref={ref}
+        onChange={handleChange}
         {...props}
       />
     );
