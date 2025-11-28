@@ -24,37 +24,59 @@ export const ProcessusCalcul = () => {
     if (!familyMembers || !familyProfile) return null;
 
     const userId = 'user'; // ID du défunt (utilisateur)
-    const conjoint = familyMembers.find(m => m.lien_familial === 'conjoint');
-    const enfants = familyMembers.filter(m => m.lien_familial === 'enfant');
+    
+    // Le conjoint est dans maritalStatus, pas dans familyMembers
+    const hasConjoint = maritalStatus?.statut_couple === 'Marié(e)' || maritalStatus?.statut_couple === 'Pacsé(e)';
+    const conjointId = hasConjoint ? 'conjoint' : undefined;
+    
+    // Chercher les enfants (attention à la casse : "Enfant" avec majuscule)
+    const enfants = familyMembers.filter(m => 
+      m.lien_familial === 'Enfant' || m.lien_familial === 'enfant'
+    );
+
+    const persons = [
+      {
+        id: userId,
+        nom: familyProfile.nom || 'Utilisateur',
+        prenom: familyProfile.prenom || '',
+        estDecede: true
+      },
+      ...familyMembers.map(m => ({
+        id: m.id!,
+        nom: m.nom,
+        prenom: m.prenom || '',
+        estDecede: m.est_decede || false,
+        handicap: m.handicap || false,
+        lienFamilial: m.lien_familial
+      }))
+    ];
+
+    // Ajouter le conjoint s'il existe
+    if (hasConjoint && maritalStatus) {
+      persons.push({
+        id: conjointId!,
+        nom: maritalStatus.nom_conjoint || '',
+        prenom: maritalStatus.prenom_conjoint || '',
+        estDecede: false,
+        lienFamilial: 'conjoint'
+      });
+    }
 
     return {
-      persons: [
-        {
-          id: userId,
-          nom: familyProfile.nom || 'Utilisateur',
-          prenom: familyProfile.prenom || '',
-          estDecede: true
-        },
-        ...familyMembers.map(m => ({
-          id: m.id!,
-          nom: m.nom,
-          prenom: m.prenom || '',
-          estDecede: m.est_decede || false,
-          handicap: m.handicap || false,
-          lienFamilial: m.lien_familial
-        }))
-      ],
+      persons,
       links: [],
-      marriages: conjoint ? [{
+      marriages: hasConjoint && conjointId ? [{
         spouseA: userId,
-        spouseB: conjoint.id!,
+        spouseB: conjointId,
         regime: maritalStatus?.regime_matrimonial || 'communauté'
       }] : [],
       decedentId: userId,
-      hasSurvivingSpouse: !!conjoint && !conjoint.est_decede,
-      survivingSpouseId: conjoint && !conjoint.est_decede ? conjoint.id : undefined,
+      hasSurvivingSpouse: hasConjoint,
+      survivingSpouseId: hasConjoint ? conjointId : undefined,
       childrenOfDecedent: enfants.map(e => e.id!),
-      childrenCommonWithSpouse: enfants.filter(e => !e.branche_familiale || e.branche_familiale === 'commune').map(e => e.id!)
+      childrenCommonWithSpouse: enfants.filter(e => 
+        e.parent_de === 'both_parents' || !e.branche_familiale || e.branche_familiale === 'commune'
+      ).map(e => e.id!)
     };
   }, [familyMembers, familyProfile, maritalStatus]);
 
