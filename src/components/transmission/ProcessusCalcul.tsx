@@ -196,7 +196,12 @@ export const ProcessusCalcul = () => {
       icon: Calculator,
       title: "2. Masse de calcul",
       description: "Reconstitution du patrimoine fictif pour le calcul de la réserve",
-      details: [],
+      details: [
+        `Patrimoine net : ${(patrimony.biensExistants - patrimony.passifs).toLocaleString('fr-FR')} €`,
+        `Donations antérieures : ${transmissionLiberalites.filter(l => l.type === 'donation').reduce((s, l) => s + l.valeur, 0).toLocaleString('fr-FR')} €`,
+        `Legs consentis : ${transmissionLiberalites.filter(l => l.type === 'legs').reduce((s, l) => s + l.valeur, 0).toLocaleString('fr-FR')} €`,
+        `= Masse de calcul : ${transmissionResult.masseCalcul.toLocaleString('fr-FR')} €`
+      ],
       formula: `${transmissionResult.masseCalcul.toLocaleString('fr-FR')} € = ${patrimony.biensExistants.toLocaleString('fr-FR')} - ${patrimony.passifs.toLocaleString('fr-FR')} + ${transmissionLiberalites.reduce((s, l) => s + l.valeur, 0).toLocaleString('fr-FR')}`,
       conseils: [
         "Les donations faites il y a moins de 15 ans sont réintégrées dans la masse",
