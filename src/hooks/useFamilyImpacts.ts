@@ -15,12 +15,12 @@ export interface FamilyMemberImpact {
 export interface FamilyImpacts {
   nombreEnfants: number;
   nombrePetitsEnfants: number;
-  reserveHereditaire: number; // en pourcentage (0.5, 0.66, 0.75)
-  quotiteDisponible: number; // en pourcentage
+  reserveHereditaire: number;
+  quotiteDisponible: number;
   totalAbattementsDisponibles: number;
   membersImpacts: FamilyMemberImpact[];
   alerts: string[];
-  completenessScore: number; // 0-100
+  completenessScore: number;
 }
 
 // Barème des abattements fiscaux 2024 (France)
@@ -35,11 +35,11 @@ const ABATTEMENTS = {
   handicap_supplement: 159325,
 };
 
-export const useFamilyImpacts = (
-  familyLinks: FamilyLink[],
+export function useFamilyImpacts(
+  familyLinks: FamilyLink[] = [],
   familyProfile: FamilyProfile | null,
   maritalStatus: MaritalStatus | null
-): FamilyImpacts => {
+): FamilyImpacts {
   return useMemo(() => {
     const impacts: FamilyImpacts = {
       nombreEnfants: 0,
@@ -181,4 +181,4 @@ export const useFamilyImpacts = (
 
     return impacts;
   }, [familyLinks, familyProfile, maritalStatus]);
-};
+}
