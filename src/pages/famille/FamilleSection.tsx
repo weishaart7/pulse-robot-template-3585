@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
-import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
+import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
+import { useFamilyImpacts } from '@/hooks/useFamilyImpacts';
 import { PartnerForm } from "@/components/famille/PartnerForm";
 import { RelationInfoDialog } from "@/components/famille/RelationInfoDialog";
-import { User, Plus } from 'lucide-react';
+import { FamilyImpactSummary } from '@/components/famille/FamilyImpactSummary';
+import { FamilyOnboardingWizard } from '@/components/famille/FamilyOnboardingWizard';
+import { User, Plus, Sparkles } from 'lucide-react';
 
 const FamilleSection = () => {
   const [activeTab, setActiveTab] = useState('ma-famille');
@@ -15,8 +18,25 @@ const FamilleSection = () => {
   const [isPartnerDrawerOpen, setIsPartnerDrawerOpen] = useState(false);
   const [isSingle, setIsSingle] = useState(false);
   const [isRelationInfoOpen, setIsRelationInfoOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const { data: familyProfile, refetch: refetchProfile } = useFamilyProfile();
   const { data: maritalData, saveData: saveMaritalData, refetch: refetchMarital } = useMaritalStatus();
+  const { data: familyLinks, loading: linksLoading } = useFamilyLinks();
+  const impacts = useFamilyImpacts(familyLinks, familyProfile, maritalData);
+
+  // Show onboarding wizard for new users
+  useEffect(() => {
+    const hasSeenOnboarding = localStorage.getItem('family_onboarding_completed');
+    if (!hasSeenOnboarding && !linksLoading && !familyLinks.length && familyProfile) {
+      setIsOnboardingOpen(true);
+    }
+  }, [linksLoading, familyLinks.length, familyProfile]);
+
+  const handleOnboardingComplete = (data: any) => {
+    localStorage.setItem('family_onboarding_completed', 'true');
+    // Data will be handled by the form submission in each respective section
+    console.log('Onboarding data:', data);
+  };
 
   const TABS = [
     { id: 'ma-famille', label: 'Ma famille' },
@@ -255,11 +275,20 @@ const FamilleSection = () => {
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f6f5f6' }}>
       <div className="p-6">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold tracking-tight">Famille</h2>
-          <p className="text-muted-foreground">
-            Gérez les informations et la composition de votre famille
-          </p>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Famille</h2>
+            <p className="text-muted-foreground">
+              Gérez les informations et la composition de votre famille
+            </p>
+          </div>
+          <button
+            onClick={() => setIsOnboardingOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            <Sparkles className="w-4 h-4" />
+            Assistant familial
+          </button>
         </div>
         
         <div className="mb-6 flex justify-start">
@@ -290,6 +319,13 @@ const FamilleSection = () => {
         <div className="mt-6">
           {renderContent()}
         </div>
+
+        {/* Impacts Summary - Always visible at bottom when family data exists */}
+        {!linksLoading && (familyLinks.length > 0 || maritalData?.statut_couple) && (
+          <div className="mt-6">
+            <FamilyImpactSummary impacts={impacts} />
+          </div>
+        )}
       </div>
 
       {/* Dialog pour modifier les informations client */}
@@ -324,6 +360,12 @@ const FamilleSection = () => {
         open={isRelationInfoOpen}
         onOpenChange={setIsRelationInfoOpen}
         relationStatus={relationStatus || ''}
+      />
+
+      <FamilyOnboardingWizard
+        open={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+        onComplete={handleOnboardingComplete}
       />
     </div>
   );

@@ -37,15 +37,20 @@ interface FamilyMember {
 
 const getRelationColor = (relation: string, isMain = false, isSpouse = false) => {
   if (isMain) return '#1e293b';
-  if (isSpouse) return '#475569';
+  if (isSpouse) return '#ef4444'; // Red for spouse
   
+  // Ligne directe (réservataires) - Green shades
+  if (['Enfant', 'Petit-enfant', 'Arrière petit-enfant'].includes(relation)) {
+    return '#22c55e';
+  }
+  
+  // Parents ascendants - Blue shades
+  if (['Parent', 'Grand-parent', 'Arrière grand-parent'].includes(relation)) {
+    return '#2563eb';
+  }
+  
+  // Collatéraux - Orange/Purple shades
   const colors: Record<string, string> = {
-    'Enfant': '#22c55e',
-    'Petit-enfant': '#4ade80',
-    'Arrière petit-enfant': '#86efac',
-    'Parent': '#2563eb',
-    'Grand-parent': '#3b82f6',
-    'Arrière grand-parent': '#60a5fa',
     'Frère/Sœur': '#f97316',
     'Oncle/Tante': '#a855f7',
     'Neveu/Nièce': '#c084fc',
