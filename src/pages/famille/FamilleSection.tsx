@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -21,16 +21,16 @@ const FamilleSection = () => {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const { data: familyProfile, refetch: refetchProfile } = useFamilyProfile();
   const { data: maritalData, saveData: saveMaritalData, refetch: refetchMarital } = useMaritalStatus();
-  const { data: familyLinks, loading: linksLoading } = useFamilyLinks();
+  const { data: familyLinks = [], loading: linksLoading } = useFamilyLinks();
   const impacts = useFamilyImpacts(familyLinks, familyProfile, maritalData);
 
-  // Show onboarding wizard for new users
-  useEffect(() => {
-    const hasSeenOnboarding = localStorage.getItem('family_onboarding_completed');
-    if (!hasSeenOnboarding && !linksLoading && !familyLinks.length && familyProfile) {
-      setIsOnboardingOpen(true);
-    }
-  }, [linksLoading, familyLinks.length, familyProfile]);
+  // Show onboarding wizard for new users - temporarily disabled
+  // useEffect(() => {
+  //   const hasSeenOnboarding = localStorage.getItem('family_onboarding_completed');
+  //   if (!hasSeenOnboarding && !linksLoading && !familyLinks.length && familyProfile) {
+  //     setIsOnboardingOpen(true);
+  //   }
+  // }, [linksLoading, familyLinks.length, familyProfile]);
 
   const handleOnboardingComplete = (data: any) => {
     localStorage.setItem('family_onboarding_completed', 'true');
