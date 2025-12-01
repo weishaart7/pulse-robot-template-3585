@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { FamilyTree } from '@/components/FamilyTree';
+import { FamilyTreeTimeline } from '@/components/FamilyTreeTimeline';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { FamilyLink } from '@/services/familyService';
 import { FicheClientForm } from './components/FicheClientForm';
@@ -253,24 +253,21 @@ const FamilleSection = () => {
             <CardContent>
           <LiensFamiliauxForm />
           
-          {/* Family Tree Visualization */}
+          {/* Family Timeline Visualization */}
           <div className="mt-8">
             <Card>
               <CardHeader>
-                <CardTitle>Arbre généalogique</CardTitle>
+                <CardTitle>Frise chronologique familiale</CardTitle>
                 <CardDescription>
-                  Visualisation de votre famille avec impacts fiscaux
+                  Chronologie des naissances et décès de votre famille
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[600px] border rounded-lg">
-                  <FamilyTree 
-                    familyProfile={familyProfile}
-                    maritalStatus={maritalData}
-                    familyMembers={familyLinks}
-                    onEditMember={(member) => setSelectedMember(member)}
-                  />
-                </div>
+                <FamilyTreeTimeline 
+                  familyProfile={familyProfile}
+                  maritalStatus={maritalData}
+                  familyMembers={familyLinks}
+                />
               </CardContent>
             </Card>
           </div>
