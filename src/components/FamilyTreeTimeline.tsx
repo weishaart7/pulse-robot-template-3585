@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FamilyLink } from '@/services/familyService';
 
 interface FamilyTreeTimelineProps {
@@ -21,58 +21,60 @@ export const FamilyTreeTimeline: React.FC<FamilyTreeTimelineProps> = ({
   maritalStatus,
   familyMembers,
 }) => {
-  const events: TimelineEvent[] = [];
+  const events = useMemo(() => {
+    const eventsList: TimelineEvent[] = [];
 
-  // Add user birth
-  if (familyProfile?.date_naissance) {
-    events.push({
-      id: 'user-birth',
-      name: `${familyProfile.prenom || ''} ${familyProfile.nom || ''}`.trim() || 'Vous',
-      type: 'birth',
-      date: new Date(familyProfile.date_naissance),
-      relation: 'Vous',
-      civilite: familyProfile.civility,
-    });
-  }
-
-  // Add partner birth
-  if (maritalStatus?.date_naissance_conjoint) {
-    events.push({
-      id: 'partner-birth',
-      name: `${maritalStatus.prenom_conjoint || ''} ${maritalStatus.nom_conjoint || ''}`.trim() || 'Conjoint(e)',
-      type: 'birth',
-      date: new Date(maritalStatus.date_naissance_conjoint),
-      relation: 'Conjoint(e)',
-      civilite: maritalStatus.civilite_conjoint,
-    });
-  }
-
-  // Add family members
-  familyMembers.forEach((member) => {
-    if (member.date_naissance) {
-      events.push({
-        id: `${member.id}-birth`,
-        name: `${member.prenom || ''} ${member.nom || ''}`.trim(),
+    // Add user birth
+    if (familyProfile?.date_naissance) {
+      eventsList.push({
+        id: 'user-birth',
+        name: `${familyProfile.prenom || ''} ${familyProfile.nom || ''}`.trim() || 'Vous',
         type: 'birth',
-        date: new Date(member.date_naissance),
-        relation: member.lien_familial,
-        civilite: member.civilite,
+        date: new Date(familyProfile.date_naissance),
+        relation: 'Vous',
+        civilite: familyProfile.civility,
       });
     }
-    if (member.date_deces && member.est_decede) {
-      events.push({
-        id: `${member.id}-death`,
-        name: `${member.prenom || ''} ${member.nom || ''}`.trim(),
-        type: 'death',
-        date: new Date(member.date_deces),
-        relation: member.lien_familial,
-        civilite: member.civilite,
-      });
-    }
-  });
 
-  // Sort events by date
-  events.sort((a, b) => a.date.getTime() - b.date.getTime());
+    // Add partner birth
+    if (maritalStatus?.date_naissance_conjoint) {
+      eventsList.push({
+        id: 'partner-birth',
+        name: `${maritalStatus.prenom_conjoint || ''} ${maritalStatus.nom_conjoint || ''}`.trim() || 'Conjoint(e)',
+        type: 'birth',
+        date: new Date(maritalStatus.date_naissance_conjoint),
+        relation: 'Conjoint(e)',
+        civilite: maritalStatus.civilite_conjoint,
+      });
+    }
+
+    // Add family members
+    familyMembers.forEach((member) => {
+      if (member.date_naissance) {
+        eventsList.push({
+          id: `${member.id}-birth`,
+          name: `${member.prenom || ''} ${member.nom || ''}`.trim(),
+          type: 'birth',
+          date: new Date(member.date_naissance),
+          relation: member.lien_familial,
+          civilite: member.civilite,
+        });
+      }
+      if (member.date_deces && member.est_decede) {
+        eventsList.push({
+          id: `${member.id}-death`,
+          name: `${member.prenom || ''} ${member.nom || ''}`.trim(),
+          type: 'death',
+          date: new Date(member.date_deces),
+          relation: member.lien_familial,
+          civilite: member.civilite,
+        });
+      }
+    });
+
+    // Sort events by date
+    return eventsList.sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, [familyProfile, maritalStatus, familyMembers]);
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('fr-FR', {
@@ -110,11 +112,11 @@ export const FamilyTreeTimeline: React.FC<FamilyTreeTimelineProps> = ({
             return (
               <div
                 key={event.id}
-                className="relative flex flex-col items-center animate-fade-in"
-                style={{ animationDelay: `${index * 0.1}s`, minWidth: '200px' }}
+                className="relative flex flex-col items-center"
+                style={{ minWidth: '200px' }}
               >
-                {/* Content */}
-                <div className={`${isTop ? 'mb-12' : 'mt-12 order-2'}`}>
+                {/* Content card */}
+                <div className={isTop ? 'mb-12' : 'mt-12'} style={{ order: isTop ? 2 : 0 }}>
                   <div
                     className="rounded-lg border-2 bg-card p-4 shadow-md transition-all hover:shadow-lg hover:scale-105"
                     style={{ borderColor: color }}
@@ -141,16 +143,20 @@ export const FamilyTreeTimeline: React.FC<FamilyTreeTimelineProps> = ({
                   </div>
                 </div>
 
-                {/* Center dot */}
+                {/* Center dot on timeline */}
                 <div
-                  className={`w-4 h-4 rounded-full border-4 border-background z-10 ${isTop ? 'order-1' : 'order-1'}`}
-                  style={{ backgroundColor: color }}
+                  className="w-4 h-4 rounded-full border-4 border-background z-10"
+                  style={{ backgroundColor: color, order: 1 }}
                 />
 
-                {/* Vertical connector */}
+                {/* Vertical connector line */}
                 <div
-                  className={`absolute w-0.5 ${isTop ? 'top-1/2 h-8' : 'bottom-1/2 h-8'}`}
-                  style={{ backgroundColor: color }}
+                  className="absolute w-0.5 left-1/2 -translate-x-1/2"
+                  style={{
+                    backgroundColor: color,
+                    height: '3rem',
+                    [isTop ? 'bottom' : 'top']: '50%',
+                  }}
                 />
               </div>
             );
