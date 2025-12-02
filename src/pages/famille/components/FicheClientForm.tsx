@@ -17,6 +17,7 @@ import { Switch } from '@/components/ui/switch';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import SelectMenu from '@/components/ui/select-menu';
+import NationalitySelect from '@/components/ui/nationality-select';
 import { cn } from '@/lib/utils';
 import { useFamilyProfile } from '@/hooks/useFamilyData';
 import { useSecureForm } from '@/hooks/useSecureForm';
@@ -310,7 +311,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                     )}
                   />
 
-                  {form.watch('civilite') === 'Mme' && (
+                  {(form.watch('civilite') === 'Mme' || form.watch('civilite') === 'Autre') && (
                     <FormField
                       control={form.control}
                       name="nomJeuneFille"
@@ -510,17 +511,19 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                     control={form.control}
                     name="nationalite"
                     render={({ field }) => (
-                      <FormItem className="space-y-1">
-                        <FormControl>
-                          <ActionHubInput
-                            label="Nationalité"
-                            placeholder="Nationalité"
-                            value={field.value}
-                            onChange={field.onChange}
-                            required
-                            historyEnabled={false}
-                          />
-                        </FormControl>
+                      <FormItem>
+                        <div className="relative w-full flex flex-col gap-1">
+                          <FormLabel className="text-xs">
+                            Nationalité <span className="text-red-800">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <NationalitySelect
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              placeholder="Sélectionner une nationalité"
+                            />
+                          </FormControl>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
