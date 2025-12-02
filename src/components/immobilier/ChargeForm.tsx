@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { assetService } from '@/services/assetService';
+import { CHARGE_NATURES, PERIODICITE_OPTIONS, DETENTEUR_OPTIONS } from '@/schemas/immobilierPropertySchema';
 
 interface ChargeFormProps {
   assetId: string;
@@ -14,24 +15,20 @@ interface ChargeFormProps {
   onSuccess: () => void;
 }
 
-const CHARGE_NATURES = [
-  'Taxe foncière',
-  'Assurance propriétaire non occupant (PNO)',
-  'Assurance GLI',
-  'Frais de gestion locative',
-  'Frais de comptabilité (€)'
-];
-
 export const ChargeForm = ({ assetId, open, onOpenChange, onSuccess }: ChargeFormProps) => {
   const { toast } = useToast();
-  const [nature, setNature] = useState('');
-  const [montant, setMontant] = useState('');
+  const [formData, setFormData] = useState({
+    nature: '',
+    montant: '',
+    periodicite: 'Annuelle',
+    debiteur: 'common'
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!nature || !montant) {
+    if (!formData.nature || !formData.montant) {
       toast({
         title: "Erreur",
         description: "Veuillez remplir tous les champs obligatoires.",
@@ -42,14 +39,21 @@ export const ChargeForm = ({ assetId, open, onOpenChange, onSuccess }: ChargeFor
 
     setIsSubmitting(true);
     try {
+      const periodiciteMap: Record<string, 'mensuelle' | 'trimestrielle' | 'annuelle'> = {
+        'Mensuelle': 'mensuelle',
+        'Trimestrielle': 'trimestrielle',
+        'Semestrielle': 'annuelle', // fallback
+        'Annuelle': 'annuelle'
+      };
+      
       await assetService.createAssetCharge({
         asset_id: assetId,
         type_charge: 'Charges courantes',
-        denomination: nature,
-        montant: parseFloat(montant),
+        denomination: formData.nature,
+        montant: parseFloat(formData.montant),
         debiteur: 'Couple',
         unite: '€',
-        periodicite: 'annuelle',
+        periodicite: periodiciteMap[formData.periodicite] || 'annuelle',
         date_debut: new Date().toISOString().split('T')[0],
         duree_type: 'Indéterminée'
       });
@@ -60,12 +64,15 @@ export const ChargeForm = ({ assetId, open, onOpenChange, onSuccess }: ChargeFor
       });
 
       // Reset form
-      setNature('');
-      setMontant('');
+      setFormData({
+        nature: '',
+        montant: '',
+        periodicite: 'Annuelle',
+        debiteur: 'common'
+      });
       onOpenChange(false);
       onSuccess();
     } catch (error) {
-      console.error('Error creating charge:', error);
       toast({
         title: "Erreur",
         description: "Impossible d'enregistrer la charge.",
@@ -89,7 +96,10 @@ export const ChargeForm = ({ assetId, open, onOpenChange, onSuccess }: ChargeFor
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="nature">Nature de la charge *</Label>
-            <Select value={nature} onValueChange={setNature}>
+            <Select 
+              value={formData.nature} 
+              onValueChange={(value) => setFormData({ ...formData, nature: value })}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Sélectionnez une nature" />
               </SelectTrigger>
@@ -110,10 +120,48 @@ export const ChargeForm = ({ assetId, open, onOpenChange, onSuccess }: ChargeFor
               type="number"
               step="0.01"
               placeholder="0.00"
-              value={montant}
-              onChange={(e) => setMontant(e.target.value)}
+              value={formData.montant}
+              onChange={(e) => setFormData({ ...formData, montant: e.target.value })}
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="periodicite">Périodicité</Label>
+            <Select 
+              value={formData.periodicite} 
+              onValueChange={(value) => setFormData({ ...formData, periodicite: value })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PERIODICITE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="debiteur">Débiteur</Label>
+            <Select 
+              value={formData.debiteur} 
+              onValueChange={(value) => setFormData({ ...formData, debiteur: value })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DETENTEUR_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
