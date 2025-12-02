@@ -1,340 +1,63 @@
-import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { CalendarIcon, Plus, Trash2 } from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import React from 'react';
+import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
 import { DateInput } from '@/components/ui/date-input';
 import { SearchableSelect } from '@/components/ui/searchable-select';
-import { cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Asset, AssetCharge } from '@/services/assetService';
 import { ChargeForm } from './ChargeForm';
-import { ASSET_NATURES, ASSET_CATEGORIES, getAssetCategory } from '@/constants/assetTypes';
-import { familyService } from '@/services/familyService';
-import { Checkbox } from '@/components/ui/checkbox';
+import { ASSET_NATURES, getAssetCategory } from '@/constants/assetTypes';
+import { useAssetForm, NATURES_WITH_ETABLISSEMENT } from '@/hooks/useAssetForm';
+import { 
+  ORIGINE_ACTIF_OPTIONS, 
+  SITUATION_PARTICULIERE_OPTIONS, 
+  MODE_DETENTION_OPTIONS 
+} from '@/schemas/assetSchema';
 
-// Constantes pour les nouveaux champs
-const ORIGINE_ACTIF_OPTIONS = [
-  'Acquisition à titre gratuite',
-  'Acquisition à titre onéreuse',
-  'Acquisition par occupation',
-  'Création',
-  'Découverte',
-  'Donation',
-  'Échange',
-  'Héritage',
-  'Présent d\'usage'
-] as const;
-
-const SITUATION_PARTICULIERE_OPTIONS = [
-  'Antichrèse',
-  'Gage',
-  'Hypothèque',
-  'Indivision',
-  'Nantissement',
-  'Non',
-  'Saisie conservatoire'
-] as const;
-
-// Types d'actifs qui nécessitent le champ "Établissement"
-const NATURES_WITH_ETABLISSEMENT = [
-  'Objets numériques (NFT, etc.)',
-  ...ASSET_CATEGORIES['épargne retraite et prévoyance'],
-  ...ASSET_CATEGORIES['épargne et assurance-vie'],
-  ...ASSET_CATEGORIES['épargne salariale'],
-  ...ASSET_CATEGORIES['épargne bancaire / liquidités'],
-  ...ASSET_CATEGORIES['valeurs mobilières et placements financiers']
-];
-
-const assetSchema = z.object({
-  nature: z.string().min(1, 'La nature est requise'),
-  denomination: z.string().optional(),
-  etablissement: z.string().optional(),
-  mode_detention: z.string().optional(),
-  beneficiaire_autre_partie: z.string().optional(),
-  valeur_estimee: z.number().optional(),
-  date_estimation: z.date().optional(),
-  revalorisation_annuelle: z.number().optional(),
-  detenteur: z.string().optional(),
-  pourcentage_utilisateur: z.number().optional(),
-  pourcentage_conjoint: z.number().optional(),
-  valeur_acquisition: z.number().optional(),
-  frais_acquisition: z.number().optional(),
-  date_acquisition: z.date().optional(),
-  origine_actif: z.array(z.string()).optional(),
-  situation_particuliere: z.array(z.string()).optional(),
-  attachement_emotionnel: z.number().min(0).max(10).optional(),
-  transfert_immobilier: z.boolean().optional()
-});
-type AssetFormValues = z.infer<typeof assetSchema>;
 interface AssetFormProps {
   asset?: Asset;
-  onSubmit: (asset: AssetFormValues, charges: AssetCharge[]) => Promise<void>;
+  onSubmit: (asset: any, charges: AssetCharge[]) => Promise<void>;
   onCancel: () => void;
   onDelete?: (assetId: string) => Promise<void>;
 }
+
 export const AssetForm: React.FC<AssetFormProps> = ({
   asset,
   onSubmit,
   onCancel,
   onDelete
 }) => {
-  const [charges, setCharges] = useState<AssetCharge[]>([]);
-  const [showChargeForm, setShowChargeForm] = useState(false);
-  const [editingCharge, setEditingCharge] = useState<AssetCharge | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
-  const [familyMembers, setFamilyMembers] = useState<Array<{ id?: string; nom: string; prenom?: string }>>([]);
-  const [familyData, setFamilyData] = useState<{
-    userFirstName?: string;
-    partnerFirstName?: string;
-    hasPartner: boolean;
-  }>({ hasPartner: false });
+  const {
+    form,
+    charges,
+    showChargeForm,
+    setShowChargeForm,
+    editingCharge,
+    setEditingCharge,
+    isLoading,
+    detenteurOptions,
+    familyMembers,
+    familyData,
+    handleSubmit,
+    handleChargeSubmit,
+    handleChargeDelete,
+    handleChargeEdit
+  } = useAssetForm({ asset, onSubmit });
 
-  // Mapping functions for detenteur values
-  const mapDetenteurToDisplay = (dbValue: string, familyData: any): string => {
-    switch (dbValue) {
-      case 'user':
-      case 'utilisateur':
-        return familyData.userFirstName || 'Vous';
-      case 'spouse':
-      case 'conjoint':
-        return familyData.partnerFirstName || 'Conjoint';
-      case 'common':
-      case 'commun':
-      case 'couple':
-        return 'Le couple';
-      default:
-        return dbValue;
-    }
-  };
-
-  const mapDetenteurToDb = (displayValue: string, familyData: any): string => {
-    if (displayValue === familyData.userFirstName || displayValue === 'Vous') {
-      return 'user';
-    }
-    if (displayValue === familyData.partnerFirstName || displayValue === 'Conjoint') {
-      return 'spouse';
-    }
-    if (displayValue === 'Le couple') {
-      return 'common';
-    }
-    return displayValue;
-  };
-
-  // Load family data to get real names
-  useEffect(() => {
-    const loadFamilyData = async () => {
-      try {
-        const [familyProfile, maritalStatus, familyLinks] = await Promise.all([
-          familyService.getFamilyProfile(),
-          familyService.getMaritalStatus(),
-          familyService.getFamilyLinks()
-        ]);
-
-        const options: string[] = [];
-        const familyInfo = { hasPartner: false, userFirstName: '', partnerFirstName: '' };
-        
-        // Add user's first name
-        if (familyProfile?.prenom) {
-          options.push(familyProfile.prenom);
-          familyInfo.userFirstName = familyProfile.prenom;
-        }
-
-        // Check if user has partner (married, pacsé or concubinage)
-        const hasPartner = maritalStatus?.statut_couple && 
-            ['Marié(e)', 'Pacsé(e)', 'Concubinage', 'MARIE', 'PACS', 'PACSE', 'CONCUBINAGE'].includes(maritalStatus.statut_couple) &&
-            maritalStatus.prenom_conjoint;
-
-        if (hasPartner) {
-          options.push(maritalStatus.prenom_conjoint);
-          familyInfo.hasPartner = true;
-          familyInfo.partnerFirstName = maritalStatus.prenom_conjoint;
-        }
-
-        // Always add "Le couple" option if there's a partner
-        if (familyInfo.hasPartner) {
-          options.push('Le couple');
-        }
-
-        setDetenteurOptions(options);
-        setFamilyData(familyInfo);
-        
-        // Set family members for beneficiary selection
-        setFamilyMembers(familyLinks || []);
-      } catch (error) {
-        console.error('Error loading family data:', error);
-        // Fallback to generic options - no sensitive data logged
-        setDetenteurOptions(['Utilisateur']);
-      }
-    };
-
-    loadFamilyData();
-  }, []);
-  const form = useForm<AssetFormValues>({
-    resolver: zodResolver(assetSchema),
-    defaultValues: {
-      nature: '',
-      denomination: '',
-      etablissement: '',
-      mode_detention: '',
-      detenteur: '',
-      pourcentage_utilisateur: 50,
-      pourcentage_conjoint: 50,
-      origine_actif: ['Acquisition à titre onéreuse'],
-      situation_particuliere: ['Non'],
-      attachement_emotionnel: 0,
-      transfert_immobilier: false
-    }
-  });
-
-  // Update form values when family data is loaded and asset is provided
-  useEffect(() => {
-    if (asset && familyData.userFirstName) {
-      const displayDetenteur = mapDetenteurToDisplay(asset.detenteur || '', familyData);
-      
-      // Determine percentages based on detenteur
-      let userPercentage = 50;
-      let spousePercentage = 50;
-      
-      if (displayDetenteur === familyData.userFirstName || displayDetenteur === 'Vous') {
-        userPercentage = 100;
-        spousePercentage = 0;
-      } else if (displayDetenteur === familyData.partnerFirstName || displayDetenteur === 'Conjoint') {
-        userPercentage = 0;
-        spousePercentage = 100;
-      } else if (displayDetenteur === 'Le couple') {
-        userPercentage = asset.pourcentage_utilisateur || 50;
-        spousePercentage = asset.pourcentage_conjoint || 50;
-      }
-      
-      form.reset({
-        nature: asset.nature,
-        denomination: asset.denomination || '',
-        etablissement: asset.etablissement || '',
-        mode_detention: asset.mode_detention || '',
-        beneficiaire_autre_partie: (asset as any).beneficiaire_autre_partie || '',
-        valeur_estimee: asset.valeur_estimee || undefined,
-        date_estimation: asset.date_estimation ? new Date(asset.date_estimation) : undefined,
-        revalorisation_annuelle: asset.revalorisation_annuelle || undefined,
-        detenteur: displayDetenteur,
-        pourcentage_utilisateur: userPercentage,
-        pourcentage_conjoint: spousePercentage,
-        valeur_acquisition: asset.valeur_acquisition || undefined,
-        frais_acquisition: asset.frais_acquisition || undefined,
-        date_acquisition: asset.date_acquisition ? new Date(asset.date_acquisition) : undefined,
-        origine_actif: (asset as any).origine_actif || ['Acquisition à titre onéreuse'],
-        situation_particuliere: (asset as any).situation_particuliere || ['Non'],
-        attachement_emotionnel: (asset as any).attachement_emotionnel || 0,
-        transfert_immobilier: (asset as any).transfert_immobilier || false
-      });
-    }
-  }, [asset, familyData, form]);
-  
-  // Auto-adjust percentages when detenteur changes
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === 'detenteur' && value.detenteur) {
-        const detenteur = value.detenteur;
-        
-        if (detenteur === familyData.userFirstName || detenteur === 'Vous') {
-          form.setValue('pourcentage_utilisateur', 100);
-          form.setValue('pourcentage_conjoint', 0);
-        } else if (detenteur === familyData.partnerFirstName || detenteur === 'Conjoint') {
-          form.setValue('pourcentage_utilisateur', 0);
-          form.setValue('pourcentage_conjoint', 100);
-        } else if (detenteur === 'Le couple') {
-          // Keep current values or reset to 50/50 if they are 100/0 or 0/100
-          const currentUser = form.getValues('pourcentage_utilisateur');
-          const currentSpouse = form.getValues('pourcentage_conjoint');
-          if ((currentUser === 100 && currentSpouse === 0) || (currentUser === 0 && currentSpouse === 100)) {
-            form.setValue('pourcentage_utilisateur', 50);
-            form.setValue('pourcentage_conjoint', 50);
-          }
-        }
-      }
-    });
-    
-    return () => subscription.unsubscribe();
-  }, [form, familyData]);
-  const handleSubmit = async (values: AssetFormValues) => {
-    setIsLoading(true);
-    try {
-      // Convert display values to database values
-      const dbDetenteur = mapDetenteurToDb(values.detenteur || '', familyData);
-      
-      // Adjust percentages based on detenteur
-      let finalUserPercentage = values.pourcentage_utilisateur;
-      let finalSpousePercentage = values.pourcentage_conjoint;
-      
-      if (dbDetenteur === 'user') {
-        finalUserPercentage = 100;
-        finalSpousePercentage = 0;
-      } else if (dbDetenteur === 'spouse') {
-        finalUserPercentage = 0;
-        finalSpousePercentage = 100;
-      }
-      
-      const formattedValues = {
-        ...values,
-        detenteur: dbDetenteur,
-        pourcentage_utilisateur: finalUserPercentage,
-        pourcentage_conjoint: finalSpousePercentage,
-        date_estimation: values.date_estimation ? format(values.date_estimation, 'yyyy-MM-dd') : undefined,
-        date_acquisition: values.date_acquisition ? format(values.date_acquisition, 'yyyy-MM-dd') : undefined
-      };
-      await onSubmit(formattedValues as any, charges);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  const handleChargeSubmit = (chargeData: any) => {
-    if (editingCharge) {
-      setCharges(prev => prev.map(c => c.id === editingCharge.id ? {
-        ...editingCharge,
-        ...chargeData
-      } : c));
-      setEditingCharge(null);
-    } else {
-      const newCharge: AssetCharge = {
-        id: `temp-${Date.now()}`,
-        asset_id: asset?.id || '',
-        ...chargeData
-      };
-      setCharges(prev => [...prev, newCharge]);
-    }
-    setShowChargeForm(false);
-  };
-  const handleChargeDelete = (chargeId: string) => {
-    setCharges(prev => prev.filter(c => c.id !== chargeId));
-  };
-  const handleChargeEdit = (charge: AssetCharge) => {
-    setEditingCharge(charge);
-    setShowChargeForm(true);
-  };
   const handleDelete = async () => {
     if (asset?.id && onDelete && window.confirm('Êtes-vous sûr de vouloir supprimer cet actif ? Cette action est irréversible.')) {
-      setIsLoading(true);
-      try {
-        await onDelete(asset.id);
-      } finally {
-        setIsLoading(false);
-      }
+      await onDelete(asset.id);
     }
   };
 
-  return <div className="space-y-6">
+  return (
+    <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>{asset ? 'Modifier l\'actif' : 'Ajouter un actif'}</CardTitle>
@@ -345,160 +68,155 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               {/* Section 1: Description de l'actif */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">1. Description de l'actif</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="nature" render={({
-                  field
-                }) => <FormItem>
-                        <FormLabel>Nature *</FormLabel>
-                        <FormControl>
-                          <SearchableSelect options={ASSET_NATURES} value={field.value} onChange={field.onChange} placeholder="Choisir une nature" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>} />
 
-                  <FormField control={form.control} name="mode_detention" render={({
-                  field
-                }) => <FormItem>
-                        <FormLabel>Mode de détention</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="nature" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nature *</FormLabel>
+                      <FormControl>
+                        <SearchableSelect options={ASSET_NATURES} value={field.value} onChange={field.onChange} placeholder="Choisir une nature" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  <FormField control={form.control} name="mode_detention" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Mode de détention</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger size="lg">
+                            <SelectValue placeholder="Choisir un mode de détention" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {MODE_DETENTION_OPTIONS.map(option => (
+                            <SelectItem key={option} value={option}>{option}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  {/* Beneficiaire autre partie - conditional */}
+                  {(form.watch('mode_detention') === 'Usufruit' || form.watch('mode_detention') === 'Nue-propriété') && (
+                    <FormField control={form.control} name="beneficiaire_autre_partie" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {form.watch('mode_detention') === 'Usufruit' ? 'Nu-propriétaire' : 'Usufruitier'}
+                        </FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger size="lg">
-                              <SelectValue placeholder="Choisir un mode de détention" />
+                              <SelectValue placeholder="Choisir une personne" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Pleine propriété">Pleine propriété</SelectItem>
-                            <SelectItem value="Usufruit">Usufruit</SelectItem>
-                            <SelectItem value="Nue-propriété">Nue-propriété</SelectItem>
+                          <SelectContent className="bg-background z-50">
+                            {familyMembers.map((member) => (
+                              <SelectItem key={member.id || member.nom} value={member.id || ''}>
+                                {member.prenom ? `${member.prenom} ${member.nom}` : member.nom}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
+                        <FormDescription>
+                          Sélectionnez le bénéficiaire parmi les personnes renseignées dans la section Famille
+                        </FormDescription>
                         <FormMessage />
-                      </FormItem>} />
-
-                  {/* Champ bénéficiaire de l'autre partie - conditionnel si démembrement */}
-                  {(form.watch('mode_detention') === 'Usufruit' || form.watch('mode_detention') === 'Nue-propriété') && (
-                    <FormField control={form.control} name="beneficiaire_autre_partie" render={({
-                      field
-                    }) => <FormItem>
-                          <FormLabel>
-                            {form.watch('mode_detention') === 'Usufruit' ? 'Nu-propriétaire' : 'Usufruitier'}
-                          </FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger size="lg">
-                                <SelectValue placeholder="Choisir une personne" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent className="bg-background z-50">
-                              {familyMembers.map((member) => (
-                                <SelectItem key={member.id || member.nom} value={member.id || ''}>
-                                  {member.prenom ? `${member.prenom} ${member.nom}` : member.nom}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormDescription>
-                            Sélectionnez le bénéficiaire parmi les personnes renseignées dans la section Famille
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>} />
+                      </FormItem>
+                    )} />
                   )}
 
-                  <FormField control={form.control} name="valeur_estimee" render={({
-                  field
-                }) => <FormItem>
-                        <FormLabel>Valeur estimée (€)</FormLabel>
-                        <FormControl>
-                          <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>} />
+                  <FormField control={form.control} name="valeur_estimee" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Valeur estimée (€)</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
 
-                  <FormField control={form.control} name="date_estimation" render={({
-                  field
-                }) => <FormItem>
-                        <FormLabel>Date d'estimation</FormLabel>
-                        <FormControl>
-                          <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>} />
+                  <FormField control={form.control} name="date_estimation" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date d'estimation</FormLabel>
+                      <FormControl>
+                        <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
 
-                  <FormField control={form.control} name="denomination" render={({
-                  field
-                }) => <FormItem>
-                        <FormLabel>Dénomination</FormLabel>
+                  <FormField control={form.control} name="denomination" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dénomination</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  {/* Établissement - conditional */}
+                  {NATURES_WITH_ETABLISSEMENT.includes(form.watch('nature')) && (
+                    <FormField control={form.control} name="etablissement" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Établissement</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>} />
-
-                  {/* Champ Établissement conditionnel */}
-                  {NATURES_WITH_ETABLISSEMENT.includes(form.watch('nature')) && (
-                    <FormField control={form.control} name="etablissement" render={({
-                      field
-                    }) => <FormItem>
-                          <FormLabel>Établissement</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>} />
+                      </FormItem>
+                    )} />
                   )}
-
                 </div>
 
                 {/* Origine de l'actif */}
-                <FormField control={form.control} name="origine_actif" render={({
-                  field
-                }) => <FormItem>
-                      <FormLabel>Origine de l'actif</FormLabel>
-                      <Select 
-                        onValueChange={(value) => field.onChange([value])} 
-                        value={field.value?.[0] || 'Acquisition à titre onéreuse'}
-                      >
-                        <FormControl>
-                          <SelectTrigger size="lg">
-                            <SelectValue placeholder="Choisir l'origine de l'actif" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {ORIGINE_ACTIF_OPTIONS.map((option) => (
-                            <SelectItem key={option} value={option}>
-                              {option}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>} />
+                <FormField control={form.control} name="origine_actif" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Origine de l'actif</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange([value])}
+                      value={field.value?.[0] || 'Acquisition à titre onéreuse'}
+                    >
+                      <FormControl>
+                        <SelectTrigger size="lg">
+                          <SelectValue placeholder="Choisir l'origine de l'actif" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {ORIGINE_ACTIF_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
 
                 {/* Situation particulière */}
-                <FormField control={form.control} name="situation_particuliere" render={({
-                  field
-                }) => <FormItem>
-                      <FormLabel>Situation particulière</FormLabel>
-                      <Select 
-                        onValueChange={(value) => field.onChange([value])} 
-                        value={field.value?.[0] || 'Non'}
-                      >
-                        <FormControl>
-                          <SelectTrigger size="lg">
-                            <SelectValue placeholder="Choisir la situation particulière" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {SITUATION_PARTICULIERE_OPTIONS.map((option) => (
-                            <SelectItem key={option} value={option}>
-                              {option}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>} />
+                <FormField control={form.control} name="situation_particuliere" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Situation particulière</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange([value])}
+                      value={field.value?.[0] || 'Non'}
+                    >
+                      <FormControl>
+                        <SelectTrigger size="lg">
+                          <SelectValue placeholder="Choisir la situation particulière" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {SITUATION_PARTICULIERE_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
               </div>
 
               <Separator />
@@ -506,72 +224,66 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               {/* Section 2: Détenteur */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">2. Détenteur</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="detenteur" render={({
-                  field
-                }) => <FormItem>
-                        <FormLabel>Détenteur</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger size="lg">
-                              <SelectValue placeholder="Choisir un détenteur" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {detenteurOptions.map(option => <SelectItem key={option} value={option}>
-                                {option}
-                              </SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>} />
 
-                  {/* Pourcentages si "Le couple" est sélectionné */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="detenteur" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Détenteur</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger size="lg">
+                            <SelectValue placeholder="Choisir un détenteur" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {detenteurOptions.map(option => (
+                            <SelectItem key={option} value={option}>{option}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  {/* Percentages if "Le couple" is selected */}
                   {form.watch('detenteur') === 'Le couple' && familyData.hasPartner && (
                     <>
-                      <FormField control={form.control} name="pourcentage_utilisateur" render={({
-                        field
-                      }) => (
+                      <FormField control={form.control} name="pourcentage_utilisateur" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Pourcentage appartenant à {familyData.userFirstName || 'vous'} (%)</FormLabel>
                           <FormControl>
-                            <Input 
-                              type="number" 
-                              min="0" 
-                              max="100" 
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
                               step="0.1"
-                              {...field} 
+                              {...field}
                               onChange={e => {
                                 const value = parseFloat(e.target.value) || 0;
                                 field.onChange(value);
-                                // Auto-adjust partner percentage
                                 form.setValue('pourcentage_conjoint', 100 - value);
-                              }} 
+                              }}
                             />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )} />
 
-                      <FormField control={form.control} name="pourcentage_conjoint" render={({
-                        field
-                      }) => (
+                      <FormField control={form.control} name="pourcentage_conjoint" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Pourcentage appartenant à {familyData.partnerFirstName || 'votre conjoint(e)'} (%)</FormLabel>
                           <FormControl>
-                            <Input 
-                              type="number" 
-                              min="0" 
-                              max="100" 
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
                               step="0.1"
-                              {...field} 
+                              {...field}
                               onChange={e => {
                                 const value = parseFloat(e.target.value) || 0;
                                 field.onChange(value);
-                                // Auto-adjust user percentage
                                 form.setValue('pourcentage_utilisateur', 100 - value);
-                              }} 
+                              }}
                             />
                           </FormControl>
                           <FormMessage />
@@ -580,35 +292,35 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                     </>
                   )}
 
-                  <FormField control={form.control} name="date_acquisition" render={({
-                  field
-                }) => <FormItem>
-                        <FormLabel>Date d'acquisition</FormLabel>
-                        <FormControl>
-                          <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>} />
+                  <FormField control={form.control} name="date_acquisition" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date d'acquisition</FormLabel>
+                      <FormControl>
+                        <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
 
-                  <FormField control={form.control} name="valeur_acquisition" render={({
-                  field
-                }) => <FormItem>
-                        <FormLabel>Valeur d'acquisition (€)</FormLabel>
-                        <FormControl>
-                          <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>} />
+                  <FormField control={form.control} name="valeur_acquisition" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Valeur d'acquisition (€)</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
 
-                  <FormField control={form.control} name="frais_acquisition" render={({
-                  field
-                }) => <FormItem>
-                        <FormLabel>Frais d'acquisition (€)</FormLabel>
-                        <FormControl>
-                          <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>} />
+                  <FormField control={form.control} name="frais_acquisition" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Frais d'acquisition (€)</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
               </div>
 
@@ -624,8 +336,10 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                   </Button>
                 </div>
 
-                {charges.length > 0 && <div className="space-y-2">
-                    {charges.map(charge => <Card key={charge.id} className="p-4">
+                {charges.length > 0 && (
+                  <div className="space-y-2">
+                    {charges.map(charge => (
+                      <Card key={charge.id} className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="font-medium">{charge.denomination}</p>
@@ -642,8 +356,10 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                             </Button>
                           </div>
                         </div>
-                      </Card>)}
-                  </div>}
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <Separator />
@@ -695,9 +411,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>
-                            Transfert dans Immobilier
-                          </FormLabel>
+                          <FormLabel>Transfert dans Immobilier</FormLabel>
                           <FormDescription>
                             Ce bien apparaîtra dans la section "Immobilier" → "Mes biens"
                           </FormDescription>
@@ -709,9 +423,11 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               </div>
 
               <div className="flex justify-between">
-                {asset?.id && onDelete && <Button type="button" variant="destructive" onClick={handleDelete} disabled={isLoading}>
+                {asset?.id && onDelete && (
+                  <Button type="button" variant="destructive" onClick={handleDelete} disabled={isLoading}>
                     Supprimer l'actif
-                  </Button>}
+                  </Button>
+                )}
                 <div className="flex space-x-2 ml-auto">
                   <Button type="button" variant="outline" onClick={onCancel}>
                     Annuler
@@ -727,9 +443,16 @@ export const AssetForm: React.FC<AssetFormProps> = ({
       </Card>
 
       {/* Formulaire de charge */}
-      {showChargeForm && <ChargeForm charge={editingCharge || undefined} onSubmit={handleChargeSubmit} onCancel={() => {
-      setShowChargeForm(false);
-      setEditingCharge(null);
-    }} />}
-    </div>;
+      {showChargeForm && (
+        <ChargeForm
+          charge={editingCharge || undefined}
+          onSubmit={handleChargeSubmit}
+          onCancel={() => {
+            setShowChargeForm(false);
+            setEditingCharge(null);
+          }}
+        />
+      )}
+    </div>
+  );
 };

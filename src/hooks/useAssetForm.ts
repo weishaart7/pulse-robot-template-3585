@@ -1,0 +1,222 @@
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { format } from 'date-fns';
+import { assetSchema, AssetFormValues, getDefaultAssetValues } from '@/schemas/assetSchema';
+import { Asset, AssetCharge } from '@/services/assetService';
+import { familyService } from '@/services/familyService';
+import { mapDetenteurToDisplay, mapDetenteurToDb, FamilyInfo } from '@/lib/patrimoine/utils';
+import { ASSET_CATEGORIES } from '@/constants/assetTypes';
+
+// Types d'actifs qui nécessitent le champ "Établissement"
+export const NATURES_WITH_ETABLISSEMENT = [
+  'Objets numériques (NFT, etc.)',
+  ...ASSET_CATEGORIES['épargne retraite et prévoyance'],
+  ...ASSET_CATEGORIES['épargne et assurance-vie'],
+  ...ASSET_CATEGORIES['épargne salariale'],
+  ...ASSET_CATEGORIES['épargne bancaire / liquidités'],
+  ...ASSET_CATEGORIES['valeurs mobilières et placements financiers']
+];
+
+interface UseAssetFormProps {
+  asset?: Asset;
+  onSubmit: (asset: AssetFormValues, charges: AssetCharge[]) => Promise<void>;
+}
+
+export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
+  const [charges, setCharges] = useState<AssetCharge[]>([]);
+  const [showChargeForm, setShowChargeForm] = useState(false);
+  const [editingCharge, setEditingCharge] = useState<AssetCharge | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
+  const [familyMembers, setFamilyMembers] = useState<Array<{ id?: string; nom: string; prenom?: string }>>([]);
+  const [familyData, setFamilyData] = useState<FamilyInfo>({ hasPartner: false });
+
+  const form = useForm<AssetFormValues>({
+    resolver: zodResolver(assetSchema),
+    defaultValues: getDefaultAssetValues()
+  });
+
+  // Load family data
+  useEffect(() => {
+    const loadFamilyData = async () => {
+      try {
+        const [familyProfile, maritalStatus, familyLinks] = await Promise.all([
+          familyService.getFamilyProfile(),
+          familyService.getMaritalStatus(),
+          familyService.getFamilyLinks()
+        ]);
+
+        const options: string[] = [];
+        const familyInfo: FamilyInfo = { hasPartner: false, userFirstName: '', partnerFirstName: '' };
+
+        if (familyProfile?.prenom) {
+          options.push(familyProfile.prenom);
+          familyInfo.userFirstName = familyProfile.prenom;
+        }
+
+        const hasPartner = maritalStatus?.statut_couple &&
+          ['Marié(e)', 'Pacsé(e)', 'Concubinage', 'MARIE', 'PACS', 'PACSE', 'CONCUBINAGE'].includes(maritalStatus.statut_couple) &&
+          maritalStatus.prenom_conjoint;
+
+        if (hasPartner) {
+          options.push(maritalStatus.prenom_conjoint);
+          familyInfo.hasPartner = true;
+          familyInfo.partnerFirstName = maritalStatus.prenom_conjoint;
+        }
+
+        if (familyInfo.hasPartner) {
+          options.push('Le couple');
+        }
+
+        setDetenteurOptions(options);
+        setFamilyData(familyInfo);
+        setFamilyMembers(familyLinks || []);
+      } catch (error) {
+        setDetenteurOptions(['Utilisateur']);
+      }
+    };
+
+    loadFamilyData();
+  }, []);
+
+  // Update form when asset or family data changes
+  useEffect(() => {
+    if (asset && familyData.userFirstName) {
+      const displayDetenteur = mapDetenteurToDisplay(asset.detenteur || '', familyData);
+
+      let userPercentage = 50;
+      let spousePercentage = 50;
+
+      if (displayDetenteur === familyData.userFirstName || displayDetenteur === 'Vous') {
+        userPercentage = 100;
+        spousePercentage = 0;
+      } else if (displayDetenteur === familyData.partnerFirstName || displayDetenteur === 'Conjoint') {
+        userPercentage = 0;
+        spousePercentage = 100;
+      } else if (displayDetenteur === 'Le couple') {
+        userPercentage = asset.pourcentage_utilisateur || 50;
+        spousePercentage = asset.pourcentage_conjoint || 50;
+      }
+
+      form.reset({
+        nature: asset.nature,
+        denomination: asset.denomination || '',
+        etablissement: asset.etablissement || '',
+        mode_detention: asset.mode_detention || '',
+        beneficiaire_autre_partie: (asset as any).beneficiaire_autre_partie || '',
+        valeur_estimee: asset.valeur_estimee || undefined,
+        date_estimation: asset.date_estimation ? new Date(asset.date_estimation) : undefined,
+        revalorisation_annuelle: asset.revalorisation_annuelle || undefined,
+        detenteur: displayDetenteur,
+        pourcentage_utilisateur: userPercentage,
+        pourcentage_conjoint: spousePercentage,
+        valeur_acquisition: asset.valeur_acquisition || undefined,
+        frais_acquisition: asset.frais_acquisition || undefined,
+        date_acquisition: asset.date_acquisition ? new Date(asset.date_acquisition) : undefined,
+        origine_actif: (asset as any).origine_actif || ['Acquisition à titre onéreuse'],
+        situation_particuliere: (asset as any).situation_particuliere || ['Non'],
+        attachement_emotionnel: (asset as any).attachement_emotionnel || 0,
+        transfert_immobilier: (asset as any).transfert_immobilier || false
+      });
+    }
+  }, [asset, familyData, form]);
+
+  // Auto-adjust percentages when detenteur changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'detenteur' && value.detenteur) {
+        const detenteur = value.detenteur;
+
+        if (detenteur === familyData.userFirstName || detenteur === 'Vous') {
+          form.setValue('pourcentage_utilisateur', 100);
+          form.setValue('pourcentage_conjoint', 0);
+        } else if (detenteur === familyData.partnerFirstName || detenteur === 'Conjoint') {
+          form.setValue('pourcentage_utilisateur', 0);
+          form.setValue('pourcentage_conjoint', 100);
+        } else if (detenteur === 'Le couple') {
+          const currentUser = form.getValues('pourcentage_utilisateur');
+          const currentSpouse = form.getValues('pourcentage_conjoint');
+          if ((currentUser === 100 && currentSpouse === 0) || (currentUser === 0 && currentSpouse === 100)) {
+            form.setValue('pourcentage_utilisateur', 50);
+            form.setValue('pourcentage_conjoint', 50);
+          }
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [form, familyData]);
+
+  const handleSubmit = async (values: AssetFormValues) => {
+    setIsLoading(true);
+    try {
+      const dbDetenteur = mapDetenteurToDb(values.detenteur || '', familyData);
+
+      let finalUserPercentage = values.pourcentage_utilisateur;
+      let finalSpousePercentage = values.pourcentage_conjoint;
+
+      if (dbDetenteur === 'user') {
+        finalUserPercentage = 100;
+        finalSpousePercentage = 0;
+      } else if (dbDetenteur === 'spouse') {
+        finalUserPercentage = 0;
+        finalSpousePercentage = 100;
+      }
+
+      const formattedValues = {
+        ...values,
+        detenteur: dbDetenteur,
+        pourcentage_utilisateur: finalUserPercentage,
+        pourcentage_conjoint: finalSpousePercentage,
+        date_estimation: values.date_estimation ? format(values.date_estimation, 'yyyy-MM-dd') : undefined,
+        date_acquisition: values.date_acquisition ? format(values.date_acquisition, 'yyyy-MM-dd') : undefined
+      };
+
+      await onSubmit(formattedValues as any, charges);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChargeSubmit = (chargeData: any) => {
+    if (editingCharge) {
+      setCharges(prev => prev.map(c => c.id === editingCharge.id ? { ...editingCharge, ...chargeData } : c));
+      setEditingCharge(null);
+    } else {
+      const newCharge: AssetCharge = {
+        id: `temp-${Date.now()}`,
+        asset_id: asset?.id || '',
+        ...chargeData
+      };
+      setCharges(prev => [...prev, newCharge]);
+    }
+    setShowChargeForm(false);
+  };
+
+  const handleChargeDelete = (chargeId: string) => {
+    setCharges(prev => prev.filter(c => c.id !== chargeId));
+  };
+
+  const handleChargeEdit = (charge: AssetCharge) => {
+    setEditingCharge(charge);
+    setShowChargeForm(true);
+  };
+
+  return {
+    form,
+    charges,
+    showChargeForm,
+    setShowChargeForm,
+    editingCharge,
+    setEditingCharge,
+    isLoading,
+    detenteurOptions,
+    familyMembers,
+    familyData,
+    handleSubmit,
+    handleChargeSubmit,
+    handleChargeDelete,
+    handleChargeEdit
+  };
+};
