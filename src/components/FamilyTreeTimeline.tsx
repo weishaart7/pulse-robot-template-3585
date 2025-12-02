@@ -99,12 +99,12 @@ export const FamilyTreeTimeline: React.FC<FamilyTreeTimelineProps> = ({
 
   return (
     <div className="relative overflow-x-auto pb-2">
-      <div className="relative px-4 py-8">
-        {/* Timeline line */}
-        <div className="absolute left-0 right-0 top-1/2 h-px bg-border -translate-y-1/2" />
+      <div className="relative px-4 py-8 min-h-[180px]">
+        {/* Timeline line - centered */}
+        <div className="absolute left-0 right-0 top-1/2 h-px bg-border" />
 
         {/* Events */}
-        <div className="relative flex items-center justify-start gap-6">
+        <div className="relative flex items-center justify-around gap-12">
           {events.map((event, index) => {
             const isTop = index % 2 === 0;
             const color = getColor(event.civilite);
