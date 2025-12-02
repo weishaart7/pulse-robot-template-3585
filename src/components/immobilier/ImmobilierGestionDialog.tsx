@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { Plus, Trash2 } from 'lucide-react';
 import { Asset, AssetRevenu, AssetCharge, assetService } from '@/services/assetService';
 import AnimatedBackground from '@/components/ui/animated-tabs';
@@ -9,6 +11,7 @@ import { RevenuForm } from './RevenuForm';
 import { ChargeForm } from './ChargeForm';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ImmobilierGestionDialogProps {
   asset: Asset | null;
@@ -25,26 +28,20 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
   const [charges, setCharges] = useState<AssetCharge[]>([]);
   const [isLoadingRevenus, setIsLoadingRevenus] = useState(false);
   const [isLoadingCharges, setIsLoadingCharges] = useState(false);
+  const [impactBudget, setImpactBudget] = useState(false);
+  const [isUpdatingBudget, setIsUpdatingBudget] = useState(false);
 
-  useEffect(() => {
-    if (asset && open) {
-      if (activeTab === 'revenus') {
-        fetchRevenus();
-      } else if (activeTab === 'charges') {
-        fetchCharges();
-      }
-    }
-  }, [asset, open, activeTab]);
-
-  const fetchRevenus = async () => {
+  const fetchRevenus = useCallback(async () => {
     if (!asset?.id) return;
     
     setIsLoadingRevenus(true);
     try {
       const data = await assetService.getAssetRevenus(asset.id);
       setRevenus(data);
+      // Check if any revenue has impact_budget = true
+      const hasImpact = data.some((r: any) => r.impact_budget === true);
+      setImpactBudget(hasImpact);
     } catch (error) {
-      console.error('Error fetching revenus:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les revenus.",
@@ -53,17 +50,19 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
     } finally {
       setIsLoadingRevenus(false);
     }
-  };
+  }, [asset?.id, toast]);
 
-  const fetchCharges = async () => {
+  const fetchCharges = useCallback(async () => {
     if (!asset?.id) return;
     
     setIsLoadingCharges(true);
     try {
       const data = await assetService.getAssetCharges(asset.id);
       setCharges(data);
+      // Check if any charge has impact_budget = true
+      const hasImpact = data.some((c: any) => c.impact_budget === true);
+      if (hasImpact) setImpactBudget(true);
     } catch (error) {
-      console.error('Error fetching charges:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les charges.",
@@ -71,6 +70,53 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
       });
     } finally {
       setIsLoadingCharges(false);
+    }
+  }, [asset?.id, toast]);
+
+  useEffect(() => {
+    if (asset && open) {
+      fetchRevenus();
+      fetchCharges();
+    }
+  }, [asset, open, fetchRevenus, fetchCharges]);
+
+  const handleToggleImpactBudget = async (checked: boolean) => {
+    if (!asset?.id) return;
+    
+    setIsUpdatingBudget(true);
+    try {
+      // Update all revenus for this asset
+      const { error: revenusError } = await supabase
+        .from('asset_revenus')
+        .update({ impact_budget: checked })
+        .eq('asset_id', asset.id);
+
+      if (revenusError) throw revenusError;
+
+      // Update all charges for this asset
+      const { error: chargesError } = await supabase
+        .from('asset_charges')
+        .update({ impact_budget: checked })
+        .eq('asset_id', asset.id);
+
+      if (chargesError) throw chargesError;
+
+      setImpactBudget(checked);
+      
+      toast({
+        title: checked ? "Transfert activé" : "Transfert désactivé",
+        description: checked 
+          ? "Les revenus et charges seront visibles dans la section Budget."
+          : "Les revenus et charges ne seront plus visibles dans le Budget.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le transfert budget.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingBudget(false);
     }
   };
 
@@ -83,7 +129,6 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
       });
       fetchRevenus();
     } catch (error) {
-      console.error('Error deleting revenu:', error);
       toast({
         title: "Erreur",
         description: "Impossible de supprimer le revenu.",
@@ -101,7 +146,6 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
       });
       fetchCharges();
     } catch (error) {
-      console.error('Error deleting charge:', error);
       toast({
         title: "Erreur",
         description: "Impossible de supprimer la charge.",
@@ -228,9 +272,9 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
                   <TableBody>
                     {charges.map((charge) => (
                       <TableRow key={charge.id}>
-                        <TableCell>{charge.type_charge}</TableCell>
+                        <TableCell>{charge.denomination || charge.type_charge}</TableCell>
                         <TableCell>{charge.montant.toLocaleString('fr-FR')} {charge.unite}</TableCell>
-                        <TableCell>{charge.periodicite}</TableCell>
+                        <TableCell className="capitalize">{charge.periodicite}</TableCell>
                         <TableCell>
                           {new Date(charge.date_debut).toLocaleDateString('fr-FR')}
                         </TableCell>
@@ -261,9 +305,25 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              Gestion de {asset?.denomination || 'ce bien'}
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>
+                Gestion de {asset?.denomination || 'ce bien'}
+              </DialogTitle>
+              <div className="flex items-center gap-2 mr-6">
+                <Checkbox
+                  id="impact-budget"
+                  checked={impactBudget}
+                  onCheckedChange={handleToggleImpactBudget}
+                  disabled={isUpdatingBudget || (revenus.length === 0 && charges.length === 0)}
+                />
+                <Label 
+                  htmlFor="impact-budget" 
+                  className="text-sm font-medium cursor-pointer"
+                >
+                  Transfert dans budget
+                </Label>
+              </div>
+            </div>
           </DialogHeader>
 
           <div className="space-y-6">
@@ -303,13 +363,25 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
             assetId={asset.id}
             open={revenuFormOpen}
             onOpenChange={setRevenuFormOpen}
-            onSuccess={fetchRevenus}
+            onSuccess={() => {
+              fetchRevenus();
+              // If impact_budget is enabled, new revenues should inherit it
+              if (impactBudget) {
+                handleToggleImpactBudget(true);
+              }
+            }}
           />
           <ChargeForm
             assetId={asset.id}
             open={chargeFormOpen}
             onOpenChange={setChargeFormOpen}
-            onSuccess={fetchCharges}
+            onSuccess={() => {
+              fetchCharges();
+              // If impact_budget is enabled, new charges should inherit it
+              if (impactBudget) {
+                handleToggleImpactBudget(true);
+              }
+            }}
           />
         </>
       )}
