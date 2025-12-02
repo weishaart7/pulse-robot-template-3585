@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { assetService } from '@/services/assetService';
+import { REVENU_NATURES, PERIODICITE_OPTIONS } from '@/schemas/immobilierPropertySchema';
 
 interface RevenuFormProps {
   assetId: string;
@@ -19,12 +21,23 @@ export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess }: RevenuFor
   const [formData, setFormData] = useState({
     nature: 'Loyers charges comprises',
     montant: '',
-    periodicite: 'Mensuelle'
+    periodicite: 'Mensuelle',
+    commentaire: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.montant) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez remplir le montant.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -34,6 +47,7 @@ export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess }: RevenuFor
         montant: parseFloat(formData.montant),
         periodicite: formData.periodicite as 'Mensuelle' | 'Trimestrielle' | 'Annuelle',
         date_debut: new Date().toISOString().split('T')[0],
+        commentaire: formData.commentaire || null,
       });
       
       toast({
@@ -46,10 +60,10 @@ export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess }: RevenuFor
       setFormData({
         nature: 'Loyers charges comprises',
         montant: '',
-        periodicite: 'Mensuelle'
+        periodicite: 'Mensuelle',
+        commentaire: ''
       });
     } catch (error) {
-      console.error('Error creating revenu:', error);
       toast({
         title: "Erreur",
         description: "Une erreur est survenue lors de l'ajout du revenu.",
@@ -65,6 +79,9 @@ export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess }: RevenuFor
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Ajouter un revenu</DialogTitle>
+          <DialogDescription>
+            Enregistrez un revenu lié à ce bien immobilier
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -78,13 +95,17 @@ export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess }: RevenuFor
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Loyers charges comprises">Loyers charges comprises</SelectItem>
+                {REVENU_NATURES.map((nature) => (
+                  <SelectItem key={nature} value={nature}>
+                    {nature}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="montant">Montant (€)</Label>
+            <Label htmlFor="montant">Montant (€) *</Label>
             <Input
               id="montant"
               type="number"
@@ -106,11 +127,24 @@ export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess }: RevenuFor
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Mensuelle">Mensuelle</SelectItem>
-                <SelectItem value="Trimestrielle">Trimestrielle</SelectItem>
-                <SelectItem value="Annuelle">Annuelle</SelectItem>
+                {PERIODICITE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="commentaire">Commentaire (optionnel)</Label>
+            <Textarea
+              id="commentaire"
+              value={formData.commentaire}
+              onChange={(e) => setFormData({ ...formData, commentaire: e.target.value })}
+              placeholder="Informations complémentaires..."
+              rows={3}
+            />
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
