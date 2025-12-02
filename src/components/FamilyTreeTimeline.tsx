@@ -98,13 +98,13 @@ export const FamilyTreeTimeline: React.FC<FamilyTreeTimelineProps> = ({
   }
 
   return (
-    <div className="relative overflow-x-auto pb-4">
-      <div className="relative min-w-max px-8 py-16">
+    <div className="relative overflow-x-auto pb-2">
+      <div className="relative px-4 py-8">
         {/* Timeline line */}
-        <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-border -translate-y-1/2" />
+        <div className="absolute left-0 right-0 top-1/2 h-px bg-border -translate-y-1/2" />
 
         {/* Events */}
-        <div className="relative flex items-center justify-start gap-16">
+        <div className="relative flex items-center justify-start gap-6">
           {events.map((event, index) => {
             const isTop = index % 2 === 0;
             const color = getColor(event.civilite);
@@ -113,31 +113,24 @@ export const FamilyTreeTimeline: React.FC<FamilyTreeTimelineProps> = ({
               <div
                 key={event.id}
                 className="relative flex flex-col items-center"
-                style={{ minWidth: '200px' }}
+                style={{ minWidth: '100px' }}
               >
                 {/* Content card */}
-                <div className={isTop ? 'mb-12' : 'mt-12'} style={{ order: isTop ? 2 : 0 }}>
+                <div className={isTop ? 'mb-6' : 'mt-6'} style={{ order: isTop ? 0 : 2 }}>
                   <div
-                    className="rounded-lg border-2 bg-card p-4 shadow-md transition-all hover:shadow-lg hover:scale-105"
+                    className="rounded-md border bg-card px-2 py-1.5 shadow-sm transition-all hover:shadow-md hover:scale-105"
                     style={{ borderColor: color }}
                   >
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      {event.type === 'birth' ? (
-                        <span className="text-lg">🎂</span>
-                      ) : (
-                        <span className="text-lg">✝️</span>
-                      )}
-                      <span className="font-semibold text-foreground text-sm">
-                        {event.type === 'birth' ? 'Naissance' : 'Décès'}
-                      </span>
+                    <div className="flex items-center justify-center gap-1 mb-0.5">
+                      <span className="text-xs">{event.type === 'birth' ? '🎂' : '✝️'}</span>
                     </div>
-                    <div className="text-center text-base font-bold mb-1" style={{ color }}>
+                    <div className="text-center text-xs font-semibold truncate max-w-[90px]" style={{ color }}>
                       {event.name}
                     </div>
-                    <div className="text-center text-xs text-muted-foreground mb-1">
+                    <div className="text-center text-[10px] text-muted-foreground">
                       {event.relation}
                     </div>
-                    <div className="text-center text-sm font-medium text-foreground">
+                    <div className="text-center text-[10px] font-medium text-foreground">
                       {formatDate(event.date)}
                     </div>
                   </div>
@@ -145,16 +138,16 @@ export const FamilyTreeTimeline: React.FC<FamilyTreeTimelineProps> = ({
 
                 {/* Center dot on timeline */}
                 <div
-                  className="w-4 h-4 rounded-full border-4 border-background z-10"
+                  className="w-2.5 h-2.5 rounded-full border-2 border-background z-10"
                   style={{ backgroundColor: color, order: 1 }}
                 />
 
                 {/* Vertical connector line */}
                 <div
-                  className="absolute w-0.5 left-1/2 -translate-x-1/2"
+                  className="absolute w-px left-1/2 -translate-x-1/2"
                   style={{
                     backgroundColor: color,
-                    height: '3rem',
+                    height: '1.5rem',
                     [isTop ? 'bottom' : 'top']: '50%',
                   }}
                 />
