@@ -28,7 +28,7 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
   const [charges, setCharges] = useState<AssetCharge[]>([]);
   const [isLoadingRevenus, setIsLoadingRevenus] = useState(false);
   const [isLoadingCharges, setIsLoadingCharges] = useState(false);
-  const [impactBudget, setImpactBudget] = useState(false);
+  const [impactBudget, setImpactBudget] = useState(true);
   const [isUpdatingBudget, setIsUpdatingBudget] = useState(false);
 
   const fetchRevenus = useCallback(async () => {
