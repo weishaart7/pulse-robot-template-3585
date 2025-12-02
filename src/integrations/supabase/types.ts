@@ -117,6 +117,7 @@ export type Database = {
           date_debut: string
           date_fin: string | null
           id: string
+          impact_budget: boolean | null
           montant: number
           nature: string
           periodicite: string
@@ -129,6 +130,7 @@ export type Database = {
           date_debut?: string
           date_fin?: string | null
           id?: string
+          impact_budget?: boolean | null
           montant: number
           nature: string
           periodicite: string
@@ -141,6 +143,7 @@ export type Database = {
           date_debut?: string
           date_fin?: string | null
           id?: string
+          impact_budget?: boolean | null
           montant?: number
           nature?: string
           periodicite?: string
