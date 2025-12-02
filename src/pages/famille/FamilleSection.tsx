@@ -8,8 +8,6 @@ import { FamilyLink } from '@/services/familyService';
 import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
 import { SituationMatrimonialeForm } from './components/SituationMatrimonialeForm';
-import { FamilyImpactSummary } from '@/components/famille/FamilyImpactSummary';
-import { useFamilyImpacts } from '@/hooks/useFamilyImpacts';
 import { PartnerForm } from "@/components/famille/PartnerForm";
 import { RelationInfoDialog } from "@/components/famille/RelationInfoDialog";
 import { User, Plus } from 'lucide-react';
@@ -24,7 +22,7 @@ const FamilleSection = () => {
   const { data: familyProfile, refetch: refetchProfile } = useFamilyProfile();
   const { data: maritalData, saveData: saveMaritalData, refetch: refetchMarital } = useMaritalStatus();
   const { data: familyLinks = [], loading: linksLoading } = useFamilyLinks();
-  const impacts = useFamilyImpacts(familyLinks, familyProfile, maritalData);
+  
 
   const TABS = [
     { id: 'ma-famille', label: 'Ma famille' },
@@ -318,12 +316,6 @@ const FamilleSection = () => {
           {renderContent()}
         </div>
 
-        {/* Impacts Summary - Always visible at bottom when family data exists */}
-        {!linksLoading && (familyLinks.length > 0 || maritalData?.statut_couple) && (
-          <div className="mt-6">
-            <FamilyImpactSummary impacts={impacts} />
-          </div>
-        )}
       </div>
 
       {/* Dialog pour modifier les informations client */}
