@@ -24,15 +24,12 @@ export const BudgetCharges = ({ displayMode, personFilter }: BudgetChargesProps)
     deleteCharge
   } = useCharges();
 
-  // Filtrer par personne
+  // Filtrer par personne (individuel = uniquement les éléments explicitement attribués)
   const charges = useMemo(() => {
     if (personFilter === 'couple') return allCharges;
     return allCharges.filter(c => {
       const debiteur = c.debiteur?.toLowerCase();
-      if (personFilter === 'utilisateur') {
-        return !debiteur || debiteur === 'utilisateur';
-      }
-      return debiteur === 'conjoint';
+      return debiteur === personFilter;
     });
   }, [allCharges, personFilter]);
 
