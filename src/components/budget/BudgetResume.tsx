@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useRevenus, useCharges } from '@/hooks/useBudget';
 import { Revenu, Charge } from '@/services/budgetService';
 import { REVENUS_CATEGORIES, CHARGES_CATEGORIES } from '@/constants/budgetCategories';
@@ -466,49 +466,95 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
   }
 
   return (
-    <div className="h-80">
+    <div className="h-80 relative">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+        <BarChart 
+          data={monthlyData} 
+          margin={{ top: 20, right: 16, left: 0, bottom: 0 }}
+          barGap={4}
+          barCategoryGap="20%"
+        >
+          <defs>
+            <linearGradient id="revenusGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#22c55e" stopOpacity={1} />
+              <stop offset="100%" stopColor="#16a34a" stopOpacity={0.8} />
+            </linearGradient>
+            <linearGradient id="chargesGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#a78bfa" stopOpacity={1} />
+              <stop offset="100%" stopColor="#7c3aed" stopOpacity={0.8} />
+            </linearGradient>
+            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.1"/>
+            </filter>
+          </defs>
+          <CartesianGrid 
+            strokeDasharray="0" 
+            stroke="hsl(var(--border))" 
+            strokeOpacity={0.4}
+            vertical={false}
+          />
           <XAxis 
             dataKey="month" 
-            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-            axisLine={{ stroke: 'hsl(var(--border))' }}
+            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11, fontWeight: 500 }}
+            axisLine={false}
+            tickLine={false}
+            dy={8}
           />
           <YAxis 
-            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-            axisLine={{ stroke: 'hsl(var(--border))' }}
-            tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(value) => `${(value / 1000).toFixed(0)}k€`}
+            width={45}
           />
           <Tooltip 
+            cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3, radius: 4 }}
             formatter={(value: number, name: string) => [
               formatCurrency(value),
-              name === 'revenus' ? 'Revenus' : name === 'charges' ? 'Charges' : 'Solde'
+              name === 'revenus' ? 'Revenus' : 'Charges'
             ]}
             contentStyle={{
-              backgroundColor: 'hsl(var(--card))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '8px',
-              color: 'hsl(var(--foreground))'
+              backgroundColor: 'hsl(var(--popover))',
+              border: 'none',
+              borderRadius: '12px',
+              boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2)',
+              padding: '12px 16px',
             }}
-            labelStyle={{ color: 'hsl(var(--foreground))' }}
+            labelStyle={{ 
+              color: 'hsl(var(--foreground))', 
+              fontWeight: 600,
+              marginBottom: '8px',
+              fontSize: '13px'
+            }}
+            itemStyle={{
+              color: 'hsl(var(--muted-foreground))',
+              fontSize: '12px',
+              padding: '2px 0'
+            }}
           />
           <Legend 
-            formatter={(value) => value === 'revenus' ? 'Revenus' : value === 'charges' ? 'Charges' : 'Solde'}
-            wrapperStyle={{ color: 'hsl(var(--foreground))' }}
+            formatter={(value) => (
+              <span className="text-xs font-medium text-muted-foreground">
+                {value === 'revenus' ? 'Revenus' : 'Charges'}
+              </span>
+            )}
+            wrapperStyle={{ paddingTop: '20px' }}
+            iconType="circle"
+            iconSize={8}
           />
-          <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
           <Bar 
             dataKey="revenus" 
-            fill="#22c55e" 
-            radius={[4, 4, 0, 0]}
+            fill="url(#revenusGradient)"
+            radius={[6, 6, 0, 0]}
             name="revenus"
+            filter="url(#shadow)"
           />
           <Bar 
             dataKey="charges" 
-            fill="#8b5cf6" 
-            radius={[4, 4, 0, 0]}
+            fill="url(#chargesGradient)"
+            radius={[6, 6, 0, 0]}
             name="charges"
+            filter="url(#shadow)"
           />
         </BarChart>
       </ResponsiveContainer>
