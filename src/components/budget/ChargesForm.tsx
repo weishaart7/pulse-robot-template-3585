@@ -161,7 +161,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
 
       if (success) {
         form.reset();
-        onCancel(); // Close form on success
+        // Ne pas appeler onCancel() ici car handleSubmitCharge ferme déjà le formulaire
       }
     } finally {
       setIsSubmitting(false);

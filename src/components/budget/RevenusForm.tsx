@@ -111,7 +111,7 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
 
       if (success) {
         form.reset();
-        onCancel(); // Close form on success
+        // Ne pas appeler onCancel() ici car handleSubmitRevenu ferme déjà le formulaire
       }
     } finally {
       setIsSubmitting(false);
