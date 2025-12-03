@@ -5,27 +5,60 @@ import { useRevenus, useCharges } from '@/hooks/useBudget';
 import { Revenu, Charge } from '@/services/budgetService';
 import { REVENUS_CATEGORIES, CHARGES_CATEGORIES } from '@/constants/budgetCategories';
 import { SlidingNumber } from '@/components/ui/sliding-number';
-import { DisplayMode } from '@/pages/budget/BudgetSection';
+import { DisplayMode, PersonFilter } from '@/pages/budget/BudgetSection';
 
 interface BudgetResumeProps {
   displayMode: DisplayMode;
+  personFilter: PersonFilter;
 }
 
-export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
+// Fonction utilitaire pour filtrer par personne
+const filterByPerson = <T extends { beneficiaire?: string | null } | { debiteur?: string | null }>(
+  items: T[],
+  personFilter: PersonFilter,
+  field: 'beneficiaire' | 'debiteur'
+): T[] => {
+  if (personFilter === 'couple') return items;
+  
+  return items.filter(item => {
+    const value = (item as Record<string, unknown>)[field] as string | null | undefined;
+    if (personFilter === 'utilisateur') {
+      return !value || value.toLowerCase() === 'utilisateur';
+    }
+    if (personFilter === 'conjoint') {
+      return value?.toLowerCase() === 'conjoint';
+    }
+    return true;
+  });
+};
+
+export const BudgetResume = ({ displayMode, personFilter }: BudgetResumeProps) => {
   const {
-    revenus,
+    revenus: allRevenus,
     loading: revenusLoading,
     fetchRevenus
   } = useRevenus();
   const {
-    charges,
+    charges: allCharges,
     loading: chargesLoading,
     fetchCharges
   } = useCharges();
+  
   useEffect(() => {
     fetchRevenus();
     fetchCharges();
   }, []);
+
+  // Filtrer par personne
+  const revenus = useMemo(() => 
+    filterByPerson(allRevenus, personFilter, 'beneficiaire'), 
+    [allRevenus, personFilter]
+  );
+  const charges = useMemo(() => 
+    filterByPerson(allCharges, personFilter, 'debiteur'), 
+    [allCharges, personFilter]
+  );
+
   const totalRevenus = Math.round(revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0));
   const totalCharges = Math.round(charges.reduce((sum, charge) => sum + (charge.montant || 0), 0));
 

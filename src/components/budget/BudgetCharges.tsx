@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -6,22 +6,35 @@ import { useCharges } from '@/hooks/useBudget';
 import { ChargesForm } from '@/components/budget/ChargesForm';
 import { BudgetList } from '@/components/budget/BudgetList';
 import { Charge } from '@/services/budgetService';
-import { DisplayMode } from '@/pages/budget/BudgetSection';
+import { DisplayMode, PersonFilter } from '@/pages/budget/BudgetSection';
 
 interface BudgetChargesProps {
   displayMode: DisplayMode;
+  personFilter: PersonFilter;
 }
 
-export const BudgetCharges = ({ displayMode }: BudgetChargesProps) => {
+export const BudgetCharges = ({ displayMode, personFilter }: BudgetChargesProps) => {
   const [showChargesForm, setShowChargesForm] = useState(false);
   const [editingCharge, setEditingCharge] = useState<Charge | undefined>();
   const {
-    charges,
+    charges: allCharges,
     loading: chargesLoading,
     createCharge,
     updateCharge,
     deleteCharge
   } = useCharges();
+
+  // Filtrer par personne
+  const charges = useMemo(() => {
+    if (personFilter === 'couple') return allCharges;
+    return allCharges.filter(c => {
+      const debiteur = c.debiteur?.toLowerCase();
+      if (personFilter === 'utilisateur') {
+        return !debiteur || debiteur === 'utilisateur';
+      }
+      return debiteur === 'conjoint';
+    });
+  }, [allCharges, personFilter]);
 
   const handleSubmitCharge = async (data: Omit<Charge, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (editingCharge) {
