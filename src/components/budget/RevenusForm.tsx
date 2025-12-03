@@ -181,7 +181,16 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
   }, [open, revenu, form, getDisplayMontant]);
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()} modal={true}>
+    <Dialog 
+      open={open} 
+      onOpenChange={(isOpen) => {
+        if (!isOpen) {
+          // Délai pour laisser les popovers enfants se fermer proprement
+          setTimeout(() => onCancel(), 50);
+        }
+      }} 
+      modal={true}
+    >
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{revenu ? 'Modifier le revenu' : 'Ajouter un revenu'}</DialogTitle>
