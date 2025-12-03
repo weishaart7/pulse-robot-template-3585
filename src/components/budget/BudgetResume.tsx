@@ -1,7 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts';
 import { useRevenus, useCharges } from '@/hooks/useBudget';
 import { REVENUS_CATEGORIES, CHARGES_CATEGORIES } from '@/constants/budgetCategories';
 import { SlidingNumber } from '@/components/ui/sliding-number';
@@ -265,16 +264,105 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
         </Card>
       </div>
 
-      {/* Saisonnalité */}
+      {/* Saisonnalité - Évolution mensuelle */}
       <Card className="mt-6 border-0">
         <CardHeader>
-          <CardTitle>Saisonnalité</CardTitle>
+          <CardTitle>Évolution mensuelle</CardTitle>
+          <CardDescription>
+            Comparaison revenus et charges sur 12 mois
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center text-muted-foreground py-8">
-            Contenu à venir
-          </div>
+          <SeasonalityChart 
+            totalRevenus={totalRevenus} 
+            totalCharges={totalCharges} 
+            formatCurrency={formatCurrency}
+          />
         </CardContent>
       </Card>
     </div>;
+};
+
+// Composant graphique saisonnalité
+interface SeasonalityChartProps {
+  totalRevenus: number;
+  totalCharges: number;
+  formatCurrency: (amount: number) => string;
+}
+
+const SeasonalityChart = ({ totalRevenus, totalCharges, formatCurrency }: SeasonalityChartProps) => {
+  const MONTHS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+  
+  // Calculer les montants mensuels moyens
+  const monthlyRevenus = Math.round(totalRevenus / 12);
+  const monthlyCharges = Math.round(totalCharges / 12);
+  const monthlySolde = monthlyRevenus - monthlyCharges;
+
+  // Générer les données mensuelles (pour l'instant uniformes, pourra être amélioré avec les périodicités)
+  const monthlyData = useMemo(() => {
+    return MONTHS.map((month) => ({
+      month,
+      revenus: monthlyRevenus,
+      charges: monthlyCharges,
+      solde: monthlySolde
+    }));
+  }, [monthlyRevenus, monthlyCharges, monthlySolde]);
+
+  if (totalRevenus === 0 && totalCharges === 0) {
+    return (
+      <div className="text-center text-muted-foreground py-8">
+        Aucune donnée à afficher
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-80">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <XAxis 
+            dataKey="month" 
+            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+            axisLine={{ stroke: 'hsl(var(--border))' }}
+          />
+          <YAxis 
+            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+            axisLine={{ stroke: 'hsl(var(--border))' }}
+            tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+          />
+          <Tooltip 
+            formatter={(value: number, name: string) => [
+              formatCurrency(value),
+              name === 'revenus' ? 'Revenus' : name === 'charges' ? 'Charges' : 'Solde'
+            ]}
+            contentStyle={{
+              backgroundColor: 'hsl(var(--card))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '8px',
+              color: 'hsl(var(--foreground))'
+            }}
+            labelStyle={{ color: 'hsl(var(--foreground))' }}
+          />
+          <Legend 
+            formatter={(value) => value === 'revenus' ? 'Revenus' : value === 'charges' ? 'Charges' : 'Solde'}
+            wrapperStyle={{ color: 'hsl(var(--foreground))' }}
+          />
+          <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
+          <Bar 
+            dataKey="revenus" 
+            fill="#22c55e" 
+            radius={[4, 4, 0, 0]}
+            name="revenus"
+          />
+          <Bar 
+            dataKey="charges" 
+            fill="#8b5cf6" 
+            radius={[4, 4, 0, 0]}
+            name="charges"
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
 };
