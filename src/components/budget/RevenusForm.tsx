@@ -8,7 +8,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Revenu } from '@/services/budgetService';
 import { REVENUS_CATEGORIES, getNaturesByCategory } from '@/constants/budgetCategories';
 import { useFamilyData, useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
@@ -180,19 +179,6 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
     }
   }, [open, revenu, form, getDisplayMontant]);
 
-  // Force cleanup when component unmounts or closes
-  useEffect(() => {
-    if (!open) {
-      // Force remove any lingering pointer-events locks
-      document.body.style.pointerEvents = '';
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.pointerEvents = '';
-      document.body.style.overflow = '';
-    };
-  }, [open]);
-
   return (
     <Dialog 
       open={open} 
@@ -243,12 +229,18 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
                 <FormItem>
                   <FormLabel>Nature du revenu</FormLabel>
                   <FormControl>
-                    <SearchableSelect
-                      options={natureOptions}
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="Sélectionner une nature"
-                    />
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger size="lg">
+                        <SelectValue placeholder="Sélectionner une nature" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {natureOptions.map((nature) => (
+                          <SelectItem key={nature} value={nature}>
+                            {nature}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
