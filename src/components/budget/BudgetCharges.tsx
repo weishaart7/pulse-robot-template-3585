@@ -25,13 +25,26 @@ export const BudgetCharges = ({ displayMode, personFilter, personNames }: Budget
     deleteCharge
   } = useCharges();
 
-  // Filtrer par personne (individuel = uniquement les éléments explicitement attribués)
+  // Filtrer par personne (individuel = uniquement les éléments explicitement attribués + moitié des communs)
   const charges = useMemo(() => {
     if (personFilter === 'couple') return allCharges;
     const targetName = personFilter === 'utilisateur' 
       ? personNames.userFullName.toLowerCase() 
       : personNames.partnerFullName.toLowerCase();
-    return allCharges.filter(c => c.debiteur?.toLowerCase() === targetName);
+    const commonValues = ['le couple', 'couple', 'commun', 'les deux'];
+    
+    return allCharges
+      .filter(c => {
+        const debiteur = c.debiteur?.toLowerCase() || '';
+        return debiteur === targetName || commonValues.some(cv => debiteur.includes(cv));
+      })
+      .map(c => {
+        const debiteur = c.debiteur?.toLowerCase() || '';
+        if (commonValues.some(cv => debiteur.includes(cv))) {
+          return { ...c, montant: (c.montant || 0) / 2 };
+        }
+        return c;
+      });
   }, [allCharges, personFilter, personNames]);
 
   const handleSubmitCharge = async (data: Omit<Charge, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
