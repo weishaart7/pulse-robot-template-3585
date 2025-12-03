@@ -31,12 +31,12 @@ interface RevenusFormProps {
   onSubmit: (data: Omit<Revenu, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<void>;
   onCancel: () => void;
   open: boolean;
-  displayMode: 'annuel' | 'mensuel';
 }
 
-export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCancel, open, displayMode }) => {
+export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCancel, open }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLibellePrefilled, setIsLibellePrefilled] = useState(false);
+  const [inputMode, setInputMode] = useState<'annuel' | 'mensuel'>('annuel');
   const { familyMembers } = useFamilyData();
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
@@ -48,12 +48,6 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
     windowMs: 60000
   });
 
-  // Convertir le montant pour l'affichage selon le mode
-  const getDisplayMontant = useCallback((montantAnnuel: number | null | undefined) => {
-    if (!montantAnnuel) return "";
-    return displayMode === 'mensuel' ? (montantAnnuel / 12).toFixed(2) : montantAnnuel.toString();
-  }, [displayMode]);
-
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -63,13 +57,21 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
       nature: revenu?.nature || "",
       libelle: revenu?.libelle || "",
       beneficiaire: revenu?.beneficiaire || "",
-      montant: getDisplayMontant(revenu?.montant),
+      montant: revenu?.montant?.toString() || "",
       commentaire: revenu?.commentaire || "",
     },
   });
 
   const selectedCategory = form.watch("categorie");
   const selectedNature = form.watch("nature");
+  const montantValue = form.watch("montant");
+  
+  // Calculer la valeur convertie pour l'affichage
+  const convertedValue = useMemo(() => {
+    const value = parseFloat(montantValue) || 0;
+    if (value === 0) return null;
+    return inputMode === 'annuel' ? (value / 12).toFixed(2) : (value * 12).toFixed(2);
+  }, [montantValue, inputMode]);
   
   const availableNatures = useMemo(() => {
     if (!selectedCategory) return [];
@@ -89,7 +91,7 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
     try {
       // Convertir le montant saisi en montant annuel pour le stockage
       const montantSaisi = sanitizeNumericInput(data.montant) || 0;
-      const montantAnnuel = displayMode === 'mensuel' ? montantSaisi * 12 : montantSaisi;
+      const montantAnnuel = inputMode === 'mensuel' ? montantSaisi * 12 : montantSaisi;
       
       const formData = {
         nature: sanitizeTextInput(data.nature),
@@ -158,8 +160,9 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
       });
       setIsLibellePrefilled(false);
       setIsSubmitting(false);
+      setInputMode('annuel');
     } else if (open && revenu) {
-      // Charger les données existantes pour modification
+      // Charger les données existantes pour modification (toujours en annuel)
       form.reset({
         categorie: Object.keys(REVENUS_CATEGORIES).find(cat => 
           getNaturesByCategory(REVENUS_CATEGORIES, cat).includes(revenu.nature)
@@ -167,17 +170,18 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
         nature: revenu.nature || "",
         libelle: revenu.libelle || "",
         beneficiaire: revenu.beneficiaire || "",
-        montant: getDisplayMontant(revenu.montant),
+        montant: revenu.montant?.toString() || "",
         commentaire: revenu.commentaire || "",
       });
       setIsLibellePrefilled(false);
       setIsSubmitting(false);
+      setInputMode('annuel');
     } else if (!open) {
       // Nettoyer complètement quand le Dialog se ferme
       setIsSubmitting(false);
       setIsLibellePrefilled(false);
     }
-  }, [open, revenu, form, getDisplayMontant]);
+  }, [open, revenu, form]);
 
   return (
     <Dialog 
@@ -299,10 +303,35 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
               name="montant"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Montant {displayMode === 'mensuel' ? 'mensuel' : 'annuel'} (€)</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="number" step="0.01" placeholder="0.00" />
-                  </FormControl>
+                  <div className="flex items-center justify-between">
+                    <FormLabel>Montant (€)</FormLabel>
+                    <div className="flex items-center gap-1 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setInputMode('mensuel')}
+                        className={`px-2 py-1 rounded transition-colors ${inputMode === 'mensuel' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                      >
+                        Mensuel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInputMode('annuel')}
+                        className={`px-2 py-1 rounded transition-colors ${inputMode === 'annuel' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                      >
+                        Annuel
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <FormControl>
+                      <Input {...field} type="number" step="0.01" placeholder="0.00" className="flex-1" />
+                    </FormControl>
+                    {convertedValue && (
+                      <span className="text-sm text-muted-foreground whitespace-nowrap">
+                        = {convertedValue} € / {inputMode === 'annuel' ? 'mois' : 'an'}
+                      </span>
+                    )}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

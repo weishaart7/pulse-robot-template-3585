@@ -31,12 +31,12 @@ interface ChargesFormProps {
   onSubmit: (data: Omit<Charge, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<void>;
   onCancel: () => void;
   open: boolean;
-  displayMode: 'annuel' | 'mensuel';
 }
 
-export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCancel, open, displayMode }) => {
+export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCancel, open }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLibellePrefilled, setIsLibellePrefilled] = useState(false);
+  const [inputMode, setInputMode] = useState<'annuel' | 'mensuel'>('annuel');
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
   const { user } = useAuth();
@@ -47,12 +47,6 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
     windowMs: 60000
   });
 
-  // Convertir le montant pour l'affichage selon le mode
-  const getDisplayMontant = useCallback((montantAnnuel: number | null | undefined) => {
-    if (!montantAnnuel) return "";
-    return displayMode === 'mensuel' ? (montantAnnuel / 12).toFixed(2) : montantAnnuel.toString();
-  }, [displayMode]);
-
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -62,13 +56,21 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
       nature: charge?.nature || "",
       libelle: charge?.libelle || "",
       debiteur: charge?.debiteur || "",
-      montant: getDisplayMontant(charge?.montant),
+      montant: charge?.montant?.toString() || "",
       commentaire: charge?.commentaire || "",
     },
   });
 
   const selectedCategory = form.watch("categorie");
   const selectedNature = form.watch("nature");
+  const montantValue = form.watch("montant");
+  
+  // Calculer la valeur convertie pour l'affichage
+  const convertedValue = useMemo(() => {
+    const value = parseFloat(montantValue) || 0;
+    if (value === 0) return null;
+    return inputMode === 'annuel' ? (value / 12).toFixed(2) : (value * 12).toFixed(2);
+  }, [montantValue, inputMode]);
   
   const availableNatures = useMemo(() => {
     if (!selectedCategory) return [];
@@ -114,8 +116,9 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
       });
       setIsLibellePrefilled(false);
       setIsSubmitting(false);
+      setInputMode('annuel');
     } else if (open && charge) {
-      // Charger les données existantes pour modification
+      // Charger les données existantes pour modification (toujours en annuel)
       form.reset({
         categorie: Object.keys(CHARGES_CATEGORIES).find(cat => 
           getNaturesByCategory(CHARGES_CATEGORIES, cat).includes(charge.nature)
@@ -123,24 +126,25 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
         nature: charge.nature || "",
         libelle: charge.libelle || "",
         debiteur: charge.debiteur || "",
-        montant: getDisplayMontant(charge.montant),
+        montant: charge.montant?.toString() || "",
         commentaire: charge.commentaire || "",
       });
       setIsLibellePrefilled(false);
       setIsSubmitting(false);
+      setInputMode('annuel');
     } else if (!open) {
       // Nettoyer complètement quand le Dialog se ferme
       setIsSubmitting(false);
       setIsLibellePrefilled(false);
     }
-  }, [open, charge, form, getDisplayMontant]);
+  }, [open, charge, form]);
 
   const handleSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
       // Convertir le montant saisi en montant annuel pour le stockage
       const montantSaisi = sanitizeNumericInput(data.montant) || 0;
-      const montantAnnuel = displayMode === 'mensuel' ? montantSaisi * 12 : montantSaisi;
+      const montantAnnuel = inputMode === 'mensuel' ? montantSaisi * 12 : montantSaisi;
       
       const formData = {
         nature: sanitizeTextInput(data.nature),
@@ -295,10 +299,35 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
               name="montant"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Montant {displayMode === 'mensuel' ? 'mensuel' : 'annuel'} (€)</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="number" step="0.01" placeholder="0.00" />
-                  </FormControl>
+                  <div className="flex items-center justify-between">
+                    <FormLabel>Montant (€)</FormLabel>
+                    <div className="flex items-center gap-1 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setInputMode('mensuel')}
+                        className={`px-2 py-1 rounded transition-colors ${inputMode === 'mensuel' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                      >
+                        Mensuel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInputMode('annuel')}
+                        className={`px-2 py-1 rounded transition-colors ${inputMode === 'annuel' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                      >
+                        Annuel
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <FormControl>
+                      <Input {...field} type="number" step="0.01" placeholder="0.00" className="flex-1" />
+                    </FormControl>
+                    {convertedValue && (
+                      <span className="text-sm text-muted-foreground whitespace-nowrap">
+                        = {convertedValue} € / {inputMode === 'annuel' ? 'mois' : 'an'}
+                      </span>
+                    )}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
