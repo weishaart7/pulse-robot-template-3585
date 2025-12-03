@@ -32,9 +32,10 @@ interface RevenusFormProps {
   onSubmit: (data: Omit<Revenu, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<void>;
   onCancel: () => void;
   open: boolean;
+  displayMode: 'annuel' | 'mensuel';
 }
 
-export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCancel, open }) => {
+export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCancel, open, displayMode }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLibellePrefilled, setIsLibellePrefilled] = useState(false);
   const { familyMembers } = useFamilyData();
@@ -48,6 +49,12 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
     windowMs: 60000
   });
 
+  // Convertir le montant pour l'affichage selon le mode
+  const getDisplayMontant = (montantAnnuel: number | null | undefined) => {
+    if (!montantAnnuel) return "";
+    return displayMode === 'mensuel' ? (montantAnnuel / 12).toFixed(2) : montantAnnuel.toString();
+  };
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -57,7 +64,7 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
       nature: revenu?.nature || "",
       libelle: revenu?.libelle || "",
       beneficiaire: revenu?.beneficiaire || "",
-      montant: revenu?.montant?.toString() || "",
+      montant: getDisplayMontant(revenu?.montant),
       commentaire: revenu?.commentaire || "",
     },
   });
@@ -81,11 +88,15 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
   const handleSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
+      // Convertir le montant saisi en montant annuel pour le stockage
+      const montantSaisi = sanitizeNumericInput(data.montant) || 0;
+      const montantAnnuel = displayMode === 'mensuel' ? montantSaisi * 12 : montantSaisi;
+      
       const formData = {
         nature: sanitizeTextInput(data.nature),
         libelle: sanitizeTextInput(data.libelle),
         beneficiaire: sanitizeTextInput(data.beneficiaire),
-        montant: sanitizeNumericInput(data.montant) || 0,
+        montant: montantAnnuel,
         revenu_disponible: false,
         commentaire: sanitizeTextInput(data.commentaire),
       };
@@ -157,7 +168,7 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
         nature: revenu.nature || "",
         libelle: revenu.libelle || "",
         beneficiaire: revenu.beneficiaire || "",
-        montant: revenu.montant?.toString() || "",
+        montant: getDisplayMontant(revenu.montant),
         commentaire: revenu.commentaire || "",
       });
       setIsLibellePrefilled(false);
@@ -167,7 +178,7 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
       setIsSubmitting(false);
       setIsLibellePrefilled(false);
     }
-  }, [open, revenu, form]);
+  }, [open, revenu, form, displayMode]);
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()} modal={true}>
@@ -276,7 +287,7 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
               name="montant"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Montant (€)</FormLabel>
+                  <FormLabel>Montant {displayMode === 'mensuel' ? 'mensuel' : 'annuel'} (€)</FormLabel>
                   <FormControl>
                     <Input {...field} type="number" step="0.01" placeholder="0.00" />
                   </FormControl>

@@ -71,7 +71,8 @@ export const BudgetRevenus = ({ displayMode }: BudgetRevenusProps) => {
         revenu={editingRevenu} 
         onSubmit={handleSubmitRevenu} 
         onCancel={handleCancelRevenu} 
-        open={showRevenusForm} 
+        open={showRevenusForm}
+        displayMode={displayMode}
       />
 
       {/* Liste des revenus */}
