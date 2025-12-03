@@ -18,12 +18,14 @@ const filterByPerson = <T extends { beneficiaire?: string | null } | { debiteur?
   personFilter: PersonFilter,
   field: 'beneficiaire' | 'debiteur'
 ): T[] => {
+  // Couple = tous les revenus/charges (propres + communs)
   if (personFilter === 'couple') return items;
   
+  // Filtre individuel = uniquement les éléments explicitement attribués à cette personne
   return items.filter(item => {
     const value = (item as Record<string, unknown>)[field] as string | null | undefined;
     if (personFilter === 'utilisateur') {
-      return !value || value.toLowerCase() === 'utilisateur';
+      return value?.toLowerCase() === 'utilisateur';
     }
     if (personFilter === 'conjoint') {
       return value?.toLowerCase() === 'conjoint';

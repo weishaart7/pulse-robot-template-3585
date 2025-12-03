@@ -24,15 +24,12 @@ export const BudgetRevenus = ({ displayMode, personFilter }: BudgetRevenusProps)
     deleteRevenu
   } = useRevenus();
 
-  // Filtrer par personne
+  // Filtrer par personne (individuel = uniquement les éléments explicitement attribués)
   const revenus = useMemo(() => {
     if (personFilter === 'couple') return allRevenus;
     return allRevenus.filter(r => {
       const beneficiaire = r.beneficiaire?.toLowerCase();
-      if (personFilter === 'utilisateur') {
-        return !beneficiaire || beneficiaire === 'utilisateur';
-      }
-      return beneficiaire === 'conjoint';
+      return beneficiaire === personFilter;
     });
   }, [allRevenus, personFilter]);
 
