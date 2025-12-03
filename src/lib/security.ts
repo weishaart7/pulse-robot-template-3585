@@ -41,11 +41,13 @@ export function sanitizeFinancialAmount(input: number | string | null | undefine
 export function sanitizeNumericInput(input: number | string | null | undefined): number | null {
   if (input === null || input === undefined || input === '') return null;
   
-  const num = typeof input === 'string' ? parseFloat(input) : input;
+  // Handle French decimal separator (comma) and standard dot
+  const num = typeof input === 'string' ? parseFloat(input.replace(',', '.')) : input;
   
   if (isNaN(num) || !isFinite(num)) return null;
   
-  return num;
+  // Round to 2 decimal places for precision
+  return Math.round(num * 100) / 100;
 }
 
 /**
