@@ -35,17 +35,17 @@ export interface Charge {
 
 // Helper to convert periodicity to annual amount
 const convertToAnnual = (montant: number, periodicite: string): number => {
-  switch (periodicite) {
-    case 'Mensuel':
-      return montant * 12;
-    case 'Trimestriel':
-      return montant * 4;
-    case 'Semestriel':
-      return montant * 2;
-    case 'Annuel':
-    default:
-      return montant;
+  const p = periodicite.toLowerCase();
+  if (p === 'mensuel' || p === 'mensuelle') {
+    return montant * 12;
   }
+  if (p === 'trimestriel' || p === 'trimestrielle') {
+    return montant * 4;
+  }
+  if (p === 'semestriel' || p === 'semestrielle') {
+    return montant * 2;
+  }
+  return montant; // annuel/annuelle or default
 };
 
 export const budgetService = {
