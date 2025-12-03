@@ -285,19 +285,20 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
 };
 
 // Fonction pour calculer le montant mensuel selon la périodicité
+// Note: Les montants sont stockés en base annualisés, donc on divise par 12 pour mensuel
 const getMonthlyAmount = (montant: number, periodicite?: string): number => {
   const p = (periodicite || 'mensuel').toLowerCase();
   switch (p) {
     case 'mensuel':
-      return montant;
+      return montant / 12; // Montant stocké annuellement, divisé par 12
     case 'trimestriel':
-      return montant / 3;
+      return montant / 4; // 4 trimestres par an
     case 'semestriel':
-      return montant / 6;
+      return montant / 2; // 2 semestres par an
     case 'annuel':
-      return montant / 12;
+      return montant; // Montant annuel payé en une fois
     case 'ponctuel':
-      return 0; // Les ponctuels sont traités séparément
+      return montant; // Montant ponctuel payé une fois
     default:
       return montant / 12;
   }
@@ -311,7 +312,6 @@ const getApplicableMonths = (
   jourFixe?: number
 ): number[] => {
   const p = (periodicite || 'mensuel').toLowerCase();
-  const allMonths = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
   
   // Si ponctuel avec une date, appliquer uniquement au mois de la date
   if (p === 'ponctuel' && dateDebut) {
@@ -319,8 +319,8 @@ const getApplicableMonths = (
     return [month];
   }
   
-  // Filtrer selon date_debut et date_fin si présentes
-  let months = allMonths;
+  // Pour mensuel, retourner tous les mois (filtrés par dates si présentes)
+  let months = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
   const currentYear = new Date().getFullYear();
   
   if (dateDebut) {
@@ -337,12 +337,14 @@ const getApplicableMonths = (
     }
   }
   
-  // Pour trimestriel/semestriel, appliquer uniquement à certains mois
+  // Pour les périodicités non-mensuelles, retourner les mois spécifiques
   if (p === 'trimestriel') {
-    return months.filter(m => m % 3 === 0); // Jan, Avr, Juil, Oct
+    // Jan (0), Avr (3), Juil (6), Oct (9)
+    return months.filter(m => [0, 3, 6, 9].includes(m));
   }
   if (p === 'semestriel') {
-    return months.filter(m => m % 6 === 0); // Jan, Juil
+    // Jan (0), Juil (6)
+    return months.filter(m => [0, 6].includes(m));
   }
   if (p === 'annuel') {
     // Appliquer en janvier ou au mois de date_debut
@@ -353,6 +355,7 @@ const getApplicableMonths = (
     return months.includes(0) ? [0] : [];
   }
   
+  // Pour mensuel (défaut), retourner tous les mois filtrés
   return months;
 };
 
