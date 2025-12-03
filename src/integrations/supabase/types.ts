@@ -329,33 +329,45 @@ export type Database = {
         Row: {
           commentaire: string | null
           created_at: string
+          date_debut: string | null
+          date_fin: string | null
           debiteur: string | null
           id: string
+          jour_fixe: number | null
           libelle: string
           montant: number | null
           nature: string
+          periodicite: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           commentaire?: string | null
           created_at?: string
+          date_debut?: string | null
+          date_fin?: string | null
           debiteur?: string | null
           id?: string
+          jour_fixe?: number | null
           libelle: string
           montant?: number | null
           nature: string
+          periodicite?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           commentaire?: string | null
           created_at?: string
+          date_debut?: string | null
+          date_fin?: string | null
           debiteur?: string | null
           id?: string
+          jour_fixe?: number | null
           libelle?: string
           montant?: number | null
           nature?: string
+          periodicite?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1248,10 +1260,14 @@ export type Database = {
           beneficiaire: string | null
           commentaire: string | null
           created_at: string
+          date_debut: string | null
+          date_fin: string | null
           id: string
+          jour_fixe: number | null
           libelle: string
           montant: number | null
           nature: string
+          periodicite: string | null
           revenu_disponible: boolean | null
           updated_at: string
           user_id: string
@@ -1260,10 +1276,14 @@ export type Database = {
           beneficiaire?: string | null
           commentaire?: string | null
           created_at?: string
+          date_debut?: string | null
+          date_fin?: string | null
           id?: string
+          jour_fixe?: number | null
           libelle: string
           montant?: number | null
           nature: string
+          periodicite?: string | null
           revenu_disponible?: boolean | null
           updated_at?: string
           user_id: string
@@ -1272,10 +1292,14 @@ export type Database = {
           beneficiaire?: string | null
           commentaire?: string | null
           created_at?: string
+          date_debut?: string | null
+          date_fin?: string | null
           id?: string
+          jour_fixe?: number | null
           libelle?: string
           montant?: number | null
           nature?: string
+          periodicite?: string | null
           revenu_disponible?: boolean | null
           updated_at?: string
           user_id?: string

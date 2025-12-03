@@ -15,12 +15,24 @@ import { useSecureForm } from '@/hooks/useSecureForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { sanitizeTextInput, sanitizeNumericInput } from '@/lib/security';
 
+const PERIODICITE_OPTIONS = [
+  { value: 'mensuel', label: 'Mensuel' },
+  { value: 'trimestriel', label: 'Trimestriel' },
+  { value: 'semestriel', label: 'Semestriel' },
+  { value: 'annuel', label: 'Annuel' },
+  { value: 'ponctuel', label: 'Ponctuel' },
+];
+
 const formSchema = z.object({
   categorie: z.string().min(1, "La catégorie est requise"),
   nature: z.string().min(1, "La nature est requise"),
   libelle: z.string().min(1, "Le libellé est requis"),
   beneficiaire: z.string().optional(),
   montant: z.string().min(1, "Le montant est requis"),
+  periodicite: z.string().default('mensuel'),
+  date_debut: z.string().optional(),
+  date_fin: z.string().optional(),
+  jour_fixe: z.string().optional(),
   commentaire: z.string().optional(),
 });
 
@@ -58,6 +70,10 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
       libelle: revenu?.libelle || "",
       beneficiaire: revenu?.beneficiaire || "",
       montant: revenu?.montant?.toString() || "",
+      periodicite: revenu?.periodicite || "mensuel",
+      date_debut: revenu?.date_debut || "",
+      date_fin: revenu?.date_fin || "",
+      jour_fixe: revenu?.jour_fixe?.toString() || "",
       commentaire: revenu?.commentaire || "",
     },
   });
@@ -99,6 +115,10 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
         beneficiaire: sanitizeTextInput(data.beneficiaire),
         montant: montantAnnuel,
         revenu_disponible: false,
+        periodicite: data.periodicite || 'mensuel',
+        date_debut: data.date_debut || null,
+        date_fin: data.date_fin || null,
+        jour_fixe: data.jour_fixe ? parseInt(data.jour_fixe) : null,
         commentaire: sanitizeTextInput(data.commentaire),
       };
 
@@ -156,6 +176,10 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
         libelle: "",
         beneficiaire: "",
         montant: "",
+        periodicite: "mensuel",
+        date_debut: "",
+        date_fin: "",
+        jour_fixe: "",
         commentaire: "",
       });
       setIsLibellePrefilled(false);
@@ -171,6 +195,10 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
         libelle: revenu.libelle || "",
         beneficiaire: revenu.beneficiaire || "",
         montant: revenu.montant?.toString() || "",
+        periodicite: revenu.periodicite || "mensuel",
+        date_debut: revenu.date_debut || "",
+        date_fin: revenu.date_fin || "",
+        jour_fixe: revenu.jour_fixe?.toString() || "",
         commentaire: revenu.commentaire || "",
       });
       setIsLibellePrefilled(false);
@@ -332,6 +360,76 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
                       </span>
                     )}
                   </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="periodicite"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Périodicité</FormLabel>
+                  <FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger size="lg">
+                        <SelectValue placeholder="Sélectionner la périodicité" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PERIODICITE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="date_debut"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date de début</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="date" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="date_fin"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date de fin (optionnel)</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="date" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="jour_fixe"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Jour fixe du mois (optionnel)</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="number" min="1" max="31" placeholder="ex: 15" />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">Pour les prélèvements à date fixe (1-31)</p>
                   <FormMessage />
                 </FormItem>
               )}
