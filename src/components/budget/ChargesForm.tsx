@@ -177,7 +177,16 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
   const natureOptions = availableNatures;
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()} modal={true}>
+    <Dialog 
+      open={open} 
+      onOpenChange={(isOpen) => {
+        if (!isOpen) {
+          // Délai pour laisser les popovers enfants se fermer proprement
+          setTimeout(() => onCancel(), 50);
+        }
+      }} 
+      modal={true}
+    >
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{charge ? 'Modifier la charge' : 'Ajouter une charge'}</DialogTitle>
