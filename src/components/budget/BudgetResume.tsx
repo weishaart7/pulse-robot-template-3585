@@ -476,12 +476,12 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
         >
           <defs>
             <linearGradient id="revenusGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#22c55e" stopOpacity={1} />
-              <stop offset="100%" stopColor="#16a34a" stopOpacity={0.8} />
+              <stop offset="0%" stopColor="#2a9d8f" stopOpacity={1} />
+              <stop offset="100%" stopColor="#21867a" stopOpacity={0.85} />
             </linearGradient>
             <linearGradient id="chargesGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#a78bfa" stopOpacity={1} />
-              <stop offset="100%" stopColor="#7c3aed" stopOpacity={0.8} />
+              <stop offset="0%" stopColor="#b0413e" stopOpacity={1} />
+              <stop offset="100%" stopColor="#8f3432" stopOpacity={0.85} />
             </linearGradient>
             <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
               <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.1"/>
