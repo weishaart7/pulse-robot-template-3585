@@ -25,13 +25,26 @@ export const BudgetRevenus = ({ displayMode, personFilter, personNames }: Budget
     deleteRevenu
   } = useRevenus();
 
-  // Filtrer par personne (individuel = uniquement les éléments explicitement attribués)
+  // Filtrer par personne (individuel = uniquement les éléments explicitement attribués + moitié des communs)
   const revenus = useMemo(() => {
     if (personFilter === 'couple') return allRevenus;
     const targetName = personFilter === 'utilisateur' 
       ? personNames.userFullName.toLowerCase() 
       : personNames.partnerFullName.toLowerCase();
-    return allRevenus.filter(r => r.beneficiaire?.toLowerCase() === targetName);
+    const commonValues = ['le couple', 'couple', 'commun', 'les deux'];
+    
+    return allRevenus
+      .filter(r => {
+        const beneficiaire = r.beneficiaire?.toLowerCase() || '';
+        return beneficiaire === targetName || commonValues.some(cv => beneficiaire.includes(cv));
+      })
+      .map(r => {
+        const beneficiaire = r.beneficiaire?.toLowerCase() || '';
+        if (commonValues.some(cv => beneficiaire.includes(cv))) {
+          return { ...r, montant: (r.montant || 0) / 2 };
+        }
+        return r;
+      });
   }, [allRevenus, personFilter, personNames]);
 
   const handleSubmitRevenu = async (data: Omit<Revenu, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {

@@ -13,8 +13,8 @@ interface BudgetResumeProps {
   personNames: PersonNames;
 }
 
-// Fonction utilitaire pour filtrer par personne
-const filterByPerson = <T extends { beneficiaire?: string | null } | { debiteur?: string | null }>(
+// Fonction utilitaire pour filtrer et ajuster les montants par personne
+const filterByPerson = <T extends { montant?: number | null; beneficiaire?: string | null; debiteur?: string | null }>(
   items: T[],
   personFilter: PersonFilter,
   field: 'beneficiaire' | 'debiteur',
@@ -28,11 +28,26 @@ const filterByPerson = <T extends { beneficiaire?: string | null } | { debiteur?
     ? personNames.userFullName.toLowerCase() 
     : personNames.partnerFullName.toLowerCase();
   
-  // Filtre individuel = uniquement les éléments explicitement attribués à cette personne
-  return items.filter(item => {
-    const value = (item as Record<string, unknown>)[field] as string | null | undefined;
-    return value?.toLowerCase() === targetName;
-  });
+  // Valeurs qui indiquent un élément commun
+  const commonValues = ['le couple', 'couple', 'commun', 'les deux'];
+  
+  // Filtre individuel : éléments propres + moitié des communs
+  return items
+    .filter(item => {
+      const value = (item as Record<string, unknown>)[field] as string | null | undefined;
+      const valueLower = value?.toLowerCase() || '';
+      // Inclure si c'est attribué à la personne OU si c'est commun
+      return valueLower === targetName || commonValues.some(cv => valueLower.includes(cv));
+    })
+    .map(item => {
+      const value = (item as Record<string, unknown>)[field] as string | null | undefined;
+      const valueLower = value?.toLowerCase() || '';
+      // Si c'est un élément commun, diviser le montant par 2
+      if (commonValues.some(cv => valueLower.includes(cv))) {
+        return { ...item, montant: (item.montant || 0) / 2 };
+      }
+      return item;
+    });
 };
 
 export const BudgetResume = ({ displayMode, personFilter, personNames }: BudgetResumeProps) => {
