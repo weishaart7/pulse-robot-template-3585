@@ -3,9 +3,14 @@ import AnimatedBackground from '@/components/ui/animated-tabs';
 import { BudgetResume } from '@/components/budget/BudgetResume';
 import { BudgetRevenus } from '@/components/budget/BudgetRevenus';
 import { BudgetCharges } from '@/components/budget/BudgetCharges';
+import { Button } from '@/components/ui/button';
+import { Calendar, CalendarDays } from 'lucide-react';
+
+export type DisplayMode = 'annuel' | 'mensuel';
 
 export const BudgetSection = () => {
   const [activeTab, setActiveTab] = useState('resume');
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('annuel');
 
   const TABS = [
     { id: 'resume', label: 'Résumé' },
@@ -16,24 +21,44 @@ export const BudgetSection = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'resume':
-        return <BudgetResume />;
+        return <BudgetResume displayMode={displayMode} />;
       case 'revenus':
-        return <BudgetRevenus />;
+        return <BudgetRevenus displayMode={displayMode} />;
       case 'charges':
-        return <BudgetCharges />;
+        return <BudgetCharges displayMode={displayMode} />;
       default:
-        return <BudgetResume />;
+        return <BudgetResume displayMode={displayMode} />;
     }
   };
 
   return (
     <div className="p-6">
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Budget</h2>
           <p className="text-muted-foreground">
             Contrôlez vos revenus, dépenses et objectifs financiers
           </p>
+        </div>
+        <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+          <Button
+            variant={displayMode === 'mensuel' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setDisplayMode('mensuel')}
+            className="gap-2"
+          >
+            <Calendar className="h-4 w-4" />
+            Mensuel
+          </Button>
+          <Button
+            variant={displayMode === 'annuel' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setDisplayMode('annuel')}
+            className="gap-2"
+          >
+            <CalendarDays className="h-4 w-4" />
+            Annuel
+          </Button>
         </div>
       </div>
 

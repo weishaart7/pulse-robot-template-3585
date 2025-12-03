@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Trash2, Edit, MoreHorizontal, Building2 } from 'lucide-react';
 import { Revenu, Charge } from '@/services/budgetService';
+import { DisplayMode } from '@/pages/budget/BudgetSection';
 
 interface BudgetListProps {
   revenus: Revenu[];
@@ -19,6 +20,7 @@ interface BudgetListProps {
   onEditCharge: (charge: Charge) => void;
   onDeleteCharge: (id: string) => void;
   loading?: boolean;
+  displayMode?: DisplayMode;
 }
 
 export const BudgetList = ({
@@ -28,11 +30,29 @@ export const BudgetList = ({
   onDeleteRevenu,
   onEditCharge,
   onDeleteCharge,
-  loading
+  loading,
+  displayMode = 'annuel'
 }: BudgetListProps) => {
   if (loading) {
     return <div>Chargement...</div>;
   }
+
+  const divisor = displayMode === 'mensuel' ? 12 : 1;
+  const periodLabel = displayMode === 'mensuel' ? '/mois' : '/an';
+
+  const getDisplayAmount = (amount: number | undefined) => {
+    if (!amount) return undefined;
+    return amount / divisor;
+  };
+
+  const formatCurrency = (amount: number | undefined) => {
+    if (!amount) return '-';
+    return amount.toLocaleString('fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+      maximumFractionDigits: 0
+    });
+  };
 
   const totalRevenus = revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0);
   const totalCharges = charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
@@ -45,7 +65,12 @@ export const BudgetList = ({
       {revenus.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Revenus</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              Revenus
+              <Badge variant="outline" className="font-normal">
+                {periodLabel}
+              </Badge>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
@@ -74,12 +99,7 @@ export const BudgetList = ({
                     </TableCell>
                     <TableCell>{revenu.beneficiaire || '-'}</TableCell>
                     <TableCell className="text-right">
-                      {revenu.montant ? 
-                        revenu.montant.toLocaleString('fr-FR', {
-                          style: 'currency',
-                          currency: 'EUR'
-                        }) : '-'
-                      }
+                      {formatCurrency(getDisplayAmount(revenu.montant))}
                     </TableCell>
                     <TableCell className="text-right">
                       {totalRevenus > 0 && revenu.montant 
@@ -122,10 +142,7 @@ export const BudgetList = ({
                 <TableRow className="font-bold bg-muted/50">
                   <TableCell colSpan={2}>Total</TableCell>
                   <TableCell className="text-right">
-                    {totalRevenus.toLocaleString('fr-FR', {
-                      style: 'currency',
-                      currency: 'EUR'
-                    })}
+                    {formatCurrency(getDisplayAmount(totalRevenus))}
                   </TableCell>
                   <TableCell className="text-right">100%</TableCell>
                   <TableCell></TableCell>
@@ -140,7 +157,12 @@ export const BudgetList = ({
       {charges.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Charges</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              Charges
+              <Badge variant="outline" className="font-normal">
+                {periodLabel}
+              </Badge>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
@@ -169,12 +191,7 @@ export const BudgetList = ({
                     </TableCell>
                     <TableCell>{charge.debiteur || '-'}</TableCell>
                     <TableCell className="text-right">
-                      {charge.montant ? 
-                        charge.montant.toLocaleString('fr-FR', {
-                          style: 'currency',
-                          currency: 'EUR'
-                        }) : '-'
-                      }
+                      {formatCurrency(getDisplayAmount(charge.montant))}
                     </TableCell>
                     <TableCell className="text-right">
                       {totalCharges > 0 && charge.montant 
@@ -217,10 +234,7 @@ export const BudgetList = ({
                 <TableRow className="font-bold bg-muted/50">
                   <TableCell colSpan={2}>Total</TableCell>
                   <TableCell className="text-right">
-                    {totalCharges.toLocaleString('fr-FR', {
-                      style: 'currency',
-                      currency: 'EUR'
-                    })}
+                    {formatCurrency(getDisplayAmount(totalCharges))}
                   </TableCell>
                   <TableCell className="text-right">100%</TableCell>
                   <TableCell></TableCell>
