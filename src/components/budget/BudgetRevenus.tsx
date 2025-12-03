@@ -6,7 +6,13 @@ import { useRevenus } from '@/hooks/useBudget';
 import { RevenusForm } from '@/components/budget/RevenusForm';
 import { BudgetList } from '@/components/budget/BudgetList';
 import { Revenu } from '@/services/budgetService';
-export const BudgetRevenus = () => {
+import { DisplayMode } from '@/pages/budget/BudgetSection';
+
+interface BudgetRevenusProps {
+  displayMode: DisplayMode;
+}
+
+export const BudgetRevenus = ({ displayMode }: BudgetRevenusProps) => {
   const [showRevenusForm, setShowRevenusForm] = useState(false);
   const [editingRevenu, setEditingRevenu] = useState<Revenu | undefined>();
   const {
@@ -16,6 +22,7 @@ export const BudgetRevenus = () => {
     updateRevenu,
     deleteRevenu
   } = useRevenus();
+
   const handleSubmitRevenu = async (data: Omit<Revenu, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (editingRevenu) {
       await updateRevenu(editingRevenu.id, data);
@@ -25,20 +32,23 @@ export const BudgetRevenus = () => {
     }
     setShowRevenusForm(false);
   };
+
   const handleEditRevenu = (revenu: Revenu) => {
     setEditingRevenu(revenu);
     setShowRevenusForm(true);
   };
+
   const handleCancelRevenu = () => {
     setShowRevenusForm(false);
     setEditingRevenu(undefined);
   };
-  return <div className="space-y-6">
+
+  return (
+    <div className="space-y-6">
       {/* Résumé des revenus */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Sources de revenus</CardTitle>
-          
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
@@ -57,9 +67,24 @@ export const BudgetRevenus = () => {
       </Card>
 
       {/* Formulaire d'ajout/modification */}
-      <RevenusForm revenu={editingRevenu} onSubmit={handleSubmitRevenu} onCancel={handleCancelRevenu} open={showRevenusForm} />
+      <RevenusForm 
+        revenu={editingRevenu} 
+        onSubmit={handleSubmitRevenu} 
+        onCancel={handleCancelRevenu} 
+        open={showRevenusForm} 
+      />
 
       {/* Liste des revenus */}
-      <BudgetList revenus={revenus} charges={[]} onEditRevenu={handleEditRevenu} onDeleteRevenu={deleteRevenu} onEditCharge={() => {}} onDeleteCharge={() => {}} loading={revenusLoading} />
-    </div>;
+      <BudgetList 
+        revenus={revenus} 
+        charges={[]} 
+        onEditRevenu={handleEditRevenu} 
+        onDeleteRevenu={deleteRevenu} 
+        onEditCharge={() => {}} 
+        onDeleteCharge={() => {}} 
+        loading={revenusLoading}
+        displayMode={displayMode}
+      />
+    </div>
+  );
 };

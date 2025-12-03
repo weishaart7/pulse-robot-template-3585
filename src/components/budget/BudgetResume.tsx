@@ -5,7 +5,13 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 import { useRevenus, useCharges } from '@/hooks/useBudget';
 import { REVENUS_CATEGORIES, CHARGES_CATEGORIES } from '@/constants/budgetCategories';
 import { SlidingNumber } from '@/components/ui/sliding-number';
-export const BudgetResume = () => {
+import { DisplayMode } from '@/pages/budget/BudgetSection';
+
+interface BudgetResumeProps {
+  displayMode: DisplayMode;
+}
+
+export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
   const {
     revenus,
     loading: revenusLoading,
@@ -22,6 +28,14 @@ export const BudgetResume = () => {
   }, []);
   const totalRevenus = Math.round(revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0));
   const totalCharges = Math.round(charges.reduce((sum, charge) => sum + (charge.montant || 0), 0));
+
+  const divisor = displayMode === 'mensuel' ? 12 : 1;
+  const periodLabel = displayMode === 'mensuel' ? 'mensuel' : 'annuel';
+
+  // Appliquer le diviseur pour l'affichage
+  const displayRevenus = Math.round(totalRevenus / divisor);
+  const displayCharges = Math.round(totalCharges / divisor);
+
   if (revenusLoading || chargesLoading) {
     return <div className="space-y-6">
         <Card>
@@ -37,11 +51,12 @@ export const BudgetResume = () => {
 
   // Calculer les mensualités de crédits (charges liées aux crédits)
   const mensualitesCredits = Math.round(charges.filter(charge => charge.nature?.toLowerCase().includes('crédit') || charge.nature?.toLowerCase().includes('emprunt')).reduce((sum, charge) => sum + (charge.montant || 0), 0));
+  const displayMensualitesCredits = Math.round(mensualitesCredits / divisor);
 
-  // Calculer les indicateurs
-  const soldeMensuel = Math.round(totalRevenus - totalCharges);
-  const tauxEndettement = totalRevenus > 0 ? mensualitesCredits / totalRevenus * 100 : 0;
-  const capaciteEndettement = Math.round(totalRevenus * 0.35 - mensualitesCredits);
+  // Calculer les indicateurs (basés sur les montants affichés)
+  const soldePeriode = displayRevenus - displayCharges;
+  const tauxEndettement = displayRevenus > 0 ? displayMensualitesCredits / displayRevenus * 100 : 0;
+  const capaciteEndettement = Math.round(displayRevenus * 0.35 - displayMensualitesCredits);
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -57,7 +72,7 @@ export const BudgetResume = () => {
     const total = revenusCategorie.reduce((sum, r) => sum + (Number(r.montant) || 0), 0);
     return {
       categorie,
-      total,
+      total: total / divisor,
       count: revenusCategorie.length
     };
   }).filter(cat => cat.count > 0);
@@ -68,7 +83,7 @@ export const BudgetResume = () => {
     const total = chargesCategorie.reduce((sum, c) => sum + (Number(c.montant) || 0), 0);
     return {
       categorie,
-      total,
+      total: total / divisor,
       count: chargesCategorie.length
     };
   }).filter(cat => cat.count > 0);
@@ -108,12 +123,12 @@ export const BudgetResume = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="border-0">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-medium text-muted-foreground">Solde mensuel annualisé</CardTitle>
+            <CardTitle className="text-base font-medium text-muted-foreground">Solde {periodLabel}</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="text-2xl font-bold flex items-center gap-1 text-black">
-              {soldeMensuel >= 0 ? '+' : ''}
-              <SlidingNumber value={soldeMensuel} />
+              {soldePeriode >= 0 ? '+' : ''}
+              <SlidingNumber value={soldePeriode} />
               <span className="ml-1">€</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -134,7 +149,7 @@ export const BudgetResume = () => {
               <span>%</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {mensualitesCredits.toLocaleString('fr-FR')} € / {totalRevenus.toLocaleString('fr-FR')} €
+              {displayMensualitesCredits.toLocaleString('fr-FR')} € / {displayRevenus.toLocaleString('fr-FR')} €
             </p>
           </CardContent>
         </Card>
