@@ -67,13 +67,15 @@ export const BudgetCharges = ({ displayMode }: BudgetChargesProps) => {
       </Card>
 
       {/* Formulaire d'ajout/modification */}
-      <ChargesForm 
-        charge={editingCharge} 
-        onSubmit={handleSubmitCharge} 
-        onCancel={handleCancelCharge} 
-        open={showChargesForm}
-        displayMode={displayMode}
-      />
+      {showChargesForm && (
+        <ChargesForm 
+          charge={editingCharge} 
+          onSubmit={handleSubmitCharge} 
+          onCancel={handleCancelCharge} 
+          open={showChargesForm}
+          displayMode={displayMode}
+        />
+      )}
 
       {/* Liste des charges */}
       <BudgetList 

@@ -67,13 +67,15 @@ export const BudgetRevenus = ({ displayMode }: BudgetRevenusProps) => {
       </Card>
 
       {/* Formulaire d'ajout/modification */}
-      <RevenusForm 
-        revenu={editingRevenu} 
-        onSubmit={handleSubmitRevenu} 
-        onCancel={handleCancelRevenu} 
-        open={showRevenusForm}
-        displayMode={displayMode}
-      />
+      {showRevenusForm && (
+        <RevenusForm 
+          revenu={editingRevenu} 
+          onSubmit={handleSubmitRevenu} 
+          onCancel={handleCancelRevenu} 
+          open={showRevenusForm}
+          displayMode={displayMode}
+        />
+      )}
 
       {/* Liste des revenus */}
       <BudgetList 
