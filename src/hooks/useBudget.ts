@@ -10,8 +10,14 @@ export const useRevenus = () => {
   const fetchRevenus = async () => {
     setLoading(true);
     try {
-      const data = await budgetService.getRevenus();
-      setRevenus(data);
+      // Fetch both classic revenus and asset revenus
+      const [classicRevenus, assetRevenus] = await Promise.all([
+        budgetService.getRevenus(),
+        budgetService.getAssetRevenusForBudget()
+      ]);
+      
+      // Merge both sources
+      setRevenus([...classicRevenus, ...assetRevenus]);
     } catch (error) {
       toast({
         title: "Erreur",
@@ -101,8 +107,14 @@ export const useCharges = () => {
   const fetchCharges = async () => {
     setLoading(true);
     try {
-      const data = await budgetService.getCharges();
-      setCharges(data);
+      // Fetch both classic charges and asset charges
+      const [classicCharges, assetCharges] = await Promise.all([
+        budgetService.getCharges(),
+        budgetService.getAssetChargesForBudget()
+      ]);
+      
+      // Merge both sources
+      setCharges([...classicCharges, ...assetCharges]);
     } catch (error) {
       toast({
         title: "Erreur",

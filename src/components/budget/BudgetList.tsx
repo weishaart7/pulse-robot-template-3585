@@ -8,8 +8,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Trash2, Edit, MoreHorizontal } from 'lucide-react';
+import { Trash2, Edit, MoreHorizontal, Building2 } from 'lucide-react';
 import { Revenu, Charge } from '@/services/budgetService';
+
 interface BudgetListProps {
   revenus: Revenu[];
   charges: Charge[];
@@ -19,6 +20,7 @@ interface BudgetListProps {
   onDeleteCharge: (id: string) => void;
   loading?: boolean;
 }
+
 export const BudgetList = ({
   revenus,
   charges,
@@ -35,9 +37,13 @@ export const BudgetList = ({
   const totalRevenus = revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0);
   const totalCharges = charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
 
-  return <div className="space-y-6">
+  const isFromImmobilier = (item: Revenu | Charge) => item.source === 'immobilier';
+
+  return (
+    <div className="space-y-6">
       {/* Liste des revenus */}
-      {revenus.length > 0 && <Card>
+      {revenus.length > 0 && (
+        <Card>
           <CardHeader>
             <CardTitle>Revenus</CardTitle>
           </CardHeader>
@@ -55,7 +61,17 @@ export const BudgetList = ({
               <TableBody>
                 {revenus.map(revenu => (
                   <TableRow key={revenu.id}>
-                    <TableCell className="font-medium">{revenu.libelle}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {revenu.libelle}
+                        {isFromImmobilier(revenu) && (
+                          <Badge variant="secondary" className="text-xs gap-1">
+                            <Building2 className="h-3 w-3" />
+                            Immobilier
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{revenu.beneficiaire || '-'}</TableCell>
                     <TableCell className="text-right">
                       {revenu.montant ? 
@@ -72,28 +88,34 @@ export const BudgetList = ({
                       }
                     </TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="rounded-full shadow-none"
-                            aria-label="Open edit menu"
-                          >
-                            <MoreHorizontal size={16} strokeWidth={2} aria-hidden="true" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem onClick={() => onEditRevenu(revenu)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Modifier
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onDeleteRevenu(revenu.id)}>
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Supprimer
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {isFromImmobilier(revenu) ? (
+                        <span className="text-xs text-muted-foreground">
+                          Modifier depuis Immobilier
+                        </span>
+                      ) : (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="rounded-full shadow-none"
+                              aria-label="Open edit menu"
+                            >
+                              <MoreHorizontal size={16} strokeWidth={2} aria-hidden="true" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => onEditRevenu(revenu)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Modifier
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onDeleteRevenu(revenu.id)}>
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Supprimer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -111,10 +133,12 @@ export const BudgetList = ({
               </TableBody>
             </Table>
           </CardContent>
-        </Card>}
+        </Card>
+      )}
 
       {/* Liste des charges */}
-      {charges.length > 0 && <Card>
+      {charges.length > 0 && (
+        <Card>
           <CardHeader>
             <CardTitle>Charges</CardTitle>
           </CardHeader>
@@ -132,7 +156,17 @@ export const BudgetList = ({
               <TableBody>
                 {charges.map(charge => (
                   <TableRow key={charge.id}>
-                    <TableCell className="font-medium">{charge.libelle}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {charge.libelle}
+                        {isFromImmobilier(charge) && (
+                          <Badge variant="secondary" className="text-xs gap-1">
+                            <Building2 className="h-3 w-3" />
+                            Immobilier
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{charge.debiteur || '-'}</TableCell>
                     <TableCell className="text-right">
                       {charge.montant ? 
@@ -149,28 +183,34 @@ export const BudgetList = ({
                       }
                     </TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="rounded-full shadow-none"
-                            aria-label="Open edit menu"
-                          >
-                            <MoreHorizontal size={16} strokeWidth={2} aria-hidden="true" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem onClick={() => onEditCharge(charge)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Modifier
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onDeleteCharge(charge.id)}>
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Supprimer
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {isFromImmobilier(charge) ? (
+                        <span className="text-xs text-muted-foreground">
+                          Modifier depuis Immobilier
+                        </span>
+                      ) : (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="rounded-full shadow-none"
+                              aria-label="Open edit menu"
+                            >
+                              <MoreHorizontal size={16} strokeWidth={2} aria-hidden="true" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => onEditCharge(charge)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Modifier
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onDeleteCharge(charge.id)}>
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Supprimer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -188,10 +228,14 @@ export const BudgetList = ({
               </TableBody>
             </Table>
           </CardContent>
-        </Card>}
+        </Card>
+      )}
 
-      {revenus.length === 0 && charges.length === 0 && <div className="text-center text-muted-foreground py-8">
+      {revenus.length === 0 && charges.length === 0 && (
+        <div className="text-center text-muted-foreground py-8">
           Aucun revenu ou charge enregistré pour le moment.
-        </div>}
-    </div>;
+        </div>
+      )}
+    </div>
+  );
 };
