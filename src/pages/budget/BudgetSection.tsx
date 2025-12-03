@@ -25,9 +25,8 @@ export const BudgetSection = () => {
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
 
-  // Déterminer si l'utilisateur est en couple
-  const isInCouple = maritalStatus?.statut_couple && 
-    ['marie', 'pacse', 'concubinage'].includes(maritalStatus.statut_couple);
+  // Déterminer si l'utilisateur est en couple (si un conjoint est renseigné)
+  const isInCouple = !!(maritalStatus?.prenom_conjoint || maritalStatus?.nom_conjoint);
 
   // Prénoms
   const userFirstName = familyProfile?.prenom || 'Utilisateur';
