@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -49,10 +49,10 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
   });
 
   // Convertir le montant pour l'affichage selon le mode
-  const getDisplayMontant = (montantAnnuel: number | null | undefined) => {
+  const getDisplayMontant = useCallback((montantAnnuel: number | null | undefined) => {
     if (!montantAnnuel) return "";
     return displayMode === 'mensuel' ? (montantAnnuel / 12).toFixed(2) : montantAnnuel.toString();
-  };
+  }, [displayMode]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -134,7 +134,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
       setIsSubmitting(false);
       setIsLibellePrefilled(false);
     }
-  }, [open, charge, form, displayMode]);
+  }, [open, charge, form, getDisplayMontant]);
 
   const handleSubmit = async (data: FormData) => {
     setIsSubmitting(true);
