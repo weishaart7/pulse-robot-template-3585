@@ -24,7 +24,7 @@ export interface PersonNames {
 
 export const BudgetSection = () => {
   const [activeTab, setActiveTab] = useState('resume');
-  const [displayMode, setDisplayMode] = useState<DisplayMode>('annuel');
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('mensuel');
   const [personFilter, setPersonFilter] = useState<PersonFilter>('couple');
 
   const { data: familyProfile } = useFamilyProfile();
