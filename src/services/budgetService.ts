@@ -11,6 +11,10 @@ export interface Revenu {
   commentaire?: string;
   created_at: string;
   updated_at: string;
+  // Extended fields for immobilier
+  source?: 'budget' | 'immobilier';
+  asset_id?: string;
+  asset_name?: string;
 }
 
 export interface Charge {
@@ -23,7 +27,26 @@ export interface Charge {
   commentaire?: string;
   created_at: string;
   updated_at: string;
+  // Extended fields for immobilier
+  source?: 'budget' | 'immobilier';
+  asset_id?: string;
+  asset_name?: string;
 }
+
+// Helper to convert periodicity to annual amount
+const convertToAnnual = (montant: number, periodicite: string): number => {
+  switch (periodicite) {
+    case 'Mensuel':
+      return montant * 12;
+    case 'Trimestriel':
+      return montant * 4;
+    case 'Semestriel':
+      return montant * 2;
+    case 'Annuel':
+    default:
+      return montant;
+  }
+};
 
 export const budgetService = {
   // Revenus
@@ -34,7 +57,52 @@ export const budgetService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map(r => ({ ...r, source: 'budget' as const }));
+  },
+
+  async getAssetRevenusForBudget(): Promise<Revenu[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase
+      .from('asset_revenus')
+      .select(`
+        id,
+        asset_id,
+        nature,
+        montant,
+        periodicite,
+        commentaire,
+        created_at,
+        updated_at,
+        assets!inner (
+          id,
+          denomination,
+          user_id
+        )
+      `)
+      .eq('impact_budget', true);
+
+    if (error) throw error;
+
+    // Transform asset_revenus to Revenu format
+    return (data || [])
+      .filter((item: any) => item.assets?.user_id === user.id)
+      .map((item: any) => ({
+        id: item.id,
+        user_id: user.id,
+        nature: item.nature || 'Revenus locatifs',
+        libelle: `${item.nature || 'Revenu'} - ${item.assets?.denomination || 'Bien immobilier'}`,
+        beneficiaire: 'Immobilier',
+        montant: convertToAnnual(item.montant || 0, item.periodicite),
+        revenu_disponible: true,
+        commentaire: item.commentaire,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        source: 'immobilier' as const,
+        asset_id: item.asset_id,
+        asset_name: item.assets?.denomination || 'Bien immobilier'
+      }));
   },
 
   async createRevenu(revenu: Omit<Revenu, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Revenu> {
@@ -48,7 +116,7 @@ export const budgetService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return { ...data, source: 'budget' as const };
   },
 
   async updateRevenu(id: string, revenu: Partial<Revenu>): Promise<Revenu> {
@@ -74,7 +142,7 @@ export const budgetService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return { ...data, source: 'budget' as const };
   },
 
   async deleteRevenu(id: string): Promise<void> {
@@ -108,7 +176,52 @@ export const budgetService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map(c => ({ ...c, source: 'budget' as const }));
+  },
+
+  async getAssetChargesForBudget(): Promise<Charge[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase
+      .from('asset_charges')
+      .select(`
+        id,
+        asset_id,
+        type_charge,
+        denomination,
+        debiteur,
+        montant,
+        periodicite,
+        created_at,
+        updated_at,
+        assets!inner (
+          id,
+          denomination,
+          user_id
+        )
+      `)
+      .eq('impact_budget', true);
+
+    if (error) throw error;
+
+    // Transform asset_charges to Charge format
+    return (data || [])
+      .filter((item: any) => item.assets?.user_id === user.id)
+      .map((item: any) => ({
+        id: item.id,
+        user_id: user.id,
+        nature: item.type_charge || 'Charges locatives',
+        libelle: `${item.denomination || item.type_charge} - ${item.assets?.denomination || 'Bien immobilier'}`,
+        debiteur: item.debiteur || 'Immobilier',
+        montant: convertToAnnual(item.montant || 0, item.periodicite),
+        commentaire: undefined,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        source: 'immobilier' as const,
+        asset_id: item.asset_id,
+        asset_name: item.assets?.denomination || 'Bien immobilier'
+      }));
   },
 
   async createCharge(charge: Omit<Charge, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Charge> {
@@ -122,7 +235,7 @@ export const budgetService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return { ...data, source: 'budget' as const };
   },
 
   async updateCharge(id: string, charge: Partial<Charge>): Promise<Charge> {
@@ -148,7 +261,7 @@ export const budgetService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return { ...data, source: 'budget' as const };
   },
 
   async deleteCharge(id: string): Promise<void> {
