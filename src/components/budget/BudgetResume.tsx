@@ -312,18 +312,24 @@ const getApplicableMonths = (
   jourFixe?: number
 ): number[] => {
   const p = (periodicite || 'mensuel').toLowerCase();
+  const currentYear = new Date().getFullYear();
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
   
-  // Si ponctuel avec une date, appliquer uniquement au mois de la date
-  if (p === 'ponctuel' && dateDebut) {
+  // Vérifier si date_debut est "significative" (pas la valeur par défaut d'aujourd'hui)
+  const isDateDebutMeaningful = dateDebut && dateDebut !== todayStr;
+  
+  // Si ponctuel avec une date significative, appliquer uniquement au mois de la date
+  if (p === 'ponctuel' && isDateDebutMeaningful) {
     const month = new Date(dateDebut).getMonth();
     return [month];
   }
   
   // Pour mensuel, retourner tous les mois (filtrés par dates si présentes)
   let months = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-  const currentYear = new Date().getFullYear();
   
-  if (dateDebut) {
+  // Ne filtrer par date_debut que si c'est une date significative (pas le défaut)
+  if (isDateDebutMeaningful) {
     const startDate = new Date(dateDebut);
     if (startDate.getFullYear() === currentYear) {
       months = months.filter(m => m >= startDate.getMonth());
@@ -347,8 +353,8 @@ const getApplicableMonths = (
     return months.filter(m => [0, 6].includes(m));
   }
   if (p === 'annuel') {
-    // Appliquer en janvier ou au mois de date_debut
-    if (dateDebut) {
+    // Appliquer en janvier ou au mois de date_debut si significatif
+    if (isDateDebutMeaningful) {
       const month = new Date(dateDebut).getMonth();
       return months.includes(month) ? [month] : [];
     }
