@@ -5,36 +5,37 @@ import { useRevenus, useCharges } from '@/hooks/useBudget';
 import { Revenu, Charge } from '@/services/budgetService';
 import { REVENUS_CATEGORIES, CHARGES_CATEGORIES } from '@/constants/budgetCategories';
 import { SlidingNumber } from '@/components/ui/sliding-number';
-import { DisplayMode, PersonFilter } from '@/pages/budget/BudgetSection';
+import { DisplayMode, PersonFilter, PersonNames } from '@/pages/budget/BudgetSection';
 
 interface BudgetResumeProps {
   displayMode: DisplayMode;
   personFilter: PersonFilter;
+  personNames: PersonNames;
 }
 
 // Fonction utilitaire pour filtrer par personne
 const filterByPerson = <T extends { beneficiaire?: string | null } | { debiteur?: string | null }>(
   items: T[],
   personFilter: PersonFilter,
-  field: 'beneficiaire' | 'debiteur'
+  field: 'beneficiaire' | 'debiteur',
+  personNames: PersonNames
 ): T[] => {
   // Couple = tous les revenus/charges (propres + communs)
   if (personFilter === 'couple') return items;
   
+  // Déterminer le nom à chercher
+  const targetName = personFilter === 'utilisateur' 
+    ? personNames.userFullName.toLowerCase() 
+    : personNames.partnerFullName.toLowerCase();
+  
   // Filtre individuel = uniquement les éléments explicitement attribués à cette personne
   return items.filter(item => {
     const value = (item as Record<string, unknown>)[field] as string | null | undefined;
-    if (personFilter === 'utilisateur') {
-      return value?.toLowerCase() === 'utilisateur';
-    }
-    if (personFilter === 'conjoint') {
-      return value?.toLowerCase() === 'conjoint';
-    }
-    return true;
+    return value?.toLowerCase() === targetName;
   });
 };
 
-export const BudgetResume = ({ displayMode, personFilter }: BudgetResumeProps) => {
+export const BudgetResume = ({ displayMode, personFilter, personNames }: BudgetResumeProps) => {
   const {
     revenus: allRevenus,
     loading: revenusLoading,
@@ -53,12 +54,12 @@ export const BudgetResume = ({ displayMode, personFilter }: BudgetResumeProps) =
 
   // Filtrer par personne
   const revenus = useMemo(() => 
-    filterByPerson(allRevenus, personFilter, 'beneficiaire'), 
-    [allRevenus, personFilter]
+    filterByPerson(allRevenus, personFilter, 'beneficiaire', personNames), 
+    [allRevenus, personFilter, personNames]
   );
   const charges = useMemo(() => 
-    filterByPerson(allCharges, personFilter, 'debiteur'), 
-    [allCharges, personFilter]
+    filterByPerson(allCharges, personFilter, 'debiteur', personNames), 
+    [allCharges, personFilter, personNames]
   );
 
   const totalRevenus = Math.round(revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0));

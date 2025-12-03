@@ -6,14 +6,15 @@ import { useRevenus } from '@/hooks/useBudget';
 import { RevenusForm } from '@/components/budget/RevenusForm';
 import { BudgetList } from '@/components/budget/BudgetList';
 import { Revenu } from '@/services/budgetService';
-import { DisplayMode, PersonFilter } from '@/pages/budget/BudgetSection';
+import { DisplayMode, PersonFilter, PersonNames } from '@/pages/budget/BudgetSection';
 
 interface BudgetRevenusProps {
   displayMode: DisplayMode;
   personFilter: PersonFilter;
+  personNames: PersonNames;
 }
 
-export const BudgetRevenus = ({ displayMode, personFilter }: BudgetRevenusProps) => {
+export const BudgetRevenus = ({ displayMode, personFilter, personNames }: BudgetRevenusProps) => {
   const [showRevenusForm, setShowRevenusForm] = useState(false);
   const [editingRevenu, setEditingRevenu] = useState<Revenu | undefined>();
   const {
@@ -27,11 +28,11 @@ export const BudgetRevenus = ({ displayMode, personFilter }: BudgetRevenusProps)
   // Filtrer par personne (individuel = uniquement les éléments explicitement attribués)
   const revenus = useMemo(() => {
     if (personFilter === 'couple') return allRevenus;
-    return allRevenus.filter(r => {
-      const beneficiaire = r.beneficiaire?.toLowerCase();
-      return beneficiaire === personFilter;
-    });
-  }, [allRevenus, personFilter]);
+    const targetName = personFilter === 'utilisateur' 
+      ? personNames.userFullName.toLowerCase() 
+      : personNames.partnerFullName.toLowerCase();
+    return allRevenus.filter(r => r.beneficiaire?.toLowerCase() === targetName);
+  }, [allRevenus, personFilter, personNames]);
 
   const handleSubmitRevenu = async (data: Omit<Revenu, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (editingRevenu) {
