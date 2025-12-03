@@ -6,14 +6,15 @@ import { useCharges } from '@/hooks/useBudget';
 import { ChargesForm } from '@/components/budget/ChargesForm';
 import { BudgetList } from '@/components/budget/BudgetList';
 import { Charge } from '@/services/budgetService';
-import { DisplayMode, PersonFilter } from '@/pages/budget/BudgetSection';
+import { DisplayMode, PersonFilter, PersonNames } from '@/pages/budget/BudgetSection';
 
 interface BudgetChargesProps {
   displayMode: DisplayMode;
   personFilter: PersonFilter;
+  personNames: PersonNames;
 }
 
-export const BudgetCharges = ({ displayMode, personFilter }: BudgetChargesProps) => {
+export const BudgetCharges = ({ displayMode, personFilter, personNames }: BudgetChargesProps) => {
   const [showChargesForm, setShowChargesForm] = useState(false);
   const [editingCharge, setEditingCharge] = useState<Charge | undefined>();
   const {
@@ -27,11 +28,11 @@ export const BudgetCharges = ({ displayMode, personFilter }: BudgetChargesProps)
   // Filtrer par personne (individuel = uniquement les éléments explicitement attribués)
   const charges = useMemo(() => {
     if (personFilter === 'couple') return allCharges;
-    return allCharges.filter(c => {
-      const debiteur = c.debiteur?.toLowerCase();
-      return debiteur === personFilter;
-    });
-  }, [allCharges, personFilter]);
+    const targetName = personFilter === 'utilisateur' 
+      ? personNames.userFullName.toLowerCase() 
+      : personNames.partnerFullName.toLowerCase();
+    return allCharges.filter(c => c.debiteur?.toLowerCase() === targetName);
+  }, [allCharges, personFilter, personNames]);
 
   const handleSubmitCharge = async (data: Omit<Charge, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (editingCharge) {

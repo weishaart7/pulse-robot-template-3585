@@ -17,6 +17,11 @@ import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 export type DisplayMode = 'annuel' | 'mensuel';
 export type PersonFilter = 'couple' | 'utilisateur' | 'conjoint';
 
+export interface PersonNames {
+  userFullName: string;
+  partnerFullName: string;
+}
+
 export const BudgetSection = () => {
   const [activeTab, setActiveTab] = useState('resume');
   const [displayMode, setDisplayMode] = useState<DisplayMode>('annuel');
@@ -28,9 +33,18 @@ export const BudgetSection = () => {
   // Déterminer si l'utilisateur est en couple (si un conjoint est renseigné)
   const isInCouple = !!(maritalStatus?.prenom_conjoint || maritalStatus?.nom_conjoint);
 
-  // Prénoms
+  // Noms complets pour le filtrage (format utilisé dans la BDD)
+  const userFullName = [familyProfile?.prenom, familyProfile?.nom].filter(Boolean).join(' ').trim();
+  const partnerFullName = [maritalStatus?.prenom_conjoint, maritalStatus?.nom_conjoint].filter(Boolean).join(' ').trim();
+  
+  // Prénoms pour l'affichage
   const userFirstName = familyProfile?.prenom || 'Utilisateur';
   const partnerFirstName = maritalStatus?.prenom_conjoint || 'Conjoint';
+
+  const personNames: PersonNames = {
+    userFullName,
+    partnerFullName
+  };
 
   // Si célibataire, forcer le filtre sur l'utilisateur
   useEffect(() => {
@@ -48,13 +62,13 @@ export const BudgetSection = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'resume':
-        return <BudgetResume displayMode={displayMode} personFilter={personFilter} />;
+        return <BudgetResume displayMode={displayMode} personFilter={personFilter} personNames={personNames} />;
       case 'revenus':
-        return <BudgetRevenus displayMode={displayMode} personFilter={personFilter} />;
+        return <BudgetRevenus displayMode={displayMode} personFilter={personFilter} personNames={personNames} />;
       case 'charges':
-        return <BudgetCharges displayMode={displayMode} personFilter={personFilter} />;
+        return <BudgetCharges displayMode={displayMode} personFilter={personFilter} personNames={personNames} />;
       default:
-        return <BudgetResume displayMode={displayMode} personFilter={personFilter} />;
+        return <BudgetResume displayMode={displayMode} personFilter={personFilter} personNames={personNames} />;
     }
   };
 
