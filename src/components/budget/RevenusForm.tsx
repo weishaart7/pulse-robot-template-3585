@@ -180,16 +180,27 @@ export const RevenusForm: React.FC<RevenusFormProps> = ({ revenu, onSubmit, onCa
     }
   }, [open, revenu, form, getDisplayMontant]);
 
+  // Force cleanup when component unmounts or closes
+  useEffect(() => {
+    if (!open) {
+      // Force remove any lingering pointer-events locks
+      document.body.style.pointerEvents = '';
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.pointerEvents = '';
+      document.body.style.overflow = '';
+    };
+  }, [open]);
+
   return (
     <Dialog 
       open={open} 
       onOpenChange={(isOpen) => {
         if (!isOpen) {
-          // Délai pour laisser les popovers enfants se fermer proprement
-          setTimeout(() => onCancel(), 50);
+          onCancel();
         }
-      }} 
-      modal={true}
+      }}
     >
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
