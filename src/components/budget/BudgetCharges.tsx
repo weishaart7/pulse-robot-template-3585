@@ -73,7 +73,6 @@ export const BudgetCharges = ({ displayMode }: BudgetChargesProps) => {
           onSubmit={handleSubmitCharge} 
           onCancel={handleCancelCharge} 
           open={showChargesForm}
-          displayMode={displayMode}
         />
       )}
 
