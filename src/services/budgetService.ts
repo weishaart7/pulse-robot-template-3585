@@ -64,45 +64,51 @@ export const budgetService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    const { data, error } = await supabase
+    // Fetch asset_revenus with impact_budget = true
+    const { data: revenusData, error: revenusError } = await supabase
       .from('asset_revenus')
-      .select(`
-        id,
-        asset_id,
-        nature,
-        montant,
-        periodicite,
-        commentaire,
-        created_at,
-        updated_at,
-        assets!inner (
-          id,
-          denomination,
-          user_id
-        )
-      `)
+      .select('id, asset_id, nature, montant, periodicite, commentaire, created_at, updated_at')
       .eq('impact_budget', true);
 
-    if (error) throw error;
+    if (revenusError) throw revenusError;
+    if (!revenusData || revenusData.length === 0) return [];
 
-    // Transform asset_revenus to Revenu format
-    return (data || [])
-      .filter((item: any) => item.assets?.user_id === user.id)
-      .map((item: any) => ({
-        id: item.id,
-        user_id: user.id,
-        nature: item.nature || 'Revenus locatifs',
-        libelle: `${item.nature || 'Revenu'} - ${item.assets?.denomination || 'Bien immobilier'}`,
-        beneficiaire: 'Immobilier',
-        montant: convertToAnnual(item.montant || 0, item.periodicite),
-        revenu_disponible: true,
-        commentaire: item.commentaire,
-        created_at: item.created_at,
-        updated_at: item.updated_at,
-        source: 'immobilier' as const,
-        asset_id: item.asset_id,
-        asset_name: item.assets?.denomination || 'Bien immobilier'
-      }));
+    // Get unique asset_ids
+    const assetIds = [...new Set(revenusData.map(r => r.asset_id))];
+
+    // Fetch user's assets
+    const { data: assetsData, error: assetsError } = await supabase
+      .from('assets')
+      .select('id, denomination, user_id')
+      .eq('user_id', user.id)
+      .in('id', assetIds);
+
+    if (assetsError) throw assetsError;
+
+    // Create a map of assets
+    const assetsMap = new Map((assetsData || []).map(a => [a.id, a]));
+
+    // Transform asset_revenus to Revenu format, filtering by user's assets
+    return revenusData
+      .filter(item => assetsMap.has(item.asset_id))
+      .map(item => {
+        const asset = assetsMap.get(item.asset_id);
+        return {
+          id: item.id,
+          user_id: user.id,
+          nature: item.nature || 'Revenus locatifs',
+          libelle: `${item.nature || 'Revenu'} - ${asset?.denomination || 'Bien immobilier'}`,
+          beneficiaire: 'Immobilier',
+          montant: convertToAnnual(item.montant || 0, item.periodicite),
+          revenu_disponible: true,
+          commentaire: item.commentaire,
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+          source: 'immobilier' as const,
+          asset_id: item.asset_id,
+          asset_name: asset?.denomination || 'Bien immobilier'
+        };
+      });
   },
 
   async createRevenu(revenu: Omit<Revenu, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Revenu> {
