@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { BudgetResume } from '@/components/budget/BudgetResume';
 import { BudgetRevenus } from '@/components/budget/BudgetRevenus';
@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 
 export type DisplayMode = 'annuel' | 'mensuel';
 export type PersonFilter = 'couple' | 'utilisateur' | 'conjoint';
@@ -20,6 +21,24 @@ export const BudgetSection = () => {
   const [activeTab, setActiveTab] = useState('resume');
   const [displayMode, setDisplayMode] = useState<DisplayMode>('annuel');
   const [personFilter, setPersonFilter] = useState<PersonFilter>('couple');
+
+  const { data: familyProfile } = useFamilyProfile();
+  const { data: maritalStatus } = useMaritalStatus();
+
+  // Déterminer si l'utilisateur est en couple
+  const isInCouple = maritalStatus?.statut_couple && 
+    ['marie', 'pacse', 'concubinage'].includes(maritalStatus.statut_couple);
+
+  // Prénoms
+  const userFirstName = familyProfile?.prenom || 'Utilisateur';
+  const partnerFirstName = maritalStatus?.prenom_conjoint || 'Conjoint';
+
+  // Si célibataire, forcer le filtre sur l'utilisateur
+  useEffect(() => {
+    if (!isInCouple && personFilter !== 'utilisateur') {
+      setPersonFilter('utilisateur');
+    }
+  }, [isInCouple, personFilter]);
 
   const TABS = [
     { id: 'resume', label: 'Résumé' },
@@ -49,7 +68,7 @@ export const BudgetSection = () => {
             Contrôlez vos revenus, dépenses et objectifs financiers
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
             <Button
               variant={displayMode === 'mensuel' ? 'default' : 'ghost'}
@@ -70,31 +89,39 @@ export const BudgetSection = () => {
               Annuel
             </Button>
           </div>
-          <Select value={personFilter} onValueChange={(value: PersonFilter) => setPersonFilter(value)}>
-            <SelectTrigger className="w-[160px] bg-background">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-popover">
-              <SelectItem value="couple">
-                <span className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Couple
-                </span>
-              </SelectItem>
-              <SelectItem value="utilisateur">
-                <span className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Utilisateur
-                </span>
-              </SelectItem>
-              <SelectItem value="conjoint">
-                <span className="flex items-center gap-2">
-                  <UserRound className="h-4 w-4" />
-                  Conjoint
-                </span>
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          
+          {isInCouple ? (
+            <Select value={personFilter} onValueChange={(value: PersonFilter) => setPersonFilter(value)}>
+              <SelectTrigger className="w-[180px] bg-background">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-popover">
+                <SelectItem value="couple">
+                  <span className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    {userFirstName} & {partnerFirstName}
+                  </span>
+                </SelectItem>
+                <SelectItem value="utilisateur">
+                  <span className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    {userFirstName}
+                  </span>
+                </SelectItem>
+                <SelectItem value="conjoint">
+                  <span className="flex items-center gap-2">
+                    <UserRound className="h-4 w-4" />
+                    {partnerFirstName}
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          ) : (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground px-3 py-1.5 bg-muted rounded-md">
+              <User className="h-4 w-4" />
+              {userFirstName}
+            </div>
+          )}
         </div>
       </div>
 
