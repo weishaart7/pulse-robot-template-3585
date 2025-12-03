@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts';
 import { useRevenus, useCharges } from '@/hooks/useBudget';
+import { Revenu, Charge } from '@/services/budgetService';
 import { REVENUS_CATEGORIES, CHARGES_CATEGORIES } from '@/constants/budgetCategories';
 import { SlidingNumber } from '@/components/ui/sliding-number';
 import { DisplayMode } from '@/pages/budget/BudgetSection';
@@ -274,8 +275,8 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
         </CardHeader>
         <CardContent>
           <SeasonalityChart 
-            totalRevenus={totalRevenus} 
-            totalCharges={totalCharges} 
+            revenus={revenus} 
+            charges={charges} 
             formatCurrency={formatCurrency}
           />
         </CardContent>
@@ -283,32 +284,135 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
     </div>;
 };
 
+// Fonction pour calculer le montant mensuel selon la périodicité
+const getMonthlyAmount = (montant: number, periodicite?: string): number => {
+  const p = (periodicite || 'mensuel').toLowerCase();
+  switch (p) {
+    case 'mensuel':
+      return montant;
+    case 'trimestriel':
+      return montant / 3;
+    case 'semestriel':
+      return montant / 6;
+    case 'annuel':
+      return montant / 12;
+    case 'ponctuel':
+      return 0; // Les ponctuels sont traités séparément
+    default:
+      return montant / 12;
+  }
+};
+
+// Fonction pour déterminer les mois où un revenu/charge s'applique
+const getApplicableMonths = (
+  periodicite?: string,
+  dateDebut?: string,
+  dateFin?: string,
+  jourFixe?: number
+): number[] => {
+  const p = (periodicite || 'mensuel').toLowerCase();
+  const allMonths = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+  
+  // Si ponctuel avec une date, appliquer uniquement au mois de la date
+  if (p === 'ponctuel' && dateDebut) {
+    const month = new Date(dateDebut).getMonth();
+    return [month];
+  }
+  
+  // Filtrer selon date_debut et date_fin si présentes
+  let months = allMonths;
+  const currentYear = new Date().getFullYear();
+  
+  if (dateDebut) {
+    const startDate = new Date(dateDebut);
+    if (startDate.getFullYear() === currentYear) {
+      months = months.filter(m => m >= startDate.getMonth());
+    }
+  }
+  
+  if (dateFin) {
+    const endDate = new Date(dateFin);
+    if (endDate.getFullYear() === currentYear) {
+      months = months.filter(m => m <= endDate.getMonth());
+    }
+  }
+  
+  // Pour trimestriel/semestriel, appliquer uniquement à certains mois
+  if (p === 'trimestriel') {
+    return months.filter(m => m % 3 === 0); // Jan, Avr, Juil, Oct
+  }
+  if (p === 'semestriel') {
+    return months.filter(m => m % 6 === 0); // Jan, Juil
+  }
+  if (p === 'annuel') {
+    // Appliquer en janvier ou au mois de date_debut
+    if (dateDebut) {
+      const month = new Date(dateDebut).getMonth();
+      return months.includes(month) ? [month] : [];
+    }
+    return months.includes(0) ? [0] : [];
+  }
+  
+  return months;
+};
+
 // Composant graphique saisonnalité
 interface SeasonalityChartProps {
-  totalRevenus: number;
-  totalCharges: number;
+  revenus: Revenu[];
+  charges: Charge[];
   formatCurrency: (amount: number) => string;
 }
 
-const SeasonalityChart = ({ totalRevenus, totalCharges, formatCurrency }: SeasonalityChartProps) => {
+const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChartProps) => {
   const MONTHS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
   
-  // Calculer les montants mensuels moyens
-  const monthlyRevenus = Math.round(totalRevenus / 12);
-  const monthlyCharges = Math.round(totalCharges / 12);
-  const monthlySolde = monthlyRevenus - monthlyCharges;
-
-  // Générer les données mensuelles (pour l'instant uniformes, pourra être amélioré avec les périodicités)
+  // Calculer les montants par mois en utilisant les périodicités
   const monthlyData = useMemo(() => {
-    return MONTHS.map((month) => ({
-      month,
-      revenus: monthlyRevenus,
-      charges: monthlyCharges,
-      solde: monthlySolde
-    }));
-  }, [monthlyRevenus, monthlyCharges, monthlySolde]);
+    return MONTHS.map((month, monthIndex) => {
+      // Calculer les revenus pour ce mois
+      let monthRevenus = 0;
+      revenus.forEach(revenu => {
+        const montant = revenu.montant || 0;
+        const periodicite = revenu.periodicite;
+        const applicableMonths = getApplicableMonths(periodicite, revenu.date_debut, revenu.date_fin, revenu.jour_fixe);
+        
+        if (applicableMonths.includes(monthIndex)) {
+          if (periodicite === 'ponctuel') {
+            monthRevenus += montant;
+          } else {
+            monthRevenus += getMonthlyAmount(montant, periodicite);
+          }
+        }
+      });
+      
+      // Calculer les charges pour ce mois
+      let monthCharges = 0;
+      charges.forEach(charge => {
+        const montant = charge.montant || 0;
+        const periodicite = charge.periodicite;
+        const applicableMonths = getApplicableMonths(periodicite, charge.date_debut, charge.date_fin, charge.jour_fixe);
+        
+        if (applicableMonths.includes(monthIndex)) {
+          if (periodicite === 'ponctuel') {
+            monthCharges += montant;
+          } else {
+            monthCharges += getMonthlyAmount(montant, periodicite);
+          }
+        }
+      });
+      
+      return {
+        month,
+        revenus: Math.round(monthRevenus),
+        charges: Math.round(monthCharges),
+        solde: Math.round(monthRevenus - monthCharges)
+      };
+    });
+  }, [revenus, charges]);
 
-  if (totalRevenus === 0 && totalCharges === 0) {
+  const hasData = revenus.length > 0 || charges.length > 0;
+
+  if (!hasData) {
     return (
       <div className="text-center text-muted-foreground py-8">
         Aucune donnée à afficher

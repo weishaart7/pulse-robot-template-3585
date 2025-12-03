@@ -1,5 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
+export type Periodicite = 'mensuel' | 'trimestriel' | 'semestriel' | 'annuel' | 'ponctuel';
+
 export interface Revenu {
   id: string;
   user_id: string;
@@ -9,6 +11,10 @@ export interface Revenu {
   montant?: number;
   revenu_disponible: boolean;
   commentaire?: string;
+  periodicite?: string;
+  date_debut?: string;
+  date_fin?: string;
+  jour_fixe?: number;
   created_at: string;
   updated_at: string;
   // Extended fields for immobilier
@@ -25,6 +31,10 @@ export interface Charge {
   debiteur?: string;
   montant?: number;
   commentaire?: string;
+  periodicite?: string;
+  date_debut?: string;
+  date_fin?: string;
+  jour_fixe?: number;
   created_at: string;
   updated_at: string;
   // Extended fields for immobilier
