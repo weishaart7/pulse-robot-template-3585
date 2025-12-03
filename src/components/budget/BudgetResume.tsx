@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Line, ReferenceLine } from 'recharts';
 import { useRevenus, useCharges } from '@/hooks/useBudget';
 import { Revenu, Charge } from '@/services/budgetService';
 import { REVENUS_CATEGORIES, CHARGES_CATEGORIES } from '@/constants/budgetCategories';
@@ -468,7 +468,7 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
   return (
     <div className="h-80 relative">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart 
+        <ComposedChart 
           data={monthlyData} 
           margin={{ top: 20, right: 16, left: 0, bottom: 0 }}
           barGap={4}
@@ -511,7 +511,7 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
             cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3, radius: 4 }}
             formatter={(value: number, name: string) => [
               formatCurrency(value),
-              name === 'revenus' ? 'Revenus' : 'Charges'
+              name === 'revenus' ? 'Revenus' : name === 'charges' ? 'Charges' : 'Solde'
             ]}
             contentStyle={{
               backgroundColor: 'hsl(var(--popover))',
@@ -535,19 +535,23 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
           <Legend 
             formatter={(value) => (
               <span className="text-xs font-medium text-muted-foreground">
-                {value === 'revenus' ? 'Revenus' : 'Charges'}
+                {value === 'revenus' ? 'Revenus' : value === 'charges' ? 'Charges' : 'Solde'}
               </span>
             )}
             wrapperStyle={{ paddingTop: '20px' }}
             iconType="circle"
             iconSize={8}
           />
+          <ReferenceLine y={0} stroke="hsl(var(--border))" strokeDasharray="3 3" />
           <Bar 
             dataKey="revenus" 
             fill="url(#revenusGradient)"
             radius={[6, 6, 0, 0]}
             name="revenus"
             filter="url(#shadow)"
+            animationBegin={0}
+            animationDuration={800}
+            animationEasing="ease-out"
           />
           <Bar 
             dataKey="charges" 
@@ -555,8 +559,23 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
             radius={[6, 6, 0, 0]}
             name="charges"
             filter="url(#shadow)"
+            animationBegin={200}
+            animationDuration={800}
+            animationEasing="ease-out"
           />
-        </BarChart>
+          <Line
+            type="monotone"
+            dataKey="solde"
+            stroke="#f59e0b"
+            strokeWidth={2.5}
+            dot={{ fill: '#f59e0b', strokeWidth: 0, r: 4 }}
+            activeDot={{ r: 6, fill: '#f59e0b', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
+            name="solde"
+            animationBegin={400}
+            animationDuration={1000}
+            animationEasing="ease-out"
+          />
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );
