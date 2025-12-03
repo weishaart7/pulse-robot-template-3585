@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -6,22 +6,35 @@ import { useRevenus } from '@/hooks/useBudget';
 import { RevenusForm } from '@/components/budget/RevenusForm';
 import { BudgetList } from '@/components/budget/BudgetList';
 import { Revenu } from '@/services/budgetService';
-import { DisplayMode } from '@/pages/budget/BudgetSection';
+import { DisplayMode, PersonFilter } from '@/pages/budget/BudgetSection';
 
 interface BudgetRevenusProps {
   displayMode: DisplayMode;
+  personFilter: PersonFilter;
 }
 
-export const BudgetRevenus = ({ displayMode }: BudgetRevenusProps) => {
+export const BudgetRevenus = ({ displayMode, personFilter }: BudgetRevenusProps) => {
   const [showRevenusForm, setShowRevenusForm] = useState(false);
   const [editingRevenu, setEditingRevenu] = useState<Revenu | undefined>();
   const {
-    revenus,
+    revenus: allRevenus,
     loading: revenusLoading,
     createRevenu,
     updateRevenu,
     deleteRevenu
   } = useRevenus();
+
+  // Filtrer par personne
+  const revenus = useMemo(() => {
+    if (personFilter === 'couple') return allRevenus;
+    return allRevenus.filter(r => {
+      const beneficiaire = r.beneficiaire?.toLowerCase();
+      if (personFilter === 'utilisateur') {
+        return !beneficiaire || beneficiaire === 'utilisateur';
+      }
+      return beneficiaire === 'conjoint';
+    });
+  }, [allRevenus, personFilter]);
 
   const handleSubmitRevenu = async (data: Omit<Revenu, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (editingRevenu) {
