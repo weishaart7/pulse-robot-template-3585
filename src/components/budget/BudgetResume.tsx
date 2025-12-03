@@ -66,6 +66,10 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
     }).format(amount);
   };
 
+  // Collecter toutes les natures définies dans les catégories
+  const allRevenusNatures = Object.values(REVENUS_CATEGORIES).flat() as string[];
+  const allChargesNatures = Object.values(CHARGES_CATEGORIES).flat() as string[];
+
   // Grouper les revenus par catégories
   const revenusParCategorie = Object.entries(REVENUS_CATEGORIES).map(([categorie, natures]) => {
     const revenusCategorie = revenus.filter(r => (natures as readonly string[]).includes(r.nature));
@@ -77,6 +81,22 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
     };
   }).filter(cat => cat.count > 0);
 
+  // Ajouter les revenus non catégorisés (ex: revenus immobiliers)
+  const revenusNonCategorises = revenus.filter(r => !allRevenusNatures.includes(r.nature));
+  if (revenusNonCategorises.length > 0) {
+    const totalNonCategorises = revenusNonCategorises.reduce((sum, r) => sum + (Number(r.montant) || 0), 0);
+    revenusParCategorie.push({
+      categorie: 'Revenus du patrimoine',
+      total: totalNonCategorises / divisor + (revenusParCategorie.find(c => c.categorie === 'Revenus du patrimoine')?.total || 0),
+      count: revenusNonCategorises.length + (revenusParCategorie.find(c => c.categorie === 'Revenus du patrimoine')?.count || 0)
+    });
+    // Retirer l'ancienne entrée "Revenus du patrimoine" si elle existe déjà
+    const existingIndex = revenusParCategorie.findIndex(c => c.categorie === 'Revenus du patrimoine');
+    if (existingIndex !== -1 && existingIndex !== revenusParCategorie.length - 1) {
+      revenusParCategorie.splice(existingIndex, 1);
+    }
+  }
+
   // Grouper les charges par catégories
   const chargesParCategorie = Object.entries(CHARGES_CATEGORIES).map(([categorie, natures]) => {
     const chargesCategorie = charges.filter(c => (natures as readonly string[]).includes(c.nature));
@@ -87,6 +107,22 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
       count: chargesCategorie.length
     };
   }).filter(cat => cat.count > 0);
+
+  // Ajouter les charges non catégorisées (ex: charges immobilières)
+  const chargesNonCategorisees = charges.filter(c => !allChargesNatures.includes(c.nature));
+  if (chargesNonCategorisees.length > 0) {
+    const totalNonCategorisees = chargesNonCategorisees.reduce((sum, c) => sum + (Number(c.montant) || 0), 0);
+    chargesParCategorie.push({
+      categorie: 'Logement & Habitation',
+      total: totalNonCategorisees / divisor + (chargesParCategorie.find(c => c.categorie === 'Logement & Habitation')?.total || 0),
+      count: chargesNonCategorisees.length + (chargesParCategorie.find(c => c.categorie === 'Logement & Habitation')?.count || 0)
+    });
+    // Retirer l'ancienne entrée si elle existe déjà
+    const existingIndex = chargesParCategorie.findIndex(c => c.categorie === 'Logement & Habitation');
+    if (existingIndex !== -1 && existingIndex !== chargesParCategorie.length - 1) {
+      chargesParCategorie.splice(existingIndex, 1);
+    }
+  }
   const totalRevenusCat = revenusParCategorie.reduce((sum, cat) => sum + cat.total, 0);
   const totalChargesCat = chargesParCategorie.reduce((sum, cat) => sum + cat.total, 0);
   
