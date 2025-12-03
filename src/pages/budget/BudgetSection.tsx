@@ -28,7 +28,7 @@ export const BudgetSection = () => {
   const [personFilter, setPersonFilter] = useState<PersonFilter>('couple');
 
   const { data: familyProfile } = useFamilyProfile();
-  const { data: maritalStatus } = useMaritalStatus();
+  const { data: maritalStatus, loading: maritalLoading } = useMaritalStatus();
 
   // Déterminer si l'utilisateur est en couple (si un conjoint est renseigné)
   const isInCouple = !!(maritalStatus?.prenom_conjoint || maritalStatus?.nom_conjoint);
@@ -46,12 +46,15 @@ export const BudgetSection = () => {
     partnerFullName
   };
 
-  // Si célibataire, forcer le filtre sur l'utilisateur
+  // Si célibataire (et données chargées), forcer le filtre sur l'utilisateur
   useEffect(() => {
+    // Attendre que les données soient chargées avant de modifier le filtre
+    if (maritalLoading) return;
+    
     if (!isInCouple && personFilter !== 'utilisateur') {
       setPersonFilter('utilisateur');
     }
-  }, [isInCouple, personFilter]);
+  }, [isInCouple, personFilter, maritalLoading]);
 
   const TABS = [
     { id: 'resume', label: 'Résumé' },
