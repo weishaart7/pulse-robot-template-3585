@@ -71,7 +71,8 @@ export const BudgetCharges = ({ displayMode }: BudgetChargesProps) => {
         charge={editingCharge} 
         onSubmit={handleSubmitCharge} 
         onCancel={handleCancelCharge} 
-        open={showChargesForm} 
+        open={showChargesForm}
+        displayMode={displayMode}
       />
 
       {/* Liste des charges */}

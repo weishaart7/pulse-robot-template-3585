@@ -32,9 +32,10 @@ interface ChargesFormProps {
   onSubmit: (data: Omit<Charge, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<void>;
   onCancel: () => void;
   open: boolean;
+  displayMode: 'annuel' | 'mensuel';
 }
 
-export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCancel, open }) => {
+export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCancel, open, displayMode }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLibellePrefilled, setIsLibellePrefilled] = useState(false);
   const { data: familyProfile } = useFamilyProfile();
@@ -47,6 +48,12 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
     windowMs: 60000
   });
 
+  // Convertir le montant pour l'affichage selon le mode
+  const getDisplayMontant = (montantAnnuel: number | null | undefined) => {
+    if (!montantAnnuel) return "";
+    return displayMode === 'mensuel' ? (montantAnnuel / 12).toFixed(2) : montantAnnuel.toString();
+  };
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -56,7 +63,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
       nature: charge?.nature || "",
       libelle: charge?.libelle || "",
       debiteur: charge?.debiteur || "",
-      montant: charge?.montant?.toString() || "",
+      montant: getDisplayMontant(charge?.montant),
       commentaire: charge?.commentaire || "",
     },
   });
@@ -117,7 +124,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
         nature: charge.nature || "",
         libelle: charge.libelle || "",
         debiteur: charge.debiteur || "",
-        montant: charge.montant?.toString() || "",
+        montant: getDisplayMontant(charge.montant),
         commentaire: charge.commentaire || "",
       });
       setIsLibellePrefilled(false);
@@ -127,16 +134,20 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
       setIsSubmitting(false);
       setIsLibellePrefilled(false);
     }
-  }, [open, charge, form]);
+  }, [open, charge, form, displayMode]);
 
   const handleSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
+      // Convertir le montant saisi en montant annuel pour le stockage
+      const montantSaisi = sanitizeNumericInput(data.montant) || 0;
+      const montantAnnuel = displayMode === 'mensuel' ? montantSaisi * 12 : montantSaisi;
+      
       const formData = {
         nature: sanitizeTextInput(data.nature),
         libelle: sanitizeTextInput(data.libelle),
         debiteur: sanitizeTextInput(data.debiteur),
-        montant: sanitizeNumericInput(data.montant) || 0,
+        montant: montantAnnuel,
         commentaire: sanitizeTextInput(data.commentaire),
       };
 
@@ -272,7 +283,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
               name="montant"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Montant (€)</FormLabel>
+                  <FormLabel>Montant {displayMode === 'mensuel' ? 'mensuel' : 'annuel'} (€)</FormLabel>
                   <FormControl>
                     <Input {...field} type="number" step="0.01" placeholder="0.00" />
                   </FormControl>
