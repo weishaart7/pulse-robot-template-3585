@@ -5,12 +5,10 @@ import { useRevenus, useCharges } from '@/hooks/useBudget';
 import { Revenu, Charge } from '@/services/budgetService';
 import { REVENUS_CATEGORIES, CHARGES_CATEGORIES } from '@/constants/budgetCategories';
 import { SlidingNumber } from '@/components/ui/sliding-number';
-import { DisplayMode, PersonFilter, PersonNames } from '@/pages/budget/BudgetSection';
+import { DisplayMode } from '@/pages/budget/BudgetSection';
 
 interface BudgetResumeProps {
   displayMode: DisplayMode;
-  personFilter: PersonFilter;
-  personNames: PersonNames;
 }
 
 // Convertir un montant périodique en montant annuel
@@ -34,56 +32,9 @@ const toAnnual = (montant: number, periodicite?: string): number => {
   }
 };
 
-// Fonction utilitaire pour filtrer et ajuster les montants par personne
-const filterByPerson = <T extends { montant?: number | null; beneficiaire?: string | null; debiteur?: string | null }>(
-  items: T[],
-  personFilter: PersonFilter,
-  field: 'beneficiaire' | 'debiteur',
-  personNames: PersonNames
-): T[] => {
-  // Couple = tous les revenus/charges
-  if (personFilter === 'couple') return items;
-  
-  // Déterminer le nom à chercher
-  const targetName = personFilter === 'utilisateur' 
-    ? personNames.userFullName.toLowerCase() 
-    : personNames.partnerFullName.toLowerCase();
-  
-  // Valeurs qui indiquent un élément commun
-  const commonValues = ['le couple', 'couple', 'commun', 'les deux'];
-  
-  // Filtre individuel : éléments propres + moitié des communs
-  return items
-    .filter(item => {
-      const value = (item as Record<string, unknown>)[field] as string | null | undefined;
-      const valueLower = value?.toLowerCase() || '';
-      // Inclure si c'est attribué à la personne OU si c'est commun
-      return valueLower === targetName || commonValues.some(cv => valueLower.includes(cv));
-    })
-    .map(item => {
-      const value = (item as Record<string, unknown>)[field] as string | null | undefined;
-      const valueLower = value?.toLowerCase() || '';
-      // Si c'est un élément commun, diviser le montant par 2
-      if (commonValues.some(cv => valueLower.includes(cv))) {
-        return { ...item, montant: (item.montant || 0) / 2 };
-      }
-      return item;
-    });
-};
-
-export const BudgetResume = ({ displayMode, personFilter, personNames }: BudgetResumeProps) => {
-  const { revenus: allRevenus, loading: revenusLoading } = useRevenus();
-  const { charges: allCharges, loading: chargesLoading } = useCharges();
-
-  // Filtrer par personne
-  const revenus = useMemo(() => 
-    filterByPerson(allRevenus, personFilter, 'beneficiaire', personNames), 
-    [allRevenus, personFilter, personNames]
-  );
-  const charges = useMemo(() => 
-    filterByPerson(allCharges, personFilter, 'debiteur', personNames), 
-    [allCharges, personFilter, personNames]
-  );
+export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
+  const { revenus, loading: revenusLoading } = useRevenus();
+  const { charges, loading: chargesLoading } = useCharges();
 
   // Calculer les totaux annuels
   const totalRevenusAnnuel = useMemo(() => 

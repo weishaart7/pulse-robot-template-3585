@@ -1,60 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { BudgetResume } from '@/components/budget/BudgetResume';
 import { BudgetRevenus } from '@/components/budget/BudgetRevenus';
 import { BudgetCharges } from '@/components/budget/BudgetCharges';
 import { Button } from '@/components/ui/button';
-import { Calendar, CalendarDays, Users, User, UserRound } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
+import { Calendar, CalendarDays } from 'lucide-react';
 
 export type DisplayMode = 'annuel' | 'mensuel';
-export type PersonFilter = 'couple' | 'utilisateur' | 'conjoint';
-
-export interface PersonNames {
-  userFullName: string;
-  partnerFullName: string;
-}
 
 export const BudgetSection = () => {
   const [activeTab, setActiveTab] = useState('resume');
   const [displayMode, setDisplayMode] = useState<DisplayMode>('mensuel');
-  const [personFilter, setPersonFilter] = useState<PersonFilter>('couple');
-
-  const { data: familyProfile } = useFamilyProfile();
-  const { data: maritalStatus, loading: maritalLoading } = useMaritalStatus();
-
-  // Déterminer si l'utilisateur est en couple (si un conjoint est renseigné)
-  const isInCouple = !!(maritalStatus?.prenom_conjoint || maritalStatus?.nom_conjoint);
-
-  // Noms complets pour le filtrage (format utilisé dans la BDD)
-  const userFullName = [familyProfile?.prenom, familyProfile?.nom].filter(Boolean).join(' ').trim();
-  const partnerFullName = [maritalStatus?.prenom_conjoint, maritalStatus?.nom_conjoint].filter(Boolean).join(' ').trim();
-  
-  // Prénoms pour l'affichage
-  const userFirstName = familyProfile?.prenom || 'Utilisateur';
-  const partnerFirstName = maritalStatus?.prenom_conjoint || 'Conjoint';
-
-  const personNames: PersonNames = {
-    userFullName,
-    partnerFullName
-  };
-
-  // Si célibataire (et données chargées), forcer le filtre sur l'utilisateur
-  useEffect(() => {
-    // Attendre que les données soient chargées avant de modifier le filtre
-    if (maritalLoading) return;
-    
-    if (!isInCouple && personFilter !== 'utilisateur') {
-      setPersonFilter('utilisateur');
-    }
-  }, [isInCouple, personFilter, maritalLoading]);
 
   const TABS = [
     { id: 'resume', label: 'Résumé' },
@@ -65,13 +21,13 @@ export const BudgetSection = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'resume':
-        return <BudgetResume displayMode={displayMode} personFilter={personFilter} personNames={personNames} />;
+        return <BudgetResume displayMode={displayMode} />;
       case 'revenus':
-        return <BudgetRevenus displayMode={displayMode} personFilter={personFilter} personNames={personNames} />;
+        return <BudgetRevenus displayMode={displayMode} />;
       case 'charges':
-        return <BudgetCharges displayMode={displayMode} personFilter={personFilter} personNames={personNames} />;
+        return <BudgetCharges displayMode={displayMode} />;
       default:
-        return <BudgetResume displayMode={displayMode} personFilter={personFilter} personNames={personNames} />;
+        return <BudgetResume displayMode={displayMode} />;
     }
   };
 
@@ -84,60 +40,25 @@ export const BudgetSection = () => {
             Contrôlez vos revenus, dépenses et objectifs financiers
           </p>
         </div>
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
-            <Button
-              variant={displayMode === 'mensuel' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setDisplayMode('mensuel')}
-              className="gap-2"
-            >
-              <Calendar className="h-4 w-4" />
-              Mensuel
-            </Button>
-            <Button
-              variant={displayMode === 'annuel' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setDisplayMode('annuel')}
-              className="gap-2"
-            >
-              <CalendarDays className="h-4 w-4" />
-              Annuel
-            </Button>
-          </div>
-          
-          {isInCouple ? (
-            <Select value={personFilter} onValueChange={(value: PersonFilter) => setPersonFilter(value)}>
-              <SelectTrigger className="w-[180px] bg-background">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-popover">
-                <SelectItem value="couple">
-                  <span className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    {userFirstName} & {partnerFirstName}
-                  </span>
-                </SelectItem>
-                <SelectItem value="utilisateur">
-                  <span className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    {userFirstName}
-                  </span>
-                </SelectItem>
-                <SelectItem value="conjoint">
-                  <span className="flex items-center gap-2">
-                    <UserRound className="h-4 w-4" />
-                    {partnerFirstName}
-                  </span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          ) : (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground px-3 py-1.5 bg-muted rounded-md">
-              <User className="h-4 w-4" />
-              {userFirstName}
-            </div>
-          )}
+        <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+          <Button
+            variant={displayMode === 'mensuel' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setDisplayMode('mensuel')}
+            className="gap-2"
+          >
+            <Calendar className="h-4 w-4" />
+            Mensuel
+          </Button>
+          <Button
+            variant={displayMode === 'annuel' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setDisplayMode('annuel')}
+            className="gap-2"
+          >
+            <CalendarDays className="h-4 w-4" />
+            Annuel
+          </Button>
         </div>
       </div>
 
