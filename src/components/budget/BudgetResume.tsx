@@ -385,7 +385,8 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
   const MONTHS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
   const currentYear = new Date().getFullYear();
 
-  // Calculer les mois où un item s'applique selon sa périodicité et ses dates
+  // Calculer les mois où un item s'applique selon ses dates de début/fin
+  // Pour les montants distribués mensuellement, on retourne tous les mois applicables
   const getApplicableMonths = (
     periodicite?: string,
     dateDebut?: string,
@@ -394,55 +395,65 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
     const p = (periodicite || 'mensuel').toLowerCase();
     let months = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
     
-    // Filtrer par date de début si elle est dans l'année courante
+    // Filtrer par date de début
     if (dateDebut) {
       const startDate = new Date(dateDebut);
-      if (startDate.getFullYear() === currentYear) {
+      const startYear = startDate.getFullYear();
+      if (startYear === currentYear) {
         months = months.filter(m => m >= startDate.getMonth());
-      } else if (startDate.getFullYear() > currentYear) {
+      } else if (startYear > currentYear) {
         return []; // Pas encore commencé
       }
+      // Si startYear < currentYear, on garde tous les mois (en cours)
     }
     
-    // Filtrer par date de fin si elle est dans l'année courante
+    // Filtrer par date de fin
     if (dateFin) {
       const endDate = new Date(dateFin);
-      if (endDate.getFullYear() === currentYear) {
+      const endYear = endDate.getFullYear();
+      if (endYear === currentYear) {
         months = months.filter(m => m <= endDate.getMonth());
-      } else if (endDate.getFullYear() < currentYear) {
+      } else if (endYear < currentYear) {
         return []; // Déjà terminé
       }
+      // Si endYear > currentYear, on garde tous les mois filtrés
     }
     
-    // Selon la périodicité, retourner les mois spécifiques
+    // Pour ponctuel uniquement, restreindre au mois de date_debut
+    if (p === 'ponctuel') {
+      if (dateDebut) {
+        const month = new Date(dateDebut).getMonth();
+        return months.includes(month) ? [month] : [];
+      }
+      return months.length > 0 ? [months[0]] : [];
+    }
+    
+    // Pour toutes les autres périodicités (mensuel, trimestriel, semestriel, annuel)
+    // on retourne tous les mois applicables car le montant sera distribué mensuellement
+    return months;
+  };
+
+  // Convertir un montant périodique en montant mensuel
+  const toMonthlyAmount = (montant: number, periodicite?: string): number => {
+    const p = (periodicite || 'mensuel').toLowerCase();
     switch (p) {
-      case 'trimestriel':
-      case 'trimestrielle':
-        return months.filter(m => [0, 3, 6, 9].includes(m));
-      case 'semestriel':
-      case 'semestrielle':
-        return months.filter(m => [0, 6].includes(m));
       case 'annuel':
       case 'annuelle':
-        // En janvier si pas de date_debut, sinon au mois de la date
-        if (dateDebut) {
-          const month = new Date(dateDebut).getMonth();
-          return months.includes(month) ? [month] : (months.length > 0 ? [months[0]] : []);
-        }
-        return months.includes(0) ? [0] : [];
+        return montant / 12;
+      case 'semestriel':
+      case 'semestrielle':
+        return montant / 6;
+      case 'trimestriel':
+      case 'trimestrielle':
+        return montant / 3;
       case 'ponctuel':
-        // Au mois de la date_debut uniquement
-        if (dateDebut) {
-          const month = new Date(dateDebut).getMonth();
-          return months.includes(month) ? [month] : [];
-        }
-        return months.includes(0) ? [0] : [];
-      default: // mensuel
-        return months;
+        return montant; // Montant unique affiché tel quel le mois concerné
+      default: // mensuel, mensuelle
+        return montant;
     }
   };
 
-  // Calculer les montants par mois
+  // Calculer les montants par mois (distribués mensuellement pour toutes les périodicités sauf ponctuel)
   const monthlyData = useMemo(() => {
     return MONTHS.map((month, monthIndex) => {
       // Revenus pour ce mois
@@ -453,8 +464,13 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
         
         const applicableMonths = getApplicableMonths(revenu.periodicite, revenu.date_debut, revenu.date_fin);
         if (applicableMonths.includes(monthIndex)) {
-          // Le montant stocké est le montant périodique (ex: loyer mensuel)
-          monthRevenus += montant;
+          // Pour ponctuel, on garde le montant complet; sinon on convertit en mensuel
+          const p = (revenu.periodicite || 'mensuel').toLowerCase();
+          if (p === 'ponctuel') {
+            monthRevenus += montant;
+          } else {
+            monthRevenus += toMonthlyAmount(montant, revenu.periodicite);
+          }
         }
       });
       
@@ -466,7 +482,12 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
         
         const applicableMonths = getApplicableMonths(charge.periodicite, charge.date_debut, charge.date_fin);
         if (applicableMonths.includes(monthIndex)) {
-          monthCharges += montant;
+          const p = (charge.periodicite || 'mensuel').toLowerCase();
+          if (p === 'ponctuel') {
+            monthCharges += montant;
+          } else {
+            monthCharges += toMonthlyAmount(montant, charge.periodicite);
+          }
         }
       });
       
