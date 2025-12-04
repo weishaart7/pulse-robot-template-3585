@@ -42,13 +42,23 @@ export const BudgetList = ({
   // Convertir un montant en annuel selon sa périodicité
   const toAnnual = (amount: number | undefined, periodicite: string | undefined): number => {
     if (!amount) return 0;
-    switch (periodicite) {
-      case 'mensuel': return amount * 12;
-      case 'trimestriel': return amount * 4;
-      case 'semestriel': return amount * 2;
-      case 'annuel': return amount;
-      case 'ponctuel': return amount;
-      default: return amount * 12; // Par défaut mensuel
+    const p = (periodicite || 'mensuel').toLowerCase();
+    switch (p) {
+      case 'mensuel':
+      case 'mensuelle':
+        return amount * 12;
+      case 'trimestriel':
+      case 'trimestrielle':
+        return amount * 4;
+      case 'semestriel':
+      case 'semestrielle':
+        return amount * 2;
+      case 'annuel':
+      case 'annuelle':
+      case 'ponctuel':
+        return amount;
+      default:
+        return amount * 12; // Par défaut mensuel
     }
   };
 
