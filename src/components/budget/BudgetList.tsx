@@ -37,12 +37,31 @@ export const BudgetList = ({
     return <div>Chargement...</div>;
   }
 
-  const divisor = displayMode === 'mensuel' ? 12 : 1;
   const periodLabel = displayMode === 'mensuel' ? '/mois' : '/an';
 
-  const getDisplayAmount = (amount: number | undefined) => {
+  // Convertir un montant en annuel selon sa périodicité
+  const toAnnual = (amount: number | undefined, periodicite: string | undefined): number => {
+    if (!amount) return 0;
+    switch (periodicite) {
+      case 'mensuel': return amount * 12;
+      case 'trimestriel': return amount * 4;
+      case 'semestriel': return amount * 2;
+      case 'annuel': return amount;
+      case 'ponctuel': return amount;
+      default: return amount * 12; // Par défaut mensuel
+    }
+  };
+
+  // Convertir un montant annuel en mensuel
+  const toMonthly = (annualAmount: number): number => {
+    return annualAmount / 12;
+  };
+
+  // Obtenir le montant à afficher selon le displayMode
+  const getDisplayAmount = (amount: number | undefined, periodicite: string | undefined): number | undefined => {
     if (!amount) return undefined;
-    return amount / divisor;
+    const annual = toAnnual(amount, periodicite);
+    return displayMode === 'mensuel' ? toMonthly(annual) : annual;
   };
 
   const formatCurrency = (amount: number | undefined) => {
@@ -54,8 +73,9 @@ export const BudgetList = ({
     });
   };
 
-  const totalRevenus = revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0);
-  const totalCharges = charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
+  // Calculer les totaux en annuel pour une comparaison cohérente
+  const totalRevenusAnnuel = revenus.reduce((sum, revenu) => sum + toAnnual(revenu.montant, revenu.periodicite), 0);
+  const totalChargesAnnuel = charges.reduce((sum, charge) => sum + toAnnual(charge.montant, charge.periodicite), 0);
 
   const isFromImmobilier = (item: Revenu | Charge) => item.source === 'immobilier';
 
@@ -99,11 +119,11 @@ export const BudgetList = ({
                     </TableCell>
                     <TableCell>{revenu.beneficiaire || '-'}</TableCell>
                     <TableCell className="text-right">
-                      {formatCurrency(getDisplayAmount(revenu.montant))}
+                      {formatCurrency(getDisplayAmount(revenu.montant, revenu.periodicite))}
                     </TableCell>
                     <TableCell className="text-right">
-                      {totalRevenus > 0 && revenu.montant 
-                        ? ((revenu.montant / totalRevenus) * 100).toFixed(1) + '%'
+                      {totalRevenusAnnuel > 0 && revenu.montant 
+                        ? ((toAnnual(revenu.montant, revenu.periodicite) / totalRevenusAnnuel) * 100).toFixed(1) + '%'
                         : '-'
                       }
                     </TableCell>
@@ -142,7 +162,7 @@ export const BudgetList = ({
                 <TableRow className="font-bold bg-muted/50">
                   <TableCell colSpan={2}>Total</TableCell>
                   <TableCell className="text-right">
-                    {formatCurrency(getDisplayAmount(totalRevenus))}
+                    {formatCurrency(displayMode === 'mensuel' ? toMonthly(totalRevenusAnnuel) : totalRevenusAnnuel)}
                   </TableCell>
                   <TableCell className="text-right">100%</TableCell>
                   <TableCell></TableCell>
@@ -191,11 +211,11 @@ export const BudgetList = ({
                     </TableCell>
                     <TableCell>{charge.debiteur || '-'}</TableCell>
                     <TableCell className="text-right">
-                      {formatCurrency(getDisplayAmount(charge.montant))}
+                      {formatCurrency(getDisplayAmount(charge.montant, charge.periodicite))}
                     </TableCell>
                     <TableCell className="text-right">
-                      {totalCharges > 0 && charge.montant 
-                        ? ((charge.montant / totalCharges) * 100).toFixed(1) + '%'
+                      {totalChargesAnnuel > 0 && charge.montant 
+                        ? ((toAnnual(charge.montant, charge.periodicite) / totalChargesAnnuel) * 100).toFixed(1) + '%'
                         : '-'
                       }
                     </TableCell>
@@ -234,7 +254,7 @@ export const BudgetList = ({
                 <TableRow className="font-bold bg-muted/50">
                   <TableCell colSpan={2}>Total</TableCell>
                   <TableCell className="text-right">
-                    {formatCurrency(getDisplayAmount(totalCharges))}
+                    {formatCurrency(displayMode === 'mensuel' ? toMonthly(totalChargesAnnuel) : totalChargesAnnuel)}
                   </TableCell>
                   <TableCell className="text-right">100%</TableCell>
                   <TableCell></TableCell>
