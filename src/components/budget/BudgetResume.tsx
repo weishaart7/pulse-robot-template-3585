@@ -336,52 +336,49 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
   const MONTHS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
   const currentYear = new Date().getFullYear();
 
-  // Calculer les mois où un item s'applique selon ses dates de début/fin
-  // Pour les montants distribués mensuellement, on retourne tous les mois applicables
+  // Calculer les mois où un item s'applique
+  // Pour les revenus/charges récurrents, on affiche tous les mois de l'année (budget lissé)
+  // Sauf pour ponctuel où on respecte la date exacte
   const getApplicableMonths = (
     periodicite?: string,
     dateDebut?: string,
     dateFin?: string
   ): number[] => {
     const p = (periodicite || 'mensuel').toLowerCase();
-    let months = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
     
-    // Filtrer par date de début
-    if (dateDebut) {
-      const startDate = new Date(dateDebut);
-      const startYear = startDate.getFullYear();
-      if (startYear === currentYear) {
-        months = months.filter(m => m >= startDate.getMonth());
-      } else if (startYear > currentYear) {
-        return []; // Pas encore commencé
-      }
-      // Si startYear < currentYear, on garde tous les mois (en cours)
-    }
-    
-    // Filtrer par date de fin
-    if (dateFin) {
-      const endDate = new Date(dateFin);
-      const endYear = endDate.getFullYear();
-      if (endYear === currentYear) {
-        months = months.filter(m => m <= endDate.getMonth());
-      } else if (endYear < currentYear) {
-        return []; // Déjà terminé
-      }
-      // Si endYear > currentYear, on garde tous les mois filtrés
-    }
-    
-    // Pour ponctuel uniquement, restreindre au mois de date_debut
+    // Pour ponctuel uniquement, restreindre au mois de date_debut de l'année en cours
     if (p === 'ponctuel') {
       if (dateDebut) {
-        const month = new Date(dateDebut).getMonth();
-        return months.includes(month) ? [month] : [];
+        const startDate = new Date(dateDebut);
+        const startYear = startDate.getFullYear();
+        if (startYear === currentYear) {
+          return [startDate.getMonth()];
+        }
+        return []; // Pas dans l'année en cours
       }
-      return months.length > 0 ? [months[0]] : [];
+      return [0]; // Par défaut janvier si pas de date
     }
     
-    // Pour toutes les autres périodicités (mensuel, trimestriel, semestriel, annuel)
-    // on retourne tous les mois applicables car le montant sera distribué mensuellement
-    return months;
+    // Pour les périodicités récurrentes (mensuel, trimestriel, semestriel, annuel)
+    // On affiche sur tous les mois de l'année (vue budget lissé)
+    // Sauf si explicitement terminé avant l'année en cours
+    if (dateFin) {
+      const endDate = new Date(dateFin);
+      if (endDate.getFullYear() < currentYear) {
+        return []; // Terminé avant cette année
+      }
+    }
+    
+    // Sauf si ça commence après l'année en cours
+    if (dateDebut) {
+      const startDate = new Date(dateDebut);
+      if (startDate.getFullYear() > currentYear) {
+        return []; // Pas encore commencé
+      }
+    }
+    
+    // Pour tout le reste, afficher sur les 12 mois
+    return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
   };
 
   // Convertir un montant périodique en montant mensuel
