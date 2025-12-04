@@ -26,6 +26,8 @@ export interface Societe {
   activite?: string;
   holding?: string;
   forme_societe_civile?: string;
+  pourcentage_utilisateur?: number;
+  pourcentage_conjoint?: number;
   created_at?: string;
   updated_at?: string;
 }

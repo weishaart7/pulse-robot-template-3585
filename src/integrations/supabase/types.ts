@@ -181,6 +181,7 @@ export type Database = {
           regime_location: string | null
           revalorisation_annuelle: number | null
           situation_particuliere: string[] | null
+          societe_id: string | null
           statut_bien: string | null
           surface_m2: number | null
           transfert_immobilier: boolean | null
@@ -222,6 +223,7 @@ export type Database = {
           regime_location?: string | null
           revalorisation_annuelle?: number | null
           situation_particuliere?: string[] | null
+          societe_id?: string | null
           statut_bien?: string | null
           surface_m2?: number | null
           transfert_immobilier?: boolean | null
@@ -263,6 +265,7 @@ export type Database = {
           regime_location?: string | null
           revalorisation_annuelle?: number | null
           situation_particuliere?: string[] | null
+          societe_id?: string | null
           statut_bien?: string | null
           surface_m2?: number | null
           transfert_immobilier?: boolean | null
@@ -275,7 +278,15 @@ export type Database = {
           valeur_acquisition?: number | null
           valeur_estimee?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "assets_societe_id_fkey"
+            columns: ["societe_id"]
+            isOneToOne: false
+            referencedRelation: "societes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       blog_articles: {
         Row: {
@@ -1365,7 +1376,9 @@ export type Database = {
           nombre_salaries: number | null
           nombre_titres: number | null
           pays: string | null
+          pourcentage_conjoint: number | null
           pourcentage_ifi: number | null
+          pourcentage_utilisateur: number | null
           regime_fiscal: string | null
           rue_adresse: string | null
           siret: string | null
@@ -1392,7 +1405,9 @@ export type Database = {
           nombre_salaries?: number | null
           nombre_titres?: number | null
           pays?: string | null
+          pourcentage_conjoint?: number | null
           pourcentage_ifi?: number | null
+          pourcentage_utilisateur?: number | null
           regime_fiscal?: string | null
           rue_adresse?: string | null
           siret?: string | null
@@ -1419,7 +1434,9 @@ export type Database = {
           nombre_salaries?: number | null
           nombre_titres?: number | null
           pays?: string | null
+          pourcentage_conjoint?: number | null
           pourcentage_ifi?: number | null
+          pourcentage_utilisateur?: number | null
           regime_fiscal?: string | null
           rue_adresse?: string | null
           siret?: string | null
