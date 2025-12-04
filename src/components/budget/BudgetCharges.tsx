@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -6,46 +6,22 @@ import { useCharges } from '@/hooks/useBudget';
 import { ChargesForm } from '@/components/budget/ChargesForm';
 import { BudgetList } from '@/components/budget/BudgetList';
 import { Charge } from '@/services/budgetService';
-import { DisplayMode, PersonFilter, PersonNames } from '@/pages/budget/BudgetSection';
+import { DisplayMode } from '@/pages/budget/BudgetSection';
 
 interface BudgetChargesProps {
   displayMode: DisplayMode;
-  personFilter: PersonFilter;
-  personNames: PersonNames;
 }
 
-export const BudgetCharges = ({ displayMode, personFilter, personNames }: BudgetChargesProps) => {
+export const BudgetCharges = ({ displayMode }: BudgetChargesProps) => {
   const [showChargesForm, setShowChargesForm] = useState(false);
   const [editingCharge, setEditingCharge] = useState<Charge | undefined>();
   const {
-    charges: allCharges,
+    charges,
     loading: chargesLoading,
     createCharge,
     updateCharge,
     deleteCharge
   } = useCharges();
-
-  // Filtrer par personne (individuel = uniquement les éléments explicitement attribués + moitié des communs)
-  const charges = useMemo(() => {
-    if (personFilter === 'couple') return allCharges;
-    const targetName = personFilter === 'utilisateur' 
-      ? personNames.userFullName.toLowerCase() 
-      : personNames.partnerFullName.toLowerCase();
-    const commonValues = ['le couple', 'couple', 'commun', 'les deux'];
-    
-    return allCharges
-      .filter(c => {
-        const debiteur = c.debiteur?.toLowerCase() || '';
-        return debiteur === targetName || commonValues.some(cv => debiteur.includes(cv));
-      })
-      .map(c => {
-        const debiteur = c.debiteur?.toLowerCase() || '';
-        if (commonValues.some(cv => debiteur.includes(cv))) {
-          return { ...c, montant: (c.montant || 0) / 2 };
-        }
-        return c;
-      });
-  }, [allCharges, personFilter, personNames]);
 
   const handleSubmitCharge = async (data: Omit<Charge, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (editingCharge) {
@@ -69,7 +45,6 @@ export const BudgetCharges = ({ displayMode, personFilter, personNames }: Budget
 
   return (
     <div className="space-y-6">
-      {/* Résumé des charges */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total des Charges</CardTitle>
@@ -90,7 +65,6 @@ export const BudgetCharges = ({ displayMode, personFilter, personNames }: Budget
         </CardContent>
       </Card>
 
-      {/* Formulaire d'ajout/modification */}
       {showChargesForm && (
         <ChargesForm 
           charge={editingCharge} 
@@ -100,7 +74,6 @@ export const BudgetCharges = ({ displayMode, personFilter, personNames }: Budget
         />
       )}
 
-      {/* Liste des charges */}
       <BudgetList 
         revenus={[]} 
         charges={charges} 
