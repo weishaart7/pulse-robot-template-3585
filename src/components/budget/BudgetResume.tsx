@@ -468,7 +468,9 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
       // Calculer les revenus pour ce mois
       let monthRevenus = 0;
       revenus.forEach(revenu => {
-        const montant = revenu.montant || 0;
+        const montant = Number(revenu.montant) || 0;
+        if (!isFinite(montant)) return;
+        
         const periodicite = revenu.periodicite;
         const applicableMonths = getApplicableMonths(periodicite, revenu.date_debut, revenu.date_fin, revenu.jour_fixe);
         
@@ -476,7 +478,10 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
           if (periodicite === 'ponctuel') {
             monthRevenus += montant;
           } else {
-            monthRevenus += getMonthlyAmount(montant, periodicite);
+            const monthlyAmount = getMonthlyAmount(montant, periodicite);
+            if (isFinite(monthlyAmount)) {
+              monthRevenus += monthlyAmount;
+            }
           }
         }
       });
@@ -484,7 +489,9 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
       // Calculer les charges pour ce mois
       let monthCharges = 0;
       charges.forEach(charge => {
-        const montant = charge.montant || 0;
+        const montant = Number(charge.montant) || 0;
+        if (!isFinite(montant)) return;
+        
         const periodicite = charge.periodicite;
         const applicableMonths = getApplicableMonths(periodicite, charge.date_debut, charge.date_fin, charge.jour_fixe);
         
@@ -492,16 +499,23 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
           if (periodicite === 'ponctuel') {
             monthCharges += montant;
           } else {
-            monthCharges += getMonthlyAmount(montant, periodicite);
+            const monthlyAmount = getMonthlyAmount(montant, periodicite);
+            if (isFinite(monthlyAmount)) {
+              monthCharges += monthlyAmount;
+            }
           }
         }
       });
       
+      // S'assurer que les valeurs sont finies
+      const finalRevenus = isFinite(monthRevenus) ? Math.round(monthRevenus) : 0;
+      const finalCharges = isFinite(monthCharges) ? Math.round(monthCharges) : 0;
+      
       return {
         month,
-        revenus: Math.round(monthRevenus),
-        charges: Math.round(monthCharges),
-        solde: Math.round(monthRevenus - monthCharges)
+        revenus: finalRevenus,
+        charges: finalCharges,
+        solde: finalRevenus - finalCharges
       };
     });
   }, [revenus, charges]);
