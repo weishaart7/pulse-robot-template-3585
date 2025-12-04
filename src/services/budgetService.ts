@@ -112,6 +112,7 @@ export const budgetService = {
           montant: convertToAnnual(item.montant || 0, item.periodicite),
           revenu_disponible: true,
           commentaire: item.commentaire,
+          periodicite: 'mensuel', // Montant annualisé, donc diviser par 12 pour affichage mensuel
           created_at: item.created_at,
           updated_at: item.updated_at,
           source: 'immobilier' as const,
@@ -232,6 +233,7 @@ export const budgetService = {
         debiteur: item.debiteur || 'Immobilier',
         montant: convertToAnnual(item.montant || 0, item.periodicite),
         commentaire: undefined,
+        periodicite: 'mensuel', // Montant annualisé, donc diviser par 12 pour affichage mensuel
         created_at: item.created_at,
         updated_at: item.updated_at,
         source: 'immobilier' as const,
