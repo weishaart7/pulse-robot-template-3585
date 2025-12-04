@@ -67,7 +67,12 @@ export const budgetService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []).map(r => ({ ...r, source: 'budget' as const }));
+    // Annualiser tous les montants pour cohérence
+    return (data || []).map(r => ({
+      ...r,
+      montant: convertToAnnual(r.montant || 0, r.periodicite || 'mensuel'),
+      source: 'budget' as const
+    }));
   },
 
   async getAssetRevenusForBudget(): Promise<Revenu[]> {
@@ -86,10 +91,10 @@ export const budgetService = {
     // Get unique asset_ids
     const assetIds = [...new Set(revenusData.map(r => r.asset_id))];
 
-    // Fetch user's assets
+    // Fetch user's assets with detenteur field
     const { data: assetsData, error: assetsError } = await supabase
       .from('assets')
-      .select('id, denomination, user_id')
+      .select('id, denomination, user_id, detenteur')
       .eq('user_id', user.id)
       .in('id', assetIds);
 
@@ -103,16 +108,23 @@ export const budgetService = {
       .filter(item => assetsMap.has(item.asset_id))
       .map(item => {
         const asset = assetsMap.get(item.asset_id);
+        // Déterminer le bénéficiaire basé sur le détenteur de l'asset
+        const detenteur = asset?.detenteur;
+        let beneficiaire = 'Le couple';
+        if (detenteur && detenteur !== 'Commun' && detenteur !== 'Le couple') {
+          beneficiaire = detenteur;
+        }
+        
         return {
           id: item.id,
           user_id: user.id,
           nature: item.nature || 'Revenus locatifs',
           libelle: `${item.nature || 'Revenu'} - ${asset?.denomination || 'Bien immobilier'}`,
-          beneficiaire: 'Immobilier',
+          beneficiaire,
           montant: convertToAnnual(item.montant || 0, item.periodicite),
           revenu_disponible: true,
           commentaire: item.commentaire,
-          periodicite: 'mensuel', // Montant annualisé, donc diviser par 12 pour affichage mensuel
+          periodicite: item.periodicite || 'mensuel',
           created_at: item.created_at,
           updated_at: item.updated_at,
           source: 'immobilier' as const,
@@ -193,7 +205,12 @@ export const budgetService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []).map(c => ({ ...c, source: 'budget' as const }));
+    // Annualiser tous les montants pour cohérence
+    return (data || []).map(c => ({
+      ...c,
+      montant: convertToAnnual(c.montant || 0, c.periodicite || 'mensuel'),
+      source: 'budget' as const
+    }));
   },
 
   async getAssetChargesForBudget(): Promise<Charge[]> {
@@ -215,7 +232,8 @@ export const budgetService = {
         assets!inner (
           id,
           denomination,
-          user_id
+          user_id,
+          detenteur
         )
       `)
       .eq('impact_budget', true);
@@ -225,21 +243,30 @@ export const budgetService = {
     // Transform asset_charges to Charge format
     return (data || [])
       .filter((item: any) => item.assets?.user_id === user.id)
-      .map((item: any) => ({
-        id: item.id,
-        user_id: user.id,
-        nature: item.type_charge || 'Charges locatives',
-        libelle: `${item.denomination || item.type_charge} - ${item.assets?.denomination || 'Bien immobilier'}`,
-        debiteur: item.debiteur || 'Immobilier',
-        montant: convertToAnnual(item.montant || 0, item.periodicite),
-        commentaire: undefined,
-        periodicite: 'mensuel', // Montant annualisé, donc diviser par 12 pour affichage mensuel
-        created_at: item.created_at,
-        updated_at: item.updated_at,
-        source: 'immobilier' as const,
-        asset_id: item.asset_id,
-        asset_name: item.assets?.denomination || 'Bien immobilier'
-      }));
+      .map((item: any) => {
+        // Déterminer le débiteur basé sur le détenteur de l'asset
+        const detenteur = item.assets?.detenteur;
+        let debiteurFinal = 'Le couple';
+        if (detenteur && detenteur !== 'Commun' && detenteur !== 'Le couple') {
+          debiteurFinal = detenteur;
+        }
+        
+        return {
+          id: item.id,
+          user_id: user.id,
+          nature: item.type_charge || 'Charges locatives',
+          libelle: `${item.denomination || item.type_charge} - ${item.assets?.denomination || 'Bien immobilier'}`,
+          debiteur: debiteurFinal,
+          montant: convertToAnnual(item.montant || 0, item.periodicite),
+          commentaire: undefined,
+          periodicite: item.periodicite || 'mensuel',
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+          source: 'immobilier' as const,
+          asset_id: item.asset_id,
+          asset_name: item.assets?.denomination || 'Bien immobilier'
+        };
+      });
   },
 
   async createCharge(charge: Omit<Charge, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Charge> {
