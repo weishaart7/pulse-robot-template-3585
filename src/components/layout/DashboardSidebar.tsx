@@ -87,165 +87,180 @@ export function DashboardSidebar() {
   };
 
   return (
-    <motion.div
-      className="bg-white flex flex-col h-full overflow-hidden flex-shrink-0"
-      animate={{
-        width: open ? 240 : 64,
-      }}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
-    >
-      {/* Logo */}
-      <div className={cn("px-3 py-4", open ? "mx-[19px]" : "mx-auto")}>
-        {open ? (
-          <motion.img 
-            src="/lovable-uploads/3f46b218-16fb-43cf-8206-7af4be7cbfd0.png" 
-            alt="Merislabs Logo" 
-            className="h-7 w-auto object-contain cursor-pointer" 
-            onClick={() => navigate('/')}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.2 }}
-          />
-        ) : (
-          <motion.img 
-            src="/lovable-uploads/3f46b218-16fb-43cf-8206-7af4be7cbfd0.png" 
-            alt="Merislabs Logo" 
-            className="h-7 w-7 object-cover object-left cursor-pointer" 
-            onClick={() => navigate('/')}
-          />
-        )}
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 p-2 space-y-1 overflow-y-auto overflow-x-hidden">
-        {/* Vue d'ensemble */}
-        {menuItems.slice(0, 1).map(item => {
-          const Icon = item.icon;
-          const isActive = currentValue === item.value;
-          return (
-            <button 
-              key={item.value} 
-              onClick={() => handleNavigation(item.href)} 
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left",
-                isActive ? "bg-gray-100 text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
-                !open && "justify-center"
-              )}
-            >
-              <Icon className="h-4 w-4 flex-shrink-0" />
-              {open && (
-                <motion.span 
-                  className="truncate whitespace-nowrap"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {item.label}
-                </motion.span>
-              )}
-            </button>
-          );
-        })}
-        
-        {/* Séparateur après Vue d'ensemble */}
-        <div className={cn("py-2", open ? "px-4" : "px-2")}>
-          <Separator className="bg-gray-200 h-px" />
+    <>
+      {/* Spacer fixe pour maintenir l'espace de la sidebar réduite */}
+      <div className="w-16 flex-shrink-0" />
+      
+      {/* Sidebar animée en position absolue */}
+      <motion.div
+        className="fixed left-0 top-0 h-full bg-white flex flex-col z-40 shadow-lg"
+        initial={false}
+        animate={{
+          width: open ? 240 : 64,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 400,
+          damping: 30,
+        }}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+      >
+        {/* Logo */}
+        <div className={cn("px-3 py-4 h-16 flex items-center", open ? "px-6" : "justify-center")}>
+          {open ? (
+            <motion.img 
+              src="/lovable-uploads/3f46b218-16fb-43cf-8206-7af4be7cbfd0.png" 
+              alt="Merislabs Logo" 
+              className="h-7 w-auto object-contain cursor-pointer" 
+              onClick={() => navigate('/')}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.15 }}
+            />
+          ) : (
+            <img 
+              src="/lovable-uploads/3f46b218-16fb-43cf-8206-7af4be7cbfd0.png" 
+              alt="Merislabs Logo" 
+              className="h-7 w-7 object-cover object-left cursor-pointer" 
+              onClick={() => navigate('/')}
+            />
+          )}
         </div>
 
-        {/* Menu principal (Famille à Transmission) */}
-        {menuItems.slice(1, 9).map(item => {
-          const Icon = item.icon;
-          const isActive = currentValue === item.value;
-          return (
-            <button 
-              key={item.value} 
-              onClick={() => handleNavigation(item.href)} 
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left",
-                isActive ? "bg-gray-100 text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
-                !open && "justify-center"
-              )}
-            >
-              <Icon className="h-4 w-4 flex-shrink-0" />
-              {open && (
+        {/* Navigation */}
+        <nav className="flex-1 p-2 space-y-1 overflow-y-auto overflow-x-hidden">
+          {/* Vue d'ensemble */}
+          {menuItems.slice(0, 1).map(item => {
+            const Icon = item.icon;
+            const isActive = currentValue === item.value;
+            return (
+              <button 
+                key={item.value} 
+                onClick={() => handleNavigation(item.href)} 
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left",
+                  isActive ? "bg-gray-100 text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
+                  !open && "justify-center"
+                )}
+              >
+                <Icon className="h-4 w-4 flex-shrink-0" />
                 <motion.span 
-                  className="truncate whitespace-nowrap"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
+                  className="truncate whitespace-nowrap overflow-hidden"
+                  initial={false}
+                  animate={{ 
+                    opacity: open ? 1 : 0,
+                    width: open ? "auto" : 0,
+                  }}
+                  transition={{ duration: 0.15 }}
                 >
                   {item.label}
                 </motion.span>
-              )}
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
+          
+          {/* Séparateur après Vue d'ensemble */}
+          <div className={cn("py-2", open ? "px-4" : "px-2")}>
+            <Separator className="bg-gray-200 h-px" />
+          </div>
 
-        {/* Séparateur avant Stratégies */}
-        <div className={cn("py-2", open ? "px-4" : "px-2")}>
-          <Separator className="bg-gray-200 h-px" />
+          {/* Menu principal (Famille à Transmission) */}
+          {menuItems.slice(1, 9).map(item => {
+            const Icon = item.icon;
+            const isActive = currentValue === item.value;
+            return (
+              <button 
+                key={item.value} 
+                onClick={() => handleNavigation(item.href)} 
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left",
+                  isActive ? "bg-gray-100 text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
+                  !open && "justify-center"
+                )}
+              >
+                <Icon className="h-4 w-4 flex-shrink-0" />
+                <motion.span 
+                  className="truncate whitespace-nowrap overflow-hidden"
+                  initial={false}
+                  animate={{ 
+                    opacity: open ? 1 : 0,
+                    width: open ? "auto" : 0,
+                  }}
+                  transition={{ duration: 0.15 }}
+                >
+                  {item.label}
+                </motion.span>
+              </button>
+            );
+          })}
+
+          {/* Séparateur avant Stratégies */}
+          <div className={cn("py-2", open ? "px-4" : "px-2")}>
+            <Separator className="bg-gray-200 h-px" />
+          </div>
+
+          {/* Stratégies et Mon agenda */}
+          {menuItems.slice(9).map(item => {
+            const Icon = item.icon;
+            const isActive = currentValue === item.value;
+            return (
+              <button 
+                key={item.value} 
+                onClick={() => handleNavigation(item.href)} 
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left",
+                  isActive ? "bg-gray-100 text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
+                  !open && "justify-center"
+                )}
+              >
+                <Icon className="h-4 w-4 flex-shrink-0" />
+                <motion.span 
+                  className="truncate whitespace-nowrap overflow-hidden"
+                  initial={false}
+                  animate={{ 
+                    opacity: open ? 1 : 0,
+                    width: open ? "auto" : 0,
+                  }}
+                  transition={{ duration: 0.15 }}
+                >
+                  {item.label}
+                </motion.span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Sections du bas */}
+        <div className="p-2 space-y-1">
+          {bottomItems.map(item => {
+            const Icon = item.icon;
+            return (
+              <button 
+                key={item.href}
+                onClick={() => handleNavigation(item.href)} 
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900",
+                  !open && "justify-center"
+                )}
+              >
+                <Icon className="h-4 w-4 flex-shrink-0" />
+                <motion.span 
+                  className="truncate whitespace-nowrap overflow-hidden"
+                  initial={false}
+                  animate={{ 
+                    opacity: open ? 1 : 0,
+                    width: open ? "auto" : 0,
+                  }}
+                  transition={{ duration: 0.15 }}
+                >
+                  {item.label}
+                </motion.span>
+              </button>
+            );
+          })}
         </div>
-
-        {/* Stratégies et Mon agenda */}
-        {menuItems.slice(9).map(item => {
-          const Icon = item.icon;
-          const isActive = currentValue === item.value;
-          return (
-            <button 
-              key={item.value} 
-              onClick={() => handleNavigation(item.href)} 
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left",
-                isActive ? "bg-gray-100 text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
-                !open && "justify-center"
-              )}
-            >
-              <Icon className="h-4 w-4 flex-shrink-0" />
-              {open && (
-                <motion.span 
-                  className="truncate whitespace-nowrap"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {item.label}
-                </motion.span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
-
-      {/* Sections du bas */}
-      <div className="p-2 space-y-1">
-        {bottomItems.map(item => {
-          const Icon = item.icon;
-          return (
-            <button 
-              key={item.href}
-              onClick={() => handleNavigation(item.href)} 
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900",
-                !open && "justify-center"
-              )}
-            >
-              <Icon className="h-4 w-4 flex-shrink-0" />
-              {open && (
-                <motion.span 
-                  className="truncate whitespace-nowrap"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {item.label}
-                </motion.span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </motion.div>
+      </motion.div>
+    </>
   );
 }
