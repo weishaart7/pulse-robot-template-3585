@@ -43,23 +43,8 @@ export interface Charge {
   asset_name?: string;
 }
 
-// Helper to convert periodicity to annual amount
-const convertToAnnual = (montant: number, periodicite: string): number => {
-  const p = periodicite.toLowerCase();
-  if (p === 'mensuel' || p === 'mensuelle') {
-    return montant * 12;
-  }
-  if (p === 'trimestriel' || p === 'trimestrielle') {
-    return montant * 4;
-  }
-  if (p === 'semestriel' || p === 'semestrielle') {
-    return montant * 2;
-  }
-  return montant; // annuel/annuelle or default
-};
-
 export const budgetService = {
-  // Revenus
+  // Revenus - retourne les montants bruts avec leur périodicité d'origine
   async getRevenus(): Promise<Revenu[]> {
     const { data, error } = await supabase
       .from('revenus')
@@ -67,12 +52,7 @@ export const budgetService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    // Annualiser tous les montants pour cohérence
-    return (data || []).map(r => ({
-      ...r,
-      montant: convertToAnnual(r.montant || 0, r.periodicite || 'mensuel'),
-      source: 'budget' as const
-    }));
+    return (data || []).map(r => ({ ...r, source: 'budget' as const }));
   },
 
   async getAssetRevenusForBudget(): Promise<Revenu[]> {
@@ -82,7 +62,7 @@ export const budgetService = {
     // Fetch asset_revenus with impact_budget = true
     const { data: revenusData, error: revenusError } = await supabase
       .from('asset_revenus')
-      .select('id, asset_id, nature, montant, periodicite, commentaire, created_at, updated_at')
+      .select('id, asset_id, nature, montant, periodicite, commentaire, date_debut, date_fin, created_at, updated_at')
       .eq('impact_budget', true);
 
     if (revenusError) throw revenusError;
@@ -103,7 +83,7 @@ export const budgetService = {
     // Create a map of assets
     const assetsMap = new Map((assetsData || []).map(a => [a.id, a]));
 
-    // Transform asset_revenus to Revenu format, filtering by user's assets
+    // Transform asset_revenus to Revenu format
     return revenusData
       .filter(item => assetsMap.has(item.asset_id))
       .map(item => {
@@ -121,10 +101,12 @@ export const budgetService = {
           nature: item.nature || 'Revenus locatifs',
           libelle: `${item.nature || 'Revenu'} - ${asset?.denomination || 'Bien immobilier'}`,
           beneficiaire,
-          montant: convertToAnnual(item.montant || 0, item.periodicite),
+          montant: item.montant || 0,
           revenu_disponible: true,
           commentaire: item.commentaire,
           periodicite: item.periodicite || 'mensuel',
+          date_debut: item.date_debut,
+          date_fin: item.date_fin,
           created_at: item.created_at,
           updated_at: item.updated_at,
           source: 'immobilier' as const,
@@ -197,7 +179,7 @@ export const budgetService = {
     if (error) throw error;
   },
 
-  // Charges
+  // Charges - retourne les montants bruts avec leur périodicité d'origine
   async getCharges(): Promise<Charge[]> {
     const { data, error } = await supabase
       .from('charges')
@@ -205,12 +187,7 @@ export const budgetService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    // Annualiser tous les montants pour cohérence
-    return (data || []).map(c => ({
-      ...c,
-      montant: convertToAnnual(c.montant || 0, c.periodicite || 'mensuel'),
-      source: 'budget' as const
-    }));
+    return (data || []).map(c => ({ ...c, source: 'budget' as const }));
   },
 
   async getAssetChargesForBudget(): Promise<Charge[]> {
@@ -227,6 +204,8 @@ export const budgetService = {
         debiteur,
         montant,
         periodicite,
+        date_debut,
+        duree_fin_date,
         created_at,
         updated_at,
         assets!inner (
@@ -257,9 +236,11 @@ export const budgetService = {
           nature: item.type_charge || 'Charges locatives',
           libelle: `${item.denomination || item.type_charge} - ${item.assets?.denomination || 'Bien immobilier'}`,
           debiteur: debiteurFinal,
-          montant: convertToAnnual(item.montant || 0, item.periodicite),
+          montant: item.montant || 0,
           commentaire: undefined,
           periodicite: item.periodicite || 'mensuel',
+          date_debut: item.date_debut,
+          date_fin: item.duree_fin_date,
           created_at: item.created_at,
           updated_at: item.updated_at,
           source: 'immobilier' as const,

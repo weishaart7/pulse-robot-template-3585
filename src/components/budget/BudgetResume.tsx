@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Line, ReferenceLine } from 'recharts';
 import { useRevenus, useCharges } from '@/hooks/useBudget';
@@ -13,6 +13,27 @@ interface BudgetResumeProps {
   personNames: PersonNames;
 }
 
+// Convertir un montant périodique en montant annuel
+const toAnnual = (montant: number, periodicite?: string): number => {
+  const p = (periodicite || 'mensuel').toLowerCase();
+  switch (p) {
+    case 'mensuel':
+    case 'mensuelle':
+      return montant * 12;
+    case 'trimestriel':
+    case 'trimestrielle':
+      return montant * 4;
+    case 'semestriel':
+    case 'semestrielle':
+      return montant * 2;
+    case 'annuel':
+    case 'annuelle':
+    case 'ponctuel':
+    default:
+      return montant;
+  }
+};
+
 // Fonction utilitaire pour filtrer et ajuster les montants par personne
 const filterByPerson = <T extends { montant?: number | null; beneficiaire?: string | null; debiteur?: string | null }>(
   items: T[],
@@ -20,7 +41,7 @@ const filterByPerson = <T extends { montant?: number | null; beneficiaire?: stri
   field: 'beneficiaire' | 'debiteur',
   personNames: PersonNames
 ): T[] => {
-  // Couple = tous les revenus/charges (propres + communs)
+  // Couple = tous les revenus/charges
   if (personFilter === 'couple') return items;
   
   // Déterminer le nom à chercher
@@ -51,21 +72,8 @@ const filterByPerson = <T extends { montant?: number | null; beneficiaire?: stri
 };
 
 export const BudgetResume = ({ displayMode, personFilter, personNames }: BudgetResumeProps) => {
-  const {
-    revenus: allRevenus,
-    loading: revenusLoading,
-    fetchRevenus
-  } = useRevenus();
-  const {
-    charges: allCharges,
-    loading: chargesLoading,
-    fetchCharges
-  } = useCharges();
-  
-  useEffect(() => {
-    fetchRevenus();
-    fetchCharges();
-  }, []);
+  const { revenus: allRevenus, loading: revenusLoading } = useRevenus();
+  const { charges: allCharges, loading: chargesLoading } = useCharges();
 
   // Filtrer par personne
   const revenus = useMemo(() => 
@@ -77,18 +85,26 @@ export const BudgetResume = ({ displayMode, personFilter, personNames }: BudgetR
     [allCharges, personFilter, personNames]
   );
 
-  const totalRevenus = Math.round(revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0));
-  const totalCharges = Math.round(charges.reduce((sum, charge) => sum + (charge.montant || 0), 0));
+  // Calculer les totaux annuels
+  const totalRevenusAnnuel = useMemo(() => 
+    revenus.reduce((sum, r) => sum + toAnnual(r.montant || 0, r.periodicite), 0),
+    [revenus]
+  );
+  const totalChargesAnnuel = useMemo(() => 
+    charges.reduce((sum, c) => sum + toAnnual(c.montant || 0, c.periodicite), 0),
+    [charges]
+  );
 
   const divisor = displayMode === 'mensuel' ? 12 : 1;
   const periodLabel = displayMode === 'mensuel' ? 'mensuel' : 'annuel';
 
   // Appliquer le diviseur pour l'affichage
-  const displayRevenus = Math.round(totalRevenus / divisor);
-  const displayCharges = Math.round(totalCharges / divisor);
+  const displayRevenus = Math.round(totalRevenusAnnuel / divisor);
+  const displayCharges = Math.round(totalChargesAnnuel / divisor);
 
   if (revenusLoading || chargesLoading) {
-    return <div className="space-y-6">
+    return (
+      <div className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Résumé du Budget</CardTitle>
@@ -97,17 +113,21 @@ export const BudgetResume = ({ displayMode, personFilter, personNames }: BudgetR
             <p className="text-muted-foreground">Chargement des données...</p>
           </CardContent>
         </Card>
-      </div>;
+      </div>
+    );
   }
 
   // Calculer les mensualités de crédits (charges liées aux crédits)
-  const mensualitesCredits = Math.round(charges.filter(charge => charge.nature?.toLowerCase().includes('crédit') || charge.nature?.toLowerCase().includes('emprunt')).reduce((sum, charge) => sum + (charge.montant || 0), 0));
-  const displayMensualitesCredits = Math.round(mensualitesCredits / divisor);
+  const mensualitesCreditsAnnuel = charges
+    .filter(c => c.nature?.toLowerCase().includes('crédit') || c.nature?.toLowerCase().includes('emprunt'))
+    .reduce((sum, c) => sum + toAnnual(c.montant || 0, c.periodicite), 0);
+  const displayMensualitesCredits = Math.round(mensualitesCreditsAnnuel / divisor);
 
-  // Calculer les indicateurs (basés sur les montants affichés)
+  // Calculer les indicateurs
   const soldePeriode = displayRevenus - displayCharges;
   const tauxEndettement = displayRevenus > 0 ? displayMensualitesCredits / displayRevenus * 100 : 0;
   const capaciteEndettement = Math.round(displayRevenus * 0.35 - displayMensualitesCredits);
+  
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -124,7 +144,7 @@ export const BudgetResume = ({ displayMode, personFilter, personNames }: BudgetR
   // Grouper les revenus par catégories
   const revenusParCategorie = Object.entries(REVENUS_CATEGORIES).map(([categorie, natures]) => {
     const revenusCategorie = revenus.filter(r => (natures as readonly string[]).includes(r.nature));
-    const total = revenusCategorie.reduce((sum, r) => sum + (Number(r.montant) || 0), 0);
+    const total = revenusCategorie.reduce((sum, r) => sum + toAnnual(r.montant || 0, r.periodicite), 0);
     return {
       categorie,
       total: total / divisor,
@@ -132,26 +152,27 @@ export const BudgetResume = ({ displayMode, personFilter, personNames }: BudgetR
     };
   }).filter(cat => cat.count > 0);
 
-  // Ajouter les revenus non catégorisés (ex: revenus immobiliers)
+  // Ajouter les revenus non catégorisés
   const revenusNonCategorises = revenus.filter(r => !allRevenusNatures.includes(r.nature));
   if (revenusNonCategorises.length > 0) {
-    const totalNonCategorises = revenusNonCategorises.reduce((sum, r) => sum + (Number(r.montant) || 0), 0);
-    revenusParCategorie.push({
-      categorie: 'Revenus du patrimoine',
-      total: totalNonCategorises / divisor + (revenusParCategorie.find(c => c.categorie === 'Revenus du patrimoine')?.total || 0),
-      count: revenusNonCategorises.length + (revenusParCategorie.find(c => c.categorie === 'Revenus du patrimoine')?.count || 0)
-    });
-    // Retirer l'ancienne entrée "Revenus du patrimoine" si elle existe déjà
+    const totalNonCategorises = revenusNonCategorises.reduce((sum, r) => sum + toAnnual(r.montant || 0, r.periodicite), 0);
     const existingIndex = revenusParCategorie.findIndex(c => c.categorie === 'Revenus du patrimoine');
-    if (existingIndex !== -1 && existingIndex !== revenusParCategorie.length - 1) {
-      revenusParCategorie.splice(existingIndex, 1);
+    if (existingIndex !== -1) {
+      revenusParCategorie[existingIndex].total += totalNonCategorises / divisor;
+      revenusParCategorie[existingIndex].count += revenusNonCategorises.length;
+    } else {
+      revenusParCategorie.push({
+        categorie: 'Revenus du patrimoine',
+        total: totalNonCategorises / divisor,
+        count: revenusNonCategorises.length
+      });
     }
   }
 
   // Grouper les charges par catégories
   const chargesParCategorie = Object.entries(CHARGES_CATEGORIES).map(([categorie, natures]) => {
     const chargesCategorie = charges.filter(c => (natures as readonly string[]).includes(c.nature));
-    const total = chargesCategorie.reduce((sum, c) => sum + (Number(c.montant) || 0), 0);
+    const total = chargesCategorie.reduce((sum, c) => sum + toAnnual(c.montant || 0, c.periodicite), 0);
     return {
       categorie,
       total: total / divisor,
@@ -159,21 +180,23 @@ export const BudgetResume = ({ displayMode, personFilter, personNames }: BudgetR
     };
   }).filter(cat => cat.count > 0);
 
-  // Ajouter les charges non catégorisées (ex: charges immobilières)
+  // Ajouter les charges non catégorisées
   const chargesNonCategorisees = charges.filter(c => !allChargesNatures.includes(c.nature));
   if (chargesNonCategorisees.length > 0) {
-    const totalNonCategorisees = chargesNonCategorisees.reduce((sum, c) => sum + (Number(c.montant) || 0), 0);
-    chargesParCategorie.push({
-      categorie: 'Logement & Habitation',
-      total: totalNonCategorisees / divisor + (chargesParCategorie.find(c => c.categorie === 'Logement & Habitation')?.total || 0),
-      count: chargesNonCategorisees.length + (chargesParCategorie.find(c => c.categorie === 'Logement & Habitation')?.count || 0)
-    });
-    // Retirer l'ancienne entrée si elle existe déjà
+    const totalNonCategorisees = chargesNonCategorisees.reduce((sum, c) => sum + toAnnual(c.montant || 0, c.periodicite), 0);
     const existingIndex = chargesParCategorie.findIndex(c => c.categorie === 'Logement & Habitation');
-    if (existingIndex !== -1 && existingIndex !== chargesParCategorie.length - 1) {
-      chargesParCategorie.splice(existingIndex, 1);
+    if (existingIndex !== -1) {
+      chargesParCategorie[existingIndex].total += totalNonCategorisees / divisor;
+      chargesParCategorie[existingIndex].count += chargesNonCategorisees.length;
+    } else {
+      chargesParCategorie.push({
+        categorie: 'Logement & Habitation',
+        total: totalNonCategorisees / divisor,
+        count: chargesNonCategorisees.length
+      });
     }
   }
+
   const totalRevenusCat = revenusParCategorie.reduce((sum, cat) => sum + cat.total, 0);
   const totalChargesCat = chargesParCategorie.reduce((sum, cat) => sum + cat.total, 0);
   
@@ -199,14 +222,11 @@ export const BudgetResume = ({ displayMode, personFilter, personNames }: BudgetR
     'Solidarité, Pensions & Divers': '#ffb600'
   };
 
-  const getColorForRevenu = (categorie: string) => {
-    return REVENUS_COLORS[categorie] || '#76ff61';
-  };
+  const getColorForRevenu = (categorie: string) => REVENUS_COLORS[categorie] || '#76ff61';
+  const getColorForCharge = (categorie: string) => CHARGES_COLORS[categorie] || '#2d00f7';
 
-  const getColorForCharge = (categorie: string) => {
-    return CHARGES_COLORS[categorie] || '#2d00f7';
-  };
-  return <div className="space-y-6">
+  return (
+    <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="border-0">
           <CardHeader className="pb-2">
@@ -218,17 +238,13 @@ export const BudgetResume = ({ displayMode, personFilter, personNames }: BudgetR
               <SlidingNumber value={soldePeriode} />
               <span className="ml-1">€</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Revenus - Dépenses
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Revenus - Dépenses</p>
           </CardContent>
         </Card>
 
         <Card className="border-0">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-medium text-muted-foreground">
-              Taux d'endettement
-            </CardTitle>
+            <CardTitle className="text-base font-medium text-muted-foreground">Taux d'endettement</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="text-2xl font-bold flex items-center gap-1 text-black">
@@ -243,18 +259,14 @@ export const BudgetResume = ({ displayMode, personFilter, personNames }: BudgetR
 
         <Card className="border-0">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-medium text-muted-foreground">
-              Capacité d'endettement
-            </CardTitle>
+            <CardTitle className="text-base font-medium text-muted-foreground">Capacité d'endettement</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="text-2xl font-bold flex items-center gap-1 text-black">
               <SlidingNumber value={capaciteEndettement} />
               <span className="ml-1">€</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Maximum à 35% des revenus
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Maximum à 35% des revenus</p>
           </CardContent>
         </Card>
       </div>
@@ -265,44 +277,42 @@ export const BudgetResume = ({ displayMode, personFilter, personNames }: BudgetR
         <Card className="border-0">
           <CardHeader>
             <CardTitle>Répartition des revenus par catégories</CardTitle>
-            <CardDescription>
-              Distribution des revenus selon leur nature
-            </CardDescription>
+            <CardDescription>Distribution des revenus selon leur nature</CardDescription>
           </CardHeader>
           <CardContent>
-            {revenusParCategorie.length > 0 ? <div className="relative h-64">
+            {revenusParCategorie.length > 0 ? (
+              <div className="relative h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={revenusParCategorie.map(cat => ({
-                  name: cat.categorie,
-                  value: cat.total
-                }))} cx="50%" cy="50%" innerRadius={70} outerRadius={85} paddingAngle={2} dataKey="value" stroke="hsl(var(--background))" strokeWidth={2}>
-                      {revenusParCategorie.map((entry, index) => <Cell key={`cell-${index}`} fill={getColorForRevenu(entry.categorie)} />)}
+                    <Pie
+                      data={revenusParCategorie.map(cat => ({ name: cat.categorie, value: cat.total }))}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={70}
+                      outerRadius={85}
+                      paddingAngle={2}
+                      dataKey="value"
+                      stroke="hsl(var(--background))"
+                      strokeWidth={2}
+                    >
+                      {revenusParCategorie.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={getColorForRevenu(entry.categorie)} />
+                      ))}
                     </Pie>
                     <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{
-                  fontSize: '12px',
-                  color: 'black'
-                }} />
+                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px', color: 'black' }} />
                   </PieChart>
                 </ResponsiveContainer>
-                
-                {/* Valeur totale au centre */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{
-              paddingBottom: '36px'
-            }}>
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ paddingBottom: '36px' }}>
                   <div className="text-center">
-                    <div className="text-xl font-bold text-foreground">
-                      {formatCurrency(totalRevenusCat)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Total revenus
-                    </div>
+                    <div className="text-xl font-bold text-foreground">{formatCurrency(totalRevenusCat)}</div>
+                    <div className="text-xs text-muted-foreground">Total revenus</div>
                   </div>
                 </div>
-              </div> : <div className="text-center text-muted-foreground py-8">
-                Aucun revenu pour le moment
-              </div>}
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground py-8">Aucun revenu pour le moment</div>
+            )}
           </CardContent>
         </Card>
 
@@ -310,44 +320,42 @@ export const BudgetResume = ({ displayMode, personFilter, personNames }: BudgetR
         <Card className="border-0">
           <CardHeader>
             <CardTitle>Répartition des charges par catégories</CardTitle>
-            <CardDescription>
-              Distribution des charges selon leur nature
-            </CardDescription>
+            <CardDescription>Distribution des charges selon leur nature</CardDescription>
           </CardHeader>
           <CardContent>
-            {chargesParCategorie.length > 0 ? <div className="relative h-64">
+            {chargesParCategorie.length > 0 ? (
+              <div className="relative h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={chargesParCategorie.map(cat => ({
-                  name: cat.categorie,
-                  value: cat.total
-                }))} cx="50%" cy="50%" innerRadius={70} outerRadius={85} paddingAngle={2} dataKey="value" stroke="hsl(var(--background))" strokeWidth={2}>
-                      {chargesParCategorie.map((entry, index) => <Cell key={`cell-${index}`} fill={getColorForCharge(entry.categorie)} />)}
+                    <Pie
+                      data={chargesParCategorie.map(cat => ({ name: cat.categorie, value: cat.total }))}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={70}
+                      outerRadius={85}
+                      paddingAngle={2}
+                      dataKey="value"
+                      stroke="hsl(var(--background))"
+                      strokeWidth={2}
+                    >
+                      {chargesParCategorie.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={getColorForCharge(entry.categorie)} />
+                      ))}
                     </Pie>
                     <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{
-                  fontSize: '12px',
-                  color: 'black'
-                }} />
+                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px', color: 'black' }} />
                   </PieChart>
                 </ResponsiveContainer>
-                
-                {/* Valeur totale au centre */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{
-              paddingBottom: '36px'
-            }}>
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ paddingBottom: '36px' }}>
                   <div className="text-center">
-                    <div className="text-xl font-bold text-foreground">
-                      {formatCurrency(totalChargesCat)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Total charges
-                    </div>
+                    <div className="text-xl font-bold text-foreground">{formatCurrency(totalChargesCat)}</div>
+                    <div className="text-xs text-muted-foreground">Total charges</div>
                   </div>
                 </div>
-              </div> : <div className="text-center text-muted-foreground py-8">
-                Aucune charge pour le moment
-              </div>}
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground py-8">Aucune charge pour le moment</div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -356,100 +364,14 @@ export const BudgetResume = ({ displayMode, personFilter, personNames }: BudgetR
       <Card className="mt-6 border-0">
         <CardHeader>
           <CardTitle>Évolution mensuelle</CardTitle>
-          <CardDescription>
-            Comparaison revenus et charges sur 12 mois
-          </CardDescription>
+          <CardDescription>Comparaison revenus et charges sur 12 mois</CardDescription>
         </CardHeader>
         <CardContent>
-          <SeasonalityChart 
-            revenus={revenus} 
-            charges={charges} 
-            formatCurrency={formatCurrency}
-          />
+          <SeasonalityChart revenus={revenus} charges={charges} formatCurrency={formatCurrency} />
         </CardContent>
       </Card>
-    </div>;
-};
-
-// Fonction pour calculer le montant mensuel selon la périodicité
-// Note: Les montants sont stockés en base annualisés, donc on divise par 12 pour mensuel
-const getMonthlyAmount = (montant: number, periodicite?: string): number => {
-  const p = (periodicite || 'mensuel').toLowerCase();
-  switch (p) {
-    case 'mensuel':
-      return montant / 12; // Montant stocké annuellement, divisé par 12
-    case 'trimestriel':
-      return montant / 4; // 4 trimestres par an
-    case 'semestriel':
-      return montant / 2; // 2 semestres par an
-    case 'annuel':
-      return montant; // Montant annuel payé en une fois
-    case 'ponctuel':
-      return montant; // Montant ponctuel payé une fois
-    default:
-      return montant / 12;
-  }
-};
-
-// Fonction pour déterminer les mois où un revenu/charge s'applique
-const getApplicableMonths = (
-  periodicite?: string,
-  dateDebut?: string,
-  dateFin?: string,
-  jourFixe?: number
-): number[] => {
-  const p = (periodicite || 'mensuel').toLowerCase();
-  const currentYear = new Date().getFullYear();
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
-  
-  // Vérifier si date_debut est "significative" (pas la valeur par défaut d'aujourd'hui)
-  const isDateDebutMeaningful = dateDebut && dateDebut !== todayStr;
-  
-  // Si ponctuel avec une date significative, appliquer uniquement au mois de la date
-  if (p === 'ponctuel' && isDateDebutMeaningful) {
-    const month = new Date(dateDebut).getMonth();
-    return [month];
-  }
-  
-  // Pour mensuel, retourner tous les mois (filtrés par dates si présentes)
-  let months = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-  
-  // Ne filtrer par date_debut que si c'est une date significative (pas le défaut)
-  if (isDateDebutMeaningful) {
-    const startDate = new Date(dateDebut);
-    if (startDate.getFullYear() === currentYear) {
-      months = months.filter(m => m >= startDate.getMonth());
-    }
-  }
-  
-  if (dateFin) {
-    const endDate = new Date(dateFin);
-    if (endDate.getFullYear() === currentYear) {
-      months = months.filter(m => m <= endDate.getMonth());
-    }
-  }
-  
-  // Pour les périodicités non-mensuelles, retourner les mois spécifiques
-  if (p === 'trimestriel') {
-    // Jan (0), Avr (3), Juil (6), Oct (9)
-    return months.filter(m => [0, 3, 6, 9].includes(m));
-  }
-  if (p === 'semestriel') {
-    // Jan (0), Juil (6)
-    return months.filter(m => [0, 6].includes(m));
-  }
-  if (p === 'annuel') {
-    // Appliquer en janvier ou au mois de date_debut si significatif
-    if (isDateDebutMeaningful) {
-      const month = new Date(dateDebut).getMonth();
-      return months.includes(month) ? [month] : [];
-    }
-    return months.includes(0) ? [0] : [];
-  }
-  
-  // Pour mensuel (défaut), retourner tous les mois filtrés
-  return months;
+    </div>
+  );
 };
 
 // Composant graphique saisonnalité
@@ -461,84 +383,112 @@ interface SeasonalityChartProps {
 
 const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChartProps) => {
   const MONTHS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
-  
-  // Calculer les montants par mois en utilisant les périodicités
+  const currentYear = new Date().getFullYear();
+
+  // Calculer les mois où un item s'applique selon sa périodicité et ses dates
+  const getApplicableMonths = (
+    periodicite?: string,
+    dateDebut?: string,
+    dateFin?: string
+  ): number[] => {
+    const p = (periodicite || 'mensuel').toLowerCase();
+    let months = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    
+    // Filtrer par date de début si elle est dans l'année courante
+    if (dateDebut) {
+      const startDate = new Date(dateDebut);
+      if (startDate.getFullYear() === currentYear) {
+        months = months.filter(m => m >= startDate.getMonth());
+      } else if (startDate.getFullYear() > currentYear) {
+        return []; // Pas encore commencé
+      }
+    }
+    
+    // Filtrer par date de fin si elle est dans l'année courante
+    if (dateFin) {
+      const endDate = new Date(dateFin);
+      if (endDate.getFullYear() === currentYear) {
+        months = months.filter(m => m <= endDate.getMonth());
+      } else if (endDate.getFullYear() < currentYear) {
+        return []; // Déjà terminé
+      }
+    }
+    
+    // Selon la périodicité, retourner les mois spécifiques
+    switch (p) {
+      case 'trimestriel':
+      case 'trimestrielle':
+        return months.filter(m => [0, 3, 6, 9].includes(m));
+      case 'semestriel':
+      case 'semestrielle':
+        return months.filter(m => [0, 6].includes(m));
+      case 'annuel':
+      case 'annuelle':
+        // En janvier si pas de date_debut, sinon au mois de la date
+        if (dateDebut) {
+          const month = new Date(dateDebut).getMonth();
+          return months.includes(month) ? [month] : (months.length > 0 ? [months[0]] : []);
+        }
+        return months.includes(0) ? [0] : [];
+      case 'ponctuel':
+        // Au mois de la date_debut uniquement
+        if (dateDebut) {
+          const month = new Date(dateDebut).getMonth();
+          return months.includes(month) ? [month] : [];
+        }
+        return months.includes(0) ? [0] : [];
+      default: // mensuel
+        return months;
+    }
+  };
+
+  // Calculer les montants par mois
   const monthlyData = useMemo(() => {
     return MONTHS.map((month, monthIndex) => {
-      // Calculer les revenus pour ce mois
+      // Revenus pour ce mois
       let monthRevenus = 0;
       revenus.forEach(revenu => {
         const montant = Number(revenu.montant) || 0;
-        if (!isFinite(montant)) return;
+        if (!isFinite(montant) || montant === 0) return;
         
-        const periodicite = revenu.periodicite;
-        const applicableMonths = getApplicableMonths(periodicite, revenu.date_debut, revenu.date_fin, revenu.jour_fixe);
-        
+        const applicableMonths = getApplicableMonths(revenu.periodicite, revenu.date_debut, revenu.date_fin);
         if (applicableMonths.includes(monthIndex)) {
-          if (periodicite === 'ponctuel') {
-            monthRevenus += montant;
-          } else {
-            const monthlyAmount = getMonthlyAmount(montant, periodicite);
-            if (isFinite(monthlyAmount)) {
-              monthRevenus += monthlyAmount;
-            }
-          }
+          // Le montant stocké est le montant périodique (ex: loyer mensuel)
+          monthRevenus += montant;
         }
       });
       
-      // Calculer les charges pour ce mois
+      // Charges pour ce mois
       let monthCharges = 0;
       charges.forEach(charge => {
         const montant = Number(charge.montant) || 0;
-        if (!isFinite(montant)) return;
+        if (!isFinite(montant) || montant === 0) return;
         
-        const periodicite = charge.periodicite;
-        const applicableMonths = getApplicableMonths(periodicite, charge.date_debut, charge.date_fin, charge.jour_fixe);
-        
+        const applicableMonths = getApplicableMonths(charge.periodicite, charge.date_debut, charge.date_fin);
         if (applicableMonths.includes(monthIndex)) {
-          if (periodicite === 'ponctuel') {
-            monthCharges += montant;
-          } else {
-            const monthlyAmount = getMonthlyAmount(montant, periodicite);
-            if (isFinite(monthlyAmount)) {
-              monthCharges += monthlyAmount;
-            }
-          }
+          monthCharges += montant;
         }
       });
       
-      // S'assurer que les valeurs sont finies
-      const finalRevenus = isFinite(monthRevenus) ? Math.round(monthRevenus) : 0;
-      const finalCharges = isFinite(monthCharges) ? Math.round(monthCharges) : 0;
-      
       return {
         month,
-        revenus: finalRevenus,
-        charges: finalCharges,
-        solde: finalRevenus - finalCharges
+        revenus: Math.round(monthRevenus),
+        charges: Math.round(monthCharges),
+        solde: Math.round(monthRevenus - monthCharges)
       };
     });
-  }, [revenus, charges]);
+  }, [revenus, charges, currentYear]);
 
   const hasData = revenus.length > 0 || charges.length > 0;
 
   if (!hasData) {
-    return (
-      <div className="text-center text-muted-foreground py-8">
-        Aucune donnée à afficher
-      </div>
-    );
+    return <div className="text-center text-muted-foreground py-8">Aucune donnée à afficher</div>;
   }
 
   return (
     <div className="h-80 relative">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart 
-          data={monthlyData} 
-          margin={{ top: 20, right: 16, left: 0, bottom: 0 }}
-          barGap={4}
-          barCategoryGap="20%"
-        >
+        <ComposedChart data={monthlyData} margin={{ top: 20, right: 16, left: 0, bottom: 0 }} barGap={4} barCategoryGap="20%">
           <defs>
             <linearGradient id="revenusGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#2a9d8f" stopOpacity={1} />
@@ -552,12 +502,7 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
               <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.1"/>
             </filter>
           </defs>
-          <CartesianGrid 
-            strokeDasharray="0" 
-            stroke="hsl(var(--border))" 
-            strokeOpacity={0.4}
-            vertical={false}
-          />
+          <CartesianGrid strokeDasharray="0" stroke="hsl(var(--border))" strokeOpacity={0.4} vertical={false} />
           <XAxis 
             dataKey="month" 
             tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11, fontWeight: 500 }}
@@ -585,17 +530,8 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
               boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2)',
               padding: '12px 16px',
             }}
-            labelStyle={{ 
-              color: 'hsl(var(--foreground))', 
-              fontWeight: 600,
-              marginBottom: '8px',
-              fontSize: '13px'
-            }}
-            itemStyle={{
-              color: 'hsl(var(--muted-foreground))',
-              fontSize: '12px',
-              padding: '2px 0'
-            }}
+            labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600, marginBottom: '8px', fontSize: '13px' }}
+            itemStyle={{ color: 'hsl(var(--muted-foreground))', fontSize: '12px', padding: '2px 0' }}
           />
           <Legend 
             formatter={(value) => (
