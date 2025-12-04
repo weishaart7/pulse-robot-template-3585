@@ -87,13 +87,14 @@ export function DashboardSidebar() {
   };
 
   return (
-    <>
-      {/* Spacer fixe pour maintenir l'espace de la sidebar réduite */}
-      <div className="w-16 flex-shrink-0" />
-      
-      {/* Sidebar animée en position absolue */}
+    <div 
+      className="w-16 flex-shrink-0 relative"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      {/* Sidebar animée - position absolue pour overlay */}
       <motion.div
-        className="fixed left-0 top-0 h-full bg-white flex flex-col z-40 shadow-lg"
+        className="absolute inset-y-0 left-0 bg-white flex flex-col h-full z-20"
         initial={false}
         animate={{
           width: open ? 240 : 64,
@@ -103,8 +104,9 @@ export function DashboardSidebar() {
           stiffness: 400,
           damping: 30,
         }}
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
+        style={{
+          boxShadow: open ? '4px 0 12px rgba(0,0,0,0.08)' : 'none'
+        }}
       >
         {/* Logo */}
         <div className={cn("px-3 py-4 h-16 flex items-center", open ? "px-6" : "justify-center")}>
@@ -261,6 +263,6 @@ export function DashboardSidebar() {
           })}
         </div>
       </motion.div>
-    </>
+    </div>
   );
 }
