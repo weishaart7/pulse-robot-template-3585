@@ -94,28 +94,25 @@ export function DashboardSidebar() {
       }}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      transition={{ 
+        duration: 0.25, 
+        ease: [0.25, 0.1, 0.25, 1],
+      }}
     >
       {/* Logo */}
       <div className={cn("px-3 py-4", open ? "mx-[19px]" : "mx-auto")}>
-        {open ? (
-          <motion.img 
-            src="/lovable-uploads/3f46b218-16fb-43cf-8206-7af4be7cbfd0.png" 
-            alt="Merislabs Logo" 
-            className="h-7 w-auto object-contain cursor-pointer" 
-            onClick={() => navigate('/')}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.2 }}
-          />
-        ) : (
-          <motion.img 
-            src="/lovable-uploads/3f46b218-16fb-43cf-8206-7af4be7cbfd0.png" 
-            alt="Merislabs Logo" 
-            className="h-7 w-7 object-cover object-left cursor-pointer" 
-            onClick={() => navigate('/')}
-          />
-        )}
+        <motion.img 
+          src="/lovable-uploads/3f46b218-16fb-43cf-8206-7af4be7cbfd0.png" 
+          alt="Merislabs Logo" 
+          className="h-7 cursor-pointer" 
+          onClick={() => navigate('/')}
+          animate={{
+            width: open ? 'auto' : 28,
+            objectFit: open ? 'contain' : 'cover',
+            objectPosition: 'left',
+          }}
+          transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+        />
       </div>
 
       {/* Navigation */}
@@ -135,16 +132,16 @@ export function DashboardSidebar() {
               )}
             >
               <Icon className="h-4 w-4 flex-shrink-0" />
-              {open && (
-                <motion.span 
-                  className="truncate whitespace-nowrap"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {item.label}
-                </motion.span>
-              )}
+              <motion.span 
+                className="truncate whitespace-nowrap"
+                animate={{ 
+                  opacity: open ? 1 : 0,
+                  width: open ? 'auto' : 0,
+                }}
+                transition={{ duration: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
+              >
+                {item.label}
+              </motion.span>
             </button>
           );
         })}
@@ -169,16 +166,16 @@ export function DashboardSidebar() {
               )}
             >
               <Icon className="h-4 w-4 flex-shrink-0" />
-              {open && (
-                <motion.span 
-                  className="truncate whitespace-nowrap"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {item.label}
-                </motion.span>
-              )}
+              <motion.span 
+                className="truncate whitespace-nowrap"
+                animate={{ 
+                  opacity: open ? 1 : 0,
+                  width: open ? 'auto' : 0,
+                }}
+                transition={{ duration: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
+              >
+                {item.label}
+              </motion.span>
             </button>
           );
         })}
@@ -203,16 +200,16 @@ export function DashboardSidebar() {
               )}
             >
               <Icon className="h-4 w-4 flex-shrink-0" />
-              {open && (
-                <motion.span 
-                  className="truncate whitespace-nowrap"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {item.label}
-                </motion.span>
-              )}
+              <motion.span 
+                className="truncate whitespace-nowrap"
+                animate={{ 
+                  opacity: open ? 1 : 0,
+                  width: open ? 'auto' : 0,
+                }}
+                transition={{ duration: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
+              >
+                {item.label}
+              </motion.span>
             </button>
           );
         })}
@@ -232,16 +229,16 @@ export function DashboardSidebar() {
               )}
             >
               <Icon className="h-4 w-4 flex-shrink-0" />
-              {open && (
-                <motion.span 
-                  className="truncate whitespace-nowrap"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {item.label}
-                </motion.span>
-              )}
+              <motion.span 
+                className="truncate whitespace-nowrap"
+                animate={{ 
+                  opacity: open ? 1 : 0,
+                  width: open ? 'auto' : 0,
+                }}
+                transition={{ duration: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
+              >
+                {item.label}
+              </motion.span>
             </button>
           );
         })}
