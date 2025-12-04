@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -45,10 +45,18 @@ interface ChargesFormProps {
   open: boolean;
 }
 
+// Labels pour afficher la période selon la periodicite
+const PERIODICITE_LABELS: Record<string, string> = {
+  'mensuel': 'mensuel',
+  'trimestriel': 'trimestriel',
+  'semestriel': 'semestriel',
+  'annuel': 'annuel',
+  'ponctuel': 'ponctuel',
+};
+
 export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCancel, open }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLibellePrefilled, setIsLibellePrefilled] = useState(false);
-  const [inputMode, setInputMode] = useState<'annuel' | 'mensuel'>('annuel');
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
   const { user } = useAuth();
@@ -79,14 +87,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
 
   const selectedCategory = form.watch("categorie");
   const selectedNature = form.watch("nature");
-  const montantValue = form.watch("montant");
-  
-  // Calculer la valeur convertie pour l'affichage
-  const convertedValue = useMemo(() => {
-    const value = parseFloat(montantValue) || 0;
-    if (value === 0) return null;
-    return inputMode === 'annuel' ? (value / 12).toFixed(2) : (value * 12).toFixed(2);
-  }, [montantValue, inputMode]);
+  const selectedPeriodicite = form.watch("periodicite");
   
   const availableNatures = useMemo(() => {
     if (!selectedCategory) return [];
@@ -121,7 +122,6 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
   // Réinitialiser le formulaire quand le dialogue s'ouvre/ferme
   useEffect(() => {
     if (open && !charge) {
-      // Réinitialiser pour une nouvelle charge
       form.reset({
         categorie: "",
         nature: "",
@@ -136,9 +136,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
       });
       setIsLibellePrefilled(false);
       setIsSubmitting(false);
-      setInputMode('annuel');
     } else if (open && charge) {
-      // Charger les données existantes pour modification (toujours en annuel)
       form.reset({
         categorie: Object.keys(CHARGES_CATEGORIES).find(cat => 
           getNaturesByCategory(CHARGES_CATEGORIES, cat).includes(charge.nature)
@@ -155,9 +153,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
       });
       setIsLibellePrefilled(false);
       setIsSubmitting(false);
-      setInputMode('annuel');
     } else if (!open) {
-      // Nettoyer complètement quand le Dialog se ferme
       setIsSubmitting(false);
       setIsLibellePrefilled(false);
     }
@@ -166,15 +162,14 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
   const handleSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
-      // Convertir le montant saisi en montant annuel pour le stockage
-      const montantSaisi = sanitizeNumericInput(data.montant) || 0;
-      const montantAnnuel = inputMode === 'mensuel' ? montantSaisi * 12 : montantSaisi;
+      // Le montant est stocké tel quel, dans sa périodicité native
+      const montant = sanitizeNumericInput(data.montant) || 0;
       
       const formData = {
         nature: sanitizeTextInput(data.nature),
         libelle: sanitizeTextInput(data.libelle),
         debiteur: sanitizeTextInput(data.debiteur),
-        montant: montantAnnuel,
+        montant: montant,
         periodicite: data.periodicite || 'mensuel',
         date_debut: data.date_debut || null,
         date_fin: data.date_fin || null,
@@ -192,7 +187,6 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
 
       if (success) {
         form.reset();
-        // Ne pas appeler onCancel() ici car handleSubmitCharge ferme déjà le formulaire
       }
     } finally {
       setIsSubmitting(false);
@@ -231,7 +225,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
                   <FormControl>
                     <Select value={field.value} onValueChange={(value) => {
                       field.onChange(value);
-                      form.setValue("nature", ""); // Reset nature when category changes
+                      form.setValue("nature", "");
                     }}>
                       <SelectTrigger size="lg">
                         <SelectValue placeholder="Sélectionner une catégorie" />
@@ -324,45 +318,6 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
 
             <FormField
               control={form.control}
-              name="montant"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex items-center justify-between">
-                    <FormLabel>Montant (€)</FormLabel>
-                    <div className="flex items-center gap-1 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setInputMode('mensuel')}
-                        className={`px-2 py-1 rounded transition-colors ${inputMode === 'mensuel' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
-                      >
-                        Mensuel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setInputMode('annuel')}
-                        className={`px-2 py-1 rounded transition-colors ${inputMode === 'annuel' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
-                      >
-                        Annuel
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <FormControl>
-                      <Input {...field} type="number" step="0.01" placeholder="0.00" className="flex-1" />
-                    </FormControl>
-                    {convertedValue && (
-                      <span className="text-sm text-muted-foreground whitespace-nowrap">
-                        = {convertedValue} € / {inputMode === 'annuel' ? 'mois' : 'an'}
-                      </span>
-                    )}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
               name="periodicite"
               render={({ field }) => (
                 <FormItem>
@@ -380,6 +335,22 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
                         ))}
                       </SelectContent>
                     </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="montant"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Montant {PERIODICITE_LABELS[selectedPeriodicite] || 'mensuel'} (€)
+                  </FormLabel>
+                  <FormControl>
+                    <Input {...field} type="number" step="0.01" placeholder="0.00" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
