@@ -33,7 +33,6 @@ export const ASSET_NATURES = [
   
   // Actifs professionnels
   "Droits sociaux",
-  "Droits sociaux (Pacte Dutreil)",
   "Autres droits sociaux",
   "Entreprise individuelle",
   "Parts de holding",
@@ -195,7 +194,6 @@ export const ASSET_CATEGORIES = {
   ],
   "actifs professionnels": [
     "Droits sociaux",
-    "Droits sociaux (Pacte Dutreil)",
     "Autres droits sociaux",
     "Entreprise individuelle",
     "Parts de holding",

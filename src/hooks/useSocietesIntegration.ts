@@ -11,9 +11,6 @@ interface IFICalculation {
 
 interface TransmissionCalculation {
   valeurSuccessorale: number;
-  eligibleDutreil: boolean;
-  abattementDutreil: number;
-  valeurApresAbattement: number;
 }
 
 interface BudgetIntegration {
@@ -43,25 +40,6 @@ const isHoldingAnimatrice = (societe: Societe): boolean => {
 // Determine if a company is a passive holding
 const isHoldingPassive = (societe: Societe): boolean => {
   return societe.holding === 'Passive';
-};
-
-// Check if company is eligible for Dutreil exemption (operational companies)
-const isEligibleDutreil = (societe: Societe): boolean => {
-  const activite = societe.activite?.toLowerCase() || '';
-  const holding = societe.holding;
-  
-  // Operational activities eligible for Dutreil
-  const activitesEligibles = [
-    'industrielle et commerciale',
-    'agricole',
-    'libérale',
-    'non agricole'
-  ];
-  
-  const hasEligibleActivity = activitesEligibles.some(a => activite.includes(a.toLowerCase()));
-  
-  // Holding animatrice is also eligible
-  return hasEligibleActivity || holding === 'Animatrice';
 };
 
 export const useSocietesIFI = (societes: Societe[]) => {
@@ -137,31 +115,18 @@ export const useSocietesTransmission = (societes: Societe[]) => {
       const pourcentageTotal = pourcentageUtilisateur + pourcentageConjoint;
       
       const valeurSuccessorale = valeurEstimee * (pourcentageTotal / 100);
-      const eligibleDutreil = isEligibleDutreil(societe);
-      
-      // Dutreil provides 75% exemption on company value
-      const abattementDutreil = eligibleDutreil ? valeurSuccessorale * 0.75 : 0;
-      const valeurApresAbattement = valeurSuccessorale - abattementDutreil;
       
       calculations.push({
         societe,
-        valeurSuccessorale,
-        eligibleDutreil,
-        abattementDutreil,
-        valeurApresAbattement
+        valeurSuccessorale
       });
     }
     
     const totalValeurSuccessorale = calculations.reduce((sum, c) => sum + c.valeurSuccessorale, 0);
-    const totalAbattementDutreil = calculations.reduce((sum, c) => sum + c.abattementDutreil, 0);
-    const societesEligiblesDutreil = calculations.filter(c => c.eligibleDutreil);
     
     return {
       calculations,
-      totalValeurSuccessorale,
-      totalAbattementDutreil,
-      totalApresAbattement: totalValeurSuccessorale - totalAbattementDutreil,
-      nombreEligiblesDutreil: societesEligiblesDutreil.length
+      totalValeurSuccessorale
     };
   }, [societes]);
 };

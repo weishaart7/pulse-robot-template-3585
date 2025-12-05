@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calculator, Scale, FileText, Check, X } from 'lucide-react';
+import { Calculator, Scale, Check } from 'lucide-react';
 
 interface SocieteFormData {
   type_societe: string;
@@ -34,14 +34,6 @@ export const SocieteFinancesImpactFiscal: React.FC<SocieteFinancesImpactFiscalPr
            (formData.type_activite && ['commerciale', 'artisanale', 'industrielle', 'liberale'].includes(formData.type_activite));
   }, [formData.holding, formData.type_activite]);
 
-  // Determine if eligible for Dutreil exemption
-  const isDutreilEligible = useMemo(() => {
-    // Eligible if operational activity (not pure holding or patrimoine)
-    if (formData.holding === 'passive') return false;
-    if (formData.type_societe === 'SCI' && formData.type_activite === 'immobilier') return false;
-    return formData.type_activite && ['commerciale', 'artisanale', 'industrielle', 'liberale', 'agricole'].includes(formData.type_activite);
-  }, [formData.type_societe, formData.holding, formData.type_activite]);
-
   // Calculate IS estimate
   const isEstimate = useMemo(() => {
     if (!formData.resultat_net || formData.resultat_net <= 0) return null;
@@ -67,12 +59,6 @@ export const SocieteFinancesImpactFiscal: React.FC<SocieteFinancesImpactFiscalPr
     
     return { value: ifiValue, exempt: false };
   }, [formData.valeur_estimee, formData.pourcentage_ifi, formData.valeur_ifi, isIFIExempt]);
-
-  // Calculate Dutreil abatement
-  const dutreilAbatement = useMemo(() => {
-    if (!isDutreilEligible || !formData.valeur_estimee) return null;
-    return formData.valeur_estimee * 0.75; // 75% exemption
-  }, [isDutreilEligible, formData.valeur_estimee]);
 
   return (
     <Card>
@@ -114,44 +100,6 @@ export const SocieteFinancesImpactFiscal: React.FC<SocieteFinancesImpactFiscalPr
           {isIFIExempt && (
             <p className="text-xs text-muted-foreground">
               Cette société est considérée comme bien professionnel et peut être exonérée d'IFI.
-            </p>
-          )}
-        </div>
-
-        {/* Transmission / Dutreil Section */}
-        <div className="p-4 bg-muted/30 rounded-lg space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-sm">Transmission (Pacte Dutreil)</span>
-            </div>
-            {isDutreilEligible ? (
-              <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
-                <Check className="h-3 w-3 mr-1" />
-                Éligible
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/30">
-                <X className="h-3 w-3 mr-1" />
-                Non éligible
-              </Badge>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-muted-foreground">Valeur successorale</p>
-              <p className="font-medium">{formatCurrency(formData.valeur_estimee)}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Abattement Dutreil</p>
-              <p className="font-medium text-green-600">
-                {dutreilAbatement ? `-${formatCurrency(dutreilAbatement)}` : '-'}
-              </p>
-            </div>
-          </div>
-          {isDutreilEligible && (
-            <p className="text-xs text-muted-foreground">
-              Exonération de 75% de la valeur des titres sous conditions (engagement collectif de 2 ans, engagement individuel de 4 ans).
             </p>
           )}
         </div>
