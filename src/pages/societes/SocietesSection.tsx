@@ -42,7 +42,13 @@ export const SocietesSection = () => {
   const [editingSocieteId, setEditingSocieteId] = useState<string | null>(null);
   const [formData, setFormData] = useState<SocieteFormData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [formTab, setFormTab] = useState('informations');
 
+  const FORM_TABS = [
+    { id: 'synthese', label: 'Synthèse' },
+    { id: 'informations', label: 'Informations' },
+    { id: 'finances', label: 'Finances' }
+  ];
   const TABS = [
     { id: 'synthese', label: 'Synthèse' },
     { id: 'mes_societes', label: 'Mes sociétés' },
@@ -135,6 +141,7 @@ export const SocietesSection = () => {
     setEditingMode('list');
     setEditingSocieteId(null);
     setFormData(null);
+    setFormTab('informations');
   };
 
   const handleSubmit = async (data: SocieteFormData) => {
@@ -198,6 +205,32 @@ export const SocietesSection = () => {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Retour aux sociétés
           </Button>
+
+          <div className="mb-6 flex justify-start">
+            <div className="rounded-[8px] bg-muted p-[2px]">
+              <AnimatedBackground
+                defaultValue={formTab}
+                onValueChange={(value) => setFormTab(value || 'informations')}
+                className="rounded-lg bg-background shadow-sm"
+                transition={{
+                  ease: "easeInOut",
+                  duration: 0.2,
+                }}
+              >
+                {FORM_TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    data-id={tab.id}
+                    type="button"
+                    className="inline-flex min-w-24 items-center justify-center px-3 py-2 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </AnimatedBackground>
+            </div>
+          </div>
+
           <h2 className="text-2xl font-bold tracking-tight">
             {editingMode === 'edit' ? 'Modifier la société' : 'Nouvelle société'}
           </h2>
@@ -217,6 +250,7 @@ export const SocietesSection = () => {
             onSubmit={handleSubmit}
             onCancel={handleCancel}
             initialData={formData}
+            activeTab={formTab}
           />
         )}
       </div>

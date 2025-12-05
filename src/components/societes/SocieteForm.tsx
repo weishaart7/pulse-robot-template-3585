@@ -40,6 +40,7 @@ interface SocieteFormProps {
   onSubmit: (data: Omit<SocieteFormData, 'id'>) => void;
   onCancel: () => void;
   initialData?: SocieteFormData | null;
+  activeTab?: string;
 }
 
 const TYPES_SOCIETE = [
@@ -108,7 +109,7 @@ const FORMES_SOCIETE_CIVILE = [
 
 const HOLDINGS = ['Non', 'Passive', 'Animatrice'];
 
-export const SocieteForm = ({ onSubmit, onCancel, initialData }: SocieteFormProps) => {
+export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'informations' }: SocieteFormProps) => {
   const [formData, setFormData] = useState<SocieteFormData>({
     denomination: '',
     typeSociete: '',
