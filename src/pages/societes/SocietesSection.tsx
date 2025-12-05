@@ -52,6 +52,7 @@ export const SocietesSection = () => {
   const [editingSocieteId, setEditingSocieteId] = useState<string | null>(null);
   const [formData, setFormData] = useState<SocieteFormData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [formTab, setFormTab] = useState('informations');
 
   const FORM_TABS = [
@@ -174,6 +175,7 @@ export const SocietesSection = () => {
 
   const handleSubmit = async (data: SocieteFormData) => {
     try {
+      setSaving(true);
       const societeData = formDataToSociete(data);
       
       if (editingMode === 'edit' && editingSocieteId) {
@@ -199,6 +201,27 @@ export const SocietesSection = () => {
     } catch (error) {
       console.error('Error saving societe:', error);
       toast.error('Erreur lors de l\'enregistrement de la société');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveFinances = async () => {
+    if (!formData) return;
+    
+    try {
+      setSaving(true);
+      const societeData = formDataToSociete(formData);
+      
+      if (editingSocieteId) {
+        await societeService.update(editingSocieteId, societeData);
+        toast.success('Données financières enregistrées');
+      }
+    } catch (error) {
+      console.error('Error saving finances:', error);
+      toast.error('Erreur lors de l\'enregistrement');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -321,6 +344,8 @@ export const SocietesSection = () => {
                     dateDernierBilan: data.date_dernier_bilan,
                   });
                 }}
+                onSave={handleSaveFinances}
+                isSaving={saving}
               />
             )}
             {formTab === 'finances' && !formData && (

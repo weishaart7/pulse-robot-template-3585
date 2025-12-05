@@ -5,6 +5,8 @@ import { SocieteFinancesDividendes } from './SocieteFinancesDividendes';
 import { SocieteFinancesEmprunts } from './SocieteFinancesEmprunts';
 import { SocieteFinancesImpactFiscal } from './SocieteFinancesImpactFiscal';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { Save } from 'lucide-react';
 
 interface SocieteFormData {
   denomination: string;
@@ -43,12 +45,16 @@ interface SocieteFinancesProps {
   societeId: string | null;
   formData: SocieteFormData;
   onFormDataChange: (data: SocieteFormData) => void;
+  onSave?: () => void;
+  isSaving?: boolean;
 }
 
 export const SocieteFinances: React.FC<SocieteFinancesProps> = ({
   societeId,
   formData,
   onFormDataChange,
+  onSave,
+  isSaving = false,
 }) => {
   const handleFieldChange = (field: keyof SocieteFormData, value: any) => {
     onFormDataChange({
@@ -58,32 +64,43 @@ export const SocieteFinances: React.FC<SocieteFinancesProps> = ({
   };
 
   return (
-    <ScrollArea className="h-[calc(100vh-280px)]">
-      <div className="space-y-6 pr-4">
-        <SocieteFinancesComptables
-          formData={formData}
-          onFieldChange={handleFieldChange}
-        />
+    <div className="flex flex-col h-[calc(100vh-280px)]">
+      <ScrollArea className="flex-1">
+        <div className="space-y-6 pr-4">
+          <SocieteFinancesComptables
+            formData={formData}
+            onFieldChange={handleFieldChange}
+          />
 
-        <SocieteFinancesValorisation
-          societeId={societeId}
-          valeurEstimee={formData.valeur_estimee}
-          nombreTitres={formData.nombre_titres}
-        />
+          <SocieteFinancesValorisation
+            societeId={societeId}
+            valeurEstimee={formData.valeur_estimee}
+            nombreTitres={formData.nombre_titres}
+          />
 
-        <SocieteFinancesDividendes
-          societeId={societeId}
-          valeurEstimee={formData.valeur_estimee}
-        />
+          <SocieteFinancesDividendes
+            societeId={societeId}
+            valeurEstimee={formData.valeur_estimee}
+          />
 
-        <SocieteFinancesEmprunts
-          societeId={societeId}
-        />
+          <SocieteFinancesEmprunts
+            societeId={societeId}
+          />
 
-        <SocieteFinancesImpactFiscal
-          formData={formData}
-        />
-      </div>
-    </ScrollArea>
+          <SocieteFinancesImpactFiscal
+            formData={formData}
+          />
+        </div>
+      </ScrollArea>
+
+      {onSave && (
+        <div className="pt-4 border-t mt-4">
+          <Button onClick={onSave} disabled={isSaving} className="w-full sm:w-auto">
+            <Save className="h-4 w-4 mr-2" />
+            {isSaving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+          </Button>
+        </div>
+      )}
+    </div>
   );
 };
