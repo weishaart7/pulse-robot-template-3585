@@ -36,8 +36,9 @@ export const SocieteFinancesImpactFiscal: React.FC<SocieteFinancesImpactFiscalPr
 
   // Calculate IS estimate
   const isEstimate = useMemo(() => {
-    if (!formData.resultat_net || formData.resultat_net <= 0) return null;
+    if (formData.resultat_net === undefined || formData.resultat_net === null) return null;
     if (formData.regime_fiscal !== 'IS') return null;
+    if (formData.resultat_net <= 0) return 0; // Déficit = pas d'IS
 
     const resultat = formData.resultat_net;
     // Simplified IS calculation (2024 rates)
