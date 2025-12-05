@@ -89,14 +89,10 @@ export const SocietesStrategies = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="ifi" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="ifi" className="flex items-center gap-2">
             <Scale className="h-4 w-4" />
             <span className="hidden sm:inline">Impact IFI</span>
-          </TabsTrigger>
-          <TabsTrigger value="transmission" className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4" />
-            <span className="hidden sm:inline">Transmission</span>
           </TabsTrigger>
           <TabsTrigger value="fiscal" className="flex items-center gap-2">
             <Calculator className="h-4 w-4" />
@@ -209,117 +205,6 @@ export const SocietesStrategies = () => {
           </Card>
         </TabsContent>
 
-        {/* Transmission Tab */}
-        <TabsContent value="transmission" className="space-y-4 mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Valeur successorale</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {transmissionData.totalValeurSuccessorale.toLocaleString('fr-FR')} €
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Total des participations
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Abattement Dutreil</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  -{transmissionData.totalAbattementDutreil.toLocaleString('fr-FR')} €
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Exonération 75% sur {transmissionData.nombreEligiblesDutreil} société(s)
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Base taxable</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary">
-                  {transmissionData.totalApresAbattement.toLocaleString('fr-FR')} €
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Après abattements
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Éligibilité Pacte Dutreil</CardTitle>
-              <CardDescription>Exonération de 75% de la valeur des parts transmises</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {transmissionData.calculations.map((calc) => (
-                  <div key={calc.societe.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Building2 className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">{calc.societe.denomination}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {getSocieteCategory(calc.societe)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right flex items-center gap-3">
-                      {calc.eligibleDutreil ? (
-                        <>
-                          <div>
-                            <p className="text-sm text-green-600">-{calc.abattementDutreil.toLocaleString('fr-FR')} €</p>
-                            <p className="text-xs text-muted-foreground">Abattement 75%</p>
-                          </div>
-                          <Badge className="bg-green-500">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Éligible
-                          </Badge>
-                        </>
-                      ) : (
-                        <>
-                          <div>
-                            <p className="text-sm">{calc.valeurSuccessorale.toLocaleString('fr-FR')} €</p>
-                            <p className="text-xs text-muted-foreground">Intégralement taxable</p>
-                          </div>
-                          <Badge variant="secondary">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            Non éligible
-                          </Badge>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-amber-500/20 bg-amber-500/5">
-            <CardContent className="pt-4">
-              <div className="flex gap-3">
-                <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-amber-700">Conditions du Pacte Dutreil</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    L'exonération de 75% nécessite : engagement collectif de conservation de 2 ans, engagement individuel de 4 ans, 
-                    exercice d'une fonction de direction pendant 3 ans, et activité commerciale, artisanale, agricole ou libérale.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         {/* IS vs IR Tab */}
         <TabsContent value="fiscal" className="space-y-4 mt-4">
           <Card>
@@ -411,13 +296,9 @@ export const SocietesStrategies = () => {
                         <span className="text-muted-foreground">IR ({simulationData.tauxIR}%)</span>
                         <span>-{isirComparison.ir.impot.toLocaleString('fr-FR')} €</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Cotisations sociales</span>
-                        <span className="text-xs text-muted-foreground">Non incluses</span>
-                      </div>
                       <hr className="my-2" />
                       <div className="flex justify-between font-semibold">
-                        <span>Net disponible</span>
+                        <span>Net associé</span>
                         <span className="text-green-600">{isirComparison.ir.net.toLocaleString('fr-FR')} €</span>
                       </div>
                     </div>
@@ -425,146 +306,123 @@ export const SocietesStrategies = () => {
                 </Card>
               </div>
 
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <ArrowRight className="h-4 w-4 text-primary" />
-                  <span className="font-medium">Différence</span>
-                </div>
-                <p className="text-2xl font-bold">
-                  {Math.abs(isirComparison.is.netAssocies - isirComparison.ir.net).toLocaleString('fr-FR')} €
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  en faveur de l'{isirComparison.avantageIS ? 'IS' : 'IR'}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-blue-500/20 bg-blue-500/5">
-            <CardContent className="pt-4">
-              <div className="flex gap-3">
-                <Info className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-blue-700">À noter</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Cette simulation est simplifiée. L'IS permet également de capitaliser les bénéfices dans la société, 
-                    tandis que l'IR impose les associés même sans distribution. Les cotisations sociales TNS ne sont pas incluses.
-                  </p>
-                </div>
-              </div>
+              <Card className="border-amber-500/20 bg-amber-500/5">
+                <CardContent className="pt-4">
+                  <div className="flex gap-3">
+                    <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-amber-700">Simulation simplifiée</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Cette simulation ne prend pas en compte tous les paramètres (CSG/CRDS, abattements, charges sociales TNS, etc.). 
+                        Consultez un expert-comptable pour une analyse personnalisée.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* Holding Tab */}
         <TabsContent value="holding" className="space-y-4 mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  Intérêt d'une holding
-                </CardTitle>
-                <CardDescription>
-                  Évaluez si une structure holding est pertinente
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3 p-3 bg-green-500/10 rounded-lg">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-green-700">Régime mère-fille</p>
-                      <p className="text-sm text-muted-foreground">
-                        Exonération quasi-totale des dividendes remontés (5% de quote-part de frais)
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-3 bg-green-500/10 rounded-lg">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-green-700">Plus-values de cession</p>
-                      <p className="text-sm text-muted-foreground">
-                        Exonération des plus-values sur titres de participation (niche Copé)
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-3 bg-green-500/10 rounded-lg">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-green-700">IFI</p>
-                      <p className="text-sm text-muted-foreground">
-                        Holding animatrice = bien professionnel exonéré d'IFI
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-3 bg-green-500/10 rounded-lg">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-green-700">Transmission</p>
-                      <p className="text-sm text-muted-foreground">
-                        Pacte Dutreil applicable si holding animatrice (exonération 75%)
-                      </p>
-                    </div>
-                  </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Avantages d'une structure holding
+              </CardTitle>
+              <CardDescription>
+                Pourquoi créer une holding pour vos participations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <h4 className="font-medium flex items-center gap-2 mb-2">
+                    <TrendingUp className="h-4 w-4 text-green-600" />
+                    Régime mère-fille
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Exonération de 95% des dividendes remontés des filiales (quote-part de frais de 5% imposée à l'IS).
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Vos holdings actuelles</CardTitle>
-                <CardDescription>
-                  Analyse de vos structures existantes
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {societes.filter(s => s.holding && s.holding !== 'Non').length === 0 ? (
-                  <div className="text-center py-6">
-                    <Building2 className="mx-auto h-10 w-10 text-muted-foreground/30 mb-3" />
-                    <p className="text-muted-foreground">Aucune holding identifiée</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Envisagez de créer une holding pour optimiser votre fiscalité
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {societes
-                      .filter(s => s.holding && s.holding !== 'Non')
-                      .map(societe => (
-                        <div key={societe.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                          <div>
-                            <p className="font-medium">{societe.denomination}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {societe.valeur_estimee?.toLocaleString('fr-FR')} €
-                            </p>
-                          </div>
-                          <Badge variant={societe.holding === 'Animatrice' ? 'default' : 'secondary'}>
-                            {societe.holding}
-                          </Badge>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <h4 className="font-medium flex items-center gap-2 mb-2">
+                    <Percent className="h-4 w-4 text-green-600" />
+                    Plus-values sur titres
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Exonération des plus-values de cession de titres de participation (quote-part de 12% imposée).
+                  </p>
+                </div>
 
-          <Card className="border-amber-500/20 bg-amber-500/5">
-            <CardContent className="pt-4">
-              <div className="flex gap-3">
-                <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-amber-700">Holding animatrice vs passive</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Une holding animatrice doit avoir une participation effective dans la stratégie et la gestion de ses filiales 
-                    (services, direction, contrôle). Une simple détention passive ne suffit pas pour bénéficier des avantages fiscaux.
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <h4 className="font-medium flex items-center gap-2 mb-2">
+                    <Scale className="h-4 w-4 text-green-600" />
+                    Impact IFI
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Holding animatrice : exonération totale de l'IFI sur les titres (bien professionnel).
+                  </p>
+                </div>
+
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <h4 className="font-medium flex items-center gap-2 mb-2">
+                    <ArrowRight className="h-4 w-4 text-green-600" />
+                    Transmission
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Facilite la transmission et la réorganisation du groupe (apport de titres, donation, etc.).
                   </p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* List of existing holdings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Vos holdings</CardTitle>
+              <CardDescription>Holdings existantes dans votre patrimoine</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {societes.filter(s => s.holding && s.holding !== 'Non').length > 0 ? (
+                <div className="space-y-3">
+                  {societes.filter(s => s.holding && s.holding !== 'Non').map((societe) => (
+                    <div key={societe.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Building2 className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">{societe.denomination}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {getSocieteTypeLabel(societe.type_societe)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={societe.holding === 'Animatrice' ? 'default' : 'secondary'}>
+                          Holding {societe.holding}
+                        </Badge>
+                        {societe.holding === 'Animatrice' && (
+                          <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            IFI exonéré
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <Building2 className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
+                  <p className="text-muted-foreground text-sm">
+                    Aucune holding enregistrée
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

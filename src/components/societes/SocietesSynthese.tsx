@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { useSocietes } from '@/hooks/useSocietes';
 import { useSocietesIFI, useSocietesTransmission, getSocieteCategory, getSocieteTypeLabel } from '@/hooks/useSocietesIntegration';
 import { Building2, TrendingUp, Wallet, Scale, ShieldCheck, Users, PieChart, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+
 export const SocietesSynthese = () => {
   const {
     societes,
@@ -11,11 +12,13 @@ export const SocietesSynthese = () => {
   } = useSocietes();
   const ifiData = useSocietesIFI(societes);
   const transmissionData = useSocietesTransmission(societes);
+
   if (isLoading) {
     return <div className="text-center py-12">
         <p className="text-muted-foreground">Chargement...</p>
       </div>;
   }
+
   const totalSocietes = societes.length;
   const valeurTotale = societes.reduce((sum, s) => sum + (s.valeur_estimee || 0), 0);
   const capitalTotal = societes.reduce((sum, s) => sum + (s.capital_social || 0), 0);
@@ -37,6 +40,7 @@ export const SocietesSynthese = () => {
   // Holdings count
   const holdings = societes.filter(s => s.holding && s.holding !== 'Non');
   const holdingsAnimatrices = societes.filter(s => s.holding === 'Animatrice');
+
   if (totalSocietes === 0) {
     return <div className="text-center py-12">
         <Building2 className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
@@ -46,6 +50,7 @@ export const SocietesSynthese = () => {
         </p>
       </div>;
   }
+
   return <div className="space-y-6">
       {/* KPIs principaux */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -102,12 +107,11 @@ export const SocietesSynthese = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {transmissionData.totalApresAbattement.toLocaleString('fr-FR')} €
+              {transmissionData.totalValeurSuccessorale.toLocaleString('fr-FR')} €
             </div>
-            {transmissionData.totalAbattementDutreil > 0 && <p className="text-xs text-green-600 flex items-center">
-                <ArrowDownRight className="h-3 w-3 mr-1" />
-                -{transmissionData.totalAbattementDutreil.toLocaleString('fr-FR')} € (Dutreil)
-              </p>}
+            <p className="text-xs text-muted-foreground">
+              Valeur successorale
+            </p>
           </CardContent>
         </Card>
       </div>
