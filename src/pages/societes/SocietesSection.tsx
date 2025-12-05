@@ -246,12 +246,26 @@ export const SocietesSection = () => {
             <p className="text-muted-foreground">Chargement...</p>
           </div>
         ) : (
-          <SocieteForm
-            onSubmit={handleSubmit}
-            onCancel={handleCancel}
-            initialData={formData}
-            activeTab={formTab}
-          />
+          <>
+            {formTab === 'synthese' && (
+              <div className="text-center py-12 text-muted-foreground">
+                Synthèse de la société (à venir)
+              </div>
+            )}
+            {formTab === 'informations' && (
+              <SocieteForm
+                onSubmit={handleSubmit}
+                onCancel={handleCancel}
+                initialData={formData}
+                activeTab={formTab}
+              />
+            )}
+            {formTab === 'finances' && (
+              <div className="text-center py-12 text-muted-foreground">
+                Informations financières (à venir)
+              </div>
+            )}
+          </>
         )}
       </div>
     );
