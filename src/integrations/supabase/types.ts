@@ -396,6 +396,7 @@ export type Database = {
           nature: string
           pourcentage_conjoint: number | null
           pourcentage_utilisateur: number | null
+          societe_id: string | null
           taux_interet: number | null
           updated_at: string
           user_id: string
@@ -411,6 +412,7 @@ export type Database = {
           nature: string
           pourcentage_conjoint?: number | null
           pourcentage_utilisateur?: number | null
+          societe_id?: string | null
           taux_interet?: number | null
           updated_at?: string
           user_id: string
@@ -426,11 +428,20 @@ export type Database = {
           nature?: string
           pourcentage_conjoint?: number | null
           pourcentage_utilisateur?: number | null
+          societe_id?: string | null
           taux_interet?: number | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "emprunts_societe_id_fkey"
+            columns: ["societe_id"]
+            isOneToOne: false
+            referencedRelation: "societes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       family_links: {
         Row: {
@@ -1359,14 +1370,108 @@ export type Database = {
         }
         Relationships: []
       }
+      societe_dividendes: {
+        Row: {
+          beneficiaire: string | null
+          created_at: string
+          date_distribution: string | null
+          exercice_annee: number
+          id: string
+          montant_brut: number
+          montant_net: number | null
+          societe_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          beneficiaire?: string | null
+          created_at?: string
+          date_distribution?: string | null
+          exercice_annee: number
+          id?: string
+          montant_brut: number
+          montant_net?: number | null
+          societe_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          beneficiaire?: string | null
+          created_at?: string
+          date_distribution?: string | null
+          exercice_annee?: number
+          id?: string
+          montant_brut?: number
+          montant_net?: number | null
+          societe_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "societe_dividendes_societe_id_fkey"
+            columns: ["societe_id"]
+            isOneToOne: false
+            referencedRelation: "societes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      societe_valorisations: {
+        Row: {
+          commentaire: string | null
+          created_at: string
+          date_valorisation: string
+          id: string
+          methode_valorisation: string | null
+          societe_id: string
+          updated_at: string
+          user_id: string
+          valeur: number
+        }
+        Insert: {
+          commentaire?: string | null
+          created_at?: string
+          date_valorisation: string
+          id?: string
+          methode_valorisation?: string | null
+          societe_id: string
+          updated_at?: string
+          user_id: string
+          valeur: number
+        }
+        Update: {
+          commentaire?: string | null
+          created_at?: string
+          date_valorisation?: string
+          id?: string
+          methode_valorisation?: string | null
+          societe_id?: string
+          updated_at?: string
+          user_id?: string
+          valeur?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "societe_valorisations_societe_id_fkey"
+            columns: ["societe_id"]
+            isOneToOne: false
+            referencedRelation: "societes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       societes: {
         Row: {
           activite: string | null
           capital_social: number | null
+          chiffre_affaires: number | null
           code_postal: string | null
           commune: string | null
+          compte_courant_associes: number | null
           created_at: string
           date_creation: string | null
+          date_dernier_bilan: string | null
           denomination: string
           forme_societe_civile: string | null
           holding: string | null
@@ -1380,8 +1485,11 @@ export type Database = {
           pourcentage_ifi: number | null
           pourcentage_utilisateur: number | null
           regime_fiscal: string | null
+          reserves: number | null
+          resultat_net: number | null
           rue_adresse: string | null
           siret: string | null
+          tresorerie_disponible: number | null
           type_activite: string | null
           type_societe: string
           updated_at: string
@@ -1392,10 +1500,13 @@ export type Database = {
         Insert: {
           activite?: string | null
           capital_social?: number | null
+          chiffre_affaires?: number | null
           code_postal?: string | null
           commune?: string | null
+          compte_courant_associes?: number | null
           created_at?: string
           date_creation?: string | null
+          date_dernier_bilan?: string | null
           denomination: string
           forme_societe_civile?: string | null
           holding?: string | null
@@ -1409,8 +1520,11 @@ export type Database = {
           pourcentage_ifi?: number | null
           pourcentage_utilisateur?: number | null
           regime_fiscal?: string | null
+          reserves?: number | null
+          resultat_net?: number | null
           rue_adresse?: string | null
           siret?: string | null
+          tresorerie_disponible?: number | null
           type_activite?: string | null
           type_societe: string
           updated_at?: string
@@ -1421,10 +1535,13 @@ export type Database = {
         Update: {
           activite?: string | null
           capital_social?: number | null
+          chiffre_affaires?: number | null
           code_postal?: string | null
           commune?: string | null
+          compte_courant_associes?: number | null
           created_at?: string
           date_creation?: string | null
+          date_dernier_bilan?: string | null
           denomination?: string
           forme_societe_civile?: string | null
           holding?: string | null
@@ -1438,8 +1555,11 @@ export type Database = {
           pourcentage_ifi?: number | null
           pourcentage_utilisateur?: number | null
           regime_fiscal?: string | null
+          reserves?: number | null
+          resultat_net?: number | null
           rue_adresse?: string | null
           siret?: string | null
+          tresorerie_disponible?: number | null
           type_activite?: string | null
           type_societe?: string
           updated_at?: string
