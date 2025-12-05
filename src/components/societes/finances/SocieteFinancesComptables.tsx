@@ -111,7 +111,7 @@ export const SocieteFinancesComptables: React.FC<SocieteFinancesComptablesProps>
                 value={inputValues.resultat_net ?? ''}
                 onChange={(e) => handleNumberChange('resultat_net', e.target.value)}
                 onBlur={() => handleBlur('resultat_net')}
-                className={`pr-8 ${formData.resultat_net !== undefined && formData.resultat_net !== null && formData.resultat_net < 0 ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                className="pr-8"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
             </div>
