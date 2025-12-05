@@ -5,14 +5,16 @@ import { Plus, Edit, Trash2, LayoutGrid, Table as TableIcon, Building2 } from 'l
 import { societeService, type Societe } from '@/services/societeService';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
-import { SocieteFormDialog } from '@/components/societes/SocieteFormDialog';
 
-export const SocietesMesSocietes = () => {
+interface SocietesMesSocietesProps {
+  onEdit: (societeId: string) => void;
+  onAdd: () => void;
+}
+
+export const SocietesMesSocietes = ({ onEdit, onAdd }: SocietesMesSocietesProps) => {
   const [societes, setSocietes] = useState<Societe[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards');
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingSocieteId, setEditingSocieteId] = useState<string | null>(null);
 
   // Load societes on mount
   useEffect(() => {
@@ -30,16 +32,6 @@ export const SocietesMesSocietes = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleAddSociete = () => {
-    setEditingSocieteId(null);
-    setDialogOpen(true);
-  };
-
-  const handleEditSociete = (societeId: string) => {
-    setEditingSocieteId(societeId);
-    setDialogOpen(true);
   };
 
   const handleDeleteSociete = async (id: string) => {
@@ -77,7 +69,7 @@ export const SocietesMesSocietes = () => {
         <p className="text-muted-foreground mb-6">
           Commencez par ajouter votre première société pour suivre vos participations.
         </p>
-        <Button onClick={handleAddSociete} className="flex items-center gap-2">
+        <Button onClick={onAdd} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
           Ajouter une société
         </Button>
@@ -108,7 +100,7 @@ export const SocietesMesSocietes = () => {
               <TableIcon className="h-4 w-4" />
             </Button>
           </div>
-          <Button onClick={handleAddSociete} className="flex items-center gap-2">
+          <Button onClick={onAdd} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Ajouter une société
           </Button>
@@ -143,7 +135,7 @@ export const SocietesMesSocietes = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleEditSociete(societe.id)}
+                        onClick={() => onEdit(societe.id)}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -222,7 +214,7 @@ export const SocietesMesSocietes = () => {
                     variant="outline"
                     size="sm"
                     className="flex-1"
-                    onClick={() => handleEditSociete(societe.id)}
+                    onClick={() => onEdit(societe.id)}
                   >
                     <Edit className="h-3.5 w-3.5 mr-1.5" />
                     Modifier
@@ -240,13 +232,6 @@ export const SocietesMesSocietes = () => {
           ))}
         </div>
       )}
-
-      <SocieteFormDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        societeId={editingSocieteId}
-        onSuccess={loadSocietes}
-      />
     </div>
   );
 };
