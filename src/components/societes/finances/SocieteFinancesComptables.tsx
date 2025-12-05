@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,18 +18,53 @@ interface SocieteFinancesComptablesProps {
   onFieldChange: (field: keyof SocieteFormData, value: any) => void;
 }
 
+const numericFields = ['chiffre_affaires', 'resultat_net', 'tresorerie_disponible', 'compte_courant_associes', 'reserves'] as const;
+
 export const SocieteFinancesComptables: React.FC<SocieteFinancesComptablesProps> = ({
   formData,
   onFieldChange,
 }) => {
+  const [inputValues, setInputValues] = useState<Record<string, string>>({});
+
+  // Initialize local state from formData
+  useEffect(() => {
+    const values: Record<string, string> = {};
+    numericFields.forEach(field => {
+      values[field] = formData[field]?.toString() ?? '';
+    });
+    setInputValues(values);
+  }, [formData.chiffre_affaires, formData.resultat_net, formData.tresorerie_disponible, formData.compte_courant_associes, formData.reserves]);
+
   const formatCurrency = (value: number | undefined) => {
     if (value === undefined || value === null) return '-';
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value);
   };
 
   const handleNumberChange = (field: keyof SocieteFormData, value: string) => {
-    const numValue = value ? parseFloat(value.replace(',', '.')) : undefined;
-    onFieldChange(field, numValue);
+    // Always update local display immediately
+    setInputValues(prev => ({ ...prev, [field]: value }));
+    
+    // Only propagate valid numbers to parent
+    const sanitized = value.replace(',', '.');
+    const numValue = parseFloat(sanitized);
+    
+    if (!isNaN(numValue)) {
+      onFieldChange(field, numValue);
+    } else if (value === '') {
+      onFieldChange(field, undefined);
+    }
+    // For '-' or other partial inputs, don't propagate yet
+  };
+
+  const handleBlur = (field: keyof SocieteFormData) => {
+    const value = inputValues[field] || '';
+    const sanitized = value.replace(',', '.');
+    const numValue = parseFloat(sanitized);
+    
+    if (isNaN(numValue) || value === '-') {
+      // Reset to formData value or empty
+      setInputValues(prev => ({ ...prev, [field]: formData[field]?.toString() ?? '' }));
+    }
   };
 
   return (
@@ -53,8 +88,9 @@ export const SocieteFinancesComptables: React.FC<SocieteFinancesComptablesProps>
                 id="chiffre_affaires"
                 type="text"
                 placeholder="0"
-                value={formData.chiffre_affaires || ''}
+                value={inputValues.chiffre_affaires ?? ''}
                 onChange={(e) => handleNumberChange('chiffre_affaires', e.target.value)}
+                onBlur={() => handleBlur('chiffre_affaires')}
                 className="pr-8"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
@@ -72,8 +108,9 @@ export const SocieteFinancesComptables: React.FC<SocieteFinancesComptablesProps>
                 id="resultat_net"
                 type="text"
                 placeholder="0"
-                value={formData.resultat_net || ''}
+                value={inputValues.resultat_net ?? ''}
                 onChange={(e) => handleNumberChange('resultat_net', e.target.value)}
+                onBlur={() => handleBlur('resultat_net')}
                 className="pr-8"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
@@ -91,8 +128,9 @@ export const SocieteFinancesComptables: React.FC<SocieteFinancesComptablesProps>
                 id="tresorerie_disponible"
                 type="text"
                 placeholder="0"
-                value={formData.tresorerie_disponible || ''}
+                value={inputValues.tresorerie_disponible ?? ''}
                 onChange={(e) => handleNumberChange('tresorerie_disponible', e.target.value)}
+                onBlur={() => handleBlur('tresorerie_disponible')}
                 className="pr-8"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
@@ -110,8 +148,9 @@ export const SocieteFinancesComptables: React.FC<SocieteFinancesComptablesProps>
                 id="compte_courant_associes"
                 type="text"
                 placeholder="0"
-                value={formData.compte_courant_associes || ''}
+                value={inputValues.compte_courant_associes ?? ''}
                 onChange={(e) => handleNumberChange('compte_courant_associes', e.target.value)}
+                onBlur={() => handleBlur('compte_courant_associes')}
                 className="pr-8"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
@@ -129,8 +168,9 @@ export const SocieteFinancesComptables: React.FC<SocieteFinancesComptablesProps>
                 id="reserves"
                 type="text"
                 placeholder="0"
-                value={formData.reserves || ''}
+                value={inputValues.reserves ?? ''}
                 onChange={(e) => handleNumberChange('reserves', e.target.value)}
+                onBlur={() => handleBlur('reserves')}
                 className="pr-8"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
