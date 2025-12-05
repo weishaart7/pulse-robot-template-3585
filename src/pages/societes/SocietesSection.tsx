@@ -4,6 +4,7 @@ import { SocietesSynthese } from '@/components/societes/SocietesSynthese';
 import { SocietesStrategies } from '@/components/societes/SocietesStrategies';
 import { SocietesMesSocietes } from '@/components/societes/SocietesMesSocietes';
 import { SocieteForm } from '@/components/societes/SocieteForm';
+import { SocieteFinances } from '@/components/societes/finances/SocieteFinances';
 import { societeService, type Societe } from '@/services/societeService';
 import { assetService } from '@/services/assetService';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,15 @@ interface SocieteFormData {
   formeSocieteCivile?: string;
   transfertVersActifs?: boolean;
   natureActif?: string;
+  pourcentageUtilisateur?: number;
+  pourcentageConjoint?: number;
+  // New financial fields
+  chiffreAffaires?: number;
+  resultatNet?: number;
+  tresorerieDisponible?: number;
+  compteCourantAssocies?: number;
+  reserves?: number;
+  dateDernierBilan?: string;
 }
 
 export const SocietesSection = () => {
@@ -100,7 +110,16 @@ export const SocietesSection = () => {
     activite: societe.activite || '',
     holding: societe.holding || 'Non',
     formeSocieteCivile: societe.forme_societe_civile || '',
-    transfertVersActifs: false
+    transfertVersActifs: false,
+    pourcentageUtilisateur: societe.pourcentage_utilisateur || 100,
+    pourcentageConjoint: societe.pourcentage_conjoint || 0,
+    // New financial fields
+    chiffreAffaires: (societe as any).chiffre_affaires || undefined,
+    resultatNet: (societe as any).resultat_net || undefined,
+    tresorerieDisponible: (societe as any).tresorerie_disponible || undefined,
+    compteCourantAssocies: (societe as any).compte_courant_associes || undefined,
+    reserves: (societe as any).reserves || undefined,
+    dateDernierBilan: (societe as any).date_dernier_bilan || undefined,
   });
 
   const formDataToSociete = (data: SocieteFormData): Omit<Societe, 'id' | 'user_id' | 'created_at' | 'updated_at'> => ({
@@ -124,8 +143,17 @@ export const SocietesSection = () => {
     valeur_ifi: data.valeurIFI || null,
     activite: data.activite || null,
     holding: data.holding || null,
-    forme_societe_civile: data.formeSocieteCivile || null
-  });
+    forme_societe_civile: data.formeSocieteCivile || null,
+    pourcentage_utilisateur: data.pourcentageUtilisateur || null,
+    pourcentage_conjoint: data.pourcentageConjoint || null,
+    // New financial fields
+    chiffre_affaires: data.chiffreAffaires || null,
+    resultat_net: data.resultatNet || null,
+    tresorerie_disponible: data.tresorerieDisponible || null,
+    compte_courant_associes: data.compteCourantAssocies || null,
+    reserves: data.reserves || null,
+    date_dernier_bilan: data.dateDernierBilan || null,
+  } as any);
 
   const handleEditSociete = (societeId: string) => {
     setEditingSocieteId(societeId);
@@ -260,9 +288,44 @@ export const SocietesSection = () => {
                 activeTab={formTab}
               />
             )}
-            {formTab === 'finances' && (
+            {formTab === 'finances' && formData && (
+              <SocieteFinances
+                societeId={editingSocieteId}
+                formData={{
+                  denomination: formData.denomination,
+                  type_societe: formData.typeSociete,
+                  valeur_estimee: formData.valeurEstimee,
+                  capital_social: formData.capitalSocial,
+                  nombre_titres: formData.nombreTitres,
+                  nombre_salaries: formData.nombreSalaries,
+                  pourcentage_ifi: formData.pourcentageIFI,
+                  valeur_ifi: formData.valeurIFI,
+                  regime_fiscal: formData.regimeFiscal,
+                  type_activite: formData.typeActivite,
+                  holding: formData.holding,
+                  chiffre_affaires: formData.chiffreAffaires,
+                  resultat_net: formData.resultatNet,
+                  tresorerie_disponible: formData.tresorerieDisponible,
+                  compte_courant_associes: formData.compteCourantAssocies,
+                  reserves: formData.reserves,
+                  date_dernier_bilan: formData.dateDernierBilan,
+                }}
+                onFormDataChange={(data) => {
+                  setFormData({
+                    ...formData,
+                    chiffreAffaires: data.chiffre_affaires,
+                    resultatNet: data.resultat_net,
+                    tresorerieDisponible: data.tresorerie_disponible,
+                    compteCourantAssocies: data.compte_courant_associes,
+                    reserves: data.reserves,
+                    dateDernierBilan: data.date_dernier_bilan,
+                  });
+                }}
+              />
+            )}
+            {formTab === 'finances' && !formData && (
               <div className="text-center py-12 text-muted-foreground">
-                Informations financières (à venir)
+                Chargement...
               </div>
             )}
           </>

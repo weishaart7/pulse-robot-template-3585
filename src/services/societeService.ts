@@ -28,6 +28,13 @@ export interface Societe {
   forme_societe_civile?: string;
   pourcentage_utilisateur?: number;
   pourcentage_conjoint?: number;
+  // Financial fields
+  chiffre_affaires?: number;
+  resultat_net?: number;
+  tresorerie_disponible?: number;
+  compte_courant_associes?: number;
+  reserves?: number;
+  date_dernier_bilan?: string;
   created_at?: string;
   updated_at?: string;
 }
