@@ -52,9 +52,13 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between", className)}
+          className={cn(
+            "w-full justify-between h-10 px-3 py-2 text-sm font-normal",
+            !value && "text-muted-foreground",
+            className
+          )}
         >
-          {value ? value : placeholder}
+          <span className="truncate">{value ? value : placeholder}</span>
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
