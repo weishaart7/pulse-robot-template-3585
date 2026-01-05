@@ -65,5 +65,5 @@ export const getDefaultAssetValues = (): AssetFormValues => ({
   origine_actif: ['Acquisition à titre onéreuse'],
   situation_particuliere: ['Non'],
   attachement_emotionnel: 0,
-  transfert_immobilier: false
+  transfert_immobilier: true
 });
