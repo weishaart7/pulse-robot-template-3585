@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Check, ChevronDown, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 
 interface SearchableSelectProps {
@@ -48,19 +47,22 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
+        <button
+          type="button"
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-full justify-between h-10 px-3 py-2 text-sm font-normal",
+            "flex w-full items-center justify-between bg-background border border-input shadow-sm shadow-black/5 transition-shadow",
+            "text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20",
+            "disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+            "h-9 px-3 text-sm gap-1.5 rounded-lg",
             !value && "text-muted-foreground",
             className
           )}
         >
           <span className="truncate">{value ? value : placeholder}</span>
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
+          <ChevronDown className="h-4 w-4 opacity-60 -me-0.5" />
+        </button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" style={{ width: 'var(--radix-popover-trigger-width)' }}>
         <Command>
