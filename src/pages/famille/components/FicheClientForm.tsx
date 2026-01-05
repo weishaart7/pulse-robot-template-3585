@@ -424,7 +424,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
               <FormItem>
                 <div className="relative w-full flex flex-col gap-1">
                   <FormLabel className="text-xs">Profession</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || undefined}>
                     <FormControl>
                       <SelectTrigger size="lg">
                         <SelectValue placeholder="Sélectionner une profession" />
