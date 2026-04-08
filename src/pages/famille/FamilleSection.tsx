@@ -250,25 +250,6 @@ const FamilleSection = () => {
             </CardHeader>
             <CardContent>
           <LiensFamiliauxForm />
-          
-          {/* Family Timeline Visualization */}
-          <div className="mt-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Frise chronologique familiale</CardTitle>
-                <CardDescription>
-                  Chronologie des naissances et décès de votre famille
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <FamilyTreeTimeline 
-                  familyProfile={familyProfile}
-                  maritalStatus={maritalData}
-                  familyMembers={familyLinks}
-                />
-              </CardContent>
-            </Card>
-          </div>
         </CardContent>
           </Card>
         );
