@@ -160,7 +160,7 @@ export const Synthese = () => {
       const hasTestament = (liberalites || []).some(lib => lib.type === 'legs');
       
       // Calculer la succession légale "à défaut de dispositions"
-      const successionLegaleResult = calculateSuccessionLegale(family, hasTestament);
+      const successionLegaleResult = calculateSuccessionLegale(family, hasTestament, optionConjoint || undefined);
       setSuccessionLegale(successionLegaleResult);
       // Legal succession calculation completed
 
