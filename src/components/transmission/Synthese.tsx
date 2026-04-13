@@ -68,7 +68,7 @@ export const Synthese = () => {
 
       // Construire le graphe familial
       const family: FamilyGraph = buildFamilyGraph(familyProfile, maritalStatus, familyLinks || []);
-      // Family structure analysis completed
+      (family as any).hasDDV = !!maritalStatus?.donation_dernier_vivant_personne || !!maritalStatus?.donation_dernier_vivant_conjoint;
       
       // Construire le patrimoine
       const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], charges || []);
