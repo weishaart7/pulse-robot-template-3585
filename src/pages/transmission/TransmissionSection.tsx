@@ -4,12 +4,14 @@ import { Synthese } from '@/components/transmission/Synthese';
 import { Liberalites } from '@/components/transmission/Liberalites';
 import { AssuranceVie } from '@/components/transmission/AssuranceVie';
 import { ProcessusCalcul } from '@/components/transmission/ProcessusCalcul';
+import { Optimisation } from '@/components/transmission/Optimisation';
 
 export const TransmissionSection = () => {
   const [activeTab, setActiveTab] = useState('synthese');
 
   const TABS = [
     { id: 'synthese', label: 'Synthèse' },
+    { id: 'optimisation', label: 'Optimisation' },
     { id: 'liberalites', label: 'Libéralités' },
     { id: 'assurance-vie', label: 'Assurance-vie' },
     { id: 'processus-calcul', label: 'Processus de calcul' }
@@ -19,6 +21,8 @@ export const TransmissionSection = () => {
     switch (activeTab) {
       case 'synthese':
         return <Synthese />;
+      case 'optimisation':
+        return <Optimisation />;
       case 'liberalites':
         return <Liberalites />;
       case 'assurance-vie':
