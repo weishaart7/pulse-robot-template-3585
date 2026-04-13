@@ -41,6 +41,8 @@ export const Synthese = () => {
         .eq('user_id', user!.id)
         .single();
 
+      const optionConjoint = (maritalStatus as any)?.option_conjoint as string | null;
+
       const { data: familyLinks } = await supabase
         .from('family_links')
         .select('*')
