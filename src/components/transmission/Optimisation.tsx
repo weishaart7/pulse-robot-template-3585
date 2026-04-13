@@ -29,7 +29,7 @@ export const Optimisation = () => {
 
   // Determine situation
   const isMarried = maritalData?.statut_couple === 'marie';
-  const hasDDV = !!(maritalData as any)?.donation_dernier_vivant_personne || !!(maritalData as any)?.donation_dernier_vivant_conjoint;
+  const hasDDV = !!maritalData?.donation_dernier_vivant_personne || !!maritalData?.donation_dernier_vivant_conjoint;
 
   const enfants = (familyLinks || []).filter(l => l.lien_familial === 'enfant');
   const hasChildren = enfants.length > 0;
