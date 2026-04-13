@@ -28,7 +28,7 @@ export const Optimisation = () => {
   const loading = loadingMarital || loadingFamily;
 
   // Determine situation
-  const isMarried = maritalData?.statut_couple === 'marie';
+  const isMarried = maritalData?.statut_couple?.toLowerCase().includes('marié') || maritalData?.statut_couple?.toLowerCase() === 'marie';
   const hasDDV = !!maritalData?.donation_dernier_vivant_personne || !!maritalData?.donation_dernier_vivant_conjoint;
 
   const enfants = (familyLinks || []).filter(l => l.lien_familial === 'enfant');
