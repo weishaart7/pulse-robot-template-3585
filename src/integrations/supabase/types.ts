@@ -1076,6 +1076,7 @@ export type Database = {
           nom_jeune_fille_conjoint: string | null
           nom_notaire: string | null
           nombre_enfants_charges: number | null
+          option_conjoint: string | null
           parent_isole: boolean | null
           pays_conjoint: string | null
           pays_naissance_conjoint: string | null
@@ -1122,6 +1123,7 @@ export type Database = {
           nom_jeune_fille_conjoint?: string | null
           nom_notaire?: string | null
           nombre_enfants_charges?: number | null
+          option_conjoint?: string | null
           parent_isole?: boolean | null
           pays_conjoint?: string | null
           pays_naissance_conjoint?: string | null
@@ -1168,6 +1170,7 @@ export type Database = {
           nom_jeune_fille_conjoint?: string | null
           nom_notaire?: string | null
           nombre_enfants_charges?: number | null
+          option_conjoint?: string | null
           parent_isole?: boolean | null
           pays_conjoint?: string | null
           pays_naissance_conjoint?: string | null
