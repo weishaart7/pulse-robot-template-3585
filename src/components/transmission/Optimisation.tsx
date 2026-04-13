@@ -31,7 +31,7 @@ export const Optimisation = () => {
   const isMarried = maritalData?.statut_couple?.toLowerCase().includes('marié') || maritalData?.statut_couple?.toLowerCase() === 'marie';
   const hasDDV = !!maritalData?.donation_dernier_vivant_personne || !!maritalData?.donation_dernier_vivant_conjoint;
 
-  const enfants = (familyLinks || []).filter(l => l.lien_familial === 'enfant');
+  const enfants = (familyLinks || []).filter(l => l.lien_familial.toLowerCase() === 'enfant');
   const hasChildren = enfants.length > 0;
 
   const allCommon = hasChildren && enfants.every(e => 
