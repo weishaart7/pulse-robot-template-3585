@@ -27,7 +27,8 @@ export interface SuccessionLegaleResult {
  */
 export function calculateSuccessionLegale(
   graph: FamilyGraph,
-  hasTestament: boolean = false
+  hasTestament: boolean = false,
+  optionConjoint?: string
 ): SuccessionLegaleResult {
   if (hasTestament) {
     return {
