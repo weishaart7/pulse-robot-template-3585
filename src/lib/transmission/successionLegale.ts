@@ -60,7 +60,8 @@ export function calculateSuccessionLegale(
 function calculateBrancheA(
   graph: FamilyGraph,
   personnesVivantes: any[],
-  result: SuccessionLegaleResult
+  result: SuccessionLegaleResult,
+  optionConjoint?: string
 ): SuccessionLegaleResult {
   const conjoint = personnesVivantes.find(p => p.id === graph.survivingSpouseId);
   if (!conjoint) return result;
