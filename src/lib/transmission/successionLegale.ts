@@ -76,18 +76,46 @@ function calculateBrancheA(
     );
 
     let conjointPart: number;
+    let conjointTypeQuotePart: 'pleine_propriete' | 'usufruit' | 'nue_propriete' = 'pleine_propriete';
+    let enfantsTypeQuotePart: 'pleine_propriete' | 'usufruit' | 'nue_propriete' = 'pleine_propriete';
+
+    // Déterminer si DDV existe (on vérifie dans le graph si le mariage a une DDV)
+    const hasDDV = !!(graph as any).hasDDV;
 
     if (tousCommuns) {
-      // Tous communs → option conjoint
       result.optionConjoint = {
         quartPP: true,
         usufruitTotal: true,
         enfantsCommuns: true
       };
-      conjointPart = 0.25; // Par défaut option 1/4 PP
-      result.explicationsTexte.push(
-        `Le conjoint peut choisir entre 1/4 en pleine propriété ou la totalité en usufruit (enfants communs).`
-      );
+
+      if (optionConjoint === 'usufruit_total') {
+        conjointPart = 1.0;
+        conjointTypeQuotePart = 'usufruit';
+        enfantsTypeQuotePart = 'nue_propriete';
+        result.explicationsTexte.push(
+          `Le conjoint reçoit 100% en usufruit. Les enfants reçoivent la nue-propriété.`
+        );
+      } else if (optionConjoint === 'quart_pp_3quarts_us' && hasDDV) {
+        conjointPart = 1.0; // conjoint reçoit sur la totalité (1/4 PP + 3/4 US)
+        conjointTypeQuotePart = 'pleine_propriete'; // simplifié
+        enfantsTypeQuotePart = 'nue_propriete';
+        result.explicationsTexte.push(
+          `Le conjoint reçoit 1/4 en pleine propriété et 3/4 en usufruit (donation au dernier vivant).`
+        );
+      } else if (optionConjoint === 'qd_pp' && hasDDV) {
+        const nbEnfants = souchesEnfants.length;
+        conjointPart = nbEnfants === 1 ? 0.5 : nbEnfants === 2 ? 1/3 : 0.25;
+        result.explicationsTexte.push(
+          `Le conjoint reçoit la quotité disponible (${Math.round(conjointPart * 100)}%) en pleine propriété (donation au dernier vivant).`
+        );
+      } else {
+        // Par défaut ou quart_pp
+        conjointPart = 0.25;
+        result.explicationsTexte.push(
+          `Le conjoint reçoit 1/4 en pleine propriété. Les enfants se partagent les 3/4 restants.`
+        );
+      }
     } else {
       // Au moins un enfant non commun → 1/4 PP obligatoire
       conjointPart = 0.25;
@@ -102,17 +130,24 @@ function calculateBrancheA(
       prenom: conjoint.prenom || '',
       lien: 'conjoint',
       quotePart: conjointPart,
-      typeQuotePart: 'pleine_propriete',
+      typeQuotePart: conjointTypeQuotePart,
       ordre: 0
     });
 
     // Enfants se partagent le solde par souche
     const solde = 1 - conjointPart;
-    distributeToSouches(result, souchesEnfants, solde);
+    if (solde > 0) {
+      distributeToSouchesWithType(result, souchesEnfants, solde, enfantsTypeQuotePart);
+    } else {
+      // Usufruit total: enfants reçoivent 100% en nue-propriété
+      distributeToSouchesWithType(result, souchesEnfants, 1.0, enfantsTypeQuotePart);
+    }
 
-    result.explicationsTexte.push(
-      `Les enfants se partagent ${Math.round(solde * 100)}% à parts égales par souche.`
-    );
+    if (solde > 0) {
+      result.explicationsTexte.push(
+        `Les enfants se partagent ${Math.round(solde * 100)}% à parts égales par souche.`
+      );
+    }
   } else {
     // A2. Pas d'enfant → vérifier les parents
     const parentsVivants = getParentsVivants(graph, personnesVivantes);
