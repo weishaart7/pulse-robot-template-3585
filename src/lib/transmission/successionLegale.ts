@@ -394,6 +394,30 @@ function distributeToSouches(
   }
 }
 
+function distributeToSouchesWithType(
+  result: SuccessionLegaleResult,
+  souches: Souche[],
+  totalShare: number,
+  typeQuotePart: 'pleine_propriete' | 'usufruit' | 'nue_propriete'
+): void {
+  const partParSouche = totalShare / souches.length;
+
+  for (const souche of souches) {
+    for (const h of souche.heritiers) {
+      result.heritiers.push({
+        personId: h.person.id,
+        nom: h.person.nom,
+        prenom: h.person.prenom || '',
+        lien: h.representation ? 'petit_enfant' : 'enfant',
+        quotePart: partParSouche * h.part,
+        typeQuotePart,
+        ordre: 1,
+        representation: h.representation
+      });
+    }
+  }
+}
+
 // ─── Fratrie avec représentation ────────────────────────────────────
 
 interface SoucheFratrie {
