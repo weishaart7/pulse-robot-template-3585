@@ -48,7 +48,7 @@ export function calculateSuccessionLegale(
 
   // BRANCHE A — Le défunt était marié
   if (graph.hasSurvivingSpouse && graph.survivingSpouseId) {
-    return calculateBrancheA(graph, personnesVivantes, result);
+    return calculateBrancheA(graph, personnesVivantes, result, optionConjoint);
   }
 
   // BRANCHE B — Le défunt n'était pas marié
