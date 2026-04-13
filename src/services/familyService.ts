@@ -47,6 +47,11 @@ export interface MaritalStatus {
   nombre_enfants_charges?: number;
   mariage_precedent_personne?: boolean;
   mariage_precedent_conjoint?: boolean;
+  donation_dernier_vivant_personne?: boolean;
+  donation_dernier_vivant_conjoint?: boolean;
+  date_donation_personne?: string;
+  date_donation_conjoint?: string;
+  clauses_contrat?: any;
 }
 
 export interface FamilyLink {
