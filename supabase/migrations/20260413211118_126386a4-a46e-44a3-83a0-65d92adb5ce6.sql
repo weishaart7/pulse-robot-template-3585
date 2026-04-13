@@ -1,0 +1,1 @@
+ALTER TABLE public.marital_status ADD COLUMN IF NOT EXISTS option_conjoint text DEFAULT NULL;

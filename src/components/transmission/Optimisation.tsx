@@ -3,9 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Heart, Info } from 'lucide-react';
+import { AlertCircle, Heart, Info, Check } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 type ConjointOption = 
   | 'usufruit_total'
@@ -24,6 +26,7 @@ export const Optimisation = () => {
   const { data: maritalData, loading: loadingMarital } = useMaritalStatus();
   const { data: familyLinks, loading: loadingFamily } = useFamilyLinks();
   const [selectedOption, setSelectedOption] = useState<ConjointOption | ''>('');
+  const [saving, setSaving] = useState(false);
 
   const loading = loadingMarital || loadingFamily;
 
@@ -38,6 +41,45 @@ export const Optimisation = () => {
     !e.branche_familiale || e.branche_familiale === 'commune'
   );
   const hasNonCommon = hasChildren && !allCommon;
+
+  // Load saved option from DB
+  useEffect(() => {
+    if (maritalData && (maritalData as any).option_conjoint) {
+      setSelectedOption((maritalData as any).option_conjoint as ConjointOption);
+    }
+  }, [maritalData]);
+
+  // Save option to DB on change
+  const handleOptionChange = async (val: string) => {
+    const option = val as ConjointOption;
+    setSelectedOption(option);
+
+    if (!user) return;
+
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from('marital_status')
+        .update({ option_conjoint: option } as any)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Enregistré",
+        description: "L'option du conjoint survivant a été enregistrée.",
+      });
+    } catch (error) {
+      console.error('Error saving option_conjoint:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'enregistrer l'option.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Determine which scenario applies
   const getScenario = (): 'no_marriage' | 'no_children' | 'married_no_ddv_common' | 'married_no_ddv_noncommon' | 'married_ddv' | null => {
@@ -140,6 +182,8 @@ export const Optimisation = () => {
           <div className="flex items-center gap-2">
             <Heart className="h-5 w-5 text-primary" />
             <CardTitle className="text-lg">Option du conjoint survivant</CardTitle>
+            {saving && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />}
+            {selectedOption && !saving && <Check className="h-4 w-4 text-green-500" />}
           </div>
           <CardDescription>
             Choisissez l'option successorale du conjoint survivant en fonction de votre situation familiale.
@@ -163,7 +207,7 @@ export const Optimisation = () => {
           {options.length > 0 ? (
             <RadioGroup
               value={selectedOption}
-              onValueChange={(val) => setSelectedOption(val as ConjointOption)}
+              onValueChange={handleOptionChange}
               className="space-y-3"
             >
               {options.map((opt) => (

@@ -41,6 +41,8 @@ export const Synthese = () => {
         .eq('user_id', user!.id)
         .single();
 
+      const optionConjoint = (maritalStatus as any)?.option_conjoint as string | null;
+
       const { data: familyLinks } = await supabase
         .from('family_links')
         .select('*')
@@ -66,7 +68,7 @@ export const Synthese = () => {
 
       // Construire le graphe familial
       const family: FamilyGraph = buildFamilyGraph(familyProfile, maritalStatus, familyLinks || []);
-      // Family structure analysis completed
+      (family as any).hasDDV = !!maritalStatus?.donation_dernier_vivant_personne || !!maritalStatus?.donation_dernier_vivant_conjoint;
       
       // Construire le patrimoine
       const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], charges || []);
@@ -158,7 +160,7 @@ export const Synthese = () => {
       const hasTestament = (liberalites || []).some(lib => lib.type === 'legs');
       
       // Calculer la succession légale "à défaut de dispositions"
-      const successionLegaleResult = calculateSuccessionLegale(family, hasTestament);
+      const successionLegaleResult = calculateSuccessionLegale(family, hasTestament, optionConjoint || undefined);
       setSuccessionLegale(successionLegaleResult);
       // Legal succession calculation completed
 
