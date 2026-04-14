@@ -133,6 +133,13 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
     fetchData();
   }, [fetchData]);
 
+  // Auto-calculate frais de notaire when prixAchat changes (7.5%)
+  useEffect(() => {
+    if (prixAchat > 0 && fraisNotaire === 0) {
+      setFraisNotaire(Math.round(prixAchat * 0.075));
+    }
+  }, [prixAchat]);
+
   // Compute amortissement
   const amortissementLines = computeAmortissement(prixAchat, terrainPct, valeurMobilier, travaux);
   const totalAmortissementAnnuel = amortissementLines.reduce((s, l) => s + l.amortissementAnnuel, 0);
