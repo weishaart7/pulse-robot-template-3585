@@ -676,12 +676,14 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
         assetId={asset.id!}
         open={revenuFormOpen}
         onOpenChange={setRevenuFormOpen}
+        impactBudget={impactBudget}
         onSuccess={fetchData}
       />
       <ChargeForm
         assetId={asset.id!}
         open={chargeFormOpen}
         onOpenChange={setChargeFormOpen}
+        impactBudget={impactBudget}
         onSuccess={fetchData}
       />
     </div>

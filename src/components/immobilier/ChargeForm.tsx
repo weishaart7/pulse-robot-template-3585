@@ -13,9 +13,10 @@ interface ChargeFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  impactBudget?: boolean;
 }
 
-export const ChargeForm = ({ assetId, open, onOpenChange, onSuccess }: ChargeFormProps) => {
+export const ChargeForm = ({ assetId, open, onOpenChange, onSuccess, impactBudget = false }: ChargeFormProps) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     nature: '',
@@ -45,17 +46,24 @@ export const ChargeForm = ({ assetId, open, onOpenChange, onSuccess }: ChargeFor
         'Semestrielle': 'annuelle', // fallback
         'Annuelle': 'annuelle'
       };
+
+      const debiteurMap: Record<string, 'Époux 1' | 'Époux 2' | 'Couple'> = {
+        user: 'Époux 1',
+        spouse: 'Époux 2',
+        common: 'Couple'
+      };
       
       await assetService.createAssetCharge({
         asset_id: assetId,
         type_charge: 'Charges courantes',
         denomination: formData.nature,
         montant: parseFloat(formData.montant),
-        debiteur: 'Couple',
+        debiteur: debiteurMap[formData.debiteur] || 'Couple',
         unite: '€',
         periodicite: periodiciteMap[formData.periodicite] || 'annuelle',
         date_debut: new Date().toISOString().split('T')[0],
-        duree_type: 'Indéterminée'
+        duree_type: 'Indéterminée',
+        impact_budget: impactBudget,
       });
 
       toast({

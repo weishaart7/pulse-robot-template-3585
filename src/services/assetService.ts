@@ -73,6 +73,7 @@ export interface AssetRevenu {
   date_debut: string;
   date_fin?: string;
   commentaire?: string;
+  impact_budget?: boolean;
   created_at?: string;
   updated_at?: string;
 }

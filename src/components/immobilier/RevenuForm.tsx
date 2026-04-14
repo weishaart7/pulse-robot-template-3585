@@ -14,9 +14,10 @@ interface RevenuFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  impactBudget?: boolean;
 }
 
-export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess }: RevenuFormProps) => {
+export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess, impactBudget = false }: RevenuFormProps) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     nature: 'Loyers charges comprises',
@@ -47,7 +48,8 @@ export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess }: RevenuFor
         montant: parseFloat(formData.montant),
         periodicite: formData.periodicite as 'Mensuelle' | 'Trimestrielle' | 'Annuelle',
         date_debut: new Date().toISOString().split('T')[0],
-        commentaire: formData.commentaire || null,
+        commentaire: formData.commentaire || undefined,
+        impact_budget: impactBudget,
       });
       
       toast({
