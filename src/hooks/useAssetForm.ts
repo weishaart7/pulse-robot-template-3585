@@ -175,8 +175,12 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         detenteur: dbDetenteur,
         pourcentage_utilisateur: finalUserPercentage,
         pourcentage_conjoint: finalSpousePercentage,
-        date_estimation: values.date_estimation ? format(values.date_estimation, 'yyyy-MM-dd') : undefined,
-        date_acquisition: values.date_acquisition ? format(values.date_acquisition, 'yyyy-MM-dd') : undefined
+        date_estimation: values.date_estimation ? format(values.date_estimation, 'yyyy-MM-dd') : null,
+        date_acquisition: values.date_acquisition ? format(values.date_acquisition, 'yyyy-MM-dd') : null,
+        // Convert empty strings to null for optional fields
+        denomination: values.denomination || null,
+        etablissement: values.etablissement || null,
+        mode_detention: values.mode_detention || null,
       };
 
       const formattedValues = dbValues;
