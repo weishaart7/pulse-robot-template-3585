@@ -80,8 +80,7 @@ export const ASSET_NATURES = [
   
   // Actifs financiers investis
   "Compte-titres",
-  "PEA bancaire",
-  "PEA assurance",
+  "PEA",
   "PEA-PME",
   "Parts de FIP",
   "Parts de FIP Corse",
@@ -202,8 +201,7 @@ export const ASSET_CATEGORIES = {
     "Autres biens professionnels"
   ],
   "épargne retraite et prévoyance": [
-    "PER individuel bancaire",
-    "PER individuel assurance",
+    "PER individuel",
     "PER entreprise collectif",
     "PER entreprise obligatoire",
     "PERCO/PERCOI",
@@ -248,8 +246,7 @@ export const ASSET_CATEGORIES = {
   ],
   "valeurs mobilières et placements financiers": [
     "Compte-titres",
-    "PEA bancaire",
-    "PEA assurance",
+    "PEA",
     "PEA-PME",
     "Parts de FIP",
     "Parts de FIP Corse",
