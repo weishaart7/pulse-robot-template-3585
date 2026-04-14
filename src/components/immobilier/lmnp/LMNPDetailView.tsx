@@ -116,6 +116,19 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitialMount = useRef(true);
 
+  // Use refs for auto-save to avoid stale closures
+  const formDataRef = useRef({
+    prixAchat, zoneBien, forceTerrainPct, terrainPctCustom, fraisNotaire,
+    anneeAcquisition, valeurMobilier, travaux, typeLocationLmnp,
+  });
+
+  useEffect(() => {
+    formDataRef.current = {
+      prixAchat, zoneBien, forceTerrainPct, terrainPctCustom, fraisNotaire,
+      anneeAcquisition, valeurMobilier, travaux, typeLocationLmnp,
+    };
+  }, [prixAchat, zoneBien, forceTerrainPct, terrainPctCustom, fraisNotaire, anneeAcquisition, valeurMobilier, travaux, typeLocationLmnp]);
+
   const terrainPct = forceTerrainPct
     ? terrainPctCustom
     : (ZONE_TERRAIN_PERCENTAGES[zoneBien] || 0);
@@ -142,6 +155,39 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
     }
   }, [prixAchat]);
 
+  const performSave = useCallback(async (silent: boolean) => {
+    const d = formDataRef.current;
+    setIsSaving(true);
+    try {
+      const updateData: Record<string, any> = {
+        montant_immeuble: d.prixAchat || null,
+        zone_bien: d.zoneBien || null,
+        pourcentage_terrain_force: d.forceTerrainPct ? d.terrainPctCustom : null,
+        frais_notaire: d.fraisNotaire || null,
+        date_acquisition: d.anneeAcquisition ? `${d.anneeAcquisition}-01-01` : null,
+        meubles: d.valeurMobilier || null,
+        travaux_renovation: d.travaux || null,
+        type_location_lmnp: d.typeLocationLmnp || null,
+      };
+
+      const { error } = await supabase
+        .from('assets')
+        .update(updateData)
+        .eq('id', asset.id);
+
+      if (error) throw error;
+
+      if (!silent) {
+        toast({ title: 'Enregistré', description: 'Les informations LMNP ont été mises à jour.' });
+        onUpdate();
+      }
+    } catch {
+      toast({ title: 'Erreur', description: 'Impossible de sauvegarder.', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [asset.id, toast, onUpdate]);
+
   // Auto-save with debounce
   useEffect(() => {
     if (isInitialMount.current) {
@@ -154,7 +200,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
     }
 
     saveTimeoutRef.current = setTimeout(() => {
-      handleSave(true);
+      performSave(true);
     }, 1500);
 
     return () => {
@@ -162,39 +208,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [prixAchat, zoneBien, forceTerrainPct, terrainPctCustom, fraisNotaire, anneeAcquisition, valeurMobilier, travaux, typeLocationLmnp]);
-
-  const handleSave = async (silent = false) => {
-    setIsSaving(true);
-    try {
-      const updateData: Record<string, any> = {
-        montant_immeuble: prixAchat || null,
-        zone_bien: zoneBien || null,
-        pourcentage_terrain_force: forceTerrainPct ? terrainPctCustom : null,
-        frais_notaire: fraisNotaire || null,
-        date_acquisition: anneeAcquisition ? `${anneeAcquisition}-01-01` : null,
-        meubles: valeurMobilier || null,
-        travaux_renovation: travaux || null,
-        type_location_lmnp: typeLocationLmnp || null,
-      };
-
-      const { error } = await supabase
-        .from('assets')
-        .update(updateData)
-        .eq('id', asset.id);
-
-      if (error) throw error;
-
-      if (!silent) {
-        toast({ title: 'Enregistré', description: 'Les informations LMNP ont été mises à jour.' });
-      }
-      onUpdate();
-    } catch {
-      toast({ title: 'Erreur', description: 'Impossible de sauvegarder.', variant: 'destructive' });
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  }, [prixAchat, zoneBien, forceTerrainPct, terrainPctCustom, fraisNotaire, anneeAcquisition, valeurMobilier, travaux, typeLocationLmnp, performSave]);
 
   // Compute amortissement
   const amortissementLines = computeAmortissement(prixAchat, terrainPct, valeurMobilier, travaux);
