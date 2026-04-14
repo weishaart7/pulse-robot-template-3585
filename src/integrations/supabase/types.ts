@@ -177,6 +177,7 @@ export type Database = {
           nature: string
           origine_actif: string[] | null
           pourcentage_conjoint: number | null
+          pourcentage_terrain_force: number | null
           pourcentage_utilisateur: number | null
           regime_location: string | null
           revalorisation_annuelle: number | null
@@ -188,11 +189,13 @@ export type Database = {
           travaux_construction: number | null
           travaux_renovation: number | null
           type_location: string | null
+          type_location_lmnp: string | null
           typologie_bien: string | null
           updated_at: string
           user_id: string
           valeur_acquisition: number | null
           valeur_estimee: number | null
+          zone_bien: string | null
         }
         Insert: {
           attachement_emotionnel?: number | null
@@ -219,6 +222,7 @@ export type Database = {
           nature: string
           origine_actif?: string[] | null
           pourcentage_conjoint?: number | null
+          pourcentage_terrain_force?: number | null
           pourcentage_utilisateur?: number | null
           regime_location?: string | null
           revalorisation_annuelle?: number | null
@@ -230,11 +234,13 @@ export type Database = {
           travaux_construction?: number | null
           travaux_renovation?: number | null
           type_location?: string | null
+          type_location_lmnp?: string | null
           typologie_bien?: string | null
           updated_at?: string
           user_id: string
           valeur_acquisition?: number | null
           valeur_estimee?: number | null
+          zone_bien?: string | null
         }
         Update: {
           attachement_emotionnel?: number | null
@@ -261,6 +267,7 @@ export type Database = {
           nature?: string
           origine_actif?: string[] | null
           pourcentage_conjoint?: number | null
+          pourcentage_terrain_force?: number | null
           pourcentage_utilisateur?: number | null
           regime_location?: string | null
           revalorisation_annuelle?: number | null
@@ -272,11 +279,13 @@ export type Database = {
           travaux_construction?: number | null
           travaux_renovation?: number | null
           type_location?: string | null
+          type_location_lmnp?: string | null
           typologie_bien?: string | null
           updated_at?: string
           user_id?: string
           valeur_acquisition?: number | null
           valeur_estimee?: number | null
+          zone_bien?: string | null
         }
         Relationships: [
           {

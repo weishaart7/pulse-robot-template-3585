@@ -39,6 +39,9 @@ export interface Asset {
   financement_taux_assurance?: number;
   type_location?: string;
   regime_location?: string;
+  zone_bien?: string;
+  pourcentage_terrain_force?: number;
+  type_location_lmnp?: string;
   created_at?: string;
   updated_at?: string;
 }
