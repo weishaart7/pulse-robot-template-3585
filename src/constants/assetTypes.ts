@@ -40,8 +40,7 @@ export const ASSET_NATURES = [
   "Autres biens professionnels",
   
   // Retraite et prévoyance
-  "PER individuel bancaire",
-  "PER individuel assurance",
+  "PER individuel",
   "PER entreprise collectif",
   "PER entreprise obligatoire",
   "PERCO/PERCOI",
