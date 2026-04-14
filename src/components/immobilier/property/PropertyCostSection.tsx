@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -16,6 +16,19 @@ export const PropertyCostSection: React.FC<PropertyCostSectionProps> = ({
   form,
   showMeublesField = false,
 }) => {
+  // Auto-calculate frais_notaire when montant_immeuble changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'montant_immeuble' && value.montant_immeuble) {
+        const montant = Number(value.montant_immeuble);
+        if (!isNaN(montant) && montant > 0) {
+          form.setValue('frais_notaire', montant * 0.075);
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
   const renderNumberField = (
     name: NumericFieldNames,
     label: string,
@@ -48,7 +61,7 @@ export const PropertyCostSection: React.FC<PropertyCostSectionProps> = ({
         <CardTitle>Coût de revient</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {renderNumberField('montant_immeuble', "Montant de l'immeuble (hors frais d'agence et frais de notaire) (€)", "Montant de l'immeuble")}
+        {renderNumberField('montant_immeuble', "Prix d'achat du bien (€)", "Prix d'achat du bien")}
         {renderNumberField('frais_agence', "Frais d'agence (€)", "Frais d'agence")}
         {renderNumberField('frais_notaire', 'Frais de notaire (€)', 'Frais de notaire (calculé automatiquement à 7,5%)')}
         {renderNumberField('frais_bancaires', 'Frais bancaires ou de courtier (€)', 'Frais bancaires')}
