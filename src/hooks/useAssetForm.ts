@@ -169,7 +169,8 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         finalSpousePercentage = 100;
       }
 
-      const formattedValues = {
+      // Remove form-only fields that don't exist in the database
+      const { beneficiaire_autre_partie, ...dbValues } = {
         ...values,
         detenteur: dbDetenteur,
         pourcentage_utilisateur: finalUserPercentage,
@@ -177,6 +178,8 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         date_estimation: values.date_estimation ? format(values.date_estimation, 'yyyy-MM-dd') : undefined,
         date_acquisition: values.date_acquisition ? format(values.date_acquisition, 'yyyy-MM-dd') : undefined
       };
+
+      const formattedValues = dbValues;
 
       await onSubmit(formattedValues as any, charges);
     } finally {
