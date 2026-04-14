@@ -275,7 +275,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
                     type="number"
                     value={fraisNotaire || ''}
                     onChange={(e) => setFraisNotaire(parseFloat(e.target.value) || 0)}
-                    placeholder="15 000"
+                    placeholder="7,5% du prix d'achat"
                   />
                 </div>
 
