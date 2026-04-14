@@ -3,6 +3,7 @@ import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Building2, LayoutGrid, Table as TableIcon, Home } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { useImmobilierAssets } from '@/hooks/useImmobilierAssets';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ImmobilierPropertyDialog } from '@/components/immobilier/ImmobilierPropertyDialog';
