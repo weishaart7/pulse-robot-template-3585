@@ -122,7 +122,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
     }
   }, [asset, familyData, form]);
 
-  // Auto-adjust percentages when detenteur changes
+  // Auto-adjust percentages when detenteur changes, and auto-set origine for NP
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name === 'detenteur' && value.detenteur) {
@@ -142,6 +142,11 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
             form.setValue('pourcentage_conjoint', 50);
           }
         }
+      }
+
+      // Auto-set origine to "Acquisition à titre gratuite" when NP is selected
+      if (name === 'mode_detention' && value.mode_detention === 'Nue-propriété') {
+        form.setValue('origine_actif', ['Acquisition à titre gratuite']);
       }
     });
 
