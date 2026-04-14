@@ -40,15 +40,16 @@ export const ASSET_NATURES = [
   "Autres biens professionnels",
   
   // Retraite et prévoyance
-  "PER individuel",
+  "PER individuel bancaire",
+  "PER individuel assurance",
   "PER entreprise collectif",
   "PER entreprise obligatoire",
   "PERCO/PERCOI",
   "PERP",
   "Contrat loi Madelin",
   "Contrat loi Madelin Agricole",
-  "Contrat 83",
-  "Contrat 82",
+  "Contrat article 83",
+  "Contrat article 82",
   "Contrat Préfon-retraite",
   "Contrat retraite mutualiste du combattant",
   "Régimes de retraite étrangers",
@@ -73,14 +74,15 @@ export const ASSET_NATURES = [
   "CEL",
   "PEL",
   "Compte à terme",
-  "Bons de caisse",
+  "Bons de caisse (ou bon d'épargne)",
   "PEP Bancaire",
   "Autres dépôts",
   "Autres disponibilités",
   
   // Actifs financiers investis
   "Compte-titres",
-  "PEA",
+  "PEA bancaire",
+  "PEA assurance",
   "PEA-PME",
   "Parts de FIP",
   "Parts de FIP Corse",
@@ -201,15 +203,16 @@ export const ASSET_CATEGORIES = {
     "Autres biens professionnels"
   ],
   "épargne retraite et prévoyance": [
-    "PER individuel",
+    "PER individuel bancaire",
+    "PER individuel assurance",
     "PER entreprise collectif",
     "PER entreprise obligatoire",
     "PERCO/PERCOI",
     "PERP",
     "Contrat loi Madelin",
     "Contrat loi Madelin Agricole",
-    "Contrat 83",
-    "Contrat 82",
+    "Contrat article 83",
+    "Contrat article 82",
     "Contrat Préfon-retraite",
     "Contrat retraite mutualiste du combattant",
     "Régimes de retraite étrangers",
@@ -238,7 +241,7 @@ export const ASSET_CATEGORIES = {
     "CEL",
     "PEL",
     "Compte à terme",
-    "Bons de caisse",
+    "Bons de caisse (ou bon d'épargne)",
     "PEP Bancaire",
     "Dépôt de garantie",
     "Autres dépôts",
@@ -246,7 +249,8 @@ export const ASSET_CATEGORIES = {
   ],
   "valeurs mobilières et placements financiers": [
     "Compte-titres",
-    "PEA",
+    "PEA bancaire",
+    "PEA assurance",
     "PEA-PME",
     "Parts de FIP",
     "Parts de FIP Corse",
@@ -277,3 +281,22 @@ export const getAssetCategory = (nature: string): string => {
   }
   return "autres";
 };
+
+// Natures pour lesquelles les champs d'acquisition (date, valeur, frais) et plus-values n'ont pas de sens
+export const NATURES_WITHOUT_ACQUISITION: string[] = [
+  "Comptes courants",
+  "Comptes sur livret (CSL)",
+  "Livret A",
+  "Livret Bleu",
+  "Livret de développement durable et solidaire (LDDS)",
+  "Livret d'épargne populaire (LEP)",
+  "Livret Jeune",
+  "CEL",
+  "PEL",
+  "Compte à terme",
+  "Bons de caisse (ou bon d'épargne)",
+  "PEP Bancaire",
+  "Dépôt de garantie",
+  "Autres dépôts",
+  "Autres disponibilités"
+];

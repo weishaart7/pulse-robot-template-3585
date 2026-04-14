@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Asset } from '@/services/assetService';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, TrendingUp, User, Building, Coins, Heart } from 'lucide-react';
+import { Calendar, TrendingUp, User, Building, Coins, Heart, Key } from 'lucide-react';
+import { NATURES_WITHOUT_ACQUISITION } from '@/constants/assetTypes';
 import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 
 interface AssetDetailsDialogProps {
@@ -59,9 +60,17 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
           <DialogTitle className="text-2xl font-bold">
             {asset.denomination || asset.nature}
           </DialogTitle>
-          <Badge variant="outline" className="w-fit mt-2">
-            {asset.nature}
-          </Badge>
+          <div className="flex items-center gap-2 mt-2">
+            <Badge variant="outline" className="w-fit">
+              {asset.nature}
+            </Badge>
+            {asset.mode_detention && asset.mode_detention !== 'Pleine propriété' && (
+              <Badge variant="secondary" className="w-fit">
+                <Key className="h-3 w-3 mr-1" />
+                {asset.mode_detention}
+              </Badge>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
@@ -90,35 +99,37 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
 
           <Separator />
 
-          {/* Informations d'acquisition */}
-          <div>
-            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Acquisition
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <span className="text-sm text-muted-foreground">Date d'acquisition</span>
-                <p className="font-medium">{formatDate(asset.date_acquisition)}</p>
-              </div>
-              <div>
-                <span className="text-sm text-muted-foreground">Valeur d'acquisition</span>
-                <p className="font-medium">{formatCurrency(asset.valeur_acquisition)}</p>
-              </div>
-              {asset.frais_acquisition && (
+          {/* Informations d'acquisition - masquées pour les actifs liquides */}
+          {!NATURES_WITHOUT_ACQUISITION.includes(asset.nature) && (
+            <div>
+              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Acquisition
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="text-sm text-muted-foreground">Frais d'acquisition</span>
-                  <p className="font-medium">{formatCurrency(asset.frais_acquisition)}</p>
+                  <span className="text-sm text-muted-foreground">Date d'acquisition</span>
+                  <p className="font-medium">{formatDate(asset.date_acquisition)}</p>
                 </div>
-              )}
-              {asset.date_estimation && (
                 <div>
-                  <span className="text-sm text-muted-foreground">Date d'estimation</span>
-                  <p className="font-medium">{formatDate(asset.date_estimation)}</p>
+                  <span className="text-sm text-muted-foreground">Valeur d'acquisition</span>
+                  <p className="font-medium">{formatCurrency(asset.valeur_acquisition)}</p>
                 </div>
-              )}
+                {asset.frais_acquisition && (
+                  <div>
+                    <span className="text-sm text-muted-foreground">Frais d'acquisition</span>
+                    <p className="font-medium">{formatCurrency(asset.frais_acquisition)}</p>
+                  </div>
+                )}
+                {asset.date_estimation && (
+                  <div>
+                    <span className="text-sm text-muted-foreground">Date d'estimation</span>
+                    <p className="font-medium">{formatDate(asset.date_estimation)}</p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Revalorisation */}
           {asset.revalorisation_annuelle && (

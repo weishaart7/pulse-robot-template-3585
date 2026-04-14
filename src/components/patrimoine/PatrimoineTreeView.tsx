@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronDown, ChevronRight, MoreHorizontal, Edit, Trash2, Search, TrendingUp, TrendingDown } from 'lucide-react';
 import { Asset } from '@/services/assetService';
-import { getAssetCategory } from '@/constants/assetTypes';
+import { getAssetCategory, NATURES_WITHOUT_ACQUISITION } from '@/constants/assetTypes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FullTable } from '@/components/ui/full-table';
@@ -80,6 +80,11 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
 
   // Calculate plus-value for display
   const getPlusValueDisplay = (asset: Asset) => {
+    // No plus-value for liquid assets
+    if (NATURES_WITHOUT_ACQUISITION.includes(asset.nature)) {
+      return { display: '—', className: 'text-muted-foreground', value: 0 };
+    }
+
     const { plusValue, hasData } = calculatePlusValue(
       asset.valeur_estimee,
       asset.valeur_acquisition,
@@ -236,7 +241,12 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
                           <div className="flex items-center gap-2">
                             <div className="w-1.5 h-1.5 rounded-full opacity-60" style={{ backgroundColor: getCategoryColor(category) }} />
                             <div className="flex-1">
-                              <div className="font-normal text-sm text-foreground">{asset.denomination || asset.nature}</div>
+                              <div className="font-normal text-sm text-foreground">
+                                {asset.denomination || asset.nature}
+                                {asset.mode_detention && asset.mode_detention !== 'Pleine propriété' && (
+                                  <span className="ml-2 text-xs text-muted-foreground italic">({asset.mode_detention})</span>
+                                )}
+                              </div>
                               {asset.etablissement && (
                                 <div className="text-xs text-muted-foreground mt-0.5">
                                   {asset.etablissement}

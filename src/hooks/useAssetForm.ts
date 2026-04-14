@@ -122,7 +122,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
     }
   }, [asset, familyData, form]);
 
-  // Auto-adjust percentages when detenteur changes
+  // Auto-adjust percentages when detenteur changes, and auto-set origine for NP
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name === 'detenteur' && value.detenteur) {
@@ -142,6 +142,11 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
             form.setValue('pourcentage_conjoint', 50);
           }
         }
+      }
+
+      // Auto-set origine to "Acquisition à titre gratuite" when NP is selected
+      if (name === 'mode_detention' && value.mode_detention === 'Nue-propriété') {
+        form.setValue('origine_actif', ['Acquisition à titre gratuite']);
       }
     });
 
@@ -164,14 +169,21 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         finalSpousePercentage = 100;
       }
 
-      const formattedValues = {
+      // Remove form-only fields that don't exist in the database
+      const { beneficiaire_autre_partie, ...dbValues } = {
         ...values,
         detenteur: dbDetenteur,
         pourcentage_utilisateur: finalUserPercentage,
         pourcentage_conjoint: finalSpousePercentage,
-        date_estimation: values.date_estimation ? format(values.date_estimation, 'yyyy-MM-dd') : undefined,
-        date_acquisition: values.date_acquisition ? format(values.date_acquisition, 'yyyy-MM-dd') : undefined
+        date_estimation: values.date_estimation ? format(values.date_estimation, 'yyyy-MM-dd') : null,
+        date_acquisition: values.date_acquisition ? format(values.date_acquisition, 'yyyy-MM-dd') : null,
+        // Convert empty strings to null for optional fields
+        denomination: values.denomination || null,
+        etablissement: values.etablissement || null,
+        mode_detention: values.mode_detention || null,
       };
+
+      const formattedValues = dbValues;
 
       await onSubmit(formattedValues as any, charges);
     } finally {

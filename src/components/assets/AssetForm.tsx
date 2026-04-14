@@ -12,7 +12,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Asset, AssetCharge } from '@/services/assetService';
 import { ChargeForm } from './ChargeForm';
-import { ASSET_NATURES, getAssetCategory } from '@/constants/assetTypes';
+import { ASSET_NATURES, getAssetCategory, NATURES_WITHOUT_ACQUISITION } from '@/constants/assetTypes';
 import { useAssetForm, NATURES_WITH_ETABLISSEMENT } from '@/hooks/useAssetForm';
 import { 
   ORIGINE_ACTIF_OPTIONS, 
@@ -292,35 +292,39 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                     </>
                   )}
 
-                  <FormField control={form.control} name="date_acquisition" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date d'acquisition</FormLabel>
-                      <FormControl>
-                        <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+                  {!NATURES_WITHOUT_ACQUISITION.includes(form.watch('nature')) && (
+                    <>
+                      <FormField control={form.control} name="date_acquisition" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Date d'acquisition</FormLabel>
+                          <FormControl>
+                            <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
 
-                  <FormField control={form.control} name="valeur_acquisition" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Valeur d'acquisition (€)</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+                      <FormField control={form.control} name="valeur_acquisition" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Valeur d'acquisition (€)</FormLabel>
+                          <FormControl>
+                            <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
 
-                  <FormField control={form.control} name="frais_acquisition" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Frais d'acquisition (€)</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+                      <FormField control={form.control} name="frais_acquisition" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Frais d'acquisition (€)</FormLabel>
+                          <FormControl>
+                            <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </>
+                  )}
                 </div>
               </div>
 
