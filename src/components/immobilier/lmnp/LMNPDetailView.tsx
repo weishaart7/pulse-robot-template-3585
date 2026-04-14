@@ -283,7 +283,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
               Transfert budget
             </Label>
           </div>
-          <Button onClick={() => handleSave(false)} disabled={isSaving}>
+          <Button onClick={() => performSave(false)} disabled={isSaving}>
             {isSaving ? 'Enregistrement...' : 'Enregistrer'}
           </Button>
         </div>
