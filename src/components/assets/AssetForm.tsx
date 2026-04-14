@@ -12,7 +12,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Asset, AssetCharge } from '@/services/assetService';
 import { ChargeForm } from './ChargeForm';
-import { ASSET_NATURES, getAssetCategory } from '@/constants/assetTypes';
+import { ASSET_NATURES, getAssetCategory, NATURES_WITHOUT_ACQUISITION } from '@/constants/assetTypes';
 import { useAssetForm, NATURES_WITH_ETABLISSEMENT } from '@/hooks/useAssetForm';
 import { 
   ORIGINE_ACTIF_OPTIONS, 
