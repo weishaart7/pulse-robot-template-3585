@@ -8,7 +8,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ImmobilierPropertyDialog } from '@/components/immobilier/ImmobilierPropertyDialog';
 import { ImmobilierGestionDialog } from '@/components/immobilier/ImmobilierGestionDialog';
 import { ImmobilierOverview } from '@/components/immobilier/ImmobilierOverview';
+import { LMNPDetailView } from '@/components/immobilier/lmnp/LMNPDetailView';
 import { Asset } from '@/services/assetService';
+
+const MEUBLE_NATURES = [
+  'Immeubles locatifs (LMNP)',
+  'Immeubles locatifs (LMP)',
+];
 
 export const ImmobilierSection = () => {
   const [activeTab, setActiveTab] = useState('biens');
@@ -18,10 +24,17 @@ export const ImmobilierSection = () => {
   const [gestionDialogOpen, setGestionDialogOpen] = useState(false);
   const [selectedAssetForGestion, setSelectedAssetForGestion] = useState<Asset | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [lmnpAsset, setLmnpAsset] = useState<Asset | null>(null);
+
+  const isMeuble = (asset: Asset) => MEUBLE_NATURES.includes(asset.nature || '');
 
   const handleManageInfo = useCallback((asset: Asset) => {
-    setSelectedAsset(asset);
-    setDialogOpen(true);
+    if (isMeuble(asset)) {
+      setLmnpAsset(asset);
+    } else {
+      setSelectedAsset(asset);
+      setDialogOpen(true);
+    }
   }, []);
 
   const handleDialogClose = useCallback(() => {
@@ -34,24 +47,44 @@ export const ImmobilierSection = () => {
   }, [refetch]);
 
   const handleGestion = useCallback((asset: Asset) => {
-    setSelectedAssetForGestion(asset);
-    setGestionDialogOpen(true);
+    if (isMeuble(asset)) {
+      setLmnpAsset(asset);
+    } else {
+      setSelectedAssetForGestion(asset);
+      setGestionDialogOpen(true);
+    }
   }, []);
 
   // Tri optimisé des assets
   const sortedAssets = useMemo(() => {
     return [...assets].sort((a, b) => {
-      // Résidence principale en premier
       const aIsResidencePrincipale = a.nature?.toLowerCase().includes('résidence principale');
       const bIsResidencePrincipale = b.nature?.toLowerCase().includes('résidence principale');
       
       if (aIsResidencePrincipale && !bIsResidencePrincipale) return -1;
       if (!aIsResidencePrincipale && bIsResidencePrincipale) return 1;
       
-      // Ensuite par valeur décroissante
       return (b.valeur_estimee || 0) - (a.valeur_estimee || 0);
     });
   }, [assets]);
+
+  // If LMNP detail view is active, show it
+  if (lmnpAsset) {
+    return (
+      <div className="p-6">
+        <LMNPDetailView
+          asset={lmnpAsset}
+          onBack={() => setLmnpAsset(null)}
+          onUpdate={() => {
+            refetch();
+            // Refresh the asset data
+            const updated = assets.find(a => a.id === lmnpAsset.id);
+            if (updated) setLmnpAsset(updated);
+          }}
+        />
+      </div>
+    );
+  }
 
   const TABS = [
     { id: 'biens', label: 'Vue d\'ensemble' },
@@ -145,6 +178,9 @@ export const ImmobilierSection = () => {
                               <IconComponent className="h-6 w-6 text-primary" />
                             </div>
                           </div>
+                          {isMeuble(asset) && (
+                            <Badge variant="secondary" className="text-xs">Meublé</Badge>
+                          )}
                         </div>
                         
                         <h3 className="text-lg font-semibold mb-1 text-foreground group-hover:text-secondary transition-colors duration-300">
