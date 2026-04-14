@@ -80,6 +80,11 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
 
   // Calculate plus-value for display
   const getPlusValueDisplay = (asset: Asset) => {
+    // No plus-value for liquid assets
+    if (NATURES_WITHOUT_ACQUISITION.includes(asset.nature)) {
+      return { display: '—', className: 'text-muted-foreground', value: 0 };
+    }
+
     const { plusValue, hasData } = calculatePlusValue(
       asset.valeur_estimee,
       asset.valeur_acquisition,
