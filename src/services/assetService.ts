@@ -175,6 +175,20 @@ export const assetService = {
   },
 
   async createAssetCharge(charge: Omit<AssetCharge, 'id' | 'created_at' | 'updated_at'>): Promise<AssetCharge> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data: asset, error: assetError } = await supabase
+      .from('assets')
+      .select('id, user_id')
+      .eq('id', charge.asset_id)
+      .single();
+
+    if (assetError) throw assetError;
+    if (!asset || asset.user_id !== user.id) {
+      throw new Error('Unauthorized: Asset not found or access denied');
+    }
+
     const { data, error } = await supabase
       .from('asset_charges')
       .insert(charge)
@@ -254,6 +268,20 @@ export const assetService = {
   },
 
   async createAssetRevenu(revenu: Omit<AssetRevenu, 'id' | 'created_at' | 'updated_at'>): Promise<AssetRevenu> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data: asset, error: assetError } = await supabase
+      .from('assets')
+      .select('id, user_id')
+      .eq('id', revenu.asset_id)
+      .single();
+
+    if (assetError) throw assetError;
+    if (!asset || asset.user_id !== user.id) {
+      throw new Error('Unauthorized: Asset not found or access denied');
+    }
+
     const { data, error } = await supabase
       .from('asset_revenus')
       .insert(revenu)
