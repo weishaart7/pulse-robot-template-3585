@@ -66,6 +66,7 @@ export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess, impactBudge
         commentaire: ''
       });
     } catch (error) {
+      console.error('Error creating asset revenu:', error);
       toast({
         title: "Erreur",
         description: "Une erreur est survenue lors de l'ajout du revenu.",
