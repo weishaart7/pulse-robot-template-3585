@@ -281,3 +281,22 @@ export const getAssetCategory = (nature: string): string => {
   }
   return "autres";
 };
+
+// Natures pour lesquelles les champs d'acquisition (date, valeur, frais) et plus-values n'ont pas de sens
+export const NATURES_WITHOUT_ACQUISITION = [
+  "Comptes courants",
+  "Comptes sur livret (CSL)",
+  "Livret A",
+  "Livret Bleu",
+  "Livret de développement durable et solidaire (LDDS)",
+  "Livret d'épargne populaire (LEP)",
+  "Livret Jeune",
+  "CEL",
+  "PEL",
+  "Compte à terme",
+  "Bons de caisse (ou bon d'épargne)",
+  "PEP Bancaire",
+  "Dépôt de garantie",
+  "Autres dépôts",
+  "Autres disponibilités"
+] as const;
