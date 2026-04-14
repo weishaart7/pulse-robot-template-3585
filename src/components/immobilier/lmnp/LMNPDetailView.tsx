@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -113,6 +113,8 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
   const [chargeFormOpen, setChargeFormOpen] = useState(false);
   const [impactBudget, setImpactBudget] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialMount = useRef(true);
 
   const terrainPct = forceTerrainPct
     ? terrainPctCustom
@@ -135,30 +137,34 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
 
   // Auto-calculate frais de notaire when prixAchat changes (7.5%)
   useEffect(() => {
-    if (prixAchat > 0 && fraisNotaire === 0) {
+    if (prixAchat > 0) {
       setFraisNotaire(Math.round(prixAchat * 0.075));
     }
   }, [prixAchat]);
 
-  // Compute amortissement
-  const amortissementLines = computeAmortissement(prixAchat, terrainPct, valeurMobilier, travaux);
-  const totalAmortissementAnnuel = amortissementLines.reduce((s, l) => s + l.amortissementAnnuel, 0);
+  // Auto-save with debounce
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
 
-  // Compute annual revenues & charges
-  const totalRevenusAnnuel = revenus.reduce((sum, r) => {
-    const m = r.montant || 0;
-    return sum + (r.periodicite === 'Mensuelle' ? m * 12 : r.periodicite === 'Trimestrielle' ? m * 4 : m);
-  }, 0);
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
 
-  const totalChargesAnnuel = charges.reduce((sum, c) => {
-    const m = c.montant || 0;
-    const p = c.periodicite?.toLowerCase();
-    return sum + (p === 'mensuelle' ? m * 12 : p === 'trimestrielle' ? m * 4 : m);
-  }, 0);
+    saveTimeoutRef.current = setTimeout(() => {
+      handleSave(true);
+    }, 1500);
 
-  const resultatFiscal = totalRevenusAnnuel - totalChargesAnnuel - totalAmortissementAnnuel;
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [prixAchat, zoneBien, forceTerrainPct, terrainPctCustom, fraisNotaire, anneeAcquisition, valeurMobilier, travaux, typeLocationLmnp]);
 
-  const handleSave = async () => {
+  const handleSave = async (silent = false) => {
     setIsSaving(true);
     try {
       const updateData: Record<string, any> = {
@@ -179,7 +185,9 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
 
       if (error) throw error;
 
-      toast({ title: 'Enregistré', description: 'Les informations LMNP ont été mises à jour.' });
+      if (!silent) {
+        toast({ title: 'Enregistré', description: 'Les informations LMNP ont été mises à jour.' });
+      }
       onUpdate();
     } catch {
       toast({ title: 'Erreur', description: 'Impossible de sauvegarder.', variant: 'destructive' });
@@ -187,6 +195,24 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
       setIsSaving(false);
     }
   };
+
+  // Compute amortissement
+  const amortissementLines = computeAmortissement(prixAchat, terrainPct, valeurMobilier, travaux);
+  const totalAmortissementAnnuel = amortissementLines.reduce((s, l) => s + l.amortissementAnnuel, 0);
+
+  // Compute annual revenues & charges
+  const totalRevenusAnnuel = revenus.reduce((sum, r) => {
+    const m = r.montant || 0;
+    return sum + (r.periodicite === 'Mensuelle' ? m * 12 : r.periodicite === 'Trimestrielle' ? m * 4 : m);
+  }, 0);
+
+  const totalChargesAnnuel = charges.reduce((sum, c) => {
+    const m = c.montant || 0;
+    const p = c.periodicite?.toLowerCase();
+    return sum + (p === 'mensuelle' ? m * 12 : p === 'trimestrielle' ? m * 4 : m);
+  }, 0);
+
+  const resultatFiscal = totalRevenusAnnuel - totalChargesAnnuel - totalAmortissementAnnuel;
 
   const handleToggleImpactBudget = async (checked: boolean) => {
     if (!asset.id) return;
@@ -243,7 +269,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
               Transfert budget
             </Label>
           </div>
-          <Button onClick={handleSave} disabled={isSaving}>
+          <Button onClick={() => handleSave(false)} disabled={isSaving}>
             {isSaving ? 'Enregistrement...' : 'Enregistrer'}
           </Button>
         </div>
