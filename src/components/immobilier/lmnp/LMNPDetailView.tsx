@@ -196,6 +196,24 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
     }
   };
 
+  // Compute amortissement
+  const amortissementLines = computeAmortissement(prixAchat, terrainPct, valeurMobilier, travaux);
+  const totalAmortissementAnnuel = amortissementLines.reduce((s, l) => s + l.amortissementAnnuel, 0);
+
+  // Compute annual revenues & charges
+  const totalRevenusAnnuel = revenus.reduce((sum, r) => {
+    const m = r.montant || 0;
+    return sum + (r.periodicite === 'Mensuelle' ? m * 12 : r.periodicite === 'Trimestrielle' ? m * 4 : m);
+  }, 0);
+
+  const totalChargesAnnuel = charges.reduce((sum, c) => {
+    const m = c.montant || 0;
+    const p = c.periodicite?.toLowerCase();
+    return sum + (p === 'mensuelle' ? m * 12 : p === 'trimestrielle' ? m * 4 : m);
+  }, 0);
+
+  const resultatFiscal = totalRevenusAnnuel - totalChargesAnnuel - totalAmortissementAnnuel;
+
   const handleToggleImpactBudget = async (checked: boolean) => {
     if (!asset.id) return;
     try {
