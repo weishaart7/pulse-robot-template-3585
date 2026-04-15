@@ -9,13 +9,15 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft, Calendar, TrendingUp, TrendingDown, Shield, Users, FileText, Info, Settings, Target, RefreshCw, UserCheck } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { ArrowLeft, Calendar, TrendingUp, TrendingDown, Shield, Users, FileText, Info, Settings, Target, RefreshCw, UserCheck, PenLine, Wand2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Asset } from '@/services/assetService';
 import { formatCurrency } from '@/lib/patrimoine/utils';
 import { toast } from 'sonner';
 import { AVFiscalInfo } from './AVFiscalInfo';
 import { AVOperationsTable } from './AVOperationsTable';
+import { ClauseBeneficiaireBuilder, ClauseStructuree } from './ClauseBeneficiaireBuilder';
 
 interface AVContractDetailProps {
   contract: Asset;
@@ -68,7 +70,12 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
     rachats_programmes_periodicite: null,
   });
   const [operations, setOperations] = useState<AVOperation[]>([]);
-  const [beneficiaires, setBeneficiaires] = useState<{ nom: string; prenom: string | null; lien: string }[]>([]);
+  const [beneficiaires, setBeneficiaires] = useState<{ id: string; nom: string; prenom: string | null; lien: string }[]>([]);
+  const [conjointName, setConjointName] = useState<string | null>(null);
+  const [clauseStructuree, setClauseStructuree] = useState<ClauseStructuree>({
+    niveaux: [{ beneficiaires: [{ familyLinkId: '', nom: '', prenom: '', lien: '', pourcentage: 100, typeDetention: 'pleine-propriete' }] }],
+  });
+  const [clauseMode, setClauseMode] = useState<'libre' | 'assistee'>('libre');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -103,7 +110,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const [detailsRes, opsRes, familyRes] = await Promise.all([
+      const [detailsRes, opsRes, familyRes, maritalRes] = await Promise.all([
         supabase
           .from('av_contract_details')
           .select('*')
@@ -116,8 +123,13 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
           .order('date_operation', { ascending: false }),
         supabase
           .from('family_links')
-          .select('nom, prenom, lien_familial')
+          .select('id, nom, prenom, lien_familial')
           .eq('user_id', user.id),
+        supabase
+          .from('marital_status')
+          .select('statut_couple, nom_conjoint, prenom_conjoint')
+          .eq('user_id', user.id)
+          .maybeSingle(),
       ]);
 
       if (detailsRes.data) {
@@ -139,16 +151,30 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
           rachats_programmes_montant: d.rachats_programmes_montant || null,
           rachats_programmes_periodicite: d.rachats_programmes_periodicite || null,
         });
+        // Restore structured clause if exists
+        if (d.clause_beneficiaire_structuree) {
+          setClauseStructuree(d.clause_beneficiaire_structuree);
+          setClauseMode('assistee');
+        }
       }
       if (opsRes.data) {
         setOperations(opsRes.data as AVOperation[]);
       }
       if (familyRes.data) {
-        setBeneficiaires(familyRes.data.map(f => ({
+        setBeneficiaires(familyRes.data.map((f: any) => ({
+          id: f.id,
           nom: f.nom,
           prenom: f.prenom,
           lien: f.lien_familial,
         })));
+      }
+      // Conjoint name
+      if (maritalRes.data) {
+        const ms = maritalRes.data as any;
+        const statut = ms.statut_couple || '';
+        if (['Marié(e)', 'Pacsé(e)', 'Concubinage'].includes(statut) && (ms.nom_conjoint || ms.prenom_conjoint)) {
+          setConjointName(`${ms.prenom_conjoint || ''} ${ms.nom_conjoint || ''}`.trim());
+        }
       }
     } catch (error) {
       console.error('Error fetching AV details:', error);
@@ -178,6 +204,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
         rachats_programmes: details.rachats_programmes,
         rachats_programmes_montant: details.rachats_programmes_montant,
         rachats_programmes_periodicite: details.rachats_programmes_periodicite,
+        clause_beneficiaire_structuree: clauseMode === 'assistee' ? clauseStructuree : null,
       };
 
       if (details.id) {
@@ -583,13 +610,48 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
                 Clause bénéficiaire
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <Textarea
-                placeholder="Ex: Mon conjoint, à défaut mes enfants nés ou à naître, vivants ou représentés, par parts égales entre eux, à défaut mes héritiers."
-                value={details.clause_beneficiaire}
-                onChange={(e) => setDetails(prev => ({ ...prev, clause_beneficiaire: e.target.value }))}
-                rows={5}
-              />
+            <CardContent className="space-y-4">
+              <Tabs value={clauseMode} onValueChange={(v) => setClauseMode(v as 'libre' | 'assistee')}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="assistee" className="gap-1.5">
+                    <Wand2 className="h-3.5 w-3.5" />
+                    Rédaction assistée
+                  </TabsTrigger>
+                  <TabsTrigger value="libre" className="gap-1.5">
+                    <PenLine className="h-3.5 w-3.5" />
+                    Rédaction libre
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="assistee" className="mt-4">
+                  {beneficiaires.length > 0 || conjointName ? (
+                    <ClauseBeneficiaireBuilder
+                      clause={clauseStructuree}
+                      onChange={setClauseStructuree}
+                      familyMembers={beneficiaires}
+                      conjointName={conjointName}
+                      contractValue={contract.valeur_estimee || 0}
+                    />
+                  ) : (
+                    <div className="py-6 text-center space-y-2">
+                      <Users className="h-8 w-8 mx-auto text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">
+                        Ajoutez vos proches dans la section Famille pour utiliser la rédaction assistée.
+                      </p>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="libre" className="mt-4 space-y-3">
+                  <Textarea
+                    placeholder="Ex: Mon conjoint, à défaut mes enfants nés ou à naître, vivants ou représentés, par parts égales entre eux, à défaut mes héritiers."
+                    value={details.clause_beneficiaire}
+                    onChange={(e) => setDetails(prev => ({ ...prev, clause_beneficiaire: e.target.value }))}
+                    rows={5}
+                  />
+                </TabsContent>
+              </Tabs>
+
               <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50">
                 <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground">
