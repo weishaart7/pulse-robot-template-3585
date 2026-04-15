@@ -302,6 +302,10 @@ export type Database = {
           asset_id: string
           clause_beneficiaire: string | null
           created_at: string
+          frais_arbitrage: number | null
+          frais_gestion_euros: number | null
+          frais_gestion_uc: number | null
+          frais_versement: number | null
           id: string
           part_fonds_euros: number | null
           part_unites_compte: number | null
@@ -312,6 +316,10 @@ export type Database = {
           asset_id: string
           clause_beneficiaire?: string | null
           created_at?: string
+          frais_arbitrage?: number | null
+          frais_gestion_euros?: number | null
+          frais_gestion_uc?: number | null
+          frais_versement?: number | null
           id?: string
           part_fonds_euros?: number | null
           part_unites_compte?: number | null
@@ -322,6 +330,10 @@ export type Database = {
           asset_id?: string
           clause_beneficiaire?: string | null
           created_at?: string
+          frais_arbitrage?: number | null
+          frais_gestion_euros?: number | null
+          frais_gestion_uc?: number | null
+          frais_versement?: number | null
           id?: string
           part_fonds_euros?: number | null
           part_unites_compte?: number | null
