@@ -232,12 +232,6 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
     { id: 'coordonnees' as Section, label: 'Coordonnées', icon: MapPin },
   ];
 
-  const sidebarLinks = sections.map((section) => ({
-    label: section.label,
-    id: section.id,
-    icon: <section.icon className="h-5 w-5 flex-shrink-0" />
-  }));
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
