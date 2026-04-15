@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { AVContractDetail } from './av/AVContractDetail';
+import { ClauseStructuree, BeneficiaireEntry } from './av/ClauseBeneficiaireBuilder';
 
 const AV_NATURES = [
   "Contrat d'assurance-vie",
