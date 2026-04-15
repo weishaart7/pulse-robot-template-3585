@@ -22,6 +22,7 @@ export const AssuranceVie = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedContract, setSelectedContract] = useState<Asset | null>(null);
   const [subscriberAge, setSubscriberAge] = useState<number | null>(null);
+  const [isCouple, setIsCouple] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,7 +31,7 @@ export const AssuranceVie = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const [contractsRes, profileRes] = await Promise.all([
+        const [contractsRes, profileRes, maritalRes] = await Promise.all([
           supabase
             .from('assets')
             .select('*')
@@ -42,6 +43,11 @@ export const AssuranceVie = () => {
             .select('date_naissance')
             .eq('user_id', user.id)
             .maybeSingle(),
+          supabase
+            .from('marital_status')
+            .select('statut_couple')
+            .eq('user_id', user.id)
+            .maybeSingle(),
         ]);
 
         if (contractsRes.data) setContracts(contractsRes.data || []);
@@ -51,6 +57,8 @@ export const AssuranceVie = () => {
           const age = Math.floor((now.getTime() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
           setSubscriberAge(age);
         }
+        const statut = maritalRes.data?.statut_couple || null;
+        setIsCouple(['Marié(e)', 'Pacsé(e)'].includes(statut || ''));
       } catch (error) {
         console.error('Error fetching AV contracts:', error);
       } finally {
@@ -85,6 +93,7 @@ export const AssuranceVie = () => {
           contract={selectedContract}
           onBack={() => setSelectedContract(null)}
           subscriberAge={subscriberAge}
+          isCouple={isCouple}
         />
       </div>
     );
