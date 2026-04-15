@@ -173,13 +173,17 @@ export const Synthese = () => {
       const dmtgResult = computeDMTG(dmtgContext);
       // DMTG tax calculation completed
 
+      // Recalculer la transmission nette avec les droits DMTG
+      const patrimoineNet = patrimony.biensExistants - patrimony.passifs;
+      const transmissionNetteCorrigee = patrimoineNet - dmtgResult.totals.droitsTotaux - totalAV - civilResult.fraisNotaire;
+
       // Combiner les résultats
       const combinedResult = {
         ...civilResult,
         family,
         dmtg: dmtgResult,
         successionLegale: successionLegaleResult,
-        // Mettre à jour les droits de succession avec les calculs DMTG
+        transmissionNette: transmissionNetteCorrigee,
         heirs: civilResult.heirs.map(heir => ({
           ...heir,
           droitsSuccession: dmtgResult.perBeneficiary[heir.personId]?.droitsTotaux || 0
