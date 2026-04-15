@@ -59,7 +59,7 @@ export const AssuranceVie = () => {
             .maybeSingle(),
           supabase
             .from('marital_status')
-            .select('statut_couple')
+            .select('statut_couple, nom_conjoint, prenom_conjoint')
             .eq('user_id', user.id)
             .maybeSingle(),
           supabase
