@@ -22,6 +22,11 @@ interface OperationsByContract {
   [assetId: string]: { type_operation: string; montant: number }[];
 }
 
+interface ContractClause {
+  asset_id: string;
+  clause_beneficiaire_structuree: ClauseStructuree | null;
+}
+
 interface Beneficiaire {
   nom: string;
   prenom: string | null;
@@ -38,6 +43,7 @@ export const AssuranceVie = () => {
   const [nbBeneficiaires, setNbBeneficiaires] = useState(1);
   const [beneficiaires, setBeneficiaires] = useState<Beneficiaire[]>([]);
   const [conjointName, setConjointName] = useState<string | null>(null);
+  const [contractClauses, setContractClauses] = useState<ContractClause[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
