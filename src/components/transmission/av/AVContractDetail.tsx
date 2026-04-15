@@ -363,7 +363,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
         </Card>
       </div>
 
-      {/* Bénéficiaires card */}
+      {/* Bénéficiaires card — reflects clause bénéficiaire content */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
@@ -372,25 +372,60 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {beneficiaires.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {beneficiaires.map((b, i) => (
-                <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
-                    {(b.prenom?.[0] || '').toUpperCase()}{b.nom[0]?.toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">{b.prenom} {b.nom}</p>
-                    <p className="text-xs text-muted-foreground">{b.lien}</p>
-                  </div>
+          {(() => {
+            // If structured mode with at least one named beneficiary
+            if (clauseMode === 'assistee') {
+              const namedBenefs = clauseStructuree.niveaux.flatMap((n, nIdx) =>
+                n.beneficiaires
+                  .filter(b => b.nom)
+                  .map(b => ({ ...b, niveau: nIdx }))
+              );
+              if (namedBenefs.length === 0) {
+                return <p className="text-sm text-muted-foreground">Non renseigné</p>;
+              }
+              return (
+                <div className="space-y-3">
+                  {clauseStructuree.niveaux.map((niveau, nIdx) => {
+                    const named = niveau.beneficiaires.filter(b => b.nom);
+                    if (named.length === 0) return null;
+                    return (
+                      <div key={nIdx}>
+                        {nIdx > 0 && (
+                          <p className="text-xs text-muted-foreground italic mb-2">↳ À défaut :</p>
+                        )}
+                        <div className="flex flex-wrap gap-2">
+                          {named.map((b, i) => (
+                            <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
+                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
+                                {(b.prenom?.[0] || '').toUpperCase()}{b.nom[0]?.toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium">{b.prenom} {b.nom}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {niveau.beneficiaires.length > 1 ? `${b.pourcentage}% · ` : ''}
+                                  {b.typeDetention === 'usufruit' ? 'Usufruit' : 'PP'}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <p className="text-xs text-muted-foreground italic">À défaut, mes héritiers</p>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Aucun membre de la famille renseigné. Ajoutez vos proches dans la section Famille.
-            </p>
-          )}
+              );
+            }
+            // Free-text mode
+            if (details.clause_beneficiaire && details.clause_beneficiaire.trim()) {
+              return (
+                <p className="text-sm text-muted-foreground italic leading-relaxed">
+                  {details.clause_beneficiaire}
+                </p>
+              );
+            }
+            return <p className="text-sm text-muted-foreground">Non renseigné</p>;
+          })()}
         </CardContent>
       </Card>
 
