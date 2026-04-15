@@ -4,10 +4,11 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { Asset } from '@/services/assetService';
 import { formatCurrency } from '@/lib/patrimoine/utils';
-import { Shield, FileText, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Shield, FileText, AlertTriangle, ArrowRight, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { AVContractDetail } from './av/AVContractDetail';
 
 const AV_NATURES = [
   "Contrat d'assurance-vie",
@@ -19,23 +20,37 @@ const AV_NATURES = [
 export const AssuranceVie = () => {
   const [contracts, setContracts] = useState<Asset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedContract, setSelectedContract] = useState<Asset | null>(null);
+  const [subscriberAge, setSubscriberAge] = useState<number | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchAVContracts = async () => {
+    const fetchData = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const { data, error } = await supabase
-          .from('assets')
-          .select('*')
-          .eq('user_id', user.id)
-          .in('nature', AV_NATURES)
-          .order('created_at', { ascending: false });
+        const [contractsRes, profileRes] = await Promise.all([
+          supabase
+            .from('assets')
+            .select('*')
+            .eq('user_id', user.id)
+            .in('nature', AV_NATURES)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('family_profiles')
+            .select('date_naissance')
+            .eq('user_id', user.id)
+            .maybeSingle(),
+        ]);
 
-        if (error) throw error;
-        setContracts(data || []);
+        if (contractsRes.data) setContracts(contractsRes.data || []);
+        if (profileRes.data?.date_naissance) {
+          const birth = new Date(profileRes.data.date_naissance);
+          const now = new Date();
+          const age = Math.floor((now.getTime() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+          setSubscriberAge(age);
+        }
       } catch (error) {
         console.error('Error fetching AV contracts:', error);
       } finally {
@@ -43,8 +58,37 @@ export const AssuranceVie = () => {
       }
     };
 
-    fetchAVContracts();
+    fetchData();
   }, []);
+
+  // If a contract is selected, show the detail view
+  if (selectedContract) {
+    return (
+      <div className="space-y-4">
+        {/* Tabs to switch between contracts */}
+        {contracts.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {contracts.map((c) => (
+              <Button
+                key={c.id}
+                variant={c.id === selectedContract.id ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSelectedContract(c)}
+                className="whitespace-nowrap"
+              >
+                {c.denomination || c.nature}
+              </Button>
+            ))}
+          </div>
+        )}
+        <AVContractDetail
+          contract={selectedContract}
+          onBack={() => setSelectedContract(null)}
+          subscriberAge={subscriberAge}
+        />
+      </div>
+    );
+  }
 
   const totalValeur = contracts.reduce((sum, c) => sum + (c.valeur_estimee || 0), 0);
 
@@ -135,16 +179,19 @@ export const AssuranceVie = () => {
         </Card>
       </div>
 
-      {/* Liste des contrats */}
+      {/* Liste des contrats - cliquable */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Contrats d'assurance-vie</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-1">
           {contracts.map((contract, index) => (
             <React.Fragment key={contract.id}>
               {index > 0 && <Separator />}
-              <div className="flex items-center justify-between py-2">
+              <button
+                className="w-full flex items-center justify-between py-3 px-2 rounded-lg hover:bg-muted/50 transition-colors text-left"
+                onClick={() => setSelectedContract(contract)}
+              >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <p className="font-medium">
@@ -166,15 +213,18 @@ export const AssuranceVie = () => {
                     )}
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold text-lg">
-                    {formatCurrency(contract.valeur_estimee || 0)}
-                  </p>
-                  {contract.mode_detention && (
-                    <p className="text-xs text-muted-foreground">{contract.mode_detention}</p>
-                  )}
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="font-semibold text-lg">
+                      {formatCurrency(contract.valeur_estimee || 0)}
+                    </p>
+                    {contract.mode_detention && (
+                      <p className="text-xs text-muted-foreground">{contract.mode_detention}</p>
+                    )}
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
                 </div>
-              </div>
+              </button>
             </React.Fragment>
           ))}
         </CardContent>

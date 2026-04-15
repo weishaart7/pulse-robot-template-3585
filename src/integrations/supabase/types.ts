@@ -297,6 +297,91 @@ export type Database = {
           },
         ]
       }
+      av_contract_details: {
+        Row: {
+          asset_id: string
+          clause_beneficiaire: string | null
+          created_at: string
+          id: string
+          part_fonds_euros: number | null
+          part_unites_compte: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_id: string
+          clause_beneficiaire?: string | null
+          created_at?: string
+          id?: string
+          part_fonds_euros?: number | null
+          part_unites_compte?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string
+          clause_beneficiaire?: string | null
+          created_at?: string
+          id?: string
+          part_fonds_euros?: number | null
+          part_unites_compte?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "av_contract_details_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: true
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      av_operations: {
+        Row: {
+          asset_id: string
+          commentaire: string | null
+          created_at: string
+          date_operation: string
+          id: string
+          montant: number
+          type_operation: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_id: string
+          commentaire?: string | null
+          created_at?: string
+          date_operation: string
+          id?: string
+          montant: number
+          type_operation: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string
+          commentaire?: string | null
+          created_at?: string
+          date_operation?: string
+          id?: string
+          montant?: number
+          type_operation?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "av_operations_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_articles: {
         Row: {
           author_id: string | null
