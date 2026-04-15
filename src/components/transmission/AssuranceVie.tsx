@@ -152,11 +152,54 @@ export const AssuranceVie = () => {
     const montant990I = is990I ? totalValeur : 0;
     const montant757B = !is990I && subscriberAge !== null ? totalValeur : 0;
 
-    // Count non-spouse beneficiaries for taxation (spouse is always exempt)
-    const nonSpouseBeneficiaires = beneficiaires.filter(b => b.lien !== 'Conjoint');
-    const nbTaxable = Math.max(1, nonSpouseBeneficiaires.length);
+    // Aggregate beneficiaries from each contract's structured clause
+    // Key: beneficiary identifier (familyLinkId or name), Value: accumulated capital
+    const benefMap = new Map<string, { nom: string; prenom: string; lien: string; capitalBrut: number }>();
 
-    // 990I: 152,500€ per taxable beneficiary
+    contracts.forEach(contract => {
+      const contractVal = contract.valeur_estimee || 0;
+      const clauseData = contractClauses.find(c => c.asset_id === contract.id);
+      const clause = clauseData?.clause_beneficiaire_structuree;
+
+      if (clause && clause.niveaux && clause.niveaux.length > 0) {
+        // Use first level beneficiaries (principal)
+        const niveau = clause.niveaux[0];
+        const namedBenefs = niveau.beneficiaires.filter((b: any) => b.nom);
+        if (namedBenefs.length > 0) {
+          const totalPct = namedBenefs.reduce((s: number, b: any) => s + (b.pourcentage || 0), 0);
+          namedBenefs.forEach((b: any) => {
+            const key = b.familyLinkId || `${b.prenom}_${b.nom}`;
+            const pct = totalPct > 0 ? (b.pourcentage || 0) / totalPct : 1 / namedBenefs.length;
+            const amount = contractVal * pct;
+            const existing = benefMap.get(key);
+            if (existing) {
+              existing.capitalBrut += amount;
+            } else {
+              benefMap.set(key, {
+                nom: b.nom,
+                prenom: b.prenom || '',
+                lien: b.lien || '',
+                capitalBrut: amount,
+              });
+            }
+          });
+          return; // Done for this contract
+        }
+      }
+
+      // Fallback: no structured clause — skip (will show "Non renseigné" if no contract has a clause)
+    });
+
+    // If no beneficiaries from clauses, show a single "Non renseigné" row
+    const allBenefs = benefMap.size > 0
+      ? Array.from(benefMap.values())
+      : [{ nom: 'Non renseigné', prenom: '', lien: '', capitalBrut: totalValeur }];
+
+    // Count non-spouse for taxation
+    const nonSpouseBenefs = allBenefs.filter(b => b.lien !== 'Conjoint');
+    const nbTaxable = Math.max(1, nonSpouseBenefs.length);
+
+    // 990I global
     const abattement990I = 152500 * nbTaxable;
     const assiette990I = Math.max(0, montant990I - abattement990I);
     const seuil700k = 700000;
@@ -167,48 +210,41 @@ export const AssuranceVie = () => {
       droits990I = tranche1 * 0.20 + tranche2 * 0.3125;
     }
 
-    // 757B: 30,500€ global abattement
+    // 757B
     const abattement757B = 30500;
     const assiette757B = Math.max(0, montant757B - abattement757B);
     const droits757B = assiette757B * 0.20;
 
     const totalDroits = droits990I + droits757B;
 
-    // Per-beneficiary breakdown (equal split assumed)
-    const allBenefs = beneficiaires.length > 0 ? beneficiaires : [{ nom: 'Bénéficiaire', prenom: null, lien: 'Non renseigné' }];
-    const capitalParBenef = totalValeur / Math.max(1, allBenefs.length);
-
+    // Per-beneficiary tax computation
     const beneficiaireDetails = allBenefs.map(b => {
       const isSpouse = b.lien === 'Conjoint';
       if (isSpouse) {
         return {
           ...b,
-          capitalBrut: capitalParBenef,
           droits: 0,
-          capitalNet: capitalParBenef,
+          capitalNet: b.capitalBrut,
           exonere: true,
         };
       }
 
-      // Taxable beneficiary
       let droitsBenef = 0;
       if (is990I) {
-        const assietteBenef = Math.max(0, capitalParBenef - 152500);
+        const assietteBenef = Math.max(0, b.capitalBrut - 152500);
         const t1 = Math.min(assietteBenef, seuil700k);
         const t2 = Math.max(0, assietteBenef - seuil700k);
         droitsBenef = t1 * 0.20 + t2 * 0.3125;
       } else if (subscriberAge !== null) {
-        // 757B: share of global abattement
         const abattShare = abattement757B / nbTaxable;
-        const assietteBenef = Math.max(0, capitalParBenef - abattShare);
+        const assietteBenef = Math.max(0, b.capitalBrut - abattShare);
         droitsBenef = assietteBenef * 0.20;
       }
 
       return {
         ...b,
-        capitalBrut: capitalParBenef,
         droits: droitsBenef,
-        capitalNet: capitalParBenef - droitsBenef,
+        capitalNet: b.capitalBrut - droitsBenef,
         exonere: false,
       };
     });
@@ -227,7 +263,7 @@ export const AssuranceVie = () => {
       beneficiaireDetails,
       nbTaxable,
     };
-  }, [contracts, operationsByContract, subscriberAge, nbBeneficiaires, beneficiaires]);
+  }, [contracts, contractClauses, subscriberAge]);
 
   // If a contract is selected, show the detail view
   if (selectedContract) {
