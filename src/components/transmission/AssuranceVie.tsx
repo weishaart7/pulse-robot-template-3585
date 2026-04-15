@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { Asset } from '@/services/assetService';
 import { formatCurrency } from '@/lib/patrimoine/utils';
-import { Shield, FileText, AlertTriangle, ArrowRight, ChevronRight, Scale } from 'lucide-react';
+import { Shield, FileText, AlertTriangle, ArrowRight, ChevronRight, Scale, UserCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -21,6 +21,12 @@ interface OperationsByContract {
   [assetId: string]: { type_operation: string; montant: number }[];
 }
 
+interface Beneficiaire {
+  nom: string;
+  prenom: string | null;
+  lien: string;
+}
+
 export const AssuranceVie = () => {
   const [contracts, setContracts] = useState<Asset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,6 +35,8 @@ export const AssuranceVie = () => {
   const [isCouple, setIsCouple] = useState(false);
   const [operationsByContract, setOperationsByContract] = useState<OperationsByContract>({});
   const [nbBeneficiaires, setNbBeneficiaires] = useState(1);
+  const [beneficiaires, setBeneficiaires] = useState<Beneficiaire[]>([]);
+  const [conjointName, setConjointName] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -56,7 +64,7 @@ export const AssuranceVie = () => {
             .maybeSingle(),
           supabase
             .from('family_links')
-            .select('id')
+            .select('nom, prenom, lien_familial')
             .eq('user_id', user.id),
         ]);
 
@@ -70,8 +78,24 @@ export const AssuranceVie = () => {
           setSubscriberAge(age);
         }
         const statut = maritalRes.data?.statut_couple || null;
-        setIsCouple(['Marié(e)', 'Pacsé(e)'].includes(statut || ''));
-        setNbBeneficiaires(Math.max(1, familyRes.data?.length || 1));
+        const coupleStatus = ['Marié(e)', 'Pacsé(e)'].includes(statut || '');
+        setIsCouple(coupleStatus);
+
+        const familyMembers = (familyRes.data || []).map((f: any) => ({
+          nom: f.nom,
+          prenom: f.prenom,
+          lien: f.lien_familial,
+        }));
+        setBeneficiaires(familyMembers);
+        setNbBeneficiaires(Math.max(1, familyMembers.length));
+
+        // Get spouse name if couple
+        if (coupleStatus && maritalRes.data) {
+          const ms = maritalRes.data as any;
+          if (ms.nom_conjoint || ms.prenom_conjoint) {
+            setConjointName(`${ms.prenom_conjoint || ''} ${ms.nom_conjoint || ''}`.trim());
+          }
+        }
 
         // Fetch all operations for these contracts
         if (avContracts.length > 0) {
