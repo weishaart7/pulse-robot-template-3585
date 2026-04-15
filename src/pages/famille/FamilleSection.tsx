@@ -68,20 +68,38 @@ const FamilleSection = () => {
       ...(hasPartner ? [{ id: 'partner' as EditView, label: partnerName || 'Partenaire' }] : []),
     ];
 
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="border-b bg-card">
-          <div className="flex items-center gap-4 p-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setEditView(null)}
-              className="shrink-0"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
+    const currentSexe = editView === 'client'
+      ? (familyProfile?.civility?.toLowerCase() === 'mme' ? 'F' : 'M')
+      : (maritalData?.civilite_conjoint?.toLowerCase() === 'mme' ? 'F' : 'M');
+    const accentColor = currentSexe === 'M' ? '#023e8a' : '#e0aaff';
 
-            {EDIT_TABS.length > 1 ? (
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: '#f6f5f6' }}>
+        {/* Header */}
+        <div className="sticky top-0 z-20 border-b bg-card/95 backdrop-blur-md">
+          <div className="max-w-5xl mx-auto flex items-center justify-between px-6 py-3">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditView(null)}
+                className="gap-2 text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Retour
+              </Button>
+              <div className="h-5 w-px bg-border" />
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: accentColor + '20' }}>
+                  <User className="h-4 w-4" style={{ color: accentColor }} />
+                </div>
+                <span className="text-sm font-medium text-foreground">
+                  {editView === 'client' ? clientName : (partnerName || 'Partenaire')}
+                </span>
+              </div>
+            </div>
+
+            {EDIT_TABS.length > 1 && (
               <div className="rounded-[8px] bg-muted p-[2px]">
                 <AnimatedBackground
                   defaultValue={editView}
@@ -96,20 +114,19 @@ const FamilleSection = () => {
                       key={tab.id}
                       data-id={tab.id}
                       type="button"
-                      className="inline-flex min-w-32 items-center justify-center px-4 py-2 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
+                      className="inline-flex min-w-28 items-center justify-center px-4 py-1.5 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
                     >
                       {tab.label}
                     </button>
                   ))}
                 </AnimatedBackground>
               </div>
-            ) : (
-              <h2 className="text-lg font-semibold">{EDIT_TABS[0]?.label}</h2>
             )}
           </div>
         </div>
 
-        <div className="p-6 max-w-5xl mx-auto">
+        {/* Form content */}
+        <div className="max-w-4xl mx-auto px-6 py-8">
           {editView === 'client' && (
             <FicheClientForm onSuccess={() => {
               setEditView(null);
