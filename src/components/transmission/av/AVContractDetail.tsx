@@ -110,7 +110,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const [detailsRes, opsRes, familyRes] = await Promise.all([
+      const [detailsRes, opsRes, familyRes, maritalRes] = await Promise.all([
         supabase
           .from('av_contract_details')
           .select('*')
@@ -123,8 +123,13 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
           .order('date_operation', { ascending: false }),
         supabase
           .from('family_links')
-          .select('nom, prenom, lien_familial')
+          .select('id, nom, prenom, lien_familial')
           .eq('user_id', user.id),
+        supabase
+          .from('marital_status')
+          .select('statut_couple, nom_conjoint, prenom_conjoint')
+          .eq('user_id', user.id)
+          .maybeSingle(),
       ]);
 
       if (detailsRes.data) {
@@ -146,16 +151,30 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
           rachats_programmes_montant: d.rachats_programmes_montant || null,
           rachats_programmes_periodicite: d.rachats_programmes_periodicite || null,
         });
+        // Restore structured clause if exists
+        if (d.clause_beneficiaire_structuree) {
+          setClauseStructuree(d.clause_beneficiaire_structuree);
+          setClauseMode('assistee');
+        }
       }
       if (opsRes.data) {
         setOperations(opsRes.data as AVOperation[]);
       }
       if (familyRes.data) {
-        setBeneficiaires(familyRes.data.map(f => ({
+        setBeneficiaires(familyRes.data.map((f: any) => ({
+          id: f.id,
           nom: f.nom,
           prenom: f.prenom,
           lien: f.lien_familial,
         })));
+      }
+      // Conjoint name
+      if (maritalRes.data) {
+        const ms = maritalRes.data as any;
+        const statut = ms.statut_couple || '';
+        if (['Marié(e)', 'Pacsé(e)', 'Concubinage'].includes(statut) && (ms.nom_conjoint || ms.prenom_conjoint)) {
+          setConjointName(`${ms.prenom_conjoint || ''} ${ms.nom_conjoint || ''}`.trim());
+        }
       }
     } catch (error) {
       console.error('Error fetching AV details:', error);
