@@ -352,7 +352,7 @@ export const AssuranceVie = () => {
                     <span className="font-medium">{formatCurrency(fiscalSummary.montant990I)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Abattement ({nbBeneficiaires} bénéf. × 152 500 €)</span>
+                    <span className="text-muted-foreground">Abattement ({fiscalSummary.nbTaxable} bénéf. × 152 500 €)</span>
                     <span className="font-medium text-emerald-600">- {formatCurrency(Math.min(fiscalSummary.abattement990I, fiscalSummary.montant990I))}</span>
                   </div>
                   <Separator />
