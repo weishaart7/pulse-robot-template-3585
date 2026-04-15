@@ -104,21 +104,34 @@ export const AssuranceVie = () => {
           }
         }
 
-        // Fetch all operations for these contracts
+         // Fetch all operations and contract details for these contracts
         if (avContracts.length > 0) {
           const assetIds = avContracts.map(c => c.id);
-          const { data: opsData } = await supabase
-            .from('av_operations')
-            .select('asset_id, type_operation, montant')
-            .in('asset_id', assetIds);
+          const [opsRes2, clausesRes] = await Promise.all([
+            supabase
+              .from('av_operations')
+              .select('asset_id, type_operation, montant')
+              .in('asset_id', assetIds),
+            supabase
+              .from('av_contract_details')
+              .select('asset_id, clause_beneficiaire_structuree')
+              .in('asset_id', assetIds),
+          ]);
 
-          if (opsData) {
+          if (opsRes2.data) {
             const grouped: OperationsByContract = {};
-            opsData.forEach((op: any) => {
+            opsRes2.data.forEach((op: any) => {
               if (!grouped[op.asset_id]) grouped[op.asset_id] = [];
               grouped[op.asset_id].push({ type_operation: op.type_operation, montant: op.montant });
             });
             setOperationsByContract(grouped);
+          }
+
+          if (clausesRes.data) {
+            setContractClauses(clausesRes.data.map((d: any) => ({
+              asset_id: d.asset_id,
+              clause_beneficiaire_structuree: d.clause_beneficiaire_structuree || null,
+            })));
           }
         }
       } catch (error) {
