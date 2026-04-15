@@ -1,28 +1,26 @@
 import React, { useState } from 'react';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { FamilyTreeTimeline } from '@/components/FamilyTreeTimeline';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { FamilyLink } from '@/services/familyService';
 import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
-import { SituationMatrimonialeForm } from './components/SituationMatrimonialeForm';
 import { PartnerForm } from "@/components/famille/PartnerForm";
 import { RelationInfoDialog } from "@/components/famille/RelationInfoDialog";
-import { User, Plus } from 'lucide-react';
+import { User, Plus, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+type EditView = 'client' | 'partner';
 
 const FamilleSection = () => {
   const [activeTab, setActiveTab] = useState('ma-famille');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isPartnerDrawerOpen, setIsPartnerDrawerOpen] = useState(false);
+  const [editView, setEditView] = useState<EditView | null>(null);
   const [isSingle, setIsSingle] = useState(false);
   const [isRelationInfoOpen, setIsRelationInfoOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<FamilyLink | null>(null);
   const { data: familyProfile, refetch: refetchProfile } = useFamilyProfile();
   const { data: maritalData, saveData: saveMaritalData, refetch: refetchMarital } = useMaritalStatus();
   const { data: familyLinks = [], loading: linksLoading } = useFamilyLinks();
-  
 
   const TABS = [
     { id: 'ma-famille', label: 'Ma famille' },
@@ -63,6 +61,72 @@ const FamilleSection = () => {
   if (familyProfile?.personne_handicapee) tags.push('Handicap');
   if (familyProfile?.nationalite && familyProfile.nationalite !== 'Française') tags.push(familyProfile.nationalite);
 
+  // Full-screen edit view
+  if (editView) {
+    const EDIT_TABS = [
+      { id: 'client' as EditView, label: clientName || 'Client' },
+      ...(hasPartner ? [{ id: 'partner' as EditView, label: partnerName || 'Partenaire' }] : []),
+    ];
+
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="border-b bg-card">
+          <div className="flex items-center gap-4 p-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setEditView(null)}
+              className="shrink-0"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+
+            {EDIT_TABS.length > 1 ? (
+              <div className="rounded-[8px] bg-muted p-[2px]">
+                <AnimatedBackground
+                  defaultValue={editView}
+                  onValueChange={(value) => {
+                    if (value) setEditView(value as EditView);
+                  }}
+                  className="rounded-lg bg-background shadow-sm"
+                  transition={{ ease: "easeInOut", duration: 0.2 }}
+                >
+                  {EDIT_TABS.map((tab) => (
+                    <button
+                      key={tab.id}
+                      data-id={tab.id}
+                      type="button"
+                      className="inline-flex min-w-32 items-center justify-center px-4 py-2 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </AnimatedBackground>
+              </div>
+            ) : (
+              <h2 className="text-lg font-semibold">{EDIT_TABS[0]?.label}</h2>
+            )}
+          </div>
+        </div>
+
+        <div className="p-6 max-w-5xl mx-auto">
+          {editView === 'client' && (
+            <FicheClientForm onSuccess={() => {
+              setEditView(null);
+              refetchProfile();
+            }} />
+          )}
+          {editView === 'partner' && (
+            <PartnerForm onSuccess={() => {
+              setEditView(null);
+              refetchMarital();
+            }} />
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const renderContent = () => {
     switch (activeTab) {
       case 'ma-famille':
@@ -74,7 +138,7 @@ const FamilleSection = () => {
             <div className="grid gap-6 md:grid-cols-2">
               {/* Carte Utilisateur */}
               <div
-                onClick={() => setIsDialogOpen(true)}
+                onClick={() => setEditView('client')}
                 className="group relative overflow-hidden rounded-3xl bg-card p-6 shadow-[12px_12px_24px_rgba(0,0,0,0.15),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.3),-12px_-12px_24px_rgba(255,255,255,0.1)] transition-all duration-500 hover:shadow-[20px_20px_40px_rgba(0,0,0,0.2),-20px_-20px_40px_rgba(255,255,255,1)] dark:hover:shadow-[20px_20px_40px_rgba(0,0,0,0.4),-20px_-20px_40px_rgba(255,255,255,0.15)] hover:scale-105 hover:-translate-y-2 cursor-pointer"
               >
                 <div className="mb-4 flex justify-center relative z-10">
@@ -132,7 +196,7 @@ const FamilleSection = () => {
 
                   {!isSingle && (
                     <button
-                      onClick={() => setIsPartnerDrawerOpen(true)}
+                      onClick={() => setEditView('partner')}
                       className="w-full h-14 flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
                     >
                       <Plus className="w-5 h-5" />
@@ -142,7 +206,7 @@ const FamilleSection = () => {
                 </div>
               ) : (
                 <div
-                  onClick={() => setIsPartnerDrawerOpen(true)}
+                  onClick={() => setEditView('partner')}
                   className="group relative overflow-hidden rounded-3xl bg-card p-6 shadow-[12px_12px_24px_rgba(0,0,0,0.15),-12px_-12px_24px_rgba(255,255,255,0.9)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.3),-12px_-12px_24px_rgba(255,255,255,0.1)] transition-all duration-500 hover:shadow-[20px_20px_40px_rgba(0,0,0,0.2),-20px_-20px_40px_rgba(255,255,255,1)] dark:hover:shadow-[20px_20px_40px_rgba(0,0,0,0.4),-20px_-20px_40px_rgba(255,255,255,0.15)] hover:scale-105 hover:-translate-y-2 cursor-pointer"
                 >
                   <div className="mb-4 flex justify-center relative z-10">
@@ -207,7 +271,6 @@ const FamilleSection = () => {
                   </div>
                 </div>
                 
-                {/* Mariages précédents */}
                 {(maritalData?.mariage_precedent_personne || maritalData?.mariage_precedent_conjoint) && (
                   <div className="pt-4 border-t border-border">
                     <p className="text-sm font-medium text-muted-foreground mb-2">Mariages précédents :</p>
@@ -249,8 +312,8 @@ const FamilleSection = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-          <LiensFamiliauxForm />
-        </CardContent>
+              <LiensFamiliauxForm />
+            </CardContent>
           </Card>
         );
       default:
@@ -271,24 +334,24 @@ const FamilleSection = () => {
         <div className="mb-6 flex justify-start">
           <div className="rounded-[8px] bg-muted p-[2px]">
             <AnimatedBackground
-            defaultValue="ma-famille"
-            onValueChange={(value) => setActiveTab(value || 'ma-famille')}
-            className="rounded-lg bg-background shadow-sm"
-            transition={{
-              ease: "easeInOut",
-              duration: 0.2,
-            }}
-          >
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                data-id={tab.id}
-                type="button"
-                className="inline-flex min-w-24 items-center justify-center px-3 py-2 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
-              >
-                {tab.label}
-              </button>
-            ))}
+              defaultValue="ma-famille"
+              onValueChange={(value) => setActiveTab(value || 'ma-famille')}
+              className="rounded-lg bg-background shadow-sm"
+              transition={{
+                ease: "easeInOut",
+                duration: 0.2,
+              }}
+            >
+              {TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  data-id={tab.id}
+                  type="button"
+                  className="inline-flex min-w-24 items-center justify-center px-3 py-2 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
+                >
+                  {tab.label}
+                </button>
+              ))}
             </AnimatedBackground>
           </div>
         </div>
@@ -296,36 +359,7 @@ const FamilleSection = () => {
         <div className="mt-6">
           {renderContent()}
         </div>
-
       </div>
-
-      {/* Dialog pour modifier les informations client */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Modifier les informations</DialogTitle>
-            <DialogDescription>Modifiez les informations, puis enregistrez.</DialogDescription>
-          </DialogHeader>
-          <FicheClientForm onSuccess={() => {
-            setIsDialogOpen(false);
-            refetchProfile();
-          }} />
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog pour modifier le partenaire */}
-      <Dialog open={isPartnerDrawerOpen} onOpenChange={setIsPartnerDrawerOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Modifier les informations du partenaire</DialogTitle>
-            <DialogDescription>Modifiez les informations, puis enregistrez.</DialogDescription>
-          </DialogHeader>
-          <PartnerForm onSuccess={() => {
-            setIsPartnerDrawerOpen(false);
-            refetchMarital();
-          }} />
-        </DialogContent>
-      </Dialog>
 
       <RelationInfoDialog
         open={isRelationInfoOpen}
