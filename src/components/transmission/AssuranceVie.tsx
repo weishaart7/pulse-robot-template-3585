@@ -431,6 +431,59 @@ export const AssuranceVie = () => {
         </Card>
       )}
 
+      {/* Beneficiary breakdown */}
+      {subscriberAge !== null && contracts.length > 0 && fiscalSummary.beneficiaireDetails.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <UserCheck className="h-4 w-4" />
+              Répartition par bénéficiaire (estimation)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {/* Header */}
+              <div className="grid grid-cols-4 gap-4 text-xs font-medium text-muted-foreground pb-2 border-b">
+                <span>Bénéficiaire</span>
+                <span className="text-right">Capital brut</span>
+                <span className="text-right">Prélèvement</span>
+                <span className="text-right">Capital net</span>
+              </div>
+              {fiscalSummary.beneficiaireDetails.map((b, i) => (
+                <div key={i} className="grid grid-cols-4 gap-4 items-center text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary shrink-0">
+                      {(b.prenom?.[0] || '').toUpperCase()}{b.nom[0]?.toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{b.prenom} {b.nom}</p>
+                      <p className="text-xs text-muted-foreground">{b.lien}</p>
+                    </div>
+                  </div>
+                  <p className="text-right font-medium">{formatCurrency(b.capitalBrut)}</p>
+                  <p className="text-right">
+                    {b.exonere ? (
+                      <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-200">Exonéré</Badge>
+                    ) : (
+                      <span className="text-destructive font-medium">- {formatCurrency(b.droits)}</span>
+                    )}
+                  </p>
+                  <p className="text-right font-semibold text-primary">{formatCurrency(b.capitalNet)}</p>
+                </div>
+              ))}
+              {/* Total row */}
+              <Separator />
+              <div className="grid grid-cols-4 gap-4 text-sm font-semibold">
+                <span>Total</span>
+                <span className="text-right">{formatCurrency(fiscalSummary.totalValeur)}</span>
+                <span className="text-right text-destructive">- {formatCurrency(fiscalSummary.totalDroits)}</span>
+                <span className="text-right text-primary">{formatCurrency(fiscalSummary.totalValeur - fiscalSummary.totalDroits)}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Liste des contrats - cliquable */}
       <Card>
         <CardHeader>
