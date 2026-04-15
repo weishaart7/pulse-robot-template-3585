@@ -70,7 +70,12 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
     rachats_programmes_periodicite: null,
   });
   const [operations, setOperations] = useState<AVOperation[]>([]);
-  const [beneficiaires, setBeneficiaires] = useState<{ nom: string; prenom: string | null; lien: string }[]>([]);
+  const [beneficiaires, setBeneficiaires] = useState<{ id: string; nom: string; prenom: string | null; lien: string }[]>([]);
+  const [conjointName, setConjointName] = useState<string | null>(null);
+  const [clauseStructuree, setClauseStructuree] = useState<ClauseStructuree>({
+    niveaux: [{ beneficiaires: [{ familyLinkId: '', nom: '', prenom: '', lien: '', pourcentage: 100, typeDetention: 'pleine-propriete' }] }],
+  });
+  const [clauseMode, setClauseMode] = useState<'libre' | 'assistee'>('libre');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
