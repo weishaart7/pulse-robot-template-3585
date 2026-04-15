@@ -204,6 +204,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
         rachats_programmes: details.rachats_programmes,
         rachats_programmes_montant: details.rachats_programmes_montant,
         rachats_programmes_periodicite: details.rachats_programmes_periodicite,
+        clause_beneficiaire_structuree: clauseMode === 'assistee' ? clauseStructuree : null,
       };
 
       if (details.id) {
