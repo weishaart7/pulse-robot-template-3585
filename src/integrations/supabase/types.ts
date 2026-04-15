@@ -307,10 +307,17 @@ export type Database = {
           frais_gestion_uc: number | null
           frais_versement: number | null
           id: string
+          objectif: string | null
           part_fonds_euros: number | null
           part_unites_compte: number | null
+          rachats_programmes: boolean | null
+          rachats_programmes_montant: number | null
+          rachats_programmes_periodicite: string | null
           updated_at: string
           user_id: string
+          versements_programmes: boolean | null
+          versements_programmes_montant: number | null
+          versements_programmes_periodicite: string | null
         }
         Insert: {
           asset_id: string
@@ -321,10 +328,17 @@ export type Database = {
           frais_gestion_uc?: number | null
           frais_versement?: number | null
           id?: string
+          objectif?: string | null
           part_fonds_euros?: number | null
           part_unites_compte?: number | null
+          rachats_programmes?: boolean | null
+          rachats_programmes_montant?: number | null
+          rachats_programmes_periodicite?: string | null
           updated_at?: string
           user_id: string
+          versements_programmes?: boolean | null
+          versements_programmes_montant?: number | null
+          versements_programmes_periodicite?: string | null
         }
         Update: {
           asset_id?: string
@@ -335,10 +349,17 @@ export type Database = {
           frais_gestion_uc?: number | null
           frais_versement?: number | null
           id?: string
+          objectif?: string | null
           part_fonds_euros?: number | null
           part_unites_compte?: number | null
+          rachats_programmes?: boolean | null
+          rachats_programmes_montant?: number | null
+          rachats_programmes_periodicite?: string | null
           updated_at?: string
           user_id?: string
+          versements_programmes?: boolean | null
+          versements_programmes_montant?: number | null
+          versements_programmes_periodicite?: string | null
         }
         Relationships: [
           {
