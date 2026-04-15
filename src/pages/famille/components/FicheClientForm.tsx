@@ -159,11 +159,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
         throw new Error('Format d\'email invalide');
       }
 
-      // Sanitize and validate all form data
-      // Détermine la profession finale : si professionLibre est rempli, on l'utilise, sinon on prend profession du select
-      const professionFinale = formData.professionLibre?.trim() 
-        ? formData.professionLibre.trim() 
-        : (formData.profession || '');
+      const professionFinale = formData.professionLibre?.trim() || '';
       
       const sanitizedFormData = {
         civilite: formData.civilite,
@@ -426,40 +422,13 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                 <FormField
                   control={form.control}
-                  name="profession"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="relative w-full flex flex-col gap-1">
-                        <FormLabel className="text-xs">Profession</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || undefined}>
-                          <FormControl>
-                            <SelectTrigger size="lg">
-                              <SelectValue placeholder="Sélectionner une profession" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {professions.map((profession) => (
-                              <SelectItem key={profession} value={profession}>
-                                {profession}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
                   name="professionLibre"
                   render={({ field }) => (
                     <FormItem className="space-y-1">
                       <FormControl>
                         <ActionHubInput
-                          label="Profession (libellé libre)"
-                          placeholder="Description libre de la profession"
+                          label="Profession"
+                          placeholder="Profession"
                           value={field.value}
                           onChange={field.onChange}
                           historyEnabled={false}
