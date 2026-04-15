@@ -54,6 +54,11 @@ export const Synthese = () => {
         .select('*')
         .eq('user_id', user!.id);
 
+      // Calculer le total des assurances-vie (hors succession)
+      const totalAV = (assets || [])
+        .filter(a => a.nature === 'assurance-vie')
+        .reduce((sum, a) => sum + (Number(a.valeur_estimee) || 0), 0);
+
       // Récupérer les passifs (charges)
       const { data: charges } = await supabase
         .from('charges')
@@ -71,7 +76,7 @@ export const Synthese = () => {
       (family as any).hasDDV = !!maritalStatus?.donation_dernier_vivant_personne || !!maritalStatus?.donation_dernier_vivant_conjoint;
       
       // Construire le patrimoine
-      const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], charges || []);
+      const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], charges || [], totalAV);
       // Asset portfolio analysis completed
       
       // Transformer les libéralités
@@ -274,14 +279,15 @@ export const Synthese = () => {
     };
   };
 
-  const buildPatrimonySnapshot = (assets: any[], charges: any[]): PatrimonySnapshot => {
+  const buildPatrimonySnapshot = (assets: any[], charges: any[], assuranceVieTotal: number = 0): PatrimonySnapshot => {
     const totalActifs = assets.reduce((sum, asset) => sum + (Number(asset.valeur_estimee) || 0), 0);
     const totalPassifs = charges.reduce((sum, charge) => sum + (Number(charge.montant) || 0), 0);
 
     return {
       date: new Date().toISOString().split('T')[0],
       biensExistants: totalActifs,
-      passifs: totalPassifs
+      passifs: totalPassifs,
+      assuranceVieTotal
     };
   };
 

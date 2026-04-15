@@ -127,9 +127,11 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // Frais de notaire sur l'actif brut
   const notaryFeesResult = computeNotaryFees(patrimony.biensExistants, params);
   
-  // Transmission nette = actif - passif - droits - frais
-  const transmissionNette = patrimony.biensExistants - patrimony.passifs - 
-                           totalDroitsSuccession - total990I - notaryFeesResult.frais;
+  // Transmission nette = actif (hors AV) - passif - droits - frais
+  // Les capitaux AV sont hors succession, on les soustrait de l'actif brut
+  const actifHorsAV = patrimony.biensExistants - (patrimony.assuranceVieTotal || 0);
+  const transmissionNette = actifHorsAV - patrimony.passifs - 
+                           totalDroitsSuccession - notaryFeesResult.frais;
   
   return {
     masseCalcul: reserveResult.masseCalcul,
