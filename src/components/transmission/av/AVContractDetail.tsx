@@ -9,13 +9,15 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft, Calendar, TrendingUp, TrendingDown, Shield, Users, FileText, Info, Settings, Target, RefreshCw, UserCheck } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { ArrowLeft, Calendar, TrendingUp, TrendingDown, Shield, Users, FileText, Info, Settings, Target, RefreshCw, UserCheck, PenLine, Wand2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Asset } from '@/services/assetService';
 import { formatCurrency } from '@/lib/patrimoine/utils';
 import { toast } from 'sonner';
 import { AVFiscalInfo } from './AVFiscalInfo';
 import { AVOperationsTable } from './AVOperationsTable';
+import { ClauseBeneficiaireBuilder, ClauseStructuree } from './ClauseBeneficiaireBuilder';
 
 interface AVContractDetailProps {
   contract: Asset;
