@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { Asset } from '@/services/assetService';
 import { formatCurrency } from '@/lib/patrimoine/utils';
-import { Shield, FileText, AlertTriangle, ArrowRight, ChevronRight, Scale } from 'lucide-react';
+import { Shield, FileText, AlertTriangle, ArrowRight, ChevronRight, Scale, UserCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -21,6 +21,12 @@ interface OperationsByContract {
   [assetId: string]: { type_operation: string; montant: number }[];
 }
 
+interface Beneficiaire {
+  nom: string;
+  prenom: string | null;
+  lien: string;
+}
+
 export const AssuranceVie = () => {
   const [contracts, setContracts] = useState<Asset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,6 +35,8 @@ export const AssuranceVie = () => {
   const [isCouple, setIsCouple] = useState(false);
   const [operationsByContract, setOperationsByContract] = useState<OperationsByContract>({});
   const [nbBeneficiaires, setNbBeneficiaires] = useState(1);
+  const [beneficiaires, setBeneficiaires] = useState<Beneficiaire[]>([]);
+  const [conjointName, setConjointName] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -51,12 +59,12 @@ export const AssuranceVie = () => {
             .maybeSingle(),
           supabase
             .from('marital_status')
-            .select('statut_couple')
+            .select('statut_couple, nom_conjoint, prenom_conjoint')
             .eq('user_id', user.id)
             .maybeSingle(),
           supabase
             .from('family_links')
-            .select('id')
+            .select('nom, prenom, lien_familial')
             .eq('user_id', user.id),
         ]);
 
@@ -70,8 +78,24 @@ export const AssuranceVie = () => {
           setSubscriberAge(age);
         }
         const statut = maritalRes.data?.statut_couple || null;
-        setIsCouple(['Marié(e)', 'Pacsé(e)'].includes(statut || ''));
-        setNbBeneficiaires(Math.max(1, familyRes.data?.length || 1));
+        const coupleStatus = ['Marié(e)', 'Pacsé(e)'].includes(statut || '');
+        setIsCouple(coupleStatus);
+
+        const familyMembers = (familyRes.data || []).map((f: any) => ({
+          nom: f.nom,
+          prenom: f.prenom,
+          lien: f.lien_familial,
+        }));
+        setBeneficiaires(familyMembers);
+        setNbBeneficiaires(Math.max(1, familyMembers.length));
+
+        // Get spouse name if couple
+        if (coupleStatus && maritalRes.data) {
+          const ms = maritalRes.data as any;
+          if (ms.nom_conjoint || ms.prenom_conjoint) {
+            setConjointName(`${ms.prenom_conjoint || ''} ${ms.nom_conjoint || ''}`.trim());
+          }
+        }
 
         // Fetch all operations for these contracts
         if (avContracts.length > 0) {
@@ -100,28 +124,21 @@ export const AssuranceVie = () => {
     fetchData();
   }, []);
 
-  // Compute 990I / 757B totals
+  // Compute 990I / 757B totals and per-beneficiary breakdown
   const fiscalSummary = useMemo(() => {
-    // Total value of all contracts split by regime based on subscriber age
     const totalValeur = contracts.reduce((sum, c) => sum + (c.valeur_estimee || 0), 0);
 
-    // Total versements across all contracts
-    const totalVersements = Object.values(operationsByContract)
-      .flat()
-      .filter(op => op.type_operation === 'versement')
-      .reduce((sum, op) => sum + op.montant, 0);
-
-    // Use contract values for the split
-    // If age < 70 → all under 990I, else all under 757B
-    // In reality it depends on age at time of payment, simplified here
     const is990I = subscriberAge !== null && subscriberAge < 70;
     const montant990I = is990I ? totalValeur : 0;
     const montant757B = !is990I && subscriberAge !== null ? totalValeur : 0;
 
-    // 990I taxation: 152,500€ abattement per beneficiary
-    const abattement990I = 152500 * nbBeneficiaires;
+    // Count non-spouse beneficiaries for taxation (spouse is always exempt)
+    const nonSpouseBeneficiaires = beneficiaires.filter(b => b.lien !== 'Conjoint');
+    const nbTaxable = Math.max(1, nonSpouseBeneficiaires.length);
+
+    // 990I: 152,500€ per taxable beneficiary
+    const abattement990I = 152500 * nbTaxable;
     const assiette990I = Math.max(0, montant990I - abattement990I);
-    // 20% up to 700,000€ (after abattement), 31.25% beyond
     const seuil700k = 700000;
     let droits990I = 0;
     if (assiette990I > 0) {
@@ -130,11 +147,51 @@ export const AssuranceVie = () => {
       droits990I = tranche1 * 0.20 + tranche2 * 0.3125;
     }
 
-    // 757B taxation: 30,500€ global abattement, excess taxed at inheritance rates
-    // Simplified: use average rate of ~20% for illustration
+    // 757B: 30,500€ global abattement
     const abattement757B = 30500;
     const assiette757B = Math.max(0, montant757B - abattement757B);
-    const droits757B = assiette757B * 0.20; // simplified
+    const droits757B = assiette757B * 0.20;
+
+    const totalDroits = droits990I + droits757B;
+
+    // Per-beneficiary breakdown (equal split assumed)
+    const allBenefs = beneficiaires.length > 0 ? beneficiaires : [{ nom: 'Bénéficiaire', prenom: null, lien: 'Non renseigné' }];
+    const capitalParBenef = totalValeur / Math.max(1, allBenefs.length);
+
+    const beneficiaireDetails = allBenefs.map(b => {
+      const isSpouse = b.lien === 'Conjoint';
+      if (isSpouse) {
+        return {
+          ...b,
+          capitalBrut: capitalParBenef,
+          droits: 0,
+          capitalNet: capitalParBenef,
+          exonere: true,
+        };
+      }
+
+      // Taxable beneficiary
+      let droitsBenef = 0;
+      if (is990I) {
+        const assietteBenef = Math.max(0, capitalParBenef - 152500);
+        const t1 = Math.min(assietteBenef, seuil700k);
+        const t2 = Math.max(0, assietteBenef - seuil700k);
+        droitsBenef = t1 * 0.20 + t2 * 0.3125;
+      } else if (subscriberAge !== null) {
+        // 757B: share of global abattement
+        const abattShare = abattement757B / nbTaxable;
+        const assietteBenef = Math.max(0, capitalParBenef - abattShare);
+        droitsBenef = assietteBenef * 0.20;
+      }
+
+      return {
+        ...b,
+        capitalBrut: capitalParBenef,
+        droits: droitsBenef,
+        capitalNet: capitalParBenef - droitsBenef,
+        exonere: false,
+      };
+    });
 
     return {
       montant990I,
@@ -146,8 +203,11 @@ export const AssuranceVie = () => {
       droits990I,
       droits757B,
       totalValeur,
+      totalDroits,
+      beneficiaireDetails,
+      nbTaxable,
     };
-  }, [contracts, operationsByContract, subscriberAge, nbBeneficiaires]);
+  }, [contracts, operationsByContract, subscriberAge, nbBeneficiaires, beneficiaires]);
 
   // If a contract is selected, show the detail view
   if (selectedContract) {
@@ -292,7 +352,7 @@ export const AssuranceVie = () => {
                     <span className="font-medium">{formatCurrency(fiscalSummary.montant990I)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Abattement ({nbBeneficiaires} bénéf. × 152 500 €)</span>
+                    <span className="text-muted-foreground">Abattement ({fiscalSummary.nbTaxable} bénéf. × 152 500 €)</span>
                     <span className="font-medium text-emerald-600">- {formatCurrency(Math.min(fiscalSummary.abattement990I, fiscalSummary.montant990I))}</span>
                   </div>
                   <Separator />
@@ -366,6 +426,59 @@ export const AssuranceVie = () => {
                 En réalité, le régime applicable dépend de l'âge au moment de chaque versement. 
                 Le conjoint ou partenaire de PACS est exonéré dans tous les cas.
               </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Beneficiary breakdown */}
+      {subscriberAge !== null && contracts.length > 0 && fiscalSummary.beneficiaireDetails.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <UserCheck className="h-4 w-4" />
+              Répartition par bénéficiaire (estimation)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {/* Header */}
+              <div className="grid grid-cols-4 gap-4 text-xs font-medium text-muted-foreground pb-2 border-b">
+                <span>Bénéficiaire</span>
+                <span className="text-right">Capital brut</span>
+                <span className="text-right">Prélèvement</span>
+                <span className="text-right">Capital net</span>
+              </div>
+              {fiscalSummary.beneficiaireDetails.map((b, i) => (
+                <div key={i} className="grid grid-cols-4 gap-4 items-center text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary shrink-0">
+                      {(b.prenom?.[0] || '').toUpperCase()}{b.nom[0]?.toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{b.prenom} {b.nom}</p>
+                      <p className="text-xs text-muted-foreground">{b.lien}</p>
+                    </div>
+                  </div>
+                  <p className="text-right font-medium">{formatCurrency(b.capitalBrut)}</p>
+                  <p className="text-right">
+                    {b.exonere ? (
+                      <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-200">Exonéré</Badge>
+                    ) : (
+                      <span className="text-destructive font-medium">- {formatCurrency(b.droits)}</span>
+                    )}
+                  </p>
+                  <p className="text-right font-semibold text-primary">{formatCurrency(b.capitalNet)}</p>
+                </div>
+              ))}
+              {/* Total row */}
+              <Separator />
+              <div className="grid grid-cols-4 gap-4 text-sm font-semibold">
+                <span>Total</span>
+                <span className="text-right">{formatCurrency(fiscalSummary.totalValeur)}</span>
+                <span className="text-right text-destructive">- {formatCurrency(fiscalSummary.totalDroits)}</span>
+                <span className="text-right text-primary">{formatCurrency(fiscalSummary.totalValeur - fiscalSummary.totalDroits)}</span>
+              </div>
             </div>
           </CardContent>
         </Card>
