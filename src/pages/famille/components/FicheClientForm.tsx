@@ -159,11 +159,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
         throw new Error('Format d\'email invalide');
       }
 
-      // Sanitize and validate all form data
-      // Détermine la profession finale : si professionLibre est rempli, on l'utilise, sinon on prend profession du select
-      const professionFinale = formData.professionLibre?.trim() 
-        ? formData.professionLibre.trim() 
-        : (formData.profession || '');
+      const professionFinale = formData.professionLibre?.trim() || '';
       
       const sanitizedFormData = {
         civilite: formData.civilite,
