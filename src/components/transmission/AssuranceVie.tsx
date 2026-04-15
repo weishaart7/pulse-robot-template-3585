@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { Asset } from '@/services/assetService';
 import { formatCurrency } from '@/lib/patrimoine/utils';
-import { Shield, FileText, AlertTriangle, ArrowRight, ChevronRight } from 'lucide-react';
+import { Shield, FileText, AlertTriangle, ArrowRight, ChevronRight, Scale } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -17,12 +17,18 @@ const AV_NATURES = [
   "Bons & contrats de capitalisation",
 ];
 
+interface OperationsByContract {
+  [assetId: string]: { type_operation: string; montant: number }[];
+}
+
 export const AssuranceVie = () => {
   const [contracts, setContracts] = useState<Asset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedContract, setSelectedContract] = useState<Asset | null>(null);
   const [subscriberAge, setSubscriberAge] = useState<number | null>(null);
   const [isCouple, setIsCouple] = useState(false);
+  const [operationsByContract, setOperationsByContract] = useState<OperationsByContract>({});
+  const [nbBeneficiaires, setNbBeneficiaires] = useState(1);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,7 +37,7 @@ export const AssuranceVie = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const [contractsRes, profileRes, maritalRes] = await Promise.all([
+        const [contractsRes, profileRes, maritalRes, familyRes] = await Promise.all([
           supabase
             .from('assets')
             .select('*')
@@ -48,9 +54,15 @@ export const AssuranceVie = () => {
             .select('statut_couple')
             .eq('user_id', user.id)
             .maybeSingle(),
+          supabase
+            .from('family_links')
+            .select('id')
+            .eq('user_id', user.id),
         ]);
 
-        if (contractsRes.data) setContracts(contractsRes.data || []);
+        const avContracts = contractsRes.data || [];
+        setContracts(avContracts);
+
         if (profileRes.data?.date_naissance) {
           const birth = new Date(profileRes.data.date_naissance);
           const now = new Date();
@@ -59,6 +71,25 @@ export const AssuranceVie = () => {
         }
         const statut = maritalRes.data?.statut_couple || null;
         setIsCouple(['Marié(e)', 'Pacsé(e)'].includes(statut || ''));
+        setNbBeneficiaires(Math.max(1, familyRes.data?.length || 1));
+
+        // Fetch all operations for these contracts
+        if (avContracts.length > 0) {
+          const assetIds = avContracts.map(c => c.id);
+          const { data: opsData } = await supabase
+            .from('av_operations')
+            .select('asset_id, type_operation, montant')
+            .in('asset_id', assetIds);
+
+          if (opsData) {
+            const grouped: OperationsByContract = {};
+            opsData.forEach((op: any) => {
+              if (!grouped[op.asset_id]) grouped[op.asset_id] = [];
+              grouped[op.asset_id].push({ type_operation: op.type_operation, montant: op.montant });
+            });
+            setOperationsByContract(grouped);
+          }
+        }
       } catch (error) {
         console.error('Error fetching AV contracts:', error);
       } finally {
@@ -69,11 +100,59 @@ export const AssuranceVie = () => {
     fetchData();
   }, []);
 
+  // Compute 990I / 757B totals
+  const fiscalSummary = useMemo(() => {
+    // Total value of all contracts split by regime based on subscriber age
+    const totalValeur = contracts.reduce((sum, c) => sum + (c.valeur_estimee || 0), 0);
+
+    // Total versements across all contracts
+    const totalVersements = Object.values(operationsByContract)
+      .flat()
+      .filter(op => op.type_operation === 'versement')
+      .reduce((sum, op) => sum + op.montant, 0);
+
+    // Use contract values for the split
+    // If age < 70 → all under 990I, else all under 757B
+    // In reality it depends on age at time of payment, simplified here
+    const is990I = subscriberAge !== null && subscriberAge < 70;
+    const montant990I = is990I ? totalValeur : 0;
+    const montant757B = !is990I && subscriberAge !== null ? totalValeur : 0;
+
+    // 990I taxation: 152,500€ abattement per beneficiary
+    const abattement990I = 152500 * nbBeneficiaires;
+    const assiette990I = Math.max(0, montant990I - abattement990I);
+    // 20% up to 700,000€ (after abattement), 31.25% beyond
+    const seuil700k = 700000;
+    let droits990I = 0;
+    if (assiette990I > 0) {
+      const tranche1 = Math.min(assiette990I, seuil700k);
+      const tranche2 = Math.max(0, assiette990I - seuil700k);
+      droits990I = tranche1 * 0.20 + tranche2 * 0.3125;
+    }
+
+    // 757B taxation: 30,500€ global abattement, excess taxed at inheritance rates
+    // Simplified: use average rate of ~20% for illustration
+    const abattement757B = 30500;
+    const assiette757B = Math.max(0, montant757B - abattement757B);
+    const droits757B = assiette757B * 0.20; // simplified
+
+    return {
+      montant990I,
+      montant757B,
+      abattement990I,
+      abattement757B,
+      assiette990I,
+      assiette757B,
+      droits990I,
+      droits757B,
+      totalValeur,
+    };
+  }, [contracts, operationsByContract, subscriberAge, nbBeneficiaires]);
+
   // If a contract is selected, show the detail view
   if (selectedContract) {
     return (
       <div className="space-y-4">
-        {/* Tabs to switch between contracts */}
         {contracts.length > 1 && (
           <div className="flex gap-2 overflow-x-auto pb-2">
             {contracts.map((c) => (
@@ -187,6 +266,110 @@ export const AssuranceVie = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Fiscal 990I / 757B summary */}
+      {subscriberAge !== null && contracts.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Scale className="h-4 w-4" />
+              Répartition fiscale en cas de décès
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* 990I */}
+              <div className="space-y-3 p-4 rounded-lg bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="default">Art. 990 I</Badge>
+                    <span className="text-xs text-muted-foreground">Primes avant 70 ans</span>
+                  </div>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Capitaux taxables</span>
+                    <span className="font-medium">{formatCurrency(fiscalSummary.montant990I)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Abattement ({nbBeneficiaires} bénéf. × 152 500 €)</span>
+                    <span className="font-medium text-emerald-600">- {formatCurrency(Math.min(fiscalSummary.abattement990I, fiscalSummary.montant990I))}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Assiette taxable</span>
+                    <span className="font-medium">{formatCurrency(fiscalSummary.assiette990I)}</span>
+                  </div>
+                  {fiscalSummary.assiette990I > 0 && (
+                    <>
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Jusqu'à 700 000 € → 20 %</span>
+                        <span>{formatCurrency(Math.min(fiscalSummary.assiette990I, 700000) * 0.20)}</span>
+                      </div>
+                      {fiscalSummary.assiette990I > 700000 && (
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Au-delà → 31,25 %</span>
+                          <span>{formatCurrency((fiscalSummary.assiette990I - 700000) * 0.3125)}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  <Separator />
+                  <div className="flex justify-between font-semibold">
+                    <span>Prélèvement estimé</span>
+                    <span className="text-destructive">{formatCurrency(fiscalSummary.droits990I)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 757B */}
+              <div className="space-y-3 p-4 rounded-lg bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">Art. 757 B</Badge>
+                    <span className="text-xs text-muted-foreground">Primes après 70 ans</span>
+                  </div>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Capitaux taxables</span>
+                    <span className="font-medium">{formatCurrency(fiscalSummary.montant757B)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Abattement global</span>
+                    <span className="font-medium text-emerald-600">- {formatCurrency(Math.min(30500, fiscalSummary.montant757B))}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Assiette taxable</span>
+                    <span className="font-medium">{formatCurrency(fiscalSummary.assiette757B)}</span>
+                  </div>
+                  {fiscalSummary.assiette757B > 0 && (
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Soumis aux droits de succession</span>
+                      <span>≈ 20 %</span>
+                    </div>
+                  )}
+                  <Separator />
+                  <div className="flex justify-between font-semibold">
+                    <span>Droits estimés</span>
+                    <span className="text-destructive">{formatCurrency(fiscalSummary.droits757B)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-start gap-2 p-3 rounded-lg bg-muted/50">
+              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-muted-foreground">
+                Estimation simplifiée basée sur l'âge actuel du souscripteur ({subscriberAge} ans). 
+                En réalité, le régime applicable dépend de l'âge au moment de chaque versement. 
+                Le conjoint ou partenaire de PACS est exonéré dans tous les cas.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Liste des contrats - cliquable */}
       <Card>
