@@ -1,0 +1,2 @@
+ALTER TABLE public.av_contract_details
+ADD COLUMN clause_beneficiaire_structuree jsonb DEFAULT NULL;

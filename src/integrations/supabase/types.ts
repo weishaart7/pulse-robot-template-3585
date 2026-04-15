@@ -301,6 +301,7 @@ export type Database = {
         Row: {
           asset_id: string
           clause_beneficiaire: string | null
+          clause_beneficiaire_structuree: Json | null
           created_at: string
           frais_arbitrage: number | null
           frais_gestion_euros: number | null
@@ -322,6 +323,7 @@ export type Database = {
         Insert: {
           asset_id: string
           clause_beneficiaire?: string | null
+          clause_beneficiaire_structuree?: Json | null
           created_at?: string
           frais_arbitrage?: number | null
           frais_gestion_euros?: number | null
@@ -343,6 +345,7 @@ export type Database = {
         Update: {
           asset_id?: string
           clause_beneficiaire?: string | null
+          clause_beneficiaire_structuree?: Json | null
           created_at?: string
           frais_arbitrage?: number | null
           frais_gestion_euros?: number | null
