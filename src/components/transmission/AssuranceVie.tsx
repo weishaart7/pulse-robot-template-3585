@@ -124,28 +124,21 @@ export const AssuranceVie = () => {
     fetchData();
   }, []);
 
-  // Compute 990I / 757B totals
+  // Compute 990I / 757B totals and per-beneficiary breakdown
   const fiscalSummary = useMemo(() => {
-    // Total value of all contracts split by regime based on subscriber age
     const totalValeur = contracts.reduce((sum, c) => sum + (c.valeur_estimee || 0), 0);
 
-    // Total versements across all contracts
-    const totalVersements = Object.values(operationsByContract)
-      .flat()
-      .filter(op => op.type_operation === 'versement')
-      .reduce((sum, op) => sum + op.montant, 0);
-
-    // Use contract values for the split
-    // If age < 70 → all under 990I, else all under 757B
-    // In reality it depends on age at time of payment, simplified here
     const is990I = subscriberAge !== null && subscriberAge < 70;
     const montant990I = is990I ? totalValeur : 0;
     const montant757B = !is990I && subscriberAge !== null ? totalValeur : 0;
 
-    // 990I taxation: 152,500€ abattement per beneficiary
-    const abattement990I = 152500 * nbBeneficiaires;
+    // Count non-spouse beneficiaries for taxation (spouse is always exempt)
+    const nonSpouseBeneficiaires = beneficiaires.filter(b => b.lien !== 'Conjoint');
+    const nbTaxable = Math.max(1, nonSpouseBeneficiaires.length);
+
+    // 990I: 152,500€ per taxable beneficiary
+    const abattement990I = 152500 * nbTaxable;
     const assiette990I = Math.max(0, montant990I - abattement990I);
-    // 20% up to 700,000€ (after abattement), 31.25% beyond
     const seuil700k = 700000;
     let droits990I = 0;
     if (assiette990I > 0) {
@@ -154,11 +147,51 @@ export const AssuranceVie = () => {
       droits990I = tranche1 * 0.20 + tranche2 * 0.3125;
     }
 
-    // 757B taxation: 30,500€ global abattement, excess taxed at inheritance rates
-    // Simplified: use average rate of ~20% for illustration
+    // 757B: 30,500€ global abattement
     const abattement757B = 30500;
     const assiette757B = Math.max(0, montant757B - abattement757B);
-    const droits757B = assiette757B * 0.20; // simplified
+    const droits757B = assiette757B * 0.20;
+
+    const totalDroits = droits990I + droits757B;
+
+    // Per-beneficiary breakdown (equal split assumed)
+    const allBenefs = beneficiaires.length > 0 ? beneficiaires : [{ nom: 'Bénéficiaire', prenom: null, lien: 'Non renseigné' }];
+    const capitalParBenef = totalValeur / Math.max(1, allBenefs.length);
+
+    const beneficiaireDetails = allBenefs.map(b => {
+      const isSpouse = b.lien === 'Conjoint';
+      if (isSpouse) {
+        return {
+          ...b,
+          capitalBrut: capitalParBenef,
+          droits: 0,
+          capitalNet: capitalParBenef,
+          exonere: true,
+        };
+      }
+
+      // Taxable beneficiary
+      let droitsBenef = 0;
+      if (is990I) {
+        const assietteBenef = Math.max(0, capitalParBenef - 152500);
+        const t1 = Math.min(assietteBenef, seuil700k);
+        const t2 = Math.max(0, assietteBenef - seuil700k);
+        droitsBenef = t1 * 0.20 + t2 * 0.3125;
+      } else if (subscriberAge !== null) {
+        // 757B: share of global abattement
+        const abattShare = abattement757B / nbTaxable;
+        const assietteBenef = Math.max(0, capitalParBenef - abattShare);
+        droitsBenef = assietteBenef * 0.20;
+      }
+
+      return {
+        ...b,
+        capitalBrut: capitalParBenef,
+        droits: droitsBenef,
+        capitalNet: capitalParBenef - droitsBenef,
+        exonere: false,
+      };
+    });
 
     return {
       montant990I,
@@ -170,8 +203,11 @@ export const AssuranceVie = () => {
       droits990I,
       droits757B,
       totalValeur,
+      totalDroits,
+      beneficiaireDetails,
+      nbTaxable,
     };
-  }, [contracts, operationsByContract, subscriberAge, nbBeneficiaires]);
+  }, [contracts, operationsByContract, subscriberAge, nbBeneficiaires, beneficiaires]);
 
   // If a contract is selected, show the detail view
   if (selectedContract) {
