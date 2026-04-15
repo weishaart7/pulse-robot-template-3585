@@ -610,13 +610,48 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
                 Clause bénéficiaire
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <Textarea
-                placeholder="Ex: Mon conjoint, à défaut mes enfants nés ou à naître, vivants ou représentés, par parts égales entre eux, à défaut mes héritiers."
-                value={details.clause_beneficiaire}
-                onChange={(e) => setDetails(prev => ({ ...prev, clause_beneficiaire: e.target.value }))}
-                rows={5}
-              />
+            <CardContent className="space-y-4">
+              <Tabs value={clauseMode} onValueChange={(v) => setClauseMode(v as 'libre' | 'assistee')}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="assistee" className="gap-1.5">
+                    <Wand2 className="h-3.5 w-3.5" />
+                    Rédaction assistée
+                  </TabsTrigger>
+                  <TabsTrigger value="libre" className="gap-1.5">
+                    <PenLine className="h-3.5 w-3.5" />
+                    Rédaction libre
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="assistee" className="mt-4">
+                  {beneficiaires.length > 0 || conjointName ? (
+                    <ClauseBeneficiaireBuilder
+                      clause={clauseStructuree}
+                      onChange={setClauseStructuree}
+                      familyMembers={beneficiaires}
+                      conjointName={conjointName}
+                      contractValue={contract.valeur_estimee || 0}
+                    />
+                  ) : (
+                    <div className="py-6 text-center space-y-2">
+                      <Users className="h-8 w-8 mx-auto text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">
+                        Ajoutez vos proches dans la section Famille pour utiliser la rédaction assistée.
+                      </p>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="libre" className="mt-4 space-y-3">
+                  <Textarea
+                    placeholder="Ex: Mon conjoint, à défaut mes enfants nés ou à naître, vivants ou représentés, par parts égales entre eux, à défaut mes héritiers."
+                    value={details.clause_beneficiaire}
+                    onChange={(e) => setDetails(prev => ({ ...prev, clause_beneficiaire: e.target.value }))}
+                    rows={5}
+                  />
+                </TabsContent>
+              </Tabs>
+
               <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50">
                 <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground">
