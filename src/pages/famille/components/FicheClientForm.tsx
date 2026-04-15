@@ -110,17 +110,26 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
   // Charger les données depuis Supabase
   useEffect(() => {
     if (data) {
-      // Déterminer si la profession est prédéfinie ou libre
-      const isPredefinedProfession = data.profession && professions.includes(data.profession);
+      // Unescape HTML entities that may have been stored by sanitizeTextInput
+      const unescapeHtml = (str: string) =>
+        str
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#x27;/g, "'")
+          .replace(/&#x2F;/g, '/');
+
+      const rawProfession = data.profession ? unescapeHtml(data.profession) : '';
+      const isPredefinedProfession = rawProfession && professions.includes(rawProfession);
       
       const formattedData = {
         civilite: (data.civility as 'M' | 'Mme' | 'Autre') || undefined,
-        nom: data.nom || '',
-        nomJeuneFille: (data as any).nom_jeune_fille || '',
-        prenom: data.prenom || '',
+        nom: data.nom ? unescapeHtml(data.nom) : '',
+        nomJeuneFille: (data as any).nom_jeune_fille ? unescapeHtml((data as any).nom_jeune_fille) : '',
+        prenom: data.prenom ? unescapeHtml(data.prenom) : '',
         dateNaissance: data.date_naissance ? new Date(data.date_naissance) : undefined,
-        profession: isPredefinedProfession ? data.profession : '',
-        professionLibre: !isPredefinedProfession ? (data.profession || '') : '',
+        profession: isPredefinedProfession ? rawProfession : '',
+        professionLibre: !isPredefinedProfession ? rawProfession : '',
         communeNaissance: data.commune_naissance || '',
         paysNaissance: data.pays_naissance || '',
         nationalite: data.nationalite || '',
