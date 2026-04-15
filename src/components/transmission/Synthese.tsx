@@ -54,6 +54,11 @@ export const Synthese = () => {
         .select('*')
         .eq('user_id', user!.id);
 
+      // Calculer le total des assurances-vie (hors succession)
+      const totalAV = (assets || [])
+        .filter(a => a.nature === 'assurance-vie')
+        .reduce((sum, a) => sum + (Number(a.valeur_estimee) || 0), 0);
+
       // Récupérer les passifs (charges)
       const { data: charges } = await supabase
         .from('charges')
