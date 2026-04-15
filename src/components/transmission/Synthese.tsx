@@ -76,7 +76,7 @@ export const Synthese = () => {
       (family as any).hasDDV = !!maritalStatus?.donation_dernier_vivant_personne || !!maritalStatus?.donation_dernier_vivant_conjoint;
       
       // Construire le patrimoine
-      const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], charges || []);
+      const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], charges || [], totalAV);
       // Asset portfolio analysis completed
       
       // Transformer les libéralités
