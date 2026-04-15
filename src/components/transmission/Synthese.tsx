@@ -279,14 +279,15 @@ export const Synthese = () => {
     };
   };
 
-  const buildPatrimonySnapshot = (assets: any[], charges: any[]): PatrimonySnapshot => {
+  const buildPatrimonySnapshot = (assets: any[], charges: any[], assuranceVieTotal: number = 0): PatrimonySnapshot => {
     const totalActifs = assets.reduce((sum, asset) => sum + (Number(asset.valeur_estimee) || 0), 0);
     const totalPassifs = charges.reduce((sum, charge) => sum + (Number(charge.montant) || 0), 0);
 
     return {
       date: new Date().toISOString().split('T')[0],
       biensExistants: totalActifs,
-      passifs: totalPassifs
+      passifs: totalPassifs,
+      assuranceVieTotal
     };
   };
 
