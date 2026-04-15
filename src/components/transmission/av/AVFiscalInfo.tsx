@@ -7,9 +7,12 @@ interface AVFiscalInfoProps {
   fiscalRegime: string;
   contractAge: number;
   subscriberAge: number | null;
+  isCouple: boolean;
 }
 
-export const AVFiscalInfo: React.FC<AVFiscalInfoProps> = ({ fiscalRegime, contractAge, subscriberAge }) => {
+export const AVFiscalInfo: React.FC<AVFiscalInfoProps> = ({ fiscalRegime, contractAge, subscriberAge, isCouple }) => {
+  const abattement = isCouple ? '9 200 €' : '4 600 €';
+
   const getRegimeLabel = () => {
     switch (fiscalRegime) {
       case 'avant_1997': return 'Avant le 26/09/1997';
@@ -38,48 +41,44 @@ export const AVFiscalInfo: React.FC<AVFiscalInfoProps> = ({ fiscalRegime, contra
       case 'entre_1997_2017':
         return (
           <div className="space-y-3">
-            <div>
-              <p className="text-sm font-medium mb-1">
-                {contractAge < 8 ? '⏱ Durée < 8 ans' : '✅ Durée ≥ 8 ans'}
-              </p>
-              {contractAge < 8 ? (
-                <ul className="text-sm space-y-1 text-muted-foreground list-disc list-inside">
-                  <li>IR : {contractAge < 4 ? '35%' : '15%'} (ou TMI sur option)</li>
-                  <li>PS : 17,2%</li>
-                </ul>
-              ) : (
-                <ul className="text-sm space-y-1 text-muted-foreground list-disc list-inside">
-                  <li>Abattement : {subscriberAge !== null && (subscriberAge >= 18) ? '4 600 €' : '4 600 €'} (célibataire) / 9 200 € (couple)</li>
-                  <li>IR : 7,5% sur l'excédent</li>
-                  <li>PS : 17,2%</li>
-                </ul>
-              )}
-            </div>
+            <p className="text-sm font-medium">
+              {contractAge < 8 ? '⏱ Durée < 8 ans' : '✅ Durée ≥ 8 ans'}
+            </p>
+            {contractAge < 8 ? (
+              <ul className="text-sm space-y-1 text-muted-foreground list-disc list-inside">
+                <li>IR : {contractAge < 4 ? '35%' : '15%'} (ou TMI sur option)</li>
+                <li>PS : 17,2%</li>
+              </ul>
+            ) : (
+              <ul className="text-sm space-y-1 text-muted-foreground list-disc list-inside">
+                <li>Abattement : {abattement} {isCouple ? '(couple marié/pacsé)' : '(célibataire)'}</li>
+                <li>IR : 7,5% sur l'excédent</li>
+                <li>PS : 17,2%</li>
+              </ul>
+            )}
           </div>
         );
 
       case 'apres_2017':
         return (
           <div className="space-y-3">
-            <div>
-              <p className="text-sm font-medium mb-1">
-                {contractAge < 8 ? '⏱ Durée < 8 ans' : '✅ Durée ≥ 8 ans'}
-              </p>
-              {contractAge < 8 ? (
-                <ul className="text-sm space-y-1 text-muted-foreground list-disc list-inside">
-                  <li>PFU (flat tax) : 12,8%</li>
-                  <li>PS : 17,2%</li>
-                  <li>Total : <strong>30%</strong></li>
-                </ul>
-              ) : (
-                <ul className="text-sm space-y-1 text-muted-foreground list-disc list-inside">
-                  <li>Abattement : 4 600 € (célibataire) / 9 200 € (couple)</li>
-                  <li>Versements ≤ 150 000 € : IR à 7,5%</li>
-                  <li>Versements &gt; 150 000 € : IR à 12,8% sur l'excédent</li>
-                  <li>PS : 17,2%</li>
-                </ul>
-              )}
-            </div>
+            <p className="text-sm font-medium">
+              {contractAge < 8 ? '⏱ Durée < 8 ans' : '✅ Durée ≥ 8 ans'}
+            </p>
+            {contractAge < 8 ? (
+              <ul className="text-sm space-y-1 text-muted-foreground list-disc list-inside">
+                <li>PFU (flat tax) : 12,8%</li>
+                <li>PS : 17,2%</li>
+                <li>Total : <strong>30%</strong></li>
+              </ul>
+            ) : (
+              <ul className="text-sm space-y-1 text-muted-foreground list-disc list-inside">
+                <li>Abattement : {abattement} {isCouple ? '(couple marié/pacsé)' : '(célibataire)'}</li>
+                <li>Versements ≤ 150 000 € : IR à 7,5%</li>
+                <li>Versements &gt; 150 000 € : IR à 12,8% sur l'excédent</li>
+                <li>PS : 17,2%</li>
+              </ul>
+            )}
           </div>
         );
 
