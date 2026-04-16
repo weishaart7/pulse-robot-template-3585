@@ -40,6 +40,12 @@ export const PatrimoinePlusValues = ({ onBack }: PatrimoinePlusValuesProps) => {
 
   return (
     <div className="space-y-6">
+      {onBack && (
+        <Button variant="ghost" size="sm" onClick={onBack} className="flex items-center gap-2 -ml-2">
+          <ArrowLeft className="h-4 w-4" />
+          Retour au résumé
+        </Button>
+      )}
       {/* Résumé en haut */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
