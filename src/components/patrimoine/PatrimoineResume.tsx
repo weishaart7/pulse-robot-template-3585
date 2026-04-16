@@ -6,7 +6,7 @@ import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
-import { TrendingUp, TrendingDown, Wallet, User, Users, Target } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, User, Users, Target, ArrowUpRight } from 'lucide-react';
 
 interface PatrimoineResumeProps {
   onNavigateToPlusValues?: () => void;
@@ -34,67 +34,80 @@ export const PatrimoineResume = ({ onNavigateToPlusValues }: PatrimoineResumePro
   });
 
   return (
-    <div className="space-y-6">
-      {/* Carte Répartition avec graphique et synthèse */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Répartition du patrimoine</CardTitle>
+    <div className="space-y-8">
+      {/* Top summary cards with colored top borders */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
+          <div className="h-1 bg-green-500" />
+          <div className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm text-muted-foreground font-medium">Actifs</p>
+                <p className="text-xs text-muted-foreground/70">Total de vos actifs</p>
+              </div>
+              <div className="h-9 w-9 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
+                <ArrowUpRight className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-foreground">
+              {formatCurrency(financialSummary.totalActifs)}
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
+          <div className="h-1 bg-red-500" />
+          <div className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm text-muted-foreground font-medium">Passifs</p>
+                <p className="text-xs text-muted-foreground/70">Total de vos dettes</p>
+              </div>
+              <div className="h-9 w-9 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
+                <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-foreground">
+              {formatCurrency(financialSummary.totalPassifs)}
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
+          <div className="h-1 bg-primary" />
+          <div className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm text-muted-foreground font-medium">Patrimoine net</p>
+                <p className="text-xs text-muted-foreground/70">Actifs - Passifs</p>
+              </div>
+              <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+                <Wallet className="h-4 w-4 text-primary" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-foreground">
+              {formatCurrency(financialSummary.patrimoineNet)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Chart section */}
+      <Card className="shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-semibold">Répartition du patrimoine</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Graphique à gauche */}
-            <div>
-              <PatrimoineChart assets={assets} passifs={passifs} emprunts={emprunts} selectedCategory={null} />
-            </div>
-
-            {/* Synthèse à droite */}
-            <div className="flex flex-col justify-center space-y-4">
-              <div className="flex items-center gap-4 p-5 rounded-lg border bg-card hover:border-muted-foreground/20 transition-colors duration-200">
-                <div className="p-2.5 rounded-lg bg-muted">
-                  <TrendingUp className="h-5 w-5 text-foreground" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Actifs</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {formatCurrency(financialSummary.totalActifs)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 p-5 rounded-lg border bg-card hover:border-muted-foreground/20 transition-colors duration-200">
-                <div className="p-2.5 rounded-lg bg-muted">
-                  <TrendingDown className="h-5 w-5 text-foreground" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Passifs</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {formatCurrency(financialSummary.totalPassifs)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 p-5 rounded-lg border-2 border-primary/10 bg-card hover:border-primary/30 transition-colors duration-200">
-                <div className="p-2.5 rounded-lg bg-primary/10">
-                  <Wallet className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Patrimoine net</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {formatCurrency(financialSummary.patrimoineNet)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <PatrimoineChart assets={assets} passifs={passifs} emprunts={emprunts} selectedCategory={null} />
         </CardContent>
       </Card>
 
-      {/* Ligne avec trois cartes */}
+      {/* Bottom row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Carte Patrimoine par tête */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Patrimoine par tête</CardTitle>
+        {/* Patrimoine par tête */}
+        <Card className="shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">Patrimoine par tête</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4 p-4 rounded-lg border bg-card">
@@ -141,7 +154,7 @@ export const PatrimoineResume = ({ onNavigateToPlusValues }: PatrimoineResumePro
               </div>
             )}
 
-            {/* Graphique à barres */}
+            {/* Progress bars */}
             <div className="space-y-2 pt-2">
               <div className="space-y-1">
                 <div className="flex justify-between text-xs mb-1">
@@ -182,7 +195,7 @@ export const PatrimoineResume = ({ onNavigateToPlusValues }: PatrimoineResumePro
           </CardContent>
         </Card>
 
-        {/* Carte Plus-values */}
+        {/* Plus-values card */}
         <div 
           onClick={onNavigateToPlusValues} 
           className={onNavigateToPlusValues ? 'cursor-pointer transition-transform hover:scale-[1.01]' : ''}
@@ -190,10 +203,10 @@ export const PatrimoineResume = ({ onNavigateToPlusValues }: PatrimoineResumePro
           <PlusValuesCard plusValuesSummary={plusValuesSummary} />
         </div>
 
-        {/* Carte Objectifs */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Objectifs</CardTitle>
+        {/* Objectifs */}
+        <Card className="shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">Objectifs</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col items-center justify-center py-6 text-center">
