@@ -12,25 +12,27 @@ export const PatrimoineSection = () => {
   const [activeTab, setActiveTab] = useState('resume');
   const { assets } = useAssets();
 
+  const [showPlusValuesDetail, setShowPlusValuesDetail] = useState(false);
+
   const TABS = [
     { id: 'resume', label: 'Résumé' },
     { id: 'actifs', label: 'Actifs' },
-    { id: 'passifs', label: 'Passifs' },
-    { id: 'plus-values', label: 'Plus-values' }
+    { id: 'passifs', label: 'Passifs' }
   ];
 
   const renderContent = () => {
+    if (showPlusValuesDetail) {
+      return <PatrimoinePlusValues onBack={() => setShowPlusValuesDetail(false)} />;
+    }
     switch (activeTab) {
       case 'resume':
-        return <PatrimoineResume onNavigateToPlusValues={() => setActiveTab('plus-values')} />;
+        return <PatrimoineResume onNavigateToPlusValues={() => setShowPlusValuesDetail(true)} />;
       case 'actifs':
         return <PatrimoineActifs />;
       case 'passifs':
         return <PatrimoinePassifs />;
-      case 'plus-values':
-        return <PatrimoinePlusValues />;
       default:
-        return <PatrimoineResume onNavigateToPlusValues={() => setActiveTab('plus-values')} />;
+        return <PatrimoineResume onNavigateToPlusValues={() => setShowPlusValuesDetail(true)} />;
     }
   };
 
