@@ -5,6 +5,7 @@ import AnimatedBackground from '@/components/ui/animated-tabs';
 import { PatrimoineResume } from '@/components/patrimoine/PatrimoineResume';
 import { PatrimoineActifs } from '@/components/patrimoine/PatrimoineActifs';
 import { PatrimoinePassifs } from '@/components/patrimoine/PatrimoinePassifs';
+import { PatrimoinePlusValues } from '@/components/patrimoine/PatrimoinePlusValues';
 import { useAssets } from '@/hooks/useAssets';
 
 export const PatrimoineSection = () => {
@@ -14,19 +15,22 @@ export const PatrimoineSection = () => {
   const TABS = [
     { id: 'resume', label: 'Résumé' },
     { id: 'actifs', label: 'Actifs' },
-    { id: 'passifs', label: 'Passifs' }
+    { id: 'passifs', label: 'Passifs' },
+    { id: 'plus-values', label: 'Plus-values' }
   ];
 
   const renderContent = () => {
     switch (activeTab) {
       case 'resume':
-        return <PatrimoineResume />;
+        return <PatrimoineResume onNavigateToPlusValues={() => setActiveTab('plus-values')} />;
       case 'actifs':
         return <PatrimoineActifs />;
       case 'passifs':
         return <PatrimoinePassifs />;
+      case 'plus-values':
+        return <PatrimoinePlusValues />;
       default:
-        return <PatrimoineResume />;
+        return <PatrimoineResume onNavigateToPlusValues={() => setActiveTab('plus-values')} />;
     }
   };
 
@@ -44,7 +48,7 @@ export const PatrimoineSection = () => {
       <div className="mb-6 flex justify-start">
         <div className="rounded-[8px] bg-muted p-[2px]">
           <AnimatedBackground
-            defaultValue="resume"
+            defaultValue={activeTab}
             onValueChange={(value) => setActiveTab(value || 'resume')}
             className="rounded-lg bg-background shadow-sm"
             transition={{
