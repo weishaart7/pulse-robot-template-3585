@@ -8,7 +8,11 @@ import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
 import { TrendingUp, TrendingDown, Wallet, User, Users, Target } from 'lucide-react';
 
-export const PatrimoineResume = () => {
+interface PatrimoineResumeProps {
+  onNavigateToPlusValues?: () => void;
+}
+
+export const PatrimoineResume = ({ onNavigateToPlusValues }: PatrimoineResumeProps) => {
   const { assets } = useAssets();
   const { passifs } = usePassifs();
   const { emprunts } = useEmprunts();
@@ -179,7 +183,12 @@ export const PatrimoineResume = () => {
         </Card>
 
         {/* Carte Plus-values */}
-        <PlusValuesCard plusValuesSummary={plusValuesSummary} />
+        <div 
+          onClick={onNavigateToPlusValues} 
+          className={onNavigateToPlusValues ? 'cursor-pointer transition-transform hover:scale-[1.01]' : ''}
+        >
+          <PlusValuesCard plusValuesSummary={plusValuesSummary} />
+        </div>
 
         {/* Carte Objectifs */}
         <Card>
