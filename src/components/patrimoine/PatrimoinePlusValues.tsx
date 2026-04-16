@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
@@ -8,7 +9,11 @@ import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
 import { getAssetCategory } from '@/constants/assetTypes';
 import { getCategoryColor } from '@/lib/patrimoine/utils';
 
-export const PatrimoinePlusValues = () => {
+interface PatrimoinePlusValuesProps {
+  onBack?: () => void;
+}
+
+export const PatrimoinePlusValues = ({ onBack }: PatrimoinePlusValuesProps) => {
   const { assets } = useAssets();
   const { passifs } = usePassifs();
   const { emprunts } = useEmprunts();
