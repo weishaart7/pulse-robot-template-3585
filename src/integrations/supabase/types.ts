@@ -1196,6 +1196,7 @@ export type Database = {
           duree_mariage_precedent_personne_mois: number | null
           email_conjoint: string | null
           id: string
+          imposition_distincte: boolean | null
           lieu_mariage: string | null
           lieu_naissance_conjoint: string | null
           lieu_pacs: string | null
@@ -1243,6 +1244,7 @@ export type Database = {
           duree_mariage_precedent_personne_mois?: number | null
           email_conjoint?: string | null
           id?: string
+          imposition_distincte?: boolean | null
           lieu_mariage?: string | null
           lieu_naissance_conjoint?: string | null
           lieu_pacs?: string | null
@@ -1290,6 +1292,7 @@ export type Database = {
           duree_mariage_precedent_personne_mois?: number | null
           email_conjoint?: string | null
           id?: string
+          imposition_distincte?: boolean | null
           lieu_mariage?: string | null
           lieu_naissance_conjoint?: string | null
           lieu_pacs?: string | null
