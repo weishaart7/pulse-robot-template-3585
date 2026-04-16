@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Minus, ChevronRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, ChevronRight } from 'lucide-react';
 import { formatCurrency, getCategoryColor } from '@/lib/patrimoine/utils';
 
 interface PlusValuesSummary {
@@ -30,12 +30,12 @@ export const PlusValuesCard: React.FC<PlusValuesCardProps> = ({ plusValuesSummar
 
   if (!hasData) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Plus-values</CardTitle>
+      <Card className="border-border/60 shadow-none hover:shadow-sm transition-shadow duration-500">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-[15px] font-semibold tracking-tight">Plus-values</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground text-center py-4 text-sm">
+          <p className="text-muted-foreground/70 text-center py-6 text-sm">
             Renseignez la valeur d'acquisition de vos actifs pour calculer les plus-values
           </p>
         </CardContent>
@@ -43,50 +43,47 @@ export const PlusValuesCard: React.FC<PlusValuesCardProps> = ({ plusValuesSummar
     );
   }
 
-  // Top 3 plus-values and moins-values
   const topPlusValues = assetsWithPlusValue.filter(a => a.plusValue > 0).slice(0, 3);
   const topMoinsValues = [...assetsWithPlusValue].filter(a => a.plusValue < 0).sort((a, b) => a.plusValue - b.plusValue).slice(0, 3);
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="group border-border/60 shadow-none hover:shadow-md hover:shadow-primary/5 transition-all duration-500 hover:-translate-y-0.5 overflow-hidden">
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle>Plus-values</CardTitle>
-          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          <CardTitle className="text-[15px] font-semibold tracking-tight">Plus-values</CardTitle>
+          <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground group-hover:translate-x-0.5 transition-all duration-300" />
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Net result */}
-        <div className={`flex items-center gap-3 p-3 rounded-lg border ${isPositive ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950' : 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950'}`}>
-          <div className={`p-2 rounded-lg ${isPositive ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'}`}>
-            {isPositive ? (
-              <TrendingUp className={`h-4 w-4 ${isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`} />
-            ) : (
-              <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
-            )}
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Résultat net</p>
-            <p className={`text-lg font-bold ${isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-              {isPositive ? '+' : ''}{formatCurrency(netPlusValue)}
-            </p>
-          </div>
+        {/* Net result — hero number */}
+        <div className={`relative p-4 rounded-xl overflow-hidden ${
+          isPositive 
+            ? 'bg-emerald-50/80 dark:bg-emerald-950/20' 
+            : 'bg-rose-50/80 dark:bg-rose-950/20'
+        }`}>
+          <div className={`absolute top-0 left-0 w-full h-[2px] ${
+            isPositive ? 'bg-gradient-to-r from-emerald-400 to-emerald-300' : 'bg-gradient-to-r from-rose-400 to-rose-300'
+          }`} />
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Résultat net</p>
+          <p className={`text-2xl font-bold tracking-tight ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+            {isPositive ? '+' : ''}{formatCurrency(netPlusValue)}
+          </p>
         </div>
 
-        {/* Summary row */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="flex items-center gap-2 p-2 rounded border bg-card">
-            <TrendingUp className="h-3 w-3 text-green-500" />
+        {/* Plus / Moins split */}
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="flex items-center gap-2 p-2.5 rounded-lg border border-border/40 bg-card">
+            <TrendingUp className="h-3.5 w-3.5 text-emerald-500" strokeWidth={1.5} />
             <div>
-              <p className="text-xs text-muted-foreground">Plus-values</p>
-              <p className="text-sm font-semibold text-green-600 dark:text-green-400">+{formatCurrency(totalPlusValues)}</p>
+              <p className="text-[10px] text-muted-foreground/60">Plus-values</p>
+              <p className="text-[13px] font-semibold text-emerald-600 dark:text-emerald-400">+{formatCurrency(totalPlusValues)}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 p-2 rounded border bg-card">
-            <TrendingDown className="h-3 w-3 text-red-500" />
+          <div className="flex items-center gap-2 p-2.5 rounded-lg border border-border/40 bg-card">
+            <TrendingDown className="h-3.5 w-3.5 text-rose-500" strokeWidth={1.5} />
             <div>
-              <p className="text-xs text-muted-foreground">Moins-values</p>
-              <p className="text-sm font-semibold text-red-600 dark:text-red-400">-{formatCurrency(totalMoinsValues)}</p>
+              <p className="text-[10px] text-muted-foreground/60">Moins-values</p>
+              <p className="text-[13px] font-semibold text-rose-600 dark:text-rose-400">-{formatCurrency(totalMoinsValues)}</p>
             </div>
           </div>
         </div>
@@ -94,11 +91,11 @@ export const PlusValuesCard: React.FC<PlusValuesCardProps> = ({ plusValuesSummar
         {/* Top assets */}
         {topPlusValues.length > 0 && (
           <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground">Top plus-values</p>
+            <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Top plus-values</p>
             {topPlusValues.map(asset => (
-              <div key={asset.id} className="flex justify-between items-center text-xs py-1">
-                <span className="text-foreground truncate max-w-[60%]">{asset.denomination}</span>
-                <span className="text-green-600 dark:text-green-400 font-medium">+{formatCurrency(asset.plusValue)}</span>
+              <div key={asset.id} className="flex justify-between items-center text-[12px] py-1.5 group/item">
+                <span className="text-foreground/80 truncate max-w-[60%] group-hover/item:text-foreground transition-colors">{asset.denomination}</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium tabular-nums">+{formatCurrency(asset.plusValue)}</span>
               </div>
             ))}
           </div>
@@ -106,35 +103,35 @@ export const PlusValuesCard: React.FC<PlusValuesCardProps> = ({ plusValuesSummar
 
         {topMoinsValues.length > 0 && (
           <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground">Top moins-values</p>
+            <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Top moins-values</p>
             {topMoinsValues.map(asset => (
-              <div key={asset.id} className="flex justify-between items-center text-xs py-1">
-                <span className="text-foreground truncate max-w-[60%]">{asset.denomination}</span>
-                <span className="text-red-600 dark:text-red-400 font-medium">{formatCurrency(asset.plusValue)}</span>
+              <div key={asset.id} className="flex justify-between items-center text-[12px] py-1.5">
+                <span className="text-foreground/80 truncate max-w-[60%]">{asset.denomination}</span>
+                <span className="text-rose-600 dark:text-rose-400 font-medium tabular-nums">{formatCurrency(asset.plusValue)}</span>
               </div>
             ))}
           </div>
         )}
 
-        {/* By category summary */}
-        <div className="space-y-1 pt-2 border-t">
-          <p className="text-xs font-medium text-muted-foreground">Par catégorie</p>
+        {/* Category summary */}
+        <div className="space-y-1 pt-3 border-t border-border/30">
+          <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest mb-2">Par catégorie</p>
           {Object.entries(byCategory)
             .filter(([_, data]) => data.count > 0)
             .sort((a, b) => Math.abs(b[1].plusValue) - Math.abs(a[1].plusValue))
             .slice(0, 4)
             .map(([category, data]) => (
-              <div key={category} className="flex justify-between items-center text-xs py-1">
+              <div key={category} className="flex justify-between items-center text-[12px] py-1">
                 <div className="flex items-center gap-2">
                   <div 
-                    className="w-2 h-2 rounded-full" 
+                    className="w-[6px] h-[6px] rounded-full" 
                     style={{ backgroundColor: getCategoryColor(category) }} 
                   />
-                  <span className="text-muted-foreground truncate max-w-[120px]">
+                  <span className="text-muted-foreground/70 truncate max-w-[140px]">
                     {category.charAt(0).toUpperCase() + category.slice(1)}
                   </span>
                 </div>
-                <span className={`font-medium ${data.plusValue >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                <span className={`font-medium tabular-nums ${data.plusValue >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                   {data.plusValue >= 0 ? '+' : ''}{formatCurrency(data.plusValue)}
                 </span>
               </div>
