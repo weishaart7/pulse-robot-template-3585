@@ -93,6 +93,7 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
         dateMariage: maritalData.date_mariage ? new Date(maritalData.date_mariage) : undefined,
         lieuMariage: maritalData.lieu_mariage || "",
         pasDeContrat: false,
+        impositionDistincte: (maritalData as any).imposition_distincte || false,
         donationDernierVivantPersonne: (maritalData as any).donation_dernier_vivant_personne || false,
         dateDonationPersonne: (maritalData as any).date_donation_personne ? new Date((maritalData as any).date_donation_personne) : undefined,
         donationDernierVivantConjoint: (maritalData as any).donation_dernier_vivant_conjoint || false,
