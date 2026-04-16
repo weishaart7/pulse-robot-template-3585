@@ -200,6 +200,7 @@ export const ASSET_CATEGORIES = {
     "Sacs et accessoires de luxe",
     "Matériel informatique ou audiovisuel haut de gamme",
     "Matériel sportif de valeur",
+    "Vins & spiritueux d'investissement",
     "Autres placements divers"
   ],
   "actifs professionnels": [
@@ -275,6 +276,15 @@ export const ASSET_CATEGORIES = {
     "Portefeuille de valeurs numériques (cryptomonnaies)",
     "Objets numériques (NFT, etc.)",
     "Droits de propriété littéraire ou artistique",
+    "Fonds de private equity (LBO, growth, venture)",
+    "Club deals",
+    "SPV d'investissement (structures ad hoc)",
+    "Fonds de dette privée",
+    "Produits structurés",
+    "Autres produits dérivés (Swap, Warrants, CFD...)",
+    "Or (physique)",
+    "Métaux précieux (argent, platine)",
+    "Matières premières (pétrole, blé…)",
     "Autres valeurs mobilières"
   ]
 } as const;
