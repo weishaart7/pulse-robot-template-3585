@@ -51,7 +51,10 @@ export const PatrimoineSection = () => {
         <div className="rounded-[8px] bg-muted p-[2px]">
           <AnimatedBackground
             defaultValue={activeTab}
-            onValueChange={(value) => setActiveTab(value || 'resume')}
+            onValueChange={(value) => {
+              setActiveTab(value || 'resume');
+              setShowPlusValuesDetail(false);
+            }}
             className="rounded-lg bg-background shadow-sm"
             transition={{
               ease: "easeInOut",
