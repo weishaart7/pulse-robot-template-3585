@@ -521,7 +521,235 @@ export const Synthese = () => {
         </Card>
       </div>
 
-      {/* Carte des réserves et quotité disponible */}
+      {/* Coûts de succession par héritier */}
+      {transmissionResult.dmtg && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calculator className="h-5 w-5" />
+              Coûts de la succession
+            </CardTitle>
+            <CardDescription>
+              Droits de mutation (DMTG), frais de notaire et droit de partage par héritier
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              const dmtg = transmissionResult.dmtg;
+              const family = transmissionResult.family;
+              const fraisNotaireTotal = transmissionResult.fraisNotaire || 0;
+              const nbHeritiers = heritiersData.length;
+              // Droit de partage : 2,5% de l'actif net partagé (si >1 héritier)
+              const droitPartageTotal = nbHeritiers > 1 ? Math.round(transmissionResult.transmissionNette * 0.025) : 0;
+
+              const rows = heritiersData.map((heritier, idx) => {
+                // Trouver le personId correspondant
+                const person = family?.persons?.find((p: any) => {
+                  const fullName = `${p.prenom} ${p.nom}`.trim();
+                  return fullName === heritier.name || p.nom === heritier.name;
+                });
+                const personId = person?.id;
+                const dmtgData = personId ? dmtg.perBeneficiary[personId] : null;
+                const droitsDMTG = dmtgData?.droitsTotaux || 0;
+                const quotePart = transmissionResult.transmissionNette > 0 
+                  ? heritier.value / transmissionResult.transmissionNette 
+                  : 1 / nbHeritiers;
+                const fraisNotaireHeritier = Math.round(fraisNotaireTotal * quotePart);
+                const droitPartageHeritier = Math.round(droitPartageTotal * quotePart);
+                const totalCouts = droitsDMTG + fraisNotaireHeritier + droitPartageHeritier;
+
+                return {
+                  name: heritier.name,
+                  lien: heritier.lien,
+                  droitsDMTG,
+                  fraisNotaire: fraisNotaireHeritier,
+                  droitPartage: droitPartageHeritier,
+                  totalCouts,
+                  color: getColorForLien(heritier.lien, idx)
+                };
+              });
+
+              const totalDMTG = rows.reduce((s, r) => s + r.droitsDMTG, 0);
+              const totalFrais = rows.reduce((s, r) => s + r.fraisNotaire, 0);
+              const totalPartage = rows.reduce((s, r) => s + r.droitPartage, 0);
+              const grandTotal = rows.reduce((s, r) => s + r.totalCouts, 0);
+
+              return (
+                <div className="space-y-6">
+                  <div className="overflow-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Héritier</TableHead>
+                          <TableHead className="text-right">DMTG</TableHead>
+                          <TableHead className="text-right">Frais de notaire</TableHead>
+                          <TableHead className="text-right">Droit de partage</TableHead>
+                          <TableHead className="text-right font-semibold">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {rows.map((row) => (
+                          <TableRow key={row.name}>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: row.color }} />
+                                <div>
+                                  <span className="font-medium">{row.name}</span>
+                                  <span className="text-xs text-muted-foreground ml-1.5">({row.lien})</span>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">{formatCurrency(row.droitsDMTG)}</TableCell>
+                            <TableCell className="text-right tabular-nums">{formatCurrency(row.fraisNotaire)}</TableCell>
+                            <TableCell className="text-right tabular-nums">{formatCurrency(row.droitPartage)}</TableCell>
+                            <TableCell className="text-right tabular-nums font-semibold">{formatCurrency(row.totalCouts)}</TableCell>
+                          </TableRow>
+                        ))}
+                        <TableRow className="border-t-2">
+                          <TableCell className="font-semibold">Total</TableCell>
+                          <TableCell className="text-right tabular-nums font-semibold">{formatCurrency(totalDMTG)}</TableCell>
+                          <TableCell className="text-right tabular-nums font-semibold">{formatCurrency(totalFrais)}</TableCell>
+                          <TableCell className="text-right tabular-nums font-semibold">{formatCurrency(totalPartage)}</TableCell>
+                          <TableCell className="text-right tabular-nums font-bold">{formatCurrency(grandTotal)}</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Bar chart visualization */}
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={rows} layout="vertical" margin={{ left: 20, right: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis type="number" tickFormatter={(v) => `${Math.round(v / 1000)}k€`} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                        <YAxis type="category" dataKey="name" width={100} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                        <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                        <Bar dataKey="droitsDMTG" name="DMTG" fill="#ef4444" stackId="costs" radius={[0, 0, 0, 0]} />
+                        <Bar dataKey="fraisNotaire" name="Frais de notaire" fill="#f59e0b" stackId="costs" />
+                        <Bar dataKey="droitPartage" name="Droit de partage" fill="#8b5cf6" stackId="costs" radius={[0, 4, 4, 0]} />
+                        <Legend />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Abattements restants par héritier */}
+      {transmissionResult.dmtg && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Abattements restants
+            </CardTitle>
+            <CardDescription>
+              Abattements fiscaux résiduels par héritier en fonction de son lien avec le défunt
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              const dmtg = transmissionResult.dmtg;
+              const family = transmissionResult.family;
+
+              const getAbattementLegal = (lien: string): { montant: number; label: string } => {
+                switch (lien) {
+                  case 'enfant': return { montant: 100000, label: 'Enfant / Ascendant (100 000 €)' };
+                  case 'conjoint': return { montant: Infinity, label: 'Conjoint / Partenaire (exonéré)' };
+                  case 'parent': return { montant: 100000, label: 'Ascendant (100 000 €)' };
+                  case 'frère': case 'sœur': case 'frere_soeur': return { montant: 15932, label: 'Frère / Sœur (15 932 €)' };
+                  case 'neveu': case 'nièce': case 'neveu_niece': return { montant: 7967, label: 'Neveu / Nièce (7 967 €)' };
+                  default: return { montant: 1594, label: 'Autre (1 594 €)' };
+                }
+              };
+
+              const abattementRows = heritiersData.map((heritier, idx) => {
+                const person = family?.persons?.find((p: any) => {
+                  const fullName = `${p.prenom} ${p.nom}`.trim();
+                  return fullName === heritier.name || p.nom === heritier.name;
+                });
+                const personId = person?.id;
+                const dmtgData = personId ? dmtg.perBeneficiary[personId] : null;
+                const lienFamilial = person?.lienFamilial || heritier.lien;
+                const abattementInfo = getAbattementLegal(lienFamilial);
+                const abattementLegal = abattementInfo.montant;
+                const residuel = dmtgData?.allowanceGeneralResidual ?? abattementLegal;
+                const isExonere = abattementLegal === Infinity;
+                const consomme = isExonere ? 0 : Math.max(0, abattementLegal - (typeof residuel === 'number' && residuel !== Infinity ? residuel : abattementLegal));
+                const pctUtilise = isExonere ? 0 : abattementLegal > 0 ? (consomme / abattementLegal) * 100 : 0;
+
+                return {
+                  name: heritier.name,
+                  lien: lienFamilial,
+                  qualite: abattementInfo.label,
+                  abattementLegal: isExonere ? 'Exonéré' : formatCurrency(abattementLegal),
+                  residuel: isExonere ? 'Exonéré' : formatCurrency(typeof residuel === 'number' && residuel !== Infinity ? residuel : abattementLegal),
+                  consomme: isExonere ? '-' : formatCurrency(consomme),
+                  pctUtilise: isExonere ? 0 : pctUtilise,
+                  isExonere,
+                  color: getColorForLien(heritier.lien, idx)
+                };
+              });
+
+              return (
+                <div className="space-y-4">
+                  {abattementRows.map((row) => (
+                    <div key={row.name} className="p-4 rounded-lg border space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: row.color }} />
+                          <span className="font-medium">{row.name}</span>
+                        </div>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                          {row.qualite}
+                        </span>
+                      </div>
+                      
+                      {row.isExonere ? (
+                        <div className="text-sm text-emerald-600 font-medium">
+                          Exonéré de droits de succession (conjoint ou partenaire de PACS)
+                        </div>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <div className="text-muted-foreground">Abattement légal</div>
+                              <div className="font-medium">{row.abattementLegal}</div>
+                            </div>
+                            <div>
+                              <div className="text-muted-foreground">Consommé</div>
+                              <div className="font-medium text-orange-500">{row.consomme}</div>
+                            </div>
+                            <div>
+                              <div className="text-muted-foreground">Restant</div>
+                              <div className="font-semibold text-emerald-600">{row.residuel}</div>
+                            </div>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-2">
+                            <div
+                              className="h-2 rounded-full transition-all"
+                              style={{
+                                width: `${Math.min(100, row.pctUtilise)}%`,
+                                backgroundColor: row.pctUtilise > 75 ? '#ef4444' : row.pctUtilise > 50 ? '#f59e0b' : '#22c55e'
+                              }}
+                            />
+                          </div>
+                          <div className="text-xs text-muted-foreground text-right">
+                            {row.pctUtilise.toFixed(0)}% utilisé
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+      )}
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>Répartition patrimoniale</CardTitle>
