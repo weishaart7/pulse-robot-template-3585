@@ -70,6 +70,7 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
       regimeMatrimonial: 'Communauté réduite aux acquêts (option sans contrat de mariage)',
       lieuMariage: "",
       pasDeContrat: false,
+      impositionDistincte: false,
       donationDernierVivantPersonne: false,
       dateDonationPersonne: undefined,
       donationDernierVivantConjoint: false,
