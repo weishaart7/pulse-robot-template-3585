@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, ChevronRight } from 'lucide-react';
 import { formatCurrency, getCategoryColor } from '@/lib/patrimoine/utils';
 
 interface PlusValuesSummary {
@@ -50,7 +50,10 @@ export const PlusValuesCard: React.FC<PlusValuesCardProps> = ({ plusValuesSummar
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Plus-values</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Plus-values</CardTitle>
+          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Net result */}
