@@ -116,6 +116,7 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
         regime_matrimonial: data.regimeMatrimonial,
         date_mariage: data.dateMariage?.toISOString().split('T')[0],
         lieu_mariage: data.lieuMariage,
+        imposition_distincte: data.impositionDistincte,
         donation_dernier_vivant_personne: data.donationDernierVivantPersonne,
         date_donation_personne: data.dateDonationPersonne?.toISOString().split('T')[0],
         donation_dernier_vivant_conjoint: data.donationDernierVivantConjoint,
