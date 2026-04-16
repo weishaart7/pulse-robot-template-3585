@@ -35,6 +35,7 @@ const formSchema = z.object({
   dateMariage: z.date().optional(),
   lieuMariage: z.string().optional(),
   pasDeContrat: z.boolean().default(false),
+  impositionDistincte: z.boolean().default(false),
   donationDernierVivantPersonne: z.boolean().default(false),
   dateDonationPersonne: z.date().optional(),
   donationDernierVivantConjoint: z.boolean().default(false),
