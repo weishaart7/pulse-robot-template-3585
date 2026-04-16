@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
@@ -8,7 +9,11 @@ import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
 import { getAssetCategory } from '@/constants/assetTypes';
 import { getCategoryColor } from '@/lib/patrimoine/utils';
 
-export const PatrimoinePlusValues = () => {
+interface PatrimoinePlusValuesProps {
+  onBack?: () => void;
+}
+
+export const PatrimoinePlusValues = ({ onBack }: PatrimoinePlusValuesProps) => {
   const { assets } = useAssets();
   const { passifs } = usePassifs();
   const { emprunts } = useEmprunts();
@@ -35,6 +40,12 @@ export const PatrimoinePlusValues = () => {
 
   return (
     <div className="space-y-6">
+      {onBack && (
+        <Button variant="ghost" size="sm" onClick={onBack} className="flex items-center gap-2 -ml-2">
+          <ArrowLeft className="h-4 w-4" />
+          Retour au résumé
+        </Button>
+      )}
       {/* Résumé en haut */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
