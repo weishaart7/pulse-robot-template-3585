@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, ArrowLeft } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, ArrowLeft, Receipt, ShieldCheck, BadgePercent } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
@@ -8,6 +8,48 @@ import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
 import { getAssetCategory } from '@/constants/assetTypes';
 import { getCategoryColor } from '@/lib/patrimoine/utils';
+
+// Natures soumises au PFU (12,8% IR + 18,6% PS = 31,4%)
+const NATURES_PFU: string[] = [
+  "Actions",
+  "Obligations",
+  "Bons du Trésor",
+  "Titres de dette subordonné",
+  "Compte-titres",
+  "Parts de FIP",
+  "Parts de FIP Corse",
+  "Parts de FCPI",
+  "Fonds de private equity (LBO, growth, venture)",
+  "Fonds de dette privée",
+  "Club deals",
+  "SPV d'investissement (structures ad hoc)",
+  "Produits structurés",
+  "Autres produits dérivés (Swap, Warrants, CFD...)",
+  "Credit default swap",
+  "Contrat à terme",
+  "Options",
+  "Stock-options",
+];
+
+// Natures exonérées
+const NATURES_EXONEREES: string[] = [
+  "Livret A",
+  "Livret de développement durable et solidaire (LDDS)",
+  "Livret d'épargne populaire (LEP)",
+  "Livret Jeune",
+];
+
+const PFU_RATE = 0.314; // 31,4%
+const PFU_IR = 0.128;   // 12,8%
+const PFU_PS = 0.186;   // 18,6%
+
+type FiscalRegime = 'pfu' | 'exonere' | 'non_determine';
+
+const getFiscalRegime = (nature: string): FiscalRegime => {
+  if (NATURES_PFU.includes(nature)) return 'pfu';
+  if (NATURES_EXONEREES.includes(nature)) return 'exonere';
+  return 'non_determine';
+};
 
 interface PatrimoinePlusValuesProps {
   onBack?: () => void;
