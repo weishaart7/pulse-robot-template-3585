@@ -1,0 +1,1 @@
+ALTER TABLE public.marital_status ADD COLUMN imposition_distincte boolean DEFAULT false;

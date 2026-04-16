@@ -35,6 +35,7 @@ const formSchema = z.object({
   dateMariage: z.date().optional(),
   lieuMariage: z.string().optional(),
   pasDeContrat: z.boolean().default(false),
+  impositionDistincte: z.boolean().default(false),
   donationDernierVivantPersonne: z.boolean().default(false),
   dateDonationPersonne: z.date().optional(),
   donationDernierVivantConjoint: z.boolean().default(false),
@@ -69,6 +70,7 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
       regimeMatrimonial: 'Communauté réduite aux acquêts (option sans contrat de mariage)',
       lieuMariage: "",
       pasDeContrat: false,
+      impositionDistincte: false,
       donationDernierVivantPersonne: false,
       dateDonationPersonne: undefined,
       donationDernierVivantConjoint: false,
@@ -91,6 +93,7 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
         dateMariage: maritalData.date_mariage ? new Date(maritalData.date_mariage) : undefined,
         lieuMariage: maritalData.lieu_mariage || "",
         pasDeContrat: false,
+        impositionDistincte: (maritalData as any).imposition_distincte || false,
         donationDernierVivantPersonne: (maritalData as any).donation_dernier_vivant_personne || false,
         dateDonationPersonne: (maritalData as any).date_donation_personne ? new Date((maritalData as any).date_donation_personne) : undefined,
         donationDernierVivantConjoint: (maritalData as any).donation_dernier_vivant_conjoint || false,
@@ -113,6 +116,7 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
         regime_matrimonial: data.regimeMatrimonial,
         date_mariage: data.dateMariage?.toISOString().split('T')[0],
         lieu_mariage: data.lieuMariage,
+        imposition_distincte: data.impositionDistincte,
         donation_dernier_vivant_personne: data.donationDernierVivantPersonne,
         date_donation_personne: data.dateDonationPersonne?.toISOString().split('T')[0],
         donation_dernier_vivant_conjoint: data.donationDernierVivantConjoint,
@@ -312,6 +316,27 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
                               <div className="space-y-1 leading-none">
                                 <FormLabel className="text-xs">
                                   Pas de contrat de mariage
+                                </FormLabel>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* Imposition distincte */}
+                        <FormField
+                          control={form.control}
+                          name="impositionDistincte"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel className="text-xs">
+                                  Imposition distincte
                                 </FormLabel>
                               </div>
                             </FormItem>
@@ -767,6 +792,27 @@ export function RelationInfoDialog({ open, onOpenChange, relationStatus }: Relat
                           </PopoverContent>
                         </Popover>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Imposition distincte */}
+                  <FormField
+                    control={form.control}
+                    name="impositionDistincte"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="text-xs">
+                            Imposition distincte
+                          </FormLabel>
+                        </div>
                       </FormItem>
                     )}
                   />
