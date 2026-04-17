@@ -14,10 +14,12 @@ import { ChargeForm } from './ChargeForm';
 import { ASSET_NATURES, getAssetCategory, NATURES_WITHOUT_ACQUISITION } from '@/constants/assetTypes';
 import { useAssetForm, NATURES_WITH_ETABLISSEMENT } from '@/hooks/useAssetForm';
 import AnimatedBackground from '@/components/ui/animated-tabs';
+import { Globe, Info, TrendingUp, TrendingDown } from 'lucide-react';
 import { 
   ORIGINE_ACTIF_OPTIONS, 
   SITUATION_PARTICULIERE_OPTIONS, 
-  MODE_DETENTION_OPTIONS 
+  MODE_DETENTION_OPTIONS,
+  NATURES_LIQUIDITES_FR
 } from '@/schemas/assetSchema';
 
 interface AssetFormProps {
