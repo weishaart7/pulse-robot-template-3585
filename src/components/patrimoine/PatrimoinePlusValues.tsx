@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, ArrowLeft, Receipt, ShieldCheck, BadgePercent } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, ArrowLeft, Receipt, ShieldCheck, BadgePercent, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
@@ -221,7 +221,23 @@ export const PatrimoinePlusValues = ({ onBack }: PatrimoinePlusValuesProps) => {
               Fiscalité des plus-values
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-5">
+            <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-muted/30 p-4">
+              <AlertTriangle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" strokeWidth={1.5} />
+              <div className="space-y-1">
+                <p className="text-[12px] font-semibold text-foreground">Fiscalité différenciée selon l'enveloppe</p>
+                <p className="text-[12px] text-muted-foreground/90 leading-relaxed">
+                  Les régimes ci-dessous correspondent à la <strong>nature de l'actif</strong>. Certains placements suivent une fiscalité <strong>spécifique liée à l'enveloppe</strong> qui les détient :
+                </p>
+                <ul className="text-[12px] text-muted-foreground/80 leading-relaxed list-disc pl-5 mt-1 space-y-0.5">
+                  <li>SCPI logée dans un CTO → revenus fonciers + PV immobilière (et non PFU)</li>
+                  <li>Titres dans un PEA / PEA-PME → exonération après 5 ans</li>
+                  <li>Assurance-vie → fiscalité spécifique selon antériorité du contrat (8 ans)</li>
+                  <li>PER → fiscalité de sortie selon le mode (capital ou rente)</li>
+                  <li>Immobilier détenu en propre → abattement pour durée de détention</li>
+                </ul>
+              </div>
+            </div>
             <FiscalContent assetsWithPlusValue={assetsWithPlusValue} formatCurrency={formatCurrency} />
           </CardContent>
         </Card>

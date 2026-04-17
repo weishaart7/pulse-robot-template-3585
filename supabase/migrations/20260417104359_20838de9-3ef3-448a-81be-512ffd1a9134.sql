@@ -1,0 +1,1 @@
+UPDATE public.assets SET nature = 'Compte-titres (CTO)' WHERE nature = 'Compte-titres';

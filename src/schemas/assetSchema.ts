@@ -29,6 +29,27 @@ export const MODE_DETENTION_OPTIONS = [
   'Nue-propriété'
 ] as const;
 
+// Liste des natures pour lesquelles la case "Bien à l'étranger" est masquée
+// (livrets et comptes français règlementés par nature)
+export const NATURES_LIQUIDITES_FR: string[] = [
+  'Livret A',
+  'Livret Bleu',
+  'Livret de développement durable et solidaire (LDDS)',
+  "Livret d'épargne populaire (LEP)",
+  'Livret Jeune',
+  'CEL',
+  'PEL',
+  'PEA',
+  'PEA-PME',
+  'PEE',
+  'PEI',
+  'PER individuel',
+  'PER entreprise collectif',
+  'PER entreprise obligatoire',
+  'PERCO/PERCOI',
+  'PERP',
+];
+
 // Schema
 export const assetSchema = z.object({
   nature: z.string().min(1, 'La nature est requise'),
@@ -48,7 +69,8 @@ export const assetSchema = z.object({
   origine_actif: z.array(z.string()).optional(),
   situation_particuliere: z.array(z.string()).optional(),
   attachement_emotionnel: z.number().min(0).max(10).optional(),
-  transfert_immobilier: z.boolean().optional()
+  transfert_immobilier: z.boolean().optional(),
+  bien_etranger: z.boolean().optional(),
 });
 
 export type AssetFormValues = z.infer<typeof assetSchema>;
@@ -65,5 +87,6 @@ export const getDefaultAssetValues = (): AssetFormValues => ({
   origine_actif: ['Acquisition à titre onéreuse'],
   situation_particuliere: ['Non'],
   attachement_emotionnel: 0,
-  transfert_immobilier: true
+  transfert_immobilier: true,
+  bien_etranger: false,
 });

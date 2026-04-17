@@ -14,10 +14,12 @@ import { ChargeForm } from './ChargeForm';
 import { ASSET_NATURES, getAssetCategory, NATURES_WITHOUT_ACQUISITION } from '@/constants/assetTypes';
 import { useAssetForm, NATURES_WITH_ETABLISSEMENT } from '@/hooks/useAssetForm';
 import AnimatedBackground from '@/components/ui/animated-tabs';
+import { Globe, Info, TrendingUp, TrendingDown } from 'lucide-react';
 import { 
   ORIGINE_ACTIF_OPTIONS, 
   SITUATION_PARTICULIERE_OPTIONS, 
-  MODE_DETENTION_OPTIONS 
+  MODE_DETENTION_OPTIONS,
+  NATURES_LIQUIDITES_FR
 } from '@/schemas/assetSchema';
 
 interface AssetFormProps {
@@ -68,9 +70,22 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const watchedNature = form.watch('nature');
   const watchedModeDetention = form.watch('mode_detention');
   const watchedDetenteur = form.watch('detenteur');
+  const watchedValeurAcquisition = form.watch('valeur_acquisition');
+  const watchedValeurEstimee = form.watch('valeur_estimee');
   const isImmobilier = getAssetCategory(watchedNature) === 'actifs immobiliers';
   const hideAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature);
   const showEtablissement = NATURES_WITH_ETABLISSEMENT.includes(watchedNature);
+  const showBienEtranger = watchedNature && !NATURES_LIQUIDITES_FR.includes(watchedNature);
+
+  // Plus-value live
+  const plusValueLive = (watchedValeurEstimee || 0) - (watchedValeurAcquisition || 0);
+  const plusValuePct = watchedValeurAcquisition && watchedValeurAcquisition > 0
+    ? (plusValueLive / watchedValeurAcquisition) * 100
+    : 0;
+  const showPlusValue = !hideAcquisition && watchedValeurAcquisition && watchedValeurEstimee;
+
+  const formatEur = (n: number) =>
+    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
 
   const renderGeneralSection = () => (
     <div className="space-y-6">
@@ -129,6 +144,32 @@ export const AssetForm: React.FC<AssetFormProps> = ({
           </FormItem>
         )} />
       </div>
+
+      {showBienEtranger && (
+        <FormField
+          control={form.control}
+          name="bien_etranger"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-muted/30">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                  Bien situé à l'étranger
+                </FormLabel>
+                <FormDescription>
+                  Impact fiscal : déclaration spécifique (formulaire 3916 pour les comptes, conventions fiscales, IFI sur immobilier étranger). À traiter au cas par cas.
+                </FormDescription>
+              </div>
+            </FormItem>
+          )}
+        />
+      )}
 
       {isImmobilier && (
         <FormField
@@ -350,7 +391,8 @@ export const AssetForm: React.FC<AssetFormProps> = ({
 
           <FormField control={form.control} name="valeur_acquisition" render={({ field }) => (
             <FormItem>
-              <FormLabel>Valeur d'acquisition (€)</FormLabel>
+              <FormLabel>Valeur d'achat / réception (€)</FormLabel>
+              <FormDescription>Prix payé à l'achat, ou valeur déclarée si reçu en donation/héritage. Sert de base pour le calcul de la plus-value.</FormDescription>
               <FormControl>
                 <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
               </FormControl>
@@ -361,6 +403,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
           <FormField control={form.control} name="frais_acquisition" render={({ field }) => (
             <FormItem>
               <FormLabel>Frais d'acquisition (€)</FormLabel>
+              <FormDescription>Notaire, agence, droits d'enregistrement, etc.</FormDescription>
               <FormControl>
                 <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
               </FormControl>
@@ -377,7 +420,8 @@ export const AssetForm: React.FC<AssetFormProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormField control={form.control} name="valeur_estimee" render={({ field }) => (
           <FormItem>
-            <FormLabel>Valeur estimée (€)</FormLabel>
+            <FormLabel>Valeur actuelle estimée (€)</FormLabel>
+            <FormDescription>Valeur du bien à ce jour. C'est elle qui est utilisée dans le calcul du patrimoine.</FormDescription>
             <FormControl>
               <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
             </FormControl>
@@ -398,6 +442,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         <FormField control={form.control} name="revalorisation_annuelle" render={({ field }) => (
           <FormItem>
             <FormLabel>Revalorisation annuelle (%)</FormLabel>
+            <FormDescription>Hypothèse de revalorisation pour les projections.</FormDescription>
             <FormControl>
               <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
             </FormControl>
@@ -405,6 +450,39 @@ export const AssetForm: React.FC<AssetFormProps> = ({
           </FormItem>
         )} />
       </div>
+
+      {showPlusValue && (
+        <div className="rounded-xl border border-border/60 bg-card p-5 animate-fade-in">
+          <div className="flex items-center gap-2 mb-3">
+            <Info className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+            <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-widest">Plus / moins-value latente</p>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <p className="text-[11px] text-muted-foreground/60">Valeur d'achat</p>
+              <p className="text-[15px] font-semibold text-foreground tabular-nums mt-0.5">{formatEur(watchedValeurAcquisition || 0)}</p>
+            </div>
+            <div>
+              <p className="text-[11px] text-muted-foreground/60">Valeur actuelle</p>
+              <p className="text-[15px] font-semibold text-foreground tabular-nums mt-0.5">{formatEur(watchedValeurEstimee || 0)}</p>
+            </div>
+            <div>
+              <p className="text-[11px] text-muted-foreground/60">Différence</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                {plusValueLive >= 0 ? (
+                  <TrendingUp className="h-4 w-4 text-emerald-500" strokeWidth={2} />
+                ) : (
+                  <TrendingDown className="h-4 w-4 text-rose-500" strokeWidth={2} />
+                )}
+                <p className={`text-[15px] font-bold tabular-nums ${plusValueLive >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                  {plusValueLive >= 0 ? '+' : ''}{formatEur(plusValueLive)}
+                  <span className="text-[11px] font-medium ml-1.5 opacity-70">({plusValuePct >= 0 ? '+' : ''}{plusValuePct.toFixed(1)}%)</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 

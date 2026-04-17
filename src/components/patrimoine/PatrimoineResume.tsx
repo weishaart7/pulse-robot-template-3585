@@ -10,6 +10,7 @@ import { TrendingUp, TrendingDown, Wallet, User, Users, Target } from 'lucide-re
 
 interface PatrimoineResumeProps {
   onNavigateToPlusValues?: () => void;
+  onNavigateToParTete?: () => void;
 }
 
 const StatCard = ({ 
@@ -50,7 +51,7 @@ const StatCard = ({
   </div>
 );
 
-export const PatrimoineResume = ({ onNavigateToPlusValues }: PatrimoineResumeProps) => {
+export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }: PatrimoineResumeProps) => {
   const { assets } = useAssets();
   const { passifs } = usePassifs();
   const { emprunts } = useEmprunts();
@@ -114,7 +115,11 @@ export const PatrimoineResume = ({ onNavigateToPlusValues }: PatrimoineResumePro
       {/* Bottom row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Patrimoine par tête */}
-        <Card className="border-border/60 shadow-none hover:shadow-sm transition-shadow duration-500 animate-fade-in" style={{ animationDelay: '240ms' }}>
+        <Card
+          onClick={onNavigateToParTete}
+          className={`border-border/60 shadow-none hover:shadow-sm transition-shadow duration-500 animate-fade-in ${onNavigateToParTete ? 'cursor-pointer hover:border-border' : ''}`}
+          style={{ animationDelay: '240ms' }}
+        >
           <CardHeader className="pb-3">
             <CardTitle className="text-[15px] font-semibold tracking-tight">Patrimoine par tête</CardTitle>
           </CardHeader>

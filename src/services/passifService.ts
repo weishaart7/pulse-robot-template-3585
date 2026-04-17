@@ -12,6 +12,7 @@ export interface Emprunt {
   detenteur?: string;
   pourcentage_utilisateur?: number;
   pourcentage_conjoint?: number;
+  reporter_budget?: boolean;
   created_at: string;
   updated_at: string;
 }

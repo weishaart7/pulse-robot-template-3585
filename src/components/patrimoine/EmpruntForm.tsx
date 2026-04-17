@@ -3,9 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { EMPRUNT_NATURES } from '@/constants/assetTypes';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Wallet } from 'lucide-react';
 import { useEmprunts } from '@/hooks/usePassifs';
 import { familyService } from '@/services/familyService';
 
@@ -25,6 +26,7 @@ export const EmpruntForm = ({ emprunt, onCancel, onSubmit }: EmpruntFormProps) =
   const [detenteur, setDetenteur] = useState('');
   const [pourcentageUtilisateur, setPourcentageUtilisateur] = useState(emprunt?.pourcentage_utilisateur || 50);
   const [pourcentageConjoint, setPourcentageConjoint] = useState(emprunt?.pourcentage_conjoint || 50);
+  const [reporterBudget, setReporterBudget] = useState<boolean>(emprunt?.reporter_budget ?? false);
   const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
   const [familyData, setFamilyData] = useState({ hasPartner: false, userFirstName: '', partnerFirstName: '' });
   const { createEmprunt, updateEmprunt } = useEmprunts();
@@ -117,7 +119,8 @@ export const EmpruntForm = ({ emprunt, onCancel, onSubmit }: EmpruntFormProps) =
         capital_restant_du: capitalRestantDu ? parseFloat(capitalRestantDu) : undefined,
         taux_interet: interets ? parseFloat(interets) : undefined,
         mensualite: mensualites ? parseFloat(mensualites) : undefined,
-        duree_restante: dureeRestante ? parseInt(dureeRestante) : undefined
+        duree_restante: dureeRestante ? parseInt(dureeRestante) : undefined,
+        reporter_budget: reporterBudget,
       };
 
       if (detenteur) {
@@ -228,6 +231,23 @@ export const EmpruntForm = ({ emprunt, onCancel, onSubmit }: EmpruntFormProps) =
                   placeholder="0"
                   required
                 />
+              </div>
+
+              <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-muted/30">
+                <Checkbox
+                  id="reporterBudget"
+                  checked={reporterBudget}
+                  onCheckedChange={(c) => setReporterBudget(!!c)}
+                />
+                <div className="space-y-1 leading-none">
+                  <Label htmlFor="reporterBudget" className="flex items-center gap-2 cursor-pointer">
+                    <Wallet className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                    Reporter la mensualité dans le budget
+                  </Label>
+                  <p className="text-[12px] text-muted-foreground">
+                    La mensualité de cet emprunt sera ajoutée automatiquement aux charges du budget mensuel.
+                  </p>
+                </div>
               </div>
 
               {detenteurOptions.length > 0 && (
