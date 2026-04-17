@@ -114,7 +114,7 @@ export const DateInput: React.FC<DateInputProps> = ({
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="single"
-              selected={value}
+              selected={safeValue}
               onSelect={handleCalendarSelect}
               initialFocus
               className="pointer-events-auto"
