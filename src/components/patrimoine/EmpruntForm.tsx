@@ -119,7 +119,8 @@ export const EmpruntForm = ({ emprunt, onCancel, onSubmit }: EmpruntFormProps) =
         capital_restant_du: capitalRestantDu ? parseFloat(capitalRestantDu) : undefined,
         taux_interet: interets ? parseFloat(interets) : undefined,
         mensualite: mensualites ? parseFloat(mensualites) : undefined,
-        duree_restante: dureeRestante ? parseInt(dureeRestante) : undefined
+        duree_restante: dureeRestante ? parseInt(dureeRestante) : undefined,
+        reporter_budget: reporterBudget,
       };
 
       if (detenteur) {
