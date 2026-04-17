@@ -23,7 +23,7 @@ export const NATURES_WITH_ETABLISSEMENT = [
 
 interface UseAssetFormProps {
   asset?: Asset;
-  onSubmit: (asset: AssetFormValues, charges: AssetCharge[]) => Promise<void>;
+  onSubmit: (asset: AssetFormValues, charges: AssetCharge[]) => Promise<any>;
 }
 
 export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
