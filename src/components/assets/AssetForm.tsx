@@ -145,6 +145,32 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         )} />
       </div>
 
+      {showBienEtranger && (
+        <FormField
+          control={form.control}
+          name="bien_etranger"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-amber-50/40 dark:bg-amber-950/10 border-amber-200/60 dark:border-amber-900/40">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-amber-600" strokeWidth={1.5} />
+                  Bien situé à l'étranger
+                </FormLabel>
+                <FormDescription>
+                  Impact fiscal : déclaration spécifique (formulaire 3916 pour les comptes, conventions fiscales, IFI sur immobilier étranger). À traiter au cas par cas.
+                </FormDescription>
+              </div>
+            </FormItem>
+          )}
+        />
+      )}
+
       {isImmobilier && (
         <FormField
           control={form.control}
