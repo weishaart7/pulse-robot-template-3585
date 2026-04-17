@@ -7,6 +7,9 @@ import { Asset, AssetCharge } from '@/services/assetService';
 import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, mapDetenteurToDb, FamilyInfo } from '@/lib/patrimoine/utils';
 import { ASSET_CATEGORIES } from '@/constants/assetTypes';
+import { qualifierBien } from '@/lib/patrimoine/qualification';
+import { assetIndivisaireService, AssetIndivisaire } from '@/services/assetIndivisaireService';
+import { IndivisaireDraft, draftsFromIndivisaires } from '@/components/assets/IndivisairesSection';
 
 // Types d'actifs qui nécessitent le champ "Établissement"
 export const NATURES_WITH_ETABLISSEMENT = [
@@ -31,6 +34,8 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
   const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
   const [familyMembers, setFamilyMembers] = useState<Array<{ id?: string; nom: string; prenom?: string }>>([]);
   const [familyData, setFamilyData] = useState<FamilyInfo>({ hasPartner: false });
+  const [maritalContext, setMaritalContext] = useState<{ statutCouple?: string; regimeMatrimonial?: string; dateMariage?: string }>({});
+  const [indivisaires, setIndivisaires] = useState<IndivisaireDraft[]>([]);
 
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
