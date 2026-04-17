@@ -74,9 +74,17 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
           options.push('Le couple');
         }
 
+        // Toujours proposer "Indivision" comme option
+        options.push('Indivision');
+
         setDetenteurOptions(options);
         setFamilyData(familyInfo);
         setFamilyMembers(familyLinks || []);
+        setMaritalContext({
+          statutCouple: maritalStatus?.statut_couple,
+          regimeMatrimonial: maritalStatus?.regime_matrimonial,
+          dateMariage: maritalStatus?.date_mariage,
+        });
       } catch (error) {
         setDetenteurOptions(['Utilisateur']);
       }
@@ -84,6 +92,15 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
 
     loadFamilyData();
   }, []);
+
+  // Load indivisaires when editing existing asset
+  useEffect(() => {
+    if (asset?.id) {
+      assetIndivisaireService.getByAsset(asset.id)
+        .then((rows) => setIndivisaires(draftsFromIndivisaires(rows)))
+        .catch(() => setIndivisaires([]));
+    }
+  }, [asset?.id]);
 
   // Update form when asset or family data changes
   useEffect(() => {
