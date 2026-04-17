@@ -24,8 +24,9 @@ export const DateInput: React.FC<DateInputProps> = ({
   disabled = false,
   className
 }) => {
+  const safeValue = value instanceof Date && isValid(value) ? value : undefined;
   const [inputValue, setInputValue] = useState(() => {
-    return value ? format(value, 'dd/MM/yyyy') : '';
+    return safeValue ? format(safeValue, 'dd/MM/yyyy') : '';
   });
   const [isOpen, setIsOpen] = useState(false);
 
@@ -59,7 +60,6 @@ export const DateInput: React.FC<DateInputProps> = ({
   };
 
   const handleInputBlur = () => {
-    // Revalider et reformater l'input au blur
     if (inputValue && inputValue.length === 10) {
       try {
         const parsedDate = parse(inputValue, 'dd/MM/yyyy', new Date());
@@ -67,23 +67,22 @@ export const DateInput: React.FC<DateInputProps> = ({
           setInputValue(format(parsedDate, 'dd/MM/yyyy'));
           onChange(parsedDate);
         } else {
-          // Si la date n'est pas valide, remettre la valeur précédente
-          setInputValue(value ? format(value, 'dd/MM/yyyy') : '');
+          setInputValue(safeValue ? format(safeValue, 'dd/MM/yyyy') : '');
         }
       } catch {
-        setInputValue(value ? format(value, 'dd/MM/yyyy') : '');
+        setInputValue(safeValue ? format(safeValue, 'dd/MM/yyyy') : '');
       }
     }
   };
 
   // Synchroniser l'input avec la valeur externe
   React.useEffect(() => {
-    if (value) {
-      const formatted = format(value, 'dd/MM/yyyy');
+    if (safeValue) {
+      const formatted = format(safeValue, 'dd/MM/yyyy');
       if (inputValue !== formatted) {
         setInputValue(formatted);
       }
-    } else if (inputValue && !value) {
+    } else if (inputValue && !safeValue) {
       setInputValue('');
     }
   }, [value]);
@@ -115,7 +114,7 @@ export const DateInput: React.FC<DateInputProps> = ({
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="single"
-              selected={value}
+              selected={safeValue}
               onSelect={handleCalendarSelect}
               initialFocus
               className="pointer-events-auto"
