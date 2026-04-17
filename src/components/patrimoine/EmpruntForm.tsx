@@ -26,6 +26,7 @@ export const EmpruntForm = ({ emprunt, onCancel, onSubmit }: EmpruntFormProps) =
   const [detenteur, setDetenteur] = useState('');
   const [pourcentageUtilisateur, setPourcentageUtilisateur] = useState(emprunt?.pourcentage_utilisateur || 50);
   const [pourcentageConjoint, setPourcentageConjoint] = useState(emprunt?.pourcentage_conjoint || 50);
+  const [reporterBudget, setReporterBudget] = useState<boolean>(emprunt?.reporter_budget ?? false);
   const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
   const [familyData, setFamilyData] = useState({ hasPartner: false, userFirstName: '', partnerFirstName: '' });
   const { createEmprunt, updateEmprunt } = useEmprunts();
