@@ -6,6 +6,7 @@ import { PatrimoineResume } from '@/components/patrimoine/PatrimoineResume';
 import { PatrimoineActifs } from '@/components/patrimoine/PatrimoineActifs';
 import { PatrimoinePassifs } from '@/components/patrimoine/PatrimoinePassifs';
 import { PatrimoinePlusValues } from '@/components/patrimoine/PatrimoinePlusValues';
+import { IncompleteAssetsBanner } from '@/components/patrimoine/IncompleteAssetsBanner';
 import { useAssets } from '@/hooks/useAssets';
 
 export const PatrimoineSection = () => {
@@ -74,6 +75,8 @@ export const PatrimoineSection = () => {
           </AnimatedBackground>
         </div>
       </div>
+
+      {!showPlusValuesDetail && <IncompleteAssetsBanner assets={assets} />}
 
       <div className="mt-6">
         {renderContent()}
