@@ -153,6 +153,7 @@ export const DEBITEUR_OPTIONS = [
 ] as const;
 
 export const PERIODICITE_OPTIONS = [
+  "ponctuelle",
   "annuelle",
   "trimestrielle",
   "mensuelle"

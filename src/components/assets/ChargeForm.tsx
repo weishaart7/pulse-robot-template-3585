@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { DateInput } from '@/components/ui/date-input';
 import { AssetCharge } from '@/services/assetService';
-import { CHARGE_TYPES, DEBITEUR_OPTIONS, PERIODICITE_OPTIONS, DUREE_TYPE_OPTIONS, UNITE_OPTIONS } from '@/constants/assetTypes';
+import { CHARGE_TYPES, DEBITEUR_OPTIONS, PERIODICITE_OPTIONS, UNITE_OPTIONS } from '@/constants/assetTypes';
 
 const chargeSchema = z.object({
   type_charge: z.enum(['Charges courantes', 'Charges fiscales']),
@@ -24,8 +24,8 @@ const chargeSchema = z.object({
   debiteur: z.enum(['Époux 1', 'Époux 2', 'Couple']),
   montant: z.number().min(0, 'Le montant doit être positif'),
   unite: z.enum(['€', '%']),
-  periodicite: z.enum(['annuelle', 'trimestrielle', 'mensuelle']),
-  date_debut: z.date({ required_error: 'La date de début est requise' }),
+  periodicite: z.enum(['ponctuelle', 'annuelle', 'trimestrielle', 'mensuelle']),
+  date_debut: z.date({ required_error: 'La date est requise' }),
   duree_type: z.enum(['Indéterminée', 'Jusqu\'à date', 'Pendant années']),
   duree_fin_date: z.date().optional(),
   duree_annees: z.number().optional(),
@@ -69,6 +69,8 @@ export const ChargeForm: React.FC<ChargeFormProps> = ({ charge, onSubmit, onCanc
   });
 
   const dureeType = form.watch('duree_type');
+  const periodicite = form.watch('periodicite');
+  const isPonctuelle = periodicite === 'ponctuelle';
 
   const handleSubmit = (values: ChargeFormValues) => {
     const formattedValues = {
@@ -231,7 +233,7 @@ export const ChargeForm: React.FC<ChargeFormProps> = ({ charge, onSubmit, onCanc
                 name="date_debut"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date de début</FormLabel>
+                    <FormLabel>{isPonctuelle ? 'Date' : 'Date de début'}</FormLabel>
                     <FormControl>
                       <DateInput
                         value={field.value}
@@ -245,72 +247,49 @@ export const ChargeForm: React.FC<ChargeFormProps> = ({ charge, onSubmit, onCanc
               />
             </div>
 
+            {!isPonctuelle && (
             <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="duree_type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Durée</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {DUREE_TYPE_OPTIONS.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {dureeType === 'Jusqu\'à date' && (
-                <FormField
-                  control={form.control}
-                  name="duree_fin_date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date de fin</FormLabel>
-                      <FormControl>
-                        <DateInput
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="jj/mm/aaaa"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              {dureeType === 'Pendant années' && (
-                <FormField
-                  control={form.control}
-                  name="duree_annees"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nombre d'années</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || undefined)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
+              <FormItem>
+                <FormLabel>Durée</FormLabel>
+                <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+                  <div className="flex-1">
+                    <FormField
+                      control={form.control}
+                      name="duree_fin_date"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs text-muted-foreground font-normal">Date de fin</FormLabel>
+                          <FormControl>
+                            <DateInput
+                              value={field.value}
+                              onChange={(date) => {
+                                field.onChange(date);
+                                if (date) form.setValue('duree_type', 'Jusqu\'à date');
+                              }}
+                              placeholder="jj/mm/aaaa"
+                              disabled={dureeType === 'Indéterminée'}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant={dureeType === 'Indéterminée' ? 'default' : 'outline'}
+                    onClick={() => {
+                      form.setValue('duree_type', 'Indéterminée');
+                      form.setValue('duree_fin_date', undefined);
+                    }}
+                  >
+                    Durée indéterminée
+                  </Button>
+                </div>
+              </FormItem>
+            </div>
+            )}
+            <div className="space-y-4">
               <FormField
                 control={form.control}
                 name="impact_budget"
