@@ -139,10 +139,34 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         origine_actif: (asset as any).origine_actif || ['Acquisition à titre onéreuse'],
         situation_particuliere: (asset as any).situation_particuliere || ['Non'],
         attachement_emotionnel: (asset as any).attachement_emotionnel || 0,
-        transfert_immobilier: (asset as any).transfert_immobilier || false
+        transfert_immobilier: (asset as any).transfert_immobilier || false,
+        bien_etranger: (asset as any).bien_etranger || false,
+        qualification_bien: (asset as any).qualification_bien || undefined,
+        qualification_auto: (asset as any).qualification_auto !== false,
       });
     }
   }, [asset, familyData, form]);
+
+  // Auto-qualification : recalcule la qualification quand auto et que les inputs changent
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      const autoOn = value.qualification_auto !== false;
+      if (!autoOn) return;
+      if (!['origine_actif', 'date_acquisition', 'detenteur', 'mode_detention', 'qualification_auto'].includes(name || '')) return;
+
+      const { qualification } = qualifierBien({
+        statutCouple: maritalContext.statutCouple,
+        regimeMatrimonial: maritalContext.regimeMatrimonial,
+        dateMariage: maritalContext.dateMariage,
+        dateAcquisition: value.date_acquisition ? new Date(value.date_acquisition).toISOString() : undefined,
+        origineActif: value.origine_actif as string[] | undefined,
+        modeDetention: value.mode_detention,
+        detenteur: value.detenteur,
+      });
+      form.setValue('qualification_bien', qualification);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, maritalContext]);
 
   // Auto-adjust percentages when detenteur changes, and auto-set origine for NP
   useEffect(() => {
