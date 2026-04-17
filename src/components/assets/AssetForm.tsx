@@ -70,9 +70,22 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const watchedNature = form.watch('nature');
   const watchedModeDetention = form.watch('mode_detention');
   const watchedDetenteur = form.watch('detenteur');
+  const watchedValeurAcquisition = form.watch('valeur_acquisition');
+  const watchedValeurEstimee = form.watch('valeur_estimee');
   const isImmobilier = getAssetCategory(watchedNature) === 'actifs immobiliers';
   const hideAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature);
   const showEtablissement = NATURES_WITH_ETABLISSEMENT.includes(watchedNature);
+  const showBienEtranger = watchedNature && !NATURES_LIQUIDITES_FR.includes(watchedNature);
+
+  // Plus-value live
+  const plusValueLive = (watchedValeurEstimee || 0) - (watchedValeurAcquisition || 0);
+  const plusValuePct = watchedValeurAcquisition && watchedValeurAcquisition > 0
+    ? (plusValueLive / watchedValeurAcquisition) * 100
+    : 0;
+  const showPlusValue = !hideAcquisition && watchedValeurAcquisition && watchedValeurEstimee;
+
+  const formatEur = (n: number) =>
+    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
 
   const renderGeneralSection = () => (
     <div className="space-y-6">
