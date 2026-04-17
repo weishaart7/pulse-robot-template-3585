@@ -24,8 +24,9 @@ export const DateInput: React.FC<DateInputProps> = ({
   disabled = false,
   className
 }) => {
+  const safeValue = value instanceof Date && isValid(value) ? value : undefined;
   const [inputValue, setInputValue] = useState(() => {
-    return value ? format(value, 'dd/MM/yyyy') : '';
+    return safeValue ? format(safeValue, 'dd/MM/yyyy') : '';
   });
   const [isOpen, setIsOpen] = useState(false);
 
