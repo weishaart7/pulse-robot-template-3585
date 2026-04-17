@@ -42,6 +42,9 @@ export interface Asset {
   zone_bien?: string;
   pourcentage_terrain_force?: number;
   type_location_lmnp?: string;
+  bien_etranger?: boolean;
+  qualification_bien?: string;
+  qualification_auto?: boolean;
   created_at?: string;
   updated_at?: string;
 }
