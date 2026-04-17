@@ -284,24 +284,78 @@ export const AssetForm: React.FC<AssetFormProps> = ({
           )} />
         )}
 
-        <FormField control={form.control} name="detenteur" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Détenteur</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value}>
-              <FormControl>
-                <SelectTrigger size="lg">
-                  <SelectValue placeholder="Choisir un détenteur" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {detenteurOptions.map(option => (
-                  <SelectItem key={option} value={option}>{option}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )} />
+        <FormField control={form.control} name="detenteur" render={({ field }) => {
+          const isAuto = form.watch('qualification_auto') !== false;
+          const qual = qualifierBien({
+            statutCouple: maritalContext.statutCouple,
+            regimeMatrimonial: maritalContext.regimeMatrimonial,
+            dateMariage: maritalContext.dateMariage,
+            dateAcquisition: form.watch('date_acquisition')?.toISOString(),
+            origineActif: form.watch('origine_actif') as string[] | undefined,
+            modeDetention: form.watch('mode_detention'),
+            detenteur: form.watch('detenteur'),
+          });
+          const currentQual = isAuto ? qual.qualification : form.watch('qualification_bien');
+          return (
+            <FormItem>
+              <FormLabel>Détenteur</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger size="lg">
+                    <SelectValue placeholder="Choisir un détenteur" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {detenteurOptions.map(option => (
+                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {field.value && currentQual && (
+                <div className="flex items-center gap-2 pt-1.5 text-xs text-muted-foreground">
+                  <Sparkles className="h-3 w-3" strokeWidth={1.5} />
+                  <span>Qualification&nbsp;: <b className="text-foreground">{currentQual}</b></span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button"><HelpCircle className="h-3 w-3" /></button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-sm">
+                        <p className="text-xs">
+                          {isAuto ? qual.raison : 'Qualification définie manuellement.'}<br/>
+                          <b>Bien propre</b>&nbsp;: exclusif à un époux. <b>Bien commun</b>&nbsp;: acquis pendant l'union sous régime légal. <b>Indivision</b>&nbsp;: hors couple.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <span className="ml-auto flex items-center gap-1.5">
+                    <FormField control={form.control} name="qualification_auto" render={({ field: f }) => (
+                      <>
+                        <span>Auto</span>
+                        <Switch checked={f.value !== false} onCheckedChange={f.onChange} className="scale-75" />
+                      </>
+                    )} />
+                  </span>
+                </div>
+              )}
+              {!isAuto && field.value && (
+                <FormField control={form.control} name="qualification_bien" render={({ field: qf }) => (
+                  <Select value={qf.value || ''} onValueChange={qf.onChange}>
+                    <SelectTrigger size="lg" className="mt-2">
+                      <SelectValue placeholder="Choisir la qualification" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {QUALIFICATION_OPTIONS.map((q) => (
+                        <SelectItem key={q} value={q}>{q}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )} />
+              )}
+              <FormMessage />
+            </FormItem>
+          );
+        }} />
 
         {watchedDetenteur === 'Le couple' && familyData.hasPartner && (
           <>
@@ -359,78 +413,6 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         />
       )}
 
-      {/* Qualification bien propre / commun */}
-      <div className="rounded-md border p-4 bg-muted/20 space-y-3">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-            <p className="text-sm font-medium">Qualification du bien</p>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button"><HelpCircle className="h-3.5 w-3.5 text-muted-foreground" /></button>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-sm">
-                  <p className="text-xs">
-                    <b>Bien propre</b> : appartient exclusivement à un époux (acquis avant mariage, par donation/héritage, ou en séparation de biens).<br/>
-                    <b>Bien commun</b> : acquis pendant l'union à titre onéreux sous régime légal.<br/>
-                    <b>Indivision</b> : détenu à plusieurs hors couple.<br/>
-                    Vous pouvez désactiver la qualification automatique pour la définir manuellement.
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <FormField
-            control={form.control}
-            name="qualification_auto"
-            render={({ field }) => (
-              <FormItem className="flex items-center gap-2 space-y-0">
-                <FormLabel className="text-xs text-muted-foreground">Auto</FormLabel>
-                <FormControl>
-                  <Switch checked={field.value !== false} onCheckedChange={field.onChange} />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="qualification_bien"
-          render={({ field }) => {
-            const isAuto = form.watch('qualification_auto') !== false;
-            const reason = qualifierBien({
-              statutCouple: maritalContext.statutCouple,
-              regimeMatrimonial: maritalContext.regimeMatrimonial,
-              dateMariage: maritalContext.dateMariage,
-              dateAcquisition: form.watch('date_acquisition')?.toISOString(),
-              origineActif: form.watch('origine_actif') as string[] | undefined,
-              modeDetention: form.watch('mode_detention'),
-              detenteur: form.watch('detenteur'),
-            }).raison;
-            return (
-              <FormItem>
-                <FormControl>
-                  <Select value={field.value || ''} onValueChange={field.onChange} disabled={isAuto}>
-                    <SelectTrigger size="lg">
-                      <SelectValue placeholder="À qualifier" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {QUALIFICATION_OPTIONS.map((q) => (
-                        <SelectItem key={q} value={q}>{q}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                {isAuto && (
-                  <FormDescription className="text-xs">{reason}</FormDescription>
-                )}
-              </FormItem>
-            );
-          }}
-        />
-      </div>
     </div>
   );
 
