@@ -69,6 +69,8 @@ export const ChargeForm: React.FC<ChargeFormProps> = ({ charge, onSubmit, onCanc
   });
 
   const dureeType = form.watch('duree_type');
+  const periodicite = form.watch('periodicite');
+  const isPonctuelle = periodicite === 'ponctuelle';
 
   const handleSubmit = (values: ChargeFormValues) => {
     const formattedValues = {
@@ -231,7 +233,7 @@ export const ChargeForm: React.FC<ChargeFormProps> = ({ charge, onSubmit, onCanc
                 name="date_debut"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date de début</FormLabel>
+                    <FormLabel>{isPonctuelle ? 'Date' : 'Date de début'}</FormLabel>
                     <FormControl>
                       <DateInput
                         value={field.value}
@@ -245,6 +247,48 @@ export const ChargeForm: React.FC<ChargeFormProps> = ({ charge, onSubmit, onCanc
               />
             </div>
 
+            {!isPonctuelle && (
+            <div className="space-y-4">
+              <FormItem>
+                <FormLabel>Durée</FormLabel>
+                <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+                  <div className="flex-1">
+                    <FormField
+                      control={form.control}
+                      name="duree_fin_date"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs text-muted-foreground font-normal">Date de fin</FormLabel>
+                          <FormControl>
+                            <DateInput
+                              value={field.value}
+                              onChange={(date) => {
+                                field.onChange(date);
+                                if (date) form.setValue('duree_type', 'Jusqu\'à date');
+                              }}
+                              placeholder="jj/mm/aaaa"
+                              disabled={dureeType === 'Indéterminée'}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant={dureeType === 'Indéterminée' ? 'default' : 'outline'}
+                    onClick={() => {
+                      form.setValue('duree_type', 'Indéterminée');
+                      form.setValue('duree_fin_date', undefined);
+                    }}
+                  >
+                    Durée indéterminée
+                  </Button>
+                </div>
+              </FormItem>
+            </div>
+            )}
             <div className="space-y-4">
               <FormField
                 control={form.control}
