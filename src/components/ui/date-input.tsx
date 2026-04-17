@@ -60,7 +60,6 @@ export const DateInput: React.FC<DateInputProps> = ({
   };
 
   const handleInputBlur = () => {
-    // Revalider et reformater l'input au blur
     if (inputValue && inputValue.length === 10) {
       try {
         const parsedDate = parse(inputValue, 'dd/MM/yyyy', new Date());
@@ -68,23 +67,22 @@ export const DateInput: React.FC<DateInputProps> = ({
           setInputValue(format(parsedDate, 'dd/MM/yyyy'));
           onChange(parsedDate);
         } else {
-          // Si la date n'est pas valide, remettre la valeur précédente
-          setInputValue(value ? format(value, 'dd/MM/yyyy') : '');
+          setInputValue(safeValue ? format(safeValue, 'dd/MM/yyyy') : '');
         }
       } catch {
-        setInputValue(value ? format(value, 'dd/MM/yyyy') : '');
+        setInputValue(safeValue ? format(safeValue, 'dd/MM/yyyy') : '');
       }
     }
   };
 
   // Synchroniser l'input avec la valeur externe
   React.useEffect(() => {
-    if (value) {
-      const formatted = format(value, 'dd/MM/yyyy');
+    if (safeValue) {
+      const formatted = format(safeValue, 'dd/MM/yyyy');
       if (inputValue !== formatted) {
         setInputValue(formatted);
       }
-    } else if (inputValue && !value) {
+    } else if (inputValue && !safeValue) {
       setInputValue('');
     }
   }, [value]);
