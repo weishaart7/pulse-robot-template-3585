@@ -257,7 +257,7 @@ export const ASSET_CATEGORIES = {
     "Autres disponibilités"
   ],
   "valeurs mobilières et placements financiers": [
-    "Compte-titres",
+    "Compte-titres (CTO)",
     "PEA",
     "PEA-PME",
     "Parts de FIP",
