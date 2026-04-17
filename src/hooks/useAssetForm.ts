@@ -7,6 +7,9 @@ import { Asset, AssetCharge } from '@/services/assetService';
 import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, mapDetenteurToDb, FamilyInfo } from '@/lib/patrimoine/utils';
 import { ASSET_CATEGORIES } from '@/constants/assetTypes';
+import { qualifierBien } from '@/lib/patrimoine/qualification';
+import { assetIndivisaireService, AssetIndivisaire } from '@/services/assetIndivisaireService';
+import { IndivisaireDraft, draftsFromIndivisaires } from '@/components/assets/IndivisairesSection';
 
 // Types d'actifs qui nécessitent le champ "Établissement"
 export const NATURES_WITH_ETABLISSEMENT = [
@@ -20,7 +23,7 @@ export const NATURES_WITH_ETABLISSEMENT = [
 
 interface UseAssetFormProps {
   asset?: Asset;
-  onSubmit: (asset: AssetFormValues, charges: AssetCharge[]) => Promise<void>;
+  onSubmit: (asset: AssetFormValues, charges: AssetCharge[]) => Promise<any>;
 }
 
 export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
@@ -31,6 +34,8 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
   const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
   const [familyMembers, setFamilyMembers] = useState<Array<{ id?: string; nom: string; prenom?: string }>>([]);
   const [familyData, setFamilyData] = useState<FamilyInfo>({ hasPartner: false });
+  const [maritalContext, setMaritalContext] = useState<{ statutCouple?: string; regimeMatrimonial?: string; dateMariage?: string }>({});
+  const [indivisaires, setIndivisaires] = useState<IndivisaireDraft[]>([]);
 
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
@@ -69,9 +74,17 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
           options.push('Le couple');
         }
 
+        // Toujours proposer "Indivision" comme option
+        options.push('Indivision');
+
         setDetenteurOptions(options);
         setFamilyData(familyInfo);
         setFamilyMembers(familyLinks || []);
+        setMaritalContext({
+          statutCouple: maritalStatus?.statut_couple,
+          regimeMatrimonial: maritalStatus?.regime_matrimonial,
+          dateMariage: maritalStatus?.date_mariage,
+        });
       } catch (error) {
         setDetenteurOptions(['Utilisateur']);
       }
@@ -79,6 +92,15 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
 
     loadFamilyData();
   }, []);
+
+  // Load indivisaires when editing existing asset
+  useEffect(() => {
+    if (asset?.id) {
+      assetIndivisaireService.getByAsset(asset.id)
+        .then((rows) => setIndivisaires(draftsFromIndivisaires(rows)))
+        .catch(() => setIndivisaires([]));
+    }
+  }, [asset?.id]);
 
   // Update form when asset or family data changes
   useEffect(() => {
@@ -117,10 +139,34 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         origine_actif: (asset as any).origine_actif || ['Acquisition à titre onéreuse'],
         situation_particuliere: (asset as any).situation_particuliere || ['Non'],
         attachement_emotionnel: (asset as any).attachement_emotionnel || 0,
-        transfert_immobilier: (asset as any).transfert_immobilier || false
+        transfert_immobilier: (asset as any).transfert_immobilier || false,
+        bien_etranger: (asset as any).bien_etranger || false,
+        qualification_bien: (asset as any).qualification_bien || undefined,
+        qualification_auto: (asset as any).qualification_auto !== false,
       });
     }
   }, [asset, familyData, form]);
+
+  // Auto-qualification : recalcule la qualification quand auto et que les inputs changent
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      const autoOn = value.qualification_auto !== false;
+      if (!autoOn) return;
+      if (!['origine_actif', 'date_acquisition', 'detenteur', 'mode_detention', 'qualification_auto'].includes(name || '')) return;
+
+      const { qualification } = qualifierBien({
+        statutCouple: maritalContext.statutCouple,
+        regimeMatrimonial: maritalContext.regimeMatrimonial,
+        dateMariage: maritalContext.dateMariage,
+        dateAcquisition: value.date_acquisition ? new Date(value.date_acquisition).toISOString() : undefined,
+        origineActif: value.origine_actif as string[] | undefined,
+        modeDetention: value.mode_detention,
+        detenteur: value.detenteur,
+      });
+      form.setValue('qualification_bien', qualification);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, maritalContext]);
 
   // Auto-adjust percentages when detenteur changes, and auto-set origine for NP
   useEffect(() => {
@@ -226,6 +272,9 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
     detenteurOptions,
     familyMembers,
     familyData,
+    maritalContext,
+    indivisaires,
+    setIndivisaires,
     handleSubmit,
     handleChargeSubmit,
     handleChargeDelete,
