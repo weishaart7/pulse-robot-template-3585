@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { DateInput } from '@/components/ui/date-input';
 import { AssetCharge } from '@/services/assetService';
-import { CHARGE_TYPES, DEBITEUR_OPTIONS, PERIODICITE_OPTIONS, DUREE_TYPE_OPTIONS, UNITE_OPTIONS } from '@/constants/assetTypes';
+import { CHARGE_TYPES, DEBITEUR_OPTIONS, PERIODICITE_OPTIONS, UNITE_OPTIONS } from '@/constants/assetTypes';
 
 const chargeSchema = z.object({
   type_charge: z.enum(['Charges courantes', 'Charges fiscales']),
