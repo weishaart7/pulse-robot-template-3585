@@ -80,7 +80,7 @@ export const ASSET_NATURES = [
   "Autres disponibilités",
   
   // Actifs financiers investis
-  "Compte-titres",
+  "Compte-titres (CTO)",
   "PEA",
   "PEA-PME",
   "Parts de FIP",
