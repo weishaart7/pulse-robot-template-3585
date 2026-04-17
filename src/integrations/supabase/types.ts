@@ -109,6 +109,57 @@ export type Database = {
           },
         ]
       }
+      asset_indivisaires: {
+        Row: {
+          asset_id: string
+          created_at: string
+          family_link_id: string | null
+          id: string
+          nom_libre: string | null
+          pourcentage: number
+          type_indivisaire: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          family_link_id?: string | null
+          id?: string
+          nom_libre?: string | null
+          pourcentage?: number
+          type_indivisaire?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          family_link_id?: string | null
+          id?: string
+          nom_libre?: string | null
+          pourcentage?: number
+          type_indivisaire?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_indivisaires_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_indivisaires_family_link_id_fkey"
+            columns: ["family_link_id"]
+            isOneToOne: false
+            referencedRelation: "family_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asset_revenus: {
         Row: {
           asset_id: string
@@ -154,6 +205,7 @@ export type Database = {
       assets: {
         Row: {
           attachement_emotionnel: number | null
+          bien_etranger: boolean | null
           created_at: string
           date_acquisition: string | null
           date_estimation: string | null
@@ -179,6 +231,8 @@ export type Database = {
           pourcentage_conjoint: number | null
           pourcentage_terrain_force: number | null
           pourcentage_utilisateur: number | null
+          qualification_auto: boolean | null
+          qualification_bien: string | null
           regime_location: string | null
           revalorisation_annuelle: number | null
           situation_particuliere: string[] | null
@@ -199,6 +253,7 @@ export type Database = {
         }
         Insert: {
           attachement_emotionnel?: number | null
+          bien_etranger?: boolean | null
           created_at?: string
           date_acquisition?: string | null
           date_estimation?: string | null
@@ -224,6 +279,8 @@ export type Database = {
           pourcentage_conjoint?: number | null
           pourcentage_terrain_force?: number | null
           pourcentage_utilisateur?: number | null
+          qualification_auto?: boolean | null
+          qualification_bien?: string | null
           regime_location?: string | null
           revalorisation_annuelle?: number | null
           situation_particuliere?: string[] | null
@@ -244,6 +301,7 @@ export type Database = {
         }
         Update: {
           attachement_emotionnel?: number | null
+          bien_etranger?: boolean | null
           created_at?: string
           date_acquisition?: string | null
           date_estimation?: string | null
@@ -269,6 +327,8 @@ export type Database = {
           pourcentage_conjoint?: number | null
           pourcentage_terrain_force?: number | null
           pourcentage_utilisateur?: number | null
+          qualification_auto?: boolean | null
+          qualification_bien?: string | null
           regime_location?: string | null
           revalorisation_annuelle?: number | null
           situation_particuliere?: string[] | null
@@ -526,6 +586,7 @@ export type Database = {
           nature: string
           pourcentage_conjoint: number | null
           pourcentage_utilisateur: number | null
+          reporter_budget: boolean | null
           societe_id: string | null
           taux_interet: number | null
           updated_at: string
@@ -542,6 +603,7 @@ export type Database = {
           nature: string
           pourcentage_conjoint?: number | null
           pourcentage_utilisateur?: number | null
+          reporter_budget?: boolean | null
           societe_id?: string | null
           taux_interet?: number | null
           updated_at?: string
@@ -558,6 +620,7 @@ export type Database = {
           nature?: string
           pourcentage_conjoint?: number | null
           pourcentage_utilisateur?: number | null
+          reporter_budget?: boolean | null
           societe_id?: string | null
           taux_interet?: number | null
           updated_at?: string
