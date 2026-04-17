@@ -233,6 +233,23 @@ export const EmpruntForm = ({ emprunt, onCancel, onSubmit }: EmpruntFormProps) =
                 />
               </div>
 
+              <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-muted/30">
+                <Checkbox
+                  id="reporterBudget"
+                  checked={reporterBudget}
+                  onCheckedChange={(c) => setReporterBudget(!!c)}
+                />
+                <div className="space-y-1 leading-none">
+                  <Label htmlFor="reporterBudget" className="flex items-center gap-2 cursor-pointer">
+                    <Wallet className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                    Reporter la mensualité dans le budget
+                  </Label>
+                  <p className="text-[12px] text-muted-foreground">
+                    La mensualité de cet emprunt sera ajoutée automatiquement aux charges du budget mensuel.
+                  </p>
+                </div>
+              </div>
+
               {detenteurOptions.length > 0 && (
                 <div className="space-y-2">
                   <Label htmlFor="detenteur">Détenteur</Label>
