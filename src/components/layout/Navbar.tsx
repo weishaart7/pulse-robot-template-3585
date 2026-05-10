@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { CircleUserRound, Settings, Gift, CreditCard, LogOut } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { GlowEffect } from '@/components/ui/glow-effect';
 import {
   DropdownMenu,
   DropdownMenuContent,

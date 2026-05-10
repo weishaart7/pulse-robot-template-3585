@@ -2,8 +2,6 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { CircleUserRound, Settings, Gift, CreditCard, LogOut } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { GlowEffect } from '@/components/ui/glow-effect';
 import { SearchBar } from './SearchBar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 export function DashboardHeader() {
