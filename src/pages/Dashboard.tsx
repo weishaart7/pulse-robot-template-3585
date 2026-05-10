@@ -57,7 +57,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card className="border-0">
+        <Card className="border border-black">
           <CardHeader>
             <CardTitle className="text-xl">Budget</CardTitle>
             <CardDescription>
@@ -69,7 +69,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card className="border-0 overflow-hidden">
+        <Card className="border border-black overflow-hidden">
           <CardHeader className="pb-4">
             <CardTitle className="text-xl">Fiscalité</CardTitle>
             <CardDescription>
@@ -129,7 +129,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card className="border-0">
+        <Card className="border border-black">
           <CardHeader>
             <CardTitle className="text-xl">Transmission</CardTitle>
             <CardDescription>
@@ -143,7 +143,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card className="border-0">
+        <Card className="border border-black">
           <CardHeader>
             <CardTitle className="text-xl">Retraite</CardTitle>
             <CardDescription>
