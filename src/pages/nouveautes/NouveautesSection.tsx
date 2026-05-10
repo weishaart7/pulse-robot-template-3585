@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { DashboardSidebar } from '@/components/layout/DashboardSidebar';
-import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { DerniersAjouts } from './components/DerniersAjouts';
 import { Roadmap } from './components/Roadmap';
 
@@ -29,7 +28,6 @@ const NouveautesSection = () => {
     <div className="flex bg-background w-full h-screen overflow-hidden">
       <DashboardSidebar />
       <div className="flex-1 flex flex-col">
-        <DashboardHeader />
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 rounded-tl-xl" style={{ backgroundColor: '#f6f5f6' }}>
           <div className="p-6">
       <div className="mb-6">
