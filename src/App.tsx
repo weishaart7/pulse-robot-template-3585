@@ -46,11 +46,6 @@ const App = () => {
                     <NouveautesSection />
                   </ProtectedRoute>
                 } />
-                <Route path="/investment" element={
-                  <ProtectedRoute>
-                    <InvestmentPlatform />
-                  </ProtectedRoute>
-                } />
                 <Route path="/societes/form" element={
                   <ProtectedRoute>
                     <SocieteFormPage />
