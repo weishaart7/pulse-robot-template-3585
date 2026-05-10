@@ -12,7 +12,6 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import DashboardSection from "./pages/DashboardSection";
 import DashboardLayout from "./components/layout/DashboardLayout";
-import InvestmentPlatform from "./pages/investment/InvestmentPlatform";
 import NouveautesSection from "./pages/nouveautes/NouveautesSection";
 import { SocieteFormPage } from "./pages/societes/SocieteFormPage";
 import NotFound from "./pages/NotFound";
@@ -45,11 +44,6 @@ const App = () => {
                 <Route path="/nouveautes" element={
                   <ProtectedRoute>
                     <NouveautesSection />
-                  </ProtectedRoute>
-                } />
-                <Route path="/investment" element={
-                  <ProtectedRoute>
-                    <InvestmentPlatform />
                   </ProtectedRoute>
                 } />
                 <Route path="/societes/form" element={

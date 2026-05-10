@@ -2,8 +2,6 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { CircleUserRound, Settings, Gift, CreditCard, LogOut } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { GlowEffect } from '@/components/ui/glow-effect';
 import { SearchBar } from './SearchBar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 export function DashboardHeader() {
@@ -11,7 +9,6 @@ export function DashboardHeader() {
     user,
     logout
   } = useAuth();
-  const navigate = useNavigate();
   const handleLogout = () => {
     logout();
   };
@@ -19,13 +16,6 @@ export function DashboardHeader() {
       <SearchBar />
       
       <div className="flex items-center gap-3">
-        <div className="relative">
-          <GlowEffect colors={['#FF5733', '#33FF57', '#3357FF', '#F1C40F']} mode="colorShift" blur="soft" duration={3} scale={0.9} />
-          <button onClick={() => navigate('/investment')} className="relative inline-flex items-center gap-1 rounded-md bg-zinc-950 px-2.5 py-1.5 text-sm text-zinc-50 outline outline-1 outline-[#fff2f21f] hover:bg-zinc-800 transition-colors">
-            Accéder à Imeris Invest
-          </button>
-        </div>
-        
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button size="icon" variant="outline" aria-label="Menu utilisateur">
