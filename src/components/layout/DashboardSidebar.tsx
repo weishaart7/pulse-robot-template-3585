@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, Building2, Building, PiggyBank, Calculator, DollarSign, FileText, TrendingUp, BarChart3, BookOpen, Sparkles, Calendar, MessageSquare, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Home, Users, Building2, Building, PiggyBank, Calculator, DollarSign, FileText, TrendingUp, BarChart3, BookOpen, Sparkles, Calendar, MessageSquare, PanelLeftClose, PanelLeftOpen, Search, CircleUserRound, Settings, Gift, CreditCard, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { SidebarSearchDialog } from './SidebarSearchDialog';
 
 const menuItems = [{
   label: 'Vue d\'ensemble',
@@ -71,7 +74,9 @@ const bottomItems = [
 export function DashboardSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [open, setOpen] = useState(true);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const getCurrentValue = () => {
     const path = location.pathname;
@@ -117,7 +122,7 @@ export function DashboardSidebar() {
             className="p-1 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
             aria-label="Réduire la barre latérale"
           >
-            <PanelLeftClose className="h-4 w-4" />
+            <PanelLeftClose className="h-4 w-4" strokeWidth={1.5} />
           </button>
         )}
       </div>
@@ -128,10 +133,59 @@ export function DashboardSidebar() {
             className="p-1 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
             aria-label="Ouvrir la barre latérale"
           >
-            <PanelLeftOpen className="h-4 w-4" />
+            <PanelLeftOpen className="h-4 w-4" strokeWidth={1.5} />
           </button>
         </div>
       )}
+
+      {/* Profile + Search */}
+      <div className={cn("px-3 pb-3 flex items-center gap-1", open ? "mx-[19px]" : "flex-col mx-auto")}>
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="p-2 rounded-md text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+          aria-label="Rechercher"
+        >
+          <Search className="h-4 w-4" strokeWidth={1.5} />
+        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="p-2 rounded-md text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+              aria-label="Menu utilisateur"
+            >
+              <CircleUserRound className="h-4 w-4" strokeWidth={1.5} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="max-w-64" align="start">
+            <DropdownMenuLabel className="flex flex-col">
+              <span>Connecté en tant que</span>
+              <span className="text-xs font-normal text-foreground">{user?.email}</span>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem>
+                <CreditCard className="h-4 w-4" />
+                Gérer mon abonnement
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Gift className="h-4 w-4" />
+                Parrainage
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Settings className="h-4 w-4" />
+                Paramètres
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => logout()}>
+              <LogOut className="h-4 w-4" />
+              Déconnexion
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <SidebarSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
       {/* Navigation */}
       <nav className="flex-1 p-2 space-y-1 overflow-y-auto overflow-x-hidden">
