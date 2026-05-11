@@ -25,6 +25,7 @@ import {
   MODE_DETENTION_OPTIONS,
   NATURES_LIQUIDITES_FR
 } from '@/schemas/assetSchema';
+import { isSocieteEligibleNature } from '@/lib/patrimoine/societeTransfer';
 
 interface AssetFormProps {
   asset?: Asset;
