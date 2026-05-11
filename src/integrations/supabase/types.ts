@@ -240,6 +240,7 @@ export type Database = {
           statut_bien: string | null
           surface_m2: number | null
           transfert_immobilier: boolean | null
+          transfert_societe: boolean | null
           travaux_construction: number | null
           travaux_renovation: number | null
           type_location: string | null
@@ -288,6 +289,7 @@ export type Database = {
           statut_bien?: string | null
           surface_m2?: number | null
           transfert_immobilier?: boolean | null
+          transfert_societe?: boolean | null
           travaux_construction?: number | null
           travaux_renovation?: number | null
           type_location?: string | null
@@ -336,6 +338,7 @@ export type Database = {
           statut_bien?: string | null
           surface_m2?: number | null
           transfert_immobilier?: boolean | null
+          transfert_societe?: boolean | null
           travaux_construction?: number | null
           travaux_renovation?: number | null
           type_location?: string | null
