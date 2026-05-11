@@ -25,6 +25,7 @@ export const useImmobilierAssets = () => {
         .select('*')
         .eq('user_id', user.id)
         .eq('transfert_immobilier', true)
+        .in('nature', IMMOBILIER_NATURES as unknown as string[])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
