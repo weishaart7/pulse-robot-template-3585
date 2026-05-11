@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Asset } from '@/services/assetService';
+import { ASSET_CATEGORIES } from '@/constants/assetTypes';
+
+const IMMOBILIER_NATURES = ASSET_CATEGORIES['actifs immobiliers'] as readonly string[];
 
 export const useImmobilierAssets = () => {
   const [assets, setAssets] = useState<Asset[]>([]);
