@@ -93,7 +93,7 @@ export function DashboardSidebar() {
 
   return (
     <motion.div
-      className="bg-white flex flex-col h-full overflow-hidden flex-shrink-0 relative"
+      className="bg-white flex flex-col h-full overflow-hidden flex-shrink-0 relative rounded-tr-xl"
       animate={{
         width: open ? 240 : 64,
       }}
