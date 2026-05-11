@@ -81,6 +81,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const watchedValeurAcquisition = form.watch('valeur_acquisition');
   const watchedValeurEstimee = form.watch('valeur_estimee');
   const isImmobilier = getAssetCategory(watchedNature) === 'actifs immobiliers';
+  const isSocieteEligible = isSocieteEligibleNature(watchedNature);
   const hideAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature);
   const showEtablissement = NATURES_WITH_ETABLISSEMENT.includes(watchedNature);
   const showBienEtranger = watchedNature && !NATURES_LIQUIDITES_FR.includes(watchedNature);
