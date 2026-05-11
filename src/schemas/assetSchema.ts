@@ -91,6 +91,7 @@ export const getDefaultAssetValues = (): AssetFormValues => ({
   situation_particuliere: ['Non'],
   attachement_emotionnel: 0,
   transfert_immobilier: true,
+  transfert_societe: true,
   bien_etranger: false,
   qualification_auto: true,
 });
