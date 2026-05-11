@@ -70,6 +70,7 @@ export const assetSchema = z.object({
   situation_particuliere: z.array(z.string()).optional(),
   attachement_emotionnel: z.number().min(0).max(10).optional(),
   transfert_immobilier: z.boolean().optional(),
+  transfert_societe: z.boolean().optional(),
   bien_etranger: z.boolean().optional(),
   qualification_bien: z.string().optional(),
   qualification_auto: z.boolean().optional(),
