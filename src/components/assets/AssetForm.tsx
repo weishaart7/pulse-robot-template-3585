@@ -199,6 +199,8 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                 </FormDescription>
               </div>
             </FormItem>
+          )}
+        />
       )}
 
       {isSocieteEligible && (
@@ -221,8 +223,6 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               </div>
             </FormItem>
           )}
-        />
-      )}
         />
       )}
 
