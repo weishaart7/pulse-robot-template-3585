@@ -1,0 +1,1 @@
+ALTER TABLE public.assets ADD COLUMN IF NOT EXISTS transfert_societe boolean DEFAULT false;

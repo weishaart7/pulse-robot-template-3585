@@ -25,6 +25,7 @@ import {
   MODE_DETENTION_OPTIONS,
   NATURES_LIQUIDITES_FR
 } from '@/schemas/assetSchema';
+import { isSocieteEligibleNature } from '@/lib/patrimoine/societeTransfer';
 
 interface AssetFormProps {
   asset?: Asset;
@@ -80,6 +81,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const watchedValeurAcquisition = form.watch('valeur_acquisition');
   const watchedValeurEstimee = form.watch('valeur_estimee');
   const isImmobilier = getAssetCategory(watchedNature) === 'actifs immobiliers';
+  const isSocieteEligible = isSocieteEligibleNature(watchedNature);
   const hideAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature);
   const showEtablissement = NATURES_WITH_ETABLISSEMENT.includes(watchedNature);
   const showBienEtranger = watchedNature && !NATURES_LIQUIDITES_FR.includes(watchedNature);
@@ -194,6 +196,29 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                 <FormLabel>Transfert dans Immobilier</FormLabel>
                 <FormDescription>
                   Ce bien apparaîtra dans la section "Immobilier" → "Mes biens"
+                </FormDescription>
+              </div>
+            </FormItem>
+          )}
+        />
+      )}
+
+      {isSocieteEligible && (
+        <FormField
+          control={form.control}
+          name="transfert_societe"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>Transfert dans Sociétés</FormLabel>
+                <FormDescription>
+                  Une fiche société sera créée automatiquement dans la section "Sociétés" → "Mes sociétés"
                 </FormDescription>
               </div>
             </FormItem>

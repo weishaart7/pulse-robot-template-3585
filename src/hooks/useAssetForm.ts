@@ -140,6 +140,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         situation_particuliere: (asset as any).situation_particuliere || ['Non'],
         attachement_emotionnel: (asset as any).attachement_emotionnel || 0,
         transfert_immobilier: (asset as any).transfert_immobilier || false,
+        transfert_societe: (asset as any).transfert_societe ?? true,
         bien_etranger: (asset as any).bien_etranger || false,
         qualification_bien: (asset as any).qualification_bien || undefined,
         qualification_auto: (asset as any).qualification_auto !== false,

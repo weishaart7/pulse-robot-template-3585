@@ -45,6 +45,8 @@ export interface Asset {
   bien_etranger?: boolean;
   qualification_bien?: string;
   qualification_auto?: boolean;
+  transfert_societe?: boolean;
+  societe_id?: string | null;
   created_at?: string;
   updated_at?: string;
 }
