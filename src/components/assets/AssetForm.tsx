@@ -199,7 +199,30 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                 </FormDescription>
               </div>
             </FormItem>
+      )}
+
+      {isSocieteEligible && (
+        <FormField
+          control={form.control}
+          name="transfert_societe"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>Transfert dans Sociétés</FormLabel>
+                <FormDescription>
+                  Une fiche société sera créée automatiquement dans la section "Sociétés" → "Mes sociétés"
+                </FormDescription>
+              </div>
+            </FormItem>
           )}
+        />
+      )}
         />
       )}
 
