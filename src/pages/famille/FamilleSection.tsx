@@ -75,27 +75,34 @@ const FamilleSection = () => {
 
     return (
       <div className="min-h-screen" style={{ backgroundColor: '#f6f5f6' }}>
-        {/* Header */}
-        <div className="sticky top-0 z-20 border-b bg-card/95 backdrop-blur-md">
-          <div className="max-w-5xl mx-auto flex items-center justify-between px-6 py-3">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setEditView(null)}
-                className="gap-2 text-muted-foreground hover:text-foreground"
+        {/* Discreet back link */}
+        <div className="max-w-4xl mx-auto px-6 pt-8">
+          <button
+            onClick={() => setEditView(null)}
+            className="group inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" strokeWidth={1.5} />
+            Retour
+          </button>
+        </div>
+
+        {/* Identity header */}
+        <div className="max-w-4xl mx-auto px-6 pt-6 pb-8">
+          <div className="flex items-end justify-between gap-6 flex-wrap">
+            <div className="flex items-center gap-4">
+              <div
+                className="h-14 w-14 rounded-full flex items-center justify-center shrink-0"
+                style={{ backgroundColor: accentColor + '15' }}
               >
-                <ArrowLeft className="h-4 w-4" />
-                Retour
-              </Button>
-              <div className="h-5 w-px bg-border" />
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: accentColor + '20' }}>
-                  <User className="h-4 w-4" style={{ color: accentColor }} />
-                </div>
-                <span className="text-sm font-medium text-foreground">
+                <User className="h-6 w-6" style={{ color: accentColor }} strokeWidth={1.5} />
+              </div>
+              <div>
+                <h1 className="text-3xl font-semibold tracking-tight text-foreground leading-tight">
                   {editView === 'client' ? clientName : (partnerName || 'Partenaire')}
-                </span>
+                </h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {editView === 'client' ? 'Fiche personnelle' : (relationStatus || 'Partenaire')}
+                </p>
               </div>
             </div>
 
@@ -126,7 +133,7 @@ const FamilleSection = () => {
         </div>
 
         {/* Form content */}
-        <div className="max-w-4xl mx-auto px-6 py-8">
+        <div className="max-w-4xl mx-auto px-6 pb-12">
           {editView === 'client' && (
             <FicheClientForm onSuccess={() => {
               setEditView(null);
