@@ -121,7 +121,7 @@ export default function ActionHubInput({
           placeholder={placeholder}
           value={currentValue}
           onChange={(e) => handleValueChange(e.target.value)}
-          className={`bg-muted border-transparent shadow-none focus-visible:bg-background focus-visible:border-ring ${actions.length > 0 ? 'pr-24' : 'pr-8'}`}
+          className={`bg-muted border-transparent shadow-none rounded-md focus-visible:bg-background focus-visible:border-ring ${actions.length > 0 ? 'pr-24' : 'pr-8'}`}
           onFocus={() => setShowHistory(true)}
           onBlur={() => setTimeout(() => setShowHistory(false), 200)}
         />
