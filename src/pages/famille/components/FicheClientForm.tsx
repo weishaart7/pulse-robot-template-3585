@@ -372,7 +372,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                           <FormControl>
                             <Input
                               placeholder="JJ/MM/AAAA"
-                              className="bg-muted border-transparent shadow-none rounded focus-visible:bg-background focus-visible:border-ring"
+                              className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                               value={field.value instanceof Date ? format(field.value, 'dd/MM/yyyy') : field.value || ''}
                               onChange={(e) => {
                                 const value = e.target.value;
@@ -522,7 +522,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                         <FormLabel className="text-xs">Capacité juridique</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded focus-visible:bg-background focus-visible:border-ring">
+                            <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
                               <SelectValue placeholder="Sélectionner la capacité juridique" />
                             </SelectTrigger>
                           </FormControl>
