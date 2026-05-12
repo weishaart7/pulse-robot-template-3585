@@ -87,7 +87,7 @@ const FamilleSection = () => {
         </div>
 
         {/* Identity header */}
-        <div className="max-w-4xl mx-auto px-6 pt-6 pb-8">
+        <div className="w-full mx-auto px-4 sm:px-6 pt-6 pb-8">
           <div className="flex items-end justify-between gap-6 flex-wrap">
             <div className="flex items-center gap-4">
               <div
@@ -133,7 +133,7 @@ const FamilleSection = () => {
         </div>
 
         {/* Form content */}
-        <div className="max-w-4xl mx-auto px-6 pb-12">
+        <div className="w-full mx-auto px-4 sm:px-6 pb-12">
           {editView === 'client' && (
             <FicheClientForm onSuccess={() => {
               setEditView(null);
