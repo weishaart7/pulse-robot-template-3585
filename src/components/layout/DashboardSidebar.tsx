@@ -95,7 +95,7 @@ export function DashboardSidebar() {
     <motion.div
       className="bg-white flex flex-col h-full overflow-hidden flex-shrink-0 relative rounded-tr-xl"
       animate={{
-        width: open ? 240 : 64,
+        width: open ? 220 : 64,
       }}
       transition={{ 
         duration: 0.25, 
