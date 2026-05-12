@@ -7,7 +7,7 @@ import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
 import { PartnerForm } from "@/components/famille/PartnerForm";
 import { RelationInfoDialog } from "@/components/famille/RelationInfoDialog";
-import { User, Plus, ArrowLeft } from 'lucide-react';
+import { User, Plus, ArrowLeft, Pencil, FileUp, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type EditView = 'client' | 'partner';
