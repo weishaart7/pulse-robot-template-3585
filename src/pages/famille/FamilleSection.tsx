@@ -108,7 +108,7 @@ const FamilleSection = () => {
           const fields = isClient
             ? [
                 familyProfile?.prenom, familyProfile?.nom, familyProfile?.civility,
-                familyProfile?.date_naissance, familyProfile?.lieu_naissance,
+                familyProfile?.date_naissance, (familyProfile as any)?.lieu_naissance,
                 familyProfile?.nationalite, familyProfile?.profession,
                 (familyProfile as any)?.email, (familyProfile as any)?.telephone,
                 (familyProfile as any)?.adresse,
