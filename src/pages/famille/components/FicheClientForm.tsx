@@ -253,18 +253,18 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
 
         {/* Informations générales */}
         {activeSection === 'informations-generales' && (
-          <div className="space-y-6">
+          <div className="space-y-7">
             {/* Civilité card */}
-            <div className="rounded-2xl border bg-card p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Identité</h3>
+            <div className="premium-card">
+              <h3 className="premium-section-title">Identité</h3>
               
               <FormField
                 control={form.control}
                 name="civilite"
                 render={({ field }) => (
                   <FormItem className="space-y-2 mb-5">
-                    <FormLabel className="text-xs">
-                      Civilité <span className="text-destructive">*</span>
+                    <FormLabel className="premium-label">
+                      Civilité <span className="text-destructive/70">*</span>
                     </FormLabel>
                     <FormControl>
                       <RadioGroup
@@ -279,15 +279,11 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                         ].map((option) => (
                           <label
                             key={option.value}
-                            className={cn(
-                              "flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer transition-all duration-200",
-                              field.value === option.value
-                                ? "border-primary bg-primary/5 text-primary"
-                                : "border-border hover:border-primary/40 hover:bg-muted/50"
-                            )}
+                            data-active={field.value === option.value}
+                            className="premium-pill"
                           >
-                            <RadioGroupItem value={option.value} id={`civ-${option.value}`} />
-                            <span className="text-sm font-medium">{option.label}</span>
+                            <RadioGroupItem value={option.value} id={`civ-${option.value}`} className="sr-only" />
+                            <span>{option.label}</span>
                           </label>
                         ))}
                       </RadioGroup>
@@ -365,14 +361,14 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                   render={({ field }) => (
                     <FormItem>
                       <div className="relative w-full flex flex-col gap-1">
-                        <FormLabel className="text-xs">
-                          Date de naissance <span className="text-destructive">*</span>
+                        <FormLabel className="premium-label">
+                          Date de naissance <span className="text-destructive/70">*</span>
                         </FormLabel>
                         <div className="flex items-center gap-2">
                           <FormControl>
                             <Input
                               placeholder="JJ/MM/AAAA"
-                              className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                              className="premium-field"
                               value={field.value instanceof Date ? format(field.value, 'dd/MM/yyyy') : field.value || ''}
                               onChange={(e) => {
                                 const value = e.target.value;
@@ -392,7 +388,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                           </FormControl>
                           <Popover>
                             <PopoverTrigger asChild>
-                              <Button variant="outline" size="icon" className="h-10 w-10 shrink-0">
+                              <Button variant="outline" size="icon" className="h-10 w-10 shrink-0 rounded-lg border-[hsl(220_16%_90%)] bg-gradient-to-b from-white to-[hsl(220_25%_99%)] hover:bg-white shadow-[0_1px_2px_hsl(220_30%_20%/0.04)]">
                                 <CalendarIcon className="h-4 w-4" />
                               </Button>
                             </PopoverTrigger>
@@ -417,8 +413,8 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
             </div>
 
             {/* Profession & Naissance card */}
-            <div className="rounded-2xl border bg-card p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Profession & Naissance</h3>
+            <div className="premium-card">
+              <h3 className="premium-section-title">Profession & Naissance</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                 <FormField
@@ -468,8 +464,8 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                   render={({ field }) => (
                     <FormItem>
                       <div className="relative w-full flex flex-col gap-1">
-                        <FormLabel className="text-xs">
-                          Pays de naissance <span className="text-destructive">*</span>
+                        <FormLabel className="premium-label">
+                          Pays de naissance <span className="text-destructive/70">*</span>
                         </FormLabel>
                         <FormControl>
                           <SelectMenu
@@ -490,8 +486,8 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                   render={({ field }) => (
                     <FormItem>
                       <div className="relative w-full flex flex-col gap-1">
-                        <FormLabel className="text-xs">
-                          Nationalité <span className="text-destructive">*</span>
+                        <FormLabel className="premium-label">
+                          Nationalité <span className="text-destructive/70">*</span>
                         </FormLabel>
                         <FormControl>
                           <NationalitySelect
@@ -509,8 +505,8 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
             </div>
 
             {/* Situation juridique card */}
-            <div className="rounded-2xl border bg-card p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Situation juridique</h3>
+            <div className="premium-card">
+              <h3 className="premium-section-title">Situation juridique</h3>
               
               <div className="flex flex-wrap items-end gap-6">
                 <FormField
@@ -519,10 +515,10 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                   render={({ field }) => (
                     <FormItem className="w-72">
                       <div className="relative w-full flex flex-col gap-1">
-                        <FormLabel className="text-xs">Capacité juridique</FormLabel>
+                        <FormLabel className="premium-label">Capacité juridique</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
+                            <SelectTrigger size="lg" className="premium-field">
                               <SelectValue placeholder="Sélectionner la capacité juridique" />
                             </SelectTrigger>
                           </FormControl>
@@ -552,9 +548,9 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                             checked={field.value}
                             onChange={field.onChange}
                           />
-                          <span className="w-5 h-5 border border-input rounded relative flex items-center justify-center peer-checked:border-primary"></span>
+                          <span className="w-[18px] h-[18px] rounded-md border border-[hsl(220_16%_82%)] bg-gradient-to-b from-white to-[hsl(220_25%_99%)] shadow-[0_1px_2px_hsl(220_30%_20%/0.04)] relative flex items-center justify-center transition-all duration-200 peer-checked:border-primary peer-checked:bg-primary peer-checked:shadow-[0_0_0_3px_hsl(220_90%_60%/0.12)]"></span>
                           <svg className="absolute hidden peer-checked:inline left-1 top-1/2 transform -translate-y-1/2" width="11" height="8" viewBox="0 0 11 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="m10.092.952-.005-.006-.006-.005A.45.45 0 0 0 9.43.939L4.162 6.23 1.585 3.636a.45.45 0 0 0-.652 0 .47.47 0 0 0 0 .657l.002.002L3.58 6.958a.8.8 0 0 0 .567.242.78.78 0 0 0 .567-.242l5.333-5.356a.474.474 0 0 0 .044-.65Zm-5.86 5.349V6.3Z" fill="currentColor" stroke="currentColor" strokeWidth=".4" className="text-primary"/>
+                            <path d="m10.092.952-.005-.006-.006-.005A.45.45 0 0 0 9.43.939L4.162 6.23 1.585 3.636a.45.45 0 0 0-.652 0 .47.47 0 0 0 0 .657l.002.002L3.58 6.958a.8.8 0 0 0 .567.242.78.78 0 0 0 .567-.242l5.333-5.356a.474.474 0 0 0 .044-.65Zm-5.86 5.349V6.3Z" fill="currentColor" stroke="currentColor" strokeWidth=".4" className="text-primary-foreground"/>
                           </svg>
                           <span className="text-foreground select-none text-sm">Personne handicapée</span>
                         </label>
@@ -569,9 +565,9 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
 
         {/* Coordonnées */}
         {activeSection === 'coordonnees' && (
-          <div className="space-y-6">
-            <div className="rounded-2xl border bg-card p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Contact</h3>
+          <div className="space-y-7">
+            <div className="premium-card">
+              <h3 className="premium-section-title">Contact</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <FormField
@@ -615,8 +611,8 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
               </div>
             </div>
 
-            <div className="rounded-2xl border bg-card p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Adresse</h3>
+            <div className="premium-card">
+              <h3 className="premium-section-title">Adresse</h3>
               
               <div className="space-y-5">
                 <FormField
