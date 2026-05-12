@@ -194,33 +194,6 @@ const FamilleSection = () => {
                   </div>
                 </div>
 
-                {/* Actions rapides */}
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 backdrop-blur px-3 py-1.5 text-[12.5px] text-foreground/80 hover:text-foreground hover:bg-background transition-all duration-300"
-                    style={{ transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
-                  >
-                    <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
-                    Modifier
-                  </button>
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-transparent px-3 py-1.5 text-[12.5px] text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all duration-300"
-                    style={{ transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
-                  >
-                    <FileUp className="h-3.5 w-3.5" strokeWidth={1.5} />
-                    Document
-                  </button>
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-transparent px-3 py-1.5 text-[12.5px] text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all duration-300"
-                    style={{ transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
-                  >
-                    <FileText className="h-3.5 w-3.5" strokeWidth={1.5} />
-                    Rapport
-                  </button>
-                </div>
               </div>
 
               {/* Segmented control */}
