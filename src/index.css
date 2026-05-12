@@ -341,3 +341,55 @@
 .delay-700 {
   animation-delay: 700ms;
 }
+
+/* ============ Premium form system ============ */
+@layer components {
+  .premium-field {
+    @apply h-10 w-full rounded-lg px-3.5 text-[13.5px] text-foreground;
+    background: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 25% 99%) 100%);
+    border: 1px solid hsl(220 16% 90% / 0.9);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.6) inset,
+      0 1px 2px hsl(220 30% 20% / 0.04);
+    transition: box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 200ms cubic-bezier(0.16, 1, 0.3, 1),
+                background 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .premium-field::placeholder {
+    color: hsl(220 12% 62%);
+  }
+  .premium-field:hover:not(:focus):not(:disabled) {
+    border-color: hsl(220 16% 84%);
+  }
+  .premium-field:focus,
+  .premium-field:focus-visible,
+  .premium-field[data-state="open"] {
+    outline: none;
+    border-color: hsl(220 80% 55% / 0.55);
+    box-shadow:
+      0 0 0 3px hsl(220 90% 60% / 0.12),
+      0 1px 2px hsl(220 30% 20% / 0.05);
+    background: hsl(0 0% 100%);
+  }
+  .premium-field:disabled {
+    @apply opacity-60 cursor-not-allowed;
+  }
+
+  .premium-label {
+    @apply text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground/80;
+  }
+
+  .premium-card {
+    @apply rounded-2xl p-7;
+    background: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 30% 99.5%) 100%);
+    border: 1px solid hsl(220 16% 92% / 0.9);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100%) inset,
+      0 1px 2px hsl(220 30% 20% / 0.03),
+      0 8px 24px -12px hsl(220 30% 20% / 0.08);
+  }
+  .premium-section-title {
+    @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/70 mb-5;
+  }
+}
+
