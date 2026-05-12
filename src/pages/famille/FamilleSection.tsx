@@ -7,7 +7,7 @@ import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
 import { PartnerForm } from "@/components/famille/PartnerForm";
 import { RelationInfoDialog } from "@/components/famille/RelationInfoDialog";
-import { User, Plus, ArrowLeft, Pencil, FileUp, FileText } from 'lucide-react';
+import { User, Plus, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type EditView = 'client' | 'partner';
@@ -86,145 +86,51 @@ const FamilleSection = () => {
           </button>
         </div>
 
-        {/* Identity hero */}
-        {(() => {
-          const isClient = editView === 'client';
-          const displayName = isClient ? clientName : (partnerName || 'Partenaire');
-          const subtitle = isClient ? 'Fiche personnelle' : (relationStatus || 'Partenaire');
-          const age = isClient ? clientAge : partnerAge;
-          const nationality = isClient
-            ? (familyProfile?.nationalite as string | undefined)
-            : (maritalData?.nationalite_conjoint as string | undefined);
-
-          // Monogram
-          const initials = displayName
-            .split(' ')
-            .filter(Boolean)
-            .slice(0, 2)
-            .map((p) => p[0]?.toUpperCase() ?? '')
-            .join('') || '·';
-
-          // Completion: count filled fields among a curated set
-          const fields = isClient
-            ? [
-                familyProfile?.prenom, familyProfile?.nom, familyProfile?.civility,
-                familyProfile?.date_naissance, (familyProfile as any)?.lieu_naissance,
-                familyProfile?.nationalite, familyProfile?.profession,
-                (familyProfile as any)?.email, (familyProfile as any)?.telephone,
-                (familyProfile as any)?.adresse,
-              ]
-            : [
-                maritalData?.prenom_conjoint, maritalData?.nom_conjoint,
-                maritalData?.civilite_conjoint, maritalData?.date_naissance_conjoint,
-                (maritalData as any)?.lieu_naissance_conjoint,
-                maritalData?.nationalite_conjoint,
-                (maritalData as any)?.profession_conjoint,
-                maritalData?.statut_couple,
-              ];
-          const filled = fields.filter((v) => v !== null && v !== undefined && String(v).trim() !== '').length;
-          const completion = Math.round((filled / fields.length) * 100);
-          const risk = 100 - completion;
-          const riskLabel = risk >= 66 ? 'Élevé' : risk >= 33 ? 'Modéré' : 'Faible';
-          const riskColor = risk >= 66 ? 'hsl(0 65% 55%)' : risk >= 33 ? 'hsl(38 90% 50%)' : 'hsl(142 60% 40%)';
-
-          const metaParts = [
-            age !== undefined ? `${age} ans` : null,
-            nationality || null,
-          ].filter(Boolean) as string[];
-
-          return (
-            <div
-              className="max-w-4xl mx-auto px-6 pt-10 pb-12"
-              style={{ animation: 'fade-in 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}
-            >
-              <div className="flex items-start justify-between gap-8 flex-wrap">
-                {/* Identity block */}
-                <div className="flex items-center gap-6 min-w-0">
-                  <div
-                    className="relative h-20 w-20 rounded-full flex items-center justify-center shrink-0 transition-transform duration-500 hover:scale-[1.02]"
-                    style={{
-                      background: `linear-gradient(135deg, ${accentColor}22 0%, ${accentColor}0a 100%)`,
-                      boxShadow: `0 1px 2px rgba(0,0,0,0.04), 0 8px 24px ${accentColor}1f, inset 0 0 0 1px rgba(255,255,255,0.6)`,
-                    }}
-                  >
-                    <span
-                      className="text-[22px] font-medium tracking-tight"
-                      style={{ color: accentColor, fontVariantLigatures: 'none' }}
-                    >
-                      {initials}
-                    </span>
-                  </div>
-
-                  <div className="min-w-0">
-                    <h1 className="text-[40px] leading-[1.05] font-semibold text-foreground tracking-[-0.02em] truncate">
-                      {displayName}
-                    </h1>
-                    <p className="mt-2 text-[13px] text-muted-foreground/80">
-                      {[subtitle, ...metaParts].join(' · ')}
-                    </p>
-
-                    {/* Smart badges */}
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                      <span
-                        className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 backdrop-blur px-3 py-1 text-[11.5px] font-medium text-foreground/80"
-                        style={{ boxShadow: '0 1px 0 rgba(0,0,0,0.02)' }}
-                      >
-                        <span className="relative flex h-1.5 w-1.5">
-                          <span
-                            className="absolute inline-flex h-full w-full rounded-full opacity-60"
-                            style={{ backgroundColor: accentColor }}
-                          />
-                          <span
-                            className="relative inline-flex h-1.5 w-1.5 rounded-full"
-                            style={{ backgroundColor: accentColor }}
-                          />
-                        </span>
-                        Dossier complet à {completion}%
-                      </span>
-                      <span
-                        className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 backdrop-blur px-3 py-1 text-[11.5px] font-medium text-foreground/80"
-                      >
-                        <span
-                          className="inline-block h-1.5 w-1.5 rounded-full"
-                          style={{ backgroundColor: riskColor }}
-                        />
-                        Risque de précision · {riskLabel}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
+        {/* Identity header */}
+        <div className="max-w-4xl mx-auto px-6 pt-6 pb-8">
+          <div className="flex items-end justify-between gap-6 flex-wrap">
+            <div className="flex items-center gap-4">
+              <div
+                className="h-14 w-14 rounded-full flex items-center justify-center shrink-0"
+                style={{ backgroundColor: accentColor + '15' }}
+              >
+                <User className="h-6 w-6" style={{ color: accentColor }} strokeWidth={1.5} />
               </div>
-
-              {/* Segmented control */}
-              {EDIT_TABS.length > 1 && (
-                <div className="mt-8">
-                  <div className="inline-flex rounded-full bg-muted/70 backdrop-blur p-[3px] border border-border/40">
-                    <AnimatedBackground
-                      defaultValue={editView}
-                      onValueChange={(value) => {
-                        if (value) setEditView(value as EditView);
-                      }}
-                      className="rounded-full bg-background shadow-[0_1px_2px_rgba(0,0,0,0.06),0_4px_12px_rgba(0,0,0,0.04)]"
-                      transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.35 }}
-                    >
-                      {EDIT_TABS.map((tab) => (
-                        <button
-                          key={tab.id}
-                          data-id={tab.id}
-                          type="button"
-                          className="inline-flex min-w-28 items-center justify-center px-5 py-1.5 text-[13px] font-medium text-foreground/90 transition-colors"
-                        >
-                          {tab.label}
-                        </button>
-                      ))}
-                    </AnimatedBackground>
-                  </div>
-                </div>
-              )}
+              <div>
+                <h1 className="text-3xl font-semibold tracking-tight text-foreground leading-tight">
+                  {editView === 'client' ? clientName : (partnerName || 'Partenaire')}
+                </h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {editView === 'client' ? 'Fiche personnelle' : (relationStatus || 'Partenaire')}
+                </p>
+              </div>
             </div>
-          );
-        })()}
+
+            {EDIT_TABS.length > 1 && (
+              <div className="rounded-[8px] bg-muted p-[2px]">
+                <AnimatedBackground
+                  defaultValue={editView}
+                  onValueChange={(value) => {
+                    if (value) setEditView(value as EditView);
+                  }}
+                  className="rounded-lg bg-background shadow-sm"
+                  transition={{ ease: "easeInOut", duration: 0.2 }}
+                >
+                  {EDIT_TABS.map((tab) => (
+                    <button
+                      key={tab.id}
+                      data-id={tab.id}
+                      type="button"
+                      className="inline-flex min-w-28 items-center justify-center px-4 py-1.5 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </AnimatedBackground>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Form content */}
         <div className="max-w-4xl mx-auto px-6 pb-12">
