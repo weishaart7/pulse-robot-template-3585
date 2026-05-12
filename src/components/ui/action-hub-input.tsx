@@ -121,7 +121,7 @@ export default function ActionHubInput({
           placeholder={placeholder}
           value={currentValue}
           onChange={(e) => handleValueChange(e.target.value)}
-          className={`bg-muted border-transparent shadow-none rounded-md focus-visible:bg-background focus-visible:border-ring ${actions.length > 0 ? 'pr-24' : 'pr-8'}`}
+          className={`bg-muted border-transparent shadow-none rounded focus-visible:bg-background focus-visible:border-ring ${actions.length > 0 ? 'pr-24' : 'pr-8'}`}
           onFocus={() => setShowHistory(true)}
           onBlur={() => setTimeout(() => setShowHistory(false), 200)}
         />
@@ -141,7 +141,7 @@ export default function ActionHubInput({
                     variant="ghost"
                     onClick={() => handleActionClick(action)}
                     title={action.tooltip}
-                    className="h-8 w-8 rounded-md p-1"
+                    className="h-8 w-8 rounded p-1"
                   >
                     {action.icon}
                   </Button>
@@ -155,7 +155,7 @@ export default function ActionHubInput({
 
       {/* History dropdown */}
       {showHistory && history.length > 0 && (
-        <div className="absolute top-full mt-1 w-full rounded-md border bg-background shadow-lg z-10 max-h-36 overflow-auto">
+        <div className="absolute top-full mt-1 w-full rounded border bg-background shadow-lg z-10 max-h-36 overflow-auto">
           {history.map((item, idx) => (
             <button
               key={idx}

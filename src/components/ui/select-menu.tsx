@@ -39,7 +39,7 @@ export default function SelectMenu({ value, onValueChange, placeholder = "Sélec
       onOpenChange={handleOpenChange}
     >
       <div className={cn("w-full", className)}>
-        <Select.Trigger className="w-full inline-flex items-center justify-between h-9 px-3 py-2 text-sm bg-muted border border-transparent rounded-md transition-shadow outline-none focus-visible:bg-background focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 text-foreground data-placeholder:text-muted-foreground">
+        <Select.Trigger className="w-full inline-flex items-center justify-between h-9 px-3 py-2 text-sm bg-muted border border-transparent rounded transition-shadow outline-none focus-visible:bg-background focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 text-foreground data-placeholder:text-muted-foreground">
           <Select.Value placeholder={placeholder}>
             {value}
           </Select.Value>
@@ -51,7 +51,7 @@ export default function SelectMenu({ value, onValueChange, placeholder = "Sélec
           <Select.Content
             position="popper"
             avoidCollisions={false}
-            className="w-[var(--radix-select-trigger-width)] overflow-hidden mt-1 bg-popover border border-border rounded-md shadow-lg text-sm z-[100]"
+            className="w-[var(--radix-select-trigger-width)] overflow-hidden mt-1 bg-popover border border-border rounded shadow-lg text-sm z-[100]"
           >
             <div className="flex items-center border-b border-border bg-popover sticky top-0 z-10">
               <Search className="h-4 w-4 mx-3 text-muted-foreground shrink-0" />
@@ -59,7 +59,7 @@ export default function SelectMenu({ value, onValueChange, placeholder = "Sélec
                 type="text"
                 placeholder="Rechercher un pays..."
                 value={searchValue}
-                className="p-2 text-popover-foreground w-full rounded-md outline-none bg-popover"
+                className="p-2 text-popover-foreground w-full rounded outline-none bg-popover"
                 onChange={handleSearch}
                 onKeyDown={(e) => {
                   e.stopPropagation();
