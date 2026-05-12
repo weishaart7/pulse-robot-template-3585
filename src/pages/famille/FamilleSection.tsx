@@ -76,7 +76,7 @@ const FamilleSection = () => {
     return (
       <div className="min-h-screen" style={{ backgroundColor: '#f6f5f6' }}>
         {/* Discreet back link */}
-        <div className="max-w-4xl mx-auto px-6 pt-8">
+        <div className="w-full mx-auto px-4 sm:px-6 pt-8">
           <button
             onClick={() => setEditView(null)}
             className="group inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
