@@ -107,10 +107,10 @@ export default function ActionHubInput({
   }
 
   return (
-    <div className={`relative w-full flex flex-col gap-1.5 ${className}`}>
+    <div className={`relative w-full flex flex-col gap-1 ${className}`}>
       {label && (
-        <Label htmlFor={id} className="premium-label">
-          {label} {required && <span className="text-destructive/70">*</span>}
+        <Label htmlFor={id} className="text-xs">
+          {label} {required && <span className="text-red-800">*</span>}
         </Label>
       )}
       <div className="relative flex items-center">
@@ -121,7 +121,7 @@ export default function ActionHubInput({
           placeholder={placeholder}
           value={currentValue}
           onChange={(e) => handleValueChange(e.target.value)}
-          className={`premium-field ${actions.length > 0 ? 'pr-24' : 'pr-8'}`}
+          className={`bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring ${actions.length > 0 ? 'pr-24' : 'pr-8'}`}
           onFocus={() => setShowHistory(true)}
           onBlur={() => setTimeout(() => setShowHistory(false), 200)}
         />
@@ -141,7 +141,7 @@ export default function ActionHubInput({
                     variant="ghost"
                     onClick={() => handleActionClick(action)}
                     title={action.tooltip}
-                    className="h-8 w-8 rounded-md p-1"
+                    className="h-8 w-8 rounded p-1"
                   >
                     {action.icon}
                   </Button>
