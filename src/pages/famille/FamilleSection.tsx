@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import AnimatedBackground from '@/components/ui/animated-tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { FamilyLink } from '@/services/familyService';
