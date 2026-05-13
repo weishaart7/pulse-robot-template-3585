@@ -318,34 +318,40 @@ const FamilleSection = () => {
                 <button
                   type="button"
                   onClick={() => setEditView('relation')}
-                  className="mt-6 w-full flex items-center justify-between rounded-xl border bg-card px-6 py-5 cursor-pointer hover:shadow-md transition-all duration-300 text-left gap-6"
+                  className="group mt-8 w-full text-left rounded-2xl bg-card px-8 py-7 ring-1 ring-border/40 hover:ring-border transition-all duration-300"
                 >
-                  <div className="flex-1 min-w-0">
-                    <div className="text-base font-medium text-foreground">
-                      {relationTitle}
-                    </div>
-                    <dl className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-2">
-                      <div>
-                        <dt className="text-xs text-muted-foreground">{durationFieldLabel}</dt>
-                        <dd className="text-sm text-foreground mt-0.5">{durationLabel ?? '—'}</dd>
+                  <div className="flex items-center justify-between gap-6">
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="h-10 w-10 rounded-full flex items-center justify-center bg-[#62706d]/10 shrink-0">
+                        <Heart className="h-5 w-5 text-[#62706d]" strokeWidth={1.5} />
                       </div>
-                      {relationStatus !== 'Concubinage' && (
-                        <div>
-                          <dt className="text-xs text-muted-foreground">Régime</dt>
-                          <dd className="text-sm text-foreground mt-0.5">
-                            {maritalData?.regime_matrimonial || '—'}
-                          </dd>
-                        </div>
-                      )}
-                      {relationStatus === 'Marié(e)' && (
-                        <div>
-                          <dt className="text-xs text-muted-foreground">Donation au dernier vivant</dt>
-                          <dd className="text-sm text-foreground mt-0.5">{ddvLabel}</dd>
-                        </div>
-                      )}
-                    </dl>
+                      <h3 className="text-base font-medium text-foreground truncate">
+                        {relationTitle}
+                      </h3>
+                    </div>
+                    <ArrowRight className="h-5 w-5 text-muted-foreground shrink-0 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-foreground" strokeWidth={1.5} />
                   </div>
-                  <ArrowRight className="h-5 w-5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+
+                  <dl className="mt-6 pt-6 border-t border-border/40 grid grid-cols-1 sm:grid-cols-3 gap-x-10 gap-y-5">
+                    <div>
+                      <dt className="text-[11px] uppercase tracking-wider text-muted-foreground/80">{durationFieldLabel}</dt>
+                      <dd className="text-sm text-foreground mt-1.5">{durationLabel ?? '—'}</dd>
+                    </div>
+                    {relationStatus !== 'Concubinage' && (
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-wider text-muted-foreground/80">Régime</dt>
+                        <dd className="text-sm text-foreground mt-1.5 line-clamp-2">
+                          {maritalData?.regime_matrimonial || '—'}
+                        </dd>
+                      </div>
+                    )}
+                    {relationStatus === 'Marié(e)' && (
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-wider text-muted-foreground/80">Donation au dernier vivant</dt>
+                        <dd className="text-sm text-foreground mt-1.5">{ddvLabel}</dd>
+                      </div>
+                    )}
+                  </dl>
                 </button>
               );
             })()}
