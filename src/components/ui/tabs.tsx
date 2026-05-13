@@ -9,7 +9,7 @@ import { Tabs as TabsPrimitive } from 'radix-ui';
 const tabsListVariants = cva('flex items-center shrink-0', {
   variants: {
     variant: {
-      default: 'bg-muted p-1',
+      default: 'bg-sidebar p-1',
       button: '',
       line: 'border-b border-border',
     },
