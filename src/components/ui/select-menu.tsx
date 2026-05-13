@@ -90,7 +90,7 @@ const SelectItem = React.forwardRef<
 >(({ children, className, ...props }, forwardedRef) => {
   return (
     <Select.Item
-      className="flex items-center justify-between px-3 cursor-pointer py-2 duration-150 text-popover-foreground bg-popover data-[state=checked]:text-primary data-[state=checked]:bg-primary/10 data-[highlighted]:text-primary data-[highlighted]:bg-primary/10 hover:bg-accent hover:text-accent-foreground outline-none"
+      className="flex items-center justify-between px-3 cursor-pointer py-2 duration-150 text-popover-foreground bg-popover data-[state=checked]:text-primary data-[state=checked]:bg-primary/10 data-[highlighted]:text-white data-[highlighted]:bg-[#62706d] hover:bg-[#62706d] hover:text-white outline-none"
       {...props}
       ref={forwardedRef}
     >
