@@ -108,27 +108,15 @@ const FamilleSection = () => {
             </div>
 
             {EDIT_TABS.length > 1 && (
-              <div className="rounded-[8px] bg-muted p-[2px]">
-                <AnimatedBackground
-                  defaultValue={editView}
-                  onValueChange={(value) => {
-                    if (value) setEditView(value as EditView);
-                  }}
-                  className="rounded-lg bg-background shadow-sm"
-                  transition={{ ease: "easeInOut", duration: 0.2 }}
-                >
+              <Tabs value={editView} onValueChange={(value) => setEditView(value as EditView)}>
+                <TabsList shape="pill" size="md">
                   {EDIT_TABS.map((tab) => (
-                    <button
-                      key={tab.id}
-                      data-id={tab.id}
-                      type="button"
-                      className="inline-flex min-w-28 items-center justify-center px-4 py-1.5 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
-                    >
+                    <TabsTrigger key={tab.id} value={tab.id} className="min-w-28">
                       {tab.label}
-                    </button>
+                    </TabsTrigger>
                   ))}
-                </AnimatedBackground>
-              </div>
+                </TabsList>
+              </Tabs>
             )}
           </div>
         </div>
