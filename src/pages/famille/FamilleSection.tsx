@@ -109,9 +109,9 @@ const FamilleSection = () => {
 
             {EDIT_TABS.length > 1 && (
               <Tabs value={editView} onValueChange={(value) => setEditView(value as EditView)}>
-                <TabsList shape="pill" size="md">
+                <TabsList className="rounded-full">
                   {EDIT_TABS.map((tab) => (
-                    <TabsTrigger key={tab.id} value={tab.id} className="min-w-28">
+                    <TabsTrigger key={tab.id} value={tab.id} className="rounded-full min-w-28">
                       {tab.label}
                     </TabsTrigger>
                   ))}
@@ -346,9 +346,9 @@ const FamilleSection = () => {
         
         <div className="mb-8 flex justify-start">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList shape="pill" size="md">
+            <TabsList className="rounded-full">
               {TABS.map((tab) => (
-                <TabsTrigger key={tab.id} value={tab.id} className="min-w-28">
+                <TabsTrigger key={tab.id} value={tab.id} className="rounded-full min-w-28">
                   {tab.label}
                 </TabsTrigger>
               ))}
