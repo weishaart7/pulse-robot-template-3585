@@ -120,7 +120,7 @@ export function DashboardSidebar() {
         {open && (
           <button
             onClick={() => setOpen(false)}
-            className="p-1 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+            className="p-1 rounded-md hover:bg-white/50 transition-colors"
             aria-label="Réduire la barre latérale"
           >
             <PanelLeftClose className="h-4 w-4" strokeWidth={1.5} />
@@ -131,7 +131,7 @@ export function DashboardSidebar() {
         <div className="px-2 pb-2 flex justify-center">
           <button
             onClick={() => setOpen(true)}
-            className="p-1 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+            className="p-1 rounded-md hover:bg-white/50 transition-colors"
             aria-label="Ouvrir la barre latérale"
           >
             <PanelLeftOpen className="h-4 w-4" strokeWidth={1.5} />
@@ -143,7 +143,7 @@ export function DashboardSidebar() {
       <div className={cn("px-3 pb-3 flex items-center gap-1", open ? "mx-[19px]" : "flex-col mx-auto")}>
         <button
           onClick={() => setSearchOpen(true)}
-          className="p-2 rounded-md text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+          className="p-2 rounded-md hover:bg-white/50 transition-colors"
           aria-label="Rechercher"
         >
           <Search className="h-4 w-4" strokeWidth={1.5} />
@@ -151,7 +151,7 @@ export function DashboardSidebar() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className="p-2 rounded-md text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+              className="p-2 rounded-md hover:bg-white/50 transition-colors"
               aria-label="Menu utilisateur"
             >
               <CircleUserRound className="h-4 w-4" strokeWidth={1.5} />
@@ -200,7 +200,7 @@ export function DashboardSidebar() {
               onClick={() => handleNavigation(item.href)} 
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left",
-                isActive ? "bg-gray-100 text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
+                isActive ? "bg-white text-black font-medium" : "hover:bg-white/50",
                 !open && "justify-center"
               )}
             >
@@ -234,7 +234,7 @@ export function DashboardSidebar() {
               onClick={() => handleNavigation(item.href)} 
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left",
-                isActive ? "bg-gray-100 text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
+                isActive ? "bg-white text-black font-medium" : "hover:bg-white/50",
                 !open && "justify-center"
               )}
             >
@@ -268,7 +268,7 @@ export function DashboardSidebar() {
               onClick={() => handleNavigation(item.href)} 
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left",
-                isActive ? "bg-gray-100 text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
+                isActive ? "bg-white text-black font-medium" : "hover:bg-white/50",
                 !open && "justify-center"
               )}
             >
@@ -297,7 +297,7 @@ export function DashboardSidebar() {
               key={item.href}
               onClick={() => handleNavigation(item.href)} 
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900",
+                "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left hover:bg-white/50",
                 !open && "justify-center"
               )}
             >
