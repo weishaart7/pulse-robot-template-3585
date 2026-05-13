@@ -134,6 +134,15 @@ const FamilleSection = () => {
               refetchMarital();
             }} />
           )}
+          {editView === 'relation' && (
+            <RelationInfoForm
+              relationStatus={relationStatus || ''}
+              onSuccess={() => {
+                setEditView(null);
+                refetchMarital();
+              }}
+            />
+          )}
         </div>
       </div>
     );
@@ -255,7 +264,7 @@ const FamilleSection = () => {
             {hasPartner && ['Marié(e)', 'Pacsé(e)', 'Concubinage'].includes(relationStatus) && (
               <button
                 type="button"
-                onClick={() => setIsRelationInfoOpen(true)}
+                onClick={() => setEditView('relation')}
                 className="mt-6 w-full flex items-center justify-between rounded-xl border bg-card px-6 py-5 cursor-pointer hover:shadow-md transition-all duration-300 text-left"
               >
                 <span className="text-base font-medium text-foreground">
@@ -314,11 +323,6 @@ const FamilleSection = () => {
         </div>
       </div>
 
-      <RelationInfoDialog
-        open={isRelationInfoOpen}
-        onOpenChange={setIsRelationInfoOpen}
-        relationStatus={relationStatus || ''}
-      />
     </div>
   );
 };
