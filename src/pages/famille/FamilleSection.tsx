@@ -74,7 +74,7 @@ const FamilleSection = () => {
     const accentColor = currentSexe === 'M' ? '#023e8a' : '#e0aaff';
 
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#f6f5f6' }}>
+      <div className="min-h-screen bg-white">
         {/* Discreet back link */}
         <div className="w-full mx-auto px-4 sm:px-6 pt-8">
           <button
@@ -346,7 +346,7 @@ const FamilleSection = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f6f5f6' }}>
+    <div className="min-h-screen bg-white">
       <div className="p-6">
         <div className="mb-6">
           <h2 className="text-2xl font-bold tracking-tight">Famille</h2>
