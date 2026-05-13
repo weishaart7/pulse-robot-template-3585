@@ -32,7 +32,7 @@ const Dashboard = () => {
         <div className="flex justify-between items-start">
           <h2 className="text-base text-foreground/70 font-medium">Bonjour {familyProfile?.prenom || '(Prénom)'}.</h2>
           
-          <div className="bg-muted rounded-lg p-6 max-w-md">
+          <div className="rounded-lg p-6 max-w-md" style={{ backgroundColor: '#ebf1f1' }}>
             <h3 className="text-base font-semibold text-foreground mb-3">Parlez avec un expert</h3>
             <p className="text-muted-foreground text-xs mb-4 leading-relaxed">
               Notre équipe interne de conseillers financiers, de conseillers patrimoniaux et partenaires est à vos côtés pour vous accompagner sereinement, qu'il s'agisse de questions simples ou de décisions stratégiques.
