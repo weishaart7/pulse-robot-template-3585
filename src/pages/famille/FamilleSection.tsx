@@ -68,10 +68,24 @@ const FamilleSection = () => {
       ...(hasPartner ? [{ id: 'partner' as EditView, label: partnerName || 'Partenaire' }] : []),
     ];
 
-    const currentSexe = editView === 'client'
-      ? (familyProfile?.civility?.toLowerCase() === 'mme' ? 'F' : 'M')
-      : (maritalData?.civilite_conjoint?.toLowerCase() === 'mme' ? 'F' : 'M');
-    const accentColor = currentSexe === 'M' ? '#023e8a' : '#e0aaff';
+    const currentSexe = editView === 'partner'
+      ? (maritalData?.civilite_conjoint?.toLowerCase() === 'mme' ? 'F' : 'M')
+      : (familyProfile?.civility?.toLowerCase() === 'mme' ? 'F' : 'M');
+    const accentColor = editView === 'relation' ? '#62706d' : (currentSexe === 'M' ? '#023e8a' : '#e0aaff');
+
+    const relationTitle =
+      relationStatus === 'Marié(e)' ? 'Informations relatives au mariage' :
+      relationStatus === 'Pacsé(e)' ? 'Informations relatives au PACS' :
+      relationStatus === 'Concubinage' ? 'Informations relatives au statut de concubins' :
+      'Informations relatives à la relation';
+
+    const headerTitle = editView === 'client' ? clientName
+      : editView === 'partner' ? (partnerName || 'Partenaire')
+      : relationTitle;
+    const headerSubtitle = editView === 'client' ? 'Fiche personnelle'
+      : editView === 'partner' ? (relationStatus || 'Partenaire')
+      : 'Détails de votre situation';
+    const HeaderIcon = editView === 'relation' ? Heart : User;
 
     return (
       <div className="min-h-screen bg-white">
@@ -94,19 +108,19 @@ const FamilleSection = () => {
                 className="h-14 w-14 rounded-full flex items-center justify-center shrink-0"
                 style={{ backgroundColor: accentColor + '15' }}
               >
-                <User className="h-6 w-6" style={{ color: accentColor }} strokeWidth={1.5} />
+                <HeaderIcon className="h-6 w-6" style={{ color: accentColor }} strokeWidth={1.5} />
               </div>
               <div>
                 <h1 className="text-3xl font-semibold tracking-tight text-foreground leading-tight">
-                  {editView === 'client' ? clientName : (partnerName || 'Partenaire')}
+                  {headerTitle}
                 </h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {editView === 'client' ? 'Fiche personnelle' : (relationStatus || 'Partenaire')}
+                  {headerSubtitle}
                 </p>
               </div>
             </div>
 
-            {EDIT_TABS.length > 1 && (
+            {EDIT_TABS.length > 1 && editView !== 'relation' && (
               <Tabs value={editView} onValueChange={(value) => setEditView(value as EditView)}>
                 <TabsList className="rounded-full">
                   {EDIT_TABS.map((tab) => (
