@@ -19,13 +19,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import SelectMenu from '@/components/ui/select-menu';
 import NationalitySelect from '@/components/ui/nationality-select';
 import { cn } from '@/lib/utils';
-import { useFamilyProfile } from '@/hooks/useFamilyData';
+import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { useSecureForm } from '@/hooks/useSecureForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { sanitizeTextInput, isValidEmail, isValidDate } from '@/lib/security';
 
 
 const formSchema = z.object({
+  statutCouple: z.enum(['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)']).optional(),
   civilite: z.enum(['M', 'Mme', 'Autre'], {
     required_error: 'Veuillez sélectionner une civilité',
   }),
