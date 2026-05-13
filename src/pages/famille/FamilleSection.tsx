@@ -355,15 +355,16 @@ const FamilleSection = () => {
           </p>
         </div>
         
-        <div className="mb-6 flex justify-start">
-          <div className="rounded-[8px] bg-muted p-[2px]">
+        <div className="mb-8 flex justify-start">
+          <div className="inline-flex rounded-full border border-border/60 bg-muted/40 p-1">
             <AnimatedBackground
               defaultValue="ma-famille"
               onValueChange={(value) => setActiveTab(value || 'ma-famille')}
-              className="rounded-lg bg-background shadow-sm"
+              className="rounded-full bg-background shadow-[0_1px_2px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)]"
               transition={{
-                ease: "easeInOut",
-                duration: 0.2,
+                type: "spring",
+                stiffness: 300,
+                damping: 28,
               }}
             >
               {TABS.map((tab) => (
@@ -371,7 +372,7 @@ const FamilleSection = () => {
                   key={tab.id}
                   data-id={tab.id}
                   type="button"
-                  className="inline-flex min-w-24 items-center justify-center px-3 py-2 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
+                  className="relative inline-flex min-w-28 items-center justify-center px-5 py-2 text-sm font-medium text-muted-foreground tracking-tight transition-colors duration-200 hover:text-foreground data-[checked=true]:text-foreground active:scale-[0.97]"
                 >
                   {tab.label}
                 </button>
