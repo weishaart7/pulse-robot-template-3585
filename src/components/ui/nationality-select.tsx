@@ -51,7 +51,7 @@ export default function NationalitySelect({ value, onValueChange, placeholder = 
           <Select.Content
             position="popper"
             avoidCollisions={false}
-            className="w-[var(--radix-select-trigger-width)] overflow-hidden mt-1 bg-popover border border-border rounded shadow-lg text-sm z-[100]"
+            className="w-[var(--radix-select-trigger-width)] overflow-hidden mt-1 bg-popover border border-border rounded-[5px] shadow-lg text-sm z-[100]"
           >
             <div className="flex items-center border-b border-border bg-popover sticky top-0 z-10">
               <Search className="h-4 w-4 mx-3 text-muted-foreground shrink-0" />
