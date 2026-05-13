@@ -199,8 +199,8 @@ export function DashboardSidebar() {
               key={item.value} 
               onClick={() => handleNavigation(item.href)} 
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left",
-                isActive ? "bg-white text-black font-medium" : "hover:bg-white/50",
+                "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors text-left",
+                isActive ? "bg-white text-black font-semibold" : "hover:bg-white/50",
                 !open && "justify-center"
               )}
             >
@@ -233,8 +233,8 @@ export function DashboardSidebar() {
               key={item.value} 
               onClick={() => handleNavigation(item.href)} 
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left",
-                isActive ? "bg-white text-black font-medium" : "hover:bg-white/50",
+                "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors text-left",
+                isActive ? "bg-white text-black font-semibold" : "hover:bg-white/50",
                 !open && "justify-center"
               )}
             >
@@ -267,8 +267,8 @@ export function DashboardSidebar() {
               key={item.value} 
               onClick={() => handleNavigation(item.href)} 
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left",
-                isActive ? "bg-white text-black font-medium" : "hover:bg-white/50",
+                "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors text-left",
+                isActive ? "bg-white text-black font-semibold" : "hover:bg-white/50",
                 !open && "justify-center"
               )}
             >
@@ -297,7 +297,7 @@ export function DashboardSidebar() {
               key={item.href}
               onClick={() => handleNavigation(item.href)} 
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-left hover:bg-white/50",
+                "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors text-left hover:bg-white/50",
                 !open && "justify-center"
               )}
             >
