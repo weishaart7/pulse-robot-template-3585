@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { Slot } from '@radix-ui/react-slot';
+import { Slot as SlotPrimitive } from 'radix-ui';
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {
   asChild?: boolean;
@@ -53,7 +53,6 @@ const badgeVariants = cva(
       },
     },
     compoundVariants: [
-      /* Light */
       {
         variant: 'primary',
         appearance: 'light',
@@ -89,7 +88,6 @@ const badgeVariants = cva(
         className:
           'text-[var(--color-destructive-accent,var(--color-red-700))] bg-[var(--color-destructive-soft,var(--color-red-50))] dark:bg-[var(--color-destructive-soft,var(--color-red-950))] dark:text-[var(--color-destructive-soft,var(--color-red-600))]',
       },
-      /* Outline */
       {
         variant: 'primary',
         appearance: 'outline',
@@ -120,7 +118,6 @@ const badgeVariants = cva(
         className:
           'text-[var(--color-destructive-accent,var(--color-red-700))] border-[var(--color-destructive-soft,var(--color-red-100))] bg-[var(--color-destructive-soft,var(--color-red-50))] dark:bg-[var(--color-destructive-soft,var(--color-red-950))] dark:border-[var(--color-destructive-soft,var(--color-red-900))] dark:text-[var(--color-destructive-soft,var(--color-red-600))]',
       },
-      /* Ghost */
       {
         variant: 'primary',
         appearance: 'ghost',
@@ -189,7 +186,7 @@ function Badge({
   disabled,
   ...props
 }: React.ComponentProps<'span'> & VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
-  const Comp = asChild ? Slot : 'span';
+  const Comp = asChild ? SlotPrimitive.Slot : 'span';
 
   return (
     <Comp
@@ -206,7 +203,7 @@ function BadgeButton({
   asChild = false,
   ...props
 }: React.ComponentProps<'button'> & VariantProps<typeof badgeButtonVariants> & { asChild?: boolean }) {
-  const Comp = asChild ? Slot : 'span';
+  const Comp = asChild ? SlotPrimitive.Slot : 'span';
   return (
     <Comp
       data-slot="badge-button"
