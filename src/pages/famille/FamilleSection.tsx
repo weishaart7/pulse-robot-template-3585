@@ -275,20 +275,80 @@ const FamilleSection = () => {
             </div>
 
             {/* Carte Informations de la relation */}
-            {hasPartner && ['Marié(e)', 'Pacsé(e)', 'Concubinage'].includes(relationStatus) && (
-              <button
-                type="button"
-                onClick={() => setEditView('relation')}
-                className="mt-6 w-full flex items-center justify-between rounded-xl border bg-card px-6 py-5 cursor-pointer hover:shadow-md transition-all duration-300 text-left"
-              >
-                <span className="text-base font-medium text-foreground">
-                  {relationStatus === 'Marié(e)' && 'Informations relatives au mariage'}
-                  {relationStatus === 'Pacsé(e)' && 'Informations relatives au PACS'}
-                  {relationStatus === 'Concubinage' && 'Informations relatives au statut de concubins'}
-                </span>
-                <ArrowRight className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
-              </button>
-            )}
+            {hasPartner && ['Marié(e)', 'Pacsé(e)', 'Concubinage'].includes(relationStatus) && (() => {
+              const relationTitle =
+                relationStatus === 'Marié(e)' ? 'Informations relatives au mariage' :
+                relationStatus === 'Pacsé(e)' ? 'Informations relatives au PACS' :
+                'Informations relatives au statut de concubins';
+
+              const startDateStr =
+                relationStatus === 'Marié(e)' ? maritalData?.date_mariage :
+                relationStatus === 'Pacsé(e)' ? maritalData?.date_pacs :
+                undefined;
+
+              let durationLabel: string | null = null;
+              if (startDateStr) {
+                const start = new Date(startDateStr);
+                const now = new Date();
+                let years = now.getFullYear() - start.getFullYear();
+                let months = now.getMonth() - start.getMonth();
+                if (now.getDate() < start.getDate()) months -= 1;
+                if (months < 0) { years -= 1; months += 12; }
+                if (years >= 0) {
+                  const parts: string[] = [];
+                  if (years > 0) parts.push(`${years} an${years > 1 ? 's' : ''}`);
+                  parts.push(`${months} mois`);
+                  durationLabel = parts.join(' et ');
+                }
+              }
+
+              const durationFieldLabel =
+                relationStatus === 'Marié(e)' ? 'Durée du mariage' :
+                relationStatus === 'Pacsé(e)' ? 'Durée du PACS' :
+                'Durée du concubinage';
+
+              const ddvPersonne = !!maritalData?.donation_dernier_vivant_personne;
+              const ddvConjoint = !!maritalData?.donation_dernier_vivant_conjoint;
+              const ddvLabel =
+                ddvPersonne && ddvConjoint ? 'Oui' :
+                !ddvPersonne && !ddvConjoint ? 'Non' :
+                'Unilatérale';
+
+              return (
+                <button
+                  type="button"
+                  onClick={() => setEditView('relation')}
+                  className="mt-6 w-full flex items-center justify-between rounded-xl border bg-card px-6 py-5 cursor-pointer hover:shadow-md transition-all duration-300 text-left gap-6"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="text-base font-medium text-foreground">
+                      {relationTitle}
+                    </div>
+                    <dl className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-2">
+                      <div>
+                        <dt className="text-xs text-muted-foreground">{durationFieldLabel}</dt>
+                        <dd className="text-sm text-foreground mt-0.5">{durationLabel ?? '—'}</dd>
+                      </div>
+                      {relationStatus !== 'Concubinage' && (
+                        <div>
+                          <dt className="text-xs text-muted-foreground">Régime</dt>
+                          <dd className="text-sm text-foreground mt-0.5">
+                            {maritalData?.regime_matrimonial || '—'}
+                          </dd>
+                        </div>
+                      )}
+                      {relationStatus === 'Marié(e)' && (
+                        <div>
+                          <dt className="text-xs text-muted-foreground">Donation au dernier vivant</dt>
+                          <dd className="text-sm text-foreground mt-0.5">{ddvLabel}</dd>
+                        </div>
+                      )}
+                    </dl>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+                </button>
+              );
+            })()}
           </>
         );
       case 'liens-familiaux':
