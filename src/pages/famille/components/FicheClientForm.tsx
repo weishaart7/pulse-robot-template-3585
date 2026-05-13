@@ -75,6 +75,7 @@ type Section = 'informations-generales' | 'coordonnees';
 export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) {
   const [activeSection, setActiveSection] = useState<Section>('informations-generales');
   const { data, loading, saving, saveData } = useFamilyProfile();
+  const { data: maritalData, saveData: saveMaritalData } = useMaritalStatus();
   const { user } = useAuth();
   const { submitSecureForm } = useSecureForm({ 
     formName: 'family_profile',
@@ -86,6 +87,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      statutCouple: undefined,
       civilite: undefined,
       nom: '',
       nomJeuneFille: '',
@@ -123,6 +125,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
       const isPredefinedProfession = rawProfession && professions.includes(rawProfession);
       
       const formattedData = {
+        statutCouple: (maritalData?.statut_couple as any) || undefined,
         civilite: (data.civility as 'M' | 'Mme' | 'Autre') || undefined,
         nom: data.nom ? unescapeHtml(data.nom) : '',
         nomJeuneFille: (data as any).nom_jeune_fille ? unescapeHtml((data as any).nom_jeune_fille) : '',
@@ -144,7 +147,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
       };
       form.reset(formattedData);
     }
-  }, [data, form]);
+  }, [data, maritalData, form]);
 
   const onSubmit = async (formData: FormData) => {
     try {
