@@ -7,17 +7,16 @@ import { FamilyLink } from '@/services/familyService';
 import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
 import { PartnerForm } from "@/components/famille/PartnerForm";
-import { RelationInfoDialog } from "@/components/famille/RelationInfoDialog";
-import { User, Plus, ArrowLeft, ArrowRight } from 'lucide-react';
+import { RelationInfoForm } from "@/components/famille/RelationInfoForm";
+import { User, Plus, ArrowLeft, ArrowRight, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type EditView = 'client' | 'partner';
+type EditView = 'client' | 'partner' | 'relation';
 
 const FamilleSection = () => {
   const [activeTab, setActiveTab] = useState('ma-famille');
   const [editView, setEditView] = useState<EditView | null>(null);
   const [isSingle, setIsSingle] = useState(false);
-  const [isRelationInfoOpen, setIsRelationInfoOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<FamilyLink | null>(null);
   const { data: familyProfile, refetch: refetchProfile } = useFamilyProfile();
   const { data: maritalData, saveData: saveMaritalData, refetch: refetchMarital } = useMaritalStatus();
@@ -69,10 +68,24 @@ const FamilleSection = () => {
       ...(hasPartner ? [{ id: 'partner' as EditView, label: partnerName || 'Partenaire' }] : []),
     ];
 
-    const currentSexe = editView === 'client'
-      ? (familyProfile?.civility?.toLowerCase() === 'mme' ? 'F' : 'M')
-      : (maritalData?.civilite_conjoint?.toLowerCase() === 'mme' ? 'F' : 'M');
-    const accentColor = currentSexe === 'M' ? '#023e8a' : '#e0aaff';
+    const currentSexe = editView === 'partner'
+      ? (maritalData?.civilite_conjoint?.toLowerCase() === 'mme' ? 'F' : 'M')
+      : (familyProfile?.civility?.toLowerCase() === 'mme' ? 'F' : 'M');
+    const accentColor = editView === 'relation' ? '#62706d' : (currentSexe === 'M' ? '#023e8a' : '#e0aaff');
+
+    const relationTitle =
+      relationStatus === 'Marié(e)' ? 'Informations relatives au mariage' :
+      relationStatus === 'Pacsé(e)' ? 'Informations relatives au PACS' :
+      relationStatus === 'Concubinage' ? 'Informations relatives au statut de concubins' :
+      'Informations relatives à la relation';
+
+    const headerTitle = editView === 'client' ? clientName
+      : editView === 'partner' ? (partnerName || 'Partenaire')
+      : relationTitle;
+    const headerSubtitle = editView === 'client' ? 'Fiche personnelle'
+      : editView === 'partner' ? (relationStatus || 'Partenaire')
+      : 'Détails de votre situation';
+    const HeaderIcon = editView === 'relation' ? Heart : User;
 
     return (
       <div className="min-h-screen bg-white">
@@ -95,19 +108,19 @@ const FamilleSection = () => {
                 className="h-14 w-14 rounded-full flex items-center justify-center shrink-0"
                 style={{ backgroundColor: accentColor + '15' }}
               >
-                <User className="h-6 w-6" style={{ color: accentColor }} strokeWidth={1.5} />
+                <HeaderIcon className="h-6 w-6" style={{ color: accentColor }} strokeWidth={1.5} />
               </div>
               <div>
                 <h1 className="text-3xl font-semibold tracking-tight text-foreground leading-tight">
-                  {editView === 'client' ? clientName : (partnerName || 'Partenaire')}
+                  {headerTitle}
                 </h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {editView === 'client' ? 'Fiche personnelle' : (relationStatus || 'Partenaire')}
+                  {headerSubtitle}
                 </p>
               </div>
             </div>
 
-            {EDIT_TABS.length > 1 && (
+            {EDIT_TABS.length > 1 && editView !== 'relation' && (
               <Tabs value={editView} onValueChange={(value) => setEditView(value as EditView)}>
                 <TabsList className="rounded-full">
                   {EDIT_TABS.map((tab) => (
@@ -134,6 +147,15 @@ const FamilleSection = () => {
               setEditView(null);
               refetchMarital();
             }} />
+          )}
+          {editView === 'relation' && (
+            <RelationInfoForm
+              relationStatus={relationStatus || ''}
+              onSuccess={() => {
+                setEditView(null);
+                refetchMarital();
+              }}
+            />
           )}
         </div>
       </div>
@@ -256,7 +278,7 @@ const FamilleSection = () => {
             {hasPartner && ['Marié(e)', 'Pacsé(e)', 'Concubinage'].includes(relationStatus) && (
               <button
                 type="button"
-                onClick={() => setIsRelationInfoOpen(true)}
+                onClick={() => setEditView('relation')}
                 className="mt-6 w-full flex items-center justify-between rounded-xl border bg-card px-6 py-5 cursor-pointer hover:shadow-md transition-all duration-300 text-left"
               >
                 <span className="text-base font-medium text-foreground">
@@ -315,11 +337,6 @@ const FamilleSection = () => {
         </div>
       </div>
 
-      <RelationInfoDialog
-        open={isRelationInfoOpen}
-        onOpenChange={setIsRelationInfoOpen}
-        relationStatus={relationStatus || ''}
-      />
     </div>
   );
 };
