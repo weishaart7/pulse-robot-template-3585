@@ -8,7 +8,7 @@ import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
 import { PartnerForm } from "@/components/famille/PartnerForm";
 import { RelationInfoDialog } from "@/components/famille/RelationInfoDialog";
-import { User, Plus, ArrowLeft } from 'lucide-react';
+import { User, Plus, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type EditView = 'client' | 'partner';
@@ -253,65 +253,19 @@ const FamilleSection = () => {
             </div>
 
             {/* Carte Informations de la relation */}
-            {hasPartner && relationStatus && relationStatus !== 'Célibataire' && (
-              <div
+            {hasPartner && ['Marié(e)', 'Pacsé(e)', 'Concubinage'].includes(relationStatus) && (
+              <button
+                type="button"
                 onClick={() => setIsRelationInfoOpen(true)}
-                className="mt-6 group relative overflow-hidden rounded-xl border bg-card p-6 cursor-pointer hover:shadow-lg transition-all duration-300"
+                className="mt-6 w-full flex items-center justify-between rounded-xl border bg-card px-6 py-5 cursor-pointer hover:shadow-md transition-all duration-300 text-left"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-1">
-                      {relationStatus === 'Marié(e)' && 'Informations du mariage'}
-                      {relationStatus === 'Pacsé(e)' && 'Informations du PACS'}
-                      {relationStatus === 'Concubinage' && 'Informations du concubinage'}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Cliquez pour consulter et modifier les informations
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
-                    <svg
-                      className="w-6 h-6 text-primary"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                </div>
-                
-                {(maritalData?.mariage_precedent_personne || maritalData?.mariage_precedent_conjoint) && (
-                  <div className="pt-4 border-t border-border">
-                    <p className="text-sm font-medium text-muted-foreground mb-2">Mariages précédents :</p>
-                    <div className="flex flex-col gap-2">
-                      {maritalData?.mariage_precedent_personne && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <div className="w-4 h-4 rounded-sm border-2 border-primary bg-primary flex items-center justify-center">
-                            <svg className="w-3 h-3 text-primary-foreground" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                          <span className="text-foreground">{clientName}</span>
-                        </div>
-                      )}
-                      {maritalData?.mariage_precedent_conjoint && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <div className="w-4 h-4 rounded-sm border-2 border-primary bg-primary flex items-center justify-center">
-                            <svg className="w-3 h-3 text-primary-foreground" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                          <span className="text-foreground">{partnerName}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+                <span className="text-base font-medium text-foreground">
+                  {relationStatus === 'Marié(e)' && 'Informations relatives au mariage'}
+                  {relationStatus === 'Pacsé(e)' && 'Informations relatives au PACS'}
+                  {relationStatus === 'Concubinage' && 'Informations relatives au statut de concubins'}
+                </span>
+                <ArrowRight className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+              </button>
             )}
           </>
         );
