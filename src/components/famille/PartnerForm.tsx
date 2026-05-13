@@ -195,32 +195,6 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
             <div className="rounded-2xl border bg-card p-6 shadow-sm">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Identité</h3>
 
-              <FormField
-                control={form.control}
-                name="statutCouple"
-                render={({ field }) => (
-                  <FormItem className="mb-5 max-w-md">
-                    <div className="relative w-full flex flex-col gap-1">
-                      <FormLabel className="text-xs">Statut matrimonial</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
-                        <FormControl>
-                          <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
-                            <SelectValue placeholder="Choisir un statut" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Célibataire">Célibataire</SelectItem>
-                          <SelectItem value="Concubinage">Concubinage</SelectItem>
-                          <SelectItem value="Pacsé(e)">Pacsé(e)</SelectItem>
-                          <SelectItem value="Marié(e)">Marié(e)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               {showPartnerFields && (
                 <>
                   <FormField
