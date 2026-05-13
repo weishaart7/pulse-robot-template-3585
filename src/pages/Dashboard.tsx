@@ -28,7 +28,7 @@ const Dashboard = () => {
   const totalRevenus = revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0);
   const totalCharges = charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
   return <div className="p-6">
-      <div className="mb-6 bg-card rounded-lg p-6">
+      <div className="mb-6 bg-card rounded-lg p-6 border border-border">
         <div className="flex justify-between items-start">
           <h2 className="text-base text-foreground/70 font-medium">Bonjour {familyProfile?.prenom || '(Prénom)'}.</h2>
           
