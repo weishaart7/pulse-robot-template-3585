@@ -241,8 +241,8 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
               className={cn(
                 "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200",
                 activeSection === section.id
-                  ? "bg-sidebar-foreground text-sidebar shadow-sm"
-                  : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  ? "bg-[#62706d] text-[#ebf1f1] shadow-sm"
+                  : "bg-[#ebf1f1] text-[#62706d] hover:opacity-90"
               )}
             >
               <section.icon className="h-4 w-4" />
