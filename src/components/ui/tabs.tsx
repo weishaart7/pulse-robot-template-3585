@@ -30,46 +30,18 @@ const tabsListVariants = cva('flex items-center shrink-0', {
     { variant: 'default', size: 'sm', className: 'p-1 gap-1.5' },
     { variant: 'default', size: 'xs', className: 'p-1 gap-1' },
 
-    {
-      variant: 'default',
-      shape: 'default',
-      size: 'lg',
-      className: 'rounded-lg',
-    },
-    {
-      variant: 'default',
-      shape: 'default',
-      size: 'md',
-      className: 'rounded-lg',
-    },
-    {
-      variant: 'default',
-      shape: 'default',
-      size: 'sm',
-      className: 'rounded-md',
-    },
-    {
-      variant: 'default',
-      shape: 'default',
-      size: 'xs',
-      className: 'rounded-md',
-    },
+    { variant: 'default', shape: 'default', size: 'lg', className: 'rounded-lg' },
+    { variant: 'default', shape: 'default', size: 'md', className: 'rounded-lg' },
+    { variant: 'default', shape: 'default', size: 'sm', className: 'rounded-md' },
+    { variant: 'default', shape: 'default', size: 'xs', className: 'rounded-md' },
 
     { variant: 'line', size: 'lg', className: 'gap-9' },
     { variant: 'line', size: 'md', className: 'gap-8' },
     { variant: 'line', size: 'sm', className: 'gap-4' },
     { variant: 'line', size: 'xs', className: 'gap-4' },
 
-    {
-      variant: 'default',
-      shape: 'pill',
-      className: 'rounded-full [&_[role=tab]]:rounded-full',
-    },
-    {
-      variant: 'button',
-      shape: 'pill',
-      className: 'rounded-full [&_[role=tab]]:rounded-full',
-    },
+    { variant: 'default', shape: 'pill', className: 'rounded-full [&_[role=tab]]:rounded-full' },
+    { variant: 'button', shape: 'pill', className: 'rounded-full [&_[role=tab]]:rounded-full' },
   ],
   defaultVariants: {
     variant: 'default',
