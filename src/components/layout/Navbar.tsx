@@ -119,8 +119,8 @@ export function Navbar() {
       {/* Navigation */}
       <div className="px-4 border-t mx-0 my-0 md:px-[10px] py-0">
         <Tabs value={getCurrentValue()} onValueChange={handleTabChange}>
-          <TabsList variant="line" className="h-10 border-0 w-full justify-start text-[10px] font-light mx-[12px]">
-            {menuItems.map(item => <TabsTrigger key={item.value} value={item.value} className="h-full data-[state=active]:text-black data-[state=active]:border-black">
+          <TabsList className="h-10 w-full justify-start gap-8 bg-transparent p-0 border-b rounded-none text-[10px] font-light mx-[12px]">
+            {menuItems.map(item => <TabsTrigger key={item.value} value={item.value} className="h-full px-0 rounded-none border-b-2 border-transparent bg-transparent text-muted-foreground data-[state=active]:bg-transparent data-[state=active]:text-black data-[state=active]:border-black data-[state=active]:shadow-none">
                 {item.label}
               </TabsTrigger>)}
           </TabsList>

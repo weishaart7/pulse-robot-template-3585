@@ -1,51 +1,64 @@
+## Diagnostic
+
+Le fichier `src/components/ui/tabs.tsx` n'est pas le composant shadcn standard que tu utilises dans ton snippet. C'est une version custom (style Reui/Keenthemes) qui empile :
+
+- 3 `variant` (`default`, `button`, `line`) × 2 `shape` (`default`, `pill`) × 4 `size` (`xs`, `sm`, `md`, `lg`) avec ~15 `compoundVariants` via CVA.
+- Un `TabsContext` qui force le `variant`/`size` du `TabsList` sur chaque `TabsTrigger`.
+- Des classes baked-in : `bg-sidebar p-1`, `data-[state=active]:bg-background`, `data-[state=active]:shadow-sm`, padding, gap, rounded… selon les variants.
+- Des sélecteurs SVG forcés : `[&_svg]:text-muted-foreground [&:hover_svg]:text-primary [&[data-state=active]_svg]:text-primary`.
+
+Conséquences quand tu essaies de coller ton snippet :
+1. `<TabsList className="grid w-full grid-cols-2">` reçoit aussi `flex items-center bg-sidebar p-1 gap-2 rounded-lg` → fond gris parasite, gap qui casse la grille, padding inattendu.
+2. Le `TabsTrigger` reçoit `text-muted-foreground data-[state=active]:bg-background data-[state=active]:shadow-sm` + padding/rounded en plus de tes classes → l'onglet actif a toujours un fond blanc + ombre que tu n'as pas demandés.
+3. Les icônes Lucide sont forcées en `text-muted-foreground` puis `text-primary` au hover/actif, peu importe la couleur que tu mets sur le parent.
+4. Tailwind-merge gère certains conflits mais pas les sélecteurs `[&_svg]` ni les `data-[state=active]:*` → tes overrides ne « gagnent » pas toujours.
+
+C'est exactement pour ça que dès que tu touches au design, « ça rate ».
+
 ## Objectif
-Aligner le composant `Tabs` avec le design que tu as fourni, sans changer son API d’usage.
 
-## Constat
-Le composant n’est pas “mal copié” : il applique bien la structure du snippet, mais le rendu final est modifié par le contexte du projet.
+Remplacer `src/components/ui/tabs.tsx` par la version shadcn standard (celle que ton snippet attend), tout en gardant la compatibilité avec les usages existants pour ne rien casser.
 
-## Cause racine
-1. **Le snippet vient d’un contexte Tailwind plus récent que le projet**
-   - Le projet utilise **Tailwind CSS v3.4.11**.
-   - Le snippet fourni utilise des conventions/classes prévues pour un setup plus récent.
-   - Certaines classes ont déjà été adaptées (`outline-none`, `shadow-sm`), mais cela ne suffit pas à garantir un rendu identique.
+## Plan
 
-2. **Le design dépend des tokens du thème local**
-   - `TabsList` en variant `default` utilise `bg-accent`.
-   - `TabsTrigger` actif utilise `data-[state=active]:bg-background`.
-   - Dans ce projet, `--accent` est un **vert vif** et `--radius` vaut **1rem**.
-   - Donc même avec le bon code, le composant prend naturellement le style du design system local, pas forcément celui de la démo d’origine.
+### 1. Réécrire `src/components/ui/tabs.tsx`
 
-3. **L’usage actuel ne force pas un style spécifique supplémentaire**
-   - Dans `FamilleSection.tsx`, les tabs sont appelés avec `shape="pill" size="md"`.
-   - Cela active bien la forme “pill”, mais laisse les couleurs/fonds dépendre des tokens globaux du projet.
+Composant shadcn minimal :
+- `Tabs` = passthrough de `TabsPrimitive.Root`.
+- `TabsList` = `inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground` + `className` mergé en dernier.
+- `TabsTrigger` = `inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm`.
+- `TabsContent` = `mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2`.
+- Aucune prop `variant`, `shape`, `size`, aucun contexte, aucun forçage de couleur sur les SVG.
 
-4. **Le composant est partagé**
-   - Il est aussi utilisé ailleurs (`Navbar`, `FiscalOverviewCard`, `TransmissionDashboard`, etc.).
-   - Toute modification globale du variant `default` impactera plusieurs écrans.
+Résultat : ton snippet (`grid w-full grid-cols-2`, icônes `<UserRound /> Profile`) s'affiche tel quel, et n'importe quelle classe que tu passes via `className` prend le dessus grâce à `tailwind-merge`.
 
-## Plan de correction
-1. **Stabiliser le rendu de `Tabs` sur Tailwind v3**
-   - Vérifier et remplacer toutes les classes incompatibles restantes par leurs équivalents v3.
-   - Conserver la même API (`variant`, `shape`, `size`) pour éviter les régressions.
+### 2. Adapter les 4 usages qui dépendent des anciennes props
 
-2. **Séparer le “design du snippet” du thème global du projet**
-   - Ajuster le variant `default` pour qu’il reproduise explicitement le rendu voulu, au lieu de trop dépendre de `bg-accent` / `bg-background`.
-   - Garder l’usage des tokens sémantiques du projet autant que possible.
+Audit complet réalisé, voici les seuls fichiers à toucher :
 
-3. **Limiter l’impact sur les autres écrans**
-   - Soit en affinant le variant `default`,
-   - soit en créant un variant dédié si le design fourni est très spécifique à `FamilleSection`.
+```text
+src/components/layout/Navbar.tsx              → variant="line"
+src/pages/famille/FamilleSection.tsx          → shape="pill" size="md"  (2 occurrences)
+```
 
-4. **Valider sur les usages existants**
-   - Contrôler au minimum `FamilleSection` et `Navbar` pour éviter une régression visuelle.
+Les autres usages (`PatrimoineMainContent`, `TransmissionDashboard`, `AVContractDetail`, `SocietesStrategies`, `FiscalOverviewCard`) n'utilisent que `<TabsList>` nu ou `className="grid w-full grid-cols-X"` → compatibles tels quels avec la nouvelle version.
 
-## Détail technique
-Les éléments actuellement responsables du décalage visuel sont surtout :
-- `bg-accent` sur la liste
-- `data-[state=active]:bg-background` sur l’onglet actif
-- le rayon global `--radius`
-- les tokens `--accent`, `--background`, `--foreground` définis dans `src/index.css`
+Adaptations :
+- **Navbar (onglets soulignés)** : remplacer `variant="line"` par des classes Tailwind directes sur `TabsList` (`bg-transparent p-0 h-10 border-b`) et sur `TabsTrigger` (`rounded-none border-b-2 border-transparent bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-foreground data-[state=active]:shadow-none`).
+- **FamilleSection (pilules)** : remplacer `shape="pill" size="md"` par `className="rounded-full"` sur `TabsList` et `className="rounded-full min-w-28"` sur `TabsTrigger`.
 
-## Résultat attendu
-Après correction, le composant gardera la structure que tu as fournie, mais son apparence sera enfin cohérente avec le rendu attendu, au lieu d’être “recoloré” par le thème actuel du projet.
+### 3. Vérification
+
+- Lecture rapide des pages impactées (`/dashboard/famille`, navbar, patrimoine, transmission, fiscalité, sociétés) pour confirmer qu'aucun style ne dépend implicitement des anciens defaults.
+- Build TypeScript automatique.
+
+## Détails techniques
+
+- API publique conservée : `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` exportés avec la même signature `React.ComponentProps<typeof TabsPrimitive.X>`.
+- Suppression des exports implicites `variant`/`shape`/`size` → les 2 fichiers consommateurs sont migrés dans le même commit pour éviter toute erreur TS.
+- On garde `radix-ui` (déjà installé), pas de nouvelle dépendance.
+
+## Hors scope
+
+- Aucune modification de logique métier, de données ou de routes.
+- Pas de refonte visuelle des pages : seuls les onglets eux-mêmes changent, et uniquement pour retrouver le rendu shadcn standard que tu attends.
