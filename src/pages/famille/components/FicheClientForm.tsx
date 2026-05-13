@@ -212,6 +212,9 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
         },
         user?.id
       );
+      if (formData.statutCouple) {
+        await saveMaritalData({ statut_couple: formData.statutCouple } as any);
+      }
       onSuccess?.();
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
