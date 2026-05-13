@@ -36,7 +36,7 @@ const TaxRateCard = () => {
   ];
 
   return (
-    <Card className="border-0">
+    <Card className="border border-border">
       <CardHeader>
         <CardTitle>Taux marginal d'imposition</CardTitle>
         <div className="text-2xl font-bold">30 %</div>

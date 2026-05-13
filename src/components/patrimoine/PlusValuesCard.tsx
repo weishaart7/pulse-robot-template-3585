@@ -30,7 +30,7 @@ export const PlusValuesCard: React.FC<PlusValuesCardProps> = ({ plusValuesSummar
 
   if (!hasData) {
     return (
-      <Card className="border-border/60 shadow-none hover:shadow-sm transition-shadow duration-500">
+      <Card className="border border-border hover:shadow-sm transition-shadow duration-500">
         <CardHeader className="pb-3">
           <CardTitle className="text-[15px] font-semibold tracking-tight">Plus-values</CardTitle>
         </CardHeader>
@@ -47,7 +47,7 @@ export const PlusValuesCard: React.FC<PlusValuesCardProps> = ({ plusValuesSummar
   const topMoinsValues = [...assetsWithPlusValue].filter(a => a.plusValue < 0).sort((a, b) => a.plusValue - b.plusValue).slice(0, 3);
 
   return (
-    <Card className="group border-border/60 shadow-none hover:shadow-md hover:shadow-primary/5 transition-all duration-500 hover:-translate-y-0.5 overflow-hidden">
+    <Card className="group border border-border hover:shadow-md hover:shadow-primary/5 transition-all duration-500 hover:-translate-y-0.5 overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-[15px] font-semibold tracking-tight">Plus-values</CardTitle>

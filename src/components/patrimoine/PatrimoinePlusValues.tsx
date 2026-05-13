@@ -104,7 +104,7 @@ export const PatrimoinePlusValues = ({ onBack }: PatrimoinePlusValuesProps) => {
       {/* Detail + categories */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 animate-fade-in" style={{ animationDelay: '180ms' }}>
-          <Card className="border-border/60 shadow-none">
+          <Card className="border border-border">
             <CardHeader className="pb-2">
               <CardTitle className="text-[15px] font-semibold tracking-tight">Détail par actif</CardTitle>
             </CardHeader>
@@ -176,7 +176,7 @@ export const PatrimoinePlusValues = ({ onBack }: PatrimoinePlusValuesProps) => {
 
         {/* Category sidebar */}
         <div className="animate-fade-in" style={{ animationDelay: '240ms' }}>
-          <Card className="border-border/60 shadow-none">
+          <Card className="border border-border">
             <CardHeader className="pb-2">
               <CardTitle className="text-[15px] font-semibold tracking-tight">Par catégorie</CardTitle>
             </CardHeader>
@@ -214,7 +214,7 @@ export const PatrimoinePlusValues = ({ onBack }: PatrimoinePlusValuesProps) => {
 
       {/* Fiscal section */}
       <div className="animate-fade-in" style={{ animationDelay: '300ms' }}>
-        <Card className="border-border/60 shadow-none">
+        <Card className="border border-border">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
               <Receipt className="h-4 w-4 text-muted-foreground/50" strokeWidth={1.5} />

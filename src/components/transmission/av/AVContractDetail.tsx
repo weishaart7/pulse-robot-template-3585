@@ -319,7 +319,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
 
       {/* KPI row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="bg-muted/30 border-0 shadow-none">
+        <Card className="bg-muted/30 border border-border ">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
@@ -328,7 +328,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
             <p className="text-lg font-semibold">{contractAge} ans</p>
           </CardContent>
         </Card>
-        <Card className="bg-muted/30 border-0 shadow-none">
+        <Card className="bg-muted/30 border border-border ">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
@@ -337,7 +337,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
             <p className="text-lg font-semibold">{formatCurrency(totalVersements)}</p>
           </CardContent>
         </Card>
-        <Card className="bg-muted/30 border-0 shadow-none">
+        <Card className="bg-muted/30 border border-border ">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <TrendingDown className="h-3.5 w-3.5 text-destructive" />
@@ -346,7 +346,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
             <p className="text-lg font-semibold">{formatCurrency(totalRachats)}</p>
           </CardContent>
         </Card>
-        <Card className="bg-muted/30 border-0 shadow-none">
+        <Card className="bg-muted/30 border border-border ">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <Shield className="h-3.5 w-3.5 text-primary" />
