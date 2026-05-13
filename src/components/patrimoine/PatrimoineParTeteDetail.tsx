@@ -239,7 +239,7 @@ const BreakdownCard = ({
   const ownPct = actifs > 0 ? (ownValue / actifs) * 100 : 0;
   const sharedPct = actifs > 0 ? (sharedValue / actifs) * 100 : 0;
   return (
-    <Card className="border-border/60 shadow-none animate-fade-in" style={{ animationDelay: delay }}>
+    <Card className="border border-border animate-fade-in" style={{ animationDelay: delay }}>
       <CardHeader className="pb-2">
         <CardTitle className="text-[13px] font-semibold tracking-tight text-muted-foreground/80 uppercase tracking-widest">
           {name} — biens propres / communs
@@ -279,7 +279,7 @@ const CategoryCard = ({
   name: string; entries: [string, number][]; total: number;
   formatCurrency: (n: number) => string; delay: string;
 }) => (
-  <Card className="border-border/60 shadow-none animate-fade-in" style={{ animationDelay: delay }}>
+  <Card className="border border-border animate-fade-in" style={{ animationDelay: delay }}>
     <CardHeader className="pb-2">
       <CardTitle className="text-[13px] font-semibold text-muted-foreground/80 uppercase tracking-widest">
         {name} — répartition par catégorie

@@ -28,7 +28,7 @@ const FiscalDeclarationsCard = () => {
 
   return (
     <>
-      <Card className="h-fit border-0">
+      <Card className="h-fit border border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />

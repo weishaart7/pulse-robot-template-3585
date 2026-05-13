@@ -103,7 +103,7 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
       </div>
 
       {/* Chart section */}
-      <Card className="border-border/60 shadow-none hover:shadow-sm transition-shadow duration-500 animate-fade-in" style={{ animationDelay: '180ms' }}>
+      <Card className="border border-border hover:shadow-sm transition-shadow duration-500 animate-fade-in" style={{ animationDelay: '180ms' }}>
         <CardHeader className="pb-2">
           <CardTitle className="text-[15px] font-semibold tracking-tight">Répartition du patrimoine</CardTitle>
         </CardHeader>
@@ -117,7 +117,7 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
         {/* Patrimoine par tête */}
         <Card
           onClick={onNavigateToParTete}
-          className={`border-border/60 shadow-none hover:shadow-sm transition-shadow duration-500 animate-fade-in ${onNavigateToParTete ? 'cursor-pointer hover:border-border' : ''}`}
+          className={`border border-border hover:shadow-sm transition-shadow duration-500 animate-fade-in ${onNavigateToParTete ? 'cursor-pointer hover:border-border' : ''}`}
           style={{ animationDelay: '240ms' }}
         >
           <CardHeader className="pb-3">
@@ -184,7 +184,7 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
         </div>
 
         {/* Objectifs */}
-        <Card className="border-border/60 shadow-none hover:shadow-sm transition-shadow duration-500 animate-fade-in" style={{ animationDelay: '360ms' }}>
+        <Card className="border border-border hover:shadow-sm transition-shadow duration-500 animate-fade-in" style={{ animationDelay: '360ms' }}>
           <CardHeader className="pb-3">
             <CardTitle className="text-[15px] font-semibold tracking-tight">Objectifs</CardTitle>
           </CardHeader>

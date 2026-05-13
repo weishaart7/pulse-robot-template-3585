@@ -179,7 +179,7 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="border-0">
+        <Card className="border border-border">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-medium text-muted-foreground">Solde {periodLabel}</CardTitle>
           </CardHeader>
@@ -193,7 +193,7 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
           </CardContent>
         </Card>
 
-        <Card className="border-0">
+        <Card className="border border-border">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-medium text-muted-foreground">Taux d'endettement</CardTitle>
           </CardHeader>
@@ -208,7 +208,7 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
           </CardContent>
         </Card>
 
-        <Card className="border-0">
+        <Card className="border border-border">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-medium text-muted-foreground">Capacité d'endettement</CardTitle>
           </CardHeader>
@@ -225,7 +225,7 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
       {/* Répartition par catégories */}
       <div className="grid gap-6 md:grid-cols-2 mt-6">
         {/* Répartition des revenus par catégories */}
-        <Card className="border-0">
+        <Card className="border border-border">
           <CardHeader>
             <CardTitle>Répartition des revenus par catégories</CardTitle>
             <CardDescription>Distribution des revenus selon leur nature</CardDescription>
@@ -268,7 +268,7 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
         </Card>
 
         {/* Répartition des charges par catégories */}
-        <Card className="border-0">
+        <Card className="border border-border">
           <CardHeader>
             <CardTitle>Répartition des charges par catégories</CardTitle>
             <CardDescription>Distribution des charges selon leur nature</CardDescription>
@@ -312,7 +312,7 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
       </div>
 
       {/* Saisonnalité - Évolution mensuelle */}
-      <Card className="mt-6 border-0">
+      <Card className="mt-6 border border-border">
         <CardHeader>
           <CardTitle>Évolution mensuelle</CardTitle>
           <CardDescription>Comparaison revenus et charges sur 12 mois</CardDescription>
