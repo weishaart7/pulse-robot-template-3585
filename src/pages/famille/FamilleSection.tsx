@@ -357,29 +357,15 @@ const FamilleSection = () => {
         </div>
         
         <div className="mb-8 flex justify-start">
-          <div className="inline-flex rounded-full border border-border/60 bg-muted/40 p-1">
-            <AnimatedBackground
-              defaultValue="ma-famille"
-              onValueChange={(value) => setActiveTab(value || 'ma-famille')}
-              className="rounded-full bg-background shadow-[0_1px_2px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)]"
-              transition={{
-                type: "spring",
-                stiffness: 300,
-                damping: 28,
-              }}
-            >
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList shape="pill" size="md">
               {TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  data-id={tab.id}
-                  type="button"
-                  className="relative inline-flex min-w-28 items-center justify-center px-5 py-2 text-sm font-medium text-muted-foreground tracking-tight transition-colors duration-200 hover:text-foreground data-[checked=true]:text-foreground active:scale-[0.97]"
-                >
+                <TabsTrigger key={tab.id} value={tab.id} className="min-w-28">
                   {tab.label}
-                </button>
+                </TabsTrigger>
               ))}
-            </AnimatedBackground>
-          </div>
+            </TabsList>
+          </Tabs>
         </div>
 
         <div className="mt-6">
