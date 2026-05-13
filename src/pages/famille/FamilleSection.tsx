@@ -346,7 +346,7 @@ const FamilleSection = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f6f5f6' }}>
+    <div className="min-h-screen bg-white">
       <div className="p-6">
         <div className="mb-6">
           <h2 className="text-2xl font-bold tracking-tight">Famille</h2>
