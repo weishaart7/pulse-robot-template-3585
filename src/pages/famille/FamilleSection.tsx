@@ -7,17 +7,16 @@ import { FamilyLink } from '@/services/familyService';
 import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
 import { PartnerForm } from "@/components/famille/PartnerForm";
-import { RelationInfoDialog } from "@/components/famille/RelationInfoDialog";
-import { User, Plus, ArrowLeft, ArrowRight } from 'lucide-react';
+import { RelationInfoForm } from "@/components/famille/RelationInfoForm";
+import { User, Plus, ArrowLeft, ArrowRight, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type EditView = 'client' | 'partner';
+type EditView = 'client' | 'partner' | 'relation';
 
 const FamilleSection = () => {
   const [activeTab, setActiveTab] = useState('ma-famille');
   const [editView, setEditView] = useState<EditView | null>(null);
   const [isSingle, setIsSingle] = useState(false);
-  const [isRelationInfoOpen, setIsRelationInfoOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<FamilyLink | null>(null);
   const { data: familyProfile, refetch: refetchProfile } = useFamilyProfile();
   const { data: maritalData, saveData: saveMaritalData, refetch: refetchMarital } = useMaritalStatus();
