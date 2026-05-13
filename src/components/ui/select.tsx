@@ -178,7 +178,7 @@ function SelectItem({ className, children, ...props }: React.ComponentProps<type
             )}
           >
             <SelectPrimitive.ItemIndicator>
-              <Check className="h-4 w-4 text-primary" />
+              <Check className="h-4 w-4 text-primary group-hover:text-white group-focus:text-white group-data-[highlighted]:text-white" />
             </SelectPrimitive.ItemIndicator>
           </span>
         ))}
