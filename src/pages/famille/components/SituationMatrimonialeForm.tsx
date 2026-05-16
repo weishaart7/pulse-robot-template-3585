@@ -261,7 +261,7 @@ export const SituationMatrimonialeForm = () => {
               <FormLabel>Statut matrimonial</FormLabel>
               <Select onValueChange={(v) => handleStatutChange(v, field.value, field.onChange)} value={field.value || ""}>
                 <FormControl>
-                  <SelectTrigger size="lg">
+                  <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
                     <SelectValue placeholder="Choisir un statut" />
                   </SelectTrigger>
                 </FormControl>
@@ -320,7 +320,7 @@ export const SituationMatrimonialeForm = () => {
                         <FormLabel>Civilité</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ""}>
                           <FormControl>
-                            <SelectTrigger size="lg">
+                            <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
                               <SelectValue placeholder="Sélectionner" />
                             </SelectTrigger>
                           </FormControl>
@@ -341,7 +341,7 @@ export const SituationMatrimonialeForm = () => {
                       <FormItem>
                         <FormLabel>Nom</FormLabel>
                         <FormControl>
-                          <Input placeholder="Nom" {...field} />
+                          <Input placeholder="Nom" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -355,7 +355,7 @@ export const SituationMatrimonialeForm = () => {
                       <FormItem>
                         <FormLabel>Prénom</FormLabel>
                         <FormControl>
-                          <Input placeholder="Prénom" {...field} />
+                          <Input placeholder="Prénom" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -373,10 +373,7 @@ export const SituationMatrimonialeForm = () => {
                             <FormControl>
                               <Button
                                 variant="outline"
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
+                                className={cn("w-full pl-3 text-left font-normal h-10 bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring", !field.value && "text-muted-foreground")}
                               >
                                 {field.value ? (
                                   format(field.value, "dd/MM/yyyy")
@@ -412,7 +409,7 @@ export const SituationMatrimonialeForm = () => {
                       <FormItem>
                         <FormLabel>Lieu de naissance</FormLabel>
                         <FormControl>
-                          <Input placeholder="Lieu de naissance" {...field} />
+                          <Input placeholder="Lieu de naissance" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -427,7 +424,7 @@ export const SituationMatrimonialeForm = () => {
                         <FormLabel>Profession (CSP)</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ""}>
                           <FormControl>
-                            <SelectTrigger size="lg">
+                            <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
                               <SelectValue placeholder="Sélectionner une CSP" />
                             </SelectTrigger>
                           </FormControl>
@@ -454,7 +451,7 @@ export const SituationMatrimonialeForm = () => {
                       <FormItem>
                         <FormLabel>Profession (libellé libre)</FormLabel>
                         <FormControl>
-                          <Input placeholder="Profession" {...field} />
+                          <Input placeholder="Profession" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -468,7 +465,7 @@ export const SituationMatrimonialeForm = () => {
                       <FormItem>
                         <FormLabel>Nationalité</FormLabel>
                         <FormControl>
-                          <Input placeholder="Nationalité" {...field} />
+                          <Input placeholder="Nationalité" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -507,7 +504,7 @@ export const SituationMatrimonialeForm = () => {
                             <FormLabel>Convention de PACS</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value || "Régime de la séparation des biens"}>
                               <FormControl>
-                                <SelectTrigger size="lg">
+                                <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
                                   <SelectValue />
                                 </SelectTrigger>
                               </FormControl>
@@ -532,10 +529,7 @@ export const SituationMatrimonialeForm = () => {
                                 <FormControl>
                                   <Button
                                     variant="outline"
-                                    className={cn(
-                                      "w-full pl-3 text-left font-normal",
-                                      !field.value && "text-muted-foreground"
-                                    )}
+                                    className={cn("w-full pl-3 text-left font-normal h-10 bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring", !field.value && "text-muted-foreground")}
                                   >
                                     {field.value ? (
                                       format(field.value, "dd/MM/yyyy")
@@ -583,10 +577,7 @@ export const SituationMatrimonialeForm = () => {
                                 <FormControl>
                                   <Button
                                     variant="outline"
-                                    className={cn(
-                                      "w-full pl-3 text-left font-normal",
-                                      !field.value && "text-muted-foreground"
-                                    )}
+                                    className={cn("w-full pl-3 text-left font-normal h-10 bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring", !field.value && "text-muted-foreground")}
                                   >
                                     {field.value ? (
                                       format(field.value, "dd/MM/yyyy")
@@ -622,7 +613,7 @@ export const SituationMatrimonialeForm = () => {
                           <FormItem>
                             <FormLabel>Lieu du mariage</FormLabel>
                             <FormControl>
-                              <Input placeholder="Lieu du mariage" {...field} />
+                              <Input placeholder="Lieu du mariage" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -691,7 +682,7 @@ export const SituationMatrimonialeForm = () => {
                         <FormLabel>Régime matrimonial</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ""}>
                           <FormControl>
-                            <SelectTrigger size="lg">
+                            <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
                               <SelectValue />
                             </SelectTrigger>
                           </FormControl>
