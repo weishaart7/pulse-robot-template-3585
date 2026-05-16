@@ -33,15 +33,15 @@
     
     /* Duolingo-inspired color scheme - light mode */
     --background: 0 0% 100%;
-    --foreground: 236 96% 11%;
+    --foreground: 20 44% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 236 96% 11%;
+    --card-foreground: 20 44% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 236 96% 11%;
+    --popover-foreground: 20 44% 15%;
 
-    --primary: 236 96% 11%; /* #010537 - Deep navy blue */
+    --primary: 20 44% 15%; /* #362015 - Deep navy blue */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 143 86% 57%; /* #32EF7B - Bright green */
@@ -51,7 +51,7 @@
     --muted-foreground: 220 20% 45%;
 
     --accent: 143 86% 57%; /* Green accent - même vert que la landing page */
-    --accent-foreground: 236 96% 11%; /* Texte noir sur fond vert */
+    --accent-foreground: 20 44% 15%; /* Texte noir sur fond vert */
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
@@ -87,7 +87,7 @@
     --ds-background-200: hsla(0, 0%, 0%, 1);
     
     /* Duolingo-inspired dark mode - deep navy background */
-    --background: 236 96% 11%; /* #010537 - Very dark navy blue */
+    --background: 20 44% 15%; /* #362015 - Very dark navy blue */
     --foreground: 0 0% 98%;
 
     --card: 236 80% 15%;
@@ -96,7 +96,7 @@
     --popover: 236 80% 15%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 236 96% 11%; /* #010537 - Deep navy stays consistent */
+    --primary: 20 44% 15%; /* #362015 - Deep navy stays consistent */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 143 86% 57%; /* #32EF7B - Bright green */
@@ -106,7 +106,7 @@
     --muted-foreground: 220 20% 70%;
 
     --accent: 143 86% 57%; /* Green accent - même vert que la landing page */
-    --accent-foreground: 236 96% 11%; /* Texte noir sur fond vert */
+    --accent-foreground: 20 44% 15%; /* Texte noir sur fond vert */
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
