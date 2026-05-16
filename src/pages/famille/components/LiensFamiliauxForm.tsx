@@ -152,7 +152,7 @@ export function LiensFamiliauxForm() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <span>Membres de la famille</span>
-              <Badge variant="secondary">{familyLinks.length}</Badge>
+              <Badge variant="secondary" className="bg-[#362015] text-white hover:bg-[#362015]/90">{familyLinks.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
