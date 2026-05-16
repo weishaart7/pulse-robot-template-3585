@@ -259,7 +259,7 @@ export const SituationMatrimonialeForm = () => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Statut matrimonial</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""}>
+              <Select onValueChange={(v) => handleStatutChange(v, field.value, field.onChange)} value={field.value || ""}>
                 <FormControl>
                   <SelectTrigger size="lg">
                     <SelectValue placeholder="Choisir un statut" />
