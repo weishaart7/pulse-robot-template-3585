@@ -774,6 +774,28 @@ export const SituationMatrimonialeForm = () => {
           </Button>
         )}
       </form>
+
+      <AlertDialog open={pendingClearOpen} onOpenChange={setPendingClearOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer le passage en Célibataire</AlertDialogTitle>
+            <AlertDialogDescription>
+              {statutCouple === 'Marié(e)'
+                ? "Les informations de votre conjoint et les données relatives au mariage seront supprimées."
+                : statutCouple === 'Pacsé(e)'
+                ? "Les informations de votre partenaire et les données relatives au PACS seront supprimées."
+                : "Les informations de votre partenaire et les données relatives au concubinage seront supprimées."}
+              {" "}Cette action est définitive. Souhaitez-vous continuer ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmClearAndSetCelibataire}>
+              Confirmer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Form>
   );
 };
