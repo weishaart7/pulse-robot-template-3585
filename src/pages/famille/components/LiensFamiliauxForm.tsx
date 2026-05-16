@@ -188,10 +188,10 @@ export function LiensFamiliauxForm() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleEditMember(member)} disabled={saving}>
+                        <Button variant="outline" size="sm" onClick={() => handleEditMember(member)} disabled={saving} className="hover:bg-[#362015] hover:text-white hover:border-[#362015]">
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDeleteMember(member.id!)} disabled={saving}>
+                        <Button variant="outline" size="sm" onClick={() => handleDeleteMember(member.id!)} disabled={saving} className="hover:bg-[#362015] hover:text-white hover:border-[#362015]">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
