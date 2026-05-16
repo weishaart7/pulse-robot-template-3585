@@ -17,8 +17,18 @@ import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { MatrimonialRegimeOptions } from "@/components/famille/MatrimonialRegimeOptions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Schéma de validation du formulaire
 const formSchema = z.object({
@@ -175,6 +185,61 @@ export const SituationMatrimonialeForm = () => {
     }
   };
 
+  const [pendingClearOpen, setPendingClearOpen] = useState(false);
+
+  const clearPartnerFields = () => {
+    form.setValue("civilitePartenaire", "");
+    form.setValue("nomPartenaire", "");
+    form.setValue("prenomPartenaire", "");
+    form.setValue("dateNaissancePartenaire", undefined);
+    form.setValue("lieuNaissancePartenaire", "");
+    form.setValue("professionCSP", "");
+    form.setValue("professionLibelle", "");
+    form.setValue("nationalitePartenaire", "");
+    form.setValue("personneHandicapee", false);
+    form.setValue("conventionPacs", "Régime de la séparation des biens");
+    form.setValue("datePacs", undefined);
+    form.setValue("regimeMatrimonial", "Communauté réduite aux acquêts (option sans contrat de mariage)");
+    form.setValue("dateMariage", undefined);
+    form.setValue("lieuMariage", "");
+    form.setValue("mariagePrecedentPersonne", false);
+    form.setValue("mariagePrecedentConjoint", false);
+  };
+
+  const hasPartnerData = () => {
+    const v = form.getValues();
+    return Boolean(
+      v.civilitePartenaire ||
+      v.nomPartenaire ||
+      v.prenomPartenaire ||
+      v.dateNaissancePartenaire ||
+      v.lieuNaissancePartenaire ||
+      v.professionCSP ||
+      v.professionLibelle ||
+      v.nationalitePartenaire ||
+      v.personneHandicapee ||
+      v.datePacs ||
+      v.dateMariage ||
+      v.lieuMariage ||
+      v.mariagePrecedentPersonne ||
+      v.mariagePrecedentConjoint
+    );
+  };
+
+  const handleStatutChange = (newValue: string, currentValue: string | undefined, onChange: (v: string) => void) => {
+    if (newValue === "Célibataire" && currentValue && currentValue !== "Célibataire" && hasPartnerData()) {
+      setPendingClearOpen(true);
+      return;
+    }
+    onChange(newValue);
+  };
+
+  const confirmClearAndSetCelibataire = () => {
+    clearPartnerFields();
+    form.setValue("statutCouple", "Célibataire");
+    setPendingClearOpen(false);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -194,7 +259,7 @@ export const SituationMatrimonialeForm = () => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Statut matrimonial</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""}>
+              <Select onValueChange={(v) => handleStatutChange(v, field.value, field.onChange)} value={field.value || ""}>
                 <FormControl>
                   <SelectTrigger size="lg">
                     <SelectValue placeholder="Choisir un statut" />
@@ -709,6 +774,28 @@ export const SituationMatrimonialeForm = () => {
           </Button>
         )}
       </form>
+
+      <AlertDialog open={pendingClearOpen} onOpenChange={setPendingClearOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer le passage en Célibataire</AlertDialogTitle>
+            <AlertDialogDescription>
+              {statutCouple === 'Marié(e)'
+                ? "Les informations de votre conjoint et les données relatives au mariage seront supprimées."
+                : statutCouple === 'Pacsé(e)'
+                ? "Les informations de votre partenaire et les données relatives au PACS seront supprimées."
+                : "Les informations de votre partenaire et les données relatives au concubinage seront supprimées."}
+              {" "}Cette action est définitive. Souhaitez-vous continuer ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmClearAndSetCelibataire}>
+              Confirmer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Form>
   );
 };
