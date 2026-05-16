@@ -205,7 +205,7 @@ export function LiensFamiliauxForm() {
       {/* Bouton d'ajout avec Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogTrigger asChild>
-          <Button onClick={handleAddMember} className="w-full" variant="outline">
+          <Button onClick={handleAddMember} className="w-full hover:bg-[#362015] hover:text-white hover:border-[#362015]" variant="outline">
             <Plus className="mr-2 h-4 w-4" />
             Ajouter un membre de la famille
           </Button>
