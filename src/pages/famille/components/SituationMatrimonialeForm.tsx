@@ -185,6 +185,61 @@ export const SituationMatrimonialeForm = () => {
     }
   };
 
+  const [pendingClearOpen, setPendingClearOpen] = useState(false);
+
+  const clearPartnerFields = () => {
+    form.setValue("civilitePartenaire", "");
+    form.setValue("nomPartenaire", "");
+    form.setValue("prenomPartenaire", "");
+    form.setValue("dateNaissancePartenaire", undefined);
+    form.setValue("lieuNaissancePartenaire", "");
+    form.setValue("professionCSP", "");
+    form.setValue("professionLibelle", "");
+    form.setValue("nationalitePartenaire", "");
+    form.setValue("personneHandicapee", false);
+    form.setValue("conventionPacs", "Régime de la séparation des biens");
+    form.setValue("datePacs", undefined);
+    form.setValue("regimeMatrimonial", "Communauté réduite aux acquêts (option sans contrat de mariage)");
+    form.setValue("dateMariage", undefined);
+    form.setValue("lieuMariage", "");
+    form.setValue("mariagePrecedentPersonne", false);
+    form.setValue("mariagePrecedentConjoint", false);
+  };
+
+  const hasPartnerData = () => {
+    const v = form.getValues();
+    return Boolean(
+      v.civilitePartenaire ||
+      v.nomPartenaire ||
+      v.prenomPartenaire ||
+      v.dateNaissancePartenaire ||
+      v.lieuNaissancePartenaire ||
+      v.professionCSP ||
+      v.professionLibelle ||
+      v.nationalitePartenaire ||
+      v.personneHandicapee ||
+      v.datePacs ||
+      v.dateMariage ||
+      v.lieuMariage ||
+      v.mariagePrecedentPersonne ||
+      v.mariagePrecedentConjoint
+    );
+  };
+
+  const handleStatutChange = (newValue: string, currentValue: string | undefined, onChange: (v: string) => void) => {
+    if (newValue === "Célibataire" && currentValue && currentValue !== "Célibataire" && hasPartnerData()) {
+      setPendingClearOpen(true);
+      return;
+    }
+    onChange(newValue);
+  };
+
+  const confirmClearAndSetCelibataire = () => {
+    clearPartnerFields();
+    form.setValue("statutCouple", "Célibataire");
+    setPendingClearOpen(false);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
