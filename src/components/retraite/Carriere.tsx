@@ -122,7 +122,7 @@ export const Carriere = () => {
                 placeholder="Ex: 45000"
                 value={salaireAnnuelMoyen}
                 onChange={(e) => setSalaireAnnuelMoyen(e.target.value)}
-              />
+               className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"/>
             </div>
           </div>
         </CardContent>
@@ -145,7 +145,7 @@ export const Carriere = () => {
                 placeholder="Ex: 160"
                 value={trimestresValides}
                 onChange={(e) => setTrimestresValides(e.target.value)}
-              />
+               className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"/>
             </div>
 
             <div className="space-y-2">

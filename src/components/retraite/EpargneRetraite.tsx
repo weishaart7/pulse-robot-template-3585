@@ -85,7 +85,7 @@ export const EpargneRetraite = () => {
                 placeholder="Ex: 50000"
                 value={epargnePer}
                 onChange={(e) => setEpargnePer(e.target.value)}
-              />
+               className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"/>
             </div>
 
             <div className="space-y-2">
@@ -96,7 +96,7 @@ export const EpargneRetraite = () => {
                 placeholder="Ex: 75000"
                 value={epargneAssuranceVie}
                 onChange={(e) => setEpargneAssuranceVie(e.target.value)}
-              />
+               className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"/>
             </div>
           </div>
 
@@ -108,7 +108,7 @@ export const EpargneRetraite = () => {
               placeholder="Ex: 25000"
               value={autresEpargnes}
               onChange={(e) => setAutresEpargnes(e.target.value)}
-            />
+             className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"/>
             <p className="text-sm text-muted-foreground">
               Comptes épargne, placements divers, etc.
             </p>
