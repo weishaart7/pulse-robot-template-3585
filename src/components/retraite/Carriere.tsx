@@ -155,7 +155,7 @@ export const Carriere = () => {
                 type="number"
                 value={trimestresRequis}
                 disabled
-                className="bg-muted"
+                className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring bg-muted"
               />
               <p className="text-sm text-muted-foreground">
                 Valeur fixée selon votre date de naissance
