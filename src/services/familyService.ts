@@ -72,6 +72,7 @@ export interface FamilyLink {
   enfant_de?: string;
   parent_de?: string;
   exoneration_succession?: boolean;
+  enfant_a_charge?: boolean;
   created_at?: string;
   updated_at?: string;
 }

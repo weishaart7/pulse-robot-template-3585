@@ -1,0 +1,1 @@
+ALTER TABLE public.family_links ADD COLUMN IF NOT EXISTS enfant_a_charge boolean DEFAULT false;
