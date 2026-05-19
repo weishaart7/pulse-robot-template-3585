@@ -6,7 +6,7 @@ import { Building2, LayoutGrid, Table as TableIcon, Home } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useImmobilierAssets } from '@/hooks/useImmobilierAssets';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ImmobilierPropertyDialog } from '@/components/immobilier/ImmobilierPropertyDialog';
+import { ImmobilierPropertyDetailView } from '@/components/immobilier/ImmobilierPropertyDetailView';
 import { ImmobilierGestionDialog } from '@/components/immobilier/ImmobilierGestionDialog';
 import { ImmobilierOverview } from '@/components/immobilier/ImmobilierOverview';
 import { LMNPDetailView } from '@/components/immobilier/lmnp/LMNPDetailView';
