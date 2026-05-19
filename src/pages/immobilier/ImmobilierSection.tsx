@@ -6,7 +6,7 @@ import { Building2, LayoutGrid, Table as TableIcon, Home } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useImmobilierAssets } from '@/hooks/useImmobilierAssets';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ImmobilierPropertyDialog } from '@/components/immobilier/ImmobilierPropertyDialog';
+import { ImmobilierPropertyDetailView } from '@/components/immobilier/ImmobilierPropertyDetailView';
 import { ImmobilierGestionDialog } from '@/components/immobilier/ImmobilierGestionDialog';
 import { ImmobilierOverview } from '@/components/immobilier/ImmobilierOverview';
 import { LMNPDetailView } from '@/components/immobilier/lmnp/LMNPDetailView';
@@ -21,7 +21,6 @@ export const ImmobilierSection = () => {
   const [activeTab, setActiveTab] = useState('biens');
   const { assets, isLoading, refetch } = useImmobilierAssets();
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [gestionDialogOpen, setGestionDialogOpen] = useState(false);
   const [selectedAssetForGestion, setSelectedAssetForGestion] = useState<Asset | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
@@ -34,12 +33,10 @@ export const ImmobilierSection = () => {
       setLmnpAsset(asset);
     } else {
       setSelectedAsset(asset);
-      setDialogOpen(true);
     }
   }, []);
 
   const handleDialogClose = useCallback(() => {
-    setDialogOpen(false);
     setSelectedAsset(null);
   }, []);
 
@@ -81,6 +78,22 @@ export const ImmobilierSection = () => {
             // Refresh the asset data
             const updated = assets.find(a => a.id === lmnpAsset.id);
             if (updated) setLmnpAsset(updated);
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (selectedAsset) {
+    return (
+      <div className="p-6">
+        <ImmobilierPropertyDetailView
+          asset={selectedAsset}
+          onBack={handleDialogClose}
+          onUpdate={() => {
+            refetch();
+            const updated = assets.find(a => a.id === selectedAsset.id);
+            if (updated) setSelectedAsset(updated);
           }}
         />
       </div>
@@ -329,12 +342,6 @@ export const ImmobilierSection = () => {
         {renderContent()}
       </div>
 
-      <ImmobilierPropertyDialog
-        asset={selectedAsset}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onUpdate={handleUpdate}
-      />
 
       <ImmobilierGestionDialog
         asset={selectedAssetForGestion}
