@@ -453,6 +453,16 @@ export const AssetForm: React.FC<AssetFormProps> = ({
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField control={form.control} name="date_acquisition" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Date d'acquisition</FormLabel>
+              <FormControl>
+                <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+
           <FormField control={form.control} name="origine_actif" render={({ field }) => (
             <FormItem>
               <FormLabel>Origine de l'actif</FormLabel>
@@ -471,16 +481,6 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                   ))}
                 </SelectContent>
               </Select>
-              <FormMessage />
-            </FormItem>
-          )} />
-
-          <FormField control={form.control} name="date_acquisition" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Date d'acquisition</FormLabel>
-              <FormControl>
-                <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
-              </FormControl>
               <FormMessage />
             </FormItem>
           )} />
