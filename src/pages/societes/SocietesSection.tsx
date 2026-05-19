@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { SocietesSynthese } from '@/components/societes/SocietesSynthese';
-import { SocietesStrategies } from '@/components/societes/SocietesStrategies';
 import { SocietesMesSocietes } from '@/components/societes/SocietesMesSocietes';
+import { SocietesGouvernance } from '@/components/societes/gouvernance/SocietesGouvernance';
+import { SocietesStrategiesFiscales } from '@/components/societes/strategies/SocietesStrategiesFiscales';
+import { SocietesTransmission } from '@/components/societes/transmission/SocietesTransmission';
+import { SocietesBilans } from '@/components/societes/bilans/SocietesBilans';
+import { SocieteActifsDetenus } from '@/components/societes/actifs/SocieteActifsDetenus';
 import { SocieteForm } from '@/components/societes/SocieteForm';
 import { SocieteFinances } from '@/components/societes/finances/SocieteFinances';
 import { societeService, type Societe } from '@/services/societeService';
