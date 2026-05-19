@@ -1572,6 +1572,141 @@ export type Database = {
         }
         Relationships: []
       }
+      societe_associes: {
+        Row: {
+          created_at: string
+          detention_directe: boolean
+          family_link_id: string | null
+          id: string
+          nature_detention: string
+          nom_libre: string | null
+          nombre_titres: number | null
+          pourcentage: number | null
+          societe_associee_id: string | null
+          societe_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          detention_directe?: boolean
+          family_link_id?: string | null
+          id?: string
+          nature_detention?: string
+          nom_libre?: string | null
+          nombre_titres?: number | null
+          pourcentage?: number | null
+          societe_associee_id?: string | null
+          societe_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          detention_directe?: boolean
+          family_link_id?: string | null
+          id?: string
+          nature_detention?: string
+          nom_libre?: string | null
+          nombre_titres?: number | null
+          pourcentage?: number | null
+          societe_associee_id?: string | null
+          societe_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      societe_bilans: {
+        Row: {
+          capitaux_propres: number | null
+          chiffre_affaires: number | null
+          commentaire: string | null
+          created_at: string
+          date_cloture: string | null
+          dettes_financieres: number | null
+          exercice_annee: number
+          id: string
+          resultat_net: number | null
+          societe_id: string
+          tresorerie: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          capitaux_propres?: number | null
+          chiffre_affaires?: number | null
+          commentaire?: string | null
+          created_at?: string
+          date_cloture?: string | null
+          dettes_financieres?: number | null
+          exercice_annee: number
+          id?: string
+          resultat_net?: number | null
+          societe_id: string
+          tresorerie?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          capitaux_propres?: number | null
+          chiffre_affaires?: number | null
+          commentaire?: string | null
+          created_at?: string
+          date_cloture?: string | null
+          dettes_financieres?: number | null
+          exercice_annee?: number
+          id?: string
+          resultat_net?: number | null
+          societe_id?: string
+          tresorerie?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      societe_comptes_courants: {
+        Row: {
+          associe_id: string | null
+          associe_libelle: string | null
+          commentaire: string | null
+          created_at: string
+          date_remboursement: string | null
+          id: string
+          societe_id: string
+          solde: number
+          taux: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          associe_id?: string | null
+          associe_libelle?: string | null
+          commentaire?: string | null
+          created_at?: string
+          date_remboursement?: string | null
+          id?: string
+          societe_id: string
+          solde?: number
+          taux?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          associe_id?: string | null
+          associe_libelle?: string | null
+          commentaire?: string | null
+          created_at?: string
+          date_remboursement?: string | null
+          id?: string
+          societe_id?: string
+          solde?: number
+          taux?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       societe_dividendes: {
         Row: {
           beneficiaire: string | null
@@ -1618,6 +1753,99 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      societe_dutreil: {
+        Row: {
+          commentaire: string | null
+          created_at: string
+          dirigeant_family_link_id: string | null
+          eligibilite_validee: boolean | null
+          engagement_collectif_date: string | null
+          engagement_individuel_date: string | null
+          fonction_direction: string | null
+          id: string
+          societe_id: string
+          updated_at: string
+          user_id: string
+          valeur_parts_transmises: number | null
+        }
+        Insert: {
+          commentaire?: string | null
+          created_at?: string
+          dirigeant_family_link_id?: string | null
+          eligibilite_validee?: boolean | null
+          engagement_collectif_date?: string | null
+          engagement_individuel_date?: string | null
+          fonction_direction?: string | null
+          id?: string
+          societe_id: string
+          updated_at?: string
+          user_id: string
+          valeur_parts_transmises?: number | null
+        }
+        Update: {
+          commentaire?: string | null
+          created_at?: string
+          dirigeant_family_link_id?: string | null
+          eligibilite_validee?: boolean | null
+          engagement_collectif_date?: string | null
+          engagement_individuel_date?: string | null
+          fonction_direction?: string | null
+          id?: string
+          societe_id?: string
+          updated_at?: string
+          user_id?: string
+          valeur_parts_transmises?: number | null
+        }
+        Relationships: []
+      }
+      societe_pactes: {
+        Row: {
+          clause_agrement: boolean | null
+          clause_drag_along: boolean | null
+          clause_preemption: boolean | null
+          clause_sortie_conjointe: boolean | null
+          commentaire: string | null
+          created_at: string
+          date_signature: string | null
+          duree_annees: number | null
+          existe: boolean
+          id: string
+          societe_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          clause_agrement?: boolean | null
+          clause_drag_along?: boolean | null
+          clause_preemption?: boolean | null
+          clause_sortie_conjointe?: boolean | null
+          commentaire?: string | null
+          created_at?: string
+          date_signature?: string | null
+          duree_annees?: number | null
+          existe?: boolean
+          id?: string
+          societe_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          clause_agrement?: boolean | null
+          clause_drag_along?: boolean | null
+          clause_preemption?: boolean | null
+          clause_sortie_conjointe?: boolean | null
+          commentaire?: string | null
+          created_at?: string
+          date_signature?: string | null
+          duree_annees?: number | null
+          existe?: boolean
+          id?: string
+          societe_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       societe_valorisations: {
         Row: {

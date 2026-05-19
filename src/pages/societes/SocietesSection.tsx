@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { SocietesSynthese } from '@/components/societes/SocietesSynthese';
-import { SocietesStrategies } from '@/components/societes/SocietesStrategies';
 import { SocietesMesSocietes } from '@/components/societes/SocietesMesSocietes';
+import { SocietesGouvernance } from '@/components/societes/gouvernance/SocietesGouvernance';
+import { SocietesStrategiesFiscales } from '@/components/societes/strategies/SocietesStrategiesFiscales';
+import { SocietesTransmission } from '@/components/societes/transmission/SocietesTransmission';
+import { SocietesBilans } from '@/components/societes/bilans/SocietesBilans';
+import { SocieteActifsDetenus } from '@/components/societes/actifs/SocieteActifsDetenus';
 import { SocieteForm } from '@/components/societes/SocieteForm';
 import { SocieteFinances } from '@/components/societes/finances/SocieteFinances';
 import { societeService, type Societe } from '@/services/societeService';
@@ -58,12 +62,16 @@ export const SocietesSection = () => {
   const FORM_TABS = [
     { id: 'synthese', label: 'Synthèse' },
     { id: 'informations', label: 'Informations' },
-    { id: 'finances', label: 'Finances' }
+    { id: 'finances', label: 'Finances' },
+    { id: 'bilans', label: 'Bilans' },
+    { id: 'actifs', label: 'Actifs détenus' },
   ];
   const TABS = [
     { id: 'synthese', label: 'Synthèse' },
     { id: 'mes_societes', label: 'Mes sociétés' },
-    { id: 'strategies', label: 'Stratégies' }
+    { id: 'gouvernance', label: 'Associés & gouvernance' },
+    { id: 'strategies', label: 'Stratégies fiscales' },
+    { id: 'transmission', label: 'Transmission des parts' },
   ];
 
   useEffect(() => {
@@ -230,14 +238,13 @@ export const SocietesSection = () => {
       case 'synthese':
         return <SocietesSynthese />;
       case 'mes_societes':
-        return (
-          <SocietesMesSocietes 
-            onEdit={handleEditSociete}
-            onAdd={handleAddSociete}
-          />
-        );
+        return <SocietesMesSocietes onEdit={handleEditSociete} onAdd={handleAddSociete} />;
+      case 'gouvernance':
+        return <SocietesGouvernance />;
       case 'strategies':
-        return <SocietesStrategies />;
+        return <SocietesStrategiesFiscales />;
+      case 'transmission':
+        return <SocietesTransmission />;
       default:
         return <SocietesSynthese />;
     }
@@ -352,6 +359,18 @@ export const SocietesSection = () => {
               <div className="text-center py-12 text-muted-foreground">
                 Chargement...
               </div>
+            )}
+            {formTab === 'bilans' && editingSocieteId && (
+              <SocietesBilans />
+            )}
+            {formTab === 'bilans' && !editingSocieteId && (
+              <p className="text-sm text-muted-foreground">Enregistrez d'abord la société pour saisir ses bilans.</p>
+            )}
+            {formTab === 'actifs' && editingSocieteId && (
+              <SocieteActifsDetenus societeId={editingSocieteId} />
+            )}
+            {formTab === 'actifs' && !editingSocieteId && (
+              <p className="text-sm text-muted-foreground">Enregistrez d'abord la société pour voir ses actifs détenus.</p>
             )}
           </>
         )}
