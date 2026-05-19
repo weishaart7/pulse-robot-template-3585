@@ -73,7 +73,8 @@ export function LiensFamiliauxForm() {
       handicap: false,
       enfant_adopte: 'Non',
       enfant_renoncant: false,
-      exoneration_succession: false
+      exoneration_succession: false,
+      enfant_a_charge: false
     }
   });
   const handleAddMember = () => {
@@ -84,7 +85,8 @@ export function LiensFamiliauxForm() {
       handicap: false,
       enfant_adopte: 'Non',
       enfant_renoncant: false,
-      exoneration_succession: false
+      exoneration_succession: false,
+      enfant_a_charge: false
     });
     setDialogOpen(true);
   };
@@ -105,7 +107,8 @@ export function LiensFamiliauxForm() {
       enfant_renoncant_de: member.enfant_renoncant_de || '',
       branche_familiale: member.branche_familiale || '',
       enfant_de: member.enfant_de || '',
-      exoneration_succession: member.exoneration_succession || false
+      exoneration_succession: member.exoneration_succession || false,
+      enfant_a_charge: (member as any).enfant_a_charge || false
     });
     setDialogOpen(true);
   };
