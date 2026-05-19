@@ -62,11 +62,6 @@ export const SocietesSection = () => {
   const FORM_TABS = [
     { id: 'synthese', label: 'Synthèse' },
     { id: 'informations', label: 'Informations' },
-    { id: 'finances', label: 'Finances' }
-  ];
-  const FORM_TABS = [
-    { id: 'synthese', label: 'Synthèse' },
-    { id: 'informations', label: 'Informations' },
     { id: 'finances', label: 'Finances' },
     { id: 'bilans', label: 'Bilans' },
     { id: 'actifs', label: 'Actifs détenus' },
