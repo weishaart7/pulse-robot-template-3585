@@ -14,7 +14,8 @@ import { ChargeForm } from './ChargeForm';
 import { ASSET_NATURES, getAssetCategory, NATURES_WITHOUT_ACQUISITION } from '@/constants/assetTypes';
 import { useAssetForm, NATURES_WITH_ETABLISSEMENT } from '@/hooks/useAssetForm';
 import AnimatedBackground from '@/components/ui/animated-tabs';
-import { Globe, Info, TrendingUp, TrendingDown, Sparkles, HelpCircle } from 'lucide-react';
+import { Globe, Info, TrendingUp, TrendingDown, Sparkles, HelpCircle, FileText, Users, ShoppingCart, Coins, Receipt } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Switch } from '@/components/ui/switch';
 import { IndivisairesSection } from './IndivisairesSection';
@@ -35,11 +36,11 @@ interface AssetFormProps {
 }
 
 const FORM_TABS = [
-  { id: 'general', label: 'Informations générales' },
-  { id: 'detention', label: 'Détention' },
-  { id: 'acquisition', label: 'Acquisition' },
-  { id: 'valorisation', label: 'Valorisation' },
-  { id: 'charges', label: 'Charges' },
+  { id: 'general', label: 'Informations générales', icon: FileText },
+  { id: 'detention', label: 'Détention', icon: Users },
+  { id: 'acquisition', label: 'Acquisition', icon: ShoppingCart },
+  { id: 'valorisation', label: 'Valorisation', icon: Coins },
+  { id: 'charges', label: 'Charges', icon: Receipt },
 ];
 
 export const AssetForm: React.FC<AssetFormProps> = ({
@@ -644,29 +645,23 @@ export const AssetForm: React.FC<AssetFormProps> = ({
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          <div className="flex justify-start">
-            <div className="rounded-[8px] bg-muted p-[2px]">
-              <AnimatedBackground
-                defaultValue="general"
-                onValueChange={(value) => setActiveTab(value || 'general')}
-                className="rounded-lg bg-background shadow-sm"
-                transition={{
-                  ease: "easeInOut",
-                  duration: 0.2,
-                }}
+          <div className="flex gap-2 flex-wrap">
+            {FORM_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200",
+                  activeTab === tab.id
+                    ? "bg-[#62706d] text-[#ebf1f1] shadow-sm"
+                    : "bg-[#ebf1f1] text-[#62706d] hover:opacity-90"
+                )}
               >
-                {FORM_TABS.map((tab) => (
-                  <button
-                    key={tab.id}
-                    data-id={tab.id}
-                    type="button"
-                    className="inline-flex min-w-24 items-center justify-center px-3 py-2 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </AnimatedBackground>
-            </div>
+                <tab.icon className="h-4 w-4" />
+                {tab.label}
+              </button>
+            ))}
           </div>
 
           <div className="mt-6">
