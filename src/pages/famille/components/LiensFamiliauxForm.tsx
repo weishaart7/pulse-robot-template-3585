@@ -137,7 +137,8 @@ export function LiensFamiliauxForm() {
         enfant_de: data.enfant_de,
         parent_de: data.enfant_de,
         // Copy for backward compatibility
-        exoneration_succession: data.exoneration_succession
+        exoneration_succession: data.exoneration_succession,
+        enfant_a_charge: data.enfant_a_charge
       };
       if (editingMember) {
         await updateLink(editingMember.id!, memberData);
