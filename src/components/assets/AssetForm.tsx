@@ -658,7 +658,6 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                     : "bg-[#ebf1f1] text-[#62706d] hover:opacity-90"
                 )}
               >
-                <tab.icon className="h-4 w-4" />
                 {tab.label}
               </button>
             ))}
