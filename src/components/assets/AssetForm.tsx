@@ -626,8 +626,12 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const renderContent = () => {
     switch (activeTab) {
       case 'general': return renderGeneralSection();
-      case 'detention': return renderDetentionSection();
-      case 'acquisition': return renderAcquisitionSection();
+      case 'detention': return (
+        <div className="space-y-8">
+          {renderDetentionSection()}
+          {renderAcquisitionSection()}
+        </div>
+      );
       case 'valorisation': return renderValorisationSection();
       case 'charges': return renderChargesSection();
       default: return renderGeneralSection();
