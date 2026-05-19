@@ -104,7 +104,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
           <FormItem>
             <FormLabel>Nature *</FormLabel>
             <FormControl>
-              <SearchableSelect options={ASSET_NATURES} value={field.value} onChange={field.onChange} placeholder="Choisir une nature" />
+              <SearchableSelect options={ASSET_NATURES} value={field.value} onChange={field.onChange} placeholder="Choisir une nature" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" />
             </FormControl>
             <FormMessage />
           </FormItem>
