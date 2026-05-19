@@ -238,14 +238,13 @@ export const SocietesSection = () => {
       case 'synthese':
         return <SocietesSynthese />;
       case 'mes_societes':
-        return (
-          <SocietesMesSocietes 
-            onEdit={handleEditSociete}
-            onAdd={handleAddSociete}
-          />
-        );
+        return <SocietesMesSocietes onEdit={handleEditSociete} onAdd={handleAddSociete} />;
+      case 'gouvernance':
+        return <SocietesGouvernance />;
       case 'strategies':
-        return <SocietesStrategies />;
+        return <SocietesStrategiesFiscales />;
+      case 'transmission':
+        return <SocietesTransmission />;
       default:
         return <SocietesSynthese />;
     }
