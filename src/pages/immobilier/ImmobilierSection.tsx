@@ -84,6 +84,22 @@ export const ImmobilierSection = () => {
     );
   }
 
+  if (selectedAsset) {
+    return (
+      <div className="p-6">
+        <ImmobilierPropertyDetailView
+          asset={selectedAsset}
+          onBack={handleDialogClose}
+          onUpdate={() => {
+            refetch();
+            const updated = assets.find(a => a.id === selectedAsset.id);
+            if (updated) setSelectedAsset(updated);
+          }}
+        />
+      </div>
+    );
+  }
+
   const TABS = [
     { id: 'biens', label: 'Vue d\'ensemble' },
     { id: 'valorisation', label: 'Mes biens' },
