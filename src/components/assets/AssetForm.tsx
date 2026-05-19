@@ -36,11 +36,11 @@ interface AssetFormProps {
 }
 
 const FORM_TABS = [
-  { id: 'general', label: 'Informations générales' },
-  { id: 'detention', label: 'Détention' },
-  { id: 'acquisition', label: 'Acquisition' },
-  { id: 'valorisation', label: 'Valorisation' },
-  { id: 'charges', label: 'Charges' },
+  { id: 'general', label: 'Informations générales', icon: FileText },
+  { id: 'detention', label: 'Détention', icon: Users },
+  { id: 'acquisition', label: 'Acquisition', icon: ShoppingCart },
+  { id: 'valorisation', label: 'Valorisation', icon: Coins },
+  { id: 'charges', label: 'Charges', icon: Receipt },
 ];
 
 export const AssetForm: React.FC<AssetFormProps> = ({
