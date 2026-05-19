@@ -35,9 +35,18 @@ const membreFamilleSchema = z.object({
   enfant_renoncant_de: z.string().optional(),
   branche_familiale: z.string().optional(),
   enfant_de: z.string().optional(),
-  exoneration_succession: z.boolean().default(false)
+  exoneration_succession: z.boolean().default(false),
+  enfant_a_charge: z.boolean().default(false)
 });
 type MembreFamille = z.infer<typeof membreFamilleSchema>;
+
+function calculateAge(date_naissance?: string, date_deces?: string): string {
+  if (!date_naissance) return '-';
+  const birth = new Date(date_naissance);
+  const end = date_deces ? new Date(date_deces) : new Date();
+  const age = Math.floor((end.getTime() - birth.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+  return `${age} ans`;
+}
 export function LiensFamiliauxForm() {
   const {
     data: familyLinks,
