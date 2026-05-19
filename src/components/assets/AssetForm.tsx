@@ -37,8 +37,7 @@ interface AssetFormProps {
 
 const FORM_TABS = [
   { id: 'general', label: 'Informations générales' },
-  { id: 'detention', label: 'Détention' },
-  { id: 'acquisition', label: 'Acquisition' },
+  { id: 'detention', label: 'Détention & Acquisition' },
   { id: 'valorisation', label: 'Valorisation' },
   { id: 'charges', label: 'Charges' },
 ];
