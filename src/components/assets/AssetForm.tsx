@@ -37,8 +37,7 @@ interface AssetFormProps {
 
 const FORM_TABS = [
   { id: 'general', label: 'Informations générales' },
-  { id: 'detention', label: 'Détention' },
-  { id: 'acquisition', label: 'Acquisition' },
+  { id: 'detention', label: 'Détention & Acquisition' },
   { id: 'valorisation', label: 'Valorisation' },
   { id: 'charges', label: 'Charges' },
 ];
@@ -627,8 +626,12 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const renderContent = () => {
     switch (activeTab) {
       case 'general': return renderGeneralSection();
-      case 'detention': return renderDetentionSection();
-      case 'acquisition': return renderAcquisitionSection();
+      case 'detention': return (
+        <div className="space-y-8">
+          {renderDetentionSection()}
+          {renderAcquisitionSection()}
+        </div>
+      );
       case 'valorisation': return renderValorisationSection();
       case 'charges': return renderChargesSection();
       default: return renderGeneralSection();
