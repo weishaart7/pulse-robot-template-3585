@@ -113,7 +113,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
           <FormItem>
             <FormLabel>Dénomination</FormLabel>
             <FormControl>
-              <Input {...field} />
+              <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -124,7 +124,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             <FormItem>
               <FormLabel>Établissement</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -139,7 +139,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               value={field.value?.[0] || 'Non'}
             >
               <FormControl>
-                <SelectTrigger size="lg">
+                <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
                   <SelectValue placeholder="Choisir la situation particulière" />
                 </SelectTrigger>
               </FormControl>
@@ -267,7 +267,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             <FormLabel>Mode de détention</FormLabel>
             <Select onValueChange={field.onChange} defaultValue={field.value}>
               <FormControl>
-                <SelectTrigger size="lg">
+                <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
                   <SelectValue placeholder="Choisir un mode de détention" />
                 </SelectTrigger>
               </FormControl>
@@ -289,7 +289,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               </FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
-                  <SelectTrigger size="lg">
+                  <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
                     <SelectValue placeholder="Choisir une personne" />
                   </SelectTrigger>
                 </FormControl>
@@ -326,7 +326,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               <FormLabel>Détenteur</FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
-                  <SelectTrigger size="lg">
+                  <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
                     <SelectValue placeholder="Choisir un détenteur" />
                   </SelectTrigger>
                 </FormControl>
@@ -366,7 +366,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               {!isAuto && field.value && (
                 <FormField control={form.control} name="qualification_bien" render={({ field: qf }) => (
                   <Select value={qf.value || ''} onValueChange={qf.onChange}>
-                    <SelectTrigger size="lg" className="mt-2">
+                    <SelectTrigger size="lg" className="mt-2 bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
                       <SelectValue placeholder="Choisir la qualification" />
                     </SelectTrigger>
                     <SelectContent>
@@ -388,7 +388,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               <FormItem>
                 <FormLabel>Pourcentage appartenant à {familyData.userFirstName || 'vous'} (%)</FormLabel>
                 <FormControl>
-                  <Input
+                  <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                     type="number"
                     min="0"
                     max="100"
@@ -409,7 +409,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               <FormItem>
                 <FormLabel>Pourcentage appartenant à {familyData.partnerFirstName || 'votre conjoint(e)'} (%)</FormLabel>
                 <FormControl>
-                  <Input
+                  <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                     type="number"
                     min="0"
                     max="100"
@@ -461,7 +461,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                 value={field.value?.[0] || 'Acquisition à titre onéreuse'}
               >
                 <FormControl>
-                  <SelectTrigger size="lg">
+                  <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
                     <SelectValue placeholder="Choisir l'origine de l'actif" />
                   </SelectTrigger>
                 </FormControl>
@@ -490,7 +490,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               <FormLabel>Valeur d'achat / réception (€)</FormLabel>
               <FormDescription>Prix payé à l'achat, ou valeur déclarée si reçu en donation/héritage. Sert de base pour le calcul de la plus-value.</FormDescription>
               <FormControl>
-                <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -501,7 +501,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               <FormLabel>Frais d'acquisition (€)</FormLabel>
               <FormDescription>Notaire, agence, droits d'enregistrement, etc.</FormDescription>
               <FormControl>
-                <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -519,7 +519,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             <FormLabel>Valeur actuelle estimée (€)</FormLabel>
             <FormDescription>Valeur du bien à ce jour. C'est elle qui est utilisée dans le calcul du patrimoine.</FormDescription>
             <FormControl>
-              <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+              <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -540,7 +540,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             <FormLabel>Revalorisation annuelle (%)</FormLabel>
             <FormDescription>Hypothèse de revalorisation pour les projections.</FormDescription>
             <FormControl>
-              <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+              <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
             </FormControl>
             <FormMessage />
           </FormItem>

@@ -75,7 +75,7 @@ export const IndivisairesSection: React.FC<Props> = ({ familyMembers, value, onC
                       value={it.family_link_id || ''}
                       onValueChange={(v) => updateAt(idx, { family_link_id: v })}
                     >
-                      <SelectTrigger size="lg">
+                      <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
                         <SelectValue placeholder="Sélectionner un membre" />
                       </SelectTrigger>
                       <SelectContent className="bg-background z-50">
@@ -87,7 +87,7 @@ export const IndivisairesSection: React.FC<Props> = ({ familyMembers, value, onC
                       </SelectContent>
                     </Select>
                   ) : (
-                    <Input
+                    <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                       placeholder="Nom du tiers indivisaire"
                       value={it.nom_libre || ''}
                       onChange={(e) => updateAt(idx, { nom_libre: e.target.value })}
@@ -96,7 +96,7 @@ export const IndivisairesSection: React.FC<Props> = ({ familyMembers, value, onC
                 </div>
                 <div className="col-span-3">
                   <div className="relative">
-                    <Input
+                    <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                       type="number"
                       min={0}
                       max={100}
