@@ -646,6 +646,7 @@ export type Database = {
           created_at: string | null
           date_deces: string | null
           date_naissance: string | null
+          enfant_a_charge: boolean | null
           enfant_adopte: string | null
           enfant_de: string | null
           enfant_renoncant: boolean | null
@@ -668,6 +669,7 @@ export type Database = {
           created_at?: string | null
           date_deces?: string | null
           date_naissance?: string | null
+          enfant_a_charge?: boolean | null
           enfant_adopte?: string | null
           enfant_de?: string | null
           enfant_renoncant?: boolean | null
@@ -690,6 +692,7 @@ export type Database = {
           created_at?: string | null
           date_deces?: string | null
           date_naissance?: string | null
+          enfant_a_charge?: boolean | null
           enfant_adopte?: string | null
           enfant_de?: string | null
           enfant_renoncant?: boolean | null

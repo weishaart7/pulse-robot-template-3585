@@ -35,9 +35,18 @@ const membreFamilleSchema = z.object({
   enfant_renoncant_de: z.string().optional(),
   branche_familiale: z.string().optional(),
   enfant_de: z.string().optional(),
-  exoneration_succession: z.boolean().default(false)
+  exoneration_succession: z.boolean().default(false),
+  enfant_a_charge: z.boolean().default(false)
 });
 type MembreFamille = z.infer<typeof membreFamilleSchema>;
+
+function calculateAge(date_naissance?: string, date_deces?: string): string {
+  if (!date_naissance) return '-';
+  const birth = new Date(date_naissance);
+  const end = date_deces ? new Date(date_deces) : new Date();
+  const age = Math.floor((end.getTime() - birth.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+  return `${age} ans`;
+}
 export function LiensFamiliauxForm() {
   const {
     data: familyLinks,
@@ -64,7 +73,8 @@ export function LiensFamiliauxForm() {
       handicap: false,
       enfant_adopte: 'Non',
       enfant_renoncant: false,
-      exoneration_succession: false
+      exoneration_succession: false,
+      enfant_a_charge: false
     }
   });
   const handleAddMember = () => {
@@ -75,7 +85,8 @@ export function LiensFamiliauxForm() {
       handicap: false,
       enfant_adopte: 'Non',
       enfant_renoncant: false,
-      exoneration_succession: false
+      exoneration_succession: false,
+      enfant_a_charge: false
     });
     setDialogOpen(true);
   };
@@ -96,7 +107,8 @@ export function LiensFamiliauxForm() {
       enfant_renoncant_de: member.enfant_renoncant_de || '',
       branche_familiale: member.branche_familiale || '',
       enfant_de: member.enfant_de || '',
-      exoneration_succession: member.exoneration_succession || false
+      exoneration_succession: member.exoneration_succession || false,
+      enfant_a_charge: (member as any).enfant_a_charge || false
     });
     setDialogOpen(true);
   };
@@ -125,7 +137,8 @@ export function LiensFamiliauxForm() {
         enfant_de: data.enfant_de,
         parent_de: data.enfant_de,
         // Copy for backward compatibility
-        exoneration_succession: data.exoneration_succession
+        exoneration_succession: data.exoneration_succession,
+        enfant_a_charge: data.enfant_a_charge
       };
       if (editingMember) {
         await updateLink(editingMember.id!, memberData);
@@ -163,6 +176,7 @@ export function LiensFamiliauxForm() {
                   <TableHead>Nom</TableHead>
                   <TableHead>Prénom</TableHead>
                   <TableHead>Date de naissance</TableHead>
+                  <TableHead>Âge</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -177,10 +191,14 @@ export function LiensFamiliauxForm() {
                     <TableCell>
                       {member.date_naissance ? format(new Date(member.date_naissance), 'dd/MM/yyyy') : '-'}
                     </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {calculateAge(member.date_naissance, member.date_deces)}
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-1 flex-wrap">
                         {member.est_decede && <Badge variant="destructive" className="text-xs">Décédé</Badge>}
                         {member.handicap && <Badge variant="secondary" className="text-xs">Handicap</Badge>}
+                        {(member as any).enfant_a_charge && <Badge variant="secondary" className="text-xs">À charge</Badge>}
                         {member.enfant_adopte && member.enfant_adopte !== 'Non' && <Badge variant="outline" className="text-xs">{member.enfant_adopte}</Badge>}
                         {member.enfant_renoncant && <Badge variant="outline" className="text-xs">Renonçant</Badge>}
                         {member.exoneration_succession && <Badge variant="secondary" className="text-xs">Exonération</Badge>}
