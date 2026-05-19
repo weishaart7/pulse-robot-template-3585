@@ -44,8 +44,13 @@ function calculateAge(date_naissance?: string, date_deces?: string): string {
   if (!date_naissance) return '-';
   const birth = new Date(date_naissance);
   const end = date_deces ? new Date(date_deces) : new Date();
-  const age = Math.floor((end.getTime() - birth.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
-  return `${age} ans`;
+  const diffMs = end.getTime() - birth.getTime();
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (days < 30) return `${days} jour${days > 1 ? 's' : ''}`;
+  const months = Math.floor(days / 30.4375);
+  if (months < 12) return `${months} mois`;
+  const years = Math.floor(days / 365.25);
+  return `${years} an${years > 1 ? 's' : ''}`;
 }
 export function LiensFamiliauxForm() {
   const {
