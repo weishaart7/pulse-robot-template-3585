@@ -21,7 +21,6 @@ export const ImmobilierSection = () => {
   const [activeTab, setActiveTab] = useState('biens');
   const { assets, isLoading, refetch } = useImmobilierAssets();
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [gestionDialogOpen, setGestionDialogOpen] = useState(false);
   const [selectedAssetForGestion, setSelectedAssetForGestion] = useState<Asset | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
@@ -34,12 +33,10 @@ export const ImmobilierSection = () => {
       setLmnpAsset(asset);
     } else {
       setSelectedAsset(asset);
-      setDialogOpen(true);
     }
   }, []);
 
   const handleDialogClose = useCallback(() => {
-    setDialogOpen(false);
     setSelectedAsset(null);
   }, []);
 
