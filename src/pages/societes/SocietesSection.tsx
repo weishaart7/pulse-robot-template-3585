@@ -360,6 +360,18 @@ export const SocietesSection = () => {
                 Chargement...
               </div>
             )}
+            {formTab === 'bilans' && editingSocieteId && (
+              <SocietesBilans />
+            )}
+            {formTab === 'bilans' && !editingSocieteId && (
+              <p className="text-sm text-muted-foreground">Enregistrez d'abord la société pour saisir ses bilans.</p>
+            )}
+            {formTab === 'actifs' && editingSocieteId && (
+              <SocieteActifsDetenus societeId={editingSocieteId} />
+            )}
+            {formTab === 'actifs' && !editingSocieteId && (
+              <p className="text-sm text-muted-foreground">Enregistrez d'abord la société pour voir ses actifs détenus.</p>
+            )}
           </>
         )}
       </div>
