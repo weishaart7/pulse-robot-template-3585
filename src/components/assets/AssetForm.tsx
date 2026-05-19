@@ -36,11 +36,11 @@ interface AssetFormProps {
 }
 
 const FORM_TABS = [
-  { id: 'general', label: 'Informations générales', icon: FileText },
-  { id: 'detention', label: 'Détention', icon: Users },
-  { id: 'acquisition', label: 'Acquisition', icon: ShoppingCart },
-  { id: 'valorisation', label: 'Valorisation', icon: Coins },
-  { id: 'charges', label: 'Charges', icon: Receipt },
+  { id: 'general', label: 'Informations générales' },
+  { id: 'detention', label: 'Détention' },
+  { id: 'acquisition', label: 'Acquisition' },
+  { id: 'valorisation', label: 'Valorisation' },
+  { id: 'charges', label: 'Charges' },
 ];
 
 export const AssetForm: React.FC<AssetFormProps> = ({
@@ -658,7 +658,6 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                     : "bg-[#ebf1f1] text-[#62706d] hover:opacity-90"
                 )}
               >
-                <tab.icon className="h-4 w-4" />
                 {tab.label}
               </button>
             ))}
