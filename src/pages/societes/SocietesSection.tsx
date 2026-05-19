@@ -64,10 +64,19 @@ export const SocietesSection = () => {
     { id: 'informations', label: 'Informations' },
     { id: 'finances', label: 'Finances' }
   ];
+  const FORM_TABS = [
+    { id: 'synthese', label: 'Synthèse' },
+    { id: 'informations', label: 'Informations' },
+    { id: 'finances', label: 'Finances' },
+    { id: 'bilans', label: 'Bilans' },
+    { id: 'actifs', label: 'Actifs détenus' },
+  ];
   const TABS = [
     { id: 'synthese', label: 'Synthèse' },
     { id: 'mes_societes', label: 'Mes sociétés' },
-    { id: 'strategies', label: 'Stratégies' }
+    { id: 'gouvernance', label: 'Associés & gouvernance' },
+    { id: 'strategies', label: 'Stratégies fiscales' },
+    { id: 'transmission', label: 'Transmission des parts' },
   ];
 
   useEffect(() => {
