@@ -176,6 +176,7 @@ export function LiensFamiliauxForm() {
                   <TableHead>Nom</TableHead>
                   <TableHead>Prénom</TableHead>
                   <TableHead>Date de naissance</TableHead>
+                  <TableHead>Âge</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -190,10 +191,14 @@ export function LiensFamiliauxForm() {
                     <TableCell>
                       {member.date_naissance ? format(new Date(member.date_naissance), 'dd/MM/yyyy') : '-'}
                     </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {calculateAge(member.date_naissance, member.date_deces)}
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-1 flex-wrap">
                         {member.est_decede && <Badge variant="destructive" className="text-xs">Décédé</Badge>}
                         {member.handicap && <Badge variant="secondary" className="text-xs">Handicap</Badge>}
+                        {(member as any).enfant_a_charge && <Badge variant="secondary" className="text-xs">À charge</Badge>}
                         {member.enfant_adopte && member.enfant_adopte !== 'Non' && <Badge variant="outline" className="text-xs">{member.enfant_adopte}</Badge>}
                         {member.enfant_renoncant && <Badge variant="outline" className="text-xs">Renonçant</Badge>}
                         {member.exoneration_succession && <Badge variant="secondary" className="text-xs">Exonération</Badge>}
