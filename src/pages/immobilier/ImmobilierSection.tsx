@@ -342,12 +342,6 @@ export const ImmobilierSection = () => {
         {renderContent()}
       </div>
 
-      <ImmobilierPropertyDialog
-        asset={selectedAsset}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onUpdate={handleUpdate}
-      />
 
       <ImmobilierGestionDialog
         asset={selectedAssetForGestion}
