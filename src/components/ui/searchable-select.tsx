@@ -52,10 +52,10 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "flex w-full items-center justify-between bg-background border border-input shadow-sm shadow-black/5 transition-shadow",
-            "text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20",
+            "flex w-full items-center justify-between bg-muted border border-transparent shadow-none transition-colors",
+            "text-foreground focus-visible:bg-background focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20",
             "disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
-            "h-9 px-3 text-sm gap-1.5 rounded-lg",
+            "h-9 px-3 text-sm gap-1.5 rounded-[5px]",
             !value && "text-muted-foreground",
             className
           )}
