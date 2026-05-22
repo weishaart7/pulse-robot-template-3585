@@ -129,7 +129,6 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         beneficiaire_autre_partie: (asset as any).beneficiaire_autre_partie || '',
         valeur_estimee: asset.valeur_estimee || undefined,
         date_estimation: asset.date_estimation ? new Date(asset.date_estimation) : undefined,
-        revalorisation_annuelle: asset.revalorisation_annuelle || undefined,
         detenteur: displayDetenteur,
         pourcentage_utilisateur: userPercentage,
         pourcentage_conjoint: spousePercentage,

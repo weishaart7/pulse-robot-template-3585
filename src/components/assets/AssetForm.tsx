@@ -309,78 +309,24 @@ export const AssetForm: React.FC<AssetFormProps> = ({
           )} />
         )}
 
-        <FormField control={form.control} name="detenteur" render={({ field }) => {
-          const isAuto = form.watch('qualification_auto') !== false;
-          const qual = qualifierBien({
-            statutCouple: maritalContext.statutCouple,
-            regimeMatrimonial: maritalContext.regimeMatrimonial,
-            dateMariage: maritalContext.dateMariage,
-            dateAcquisition: form.watch('date_acquisition')?.toISOString(),
-            origineActif: form.watch('origine_actif') as string[] | undefined,
-            modeDetention: form.watch('mode_detention'),
-            detenteur: form.watch('detenteur'),
-          });
-          const currentQual = isAuto ? qual.qualification : form.watch('qualification_bien');
-          return (
-            <FormItem>
-              <FormLabel>Détenteur</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
-                    <SelectValue placeholder="Choisir un détenteur" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {detenteurOptions.map(option => (
-                    <SelectItem key={option} value={option}>{option}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {field.value && currentQual && (
-                <div className="flex items-center gap-2 pt-1.5 text-xs text-muted-foreground">
-                  <Sparkles className="h-3 w-3" strokeWidth={1.5} />
-                  <span>Qualification&nbsp;: <b className="text-foreground">{currentQual}</b></span>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button"><HelpCircle className="h-3 w-3" /></button>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-sm">
-                        <p className="text-xs">
-                          {isAuto ? qual.raison : 'Qualification définie manuellement.'}<br/>
-                          <b>Bien propre</b>&nbsp;: exclusif à un époux. <b>Bien commun</b>&nbsp;: acquis pendant l'union sous régime légal. <b>Indivision</b>&nbsp;: hors couple.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <span className="ml-auto flex items-center gap-1.5">
-                    <FormField control={form.control} name="qualification_auto" render={({ field: f }) => (
-                      <>
-                        <span>Auto</span>
-                        <Switch checked={f.value !== false} onCheckedChange={f.onChange} className="scale-75" />
-                      </>
-                    )} />
-                  </span>
-                </div>
-              )}
-              {!isAuto && field.value && (
-                <FormField control={form.control} name="qualification_bien" render={({ field: qf }) => (
-                  <Select value={qf.value || ''} onValueChange={qf.onChange}>
-                    <SelectTrigger size="lg" className="mt-2 bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
-                      <SelectValue placeholder="Choisir la qualification" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {QUALIFICATION_OPTIONS.map((q) => (
-                        <SelectItem key={q} value={q}>{q}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )} />
-              )}
-              <FormMessage />
-            </FormItem>
-          );
-        }} />
+        <FormField control={form.control} name="detenteur" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Détenteur</FormLabel>
+            <Select onValueChange={field.onChange} value={field.value}>
+              <FormControl>
+                <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                  <SelectValue placeholder="Choisir un détenteur" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {detenteurOptions.map(option => (
+                  <SelectItem key={option} value={option}>{option}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )} />
 
         {watchedDetenteur === 'Le couple' && familyData.hasPartner && (
           <>
@@ -535,16 +481,6 @@ export const AssetForm: React.FC<AssetFormProps> = ({
           </FormItem>
         )} />
 
-        <FormField control={form.control} name="revalorisation_annuelle" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Revalorisation annuelle (%)</FormLabel>
-            <FormDescription>Hypothèse de revalorisation pour les projections.</FormDescription>
-            <FormControl>
-              <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
       </div>
 
       {showPlusValue && (
