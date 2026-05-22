@@ -131,22 +131,6 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
             </div>
           )}
 
-          {/* Revalorisation */}
-          {asset.revalorisation_annuelle && (
-            <>
-              <Separator />
-              <div>
-                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Performance
-                </h3>
-                <div>
-                  <span className="text-sm text-muted-foreground">Revalorisation annuelle</span>
-                  <p className="font-medium">{asset.revalorisation_annuelle}%</p>
-                </div>
-              </div>
-            </>
-          )}
 
           {/* Établissement */}
           {asset.etablissement && (
