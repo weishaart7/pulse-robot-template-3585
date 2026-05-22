@@ -14,12 +14,9 @@ import { ChargeForm } from './ChargeForm';
 import { ASSET_NATURES, getAssetCategory, NATURES_WITHOUT_ACQUISITION } from '@/constants/assetTypes';
 import { useAssetForm, NATURES_WITH_ETABLISSEMENT } from '@/hooks/useAssetForm';
 import AnimatedBackground from '@/components/ui/animated-tabs';
-import { Globe, Info, TrendingUp, TrendingDown, Sparkles, HelpCircle, FileText, Users, ShoppingCart, Coins, Receipt } from 'lucide-react';
+import { Globe, Info, TrendingUp, TrendingDown, FileText, Users, ShoppingCart, Coins, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Switch } from '@/components/ui/switch';
 import { IndivisairesSection } from './IndivisairesSection';
-import { qualifierBien, QUALIFICATION_OPTIONS } from '@/lib/patrimoine/qualification';
 import { 
   ORIGINE_ACTIF_OPTIONS, 
   SITUATION_PARTICULIERE_OPTIONS, 
