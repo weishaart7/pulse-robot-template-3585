@@ -257,15 +257,15 @@ export function debugCalculation(
   consumedBracketsAmount: Money,
   params: Params
 ) {
-  console.log(`=== Debug calcul pour ${lien} ===`);
-  console.log(`Part brute: ${partBrute}€`);
-  console.log(`Tranches consommées: ${consumedBracketsAmount}€`);
-  
+  if (import.meta.env.DEV) console.log(`=== Debug calcul pour ${lien} ===`);
+  if (import.meta.env.DEV) console.log(`Part brute: ${partBrute}€`);
+  if (import.meta.env.DEV) console.log(`Tranches consommées: ${consumedBracketsAmount}€`);
+
   const result = computeInheritanceForBeneficiary(partBrute, lien, consumedBracketsAmount, params);
-  
-  console.log(`Abattement appliqué: ${result.abattementApplied}€`);
-  console.log(`Base taxable: ${result.base}€`);
-  console.log(`Droits calculés: ${result.tax}€`);
+
+  if (import.meta.env.DEV) console.log(`Abattement appliqué: ${result.abattementApplied}€`);
+  if (import.meta.env.DEV) console.log(`Base taxable: ${result.base}€`);
+  if (import.meta.env.DEV) console.log(`Droits calculés: ${result.tax}€`);
   
   return result;
 }

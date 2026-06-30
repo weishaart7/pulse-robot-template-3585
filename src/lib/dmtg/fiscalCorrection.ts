@@ -36,8 +36,8 @@ export function computeDMTGCorrected(ctx: DMTGContext): DMTGResult {
     // Pour ce test, utilisons les valeurs du log actuel
     const baseHorsAV = 717206; // Valeur observée dans les logs
     
-    console.log(`=== Calcul CORRIGÉ pour ${benId} (${beneficiary.lien}) ===`);
-    console.log(`Base hors AV: ${baseHorsAV}€`);
+    if (import.meta.env.DEV) console.log(`=== Calcul CORRIGÉ pour ${benId} (${beneficiary.lien}) ===`);
+    if (import.meta.env.DEV) console.log(`Base hors AV: ${baseHorsAV}€`);
 
     // Convertir le lien DMTG vers le format simplifié
     let lienSimple: 'enfant' | 'parent' | 'conjoint' | 'frere_soeur' | 'neveu_niece' | 'tiers' | 'autre';
@@ -68,8 +68,8 @@ export function computeDMTGCorrected(ctx: DMTGContext): DMTGResult {
       simpleFiscalParams
     );
 
-    console.log(`Calcul CORRIGÉ - Base taxable: ${correctedResult.base}€`);
-    console.log(`Calcul CORRIGÉ - Droits: ${correctedResult.tax}€`);
+    if (import.meta.env.DEV) console.log(`Calcul CORRIGÉ - Base taxable: ${correctedResult.base}€`);
+    if (import.meta.env.DEV) console.log(`Calcul CORRIGÉ - Droits: ${correctedResult.tax}€`);
 
     totalDroitsHorsAV += correctedResult.tax;
 

@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft } from 'lucide-react';
 import IFISidebar from './ifi/IFISidebar';
-import HypothesesSection from './ifi/HypothesesSection';
+import HypothesesSection, { HypothesesSectionHandle } from './ifi/HypothesesSection';
 import ListeBiensIFISection from './ifi/ListeBiensIFISection';
 import BaremeIFISection from './ifi/BaremeIFISection';
 import ReductionsPlafonnementSection from './ifi/ReductionsPlafonnementSection';
@@ -16,6 +16,7 @@ interface IFIInterfaceProps {
 
 const IFIInterface = ({ onClose }: IFIInterfaceProps) => {
   const [activeSection, setActiveSection] = useState('hypotheses');
+  const hypothesesRef = useRef<HypothesesSectionHandle>(null);
 
   const sections = [
     'hypotheses',
@@ -41,15 +42,15 @@ const IFIInterface = ({ onClose }: IFIInterfaceProps) => {
     }
   };
 
-  const handleSave = () => {
-    // TODO: Logique de sauvegarde
+  const handleSave = async () => {
+    await hypothesesRef.current?.flush();
     onClose();
   };
 
   const renderContent = () => {
     switch (activeSection) {
       case 'hypotheses':
-        return <HypothesesSection />;
+        return <HypothesesSection ref={hypothesesRef} />;
       case 'liste-biens-ifi':
         return <ListeBiensIFISection />;
       case 'bareme-ifi':
@@ -59,7 +60,7 @@ const IFIInterface = ({ onClose }: IFIInterfaceProps) => {
       case 'montant-redevable':
         return <MontantRedevableSection />;
       default:
-        return <HypothesesSection />;
+        return <HypothesesSection ref={hypothesesRef} />;
     }
   };
 

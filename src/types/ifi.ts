@@ -43,6 +43,7 @@ export interface IFIImmeableNonBati {
   pourcentage_indivision?: number;
   nature_droits_detenus?: string;
   valeur_totale?: number;
+  abattement_bois_forets?: boolean;
   created_at?: string;
   updated_at?: string;
 }

@@ -1,16 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from './use-toast';
-import { 
+import {
   ifiImmeubleBatiService,
   ifiImmeableNonBatiService,
   ifiBienDetenuIndirectementService,
-  ifiBienProfessionnelExonereService
+  ifiBienProfessionnelExonereService,
+  ifiPassifDeductionService,
+  ifiHypotheseService
 } from '@/services/ifiService';
 import type {
   IFIImmeubleBati,
   IFIImmeableNonBati,
   IFIBienDetenuIndirectement,
   IFIBienProfessionnelExonere,
+  IFIPassifDeduction,
+  IFIHypothese,
 } from '@/types/ifi';
 
 // Hook pour Immeubles Bâtis
@@ -390,5 +394,155 @@ export const useIFIBiensProfessionnelsExoneres = () => {
     createBien,
     updateBien,
     deleteBien,
+  };
+};
+// Hook pour Passifs et Déductions
+export const useIFIPassifsDeductions = () => {
+  const [passifs, setPassifs] = useState<IFIPassifDeduction[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const fetchPassifs = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await ifiPassifDeductionService.getAll();
+      setPassifs(data);
+    } catch (error) {
+      console.error('Erreur lors du chargement des passifs IFI:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les passifs et déductions",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  const createPassif = useCallback(async (passif: Omit<IFIPassifDeduction, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    try {
+      const newPassif = await ifiPassifDeductionService.create(passif);
+      setPassifs(prev => [newPassif, ...prev]);
+      toast({
+        title: "Succès",
+        description: "Passif ajouté avec succès",
+      });
+      return newPassif;
+    } catch (error) {
+      console.error('Erreur lors de la création:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ajouter le passif",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  }, [toast]);
+
+  const updatePassif = useCallback(async (id: string, passif: Partial<IFIPassifDeduction>) => {
+    try {
+      const updatedPassif = await ifiPassifDeductionService.update(id, passif);
+      setPassifs(prev => prev.map(p => p.id === id ? updatedPassif : p));
+      toast({
+        title: "Succès",
+        description: "Passif modifié avec succès",
+      });
+      return updatedPassif;
+    } catch (error) {
+      console.error('Erreur lors de la modification:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier le passif",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  }, [toast]);
+
+  const deletePassif = useCallback(async (id: string) => {
+    try {
+      await ifiPassifDeductionService.delete(id);
+      setPassifs(prev => prev.filter(p => p.id !== id));
+      toast({
+        title: "Succès",
+        description: "Passif supprimé avec succès",
+      });
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le passif",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchPassifs();
+  }, [fetchPassifs]);
+
+  return {
+    passifs,
+    loading,
+    fetchPassifs,
+    createPassif,
+    updatePassif,
+    deletePassif,
+  };
+};
+
+// Hook pour Hypothèses (table générique clé/valeur)
+export const useIFIHypotheses = () => {
+  const [hypotheses, setHypotheses] = useState<IFIHypothese[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const fetchHypotheses = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await ifiHypotheseService.getAll();
+      setHypotheses(data);
+    } catch (error) {
+      console.error('Erreur lors du chargement des hypothèses IFI:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les hypothèses",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  const saveHypothese = useCallback(async (typeHypothese: string, fields: Partial<IFIHypothese>) => {
+    try {
+      const saved = await ifiHypotheseService.upsertByType(typeHypothese, fields);
+      setHypotheses(prev => {
+        const exists = prev.some(h => h.type_hypothese === typeHypothese);
+        return exists
+          ? prev.map(h => h.type_hypothese === typeHypothese ? saved : h)
+          : [saved, ...prev];
+      });
+      return saved;
+    } catch (error) {
+      console.error("Erreur lors de la sauvegarde de l'hypothèse:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'enregistrer l'hypothèse",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchHypotheses();
+  }, [fetchHypotheses]);
+
+  return {
+    hypotheses,
+    loading,
+    fetchHypotheses,
+    saveHypothese,
   };
 };

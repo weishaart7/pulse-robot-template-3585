@@ -9,12 +9,15 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useIFIPassifsDeductions } from '@/hooks/useIFI';
 
 interface AjouterPassifFormProps {
   onClose: () => void;
+  onPassifAdded?: () => void;
 }
 
-export const AjouterPassifForm = ({ onClose }: AjouterPassifFormProps) => {
+export const AjouterPassifForm = ({ onClose, onPassifAdded }: AjouterPassifFormProps) => {
+  const { createPassif } = useIFIPassifsDeductions();
   const [categorie, setCategorie] = useState('');
   const [formData, setFormData] = useState({
     designation: '',
@@ -25,17 +28,25 @@ export const AjouterPassifForm = ({ onClose }: AjouterPassifFormProps) => {
   });
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData(prev => ({
+      ...prev,
       [field]: value,
       ...(field === 'montantRestantDu' && { detteDeductible: value })
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Logique de sauvegarde à implémenter
-    console.log('Passif ajouté:', { categorie, ...formData });
+
+    await createPassif({
+      type_passif: categorie,
+      designation: formData.designation,
+      montant: formData.detteDeductible ? parseFloat(formData.detteDeductible) : null,
+      date_creation: formData.dateDette ? formData.dateDette.toISOString().split('T')[0] : null,
+      commentaire: formData.nomCreancier || null,
+    });
+
+    onPassifAdded?.();
     onClose();
   };
 

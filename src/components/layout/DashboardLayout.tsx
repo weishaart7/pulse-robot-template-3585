@@ -4,8 +4,6 @@ import { DashboardSidebar } from '@/components/layout/DashboardSidebar';
 import { cn } from '@/lib/utils';
 
 const DashboardLayout = () => {
-  console.log('📊 DashboardLayout rendering');
-  
   return (
     <div className={cn("flex bg-background w-full h-screen overflow-hidden")}>
       <DashboardSidebar />

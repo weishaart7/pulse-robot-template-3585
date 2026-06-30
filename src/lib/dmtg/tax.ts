@@ -86,7 +86,7 @@ export function computeProgressiveTax(
     }))
   };
   
-  console.log(`Calcul progressif pour ${lien}: montant=${amountAfterAllowance}, tranches consommées=${consumedBracketsAmount}, résultat=${result.taxe}€`);
+  if (import.meta.env.DEV) console.log(`Calcul progressif pour ${lien}: montant=${amountAfterAllowance}, tranches consommées=${consumedBracketsAmount}, résultat=${result.taxe}€`);
   return result;
 }
 

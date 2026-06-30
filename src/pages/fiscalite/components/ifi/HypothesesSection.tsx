@@ -1,12 +1,19 @@
-import React, { useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Settings } from 'lucide-react';
+import { useIFIHypotheses } from '@/hooks/useIFI';
 
-const HypothesesSection = () => {
-  const [hypotheses, setHypotheses] = useState({
+export interface HypothesesSectionHandle {
+  flush: () => Promise<void>;
+}
+
+const HypothesesSection = forwardRef<HypothesesSectionHandle>((_props, ref) => {
+  const { hypotheses, loading, saveHypothese } = useIFIHypotheses();
+
+  const [hypothesesGenerales, setHypothesesGenerales] = useState({
     abattementResidencePrincipale: true,
     plafonnementIFI: true,
   });
@@ -15,6 +22,52 @@ const HypothesesSection = () => {
     concubinage: false,
     mariagePacs2025: false,
   });
+
+  const [plafonnement, setPlafonnement] = useState({
+    revenusN1: '',
+    irPrelevementsSociauxN: '',
+  });
+
+  // Initialise l'état local à partir des hypothèses déjà enregistrées en base
+  useEffect(() => {
+    if (loading || hypotheses.length === 0) return;
+
+    const getActif = (type: string, fallback: boolean) => {
+      const h = hypotheses.find(h => h.type_hypothese === type);
+      return h ? !!h.actif : fallback;
+    };
+    const getValeur = (type: string) => {
+      const h = hypotheses.find(h => h.type_hypothese === type);
+      return h?.valeur !== undefined && h.valeur !== null ? String(h.valeur) : '';
+    };
+
+    setHypothesesGenerales({
+      abattementResidencePrincipale: getActif('abattement_residence_principale', true),
+      plafonnementIFI: getActif('plafonnement_ifi', true),
+    });
+    setSituationsParticulieres({
+      concubinage: getActif('concubinage', false),
+      mariagePacs2025: getActif('mariage_pacs_2025', false),
+    });
+    setPlafonnement({
+      revenusN1: getValeur('plafonnement_revenus_n1'),
+      irPrelevementsSociauxN: getValeur('plafonnement_ir_ps_n'),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
+  useImperativeHandle(ref, () => ({
+    flush: async () => {
+      await Promise.all([
+        saveHypothese('abattement_residence_principale', { actif: hypothesesGenerales.abattementResidencePrincipale }),
+        saveHypothese('plafonnement_ifi', { actif: hypothesesGenerales.plafonnementIFI }),
+        saveHypothese('concubinage', { actif: situationsParticulieres.concubinage }),
+        saveHypothese('mariage_pacs_2025', { actif: situationsParticulieres.mariagePacs2025 }),
+        saveHypothese('plafonnement_revenus_n1', { valeur: plafonnement.revenusN1 ? parseFloat(plafonnement.revenusN1) : null }),
+        saveHypothese('plafonnement_ir_ps_n', { valeur: plafonnement.irPrelevementsSociauxN ? parseFloat(plafonnement.irPrelevementsSociauxN) : null }),
+      ]);
+    },
+  }), [hypothesesGenerales, situationsParticulieres, plafonnement, saveHypothese]);
 
   return (
     <div className="space-y-6">
@@ -32,9 +85,9 @@ const HypothesesSection = () => {
           <div className="flex items-center space-x-2">
             <Checkbox
               id="abattement-rp"
-              checked={hypotheses.abattementResidencePrincipale}
+              checked={hypothesesGenerales.abattementResidencePrincipale}
               onCheckedChange={(checked) =>
-                setHypotheses(prev => ({ ...prev, abattementResidencePrincipale: !!checked }))
+                setHypothesesGenerales(prev => ({ ...prev, abattementResidencePrincipale: !!checked }))
               }
             />
             <label
@@ -48,9 +101,9 @@ const HypothesesSection = () => {
           <div className="flex items-center space-x-2">
             <Checkbox
               id="plafonnement-ifi"
-              checked={hypotheses.plafonnementIFI}
+              checked={hypothesesGenerales.plafonnementIFI}
               onCheckedChange={(checked) =>
-                setHypotheses(prev => ({ ...prev, plafonnementIFI: !!checked }))
+                setHypothesesGenerales(prev => ({ ...prev, plafonnementIFI: !!checked }))
               }
             />
             <label
@@ -60,6 +113,31 @@ const HypothesesSection = () => {
               Appliquer la règle du plafonnement de l'IFI (indisponible aux non-résidents français)
             </label>
           </div>
+
+          {hypothesesGenerales.plafonnementIFI && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6 pt-2">
+              <div>
+                <Label htmlFor="revenusN1">Revenus N-1 du foyer fiscal (€)</Label>
+                <Input
+                  id="revenusN1"
+                  type="number"
+                  value={plafonnement.revenusN1}
+                  onChange={(e) => setPlafonnement(prev => ({ ...prev, revenusN1: e.target.value }))}
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <Label htmlFor="irPrelevementsSociauxN">IR + prélèvements sociaux N (€)</Label>
+                <Input
+                  id="irPrelevementsSociauxN"
+                  type="number"
+                  value={plafonnement.irPrelevementsSociauxN}
+                  onChange={(e) => setPlafonnement(prev => ({ ...prev, irPrelevementsSociauxN: e.target.value }))}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -104,6 +182,8 @@ const HypothesesSection = () => {
       </Card>
     </div>
   );
-};
+});
+
+HypothesesSection.displayName = 'HypothesesSection';
 
 export default HypothesesSection;

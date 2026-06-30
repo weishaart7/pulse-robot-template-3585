@@ -11,11 +11,8 @@ import Testimonials from "@/components/ui/testimonials";
 import Newsletter from "@/components/Newsletter";
 import { StickyFooter } from "@/components/ui/sticky-footer";
 const Index = () => {
-  console.log('🏠 Index page rendering');
-
   // Initialize intersection observer to detect when elements enter viewport
   useEffect(() => {
-    console.log('🏠 Index useEffect - setting up intersection observer');
     const observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
