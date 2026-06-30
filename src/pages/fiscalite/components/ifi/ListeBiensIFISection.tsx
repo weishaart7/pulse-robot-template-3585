@@ -14,7 +14,7 @@ import {
   useIFIBiensProfessionnelsExoneres,
   useIFIPassifsDeductions,
 } from '@/hooks/useIFI';
-import { computeIFI } from '@/lib/ifi';
+import { computeIFI, getPassifCategorieLabel } from '@/lib/ifi';
 
 const ListeBiensIFISection = () => {
   const [isAddBienDialogOpen, setIsAddBienDialogOpen] = useState(false);
@@ -373,7 +373,7 @@ const ListeBiensIFISection = () => {
                      {passifs.map((passif) => (
                        <TableRow key={passif.id}>
                          <TableCell className="pl-8">{passif.designation}</TableCell>
-                         <TableCell>{passif.type_passif}</TableCell>
+                         <TableCell>{getPassifCategorieLabel(passif.type_passif)}</TableCell>
                          <TableCell className="text-right">-{formatCurrency(passif.montant)}</TableCell>
                          <TableCell className="text-right">-{formatCurrency(passif.montant)}</TableCell>
                          <TableCell className="text-center">

@@ -10,6 +10,7 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useIFIPassifsDeductions } from '@/hooks/useIFI';
+import { IFI_PASSIF_CATEGORIES } from '@/lib/ifi';
 
 interface AjouterPassifFormProps {
   onClose: () => void;
@@ -19,6 +20,7 @@ interface AjouterPassifFormProps {
 export const AjouterPassifForm = ({ onClose, onPassifAdded }: AjouterPassifFormProps) => {
   const { createPassif } = useIFIPassifsDeductions();
   const [categorie, setCategorie] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     designation: '',
     dateDette: undefined as Date | undefined,
@@ -38,27 +40,24 @@ export const AjouterPassifForm = ({ onClose, onPassifAdded }: AjouterPassifFormP
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    await createPassif({
-      type_passif: categorie,
-      designation: formData.designation,
-      montant: formData.detteDeductible ? parseFloat(formData.detteDeductible) : null,
-      date_creation: formData.dateDette ? formData.dateDette.toISOString().split('T')[0] : null,
-      commentaire: formData.nomCreancier || null,
-    });
+    setIsSubmitting(true);
+    try {
+      await createPassif({
+        type_passif: categorie,
+        designation: formData.designation,
+        montant: formData.detteDeductible ? parseFloat(formData.detteDeductible) : null,
+        date_creation: formData.dateDette ? formData.dateDette.toISOString().split('T')[0] : null,
+        commentaire: formData.nomCreancier || null,
+      });
 
-    onPassifAdded?.();
-    onClose();
+      onPassifAdded?.();
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const categoriesOptions = [
-    { value: 'emprunt-rp', label: 'Emprunt immobilier sur la résidence principale' },
-    { value: 'autre-emprunt', label: 'Autre emprunt immobilier' },
-    { value: 'dette-travaux', label: 'Dette afférente à des travaux sur bien imposable' },
-    { value: 'dette-bois-forets', label: 'Dettes liées à des bois et forêts et parts de GF' },
-    { value: 'dette-biens-ruraux', label: 'Dettes liées à des biens ruraux loués à long terme' },
-    { value: 'dette-gfa-gaf', label: 'Dettes liées à des parts de GFA et de GAF' },
-    { value: 'autres-impots', label: 'Autres impôts et taxes' },
-  ];
+  const categoriesOptions = IFI_PASSIF_CATEGORIES;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -165,7 +164,7 @@ export const AjouterPassifForm = ({ onClose, onPassifAdded }: AjouterPassifFormP
           <Button type="button" variant="outline" onClick={onClose}>
             Annuler
           </Button>
-          <Button type="submit">
+          <Button type="submit" disabled={isSubmitting}>
             Ajouter le passif
           </Button>
         </div>
