@@ -200,7 +200,15 @@ export type Database = {
           periodicite?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "asset_revenus_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       assets: {
         Row: {
@@ -1082,6 +1090,7 @@ export type Database = {
       }
       ifi_immeubles_non_batis: {
         Row: {
+          abattement_bois_forets: boolean | null
           adresse_code_postal: string | null
           adresse_pays: string | null
           adresse_rue: string | null
@@ -1106,6 +1115,7 @@ export type Database = {
           valeur_totale: number | null
         }
         Insert: {
+          abattement_bois_forets?: boolean | null
           adresse_code_postal?: string | null
           adresse_pays?: string | null
           adresse_rue?: string | null
@@ -1130,6 +1140,7 @@ export type Database = {
           valeur_totale?: number | null
         }
         Update: {
+          abattement_bois_forets?: boolean | null
           adresse_code_postal?: string | null
           adresse_pays?: string | null
           adresse_rue?: string | null
@@ -1618,7 +1629,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "societe_associes_societe_id_fkey"
+            columns: ["societe_id"]
+            isOneToOne: false
+            referencedRelation: "societes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       societe_bilans: {
         Row: {
@@ -1666,7 +1685,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "societe_bilans_societe_id_fkey"
+            columns: ["societe_id"]
+            isOneToOne: false
+            referencedRelation: "societes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       societe_comptes_courants: {
         Row: {
@@ -1708,7 +1735,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "societe_comptes_courants_societe_id_fkey"
+            columns: ["societe_id"]
+            isOneToOne: false
+            referencedRelation: "societes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       societe_dividendes: {
         Row: {
@@ -1800,7 +1835,15 @@ export type Database = {
           user_id?: string
           valeur_parts_transmises?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "societe_dutreil_societe_id_fkey"
+            columns: ["societe_id"]
+            isOneToOne: true
+            referencedRelation: "societes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       societe_pactes: {
         Row: {
@@ -1848,7 +1891,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "societe_pactes_societe_id_fkey"
+            columns: ["societe_id"]
+            isOneToOne: true
+            referencedRelation: "societes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       societe_valorisations: {
         Row: {
