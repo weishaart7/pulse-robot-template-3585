@@ -1,43 +1,72 @@
-# Extraction — Section Budget
+Créer `/mnt/documents/fiscalite-extraction.md` sur le modèle des 6 extractions précédentes (Famille, Patrimoine, Immobilier, Sociétés, Budget, Retraite), avec **toutes les règles et modes de calcul** trouvés dans le code.
 
-Produire `/mnt/documents/budget-extraction.md`, sur le même modèle que les 4 extractions précédentes (Famille, Patrimoine, Immobilier, Sociétés). **Toutes les règles métier et formules trouvées dans le code seront documentées explicitement** (comme pour les autres modules) : périodicité, agrégation, reste à vivre, saisonnalité, remontée depuis Immobilier/Actifs.
+## Plan du document
 
-## Périmètre couvert (~2 745 lignes)
+### 1. Architecture & Navigation
+- Route `/dashboard/fiscalite` → `FiscaliteSection.tsx` (38 lignes) : layout grid 3-cols
+- Vue racine composée de 3 cartes : `FiscalDeclarationsCard`, `FiscalOverviewCard`, `TaxRateCard`
+- Sous-module IFI complet : `IFIInterface.tsx` (128 l) + `IFISidebar.tsx` + 7 sections
+- 3 stubs à signaler : `MontantRedevableSection` (18 l), `ReductionsPlafonnementSection` (18 l), et zones "à développer" des cartes racine
 
-- **Page** : `src/pages/budget/BudgetSection.tsx` (94 l)
-- **Composants** : `BudgetResume.tsx` (552 l), `BudgetList.tsx` (285 l), `BudgetRevenus.tsx` (88 l), `BudgetCharges.tsx` (88 l), `RevenusForm.tsx` (435 l), `ChargesForm.tsx` (431 l)
-- **Hook** : `useBudget.ts` (197 l)
-- **Service** : `budgetService.ts` (315 l)
-- **Constantes** : `budgetCategories.ts` (183 l), `budgetTypes.ts` (77 l)
-- **UI partagé** : `src/components/ui/budget-statistics-card.tsx`
+### 2. Cartes de synthèse racine
+- `FiscalDeclarationsCard` : liste statique/mock des déclarations (2042, 2044, 2031, IFI)
+- `FiscalOverviewCard` : indicateurs globaux
+- `TaxRateCard` : TMI / taux moyen (source des données à documenter — dur / calculé / Supabase ?)
 
-## Structure du document
+### 3. Module IFI — Cœur du chapitre
+- **Schéma Supabase** (5 tables) : `ifi_immeubles_batis` (21 col), `ifi_immeubles_non_batis` (23 col + `abattement_bois_forets`), `ifi_biens_detenus_indirectement` (18 col), `ifi_biens_professionnels_exoneres` (26 col), `ifi_hors_france` (10 col, non branché — Phase D en attente), `ifi_passifs_deductions` (12 col + CHECK sur `type_passif` en 7 valeurs), `ifi_hypotheses` (9 col, générique clé/valeur)
+- **Sidebar / Sections** : Ajouter Bien, Ajouter Passif, Liste des biens, Barème, Hypothèses, Réductions/Plafonnement (stub), Montant redevable (stub)
+- **Hook** `useIFI.ts` (548 l) : orchestration CRUD + agrégations, `useIFIData` combiné
+- **Service** `ifiService.ts` (334 l)
 
-1. **Architecture & Navigation** — route `/dashboard/budget`, onglets (Résumé / Revenus / Charges), affichage par défaut mensuel (mémoire `budget-default-display-mode`)
-2. **Onglet Résumé** — KPIs, formules :
-   - Total revenus/charges annualisés
-   - Reste à vivre = revenus − charges (mensuel / annuel)
-   - Répartition par catégorie
-   - **Graphique de saisonnalité** : distribution mensuelle selon périodicité (mémoire `budget-seasonality-chart`), couleurs et logique
-3. **Onglet Revenus / Charges** — liste, tri, badges "Immobilier" / "Sociétés", read-only si `source !== 'manual'` (mémoire `immobilier-budget-integration-with-ownership`)
-4. **Formulaires** — schémas Zod, catégories (~20 revenus / ~30 charges), périodicités, détenteur (user/spouse/common), dates début/fin
-5. **Principe de stockage périodicité native** (mémoire `budget-periodicite-storage-principle`) — pas de pré-conversion annuelle en DB, conversion à l'affichage. Table des multiplicateurs :
-   - Mensuelle × 12, Trimestrielle × 4, Semestrielle × 2, Annuelle × 1, Ponctuelle → traité selon dates
-6. **Modèle de données Supabase** — tables `revenus` (14 col.), `charges` (13 col.), FK, RLS. Ponts `asset_revenus` / `asset_charges` filtrés par `impact_budget = true`
-7. **Interactions cross-module** :
-   - **Immobilier → Budget** : lecture asset_revenus / asset_charges avec `impact_budget`, source `'immobilier'`, boutons "Modifier depuis Immobilier"
-   - **Patrimoine → Budget** : charges/revenus d'actifs (assetService)
-   - **Sociétés → Budget** : `useSocietesBudget` NON branché
-   - **Famille → Budget** : détenteur, affichage par personne (à vérifier — mémoire dit qu'il n'y a pas de filtrage par personne)
-8. **Points d'attention** — cohérence casse périodicité (bug identifié en Immobilier), sources multiples, code mort éventuel, validation Zod
-9. **Inventaire technique** — constantes complètes, hooks, services, dépendances UI
+### 4. Règles & modes de calcul IFI (`src/lib/ifi/`)
+- **`computeIFI()`** (orchestrateur, `index.ts` + `calcul.ts`) : assiette taxable → barème → décote art. 977 → plafonnement art. 979
+- **Assiette taxable** par catégorie :
+  - Immeubles bâtis : `valeur × (fraction_taxable/100)` ; **abattement 30% RP automatique** si `categorie==='residence-principale'` (non togglable, décision d'archi)
+  - Immeubles non bâtis : abattement **75% bois/forêts et GF** appliqué seulement si `abattement_bois_forets` coché (par bien, pas par catégorie)
+  - Biens détenus indirectement : `valeur × quote-part × fraction_immobilière`
+  - Biens professionnels exonérés : exclus si case cochée (binaire, pas de vérification des seuils légaux)
+  - Hors France : non branché (Phase D)
+- **Passifs déductibles** : 7 types validés par CHECK (`emprunt-rp`, etc.) → `IFI_PASSIF_CATEGORIES` / `getPassifCategorieLabel()` (`src/lib/ifi/constants.ts`)
+- **Barème IFI 2024** (`BaremeIFISection.tsx` consommant `calcul.ts`) : tranches 0/800k/1.3M/2.57M/5M/10M à 0/0.5/0.7/1/1.25/1.5%
+- **Seuil d'assujettissement** : patrimoine net > 1 300 000 € (barème commence à 800k une fois assujetti)
+- **Décote art. 977 CGI** : entre 1.3M et 1.4M → `17 500 − 1.25% × patrimoine`
+- **Plafonnement art. 979 CGI** : IFI + IR + PS ≤ 75% des revenus N-1 ; stocké en 2 lignes `ifi_hypotheses` (`plafonnement_revenus_n1`, `plafonnement_ir_ps_n`) — pas de colonnes dédiées
 
-## Méthode
+### 5. IS/IR sur sociétés (`SocieteFinancesImpactFiscal.tsx`)
+- **IS simplifié 2024** : 15% jusqu'à 42 500 € puis 25% (résultat_net ≤ 0 → 0)
+- **IFI société** : `valeur_ifi ?? valeur_estimee × pourcentage_ifi/100`
+- **Exonération biens pro** : `holding==='animatrice'` OU `type_activite ∈ {commerciale, artisanale, industrielle, liberale}`
+- **IR** : simple mention, pas de calcul
 
-- Lecture ciblée des 11 fichiers ci-dessus
-- Interrogation Supabase pour colonnes exactes + RLS `revenus` / `charges`
-- Documentation littérale des formules trouvées (avec numéro de ligne quand pertinent)
+### 6. Interactions cross-modules
+- **Patrimoine → Fiscalité (IFI)** : les biens immobiliers du patrimoine ne sont **pas** automatiquement injectés dans les tables `ifi_*` (silo actuel — à signaler)
+- **Sociétés → IFI** : `pourcentage_ifi` / `valeur_ifi` sur `societes` alimentent l'impact fiscal société mais ne sont pas branchés dans `computeIFI()` global
+- **Budget → Fiscalité** : les revenus/charges pourraient alimenter le plafonnement (revenus N-1) — actuellement saisie manuelle dans `ifi_hypotheses`
+- **DMTG / Transmission** : moteur séparé (`src/lib/dmtg/`), sans passerelle Fiscalité
+- **Retraite** : aucun lien
+
+### 7. Corrections récentes (post-Phase B/C IFI) à documenter
+- Bug doublon passif corrigé (garde `isSubmitting` dans `AjouterPassifForm`)
+- Libellés catégories passifs (mapping partagé `IFI_PASSIF_CATEGORIES`)
+- Migration CHECK sur `type_passif` (7 valeurs)
+- 14 fichiers de code mort supprimés en Phase C (à lister)
+
+### 8. Points d'attention / dette technique
+- 3 stubs sur 7 sections IFI (Montant redevable, Réductions/Plafonnement, cartes racine mock)
+- Case à cocher "abattement RP" dans `HypothesesSection` trompeuse (à retirer — abattement automatique)
+- Pas d'agrégation Patrimoine → IFI (silo)
+- Phase D "Hors France" non branchée (table existe, service manquant)
+- Pas de crédit d'impôt étranger prévu (décision assumée)
+- Nomenclature `fraction_taxable` en % 0-100 (piège possible `× 100` vs `× (%/100)`)
+
+### 9. Inventaire technique
+- Composants : 4 racine + 8 IFI (dont 2 stubs)
+- Hook : `useIFI.ts` (548 l)
+- Service : `ifiService.ts` (334 l)
+- Lib calculs : `src/lib/ifi/` (4 fichiers, ~196 l)
+- Tables Supabase : 7 tables `ifi_*` + interaction avec `societes`
+- 3 stubs, 1 module Phase D en attente
 
 ## Livrable
-
-Un unique fichier `/mnt/documents/budget-extraction.md`, ~400–500 lignes, format identique aux 4 extractions précédentes.
+Fichier unique `/mnt/documents/fiscalite-extraction.md`, ~même longueur que les 6 précédents. Aucune modification de code.
