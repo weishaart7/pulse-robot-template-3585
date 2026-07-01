@@ -1,12 +1,13 @@
-import { 
-  FamilyGraph, 
-  PatrimonySnapshot, 
-  Liberalite, 
-  TransmissionParams, 
+import {
+  FamilyGraph,
+  PatrimonySnapshot,
+  Liberalite,
+  TransmissionParams,
   TransmissionResult,
-  ConjointOption 
+  ConjointOption,
+  PersonId
 } from './types';
-import { computeHeirsShares } from './devolution';
+import { calculateSuccessionLegale } from './successionLegale';
 import { 
   computeMasseCalcul, 
   computeReserveAndQD, 
@@ -32,8 +33,11 @@ export interface TransmissionContext {
 export function computeTransmission(ctx: TransmissionContext): TransmissionResult {
   const { family, patrimony, liberalites, params, conjointOption } = ctx;
   
-  // 1. Dévolution civile brute (heirs + conjoint)
-  const heirsShares = computeHeirsShares(family);
+  // 1. Dévolution civile (succession légale, source unique de vérité)
+  // hasTestament = false : la dévolution légale détermine toujours les réservataires,
+  // un testament ne fait que redistribuer la quotité disponible (ne supprime pas la réserve).
+  const successionLegaleResult = calculateSuccessionLegale(family, false, conjointOption);
+  const heirsShares = successionLegaleResult.heritiers;
   
   // 2. Masse de calcul / réserve / QD
   const masseCalcul = computeMasseCalcul(patrimony, liberalites);
@@ -66,26 +70,34 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   const rapportResult = computeRapport(patrimony, liberalites, reductionResult);
   
   // 6. Calcul des parts finales et fiscalité
-  const heirs = Object.values(heirsShares).map(heir => {
+  const personIdsDejaImputes = new Set<PersonId>();
+  const heirs = heirsShares.map(heir => {
     // Part civile ajustée selon les réductions et rapports
-    let partFinale = heir.part * rapportResult.massePartageable;
-    
-    // Soustraire le rapport si applicable
-    const rapport = rapportResult.rapports.find(r => r.personId === heir.personId);
-    if (rapport) {
-      partFinale -= rapport.montantRapport;
+    let partFinale = heir.quotePart * rapportResult.massePartageable;
+
+    // Un même héritier peut désormais porter plusieurs parts (ex: conjoint 1/4 PP + usufruit 3/4).
+    // Rapport et libéralités ne doivent être imputés qu'une seule fois par personne, pas par ligne.
+    const dejaImpute = personIdsDejaImputes.has(heir.personId);
+    personIdsDejaImputes.add(heir.personId);
+
+    if (!dejaImpute) {
+      // Soustraire le rapport si applicable
+      const rapport = rapportResult.rapports.find(r => r.personId === heir.personId);
+      if (rapport) {
+        partFinale -= rapport.montantRapport;
+      }
+
+      // Ajouter les libéralités maintenues
+      const liberalitesMaintenues = liberalites
+        .filter(lib => lib.beneficiaireId === heir.personId)
+        .reduce((sum, lib) => {
+          const reduction = reductionResult.reductions.find(r => r.liberaliteId === lib.id);
+          return sum + (lib.valeur - (reduction?.montantReduit || 0));
+        }, 0);
+
+      partFinale += liberalitesMaintenues;
     }
-    
-    // Ajouter les libéralités maintenues
-    const liberalitesMaintenues = liberalites
-      .filter(lib => lib.beneficiaireId === heir.personId)
-      .reduce((sum, lib) => {
-        const reduction = reductionResult.reductions.find(r => r.liberaliteId === lib.id);
-        return sum + (lib.valeur - (reduction?.montantReduit || 0));
-      }, 0);
-    
-    partFinale += liberalitesMaintenues;
-    
+
     // Base fiscale = part finale
     const baseFiscale = Math.max(0, partFinale);
     
@@ -110,13 +122,15 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     
     return {
       personId: heir.personId,
-      nom: heir.nom,
+      nom: `${heir.prenom} ${heir.nom}`.trim(),
       lien: heir.lien,
-      partCivile: heir.part * masseCalcul,
+      partCivile: heir.quotePart * masseCalcul,
       partFinale: Math.max(0, partFinale),
       baseFiscale,
       droitsSuccession,
-      droits990I: prelevement990I.droits990I
+      droits990I: prelevement990I.droits990I,
+      typeQuotePart: heir.typeQuotePart,
+      representation: heir.representation
     };
   });
   
@@ -144,12 +158,14 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     details: {
       reductions: reductionResult.reductions,
       rapports: rapportResult.rapports
-    }
+    },
+    explicationsTexte: successionLegaleResult.explicationsTexte,
+    optionConjoint: successionLegaleResult.optionConjoint
   };
 }
 
 // Export des fonctions utilitaires
 export * from './types';
-export * from './devolution';
+export * from './successionLegale';
 export * from './reserve';
 export * from './fiscal';

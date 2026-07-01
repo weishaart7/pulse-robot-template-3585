@@ -2,6 +2,7 @@
   "year": 2025,
   "abattements": {
     "enfant_ascendant": 100000,
+    "petit_enfant": 31865,
     "frere_soeur": 15932,
     "neveu_niece": 7967,
     "tiers": 1594,

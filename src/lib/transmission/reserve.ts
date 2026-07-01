@@ -75,15 +75,16 @@ export function computeReserveAndQD(
   if (hasConjoint && nbEnfants > 0 && conjointOption) {
     // QD spéciale entre époux
     switch (conjointOption) {
-      case "quartPP":
+      case "quart_pp":
+      case "qd_pp":
         // QD ordinaire
         quotiteDisponible = masseCalcul - reserveEnfants;
         break;
-      case "quartPP_plus_3quartsUS":
+      case "quart_pp_3quarts_us":
         // Réserve enfants = 3/4 en NP
         quotiteDisponible = masseCalcul * 0.25; // 1/4 PP seulement
         break;
-      case "usufruitTotal":
+      case "usufruit_total":
         // Réserve enfants = totalité en NP
         quotiteDisponible = 0; // Pas de QD en PP
         break;

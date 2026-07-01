@@ -127,7 +127,7 @@ export const ProcessusCalcul = () => {
       patrimony,
       liberalites: transmissionLiberalites,
       params,
-      conjointOption: 'quartPP'
+      conjointOption: 'quart_pp'
     };
 
     try {

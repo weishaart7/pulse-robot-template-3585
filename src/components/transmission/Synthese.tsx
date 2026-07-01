@@ -4,19 +4,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { Calculator, FileText, DollarSign, Shield } from 'lucide-react';
+import { Calculator, FileText, DollarSign, Shield, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, Liberalite, TransmissionParams } from '@/lib/transmission';
 import { computeDMTG, DMTGContext, DEFAULT_DMTG_PARAMS } from '@/lib/dmtg';
-import { calculateSuccessionLegale, SuccessionLegaleResult } from '@/lib/transmission/successionLegale';
 import transmissionParamsData from '@/data/transmission-params.json';
+
+const TYPE_QUOTE_PART_LABELS: Record<string, string> = {
+  pleine_propriete: 'pleine propriété',
+  usufruit: 'usufruit',
+  nue_propriete: 'nue-propriété'
+};
 
 export const Synthese = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [transmissionResult, setTransmissionResult] = useState<any>(null);
-  const [successionLegale, setSuccessionLegale] = useState<SuccessionLegaleResult | null>(null);
+  const [hasAssets, setHasAssets] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -54,6 +60,8 @@ export const Synthese = () => {
         .select('*')
         .eq('user_id', user!.id);
 
+      setHasAssets((assets || []).length > 0);
+
       // Calculer le total des assurances-vie (hors succession)
       const totalAV = (assets || [])
         .filter(a => a.nature === 'assurance-vie')
@@ -73,8 +81,7 @@ export const Synthese = () => {
 
       // Construire le graphe familial
       const family: FamilyGraph = buildFamilyGraph(familyProfile, maritalStatus, familyLinks || []);
-      (family as any).hasDDV = !!maritalStatus?.donation_dernier_vivant_personne || !!maritalStatus?.donation_dernier_vivant_conjoint;
-      
+
       // Construire le patrimoine
       const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], charges || [], totalAV);
       // Asset portfolio analysis completed
@@ -109,7 +116,8 @@ export const Synthese = () => {
         family,
         patrimony,
         liberalites: liberalitesFormatted,
-        params
+        params,
+        conjointOption: (optionConjoint as any) || undefined
       });
 
       // Préparer les données pour le calcul DMTG
@@ -161,14 +169,6 @@ export const Synthese = () => {
         avContracts: [] // À implémenter si contrats AV
       };
 
-      // Vérifier s'il y a des legs/testaments
-      const hasTestament = (liberalites || []).some(lib => lib.type === 'legs');
-      
-      // Calculer la succession légale "à défaut de dispositions"
-      const successionLegaleResult = calculateSuccessionLegale(family, hasTestament, optionConjoint || undefined);
-      setSuccessionLegale(successionLegaleResult);
-      // Legal succession calculation completed
-
       // Calculer les droits DMTG
       const dmtgResult = computeDMTG(dmtgContext);
       // DMTG tax calculation completed
@@ -182,7 +182,6 @@ export const Synthese = () => {
         ...civilResult,
         family,
         dmtg: dmtgResult,
-        successionLegale: successionLegaleResult,
         transmissionNette: transmissionNetteCorrigee,
         heirs: civilResult.heirs.map(heir => ({
           ...heir,
@@ -279,7 +278,8 @@ export const Synthese = () => {
       hasSurvivingSpouse: !!survivingSpouseId,
       survivingSpouseId,
       childrenOfDecedent: childrenIds,
-      childrenCommonWithSpouse: childrenIds // Simplification
+      childrenCommonWithSpouse: childrenIds, // Simplification
+      hasDDV: !!marital?.donation_dernier_vivant_personne || !!marital?.donation_dernier_vivant_conjoint
     };
   };
 
@@ -323,55 +323,84 @@ export const Synthese = () => {
     );
   }
 
-  // Utiliser les données de succession légale si disponibles, sinon les calculs civils
-  const heritiersData = successionLegale && successionLegale.heritiers.length > 0 
-    ? successionLegale.heritiers.map((heritier: any) => {
-        const displayName = `${heritier.prenom} ${heritier.nom}`.trim() || heritier.nom || 'Héritier inconnu';
-        const percentage = (heritier.quotePart * 100).toFixed(1);
-        const patrimoineNet = transmissionResult.transmissionNette || 682000; // Utiliser la masse taxable depuis les logs
-        
-        return {
+  const transmissionIncomplete = !transmissionResult.transmissionNette && hasAssets;
+
+  // Source unique : transmissionResult.heirs (issu de computeTransmission, dévolution unifiée).
+  // Un même héritier peut porter plusieurs parts (ex: conjoint 1/4 PP + usufruit 3/4) :
+  // on les regroupe en une seule ligne pour l'affichage synthétique, en gardant le détail des types.
+  const heritiersData = (() => {
+    const heirsSource: any[] = transmissionResult.heirs || [];
+
+    if (heirsSource.length === 0) {
+      return [{
+        name: "État français",
+        value: transmissionResult.transmissionNette || 0,
+        percentage: "100.0",
+        lien: "état",
+        typeQuotePart: "pleine_propriete" as const
+      }];
+    }
+
+    const grouped = new Map<string, {
+      name: string;
+      lien: string;
+      value: number;
+      representation?: boolean;
+      parts: { value: number; typeQuotePart?: string }[];
+    }>();
+
+    heirsSource.forEach((heir: any) => {
+      const person = transmissionResult.family.persons.find((p: any) => p.id === heir.personId);
+      let displayName = heir.nom || 'Héritier inconnu';
+      if (person) {
+        const prenom = person.prenom || '';
+        const nom = person.nom || '';
+        displayName = `${prenom} ${nom}`.trim() || displayName;
+      }
+      const lienFamilial = person?.lienFamilial || heir.lien || 'autre';
+
+      const existing = grouped.get(heir.personId);
+      if (existing) {
+        existing.value += heir.partFinale;
+        existing.parts.push({ value: heir.partFinale, typeQuotePart: heir.typeQuotePart });
+      } else {
+        grouped.set(heir.personId, {
           name: displayName,
-          value: heritier.quotePart * patrimoineNet,
+          lien: lienFamilial,
+          value: heir.partFinale,
+          representation: heir.representation,
+          parts: [{ value: heir.partFinale, typeQuotePart: heir.typeQuotePart }]
+        });
+      }
+    });
+
+    return Array.from(grouped.values())
+      .filter(h => h.value > 0)
+      .map(h => {
+        const percentage = transmissionResult.transmissionNette > 0
+          ? ((h.value / transmissionResult.transmissionNette) * 100).toFixed(1)
+          : "0";
+
+        const uniqueTypes = Array.from(new Set(h.parts.map(p => p.typeQuotePart).filter(Boolean)));
+        const typeQuotePart = uniqueTypes.length === 1 ? uniqueTypes[0] : undefined;
+        const droitsDetail = uniqueTypes.length > 1
+          ? h.parts
+              .filter(p => p.typeQuotePart)
+              .map(p => `${((p.value / h.value) * 100).toFixed(0)}% en ${TYPE_QUOTE_PART_LABELS[p.typeQuotePart!] || p.typeQuotePart}`)
+              .join(' + ')
+          : undefined;
+
+        return {
+          name: h.name,
+          value: h.value,
           percentage,
-          lien: heritier.lien,
-          typeQuotePart: heritier.typeQuotePart,
-          representation: heritier.representation
+          lien: h.lien,
+          typeQuotePart,
+          droitsDetail,
+          representation: h.representation
         };
-      })
-    : transmissionResult.heirs && transmissionResult.heirs.length > 0 
-      ? transmissionResult.heirs.map((heir: any) => {
-          const person = transmissionResult.family.persons.find((p: any) => p.id === heir.personId);
-          
-          // Améliorer l'affichage du nom complet
-          let displayName = heir.nom || 'Héritier inconnu';
-          if (person) {
-            const prenom = person.prenom || '';
-            const nom = person.nom || '';
-            displayName = `${prenom} ${nom}`.trim() || displayName;
-          }
-          
-          const percentage = transmissionResult.transmissionNette > 0 
-            ? ((heir.partFinale / transmissionResult.transmissionNette) * 100).toFixed(1)
-            : "0";
-          
-          // Utiliser le lien familial de la personne dans le graphe familial
-          const lienFamilial = person?.lienFamilial || heir.lien || 'autre';
-          
-          return {
-            name: displayName,
-            value: heir.partFinale,
-            percentage,
-            lien: lienFamilial
-          };
-        }).filter(heir => heir.value > 0)
-      : [{
-          name: "État français",
-          value: transmissionResult.transmissionNette || 682000,
-          percentage: "100.0",
-          lien: "état",
-          typeQuotePart: "pleine_propriete" as const
-        }]; // Fallback quand aucun héritier n'est trouvé
+      });
+  })();
 
   const chartData = heritiersData.map((heir, index) => ({
     name: heir.name,
@@ -387,8 +416,16 @@ export const Synthese = () => {
 
   return (
     <div className="space-y-6">
+      {transmissionIncomplete && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Le calcul de transmission n'a pas pu aboutir. Vérifiez que votre situation familiale est complète.
+          </AlertDescription>
+        </Alert>
+      )}
       {/* Affichage des explications de succession légale */}
-      {successionLegale && successionLegale.explicationsTexte.length > 0 && (
+      {transmissionResult.explicationsTexte && transmissionResult.explicationsTexte.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Succession légale</CardTitle>
@@ -398,14 +435,14 @@ export const Synthese = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {successionLegale.explicationsTexte.map((explication, index) => (
+              {transmissionResult.explicationsTexte.map((explication, index) => (
                 <p key={index} className="text-sm text-muted-foreground">
                   {explication}
                 </p>
               ))}
             </div>
-            
-            {successionLegale.optionConjoint && (
+
+            {transmissionResult.optionConjoint && (
               <div className="mt-4 p-4 rounded-lg bg-muted/50">
                 <h4 className="font-medium mb-2">Option du conjoint survivant</h4>
                 <p className="text-sm text-muted-foreground">
@@ -502,8 +539,10 @@ export const Synthese = () => {
                           </div>
                           <p className="text-sm text-muted-foreground mt-1">
                             {heritier.percentage}% de la transmission • {heritier.lien}
-                            {heritier.typeQuotePart && heritier.typeQuotePart !== 'pleine_propriete' && (
-                              <span className="ml-1">({heritier.typeQuotePart.replace('_', ' ')})</span>
+                            {heritier.droitsDetail ? (
+                              <span className="ml-1">({heritier.droitsDetail})</span>
+                            ) : heritier.typeQuotePart && heritier.typeQuotePart !== 'pleine_propriete' && (
+                              <span className="ml-1">({TYPE_QUOTE_PART_LABELS[heritier.typeQuotePart] || heritier.typeQuotePart})</span>
                             )}
                           </p>
                         </div>

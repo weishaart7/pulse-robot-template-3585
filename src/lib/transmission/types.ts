@@ -22,6 +22,7 @@ export interface FamilyGraph {
   survivingSpouseId?: PersonId;
   childrenOfDecedent: PersonId[];
   childrenCommonWithSpouse: PersonId[];
+  hasDDV?: boolean;
 }
 
 export interface PatrimonySnapshot {
@@ -59,6 +60,8 @@ export interface TransmissionParams {
   imputationConjointAvantLegs?: boolean;
 }
 
+export type TypeQuotePart = "pleine_propriete" | "usufruit" | "nue_propriete";
+
 export interface HeirShare {
   personId: PersonId;
   nom: string;
@@ -68,6 +71,8 @@ export interface HeirShare {
   baseFiscale: number;
   droitsSuccession: number;
   droits990I?: number;
+  typeQuotePart?: TypeQuotePart;
+  representation?: boolean;
 }
 
 export interface TransmissionResult {
@@ -83,6 +88,12 @@ export interface TransmissionResult {
     reductions: { liberaliteId: string; montantReduit: number }[];
     rapports: { personId: PersonId; montantRapport: number }[];
   };
+  explicationsTexte?: string[];
+  optionConjoint?: {
+    quartPP: boolean;
+    usufruitTotal: boolean;
+    enfantsCommuns: boolean;
+  };
 }
 
-export type ConjointOption = "quartPP" | "usufruitTotal" | "quartPP_plus_3quartsUS";
+export type ConjointOption = "quart_pp" | "usufruit_total" | "quart_pp_3quarts_us" | "qd_pp";

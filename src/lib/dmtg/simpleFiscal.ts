@@ -185,6 +185,7 @@ function applyAbattement(amount: Money, lien: Lien, params: Params): { base: Mon
   const key = (lien === 'enfant' || lien === 'parent') ? 'enfant_ascendant'
             : lien === 'frere_soeur' ? 'frere_soeur'
             : lien === 'neveu_niece' ? 'neveu_niece'
+            : lien === 'petit_enfant' ? 'petit_enfant'
             : lien === 'tiers' ? 'tiers'
             : 'enfant_ascendant';
   const ab = params.abattements[key] ?? 0;
@@ -204,6 +205,7 @@ function computeProgressiveTax(amount: Money, lien: Lien, consumedBracketsAmount
   }
 
   const bareme = (lien === 'enfant' || lien === 'parent') ? params.baremes['ligne_directe']
+               : lien === 'petit_enfant' ? params.baremes['ligne_directe']
                : lien === 'frere_soeur' ? params.baremes['frere_soeur']
                : params.baremes['autre'];
 

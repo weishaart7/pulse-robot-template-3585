@@ -1,4 +1,4 @@
-import { FamilyGraph, PersonId } from './types';
+import { FamilyGraph, PersonId, TypeQuotePart } from './types';
 
 export interface HeritierLegal {
   personId: PersonId;
@@ -6,7 +6,7 @@ export interface HeritierLegal {
   prenom: string;
   lien: string;
   quotePart: number;
-  typeQuotePart: 'pleine_propriete' | 'usufruit' | 'nue_propriete';
+  typeQuotePart: TypeQuotePart;
   ordre: number;
   representation?: boolean;
 }
@@ -76,11 +76,11 @@ function calculateBrancheA(
     );
 
     let conjointPart: number;
-    let conjointTypeQuotePart: 'pleine_propriete' | 'usufruit' | 'nue_propriete' = 'pleine_propriete';
-    let enfantsTypeQuotePart: 'pleine_propriete' | 'usufruit' | 'nue_propriete' = 'pleine_propriete';
+    let conjointTypeQuotePart: TypeQuotePart = 'pleine_propriete';
+    let enfantsTypeQuotePart: TypeQuotePart = 'pleine_propriete';
 
     // Déterminer si DDV existe (on vérifie dans le graph si le mariage a une DDV)
-    const hasDDV = !!(graph as any).hasDDV;
+    const hasDDV = !!graph.hasDDV;
 
     if (tousCommuns) {
       result.optionConjoint = {
@@ -97,12 +97,21 @@ function calculateBrancheA(
           `Le conjoint reçoit 100% en usufruit. Les enfants reçoivent la nue-propriété.`
         );
       } else if (optionConjoint === 'quart_pp_3quarts_us' && hasDDV) {
-        conjointPart = 1.0; // conjoint reçoit sur la totalité (1/4 PP + 3/4 US)
-        conjointTypeQuotePart = 'pleine_propriete'; // simplifié
-        enfantsTypeQuotePart = 'nue_propriete';
+        // Le conjoint porte deux droits distincts : 1/4 en pleine propriété + usufruit sur le solde.
+        // Les enfants reçoivent la nue-propriété uniquement sur les 3/4 grevés d'usufruit.
+        result.heritiers.push({
+          personId: conjoint.id, nom: conjoint.nom, prenom: conjoint.prenom || '',
+          lien: 'conjoint', quotePart: 0.25, typeQuotePart: 'pleine_propriete', ordre: 0
+        });
+        result.heritiers.push({
+          personId: conjoint.id, nom: conjoint.nom, prenom: conjoint.prenom || '',
+          lien: 'conjoint', quotePart: 0.75, typeQuotePart: 'usufruit', ordre: 0
+        });
+        distributeToSouchesWithType(result, souchesEnfants, 0.75, 'nue_propriete');
         result.explicationsTexte.push(
-          `Le conjoint reçoit 1/4 en pleine propriété et 3/4 en usufruit (donation au dernier vivant).`
+          `Le conjoint reçoit 1/4 en pleine propriété et l'usufruit sur les 3/4 restants (donation au dernier vivant). Les enfants reçoivent la nue-propriété sur ces 3/4.`
         );
+        return result;
       } else if (optionConjoint === 'qd_pp' && hasDDV) {
         const nbEnfants = souchesEnfants.length;
         conjointPart = nbEnfants === 1 ? 0.5 : nbEnfants === 2 ? 1/3 : 0.25;
