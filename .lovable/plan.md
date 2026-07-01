@@ -1,86 +1,48 @@
+# Extraction — Section Sociétés
 
-## Objectif
+Produire un document Markdown `/mnt/documents/societes-extraction.md`, sur le même modèle que `famille-extraction.md`, `patrimoine-extraction.md` et `immobilier-extraction.md`, couvrant l'intégralité du module Sociétés.
 
-Produire un document Markdown `docs/patrimoine-extraction.md` (livré dans `/mnt/documents/`) recensant **la totalité** de la section Patrimoine — sur le même modèle que l'extraction Famille : sous-onglets, formulaires, champs, règles conditionnelles, schéma Supabase, et interactions internes/externes.
+## Périmètre couvert
 
-Aucun code applicatif modifié — un unique fichier de documentation créé.
+Tous les fichiers du module (~5 400 lignes) :
 
-## Contenu du document
+- **Pages** : `SocietesSection.tsx` (421 l), `SocieteFormPage.tsx` (243 l)
+- **Composants racine** : `SocieteForm.tsx` (647 l), `SocieteFormDialog.tsx` (253 l), `SocietesSynthese.tsx`, `SocietesMesSocietes.tsx`, `SocietesStrategies.tsx`
+- **Sous-modules** :
+  - `finances/` — Synthèse, Comptables, Dividendes, Emprunts, Impact fiscal, Valorisation
+  - `bilans/`, `actifs/`, `gouvernance/`, `strategies/`, `transmission/`
+- **Hooks** : `useSocietes`, `useSocieteExtended`, `useSocieteDividendes`, `useSocieteValorisations`, `useSocietesIntegration`
+- **Services** : `societeService`, `societeExtendedService`, `societeDividendeService`, `societeValorisationService`
+- **Lib** : `src/lib/patrimoine/societeTransfer.ts`
 
-### 1. Vue d'ensemble
-- Route `/patrimoine` → `src/pages/patrimoine/PatrimoineSection.tsx`
-- Sidebar dédiée (`PatrimoineSidebar.tsx`) + contenu principal (`PatrimoineMainContent.tsx`)
-- Onglets/vues : **Résumé** · **Actifs** · **Passifs** · **Par tête** · **Plus-values** · **Arbre patrimoine** · **Détention** (via `PatrimoineOwnershipChart`)
-- Bannière `IncompleteAssetsBanner` (actifs mal renseignés)
+## Structure du document
 
-### 2. Résumé patrimoine (`PatrimoineResume.tsx` + `PatrimoineChart.tsx`)
-- Agrégats bruts / nets, répartition par catégorie
-- Graphiques (donut par catégorie, empilé net/dettes)
-- Sources : `useAssets` + `usePassifs` + `usePatrimoineCalculations`
+1. **Architecture & Navigation** — route `/dashboard/societes`, arborescence 5 onglets cibles (Synthèse, Mes sociétés + sous-onglets, Associés & gouvernance, Stratégies fiscales, Transmission) — cf. mémoire `societes-five-tabs-architecture`
+2. **Onglet Synthèse** — KPIs agrégés (nb sociétés, valorisation, dividendes, dettes)
+3. **Onglet Mes sociétés** avec ses sous-onglets Synthèse / Informations / Finances / Bilans / Actifs détenus (cf. mémoire `societes-form-full-page-display`)
+   - **Fiche société** — champs des 33 colonnes de `societes`, formes juridiques, régime fiscal (IS/IR)
+   - **Finances** — comptes courants, dividendes, emprunts, valorisations, impact fiscal
+   - **Bilans** — table `societe_bilans` (13 col.)
+   - **Actifs détenus** — pont vers `assets` immobiliers
+4. **Onglet Associés & gouvernance** — table `societe_associes` (12 col.), calcul quotes-parts
+5. **Onglet Stratégies fiscales** — pactes Dutreil, OBO
+6. **Onglet Transmission des parts** — table `societe_pactes` (13 col.), `societe_dutreil` (12 col.)
+7. **Modèle de données Supabase** — 8 tables (`societes` 33, `societe_associes` 12, `societe_bilans` 13, `societe_comptes_courants` 11, `societe_dividendes` 10, `societe_dutreil` 12, `societe_pactes` 13, `societe_valorisations` 9), RLS & grants (à noter : plusieurs tables n'ont **qu'1 policy** vs 4 sur les autres — à investiguer)
+8. **Interactions cross-module** :
+   - **Patrimoine → Sociétés** : `societeTransfer.ts` (auto-création depuis SCI/SCPI/SARL etc.)
+   - **Immobilier → Sociétés** : parts de SCI liées à des biens
+   - **Sociétés → IFI** : biens détenus indirectement (`ifi_biens_detenus_indirectement`)
+   - **Sociétés → Budget** : dividendes remontés en revenus (via `useSocietesIntegration`)
+   - **Sociétés → Transmission** : pacte Dutreil impact DMTG
+9. **Points d'attention** — code mort potentiel (`SocietesStrategies.tsx` racine vs `strategies/`), duplication `SocieteForm` vs `SocieteFormPage` vs `SocieteFormDialog`, RLS incomplètes (`societe_associes`, `_bilans`, `_comptes_courants`, `_dutreil`, `_pactes` n'ont qu'1 policy chacune), typage TS des tables étendues
+10. **Inventaire technique** — constantes (formes juridiques, régimes fiscaux), hooks, services, dépendances UI
 
-### 3. Actifs (`PatrimoineActifs.tsx` + `AssetForm.tsx`)
-- Liste + création/édition via `AssetForm` (636 lignes)
-- Schéma Zod : `src/schemas/assetSchema.ts` — champs identité, valorisation, acquisition, détention, régime fiscal, revenus/charges rattachés
-- Typologie complète : `src/constants/assetTypes.ts` (11 catégories, sous-types, actifs liquides, PER/PEA, nue-propriété, etc.)
-- Qualification automatique : `src/lib/patrimoine/qualification.ts`
-- Section indivisaires : `IndivisairesSection.tsx` + `assetIndivisaireService.ts`
-- Charges rattachées : `ChargeForm.tsx` (asset_charges)
-- Règles conditionnelles clés :
-  - Actifs liquides → masque acquisition et désactive plus-values
-  - Nue-propriété → force origine « Acquisition à titre gratuit »
-  - Immobilier → transfert budget par défaut coché
-  - Détenteur (utilisateur / conjoint / enfants / société / indivision)
+## Méthode
 
-### 4. Passifs (`PatrimoinePassifs.tsx` + `PassifForm.tsx` + `EmpruntForm.tsx`)
-- Deux entités : `passifs` (dettes génériques) et `emprunts` (crédits amortissables)
-- Champs emprunt : capital initial, capital restant dû, taux, durée, mensualité, date de début, banque, bien financé (FK actif)
-- Trigger `validate_financial_data` en base
-
-### 5. Par tête (`PatrimoineParTeteDetail.tsx`)
-- Répartition patrimoine nette par personne (utilisateur / conjoint / enfants / indivision)
-- Utilise `family_profiles`, `marital_status`, `family_links`, `asset_indivisaires`
-
-### 6. Plus-values (`PatrimoinePlusValues.tsx` + `PlusValuesCard.tsx`)
-- Calcul PV latente = valeur estimée − valeur acquisition − frais
-- Simulation cession (abattements pour durée de détention immobilier / valeurs mobilières)
-
-### 7. Arbre patrimoine (`PatrimoineTreeView.tsx`)
-- Vue hiérarchique personne → catégorie → actif → passif rattaché
-
-### 8. Chart détention (`PatrimoineOwnershipChart.tsx`)
-- Répartition PP / US / NP par personne
-
-### 9. Schéma Supabase
-Tables listées avec colonnes et RLS :
-- `assets` (47 colonnes)
-- `asset_charges` (15)
-- `asset_indivisaires` (9)
-- `asset_revenus` (11)
-- `passifs` (9)
-- `emprunts` (15)
-- `charges` (13) — charges hors actifs
-- `revenus` (14) — revenus hors actifs
-- Fonctions de validation : `validate_asset_data`, `validate_financial_data`, `validate_financial_amount`, `log_security_event`
-
-### 10. Interactions
-- **Internes** :
-  - Hooks : `useAssets`, `usePassifs`, `useAssetForm`, `usePatrimoineCalculations`
-  - Services : `assetService`, `passifService`, `assetIndivisaireService`
-  - Lib : `src/lib/patrimoine/{qualification, societeTransfer, utils}.ts`
-  - Consommateurs : Famille (`family_links` pour détention), Immobilier (actifs de type Immobilier), Sociétés (`societeTransfer.ts` — passage actif → société), Budget (revenus/charges liés aux actifs), Fiscalité IFI (`ifi_immeubles_batis/non_batis/…` alimentés depuis assets), Transmission (masse patrimoniale), Retraite (PER = actif liquide)
-- **Externes** :
-  - Supabase (Auth + PostgREST)
-  - Composants partagés (`NationalitySelect`, `SelectMenu`, calendar date-fns)
-  - Aucun appel API tiers depuis Patrimoine
-
-### 11. Points d'attention
-Observations relevées à qualifier avec le PO (code dupliqué, colonnes non typées, incohérences éventuelles constatées lors de la lecture).
+- Lecture ciblée : pages, formulaires principaux, sous-onglets financiers, `useSocietesIntegration` (pont budget/IFI/transmission), `societeTransfer.ts`
+- Interrogation Supabase pour les définitions exactes de colonnes et RLS des 8 tables `societe*`
+- Aucune modification de code — livrable = document uniquement
 
 ## Livrable
 
-Un unique fichier créé : `/mnt/documents/patrimoine-extraction.md` (~600–900 lignes), accompagné d'une balise `<presentation-artifact>` pour téléchargement.
-
-## Hors périmètre
-
-- Pas d'export des données réelles
-- Pas de refonte ni de correctifs de code (constats consignés en fin de document uniquement)
+Un unique fichier `/mnt/documents/societes-extraction.md` (~450–550 lignes), format identique aux 3 extractions précédentes.
