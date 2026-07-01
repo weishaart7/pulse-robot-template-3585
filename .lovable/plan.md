@@ -1,48 +1,43 @@
-# Extraction — Section Sociétés
+# Extraction — Section Budget
 
-Produire un document Markdown `/mnt/documents/societes-extraction.md`, sur le même modèle que `famille-extraction.md`, `patrimoine-extraction.md` et `immobilier-extraction.md`, couvrant l'intégralité du module Sociétés.
+Produire `/mnt/documents/budget-extraction.md`, sur le même modèle que les 4 extractions précédentes (Famille, Patrimoine, Immobilier, Sociétés). **Toutes les règles métier et formules trouvées dans le code seront documentées explicitement** (comme pour les autres modules) : périodicité, agrégation, reste à vivre, saisonnalité, remontée depuis Immobilier/Actifs.
 
-## Périmètre couvert
+## Périmètre couvert (~2 745 lignes)
 
-Tous les fichiers du module (~5 400 lignes) :
-
-- **Pages** : `SocietesSection.tsx` (421 l), `SocieteFormPage.tsx` (243 l)
-- **Composants racine** : `SocieteForm.tsx` (647 l), `SocieteFormDialog.tsx` (253 l), `SocietesSynthese.tsx`, `SocietesMesSocietes.tsx`, `SocietesStrategies.tsx`
-- **Sous-modules** :
-  - `finances/` — Synthèse, Comptables, Dividendes, Emprunts, Impact fiscal, Valorisation
-  - `bilans/`, `actifs/`, `gouvernance/`, `strategies/`, `transmission/`
-- **Hooks** : `useSocietes`, `useSocieteExtended`, `useSocieteDividendes`, `useSocieteValorisations`, `useSocietesIntegration`
-- **Services** : `societeService`, `societeExtendedService`, `societeDividendeService`, `societeValorisationService`
-- **Lib** : `src/lib/patrimoine/societeTransfer.ts`
+- **Page** : `src/pages/budget/BudgetSection.tsx` (94 l)
+- **Composants** : `BudgetResume.tsx` (552 l), `BudgetList.tsx` (285 l), `BudgetRevenus.tsx` (88 l), `BudgetCharges.tsx` (88 l), `RevenusForm.tsx` (435 l), `ChargesForm.tsx` (431 l)
+- **Hook** : `useBudget.ts` (197 l)
+- **Service** : `budgetService.ts` (315 l)
+- **Constantes** : `budgetCategories.ts` (183 l), `budgetTypes.ts` (77 l)
+- **UI partagé** : `src/components/ui/budget-statistics-card.tsx`
 
 ## Structure du document
 
-1. **Architecture & Navigation** — route `/dashboard/societes`, arborescence 5 onglets cibles (Synthèse, Mes sociétés + sous-onglets, Associés & gouvernance, Stratégies fiscales, Transmission) — cf. mémoire `societes-five-tabs-architecture`
-2. **Onglet Synthèse** — KPIs agrégés (nb sociétés, valorisation, dividendes, dettes)
-3. **Onglet Mes sociétés** avec ses sous-onglets Synthèse / Informations / Finances / Bilans / Actifs détenus (cf. mémoire `societes-form-full-page-display`)
-   - **Fiche société** — champs des 33 colonnes de `societes`, formes juridiques, régime fiscal (IS/IR)
-   - **Finances** — comptes courants, dividendes, emprunts, valorisations, impact fiscal
-   - **Bilans** — table `societe_bilans` (13 col.)
-   - **Actifs détenus** — pont vers `assets` immobiliers
-4. **Onglet Associés & gouvernance** — table `societe_associes` (12 col.), calcul quotes-parts
-5. **Onglet Stratégies fiscales** — pactes Dutreil, OBO
-6. **Onglet Transmission des parts** — table `societe_pactes` (13 col.), `societe_dutreil` (12 col.)
-7. **Modèle de données Supabase** — 8 tables (`societes` 33, `societe_associes` 12, `societe_bilans` 13, `societe_comptes_courants` 11, `societe_dividendes` 10, `societe_dutreil` 12, `societe_pactes` 13, `societe_valorisations` 9), RLS & grants (à noter : plusieurs tables n'ont **qu'1 policy** vs 4 sur les autres — à investiguer)
-8. **Interactions cross-module** :
-   - **Patrimoine → Sociétés** : `societeTransfer.ts` (auto-création depuis SCI/SCPI/SARL etc.)
-   - **Immobilier → Sociétés** : parts de SCI liées à des biens
-   - **Sociétés → IFI** : biens détenus indirectement (`ifi_biens_detenus_indirectement`)
-   - **Sociétés → Budget** : dividendes remontés en revenus (via `useSocietesIntegration`)
-   - **Sociétés → Transmission** : pacte Dutreil impact DMTG
-9. **Points d'attention** — code mort potentiel (`SocietesStrategies.tsx` racine vs `strategies/`), duplication `SocieteForm` vs `SocieteFormPage` vs `SocieteFormDialog`, RLS incomplètes (`societe_associes`, `_bilans`, `_comptes_courants`, `_dutreil`, `_pactes` n'ont qu'1 policy chacune), typage TS des tables étendues
-10. **Inventaire technique** — constantes (formes juridiques, régimes fiscaux), hooks, services, dépendances UI
+1. **Architecture & Navigation** — route `/dashboard/budget`, onglets (Résumé / Revenus / Charges), affichage par défaut mensuel (mémoire `budget-default-display-mode`)
+2. **Onglet Résumé** — KPIs, formules :
+   - Total revenus/charges annualisés
+   - Reste à vivre = revenus − charges (mensuel / annuel)
+   - Répartition par catégorie
+   - **Graphique de saisonnalité** : distribution mensuelle selon périodicité (mémoire `budget-seasonality-chart`), couleurs et logique
+3. **Onglet Revenus / Charges** — liste, tri, badges "Immobilier" / "Sociétés", read-only si `source !== 'manual'` (mémoire `immobilier-budget-integration-with-ownership`)
+4. **Formulaires** — schémas Zod, catégories (~20 revenus / ~30 charges), périodicités, détenteur (user/spouse/common), dates début/fin
+5. **Principe de stockage périodicité native** (mémoire `budget-periodicite-storage-principle`) — pas de pré-conversion annuelle en DB, conversion à l'affichage. Table des multiplicateurs :
+   - Mensuelle × 12, Trimestrielle × 4, Semestrielle × 2, Annuelle × 1, Ponctuelle → traité selon dates
+6. **Modèle de données Supabase** — tables `revenus` (14 col.), `charges` (13 col.), FK, RLS. Ponts `asset_revenus` / `asset_charges` filtrés par `impact_budget = true`
+7. **Interactions cross-module** :
+   - **Immobilier → Budget** : lecture asset_revenus / asset_charges avec `impact_budget`, source `'immobilier'`, boutons "Modifier depuis Immobilier"
+   - **Patrimoine → Budget** : charges/revenus d'actifs (assetService)
+   - **Sociétés → Budget** : `useSocietesBudget` NON branché
+   - **Famille → Budget** : détenteur, affichage par personne (à vérifier — mémoire dit qu'il n'y a pas de filtrage par personne)
+8. **Points d'attention** — cohérence casse périodicité (bug identifié en Immobilier), sources multiples, code mort éventuel, validation Zod
+9. **Inventaire technique** — constantes complètes, hooks, services, dépendances UI
 
 ## Méthode
 
-- Lecture ciblée : pages, formulaires principaux, sous-onglets financiers, `useSocietesIntegration` (pont budget/IFI/transmission), `societeTransfer.ts`
-- Interrogation Supabase pour les définitions exactes de colonnes et RLS des 8 tables `societe*`
-- Aucune modification de code — livrable = document uniquement
+- Lecture ciblée des 11 fichiers ci-dessus
+- Interrogation Supabase pour colonnes exactes + RLS `revenus` / `charges`
+- Documentation littérale des formules trouvées (avec numéro de ligne quand pertinent)
 
 ## Livrable
 
-Un unique fichier `/mnt/documents/societes-extraction.md` (~450–550 lignes), format identique aux 3 extractions précédentes.
+Un unique fichier `/mnt/documents/budget-extraction.md`, ~400–500 lignes, format identique aux 4 extractions précédentes.
