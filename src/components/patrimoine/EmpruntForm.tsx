@@ -218,6 +218,11 @@ export const EmpruntForm = ({ emprunt, onCancel, onSubmit }: EmpruntFormProps) =
                   <p className="text-[12px] text-muted-foreground">
                     La mensualité de cet emprunt sera ajoutée automatiquement aux charges du budget mensuel.
                   </p>
+                  {reporterBudget && mensualites && parseFloat(mensualites) > 0 && (
+                    <p className="text-[12px] text-muted-foreground">
+                      +{Math.round(parseFloat(mensualites)).toLocaleString('fr-FR')} €/mois dans votre budget
+                    </p>
+                  )}
                 </div>
               </div>
 

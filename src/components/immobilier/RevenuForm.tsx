@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { assetService } from '@/services/assetService';
@@ -26,6 +27,23 @@ export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess, impactBudge
     commentaire: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [localImpactBudget, setLocalImpactBudget] = useState(impactBudget);
+
+  useEffect(() => {
+    if (open) setLocalImpactBudget(impactBudget);
+  }, [open, impactBudget]);
+
+  const impactMensuel = (() => {
+    const value = parseFloat(formData.montant);
+    if (!value || value <= 0) return null;
+    switch (formData.periodicite) {
+      case 'Mensuelle': return value;
+      case 'Trimestrielle': return value / 3;
+      case 'Semestrielle': return value / 6;
+      case 'Annuelle': return value / 12;
+      default: return null;
+    }
+  })();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +67,7 @@ export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess, impactBudge
         periodicite: formData.periodicite as 'Mensuelle' | 'Trimestrielle' | 'Annuelle',
         date_debut: new Date().toISOString().split('T')[0],
         commentaire: formData.commentaire || undefined,
-        impact_budget: impactBudget,
+        impact_budget: localImpactBudget,
       });
       
       toast({
@@ -137,6 +155,24 @@ export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess, impactBudge
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex flex-row items-start space-x-3">
+            <Checkbox
+              id="revenu-impact-budget"
+              checked={localImpactBudget}
+              onCheckedChange={(checked) => setLocalImpactBudget(!!checked)}
+            />
+            <div className="space-y-1 leading-none">
+              <Label htmlFor="revenu-impact-budget" className="cursor-pointer">
+                Impact sur le budget
+              </Label>
+              {localImpactBudget && impactMensuel !== null && (
+                <p className="text-xs text-muted-foreground">
+                  +{Math.round(impactMensuel).toLocaleString('fr-FR')} €/mois dans votre budget
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">

@@ -71,6 +71,18 @@ export const ChargeForm: React.FC<ChargeFormProps> = ({ charge, onSubmit, onCanc
   const dureeType = form.watch('duree_type');
   const periodicite = form.watch('periodicite');
   const isPonctuelle = periodicite === 'ponctuelle';
+  const montant = form.watch('montant');
+  const unite = form.watch('unite');
+
+  const impactMensuel = (() => {
+    if (!montant || montant <= 0 || unite !== '€') return null;
+    switch (periodicite) {
+      case 'mensuelle': return montant;
+      case 'trimestrielle': return montant / 3;
+      case 'annuelle': return montant / 12;
+      default: return null;
+    }
+  })();
 
   const handleSubmit = (values: ChargeFormValues) => {
     const formattedValues = {
@@ -305,6 +317,11 @@ export const ChargeForm: React.FC<ChargeFormProps> = ({ charge, onSubmit, onCanc
                       <FormLabel>
                         Impact sur le budget
                       </FormLabel>
+                      {field.value && impactMensuel !== null && (
+                        <p className="text-xs text-muted-foreground">
+                          +{Math.round(impactMensuel).toLocaleString('fr-FR')} €/mois dans votre budget
+                        </p>
+                      )}
                     </div>
                   </FormItem>
                 )}
