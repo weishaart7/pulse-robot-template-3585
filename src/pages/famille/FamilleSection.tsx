@@ -278,7 +278,6 @@ const FamilleSection = () => {
                     familyProfile={familyProfile}
                     maritalStatus={maritalData}
                     familyLinks={familyLinks}
-                    hasPartner={hasPartner}
                     onClick={() => setTreeDialogOpen(true)}
                   />
                 </div>

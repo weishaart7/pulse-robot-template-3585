@@ -1,10 +1,10 @@
 import { FamilyLink, FamilyProfile, MaritalStatus } from '@/services/familyService';
+import { buildFamilyGraph, FamilyGraphNode } from '@/lib/family/buildFamilyGraph';
 
 interface FamilyMiniTreeProps {
   familyProfile: FamilyProfile | null;
   maritalStatus: MaritalStatus | null;
   familyLinks: FamilyLink[];
-  hasPartner: boolean;
   onClick: () => void;
 }
 
@@ -14,25 +14,34 @@ export const getInitials = (prenom?: string, nom?: string) => {
   return (a + b).toUpperCase() || '?';
 };
 
-const initials = getInitials;
+const initialsFromFullName = (name: string) => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const a = parts[0]?.charAt(0) || '';
+  const b = parts[1]?.charAt(0) || '';
+  return (a + b).toUpperCase() || '?';
+};
 
-export function FamilyMiniTree({ familyProfile, maritalStatus, familyLinks, hasPartner, onClick }: FamilyMiniTreeProps) {
-  const grandsParents = familyLinks.filter(l => l.lien_familial === 'Grand-parent').slice(0, 4);
-  const enfants = familyLinks.filter(l => l.lien_familial === 'Enfant').slice(0, 5);
+const MAX_NODES_PER_ROW = 5;
+const WIDTH = 280;
+const ROW_HEIGHT = 54;
+const TOP_PADDING = 24;
 
-  const clientInitials = initials(familyProfile?.prenom, familyProfile?.nom) || 'V';
-  const partnerInitials = hasPartner ? initials(maritalStatus?.prenom_conjoint, maritalStatus?.nom_conjoint) : '';
+export function FamilyMiniTree({ familyProfile, maritalStatus, familyLinks, onClick }: FamilyMiniTreeProps) {
+  const graph = buildFamilyGraph(familyProfile, maritalStatus, familyLinks);
 
-  const width = 280;
-  const gpY = 26;
-  const coupleY = 90;
-  const childY = 154;
+  // Groupe les nœuds par génération (ascendants négatifs, descendants positifs),
+  // même logique que l'arbre complet (buildFamilyGraph) — une ligne horizontale par génération.
+  const rowsByGeneration = new Map<number, FamilyGraphNode[]>();
+  graph.nodes.forEach(node => {
+    if (!rowsByGeneration.has(node.generation)) rowsByGeneration.set(node.generation, []);
+    rowsByGeneration.get(node.generation)!.push(node);
+  });
 
-  const gpSpacing = grandsParents.length > 0 ? width / (grandsParents.length + 1) : 0;
-  const childSpacing = enfants.length > 0 ? width / (enfants.length + 1) : 0;
+  const generations = Array.from(rowsByGeneration.keys()).sort((a, b) => a - b);
+  const height = TOP_PADDING * 2 + Math.max(generations.length - 1, 0) * ROW_HEIGHT;
+  const trunkX = WIDTH / 2;
 
-  const coupleXClient = hasPartner ? width / 2 - 30 : width / 2;
-  const coupleXPartner = width / 2 + 30;
+  const rowY = (generationIndex: number) => TOP_PADDING + generationIndex * ROW_HEIGHT;
 
   return (
     <button
@@ -41,46 +50,74 @@ export function FamilyMiniTree({ familyProfile, maritalStatus, familyLinks, hasP
       className="w-full h-full flex items-center justify-center rounded-lg hover:bg-black/[0.02] transition-colors"
       aria-label="Ouvrir l'arbre familial complet"
     >
-      <svg viewBox={`0 0 ${width} 180`} width="100%" height="180" style={{ maxWidth: 320 }}>
-        {grandsParents.map((gp, i) => {
-          const x = gpSpacing * (i + 1);
-          return (
-            <g key={gp.id || i}>
-              <line x1={x} y1={gpY + 12} x2={width / 2} y2={coupleY - 14} stroke="#e2e0da" strokeWidth={1} />
-              <circle cx={x} cy={gpY} r={12} fill="#eeece6" stroke="#dcdad3" strokeWidth={1} />
-              <text x={x} y={gpY + 4} textAnchor="middle" fontSize="9" fill="#8a8a86" fontFamily="Inter, sans-serif">
-                {initials(gp.prenom, gp.nom)}
-              </text>
-            </g>
-          );
-        })}
-
-        <line x1={width / 2} y1={coupleY + 16} x2={width / 2} y2={childY - 16} stroke="#e2e0da" strokeWidth={1} />
-
-        <circle cx={coupleXClient} cy={coupleY} r={16} fill="#dde8f7" stroke="#c7d8ef" strokeWidth={1} />
-        <text x={coupleXClient} y={coupleY + 4} textAnchor="middle" fontSize="10" fill="#17335c" fontFamily="Inter, sans-serif" fontWeight={500}>
-          {clientInitials}
-        </text>
-
-        {hasPartner && (
-          <>
-            <line x1={coupleXClient + 16} y1={coupleY} x2={coupleXPartner - 16} y2={coupleY} stroke="#e2e0da" strokeWidth={1} />
-            <circle cx={coupleXPartner} cy={coupleY} r={16} fill="#f4e4fb" stroke="#e9d3f5" strokeWidth={1} />
-            <text x={coupleXPartner} y={coupleY + 4} textAnchor="middle" fontSize="10" fill="#5c3170" fontFamily="Inter, sans-serif" fontWeight={500}>
-              {partnerInitials}
-            </text>
-          </>
+      <svg viewBox={`0 0 ${WIDTH} ${height}`} width="100%" height={height} style={{ maxWidth: 320 }}>
+        {generations.length > 1 && (
+          <line x1={trunkX} y1={rowY(0)} x2={trunkX} y2={rowY(generations.length - 1)} stroke="#e2e0da" strokeWidth={1} />
         )}
 
-        {enfants.map((enfant, i) => {
-          const x = childSpacing * (i + 1);
+        {generations.map((generation, rowIndex) => {
+          const rowNodes = rowsByGeneration.get(generation)!;
+          const hasOverflow = rowNodes.length > MAX_NODES_PER_ROW;
+          const visibleNodes = hasOverflow ? rowNodes.slice(0, MAX_NODES_PER_ROW - 1) : rowNodes;
+          const overflowCount = rowNodes.length - visibleNodes.length;
+          const slotCount = visibleNodes.length + (overflowCount > 0 ? 1 : 0);
+          const spacing = WIDTH / (slotCount + 1);
+          const y = rowY(rowIndex);
+
           return (
-            <g key={enfant.id || i}>
-              <line x1={width / 2} y1={childY - 14} x2={x} y2={childY - 12} stroke="#e2e0da" strokeWidth={1} />
-              <circle cx={x} cy={childY} r={12} fill="#eeece6" stroke="#dcdad3" strokeWidth={1} />
-              <text x={x} y={childY + 4} textAnchor="middle" fontSize="9" fill="#8a8a86" fontFamily="Inter, sans-serif">
-                {initials(enfant.prenom, enfant.nom)}
-              </text>
+            <g key={generation}>
+              {visibleNodes.map((node, i) => {
+                const x = spacing * (i + 1);
+                const isAccent = node.isMain || node.isSpouse;
+                const radius = isAccent ? 16 : 12;
+                const fill = node.isMain ? '#dde8f7' : node.isSpouse ? '#f4e4fb' : '#eeece6';
+                const stroke = node.isMain ? '#c7d8ef' : node.isSpouse ? '#e9d3f5' : '#dcdad3';
+                const textColor = node.isMain ? '#17335c' : node.isSpouse ? '#5c3170' : '#8a8a86';
+
+                return (
+                  <g key={node.id}>
+                    {generation !== 0 && (
+                      <line x1={x} y1={y} x2={trunkX} y2={y} stroke="#e2e0da" strokeWidth={1} />
+                    )}
+                    <circle cx={x} cy={y} r={radius} fill={fill} stroke={stroke} strokeWidth={1} />
+                    <text
+                      x={x}
+                      y={y + (isAccent ? 4 : 3)}
+                      textAnchor="middle"
+                      fontSize={isAccent ? 10 : 9}
+                      fill={textColor}
+                      fontFamily="Inter, sans-serif"
+                      fontWeight={isAccent ? 500 : 400}
+                    >
+                      {initialsFromFullName(node.name)}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {overflowCount > 0 && (
+                <g>
+                  <line
+                    x1={spacing * slotCount}
+                    y1={y}
+                    x2={trunkX}
+                    y2={y}
+                    stroke="#e2e0da"
+                    strokeWidth={1}
+                  />
+                  <circle cx={spacing * slotCount} cy={y} r={12} fill="#eeece6" stroke="#dcdad3" strokeWidth={1} />
+                  <text
+                    x={spacing * slotCount}
+                    y={y + 3}
+                    textAnchor="middle"
+                    fontSize={9}
+                    fill="#8a8a86"
+                    fontFamily="Inter, sans-serif"
+                  >
+                    +{overflowCount}
+                  </text>
+                </g>
+              )}
             </g>
           );
         })}
