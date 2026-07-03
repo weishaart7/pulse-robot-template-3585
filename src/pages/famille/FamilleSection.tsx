@@ -157,10 +157,11 @@ const FamilleSection = () => {
         return (
           <div className="space-y-5">
             {/* Bande 1 — Identité */}
-            <div className={CARD_CLASS} style={CARD_STYLE}>
-              <div className="flex flex-col sm:flex-row">
+            <div className="bg-white rounded-[14px] overflow-hidden" style={CARD_STYLE}>
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_1px_1fr]">
                 <div
-                  className="flex-1 flex items-center gap-4 cursor-pointer"
+                  className="flex items-center gap-4 cursor-pointer"
+                  style={{ padding: '20px 22px' }}
                   onClick={() => setEditView('client')}
                 >
                   <div className="h-12 w-12 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: '#dde8f7' }}>
@@ -177,10 +178,12 @@ const FamilleSection = () => {
                   </div>
                 </div>
 
-                <div className="sm:border-l mt-6 sm:mt-0 pt-6 sm:pt-0 sm:pl-8" style={{ borderColor: DIVIDER_COLOR }}>
+                <div className="hidden sm:block" style={{ backgroundColor: DIVIDER_COLOR }} />
+
+                <div style={{ padding: '20px 22px' }}>
                   {hasPartner ? (
                     <div
-                      className="flex-1 flex items-center gap-4 cursor-pointer"
+                      className="flex items-center gap-4 cursor-pointer"
                       onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
                     >
                       <div className="h-12 w-12 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: '#f4e4fb' }}>
@@ -246,8 +249,8 @@ const FamilleSection = () => {
             {/* Bande 3 — Liens familiaux */}
             <div className={CARD_CLASS} style={CARD_STYLE}>
               <p className="text-[12px] mb-4" style={{ color: LABEL_COLOR }}>Liens familiaux</p>
-              <div className="flex flex-col md:flex-row gap-6">
-                <div className="flex-1 min-w-0">
+              <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-8">
+                <div className="min-w-0">
                   {familyLinks.length === 0 ? (
                     <p className="text-sm" style={{ color: LABEL_COLOR }}>Aucun lien enregistré</p>
                   ) : (
@@ -268,7 +271,7 @@ const FamilleSection = () => {
                   )}
                 </div>
                 <div
-                  className="w-full md:w-[260px] shrink-0 md:border-l md:pl-6 flex items-center justify-center"
+                  className="min-w-0 md:border-l md:pl-8 flex items-center justify-center"
                   style={{ borderColor: DIVIDER_COLOR }}
                 >
                   <FamilyMiniTree
