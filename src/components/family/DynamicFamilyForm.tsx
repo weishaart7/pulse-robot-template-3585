@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
@@ -22,10 +22,37 @@ const civilites = ['M.', 'Mme', 'Mlle'];
 const adoptionTypes = ['Non', 'Adoption simple', 'Adoption plénière'];
 const brancheFamiliale = ['Branche paternelle', 'Branche maternelle'];
 
+function ageEnAnnees(dateNaissance: Date): number {
+  const today = new Date();
+  let age = today.getFullYear() - dateNaissance.getFullYear();
+  const moisEcoules = today.getMonth() - dateNaissance.getMonth();
+  if (moisEcoules < 0 || (moisEcoules === 0 && today.getDate() < dateNaissance.getDate())) {
+    age--;
+  }
+  return age;
+}
+
 export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciation }: DynamicFamilyFormProps) {
   const form = useFormContext();
   const watchDecede = form.watch('est_decede');
   const watchRenoncant = form.watch('enfant_renoncant');
+  const watchDateNaissance = form.watch('date_naissance');
+  const isFirstRender = useRef(true);
+  const enfantAChargeManuellementModifie = useRef(false);
+
+  React.useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (linkType !== 'Enfant') return;
+    if (enfantAChargeManuellementModifie.current) return;
+    if (!(watchDateNaissance instanceof Date)) return;
+    if (ageEnAnnees(watchDateNaissance) < 18) {
+      form.setValue('enfant_a_charge', true, { shouldDirty: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchDateNaissance, linkType]);
 
   const showParentField = ['Enfant', 'Parent', 'Frère/Sœur', 'Oncle/Tante', 'Petit-enfant', 'Arrière petit-enfant', 'Grand-parent', 'Neveu/Nièce', 'Petit neveu/nièce', 'Cousin/Cousine'].includes(linkType);
   const showAdoption = ['Enfant', 'Petit-enfant', 'Arrière petit-enfant'].includes(linkType);
@@ -385,25 +412,48 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
           )}
         />
 
-        {/* Enfant à charge */}
+        {/* Enfant à charge (civil / fiscal) */}
         {linkType === 'Enfant' && (
-          <FormField
-            control={form.control}
-            name="enfant_a_charge"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel>Enfant à charge</FormLabel>
-                </div>
-              </FormItem>
-            )}
-          />
+          <>
+            <FormField
+              control={form.control}
+              name="enfant_a_charge"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(checked) => {
+                        enfantAChargeManuellementModifie.current = true;
+                        field.onChange(checked);
+                      }}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Enfant à charge (autorité parentale / garde)</FormLabel>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="fiscalement_a_charge"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Fiscalement à charge (rattaché au foyer fiscal)</FormLabel>
+                  </div>
+                </FormItem>
+              )}
+            />
+          </>
         )}
 
         {/* Enfant adopté */}

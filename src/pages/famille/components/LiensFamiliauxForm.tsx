@@ -36,7 +36,8 @@ const membreFamilleSchema = z.object({
   branche_familiale: z.string().optional(),
   enfant_de: z.string().optional(),
   exoneration_succession: z.boolean().default(false),
-  enfant_a_charge: z.boolean().default(false)
+  enfant_a_charge: z.boolean().default(false),
+  fiscalement_a_charge: z.boolean().default(false)
 });
 type MembreFamille = z.infer<typeof membreFamilleSchema>;
 
@@ -79,7 +80,8 @@ export function LiensFamiliauxForm() {
       enfant_adopte: 'Non',
       enfant_renoncant: false,
       exoneration_succession: false,
-      enfant_a_charge: false
+      enfant_a_charge: false,
+      fiscalement_a_charge: false
     }
   });
   const handleAddMember = () => {
@@ -91,7 +93,8 @@ export function LiensFamiliauxForm() {
       enfant_adopte: 'Non',
       enfant_renoncant: false,
       exoneration_succession: false,
-      enfant_a_charge: false
+      enfant_a_charge: false,
+      fiscalement_a_charge: false
     });
     setDialogOpen(true);
   };
@@ -113,7 +116,8 @@ export function LiensFamiliauxForm() {
       branche_familiale: member.branche_familiale || '',
       enfant_de: member.enfant_de || '',
       exoneration_succession: member.exoneration_succession || false,
-      enfant_a_charge: (member as any).enfant_a_charge || false
+      enfant_a_charge: member.enfant_a_charge || false,
+      fiscalement_a_charge: member.fiscalement_a_charge || false
     });
     setDialogOpen(true);
   };
@@ -143,7 +147,8 @@ export function LiensFamiliauxForm() {
         parent_de: data.enfant_de,
         // Copy for backward compatibility
         exoneration_succession: data.exoneration_succession,
-        enfant_a_charge: data.enfant_a_charge
+        enfant_a_charge: data.enfant_a_charge,
+        fiscalement_a_charge: data.fiscalement_a_charge
       };
       if (editingMember) {
         await updateLink(editingMember.id!, memberData);
@@ -203,7 +208,10 @@ export function LiensFamiliauxForm() {
                       <div className="flex gap-1 flex-wrap">
                         {member.est_decede && <Badge variant="destructive" className="text-xs">Décédé</Badge>}
                         {member.handicap && <Badge variant="secondary" className="text-xs">Handicap</Badge>}
-                        {(member as any).enfant_a_charge && <Badge variant="secondary" className="text-xs">À charge</Badge>}
+                        {member.enfant_a_charge && member.fiscalement_a_charge ? <Badge variant="secondary" className="text-xs">À charge (civil + fiscal)</Badge> : <>
+                          {member.enfant_a_charge && <Badge variant="secondary" className="text-xs">À charge (civil)</Badge>}
+                          {member.fiscalement_a_charge && <Badge variant="secondary" className="text-xs">À charge (fiscal)</Badge>}
+                        </>}
                         {member.enfant_adopte && member.enfant_adopte !== 'Non' && <Badge variant="outline" className="text-xs">{member.enfant_adopte}</Badge>}
                         {member.enfant_renoncant && <Badge variant="outline" className="text-xs">Renonçant</Badge>}
                         {member.exoneration_succession && <Badge variant="secondary" className="text-xs">Exonération</Badge>}

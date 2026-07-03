@@ -661,6 +661,7 @@ export type Database = {
           enfant_renoncant_de: string | null
           est_decede: boolean | null
           exoneration_succession: boolean | null
+          fiscalement_a_charge: boolean | null
           handicap: boolean | null
           id: string
           lien_familial: string
@@ -684,6 +685,7 @@ export type Database = {
           enfant_renoncant_de?: string | null
           est_decede?: boolean | null
           exoneration_succession?: boolean | null
+          fiscalement_a_charge?: boolean | null
           handicap?: boolean | null
           id?: string
           lien_familial: string
@@ -707,6 +709,7 @@ export type Database = {
           enfant_renoncant_de?: string | null
           est_decede?: boolean | null
           exoneration_succession?: boolean | null
+          fiscalement_a_charge?: boolean | null
           handicap?: boolean | null
           id?: string
           lien_familial?: string
@@ -722,6 +725,7 @@ export type Database = {
       family_profiles: {
         Row: {
           adresse_postale: string | null
+          ancien_combattant: boolean | null
           capacite_juridique: string | null
           civility: string | null
           code_postal: string | null
@@ -745,6 +749,7 @@ export type Database = {
         }
         Insert: {
           adresse_postale?: string | null
+          ancien_combattant?: boolean | null
           capacite_juridique?: string | null
           civility?: string | null
           code_postal?: string | null
@@ -768,6 +773,7 @@ export type Database = {
         }
         Update: {
           adresse_postale?: string | null
+          ancien_combattant?: boolean | null
           capacite_juridique?: string | null
           civility?: string | null
           code_postal?: string | null
@@ -1257,6 +1263,7 @@ export type Database = {
         Row: {
           adresse_conjoint: string | null
           adresse_notaire: string | null
+          ancien_combattant_conjoint: boolean | null
           civilite_conjoint: string | null
           clauses_contrat: Json | null
           code_postal_conjoint: string | null
@@ -1305,6 +1312,7 @@ export type Database = {
         Insert: {
           adresse_conjoint?: string | null
           adresse_notaire?: string | null
+          ancien_combattant_conjoint?: boolean | null
           civilite_conjoint?: string | null
           clauses_contrat?: Json | null
           code_postal_conjoint?: string | null
@@ -1353,6 +1361,7 @@ export type Database = {
         Update: {
           adresse_conjoint?: string | null
           adresse_notaire?: string | null
+          ancien_combattant_conjoint?: boolean | null
           civilite_conjoint?: string | null
           clauses_contrat?: Json | null
           code_postal_conjoint?: string | null
