@@ -6,10 +6,12 @@ import { useAssets } from '@/hooks/useAssets';
 import { useFamilyData, useMaritalStatus, useFamilyProfile } from '@/hooks/useFamilyData';
 import { useLiberalites } from '@/hooks/useLiberalites';
 import { usePassifs } from '@/hooks/usePassifs';
+import { buildFamilyGraph, buildPatrimonySnapshot } from '@/utils/transmissionHelpers';
 import { computeTransmission, TransmissionContext } from '@/lib/transmission';
 import { FamilyGraph, PatrimonySnapshot, Liberalite, TransmissionParams } from '@/lib/transmission/types';
 import transmissionParamsData from '@/data/transmission-params.json';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import './kairos-transmission.css';
 
 export const ProcessusCalcul = () => {
   const { assets, loading: assetsLoading } = useAssets();
@@ -19,78 +21,15 @@ export const ProcessusCalcul = () => {
   const { liberalites, loading: liberalitesLoading } = useLiberalites();
   const { passifs } = usePassifs();
 
-  // Construire le graphe familial simplifié
+  // Construire le graphe familial
   const familyGraph: FamilyGraph | null = useMemo(() => {
     if (!familyMembers || !familyProfile) return null;
-
-    const userId = 'user'; // ID du défunt (utilisateur)
-    
-    // Le conjoint est dans maritalStatus, pas dans familyMembers
-    const hasConjoint = maritalStatus?.statut_couple === 'Marié(e)' || maritalStatus?.statut_couple === 'Pacsé(e)';
-    const conjointId = hasConjoint ? 'conjoint' : undefined;
-    
-    // Chercher les enfants (attention à la casse : "Enfant" avec majuscule)
-    const enfants = familyMembers.filter(m => 
-      m.lien_familial === 'Enfant' || m.lien_familial === 'enfant'
-    );
-
-    const persons = [
-      {
-        id: userId,
-        nom: familyProfile.nom || 'Utilisateur',
-        prenom: familyProfile.prenom || '',
-        estDecede: true
-      },
-      ...familyMembers.map(m => ({
-        id: m.id!,
-        nom: m.nom,
-        prenom: m.prenom || '',
-        estDecede: m.est_decede || false,
-        handicap: m.handicap || false,
-        lienFamilial: m.lien_familial
-      }))
-    ];
-
-    // Ajouter le conjoint s'il existe
-    if (hasConjoint && maritalStatus) {
-      persons.push({
-        id: conjointId!,
-        nom: maritalStatus.nom_conjoint || '',
-        prenom: maritalStatus.prenom_conjoint || '',
-        estDecede: false,
-        lienFamilial: 'conjoint'
-      });
-    }
-
-    return {
-      persons,
-      links: [],
-      marriages: hasConjoint && conjointId ? [{
-        spouseA: userId,
-        spouseB: conjointId,
-        regime: maritalStatus?.regime_matrimonial || 'communauté'
-      }] : [],
-      decedentId: userId,
-      hasSurvivingSpouse: hasConjoint,
-      survivingSpouseId: hasConjoint ? conjointId : undefined,
-      childrenOfDecedent: enfants.map(e => e.id!),
-      childrenCommonWithSpouse: enfants.filter(e => 
-        e.parent_de === 'both_parents' || !e.branche_familiale || e.branche_familiale === 'commune'
-      ).map(e => e.id!)
-    };
+    return buildFamilyGraph(familyProfile, maritalStatus, familyMembers);
   }, [familyMembers, familyProfile, maritalStatus]);
 
   // Calculer le patrimoine
   const patrimony: PatrimonySnapshot = useMemo(() => {
-    const totalActifs = assets.reduce((sum, a) => sum + (a.valeur_estimee || 0), 0);
-    const totalPassifs = passifs.reduce((sum, p) => sum + (p.montant_du || 0), 0);
-    
-    return {
-      date: new Date().toISOString(),
-      biensExistants: totalActifs,
-      passifs: totalPassifs,
-      assuranceVieTotal: 0 // À calculer selon les contrats AV
-    };
+    return buildPatrimonySnapshot(assets, passifs, 0); // Assurance-vie non séparée ici : pas de régression, à traiter séparément si besoin
   }, [assets, passifs]);
 
   // Convertir les libéralités
@@ -140,30 +79,34 @@ export const ProcessusCalcul = () => {
 
   if (assetsLoading || familyLoading || liberalitesLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Processus de calcul de transmission</CardTitle>
-          <CardDescription>Chargement des données...</CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="kairos-transmission">
+        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+          <CardHeader className="p-5">
+            <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Processus de calcul de transmission</CardTitle>
+            <CardDescription className="text-[var(--text-secondary)]">Chargement des données...</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
     );
   }
 
   if (!familyGraph || !transmissionResult) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Processus de calcul de transmission</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Veuillez d'abord renseigner votre situation familiale et votre patrimoine pour visualiser le processus de calcul.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
+      <div className="kairos-transmission">
+        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+          <CardHeader className="p-5">
+            <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Processus de calcul de transmission</CardTitle>
+          </CardHeader>
+          <CardContent className="p-5 pt-0">
+            <Alert className="bg-[var(--surface-sunken)] border-[var(--border)]">
+              <AlertCircle className="h-4 w-4 text-[var(--ink-400)]" />
+              <AlertDescription className="text-[var(--text-secondary)]">
+                Veuillez d'abord renseigner votre situation familiale et votre patrimoine pour visualiser le processus de calcul.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -335,36 +278,36 @@ export const ProcessusCalcul = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calculator className="h-5 w-5 text-primary" />
+    <div className="kairos-transmission space-y-6">
+      <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <CardHeader className="p-5">
+          <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-[var(--text-primary)]">
+            <Calculator className="h-5 w-5 text-[var(--ink-400)]" />
             Processus de calcul de transmission
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-[var(--text-secondary)]">
             Méthodologie complète de calcul de la transmission successorale
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-8">
+        <CardContent className="p-5 pt-0 space-y-8">
           {calculSteps.map((step, index) => (
             <div key={index} className="space-y-4">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Colonne gauche : Calcul détaillé */}
                 <div className="lg:col-span-2 space-y-4">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                      <step.icon className="h-5 w-5 text-primary" />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--ink-050)]">
+                      <step.icon className="h-5 w-5 text-[var(--ink-700)]" />
                     </div>
                     <div className="flex-1 space-y-2">
-                      <h3 className="text-lg font-semibold">{step.title}</h3>
-                      <p className="text-sm text-muted-foreground">{step.description}</p>
+                      <h3 className="text-lg font-semibold text-[var(--text-primary)]">{step.title}</h3>
+                      <p className="text-sm text-[var(--text-secondary)]">{step.description}</p>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2 pt-2">
-                    <h4 className="text-sm font-medium">Détails du calcul :</h4>
-                    <ul className="space-y-1 text-sm text-muted-foreground">
+                    <h4 className="text-sm font-medium text-[var(--text-primary)]">Détails du calcul :</h4>
+                    <ul className="space-y-1 text-sm text-[var(--text-secondary)]">
                       {step.details.map((detail, idx) => (
                         <li key={idx} className="pl-4">
                           {detail.startsWith('•') || detail.startsWith('✓') || detail.startsWith('⚠️') ? detail : `• ${detail}`}
@@ -373,22 +316,22 @@ export const ProcessusCalcul = () => {
                     </ul>
                   </div>
 
-                  <div className="mt-4 rounded-lg bg-muted/50 p-3">
-                    <p className="text-sm font-mono text-foreground">{step.formula}</p>
+                  <div className="mt-4 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--border)] p-3">
+                    <p className="kairos-num text-sm font-mono text-[var(--text-primary)]">{step.formula}</p>
                   </div>
                 </div>
 
                 {/* Colonne droite : Conseils */}
                 <div className="lg:col-span-1">
-                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3 h-full">
-                    <div className="flex items-center gap-2 text-primary">
-                      <Lightbulb className="h-4 w-4" />
+                  <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-sunken)] p-4 space-y-3 h-full">
+                    <div className="flex items-center gap-2 text-[var(--text-primary)]">
+                      <Lightbulb className="h-4 w-4 text-[var(--ink-400)]" />
                       <h4 className="text-sm font-semibold">Conseils pratiques</h4>
                     </div>
-                    <ul className="space-y-2 text-sm text-muted-foreground">
+                    <ul className="space-y-2 text-sm text-[var(--text-secondary)]">
                       {step.conseils.map((conseil, idx) => (
                         <li key={idx} className="flex items-start gap-2">
-                          <span className="text-primary mt-0.5">→</span>
+                          <span className="text-[var(--ink-400)] mt-0.5">→</span>
                           <span>{conseil}</span>
                         </li>
                       ))}
@@ -396,23 +339,23 @@ export const ProcessusCalcul = () => {
                   </div>
                 </div>
               </div>
-              
+
               {index < calculSteps.length - 1 && (
-                <Separator className="my-6" />
+                <Separator className="my-6 bg-[var(--border)]" />
               )}
             </div>
           ))}
 
-          <div className="mt-8 rounded-lg border border-primary/20 bg-primary/5 p-6">
-            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
+          <div className="mt-8 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-sunken)] p-6">
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-[var(--text-primary)]">
+              <TrendingUp className="h-5 w-5 text-[var(--ink-400)]" />
               Synthèse du processus
             </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Le calcul de transmission successorale suit un processus en 7 étapes interdépendantes. 
-              Chaque étape s'appuie sur les résultats de la précédente pour aboutir à la détermination 
-              des parts finales de chaque héritier et du coût fiscal global de la transmission. 
-              Ce processus garantit le respect des règles du Code civil (protection de la réserve héréditaire) 
+            <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+              Le calcul de transmission successorale suit un processus en 7 étapes interdépendantes.
+              Chaque étape s'appuie sur les résultats de la précédente pour aboutir à la détermination
+              des parts finales de chaque héritier et du coût fiscal global de la transmission.
+              Ce processus garantit le respect des règles du Code civil (protection de la réserve héréditaire)
               tout en permettant d'optimiser la fiscalité selon les dispositifs légaux disponibles.
             </p>
           </div>

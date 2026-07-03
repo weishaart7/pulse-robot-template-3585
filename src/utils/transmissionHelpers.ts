@@ -11,29 +11,30 @@ export function buildFamilyGraph(
   maritalStatus: MaritalStatus | null,
   familyLinks: FamilyLink[]
 ): FamilyGraph {
-  const persons: Person[] = [];
-  const decedentId = 'user'; // The user is always the potential decedent
-  
-  // Add the user as the main person
-  if (familyProfile) {
-    persons.push({
-      id: decedentId,
-      nom: familyProfile.nom || 'Utilisateur',
-      prenom: familyProfile.prenom || '',
-      dateNaissance: familyProfile.date_naissance,
-      estDecede: false,
-      handicap: familyProfile.personne_handicapee || false,
-      lienFamilial: 'decedent'
-    });
+  if (!familyProfile?.id) {
+    throw new Error('buildFamilyGraph requires a familyProfile with an id');
   }
 
-  // Add spouse if exists
+  const decedentId = familyProfile.id;
+  const persons: Person[] = [{
+    id: decedentId,
+    nom: familyProfile.nom || 'Utilisateur',
+    prenom: familyProfile.prenom || '',
+    dateNaissance: familyProfile.date_naissance,
+    estDecede: false,
+    handicap: familyProfile.personne_handicapee || false,
+    lienFamilial: 'decedent'
+  }];
+
+  const links: FamilyGraph['links'] = [];
+  const marriages: FamilyGraph['marriages'] = [];
+
   let hasSurvivingSpouse = false;
   let survivingSpouseId: string | undefined;
-  
-  if (maritalStatus && maritalStatus.statut_couple && 
-      ['Marié(e)', 'Pacsé(e)', 'MARIE', 'PACS', 'PACSE'].includes(maritalStatus.statut_couple)) {
-    const spouseId = 'spouse';
+
+  if (maritalStatus?.statut_couple &&
+      ['Marié(e)', 'Pacsé(e)'].includes(maritalStatus.statut_couple)) {
+    const spouseId = `conjoint-${decedentId}`;
     persons.push({
       id: spouseId,
       nom: maritalStatus.nom_conjoint || 'Conjoint',
@@ -44,15 +45,17 @@ export function buildFamilyGraph(
     });
     hasSurvivingSpouse = true;
     survivingSpouseId = spouseId;
+
+    links.push({ from: decedentId, to: spouseId, relation: 'spouse' });
+    marriages.push({ spouseA: decedentId, spouseB: spouseId, regime: maritalStatus.contrat_mariage });
   }
 
-  // Add family links
   const childrenOfDecedent: string[] = [];
   const childrenCommonWithSpouse: string[] = [];
-  
+
   familyLinks.forEach(link => {
     persons.push({
-      id: link.id || `family-${Date.now()}`,
+      id: link.id!,
       nom: link.nom,
       prenom: link.prenom || '',
       dateNaissance: link.date_naissance,
@@ -62,46 +65,52 @@ export function buildFamilyGraph(
       lienFamilial: link.lien_familial
     });
 
-    // Identify children
     if (link.lien_familial === 'Enfant' && !link.est_decede) {
-      const childId = link.id || `family-${Date.now()}`;
+      const childId = link.id!;
       childrenOfDecedent.push(childId);
-      
-      // If spouse exists and no specific branch mentioned, assume common child
-      if (hasSurvivingSpouse && !link.branche_familiale) {
+      links.push({ from: decedentId, to: childId, relation: 'child' });
+
+      if (link.parent_de === 'both_parents') {
         childrenCommonWithSpouse.push(childId);
       }
     }
   });
 
+  const hasDDV = !!maritalStatus?.donation_dernier_vivant_personne ||
+    !!maritalStatus?.donation_dernier_vivant_conjoint;
+
   return {
     persons,
-    links: [], // TODO: Build relationship links if needed
-    marriages: [], // TODO: Build marriage data if needed
+    links,
+    marriages,
     decedentId,
     hasSurvivingSpouse,
     survivingSpouseId,
     childrenOfDecedent,
-    childrenCommonWithSpouse
+    childrenCommonWithSpouse,
+    hasDDV
   };
 }
 
 /**
  * Converts asset data to patrimony snapshot for transmission calculations
  */
-export function buildPatrimonySnapshot(assets: Asset[]): PatrimonySnapshot {
+export function buildPatrimonySnapshot(
+  assets: Asset[],
+  passifs: { montant_du: number }[],
+  assuranceVieTotal: number = 0
+): PatrimonySnapshot {
   const totalAssets = assets.reduce((sum, asset) => {
     return sum + (asset.valeur_estimee || asset.valeur_acquisition || 0);
   }, 0);
 
-  // TODO: Calculate passifs from asset charges
-  const passifs = 0;
+  const totalPassifs = passifs.reduce((sum, p) => sum + (p.montant_du || 0), 0);
 
   return {
     date: new Date().toISOString().split('T')[0],
     biensExistants: totalAssets,
-    passifs,
-    assuranceVieTotal: 0 // TODO: Extract life insurance from assets
+    passifs: totalPassifs,
+    assuranceVieTotal
   };
 }
 
