@@ -2,6 +2,17 @@ import { useState, useEffect } from 'react';
 import { familyService, FamilyProfile, MaritalStatus, FamilyLink } from '@/services/familyService';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { compterEnfantsFiscalementACharge } from '@/lib/fiscal';
+
+const syncNombreEnfantsCharges = async (links: FamilyLink[]) => {
+  try {
+    await familyService.upsertMaritalStatus({
+      nombre_enfants_charges: compterEnfantsFiscalementACharge(links),
+    });
+  } catch (error) {
+    console.error('Error syncing nombre_enfants_charges:', error);
+  }
+};
 
 export const useFamilyProfile = () => {
   const [data, setData] = useState<FamilyProfile | null>(null);
@@ -177,7 +188,11 @@ export const useFamilyLinks = () => {
     try {
       setSaving(true);
       const newLink = await familyService.createFamilyLink(link);
-      setData(prev => [...prev, newLink]);
+      setData(prev => {
+        const updated = [...prev, newLink];
+        syncNombreEnfantsCharges(updated);
+        return updated;
+      });
       toast({
         title: "Succès",
         description: "Membre de la famille ajouté avec succès",
@@ -200,7 +215,11 @@ export const useFamilyLinks = () => {
     try {
       setSaving(true);
       const updatedLink = await familyService.updateFamilyLink(id, link);
-      setData(prev => prev.map(item => item.id === id ? updatedLink : item));
+      setData(prev => {
+        const updated = prev.map(item => item.id === id ? updatedLink : item);
+        syncNombreEnfantsCharges(updated);
+        return updated;
+      });
       toast({
         title: "Succès",
         description: "Membre de la famille modifié avec succès",
@@ -223,7 +242,11 @@ export const useFamilyLinks = () => {
     try {
       setSaving(true);
       await familyService.deleteFamilyLink(id);
-      setData(prev => prev.filter(item => item.id !== id));
+      setData(prev => {
+        const updated = prev.filter(item => item.id !== id);
+        syncNombreEnfantsCharges(updated);
+        return updated;
+      });
       toast({
         title: "Succès",
         description: "Membre de la famille supprimé avec succès",
@@ -245,7 +268,11 @@ export const useFamilyLinks = () => {
     try {
       setSaving(true);
       await familyService.deleteFamilyLinks(ids);
-      setData(prev => prev.filter(item => !ids.includes(item.id!)));
+      setData(prev => {
+        const updated = prev.filter(item => !ids.includes(item.id!));
+        syncNombreEnfantsCharges(updated);
+        return updated;
+      });
       toast({
         title: "Succès",
         description: `${ids.length} membre(s) de la famille supprimé(s) avec succès`,
