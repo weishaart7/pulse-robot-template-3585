@@ -8,9 +8,12 @@ import { Calculator, FileText, DollarSign, Shield, AlertTriangle } from 'lucide-
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePassifs } from '@/hooks/usePassifs';
+import { buildFamilyGraph, buildPatrimonySnapshot } from '@/utils/transmissionHelpers';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, Liberalite, TransmissionParams } from '@/lib/transmission';
 import { computeDMTG, DMTGContext, DEFAULT_DMTG_PARAMS } from '@/lib/dmtg';
 import transmissionParamsData from '@/data/transmission-params.json';
+import './kairos-transmission.css';
 
 const TYPE_QUOTE_PART_LABELS: Record<string, string> = {
   pleine_propriete: 'pleine propriété',
@@ -20,15 +23,16 @@ const TYPE_QUOTE_PART_LABELS: Record<string, string> = {
 
 export const Synthese = () => {
   const { user } = useAuth();
+  const { passifs, loading: passifsLoading } = usePassifs();
   const [loading, setLoading] = useState(true);
   const [transmissionResult, setTransmissionResult] = useState<any>(null);
   const [hasAssets, setHasAssets] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && !passifsLoading) {
       fetchTransmissionData();
     }
-  }, [user]);
+  }, [user, passifsLoading, passifs]);
 
   const fetchTransmissionData = async () => {
     try {
@@ -67,12 +71,6 @@ export const Synthese = () => {
         .filter(a => a.nature === 'assurance-vie')
         .reduce((sum, a) => sum + (Number(a.valeur_estimee) || 0), 0);
 
-      // Récupérer les passifs (charges)
-      const { data: charges } = await supabase
-        .from('charges')
-        .select('*')
-        .eq('user_id', user!.id);
-
       // Récupérer les libéralités
       const { data: liberalites } = await supabase
         .from('liberalites')
@@ -83,9 +81,9 @@ export const Synthese = () => {
       const family: FamilyGraph = buildFamilyGraph(familyProfile, maritalStatus, familyLinks || []);
 
       // Construire le patrimoine
-      const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], charges || [], totalAV);
+      const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], passifs, totalAV);
       // Asset portfolio analysis completed
-      
+
       // Transformer les libéralités
       const liberalitesFormatted: Liberalite[] = (liberalites || []).map(lib => ({
         id: lib.id!,
@@ -148,18 +146,19 @@ export const Synthese = () => {
           // Corriger le mapping des liens familiaux depuis la base de données
           const person = family.persons.find(p => p.id === heir.personId);
           const lienFamilial = person?.lienFamilial || heir.lien;
-          
+
           // Family link mapping in progress
-          
+
+          const lienNormalise = lienFamilial?.toLowerCase();
           let dmtgLien: any = 'autre';
-          if (lienFamilial === 'conjoint') dmtgLien = 'conjoint';
-          else if (lienFamilial === 'enfant') dmtgLien = 'enfant';
-          else if (lienFamilial === 'parent') dmtgLien = 'ascendant';
-          else if (lienFamilial === 'soeur' || lienFamilial === 'frère') dmtgLien = 'frere_soeur';
-          else if (lienFamilial === 'neveu' || lienFamilial === 'nièce') dmtgLien = 'neveu_niece';
-          
+          if (lienNormalise === 'conjoint') dmtgLien = 'conjoint';
+          else if (lienNormalise === 'enfant') dmtgLien = 'enfant';
+          else if (lienNormalise === 'parent') dmtgLien = 'ascendant';
+          else if (lienNormalise === 'frère/sœur') dmtgLien = 'frere_soeur';
+          else if (lienNormalise === 'neveu/nièce') dmtgLien = 'neveu_niece';
+
           // DMTG link mapping completed
-          
+
           return {
             id: heir.personId,
             lien: dmtgLien
@@ -198,103 +197,6 @@ export const Synthese = () => {
     }
   };
 
-  const buildFamilyGraph = (profile: any, marital: any, links: any[]): FamilyGraph => {
-    const persons = [
-      {
-        id: user!.id,
-        nom: profile?.nom || 'Utilisateur',
-        prenom: profile?.prenom || '',
-        estDecede: true, // Le défunt pour la simulation
-        lienFamilial: 'défunt'
-      }
-    ];
-
-    const familyLinks: any[] = [];
-    const marriages: any[] = [];
-    
-    // Ajouter le conjoint - IGNORER si statut célibataire même avec date_pacs
-    let survivingSpouseId: string | undefined;
-    if (marital?.statut_couple && 
-        marital.statut_couple !== 'Célibataire' && 
-        marital.statut_couple !== 'celibataire' &&
-        ['Marié(e)', 'Pacsé(e)'].includes(marital.statut_couple)) {
-      const conjointId = `conjoint-${user!.id}`;
-      persons.push({
-        id: conjointId,
-        nom: marital.nom_conjoint || 'Conjoint',
-        prenom: marital.prenom_conjoint || '',
-        estDecede: false,
-        lienFamilial: 'conjoint'
-      });
-      
-      familyLinks.push({
-        from: user!.id,
-        to: conjointId,
-        relation: 'spouse' as const
-      });
-      
-      marriages.push({
-        spouseA: user!.id,
-        spouseB: conjointId
-      });
-      
-      survivingSpouseId = conjointId;
-    }
-
-    // Ajouter les liens familiaux avec normalisation
-    const childrenIds: string[] = [];
-    links.forEach(link => {
-      const personId = `person-${link.id}`;
-      persons.push({
-        id: personId,
-        nom: link.nom,
-        prenom: link.prenom || '',
-        estDecede: link.est_decede || false, // Utiliser est_decede
-        lienFamilial: link.lien_familial
-      });
-
-      // Normaliser les relations familiales
-      const lienNormalise = link.lien_familial?.toLowerCase();
-      let relation: 'child' | 'parent' | 'sibling' | 'other' = 'other';
-      
-      if (lienNormalise === 'enfant') {
-        relation = 'child';
-        familyLinks.push({ from: user!.id, to: personId, relation });
-        childrenIds.push(personId);
-      } else if (lienNormalise === 'parent') {
-        relation = 'parent';
-        familyLinks.push({ from: personId, to: user!.id, relation: 'child' });
-      } else if (lienNormalise === 'frère' || lienNormalise === 'sœur' || lienNormalise === 'frère/sœur') {
-        relation = 'sibling';
-        familyLinks.push({ from: user!.id, to: personId, relation });
-      }
-    });
-
-    return {
-      persons,
-      links: familyLinks,
-      marriages,
-      decedentId: user!.id,
-      hasSurvivingSpouse: !!survivingSpouseId,
-      survivingSpouseId,
-      childrenOfDecedent: childrenIds,
-      childrenCommonWithSpouse: childrenIds, // Simplification
-      hasDDV: !!marital?.donation_dernier_vivant_personne || !!marital?.donation_dernier_vivant_conjoint
-    };
-  };
-
-  const buildPatrimonySnapshot = (assets: any[], charges: any[], assuranceVieTotal: number = 0): PatrimonySnapshot => {
-    const totalActifs = assets.reduce((sum, asset) => sum + (Number(asset.valeur_estimee) || 0), 0);
-    const totalPassifs = charges.reduce((sum, charge) => sum + (Number(charge.montant) || 0), 0);
-
-    return {
-      date: new Date().toISOString().split('T')[0],
-      biensExistants: totalActifs,
-      passifs: totalPassifs,
-      assuranceVieTotal
-    };
-  };
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -306,17 +208,17 @@ export const Synthese = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Calcul en cours...</div>
+      <div className="kairos-transmission flex justify-center items-center h-64">
+        <div className="text-lg text-[var(--text-secondary)]">Calcul en cours...</div>
       </div>
     );
   }
 
   if (!transmissionResult) {
     return (
-      <div className="text-center py-12">
-        <h3 className="text-lg font-semibold mb-2">Données insuffisantes</h3>
-        <p className="text-muted-foreground">
+      <div className="kairos-transmission text-center py-12">
+        <h3 className="text-lg font-semibold mb-2 text-[var(--text-primary)]">Données insuffisantes</h3>
+        <p className="text-[var(--text-secondary)]">
           Veuillez renseigner vos données dans les sections Famille et Patrimoine.
         </p>
       </div>
@@ -408,16 +310,24 @@ export const Synthese = () => {
     color: `hsl(${index * 45}, 70%, 50%)`
   }));
 
-  // Couleurs dynamiques selon le lien familial
+  // Couleurs dynamiques selon le lien familial (palette data-visualisation Kairos)
   const getColorForLien = (lien: string, index: number) => {
-    const colors = ['#76ff61', '#ffbe98', '#15eae2', '#c698f5', '#0b5563', '#caeffb', '#05aaa4'];
+    const colors = [
+      'var(--data-green)',
+      'var(--data-blue)',
+      'var(--data-teal)',
+      'var(--data-purple)',
+      'var(--data-magenta)',
+      'var(--data-amber)',
+      'var(--ink-400)'
+    ];
     return colors[index % colors.length];
   };
 
   return (
-    <div className="space-y-6">
+    <div className="kairos-transmission space-y-6">
       {transmissionIncomplete && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="bg-[var(--negative-soft)] border-[var(--negative)]/30 text-[var(--negative)]">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             Le calcul de transmission n'a pas pu aboutir. Vérifiez que votre situation familiale est complète.
@@ -426,29 +336,29 @@ export const Synthese = () => {
       )}
       {/* Affichage des explications de succession légale */}
       {transmissionResult.explicationsTexte && transmissionResult.explicationsTexte.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Succession légale</CardTitle>
-            <CardDescription>
+        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+          <CardHeader className="p-5">
+            <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Succession légale</CardTitle>
+            <CardDescription className="text-[var(--text-secondary)]">
               À défaut de dispositions testamentaires
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-5 pt-0">
             <div className="space-y-2">
               {transmissionResult.explicationsTexte.map((explication, index) => (
-                <p key={index} className="text-sm text-muted-foreground">
+                <p key={index} className="text-sm text-[var(--text-secondary)]">
                   {explication}
                 </p>
               ))}
             </div>
 
             {transmissionResult.optionConjoint && (
-              <div className="mt-4 p-4 rounded-lg bg-muted/50">
-                <h4 className="font-medium mb-2">Option du conjoint survivant</h4>
-                <p className="text-sm text-muted-foreground">
+              <div className="mt-4 p-4 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--border)]">
+                <h4 className="font-medium mb-2 text-[var(--text-primary)]">Option du conjoint survivant</h4>
+                <p className="text-sm text-[var(--text-secondary)]">
                   Le conjoint peut choisir entre :
                 </p>
-                <ul className="text-sm text-muted-foreground mt-1 ml-4 list-disc">
+                <ul className="text-sm text-[var(--text-secondary)] mt-1 ml-4 list-disc">
                   <li>1/4 en pleine propriété</li>
                   <li>La totalité en usufruit (enfants en nue-propriété)</li>
                 </ul>
@@ -457,17 +367,17 @@ export const Synthese = () => {
           </CardContent>
         </Card>
       )}
-      
+
       <div className="grid gap-6 md:grid-cols-2">
         {/* Graphique de transmission nette */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Transmission nette</CardTitle>
-            <CardDescription>
+        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+          <CardHeader className="p-5">
+            <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Transmission nette</CardTitle>
+            <CardDescription className="text-[var(--text-secondary)]">
               Répartition entre les héritiers
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-5 pt-0">
             <div className="relative h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -479,27 +389,27 @@ export const Synthese = () => {
                     outerRadius={110}
                     paddingAngle={2}
                     dataKey="value"
-                    stroke="hsl(var(--background))"
+                    stroke="var(--surface)"
                     strokeWidth={2}
                   >
                     {heritiersData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={getColorForLien(entry.lien, index)} 
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={getColorForLien(entry.lien, index)}
                       />
                     ))}
                   </Pie>
                   <Tooltip formatter={(value: number) => formatCurrency(value)} />
                 </PieChart>
               </ResponsiveContainer>
-              
+
               {/* Valeur totale au centre */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-foreground">
+                  <div className="kairos-num text-[26px] font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
                     {formatCurrency(transmissionResult.transmissionNette)}
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-[var(--text-secondary)]">
                     Transmission nette
                   </div>
                 </div>
@@ -509,35 +419,35 @@ export const Synthese = () => {
         </Card>
 
         {/* Détails par héritier */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Détail par héritier</CardTitle>
-            <CardDescription>
+        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+          <CardHeader className="p-5">
+            <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Détail par héritier</CardTitle>
+            <CardDescription className="text-[var(--text-secondary)]">
               Montants détaillés pour chaque héritier
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-5 pt-0">
             <div className="space-y-4">
               {heritiersData.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">
+                <p className="text-[var(--text-secondary)] text-center py-8">
                   Aucun héritier défini
                 </p>
               ) : (
                 heritiersData
                   .sort((a, b) => b.value - a.value)
                   .map((heritier) => (
-                    <div key={heritier.name} className="flex items-center justify-between p-3 rounded-lg border">
+                    <div key={heritier.name} className="flex items-center justify-between p-3 bg-[var(--surface-sunken)] border border-[var(--border)] rounded-[var(--radius-lg)]">
                       <div className="flex items-center gap-3">
-                        <div 
+                        <div
                           className="w-4 h-4 rounded-full flex-shrink-0"
                           style={{ backgroundColor: getColorForLien(heritier.lien, heritiersData.indexOf(heritier)) }}
                         />
                         <div>
-                          <div className="font-medium text-foreground">
+                          <div className="font-medium text-[var(--text-primary)]">
                             {heritier.name}
-                            {heritier.representation && <span className="text-xs text-muted-foreground ml-1">(par représentation)</span>}
+                            {heritier.representation && <span className="text-xs text-[var(--text-secondary)] ml-1">(par représentation)</span>}
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1">
+                          <p className="text-sm text-[var(--text-secondary)] mt-1">
                             {heritier.percentage}% de la transmission • {heritier.lien}
                             {heritier.droitsDetail ? (
                               <span className="ml-1">({heritier.droitsDetail})</span>
@@ -548,7 +458,7 @@ export const Synthese = () => {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-semibold">
+                        <div className="kairos-num font-semibold text-[var(--text-primary)]">
                           {formatCurrency(heritier.value)}
                         </div>
                       </div>
@@ -562,17 +472,17 @@ export const Synthese = () => {
 
       {/* Coûts de succession par héritier */}
       {transmissionResult.dmtg && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calculator className="h-5 w-5" />
+        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+          <CardHeader className="p-5">
+            <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-[var(--text-primary)]">
+              <Calculator className="h-5 w-5 text-[var(--ink-400)]" />
               Coûts de la succession
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-[var(--text-secondary)]">
               Droits de mutation (DMTG), frais de notaire et droit de partage par héritier
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-5 pt-0">
             {(() => {
               const dmtg = transmissionResult.dmtg;
               const family = transmissionResult.family;
@@ -590,8 +500,8 @@ export const Synthese = () => {
                 const personId = person?.id;
                 const dmtgData = personId ? dmtg.perBeneficiary[personId] : null;
                 const droitsDMTG = dmtgData?.droitsTotaux || 0;
-                const quotePart = transmissionResult.transmissionNette > 0 
-                  ? heritier.value / transmissionResult.transmissionNette 
+                const quotePart = transmissionResult.transmissionNette > 0
+                  ? heritier.value / transmissionResult.transmissionNette
                   : 1 / nbHeritiers;
                 const fraisNotaireHeritier = Math.round(fraisNotaireTotal * quotePart);
                 const droitPartageHeritier = Math.round(droitPartageTotal * quotePart);
@@ -618,38 +528,38 @@ export const Synthese = () => {
                   <div className="overflow-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead>Héritier</TableHead>
-                          <TableHead className="text-right">DMTG</TableHead>
-                          <TableHead className="text-right">Frais de notaire</TableHead>
-                          <TableHead className="text-right">Droit de partage</TableHead>
-                          <TableHead className="text-right font-semibold">Total</TableHead>
+                        <TableRow className="border-[var(--border)]">
+                          <TableHead className="text-[var(--text-secondary)]">Héritier</TableHead>
+                          <TableHead className="text-right text-[var(--text-secondary)]">DMTG</TableHead>
+                          <TableHead className="text-right text-[var(--text-secondary)]">Frais de notaire</TableHead>
+                          <TableHead className="text-right text-[var(--text-secondary)]">Droit de partage</TableHead>
+                          <TableHead className="text-right font-semibold text-[var(--text-secondary)]">Total</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {rows.map((row) => (
-                          <TableRow key={row.name}>
+                          <TableRow key={row.name} className="border-[var(--border)]">
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: row.color }} />
                                 <div>
-                                  <span className="font-medium">{row.name}</span>
-                                  <span className="text-xs text-muted-foreground ml-1.5">({row.lien})</span>
+                                  <span className="font-medium text-[var(--text-primary)]">{row.name}</span>
+                                  <span className="text-xs text-[var(--text-secondary)] ml-1.5">({row.lien})</span>
                                 </div>
                               </div>
                             </TableCell>
-                            <TableCell className="text-right tabular-nums">{formatCurrency(row.droitsDMTG)}</TableCell>
-                            <TableCell className="text-right tabular-nums">{formatCurrency(row.fraisNotaire)}</TableCell>
-                            <TableCell className="text-right tabular-nums">{formatCurrency(row.droitPartage)}</TableCell>
-                            <TableCell className="text-right tabular-nums font-semibold">{formatCurrency(row.totalCouts)}</TableCell>
+                            <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{formatCurrency(row.droitsDMTG)}</TableCell>
+                            <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{formatCurrency(row.fraisNotaire)}</TableCell>
+                            <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{formatCurrency(row.droitPartage)}</TableCell>
+                            <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{formatCurrency(row.totalCouts)}</TableCell>
                           </TableRow>
                         ))}
-                        <TableRow className="border-t-2">
-                          <TableCell className="font-semibold">Total</TableCell>
-                          <TableCell className="text-right tabular-nums font-semibold">{formatCurrency(totalDMTG)}</TableCell>
-                          <TableCell className="text-right tabular-nums font-semibold">{formatCurrency(totalFrais)}</TableCell>
-                          <TableCell className="text-right tabular-nums font-semibold">{formatCurrency(totalPartage)}</TableCell>
-                          <TableCell className="text-right tabular-nums font-bold">{formatCurrency(grandTotal)}</TableCell>
+                        <TableRow className="border-t-2 border-[var(--border-strong)]">
+                          <TableCell className="font-semibold text-[var(--text-primary)]">Total</TableCell>
+                          <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{formatCurrency(totalDMTG)}</TableCell>
+                          <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{formatCurrency(totalFrais)}</TableCell>
+                          <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{formatCurrency(totalPartage)}</TableCell>
+                          <TableCell className="kairos-num text-right tabular-nums font-bold text-[var(--text-primary)]">{formatCurrency(grandTotal)}</TableCell>
                         </TableRow>
                       </TableBody>
                     </Table>
@@ -659,13 +569,13 @@ export const Synthese = () => {
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={rows} layout="vertical" margin={{ left: 20, right: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis type="number" tickFormatter={(v) => `${Math.round(v / 1000)}k€`} stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                        <YAxis type="category" dataKey="name" width={100} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis type="number" tickFormatter={(v) => `${Math.round(v / 1000)}k€`} stroke="var(--ink-500)" fontSize={12} />
+                        <YAxis type="category" dataKey="name" width={100} stroke="var(--ink-500)" fontSize={12} />
                         <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                        <Bar dataKey="droitsDMTG" name="DMTG" fill="#ef4444" stackId="costs" radius={[0, 0, 0, 0]} />
-                        <Bar dataKey="fraisNotaire" name="Frais de notaire" fill="#f59e0b" stackId="costs" />
-                        <Bar dataKey="droitPartage" name="Droit de partage" fill="#8b5cf6" stackId="costs" radius={[0, 4, 4, 0]} />
+                        <Bar dataKey="droitsDMTG" name="DMTG" fill="var(--negative)" stackId="costs" radius={[0, 0, 0, 0]} />
+                        <Bar dataKey="fraisNotaire" name="Frais de notaire" fill="var(--warning)" stackId="costs" />
+                        <Bar dataKey="droitPartage" name="Droit de partage" fill="var(--data-purple)" stackId="costs" radius={[0, 4, 4, 0]} />
                         <Legend />
                       </BarChart>
                     </ResponsiveContainer>
@@ -679,17 +589,17 @@ export const Synthese = () => {
 
       {/* Abattements restants par héritier */}
       {transmissionResult.dmtg && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
+        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+          <CardHeader className="p-5">
+            <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-[var(--text-primary)]">
+              <Shield className="h-5 w-5 text-[var(--ink-400)]" />
               Abattements restants
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-[var(--text-secondary)]">
               Abattements fiscaux résiduels par héritier en fonction de son lien avec le défunt
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-5 pt-0">
             {(() => {
               const dmtg = transmissionResult.dmtg;
               const family = transmissionResult.family;
@@ -736,47 +646,47 @@ export const Synthese = () => {
               return (
                 <div className="space-y-4">
                   {abattementRows.map((row) => (
-                    <div key={row.name} className="p-4 rounded-lg border space-y-3">
+                    <div key={row.name} className="p-4 rounded-[var(--radius-lg)] border border-[var(--border)] space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: row.color }} />
-                          <span className="font-medium">{row.name}</span>
+                          <span className="font-medium text-[var(--text-primary)]">{row.name}</span>
                         </div>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--ink-050)] text-[var(--ink-700)]">
                           {row.qualite}
                         </span>
                       </div>
-                      
+
                       {row.isExonere ? (
-                        <div className="text-sm text-emerald-600 font-medium">
+                        <div className="text-sm text-[var(--positive)] font-medium">
                           Exonéré de droits de succession (conjoint ou partenaire de PACS)
                         </div>
                       ) : (
                         <>
                           <div className="grid grid-cols-3 gap-4 text-sm">
                             <div>
-                              <div className="text-muted-foreground">Abattement légal</div>
-                              <div className="font-medium">{row.abattementLegal}</div>
+                              <div className="text-[var(--text-secondary)]">Abattement légal</div>
+                              <div className="kairos-num font-medium text-[var(--text-primary)]">{row.abattementLegal}</div>
                             </div>
                             <div>
-                              <div className="text-muted-foreground">Consommé</div>
-                              <div className="font-medium text-orange-500">{row.consomme}</div>
+                              <div className="text-[var(--text-secondary)]">Consommé</div>
+                              <div className="kairos-num font-medium text-[var(--warning)]">{row.consomme}</div>
                             </div>
                             <div>
-                              <div className="text-muted-foreground">Restant</div>
-                              <div className="font-semibold text-emerald-600">{row.residuel}</div>
+                              <div className="text-[var(--text-secondary)]">Restant</div>
+                              <div className="kairos-num font-semibold text-[var(--positive)]">{row.residuel}</div>
                             </div>
                           </div>
-                          <div className="w-full bg-muted rounded-full h-2">
+                          <div className="w-full bg-[var(--ink-050)] rounded-full h-2">
                             <div
                               className="h-2 rounded-full transition-all"
                               style={{
                                 width: `${Math.min(100, row.pctUtilise)}%`,
-                                backgroundColor: row.pctUtilise > 75 ? '#ef4444' : row.pctUtilise > 50 ? '#f59e0b' : '#22c55e'
+                                backgroundColor: row.pctUtilise > 75 ? 'var(--negative)' : row.pctUtilise > 50 ? 'var(--warning)' : 'var(--positive)'
                               }}
                             />
                           </div>
-                          <div className="text-xs text-muted-foreground text-right">
+                          <div className="text-xs text-[var(--text-secondary)] text-right">
                             {row.pctUtilise.toFixed(0)}% utilisé
                           </div>
                         </>
@@ -789,39 +699,39 @@ export const Synthese = () => {
           </CardContent>
         </Card>
       )}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Répartition patrimoniale</CardTitle>
-          <CardDescription>
+      <Card className="mt-6 bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <CardHeader className="p-5">
+          <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Répartition patrimoniale</CardTitle>
+          <CardDescription className="text-[var(--text-secondary)]">
             Réserve héréditaire et quotité disponible
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-5 pt-0">
           <div className="grid gap-6 md:grid-cols-2">
-            <div className="text-center p-6 rounded-lg border bg-muted/50">
-              <div className="text-2xl font-bold text-foreground mb-2">
+            <div className="text-center p-6 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-sunken)]">
+              <div className="kairos-num text-[26px] font-semibold tracking-[-0.02em] text-[var(--text-primary)] mb-2">
                 {formatCurrency(transmissionResult.reserve)}
               </div>
-              <div className="text-sm font-medium text-muted-foreground">
+              <div className="text-sm font-medium text-[var(--text-secondary)]">
                 Réserve héréditaire
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {transmissionResult.masseCalcul > 0 
+              <div className="text-xs text-[var(--text-secondary)] mt-1">
+                {transmissionResult.masseCalcul > 0
                   ? `${((transmissionResult.reserve / transmissionResult.masseCalcul) * 100).toFixed(1)}%`
                   : '0%'
                 } de la masse de calcul
               </div>
             </div>
-            
-            <div className="text-center p-6 rounded-lg border bg-muted/50">
-              <div className="text-2xl font-bold text-foreground mb-2">
+
+            <div className="text-center p-6 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-sunken)]">
+              <div className="kairos-num text-[26px] font-semibold tracking-[-0.02em] text-[var(--text-primary)] mb-2">
                 {formatCurrency(Math.max(0, transmissionResult.masseCalcul - transmissionResult.reserve))}
               </div>
-              <div className="text-sm font-medium text-muted-foreground">
+              <div className="text-sm font-medium text-[var(--text-secondary)]">
                 Quotité disponible
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {transmissionResult.masseCalcul > 0 
+              <div className="text-xs text-[var(--text-secondary)] mt-1">
+                {transmissionResult.masseCalcul > 0
                   ? `${(((transmissionResult.masseCalcul - transmissionResult.reserve) / transmissionResult.masseCalcul) * 100).toFixed(1)}%`
                   : '0%'
                 } de la masse de calcul

@@ -29,11 +29,15 @@
   --positive-soft: #e6f6ee;
   --negative: #e5484d;
   --negative-soft: #fdeaea;
+  --warning: #d98c1f;
+  --warning-soft: #fbf1de;
 
   /* Data-visualization palette */
   --data-blue: #1f8bff;
   --data-green: #2ec27e;
+  --data-teal: #17b0a8;
   --data-purple: #7c5cfc;
+  --data-magenta: #b93f9e;
   --data-amber: #f0a93b;
 
   /* Text aliases */

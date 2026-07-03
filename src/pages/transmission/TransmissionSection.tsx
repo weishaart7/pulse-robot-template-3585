@@ -5,6 +5,7 @@ import { Liberalites } from '@/components/transmission/Liberalites';
 import { AssuranceVie } from '@/components/transmission/AssuranceVie';
 import { ProcessusCalcul } from '@/components/transmission/ProcessusCalcul';
 import { Optimisation } from '@/components/transmission/Optimisation';
+import '@/components/transmission/kairos-transmission.css';
 
 export const TransmissionSection = () => {
   const [activeTab, setActiveTab] = useState('synthese');
@@ -35,22 +36,22 @@ export const TransmissionSection = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="kairos-transmission p-6">
       <div className="mb-6">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Transmission</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">Transmission</h2>
+          <p className="text-[var(--text-secondary)]">
             Planifiez et optimisez la transmission de votre patrimoine
           </p>
         </div>
       </div>
 
       <div className="mb-6 flex justify-start">
-        <div className="rounded-[8px] bg-muted p-[2px]">
+        <div className="flex gap-7 border-b border-[var(--border)]">
           <AnimatedBackground
             defaultValue="synthese"
             onValueChange={(value) => setActiveTab(value || 'synthese')}
-            className="rounded-lg bg-background shadow-sm"
+            className="bg-transparent border-b-2 border-[var(--ink-900)] rounded-none shadow-none"
             transition={{
               ease: "easeInOut",
               duration: 0.2,
@@ -61,7 +62,12 @@ export const TransmissionSection = () => {
                 key={tab.id}
                 data-id={tab.id}
                 type="button"
-                className="inline-flex min-w-24 items-center justify-center px-3 py-2 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
+                className={
+                  "inline-flex items-center justify-center px-0 pb-3 text-[15px] transition-transform active:scale-[0.98] " +
+                  (activeTab === tab.id
+                    ? "font-semibold text-[var(--text-primary)]"
+                    : "font-medium text-[var(--text-secondary)]")
+                }
               >
                 {tab.label}
               </button>
