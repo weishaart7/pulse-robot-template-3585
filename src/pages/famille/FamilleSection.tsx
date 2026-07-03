@@ -249,7 +249,7 @@ const FamilleSection = () => {
             {/* Bande 3 — Liens familiaux */}
             <div className={CARD_CLASS} style={CARD_STYLE}>
               <p className="text-[12px] mb-4" style={{ color: LABEL_COLOR }}>Liens familiaux</p>
-              <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_3fr] gap-8">
                 <div className="min-w-0">
                   {familyLinks.length === 0 ? (
                     <p className="text-sm" style={{ color: LABEL_COLOR }}>Aucun lien enregistré</p>
