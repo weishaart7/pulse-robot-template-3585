@@ -9,6 +9,8 @@ import { useAssets } from '@/hooks/useAssets';
 import { Asset, AssetCharge, assetService } from '@/services/assetService';
 import { societeService } from '@/services/societeService';
 import { isSocieteEligibleNature, natureToTypeSociete } from '@/lib/patrimoine/societeTransfer';
+import { assetIndivisaireService } from '@/services/assetIndivisaireService';
+import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
 
 export const PatrimoineActifs = () => {
   const [showAssetForm, setShowAssetForm] = useState(false);
@@ -42,7 +44,7 @@ export const PatrimoineActifs = () => {
     }
   };
 
-  const handleAssetSubmit = async (assetData: any, charges: AssetCharge[]) => {
+  const handleAssetSubmit = async (assetData: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[]) => {
     try {
       let savedAsset;
       if (editingAsset) {
@@ -71,6 +73,18 @@ export const PatrimoineActifs = () => {
           })
         );
       }
+
+      // Sauvegarde des co-indivisaires (remplace l'ensemble existant pour cet actif)
+      await assetIndivisaireService.replaceForAsset(
+        savedAsset.id!,
+        indivisaires.map((i) => ({
+          asset_id: savedAsset.id!,
+          type_indivisaire: i.type_indivisaire,
+          family_link_id: i.type_indivisaire === 'famille' ? i.family_link_id : null,
+          nom_libre: i.type_indivisaire === 'tiers' ? i.nom_libre : null,
+          pourcentage: i.pourcentage,
+        }))
+      );
 
       // Création/lien automatique d'une société si applicable
       await syncSocieteFromAsset(savedAsset as Asset);

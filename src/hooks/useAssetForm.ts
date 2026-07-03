@@ -23,7 +23,7 @@ export const NATURES_WITH_ETABLISSEMENT = [
 
 interface UseAssetFormProps {
   asset?: Asset;
-  onSubmit: (asset: AssetFormValues, charges: AssetCharge[]) => Promise<any>;
+  onSubmit: (asset: AssetFormValues, charges: AssetCharge[], indivisaires: IndivisaireDraft[]) => Promise<any>;
 }
 
 export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
@@ -229,7 +229,9 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
 
       const formattedValues = dbValues;
 
-      await onSubmit(formattedValues as any, charges);
+      const finalIndivisaires = dbDetenteur === 'Indivision' ? indivisaires : [];
+
+      await onSubmit(formattedValues as any, charges, finalIndivisaires);
     } finally {
       setIsLoading(false);
     }

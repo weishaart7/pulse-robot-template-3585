@@ -1,9 +1,9 @@
-import React, { forwardRef, useImperativeHandle, useState } from 'react';
+import React, { forwardRef, useImperativeHandle, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -12,6 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FamilyLink, FamilyProfile, MaritalStatus } from '@/services/familyService';
 import { useFamilyLinkLogic } from '@/hooks/useFamilyLinkLogic';
 import { DynamicFamilyForm } from '@/components/family/DynamicFamilyForm';
+import { assetIndivisaireService, AssetIndivisaireWithAsset } from '@/services/assetIndivisaireService';
+import { Asset } from '@/services/assetService';
+import { AssetDetailsDialog } from '@/components/patrimoine/AssetDetailsDialog';
 
 export const membreFamilleSchema = z.object({
   lien_familial: z.string().min(1, 'Le lien familial est obligatoire'),
@@ -65,6 +68,19 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
     const [editingMember, setEditingMember] = useState<FamilyLink | null>(null);
     const [selectedLinkType, setSelectedLinkType] = useState('');
     const familyLinkLogic = useFamilyLinkLogic(familyLinks, familyProfile, maritalStatus);
+    const [coOwnedAssets, setCoOwnedAssets] = useState<AssetIndivisaireWithAsset[]>([]);
+    const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+    const [assetDetailsOpen, setAssetDetailsOpen] = useState(false);
+
+    useEffect(() => {
+      if (!dialogOpen || !editingMember?.id) {
+        setCoOwnedAssets([]);
+        return;
+      }
+      assetIndivisaireService.getByFamilyLink(editingMember.id)
+        .then(setCoOwnedAssets)
+        .catch(() => setCoOwnedAssets([]));
+    }, [dialogOpen, editingMember?.id]);
 
     const memberForm = useForm<MembreFamille>({
       resolver: zodResolver(membreFamilleSchema),
@@ -139,6 +155,7 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
     };
 
     return (
+      <>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -188,6 +205,33 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
                   />
                 )}
 
+                {coOwnedAssets.length > 0 && (
+                  <div className="space-y-2 pt-2 border-t">
+                    <p className="text-sm font-medium">Actifs codétenus</p>
+                    <div className="space-y-2">
+                      {coOwnedAssets.filter((item) => item.assets).map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedAsset(item.assets);
+                            setAssetDetailsOpen(true);
+                          }}
+                          className="w-full flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-left hover:bg-muted/50 transition-colors"
+                        >
+                          <span className="flex items-center gap-2 text-sm font-medium truncate">
+                            <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                            {item.assets!.denomination || item.assets!.nature}
+                          </span>
+                          <span className="text-sm text-muted-foreground shrink-0">
+                            {item.pourcentage}%
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex justify-end gap-2">
                   <Button
                     type="button"
@@ -215,6 +259,13 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
           </div>
         </DialogContent>
       </Dialog>
+
+      <AssetDetailsDialog
+        asset={selectedAsset}
+        open={assetDetailsOpen}
+        onOpenChange={setAssetDetailsOpen}
+      />
+    </>
     );
   }
 );

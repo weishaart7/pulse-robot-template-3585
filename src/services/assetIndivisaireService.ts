@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { Asset } from '@/services/assetService';
 
 export interface AssetIndivisaire {
   id?: string;
@@ -12,6 +13,10 @@ export interface AssetIndivisaire {
   updated_at?: string;
 }
 
+export interface AssetIndivisaireWithAsset extends AssetIndivisaire {
+  assets: Asset | null;
+}
+
 export const assetIndivisaireService = {
   async getByAsset(assetId: string): Promise<AssetIndivisaire[]> {
     const { data, error } = await supabase
@@ -21,6 +26,16 @@ export const assetIndivisaireService = {
       .order('created_at', { ascending: true });
     if (error) throw error;
     return (data || []) as AssetIndivisaire[];
+  },
+
+  async getByFamilyLink(familyLinkId: string): Promise<AssetIndivisaireWithAsset[]> {
+    const { data, error } = await supabase
+      .from('asset_indivisaires')
+      .select('*, assets(*)')
+      .eq('family_link_id', familyLinkId)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return (data || []) as AssetIndivisaireWithAsset[];
   },
 
   async replaceForAsset(assetId: string, indivisaires: Omit<AssetIndivisaire, 'id' | 'user_id' | 'created_at' | 'updated_at'>[]) {

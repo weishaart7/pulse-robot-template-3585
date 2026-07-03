@@ -16,7 +16,7 @@ import { useAssetForm, NATURES_WITH_ETABLISSEMENT } from '@/hooks/useAssetForm';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Globe, Info, TrendingUp, TrendingDown, FileText, Users, ShoppingCart, Coins, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { IndivisairesSection } from './IndivisairesSection';
+import { IndivisairesSection, IndivisaireDraft } from './IndivisairesSection';
 import { 
   ORIGINE_ACTIF_OPTIONS, 
   SITUATION_PARTICULIERE_OPTIONS, 
@@ -28,7 +28,7 @@ import { QUALIFICATION_OPTIONS } from '@/lib/patrimoine/qualification';
 
 interface AssetFormProps {
   asset?: Asset;
-  onSubmit: (asset: any, charges: AssetCharge[]) => Promise<void>;
+  onSubmit: (asset: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[]) => Promise<void>;
   onCancel: () => void;
   onDelete?: (assetId: string) => Promise<void>;
 }
