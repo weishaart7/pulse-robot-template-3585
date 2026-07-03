@@ -14,6 +14,7 @@ export interface FamilyProfile {
   telephone?: string;
   email?: string;
   personne_handicapee?: boolean;
+  ancien_combattant?: boolean;
   adresse_postale?: string;
   code_postal?: string;
   ville?: string;
@@ -34,6 +35,15 @@ export interface MaritalStatus {
   profession_conjoint?: string;
   profession_csp_conjoint?: string;
   personne_handicapee_conjoint?: boolean;
+  ancien_combattant_conjoint?: boolean;
+  nom_jeune_fille_conjoint?: string;
+  pays_naissance_conjoint?: string;
+  telephone_conjoint?: string;
+  email_conjoint?: string;
+  adresse_conjoint?: string;
+  code_postal_conjoint?: string;
+  ville_conjoint?: string;
+  pays_conjoint?: string;
   date_pacs?: string;
   lieu_pacs?: string;
   convention_pacs?: string;
@@ -45,8 +55,13 @@ export interface MaritalStatus {
   contrat_mariage?: string;
   parent_isole?: boolean;
   nombre_enfants_charges?: number;
+  imposition_distincte?: boolean;
   mariage_precedent_personne?: boolean;
   mariage_precedent_conjoint?: boolean;
+  duree_mariage_precedent_personne_annees?: number | null;
+  duree_mariage_precedent_personne_mois?: number | null;
+  duree_mariage_precedent_conjoint_annees?: number | null;
+  duree_mariage_precedent_conjoint_mois?: number | null;
   donation_dernier_vivant_personne?: boolean;
   donation_dernier_vivant_conjoint?: boolean;
   date_donation_personne?: string;
@@ -73,6 +88,7 @@ export interface FamilyLink {
   parent_de?: string;
   exoneration_succession?: boolean;
   enfant_a_charge?: boolean;
+  fiscalement_a_charge?: boolean;
   created_at?: string;
   updated_at?: string;
 }

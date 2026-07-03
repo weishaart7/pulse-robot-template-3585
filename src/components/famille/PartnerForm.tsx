@@ -19,17 +19,6 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
-// Type étendu pour inclure les nouveaux champs coordonnées
-type ExtendedMaritalStatus = {
-  telephone_conjoint?: string | null;
-  email_conjoint?: string | null;
-  adresse_conjoint?: string | null;
-  code_postal_conjoint?: string | null;
-  ville_conjoint?: string | null;
-  pays_conjoint?: string | null;
-  [key: string]: any;
-};
-
 const formSchema = z.object({
   statutCouple: z.enum(['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)']).optional(),
 
@@ -45,6 +34,7 @@ const formSchema = z.object({
   nationalitePartenaire: z.string().optional(),
   capaciteJuridique: z.enum(['normale', 'curatelle', 'tutelle', 'sauvegarde']).default('normale'),
   personneHandicapee: z.boolean().default(false),
+  ancienCombattant: z.boolean().default(false),
 
   telephonePartenaire: z.string().optional(),
   emailPartenaire: z.string().email('Adresse email invalide').optional().or(z.literal('')),
@@ -68,6 +58,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       personneHandicapee: false,
+      ancienCombattant: false,
       capaciteJuridique: 'normale',
       civilitePartenaire: undefined,
       nomPartenaire: "",
@@ -91,27 +82,27 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
 
   useEffect(() => {
     if (maritalData) {
-      const data = maritalData as ExtendedMaritalStatus;
       form.reset({
-        statutCouple: data.statut_couple as any,
-        civilitePartenaire: data.civilite_conjoint as any,
-        nomPartenaire: data.nom_conjoint || "",
-        nomJeuneFillePartenaire: (data as any).nom_jeune_fille_conjoint || "",
-        prenomPartenaire: data.prenom_conjoint || "",
-        dateNaissancePartenaire: data.date_naissance_conjoint ? new Date(data.date_naissance_conjoint) : undefined,
-        lieuNaissancePartenaire: data.lieu_naissance_conjoint || "",
-        paysNaissancePartenaire: (data as any).pays_naissance_conjoint || "",
-        professionCSP: data.profession_csp_conjoint || "",
-        professionLibelle: data.profession_conjoint || "",
-        nationalitePartenaire: data.nationalite_conjoint || "",
+        statutCouple: maritalData.statut_couple as any,
+        civilitePartenaire: maritalData.civilite_conjoint as any,
+        nomPartenaire: maritalData.nom_conjoint || "",
+        nomJeuneFillePartenaire: maritalData.nom_jeune_fille_conjoint || "",
+        prenomPartenaire: maritalData.prenom_conjoint || "",
+        dateNaissancePartenaire: maritalData.date_naissance_conjoint ? new Date(maritalData.date_naissance_conjoint) : undefined,
+        lieuNaissancePartenaire: maritalData.lieu_naissance_conjoint || "",
+        paysNaissancePartenaire: maritalData.pays_naissance_conjoint || "",
+        professionCSP: maritalData.profession_csp_conjoint || "",
+        professionLibelle: maritalData.profession_conjoint || "",
+        nationalitePartenaire: maritalData.nationalite_conjoint || "",
         capaciteJuridique: 'normale',
-        personneHandicapee: data.personne_handicapee_conjoint || false,
-        telephonePartenaire: data.telephone_conjoint || "",
-        emailPartenaire: data.email_conjoint || "",
-        adressePartenaire: data.adresse_conjoint || "",
-        codePostalPartenaire: data.code_postal_conjoint || "",
-        villePartenaire: data.ville_conjoint || "",
-        paysPartenaire: data.pays_conjoint || "",
+        personneHandicapee: maritalData.personne_handicapee_conjoint || false,
+        ancienCombattant: maritalData.ancien_combattant_conjoint || false,
+        telephonePartenaire: maritalData.telephone_conjoint || "",
+        emailPartenaire: maritalData.email_conjoint || "",
+        adressePartenaire: maritalData.adresse_conjoint || "",
+        codePostalPartenaire: maritalData.code_postal_conjoint || "",
+        villePartenaire: maritalData.ville_conjoint || "",
+        paysPartenaire: maritalData.pays_conjoint || "",
       });
     }
   }, [maritalData, form]);
@@ -131,6 +122,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
         profession_conjoint: formData.professionLibelle,
         nationalite_conjoint: formData.nationalitePartenaire,
         personne_handicapee_conjoint: formData.personneHandicapee,
+        ancien_combattant_conjoint: formData.ancienCombattant,
         telephone_conjoint: formData.telephonePartenaire,
         email_conjoint: formData.emailPartenaire,
         adresse_conjoint: formData.adressePartenaire,
@@ -489,6 +481,30 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                                 <path d="m10.092.952-.005-.006-.006-.005A.45.45 0 0 0 9.43.939L4.162 6.23 1.585 3.636a.45.45 0 0 0-.652 0 .47.47 0 0 0 0 .657l.002.002L3.58 6.958a.8.8 0 0 0 .567.242.78.78 0 0 0 .567-.242l5.333-5.356a.474.474 0 0 0 .044-.65Zm-5.86 5.349V6.3Z" fill="currentColor" stroke="currentColor" strokeWidth=".4" className="text-primary"/>
                               </svg>
                               <span className="text-foreground select-none text-sm">Personne handicapée</span>
+                            </label>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="ancienCombattant"
+                      render={({ field }) => (
+                        <FormItem className="pb-1">
+                          <FormControl>
+                            <label className="flex gap-3 items-center cursor-pointer relative">
+                              <input
+                                type="checkbox"
+                                className="hidden peer"
+                                checked={field.value}
+                                onChange={field.onChange}
+                              />
+                              <span className="w-5 h-5 border border-input rounded relative flex items-center justify-center peer-checked:border-primary"></span>
+                              <svg className="absolute hidden peer-checked:inline left-1 top-1/2 transform -translate-y-1/2" width="11" height="8" viewBox="0 0 11 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="m10.092.952-.005-.006-.006-.005A.45.45 0 0 0 9.43.939L4.162 6.23 1.585 3.636a.45.45 0 0 0-.652 0 .47.47 0 0 0 0 .657l.002.002L3.58 6.958a.8.8 0 0 0 .567.242.78.78 0 0 0 .567-.242l5.333-5.356a.474.474 0 0 0 .044-.65Zm-5.86 5.349V6.3Z" fill="currentColor" stroke="currentColor" strokeWidth=".4" className="text-primary"/>
+                              </svg>
+                              <span className="text-foreground select-none text-sm">Ancien combattant</span>
                             </label>
                           </FormControl>
                         </FormItem>

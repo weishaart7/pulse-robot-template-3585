@@ -79,17 +79,17 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
         dateMariage: maritalData.date_mariage ? new Date(maritalData.date_mariage) : undefined,
         lieuMariage: maritalData.lieu_mariage || "",
         pasDeContrat: false,
-        impositionDistincte: (maritalData as any).imposition_distincte || false,
-        donationDernierVivantPersonne: (maritalData as any).donation_dernier_vivant_personne || false,
-        dateDonationPersonne: (maritalData as any).date_donation_personne ? new Date((maritalData as any).date_donation_personne) : undefined,
-        donationDernierVivantConjoint: (maritalData as any).donation_dernier_vivant_conjoint || false,
-        dateDonationConjoint: (maritalData as any).date_donation_conjoint ? new Date((maritalData as any).date_donation_conjoint) : undefined,
+        impositionDistincte: maritalData.imposition_distincte || false,
+        donationDernierVivantPersonne: maritalData.donation_dernier_vivant_personne || false,
+        dateDonationPersonne: maritalData.date_donation_personne ? new Date(maritalData.date_donation_personne) : undefined,
+        donationDernierVivantConjoint: maritalData.donation_dernier_vivant_conjoint || false,
+        dateDonationConjoint: maritalData.date_donation_conjoint ? new Date(maritalData.date_donation_conjoint) : undefined,
         mariagePrecedentPersonne: maritalData.mariage_precedent_personne || false,
-        dureeMariagePrecedentPersonneAnnees: (maritalData as any).duree_mariage_precedent_personne_annees,
-        dureeMariagePrecedentPersonneMois: (maritalData as any).duree_mariage_precedent_personne_mois,
+        dureeMariagePrecedentPersonneAnnees: maritalData.duree_mariage_precedent_personne_annees,
+        dureeMariagePrecedentPersonneMois: maritalData.duree_mariage_precedent_personne_mois,
         mariagePrecedentConjoint: maritalData.mariage_precedent_conjoint || false,
-        dureeMariagePrecedentConjointAnnees: (maritalData as any).duree_mariage_precedent_conjoint_annees,
-        dureeMariagePrecedentConjointMois: (maritalData as any).duree_mariage_precedent_conjoint_mois,
+        dureeMariagePrecedentConjointAnnees: maritalData.duree_mariage_precedent_conjoint_annees,
+        dureeMariagePrecedentConjointMois: maritalData.duree_mariage_precedent_conjoint_mois,
       });
     }
   }, [maritalData, form]);
@@ -113,7 +113,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
         mariage_precedent_conjoint: data.mariagePrecedentConjoint,
         duree_mariage_precedent_conjoint_annees: data.dureeMariagePrecedentConjointAnnees ?? null,
         duree_mariage_precedent_conjoint_mois: data.dureeMariagePrecedentConjointMois ?? null,
-      } as any);
+      });
 
       toast({ title: "Succès", description: "Les informations ont été enregistrées avec succès." });
       onSuccess?.();
