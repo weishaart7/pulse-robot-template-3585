@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
-import { FamilyTree } from '@/components/FamilyTree';
-import { FamilyMiniTree, getInitials } from '@/components/famille/FamilyMiniTree';
+import { FamilyTreeCards } from '@/components/famille/FamilyTreeCards';
+import { FamilyMemberFormDialog, FamilyMemberFormDialogHandle } from '@/components/family/FamilyMemberFormDialog';
+import { getInitials } from '@/lib/family/initials';
 import { User, Plus, ArrowLeft } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { calculerPartsFiscales } from '@/lib/fiscal';
@@ -28,10 +28,10 @@ const FamilleSection = () => {
   const [activeTab, setActiveTab] = useState('ma-famille');
   const [editView, setEditView] = useState<EditView | null>(null);
   const [isSingle, setIsSingle] = useState(false);
-  const [treeDialogOpen, setTreeDialogOpen] = useState(false);
   const { data: familyProfile, refetch: refetchProfile } = useFamilyProfile();
   const { data: maritalData, saveData: saveMaritalData } = useMaritalStatus();
-  const { data: familyLinks = [] } = useFamilyLinks();
+  const { data: familyLinks = [], saving: savingLinks, addLink, updateLink } = useFamilyLinks();
+  const memberDialogRef = useRef<FamilyMemberFormDialogHandle>(null);
 
   const TABS = [
     { id: 'ma-famille', label: 'Ma famille' },
@@ -246,43 +246,51 @@ const FamilleSection = () => {
               </div>
             )}
 
-            {/* Bande 3 — Liens familiaux */}
+            {/* Bande 3 — Arbre familial */}
+            <div className={CARD_CLASS} style={CARD_STYLE}>
+              <p className="text-[12px] mb-4" style={{ color: LABEL_COLOR }}>Arbre familial</p>
+              <FamilyTreeCards
+                familyProfile={familyProfile}
+                maritalStatus={maritalData}
+                familyLinks={familyLinks}
+                onSelectMain={() => setEditView('client')}
+                onSelectSpouse={() => navigate('/dashboard/famille/situation-matrimoniale')}
+                onSelectMember={(member) => memberDialogRef.current?.openForEdit(member)}
+              />
+            </div>
+
+            {/* Bande 4 — Liens familiaux (tableau) */}
             <div className={CARD_CLASS} style={CARD_STYLE}>
               <p className="text-[12px] mb-4" style={{ color: LABEL_COLOR }}>Liens familiaux</p>
-              <div className="grid grid-cols-1 md:grid-cols-[1fr_3fr] gap-8">
-                <div className="min-w-0">
-                  {familyLinks.length === 0 ? (
-                    <p className="text-sm" style={{ color: LABEL_COLOR }}>Aucun lien enregistré</p>
-                  ) : (
-                    <table className="w-full text-[13px]">
-                      <tbody>
-                        {familyLinks.map(link => (
-                          <tr key={link.id} className="border-b last:border-0" style={{ borderColor: '#f1f0ec' }}>
-                            <td className="py-2 pr-4" style={{ color: TEXT_COLOR }}>
-                              {link.prenom ? `${link.prenom} ${link.nom}` : link.nom}
-                            </td>
-                            <td className="py-2 text-right" style={{ color: LABEL_COLOR }}>
-                              {link.lien_familial}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-                <div
-                  className="min-w-0 md:border-l md:pl-8 flex items-center justify-center"
-                  style={{ borderColor: DIVIDER_COLOR }}
-                >
-                  <FamilyMiniTree
-                    familyProfile={familyProfile}
-                    maritalStatus={maritalData}
-                    familyLinks={familyLinks}
-                    onClick={() => setTreeDialogOpen(true)}
-                  />
-                </div>
-              </div>
+              {familyLinks.length === 0 ? (
+                <p className="text-sm" style={{ color: LABEL_COLOR }}>Aucun lien enregistré</p>
+              ) : (
+                <table className="w-full text-[13px]">
+                  <tbody>
+                    {familyLinks.map(link => (
+                      <tr key={link.id} className="border-b last:border-0" style={{ borderColor: '#f1f0ec' }}>
+                        <td className="py-2 pr-4" style={{ color: TEXT_COLOR }}>
+                          {link.prenom ? `${link.prenom} ${link.nom}` : link.nom}
+                        </td>
+                        <td className="py-2 text-right" style={{ color: LABEL_COLOR }}>
+                          {link.lien_familial}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
+
+            <FamilyMemberFormDialog
+              ref={memberDialogRef}
+              familyLinks={familyLinks}
+              familyProfile={familyProfile}
+              maritalStatus={maritalData}
+              saving={savingLinks}
+              addLink={addLink}
+              updateLink={updateLink}
+            />
           </div>
         );
       case 'liens-familiaux':
@@ -349,21 +357,6 @@ const FamilleSection = () => {
           {renderContent()}
         </div>
       </div>
-
-      <Dialog open={treeDialogOpen} onOpenChange={setTreeDialogOpen}>
-        <DialogContent className="max-w-5xl max-h-[85vh] p-0 overflow-hidden">
-          <DialogHeader className="p-6 pb-0">
-            <DialogTitle>Arbre familial</DialogTitle>
-          </DialogHeader>
-          <div className="h-[70vh]">
-            <FamilyTree
-              familyProfile={familyProfile}
-              maritalStatus={maritalData}
-              familyMembers={familyLinks}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

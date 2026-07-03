@@ -45,7 +45,7 @@ const GENERATION_BY_RELATION: Record<string, number> = {
 /**
  * Construit le graphe générationnel de la famille (nœuds + relations parent-enfant)
  * à partir de family_links, indépendamment de toute librairie de rendu.
- * Consommé par FamilyTreeFlow (vue complète) et FamilyMiniTree (résumé).
+ * Consommé par FamilyTreeFlow (vue complète, en dialog) et FamilyTreeCards (arbre en cartes intégré à la page Famille).
  */
 export function buildFamilyGraph(
   familyProfile: FamilyProfile | null,
