@@ -242,7 +242,6 @@ export type Database = {
           qualification_auto: boolean | null
           qualification_bien: string | null
           regime_location: string | null
-          revalorisation_annuelle: number | null
           situation_particuliere: string[] | null
           societe_id: string | null
           statut_bien: string | null
@@ -291,7 +290,6 @@ export type Database = {
           qualification_auto?: boolean | null
           qualification_bien?: string | null
           regime_location?: string | null
-          revalorisation_annuelle?: number | null
           situation_particuliere?: string[] | null
           societe_id?: string | null
           statut_bien?: string | null
@@ -340,7 +338,6 @@ export type Database = {
           qualification_auto?: boolean | null
           qualification_bien?: string | null
           regime_location?: string | null
-          revalorisation_annuelle?: number | null
           situation_particuliere?: string[] | null
           societe_id?: string | null
           statut_bien?: string | null

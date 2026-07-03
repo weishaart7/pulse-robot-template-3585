@@ -2,8 +2,8 @@ import * as z from 'zod';
 
 // Constants
 export const ORIGINE_ACTIF_OPTIONS = [
-  'Acquisition à titre gratuite',
-  'Acquisition à titre onéreuse',
+  'Acquisition à titre gratuit',
+  'Acquisition à titre onéreux',
   'Acquisition par occupation',
   'Création',
   'Découverte',
@@ -56,10 +56,8 @@ export const assetSchema = z.object({
   denomination: z.string().optional(),
   etablissement: z.string().optional(),
   mode_detention: z.string().optional(),
-  beneficiaire_autre_partie: z.string().optional(),
   valeur_estimee: z.number().optional(),
   date_estimation: z.date().optional(),
-  revalorisation_annuelle: z.number().optional(),
   detenteur: z.string().optional(),
   pourcentage_utilisateur: z.number().optional(),
   pourcentage_conjoint: z.number().optional(),
@@ -87,7 +85,7 @@ export const getDefaultAssetValues = (): AssetFormValues => ({
   detenteur: '',
   pourcentage_utilisateur: 50,
   pourcentage_conjoint: 50,
-  origine_actif: ['Acquisition à titre onéreuse'],
+  origine_actif: ['Acquisition à titre onéreux'],
   situation_particuliere: ['Non'],
   attachement_emotionnel: 0,
   transfert_immobilier: true,

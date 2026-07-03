@@ -74,7 +74,6 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   };
 
   const watchedNature = form.watch('nature');
-  const watchedModeDetention = form.watch('mode_detention');
   const watchedDetenteur = form.watch('detenteur');
   const watchedValeurAcquisition = form.watch('valeur_acquisition');
   const watchedValeurEstimee = form.watch('valeur_estimee');
@@ -280,34 +279,6 @@ export const AssetForm: React.FC<AssetFormProps> = ({
           </FormItem>
         )} />
 
-        {(watchedModeDetention === 'Usufruit' || watchedModeDetention === 'Nue-propriété') && (
-          <FormField control={form.control} name="beneficiaire_autre_partie" render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                {watchedModeDetention === 'Usufruit' ? 'Nu-propriétaire' : 'Usufruitier'}
-              </FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
-                    <SelectValue placeholder="Choisir une personne" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent className="bg-background z-50">
-                  {familyMembers.map((member) => (
-                    <SelectItem key={member.id || member.nom} value={member.id || ''}>
-                      {member.prenom ? `${member.prenom} ${member.nom}` : member.nom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormDescription>
-                Sélectionnez le bénéficiaire parmi les personnes renseignées dans la section Famille
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )} />
-        )}
-
         <FormField control={form.control} name="detenteur" render={({ field }) => (
           <FormItem>
             <FormLabel>Détenteur</FormLabel>
@@ -413,7 +384,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               <FormLabel>Origine de l'actif</FormLabel>
               <Select
                 onValueChange={(value) => field.onChange([value])}
-                value={field.value?.[0] || 'Acquisition à titre onéreuse'}
+                value={field.value?.[0] || 'Acquisition à titre onéreux'}
               >
                 <FormControl>
                   <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">

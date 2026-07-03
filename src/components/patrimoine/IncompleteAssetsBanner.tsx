@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { AlertTriangle, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { Asset } from '@/services/assetService';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Props {
   assets: Asset[];
@@ -25,8 +26,15 @@ const checkMissing = (a: Asset): string[] => {
 };
 
 export const IncompleteAssetsBanner: React.FC<Props> = ({ assets, onAssetClick }) => {
-  const [dismissed, setDismissed] = useState(false);
+  const { user } = useAuth();
+  const storageKey = user?.id ? `incomplete-assets-banner-dismissed-${user.id}` : null;
+  const [dismissed, setDismissed] = useState(() => storageKey ? localStorage.getItem(storageKey) === 'true' : false);
   const [expanded, setExpanded] = useState(false);
+
+  const handleDismiss = () => {
+    setDismissed(true);
+    if (storageKey) localStorage.setItem(storageKey, 'true');
+  };
 
   const incomplete = useMemo<MissingInfo[]>(() => {
     return assets
@@ -65,7 +73,7 @@ export const IncompleteAssetsBanner: React.FC<Props> = ({ assets, onAssetClick }
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => setDismissed(true)}
+                onClick={handleDismiss}
                 className="text-amber-900 dark:text-amber-100 hover:bg-amber-100 dark:hover:bg-amber-900/30"
               >
                 <X className="h-4 w-4" />

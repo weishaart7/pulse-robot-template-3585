@@ -126,7 +126,6 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         denomination: asset.denomination || '',
         etablissement: asset.etablissement || '',
         mode_detention: asset.mode_detention || '',
-        beneficiaire_autre_partie: (asset as any).beneficiaire_autre_partie || '',
         valeur_estimee: asset.valeur_estimee || undefined,
         date_estimation: asset.date_estimation ? new Date(asset.date_estimation) : undefined,
         detenteur: displayDetenteur,
@@ -135,7 +134,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         valeur_acquisition: asset.valeur_acquisition || undefined,
         frais_acquisition: asset.frais_acquisition || undefined,
         date_acquisition: asset.date_acquisition ? new Date(asset.date_acquisition) : undefined,
-        origine_actif: (asset as any).origine_actif || ['Acquisition à titre onéreuse'],
+        origine_actif: (asset as any).origine_actif || ['Acquisition à titre onéreux'],
         situation_particuliere: (asset as any).situation_particuliere || ['Non'],
         attachement_emotionnel: (asset as any).attachement_emotionnel || 0,
         transfert_immobilier: (asset as any).transfert_immobilier || false,
@@ -190,9 +189,9 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         }
       }
 
-      // Auto-set origine to "Acquisition à titre gratuite" when NP is selected
+      // Auto-set origine to "Acquisition à titre gratuit" when NP is selected
       if (name === 'mode_detention' && value.mode_detention === 'Nue-propriété') {
-        form.setValue('origine_actif', ['Acquisition à titre gratuite']);
+        form.setValue('origine_actif', ['Acquisition à titre gratuit']);
       }
     });
 
@@ -215,8 +214,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         finalSpousePercentage = 100;
       }
 
-      // Remove form-only fields that don't exist in the database
-      const { beneficiaire_autre_partie, ...dbValues } = {
+      const dbValues = {
         ...values,
         detenteur: dbDetenteur,
         pourcentage_utilisateur: finalUserPercentage,

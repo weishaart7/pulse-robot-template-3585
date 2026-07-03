@@ -32,7 +32,7 @@ const ORIGINES_PROPRES = [
   'Donation',
   'Héritage',
   "Présent d'usage",
-  'Acquisition à titre gratuite',
+  'Acquisition à titre gratuit',
   'Découverte',
   'Création',
 ];

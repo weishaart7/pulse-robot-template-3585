@@ -7,10 +7,8 @@ export interface Asset {
   denomination?: string;
   etablissement?: string;
   mode_detention?: string;
-  beneficiaire_autre_partie?: string;
   valeur_estimee?: number;
   date_estimation?: string;
-  revalorisation_annuelle?: number;
   detenteur?: string;
   pourcentage_utilisateur?: number;
   pourcentage_conjoint?: number;
