@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import './kairos-transmission.css';
 
 type ConjointOption = 
   | 'usufruit_total'
@@ -128,8 +129,8 @@ export const Optimisation = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="kairos-transmission flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--ink-900)]" />
       </div>
     );
   }
@@ -137,9 +138,9 @@ export const Optimisation = () => {
   const renderNoActionMessage = () => {
     if (scenario === 'no_marriage') {
       return (
-        <Card>
+        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardContent className="pt-6">
-            <div className="flex items-start gap-3 text-muted-foreground">
+            <div className="flex items-start gap-3 text-[var(--text-secondary)]">
               <Info className="h-5 w-5 mt-0.5 shrink-0" />
               <p>L'optimisation de l'option du conjoint n'est disponible que pour les personnes mariées. Votre situation actuelle ne nécessite pas ce choix.</p>
             </div>
@@ -149,9 +150,9 @@ export const Optimisation = () => {
     }
     if (scenario === 'no_children') {
       return (
-        <Card>
+        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardContent className="pt-6">
-            <div className="flex items-start gap-3 text-muted-foreground">
+            <div className="flex items-start gap-3 text-[var(--text-secondary)]">
               <Info className="h-5 w-5 mt-0.5 shrink-0" />
               <p>En l'absence d'enfants, le choix de l'option du conjoint ne s'applique pas. Le conjoint hérite selon les règles légales en fonction des ascendants vivants.</p>
             </div>
@@ -175,30 +176,30 @@ export const Optimisation = () => {
   const scenarioLabels = getScenarioLabel();
 
   return (
-    <div className="space-y-6">
+    <div className="kairos-transmission space-y-6">
       {/* Option du conjoint survivant */}
-      <Card>
-        <CardHeader>
+      <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <CardHeader className="p-5">
           <div className="flex items-center gap-2">
-            <Heart className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg">Option du conjoint survivant</CardTitle>
-            {saving && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />}
-            {selectedOption && !saving && <Check className="h-4 w-4 text-green-500" />}
+            <Heart className="h-5 w-5 text-[var(--ink-400)]" />
+            <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Option du conjoint survivant</CardTitle>
+            {saving && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[var(--ink-900)]" />}
+            {selectedOption && !saving && <Check className="h-4 w-4 text-[var(--positive)]" />}
           </div>
-          <CardDescription>
+          <CardDescription className="text-[var(--text-secondary)]">
             Choisissez l'option successorale du conjoint survivant en fonction de votre situation familiale.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="p-5 pt-0 space-y-4">
           {/* Situation badges */}
           {scenarioLabels && (
             <div className="flex flex-wrap gap-2 mb-4">
               {scenarioLabels.map((label, i) => (
-                <Badge key={i} variant="secondary" className="text-xs">
+                <Badge key={i} className="text-xs bg-[var(--ink-050)] text-[var(--ink-700)] border-transparent rounded-[var(--radius-md)]">
                   {label}
                 </Badge>
               ))}
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-xs bg-transparent text-[var(--text-secondary)] border-[var(--border-strong)] rounded-[var(--radius-md)]">
                 {enfants.length} enfant{enfants.length > 1 ? 's' : ''}
               </Badge>
             </div>
@@ -211,11 +212,11 @@ export const Optimisation = () => {
               className="space-y-3"
             >
               {options.map((opt) => (
-                <div key={opt.value} className="flex items-start space-x-3 rounded-lg border border-border p-4 hover:bg-muted/50 transition-colors">
+                <div key={opt.value} className="flex items-start space-x-3 rounded-[var(--radius-lg)] border border-[var(--border)] p-4 hover:bg-[var(--fill-hover)] transition-colors">
                   <RadioGroupItem value={opt.value} id={opt.value} className="mt-0.5" />
                   <Label htmlFor={opt.value} className="flex-1 cursor-pointer space-y-1">
-                    <span className="font-medium text-sm">{opt.label}</span>
-                    <p className="text-xs text-muted-foreground">{opt.description}</p>
+                    <span className="font-medium text-sm text-[var(--text-primary)]">{opt.label}</span>
+                    <p className="text-xs text-[var(--text-secondary)]">{opt.description}</p>
                   </Label>
                 </div>
               ))}
@@ -225,9 +226,9 @@ export const Optimisation = () => {
           )}
 
           {scenario === 'married_no_ddv_noncommon' && (
-            <div className="flex items-start gap-2 mt-3 p-3 rounded-md bg-muted/50 border border-border">
-              <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-              <p className="text-xs text-muted-foreground">
+            <div className="flex items-start gap-2 mt-3 p-3 rounded-[var(--radius-md)] bg-[var(--surface-sunken)] border border-[var(--border)]">
+              <AlertCircle className="h-4 w-4 text-[var(--text-secondary)] mt-0.5 shrink-0" />
+              <p className="text-xs text-[var(--text-secondary)]">
                 En présence d'au moins un enfant non commun, le conjoint ne peut recevoir que 1/4 en pleine propriété. L'option en usufruit n'est pas disponible.
               </p>
             </div>

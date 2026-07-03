@@ -141,7 +141,7 @@ export default {
 				'pulse-gradient': 'linear-gradient(180deg, rgba(173,232,244,0.8) 0%, rgba(173,232,244,0) 100%)',
 			},
 			fontFamily: {
-				'sans': ['Manrope', 'sans-serif'],
+				'sans': ['"Hanken Grotesk"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
 				'display': ['Brockmann', 'SF Pro Display', 'Manrope', 'sans-serif'],
 				'brockmann': ['Brockmann', 'serif'],
 				'playfair': ['"Playfair Display"', 'serif'],

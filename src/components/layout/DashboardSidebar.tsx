@@ -93,8 +93,7 @@ export function DashboardSidebar() {
 
   return (
     <motion.div
-      className="flex flex-col h-full overflow-hidden flex-shrink-0 relative"
-      style={{ backgroundColor: '#ebf1f1', color: '#362015' }}
+      className="flex flex-col h-full overflow-hidden flex-shrink-0 relative bg-sidebar text-sidebar-foreground border-r border-sidebar-border"
       animate={{
         width: open ? 220 : 64,
       }}
@@ -120,7 +119,7 @@ export function DashboardSidebar() {
         {open && (
           <button
             onClick={() => setOpen(false)}
-            className="p-1 rounded-md hover:bg-white/50 transition-colors"
+            className="p-1 rounded-md hover:bg-sidebar-accent transition-colors"
             aria-label="Réduire la barre latérale"
           >
             <PanelLeftClose className="h-4 w-4" strokeWidth={1.5} />
@@ -131,7 +130,7 @@ export function DashboardSidebar() {
         <div className="px-2 pb-2 flex justify-center">
           <button
             onClick={() => setOpen(true)}
-            className="p-1 rounded-md hover:bg-white/50 transition-colors"
+            className="p-1 rounded-md hover:bg-sidebar-accent transition-colors"
             aria-label="Ouvrir la barre latérale"
           >
             <PanelLeftOpen className="h-4 w-4" strokeWidth={1.5} />
@@ -143,7 +142,7 @@ export function DashboardSidebar() {
       <div className={cn("px-3 pb-3 flex items-center gap-1", open ? "mx-[19px]" : "flex-col mx-auto")}>
         <button
           onClick={() => setSearchOpen(true)}
-          className="p-2 rounded-md hover:bg-white/50 transition-colors"
+          className="p-2 rounded-md hover:bg-sidebar-accent transition-colors"
           aria-label="Rechercher"
         >
           <Search className="h-4 w-4" strokeWidth={1.5} />
@@ -151,7 +150,7 @@ export function DashboardSidebar() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className="p-2 rounded-md hover:bg-white/50 transition-colors"
+              className="p-2 rounded-md hover:bg-sidebar-accent transition-colors"
               aria-label="Menu utilisateur"
             >
               <CircleUserRound className="h-4 w-4" strokeWidth={1.5} />
@@ -200,7 +199,7 @@ export function DashboardSidebar() {
               onClick={() => handleNavigation(item.href)} 
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors text-left",
-                isActive ? "bg-white text-black font-semibold" : "hover:bg-white/50",
+                isActive ? "bg-sidebar-accent text-sidebar-foreground font-semibold" : "hover:bg-sidebar-accent",
                 !open && "justify-center"
               )}
             >
@@ -221,7 +220,7 @@ export function DashboardSidebar() {
         
         {/* Séparateur après Vue d'ensemble */}
         <div className={cn("py-2", open ? "px-4" : "px-2")}>
-          <Separator className="bg-gray-200 h-px" />
+          <Separator className="bg-sidebar-border h-px" />
         </div>
 
         {/* Menu principal (Famille à Transmission) */}
@@ -234,7 +233,7 @@ export function DashboardSidebar() {
               onClick={() => handleNavigation(item.href)} 
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors text-left",
-                isActive ? "bg-white text-black font-semibold" : "hover:bg-white/50",
+                isActive ? "bg-sidebar-accent text-sidebar-foreground font-semibold" : "hover:bg-sidebar-accent",
                 !open && "justify-center"
               )}
             >
@@ -255,7 +254,7 @@ export function DashboardSidebar() {
 
         {/* Séparateur avant Stratégies */}
         <div className={cn("py-2", open ? "px-4" : "px-2")}>
-          <Separator className="bg-gray-200 h-px" />
+          <Separator className="bg-sidebar-border h-px" />
         </div>
 
         {/* Stratégies et Mon agenda */}
@@ -268,7 +267,7 @@ export function DashboardSidebar() {
               onClick={() => handleNavigation(item.href)} 
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors text-left",
-                isActive ? "bg-white text-black font-semibold" : "hover:bg-white/50",
+                isActive ? "bg-sidebar-accent text-sidebar-foreground font-semibold" : "hover:bg-sidebar-accent",
                 !open && "justify-center"
               )}
             >
@@ -297,7 +296,7 @@ export function DashboardSidebar() {
               key={item.href}
               onClick={() => handleNavigation(item.href)} 
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors text-left hover:bg-white/50",
+                "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors text-left hover:bg-sidebar-accent",
                 !open && "justify-center"
               )}
             >

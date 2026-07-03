@@ -1,6 +1,7 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300..800;1,400&display=swap');
 
 @font-face {
   font-family: 'Brockmann';
@@ -31,53 +32,53 @@
     --ds-background-100: hsla(0, 0%, 100%, 1);
     --ds-background-200: hsla(0, 0%, 98%, 1);
     
-    /* Duolingo-inspired color scheme - light mode */
-    --background: 0 0% 100%;
-    --foreground: 20 44% 15%;
+    /* Kairos Design System - light mode (canvas gris chaud, cartes blanches, near-black) */
+    --background: 60 5% 96%;    /* --canvas #f6f6f5 */
+    --foreground: 223 14% 10%;  /* --ink-900 #16181d */
 
-    --card: 0 0% 100%;
-    --card-foreground: 20 44% 15%;
+    --card: 0 0% 100%;          /* --surface #ffffff */
+    --card-foreground: 223 14% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 20 44% 15%;
+    --popover-foreground: 223 14% 10%;
 
-    --primary: 20 44% 15%; /* #362015 - Deep navy blue */
+    --primary: 223 14% 10%;     /* --ink-900, boutons primaires quasi-noirs */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 143 86% 57%; /* #32EF7B - Bright green */
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 60 4% 96%;     /* --ink-050 #f4f4f3 */
+    --secondary-foreground: 223 14% 10%;
 
-    --muted: 220 20% 95%;
-    --muted-foreground: 220 20% 45%;
+    --muted: 60 4% 96%;         /* --ink-050 */
+    --muted-foreground: 219 6% 49%; /* --ink-500 #767b84 */
 
-    --accent: 143 86% 57%; /* Green accent - même vert que la landing page */
-    --accent-foreground: 20 44% 15%; /* Texte noir sur fond vert */
+    --accent: 60 4% 95%;        /* --fill-hover #f2f2f1 */
+    --accent-foreground: 223 14% 10%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 358 75% 59%; /* --negative #e5484d */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 20% 85%;
-    --input: 220 20% 85%;
-    --ring: 220 90% 20%;
+    --border: 0 0% 93%;         /* --border #ececec */
+    --input: 60 3% 86%;         /* --border-strong #dcdcda */
+    --ring: 223 14% 10%;        /* --ink-900 */
 
     --radius: 1rem;
 
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 270 60% 65%;
-    --chart-4: 30 80% 55%;
-    --chart-5: 340 75% 55%;
-    --chart-6: 338 100% 70%;
+    --chart-1: 211 100% 56%;    /* --data-blue */
+    --chart-2: 152 62% 47%;     /* --data-green */
+    --chart-3: 252 96% 68%;     /* --data-purple */
+    --chart-4: 37 86% 59%;      /* --data-amber */
+    --chart-5: 313 49% 49%;     /* --data-magenta */
+    --chart-6: 177 77% 39%;     /* --data-teal */
 
-    /* Sidebar colors */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 220 30% 10%;
-    --sidebar-primary: 220 90% 20%;
+    /* Sidebar colors - Kairos */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 223 14% 10%;
+    --sidebar-primary: 223 14% 10%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 20% 95%;
-    --sidebar-accent-foreground: 220 30% 10%;
-    --sidebar-border: 220 20% 85%;
-    --sidebar-ring: 220 90% 20%;
+    --sidebar-accent: 60 4% 95%;
+    --sidebar-accent-foreground: 223 14% 10%;
+    --sidebar-border: 0 0% 93%;
+    --sidebar-ring: 223 14% 10%;
   }
 
   .dark {
@@ -133,7 +134,7 @@
   }
 
   body {
-    @apply bg-white text-black font-sans antialiased text-sm;
+    @apply bg-background text-foreground font-sans antialiased text-sm;
   }
 
   /* Smooth scrolling */

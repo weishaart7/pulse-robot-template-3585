@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { DonationForm } from './DonationForm';
 import { LegsForm } from './LegsForm';
+import './kairos-transmission.css';
 
 export const Liberalites = () => {
   const { liberalites, loading, createLiberalite, updateLiberalite, deleteLiberalite } = useLiberalites();
@@ -110,54 +111,55 @@ export const Liberalites = () => {
   const legs = liberalites.filter(l => l.type === 'legs');
 
   if (loading) {
-    return <div>Chargement...</div>;
+    return <div className="kairos-transmission text-[var(--text-secondary)]">Chargement...</div>;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="kairos-transmission space-y-6">
       {/* Bloc Donations */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+      <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <CardHeader className="p-5">
+          <CardTitle className="flex items-center justify-between text-[15px] font-semibold text-[var(--text-primary)]">
             Donations
-            <Button onClick={() => setIsDonationFormOpen(true)}>
+            <Button onClick={() => setIsDonationFormOpen(true)} className="bg-[var(--ink-900)] text-white border border-[var(--ink-900)] rounded-[var(--radius-lg)] hover:bg-[var(--ink-800)] shadow-none">
               <Plus className="mr-2 h-4 w-4" />
               Ajouter une donation
             </Button>
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-[var(--text-secondary)]">
             Gérez les donations effectuées ou prévues
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-5 pt-0">
           {donations.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
+            <p className="text-[var(--text-secondary)] text-center py-8">
               Aucune donation enregistrée
             </p>
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Dénomination</TableHead>
-                  <TableHead>Bénéficiaire</TableHead>
-                  <TableHead>Montant</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Actions</TableHead>
+                <TableRow className="border-[var(--border)]">
+                  <TableHead className="text-[var(--text-secondary)]">Dénomination</TableHead>
+                  <TableHead className="text-[var(--text-secondary)]">Bénéficiaire</TableHead>
+                  <TableHead className="text-[var(--text-secondary)]">Montant</TableHead>
+                  <TableHead className="text-[var(--text-secondary)]">Date</TableHead>
+                  <TableHead className="text-[var(--text-secondary)]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {donations.map((donation) => (
-                  <TableRow key={donation.id}>
-                    <TableCell className="font-medium">{donation.denomination}</TableCell>
-                    <TableCell>{donation.beneficiaire}</TableCell>
-                    <TableCell>{formatCurrency(donation.montant)}</TableCell>
-                    <TableCell>{formatDate(donation.date_acte)}</TableCell>
+                  <TableRow key={donation.id} className="border-[var(--border)]">
+                    <TableCell className="font-medium text-[var(--text-primary)]">{donation.denomination}</TableCell>
+                    <TableCell className="text-[var(--text-primary)]">{donation.beneficiaire}</TableCell>
+                    <TableCell className="kairos-num text-[var(--text-primary)]">{formatCurrency(donation.montant)}</TableCell>
+                    <TableCell className="text-[var(--text-primary)]">{formatDate(donation.date_acte)}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleOpenDialog('donation', donation)}
+                          className="bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -165,6 +167,7 @@ export const Liberalites = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDelete(donation.id!)}
+                          className="bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -179,48 +182,49 @@ export const Liberalites = () => {
       </Card>
 
       {/* Bloc Legs */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+      <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <CardHeader className="p-5">
+          <CardTitle className="flex items-center justify-between text-[15px] font-semibold text-[var(--text-primary)]">
             Legs (Testament)
-            <Button onClick={() => setIsLegsFormOpen(true)}>
+            <Button onClick={() => setIsLegsFormOpen(true)} className="bg-[var(--ink-900)] text-white border border-[var(--ink-900)] rounded-[var(--radius-lg)] hover:bg-[var(--ink-800)] shadow-none">
               <Plus className="mr-2 h-4 w-4" />
               Ajouter un legs
             </Button>
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-[var(--text-secondary)]">
             Gérez les legs testamentaires prévus
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-5 pt-0">
           {legs.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
+            <p className="text-[var(--text-secondary)] text-center py-8">
               Aucun legs enregistré
             </p>
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Dénomination</TableHead>
-                  <TableHead>Bénéficiaire</TableHead>
-                  <TableHead>Montant</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Actions</TableHead>
+                <TableRow className="border-[var(--border)]">
+                  <TableHead className="text-[var(--text-secondary)]">Dénomination</TableHead>
+                  <TableHead className="text-[var(--text-secondary)]">Bénéficiaire</TableHead>
+                  <TableHead className="text-[var(--text-secondary)]">Montant</TableHead>
+                  <TableHead className="text-[var(--text-secondary)]">Date</TableHead>
+                  <TableHead className="text-[var(--text-secondary)]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {legs.map((leg) => (
-                  <TableRow key={leg.id}>
-                    <TableCell className="font-medium">{leg.denomination}</TableCell>
-                    <TableCell>{leg.beneficiaire}</TableCell>
-                    <TableCell>{formatCurrency(leg.montant)}</TableCell>
-                    <TableCell>{formatDate(leg.date_acte)}</TableCell>
+                  <TableRow key={leg.id} className="border-[var(--border)]">
+                    <TableCell className="font-medium text-[var(--text-primary)]">{leg.denomination}</TableCell>
+                    <TableCell className="text-[var(--text-primary)]">{leg.beneficiaire}</TableCell>
+                    <TableCell className="kairos-num text-[var(--text-primary)]">{formatCurrency(leg.montant)}</TableCell>
+                    <TableCell className="text-[var(--text-primary)]">{formatDate(leg.date_acte)}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleOpenDialog('legs', leg)}
+                          className="bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -228,6 +232,7 @@ export const Liberalites = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDelete(leg.id!)}
+                          className="bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

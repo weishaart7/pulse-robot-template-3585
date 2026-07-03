@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { AVContractDetail } from './av/AVContractDetail';
 import { ClauseStructuree, BeneficiaireEntry } from './av/ClauseBeneficiaireBuilder';
+import './kairos-transmission.css';
 
 const AV_NATURES = [
   "Contrat d'assurance-vie",
@@ -268,7 +269,7 @@ export const AssuranceVie = () => {
   // If a contract is selected, show the detail view
   if (selectedContract) {
     return (
-      <div className="space-y-4">
+      <div className="kairos-transmission space-y-4">
         {contracts.length > 1 && (
           <div className="flex gap-2 overflow-x-auto pb-2">
             {contracts.map((c) => (
@@ -277,7 +278,12 @@ export const AssuranceVie = () => {
                 variant={c.id === selectedContract.id ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setSelectedContract(c)}
-                className="whitespace-nowrap"
+                className={
+                  "whitespace-nowrap rounded-[var(--radius-lg)] shadow-none " +
+                  (c.id === selectedContract.id
+                    ? "bg-[var(--ink-900)] text-white border border-[var(--ink-900)] hover:bg-[var(--ink-800)]"
+                    : "bg-[var(--surface)] text-[var(--text-primary)] border border-[var(--border-strong)]")
+                }
               >
                 {c.denomination || c.nature}
               </Button>
@@ -298,9 +304,9 @@ export const AssuranceVie = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="kairos-transmission space-y-4">
         {[1, 2].map(i => (
-          <div key={i} className="h-24 rounded-lg bg-muted animate-pulse" />
+          <div key={i} className="h-24 rounded-[var(--radius-2xl)] bg-[var(--surface-sunken)] animate-pulse" />
         ))}
       </div>
     );
@@ -308,73 +314,75 @@ export const AssuranceVie = () => {
 
   if (contracts.length === 0) {
     return (
-      <Card>
-        <CardContent className="py-12">
-          <div className="text-center space-y-4">
-            <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-              <Shield className="h-6 w-6 text-muted-foreground" />
+      <div className="kairos-transmission">
+        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+          <CardContent className="py-12">
+            <div className="text-center space-y-4">
+              <div className="mx-auto w-12 h-12 rounded-full bg-[var(--ink-050)] flex items-center justify-center">
+                <Shield className="h-6 w-6 text-[var(--ink-400)]" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">Aucun contrat d'assurance-vie</h3>
+                <p className="text-sm text-[var(--text-secondary)] mt-1">
+                  Ajoutez vos contrats d'assurance-vie dans la section Patrimoine pour les visualiser ici.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/dashboard/patrimoine')}
+                className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
+              >
+                Aller au Patrimoine
+                <ArrowRight className="h-4 w-4" />
+              </Button>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold">Aucun contrat d'assurance-vie</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Ajoutez vos contrats d'assurance-vie dans la section Patrimoine pour les visualiser ici.
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => navigate('/dashboard/patrimoine')}
-              className="gap-2"
-            >
-              Aller au Patrimoine
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="kairos-transmission space-y-6">
       {/* Résumé */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-primary" />
+              <div className="w-10 h-10 rounded-[var(--radius-lg)] bg-[var(--ink-050)] flex items-center justify-center">
+                <FileText className="h-5 w-5 text-[var(--ink-700)]" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Nombre de contrats</p>
-                <p className="text-2xl font-bold">{contracts.length}</p>
+                <p className="text-sm text-[var(--text-secondary)]">Nombre de contrats</p>
+                <p className="kairos-num text-[26px] font-semibold tracking-[-0.02em] text-[var(--text-primary)]">{contracts.length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-primary" />
+              <div className="w-10 h-10 rounded-[var(--radius-lg)] bg-[var(--ink-050)] flex items-center justify-center">
+                <Shield className="h-5 w-5 text-[var(--ink-700)]" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Valeur totale</p>
-                <p className="text-2xl font-bold">{formatCurrency(totalValeur)}</p>
+                <p className="text-sm text-[var(--text-secondary)]">Valeur totale</p>
+                <p className="kairos-num text-[26px] font-semibold tracking-[-0.02em] text-[var(--text-primary)]">{formatCurrency(totalValeur)}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <div className="w-10 h-10 rounded-[var(--radius-lg)] bg-[var(--warning-soft)] flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-[var(--warning)]" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Fiscalité transmission</p>
-                <p className="text-sm font-medium text-muted-foreground">
+                <p className="text-sm text-[var(--text-secondary)]">Fiscalité transmission</p>
+                <p className="text-sm font-medium text-[var(--text-secondary)]">
                   Hors succession (art. L132-12)
                 </p>
               </div>
@@ -385,101 +393,101 @@ export const AssuranceVie = () => {
 
       {/* Fiscal 990I / 757B summary */}
       {subscriberAge !== null && contracts.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Scale className="h-4 w-4" />
+        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+          <CardHeader className="pb-3 p-5">
+            <CardTitle className="text-[15px] font-semibold flex items-center gap-2 text-[var(--text-primary)]">
+              <Scale className="h-4 w-4 text-[var(--ink-400)]" />
               Répartition fiscale en cas de décès
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-5 pt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* 990I */}
-              <div className="space-y-3 p-4 rounded-lg bg-muted/30">
+              <div className="space-y-3 p-4 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--border)]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Badge variant="default">Art. 990 I</Badge>
-                    <span className="text-xs text-muted-foreground">Primes avant 70 ans</span>
+                    <Badge className="bg-[var(--ink-900)] text-white border-transparent rounded-[var(--radius-md)]">Art. 990 I</Badge>
+                    <span className="text-xs text-[var(--text-secondary)]">Primes avant 70 ans</span>
                   </div>
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Capitaux taxables</span>
-                    <span className="font-medium">{formatCurrency(fiscalSummary.montant990I)}</span>
+                    <span className="text-[var(--text-secondary)]">Capitaux taxables</span>
+                    <span className="kairos-num font-medium text-[var(--text-primary)]">{formatCurrency(fiscalSummary.montant990I)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Abattement ({fiscalSummary.nbTaxable} bénéf. × 152 500 €)</span>
-                    <span className="font-medium text-emerald-600">- {formatCurrency(Math.min(fiscalSummary.abattement990I, fiscalSummary.montant990I))}</span>
+                    <span className="text-[var(--text-secondary)]">Abattement ({fiscalSummary.nbTaxable} bénéf. × 152 500 €)</span>
+                    <span className="kairos-num font-medium text-[var(--positive)]">- {formatCurrency(Math.min(fiscalSummary.abattement990I, fiscalSummary.montant990I))}</span>
                   </div>
-                  <Separator />
+                  <Separator className="bg-[var(--border)]" />
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Assiette taxable</span>
-                    <span className="font-medium">{formatCurrency(fiscalSummary.assiette990I)}</span>
+                    <span className="text-[var(--text-secondary)]">Assiette taxable</span>
+                    <span className="kairos-num font-medium text-[var(--text-primary)]">{formatCurrency(fiscalSummary.assiette990I)}</span>
                   </div>
                   {fiscalSummary.assiette990I > 0 && (
                     <>
-                      <div className="flex justify-between text-xs text-muted-foreground">
+                      <div className="flex justify-between text-xs text-[var(--text-secondary)]">
                         <span>Jusqu'à 700 000 € → 20 %</span>
-                        <span>{formatCurrency(Math.min(fiscalSummary.assiette990I, 700000) * 0.20)}</span>
+                        <span className="kairos-num">{formatCurrency(Math.min(fiscalSummary.assiette990I, 700000) * 0.20)}</span>
                       </div>
                       {fiscalSummary.assiette990I > 700000 && (
-                        <div className="flex justify-between text-xs text-muted-foreground">
+                        <div className="flex justify-between text-xs text-[var(--text-secondary)]">
                           <span>Au-delà → 31,25 %</span>
-                          <span>{formatCurrency((fiscalSummary.assiette990I - 700000) * 0.3125)}</span>
+                          <span className="kairos-num">{formatCurrency((fiscalSummary.assiette990I - 700000) * 0.3125)}</span>
                         </div>
                       )}
                     </>
                   )}
-                  <Separator />
+                  <Separator className="bg-[var(--border)]" />
                   <div className="flex justify-between font-semibold">
-                    <span>Prélèvement estimé</span>
-                    <span className="text-destructive">{formatCurrency(fiscalSummary.droits990I)}</span>
+                    <span className="text-[var(--text-primary)]">Prélèvement estimé</span>
+                    <span className="kairos-num text-[var(--negative)]">{formatCurrency(fiscalSummary.droits990I)}</span>
                   </div>
                 </div>
               </div>
 
               {/* 757B */}
-              <div className="space-y-3 p-4 rounded-lg bg-muted/30">
+              <div className="space-y-3 p-4 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--border)]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary">Art. 757 B</Badge>
-                    <span className="text-xs text-muted-foreground">Primes après 70 ans</span>
+                    <Badge className="bg-[var(--ink-050)] text-[var(--ink-700)] border-transparent rounded-[var(--radius-md)]">Art. 757 B</Badge>
+                    <span className="text-xs text-[var(--text-secondary)]">Primes après 70 ans</span>
                   </div>
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Capitaux taxables</span>
-                    <span className="font-medium">{formatCurrency(fiscalSummary.montant757B)}</span>
+                    <span className="text-[var(--text-secondary)]">Capitaux taxables</span>
+                    <span className="kairos-num font-medium text-[var(--text-primary)]">{formatCurrency(fiscalSummary.montant757B)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Abattement global</span>
-                    <span className="font-medium text-emerald-600">- {formatCurrency(Math.min(30500, fiscalSummary.montant757B))}</span>
+                    <span className="text-[var(--text-secondary)]">Abattement global</span>
+                    <span className="kairos-num font-medium text-[var(--positive)]">- {formatCurrency(Math.min(30500, fiscalSummary.montant757B))}</span>
                   </div>
-                  <Separator />
+                  <Separator className="bg-[var(--border)]" />
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Assiette taxable</span>
-                    <span className="font-medium">{formatCurrency(fiscalSummary.assiette757B)}</span>
+                    <span className="text-[var(--text-secondary)]">Assiette taxable</span>
+                    <span className="kairos-num font-medium text-[var(--text-primary)]">{formatCurrency(fiscalSummary.assiette757B)}</span>
                   </div>
                   {fiscalSummary.assiette757B > 0 && (
-                    <div className="flex justify-between text-xs text-muted-foreground">
+                    <div className="flex justify-between text-xs text-[var(--text-secondary)]">
                       <span>Soumis aux droits de succession</span>
                       <span>≈ 20 %</span>
                     </div>
                   )}
-                  <Separator />
+                  <Separator className="bg-[var(--border)]" />
                   <div className="flex justify-between font-semibold">
-                    <span>Droits estimés</span>
-                    <span className="text-destructive">{formatCurrency(fiscalSummary.droits757B)}</span>
+                    <span className="text-[var(--text-primary)]">Droits estimés</span>
+                    <span className="kairos-num text-[var(--negative)]">{formatCurrency(fiscalSummary.droits757B)}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="mt-4 flex items-start gap-2 p-3 rounded-lg bg-muted/50">
-              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-muted-foreground">
-                Estimation simplifiée basée sur l'âge actuel du souscripteur ({subscriberAge} ans). 
-                En réalité, le régime applicable dépend de l'âge au moment de chaque versement. 
+            <div className="mt-4 flex items-start gap-2 p-3 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--border)]">
+              <AlertTriangle className="h-4 w-4 text-[var(--warning)] shrink-0 mt-0.5" />
+              <p className="text-xs text-[var(--text-secondary)]">
+                Estimation simplifiée basée sur l'âge actuel du souscripteur ({subscriberAge} ans).
+                En réalité, le régime applicable dépend de l'âge au moment de chaque versement.
                 Le conjoint ou partenaire de PACS est exonéré dans tous les cas.
               </p>
             </div>
@@ -489,17 +497,17 @@ export const AssuranceVie = () => {
 
       {/* Beneficiary breakdown */}
       {subscriberAge !== null && contracts.length > 0 && fiscalSummary.beneficiaireDetails.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <UserCheck className="h-4 w-4" />
+        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+          <CardHeader className="pb-3 p-5">
+            <CardTitle className="text-[15px] font-semibold flex items-center gap-2 text-[var(--text-primary)]">
+              <UserCheck className="h-4 w-4 text-[var(--ink-400)]" />
               Répartition par bénéficiaire (estimation)
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-5 pt-0">
             <div className="space-y-3">
               {/* Header */}
-              <div className="grid grid-cols-4 gap-4 text-xs font-medium text-muted-foreground pb-2 border-b">
+              <div className="grid grid-cols-4 gap-4 text-xs font-medium text-[var(--text-secondary)] pb-2 border-b border-[var(--border)]">
                 <span>Bénéficiaire</span>
                 <span className="text-right">Capital brut</span>
                 <span className="text-right">Prélèvement</span>
@@ -508,32 +516,32 @@ export const AssuranceVie = () => {
               {fiscalSummary.beneficiaireDetails.map((b, i) => (
                 <div key={i} className="grid grid-cols-4 gap-4 items-center text-sm">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-[var(--ink-050)] flex items-center justify-center text-xs font-semibold text-[var(--ink-700)] shrink-0">
                       {(b.prenom?.[0] || '').toUpperCase()}{b.nom[0]?.toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-medium truncate">{b.prenom} {b.nom}</p>
-                      <p className="text-xs text-muted-foreground">{b.lien}</p>
+                      <p className="font-medium truncate text-[var(--text-primary)]">{b.prenom} {b.nom}</p>
+                      <p className="text-xs text-[var(--text-secondary)]">{b.lien}</p>
                     </div>
                   </div>
-                  <p className="text-right font-medium">{formatCurrency(b.capitalBrut)}</p>
+                  <p className="kairos-num text-right font-medium text-[var(--text-primary)]">{formatCurrency(b.capitalBrut)}</p>
                   <p className="text-right">
                     {b.exonere ? (
-                      <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-200">Exonéré</Badge>
+                      <Badge variant="outline" className="text-xs bg-[var(--positive-soft)] text-[var(--positive)] border-transparent rounded-[var(--radius-md)]">Exonéré</Badge>
                     ) : (
-                      <span className="text-destructive font-medium">- {formatCurrency(b.droits)}</span>
+                      <span className="kairos-num text-[var(--negative)] font-medium">- {formatCurrency(b.droits)}</span>
                     )}
                   </p>
-                  <p className="text-right font-semibold text-primary">{formatCurrency(b.capitalNet)}</p>
+                  <p className="kairos-num text-right font-semibold text-[var(--text-primary)]">{formatCurrency(b.capitalNet)}</p>
                 </div>
               ))}
               {/* Total row */}
-              <Separator />
-              <div className="grid grid-cols-4 gap-4 text-sm font-semibold">
+              <Separator className="bg-[var(--border)]" />
+              <div className="grid grid-cols-4 gap-4 text-sm font-semibold text-[var(--text-primary)]">
                 <span>Total</span>
-                <span className="text-right">{formatCurrency(fiscalSummary.totalValeur)}</span>
-                <span className="text-right text-destructive">- {formatCurrency(fiscalSummary.totalDroits)}</span>
-                <span className="text-right text-primary">{formatCurrency(fiscalSummary.totalValeur - fiscalSummary.totalDroits)}</span>
+                <span className="kairos-num text-right">{formatCurrency(fiscalSummary.totalValeur)}</span>
+                <span className="kairos-num text-right text-[var(--negative)]">- {formatCurrency(fiscalSummary.totalDroits)}</span>
+                <span className="kairos-num text-right">{formatCurrency(fiscalSummary.totalValeur - fiscalSummary.totalDroits)}</span>
               </div>
             </div>
           </CardContent>
@@ -541,28 +549,28 @@ export const AssuranceVie = () => {
       )}
 
       {/* Liste des contrats - cliquable */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Contrats d'assurance-vie</CardTitle>
+      <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <CardHeader className="p-5">
+          <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Contrats d'assurance-vie</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-1">
+        <CardContent className="p-5 pt-0 space-y-1">
           {contracts.map((contract, index) => (
             <React.Fragment key={contract.id}>
-              {index > 0 && <Separator />}
+              {index > 0 && <Separator className="bg-[var(--border)]" />}
               <button
-                className="w-full flex items-center justify-between py-3 px-2 rounded-lg hover:bg-muted/50 transition-colors text-left"
+                className="w-full flex items-center justify-between py-3 px-2 rounded-[var(--radius-lg)] hover:bg-[var(--fill-hover)] transition-colors text-left"
                 onClick={() => setSelectedContract(contract)}
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <p className="font-medium">
+                    <p className="font-medium text-[var(--text-primary)]">
                       {contract.denomination || contract.nature}
                     </p>
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge className="text-xs bg-[var(--ink-050)] text-[var(--ink-700)] border-transparent rounded-[var(--radius-md)]">
                       {contract.nature}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-4 text-sm text-[var(--text-secondary)]">
                     {contract.etablissement && (
                       <span>{contract.etablissement}</span>
                     )}
@@ -576,14 +584,14 @@ export const AssuranceVie = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-right">
-                    <p className="font-semibold text-lg">
+                    <p className="kairos-num font-semibold text-lg text-[var(--text-primary)]">
                       {formatCurrency(contract.valeur_estimee || 0)}
                     </p>
                     {contract.mode_detention && (
-                      <p className="text-xs text-muted-foreground">{contract.mode_detention}</p>
+                      <p className="text-xs text-[var(--text-secondary)]">{contract.mode_detention}</p>
                     )}
                   </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  <ChevronRight className="h-5 w-5 text-[var(--ink-400)]" />
                 </div>
               </button>
             </React.Fragment>
@@ -592,16 +600,16 @@ export const AssuranceVie = () => {
       </Card>
 
       {/* Note fiscale */}
-      <Card className="border-amber-500/20 bg-amber-500/5">
+      <Card className="bg-[var(--warning-soft)] border-[var(--warning)]/20 rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
         <CardContent className="pt-6">
           <div className="flex gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+            <AlertTriangle className="h-5 w-5 text-[var(--warning)] shrink-0 mt-0.5" />
             <div className="space-y-2 text-sm">
-              <p className="font-medium">Régime fiscal de l'assurance-vie en cas de décès</p>
-              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                <li><strong>Primes versées avant 70 ans :</strong> abattement de 152 500 € par bénéficiaire, puis prélèvement de 20 % jusqu'à 700 000 € et 31,25 % au-delà (art. 990 I CGI)</li>
-                <li><strong>Primes versées après 70 ans :</strong> abattement global de 30 500 € tous bénéficiaires confondus, excédent soumis aux droits de succession (art. 757 B CGI)</li>
-                <li><strong>Conjoint / partenaire PACS :</strong> exonéré dans tous les cas</li>
+              <p className="font-medium text-[var(--text-primary)]">Régime fiscal de l'assurance-vie en cas de décès</p>
+              <ul className="list-disc list-inside space-y-1 text-[var(--text-secondary)]">
+                <li><strong className="text-[var(--text-primary)]">Primes versées avant 70 ans :</strong> abattement de 152 500 € par bénéficiaire, puis prélèvement de 20 % jusqu'à 700 000 € et 31,25 % au-delà (art. 990 I CGI)</li>
+                <li><strong className="text-[var(--text-primary)]">Primes versées après 70 ans :</strong> abattement global de 30 500 € tous bénéficiaires confondus, excédent soumis aux droits de succession (art. 757 B CGI)</li>
+                <li><strong className="text-[var(--text-primary)]">Conjoint / partenaire PACS :</strong> exonéré dans tous les cas</li>
               </ul>
             </div>
           </div>
