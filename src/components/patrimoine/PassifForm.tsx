@@ -8,6 +8,7 @@ import { PASSIF_NATURES } from '@/constants/assetTypes';
 import { ArrowLeft } from 'lucide-react';
 import { usePassifs } from '@/hooks/usePassifs';
 import { familyService } from '@/services/familyService';
+import { mapDetenteurToDisplay, mapDetenteurToDb } from '@/lib/patrimoine/utils';
 
 interface PassifFormProps {
   passif?: any;
@@ -63,7 +64,7 @@ export const PassifForm = ({ passif, onCancel, onSubmit }: PassifFormProps) => {
 
         // Map detenteur from DB to display value if editing
         if (passif?.detenteur) {
-          const displayValue = mapDetenteurFromDb(passif.detenteur, familyInfo);
+          const displayValue = mapDetenteurToDisplay(passif.detenteur, familyInfo);
           setDetenteur(displayValue);
         }
       } catch (error) {
@@ -74,36 +75,6 @@ export const PassifForm = ({ passif, onCancel, onSubmit }: PassifFormProps) => {
     loadFamilyData();
   }, [passif]);
 
-  const mapDetenteurFromDb = (dbValue: string, familyInfo: any): string => {
-    switch (dbValue) {
-      case 'user':
-      case 'utilisateur':
-        return familyInfo.userFirstName || 'Vous';
-      case 'spouse':
-      case 'conjoint':
-        return familyInfo.partnerFirstName || 'Conjoint';
-      case 'common':
-      case 'commun':
-      case 'couple':
-        return 'Le couple';
-      default:
-        return dbValue;
-    }
-  };
-
-  const mapDetenteurToDb = (displayValue: string): string => {
-    if (displayValue === familyData.userFirstName || displayValue === 'Vous') {
-      return 'user';
-    }
-    if (displayValue === familyData.partnerFirstName || displayValue === 'Conjoint') {
-      return 'spouse';
-    }
-    if (displayValue === 'Le couple') {
-      return 'common';
-    }
-    return displayValue;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -113,7 +84,7 @@ export const PassifForm = ({ passif, onCancel, onSubmit }: PassifFormProps) => {
       };
 
       if (detenteur) {
-        passifData.detenteur = mapDetenteurToDb(detenteur);
+        passifData.detenteur = mapDetenteurToDb(detenteur, familyData);
         
         if (detenteur === 'Le couple' && familyData.hasPartner) {
           passifData.pourcentage_utilisateur = pourcentageUtilisateur;

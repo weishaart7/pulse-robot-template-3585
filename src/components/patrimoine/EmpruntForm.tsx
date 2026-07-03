@@ -9,6 +9,7 @@ import { EMPRUNT_NATURES } from '@/constants/assetTypes';
 import { ArrowLeft, Wallet } from 'lucide-react';
 import { useEmprunts } from '@/hooks/usePassifs';
 import { familyService } from '@/services/familyService';
+import { mapDetenteurToDisplay, mapDetenteurToDb } from '@/lib/patrimoine/utils';
 
 interface EmpruntFormProps {
   emprunt?: any;
@@ -69,7 +70,7 @@ export const EmpruntForm = ({ emprunt, onCancel, onSubmit }: EmpruntFormProps) =
 
         // Map detenteur from DB to display value if editing
         if (emprunt?.detenteur) {
-          const displayValue = mapDetenteurFromDb(emprunt.detenteur, familyInfo);
+          const displayValue = mapDetenteurToDisplay(emprunt.detenteur, familyInfo);
           setDetenteur(displayValue);
         }
       } catch (error) {
@@ -79,36 +80,6 @@ export const EmpruntForm = ({ emprunt, onCancel, onSubmit }: EmpruntFormProps) =
 
     loadFamilyData();
   }, [emprunt]);
-
-  const mapDetenteurFromDb = (dbValue: string, familyInfo: any): string => {
-    switch (dbValue) {
-      case 'user':
-      case 'utilisateur':
-        return familyInfo.userFirstName || 'Vous';
-      case 'spouse':
-      case 'conjoint':
-        return familyInfo.partnerFirstName || 'Conjoint';
-      case 'common':
-      case 'commun':
-      case 'couple':
-        return 'Le couple';
-      default:
-        return dbValue;
-    }
-  };
-
-  const mapDetenteurToDb = (displayValue: string): string => {
-    if (displayValue === familyData.userFirstName || displayValue === 'Vous') {
-      return 'user';
-    }
-    if (displayValue === familyData.partnerFirstName || displayValue === 'Conjoint') {
-      return 'spouse';
-    }
-    if (displayValue === 'Le couple') {
-      return 'common';
-    }
-    return displayValue;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,7 +95,7 @@ export const EmpruntForm = ({ emprunt, onCancel, onSubmit }: EmpruntFormProps) =
       };
 
       if (detenteur) {
-        empruntData.detenteur = mapDetenteurToDb(detenteur);
+        empruntData.detenteur = mapDetenteurToDb(detenteur, familyData);
         
         if (detenteur === 'Le couple' && familyData.hasPartner) {
           empruntData.pourcentage_utilisateur = pourcentageUtilisateur;

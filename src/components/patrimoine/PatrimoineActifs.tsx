@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { PatrimoineTreeView } from './PatrimoineTreeView';
 import { AssetForm } from '@/components/assets/AssetForm';
@@ -12,6 +14,7 @@ export const PatrimoineActifs = () => {
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const { assets, createAsset, updateAsset, deleteAsset } = useAssets();
+  const navigate = useNavigate();
 
   const syncSocieteFromAsset = async (savedAsset: Asset) => {
     if (!savedAsset?.id) return;
@@ -28,6 +31,12 @@ export const PatrimoineActifs = () => {
         pourcentage_conjoint: savedAsset.pourcentage_conjoint ?? undefined,
       } as any);
       await assetService.updateAsset(savedAsset.id, { societe_id: created.id } as any);
+      toast.success(`Une société ${created.denomination} a été créée automatiquement`, {
+        action: {
+          label: 'Voir la fiche société',
+          onClick: () => navigate(`/societes/form?id=${created.id}`),
+        },
+      });
     } catch (err) {
       console.error('Auto-création société depuis actif échouée:', err);
     }

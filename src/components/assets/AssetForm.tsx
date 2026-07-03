@@ -24,6 +24,7 @@ import {
   NATURES_LIQUIDITES_FR
 } from '@/schemas/assetSchema';
 import { isSocieteEligibleNature } from '@/lib/patrimoine/societeTransfer';
+import { QUALIFICATION_OPTIONS } from '@/lib/patrimoine/qualification';
 
 interface AssetFormProps {
   asset?: Asset;
@@ -77,6 +78,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const watchedDetenteur = form.watch('detenteur');
   const watchedValeurAcquisition = form.watch('valeur_acquisition');
   const watchedValeurEstimee = form.watch('valeur_estimee');
+  const watchedQualificationAuto = form.watch('qualification_auto');
   const isImmobilier = getAssetCategory(watchedNature) === 'actifs immobiliers';
   const isSocieteEligible = isSocieteEligibleNature(watchedNature);
   const hideAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature);
@@ -450,6 +452,47 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             </FormItem>
           )} />
         </div>
+
+        <FormField control={form.control} name="qualification_bien" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Qualification du bien</FormLabel>
+            <Select
+              onValueChange={(value) => {
+                field.onChange(value);
+                form.setValue('qualification_auto', false);
+              }}
+              value={field.value}
+            >
+              <FormControl>
+                <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                  <SelectValue placeholder="Choisir une qualification" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {QUALIFICATION_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>{option}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormDescription>
+              {watchedQualificationAuto !== false
+                ? "Calculée automatiquement à partir du régime matrimonial, de l'origine du bien, de la date d'acquisition et du détenteur."
+                : "Qualification définie manuellement : le calcul automatique n'écrasera plus cette valeur."}
+            </FormDescription>
+            {watchedQualificationAuto === false && (
+              <Button
+                type="button"
+                variant="link"
+                size="sm"
+                className="h-auto p-0"
+                onClick={() => form.setValue('qualification_auto', true)}
+              >
+                Réactiver le calcul automatique
+              </Button>
+            )}
+            <FormMessage />
+          </FormItem>
+        )} />
       </div>
     );
   };
