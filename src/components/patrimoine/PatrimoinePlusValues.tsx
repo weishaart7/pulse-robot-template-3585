@@ -9,6 +9,7 @@ import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
 import { getCategoryColor } from '@/lib/patrimoine/utils';
 import { computeFiscalRegime } from '@/lib/patrimoine/regimeFiscalPlusValue';
+import { computePVIRegime } from '@/lib/patrimoine/regimeFiscalPVI';
 
 interface PatrimoinePlusValuesProps {
   onBack?: () => void;
@@ -251,6 +252,7 @@ const SummaryCard = ({
 const REGIME_BADGE_CLASSES: Record<string, string> = {
   pfu: 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300',
   exonere_partiel: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300',
+  exonere_total: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300',
   informatif: 'bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-300',
   choix: 'bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-300',
   non_determine: 'bg-muted text-muted-foreground/70',
@@ -265,7 +267,11 @@ const FiscalContent = ({
 }) => {
   const allAssetsWithRegime = assetsWithPlusValue.filter(a => a.plusValue > 0).map(a => ({
     ...a,
-    regime: computeFiscalRegime({
+    regime: computePVIRegime({
+      nature: a.nature,
+      plusValue: a.plusValue,
+      dateAcquisition: a.dateAcquisition,
+    }) ?? computeFiscalRegime({
       nature: a.nature,
       plusValue: a.plusValue,
       valeurEstimee: a.valeurEstimee,
@@ -364,9 +370,15 @@ const FiscalContent = ({
                     </div>
                   </td>
                   <td className="py-3.5 text-right text-muted-foreground/70 text-[13px] tabular-nums">
+                    {regime.irDetail && (
+                      <p className="text-[10px] text-muted-foreground/60 font-normal">{regime.irDetail}</p>
+                    )}
                     {regime.ir !== null ? formatCurrency(regime.ir) : '—'}
                   </td>
                   <td className="py-3.5 text-right text-muted-foreground/70 text-[13px] tabular-nums">
+                    {regime.psDetail && (
+                      <p className="text-[10px] text-muted-foreground/60 font-normal">{regime.psDetail}</p>
+                    )}
                     {regime.ps !== null ? formatCurrency(regime.ps) : '—'}
                   </td>
                   <td className="py-3.5 text-right font-semibold text-foreground text-[13px] tabular-nums">
@@ -379,7 +391,12 @@ const FiscalContent = ({
                         ))}
                       </div>
                     ) : regime.total !== null ? (
-                      formatCurrency(regime.total)
+                      <>
+                        {regime.totalDetail && (
+                          <p className="text-[10px] text-muted-foreground/60 font-normal">{regime.totalDetail}</p>
+                        )}
+                        {formatCurrency(regime.total)}
+                      </>
                     ) : (
                       '—'
                     )}

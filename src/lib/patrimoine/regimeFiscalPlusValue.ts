@@ -14,7 +14,7 @@ export const PFU_RATE = 0.314;
 export const PFU_IR = 0.128;
 export const PFU_PS = 0.186;
 
-export type FiscalTone = 'pfu' | 'exonere_partiel' | 'informatif' | 'choix' | 'non_determine';
+export type FiscalTone = 'pfu' | 'exonere_partiel' | 'exonere_total' | 'informatif' | 'choix' | 'non_determine';
 
 export interface FiscalAlternative {
   label: string;
@@ -29,6 +29,12 @@ export interface FiscalRegimeResult {
   total: number | null;
   note?: string;
   alternatives?: FiscalAlternative[];
+  // Détail court affiché au-dessus du montant dans les cellules IR / PS /
+  // Total du tableau (ex. "Abattement 24%", "Surtaxe : 1 200 €"), utilisé par
+  // le régime PVI pour rendre le calcul lisible sans colonne supplémentaire.
+  irDetail?: string;
+  psDetail?: string;
+  totalDetail?: string;
 }
 
 // --- Groupe 1 : PFU générique ---
@@ -95,7 +101,7 @@ const NATURES_OR = ['Or (physique)', 'Métaux précieux (argent, platine)'];
 // "Livret Jeune". En pratique ces livrets n'ont pas de valeur d'acquisition
 // suivie et n'apparaissent quasiment jamais dans ce tableau.
 
-const getHoldingYears = (dateAcquisition?: string): number | null => {
+export const getHoldingYears = (dateAcquisition?: string): number | null => {
   if (!dateAcquisition) return null;
   const acquisition = new Date(dateAcquisition);
   if (isNaN(acquisition.getTime())) return null;
