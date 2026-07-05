@@ -46,6 +46,7 @@ interface PlusValuesSummary {
     plusValue: number;
     valeurEstimee: number;
     valeurAcquisition: number;
+    dateAcquisition?: string;
   }>;
 }
 
@@ -209,7 +210,8 @@ export const usePatrimoineCalculations = ({
           nature: asset.nature,
           plusValue,
           valeurEstimee: asset.valeur_estimee || 0,
-          valeurAcquisition: asset.valeur_acquisition || 0
+          valeurAcquisition: asset.valeur_acquisition || 0,
+          dateAcquisition: asset.date_acquisition
         });
       }
     });

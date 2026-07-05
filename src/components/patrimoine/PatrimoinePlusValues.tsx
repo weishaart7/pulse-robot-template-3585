@@ -1,39 +1,14 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, ArrowLeft, Receipt, ShieldCheck, BadgePercent, AlertTriangle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, ArrowLeft, Receipt, ShieldCheck, BadgePercent, AlertTriangle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
 import { getCategoryColor } from '@/lib/patrimoine/utils';
-
-// Natures soumises au PFU (12,8% IR + 18,6% PS = 31,4%)
-const NATURES_PFU: string[] = [
-  "Actions", "Obligations", "Bons du Trésor", "Titres de dette subordonné",
-  "Compte-titres", "Parts de FIP", "Parts de FIP Corse", "Parts de FCPI",
-  "Fonds de private equity (LBO, growth, venture)", "Fonds de dette privée",
-  "Club deals", "SPV d'investissement (structures ad hoc)", "Produits structurés",
-  "Autres produits dérivés (Swap, Warrants, CFD...)", "Credit default swap",
-  "Contrat à terme", "Options", "Stock-options",
-];
-
-const NATURES_EXONEREES: string[] = [
-  "Livret A", "Livret de développement durable et solidaire (LDDS)",
-  "Livret d'épargne populaire (LEP)", "Livret Jeune",
-];
-
-const PFU_RATE = 0.314;
-const PFU_IR = 0.128;
-const PFU_PS = 0.186;
-
-type FiscalRegime = 'pfu' | 'exonere' | 'non_determine';
-
-const getFiscalRegime = (nature: string): FiscalRegime => {
-  if (NATURES_PFU.includes(nature)) return 'pfu';
-  if (NATURES_EXONEREES.includes(nature)) return 'exonere';
-  return 'non_determine';
-};
+import { computeFiscalRegime } from '@/lib/patrimoine/regimeFiscalPlusValue';
 
 interface PatrimoinePlusValuesProps {
   onBack?: () => void;
@@ -273,21 +248,40 @@ const SummaryCard = ({
   </div>
 );
 
-const FiscalContent = ({ 
-  assetsWithPlusValue, 
-  formatCurrency 
-}: { 
-  assetsWithPlusValue: Array<{ id: string; denomination: string; nature: string; plusValue: number; valeurEstimee: number; valeurAcquisition: number }>; 
+const REGIME_BADGE_CLASSES: Record<string, string> = {
+  pfu: 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300',
+  exonere_partiel: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300',
+  informatif: 'bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-300',
+  choix: 'bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-300',
+  non_determine: 'bg-muted text-muted-foreground/70',
+};
+
+const FiscalContent = ({
+  assetsWithPlusValue,
+  formatCurrency
+}: {
+  assetsWithPlusValue: Array<{ id: string; denomination: string; nature: string; plusValue: number; valeurEstimee: number; valeurAcquisition: number; dateAcquisition?: string }>;
   formatCurrency: (v: number) => string;
 }) => {
   const allAssetsWithRegime = assetsWithPlusValue.filter(a => a.plusValue > 0).map(a => ({
     ...a,
-    regime: getFiscalRegime(a.nature)
+    regime: computeFiscalRegime({
+      nature: a.nature,
+      plusValue: a.plusValue,
+      valeurEstimee: a.valeurEstimee,
+      dateAcquisition: a.dateAcquisition,
+    }),
   }));
 
-  const totalPFU = allAssetsWithRegime.filter(a => a.regime === 'pfu').reduce((sum, a) => sum + a.plusValue * PFU_RATE, 0);
-  const totalExonere = allAssetsWithRegime.filter(a => a.regime === 'exonere').reduce((sum, a) => sum + a.plusValue, 0);
-  const totalNonDetermine = allAssetsWithRegime.filter(a => a.regime === 'non_determine').reduce((sum, a) => sum + a.plusValue, 0);
+  const totalCalcule = allAssetsWithRegime
+    .filter(a => a.regime.total !== null)
+    .reduce((sum, a) => sum + (a.regime.total as number), 0);
+  const totalExonerePartiel = allAssetsWithRegime
+    .filter(a => a.regime.tone === 'exonere_partiel')
+    .reduce((sum, a) => sum + a.plusValue, 0);
+  const totalNonDetermine = allAssetsWithRegime
+    .filter(a => a.regime.total === null)
+    .reduce((sum, a) => sum + a.plusValue, 0);
 
   if (allAssetsWithRegime.length === 0) {
     return <p className="text-muted-foreground/60 text-center py-10 text-sm">Aucune plus-value à fiscaliser</p>;
@@ -300,19 +294,19 @@ const FiscalContent = ({
         <FiscalSummaryCard
           icon={BadgePercent}
           iconColor="text-amber-500"
-          label="PFU (31,4%)"
-          value={formatCurrency(totalPFU)}
+          label="Fiscalité estimée"
+          value={formatCurrency(totalCalcule)}
           valueColor="text-foreground"
-          subtitle="IR 12,8% + PS 18,6%"
+          subtitle="Total des régimes calculables"
           accentColor="bg-gradient-to-r from-amber-400 to-amber-500"
         />
         <FiscalSummaryCard
           icon={ShieldCheck}
           iconColor="text-emerald-500"
-          label="Exonéré"
-          value={formatCurrency(totalExonere)}
+          label="Dont IR exonéré"
+          value={formatCurrency(totalExonerePartiel)}
           valueColor="text-emerald-600 dark:text-emerald-400"
-          subtitle="Plus-values non imposées"
+          subtitle="PS (18,6%) restant dus"
           accentColor="bg-gradient-to-r from-emerald-400 to-emerald-500"
         />
         <FiscalSummaryCard
@@ -321,7 +315,7 @@ const FiscalContent = ({
           label="Non déterminé"
           value={formatCurrency(totalNonDetermine)}
           valueColor="text-muted-foreground"
-          subtitle="Régime à préciser"
+          subtitle="Régime à préciser / à ventiler"
           accentColor="bg-muted-foreground/20"
         />
       </div>
@@ -331,7 +325,7 @@ const FiscalContent = ({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border/40">
-              {['Actif', 'Plus-value', 'Régime', 'IR (12,8%)', 'PS (18,6%)', 'Total'].map((h, i) => (
+              {['Actif', 'Plus-value', 'Régime', 'IR', 'PS', 'Total'].map((h, i) => (
                 <th key={h} className={`pb-3 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest ${
                   i === 0 ? 'text-left' : i === 2 ? 'text-center' : 'text-right'
                 }`}>{h}</th>
@@ -340,9 +334,7 @@ const FiscalContent = ({
           </thead>
           <tbody>
             {allAssetsWithRegime.map(asset => {
-              const ir = asset.regime === 'pfu' ? asset.plusValue * PFU_IR : 0;
-              const ps = asset.regime === 'pfu' ? asset.plusValue * PFU_PS : 0;
-              const total = ir + ps;
+              const { regime } = asset;
               return (
                 <tr key={asset.id} className="border-b border-border/20 last:border-0 hover:bg-muted/20 transition-colors duration-200">
                   <td className="py-3.5">
@@ -353,24 +345,44 @@ const FiscalContent = ({
                     +{formatCurrency(asset.plusValue)}
                   </td>
                   <td className="py-3.5 text-center">
-                    <span className={`text-[11px] font-semibold px-2 py-[3px] rounded-md ${
-                      asset.regime === 'pfu'
-                        ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300'
-                        : asset.regime === 'exonere'
-                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
-                        : 'bg-muted text-muted-foreground/70'
-                    }`}>
-                      {asset.regime === 'pfu' ? 'PFU 31,4%' : asset.regime === 'exonere' ? 'Exonéré' : 'N/D'}
-                    </span>
+                    <div className="flex items-center justify-center gap-1">
+                      <span className={`text-[11px] font-semibold px-2 py-[3px] rounded-md ${REGIME_BADGE_CLASSES[regime.tone]}`}>
+                        {regime.badge}
+                      </span>
+                      {regime.note && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button type="button" className="text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                              <Info className="h-3 w-3" strokeWidth={1.5} />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs text-[12px] leading-relaxed">
+                            {regime.note}
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
                   </td>
                   <td className="py-3.5 text-right text-muted-foreground/70 text-[13px] tabular-nums">
-                    {asset.regime === 'pfu' ? formatCurrency(ir) : '—'}
+                    {regime.ir !== null ? formatCurrency(regime.ir) : '—'}
                   </td>
                   <td className="py-3.5 text-right text-muted-foreground/70 text-[13px] tabular-nums">
-                    {asset.regime === 'pfu' ? formatCurrency(ps) : '—'}
+                    {regime.ps !== null ? formatCurrency(regime.ps) : '—'}
                   </td>
                   <td className="py-3.5 text-right font-semibold text-foreground text-[13px] tabular-nums">
-                    {asset.regime === 'pfu' ? formatCurrency(total) : asset.regime === 'exonere' ? '0 €' : '—'}
+                    {regime.alternatives ? (
+                      <div className="flex flex-col items-end gap-0.5">
+                        {regime.alternatives.map((alt, idx) => (
+                          <span key={alt.label} className="text-[11px] font-medium text-muted-foreground/80 whitespace-nowrap">
+                            {idx === 0 ? 'Forfait' : 'Réel'} : {formatCurrency(alt.total)}
+                          </span>
+                        ))}
+                      </div>
+                    ) : regime.total !== null ? (
+                      formatCurrency(regime.total)
+                    ) : (
+                      '—'
+                    )}
                   </td>
                 </tr>
               );
