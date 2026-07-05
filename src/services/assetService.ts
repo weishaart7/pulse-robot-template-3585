@@ -19,6 +19,13 @@ export interface Asset {
   situation_particuliere?: string[];
   attachement_emotionnel?: number;
   transfert_immobilier?: boolean;
+
+  // --- Champs immobilier étendu ---
+  // Utilisés uniquement pour les natures d'actif immobilières, consommés par
+  // le module Immobilier (voir src/components/immobilier, src/pages/immobilier).
+  // Ce sous-ensemble vit dans la même table `assets` que le socle générique
+  // patrimoine ci-dessus : un split en table séparée a été envisagé mais non
+  // retenu pour l'instant (risque/bénéfice jugé disproportionné à ce stade).
   typologie_bien?: string;
   surface_m2?: number;
   statut_bien?: string;
@@ -40,6 +47,8 @@ export interface Asset {
   zone_bien?: string;
   pourcentage_terrain_force?: number;
   type_location_lmnp?: string;
+  // --- Fin champs immobilier étendu ---
+
   bien_etranger?: boolean;
   qualification_bien?: string;
   qualification_auto?: boolean;

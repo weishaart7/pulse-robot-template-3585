@@ -1,0 +1,16 @@
+-- Documentation uniquement : aucune donnée ni structure modifiée.
+--
+-- La table public.assets contient un socle générique patrimoine ainsi qu'un
+-- sous-ensemble de colonnes réservées aux natures d'actif immobilières
+-- (typologie_bien, surface_m2, statut_bien, montant_immeuble, frais_agence,
+-- frais_notaire, frais_bancaires, frais_hypotheque, travaux_renovation,
+-- travaux_construction, meubles, financement_actif, financement_duree_mois,
+-- financement_apport, financement_taux_credit, financement_taux_assurance,
+-- type_location, regime_location, zone_bien, pourcentage_terrain_force,
+-- type_location_lmnp), consommées par le module Immobilier.
+--
+-- Un split de ce sous-ensemble vers une table dédiée (ex. assets_immobilier)
+-- a été envisagé, mais non retenu pour l'instant : le risque et le coût de
+-- migration ont été jugés disproportionnés par rapport au bénéfice à ce
+-- stade du projet.
+COMMENT ON TABLE public.assets IS 'Socle générique patrimoine (tous types d''actifs) + sous-ensemble de colonnes "immobilier étendu" réservées aux natures immobilières et consommées par le module Immobilier. Un split en table séparée a été envisagé mais non retenu (risque/bénéfice jugé disproportionné à ce stade).';

@@ -51,6 +51,12 @@ export const NATURES_LIQUIDITES_FR: string[] = [
 ];
 
 // Schema
+// Note : ce schéma couvre le socle générique patrimoine du formulaire d'actif.
+// Les champs "immobilier étendu" (typologie_bien, surface_m2, financement_*,
+// etc.), utilisés uniquement pour les natures immobilières et consommés par
+// le module Immobilier, ne sont pas saisis ici : ils vivent dans le type
+// `Asset` (src/services/assetService.ts, section "Champs immobilier étendu")
+// et sont gérés par les formulaires du module Immobilier.
 export const assetSchema = z.object({
   nature: z.string().min(1, 'La nature est requise'),
   denomination: z.string().optional(),
