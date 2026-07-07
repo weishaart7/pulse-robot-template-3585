@@ -170,7 +170,7 @@ const PersonHeroCard = ({
   shareOfTotal: number; accent: string; formatCurrency: (n: number) => string; delay: string;
 }) => (
   <div
-    className="group relative rounded-2xl border border-border/60 bg-card overflow-hidden transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 animate-fade-in"
+    className="group relative rounded-md border border-border/60 bg-card overflow-hidden transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 animate-fade-in"
     style={{ animationDelay: delay }}
   >
     <div className={`h-[3px] ${accent} opacity-80 group-hover:opacity-100 transition-opacity duration-300`} />
@@ -180,7 +180,7 @@ const PersonHeroCard = ({
           <p className="text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-widest">{name}</p>
           <p className="text-[11px] text-muted-foreground/60 mt-0.5">{shareOfTotal.toFixed(1)}% du patrimoine total</p>
         </div>
-        <div className={`h-10 w-10 rounded-xl ${accent.replace('bg-gradient-to-r', 'bg-gradient-to-br')} flex items-center justify-center opacity-90 group-hover:scale-110 transition-transform duration-300`}>
+        <div className={`h-10 w-10 rounded-md ${accent.replace('bg-gradient-to-r', 'bg-gradient-to-br')} flex items-center justify-center opacity-90 group-hover:scale-110 transition-transform duration-300`}>
           <Icon className="h-[18px] w-[18px] text-white" strokeWidth={1.5} />
         </div>
       </div>
@@ -211,7 +211,7 @@ const SummaryCard = ({
   label: string; subtitle: string; value: string; icon: React.ElementType; accent: string; delay: string;
 }) => (
   <div
-    className="group relative rounded-2xl border border-border/60 bg-card overflow-hidden transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 animate-fade-in"
+    className="group relative rounded-md border border-border/60 bg-card overflow-hidden transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 animate-fade-in"
     style={{ animationDelay: delay }}
   >
     <div className={`h-[3px] ${accent} opacity-80 group-hover:opacity-100 transition-opacity duration-300`} />
@@ -221,7 +221,7 @@ const SummaryCard = ({
           <p className="text-[13px] font-medium text-muted-foreground tracking-wide">{label}</p>
           <p className="text-[11px] text-muted-foreground/60 mt-0.5">{subtitle}</p>
         </div>
-        <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center">
+        <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
           <Icon className="h-[18px] w-[18px] text-muted-foreground" strokeWidth={1.5} />
         </div>
       </div>
@@ -251,7 +251,7 @@ const BreakdownCard = ({
           <div className="bg-emerald-400/70 transition-all duration-700" style={{ width: `${sharedPct}%` }} />
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-border/40 p-3.5">
+          <div className="rounded-md border border-border/40 p-3.5">
             <div className="flex items-center gap-2 mb-1">
               <div className="w-2 h-2 rounded-full bg-primary/70" />
               <p className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Biens propres</p>
@@ -259,7 +259,7 @@ const BreakdownCard = ({
             <p className="text-[16px] font-bold text-foreground tabular-nums">{formatCurrency(ownValue)}</p>
             <p className="text-[10px] text-muted-foreground/60 mt-0.5">{ownPct.toFixed(1)}% des actifs</p>
           </div>
-          <div className="rounded-xl border border-border/40 p-3.5">
+          <div className="rounded-md border border-border/40 p-3.5">
             <div className="flex items-center gap-2 mb-1">
               <div className="w-2 h-2 rounded-full bg-emerald-400/70" />
               <p className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Part biens communs</p>

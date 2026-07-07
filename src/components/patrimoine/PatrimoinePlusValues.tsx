@@ -163,7 +163,7 @@ export const PatrimoinePlusValues = ({ onBack }: PatrimoinePlusValuesProps) => {
                 .map(([category, data]) => {
                   const positive = data.plusValue >= 0;
                   return (
-                    <div key={category} className="group p-3.5 rounded-xl border border-border/40 bg-card hover:border-border/70 transition-all duration-300">
+                    <div key={category} className="group p-3.5 rounded-md border border-border/40 bg-card hover:border-border/70 transition-all duration-300">
                       <div className="flex items-center gap-2.5 mb-1">
                         <div
                           className="w-[7px] h-[7px] rounded-full flex-shrink-0 ring-2 ring-offset-1 ring-offset-card"
@@ -198,7 +198,7 @@ export const PatrimoinePlusValues = ({ onBack }: PatrimoinePlusValuesProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
-            <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-muted/30 p-4">
+            <div className="flex items-start gap-3 rounded-md border border-border/60 bg-muted/30 p-4">
               <AlertTriangle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" strokeWidth={1.5} />
               <div className="space-y-1">
                 <p className="text-[12px] font-semibold text-foreground">Fiscalité différenciée selon l'enveloppe</p>
@@ -230,7 +230,7 @@ const SummaryCard = ({
   label: string; subtitle: string; value: string; icon: React.ElementType; accentColor: string; delay: string;
 }) => (
   <div 
-    className="group relative rounded-2xl border border-border/60 bg-card overflow-hidden transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 animate-fade-in"
+    className="group relative rounded-md border border-border/60 bg-card overflow-hidden transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 animate-fade-in"
     style={{ animationDelay: delay }}
   >
     <div className={`h-[3px] ${accentColor} opacity-80 group-hover:opacity-100 transition-opacity duration-300`} />
@@ -240,7 +240,7 @@ const SummaryCard = ({
           <p className="text-[13px] font-medium text-muted-foreground tracking-wide">{label}</p>
           <p className="text-[11px] text-muted-foreground/60 mt-0.5">{subtitle}</p>
         </div>
-        <div className={`h-10 w-10 rounded-xl ${accentColor.replace('bg-gradient-to-r', 'bg-gradient-to-br')} flex items-center justify-center opacity-90 group-hover:scale-110 transition-transform duration-300`}>
+        <div className={`h-10 w-10 rounded-md ${accentColor.replace('bg-gradient-to-r', 'bg-gradient-to-br')} flex items-center justify-center opacity-90 group-hover:scale-110 transition-transform duration-300`}>
           <Icon className="h-[18px] w-[18px] text-white" strokeWidth={1.5} />
         </div>
       </div>
@@ -416,7 +416,7 @@ const FiscalSummaryCard = ({
 }: { 
   icon: React.ElementType | null; iconColor: string; label: string; value: string; valueColor: string; subtitle: string; accentColor: string;
 }) => (
-  <div className="rounded-xl border border-border/40 bg-card overflow-hidden">
+  <div className="rounded-md border border-border/40 bg-card overflow-hidden">
     <div className={`h-[2px] ${accentColor}`} />
     <div className="p-4">
       <div className="flex items-center gap-2 mb-2">

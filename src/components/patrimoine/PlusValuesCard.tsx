@@ -56,7 +56,7 @@ export const PlusValuesCard: React.FC<PlusValuesCardProps> = ({ plusValuesSummar
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Net result — hero number */}
-        <div className={`relative p-4 rounded-xl overflow-hidden ${
+        <div className={`relative p-4 rounded-md overflow-hidden ${
           isPositive 
             ? 'bg-emerald-50/80 dark:bg-emerald-950/20' 
             : 'bg-rose-50/80 dark:bg-rose-950/20'

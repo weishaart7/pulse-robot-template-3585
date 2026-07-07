@@ -163,7 +163,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
           <>
             {activeSection === 'informations-generales' && (
               <div className="space-y-6">
-                <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                <div className="rounded-md border bg-card p-6 shadow-sm">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Date & lieu</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <FormField
@@ -205,7 +205,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                <div className="rounded-md border bg-card p-6 shadow-sm">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Régime matrimonial</h3>
                   <FormField
                     control={form.control}
@@ -259,7 +259,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
             )}
 
             {activeSection === 'clauses-contrat' && (
-              <div className="rounded-2xl border bg-card p-6 shadow-sm">
+              <div className="rounded-md border bg-card p-6 shadow-sm">
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Clauses du contrat</h3>
                 {pasDeContrat ? (
                   <p className="text-sm text-muted-foreground">Pas de contrat de mariage sélectionné</p>
@@ -280,7 +280,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
 
             {activeSection === 'donation' && (
               <div className="space-y-6">
-                <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                <div className="rounded-md border bg-card p-6 shadow-sm">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Donation consentie au conjoint</h3>
                   <div className="flex flex-wrap items-center gap-4">
                     <FormField
@@ -319,7 +319,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                <div className="rounded-md border bg-card p-6 shadow-sm">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Donation reçue du conjoint</h3>
                   <div className="flex flex-wrap items-center gap-4">
                     <FormField
@@ -366,7 +366,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                   { title: "Votre mariage précédent", flag: "mariagePrecedentPersonne" as const, annees: "dureeMariagePrecedentPersonneAnnees" as const, mois: "dureeMariagePrecedentPersonneMois" as const, label: "J'ai été marié(e) précédemment" },
                   { title: "Mariage précédent du conjoint", flag: "mariagePrecedentConjoint" as const, annees: "dureeMariagePrecedentConjointAnnees" as const, mois: "dureeMariagePrecedentConjointMois" as const, label: "Mon conjoint a été marié(e) précédemment" },
                 ].map((cfg) => (
-                  <div key={cfg.flag} className="rounded-2xl border bg-card p-6 shadow-sm">
+                  <div key={cfg.flag} className="rounded-md border bg-card p-6 shadow-sm">
                     <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">{cfg.title}</h3>
                     <FormField
                       control={form.control}
@@ -418,7 +418,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
         {/* PACS */}
         {relationStatus === "Pacsé(e)" && (
           <div className="space-y-6">
-            <div className="rounded-2xl border bg-card p-6 shadow-sm">
+            <div className="rounded-md border bg-card p-6 shadow-sm">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Convention</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <FormField
@@ -484,7 +484,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
 
         {/* CONCUBINAGE */}
         {relationStatus === "Concubinage" && (
-          <div className="rounded-2xl border bg-card p-6 shadow-sm">
+          <div className="rounded-md border bg-card p-6 shadow-sm">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Concubinage</h3>
             <p className="text-sm text-muted-foreground">
               Le concubinage est une union de fait, caractérisée par une vie commune présentant un caractère de stabilité et de continuité.

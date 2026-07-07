@@ -495,7 +495,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
       </div>
 
       {showPlusValue && (
-        <div className="rounded-xl border border-border/60 bg-card p-5 animate-fade-in">
+        <div className="rounded-md border border-border/60 bg-card p-5 animate-fade-in">
           <div className="flex items-center gap-2 mb-3">
             <Info className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
             <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-widest">Plus / moins-value latente</p>

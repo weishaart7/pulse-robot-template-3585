@@ -31,14 +31,14 @@ interface SignInPageProps {
 // --- SUB-COMPONENTS ---
 
 const GlassInputWrapper = ({ children }: { children: React.ReactNode }) => (
-  <div className="rounded-2xl border border-border bg-foreground/5 backdrop-blur-sm transition-colors focus-within:border-primary/70 focus-within:bg-primary/5">
+  <div className="rounded-md border border-border bg-foreground/5 backdrop-blur-sm transition-colors focus-within:border-primary/70 focus-within:bg-primary/5">
     {children}
   </div>
 );
 
 const TestimonialCard = ({ testimonial, delay }: { testimonial: Testimonial, delay: string }) => (
-  <div className={`animate-testimonial ${delay} flex items-start gap-3 rounded-3xl bg-card/40 backdrop-blur-xl border border-border p-5 w-64`}>
-    <img src={testimonial.avatarSrc} className="h-10 w-10 object-cover rounded-2xl" alt="avatar" />
+  <div className={`animate-testimonial ${delay} flex items-start gap-3 rounded-md bg-card/40 backdrop-blur-xl border border-border p-5 w-64`}>
+    <img src={testimonial.avatarSrc} className="h-10 w-10 object-cover rounded-md" alt="avatar" />
     <div className="text-sm leading-snug">
       <p className="flex items-center gap-1 font-medium text-foreground">{testimonial.name}</p>
       <p className="text-muted-foreground">{testimonial.handle}</p>
@@ -102,7 +102,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                     placeholder="votre@email.com" 
                     value={emailValue}
                     onChange={(e) => onEmailChange?.(e.target.value)}
-                    className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none text-foreground" 
+                    className="w-full bg-transparent text-sm p-4 rounded-md focus:outline-none text-foreground" 
                   />
                 </GlassInputWrapper>
                 {emailError && (
@@ -120,7 +120,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                       placeholder="••••••••" 
                       value={passwordValue}
                       onChange={(e) => onPasswordChange?.(e.target.value)}
-                      className="w-full bg-transparent text-sm p-4 pr-12 rounded-2xl focus:outline-none text-foreground" 
+                      className="w-full bg-transparent text-sm p-4 pr-12 rounded-md focus:outline-none text-foreground" 
                     />
                     <button 
                       type="button" 
@@ -159,7 +159,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
               <button 
                 type="submit" 
                 disabled={isLoading}
-                className="animate-element animate-delay-600 w-full rounded-2xl bg-primary py-4 font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="animate-element animate-delay-600 w-full rounded-md bg-primary py-4 font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading 
                   ? (isSignUp ? 'Création...' : 'Connexion...') 
@@ -186,7 +186,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
       {heroImageSrc && (
         <section className="hidden md:block flex-1 relative p-4">
           <div 
-            className="animate-slide-right animate-delay-300 absolute inset-4 rounded-3xl bg-cover bg-center" 
+            className="animate-slide-right animate-delay-300 absolute inset-4 rounded-md bg-cover bg-center" 
             style={{ backgroundImage: `url(${heroImageSrc})` }}
           ></div>
           {testimonials.length > 0 && (

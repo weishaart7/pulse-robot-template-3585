@@ -48,7 +48,7 @@ const RobotShowcaseSection = () => {
             </p>
           </div>
           
-          <div className="relative w-full max-w-4xl overflow-hidden rounded-3xl shadow-2xl">
+          <div className="relative w-full max-w-4xl overflow-hidden rounded-md shadow-2xl">
             <img 
               src="https://images.unsplash.com/photo-1485827404703-89b55fcc595e" 
               alt="Advanced humanoid robot with white exterior" 
@@ -68,7 +68,7 @@ const RobotShowcaseSection = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-            <div className="bg-white p-6 rounded-xl shadow-elegant hover:shadow-elegant-hover transition-all duration-300">
+            <div className="bg-white p-6 rounded-md shadow-elegant hover:shadow-elegant-hover transition-all duration-300">
               <div className="w-12 h-12 bg-pulse-100 rounded-full flex items-center justify-center mb-4">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 16V12M12 8H12.01M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" stroke="#FC4D0A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -78,7 +78,7 @@ const RobotShowcaseSection = () => {
               <p className="text-gray-600">High-precision sensors provide real-time environmental awareness and object recognition.</p>
             </div>
             
-            <div className="bg-white p-6 rounded-xl shadow-elegant hover:shadow-elegant-hover transition-all duration-300">
+            <div className="bg-white p-6 rounded-md shadow-elegant hover:shadow-elegant-hover transition-all duration-300">
               <div className="w-12 h-12 bg-pulse-100 rounded-full flex items-center justify-center mb-4">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M9.5 14.5L5.5 18.5M9.5 14.5L11.5 16.5L14.5 13.5M9.5 14.5L6.5 11.5M14.5 13.5L18.5 9.5M14.5 13.5L17.5 16.5M18.5 9.5L17.086 8.086M18.5 9.5L19.914 10.914" stroke="#FC4D0A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -88,7 +88,7 @@ const RobotShowcaseSection = () => {
               <p className="text-gray-600">Continuously learns from interactions to improve performance and personalize responses.</p>
             </div>
             
-            <div className="bg-white p-6 rounded-xl shadow-elegant hover:shadow-elegant-hover transition-all duration-300">
+            <div className="bg-white p-6 rounded-md shadow-elegant hover:shadow-elegant-hover transition-all duration-300">
               <div className="w-12 h-12 bg-pulse-100 rounded-full flex items-center justify-center mb-4">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M21 8V16M21 12H17M7 8V16M7 12H3M12 3V21M12 16L16 12M12 16L8 12" stroke="#FC4D0A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>

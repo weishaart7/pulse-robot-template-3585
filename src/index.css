@@ -61,7 +61,7 @@
     --input: 60 3% 86%;         /* --border-strong #dcdcda */
     --ring: 223 14% 10%;        /* --ink-900 */
 
-    --radius: 1rem;
+    --radius: 0.375rem;
 
     --chart-1: 211 100% 56%;    /* --data-blue */
     --chart-2: 152 62% 47%;     /* --data-green */
@@ -187,19 +187,19 @@
   }
 
   .glass-card {
-    @apply bg-white/70 backdrop-blur-sm border border-white/20 rounded-2xl shadow-elegant transition-all duration-300 hover:shadow-elegant-hover;
+    @apply bg-white/70 backdrop-blur-sm border border-white/20 rounded-md shadow-elegant transition-all duration-300 hover:shadow-elegant-hover;
   }
 
   .feature-card {
-    @apply p-6 rounded-2xl transition-all duration-500 hover:translate-y-[-5px];
+    @apply p-6 rounded-md transition-all duration-500 hover:translate-y-[-5px];
   }
-  
+
   .button-primary {
-    @apply bg-pulse-500 hover:bg-pulse-600 text-white font-medium py-3 px-6 rounded-full transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98];
+    @apply bg-pulse-500 hover:bg-pulse-600 text-white font-medium py-3 px-6 rounded-md transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98];
   }
 
   .button-secondary {
-    @apply bg-transparent border border-gray-300 hover:border-pulse-500 text-gray-800 hover:text-pulse-500 font-medium py-3 px-6 rounded-full transition-all duration-300;
+    @apply bg-transparent border border-gray-300 hover:border-pulse-500 text-gray-800 hover:text-pulse-500 font-medium py-3 px-6 rounded-md transition-all duration-300;
   }
   
   .nav-link {

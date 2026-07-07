@@ -175,14 +175,14 @@ export const ImmobilierSection = () => {
                     return (
                     <div
                       key={asset.id}
-                      className="group relative rounded-3xl border border-border/50 bg-card p-6 shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer overflow-hidden"
+                      className="group relative rounded-md border border-border/50 bg-card p-6 shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer overflow-hidden"
                       onClick={() => handleManageInfo(asset)}
                     >
                       {/* Gradient background */}
                       <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                       
                       {/* Animated border on hover */}
-                      <div className="absolute inset-0 rounded-3xl border-2 border-secondary opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                      <div className="absolute inset-0 rounded-md border-2 border-secondary opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
                       
                       {/* Content */}
                       <div className="relative z-10">

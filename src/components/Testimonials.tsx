@@ -31,7 +31,7 @@ const testimonials: TestimonialProps[] = [
 
 const TestimonialCard = ({ content, author, role }: TestimonialProps) => {
   return (
-    <div className="bg-card rounded-xl p-8 h-full flex flex-col justify-between border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg">
+    <div className="bg-card rounded-md p-8 h-full flex flex-col justify-between border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg">
       <div>
         <p className="text-lg mb-6 leading-relaxed text-foreground">{`"${content}"`}</p>
         <div>

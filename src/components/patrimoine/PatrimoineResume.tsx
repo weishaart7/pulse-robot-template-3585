@@ -29,7 +29,7 @@ const StatCard = ({
   delay: string;
 }) => (
   <div 
-    className="group relative rounded-2xl border border-border/60 bg-card overflow-hidden transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 animate-fade-in"
+    className="group relative rounded-md border border-border/60 bg-card overflow-hidden transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 animate-fade-in"
     style={{ animationDelay: delay }}
   >
     {/* Subtle gradient accent line */}
@@ -40,7 +40,7 @@ const StatCard = ({
           <p className="text-[13px] font-medium text-muted-foreground tracking-wide">{label}</p>
           <p className="text-[11px] text-muted-foreground/60 mt-0.5">{subtitle}</p>
         </div>
-        <div className={`h-10 w-10 rounded-xl ${accentColor.replace('bg-gradient-to-r', 'bg-gradient-to-br')} flex items-center justify-center opacity-90 group-hover:scale-110 transition-transform duration-300`}>
+        <div className={`h-10 w-10 rounded-md ${accentColor.replace('bg-gradient-to-r', 'bg-gradient-to-br')} flex items-center justify-center opacity-90 group-hover:scale-110 transition-transform duration-300`}>
           <Icon className="h-[18px] w-[18px] text-white" strokeWidth={1.5} />
         </div>
       </div>
@@ -190,7 +190,7 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
           </CardHeader>
           <CardContent>
             <div className="flex flex-col items-center justify-center py-8 text-center">
-              <div className="p-4 rounded-2xl bg-muted/50 mb-4 group-hover:bg-muted transition-colors">
+              <div className="p-4 rounded-md bg-muted/50 mb-4 group-hover:bg-muted transition-colors">
                 <Target className="h-6 w-6 text-muted-foreground/60" strokeWidth={1.5} />
               </div>
               <p className="text-muted-foreground/80 text-sm font-medium">
@@ -222,8 +222,8 @@ const PersonCard = ({
   showDetails?: boolean; 
   details?: React.ReactNode;
 }) => (
-  <div className="group flex items-start gap-3.5 p-4 rounded-xl border border-border/50 bg-card hover:border-border transition-all duration-300">
-    <div className="p-2 rounded-xl bg-primary/5 group-hover:bg-primary/10 transition-colors duration-300">
+  <div className="group flex items-start gap-3.5 p-4 rounded-md border border-border/50 bg-card hover:border-border transition-all duration-300">
+    <div className="p-2 rounded-md bg-primary/5 group-hover:bg-primary/10 transition-colors duration-300">
       <Icon className="h-[18px] w-[18px] text-primary/70" strokeWidth={1.5} />
     </div>
     <div className="flex-1 min-w-0">

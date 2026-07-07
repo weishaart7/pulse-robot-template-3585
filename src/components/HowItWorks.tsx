@@ -14,7 +14,7 @@ const StepCard = ({ number, title, description, isActive, onClick }: StepCardPro
   return (
     <div 
       className={cn(
-        "rounded-xl p-6 cursor-pointer transition-all duration-500 border",
+        "rounded-md p-6 cursor-pointer transition-all duration-500 border",
         isActive 
           ? "bg-white shadow-elegant border-pulse-200" 
           : "bg-white/50 hover:bg-white/80 border-transparent"
@@ -138,7 +138,7 @@ const HowItWorks = () => {
             ))}
           </div>
           
-          <div className="relative rounded-3xl overflow-hidden h-[400px] shadow-elegant order-1 lg:order-2 opacity-0 fade-in-stagger">
+          <div className="relative rounded-md overflow-hidden h-[400px] shadow-elegant order-1 lg:order-2 opacity-0 fade-in-stagger">
             {stepsData.map((step, index) => (
               <div
                 key={index}

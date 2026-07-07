@@ -390,7 +390,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
                     key={zone}
                     type="button"
                     onClick={() => { setZoneBien(zone); setForceTerrainPct(false); }}
-                    className={`rounded-xl border-2 p-4 text-left transition-all ${
+                    className={`rounded-md border-2 p-4 text-left transition-all ${
                       zoneBien === zone && !forceTerrainPct
                         ? 'border-primary bg-primary/5 shadow-md'
                         : 'border-border hover:border-primary/50'

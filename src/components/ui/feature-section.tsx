@@ -82,7 +82,7 @@ export const FeatureGrid = React.forwardRef<HTMLDivElement, FeatureGridProps>(({
         </div>
 
         {/* Grid Container */}
-        <motion.div className="rounded-xl border bg-card text-card-foreground p-6 md:p-8" initial="hidden" whileInView="visible" viewport={{
+        <motion.div className="rounded-md border bg-card text-card-foreground p-6 md:p-8" initial="hidden" whileInView="visible" viewport={{
       once: true,
       amount: 0.2
     }} variants={containerVariants}>

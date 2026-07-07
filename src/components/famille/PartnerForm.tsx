@@ -184,7 +184,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
         {activeSection === 'informations-generales' && (
           <div className="space-y-6">
             {/* Statut & Identité card */}
-            <div className="rounded-2xl border bg-card p-6 shadow-sm">
+            <div className="rounded-md border bg-card p-6 shadow-sm">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Identité</h3>
 
               {showPartnerFields && (
@@ -209,7 +209,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                               <label
                                 key={option.value}
                                 className={cn(
-                                  "flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer transition-all duration-200",
+                                  "flex items-center gap-2 px-4 py-2.5 rounded-md border cursor-pointer transition-all duration-200",
                                   field.value === option.value
                                     ? "border-primary bg-primary/5 text-primary"
                                     : "border-border hover:border-primary/40 hover:bg-muted/50"
@@ -346,7 +346,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
             {showPartnerFields && (
               <>
                 {/* Profession & Naissance card */}
-                <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                <div className="rounded-md border bg-card p-6 shadow-sm">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Profession & Naissance</h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
@@ -433,7 +433,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                 </div>
 
                 {/* Situation juridique card */}
-                <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                <div className="rounded-md border bg-card p-6 shadow-sm">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Situation juridique</h3>
 
                   <div className="flex flex-wrap items-end gap-6">
@@ -520,7 +520,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
         {/* Coordonnées */}
         {activeSection === 'coordonnees' && (
           <div className="space-y-6">
-            <div className="rounded-2xl border bg-card p-6 shadow-sm">
+            <div className="rounded-md border bg-card p-6 shadow-sm">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Contact</h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -565,7 +565,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
               </div>
             </div>
 
-            <div className="rounded-2xl border bg-card p-6 shadow-sm">
+            <div className="rounded-md border bg-card p-6 shadow-sm">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Adresse</h3>
 
               <div className="space-y-5">
