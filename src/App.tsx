@@ -15,6 +15,7 @@ import DashboardLayout from "./components/layout/DashboardLayout";
 import NouveautesSection from "./pages/nouveautes/NouveautesSection";
 import { SocieteFormPage } from "./pages/societes/SocieteFormPage";
 import SituationMatrimonialePage from "./pages/famille/SituationMatrimonialePage";
+import ConjointPage from "./pages/famille/ConjointPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => {
                 }>
                   <Route index element={<Dashboard />} />
                   <Route path="famille/situation-matrimoniale" element={<SituationMatrimonialePage />} />
+                  <Route path="famille/conjoint" element={<ConjointPage />} />
                   <Route path=":section" element={<DashboardSection />} />
                 </Route>
                 <Route path="/nouveautes" element={

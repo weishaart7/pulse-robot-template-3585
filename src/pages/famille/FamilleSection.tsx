@@ -184,7 +184,7 @@ const FamilleSection = () => {
                   {hasPartner ? (
                     <div
                       className="flex items-center gap-4 cursor-pointer"
-                      onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
+                      onClick={() => navigate('/dashboard/famille/conjoint')}
                     >
                       <div className="h-12 w-12 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: '#f4e4fb' }}>
                         <span className="text-sm font-medium" style={{ color: '#5c3170' }}>
@@ -213,7 +213,7 @@ const FamilleSection = () => {
                       </label>
                       {!isSingle && (
                         <button
-                          onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
+                          onClick={() => navigate('/dashboard/famille/conjoint')}
                           className="inline-flex items-center gap-2 text-sm rounded-md px-3 py-2 w-fit border hover:bg-black/[0.02] transition-colors"
                           style={{ borderColor: '#e2e0da', color: TEXT_COLOR }}
                         >
@@ -254,7 +254,7 @@ const FamilleSection = () => {
                 maritalStatus={maritalData}
                 familyLinks={familyLinks}
                 onSelectMain={() => setEditView('client')}
-                onSelectSpouse={() => navigate('/dashboard/famille/situation-matrimoniale')}
+                onSelectSpouse={() => navigate('/dashboard/famille/conjoint')}
                 onSelectMember={(member) => memberDialogRef.current?.openForEdit(member)}
               />
             </div>

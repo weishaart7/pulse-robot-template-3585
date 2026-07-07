@@ -1,12 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { useMaritalStatus } from '@/hooks/useFamilyData';
-import { RelationInfoForm } from '@/components/famille/RelationInfoForm';
+import { PartnerForm } from '@/components/famille/PartnerForm';
 
-export default function SituationMatrimonialePage() {
+export default function ConjointPage() {
   const navigate = useNavigate();
-  const { data: maritalData } = useMaritalStatus();
-  const relationStatus = (maritalData?.statut_couple as string) || '';
 
   return (
     <div className="bg-white">
@@ -22,15 +19,15 @@ export default function SituationMatrimonialePage() {
 
       <div className="w-full mx-auto px-4 sm:px-6 pt-6 pb-4">
         <h1 className="text-3xl font-semibold tracking-tight text-foreground leading-tight">
-          Régime matrimonial
+          Conjoint
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Régime, clauses du contrat et donation au dernier vivant
+          Identité et coordonnées du partenaire
         </p>
       </div>
 
       <div className="w-full mx-auto px-4 sm:px-6 pb-12">
-        <RelationInfoForm relationStatus={relationStatus} />
+        <PartnerForm />
       </div>
     </div>
   );
