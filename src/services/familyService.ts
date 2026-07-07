@@ -52,7 +52,6 @@ export interface MaritalStatus {
   regime_matrimonial?: string;
   nom_notaire?: string;
   adresse_notaire?: string;
-  contrat_mariage?: string;
   parent_isole?: boolean;
   nombre_enfants_charges?: number;
   imposition_distincte?: boolean;

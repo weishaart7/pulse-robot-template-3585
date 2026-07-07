@@ -158,24 +158,3 @@ export function convertClausesToAvantages(
   
   return avantages;
 }
-
-/**
- * Détermine le régime simplifié à partir de la chaîne de régime matrimonial
- */
-export function getRegimeFromString(regimeMatrimonial: string | null | undefined): 'communauté' | 'séparation' | 'participation' | 'autre' {
-  if (!regimeMatrimonial) return 'autre';
-  
-  const regime = regimeMatrimonial.toLowerCase();
-  
-  if (regime.includes('communaut') || regime.includes('légal')) {
-    return 'communauté';
-  }
-  if (regime.includes('sépar') || regime.includes('separ')) {
-    return 'séparation';
-  }
-  if (regime.includes('participation')) {
-    return 'participation';
-  }
-  
-  return 'autre';
-}

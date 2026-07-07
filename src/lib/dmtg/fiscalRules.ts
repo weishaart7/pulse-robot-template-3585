@@ -3,7 +3,6 @@
 export interface FiscalContext {
   decedentId: string;
   deathDate: string;
-  maritalRegime?: 'communaute' | 'separation' | 'participation';
   donations: Array<{
     id: string;
     date: string;

@@ -47,7 +47,7 @@ export function buildFamilyGraph(
     survivingSpouseId = spouseId;
 
     links.push({ from: decedentId, to: spouseId, relation: 'spouse' });
-    marriages.push({ spouseA: decedentId, spouseB: spouseId, regime: maritalStatus.contrat_mariage });
+    marriages.push({ spouseA: decedentId, spouseB: spouseId, regime: maritalStatus.regime_matrimonial });
   }
 
   const childrenOfDecedent: string[] = [];
@@ -126,7 +126,7 @@ export function createFamilySummary(
     decedent: {
       nom: familyProfile?.nom || 'Non renseigné',
       prenom: familyProfile?.prenom || 'Non renseigné',
-      regimeMatrimonial: maritalStatus?.contrat_mariage
+      regimeMatrimonial: maritalStatus?.regime_matrimonial
     },
     conjoint: maritalStatus && maritalStatus.statut_couple && 
       ['Marié(e)', 'Pacsé(e)', 'MARIE', 'PACS', 'PACSE'].includes(maritalStatus.statut_couple) ? {

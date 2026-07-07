@@ -123,7 +123,7 @@ export const Synthese = () => {
         deathDate: new Date().toISOString().split('T')[0],
         params: DEFAULT_DMTG_PARAMS,
         regimeMatrimonial: {
-          regime: maritalStatus?.contrat_mariage?.toLowerCase().includes('communauté') ? 'communauté' : 'séparation',
+          regime: maritalStatus?.regime_matrimonial?.toLowerCase().includes('communauté') ? 'communauté' : 'séparation',
           actifCommun: 0,
           passifCommun: 0,
           avantagesMatrimoniaux: []
