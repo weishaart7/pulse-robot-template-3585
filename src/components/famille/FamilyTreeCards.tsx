@@ -32,7 +32,9 @@ function MemberCard({ node, onClick }: { node: FamilyGraphNode; onClick: () => v
         <span className="text-xs font-medium" style={{ color: avatarText }}>{initialsFromFullName(node.name)}</span>
       </div>
       <div className="min-w-0">
-        <p className="text-[13px] font-medium truncate" style={{ color: TEXT_COLOR }}>{node.name}</p>
+        {!node.isSpouse && (
+          <p className="text-[13px] font-medium truncate" style={{ color: TEXT_COLOR }}>{node.name}</p>
+        )}
         <p className="text-[12px] truncate" style={{ color: LABEL_COLOR }}>{secondaryLabel}</p>
       </div>
     </button>

@@ -10,7 +10,7 @@ export default function SituationMatrimonialePage() {
   const relationStatus = (maritalData?.statut_couple as string) || '';
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="bg-white">
       <div className="w-full mx-auto px-4 sm:px-6 pt-8">
         <button
           onClick={() => navigate('/dashboard/famille')}

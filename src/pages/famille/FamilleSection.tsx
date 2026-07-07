@@ -98,7 +98,7 @@ const FamilleSection = () => {
   // Full-screen edit view (fiche client uniquement — partenaire/relation vivent désormais sur leur propre page)
   if (editView === 'client') {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="bg-white">
         <div className="w-full mx-auto px-4 sm:px-6 pt-8">
           <button
             onClick={() => setEditView(null)}
@@ -313,7 +313,7 @@ const FamilleSection = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#faf9f7', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ backgroundColor: '#faf9f7', fontFamily: 'Inter, sans-serif' }}>
       <div className="p-[22px]">
         <div className="mb-6 flex items-start justify-between gap-6 flex-wrap">
           <div>
