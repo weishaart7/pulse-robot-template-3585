@@ -32,9 +32,19 @@ const formSchema = z.object({
   professionCSP: z.string().optional(),
   professionLibelle: z.string().optional(),
   nationalitePartenaire: z.string().optional(),
-  capaciteJuridique: z.enum(['normale', 'curatelle', 'tutelle', 'sauvegarde']).default('normale'),
+  capaciteJuridique: z.enum([
+    'Aucune',
+    'Tutelle',
+    'Curatelle',
+    'Sauvegarde de justice',
+    'Habilitation du conjoint',
+    'Habilitation familiale',
+    "Mesure d'accompagnement",
+  ]).default('Aucune'),
   personneHandicapee: z.boolean().default(false),
   ancienCombattant: z.boolean().default(false),
+  mandatProtectionFuture: z.boolean().default(false),
+  dateMandatProtectionFuture: z.union([z.date(), z.literal(''), z.undefined()]).optional(),
 
   telephonePartenaire: z.string().optional(),
   emailPartenaire: z.string().email('Adresse email invalide').optional().or(z.literal('')),
@@ -59,7 +69,8 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
     defaultValues: {
       personneHandicapee: false,
       ancienCombattant: false,
-      capaciteJuridique: 'normale',
+      capaciteJuridique: 'Aucune',
+      mandatProtectionFuture: false,
       civilitePartenaire: undefined,
       nomPartenaire: "",
       nomJeuneFillePartenaire: "",
@@ -94,9 +105,11 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
         professionCSP: maritalData.profession_csp_conjoint || "",
         professionLibelle: maritalData.profession_conjoint || "",
         nationalitePartenaire: maritalData.nationalite_conjoint || "",
-        capaciteJuridique: 'normale',
+        capaciteJuridique: (maritalData.capacite_juridique_conjoint as FormData['capaciteJuridique']) || 'Aucune',
         personneHandicapee: maritalData.personne_handicapee_conjoint || false,
         ancienCombattant: maritalData.ancien_combattant_conjoint || false,
+        mandatProtectionFuture: maritalData.mandat_protection_future_conjoint || false,
+        dateMandatProtectionFuture: maritalData.date_mandat_protection_future_conjoint ? new Date(maritalData.date_mandat_protection_future_conjoint) : undefined,
         telephonePartenaire: maritalData.telephone_conjoint || "",
         emailPartenaire: maritalData.email_conjoint || "",
         adressePartenaire: maritalData.adresse_conjoint || "",
@@ -123,6 +136,9 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
         nationalite_conjoint: formData.nationalitePartenaire,
         personne_handicapee_conjoint: formData.personneHandicapee,
         ancien_combattant_conjoint: formData.ancienCombattant,
+        capacite_juridique_conjoint: formData.capaciteJuridique,
+        mandat_protection_future_conjoint: formData.mandatProtectionFuture,
+        date_mandat_protection_future_conjoint: formData.dateMandatProtectionFuture instanceof Date ? format(formData.dateMandatProtectionFuture, 'yyyy-MM-dd') : undefined,
         telephone_conjoint: formData.telephonePartenaire,
         email_conjoint: formData.emailPartenaire,
         adresse_conjoint: formData.adressePartenaire,
@@ -451,10 +467,13 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="normale">Normale</SelectItem>
-                                <SelectItem value="curatelle">Curatelle</SelectItem>
-                                <SelectItem value="tutelle">Tutelle</SelectItem>
-                                <SelectItem value="sauvegarde">Sauvegarde de justice</SelectItem>
+                                <SelectItem value="Aucune">Aucune</SelectItem>
+                                <SelectItem value="Tutelle">Tutelle</SelectItem>
+                                <SelectItem value="Curatelle">Curatelle</SelectItem>
+                                <SelectItem value="Sauvegarde de justice">Sauvegarde de justice</SelectItem>
+                                <SelectItem value="Habilitation du conjoint">Habilitation du conjoint</SelectItem>
+                                <SelectItem value="Habilitation familiale">Habilitation familiale</SelectItem>
+                                <SelectItem value="Mesure d'accompagnement">Mesure d'accompagnement</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -510,6 +529,85 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                         </FormItem>
                       )}
                     />
+
+                    <FormField
+                      control={form.control}
+                      name="mandatProtectionFuture"
+                      render={({ field }) => (
+                        <FormItem className="pb-1">
+                          <FormControl>
+                            <label className="flex gap-3 items-center cursor-pointer relative">
+                              <input
+                                type="checkbox"
+                                className="hidden peer"
+                                checked={field.value}
+                                onChange={field.onChange}
+                              />
+                              <span className="w-5 h-5 border border-input rounded relative flex items-center justify-center peer-checked:border-primary"></span>
+                              <svg className="absolute hidden peer-checked:inline left-1 top-1/2 transform -translate-y-1/2" width="11" height="8" viewBox="0 0 11 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="m10.092.952-.005-.006-.006-.005A.45.45 0 0 0 9.43.939L4.162 6.23 1.585 3.636a.45.45 0 0 0-.652 0 .47.47 0 0 0 0 .657l.002.002L3.58 6.958a.8.8 0 0 0 .567.242.78.78 0 0 0 .567-.242l5.333-5.356a.474.474 0 0 0 .044-.65Zm-5.86 5.349V6.3Z" fill="currentColor" stroke="currentColor" strokeWidth=".4" className="text-primary"/>
+                              </svg>
+                              <span className="text-foreground select-none text-sm">Mandat de protection future signé</span>
+                            </label>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    {form.watch('mandatProtectionFuture') && (
+                      <FormField
+                        control={form.control}
+                        name="dateMandatProtectionFuture"
+                        render={({ field }) => (
+                          <FormItem className="w-72">
+                            <div className="relative w-full flex flex-col gap-1">
+                              <FormLabel className="text-xs">Date du mandat</FormLabel>
+                              <div className="flex items-center gap-2">
+                                <FormControl>
+                                  <Input
+                                    placeholder="JJ/MM/AAAA"
+                                    className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                                    value={field.value instanceof Date ? format(field.value, 'dd/MM/yyyy') : (field.value as any) || ''}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      if (value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                                        try {
+                                          const [day, month, year] = value.split('/');
+                                          const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                                          if (!isNaN(date.getTime())) {
+                                            field.onChange(date);
+                                            return;
+                                          }
+                                        } catch (error) {}
+                                      }
+                                      field.onChange(value as any);
+                                    }}
+                                  />
+                                </FormControl>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button variant="outline" size="icon" className="h-10 w-10 shrink-0">
+                                      <CalendarIcon className="h-4 w-4" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                      mode="single"
+                                      selected={field.value instanceof Date ? field.value : undefined}
+                                      onSelect={(date) => date && field.onChange(date)}
+                                      disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
+                                      initialFocus
+                                      className="p-3 pointer-events-auto"
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
                   </div>
                 </div>
               </>

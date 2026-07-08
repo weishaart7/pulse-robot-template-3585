@@ -82,11 +82,11 @@ export function LiensFamiliauxForm() {
                       {member.date_naissance ? format(new Date(member.date_naissance), 'dd/MM/yyyy') : '-'}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {calculateAge(member.date_naissance, member.date_deces)}
+                      {member.est_decede ? '-' : calculateAge(member.date_naissance, member.date_deces)}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 flex-wrap">
-                        {member.est_decede && <Badge variant="destructive" className="text-xs">Décédé</Badge>}
+                        {member.est_decede && <Badge variant="secondary" className="text-xs">Décédé</Badge>}
                         {member.handicap && <Badge variant="secondary" className="text-xs">Handicap</Badge>}
                         {member.enfant_a_charge && member.fiscalement_a_charge ? <Badge variant="secondary" className="text-xs">À charge (civil + fiscal)</Badge> : <>
                           {member.enfant_a_charge && <Badge variant="secondary" className="text-xs">À charge (civil)</Badge>}

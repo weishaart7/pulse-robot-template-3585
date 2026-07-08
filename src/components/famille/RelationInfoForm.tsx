@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMaritalStatus } from "@/hooks/useFamilyData";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,31 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 type Section = 'informations-generales' | 'clauses-contrat' | 'donation' | 'historique';
+
+const SECTION_LABELS: Record<Section, string> = {
+  'informations-generales': 'Informations générales',
+  'clauses-contrat': 'Clauses du contrat',
+  'donation': 'Donation au dernier vivant',
+  'historique': 'Historique matrimonial',
+};
+
+const FIELD_TO_SECTION: Partial<Record<keyof FormData, Section>> = {
+  dateMariage: 'informations-generales',
+  lieuMariage: 'informations-generales',
+  regimeMatrimonial: 'informations-generales',
+  pasDeContrat: 'informations-generales',
+  impositionDistincte: 'informations-generales',
+  donationDernierVivantPersonne: 'donation',
+  dateDonationPersonne: 'donation',
+  donationDernierVivantConjoint: 'donation',
+  dateDonationConjoint: 'donation',
+  mariagePrecedentPersonne: 'historique',
+  dureeMariagePrecedentPersonneAnnees: 'historique',
+  dureeMariagePrecedentPersonneMois: 'historique',
+  mariagePrecedentConjoint: 'historique',
+  dureeMariagePrecedentConjointAnnees: 'historique',
+  dureeMariagePrecedentConjointMois: 'historique',
+};
 
 type Props = {
   relationStatus: string;
@@ -117,22 +142,53 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
         duree_mariage_precedent_conjoint_mois: data.dureeMariagePrecedentConjointMois ?? null,
       });
 
-      toast({ title: "Succès", description: "Les informations ont été enregistrées avec succès." });
       onSuccess?.();
     } catch (error) {
       console.error('Erreur de sauvegarde:', error);
-      toast({ title: "Erreur", description: "Une erreur s'est produite lors de l'enregistrement.", variant: "destructive" });
     }
+  };
+
+  const onError = (errors: FieldErrors<FormData>) => {
+    const invalidField = (Object.keys(errors) as (keyof FormData)[])[0];
+    const targetSection = invalidField ? FIELD_TO_SECTION[invalidField] : undefined;
+
+    if (targetSection && targetSection !== activeSection) {
+      setActiveSection(targetSection);
+    }
+
+    toast({
+      title: "Erreur de saisie",
+      description: targetSection
+        ? `Veuillez corriger les champs invalides dans l'onglet « ${SECTION_LABELS[targetSection]} ».`
+        : "Veuillez corriger les champs invalides avant d'enregistrer.",
+      variant: "destructive",
+    });
   };
 
   const regimeMatrimonial = form.watch("regimeMatrimonial");
   const pasDeContrat = form.watch("pasDeContrat");
+  const mariagePrecedentPersonne = form.watch("mariagePrecedentPersonne");
+  const mariagePrecedentConjoint = form.watch("mariagePrecedentConjoint");
 
   useEffect(() => {
     if (pasDeContrat) {
       form.setValue('regimeMatrimonial', 'Communauté réduite aux acquêts (option sans contrat de mariage)');
     }
   }, [pasDeContrat, form]);
+
+  useEffect(() => {
+    if (!mariagePrecedentPersonne) {
+      form.setValue('dureeMariagePrecedentPersonneAnnees', null);
+      form.setValue('dureeMariagePrecedentPersonneMois', null);
+    }
+  }, [mariagePrecedentPersonne, form]);
+
+  useEffect(() => {
+    if (!mariagePrecedentConjoint) {
+      form.setValue('dureeMariagePrecedentConjointAnnees', null);
+      form.setValue('dureeMariagePrecedentConjointMois', null);
+    }
+  }, [mariagePrecedentConjoint, form]);
 
   const sections = relationStatus === "Marié(e)" ? [
     { id: 'informations-generales' as Section, label: 'Informations générales', icon: Heart },
@@ -143,7 +199,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-8">
         {/* Pills */}
         {sections.length > 0 && (
           <div className="flex gap-2 flex-wrap">

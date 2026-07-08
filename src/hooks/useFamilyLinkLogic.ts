@@ -215,6 +215,7 @@ export const useFamilyLinkLogic = (
     parents.push({ value: 'user', label: userDisplayName });
     if (isMarriedOrPacsed && spouseDisplayName) {
       parents.push({ value: 'spouse', label: spouseDisplayName });
+      parents.push({ value: 'both', label: 'Des deux parents' });
     }
 
     return parents;

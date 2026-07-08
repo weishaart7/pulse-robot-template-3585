@@ -21,6 +21,15 @@ interface DynamicFamilyFormProps {
 const civilites = ['M.', 'Mme', 'Mlle'];
 const adoptionTypes = ['Non', 'Adoption simple', 'Adoption plénière'];
 const brancheFamiliale = ['Branche paternelle', 'Branche maternelle'];
+const mesuresProtectionJuridique = [
+  'Aucune',
+  'Tutelle',
+  'Curatelle',
+  'Sauvegarde de justice',
+  'Habilitation du conjoint',
+  'Habilitation familiale',
+  "Mesure d'accompagnement",
+];
 
 function ageEnAnnees(dateNaissance: Date): number {
   const today = new Date();
@@ -37,8 +46,10 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
   const watchDecede = form.watch('est_decede');
   const watchRenoncant = form.watch('enfant_renoncant');
   const watchDateNaissance = form.watch('date_naissance');
+  const watchMandatProtectionFuture = form.watch('mandat_protection_future');
   const isFirstRender = useRef(true);
   const enfantAChargeManuellementModifie = useRef(false);
+  const fiscalementAChargeManuellementModifie = useRef(false);
 
   React.useEffect(() => {
     if (isFirstRender.current) {
@@ -46,10 +57,14 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
       return;
     }
     if (linkType !== 'Enfant') return;
-    if (enfantAChargeManuellementModifie.current) return;
     if (!(watchDateNaissance instanceof Date)) return;
     if (ageEnAnnees(watchDateNaissance) < 18) {
-      form.setValue('enfant_a_charge', true, { shouldDirty: true });
+      if (!enfantAChargeManuellementModifie.current) {
+        form.setValue('enfant_a_charge', true, { shouldDirty: true });
+      }
+      if (!fiscalementAChargeManuellementModifie.current) {
+        form.setValue('fiscalement_a_charge', true, { shouldDirty: true });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchDateNaissance, linkType]);
@@ -284,6 +299,32 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
         />
       </div>
 
+      {/* Mesure de protection juridique */}
+      <FormField
+        control={form.control}
+        name="mesure_protection_juridique"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Mesure de protection juridique actuelle</FormLabel>
+            <Select onValueChange={field.onChange} defaultValue={field.value || 'Aucune'}>
+              <FormControl>
+                <SelectTrigger size="lg">
+                  <SelectValue placeholder="Sélectionner" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {mesuresProtectionJuridique.map((mesure) => (
+                  <SelectItem key={mesure} value={mesure}>
+                    {mesure}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       {/* Checkboxes */}
       <div className="space-y-4">
         {/* Décédé */}
@@ -412,6 +453,132 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
           )}
         />
 
+        {/* Personne à charge */}
+        <FormField
+          control={form.control}
+          name="personne_a_charge"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>Personne à charge</FormLabel>
+              </div>
+            </FormItem>
+          )}
+        />
+
+        {/* Mandat de protection future */}
+        <FormField
+          control={form.control}
+          name="mandat_protection_future"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>Mandat de protection future signé</FormLabel>
+              </div>
+            </FormItem>
+          )}
+        />
+
+        {/* Date du mandat de protection future (si signé) */}
+        {watchMandatProtectionFuture && (
+          <FormField
+            control={form.control}
+            name="date_mandat_protection_future"
+            render={({ field }) => (
+              <FormItem className="ml-6">
+                <FormLabel>Date du mandat</FormLabel>
+                <div className="flex gap-2">
+                  <FormControl className="flex-1">
+                    <Input
+                      placeholder="JJ/MM/AAAA"
+                      value={
+                        field.value instanceof Date
+                          ? format(field.value, 'dd/MM/yyyy')
+                          : field.value || ''
+                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+
+                        // Permettre seulement chiffres et /
+                        const cleanValue = value.replace(/[^\d/]/g, '');
+
+                        // Limiter à 10 caractères
+                        if (cleanValue.length > 10) return;
+
+                        // Auto-formatage pendant la saisie
+                        let formattedValue = cleanValue;
+                        if (cleanValue.length >= 2 && !cleanValue.includes('/')) {
+                          formattedValue = cleanValue.slice(0, 2) + '/' + cleanValue.slice(2);
+                        }
+                        if (cleanValue.length >= 5 && cleanValue.split('/').length === 2) {
+                          const parts = formattedValue.split('/');
+                          formattedValue = parts[0] + '/' + parts[1].slice(0, 2) + '/' + cleanValue.slice(4);
+                        }
+
+                        // Validation finale si format complet
+                        if (formattedValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                          try {
+                            const [day, month, year] = formattedValue.split('/').map(Number);
+                            const date = new Date(year, month - 1, day);
+
+                            // Vérifier que la date est valide
+                            if (date.getDate() === day &&
+                                date.getMonth() === month - 1 &&
+                                date.getFullYear() === year &&
+                                year >= 1900 && year <= new Date().getFullYear()) {
+                              field.onChange(date);
+                              return;
+                            }
+                          } catch (error) {
+                            // Continue avec la valeur string si parsing échoue
+                          }
+                        }
+
+                        // Stocker la valeur formatée comme string pendant la saisie
+                        field.onChange(formattedValue);
+                      }}
+                    />
+                  </FormControl>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="icon" className="shrink-0" type="button">
+                        <CalendarIcon className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value instanceof Date ? field.value : undefined}
+                        onSelect={(date) => {
+                          if (date) {
+                            field.onChange(date);
+                          }
+                        }}
+                        disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
         {/* Enfant à charge (civil / fiscal) */}
         {linkType === 'Enfant' && (
           <>
@@ -444,7 +611,10 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
                   <FormControl>
                     <Checkbox
                       checked={field.value}
-                      onCheckedChange={field.onChange}
+                      onCheckedChange={(checked) => {
+                        fiscalementAChargeManuellementModifie.current = true;
+                        field.onChange(checked);
+                      }}
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">

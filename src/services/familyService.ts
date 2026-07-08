@@ -20,6 +20,8 @@ export interface FamilyProfile {
   ville?: string;
   pays?: string;
   capacite_juridique?: string;
+  mandat_protection_future?: boolean;
+  date_mandat_protection_future?: string;
 }
 
 export interface MaritalStatus {
@@ -36,6 +38,9 @@ export interface MaritalStatus {
   profession_csp_conjoint?: string;
   personne_handicapee_conjoint?: boolean;
   ancien_combattant_conjoint?: boolean;
+  capacite_juridique_conjoint?: string;
+  mandat_protection_future_conjoint?: boolean;
+  date_mandat_protection_future_conjoint?: string;
   nom_jeune_fille_conjoint?: string;
   pays_naissance_conjoint?: string;
   telephone_conjoint?: string;
@@ -88,6 +93,10 @@ export interface FamilyLink {
   exoneration_succession?: boolean;
   enfant_a_charge?: boolean;
   fiscalement_a_charge?: boolean;
+  mesure_protection_juridique?: string;
+  mandat_protection_future?: boolean;
+  date_mandat_protection_future?: string;
+  personne_a_charge?: boolean;
   created_at?: string;
   updated_at?: string;
 }

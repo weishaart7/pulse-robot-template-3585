@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon, Loader2, User, MapPin } from 'lucide-react';
+import { CalendarIcon, Loader2, User, MapPin, Info } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -16,6 +16,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import SelectMenu from '@/components/ui/select-menu';
 import NationalitySelect from '@/components/ui/nationality-select';
 import { cn } from '@/lib/utils';
@@ -44,11 +45,21 @@ const formSchema = z.object({
   communeNaissance: z.string().min(1, 'La commune de naissance est obligatoire'),
   paysNaissance: z.string().min(1, 'Le pays de naissance est obligatoire'),
   nationalite: z.string().min(1, 'La nationalité est obligatoire'),
-  capaciteJuridique: z.enum(['normale', 'curatelle', 'tutelle', 'sauvegarde'], {
-    required_error: 'Veuillez sélectionner une capacité juridique',
+  capaciteJuridique: z.enum([
+    'Aucune',
+    'Tutelle',
+    'Curatelle',
+    'Sauvegarde de justice',
+    'Habilitation du conjoint',
+    'Habilitation familiale',
+    "Mesure d'accompagnement",
+  ], {
+    required_error: 'Veuillez sélectionner une mesure de protection juridique',
   }),
   handicape: z.boolean().default(false),
   ancienCombattant: z.boolean().default(false),
+  mandatProtectionFuture: z.boolean().default(false),
+  dateMandatProtectionFuture: z.union([z.date(), z.literal(''), z.undefined()]).optional(),
   telephone: z.string().optional(),
   email: z.string().email('Adresse email invalide').optional().or(z.literal('')),
   adresse: z.string().optional(),
@@ -99,8 +110,9 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
       communeNaissance: '',
       paysNaissance: '',
       nationalite: '',
-      capaciteJuridique: 'normale',
+      capaciteJuridique: 'Aucune',
       handicape: false,
+      mandatProtectionFuture: false,
       ancienCombattant: false,
       telephone: '',
       email: '',
@@ -138,9 +150,11 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
         communeNaissance: data.commune_naissance || '',
         paysNaissance: data.pays_naissance || '',
         nationalite: data.nationalite || '',
-        capaciteJuridique: (data.capacite_juridique as 'normale' | 'curatelle' | 'tutelle' | 'sauvegarde') || 'normale',
+        capaciteJuridique: (data.capacite_juridique as FormData['capaciteJuridique']) || 'Aucune',
         handicape: data.personne_handicapee || false,
         ancienCombattant: data.ancien_combattant || false,
+        mandatProtectionFuture: data.mandat_protection_future || false,
+        dateMandatProtectionFuture: data.date_mandat_protection_future ? new Date(data.date_mandat_protection_future) : undefined,
         telephone: data.telephone || '',
         email: data.email || '',
         adresse: data.adresse_postale || '',
@@ -181,6 +195,8 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
         capaciteJuridique: formData.capaciteJuridique,
         handicape: formData.handicape,
         ancienCombattant: formData.ancienCombattant,
+        mandatProtectionFuture: formData.mandatProtectionFuture,
+        dateMandatProtectionFuture: formData.dateMandatProtectionFuture,
         telephone: formData.telephone || '',
         email: formData.email || '',
         adresse: formData.adresse || '',
@@ -202,6 +218,8 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
         capacite_juridique: sanitizedFormData.capaciteJuridique,
         personne_handicapee: sanitizedFormData.handicape,
         ancien_combattant: sanitizedFormData.ancienCombattant,
+        mandat_protection_future: sanitizedFormData.mandatProtectionFuture,
+        date_mandat_protection_future: sanitizedFormData.dateMandatProtectionFuture instanceof Date ? format(sanitizedFormData.dateMandatProtectionFuture, 'yyyy-MM-dd') : undefined,
         telephone: sanitizedFormData.telephone,
         email: sanitizedFormData.email,
         adresse_postale: sanitizedFormData.adresse,
@@ -565,10 +583,13 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="normale">Normale</SelectItem>
-                            <SelectItem value="curatelle">Curatelle</SelectItem>
-                            <SelectItem value="tutelle">Tutelle</SelectItem>
-                            <SelectItem value="sauvegarde">Sauvegarde de justice</SelectItem>
+                            <SelectItem value="Aucune">Aucune</SelectItem>
+                            <SelectItem value="Tutelle">Tutelle</SelectItem>
+                            <SelectItem value="Curatelle">Curatelle</SelectItem>
+                            <SelectItem value="Sauvegarde de justice">Sauvegarde de justice</SelectItem>
+                            <SelectItem value="Habilitation du conjoint">Habilitation du conjoint</SelectItem>
+                            <SelectItem value="Habilitation familiale">Habilitation familiale</SelectItem>
+                            <SelectItem value="Mesure d'accompagnement">Mesure d'accompagnement</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -601,9 +622,45 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                   )}
                 />
 
+                <div className="flex items-center gap-2 pb-1">
+                  <FormField
+                    control={form.control}
+                    name="ancienCombattant"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <label className="flex gap-3 items-center cursor-pointer relative">
+                            <input
+                              type="checkbox"
+                              className="hidden peer"
+                              checked={field.value}
+                              onChange={field.onChange}
+                            />
+                            <span className="w-5 h-5 border border-input rounded relative flex items-center justify-center peer-checked:border-primary"></span>
+                            <svg className="absolute hidden peer-checked:inline left-1 top-1/2 transform -translate-y-1/2" width="11" height="8" viewBox="0 0 11 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="m10.092.952-.005-.006-.006-.005A.45.45 0 0 0 9.43.939L4.162 6.23 1.585 3.636a.45.45 0 0 0-.652 0 .47.47 0 0 0 0 .657l.002.002L3.58 6.958a.8.8 0 0 0 .567.242.78.78 0 0 0 .567-.242l5.333-5.356a.474.474 0 0 0 .044-.65Zm-5.86 5.349V6.3Z" fill="currentColor" stroke="currentColor" strokeWidth=".4" className="text-primary"/>
+                            </svg>
+                            <span className="text-foreground select-none text-sm">Ancien combattant</span>
+                          </label>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <Tooltip delayDuration={150}>
+                    <TooltipTrigger asChild>
+                      <button type="button" className="inline-flex p-1 -m-1 rounded hover:bg-muted/50" aria-label="Conditions du statut ancien combattant">
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      Le statut "ancien combattant" ouvre droit à une demi-part fiscale supplémentaire à partir de 74 ans. Il est reconnu si la personne détient la carte du combattant, une pension militaire d'invalidité, ou une décoration reconnaissant sa participation à un conflit armé (guerre, opération extérieure, etc.).
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+
                 <FormField
                   control={form.control}
-                  name="ancienCombattant"
+                  name="mandatProtectionFuture"
                   render={({ field }) => (
                     <FormItem className="pb-1">
                       <FormControl>
@@ -618,12 +675,67 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                           <svg className="absolute hidden peer-checked:inline left-1 top-1/2 transform -translate-y-1/2" width="11" height="8" viewBox="0 0 11 8" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="m10.092.952-.005-.006-.006-.005A.45.45 0 0 0 9.43.939L4.162 6.23 1.585 3.636a.45.45 0 0 0-.652 0 .47.47 0 0 0 0 .657l.002.002L3.58 6.958a.8.8 0 0 0 .567.242.78.78 0 0 0 .567-.242l5.333-5.356a.474.474 0 0 0 .044-.65Zm-5.86 5.349V6.3Z" fill="currentColor" stroke="currentColor" strokeWidth=".4" className="text-primary"/>
                           </svg>
-                          <span className="text-foreground select-none text-sm">Ancien combattant</span>
+                          <span className="text-foreground select-none text-sm">Mandat de protection future signé</span>
                         </label>
                       </FormControl>
                     </FormItem>
                   )}
                 />
+
+                {form.watch('mandatProtectionFuture') && (
+                  <FormField
+                    control={form.control}
+                    name="dateMandatProtectionFuture"
+                    render={({ field }) => (
+                      <FormItem className="w-72">
+                        <div className="relative w-full flex flex-col gap-1">
+                          <FormLabel className="text-xs">Date du mandat</FormLabel>
+                          <div className="flex items-center gap-2">
+                            <FormControl>
+                              <Input
+                                placeholder="JJ/MM/AAAA"
+                                className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                                value={field.value instanceof Date ? format(field.value, 'dd/MM/yyyy') : field.value || ''}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                                    try {
+                                      const [day, month, year] = value.split('/');
+                                      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                                      if (!isNaN(date.getTime())) {
+                                        field.onChange(date);
+                                        return;
+                                      }
+                                    } catch (error) {}
+                                  }
+                                  field.onChange(value);
+                                }}
+                              />
+                            </FormControl>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" size="icon" className="h-10 w-10 shrink-0">
+                                  <CalendarIcon className="h-4 w-4" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={field.value instanceof Date ? field.value : undefined}
+                                  onSelect={(date) => date && field.onChange(date)}
+                                  disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
+                                  initialFocus
+                                  className="p-3 pointer-events-auto"
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
             </div>
           </div>
