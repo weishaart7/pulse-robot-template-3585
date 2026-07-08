@@ -50,8 +50,7 @@ export interface MaritalStatus {
   date_mariage?: string;
   lieu_mariage?: string;
   regime_matrimonial?: string;
-  nom_notaire?: string;
-  adresse_notaire?: string;
+  pas_de_contrat_mariage?: boolean;
   parent_isole?: boolean;
   nombre_enfants_charges?: number;
   imposition_distincte?: boolean;
@@ -66,6 +65,7 @@ export interface MaritalStatus {
   date_donation_personne?: string;
   date_donation_conjoint?: string;
   clauses_contrat?: any;
+  clauses_personnalisees?: any;
 }
 
 export interface FamilyLink {

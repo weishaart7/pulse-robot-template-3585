@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useMaritalStatus } from '@/hooks/useFamilyData';
 import { useToast } from '@/hooks/use-toast';
-import { ClausesData, DonationDernierVivant, RegimeType, MatrimonialAnalysisResult, getSimplifiedRegime } from '@/types/matrimonial';
+import { ClausesData, ClauseState, DonationDernierVivant, RegimeType, MatrimonialAnalysisResult, getSimplifiedRegime } from '@/types/matrimonial';
 import { CLAUSES_BY_REGIME, CLAUSES_IMPACTING_TRANSMISSION } from '@/constants/matrimonialClauses';
 import { useAssets } from '@/hooks/useAssets';
 
@@ -86,14 +86,15 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
   }, [saveData, toast]);
 
   const toggleClause = useCallback((clauseName: string) => {
+    const wasEnabled = clauses[clauseName]?.enabled || false;
+    // Décocher une clause efface tout son état associé (biens sélectionnés, %, options) :
+    // sinon ces données restent enregistrées en arrière-plan bien que la clause soit désactivée.
+    const newClauseState: ClauseState = wasEnabled
+      ? { enabled: false }
+      : { enabled: true, partPleineProprietee: 50, partUsufruit: 50 };
     const newClauses: ClausesData = {
       ...clauses,
-      [clauseName]: {
-        ...clauses[clauseName],
-        enabled: !clauses[clauseName]?.enabled,
-        partPleineProprietee: clauses[clauseName]?.partPleineProprietee || 50,
-        partUsufruit: clauses[clauseName]?.partUsufruit || 50
-      }
+      [clauseName]: newClauseState
     };
     setClauses(newClauses);
     saveClausesData(newClauses, donation);

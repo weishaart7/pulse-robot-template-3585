@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { MatrimonialRegimeOptions } from "@/components/famille/MatrimonialRegimeOptions";
+import { ClausesPersonnaliseesSection } from "@/components/famille/matrimonial/ClausesPersonnaliseesSection";
 
 const formSchema = z.object({
   conventionPacs: z.enum(['Régime de la séparation des biens', 'Indivision']).default('Régime de la séparation des biens'),
@@ -78,7 +79,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
         regimeMatrimonial: (maritalData.regime_matrimonial as any) || 'Communauté réduite aux acquêts (option sans contrat de mariage)',
         dateMariage: maritalData.date_mariage ? new Date(maritalData.date_mariage) : undefined,
         lieuMariage: maritalData.lieu_mariage || "",
-        pasDeContrat: false,
+        pasDeContrat: maritalData.pas_de_contrat_mariage || false,
         impositionDistincte: maritalData.imposition_distincte || false,
         donationDernierVivantPersonne: maritalData.donation_dernier_vivant_personne || false,
         dateDonationPersonne: maritalData.date_donation_personne ? new Date(maritalData.date_donation_personne) : undefined,
@@ -102,6 +103,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
         regime_matrimonial: data.regimeMatrimonial,
         date_mariage: data.dateMariage?.toISOString().split('T')[0],
         lieu_mariage: data.lieuMariage,
+        pas_de_contrat_mariage: data.pasDeContrat,
         imposition_distincte: data.impositionDistincte,
         donation_dernier_vivant_personne: data.donationDernierVivantPersonne,
         date_donation_personne: data.dateDonationPersonne?.toISOString().split('T')[0],
@@ -125,6 +127,12 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
 
   const regimeMatrimonial = form.watch("regimeMatrimonial");
   const pasDeContrat = form.watch("pasDeContrat");
+
+  useEffect(() => {
+    if (pasDeContrat) {
+      form.setValue('regimeMatrimonial', 'Communauté réduite aux acquêts (option sans contrat de mariage)');
+    }
+  }, [pasDeContrat, form]);
 
   const sections = relationStatus === "Marié(e)" ? [
     { id: 'informations-generales' as Section, label: 'Informations générales', icon: Heart },
@@ -213,7 +221,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                     render={({ field }) => (
                       <FormItem className="space-y-1 mb-5">
                         <FormLabel className="text-xs">Régime</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={pasDeContrat}>
                           <FormControl>
                             <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
                               <SelectValue />
@@ -259,22 +267,26 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
             )}
 
             {activeSection === 'clauses-contrat' && (
-              <div className="rounded-md border bg-card p-6 shadow-sm">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Clauses du contrat</h3>
-                {pasDeContrat ? (
-                  <p className="text-sm text-muted-foreground">Pas de contrat de mariage sélectionné</p>
-                ) : (
-                  <MatrimonialRegimeOptions
-                    regimeType={
-                      regimeMatrimonial === 'Communauté réduite aux acquêts (option sans contrat de mariage)' ? 'communaute_reduite' :
-                      regimeMatrimonial === "Communauté de meubles et d'acquêts" ? 'communaute_meubles' :
-                      regimeMatrimonial === 'Communauté universelle' ? 'communaute_universelle' :
-                      regimeMatrimonial === 'Séparation de biens' ? 'separation_biens' :
-                      regimeMatrimonial === 'Participation aux acquêts' ? 'participation_acquets' :
-                      'communaute_reduite'
-                    }
-                  />
-                )}
+              <div className="space-y-6">
+                <div className="rounded-md border bg-card p-6 shadow-sm">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Clauses du contrat</h3>
+                  {pasDeContrat ? (
+                    <p className="text-sm text-muted-foreground">Pas de contrat de mariage sélectionné</p>
+                  ) : (
+                    <MatrimonialRegimeOptions
+                      regimeType={
+                        regimeMatrimonial === 'Communauté réduite aux acquêts (option sans contrat de mariage)' ? 'communaute_reduite' :
+                        regimeMatrimonial === "Communauté de meubles et d'acquêts" ? 'communaute_meubles' :
+                        regimeMatrimonial === 'Communauté universelle' ? 'communaute_universelle' :
+                        regimeMatrimonial === 'Séparation de biens' ? 'separation_biens' :
+                        regimeMatrimonial === 'Participation aux acquêts' ? 'participation_acquets' :
+                        'communaute_reduite'
+                      }
+                    />
+                  )}
+                </div>
+
+                <ClausesPersonnaliseesSection />
               </div>
             )}
 

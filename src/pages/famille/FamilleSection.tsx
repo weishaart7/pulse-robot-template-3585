@@ -313,7 +313,7 @@ const FamilleSection = () => {
   };
 
   return (
-    <div style={{ backgroundColor: '#faf9f7', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ fontFamily: 'Inter, sans-serif' }}>
       <div className="p-[22px]">
         <div className="mb-6 flex items-start justify-between gap-6 flex-wrap">
           <div>

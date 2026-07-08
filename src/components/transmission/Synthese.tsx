@@ -27,6 +27,7 @@ export const Synthese = () => {
   const [loading, setLoading] = useState(true);
   const [transmissionResult, setTransmissionResult] = useState<any>(null);
   const [hasAssets, setHasAssets] = useState(false);
+  const [hasCustomClausesToCheck, setHasCustomClausesToCheck] = useState(false);
 
   useEffect(() => {
     if (user && !passifsLoading) {
@@ -52,6 +53,10 @@ export const Synthese = () => {
         .single();
 
       const optionConjoint = (maritalStatus as any)?.option_conjoint as string | null;
+
+      const clausesPersonnalisees = (maritalStatus as any)?.clauses_personnalisees;
+      const clausesPersonnaliseesList = Array.isArray(clausesPersonnalisees) ? clausesPersonnalisees : [];
+      setHasCustomClausesToCheck(clausesPersonnaliseesList.some((c: any) => Array.isArray(c?.tags) && c.tags.length > 0));
 
       const { data: familyLinks } = await supabase
         .from('family_links')
@@ -331,6 +336,14 @@ export const Synthese = () => {
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             Le calcul de transmission n'a pas pu aboutir. Vérifiez que votre situation familiale est complète.
+          </AlertDescription>
+        </Alert>
+      )}
+      {hasCustomClausesToCheck && (
+        <Alert className="bg-[var(--warning-soft)] border-[var(--warning)]/30">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Une ou plusieurs clauses personnalisées existent dans le contrat de mariage et doivent être vérifiées manuellement.
           </AlertDescription>
         </Alert>
       )}
