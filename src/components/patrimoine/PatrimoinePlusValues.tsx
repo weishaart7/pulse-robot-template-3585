@@ -4,11 +4,13 @@ import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, ArrowLe
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAssets } from '@/hooks/useAssets';
+import { Asset } from '@/services/assetService';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
 import { getCategoryColor } from '@/lib/patrimoine/utils';
-import { computeFiscalRegime } from '@/lib/patrimoine/regimeFiscalPlusValue';
+import { getNatureDisplayLabel } from '@/constants/assetTypes';
+import { computeFiscalRegime, resolveEffectiveNature } from '@/lib/patrimoine/regimeFiscalPlusValue';
 import { computePVIRegime } from '@/lib/patrimoine/regimeFiscalPVI';
 
 interface PatrimoinePlusValuesProps {
@@ -114,7 +116,7 @@ export const PatrimoinePlusValues = ({ onBack }: PatrimoinePlusValuesProps) => {
                           >
                             <td className="py-3.5">
                               <p className="font-medium text-foreground text-[13px]">{asset.denomination}</p>
-                              <p className="text-[11px] text-muted-foreground/60 mt-0.5">{asset.nature}</p>
+                              <p className="text-[11px] text-muted-foreground/60 mt-0.5">{getNatureDisplayLabel(asset.nature)}</p>
                             </td>
                             <td className="py-3.5 text-right text-muted-foreground/70 text-[13px] tabular-nums">{formatCurrency(asset.valeurAcquisition)}</td>
                             <td className="py-3.5 text-right text-foreground font-medium text-[13px] tabular-nums">{formatCurrency(asset.valeurEstimee)}</td>
@@ -207,14 +209,14 @@ export const PatrimoinePlusValues = ({ onBack }: PatrimoinePlusValuesProps) => {
                 </p>
                 <ul className="text-[12px] text-muted-foreground/80 leading-relaxed list-disc pl-5 mt-1 space-y-0.5">
                   <li>SCPI logée dans un CTO → revenus fonciers + PV immobilière (et non PFU)</li>
-                  <li>Titres dans un PEA / PEA-PME → exonération après 5 ans</li>
+                  <li>Titres dans un Plan d'Épargne en Actions (PEA / PEA-PME) → exonération après 5 ans</li>
                   <li>Assurance-vie → fiscalité spécifique selon antériorité du contrat (8 ans)</li>
                   <li>PER → fiscalité de sortie selon le mode (capital ou rente)</li>
                   <li>Immobilier détenu en propre → abattement pour durée de détention</li>
                 </ul>
               </div>
             </div>
-            <FiscalContent assetsWithPlusValue={assetsWithPlusValue} formatCurrency={formatCurrency} />
+            <FiscalContent assetsWithPlusValue={assetsWithPlusValue} assets={assets} formatCurrency={formatCurrency} />
           </CardContent>
         </Card>
       </div>
@@ -260,24 +262,30 @@ const REGIME_BADGE_CLASSES: Record<string, string> = {
 
 const FiscalContent = ({
   assetsWithPlusValue,
+  assets,
   formatCurrency
 }: {
   assetsWithPlusValue: Array<{ id: string; denomination: string; nature: string; plusValue: number; valeurEstimee: number; valeurAcquisition: number; dateAcquisition?: string }>;
+  assets: Asset[];
   formatCurrency: (v: number) => string;
 }) => {
-  const allAssetsWithRegime = assetsWithPlusValue.filter(a => a.plusValue > 0).map(a => ({
-    ...a,
-    regime: computePVIRegime({
-      nature: a.nature,
-      plusValue: a.plusValue,
-      dateAcquisition: a.dateAcquisition,
-    }) ?? computeFiscalRegime({
-      nature: a.nature,
-      plusValue: a.plusValue,
-      valeurEstimee: a.valeurEstimee,
-      dateAcquisition: a.dateAcquisition,
-    }),
-  }));
+  const allAssetsWithRegime = assetsWithPlusValue.filter(a => a.plusValue > 0).map(a => {
+    const fullAsset = assets.find(asset => asset.id === a.id);
+    const effectiveNature = resolveEffectiveNature(a.nature, fullAsset?.cto_multi_actifs, fullAsset?.cto_nature_sous_jacent);
+    return {
+      ...a,
+      regime: computePVIRegime({
+        nature: effectiveNature,
+        plusValue: a.plusValue,
+        dateAcquisition: a.dateAcquisition,
+      }) ?? computeFiscalRegime({
+        nature: effectiveNature,
+        plusValue: a.plusValue,
+        valeurEstimee: a.valeurEstimee,
+        dateAcquisition: a.dateAcquisition,
+      }),
+    };
+  });
 
   const totalCalcule = allAssetsWithRegime
     .filter(a => a.regime.total !== null)

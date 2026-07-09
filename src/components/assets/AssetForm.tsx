@@ -11,7 +11,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Asset, AssetCharge } from '@/services/assetService';
 import { ChargeForm } from './ChargeForm';
-import { ASSET_NATURES, getAssetCategory, NATURES_WITHOUT_ACQUISITION } from '@/constants/assetTypes';
+import { ASSET_NATURE_OPTIONS, getAssetCategory, NATURES_WITHOUT_ACQUISITION, NATURES_PER, CTO_SOUS_JACENT_OPTIONS } from '@/constants/assetTypes';
 import { useAssetForm, NATURES_WITH_ETABLISSEMENT } from '@/hooks/useAssetForm';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Globe, Info, TrendingUp, TrendingDown, FileText, Users, ShoppingCart, Coins, Receipt } from 'lucide-react';
@@ -25,6 +25,7 @@ import {
 } from '@/schemas/assetSchema';
 import { isSocieteEligibleNature } from '@/lib/patrimoine/societeTransfer';
 import { QUALIFICATION_OPTIONS } from '@/lib/patrimoine/qualification';
+import { calculatePlusValue } from '@/lib/patrimoine/utils';
 
 interface AssetFormProps {
   asset?: Asset;
@@ -83,9 +84,13 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const hideAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature);
   const showEtablissement = NATURES_WITH_ETABLISSEMENT.includes(watchedNature);
   const showBienEtranger = watchedNature && !NATURES_LIQUIDITES_FR.includes(watchedNature);
+  const isPER = NATURES_PER.includes(watchedNature);
+  const isCTO = watchedNature === 'Compte-titres (CTO)';
+  const watchedCtoMultiActifs = form.watch('cto_multi_actifs');
 
   // Plus-value live
-  const plusValueLive = (watchedValeurEstimee || 0) - (watchedValeurAcquisition || 0);
+  const watchedFraisAcquisition = form.watch('frais_acquisition');
+  const { plusValue: plusValueLive } = calculatePlusValue(watchedValeurEstimee, watchedValeurAcquisition, watchedFraisAcquisition);
   const plusValuePct = watchedValeurAcquisition && watchedValeurAcquisition > 0
     ? (plusValueLive / watchedValeurAcquisition) * 100
     : 0;
@@ -101,7 +106,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
           <FormItem>
             <FormLabel>Nature *</FormLabel>
             <FormControl>
-              <SearchableSelect options={ASSET_NATURES} value={field.value} onChange={field.onChange} placeholder="Choisir une nature" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" />
+              <SearchableSelect options={ASSET_NATURE_OPTIONS} value={field.value} onChange={field.onChange} placeholder="Choisir une nature" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -222,6 +227,69 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             </FormItem>
           )}
         />
+      )}
+
+      {isPER && (
+        <FormField control={form.control} name="sous_type_per" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Sous-type</FormLabel>
+            <Select onValueChange={field.onChange} value={field.value}>
+              <FormControl>
+                <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                  <SelectValue placeholder="Choisir un sous-type" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="Bancaire">Bancaire</SelectItem>
+                <SelectItem value="Assurantiel">Assurantiel</SelectItem>
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )} />
+      )}
+
+      {isCTO && (
+        <>
+          <FormField
+            control={form.control}
+            name="cto_multi_actifs"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>Ce compte-titres détient d'autres actifs que des actions/obligations</FormLabel>
+                </div>
+              </FormItem>
+            )}
+          />
+
+          {watchedCtoMultiActifs && (
+            <FormField control={form.control} name="cto_nature_sous_jacent" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nature réelle du sous-jacent principal</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                      <SelectValue placeholder="Choisir la nature du sous-jacent" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {CTO_SOUS_JACENT_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>{option}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+        </>
       )}
 
       <FormField

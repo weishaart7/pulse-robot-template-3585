@@ -78,6 +78,9 @@ export const assetSchema = z.object({
   bien_etranger: z.boolean().optional(),
   qualification_bien: z.string().optional(),
   qualification_auto: z.boolean().optional(),
+  sous_type_per: z.enum(['Bancaire', 'Assurantiel']).optional(),
+  cto_multi_actifs: z.boolean().optional(),
+  cto_nature_sous_jacent: z.string().optional(),
 });
 
 export type AssetFormValues = z.infer<typeof assetSchema>;
@@ -98,4 +101,5 @@ export const getDefaultAssetValues = (): AssetFormValues => ({
   transfert_societe: true,
   bien_etranger: false,
   qualification_auto: true,
+  cto_multi_actifs: false,
 });

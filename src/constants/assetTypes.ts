@@ -290,6 +290,40 @@ export const ASSET_CATEGORIES = {
   ]
 } as const;
 
+// Libellés affichés distincts de la valeur technique stockée dans assets.nature
+// (et comparée telle quelle ailleurs : catégorisation, régimes fiscaux, etc.).
+// N'ajouter ici que des natures pour lesquelles on veut un libellé différent
+// de la valeur brute d'ASSET_NATURES.
+export const NATURE_DISPLAY_LABELS: Record<string, string> = {
+  "PEA": "Plan d'Épargne en Actions (PEA)",
+  "PEA-PME": "Plan d'Épargne en Actions PME (PEA-PME)",
+};
+
+export const getNatureDisplayLabel = (nature: string): string => NATURE_DISPLAY_LABELS[nature] || nature;
+
+export const ASSET_NATURE_OPTIONS = ASSET_NATURES.map((nature) => ({
+  value: nature,
+  label: getNatureDisplayLabel(nature),
+}));
+
+// Natures PER (loi PACTE) pour lesquelles le sous-type Bancaire/Assurantiel
+// est proposé. PERCO/PERCOI et PERP sont des produits retraite antérieurs,
+// juridiquement distincts d'un PER, volontairement exclus.
+export const NATURES_PER = [
+  "PER individuel",
+  "PER entreprise collectif",
+  "PER entreprise obligatoire",
+];
+
+// Natures réelles du sous-jacent principal proposées quand un CTO détient
+// autre chose que des actions/obligations classiques (voir cto_multi_actifs).
+export const CTO_SOUS_JACENT_OPTIONS = [
+  "SCPI",
+  "Cryptomonnaies",
+  "Or / métaux précieux",
+  "Private equity (FCPR/FPCI)",
+] as const;
+
 export const getAssetCategory = (nature: string): string => {
   for (const [category, natures] of Object.entries(ASSET_CATEGORIES)) {
     if ((natures as readonly string[]).includes(nature)) {

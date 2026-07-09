@@ -112,16 +112,20 @@ export const PassifDetailsDialog = ({ passif, type, open, onOpenChange }: Passif
                           {formatCurrency(emprunt.mensualite * emprunt.duree_restante)}
                         </p>
                       </div>
-                      {emprunt.capital_restant_du && emprunt.mensualite && emprunt.duree_restante && (
-                        <div className="p-3 rounded-lg bg-muted">
-                          <span className="text-sm text-muted-foreground">Coût total des intérêts</span>
-                          <p className="font-medium text-lg text-red-600">
-                            {formatCurrency(
-                              (emprunt.mensualite * emprunt.duree_restante) - emprunt.capital_restant_du
-                            )}
-                          </p>
-                        </div>
-                      )}
+                      {(() => {
+                        const coutInterets = emprunt.capital_restant_du
+                          ? (emprunt.mensualite * emprunt.duree_restante) - emprunt.capital_restant_du
+                          : null;
+                        const isCalculable = coutInterets !== null && coutInterets >= 0;
+                        return (
+                          <div className="p-3 rounded-lg bg-muted">
+                            <span className="text-sm text-muted-foreground">Coût total des intérêts</span>
+                            <p className="font-medium text-lg text-red-600">
+                              {isCalculable ? formatCurrency(coutInterets) : 'Non calculable'}
+                            </p>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </>

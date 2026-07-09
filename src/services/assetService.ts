@@ -54,6 +54,9 @@ export interface Asset {
   qualification_auto?: boolean;
   transfert_societe?: boolean;
   societe_id?: string | null;
+  sous_type_per?: 'Bancaire' | 'Assurantiel';
+  cto_multi_actifs?: boolean;
+  cto_nature_sous_jacent?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -66,7 +69,7 @@ export interface AssetCharge {
   debiteur: 'Époux 1' | 'Époux 2' | 'Couple';
   montant: number;
   unite: '€' | '%';
-  periodicite: 'annuelle' | 'trimestrielle' | 'mensuelle';
+  periodicite: 'ponctuelle' | 'annuelle' | 'trimestrielle' | 'mensuelle';
   date_debut: string;
   duree_type: 'Indéterminée' | 'Jusqu\'à date' | 'Pendant années';
   duree_fin_date?: string;

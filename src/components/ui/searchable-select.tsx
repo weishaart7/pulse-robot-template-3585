@@ -5,8 +5,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 
+export interface SearchableSelectOption {
+  value: string;
+  label: string;
+}
+
 interface SearchableSelectProps {
-  options: string[];
+  options: string[] | SearchableSelectOption[];
   value?: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -31,12 +36,26 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     };
   }, []);
 
+  // Normalise les options en { value, label } : accepte à la fois un
+  // string[] (comportement historique, label === value) et un tableau
+  // { value, label } pour les cas où le libellé affiché doit différer de
+  // la valeur technique stockée/comparée ailleurs dans l'app.
+  const normalizedOptions = useMemo<SearchableSelectOption[]>(
+    () => options.map(option => typeof option === 'string' ? { value: option, label: option } : option),
+    [options]
+  );
+
   const filteredOptions = useMemo(() => {
-    if (!searchValue) return options;
-    return options.filter(option =>
-      option.toLowerCase().includes(searchValue.toLowerCase())
+    if (!searchValue) return normalizedOptions;
+    return normalizedOptions.filter(option =>
+      option.label.toLowerCase().includes(searchValue.toLowerCase())
     );
-  }, [options, searchValue]);
+  }, [normalizedOptions, searchValue]);
+
+  const selectedLabel = useMemo(
+    () => normalizedOptions.find(option => option.value === value)?.label ?? value,
+    [normalizedOptions, value]
+  );
 
   const handleSelect = (selectedValue: string) => {
     onChange(selectedValue);
@@ -60,7 +79,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
             className
           )}
         >
-          <span className="truncate">{value ? value : placeholder}</span>
+          <span className="truncate">{value ? selectedLabel : placeholder}</span>
           <ChevronDown className="h-4 w-4 opacity-60 -me-0.5" />
         </button>
       </PopoverTrigger>
@@ -80,18 +99,18 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
             <CommandGroup>
               {filteredOptions.map((option) => (
                 <CommandItem
-                  key={option}
-                  value={option}
-                  onSelect={() => handleSelect(option)}
+                  key={option.value}
+                  value={option.value}
+                  onSelect={() => handleSelect(option.value)}
                   className="cursor-pointer"
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === option ? "opacity-100" : "opacity-0"
+                      value === option.value ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {option}
+                  {option.label}
                 </CommandItem>
               ))}
             </CommandGroup>

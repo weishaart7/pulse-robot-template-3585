@@ -107,6 +107,22 @@ export const checkIsInCouple = (statutCouple: string | undefined): boolean => {
   return false;
 };
 
+// Répartition user/conjoint pour un bien détenu en commun (défaut 50/50)
+export interface PourcentagesRepartition {
+  userQuote: number;
+  spouseQuote: number;
+}
+
+export const getPourcentagesRepartition = (
+  pourcentageUtilisateur: number | undefined,
+  pourcentageConjoint: number | undefined
+): PourcentagesRepartition => {
+  return {
+    userQuote: (pourcentageUtilisateur ?? 50) / 100,
+    spouseQuote: (pourcentageConjoint ?? 50) / 100,
+  };
+};
+
 // Plus-value calculation
 export interface PlusValueResult {
   plusValue: number;

@@ -101,6 +101,34 @@ const NATURES_OR = ['Or (physique)', 'Métaux précieux (argent, platine)'];
 // "Livret Jeune". En pratique ces livrets n'ont pas de valeur d'acquisition
 // suivie et n'apparaissent quasiment jamais dans ce tableau.
 
+// --- CTO multi-actifs : résolution de la nature effective pour le régime fiscal ---
+// Un CTO peut détenir un sous-jacent qui suit un régime fiscal différent du
+// PFU générique (SCPI, cryptomonnaies, or/métaux précieux, private equity).
+// Cette table fait correspondre le sous-jacent déclaré à une nature déjà
+// gérée par les moteurs de régime existants (regimeFiscalPVI.ts pour SCPI,
+// ci-dessus pour les 3 autres) : aucune logique de calcul n'est dupliquée,
+// seule la nature transmise au dispatch change.
+const CTO_SOUS_JACENT_TO_NATURE: Record<string, string> = {
+  'SCPI': 'Parts de SCPI',
+  'Cryptomonnaies': NATURE_CRYPTO,
+  // Les deux natures d'NATURES_OR reçoivent un traitement fiscal identique
+  // (même badge, mêmes taux) : le choix de l'une ou l'autre ici est sans
+  // incidence sur le résultat calculé.
+  'Or / métaux précieux': NATURES_OR[0],
+  'Private equity (FCPR/FPCI)': NATURE_PRIVATE_EQUITY,
+};
+
+export const resolveEffectiveNature = (
+  nature: string,
+  ctoMultiActifs?: boolean,
+  ctoNatureSousJacent?: string
+): string => {
+  if (nature === 'Compte-titres (CTO)' && ctoMultiActifs && ctoNatureSousJacent) {
+    return CTO_SOUS_JACENT_TO_NATURE[ctoNatureSousJacent] ?? nature;
+  }
+  return nature;
+};
+
 export const getHoldingYears = (dateAcquisition?: string): number | null => {
   if (!dateAcquisition) return null;
   const acquisition = new Date(dateAcquisition);

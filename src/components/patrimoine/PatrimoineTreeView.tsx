@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronDown, ChevronRight, MoreHorizontal, Edit, Trash2, Search, TrendingUp, TrendingDown } from 'lucide-react';
 import { Asset } from '@/services/assetService';
-import { getAssetCategory, NATURES_WITHOUT_ACQUISITION } from '@/constants/assetTypes';
+import { getAssetCategory, NATURES_WITHOUT_ACQUISITION, getNatureDisplayLabel } from '@/constants/assetTypes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FullTable } from '@/components/ui/full-table';
@@ -242,7 +242,7 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
                             <div className="w-1.5 h-1.5 rounded-full opacity-60" style={{ backgroundColor: getCategoryColor(category) }} />
                             <div className="flex-1">
                               <div className="font-normal text-sm text-foreground">
-                                {asset.denomination || asset.nature}
+                                {asset.denomination || getNatureDisplayLabel(asset.nature)}
                                 {asset.mode_detention && asset.mode_detention !== 'Pleine propriété' && (
                                   <span className="ml-2 text-xs text-muted-foreground italic">({asset.mode_detention})</span>
                                 )}

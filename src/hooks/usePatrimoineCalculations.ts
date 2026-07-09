@@ -7,6 +7,7 @@ import {
   isDetenteurSpouse, 
   isDetenteurCommon,
   calculatePlusValue,
+  getPourcentagesRepartition,
   formatCurrency as formatCurrencyUtil
 } from '@/lib/patrimoine/utils';
 import { getAssetCategory } from '@/constants/assetTypes';
@@ -100,8 +101,7 @@ export const usePatrimoineCalculations = ({
         } else if (isDetenteurSpouse(detenteur)) {
           spouseOwnValue += estimatedValue;
         } else if (isDetenteurCommon(detenteur)) {
-          const userQuote = (asset.pourcentage_utilisateur ?? 50) / 100;
-          const spouseQuote = (asset.pourcentage_conjoint ?? 50) / 100;
+          const { userQuote, spouseQuote } = getPourcentagesRepartition(asset.pourcentage_utilisateur, asset.pourcentage_conjoint);
           userSharedValue += estimatedValue * userQuote;
           spouseSharedValue += estimatedValue * spouseQuote;
         }
@@ -121,8 +121,7 @@ export const usePatrimoineCalculations = ({
         } else if (isDetenteurSpouse(detenteur)) {
           spouseOwnPassifs += montant;
         } else if (isDetenteurCommon(detenteur)) {
-          const userQuote = (passif.pourcentage_utilisateur ?? 50) / 100;
-          const spouseQuote = (passif.pourcentage_conjoint ?? 50) / 100;
+          const { userQuote, spouseQuote } = getPourcentagesRepartition(passif.pourcentage_utilisateur, passif.pourcentage_conjoint);
           userSharedPassifs += montant * userQuote;
           spouseSharedPassifs += montant * spouseQuote;
         }
@@ -142,8 +141,7 @@ export const usePatrimoineCalculations = ({
         } else if (isDetenteurSpouse(detenteur)) {
           spouseOwnPassifs += montant;
         } else if (isDetenteurCommon(detenteur)) {
-          const userQuote = (emprunt.pourcentage_utilisateur ?? 50) / 100;
-          const spouseQuote = (emprunt.pourcentage_conjoint ?? 50) / 100;
+          const { userQuote, spouseQuote } = getPourcentagesRepartition(emprunt.pourcentage_utilisateur, emprunt.pourcentage_conjoint);
           userSharedPassifs += montant * userQuote;
           spouseSharedPassifs += montant * spouseQuote;
         }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { PatrimoineTreeView } from './PatrimoineTreeView';
 import { AssetForm } from '@/components/assets/AssetForm';
@@ -10,6 +11,7 @@ import { Asset, AssetCharge, assetService } from '@/services/assetService';
 import { societeService } from '@/services/societeService';
 import { isSocieteEligibleNature, natureToTypeSociete } from '@/lib/patrimoine/societeTransfer';
 import { assetIndivisaireService } from '@/services/assetIndivisaireService';
+import { assetValorisationService } from '@/services/assetValorisationService';
 import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
 
 export const PatrimoineActifs = () => {
@@ -44,14 +46,30 @@ export const PatrimoineActifs = () => {
     }
   };
 
+  const syncValorisationFromAsset = async (savedAsset: Asset, previousValeurEstimee: number | undefined) => {
+    if (savedAsset.valeur_estimee === undefined || savedAsset.valeur_estimee === null) return;
+    if (previousValeurEstimee === savedAsset.valeur_estimee) return; // pas de changement, pas de ligne
+
+    try {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      await assetValorisationService.upsertForDate(savedAsset.id!, today, savedAsset.valeur_estimee);
+    } catch (err) {
+      console.error('Alimentation historique de valorisation échouée:', err);
+    }
+  };
+
   const handleAssetSubmit = async (assetData: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[]) => {
     try {
+      const previousValeurEstimee = editingAsset?.valeur_estimee;
       let savedAsset;
       if (editingAsset) {
         savedAsset = await updateAsset(editingAsset.id!, assetData);
       } else {
         savedAsset = await createAsset(assetData);
       }
+
+      // Alimentation automatique de l'historique de valorisation si la valeur a changé
+      await syncValorisationFromAsset(savedAsset as Asset, previousValeurEstimee);
 
       // Save charges for the asset
       if (charges.length > 0) {

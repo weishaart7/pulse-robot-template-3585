@@ -5,7 +5,7 @@ import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
-import { getCategoryColor } from '@/lib/patrimoine/utils';
+import { getCategoryColor, getPourcentagesRepartition } from '@/lib/patrimoine/utils';
 import { getAssetCategory } from '@/constants/assetTypes';
 
 interface PatrimoineParTeteDetailProps {
@@ -46,12 +46,11 @@ export const PatrimoineParTeteDetail = ({ onBack }: PatrimoineParTeteDetailProps
     assets.forEach((a: any) => {
       const valeur = Number(a.valeur_estimee || 0);
       if (!valeur) return;
-      const pctU = a.pourcentage_utilisateur ?? 100;
-      const pctC = a.pourcentage_conjoint ?? 0;
+      const { userQuote, spouseQuote } = getPourcentagesRepartition(a.pourcentage_utilisateur, a.pourcentage_conjoint);
       const detenteur = (a.detenteur || '').toLowerCase();
       let part = 0;
       if (detenteur === 'common' || detenteur === 'commun' || detenteur === 'couple' || detenteur === 'le couple') {
-        part = valeur * ((forSpouse ? pctC : pctU) / 100);
+        part = valeur * (forSpouse ? spouseQuote : userQuote);
       } else if (forSpouse && (detenteur === 'spouse' || detenteur === 'conjoint')) {
         part = valeur;
       } else if (!forSpouse && (detenteur === 'user' || detenteur === 'utilisateur' || !detenteur)) {

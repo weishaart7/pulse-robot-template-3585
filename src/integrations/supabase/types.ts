@@ -210,11 +210,48 @@ export type Database = {
           },
         ]
       }
+      asset_valorisations: {
+        Row: {
+          asset_id: string
+          created_at: string
+          date_valorisation: string
+          id: string
+          user_id: string
+          valeur: number
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          date_valorisation: string
+          id?: string
+          user_id: string
+          valeur: number
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          date_valorisation?: string
+          id?: string
+          user_id?: string
+          valeur?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_valorisations_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assets: {
         Row: {
           attachement_emotionnel: number | null
           bien_etranger: boolean | null
           created_at: string
+          cto_multi_actifs: boolean | null
+          cto_nature_sous_jacent: string | null
           date_acquisition: string | null
           date_estimation: string | null
           denomination: string | null
@@ -244,6 +281,7 @@ export type Database = {
           regime_location: string | null
           situation_particuliere: string[] | null
           societe_id: string | null
+          sous_type_per: string | null
           statut_bien: string | null
           surface_m2: number | null
           transfert_immobilier: boolean | null
@@ -263,6 +301,8 @@ export type Database = {
           attachement_emotionnel?: number | null
           bien_etranger?: boolean | null
           created_at?: string
+          cto_multi_actifs?: boolean | null
+          cto_nature_sous_jacent?: string | null
           date_acquisition?: string | null
           date_estimation?: string | null
           denomination?: string | null
@@ -292,6 +332,7 @@ export type Database = {
           regime_location?: string | null
           situation_particuliere?: string[] | null
           societe_id?: string | null
+          sous_type_per?: string | null
           statut_bien?: string | null
           surface_m2?: number | null
           transfert_immobilier?: boolean | null
@@ -311,6 +352,8 @@ export type Database = {
           attachement_emotionnel?: number | null
           bien_etranger?: boolean | null
           created_at?: string
+          cto_multi_actifs?: boolean | null
+          cto_nature_sous_jacent?: string | null
           date_acquisition?: string | null
           date_estimation?: string | null
           denomination?: string | null
@@ -340,6 +383,7 @@ export type Database = {
           regime_location?: string | null
           situation_particuliere?: string[] | null
           societe_id?: string | null
+          sous_type_per?: string | null
           statut_bien?: string | null
           surface_m2?: number | null
           transfert_immobilier?: boolean | null
@@ -650,6 +694,7 @@ export type Database = {
           civilite: string | null
           created_at: string | null
           date_deces: string | null
+          date_mandat_protection_future: string | null
           date_naissance: string | null
           enfant_a_charge: boolean | null
           enfant_adopte: string | null
@@ -662,9 +707,12 @@ export type Database = {
           handicap: boolean | null
           id: string
           lien_familial: string
+          mandat_protection_future: boolean
+          mesure_protection_juridique: string
           nationalite: string | null
           nom: string
           parent_de: string | null
+          personne_a_charge: boolean
           prenom: string | null
           updated_at: string | null
           user_id: string
@@ -674,6 +722,7 @@ export type Database = {
           civilite?: string | null
           created_at?: string | null
           date_deces?: string | null
+          date_mandat_protection_future?: string | null
           date_naissance?: string | null
           enfant_a_charge?: boolean | null
           enfant_adopte?: string | null
@@ -686,9 +735,12 @@ export type Database = {
           handicap?: boolean | null
           id?: string
           lien_familial: string
+          mandat_protection_future?: boolean
+          mesure_protection_juridique?: string
           nationalite?: string | null
           nom: string
           parent_de?: string | null
+          personne_a_charge?: boolean
           prenom?: string | null
           updated_at?: string | null
           user_id: string
@@ -698,6 +750,7 @@ export type Database = {
           civilite?: string | null
           created_at?: string | null
           date_deces?: string | null
+          date_mandat_protection_future?: string | null
           date_naissance?: string | null
           enfant_a_charge?: boolean | null
           enfant_adopte?: string | null
@@ -710,9 +763,12 @@ export type Database = {
           handicap?: boolean | null
           id?: string
           lien_familial?: string
+          mandat_protection_future?: boolean
+          mesure_protection_juridique?: string
           nationalite?: string | null
           nom?: string
           parent_de?: string | null
+          personne_a_charge?: boolean
           prenom?: string | null
           updated_at?: string | null
           user_id?: string
@@ -728,9 +784,11 @@ export type Database = {
           code_postal: string | null
           commune_naissance: string | null
           created_at: string | null
+          date_mandat_protection_future: string | null
           date_naissance: string | null
           email: string | null
           id: string
+          mandat_protection_future: boolean
           nationalite: string | null
           nom: string | null
           nom_jeune_fille: string | null
@@ -752,9 +810,11 @@ export type Database = {
           code_postal?: string | null
           commune_naissance?: string | null
           created_at?: string | null
+          date_mandat_protection_future?: string | null
           date_naissance?: string | null
           email?: string | null
           id?: string
+          mandat_protection_future?: boolean
           nationalite?: string | null
           nom?: string | null
           nom_jeune_fille?: string | null
@@ -776,9 +836,11 @@ export type Database = {
           code_postal?: string | null
           commune_naissance?: string | null
           created_at?: string | null
+          date_mandat_protection_future?: string | null
           date_naissance?: string | null
           email?: string | null
           id?: string
+          mandat_protection_future?: boolean
           nationalite?: string | null
           nom?: string | null
           nom_jeune_fille?: string | null
@@ -1259,16 +1321,17 @@ export type Database = {
       marital_status: {
         Row: {
           adresse_conjoint: string | null
-          adresse_notaire: string | null
           ancien_combattant_conjoint: boolean | null
+          capacite_juridique_conjoint: string
           civilite_conjoint: string | null
           clauses_contrat: Json | null
+          clauses_personnalisees: Json
           code_postal_conjoint: string | null
-          contrat_mariage: string | null
           convention_pacs: string | null
           created_at: string | null
           date_donation_conjoint: string | null
           date_donation_personne: string | null
+          date_mandat_protection_future_conjoint: string | null
           date_mariage: string | null
           date_naissance_conjoint: string | null
           date_pacs: string | null
@@ -1284,15 +1347,16 @@ export type Database = {
           lieu_mariage: string | null
           lieu_naissance_conjoint: string | null
           lieu_pacs: string | null
+          mandat_protection_future_conjoint: boolean
           mariage_precedent_conjoint: boolean | null
           mariage_precedent_personne: boolean | null
           nationalite_conjoint: string | null
           nom_conjoint: string | null
           nom_jeune_fille_conjoint: string | null
-          nom_notaire: string | null
           nombre_enfants_charges: number | null
           option_conjoint: string | null
           parent_isole: boolean | null
+          pas_de_contrat_mariage: boolean
           pays_conjoint: string | null
           pays_naissance_conjoint: string | null
           personne_handicapee_conjoint: boolean | null
@@ -1308,16 +1372,17 @@ export type Database = {
         }
         Insert: {
           adresse_conjoint?: string | null
-          adresse_notaire?: string | null
           ancien_combattant_conjoint?: boolean | null
+          capacite_juridique_conjoint?: string
           civilite_conjoint?: string | null
           clauses_contrat?: Json | null
+          clauses_personnalisees?: Json
           code_postal_conjoint?: string | null
-          contrat_mariage?: string | null
           convention_pacs?: string | null
           created_at?: string | null
           date_donation_conjoint?: string | null
           date_donation_personne?: string | null
+          date_mandat_protection_future_conjoint?: string | null
           date_mariage?: string | null
           date_naissance_conjoint?: string | null
           date_pacs?: string | null
@@ -1333,15 +1398,16 @@ export type Database = {
           lieu_mariage?: string | null
           lieu_naissance_conjoint?: string | null
           lieu_pacs?: string | null
+          mandat_protection_future_conjoint?: boolean
           mariage_precedent_conjoint?: boolean | null
           mariage_precedent_personne?: boolean | null
           nationalite_conjoint?: string | null
           nom_conjoint?: string | null
           nom_jeune_fille_conjoint?: string | null
-          nom_notaire?: string | null
           nombre_enfants_charges?: number | null
           option_conjoint?: string | null
           parent_isole?: boolean | null
+          pas_de_contrat_mariage?: boolean
           pays_conjoint?: string | null
           pays_naissance_conjoint?: string | null
           personne_handicapee_conjoint?: boolean | null
@@ -1357,16 +1423,17 @@ export type Database = {
         }
         Update: {
           adresse_conjoint?: string | null
-          adresse_notaire?: string | null
           ancien_combattant_conjoint?: boolean | null
+          capacite_juridique_conjoint?: string
           civilite_conjoint?: string | null
           clauses_contrat?: Json | null
+          clauses_personnalisees?: Json
           code_postal_conjoint?: string | null
-          contrat_mariage?: string | null
           convention_pacs?: string | null
           created_at?: string | null
           date_donation_conjoint?: string | null
           date_donation_personne?: string | null
+          date_mandat_protection_future_conjoint?: string | null
           date_mariage?: string | null
           date_naissance_conjoint?: string | null
           date_pacs?: string | null
@@ -1382,15 +1449,16 @@ export type Database = {
           lieu_mariage?: string | null
           lieu_naissance_conjoint?: string | null
           lieu_pacs?: string | null
+          mandat_protection_future_conjoint?: boolean
           mariage_precedent_conjoint?: boolean | null
           mariage_precedent_personne?: boolean | null
           nationalite_conjoint?: string | null
           nom_conjoint?: string | null
           nom_jeune_fille_conjoint?: string | null
-          nom_notaire?: string | null
           nombre_enfants_charges?: number | null
           option_conjoint?: string | null
           parent_isole?: boolean | null
+          pas_de_contrat_mariage?: boolean
           pays_conjoint?: string | null
           pays_naissance_conjoint?: string | null
           personne_handicapee_conjoint?: boolean | null

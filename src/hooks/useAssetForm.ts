@@ -142,6 +142,9 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         bien_etranger: (asset as any).bien_etranger || false,
         qualification_bien: (asset as any).qualification_bien || undefined,
         qualification_auto: (asset as any).qualification_auto !== false,
+        sous_type_per: (asset as any).sous_type_per || undefined,
+        cto_multi_actifs: (asset as any).cto_multi_actifs || false,
+        cto_nature_sous_jacent: (asset as any).cto_nature_sous_jacent || undefined,
       });
     }
   }, [asset, familyData, form]);
