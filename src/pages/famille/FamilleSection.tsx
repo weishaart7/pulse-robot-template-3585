@@ -167,18 +167,18 @@ const FamilleSection = () => {
             <div className="bg-white rounded-[4px] overflow-hidden shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)]">
               <div className="grid grid-cols-1 sm:grid-cols-[1fr_1px_1fr]">
                 <div
-                  className="flex items-center gap-3 cursor-pointer"
-                  style={{ padding: '16px 20px' }}
+                  className="flex items-center gap-2.5 cursor-pointer"
+                  style={{ padding: '14px 18px' }}
                   onClick={() => setEditView('client')}
                 >
-                  <div className="h-9 w-9 rounded-[4px] flex items-center justify-center shrink-0" style={{ backgroundColor: FOYER_SOFT_BG }}>
-                    <span className="text-[13px] font-semibold" style={{ color: FOYER_INK }}>
+                  <div className="h-8 w-8 rounded-[4px] flex items-center justify-center shrink-0" style={{ backgroundColor: FOYER_SOFT_BG }}>
+                    <span className="text-[12px] font-semibold" style={{ color: FOYER_INK }}>
                       {getInitials(familyProfile?.prenom, familyProfile?.nom)}
                     </span>
                   </div>
                   <div>
-                    <p className="text-[15px] font-semibold" style={{ color: FOYER_INK }}>{clientName}</p>
-                    <p className="text-[12px] mt-0.5" style={{ color: FOYER_LABEL, fontVariantNumeric: 'tabular-nums' }}>
+                    <p className="text-[14px] font-semibold" style={{ color: FOYER_INK }}>{clientName}</p>
+                    <p className="text-[11.5px] mt-0.5" style={{ color: FOYER_LABEL, fontVariantNumeric: 'tabular-nums' }}>
                       {secondaryLine(familyProfile?.date_naissance)}
                     </p>
                   </div>
@@ -186,20 +186,20 @@ const FamilleSection = () => {
 
                 <div className="hidden sm:block" style={{ backgroundColor: FOYER_DIVIDER }} />
 
-                <div style={{ padding: '16px 20px' }}>
+                <div style={{ padding: '14px 18px' }}>
                   {hasPartner ? (
                     <div
-                      className="flex items-center gap-3 cursor-pointer"
+                      className="flex items-center gap-2.5 cursor-pointer"
                       onClick={() => navigate('/dashboard/famille/conjoint')}
                     >
-                      <div className="h-9 w-9 rounded-[4px] flex items-center justify-center shrink-0" style={{ backgroundColor: FOYER_SOFT_BG }}>
-                        <span className="text-[13px] font-semibold" style={{ color: FOYER_INK }}>
+                      <div className="h-8 w-8 rounded-[4px] flex items-center justify-center shrink-0" style={{ backgroundColor: FOYER_SOFT_BG }}>
+                        <span className="text-[12px] font-semibold" style={{ color: FOYER_INK }}>
                           {getInitials(maritalData?.prenom_conjoint, maritalData?.nom_conjoint)}
                         </span>
                       </div>
                       <div>
-                        <p className="text-[15px] font-semibold" style={{ color: FOYER_INK }}>{partnerName || 'Partenaire'}</p>
-                        <p className="text-[12px] mt-0.5" style={{ color: FOYER_LABEL, fontVariantNumeric: 'tabular-nums' }}>
+                        <p className="text-[14px] font-semibold" style={{ color: FOYER_INK }}>{partnerName || 'Partenaire'}</p>
+                        <p className="text-[11.5px] mt-0.5" style={{ color: FOYER_LABEL, fontVariantNumeric: 'tabular-nums' }}>
                           {secondaryLine(maritalData?.date_naissance_conjoint)}
                         </p>
                       </div>
@@ -233,9 +233,9 @@ const FamilleSection = () => {
               {hasPartner && (
                 <div
                   className="flex items-center justify-between gap-5 flex-wrap"
-                  style={{ padding: '16px 24px', borderTop: `1px solid ${FOYER_DIVIDER}`, backgroundColor: FOYER_SOFT_BG }}
+                  style={{ padding: '10px 18px', borderTop: `1px solid ${FOYER_DIVIDER}`, backgroundColor: FOYER_SOFT_BG }}
                 >
-                  <p className="text-[14.5px]" style={{ color: FOYER_BODY }}>{regimeText}</p>
+                  <p className="text-[13px]" style={{ color: FOYER_BODY }}>{regimeText}</p>
                   <button
                     onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
                     className="text-sm font-medium shrink-0 hover:opacity-70 transition-opacity"
@@ -320,10 +320,10 @@ const FamilleSection = () => {
 
   return (
     <div style={{ fontFamily: 'Inter, sans-serif' }}>
-      <div>
+      <div className="p-[22px]">
         <div className="mb-6 flex items-start justify-between gap-6 flex-wrap">
           <div>
-            <h1 className="text-2xl font-bold" style={{ color: FOYER_INK, letterSpacing: '-0.02em' }}>Famille</h1>
+            <h1 className="text-[34px] font-bold" style={{ color: FOYER_INK, letterSpacing: '-0.02em' }}>Famille</h1>
             <p className="text-sm mt-1" style={{ color: LABEL_COLOR }}>
               Gérez les informations et la composition de votre famille
             </p>
@@ -331,11 +331,11 @@ const FamilleSection = () => {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="rounded-[10px] px-4 py-2 cursor-default" style={{ backgroundColor: '#eef3fb' }}>
-                <p className="text-[11px]" style={{ color: '#4a6fa5' }}>Foyer fiscal</p>
+              <div className="rounded-[14px] px-5 py-3 cursor-default" style={{ backgroundColor: '#eef3fb' }}>
+                <p className="text-[12px]" style={{ color: '#4a6fa5' }}>Foyer fiscal</p>
                 <p
                   className="mt-0.5"
-                  style={{ color: '#17335c', fontSize: 20, fontWeight: 500, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}
+                  style={{ color: '#17335c', fontSize: 28, fontWeight: 500, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}
                 >
                   {partsFiscales.totalParts}
                 </p>

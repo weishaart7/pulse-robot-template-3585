@@ -28,15 +28,25 @@ const GENERATION_NAMES: Record<number, string> = {
   '-3': 'Arrière grands-parents',
   '-2': 'Grands-parents',
   '-1': 'Parents',
-  0: 'Votre foyer',
+  0: 'Vous',
   1: 'Enfants',
   2: 'Petits-enfants',
   3: 'Arrière petits-enfants',
 } as unknown as Record<number, string>;
 
-function generationLabel(generation: number, columnIndex: number) {
+function generationLabel(generation: number, rowIndex: number) {
   const name = GENERATION_NAMES[generation] ?? `Génération ${generation}`;
-  return `${String(columnIndex + 1).padStart(2, '0')} · ${name}`;
+  return `${String(rowIndex + 1).padStart(2, '0')} · ${name}`;
+}
+
+// Place le client et son conjoint au centre de la génération 0, la fratrie répartie de part et d'autre.
+function orderGenerationZero(members: FamilyGraphNode[]) {
+  const main = members.find(m => m.isMain);
+  const spouse = members.find(m => m.isSpouse);
+  const others = members.filter(m => !m.isMain && !m.isSpouse);
+  const half = Math.ceil(others.length / 2);
+  const core = [main, spouse].filter((m): m is FamilyGraphNode => !!m);
+  return [...others.slice(0, half), ...core, ...others.slice(half)];
 }
 
 function MemberCard({
@@ -56,14 +66,14 @@ function MemberCard({
       ref={cardRef}
       type="button"
       onClick={onClick}
-      className="flex items-center gap-3 rounded-[4px] px-3 h-[54px] w-[210px] shrink-0 text-left transition-shadow shadow-[0_1px_2px_rgba(30,29,25,0.05)] hover:shadow-[0_3px_10px_rgba(30,29,25,0.1)]"
+      className="flex items-center gap-2.5 rounded-[4px] px-3 h-[54px] w-[210px] shrink-0 text-left transition-shadow shadow-[0_1px_2px_rgba(30,29,25,0.05)] hover:shadow-[0_3px_10px_rgba(30,29,25,0.1)]"
       style={{ backgroundColor: isMe ? CARD_BG_MAIN : CARD_BG }}
     >
       <div
-        className="h-8 w-8 rounded-[3px] flex items-center justify-center shrink-0"
+        className="h-7 w-7 rounded-[3px] flex items-center justify-center shrink-0"
         style={{ backgroundColor: isMe ? AVATAR_BG_MAIN : AVATAR_BG }}
       >
-        <span className="text-[11.5px] font-semibold" style={{ color: TEXT_COLOR }}>
+        <span className="text-[10.5px] font-semibold" style={{ color: TEXT_COLOR }}>
           {initialsFromFullName(node.name)}
         </span>
       </div>
@@ -88,12 +98,15 @@ export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onS
     [familyProfile, maritalStatus, familyLinks]
   );
 
-  const columnsByGeneration = new Map<number, FamilyGraphNode[]>();
+  const rowsByGeneration = new Map<number, FamilyGraphNode[]>();
   graph.nodes.forEach(node => {
-    if (!columnsByGeneration.has(node.generation)) columnsByGeneration.set(node.generation, []);
-    columnsByGeneration.get(node.generation)!.push(node);
+    if (!rowsByGeneration.has(node.generation)) rowsByGeneration.set(node.generation, []);
+    rowsByGeneration.get(node.generation)!.push(node);
   });
-  const generations = Array.from(columnsByGeneration.keys()).sort((a, b) => a - b);
+  rowsByGeneration.forEach((members, generation) => {
+    if (generation === 0) rowsByGeneration.set(generation, orderGenerationZero(members));
+  });
+  const generations = Array.from(rowsByGeneration.keys()).sort((a, b) => a - b);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const cardEls = useRef(new Map<string, HTMLButtonElement>());
@@ -119,7 +132,7 @@ export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onS
       .map(edge => {
         const source = graph.nodes.find(n => n.id === edge.source);
         const target = graph.nodes.find(n => n.id === edge.target);
-        if (!source || !target || source.generation === target.generation) return null;
+        if (!source || !target) return null;
 
         const sourceEl = cardEls.current.get(edge.source);
         const targetEl = cardEls.current.get(edge.target);
@@ -128,13 +141,26 @@ export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onS
         const sourceRect = sourceEl.getBoundingClientRect();
         const targetRect = targetEl.getBoundingClientRect();
 
-        const x1 = sourceRect.right - containerRect.left;
-        const y1 = sourceRect.top + sourceRect.height / 2 - containerRect.top;
-        const x2 = targetRect.left - containerRect.left;
-        const y2 = targetRect.top + targetRect.height / 2 - containerRect.top;
-        const midX = (x1 + x2) / 2;
+        if (source.generation === target.generation) {
+          // Même génération (ex. client ↔ conjoint) : lien horizontal direct.
+          const leftRect = sourceRect.left <= targetRect.left ? sourceRect : targetRect;
+          const rightRect = sourceRect.left <= targetRect.left ? targetRect : sourceRect;
+          const x1 = leftRect.right - containerRect.left;
+          const x2 = rightRect.left - containerRect.left;
+          const y = leftRect.top + leftRect.height / 2 - containerRect.top;
+          return { id: edge.id, d: `M ${x1} ${y} H ${x2}` };
+        }
 
-        return { id: edge.id, d: `M ${x1} ${y1} H ${midX} V ${y2} H ${x2}` };
+        // Générations différentes : lien vertical, avec coude horizontal si les cartes ne sont pas alignées.
+        const upperRect = source.generation < target.generation ? sourceRect : targetRect;
+        const lowerRect = source.generation < target.generation ? targetRect : sourceRect;
+        const x1 = upperRect.left + upperRect.width / 2 - containerRect.left;
+        const y1 = upperRect.bottom - containerRect.top;
+        const x2 = lowerRect.left + lowerRect.width / 2 - containerRect.left;
+        const y2 = lowerRect.top - containerRect.top;
+        const midY = (y1 + y2) / 2;
+
+        return { id: edge.id, d: `M ${x1} ${y1} V ${midY} H ${x2} V ${y2}` };
       })
       .filter((c): c is { id: string; d: string } => c !== null);
 
@@ -161,27 +187,29 @@ export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onS
   };
 
   return (
-    <div ref={containerRef} className="relative flex items-start gap-10 overflow-x-auto py-1">
+    <div ref={containerRef} className="relative flex flex-col gap-6 py-1">
       <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
         {connectors.map(connector => (
           <path key={connector.id} d={connector.d} fill="none" stroke={CONNECTOR_COLOR} strokeWidth={1.5} />
         ))}
       </svg>
 
-      {generations.map((generation, columnIndex) => (
-        <div key={generation} className="relative flex flex-col gap-5 shrink-0" style={{ width: 250 }}>
+      {generations.map((generation, rowIndex) => (
+        <div key={generation} className="relative flex items-center gap-4">
           <div
-            className="text-[9.5px] uppercase tracking-[0.1em]"
+            className="w-24 shrink-0 text-right text-[9.5px] uppercase tracking-[0.1em] leading-tight"
             style={{
               color: generation === 0 ? GENERATION_LABEL_COLOR_MAIN : GENERATION_LABEL_COLOR,
               fontFamily: MONO_FONT,
             }}
           >
-            {generationLabel(generation, columnIndex)}
+            {generationLabel(generation, rowIndex)}
           </div>
-          {columnsByGeneration.get(generation)!.map(node => (
-            <MemberCard key={node.id} node={node} onClick={() => handleSelect(node)} cardRef={getCardRef(node.id)} />
-          ))}
+          <div className="flex-1 flex flex-wrap justify-center gap-4">
+            {rowsByGeneration.get(generation)!.map(node => (
+              <MemberCard key={node.id} node={node} onClick={() => handleSelect(node)} cardRef={getCardRef(node.id)} />
+            ))}
+          </div>
         </div>
       ))}
     </div>
