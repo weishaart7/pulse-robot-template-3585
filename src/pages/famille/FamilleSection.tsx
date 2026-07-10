@@ -167,8 +167,8 @@ const FamilleSection = () => {
             <div className="bg-white rounded-[4px] overflow-hidden shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)]">
               <div className="grid grid-cols-1 sm:grid-cols-[1fr_1px_1fr]">
                 <div
-                  className="flex items-center gap-3.5 cursor-pointer"
-                  style={{ padding: '22px 24px' }}
+                  className="flex items-center gap-3 cursor-pointer"
+                  style={{ padding: '16px 20px' }}
                   onClick={() => setEditView('client')}
                 >
                   <div className="h-9 w-9 rounded-[4px] flex items-center justify-center shrink-0" style={{ backgroundColor: FOYER_SOFT_BG }}>
