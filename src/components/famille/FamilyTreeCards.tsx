@@ -56,7 +56,7 @@ function MemberCard({
       ref={cardRef}
       type="button"
       onClick={onClick}
-      className="flex items-center gap-3 rounded-[4px] px-3.5 h-[62px] w-[250px] shrink-0 text-left transition-shadow shadow-[0_1px_2px_rgba(30,29,25,0.05)] hover:shadow-[0_3px_10px_rgba(30,29,25,0.1)]"
+      className="flex items-center gap-3 rounded-[4px] px-3 h-[54px] w-[210px] shrink-0 text-left transition-shadow shadow-[0_1px_2px_rgba(30,29,25,0.05)] hover:shadow-[0_3px_10px_rgba(30,29,25,0.1)]"
       style={{ backgroundColor: isMe ? CARD_BG_MAIN : CARD_BG }}
     >
       <div
