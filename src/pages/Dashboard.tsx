@@ -6,6 +6,7 @@ import { useFamilyProfile } from '@/hooks/useFamilyData';
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { PatrimoineChart } from '@/components/patrimoine/PatrimoineChart';
+import { THEME_INK } from '@/lib/theme';
 const Dashboard = () => {
   const {
     revenus
@@ -28,11 +29,16 @@ const Dashboard = () => {
   const totalRevenus = revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0);
   const totalCharges = charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
   return <div className="p-6">
-      <div className="mb-6 bg-card rounded-lg p-6 border border-border">
-        <div className="flex justify-between items-start">
-          <h2 className="text-base text-foreground/70 font-medium">Bonjour {familyProfile?.prenom || '(Prénom)'}.</h2>
-          
-          <div className="rounded-lg p-6 max-w-md" style={{ backgroundColor: '#ebf1f1' }}>
+      <div className="mb-6">
+        <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>Vue d'ensemble</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Bonjour {familyProfile?.prenom || '(Prénom)'}, voici la synthèse de votre patrimoine
+        </p>
+      </div>
+
+      <div className="mb-6 bg-card rounded-[4px] p-6 shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)]">
+        <div className="flex justify-end items-start">
+          <div className="rounded-[4px] p-6 max-w-md" style={{ backgroundColor: '#ebf1f1' }}>
             <h3 className="text-base font-semibold text-foreground mb-3">Parlez avec un expert</h3>
             <p className="text-muted-foreground text-xs mb-4 leading-relaxed">
               Notre équipe interne de conseillers financiers, de conseillers patrimoniaux et partenaires est à vos côtés pour vous accompagner sereinement, qu'il s'agisse de questions simples ou de décisions stratégiques.
@@ -45,7 +51,7 @@ const Dashboard = () => {
       </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="border border-border">
+        <Card>
           <CardHeader>
             <CardTitle className="text-xl">Patrimoine</CardTitle>
             <CardDescription>
@@ -57,7 +63,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card className="border border-border">
+        <Card>
           <CardHeader>
             <CardTitle className="text-xl">Budget</CardTitle>
             <CardDescription>
@@ -69,7 +75,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card className="border border-border overflow-hidden">
+        <Card className="overflow-hidden">
           <CardHeader className="pb-4">
             <CardTitle className="text-xl">Fiscalité</CardTitle>
             <CardDescription>
@@ -129,7 +135,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card className="border border-border">
+        <Card>
           <CardHeader>
             <CardTitle className="text-xl">Transmission</CardTitle>
             <CardDescription>
@@ -143,7 +149,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card className="border border-border">
+        <Card>
           <CardHeader>
             <CardTitle className="text-xl">Retraite</CardTitle>
             <CardDescription>

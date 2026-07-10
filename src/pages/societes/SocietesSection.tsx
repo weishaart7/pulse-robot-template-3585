@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import AnimatedBackground from '@/components/ui/animated-tabs';
+import { SegmentedTabs } from '@/components/ui/segmented-tabs';
+import { THEME_INK } from '@/lib/theme';
 import { SocietesSynthese } from '@/components/societes/SocietesSynthese';
 import { SocietesMesSocietes } from '@/components/societes/SocietesMesSocietes';
 import { SocietesGouvernance } from '@/components/societes/gouvernance/SocietesGouvernance';
@@ -264,37 +265,16 @@ export const SocietesSection = () => {
             Retour aux sociétés
           </Button>
 
-          <div className="mb-6 flex justify-start">
-            <div className="rounded-[8px] bg-muted p-[2px]">
-              <AnimatedBackground
-                defaultValue={formTab}
-                onValueChange={(value) => setFormTab(value || 'informations')}
-                className="rounded-lg bg-background shadow-sm"
-                transition={{
-                  ease: "easeInOut",
-                  duration: 0.2,
-                }}
-              >
-                {FORM_TABS.map((tab) => (
-                  <button
-                    key={tab.id}
-                    data-id={tab.id}
-                    type="button"
-                    className="inline-flex min-w-24 items-center justify-center px-3 py-2 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </AnimatedBackground>
-            </div>
+          <div className="mb-8 flex justify-start">
+            <SegmentedTabs tabs={FORM_TABS} value={formTab} onValueChange={setFormTab} />
           </div>
 
-          <h2 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>
             {editingMode === 'edit' ? 'Modifier la société' : 'Nouvelle société'}
-          </h2>
-          <p className="text-muted-foreground">
-            {editingMode === 'edit' 
-              ? 'Modifiez les informations de votre société' 
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {editingMode === 'edit'
+              ? 'Modifiez les informations de votre société'
               : 'Ajoutez une nouvelle société à votre patrimoine'}
           </p>
         </div>
@@ -382,36 +362,15 @@ export const SocietesSection = () => {
     <div className="p-6">
       <div className="mb-6">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Sociétés</h2>
-          <p className="text-muted-foreground">
+          <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>Sociétés</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Administrez vos participations et structures sociétaires
           </p>
         </div>
       </div>
 
-      <div className="mb-6 flex justify-start">
-        <div className="rounded-[8px] bg-muted p-[2px]">
-          <AnimatedBackground
-            defaultValue="synthese"
-            onValueChange={(value) => setActiveTab(value || 'synthese')}
-            className="rounded-lg bg-background shadow-sm"
-            transition={{
-              ease: "easeInOut",
-              duration: 0.2,
-            }}
-          >
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                data-id={tab.id}
-                type="button"
-                className="inline-flex min-w-24 items-center justify-center px-3 py-2 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
-              >
-                {tab.label}
-              </button>
-            ))}
-          </AnimatedBackground>
-        </div>
+      <div className="mb-8 flex justify-start">
+        <SegmentedTabs tabs={TABS} value={activeTab} onValueChange={setActiveTab} />
       </div>
 
       <div className="mt-6">

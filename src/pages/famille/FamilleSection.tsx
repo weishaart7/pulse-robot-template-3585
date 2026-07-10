@@ -23,6 +23,13 @@ const LABEL_COLOR = '#8a8a86';
 const TEXT_COLOR = '#1a1a1a';
 const DIVIDER_COLOR = '#ececea';
 
+// Foyer panel — palette reprise du design "Section Famille" (Claude Design)
+const FOYER_INK = '#1F3A4B';
+const FOYER_LABEL = '#8a887f';
+const FOYER_BODY = '#3a3934';
+const FOYER_DIVIDER = '#efece3';
+const FOYER_SOFT_BG = '#F9FDEE';
+
 const FamilleSection = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('ma-famille');
@@ -156,53 +163,50 @@ const FamilleSection = () => {
       case 'ma-famille':
         return (
           <div className="space-y-5">
-            {/* Bande 1 — Identité */}
-            <div className="bg-white rounded-[14px] overflow-hidden" style={CARD_STYLE}>
+            {/* Foyer — identité + régime matrimonial dans un panneau unifié */}
+            <div className="bg-white rounded-[4px] overflow-hidden shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)]">
               <div className="grid grid-cols-1 sm:grid-cols-[1fr_1px_1fr]">
                 <div
-                  className="flex items-center gap-4 cursor-pointer"
-                  style={{ padding: '20px 22px' }}
+                  className="flex items-center gap-3.5 cursor-pointer"
+                  style={{ padding: '22px 24px' }}
                   onClick={() => setEditView('client')}
                 >
-                  <div className="h-12 w-12 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: '#dde8f7' }}>
-                    <span className="text-sm font-medium" style={{ color: '#17335c' }}>
+                  <div className="h-11 w-11 rounded-[4px] flex items-center justify-center shrink-0" style={{ backgroundColor: FOYER_SOFT_BG }}>
+                    <span className="text-[15px] font-semibold" style={{ color: FOYER_INK }}>
                       {getInitials(familyProfile?.prenom, familyProfile?.nom)}
                     </span>
                   </div>
                   <div>
-                    <p className="text-[12px]" style={{ color: LABEL_COLOR }}>Client 1</p>
-                    <p className="text-[15px] font-medium" style={{ color: TEXT_COLOR }}>{clientName}</p>
-                    <p className="text-[13px]" style={{ color: LABEL_COLOR, fontVariantNumeric: 'tabular-nums' }}>
+                    <p className="text-[18px] font-semibold" style={{ color: FOYER_INK }}>{clientName}</p>
+                    <p className="text-[13.5px] mt-0.5" style={{ color: FOYER_LABEL, fontVariantNumeric: 'tabular-nums' }}>
                       {secondaryLine(familyProfile?.date_naissance)}
                     </p>
                   </div>
                 </div>
 
-                <div className="hidden sm:block" style={{ backgroundColor: DIVIDER_COLOR }} />
+                <div className="hidden sm:block" style={{ backgroundColor: FOYER_DIVIDER }} />
 
-                <div style={{ padding: '20px 22px' }}>
+                <div style={{ padding: '22px 24px' }}>
                   {hasPartner ? (
                     <div
-                      className="flex items-center gap-4 cursor-pointer"
+                      className="flex items-center gap-3.5 cursor-pointer"
                       onClick={() => navigate('/dashboard/famille/conjoint')}
                     >
-                      <div className="h-12 w-12 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: '#f4e4fb' }}>
-                        <span className="text-sm font-medium" style={{ color: '#5c3170' }}>
+                      <div className="h-11 w-11 rounded-[4px] flex items-center justify-center shrink-0" style={{ backgroundColor: FOYER_SOFT_BG }}>
+                        <span className="text-[15px] font-semibold" style={{ color: FOYER_INK }}>
                           {getInitials(maritalData?.prenom_conjoint, maritalData?.nom_conjoint)}
                         </span>
                       </div>
                       <div>
-                        <p className="text-[12px]" style={{ color: LABEL_COLOR }}>Client 2</p>
-                        <p className="text-[15px] font-medium" style={{ color: TEXT_COLOR }}>{partnerName || 'Partenaire'}</p>
-                        <p className="text-[13px]" style={{ color: LABEL_COLOR, fontVariantNumeric: 'tabular-nums' }}>
+                        <p className="text-[18px] font-semibold" style={{ color: FOYER_INK }}>{partnerName || 'Partenaire'}</p>
+                        <p className="text-[13.5px] mt-0.5" style={{ color: FOYER_LABEL, fontVariantNumeric: 'tabular-nums' }}>
                           {secondaryLine(maritalData?.date_naissance_conjoint)}
                         </p>
                       </div>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-3">
-                      <p className="text-[12px]" style={{ color: LABEL_COLOR }}>Client 2</p>
-                      <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: TEXT_COLOR }}>
+                      <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: FOYER_INK }}>
                         <input
                           type="checkbox"
                           checked={isSingle}
@@ -214,8 +218,8 @@ const FamilleSection = () => {
                       {!isSingle && (
                         <button
                           onClick={() => navigate('/dashboard/famille/conjoint')}
-                          className="inline-flex items-center gap-2 text-sm rounded-md px-3 py-2 w-fit border hover:bg-black/[0.02] transition-colors"
-                          style={{ borderColor: '#e2e0da', color: TEXT_COLOR }}
+                          className="inline-flex items-center gap-2 text-sm rounded-[4px] px-3 py-2 w-fit border hover:bg-black/[0.02] transition-colors"
+                          style={{ borderColor: '#e2e0da', color: FOYER_INK }}
                         >
                           <Plus className="w-4 h-4" />
                           Ajouter un partenaire
@@ -225,30 +229,32 @@ const FamilleSection = () => {
                   )}
                 </div>
               </div>
-            </div>
 
-            {/* Bande 2 — Régime matrimonial */}
-            {hasPartner && (
-              <div className={CARD_CLASS} style={CARD_STYLE}>
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-[12px]" style={{ color: LABEL_COLOR }}>Régime matrimonial</p>
-                    <p className="text-[14px] mt-1" style={{ color: TEXT_COLOR }}>{regimeText}</p>
-                  </div>
+              {hasPartner && (
+                <div
+                  className="flex items-center justify-between gap-5 flex-wrap"
+                  style={{ padding: '16px 24px', borderTop: `1px solid ${FOYER_DIVIDER}`, backgroundColor: FOYER_SOFT_BG }}
+                >
+                  <p className="text-[14.5px]" style={{ color: FOYER_BODY }}>{regimeText}</p>
                   <button
                     onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
-                    className="text-[13px] font-medium shrink-0 hover:opacity-80 transition-opacity"
-                    style={{ color: '#4a6fa5' }}
+                    className="text-sm font-medium shrink-0 hover:opacity-70 transition-opacity"
+                    style={{ color: '#000000' }}
                   >
                     Voir le détail →
                   </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Bande 3 — Arbre familial */}
-            <div className={CARD_CLASS} style={CARD_STYLE}>
-              <p className="text-[12px] mb-4" style={{ color: LABEL_COLOR }}>Arbre familial</p>
+            <div className="bg-white rounded-[4px] p-6 shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)]">
+              <p
+                className="text-[10.5px] uppercase tracking-[0.11em] mb-6"
+                style={{ color: FOYER_LABEL, fontFamily: "'JetBrains Mono', monospace" }}
+              >
+                Arbre familial
+              </p>
               <FamilyTreeCards
                 familyProfile={familyProfile}
                 maritalStatus={maritalData}
@@ -317,8 +323,8 @@ const FamilleSection = () => {
       <div className="p-[22px]">
         <div className="mb-6 flex items-start justify-between gap-6 flex-wrap">
           <div>
-            <h2 className="text-2xl font-medium tracking-tight" style={{ color: TEXT_COLOR }}>Famille</h2>
-            <p className="text-sm" style={{ color: LABEL_COLOR }}>
+            <h1 className="text-[34px] font-bold" style={{ color: FOYER_INK, letterSpacing: '-0.02em' }}>Famille</h1>
+            <p className="text-sm mt-1" style={{ color: LABEL_COLOR }}>
               Gérez les informations et la composition de votre famille
             </p>
           </div>
@@ -343,9 +349,9 @@ const FamilleSection = () => {
 
         <div className="mb-8 flex justify-start">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="rounded-full">
+            <TabsList>
               {TABS.map((tab) => (
-                <TabsTrigger key={tab.id} value={tab.id} className="rounded-full min-w-28">
+                <TabsTrigger key={tab.id} value={tab.id}>
                   {tab.label}
                 </TabsTrigger>
               ))}

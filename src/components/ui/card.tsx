@@ -1,17 +1,19 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { THEME_CARD_SHADOW } from "@/lib/theme"
 
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border border-border/60 bg-card text-card-foreground",
+      "rounded-[4px] bg-card text-card-foreground",
       className
     )}
+    style={{ boxShadow: THEME_CARD_SHADOW, ...style }}
     {...props}
   />
 ))

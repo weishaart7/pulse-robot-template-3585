@@ -11,6 +11,7 @@ import { RetraiteSection } from './retraite/RetraiteSection';
 import FiscaliteSection from './fiscalite/FiscaliteSection';
 import BlogSection from './blog/BlogSection';
 import { AgendaSection } from './agenda/AgendaSection';
+import { THEME_INK } from '@/lib/theme';
 
 const DashboardSection = () => {
   const { section } = useParams();
@@ -102,10 +103,10 @@ const DashboardSection = () => {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold tracking-tight">
+        <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>
           {getSectionTitle(section || '')}
-        </h2>
-        <p className="text-muted-foreground">
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
           {getSectionDescription(section || '')}
         </p>
       </div>

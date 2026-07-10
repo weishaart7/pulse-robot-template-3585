@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import AnimatedBackground from '@/components/ui/animated-tabs';
+import { SegmentedTabs } from '@/components/ui/segmented-tabs';
+import { THEME_INK } from '@/lib/theme';
 import { PatrimoineResume } from '@/components/patrimoine/PatrimoineResume';
 import { PatrimoineActifs } from '@/components/patrimoine/PatrimoineActifs';
 import { PatrimoinePassifs } from '@/components/patrimoine/PatrimoinePassifs';
@@ -41,39 +42,22 @@ export const PatrimoineSection = () => {
     <div className="p-6">
       <div className="mb-6">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Patrimoine</h2>
-          <p className="text-muted-foreground">
+          <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>Patrimoine</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Gérez vos actifs et passifs patrimoniaux
           </p>
         </div>
       </div>
 
-      <div className="mb-6 flex justify-start">
-        <div className="rounded-[8px] bg-muted p-[2px]">
-          <AnimatedBackground
-            defaultValue={activeTab}
-            onValueChange={(value) => {
-              setActiveTab(value || 'resume');
-              setShowPlusValuesDetail(false);
-            }}
-            className="rounded-lg bg-background shadow-sm"
-            transition={{
-              ease: "easeInOut",
-              duration: 0.2,
-            }}
-          >
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                data-id={tab.id}
-                type="button"
-                className="inline-flex min-w-24 items-center justify-center px-3 py-2 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
-              >
-                {tab.label}
-              </button>
-            ))}
-          </AnimatedBackground>
-        </div>
+      <div className="mb-8 flex justify-start">
+        <SegmentedTabs
+          tabs={TABS}
+          value={activeTab}
+          onValueChange={(value) => {
+            setActiveTab(value);
+            setShowPlusValuesDetail(false);
+          }}
+        />
       </div>
 
       {!showPlusValuesDetail && <IncompleteAssetsBanner assets={assets} />}
