@@ -19,6 +19,22 @@ export interface AssetDemembrementWithAsset extends AssetDemembrement {
 }
 
 export const assetDemembrementService = {
+  // Récupère tous les démembrements de l'utilisateur courant en une seule
+  // requête (utilisé par les vues listant plusieurs actifs à la fois, pour
+  // éviter une requête par actif via getByAsset).
+  async getAllForUser(): Promise<AssetDemembrement[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase
+      .from('asset_demembrements')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return (data || []) as AssetDemembrement[];
+  },
+
   async getByAsset(assetId: string): Promise<AssetDemembrement[]> {
     const { data, error } = await supabase
       .from('asset_demembrements')

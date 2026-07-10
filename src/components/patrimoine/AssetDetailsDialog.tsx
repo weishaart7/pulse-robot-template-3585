@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Calendar, TrendingUp, User, Building, Coins, Heart, Key, History, Plus, Pencil, Trash2, Check, X, Banknote, FileText, Scale, Link2 } from 'lucide-react';
 import { NATURES_WITHOUT_ACQUISITION, getNatureDisplayLabel } from '@/constants/assetTypes';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
@@ -189,6 +190,13 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
               <span className="text-sm text-muted-foreground">Qualification du bien</span>
             </div>
             <Badge variant="outline" className="w-fit">{displayedQualification}</Badge>
+            {(asset.clause_entree_communaute || asset.clause_remploi) && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Clause d'entrée en communauté : {asset.clause_entree_communaute ? 'Oui' : 'Non'}
+                {' · '}
+                Clause de remploi : {asset.clause_remploi ? 'Oui' : 'Non'}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground italic mt-2">{displayedQualificationRaison}</p>
           </div>
 
@@ -509,6 +517,39 @@ const ValorisationHistorySection = ({ assetId, valorisations, onCreate, onUpdate
           <Button type="button" size="icon" variant="ghost" onClick={() => setIsAdding(false)}>
             <X className="h-4 w-4" />
           </Button>
+        </div>
+      )}
+
+      {valorisations.length > 0 && (
+        <div className="h-40 mb-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={[...valorisations].sort((a, b) => a.date_valorisation.localeCompare(b.date_valorisation))}
+              margin={{ top: 5, right: 12, bottom: 0, left: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis
+                dataKey="date_valorisation"
+                tickFormatter={(date: string) => format(new Date(date), 'dd/MM/yy')}
+                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              />
+              <YAxis
+                tickFormatter={(value: number) => formatCurrency(value)}
+                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                width={70}
+              />
+              <Tooltip
+                labelFormatter={(date: string) => format(new Date(date), 'dd/MM/yyyy')}
+                formatter={(value: number) => [formatCurrency(value), 'Valeur']}
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--background))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '6px'
+                }}
+              />
+              <Line type="monotone" dataKey="valeur" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       )}
 

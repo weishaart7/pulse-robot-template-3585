@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { ChevronDown, ChevronRight, MoreHorizontal, Edit, Trash2, Search, TrendingUp, TrendingDown } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { ChevronDown, ChevronRight, MoreHorizontal, Edit, Trash2, Search, TrendingUp, TrendingDown, Scale, Link2, AlertTriangle } from 'lucide-react';
 import { Asset } from '@/services/assetService';
+import { Emprunt } from '@/services/passifService';
 import { getAssetCategory, NATURES_WITHOUT_ACQUISITION, getNatureDisplayLabel } from '@/constants/assetTypes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,9 +12,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
+import { useEmprunts } from '@/hooks/usePassifs';
+import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { AssetDetailsDialog } from './AssetDetailsDialog';
 import { formatCurrency, getCategoryColor, calculatePlusValue, mapDetenteurToDisplay } from '@/lib/patrimoine/utils';
+import { resolveEffectiveNature, computeFiscalRegime } from '@/lib/patrimoine/regimeFiscalPlusValue';
+import { computePVIRegime } from '@/lib/patrimoine/regimeFiscalPVI';
 
 interface PatrimoineTreeViewProps {
   assets: Asset[];
@@ -28,6 +34,50 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
   const [searchQuery, setSearchQuery] = useState('');
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
+  const { data: familyLinks } = useFamilyLinks();
+  const { emprunts } = useEmprunts();
+  const [demembrements, setDemembrements] = useState<AssetDemembrement[]>([]);
+
+  useEffect(() => {
+    assetDemembrementService.getAllForUser()
+      .then(setDemembrements)
+      .catch(() => setDemembrements([]));
+  }, []);
+
+  const demembrementsByAsset = useMemo(() => {
+    return demembrements.reduce((acc, d) => {
+      if (!acc[d.asset_id]) acc[d.asset_id] = [];
+      acc[d.asset_id].push(d);
+      return acc;
+    }, {} as Record<string, AssetDemembrement[]>);
+  }, [demembrements]);
+
+  const empruntsByAsset = useMemo(() => {
+    return emprunts.reduce((acc, e) => {
+      if (!e.asset_id) return acc;
+      if (!acc[e.asset_id]) acc[e.asset_id] = [];
+      acc[e.asset_id].push(e);
+      return acc;
+    }, {} as Record<string, Emprunt[]>);
+  }, [emprunts]);
+
+  const getDemembrementCounterpartLabel = (d: AssetDemembrement) => {
+    if (d.type_partie === 'tiers') return d.nom_libre || 'Tiers';
+    const m = familyLinks?.find((fl) => fl.id === d.family_link_id);
+    return m ? (m.prenom ? `${m.prenom} ${m.nom}` : m.nom) : 'Membre de la famille';
+  };
+
+  const getEmpruntTooltip = (list: Emprunt[]) => (
+    <div className="space-y-1">
+      {list.map((e) => (
+        <div key={e.id}>
+          {e.libelle} — {formatCurrency(e.capital_restant_du || 0)} restant dû
+          {' · '}Garantie : {e.type_garantie || 'Aucune'}
+          {' · '}Assuré : {e.assure ? 'Oui' : 'Non'}
+        </div>
+      ))}
+    </div>
+  );
 
   const familyInfo = useMemo(() => ({
     hasPartner: !!maritalStatus?.prenom_conjoint,
@@ -82,7 +132,7 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
   const getPlusValueDisplay = (asset: Asset) => {
     // No plus-value for liquid assets
     if (NATURES_WITHOUT_ACQUISITION.includes(asset.nature)) {
-      return { display: '—', className: 'text-muted-foreground', value: 0 };
+      return { display: '—', className: 'text-muted-foreground', value: 0, regimeNonDetermine: false };
     }
 
     const { plusValue, hasData } = calculatePlusValue(
@@ -90,23 +140,38 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
       asset.valeur_acquisition,
       asset.frais_acquisition
     );
-    
-    if (!hasData) return { display: '—', className: 'text-muted-foreground', value: 0 };
-    
+
+    if (!hasData) return { display: '—', className: 'text-muted-foreground', value: 0, regimeNonDetermine: false };
+
+    const effectiveNature = resolveEffectiveNature(asset.nature, asset.cto_multi_actifs, asset.cto_nature_sous_jacent);
+    const regime = computePVIRegime({
+      nature: effectiveNature,
+      plusValue,
+      dateAcquisition: asset.date_acquisition,
+    }) ?? computeFiscalRegime({
+      nature: effectiveNature,
+      plusValue,
+      valeurEstimee: asset.valeur_estimee || 0,
+      dateAcquisition: asset.date_acquisition,
+    });
+    const regimeNonDetermine = regime.tone === 'non_determine';
+
     if (plusValue > 0) {
-      return { 
-        display: `+${formatCurrency(plusValue)}`, 
+      return {
+        display: `+${formatCurrency(plusValue)}`,
         className: 'text-green-600 dark:text-green-400',
-        value: plusValue
+        value: plusValue,
+        regimeNonDetermine
       };
     } else if (plusValue < 0) {
-      return { 
-        display: formatCurrency(plusValue), 
+      return {
+        display: formatCurrency(plusValue),
         className: 'text-red-600 dark:text-red-400',
-        value: plusValue
+        value: plusValue,
+        regimeNonDetermine
       };
     }
-    return { display: '0 €', className: 'text-muted-foreground', value: 0 };
+    return { display: '0 €', className: 'text-muted-foreground', value: 0, regimeNonDetermine };
   };
 
   // Calculate category plus-value
@@ -241,10 +306,32 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
                           <div className="flex items-center gap-2">
                             <div className="w-1.5 h-1.5 rounded-full opacity-60" style={{ backgroundColor: getCategoryColor(category) }} />
                             <div className="flex-1">
-                              <div className="font-normal text-sm text-foreground">
-                                {asset.denomination || getNatureDisplayLabel(asset.nature)}
-                                {asset.mode_detention && asset.mode_detention !== 'Pleine propriété' && (
-                                  <span className="ml-2 text-xs text-muted-foreground italic">({asset.mode_detention})</span>
+                              <div className="font-normal text-sm text-foreground flex items-center gap-1.5">
+                                <span>
+                                  {asset.denomination || getNatureDisplayLabel(asset.nature)}
+                                  {asset.mode_detention && asset.mode_detention !== 'Pleine propriété' && (
+                                    <span className="ml-2 text-xs text-muted-foreground italic">({asset.mode_detention})</span>
+                                  )}
+                                </span>
+                                {asset.id && demembrementsByAsset[asset.id]?.length > 0 && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Scale className="h-3.5 w-3.5 text-muted-foreground shrink-0" strokeWidth={1.75} />
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="text-xs">
+                                      {demembrementsByAsset[asset.id].map(getDemembrementCounterpartLabel).join(', ')}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
+                                {asset.id && empruntsByAsset[asset.id]?.length > 0 && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Link2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" strokeWidth={1.75} />
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="text-xs">
+                                      {getEmpruntTooltip(empruntsByAsset[asset.id])}
+                                    </TooltipContent>
+                                  </Tooltip>
                                 )}
                               </div>
                               {asset.etablissement && (
@@ -265,7 +352,21 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
                           <span className="text-sm text-foreground">{asset.valeur_estimee ? formatCurrency(asset.valeur_estimee) : 'Non évalué'}</span>
                         </FullTable.Cell>
                         <FullTable.Cell className="py-2.5">
-                          <span className={`text-sm ${plusValueInfo.className}`}>{plusValueInfo.display}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`text-sm ${plusValueInfo.className}`}>{plusValueInfo.display}</span>
+                            {plusValueInfo.regimeNonDetermine && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="inline-flex items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 p-0.5">
+                                    <AlertTriangle className="h-3 w-3 text-amber-600 dark:text-amber-400" strokeWidth={2} />
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs">
+                                  Régime fiscal non déterminé
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
                         </FullTable.Cell>
                         <FullTable.Cell className="py-2.5">
                           <DropdownMenu>

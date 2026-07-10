@@ -10,6 +10,24 @@ export interface AssetValorisation {
 }
 
 export const assetValorisationService = {
+  // Récupère l'ensemble des valorisations de l'utilisateur courant, tous
+  // actifs confondus, en une seule requête (utilisé pour l'agrégation
+  // temporelle du patrimoine total, par opposition à getByAssetId qui ne
+  // porte que sur un actif à la fois).
+  async getAllForUser(): Promise<AssetValorisation[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase
+      .from('asset_valorisations')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('date_valorisation', { ascending: true });
+
+    if (error) throw error;
+    return (data || []) as AssetValorisation[];
+  },
+
   async getByAssetId(assetId: string): Promise<AssetValorisation[]> {
     const { data, error } = await supabase
       .from('asset_valorisations')

@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { format } from 'date-fns';
 import { PatrimoineChart } from './PatrimoineChart';
 import { PlusValuesCard } from './PlusValuesCard';
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
+import { assetValorisationService, AssetValorisation } from '@/services/assetValorisationService';
+import { computeEvolutionPatrimoine } from '@/lib/patrimoine/evolutionPatrimoine';
 import { TrendingUp, TrendingDown, Wallet, User, Users, Target } from 'lucide-react';
 
 interface PatrimoineResumeProps {
@@ -57,6 +61,13 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
   const { emprunts } = useEmprunts();
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
+  const [valorisations, setValorisations] = useState<AssetValorisation[]>([]);
+
+  useEffect(() => {
+    assetValorisationService.getAllForUser()
+      .then(setValorisations)
+      .catch(() => setValorisations([]));
+  }, []);
 
   const {
     financialSummary,
@@ -71,6 +82,11 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
     spouseFirstName: maritalStatus?.prenom_conjoint || 'Conjoint',
     statutCouple: maritalStatus?.statut_couple
   });
+
+  const evolutionPatrimoine = useMemo(
+    () => computeEvolutionPatrimoine(assets, valorisations),
+    [assets, valorisations]
+  );
 
   return (
     <div className="space-y-8">
@@ -109,6 +125,48 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
         </CardHeader>
         <CardContent>
           <PatrimoineChart assets={assets} passifs={passifs} emprunts={emprunts} selectedCategory={null} />
+        </CardContent>
+      </Card>
+
+      {/* Evolution chart */}
+      <Card className="border border-border hover:shadow-sm transition-shadow duration-500 animate-fade-in" style={{ animationDelay: '210ms' }}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-[15px] font-semibold tracking-tight">Évolution du patrimoine</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {evolutionPatrimoine.length === 0 ? (
+            <p className="text-muted-foreground/70 text-center py-10 text-sm">
+              Pas encore d'historique de valorisation. Ajoutez des valorisations à vos actifs pour voir l'évolution de votre patrimoine dans le temps.
+            </p>
+          ) : (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={evolutionPatrimoine} margin={{ top: 5, right: 12, bottom: 0, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={(date: string) => format(new Date(date), 'dd/MM/yy')}
+                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  />
+                  <YAxis
+                    tickFormatter={(value: number) => formatCurrency(value)}
+                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                    width={80}
+                  />
+                  <Tooltip
+                    labelFormatter={(date: string) => format(new Date(date), 'dd/MM/yyyy')}
+                    formatter={(value: number) => [formatCurrency(value), 'Patrimoine']}
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--background))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px'
+                    }}
+                  />
+                  <Line type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </CardContent>
       </Card>
 
