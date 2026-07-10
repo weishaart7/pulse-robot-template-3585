@@ -320,10 +320,10 @@ const FamilleSection = () => {
 
   return (
     <div style={{ fontFamily: 'Inter, sans-serif' }}>
-      <div className="p-[22px]">
+      <div>
         <div className="mb-6 flex items-start justify-between gap-6 flex-wrap">
           <div>
-            <h1 className="text-[34px] font-bold" style={{ color: FOYER_INK, letterSpacing: '-0.02em' }}>Famille</h1>
+            <h1 className="text-2xl font-bold" style={{ color: FOYER_INK, letterSpacing: '-0.02em' }}>Famille</h1>
             <p className="text-sm mt-1" style={{ color: LABEL_COLOR }}>
               Gérez les informations et la composition de votre famille
             </p>
@@ -331,11 +331,11 @@ const FamilleSection = () => {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="rounded-[14px] px-5 py-3 cursor-default" style={{ backgroundColor: '#eef3fb' }}>
-                <p className="text-[12px]" style={{ color: '#4a6fa5' }}>Foyer fiscal</p>
+              <div className="rounded-[10px] px-4 py-2 cursor-default" style={{ backgroundColor: '#eef3fb' }}>
+                <p className="text-[11px]" style={{ color: '#4a6fa5' }}>Foyer fiscal</p>
                 <p
                   className="mt-0.5"
-                  style={{ color: '#17335c', fontSize: 28, fontWeight: 500, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}
+                  style={{ color: '#17335c', fontSize: 20, fontWeight: 500, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}
                 >
                   {partsFiscales.totalParts}
                 </p>
