@@ -17,19 +17,21 @@ import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Globe, Info, TrendingUp, TrendingDown, FileText, Users, ShoppingCart, Coins, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { IndivisairesSection, IndivisaireDraft } from './IndivisairesSection';
-import { 
-  ORIGINE_ACTIF_OPTIONS, 
-  SITUATION_PARTICULIERE_OPTIONS, 
+import { DemembrementSection, DemembrementDraft } from './DemembrementSection';
+import {
+  ORIGINE_ACTIF_OPTIONS,
+  SITUATION_PARTICULIERE_OPTIONS,
   MODE_DETENTION_OPTIONS,
   NATURES_LIQUIDITES_FR
 } from '@/schemas/assetSchema';
 import { isSocieteEligibleNature } from '@/lib/patrimoine/societeTransfer';
 import { QUALIFICATION_OPTIONS } from '@/lib/patrimoine/qualification';
 import { calculatePlusValue } from '@/lib/patrimoine/utils';
+import { computeAge, getTrancheBaremeForYoungest } from '@/lib/patrimoine/bareme669CGI';
 
 interface AssetFormProps {
   asset?: Asset;
-  onSubmit: (asset: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[]) => Promise<void>;
+  onSubmit: (asset: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[]) => Promise<void>;
   onCancel: () => void;
   onDelete?: (assetId: string) => Promise<void>;
 }
@@ -62,6 +64,9 @@ export const AssetForm: React.FC<AssetFormProps> = ({
     maritalContext,
     indivisaires,
     setIndivisaires,
+    demembrements,
+    setDemembrements,
+    qualificationRaison,
     handleSubmit,
     handleChargeSubmit,
     handleChargeDelete,
@@ -86,7 +91,13 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const showBienEtranger = watchedNature && !NATURES_LIQUIDITES_FR.includes(watchedNature);
   const isPER = NATURES_PER.includes(watchedNature);
   const isCTO = watchedNature === 'Compte-titres (CTO)';
+  const watchedOrigineActif = form.watch('origine_actif');
+  const showClauseEntreeCommunaute = (watchedOrigineActif || []).includes('Donation');
+  const showClauseRemploi = (watchedOrigineActif || []).includes('Acquisition à titre onéreux');
   const watchedCtoMultiActifs = form.watch('cto_multi_actifs');
+  const watchedModeDetention = form.watch('mode_detention');
+  const isDemembre = watchedModeDetention === 'Usufruit' || watchedModeDetention === 'Nue-propriété';
+  const demembrementCounterpartRole = watchedModeDetention === 'Usufruit' ? 'Nu-propriétaire' : 'Usufruitier';
 
   // Plus-value live
   const watchedFraisAcquisition = form.watch('frais_acquisition');
@@ -94,6 +105,33 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const plusValuePct = watchedValeurAcquisition && watchedValeurAcquisition > 0
     ? (plusValueLive / watchedValeurAcquisition) * 100
     : 0;
+
+  // Valorisation démembrée live (barème art. 669 CGI, âge du plus jeune usufruitier)
+  const clientIsUsufruitier = watchedModeDetention === 'Usufruit';
+  const clientAges: number[] = [];
+  if (isDemembre) {
+    if (watchedDetenteur === familyData.userFirstName || watchedDetenteur === 'Vous') {
+      const age = computeAge(familyData.userDateNaissance);
+      if (age !== null) clientAges.push(age);
+    } else if (watchedDetenteur === familyData.partnerFirstName || watchedDetenteur === 'Conjoint') {
+      const age = computeAge(familyData.partnerDateNaissance);
+      if (age !== null) clientAges.push(age);
+    } else if (watchedDetenteur === 'Le couple') {
+      const ageUser = computeAge(familyData.userDateNaissance);
+      const ageSpouse = computeAge(familyData.partnerDateNaissance);
+      if (ageUser !== null) clientAges.push(ageUser);
+      if (ageSpouse !== null) clientAges.push(ageSpouse);
+    }
+  }
+  const counterpartAges: number[] = isDemembre
+    ? demembrements
+        .map((d) => d.type_partie === 'tiers'
+          ? computeAge(d.date_naissance_tiers)
+          : computeAge(familyMembers.find((m) => m.id === d.family_link_id)?.date_naissance))
+        .filter((a): a is number => a !== null)
+    : [];
+  const usufruitierAges = clientIsUsufruitier ? clientAges : counterpartAges;
+  const trancheBareme669 = isDemembre ? getTrancheBaremeForYoungest(usufruitierAges) : null;
   const showPlusValue = !hideAcquisition && watchedValeurAcquisition && watchedValeurEstimee;
 
   const formatEur = (n: number) =>
@@ -422,6 +460,16 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         />
       )}
 
+      {/* Démembrement (si mode de détention Usufruit ou Nue-propriété) */}
+      {isDemembre && (
+        <DemembrementSection
+          role={demembrementCounterpartRole}
+          familyMembers={familyMembers}
+          value={demembrements}
+          onChange={setDemembrements}
+        />
+      )}
+
     </div>
   );
 
@@ -492,6 +540,52 @@ export const AssetForm: React.FC<AssetFormProps> = ({
           )} />
         </div>
 
+        {showClauseEntreeCommunaute && (
+          <FormField
+            control={form.control}
+            name="clause_entree_communaute"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>Clause d'entrée en communauté</FormLabel>
+                  <FormDescription>
+                    Le donateur a explicitement choisi que ce bien tombe dans la communauté, malgré l'origine gratuite.
+                  </FormDescription>
+                </div>
+              </FormItem>
+            )}
+          />
+        )}
+
+        {showClauseRemploi && (
+          <FormField
+            control={form.control}
+            name="clause_remploi"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>Clause de remploi actée</FormLabel>
+                  <FormDescription>
+                    Ce bien a été acheté avec des fonds propres réemployés : il reste propre malgré l'acquisition à titre onéreux pendant l'union.
+                  </FormDescription>
+                </div>
+              </FormItem>
+            )}
+          />
+        )}
+
         <FormField control={form.control} name="qualification_bien" render={({ field }) => (
           <FormItem>
             <FormLabel>Qualification du bien</FormLabel>
@@ -518,6 +612,9 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                 ? "Calculée automatiquement à partir du régime matrimonial, de l'origine du bien, de la date d'acquisition et du détenteur."
                 : "Qualification définie manuellement : le calcul automatique n'écrasera plus cette valeur."}
             </FormDescription>
+            {watchedQualificationAuto !== false && qualificationRaison && (
+              <p className="text-xs text-muted-foreground italic">{qualificationRaison}</p>
+            )}
             {watchedQualificationAuto === false && (
               <Button
                 type="button"
@@ -592,6 +689,35 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {isDemembre && watchedValeurEstimee && (
+        <div className="rounded-md border border-border/60 bg-card p-5 animate-fade-in">
+          <div className="flex items-center gap-2 mb-3">
+            <Info className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+            <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-widest">Valorisation démembrée (barème art. 669 CGI)</p>
+          </div>
+          {trancheBareme669 ? (
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-[11px] text-muted-foreground/60">Valeur pleine propriété</p>
+                <p className="text-[15px] font-semibold text-foreground tabular-nums mt-0.5">{formatEur(watchedValeurEstimee)}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-muted-foreground/60">Valeur usufruit ({(trancheBareme669.usufruit * 100).toFixed(0)}%)</p>
+                <p className="text-[15px] font-semibold text-foreground tabular-nums mt-0.5">{formatEur(watchedValeurEstimee * trancheBareme669.usufruit)}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-muted-foreground/60">Valeur nue-propriété ({(trancheBareme669.nuePropriete * 100).toFixed(0)}%)</p>
+                <p className="text-[15px] font-semibold text-foreground tabular-nums mt-0.5">{formatEur(watchedValeurEstimee * trancheBareme669.nuePropriete)}</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-[12px] text-muted-foreground/70">
+              Non calculable : renseignez la date de naissance de l'usufruitier (fiche client, conjoint, ou membre de la famille / tiers en contrepartie) pour obtenir la répartition.
+            </p>
+          )}
         </div>
       )}
     </div>

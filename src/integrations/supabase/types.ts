@@ -109,6 +109,60 @@ export type Database = {
           },
         ]
       }
+      asset_demembrements: {
+        Row: {
+          asset_id: string
+          created_at: string
+          date_naissance_tiers: string | null
+          family_link_id: string | null
+          id: string
+          nom_libre: string | null
+          role: string
+          type_partie: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          date_naissance_tiers?: string | null
+          family_link_id?: string | null
+          id?: string
+          nom_libre?: string | null
+          role: string
+          type_partie?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          date_naissance_tiers?: string | null
+          family_link_id?: string | null
+          id?: string
+          nom_libre?: string | null
+          role?: string
+          type_partie?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_demembrements_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_demembrements_family_link_id_fkey"
+            columns: ["family_link_id"]
+            isOneToOne: false
+            referencedRelation: "family_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asset_indivisaires: {
         Row: {
           asset_id: string
@@ -249,6 +303,8 @@ export type Database = {
         Row: {
           attachement_emotionnel: number | null
           bien_etranger: boolean | null
+          clause_entree_communaute: boolean | null
+          clause_remploi: boolean | null
           created_at: string
           cto_multi_actifs: boolean | null
           cto_nature_sous_jacent: string | null
@@ -300,6 +356,8 @@ export type Database = {
         Insert: {
           attachement_emotionnel?: number | null
           bien_etranger?: boolean | null
+          clause_entree_communaute?: boolean | null
+          clause_remploi?: boolean | null
           created_at?: string
           cto_multi_actifs?: boolean | null
           cto_nature_sous_jacent?: string | null
@@ -351,6 +409,8 @@ export type Database = {
         Update: {
           attachement_emotionnel?: number | null
           bien_etranger?: boolean | null
+          clause_entree_communaute?: boolean | null
+          clause_remploi?: boolean | null
           created_at?: string
           cto_multi_actifs?: boolean | null
           cto_nature_sous_jacent?: string | null
@@ -628,6 +688,9 @@ export type Database = {
       }
       emprunts: {
         Row: {
+          asset_id: string | null
+          assure: boolean | null
+          capital_garanti_deces: number | null
           capital_restant_du: number | null
           created_at: string
           detenteur: string | null
@@ -638,13 +701,19 @@ export type Database = {
           nature: string
           pourcentage_conjoint: number | null
           pourcentage_utilisateur: number | null
+          quotite_assuree_conjoint: number | null
+          quotite_assuree_utilisateur: number | null
           reporter_budget: boolean | null
           societe_id: string | null
           taux_interet: number | null
+          type_garantie: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          asset_id?: string | null
+          assure?: boolean | null
+          capital_garanti_deces?: number | null
           capital_restant_du?: number | null
           created_at?: string
           detenteur?: string | null
@@ -655,13 +724,19 @@ export type Database = {
           nature: string
           pourcentage_conjoint?: number | null
           pourcentage_utilisateur?: number | null
+          quotite_assuree_conjoint?: number | null
+          quotite_assuree_utilisateur?: number | null
           reporter_budget?: boolean | null
           societe_id?: string | null
           taux_interet?: number | null
+          type_garantie?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          asset_id?: string | null
+          assure?: boolean | null
+          capital_garanti_deces?: number | null
           capital_restant_du?: number | null
           created_at?: string
           detenteur?: string | null
@@ -672,13 +747,23 @@ export type Database = {
           nature?: string
           pourcentage_conjoint?: number | null
           pourcentage_utilisateur?: number | null
+          quotite_assuree_conjoint?: number | null
+          quotite_assuree_utilisateur?: number | null
           reporter_budget?: boolean | null
           societe_id?: string | null
           taux_interet?: number | null
+          type_garantie?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "emprunts_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "emprunts_societe_id_fkey"
             columns: ["societe_id"]

@@ -12,7 +12,9 @@ import { societeService } from '@/services/societeService';
 import { isSocieteEligibleNature, natureToTypeSociete } from '@/lib/patrimoine/societeTransfer';
 import { assetIndivisaireService } from '@/services/assetIndivisaireService';
 import { assetValorisationService } from '@/services/assetValorisationService';
+import { assetDemembrementService } from '@/services/assetDemembrementService';
 import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
+import { DemembrementDraft } from '@/components/assets/DemembrementSection';
 
 export const PatrimoineActifs = () => {
   const [showAssetForm, setShowAssetForm] = useState(false);
@@ -58,7 +60,7 @@ export const PatrimoineActifs = () => {
     }
   };
 
-  const handleAssetSubmit = async (assetData: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[]) => {
+  const handleAssetSubmit = async (assetData: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[]) => {
     try {
       const previousValeurEstimee = editingAsset?.valeur_estimee;
       let savedAsset;
@@ -104,6 +106,21 @@ export const PatrimoineActifs = () => {
         }))
       );
 
+      // Sauvegarde de la contrepartie du démembrement (remplace l'ensemble existant pour cet actif)
+      const demembrementRole: 'Usufruitier' | 'Nu-propriétaire' =
+        (savedAsset as Asset).mode_detention === 'Usufruit' ? 'Nu-propriétaire' : 'Usufruitier';
+      await assetDemembrementService.replaceForAsset(
+        savedAsset.id!,
+        demembrements.map((d) => ({
+          asset_id: savedAsset.id!,
+          role: demembrementRole,
+          type_partie: d.type_partie,
+          family_link_id: d.type_partie === 'famille' ? d.family_link_id : null,
+          nom_libre: d.type_partie === 'tiers' ? d.nom_libre : null,
+          date_naissance_tiers: d.type_partie === 'tiers' ? d.date_naissance_tiers : null,
+        }))
+      );
+
       // Création/lien automatique d'une société si applicable
       await syncSocieteFromAsset(savedAsset as Asset);
 
@@ -111,6 +128,9 @@ export const PatrimoineActifs = () => {
       setEditingAsset(null);
     } catch (error) {
       console.error('Error saving asset:', error);
+      if (error instanceof Error && error.message.includes('co-indivisaires')) {
+        toast.error("Le total des parts des indivisaires dépasse 100%. Merci de corriger la répartition avant d'enregistrer.");
+      }
     }
   };
 

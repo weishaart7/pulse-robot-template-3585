@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { EmpruntForm } from './EmpruntForm';
-import { PassifForm } from './PassifForm';
+import { PassifEmpruntForm } from './PassifEmpruntForm';
 import { Plus, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { useEmprunts, usePassifs } from '@/hooks/usePassifs';
+import { useAssets } from '@/hooks/useAssets';
 import { PassifDetailsDialog } from './PassifDetailsDialog';
 import { Emprunt, Passif } from '@/services/passifService';
 import {
@@ -15,47 +15,27 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export const PatrimoinePassifs = () => {
-  const [showEmpruntForm, setShowEmpruntForm] = useState(false);
-  const [showPassifForm, setShowPassifForm] = useState(false);
-  const [editingEmprunt, setEditingEmprunt] = useState<Emprunt | null>(null);
-  const [editingPassif, setEditingPassif] = useState<Passif | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editingItem, setEditingItem] = useState<Emprunt | Passif | null>(null);
   const [selectedPassif, setSelectedPassif] = useState<Emprunt | Passif | null>(null);
   const [passifType, setPassifType] = useState<'emprunt' | 'passif'>('emprunt');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const { emprunts, loading: empruntsLoading, deleteEmprunt } = useEmprunts();
   const { passifs, loading: passifsLoading, deletePassif } = usePassifs();
+  const { assets } = useAssets();
 
-  if (showEmpruntForm || editingEmprunt) {
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingItem(null);
+  };
+
+  if (showForm || editingItem) {
     return (
       <div className="space-y-6">
-        <EmpruntForm
-          emprunt={editingEmprunt || undefined}
-          onCancel={() => {
-            setShowEmpruntForm(false);
-            setEditingEmprunt(null);
-          }}
-          onSubmit={() => {
-            setShowEmpruntForm(false);
-            setEditingEmprunt(null);
-          }}
-        />
-      </div>
-    );
-  }
-
-  if (showPassifForm || editingPassif) {
-    return (
-      <div className="space-y-6">
-        <PassifForm
-          passif={editingPassif || undefined}
-          onCancel={() => {
-            setShowPassifForm(false);
-            setEditingPassif(null);
-          }}
-          onSubmit={() => {
-            setShowPassifForm(false);
-            setEditingPassif(null);
-          }}
+        <PassifEmpruntForm
+          item={editingItem || undefined}
+          onCancel={closeForm}
+          onSubmit={closeForm}
         />
       </div>
     );
@@ -65,18 +45,12 @@ export const PatrimoinePassifs = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Gestion des passifs</h3>
-        <div className="flex gap-2">
-          <Button onClick={() => setShowEmpruntForm(true)} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Ajouter un emprunt
-          </Button>
-          <Button variant="outline" onClick={() => setShowPassifForm(true)} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Ajouter un passif
-          </Button>
-        </div>
+        <Button onClick={() => setShowForm(true)} className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Ajouter un passif/emprunt
+        </Button>
       </div>
-      
+
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -94,8 +68,8 @@ export const PatrimoinePassifs = () => {
             ) : (
               <div className="space-y-2">
                 {emprunts.map((emprunt) => (
-                  <div 
-                    key={emprunt.id} 
+                  <div
+                    key={emprunt.id}
                     className="flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
                     onClick={() => {
                       setSelectedPassif(emprunt);
@@ -106,7 +80,7 @@ export const PatrimoinePassifs = () => {
                     <div>
                       <p className="font-medium">{emprunt.libelle}</p>
                       <p className="text-sm text-muted-foreground">
-                        {emprunt.nature} • 
+                        {emprunt.nature} •
                         {emprunt.capital_restant_du && ` Capital: ${emprunt.capital_restant_du.toLocaleString('fr-FR')}€`}
                         {emprunt.mensualite && ` • Mensualité: ${emprunt.mensualite.toLocaleString('fr-FR')}€`}
                       </p>
@@ -126,12 +100,12 @@ export const PatrimoinePassifs = () => {
                       <DropdownMenuContent>
                         <DropdownMenuItem onClick={(e) => {
                           e.stopPropagation();
-                          setEditingEmprunt(emprunt);
+                          setEditingItem(emprunt);
                         }}>
                           <Edit className="h-4 w-4 mr-2" />
                           Modifier
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={(e) => {
                             e.stopPropagation();
                             deleteEmprunt(emprunt.id);
@@ -166,8 +140,8 @@ export const PatrimoinePassifs = () => {
             ) : (
               <div className="space-y-2">
                 {passifs.map((passif) => (
-                  <div 
-                    key={passif.id} 
+                  <div
+                    key={passif.id}
                     className="flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
                     onClick={() => {
                       setSelectedPassif(passif);
@@ -196,12 +170,12 @@ export const PatrimoinePassifs = () => {
                       <DropdownMenuContent>
                         <DropdownMenuItem onClick={(e) => {
                           e.stopPropagation();
-                          setEditingPassif(passif);
+                          setEditingItem(passif);
                         }}>
                           <Edit className="h-4 w-4 mr-2" />
                           Modifier
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={(e) => {
                             e.stopPropagation();
                             deletePassif(passif.id);
@@ -221,9 +195,10 @@ export const PatrimoinePassifs = () => {
         </Card>
       </div>
 
-      <PassifDetailsDialog 
+      <PassifDetailsDialog
         passif={selectedPassif}
         type={passifType}
+        assets={assets}
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
       />

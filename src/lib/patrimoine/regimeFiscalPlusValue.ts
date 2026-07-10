@@ -100,6 +100,11 @@ const NATURES_OR = ['Or (physique)', 'Métaux précieux (argent, platine)'];
 // durable et solidaire (LDDS)", "Livret d'épargne populaire (LEP)",
 // "Livret Jeune". En pratique ces livrets n'ont pas de valeur d'acquisition
 // suivie et n'apparaissent quasiment jamais dans ce tableau.
+//
+// "Droits à royalties" (nouvelle nature) : classée "Non déterminé" au même
+// titre que les groupes ci-dessus, faute de régime fiscal propre codifié
+// pour cette phase. La plus-value brute reste affichée normalement dans
+// l'UI, seule la fiscalité n'est pas calculée.
 
 // --- CTO multi-actifs : résolution de la nature effective pour le régime fiscal ---
 // Un CTO peut détenir un sous-jacent qui suit un régime fiscal différent du

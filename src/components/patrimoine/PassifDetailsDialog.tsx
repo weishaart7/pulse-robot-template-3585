@@ -1,18 +1,20 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Emprunt, Passif } from '@/services/passifService';
+import { Asset } from '@/services/assetService';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { TrendingDown, Percent, Calendar, DollarSign } from 'lucide-react';
+import { TrendingDown, Percent, Calendar, DollarSign, Link2, ShieldCheck } from 'lucide-react';
 
 interface PassifDetailsDialogProps {
   passif: Emprunt | Passif | null;
   type: 'emprunt' | 'passif';
+  assets?: Asset[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export const PassifDetailsDialog = ({ passif, type, open, onOpenChange }: PassifDetailsDialogProps) => {
+export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenChange }: PassifDetailsDialogProps) => {
   if (!passif) return null;
 
   const formatCurrency = (value: number | undefined | null) => {
@@ -31,6 +33,7 @@ export const PassifDetailsDialog = ({ passif, type, open, onOpenChange }: Passif
 
   const emprunt = isEmprunt(passif) ? passif : null;
   const simplePassif = !isEmprunt(passif) ? passif : null;
+  const linkedAsset = emprunt?.asset_id ? assets.find((a) => a.id === emprunt.asset_id) : undefined;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -96,8 +99,55 @@ export const PassifDetailsDialog = ({ passif, type, open, onOpenChange }: Passif
                       <p className="font-medium">{emprunt.duree_restante} mois</p>
                     </div>
                   )}
+                  {emprunt.type_garantie && emprunt.type_garantie !== 'Aucune' && (
+                    <div className="p-3 rounded-lg bg-muted">
+                      <span className="text-sm text-muted-foreground">Type de garantie</span>
+                      <p className="font-medium">{emprunt.type_garantie}</p>
+                    </div>
+                  )}
+                  {linkedAsset && (
+                    <div className="p-3 rounded-lg bg-muted">
+                      <div className="flex items-center gap-2">
+                        <Link2 className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">Actif lié</span>
+                      </div>
+                      <p className="font-medium">{linkedAsset.denomination || linkedAsset.nature}</p>
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {emprunt.assure && (
+                <>
+                  <Separator />
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                      <ShieldCheck className="h-5 w-5" />
+                      Assurance emprunteur
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {emprunt.quotite_assuree_utilisateur !== undefined && emprunt.quotite_assuree_utilisateur !== null && (
+                        <div className="p-3 rounded-lg bg-muted">
+                          <span className="text-sm text-muted-foreground">Quotité assurée (vous)</span>
+                          <p className="font-medium">{emprunt.quotite_assuree_utilisateur}%</p>
+                        </div>
+                      )}
+                      {emprunt.quotite_assuree_conjoint !== undefined && emprunt.quotite_assuree_conjoint !== null && (
+                        <div className="p-3 rounded-lg bg-muted">
+                          <span className="text-sm text-muted-foreground">Quotité assurée (conjoint)</span>
+                          <p className="font-medium">{emprunt.quotite_assuree_conjoint}%</p>
+                        </div>
+                      )}
+                      {emprunt.capital_garanti_deces !== undefined && emprunt.capital_garanti_deces !== null && (
+                        <div className="p-3 rounded-lg bg-muted col-span-2">
+                          <span className="text-sm text-muted-foreground">Capital garanti en cas de décès</span>
+                          <p className="font-medium">{formatCurrency(emprunt.capital_garanti_deces)}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* Calculs */}
               {emprunt.mensualite && emprunt.duree_restante && (

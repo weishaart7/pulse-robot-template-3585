@@ -40,6 +40,8 @@ export interface FamilyInfo {
   hasPartner: boolean;
   userFirstName?: string;
   partnerFirstName?: string;
+  userDateNaissance?: string;
+  partnerDateNaissance?: string;
 }
 
 export const mapDetenteurToDisplay = (dbValue: string | undefined, familyInfo: FamilyInfo): string => {

@@ -81,6 +81,8 @@ export const assetSchema = z.object({
   sous_type_per: z.enum(['Bancaire', 'Assurantiel']).optional(),
   cto_multi_actifs: z.boolean().optional(),
   cto_nature_sous_jacent: z.string().optional(),
+  clause_entree_communaute: z.boolean().optional(),
+  clause_remploi: z.boolean().optional(),
 });
 
 export type AssetFormValues = z.infer<typeof assetSchema>;

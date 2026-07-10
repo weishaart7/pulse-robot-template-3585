@@ -10,6 +10,8 @@ import { ASSET_CATEGORIES } from '@/constants/assetTypes';
 import { qualifierBien } from '@/lib/patrimoine/qualification';
 import { assetIndivisaireService, AssetIndivisaire } from '@/services/assetIndivisaireService';
 import { IndivisaireDraft, draftsFromIndivisaires } from '@/components/assets/IndivisairesSection';
+import { assetDemembrementService } from '@/services/assetDemembrementService';
+import { DemembrementDraft, draftsFromDemembrements } from '@/components/assets/DemembrementSection';
 
 // Types d'actifs qui nécessitent le champ "Établissement"
 export const NATURES_WITH_ETABLISSEMENT = [
@@ -23,7 +25,7 @@ export const NATURES_WITH_ETABLISSEMENT = [
 
 interface UseAssetFormProps {
   asset?: Asset;
-  onSubmit: (asset: AssetFormValues, charges: AssetCharge[], indivisaires: IndivisaireDraft[]) => Promise<any>;
+  onSubmit: (asset: AssetFormValues, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[]) => Promise<any>;
 }
 
 export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
@@ -32,10 +34,12 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
   const [editingCharge, setEditingCharge] = useState<AssetCharge | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
-  const [familyMembers, setFamilyMembers] = useState<Array<{ id?: string; nom: string; prenom?: string }>>([]);
+  const [familyMembers, setFamilyMembers] = useState<Array<{ id?: string; nom: string; prenom?: string; date_naissance?: string }>>([]);
   const [familyData, setFamilyData] = useState<FamilyInfo>({ hasPartner: false });
-  const [maritalContext, setMaritalContext] = useState<{ statutCouple?: string; regimeMatrimonial?: string; dateMariage?: string }>({});
+  const [maritalContext, setMaritalContext] = useState<{ statutCouple?: string; regimeMatrimonial?: string; dateMariage?: string; conventionPacs?: string }>({});
   const [indivisaires, setIndivisaires] = useState<IndivisaireDraft[]>([]);
+  const [demembrements, setDemembrements] = useState<DemembrementDraft[]>([]);
+  const [qualificationRaison, setQualificationRaison] = useState<string | undefined>(undefined);
 
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
@@ -59,6 +63,8 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
           options.push(familyProfile.prenom);
           familyInfo.userFirstName = familyProfile.prenom;
         }
+        familyInfo.userDateNaissance = familyProfile?.date_naissance;
+        familyInfo.partnerDateNaissance = maritalStatus?.date_naissance_conjoint;
 
         const hasPartner = maritalStatus?.statut_couple &&
           ['Marié(e)', 'Pacsé(e)', 'Concubinage', 'MARIE', 'PACS', 'PACSE', 'CONCUBINAGE'].includes(maritalStatus.statut_couple) &&
@@ -84,6 +90,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
           statutCouple: maritalStatus?.statut_couple,
           regimeMatrimonial: maritalStatus?.regime_matrimonial,
           dateMariage: maritalStatus?.date_mariage,
+          conventionPacs: maritalStatus?.convention_pacs,
         });
       } catch (error) {
         setDetenteurOptions(['Utilisateur']);
@@ -99,6 +106,15 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
       assetIndivisaireService.getByAsset(asset.id)
         .then((rows) => setIndivisaires(draftsFromIndivisaires(rows)))
         .catch(() => setIndivisaires([]));
+    }
+  }, [asset?.id]);
+
+  // Load démembrement (contrepartie usufruit/nue-propriété) when editing existing asset
+  useEffect(() => {
+    if (asset?.id) {
+      assetDemembrementService.getByAsset(asset.id)
+        .then((rows) => setDemembrements(draftsFromDemembrements(rows)))
+        .catch(() => setDemembrements([]));
     }
   }, [asset?.id]);
 
@@ -145,27 +161,47 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         sous_type_per: (asset as any).sous_type_per || undefined,
         cto_multi_actifs: (asset as any).cto_multi_actifs || false,
         cto_nature_sous_jacent: (asset as any).cto_nature_sous_jacent || undefined,
+        clause_entree_communaute: (asset as any).clause_entree_communaute || false,
+        clause_remploi: (asset as any).clause_remploi || false,
       });
     }
   }, [asset, familyData, form]);
 
   // Auto-qualification : recalcule la qualification quand auto et que les inputs changent
   useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      const autoOn = value.qualification_auto !== false;
-      if (!autoOn) return;
-      if (!['origine_actif', 'date_acquisition', 'detenteur', 'mode_detention', 'qualification_auto'].includes(name || '')) return;
-
-      const { qualification } = qualifierBien({
+    const watchedFields = [
+      'origine_actif', 'date_acquisition', 'detenteur', 'mode_detention', 'qualification_auto',
+      'clause_entree_communaute', 'clause_remploi',
+    ];
+    const recompute = (value: any) => {
+      const { qualification, raison } = qualifierBien({
         statutCouple: maritalContext.statutCouple,
         regimeMatrimonial: maritalContext.regimeMatrimonial,
         dateMariage: maritalContext.dateMariage,
+        conventionPacs: maritalContext.conventionPacs,
         dateAcquisition: value.date_acquisition ? new Date(value.date_acquisition).toISOString() : undefined,
         origineActif: value.origine_actif as string[] | undefined,
         modeDetention: value.mode_detention,
         detenteur: value.detenteur,
+        clauseEntreeCommunaute: value.clause_entree_communaute,
+        clauseRemploi: value.clause_remploi,
       });
       form.setValue('qualification_bien', qualification);
+      setQualificationRaison(raison);
+    };
+
+    // Calcule la raison dès le chargement initial (pas seulement au changement),
+    // sans écraser une qualification définie manuellement.
+    const initialValues = form.getValues();
+    if (initialValues.qualification_auto !== false) {
+      recompute(initialValues);
+    }
+
+    const subscription = form.watch((value, { name }) => {
+      const autoOn = value.qualification_auto !== false;
+      if (!autoOn) return;
+      if (!watchedFields.includes(name || '')) return;
+      recompute(value);
     });
     return () => subscription.unsubscribe();
   }, [form, maritalContext]);
@@ -233,8 +269,9 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
       const formattedValues = dbValues;
 
       const finalIndivisaires = dbDetenteur === 'Indivision' ? indivisaires : [];
+      const finalDemembrements = ['Usufruit', 'Nue-propriété'].includes(values.mode_detention || '') ? demembrements : [];
 
-      await onSubmit(formattedValues as any, charges, finalIndivisaires);
+      await onSubmit(formattedValues as any, charges, finalIndivisaires, finalDemembrements);
     } finally {
       setIsLoading(false);
     }
@@ -278,6 +315,9 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
     maritalContext,
     indivisaires,
     setIndivisaires,
+    demembrements,
+    setDemembrements,
+    qualificationRaison,
     handleSubmit,
     handleChargeSubmit,
     handleChargeDelete,

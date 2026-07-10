@@ -57,6 +57,8 @@ export interface Asset {
   sous_type_per?: 'Bancaire' | 'Assurantiel';
   cto_multi_actifs?: boolean;
   cto_nature_sous_jacent?: string;
+  clause_entree_communaute?: boolean;
+  clause_remploi?: boolean;
   created_at?: string;
   updated_at?: string;
 }

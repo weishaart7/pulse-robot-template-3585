@@ -1,72 +1,68 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Asset } from '@/services/assetService';
 
-export interface AssetIndivisaire {
+export interface AssetDemembrement {
   id?: string;
   user_id?: string;
   asset_id: string;
-  type_indivisaire: 'famille' | 'tiers';
+  role: 'Usufruitier' | 'Nu-propriétaire';
+  type_partie: 'famille' | 'tiers';
   family_link_id?: string | null;
   nom_libre?: string | null;
-  pourcentage: number;
+  date_naissance_tiers?: string | null;
   created_at?: string;
   updated_at?: string;
 }
 
-export interface AssetIndivisaireWithAsset extends AssetIndivisaire {
+export interface AssetDemembrementWithAsset extends AssetDemembrement {
   assets: Asset | null;
 }
 
-export const assetIndivisaireService = {
-  async getByAsset(assetId: string): Promise<AssetIndivisaire[]> {
+export const assetDemembrementService = {
+  async getByAsset(assetId: string): Promise<AssetDemembrement[]> {
     const { data, error } = await supabase
-      .from('asset_indivisaires')
+      .from('asset_demembrements')
       .select('*')
       .eq('asset_id', assetId)
       .order('created_at', { ascending: true });
     if (error) throw error;
-    return (data || []) as AssetIndivisaire[];
+    return (data || []) as AssetDemembrement[];
   },
 
-  async getByFamilyLink(familyLinkId: string): Promise<AssetIndivisaireWithAsset[]> {
+  async getByFamilyLink(familyLinkId: string): Promise<AssetDemembrementWithAsset[]> {
     const { data, error } = await supabase
-      .from('asset_indivisaires')
+      .from('asset_demembrements')
       .select('*, assets(*)')
       .eq('family_link_id', familyLinkId)
       .order('created_at', { ascending: true });
     if (error) throw error;
-    return (data || []) as AssetIndivisaireWithAsset[];
+    return (data || []) as AssetDemembrementWithAsset[];
   },
 
-  async replaceForAsset(assetId: string, indivisaires: Omit<AssetIndivisaire, 'id' | 'user_id' | 'created_at' | 'updated_at'>[]) {
+  async replaceForAsset(assetId: string, demembrements: Omit<AssetDemembrement, 'id' | 'user_id' | 'created_at' | 'updated_at'>[]) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    const total = indivisaires.reduce((sum, i) => sum + (Number(i.pourcentage) || 0), 0);
-    if (total > 100.01) {
-      throw new Error(`Le total des parts des co-indivisaires (${total.toFixed(1)}%) dépasse 100%.`);
-    }
-
     // Delete existing
     const { error: delError } = await supabase
-      .from('asset_indivisaires')
+      .from('asset_demembrements')
       .delete()
       .eq('asset_id', assetId);
     if (delError) throw delError;
 
-    if (indivisaires.length === 0) return [];
+    if (demembrements.length === 0) return [];
 
-    const payload = indivisaires.map((i) => ({
-      ...i,
+    const payload = demembrements.map((d) => ({
+      ...d,
       asset_id: assetId,
       user_id: user.id,
     }));
 
     const { data, error } = await supabase
-      .from('asset_indivisaires')
+      .from('asset_demembrements')
       .insert(payload)
       .select();
     if (error) throw error;
-    return (data || []) as AssetIndivisaire[];
+    return (data || []) as AssetDemembrement[];
   },
 };

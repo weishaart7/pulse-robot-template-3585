@@ -13,6 +13,12 @@ export interface Emprunt {
   pourcentage_utilisateur?: number;
   pourcentage_conjoint?: number;
   reporter_budget?: boolean;
+  asset_id?: string | null;
+  type_garantie?: 'Hypothèque' | 'Caution' | 'Nantissement' | 'Aucune' | null;
+  assure?: boolean;
+  quotite_assuree_utilisateur?: number;
+  quotite_assuree_conjoint?: number;
+  capital_garanti_deces?: number;
   created_at: string;
   updated_at: string;
 }
@@ -72,8 +78,19 @@ export const passifService = {
       .from('emprunts')
       .delete()
       .eq('id', id);
-    
+
     if (error) throw error;
+  },
+
+  async getEmpruntsByAssetId(assetId: string): Promise<Emprunt[]> {
+    const { data, error } = await supabase
+      .from('emprunts')
+      .select('*')
+      .eq('asset_id', assetId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   },
 
   // Passifs methods

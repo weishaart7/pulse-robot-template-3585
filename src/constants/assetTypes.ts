@@ -100,6 +100,7 @@ export const ASSET_NATURES = [
   "Portefeuille de valeurs numériques (cryptomonnaies)",
   "Objets numériques (NFT, etc.)",
   "Droits de propriété littéraire ou artistique",
+  "Droits à royalties",
   "Fonds de private equity (LBO, growth, venture)",
   "Club deals",
   "SPV d'investissement (structures ad hoc)",
@@ -124,6 +125,13 @@ export const EMPRUNT_NATURES = [
   "Prêt immobilier locatif (investissement locatif)",
   "Prêt pour acquisition de SCPI"
 ];
+
+export const TYPE_GARANTIE_OPTIONS = [
+  "Hypothèque",
+  "Caution",
+  "Nantissement",
+  "Aucune",
+] as const;
 
 export const PASSIF_NATURES = [
   "Autres dettes diverses",
@@ -277,6 +285,7 @@ export const ASSET_CATEGORIES = {
     "Portefeuille de valeurs numériques (cryptomonnaies)",
     "Objets numériques (NFT, etc.)",
     "Droits de propriété littéraire ou artistique",
+    "Droits à royalties",
     "Fonds de private equity (LBO, growth, venture)",
     "Club deals",
     "SPV d'investissement (structures ad hoc)",
