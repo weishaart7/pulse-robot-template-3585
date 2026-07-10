@@ -14,7 +14,7 @@ export interface Emprunt {
   pourcentage_conjoint?: number;
   reporter_budget?: boolean;
   asset_id?: string | null;
-  type_garantie?: 'Hypothèque' | 'Caution' | 'Nantissement' | 'Aucune' | null;
+  type_garantie?: 'Hypothèque' | 'Caution' | 'Nantissement' | 'Aucune' | string | null;
   assure?: boolean;
   quotite_assuree_utilisateur?: number;
   quotite_assuree_conjoint?: number;
