@@ -171,14 +171,14 @@ const FamilleSection = () => {
                   style={{ padding: '22px 24px' }}
                   onClick={() => setEditView('client')}
                 >
-                  <div className="h-11 w-11 rounded-[4px] flex items-center justify-center shrink-0" style={{ backgroundColor: FOYER_SOFT_BG }}>
-                    <span className="text-[15px] font-semibold" style={{ color: FOYER_INK }}>
+                  <div className="h-9 w-9 rounded-[4px] flex items-center justify-center shrink-0" style={{ backgroundColor: FOYER_SOFT_BG }}>
+                    <span className="text-[13px] font-semibold" style={{ color: FOYER_INK }}>
                       {getInitials(familyProfile?.prenom, familyProfile?.nom)}
                     </span>
                   </div>
                   <div>
-                    <p className="text-[18px] font-semibold" style={{ color: FOYER_INK }}>{clientName}</p>
-                    <p className="text-[13.5px] mt-0.5" style={{ color: FOYER_LABEL, fontVariantNumeric: 'tabular-nums' }}>
+                    <p className="text-[15px] font-semibold" style={{ color: FOYER_INK }}>{clientName}</p>
+                    <p className="text-[12px] mt-0.5" style={{ color: FOYER_LABEL, fontVariantNumeric: 'tabular-nums' }}>
                       {secondaryLine(familyProfile?.date_naissance)}
                     </p>
                   </div>
@@ -186,20 +186,20 @@ const FamilleSection = () => {
 
                 <div className="hidden sm:block" style={{ backgroundColor: FOYER_DIVIDER }} />
 
-                <div style={{ padding: '22px 24px' }}>
+                <div style={{ padding: '16px 20px' }}>
                   {hasPartner ? (
                     <div
-                      className="flex items-center gap-3.5 cursor-pointer"
+                      className="flex items-center gap-3 cursor-pointer"
                       onClick={() => navigate('/dashboard/famille/conjoint')}
                     >
-                      <div className="h-11 w-11 rounded-[4px] flex items-center justify-center shrink-0" style={{ backgroundColor: FOYER_SOFT_BG }}>
-                        <span className="text-[15px] font-semibold" style={{ color: FOYER_INK }}>
+                      <div className="h-9 w-9 rounded-[4px] flex items-center justify-center shrink-0" style={{ backgroundColor: FOYER_SOFT_BG }}>
+                        <span className="text-[13px] font-semibold" style={{ color: FOYER_INK }}>
                           {getInitials(maritalData?.prenom_conjoint, maritalData?.nom_conjoint)}
                         </span>
                       </div>
                       <div>
-                        <p className="text-[18px] font-semibold" style={{ color: FOYER_INK }}>{partnerName || 'Partenaire'}</p>
-                        <p className="text-[13.5px] mt-0.5" style={{ color: FOYER_LABEL, fontVariantNumeric: 'tabular-nums' }}>
+                        <p className="text-[15px] font-semibold" style={{ color: FOYER_INK }}>{partnerName || 'Partenaire'}</p>
+                        <p className="text-[12px] mt-0.5" style={{ color: FOYER_LABEL, fontVariantNumeric: 'tabular-nums' }}>
                           {secondaryLine(maritalData?.date_naissance_conjoint)}
                         </p>
                       </div>
