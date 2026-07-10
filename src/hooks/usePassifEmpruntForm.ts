@@ -97,7 +97,7 @@ export const usePassifEmpruntForm = ({ item, onSuccess }: UsePassifEmpruntFormPr
         pourcentage_utilisateur: item.pourcentage_utilisateur ?? 50,
         pourcentage_conjoint: item.pourcentage_conjoint ?? 50,
         asset_id: isEmpruntItem ? (item.asset_id || undefined) : undefined,
-        type_garantie: isEmpruntItem ? (item.type_garantie || 'Aucune') : 'Aucune',
+        type_garantie: isEmpruntItem ? ((item.type_garantie as 'Aucune' | 'Caution' | 'Hypothèque' | 'Nantissement') || 'Aucune') : 'Aucune',
         assure: isEmpruntItem ? (item.assure || false) : false,
         quotite_assuree_utilisateur: isEmpruntItem ? item.quotite_assuree_utilisateur : undefined,
         quotite_assuree_conjoint: isEmpruntItem ? item.quotite_assuree_conjoint : undefined,
