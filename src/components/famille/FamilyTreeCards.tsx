@@ -161,7 +161,7 @@ export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onS
   };
 
   return (
-    <div ref={containerRef} className="relative flex items-start gap-24 overflow-x-auto py-1">
+    <div ref={containerRef} className="relative flex items-start gap-10 overflow-x-auto py-1">
       <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
         {connectors.map(connector => (
           <path key={connector.id} d={connector.d} fill="none" stroke={CONNECTOR_COLOR} strokeWidth={1.5} />
