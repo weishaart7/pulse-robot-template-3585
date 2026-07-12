@@ -2,7 +2,6 @@ import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
@@ -300,19 +299,7 @@ const FamilleSection = () => {
           </div>
         );
       case 'liens-familiaux':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Liens familiaux</CardTitle>
-              <CardDescription>
-                Gérez les membres de votre famille et leurs relations
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <LiensFamiliauxForm />
-            </CardContent>
-          </Card>
-        );
+        return <LiensFamiliauxForm />;
       default:
         return null;
     }
