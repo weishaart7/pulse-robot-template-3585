@@ -363,19 +363,14 @@ export const SocietesSection = () => {
       <div className="mb-6">
         <div>
           <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>Sociétés</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Administrez vos participations et structures sociétaires
-          </p>
         </div>
       </div>
 
-      <div className="mb-8 flex justify-start">
+      <div className="mb-6 flex justify-start">
         <SegmentedTabs tabs={TABS} value={activeTab} onValueChange={setActiveTab} />
       </div>
 
-      <div className="mt-6">
-        {renderContent()}
-      </div>
+      {renderContent()}
     </div>
   );
 };

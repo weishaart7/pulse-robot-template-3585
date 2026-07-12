@@ -33,23 +33,6 @@ const DashboardSection = () => {
     return titles[section] || 'Section inconnue';
   };
 
-  const getSectionDescription = (section: string) => {
-    const descriptions: { [key: string]: string } = {
-      famille: 'Gérez les informations et la composition de votre famille',
-      patrimoine: 'Suivez l\'évolution et la répartition de votre patrimoine',
-      immobilier: 'Gérez et optimisez votre patrimoine immobilier',
-      societes: 'Administrez vos participations et structures sociétaires',
-      retraite: 'Planifiez et optimisez votre retraite',
-      budget: 'Contrôlez vos revenus, dépenses et objectifs financiers',
-      fiscalite: 'Optimisez votre situation fiscale',
-      transmission: 'Préparez la transmission de votre patrimoine',
-      blog: 'Articles, conseils et fiches pratiques pour gérer votre patrimoine',
-      strategies: 'Définissez vos stratégies d\'investissement',
-      agenda: 'Gérez vos rendez-vous et événements'
-    };
-    return descriptions[section] || 'Description non disponible';
-  };
-
   // Si la section est "famille", afficher le composant spécialisé
   if (section === 'famille') {
     return <FamilleSection />;
@@ -106,9 +89,6 @@ const DashboardSection = () => {
         <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>
           {getSectionTitle(section || '')}
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {getSectionDescription(section || '')}
-        </p>
       </div>
       
       <Card>

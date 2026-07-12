@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SegmentedTabs } from '@/components/ui/segmented-tabs';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
@@ -9,18 +9,8 @@ import { FamilyTreeCards } from '@/components/famille/FamilyTreeCards';
 import { FamilyMemberFormDialog, FamilyMemberFormDialogHandle } from '@/components/family/FamilyMemberFormDialog';
 import { getInitials } from '@/lib/family/initials';
 import { User, Plus, ArrowLeft } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { calculerPartsFiscales } from '@/lib/fiscal';
 
 type EditView = 'client';
-
-const CARD_STYLE: React.CSSProperties = {
-  boxShadow: '0 1px 2px rgba(20,20,20,0.04), 0 4px 12px rgba(20,20,20,0.04)',
-};
-const CARD_CLASS = 'bg-white rounded-[14px] p-6';
-const LABEL_COLOR = '#8a8a86';
-const TEXT_COLOR = '#1a1a1a';
-const DIVIDER_COLOR = '#ececea';
 
 // Foyer panel — palette reprise du design "Section Famille" (Claude Design)
 const FOYER_INK = '#1F3A4B';
@@ -71,35 +61,6 @@ const FamilleSection = () => {
     const age = ageFromBirthDate(dateStr);
     return `${format(new Date(dateStr), 'dd/MM/yyyy')} · ${age} ans`;
   };
-
-  const partsFiscales = calculerPartsFiscales({
-    statutCouple: maritalData?.statut_couple as string | undefined,
-    impositionDistincte: maritalData?.imposition_distincte,
-    parentIsole: maritalData?.parent_isole,
-    personneHandicapeeClient: familyProfile?.personne_handicapee,
-    personneHandicapeeConjoint: maritalData?.personne_handicapee_conjoint,
-    ancienCombattantClient: familyProfile?.ancien_combattant,
-    ancienCombattantConjoint: maritalData?.ancien_combattant_conjoint,
-    enfants: familyLinks
-      .filter(link => link.lien_familial === 'Enfant')
-      .map(link => ({ fiscalementACharge: !!link.fiscalement_a_charge, handicap: !!link.handicap })),
-  });
-
-  const partsFiscalesDetail: string[] = [
-    `${partsFiscales.partsBase} part${partsFiscales.partsBase > 1 ? 's' : ''} (${partsFiscales.partsBase === 2 ? 'couple' : 'personne seule'})`,
-  ];
-  if (partsFiscales.partsEnfants > 0) {
-    partsFiscalesDetail.push(`+ ${partsFiscales.partsEnfants} part${partsFiscales.partsEnfants > 1 ? 's' : ''} (${partsFiscales.nombreEnfantsFiscalementACharge} enfant${partsFiscales.nombreEnfantsFiscalementACharge > 1 ? 's' : ''} à charge)`);
-  }
-  if (partsFiscales.majorationParentIsole > 0) {
-    partsFiscalesDetail.push(`+ ${partsFiscales.majorationParentIsole} part (parent isolé)`);
-  }
-  if (partsFiscales.majorationInvalidite > 0) {
-    partsFiscalesDetail.push(`+ ${partsFiscales.majorationInvalidite} part (invalidité)`);
-  }
-  if (partsFiscales.majorationAncienCombattant > 0) {
-    partsFiscalesDetail.push(`+ ${partsFiscales.majorationAncienCombattant} part (ancien combattant)`);
-  }
 
   // Full-screen edit view (fiche client uniquement — partenaire/relation vivent désormais sur leur propre page)
   if (editView === 'client') {
@@ -264,29 +225,6 @@ const FamilleSection = () => {
               />
             </div>
 
-            {/* Bande 4 — Liens familiaux (tableau) */}
-            <div className={CARD_CLASS} style={CARD_STYLE}>
-              <p className="text-[12px] mb-4" style={{ color: LABEL_COLOR }}>Liens familiaux</p>
-              {familyLinks.length === 0 ? (
-                <p className="text-sm" style={{ color: LABEL_COLOR }}>Aucun lien enregistré</p>
-              ) : (
-                <table className="w-full text-[13px]">
-                  <tbody>
-                    {familyLinks.map(link => (
-                      <tr key={link.id} className="border-b last:border-0" style={{ borderColor: '#f1f0ec' }}>
-                        <td className="py-2 pr-4" style={{ color: TEXT_COLOR }}>
-                          {link.prenom ? `${link.prenom} ${link.nom}` : link.nom}
-                        </td>
-                        <td className="py-2 text-right" style={{ color: LABEL_COLOR }}>
-                          {link.lien_familial}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-
             <FamilyMemberFormDialog
               ref={memberDialogRef}
               familyLinks={familyLinks}
@@ -306,50 +244,16 @@ const FamilleSection = () => {
   };
 
   return (
-    <div style={{ fontFamily: 'Inter, sans-serif' }}>
-      <div className="p-[22px]">
-        <div className="mb-6 flex items-start justify-between gap-6 flex-wrap">
-          <div>
-            <h1 className="text-[34px] font-bold" style={{ color: FOYER_INK, letterSpacing: '-0.02em' }}>Famille</h1>
-            <p className="text-sm mt-1" style={{ color: LABEL_COLOR }}>
-              Gérez les informations et la composition de votre famille
-            </p>
-          </div>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="rounded-[14px] px-5 py-3 cursor-default" style={{ backgroundColor: '#eef3fb' }}>
-                <p className="text-[12px]" style={{ color: '#4a6fa5' }}>Foyer fiscal</p>
-                <p
-                  className="mt-0.5"
-                  style={{ color: '#17335c', fontSize: 28, fontWeight: 500, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}
-                >
-                  {partsFiscales.totalParts}
-                </p>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              {partsFiscalesDetail.join(' ')} = {partsFiscales.totalParts} parts
-            </TooltipContent>
-          </Tooltip>
-        </div>
-
-        <div className="mb-8 flex justify-start">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              {TABS.map((tab) => (
-                <TabsTrigger key={tab.id} value={tab.id}>
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
-
-        <div className="mt-6">
-          {renderContent()}
-        </div>
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="text-[34px] font-bold" style={{ color: FOYER_INK, letterSpacing: '-0.02em' }}>Famille</h1>
       </div>
+
+      <div className="mb-6 flex justify-start">
+        <SegmentedTabs tabs={TABS} value={activeTab} onValueChange={setActiveTab} />
+      </div>
+
+      {renderContent()}
     </div>
   );
 };

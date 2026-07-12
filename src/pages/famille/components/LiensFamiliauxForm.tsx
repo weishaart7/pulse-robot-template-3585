@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { format } from 'date-fns';
-import { Plus, Trash2, Edit, Loader2, MoreVertical } from 'lucide-react';
+import { Plus, Trash2, Edit, Loader2, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -138,7 +138,7 @@ export function LiensFamiliauxForm() {
                             disabled={saving}
                             aria-label="Ouvrir le menu"
                           >
-                            <MoreVertical size={16} strokeWidth={2} aria-hidden="true" />
+                            <MoreHorizontal size={16} strokeWidth={2} aria-hidden="true" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

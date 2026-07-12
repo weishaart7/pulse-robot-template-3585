@@ -10,13 +10,12 @@ import TaxRateCard from './components/TaxRateCard';
 
 const FiscaliteSection = () => {
   return (
-    <div className="space-y-6 p-6">
+    <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>Fiscalité</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Optimisez votre situation fiscale et gérez vos déclarations
-        </p>
+        <div>
+          <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>Fiscalité</h1>
+        </div>
       </div>
 
       {/* Main content grid */}

@@ -34,13 +34,14 @@ export const BudgetSection = () => {
 
   return (
     <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6">
         <div>
           <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>Budget</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Contrôlez vos revenus, dépenses et objectifs financiers
-          </p>
         </div>
+      </div>
+
+      <div className="mb-6 flex items-center justify-between">
+        <SegmentedTabs tabs={TABS} value={activeTab} onValueChange={setActiveTab} />
         <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
           <Button
             variant={displayMode === 'mensuel' ? 'default' : 'ghost'}
@@ -63,13 +64,7 @@ export const BudgetSection = () => {
         </div>
       </div>
 
-      <div className="mb-8 flex justify-start">
-        <SegmentedTabs tabs={TABS} value={activeTab} onValueChange={setActiveTab} />
-      </div>
-
-      <div className="mt-6">
-        {renderContent()}
-      </div>
+      {renderContent()}
     </div>
   );
 };

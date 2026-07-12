@@ -43,13 +43,10 @@ export const PatrimoineSection = () => {
       <div className="mb-6">
         <div>
           <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>Patrimoine</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gérez vos actifs et passifs patrimoniaux
-          </p>
         </div>
       </div>
 
-      <div className="mb-8 flex justify-start">
+      <div className="mb-6 flex justify-start">
         <SegmentedTabs
           tabs={TABS}
           value={activeTab}

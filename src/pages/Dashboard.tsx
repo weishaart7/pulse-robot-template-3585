@@ -2,7 +2,6 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import BudgetStatisticsCard from '@/components/ui/budget-statistics-card';
 import { useRevenus, useCharges } from '@/hooks/useBudget';
-import { useFamilyProfile } from '@/hooks/useFamilyData';
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { PatrimoineChart } from '@/components/patrimoine/PatrimoineChart';
@@ -14,9 +13,6 @@ const Dashboard = () => {
   const {
     charges
   } = useCharges();
-  const {
-    data: familyProfile
-  } = useFamilyProfile();
   const {
     assets
   } = useAssets();
@@ -31,9 +27,6 @@ const Dashboard = () => {
   return <div className="p-6">
       <div className="mb-6">
         <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>Vue d'ensemble</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Bonjour {familyProfile?.prenom || '(Prénom)'}, voici la synthèse de votre patrimoine
-        </p>
       </div>
 
       <div className="mb-6 bg-card rounded-[4px] p-6 shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)]">
