@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { Tables } from '@/integrations/supabase/types';
 
 export type Periodicite = 'mensuel' | 'trimestriel' | 'semestriel' | 'annuel' | 'ponctuel';
 
@@ -42,6 +43,34 @@ export interface Charge {
   asset_id?: string;
   asset_name?: string;
 }
+
+// asset_charges/asset_revenus stockent la périodicité à l'accord féminin
+// ('mensuelle', 'trimestrielle', 'annuelle'), tandis que revenus/charges
+// utilisent l'accord masculin ('mensuel', 'trimestriel', 'annuel', + 'semestriel'/'ponctuel').
+// Cette fonction ramène tout à la convention masculine dès la lecture,
+// pour que le reste du code (BudgetList, BudgetResume, Dashboard) n'ait
+// qu'une seule graphie à gérer.
+const normalizeAssetPeriodicite = (periodicite: string | null | undefined): string => {
+  const p = (periodicite || '').toLowerCase();
+  switch (p) {
+    case 'mensuelle':
+      return 'mensuel';
+    case 'trimestrielle':
+      return 'trimestriel';
+    case 'annuelle':
+      return 'annuel';
+    default:
+      return periodicite || 'mensuel';
+  }
+};
+
+// Forme des lignes retournées par la jointure asset_charges -> assets (colonnes sélectionnées uniquement)
+type AssetChargeWithAsset = Pick<
+  Tables<'asset_charges'>,
+  'id' | 'asset_id' | 'type_charge' | 'denomination' | 'debiteur' | 'montant' | 'periodicite' | 'date_debut' | 'duree_fin_date' | 'created_at' | 'updated_at'
+> & {
+  assets: Pick<Tables<'assets'>, 'id' | 'denomination' | 'user_id' | 'detenteur'>;
+};
 
 export const budgetService = {
   // Revenus - retourne les montants bruts avec leur périodicité d'origine
@@ -104,7 +133,7 @@ export const budgetService = {
           montant: item.montant || 0,
           revenu_disponible: true,
           commentaire: item.commentaire,
-          periodicite: item.periodicite || 'mensuel',
+          periodicite: normalizeAssetPeriodicite(item.periodicite),
           date_debut: item.date_debut,
           date_fin: item.date_fin,
           created_at: item.created_at,
@@ -220,9 +249,9 @@ export const budgetService = {
     if (error) throw error;
 
     // Transform asset_charges to Charge format
-    return (data || [])
-      .filter((item: any) => item.assets?.user_id === user.id)
-      .map((item: any) => {
+    return ((data || []) as AssetChargeWithAsset[])
+      .filter(item => item.assets?.user_id === user.id)
+      .map(item => {
         // Déterminer le débiteur basé sur le détenteur de l'asset
         const detenteur = item.assets?.detenteur;
         let debiteurFinal = 'Le couple';
@@ -238,7 +267,7 @@ export const budgetService = {
           debiteur: debiteurFinal,
           montant: item.montant || 0,
           commentaire: undefined,
-          periodicite: item.periodicite || 'mensuel',
+          periodicite: normalizeAssetPeriodicite(item.periodicite),
           date_debut: item.date_debut,
           date_fin: item.duree_fin_date,
           created_at: item.created_at,

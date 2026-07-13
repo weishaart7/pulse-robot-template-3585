@@ -1,15 +1,15 @@
 'use client';
 
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button-1';
 import { Card, CardContent, CardHeader, CardTitle, CardToolbar } from '@/components/ui/card-1';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu-1';
-import { MoreVertical, DollarSign, Settings, Share2, TrendingUp, Trash } from 'lucide-react';
+import { MoreVertical, DollarSign, Settings, Trash } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface BudgetStatisticsCardProps {
@@ -19,12 +19,13 @@ interface BudgetStatisticsCardProps {
   chargesCount: number;
 }
 
-export default function BudgetStatisticsCard({ 
-  totalRevenus, 
-  totalCharges, 
+export default function BudgetStatisticsCard({
+  totalRevenus,
+  totalCharges,
   revenusCount,
-  chargesCount 
+  chargesCount
 }: BudgetStatisticsCardProps) {
+  const navigate = useNavigate();
   const difference = totalRevenus - totalCharges;
   const total = Math.max(totalRevenus, totalCharges, 1); // Avoid division by zero
   const percentage = Math.round((Math.min(totalRevenus, totalCharges) / total) * 100);
@@ -46,22 +47,9 @@ export default function BudgetStatisticsCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" side="bottom">
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/dashboard/budget')}>
                 <Settings />
                 Voir les détails
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <TrendingUp /> 
-                Exporter le rapport
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Share2 /> 
-                Analyser les tendances
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <DollarSign /> 
-                Voir l'historique
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

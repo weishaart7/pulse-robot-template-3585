@@ -68,9 +68,10 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
     );
   }
 
-  // Calculer les mensualités de crédits (charges liées aux crédits)
+  // Calculer les mensualités de crédits (charges dont la nature appartient à la catégorie fermée "Emprunts & Crédits")
+  const creditsNatures = CHARGES_CATEGORIES['Emprunts & Crédits'] as readonly string[];
   const mensualitesCreditsAnnuel = charges
-    .filter(c => c.nature?.toLowerCase().includes('crédit') || c.nature?.toLowerCase().includes('emprunt'))
+    .filter(c => c.nature && creditsNatures.includes(c.nature))
     .reduce((sum, c) => sum + toAnnual(c.montant || 0, c.periodicite), 0);
   const displayMensualitesCredits = Math.round(mensualitesCreditsAnnuel / divisor);
 

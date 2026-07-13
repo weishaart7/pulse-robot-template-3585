@@ -13,11 +13,6 @@ interface TransmissionCalculation {
   valeurSuccessorale: number;
 }
 
-interface BudgetIntegration {
-  dividendesEstimes: number;
-  chargesEstimees: number;
-}
-
 // Determine if a company is a patrimonial SCI
 const isPatrimoineSCI = (societe: Societe): boolean => {
   const type = societe.type_societe?.toLowerCase() || '';
@@ -127,41 +122,6 @@ export const useSocietesTransmission = (societes: Societe[]) => {
     return {
       calculations,
       totalValeurSuccessorale
-    };
-  }, [societes]);
-};
-
-export const useSocietesBudget = (societes: Societe[]) => {
-  return useMemo(() => {
-    const calculations: (BudgetIntegration & { societe: Societe })[] = [];
-    
-    for (const societe of societes) {
-      // Estimate dividends based on company value (conservative 3% yield)
-      const valeurEstimee = societe.valeur_estimee || 0;
-      const pourcentageUtilisateur = (societe as any).pourcentage_utilisateur || 100;
-      
-      const dividendesEstimes = valeurEstimee * (pourcentageUtilisateur / 100) * 0.03;
-      
-      // Estimate annual charges (CFE, accountant, etc.)
-      const chargesEstimees = societe.capital_social && societe.capital_social > 0 
-        ? Math.max(2000, societe.capital_social * 0.01)
-        : 2000;
-      
-      calculations.push({
-        societe,
-        dividendesEstimes,
-        chargesEstimees
-      });
-    }
-    
-    const totalDividendesEstimes = calculations.reduce((sum, c) => sum + c.dividendesEstimes, 0);
-    const totalChargesEstimees = calculations.reduce((sum, c) => sum + c.chargesEstimees, 0);
-    
-    return {
-      calculations,
-      totalDividendesEstimes,
-      totalChargesEstimees,
-      soldeNet: totalDividendesEstimes - totalChargesEstimees
     };
   }, [societes]);
 };

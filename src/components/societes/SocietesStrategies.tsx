@@ -6,12 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSocietes } from '@/hooks/useSocietes';
-import { 
-  useSocietesIFI, 
-  useSocietesTransmission, 
-  useSocietesBudget,
+import {
+  useSocietesIFI,
+  useSocietesTransmission,
   getSocieteCategory,
-  getSocieteTypeLabel 
+  getSocieteTypeLabel
 } from '@/hooks/useSocietesIntegration';
 import { 
   Calculator, 
@@ -30,7 +29,6 @@ export const SocietesStrategies = () => {
   const { societes, isLoading } = useSocietes();
   const ifiData = useSocietesIFI(societes);
   const transmissionData = useSocietesTransmission(societes);
-  const budgetData = useSocietesBudget(societes);
 
   const [simulationData, setSimulationData] = useState({
     montantCession: 100000,

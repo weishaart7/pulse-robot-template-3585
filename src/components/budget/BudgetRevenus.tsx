@@ -1,8 +1,8 @@
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useRevenus } from '@/hooks/useBudget';
+import { useBudgetEntryDialogState } from '@/hooks/useBudgetEntryDialogState';
 import { RevenusForm } from '@/components/budget/RevenusForm';
 import { BudgetList } from '@/components/budget/BudgetList';
 import { Revenu } from '@/services/budgetService';
@@ -13,8 +13,6 @@ interface BudgetRevenusProps {
 }
 
 export const BudgetRevenus = ({ displayMode }: BudgetRevenusProps) => {
-  const [showRevenusForm, setShowRevenusForm] = useState(false);
-  const [editingRevenu, setEditingRevenu] = useState<Revenu | undefined>();
   const {
     revenus,
     loading: revenusLoading,
@@ -23,25 +21,17 @@ export const BudgetRevenus = ({ displayMode }: BudgetRevenusProps) => {
     deleteRevenu
   } = useRevenus();
 
-  const handleSubmitRevenu = async (data: Omit<Revenu, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (editingRevenu) {
-      await updateRevenu(editingRevenu.id, data);
-      setEditingRevenu(undefined);
-    } else {
-      await createRevenu(data);
-    }
-    setShowRevenusForm(false);
-  };
-
-  const handleEditRevenu = (revenu: Revenu) => {
-    setEditingRevenu(revenu);
-    setShowRevenusForm(true);
-  };
-
-  const handleCancelRevenu = () => {
-    setShowRevenusForm(false);
-    setEditingRevenu(undefined);
-  };
+  const {
+    showForm: showRevenusForm,
+    editingEntry: editingRevenu,
+    handleSubmit: handleSubmitRevenu,
+    handleEdit: handleEditRevenu,
+    handleCancel: handleCancelRevenu,
+    handleAdd: handleAddRevenu,
+  } = useBudgetEntryDialogState<Revenu, Omit<Revenu, 'id' | 'user_id' | 'created_at' | 'updated_at'>>({
+    createEntry: createRevenu,
+    updateEntry: updateRevenu,
+  });
 
   return (
     <div className="space-y-6">
@@ -57,7 +47,7 @@ export const BudgetRevenus = ({ displayMode }: BudgetRevenusProps) => {
                 entrées enregistrées
               </p>
             </div>
-            <Button onClick={() => setShowRevenusForm(true)}>
+            <Button onClick={handleAddRevenu}>
               <Plus className="h-4 w-4 mr-2" />
               Nouveau revenu
             </Button>
@@ -66,21 +56,21 @@ export const BudgetRevenus = ({ displayMode }: BudgetRevenusProps) => {
       </Card>
 
       {showRevenusForm && (
-        <RevenusForm 
-          revenu={editingRevenu} 
-          onSubmit={handleSubmitRevenu} 
-          onCancel={handleCancelRevenu} 
+        <RevenusForm
+          revenu={editingRevenu}
+          onSubmit={handleSubmitRevenu}
+          onCancel={handleCancelRevenu}
           open={showRevenusForm}
         />
       )}
 
-      <BudgetList 
-        revenus={revenus} 
-        charges={[]} 
-        onEditRevenu={handleEditRevenu} 
-        onDeleteRevenu={deleteRevenu} 
-        onEditCharge={() => {}} 
-        onDeleteCharge={() => {}} 
+      <BudgetList
+        revenus={revenus}
+        charges={[]}
+        onEditRevenu={handleEditRevenu}
+        onDeleteRevenu={deleteRevenu}
+        onEditCharge={() => {}}
+        onDeleteCharge={() => {}}
         loading={revenusLoading}
         displayMode={displayMode}
       />

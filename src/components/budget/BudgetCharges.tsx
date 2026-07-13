@@ -1,8 +1,8 @@
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useCharges } from '@/hooks/useBudget';
+import { useBudgetEntryDialogState } from '@/hooks/useBudgetEntryDialogState';
 import { ChargesForm } from '@/components/budget/ChargesForm';
 import { BudgetList } from '@/components/budget/BudgetList';
 import { Charge } from '@/services/budgetService';
@@ -13,8 +13,6 @@ interface BudgetChargesProps {
 }
 
 export const BudgetCharges = ({ displayMode }: BudgetChargesProps) => {
-  const [showChargesForm, setShowChargesForm] = useState(false);
-  const [editingCharge, setEditingCharge] = useState<Charge | undefined>();
   const {
     charges,
     loading: chargesLoading,
@@ -23,25 +21,17 @@ export const BudgetCharges = ({ displayMode }: BudgetChargesProps) => {
     deleteCharge
   } = useCharges();
 
-  const handleSubmitCharge = async (data: Omit<Charge, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (editingCharge) {
-      await updateCharge(editingCharge.id, data);
-      setEditingCharge(undefined);
-    } else {
-      await createCharge(data);
-    }
-    setShowChargesForm(false);
-  };
-
-  const handleEditCharge = (charge: Charge) => {
-    setEditingCharge(charge);
-    setShowChargesForm(true);
-  };
-
-  const handleCancelCharge = () => {
-    setShowChargesForm(false);
-    setEditingCharge(undefined);
-  };
+  const {
+    showForm: showChargesForm,
+    editingEntry: editingCharge,
+    handleSubmit: handleSubmitCharge,
+    handleEdit: handleEditCharge,
+    handleCancel: handleCancelCharge,
+    handleAdd: handleAddCharge,
+  } = useBudgetEntryDialogState<Charge, Omit<Charge, 'id' | 'user_id' | 'created_at' | 'updated_at'>>({
+    createEntry: createCharge,
+    updateEntry: updateCharge,
+  });
 
   return (
     <div className="space-y-6">
@@ -57,7 +47,7 @@ export const BudgetCharges = ({ displayMode }: BudgetChargesProps) => {
                 entrées enregistrées
               </p>
             </div>
-            <Button onClick={() => setShowChargesForm(true)}>
+            <Button onClick={handleAddCharge}>
               <Plus className="h-4 w-4 mr-2" />
               Nouvelle charge
             </Button>
@@ -66,21 +56,21 @@ export const BudgetCharges = ({ displayMode }: BudgetChargesProps) => {
       </Card>
 
       {showChargesForm && (
-        <ChargesForm 
-          charge={editingCharge} 
-          onSubmit={handleSubmitCharge} 
-          onCancel={handleCancelCharge} 
+        <ChargesForm
+          charge={editingCharge}
+          onSubmit={handleSubmitCharge}
+          onCancel={handleCancelCharge}
           open={showChargesForm}
         />
       )}
 
-      <BudgetList 
-        revenus={[]} 
-        charges={charges} 
-        onEditRevenu={() => {}} 
-        onDeleteRevenu={() => {}} 
-        onEditCharge={handleEditCharge} 
-        onDeleteCharge={deleteCharge} 
+      <BudgetList
+        revenus={[]}
+        charges={charges}
+        onEditRevenu={() => {}}
+        onDeleteRevenu={() => {}}
+        onEditCharge={handleEditCharge}
+        onDeleteCharge={deleteCharge}
         loading={chargesLoading}
         displayMode={displayMode}
       />

@@ -22,8 +22,31 @@ const Dashboard = () => {
   const {
     emprunts
   } = useEmprunts();
-  const totalRevenus = revenus.reduce((sum, revenu) => sum + (revenu.montant || 0), 0);
-  const totalCharges = charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
+  // Convertir un montant en annuel selon sa périodicité (logique reprise de BudgetList.tsx)
+  const toAnnual = (amount: number | undefined, periodicite: string | undefined): number => {
+    if (!amount) return 0;
+    const p = (periodicite || 'mensuel').toLowerCase();
+    switch (p) {
+      case 'mensuel':
+      case 'mensuelle':
+        return amount * 12;
+      case 'trimestriel':
+      case 'trimestrielle':
+        return amount * 4;
+      case 'semestriel':
+      case 'semestrielle':
+        return amount * 2;
+      case 'annuel':
+      case 'annuelle':
+      case 'ponctuel':
+        return amount;
+      default:
+        return amount * 12; // Par défaut mensuel
+    }
+  };
+
+  const totalRevenus = revenus.reduce((sum, revenu) => sum + toAnnual(revenu.montant, revenu.periodicite), 0) / 12;
+  const totalCharges = charges.reduce((sum, charge) => sum + toAnnual(charge.montant, charge.periodicite), 0) / 12;
   return <div className="p-6">
       <div className="mb-6">
         <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>Vue d'ensemble</h1>

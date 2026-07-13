@@ -1,7 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,34 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Charge } from '@/services/budgetService';
-import { CHARGES_CATEGORIES, getNaturesByCategory } from '@/constants/budgetCategories';
-import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
-import { useSecureForm } from '@/hooks/useSecureForm';
-import { useAuth } from '@/contexts/AuthContext';
-import { sanitizeTextInput, sanitizeNumericInput } from '@/lib/security';
-
-const PERIODICITE_OPTIONS = [
-  { value: 'mensuel', label: 'Mensuel' },
-  { value: 'trimestriel', label: 'Trimestriel' },
-  { value: 'semestriel', label: 'Semestriel' },
-  { value: 'annuel', label: 'Annuel' },
-  { value: 'ponctuel', label: 'Ponctuel' },
-];
-
-const formSchema = z.object({
-  categorie: z.string().min(1, "La catégorie est requise"),
-  nature: z.string().min(1, "La nature est requise"),
-  libelle: z.string().min(1, "Le libellé est requis"),
-  debiteur: z.string().optional(),
-  montant: z.string().min(1, "Le montant est requis"),
-  periodicite: z.string().default('mensuel'),
-  date_debut: z.string().optional(),
-  date_fin: z.string().optional(),
-  jour_fixe: z.string().optional(),
-  commentaire: z.string().optional(),
-});
-
-type FormData = z.infer<typeof formSchema>;
+import { CHARGES_CATEGORIES } from '@/constants/budgetCategories';
+import { useBudgetEntryForm, PERIODICITE_OPTIONS, PERIODICITE_LABELS } from '@/hooks/useBudgetEntryForm';
 
 interface ChargesFormProps {
   charge?: Charge;
@@ -45,165 +16,42 @@ interface ChargesFormProps {
   open: boolean;
 }
 
-// Labels pour afficher la période selon la periodicite
-const PERIODICITE_LABELS: Record<string, string> = {
-  'mensuel': 'mensuel',
-  'trimestriel': 'trimestriel',
-  'semestriel': 'semestriel',
-  'annuel': 'annuel',
-  'ponctuel': 'ponctuel',
-};
-
 export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCancel, open }) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLibellePrefilled, setIsLibellePrefilled] = useState(false);
-  const { data: familyProfile } = useFamilyProfile();
-  const { data: maritalStatus } = useMaritalStatus();
-  const { user } = useAuth();
-  const { submitSecureForm } = useSecureForm({ 
+  const {
+    form,
+    isSubmitting,
+    isLibellePrefilled,
+    selectedNature,
+    selectedPeriodicite,
+    categoryOptions: categories,
+    natureOptions,
+    partieOptions: debiteurs,
+    handleCategoryChange,
+    handleLibelleChange,
+    submit,
+  } = useBudgetEntryForm<Omit<Charge, 'id' | 'user_id' | 'created_at' | 'updated_at'>>({
+    entity: charge,
+    open,
+    categories: CHARGES_CATEGORIES,
+    partieKey: 'debiteur',
     formName: 'budget_charges',
-    enableRateLimit: true,
-    maxAttempts: 10,
-    windowMs: 60000
+    buildSubmitPayload: (f) => ({
+      nature: f.nature,
+      libelle: f.libelle,
+      debiteur: f.partie,
+      montant: f.montant,
+      periodicite: f.periodicite,
+      date_debut: f.date_debut,
+      date_fin: f.date_fin,
+      jour_fixe: f.jour_fixe,
+      commentaire: f.commentaire,
+    }),
+    onSubmit,
   });
-
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      categorie: charge ? Object.keys(CHARGES_CATEGORIES).find(cat => 
-        getNaturesByCategory(CHARGES_CATEGORIES, cat).includes(charge.nature)
-      ) || "" : "",
-      nature: charge?.nature || "",
-      libelle: charge?.libelle || "",
-      debiteur: charge?.debiteur || "",
-      montant: charge?.montant?.toString() || "",
-      periodicite: charge?.periodicite || "mensuel",
-      date_debut: charge?.date_debut || "",
-      date_fin: charge?.date_fin || "",
-      jour_fixe: charge?.jour_fixe?.toString() || "",
-      commentaire: charge?.commentaire || "",
-    },
-  });
-
-  const selectedCategory = form.watch("categorie");
-  const selectedNature = form.watch("nature");
-  const selectedPeriodicite = form.watch("periodicite");
-  
-  const availableNatures = useMemo(() => {
-    if (!selectedCategory) return [];
-    return getNaturesByCategory(CHARGES_CATEGORIES, selectedCategory);
-  }, [selectedCategory]);
-
-  // Pré-remplir le libellé avec la nature sélectionnée
-  useEffect(() => {
-    if (selectedNature && !form.getValues("libelle")) {
-      form.setValue("libelle", selectedNature);
-      setIsLibellePrefilled(true);
-    }
-  }, [selectedNature, form]);
-
-  const debiteurs = useMemo(() => {
-    const userFullName = familyProfile?.prenom && familyProfile?.nom 
-      ? `${familyProfile.prenom} ${familyProfile.nom}` 
-      : "Moi";
-
-    const statut = maritalStatus?.statut_couple || "";
-    const hasSpouse = ["Marié(e)", "Pacsé(e)", "Concubinage"].includes(statut);
-
-    if (!hasSpouse) return [userFullName];
-
-    const spouseFullName = maritalStatus?.prenom_conjoint && maritalStatus?.nom_conjoint
-      ? `${maritalStatus.prenom_conjoint} ${maritalStatus.nom_conjoint}`
-      : "Conjoint";
-
-    return [userFullName, spouseFullName, "Le couple"];
-  }, [familyProfile, maritalStatus]);
-
-  // Réinitialiser le formulaire quand le dialogue s'ouvre/ferme
-  useEffect(() => {
-    if (open && !charge) {
-      form.reset({
-        categorie: "",
-        nature: "",
-        libelle: "",
-        debiteur: "",
-        montant: "",
-        periodicite: "mensuel",
-        date_debut: "",
-        date_fin: "",
-        jour_fixe: "",
-        commentaire: "",
-      });
-      setIsLibellePrefilled(false);
-      setIsSubmitting(false);
-    } else if (open && charge) {
-      form.reset({
-        categorie: Object.keys(CHARGES_CATEGORIES).find(cat => 
-          getNaturesByCategory(CHARGES_CATEGORIES, cat).includes(charge.nature)
-        ) || "",
-        nature: charge.nature || "",
-        libelle: charge.libelle || "",
-        debiteur: charge.debiteur || "",
-        montant: charge.montant?.toString() || "",
-        periodicite: charge.periodicite || "mensuel",
-        date_debut: charge.date_debut || "",
-        date_fin: charge.date_fin || "",
-        jour_fixe: charge.jour_fixe?.toString() || "",
-        commentaire: charge.commentaire || "",
-      });
-      setIsLibellePrefilled(false);
-      setIsSubmitting(false);
-    } else if (!open) {
-      setIsSubmitting(false);
-      setIsLibellePrefilled(false);
-    }
-  }, [open, charge, form]);
-
-  const handleSubmit = async (data: FormData) => {
-    setIsSubmitting(true);
-    try {
-      // Le montant est stocké tel quel, dans sa périodicité native
-      const montant = sanitizeNumericInput(data.montant) || 0;
-      
-      const formData = {
-        nature: sanitizeTextInput(data.nature),
-        libelle: sanitizeTextInput(data.libelle),
-        debiteur: sanitizeTextInput(data.debiteur),
-        montant: montant,
-        periodicite: data.periodicite || 'mensuel',
-        date_debut: data.date_debut || null,
-        date_fin: data.date_fin || null,
-        jour_fixe: data.jour_fixe ? parseInt(data.jour_fixe) : null,
-        commentaire: sanitizeTextInput(data.commentaire),
-      };
-
-      const success = await submitSecureForm(
-        formData,
-        async (sanitizedData) => {
-          await onSubmit(sanitizedData);
-        },
-        user?.id
-      );
-
-      if (success) {
-        form.reset();
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Préparer les options pour les selects
-  const categories = Object.keys(CHARGES_CATEGORIES).map(cat => ({
-    value: cat,
-    label: cat
-  }));
-
-  const natureOptions = availableNatures;
 
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen) {
           onCancel();
@@ -215,7 +63,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
           <DialogTitle>{charge ? 'Modifier la charge' : 'Ajouter une charge'}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={submit} className="space-y-4">
             <FormField
               control={form.control}
               name="categorie"
@@ -223,10 +71,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
                 <FormItem>
                   <FormLabel className="text-xs">Catégorie</FormLabel>
                   <FormControl>
-                    <Select value={field.value} onValueChange={(value) => {
-                      field.onChange(value);
-                      form.setValue("nature", "");
-                    }}>
+                    <Select value={field.value} onValueChange={handleCategoryChange(field.onChange)}>
                       <SelectTrigger size="lg">
                         <SelectValue placeholder="Sélectionner une catégorie" />
                       </SelectTrigger>
@@ -276,14 +121,11 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
                 <FormItem>
                   <FormLabel>Libellé</FormLabel>
                   <FormControl>
-                    <Input 
-                      {...field} 
-                      placeholder="Saisissez le libellé" 
+                    <Input
+                      {...field}
+                      placeholder="Saisissez le libellé"
                       className={isLibellePrefilled && field.value === selectedNature ? "text-muted-foreground/50" : ""}
-                      onChange={(e) => {
-                        field.onChange(e);
-                        setIsLibellePrefilled(false);
-                      }}
+                      onChange={handleLibelleChange(field.onChange)}
                     />
                   </FormControl>
                   <FormMessage />
@@ -293,7 +135,7 @@ export const ChargesForm: React.FC<ChargesFormProps> = ({ charge, onSubmit, onCa
 
             <FormField
               control={form.control}
-              name="debiteur"
+              name="partie"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-xs">Débiteur</FormLabel>
