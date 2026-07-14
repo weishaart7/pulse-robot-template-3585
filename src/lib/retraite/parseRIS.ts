@@ -1,12 +1,14 @@
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api';
+// Import `?url` : Vite résout ce fichier comme un asset statique et renvoie
+// son URL finale (avec hash) dans le bundle de prod. Le pattern
+// `new URL('pdfjs-dist/...', import.meta.url)` casse silencieusement en
+// production (le worker ne se charge pas, pdf.js échoue plus loin avec une
+// erreur cryptique sans rapport apparent) — voir mozilla/pdf.js#19519.
+import pdfWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
-// Worker pdf.js chargé depuis le bundle local (aucun appel réseau externe) —
-// pattern d'import Vite recommandé pour pdfjs-dist.
-GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
+// Worker pdf.js chargé depuis le bundle local (aucun appel réseau externe).
+GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
 
 export type TypeRegime = 'trimestres' | 'points';
 
@@ -61,6 +63,11 @@ function ressembleAUnNomDeRegime(ligne: string): boolean {
   if (ligne.length < 2 || ligne.length > 60) return false;
   if (/^\d/.test(ligne)) return false;
   if (RE_TRIMESTRES.test(ligne) || RE_POINTS.test(ligne) || RE_VALEUR_POINT.test(ligne)) return false;
+  // "Numéro d'identifiant : ..." précède chaque bloc régime dans un RIS réel
+  // et ne doit pas être pris pour le nom du régime. Comparaison insensible
+  // à la casse et aux accents (normalize + suppression des diacritiques).
+  const ligneNormalisee = ligne.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (/numero d.?identifiant/.test(ligneNormalisee)) return false;
   return true;
 }
 
@@ -119,21 +126,38 @@ export function parseRegimesDepuisTexte(lignes: string[]): RegimeDetecte[] {
 }
 
 /**
+ * Exécute une étape du parsing en loguant clairement, en console, à quelle
+ * étape une erreur technique inattendue survient (ex: souci de chargement du
+ * worker pdf.js, PDF corrompu, changement d'API entre versions de
+ * pdfjs-dist...) avant de la propager. L'appelant (Carriere.tsx) affiche
+ * volontairement un message générique à l'utilisateur — c'est ici, en
+ * console, que doit se trouver le détail exploitable pour déboguer.
+ */
+async function etape<T>(nom: string, fn: () => Promise<T> | T): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    console.error(`Erreur parsing RIS à l'étape "${nom}":`, error);
+    throw error;
+  }
+}
+
+/**
  * Extrait et parse la page 2 (page "Mes régimes") d'un RIS. Le fichier n'est
  * jamais stocké : il est lu en mémoire (ArrayBuffer) le temps de l'extraction
  * puis abandonné avec le reste de la fonction — aucun envoi réseau, aucune
  * écriture Supabase Storage.
  */
 export async function parseRIS(file: File): Promise<ParseRISResult> {
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await getDocument({ data: arrayBuffer }).promise;
+  const arrayBuffer = await etape('lecture du fichier', () => file.arrayBuffer());
+  const pdf = await etape('ouverture du PDF', () => getDocument({ data: arrayBuffer }).promise);
 
   if (pdf.numPages < 2) {
     return { regimes: [], texteIllisible: true };
   }
 
-  const page = await pdf.getPage(2);
-  const textContent = await page.getTextContent();
+  const page = await etape('accès à la page 2', () => pdf.getPage(2));
+  const textContent = await etape('extraction du texte (getTextContent)', () => page.getTextContent());
   const items = textContent.items.filter((item): item is TextItem => 'str' in item);
 
   if (items.length === 0) {
@@ -141,8 +165,8 @@ export async function parseRIS(file: File): Promise<ParseRISResult> {
     return { regimes: [], texteIllisible: true };
   }
 
-  const lignes = reconstruireLignes(items);
-  const regimes = parseRegimesDepuisTexte(lignes);
+  const lignes = await etape('reconstruction des lignes', () => reconstruireLignes(items));
+  const regimes = await etape('parsing des régimes', () => parseRegimesDepuisTexte(lignes));
 
   return { regimes, texteIllisible: regimes.length === 0 };
 }
