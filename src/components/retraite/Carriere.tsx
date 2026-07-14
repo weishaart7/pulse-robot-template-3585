@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
+import { Save, Upload } from 'lucide-react';
 import { useRetraiteData } from '@/hooks/useRetraiteData';
+import { useToast } from '@/hooks/use-toast';
+import { parseRIS, RegimeDetecte } from '@/lib/retraite/parseRIS';
+import { RISImportDialog } from '@/components/retraite/RISImportDialog';
 
 export const Carriere = () => {
   const { data, loading, saving, saveRetraiteData } = useRetraiteData();
+  const { toast } = useToast();
   const [salaireAnnuelMoyen, setSalaireAnnuelMoyen] = useState<string>('');
   const [trimestresValides, setTrimestresValides] = useState<string>('');
   const [trimestresRequis] = useState<number>(172);
@@ -15,6 +19,14 @@ export const Carriere = () => {
   const [pensionBaseBrute, setPensionBaseBrute] = useState<number>(0);
   const [decoteSurcote, setDecoteSurcote] = useState<number>(0);
   const [ageTauxPlein, setAgeTauxPlein] = useState<string>('');
+
+  // Import RIS — le fichier n'est jamais conservé au-delà du parsing ni envoyé
+  // à Supabase : il est lu en mémoire par parseRIS() puis abandonné.
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [regimesDetectes, setRegimesDetectes] = useState<RegimeDetecte[]>([]);
+  const [regimesPoints, setRegimesPoints] = useState<RegimeDetecte[]>([]);
+  const [risDialogOpen, setRisDialogOpen] = useState(false);
+  const [risImporting, setRisImporting] = useState(false);
 
   // Chargement des données depuis Supabase
   useEffect(() => {
@@ -42,7 +54,11 @@ export const Carriere = () => {
     const tauxPlein = 0.5; // 50%
 
     if (salaire > 0 && trimValides > 0) {
-      const pension = salaire * tauxPlein * (trimValides / trimestresRequis);
+      // Le taux de proratisation ne peut jamais dépasser 100% : au-delà de
+      // trimestresRequis, l'avantage supplémentaire relève de la surcote
+      // (appliquée séparément ci-dessous), pas d'un ratio > 1 ici.
+      const tauxProratisation = Math.min(trimValides / trimestresRequis, 1);
+      const pension = salaire * tauxPlein * tauxProratisation;
       setPensionBaseBrute(pension);
     } else {
       setPensionBaseBrute(0);
@@ -91,6 +107,59 @@ export const Carriere = () => {
     }
   };
 
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Autorise de resélectionner le même fichier après un annulé/échec précédent.
+    e.target.value = '';
+    if (!file) return;
+
+    setRisImporting(true);
+    try {
+      const { regimes, texteIllisible } = await parseRIS(file);
+      if (texteIllisible || regimes.length === 0) {
+        toast({
+          title: 'Import impossible',
+          description: 'Impossible de lire ce document automatiquement, merci de saisir les informations manuellement.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      setRegimesDetectes(regimes);
+      setRisDialogOpen(true);
+    } catch (error) {
+      console.error('Erreur lors de la lecture du RIS:', error);
+      toast({
+        title: 'Import impossible',
+        description: 'Impossible de lire ce document automatiquement, merci de saisir les informations manuellement.',
+        variant: 'destructive',
+      });
+    } finally {
+      setRisImporting(false);
+    }
+  };
+
+  const handleValidateRIS = (regimesValides: RegimeDetecte[]) => {
+    // Le régime de base (trimestres) préremplit trimestresValides : on
+    // privilégie un régime explicitement nommé "Assurance retraite", sinon
+    // le premier régime de type trimestres détecté.
+    const regimesTrimestres = regimesValides.filter(r => r.type === 'trimestres' && r.trimestres !== undefined);
+    const regimeBase = regimesTrimestres.find(r => /assurance retraite/i.test(r.nom)) || regimesTrimestres[0];
+    if (regimeBase?.trimestres !== undefined) {
+      setTrimestresValides(regimeBase.trimestres.toString());
+    }
+
+    // Les régimes complémentaires par points sont conservés à part : pas de
+    // calcul de pension complémentaire à ce stade, pas de persistance Supabase
+    // (aucune colonne dédiée n'existe encore dans retraite_data).
+    setRegimesPoints(regimesValides.filter(r => r.type === 'points'));
+
+    setRisDialogOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       {hasChanges && (
@@ -106,11 +175,30 @@ export const Carriere = () => {
         </div>
       )}
       <Card>
-        <CardHeader>
-          <CardTitle>Informations de carrière</CardTitle>
-          <CardDescription>
-            Renseignez les éléments de votre carrière pour calculer votre pension
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
+          <div>
+            <CardTitle>Informations de carrière</CardTitle>
+            <CardDescription>
+              Renseignez les éléments de votre carrière pour calculer votre pension
+            </CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={handleImportClick}
+            disabled={risImporting}
+          >
+            <Upload className="h-4 w-4" />
+            {risImporting ? 'Lecture en cours...' : 'Importer mon relevé de carrière (RIS)'}
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            onChange={handleFileSelected}
+          />
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid gap-4">
@@ -267,6 +355,13 @@ export const Carriere = () => {
           )}
         </CardContent>
       </Card>
+
+      <RISImportDialog
+        open={risDialogOpen}
+        regimes={regimesDetectes}
+        onValidate={handleValidateRIS}
+        onCancel={() => setRisDialogOpen(false)}
+      />
     </div>
   );
 };
