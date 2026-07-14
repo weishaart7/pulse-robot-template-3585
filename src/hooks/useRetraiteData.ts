@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { RegimeDetecte } from '@/lib/retraite/parseRIS';
 
 interface RetraiteData {
   id?: string;
@@ -10,6 +11,7 @@ interface RetraiteData {
   epargne_per?: number;
   epargne_assurance_vie?: number;
   autres_epargnes?: number;
+  regimes_points?: RegimeDetecte[];
 }
 
 export const useRetraiteData = () => {

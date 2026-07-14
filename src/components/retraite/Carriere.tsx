@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Save, Upload } from 'lucide-react';
+import { Save, Upload, Trash2 } from 'lucide-react';
 import { useRetraiteData } from '@/hooks/useRetraiteData';
 import { useToast } from '@/hooks/use-toast';
 import { parseRIS, RegimeDetecte } from '@/lib/retraite/parseRIS';
@@ -37,6 +37,9 @@ export const Carriere = () => {
       if (data.trimestres_valides !== undefined && data.trimestres_valides !== null) {
         setTrimestresValides(data.trimestres_valides.toString());
       }
+      if (data.regimes_points) {
+        setRegimesPoints(data.regimes_points);
+      }
     }
   }, [data, loading]);
 
@@ -44,8 +47,9 @@ export const Carriere = () => {
   useEffect(() => {
     const salaireDifferent = parseFloat(salaireAnnuelMoyen) !== (data.salaire_annuel_moyen || 0);
     const trimestresDifferent = parseInt(trimestresValides) !== (data.trimestres_valides || 0);
-    setHasChanges(salaireDifferent || trimestresDifferent);
-  }, [salaireAnnuelMoyen, trimestresValides, data]);
+    const regimesPointsDifferent = JSON.stringify(regimesPoints) !== JSON.stringify(data.regimes_points || []);
+    setHasChanges(salaireDifferent || trimestresDifferent || regimesPointsDifferent);
+  }, [salaireAnnuelMoyen, trimestresValides, regimesPoints, data]);
 
   // Calcul de la pension de base brute
   useEffect(() => {
@@ -99,6 +103,7 @@ export const Carriere = () => {
     const updates = {
       salaire_annuel_moyen: parseFloat(salaireAnnuelMoyen) || 0,
       trimestres_valides: parseInt(trimestresValides) || 0,
+      regimes_points: regimesPoints,
     };
     
     const success = await saveRetraiteData(updates);
@@ -153,12 +158,45 @@ export const Carriere = () => {
     }
 
     // Les régimes complémentaires par points sont conservés à part : pas de
-    // calcul de pension complémentaire à ce stade, pas de persistance Supabase
-    // (aucune colonne dédiée n'existe encore dans retraite_data).
+    // calcul de pension complémentaire à ce stade. Un nouvel import remplace
+    // entièrement la liste précédente (pas de fusion, pour éviter les doublons
+    // si un régime a changé de valeur d'une année sur l'autre) ; la
+    // persistance effective se fait via handleSave, comme les autres champs.
     setRegimesPoints(regimesValides.filter(r => r.type === 'points'));
 
     setRisDialogOpen(false);
   };
+
+  const handleRemoveRegimePoint = (index: number) => {
+    setRegimesPoints(regimesPoints.filter((_, i) => i !== index));
+  };
+
+  const formatEuro2 = (valeur: number) =>
+    valeur.toLocaleString('fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+  // Pension complémentaire par régime : uniquement calculable si points et
+  // valeurPoint sont tous deux connus (pas de valeur par défaut inventée).
+  const pensionComplementaireAnnuelle = (regime: RegimeDetecte): number | undefined =>
+    regime.points !== undefined && regime.valeurPoint !== undefined
+      ? regime.points * regime.valeurPoint
+      : undefined;
+
+  const totalPensionComplementaireAnnuelle = regimesPoints.reduce((total, regime) => {
+    const pension = pensionComplementaireAnnuelle(regime);
+    return pension !== undefined ? total + pension : total;
+  }, 0);
+
+  const regimesPointsExclusCount = regimesPoints.filter(
+    (regime) => pensionComplementaireAnnuelle(regime) === undefined
+  ).length;
+
+  const pensionBaseAjustee = pensionBaseBrute * (1 + decoteSurcote / 100);
+  const pensionTotaleConsolidee = pensionBaseAjustee + totalPensionComplementaireAnnuelle;
 
   return (
     <div className="space-y-6">
@@ -351,6 +389,92 @@ export const Carriere = () => {
                   maximumFractionDigits: 0
                 })}
               </div>
+            </div>
+          )}
+
+          {(pensionBaseBrute > 0 || regimesPoints.length > 0) && (
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+              <Label>Total consolidé (pension de base ajustée + pensions complémentaires)</Label>
+              <div className="text-xl font-semibold text-primary">
+                {formatEuro2(pensionTotaleConsolidee)} / an
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Pension de base ajustée : {formatEuro2(pensionBaseAjustee)} + pensions complémentaires calculables : {formatEuro2(totalPensionComplementaireAnnuelle)}
+              </p>
+              {regimesPointsExclusCount > 0 && (
+                <p className="text-sm text-orange-600 mt-1">
+                  {regimesPointsExclusCount} régime{regimesPointsExclusCount > 1 ? 's' : ''} non inclus, valeur du point manquante
+                </p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Régimes de retraite complémentaire (points)</CardTitle>
+          <CardDescription>
+            Régimes par points détectés lors de l'import de votre relevé de carrière (RIS)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {regimesPoints.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Aucun régime à points enregistré. Importez votre relevé de carrière pour les détecter automatiquement.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {regimesPoints.map((regime, index) => {
+                const pensionAnnuelle = pensionComplementaireAnnuelle(regime);
+                return (
+                  <div
+                    key={`${regime.nom}-${index}`}
+                    className="flex items-center justify-between gap-4 p-4 border rounded-lg"
+                  >
+                    <div className="space-y-1">
+                      <div className="font-semibold">{regime.nom}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {regime.points?.toLocaleString('fr-FR')} points
+                        {regime.valeurPoint !== undefined && (
+                          <>
+                            {' · '}
+                            Valeur du point : {regime.valeurPoint.toLocaleString('fr-FR', {
+                              style: 'currency',
+                              currency: 'EUR',
+                              minimumFractionDigits: 4,
+                              maximumFractionDigits: 4,
+                            })}
+                          </>
+                        )}
+                        {regime.dateValeurPoint && (
+                          <>
+                            {' '}
+                            (au {regime.dateValeurPoint})
+                          </>
+                        )}
+                      </div>
+                      {pensionAnnuelle !== undefined ? (
+                        <div className="text-sm font-medium text-primary">
+                          Pension complémentaire : {formatEuro2(pensionAnnuelle)} / an ({formatEuro2(pensionAnnuelle / 12)} / mois)
+                        </div>
+                      ) : (
+                        <div className="text-sm text-orange-600">
+                          Valeur du point manquante, montant non calculable
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveRegimePoint(index)}
+                      aria-label={`Supprimer le régime ${regime.nom}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </CardContent>

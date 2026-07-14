@@ -1620,6 +1620,7 @@ export type Database = {
           epargne_assurance_vie: number | null
           epargne_per: number | null
           id: string
+          regimes_points: Json
           salaire_annuel_moyen: number | null
           trimestres_requis: number | null
           trimestres_valides: number | null
@@ -1632,6 +1633,7 @@ export type Database = {
           epargne_assurance_vie?: number | null
           epargne_per?: number | null
           id?: string
+          regimes_points?: Json
           salaire_annuel_moyen?: number | null
           trimestres_requis?: number | null
           trimestres_valides?: number | null
@@ -1644,6 +1646,7 @@ export type Database = {
           epargne_assurance_vie?: number | null
           epargne_per?: number | null
           id?: string
+          regimes_points?: Json
           salaire_annuel_moyen?: number | null
           trimestres_requis?: number | null
           trimestres_valides?: number | null
