@@ -48,9 +48,28 @@ function reconstruireLignes(items: TextItem[]): string[] {
     .filter(Boolean);
 }
 
+// Étiquette seule ("Total des trimestres") — dans un vrai RIS en mise en page
+// à colonnes, la valeur n'est pas forcément sur la même ligne que l'étiquette
+// (le texte de la colonne voisine s'intercale dans l'ordre de lecture
+// reconstruit par reconstruireLignes). RE_TRIMESTRES/RE_POINTS restent
+// utilisées pour le cas où étiquette + valeur sont bien sur une seule ligne.
+const RE_LIGNE_TRIMESTRES = /^total des trimestres\b/i;
+const RE_LIGNE_POINTS = /^total des points\b/i;
 const RE_TRIMESTRES = /total des trimestres\s*:?\s*(\d+)/i;
 const RE_POINTS = /total des points\s*:?\s*([\d\s]+)/i;
 const RE_VALEUR_POINT = /valeur du point au\s*(\d{2}\/\d{2}\/\d{4})\s*:?\s*([\d,]+)\s*€/i;
+// Une ligne réduite à un seul nombre (ex: "28", "203,84").
+const RE_VALEUR_SEULE = /^(\d+(?:[,.]\d+)?)$/;
+// Une ligne "Libellé : nombre" en fin de ligne (ex: "Salarié, Indépendant : 28",
+// "Complémentaire indépendant (RCI) : 9").
+const RE_VALEUR_FIN_DE_LIGNE = /:\s*(\d+(?:[,.]\d+)?)\s*$/;
+// Nom de régime parfois entre parenthèses dans le libellé de la valeur
+// (ex: "(RCI)"), plus fiable que l'heuristique de titre quand présent.
+const RE_NOM_ENTRE_PARENTHESES = /\(([^()]+)\)/;
+
+function parseNombreFr(valeur: string): number {
+  return parseFloat(valeur.replace(',', '.'));
+}
 
 /**
  * Heuristique pour reconnaître une ligne "nom de régime" : ligne courte,
@@ -62,13 +81,44 @@ const RE_VALEUR_POINT = /valeur du point au\s*(\d{2}\/\d{2}\/\d{4})\s*:?\s*([\d,
 function ressembleAUnNomDeRegime(ligne: string): boolean {
   if (ligne.length < 2 || ligne.length > 60) return false;
   if (/^\d/.test(ligne)) return false;
-  if (RE_TRIMESTRES.test(ligne) || RE_POINTS.test(ligne) || RE_VALEUR_POINT.test(ligne)) return false;
+  if (RE_LIGNE_TRIMESTRES.test(ligne) || RE_LIGNE_POINTS.test(ligne) || RE_VALEUR_POINT.test(ligne)) return false;
   // "Numéro d'identifiant : ..." précède chaque bloc régime dans un RIS réel
   // et ne doit pas être pris pour le nom du régime. Comparaison insensible
   // à la casse et aux accents (normalize + suppression des diacritiques).
   const ligneNormalisee = ligne.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   if (/numero d.?identifiant/.test(ligneNormalisee)) return false;
   return true;
+}
+
+/**
+ * Cherche, à partir de `depart`, la valeur numérique associée à une étiquette
+ * "Total des trimestres/points" quand elle n'est pas sur la même ligne —
+ * soit une ligne réduite à un nombre, soit une ligne "Libellé : nombre".
+ * S'arrête dès qu'un nouveau bloc métrique commence, pour ne pas capturer la
+ * valeur d'un régime suivant.
+ */
+function chercherValeurEtNom(
+  lignes: string[],
+  depart: number,
+  maxLookahead = 6
+): { valeur: number; nomDepuisParenthese?: string } | null {
+  for (let j = depart; j < Math.min(depart + maxLookahead, lignes.length); j++) {
+    const ligne = lignes[j];
+    if (j > depart && (RE_LIGNE_TRIMESTRES.test(ligne) || RE_LIGNE_POINTS.test(ligne))) break;
+
+    const matchSeule = ligne.match(RE_VALEUR_SEULE);
+    if (matchSeule) return { valeur: parseNombreFr(matchSeule[1]) };
+
+    const matchFinDeLigne = ligne.match(RE_VALEUR_FIN_DE_LIGNE);
+    if (matchFinDeLigne) {
+      const matchParenthese = ligne.match(RE_NOM_ENTRE_PARENTHESES);
+      return {
+        valeur: parseNombreFr(matchFinDeLigne[1]),
+        nomDepuisParenthese: matchParenthese?.[1],
+      };
+    }
+  }
+  return null;
 }
 
 export function parseRegimesDepuisTexte(lignes: string[]): RegimeDetecte[] {
@@ -78,42 +128,53 @@ export function parseRegimesDepuisTexte(lignes: string[]): RegimeDetecte[] {
   for (let i = 0; i < lignes.length; i++) {
     const ligne = lignes[i];
 
-    const matchTrimestres = ligne.match(RE_TRIMESTRES);
-    const matchPoints = ligne.match(RE_POINTS);
+    if (RE_LIGNE_TRIMESTRES.test(ligne)) {
+      const matchMemeLigne = ligne.match(RE_TRIMESTRES);
+      const trouve = matchMemeLigne
+        ? { valeur: parseInt(matchMemeLigne[1], 10) }
+        : chercherValeurEtNom(lignes, i + 1);
 
-    if (matchTrimestres) {
-      regimes.push({
-        nom: nomCourant || 'Régime non identifié',
-        type: 'trimestres',
-        trimestres: parseInt(matchTrimestres[1], 10),
-      });
-      nomCourant = null;
+      if (trouve) {
+        regimes.push({
+          nom: trouve.nomDepuisParenthese || nomCourant || 'Régime non identifié',
+          type: 'trimestres',
+          trimestres: Math.round(trouve.valeur),
+        });
+        nomCourant = null;
+      }
       continue;
     }
 
-    if (matchPoints) {
-      let valeurPoint: number | undefined;
-      let dateValeurPoint: string | undefined;
+    if (RE_LIGNE_POINTS.test(ligne)) {
+      const matchMemeLigne = ligne.match(RE_POINTS);
+      const trouve = matchMemeLigne
+        ? { valeur: parseNombreFr(matchMemeLigne[1].replace(/\s/g, '')) }
+        : chercherValeurEtNom(lignes, i + 1);
 
-      // La ligne "Valeur du point" suit généralement de près la ligne
-      // "Total des points" — on regarde quelques lignes en avant.
-      for (let j = i; j < Math.min(i + 4, lignes.length); j++) {
-        const matchValeur = lignes[j].match(RE_VALEUR_POINT);
-        if (matchValeur) {
-          dateValeurPoint = matchValeur[1];
-          valeurPoint = parseFloat(matchValeur[2].replace(',', '.'));
-          break;
+      if (trouve) {
+        let valeurPoint: number | undefined;
+        let dateValeurPoint: string | undefined;
+
+        // La ligne "Valeur du point" suit généralement de près la ligne
+        // "Total des points" — on regarde quelques lignes en avant.
+        for (let j = i; j < Math.min(i + 8, lignes.length); j++) {
+          const matchValeur = lignes[j].match(RE_VALEUR_POINT);
+          if (matchValeur) {
+            dateValeurPoint = matchValeur[1];
+            valeurPoint = parseNombreFr(matchValeur[2]);
+            break;
+          }
         }
-      }
 
-      regimes.push({
-        nom: nomCourant || 'Régime non identifié',
-        type: 'points',
-        points: parseInt(matchPoints[1].replace(/\s/g, ''), 10),
-        valeurPoint,
-        dateValeurPoint,
-      });
-      nomCourant = null;
+        regimes.push({
+          nom: trouve.nomDepuisParenthese || nomCourant || 'Régime non identifié',
+          type: 'points',
+          points: trouve.valeur,
+          valeurPoint,
+          dateValeurPoint,
+        });
+        nomCourant = null;
+      }
       continue;
     }
 
