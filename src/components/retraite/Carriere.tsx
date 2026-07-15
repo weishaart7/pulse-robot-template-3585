@@ -8,6 +8,8 @@ import { useRetraiteData } from '@/hooks/useRetraiteData';
 import { useToast } from '@/hooks/use-toast';
 import { parseRIS, RegimeDetecte } from '@/lib/retraite/parseRIS';
 import { RISImportDialog } from '@/components/retraite/RISImportDialog';
+import { tauxProratisation, decoteSurTrimestres, pensionBase, pensionComplementaireAnnuelle } from '@/lib/retraite/calcul';
+import { CarriereFonctionPublique } from '@/components/retraite/CarriereFonctionPublique';
 
 export const Carriere = () => {
   const { data, loading, saving, saveRetraiteData } = useRetraiteData();
@@ -19,6 +21,17 @@ export const Carriere = () => {
   const [pensionBaseBrute, setPensionBaseBrute] = useState<number>(0);
   const [decoteSurcote, setDecoteSurcote] = useState<number>(0);
   const [ageTauxPlein, setAgeTauxPlein] = useState<string>('');
+
+  // Carrière fonction publique — état remonté ici (plutôt que gardé local à
+  // CarriereFonctionPublique) car le total de trimestres tous régimes doit
+  // être partagé entre les deux calculs de décote (régime général ET
+  // fonction publique), chacun gardant son propre plafond.
+  const [hasFonctionPublique, setHasFonctionPublique] = useState(false);
+  const [trimestresLiquidablesFP, setTrimestresLiquidablesFP] = useState<string>('');
+  const [resultatFonctionPublique, setResultatFonctionPublique] = useState({
+    pensionFinale: 0,
+    rafpAnnuelle: 0,
+  });
 
   // Import RIS — le fichier n'est jamais conservé au-delà du parsing ni envoyé
   // à Supabase : il est lu en mémoire par parseRIS() puis abandonné.
@@ -51,41 +64,29 @@ export const Carriere = () => {
     setHasChanges(salaireDifferent || trimestresDifferent || regimesPointsDifferent);
   }, [salaireAnnuelMoyen, trimestresValides, regimesPoints, data]);
 
-  // Calcul de la pension de base brute
+  // Calcul de la pension de base brute (moteur : src/lib/retraite/calcul.ts)
   useEffect(() => {
     const salaire = parseFloat(salaireAnnuelMoyen) || 0;
     const trimValides = parseInt(trimestresValides) || 0;
-    const tauxPlein = 0.5; // 50%
 
     if (salaire > 0 && trimValides > 0) {
-      // Le taux de proratisation ne peut jamais dépasser 100% : au-delà de
-      // trimestresRequis, l'avantage supplémentaire relève de la surcote
-      // (appliquée séparément ci-dessous), pas d'un ratio > 1 ici.
-      const tauxProratisation = Math.min(trimValides / trimestresRequis, 1);
-      const pension = salaire * tauxPlein * tauxProratisation;
-      setPensionBaseBrute(pension);
+      const taux = tauxProratisation(trimValides, trimestresRequis);
+      // decote=0 ici : on veut la pension brute avant décote/surcote,
+      // laquelle est calculée et appliquée séparément ci-dessous.
+      setPensionBaseBrute(pensionBase(salaire, taux, 0));
     } else {
       setPensionBaseBrute(0);
     }
   }, [salaireAnnuelMoyen, trimestresValides, trimestresRequis]);
 
-  // Calcul décote/surcote
+  // Calcul décote/surcote (moteur : src/lib/retraite/calcul.ts) — basé sur le
+  // total de trimestres tous régimes confondus (régime général + fonction
+  // publique le cas échéant), pas seulement les trimestres régime général.
   useEffect(() => {
     const trimValides = parseInt(trimestresValides) || 0;
-    const difference = trimValides - trimestresRequis;
-
-    if (difference < 0) {
-      // Décote : -1,25% par trimestre manquant (maximum -20%)
-      const decote = Math.max(difference * 1.25, -20);
-      setDecoteSurcote(decote);
-    } else if (difference > 0) {
-      // Surcote : +1,25% par trimestre supplémentaire
-      const surcote = difference * 1.25;
-      setDecoteSurcote(surcote);
-    } else {
-      setDecoteSurcote(0);
-    }
-  }, [trimestresValides, trimestresRequis]);
+    const trimFonctionPublique = hasFonctionPublique ? parseInt(trimestresLiquidablesFP) || 0 : 0;
+    setDecoteSurcote(decoteSurTrimestres(trimValides + trimFonctionPublique, trimestresRequis));
+  }, [trimestresValides, trimestresRequis, hasFonctionPublique, trimestresLiquidablesFP]);
 
   // Calcul de l'âge du taux plein
   useEffect(() => {
@@ -179,13 +180,6 @@ export const Carriere = () => {
       maximumFractionDigits: 2,
     });
 
-  // Pension complémentaire par régime : uniquement calculable si points et
-  // valeurPoint sont tous deux connus (pas de valeur par défaut inventée).
-  const pensionComplementaireAnnuelle = (regime: RegimeDetecte): number | undefined =>
-    regime.points !== undefined && regime.valeurPoint !== undefined
-      ? regime.points * regime.valeurPoint
-      : undefined;
-
   const totalPensionComplementaireAnnuelle = regimesPoints.reduce((total, regime) => {
     const pension = pensionComplementaireAnnuelle(regime);
     return pension !== undefined ? total + pension : total;
@@ -196,7 +190,11 @@ export const Carriere = () => {
   ).length;
 
   const pensionBaseAjustee = pensionBaseBrute * (1 + decoteSurcote / 100);
-  const pensionTotaleConsolidee = pensionBaseAjustee + totalPensionComplementaireAnnuelle;
+  const pensionTotaleRegimeGeneral = pensionBaseAjustee + totalPensionComplementaireAnnuelle;
+  const pensionTotaleFonctionPublique = hasFonctionPublique
+    ? resultatFonctionPublique.pensionFinale + resultatFonctionPublique.rafpAnnuelle
+    : 0;
+  const pensionTotaleConsolidee = pensionTotaleRegimeGeneral + pensionTotaleFonctionPublique;
 
   return (
     <div className="space-y-6">
@@ -392,9 +390,12 @@ export const Carriere = () => {
             </div>
           )}
 
-          {(pensionBaseBrute > 0 || regimesPoints.length > 0) && (
+          {(pensionBaseBrute > 0 || regimesPoints.length > 0 || hasFonctionPublique) && (
             <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-              <Label>Total consolidé (pension de base ajustée + pensions complémentaires)</Label>
+              <Label>
+                Total consolidé{hasFonctionPublique ? ' tous régimes' : ''} (pension de base ajustée +
+                pensions complémentaires{hasFonctionPublique ? ' + fonction publique + RAFP' : ''})
+              </Label>
               <div className="text-xl font-semibold text-primary">
                 {formatEuro2(pensionTotaleConsolidee)} / an
               </div>
@@ -404,6 +405,13 @@ export const Carriere = () => {
               {regimesPointsExclusCount > 0 && (
                 <p className="text-sm text-orange-600 mt-1">
                   {regimesPointsExclusCount} régime{regimesPointsExclusCount > 1 ? 's' : ''} non inclus, valeur du point manquante
+                </p>
+              )}
+              {hasFonctionPublique && (
+                <p className="text-sm text-muted-foreground mt-2 pt-2 border-t">
+                  Détail par régime : régime général (base + complémentaires) ={' '}
+                  {formatEuro2(pensionTotaleRegimeGeneral)} / an — fonction publique (pension +
+                  RAFP) = {formatEuro2(pensionTotaleFonctionPublique)} / an
                 </p>
               )}
             </div>
@@ -479,6 +487,16 @@ export const Carriere = () => {
           )}
         </CardContent>
       </Card>
+
+      <CarriereFonctionPublique
+        trimestresRequis={trimestresRequis}
+        trimestresValidesRegimeGeneral={parseInt(trimestresValides) || 0}
+        hasFonctionPublique={hasFonctionPublique}
+        onHasFonctionPubliqueChange={setHasFonctionPublique}
+        trimestresLiquidables={trimestresLiquidablesFP}
+        onTrimestresLiquidablesChange={setTrimestresLiquidablesFP}
+        onResultChange={setResultatFonctionPublique}
+      />
 
       <RISImportDialog
         open={risDialogOpen}
