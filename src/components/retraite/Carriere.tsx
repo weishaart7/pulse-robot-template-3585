@@ -149,13 +149,16 @@ export const Carriere = () => {
   };
 
   const handleValidateRIS = (regimesValides: RegimeDetecte[]) => {
-    // Le régime de base (trimestres) préremplit trimestresValides : on
-    // privilégie un régime explicitement nommé "Assurance retraite", sinon
-    // le premier régime de type trimestres détecté.
+    // trimestresValides = somme de tous les régimes de type "trimestres"
+    // détectés dans le RIS (Assurance retraite, MSA Salariés, ou tout autre
+    // régime aligné présenté séparément) — depuis la réforme LURA (2017), les
+    // trimestres des régimes alignés se fusionnent dans un seul calcul, donc
+    // on ne privilégie plus un unique régime "Assurance retraite" au risque
+    // d'ignorer silencieusement les trimestres d'un régime aligné distinct.
     const regimesTrimestres = regimesValides.filter(r => r.type === 'trimestres' && r.trimestres !== undefined);
-    const regimeBase = regimesTrimestres.find(r => /assurance retraite/i.test(r.nom)) || regimesTrimestres[0];
-    if (regimeBase?.trimestres !== undefined) {
-      setTrimestresValides(regimeBase.trimestres.toString());
+    if (regimesTrimestres.length > 0) {
+      const totalTrimestres = regimesTrimestres.reduce((total, r) => total + (r.trimestres || 0), 0);
+      setTrimestresValides(totalTrimestres.toString());
     }
 
     // Les régimes complémentaires par points sont conservés à part : pas de
