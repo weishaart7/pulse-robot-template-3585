@@ -3,10 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { tauxProratisation, decoteApplicable, pensionComplementaireAnnuelle } from '@/lib/retraite/calcul';
+import {
+  tauxProratisation,
+  decoteApplicable,
+  decoteSurTrimestresPlafond25,
+  pensionComplementaireAnnuelle,
+} from '@/lib/retraite/calcul';
 import {
   pensionBaseFonctionPublique,
-  decoteSurTrimestresFonctionPublique,
   decoteSurAgeFonctionPublique,
   minimumGaranti,
   pensionFonctionPubliqueFinale,
@@ -34,10 +38,12 @@ interface CarriereFonctionPubliqueProps {
   // fonction publique, elle est partagée entre tous les régimes d'un même
   // assuré.
   trimestresRequis: number;
-  // Trimestres validés régime général (Carriere.tsx) : la décote fonction
-  // publique se base sur le total tous régimes, pas seulement les trimestres
-  // fonction publique isolés.
-  trimestresValidesRegimeGeneral: number;
+  // Trimestres des AUTRES régimes déjà saisis (régime général + CNAVPL le
+  // cas échéant) : la décote fonction publique se base sur le total tous
+  // régimes, pas seulement les trimestres fonction publique isolés. Nommé
+  // génériquement (pas "RegimeGeneral") car ce total peut désormais
+  // regrouper plusieurs sources.
+  trimestresAutresRegimes: number;
   // Remontés au parent (Carriere.tsx) car le total de trimestres tous
   // régimes doit aussi alimenter la décote du régime général — un state
   // purement local ici ne serait pas visible du composant frère.
@@ -54,7 +60,7 @@ interface CarriereFonctionPubliqueProps {
 
 export const CarriereFonctionPublique = ({
   trimestresRequis,
-  trimestresValidesRegimeGeneral,
+  trimestresAutresRegimes,
   hasFonctionPublique,
   onHasFonctionPubliqueChange,
   trimestresLiquidables,
@@ -75,10 +81,10 @@ export const CarriereFonctionPublique = ({
 
   const taux = tauxProratisation(trimestresLiquidablesNum, trimestresRequis);
   // Décote basée sur le total de trimestres tous régimes confondus
-  // (fonction publique + régime général), avec le plafond propre à la
+  // (fonction publique + autres régimes saisis), avec le plafond propre à la
   // fonction publique (-25 %).
-  const decoteTrimestres = decoteSurTrimestresFonctionPublique(
-    trimestresLiquidablesNum + trimestresValidesRegimeGeneral,
+  const decoteTrimestres = decoteSurTrimestresPlafond25(
+    trimestresLiquidablesNum + trimestresAutresRegimes,
     trimestresRequis
   );
 

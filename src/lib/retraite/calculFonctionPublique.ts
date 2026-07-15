@@ -11,9 +11,9 @@
  *
  * La décote/surcote sur trimestres tous régimes confondus et la règle d'âge
  * générique restent gérées par calcul.ts (trimestresRequisPourGeneration,
- * decoteApplicable) — non dupliquées ici. Seuls les plafonds propres à la
- * fonction publique (-25 % au lieu de -20 %) justifient des variantes
- * locales de decoteSurTrimestres / decoteSurAge, documentées ci-dessous.
+ * decoteApplicable, decoteSurTrimestresPlafond25) — non dupliquées ici.
+ * Seule la règle d'âge propre à la fonction publique (-25 % au lieu de
+ * -20 %) justifie une variante locale de decoteSurAge, documentée ci-dessous.
  */
 
 /**
@@ -40,32 +40,6 @@ export function pensionBaseFonctionPublique(
 }
 
 /**
- * Décote fonction publique basée sur l'écart de trimestres validés par
- * rapport aux trimestres requis : même principe que decoteSurTrimestres de
- * calcul.ts (-1,25 % par trimestre manquant, +1,25 % par trimestre
- * excédentaire), MAIS plafonnée à -25 % (20 trimestres), pas -20 %
- * (16 trimestres) comme le régime général.
- *
- * ⚠️ Ne pas confondre avec decoteSurTrimestres() de calcul.ts : le plafond
- * diffère (-25 % ici, -20 % côté régime général) car les règles de décote
- * fonction publique et régime général sont réglementairement distinctes,
- * même si la mécanique (1,25 %/trimestre) est la même.
- */
-export function decoteSurTrimestresFonctionPublique(
-  trimestresValides: number,
-  trimestresRequis: number
-): number {
-  const difference = trimestresValides - trimestresRequis;
-  if (difference < 0) {
-    return Math.max(difference * 1.25, -25);
-  }
-  if (difference > 0) {
-    return difference * 1.25;
-  }
-  return 0;
-}
-
-/**
  * Décote fonction publique basée sur l'écart d'âge par rapport à l'âge
  * d'annulation de la décote (67 ans par défaut en catégorie sédentaire —
  * même valeur que le régime général, mais plafond différent : -25 % ici
@@ -75,10 +49,11 @@ export function decoteSurTrimestresFonctionPublique(
  * saisi manuellement par l'utilisateur (pas de table de corps encodée ici —
  * voir CarriereFonctionPublique.tsx).
  *
- * ⚠️ Variante locale de decoteSurAge() de calcul.ts, volontairement séparée
- * (même choix que decoteSurTrimestresFonctionPublique ci-dessus) plutôt que
- * d'ajouter un paramètre de plafond à la fonction existante : garde
- * calcul.ts inchangé et la symétrie entre les deux fonctions de décote FP.
+ * ⚠️ Variante locale de decoteSurAge() de calcul.ts (le plafond -25 % côté
+ * trimestres a été généralisé et déplacé dans calcul.ts en
+ * decoteSurTrimestresPlafond25, réutilisable par d'autres régimes — mais la
+ * règle d'âge fonction publique reste spécifique, aucune généralisation
+ * demandée pour l'instant).
  */
 export function decoteSurAgeFonctionPublique(
   ageDepart: number,

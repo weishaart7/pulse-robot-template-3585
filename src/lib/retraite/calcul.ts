@@ -64,6 +64,27 @@ export function decoteSurTrimestres(trimestresValides: number, trimestresRequis:
 }
 
 /**
+ * Décote/surcote basée sur l'écart de trimestres validés par rapport aux
+ * trimestres requis, avec un plafond de -25 % (20 trimestres) au lieu de
+ * -20 % — mécanique partagée par plusieurs régimes dont le barème de décote
+ * diffère du régime général sur ce seul point (fonction publique, CNAVPL).
+ *
+ * ⚠️ Ne pas confondre avec decoteSurTrimestres() ci-dessus (plafond -20 %,
+ * régime général) : la mécanique (1,25 %/trimestre) est identique, seul le
+ * plafond change selon le régime.
+ */
+export function decoteSurTrimestresPlafond25(trimestresValides: number, trimestresRequis: number): number {
+  const difference = trimestresValides - trimestresRequis;
+  if (difference < 0) {
+    return Math.max(difference * 1.25, -25);
+  }
+  if (difference > 0) {
+    return difference * 1.25;
+  }
+  return 0;
+}
+
+/**
  * Décote basée sur l'écart d'âge par rapport à l'âge du taux plein
  * automatique (67 ans par défaut) : même barème que decoteSurTrimestres pour
  * un départ anticipé (1,25 % par trimestre d'écart, 4 trimestres par année

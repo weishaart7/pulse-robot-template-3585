@@ -10,6 +10,7 @@ import { parseRIS, RegimeDetecte } from '@/lib/retraite/parseRIS';
 import { RISImportDialog } from '@/components/retraite/RISImportDialog';
 import { tauxProratisation, decoteSurTrimestres, pensionBase, pensionComplementaireAnnuelle } from '@/lib/retraite/calcul';
 import { CarriereFonctionPublique } from '@/components/retraite/CarriereFonctionPublique';
+import { CarriereCNAVPL } from '@/components/retraite/CarriereCNAVPL';
 
 export const Carriere = () => {
   const { data, loading, saving, saveRetraiteData } = useRetraiteData();
@@ -24,14 +25,19 @@ export const Carriere = () => {
 
   // Carrière fonction publique — état remonté ici (plutôt que gardé local à
   // CarriereFonctionPublique) car le total de trimestres tous régimes doit
-  // être partagé entre les deux calculs de décote (régime général ET
-  // fonction publique), chacun gardant son propre plafond.
+  // être partagé entre les calculs de décote de chaque régime (régime
+  // général, fonction publique, CNAVPL), chacun gardant son propre plafond.
   const [hasFonctionPublique, setHasFonctionPublique] = useState(false);
   const [trimestresLiquidablesFP, setTrimestresLiquidablesFP] = useState<string>('');
   const [resultatFonctionPublique, setResultatFonctionPublique] = useState({
     pensionFinale: 0,
     rafpAnnuelle: 0,
   });
+
+  // Carrière CNAVPL — même pattern que la fonction publique ci-dessus.
+  const [hasCNAVPL, setHasCNAVPL] = useState(false);
+  const [trimestresCNAVPL, setTrimestresCNAVPL] = useState<string>('');
+  const [resultatCNAVPL, setResultatCNAVPL] = useState({ pensionFinale: 0 });
 
   // Import RIS — le fichier n'est jamais conservé au-delà du parsing ni envoyé
   // à Supabase : il est lu en mémoire par parseRIS() puis abandonné.
@@ -81,12 +87,23 @@ export const Carriere = () => {
 
   // Calcul décote/surcote (moteur : src/lib/retraite/calcul.ts) — basé sur le
   // total de trimestres tous régimes confondus (régime général + fonction
-  // publique le cas échéant), pas seulement les trimestres régime général.
+  // publique + CNAVPL, chacun si saisi), pas seulement les trimestres
+  // régime général. Le nombre de régimes est amené à grandir : cette somme
+  // reste générique plutôt que d'empiler une addition par régime.
   useEffect(() => {
     const trimValides = parseInt(trimestresValides) || 0;
-    const trimFonctionPublique = hasFonctionPublique ? parseInt(trimestresLiquidablesFP) || 0 : 0;
-    setDecoteSurcote(decoteSurTrimestres(trimValides + trimFonctionPublique, trimestresRequis));
-  }, [trimestresValides, trimestresRequis, hasFonctionPublique, trimestresLiquidablesFP]);
+    const trimAutresRegimes =
+      (hasFonctionPublique ? parseInt(trimestresLiquidablesFP) || 0 : 0) +
+      (hasCNAVPL ? parseInt(trimestresCNAVPL) || 0 : 0);
+    setDecoteSurcote(decoteSurTrimestres(trimValides + trimAutresRegimes, trimestresRequis));
+  }, [
+    trimestresValides,
+    trimestresRequis,
+    hasFonctionPublique,
+    trimestresLiquidablesFP,
+    hasCNAVPL,
+    trimestresCNAVPL,
+  ]);
 
   // Calcul de l'âge du taux plein
   useEffect(() => {
@@ -149,13 +166,22 @@ export const Carriere = () => {
   };
 
   const handleValidateRIS = (regimesValides: RegimeDetecte[]) => {
+    // CNAVPL a sa propre carte dédiée (CarriereCNAVPL.tsx, décote/surcote
+    // spécifique) : on l'exclut explicitement des deux paniers génériques
+    // ci-dessous (trimestres régime général ET regimesPoints), sinon un bloc
+    // "CNAVPL" détecté dans le RIS gonflerait à tort trimestresValides
+    // (régime général) et/ou serait compté deux fois si l'utilisateur le
+    // ressaisit aussi dans CarriereCNAVPL — la saisie CNAVPL reste manuelle,
+    // comme RAFP et la fonction publique, jamais auto-remplie depuis le RIS.
+    const regimesHorsCNAVPL = regimesValides.filter(r => !/cnavpl/i.test(r.nom));
+
     // trimestresValides = somme de tous les régimes de type "trimestres"
     // détectés dans le RIS (Assurance retraite, MSA Salariés, ou tout autre
     // régime aligné présenté séparément) — depuis la réforme LURA (2017), les
     // trimestres des régimes alignés se fusionnent dans un seul calcul, donc
     // on ne privilégie plus un unique régime "Assurance retraite" au risque
     // d'ignorer silencieusement les trimestres d'un régime aligné distinct.
-    const regimesTrimestres = regimesValides.filter(r => r.type === 'trimestres' && r.trimestres !== undefined);
+    const regimesTrimestres = regimesHorsCNAVPL.filter(r => r.type === 'trimestres' && r.trimestres !== undefined);
     if (regimesTrimestres.length > 0) {
       const totalTrimestres = regimesTrimestres.reduce((total, r) => total + (r.trimestres || 0), 0);
       setTrimestresValides(totalTrimestres.toString());
@@ -166,7 +192,7 @@ export const Carriere = () => {
     // entièrement la liste précédente (pas de fusion, pour éviter les doublons
     // si un régime a changé de valeur d'une année sur l'autre) ; la
     // persistance effective se fait via handleSave, comme les autres champs.
-    setRegimesPoints(regimesValides.filter(r => r.type === 'points'));
+    setRegimesPoints(regimesHorsCNAVPL.filter(r => r.type === 'points'));
 
     setRisDialogOpen(false);
   };
@@ -197,7 +223,10 @@ export const Carriere = () => {
   const pensionTotaleFonctionPublique = hasFonctionPublique
     ? resultatFonctionPublique.pensionFinale + resultatFonctionPublique.rafpAnnuelle
     : 0;
-  const pensionTotaleConsolidee = pensionTotaleRegimeGeneral + pensionTotaleFonctionPublique;
+  const pensionTotaleCNAVPL = hasCNAVPL ? resultatCNAVPL.pensionFinale : 0;
+  const pensionTotaleConsolidee =
+    pensionTotaleRegimeGeneral + pensionTotaleFonctionPublique + pensionTotaleCNAVPL;
+  const aDesRegimesSupplementaires = hasFonctionPublique || hasCNAVPL;
 
   return (
     <div className="space-y-6">
@@ -393,11 +422,13 @@ export const Carriere = () => {
             </div>
           )}
 
-          {(pensionBaseBrute > 0 || regimesPoints.length > 0 || hasFonctionPublique) && (
+          {(pensionBaseBrute > 0 || regimesPoints.length > 0 || aDesRegimesSupplementaires) && (
             <div className="mt-4 p-4 bg-muted/50 rounded-lg">
               <Label>
-                Total consolidé{hasFonctionPublique ? ' tous régimes' : ''} (pension de base ajustée +
-                pensions complémentaires{hasFonctionPublique ? ' + fonction publique + RAFP' : ''})
+                Total consolidé{aDesRegimesSupplementaires ? ' tous régimes' : ''} (pension de base
+                ajustée + pensions complémentaires
+                {hasFonctionPublique ? ' + fonction publique + RAFP' : ''}
+                {hasCNAVPL ? ' + CNAVPL' : ''})
               </Label>
               <div className="text-xl font-semibold text-primary">
                 {formatEuro2(pensionTotaleConsolidee)} / an
@@ -410,11 +441,14 @@ export const Carriere = () => {
                   {regimesPointsExclusCount} régime{regimesPointsExclusCount > 1 ? 's' : ''} non inclus, valeur du point manquante
                 </p>
               )}
-              {hasFonctionPublique && (
+              {aDesRegimesSupplementaires && (
                 <p className="text-sm text-muted-foreground mt-2 pt-2 border-t">
                   Détail par régime : régime général (base + complémentaires) ={' '}
-                  {formatEuro2(pensionTotaleRegimeGeneral)} / an — fonction publique (pension +
-                  RAFP) = {formatEuro2(pensionTotaleFonctionPublique)} / an
+                  {formatEuro2(pensionTotaleRegimeGeneral)} / an
+                  {hasFonctionPublique && (
+                    <> — fonction publique (pension + RAFP) = {formatEuro2(pensionTotaleFonctionPublique)} / an</>
+                  )}
+                  {hasCNAVPL && <> — CNAVPL = {formatEuro2(pensionTotaleCNAVPL)} / an</>}
                 </p>
               )}
             </div>
@@ -493,12 +527,22 @@ export const Carriere = () => {
 
       <CarriereFonctionPublique
         trimestresRequis={trimestresRequis}
-        trimestresValidesRegimeGeneral={parseInt(trimestresValides) || 0}
+        trimestresAutresRegimes={(parseInt(trimestresValides) || 0) + (hasCNAVPL ? parseInt(trimestresCNAVPL) || 0 : 0)}
         hasFonctionPublique={hasFonctionPublique}
         onHasFonctionPubliqueChange={setHasFonctionPublique}
         trimestresLiquidables={trimestresLiquidablesFP}
         onTrimestresLiquidablesChange={setTrimestresLiquidablesFP}
         onResultChange={setResultatFonctionPublique}
+      />
+
+      <CarriereCNAVPL
+        trimestresRequis={trimestresRequis}
+        trimestresAutresRegimes={(parseInt(trimestresValides) || 0) + (hasFonctionPublique ? parseInt(trimestresLiquidablesFP) || 0 : 0)}
+        hasCNAVPL={hasCNAVPL}
+        onHasCNAVPLChange={setHasCNAVPL}
+        trimestresCNAVPL={trimestresCNAVPL}
+        onTrimestresCNAVPLChange={setTrimestresCNAVPL}
+        onResultChange={setResultatCNAVPL}
       />
 
       <RISImportDialog
