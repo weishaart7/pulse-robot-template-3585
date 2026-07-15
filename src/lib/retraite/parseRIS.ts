@@ -77,17 +77,31 @@ function parseNombreFr(valeur: string): number {
  * métrique. Le format RIS ne fournit pas de balisage explicite pour le nom
  * du régime dans le texte extrait — c'est l'approximation la plus fiable
  * sans dépendre d'une liste figée de noms de régimes connus.
+ *
+ * Retourne le nom à utiliser (la ligne elle-même dans le cas général), ou
+ * `null` si la ligne ne ressemble pas à un nom de régime.
  */
-function ressembleAUnNomDeRegime(ligne: string): boolean {
-  if (ligne.length < 2 || ligne.length > 60) return false;
-  if (/^\d/.test(ligne)) return false;
-  if (RE_LIGNE_TRIMESTRES.test(ligne) || RE_LIGNE_POINTS.test(ligne) || RE_VALEUR_POINT.test(ligne)) return false;
+function ressembleAUnNomDeRegime(ligne: string): string | null {
+  if (ligne.length < 2) return null;
+  if (/^\d/.test(ligne)) return null;
+  if (RE_LIGNE_TRIMESTRES.test(ligne) || RE_LIGNE_POINTS.test(ligne) || RE_VALEUR_POINT.test(ligne)) return null;
   // "Numéro d'identifiant : ..." précède chaque bloc régime dans un RIS réel
   // et ne doit pas être pris pour le nom du régime. Comparaison insensible
   // à la casse et aux accents (normalize + suppression des diacritiques).
   const ligneNormalisee = ligne.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  if (/numero d.?identifiant/.test(ligneNormalisee)) return false;
-  return true;
+  if (/numero d.?identifiant/.test(ligneNormalisee)) return null;
+
+  if (ligne.length > 60) {
+    // Repli : une ligne trop longue pour être un nom de régime "standard"
+    // (ex: nom complet "Caisse interprofessionnelle de prévoyance et
+    // d'assurance vieillesse (CIPAV)", 75 caractères) peut quand même
+    // contenir un sigle exploitable entre parenthèses — même regex que celui
+    // déjà validé pour le format "Libellé : nombre" (RE_NOM_ENTRE_PARENTHESES).
+    const matchParenthese = ligne.match(RE_NOM_ENTRE_PARENTHESES);
+    return matchParenthese ? matchParenthese[1] : null;
+  }
+
+  return ligne;
 }
 
 /**
@@ -178,8 +192,9 @@ export function parseRegimesDepuisTexte(lignes: string[]): RegimeDetecte[] {
       continue;
     }
 
-    if (ressembleAUnNomDeRegime(ligne)) {
-      nomCourant = ligne;
+    const nomReconnu = ressembleAUnNomDeRegime(ligne);
+    if (nomReconnu) {
+      nomCourant = nomReconnu;
     }
   }
 
