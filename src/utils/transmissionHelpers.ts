@@ -1,7 +1,103 @@
 import { FamilyLink, MaritalStatus, FamilyProfile } from '@/services/familyService';
 import { Asset } from '@/services/assetService';
-import { FamilyGraph, Person, PatrimonySnapshot } from '@/lib/transmission/types';
+import { FamilyGraph, Person, PatrimonySnapshot, Liberalite } from '@/lib/transmission/types';
 import { FamilySituationSummary, PatrimoineSummary } from '@/types/transmission';
+
+/**
+ * Ligne liberalites brute (colonnes pertinentes uniquement), telle que
+ * renvoyée par une lecture Supabase directe (Synthese.tsx) ou par
+ * liberaliteService (ProcessusCalcul.tsx via useLiberalites) — les deux
+ * partagent les mêmes noms de colonnes.
+ */
+export interface LiberaliteRow {
+  id?: string | null;
+  type: string;
+  beneficiaire_id?: string | null;
+  beneficiaire_nom: string;
+  montant?: number | null;
+  date_acte?: string | null;
+  denomination: string;
+  type_imputation?: string | null;
+  biens?: unknown;
+  pourcentage?: number | null;
+}
+
+interface AssetValeur {
+  id?: string | null;
+  valeur_estimee?: number | null;
+}
+
+export interface LegsCaduc {
+  denomination: string;
+  beneficiaireNom: string;
+}
+
+/**
+ * Construit le Liberalite[] consommé par le moteur de calcul à partir des
+ * lignes brutes de la table liberalites, en résolvant la valeur des legs par
+ * jointure live vers les biens actuels (leur valeur n'est jamais figée en
+ * base, contrairement aux donations — cf. décisions du chantier libéralités).
+ * Un legs référençant un bien qui n'existe plus dans `assets` est considéré
+ * caduc : exclu du calcul de transmission et renvoyé séparément pour
+ * affichage. Limite connue : seule l'absence de la ligne asset est détectée,
+ * pas un bien vendu mais toujours présent en base (assets n'a pas de statut
+ * de cession fiable).
+ *
+ * Un même groupe de legs peut avoir plusieurs lignes référençant les mêmes
+ * biens (un légataire par ligne) : la valeur de chaque ligne est proratisée
+ * par `pourcentage` pour ne pas compter plusieurs fois la valeur totale des
+ * biens. Les donations, elles, gardent leur `montant` déjà proratisé et figé
+ * à la création, sans reproratisation ici.
+ */
+export function buildTransmissionLiberalites(
+  rows: LiberaliteRow[],
+  assets: AssetValeur[]
+): { liberalites: Liberalite[]; legsCaducs: LegsCaduc[] } {
+  const assetsById = new Map(
+    assets.filter((a): a is AssetValeur & { id: string } => !!a.id).map(a => [a.id, a])
+  );
+
+  const liberalites: Liberalite[] = [];
+  const legsCaducs: LegsCaduc[] = [];
+
+  for (const row of rows) {
+    const biens = Array.isArray(row.biens) ? (row.biens as { asset_id: string }[]) : [];
+
+    let valeur: number;
+    if (row.type === 'legs') {
+      let caduc = false;
+      let sommeBiens = 0;
+      for (const bien of biens) {
+        const asset = assetsById.get(bien.asset_id);
+        if (!asset) {
+          caduc = true;
+          continue;
+        }
+        sommeBiens += Number(asset.valeur_estimee) || 0;
+      }
+      if (caduc) {
+        legsCaducs.push({ denomination: row.denomination, beneficiaireNom: row.beneficiaire_nom });
+        continue;
+      }
+      const pourcentage = row.pourcentage ?? 100;
+      valeur = sommeBiens * (pourcentage / 100);
+    } else {
+      valeur = Number(row.montant) || 0;
+    }
+
+    liberalites.push({
+      id: row.id || '',
+      type: row.type as 'donation' | 'legs',
+      beneficiaireId: row.beneficiaire_id || 'tiers',
+      valeur,
+      date: row.date_acte || new Date().toISOString().split('T')[0],
+      typeImputation: (row.type_imputation as Liberalite['typeImputation']) || undefined,
+      beneficiaireName: row.beneficiaire_nom
+    });
+  }
+
+  return { liberalites, legsCaducs };
+}
 
 /**
  * Converts family data from the database to the transmission library format
@@ -62,10 +158,20 @@ export function buildFamilyGraph(
       estDecede: link.est_decede || false,
       dateDeces: link.date_deces,
       handicap: link.handicap || false,
-      lienFamilial: link.lien_familial
+      lienFamilial: link.lien_familial,
+      renoncant: link.enfant_renoncant || false,
+      renoncantDe: link.enfant_renoncant_de || undefined,
+      enfantAdopte: link.enfant_adopte || undefined,
+      adoptionSimpleAbattementPlein: link.adoption_simple_abattement_plein || false,
+      brancheFamiliale: link.branche_familiale || undefined
     });
 
-    if (link.lien_familial === 'Enfant' && !link.est_decede) {
+    // Enfant direct du défunt : le lien vers le défunt doit exister que
+    // l'enfant soit vivant, décédé ou renonçant — successionLegale.ts a
+    // besoin des enfants décédés/renonçants dans le graphe pour faire
+    // jouer la représentation de leurs propres descendants (sinon la
+    // souche disparaît à tort faute de lien exploitable).
+    if (link.lien_familial === 'Enfant') {
       const childId = link.id!;
       childrenOfDecedent.push(childId);
       links.push({ from: decedentId, to: childId, relation: 'child' });
@@ -73,6 +179,26 @@ export function buildFamilyGraph(
       if (link.parent_de === 'both_parents') {
         childrenCommonWithSpouse.push(childId);
       }
+    }
+
+    // Petit-enfant / arrière petit-enfant / neveu-nièce / petit neveu-nièce :
+    // enfant_de contient l'id du lien family_links du parent immédiat (pas
+    // l'id du défunt) — même mécanisme de chaînage pour toutes les
+    // générations descendantes, que ce soit la lignée du défunt
+    // (collectRepresentantsRecursive via buildSouchesEnfants) ou celle
+    // d'un frère/sœur prédécédé (même fonction, via buildSouchesFratrie).
+    // Sans ce lien, une souche décédée/renonçante disparaît à tort au lieu
+    // d'être représentée par ses propres descendants.
+    if (
+      [
+        'Petit-enfant',
+        'Arrière petit-enfant',
+        'Neveu/Nièce',
+        'Petit neveu/nièce',
+      ].includes(link.lien_familial) &&
+      link.enfant_de
+    ) {
+      links.push({ from: link.enfant_de, to: link.id!, relation: 'child' });
     }
   });
 

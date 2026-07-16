@@ -1,15 +1,40 @@
 import { supabase } from '@/integrations/supabase/client';
 
+export interface LiberaliteBien {
+  asset_id: string;
+  // Valeur au jour de l'acte, uniquement pour une donation (figée en base).
+  // Absente pour un legs : sa valeur se relit en live depuis assets au
+  // moment du calcul de transmission (cf. buildTransmissionLiberalites).
+  valeur?: number;
+}
+
+export type LiberaliteTypeImputation = 'avance_part' | 'hors_part' | 'partage';
+
 export interface Liberalite {
   id?: string;
   user_id?: string;
   type: 'donation' | 'legs';
   denomination: string;
-  beneficiaire: string;
+  beneficiaire_id?: string | null;
+  beneficiaire_nom: string;
+  groupe_id?: string | null;
   montant?: number;
+  // Part (0-100) de ce bénéficiaire/légataire dans le groupe. Sert à
+  // proratiser la valeur d'un legs (jamais stockée directement, relue en
+  // live depuis les biens — cf. buildTransmissionLiberalites) et à
+  // reconstruire la répartition à l'édition d'un groupe multi-bénéficiaires.
+  pourcentage?: number;
   date_acte?: string;
   notaire?: string;
   description?: string;
+  nature?: string;
+  type_imputation?: LiberaliteTypeImputation;
+  realise_par?: string;
+  clauses?: string[];
+  biens?: LiberaliteBien[];
+  demembrement?: string;
+  prise_en_charge_droits?: boolean;
+  testament_realise?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -22,7 +47,7 @@ export const liberaliteService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []) as Liberalite[];
+    return (data || []) as unknown as Liberalite[];
   },
 
   async createLiberalite(liberalite: Omit<Liberalite, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Liberalite> {
@@ -31,12 +56,12 @@ export const liberaliteService = {
 
     const { data, error } = await supabase
       .from('liberalites')
-      .insert({ ...liberalite, user_id: user.id })
+      .insert({ ...liberalite, user_id: user.id } as unknown as never)
       .select()
       .single();
 
     if (error) throw error;
-    return data as Liberalite;
+    return data as unknown as Liberalite;
   },
 
   async updateLiberalite(id: string, liberalite: Partial<Liberalite>): Promise<Liberalite> {
@@ -56,13 +81,13 @@ export const liberaliteService = {
 
     const { data, error } = await supabase
       .from('liberalites')
-      .update(liberalite)
+      .update(liberalite as unknown as never)
       .eq('id', id)
       .select()
       .single();
 
     if (error) throw error;
-    return data as Liberalite;
+    return data as unknown as Liberalite;
   },
 
   async deleteLiberalite(id: string) {

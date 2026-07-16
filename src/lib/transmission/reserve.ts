@@ -130,9 +130,11 @@ export function imputeLiberalites(
     let imputeSurReserve = 0;
     let imputeSurQD = 0;
     
-    // Si donation à un héritier réservataire (enfant) ET donation en avancement de part
-    if (childrenIds.includes(donation.beneficiaireId as string) && 
-        (donation.rapportable === undefined || donation.rapportable === true)) {
+    // Si donation à un héritier réservataire (enfant) et pas explicitement hors part :
+    // 'avance_part' et 'partage' suivent le même chemin d'imputation sur la réserve
+    // (seule 'partage' diffère ensuite sur le rapport, cf. computeRapport).
+    if (childrenIds.includes(donation.beneficiaireId as string) &&
+        donation.typeImputation !== "hors_part") {
       // Donation en avancement de part : s'impute d'abord sur la part de réserve du bénéficiaire
       const reservePersonnelle = reserveResult.reserveEnfants / childrenIds.length;
       imputeSurReserve = Math.min(donation.valeur, reservePersonnelle);
@@ -158,11 +160,28 @@ export function imputeLiberalites(
   }
   
   // 2. Imputer ensuite les legs concurremment avec donations entre époux (s'il y en a)
-  // Les legs sont présumés hors part successorale donc s'imputent sur QD
+  // Un legs 'hors_part' (ou à un non-réservataire) s'impute directement sur QD.
+  // Un legs 'avance_part' à un enfant réservataire suit le même chemin que la
+  // donation en avance de part : réserve personnelle d'abord, excédent sur QD.
   for (const legItem of legs) {
-    const imputeSurQD = Math.min(legItem.valeur, qdRestante);
-    qdRestante -= imputeSurQD;
-    
+    let imputeSurQD = 0;
+
+    if (childrenIds.includes(legItem.beneficiaireId as string) &&
+        legItem.typeImputation === "avance_part") {
+      const reservePersonnelle = reserveResult.reserveEnfants / childrenIds.length;
+      const imputeSurReserve = Math.min(legItem.valeur, reservePersonnelle);
+      reserveEnfantsRestante -= imputeSurReserve;
+
+      const excedent = legItem.valeur - imputeSurReserve;
+      if (excedent > 0) {
+        imputeSurQD = Math.min(excedent, qdRestante);
+        qdRestante -= imputeSurQD;
+      }
+    } else {
+      imputeSurQD = Math.min(legItem.valeur, qdRestante);
+      qdRestante -= imputeSurQD;
+    }
+
     legResults.push({
       liberaliteId: legItem.id,
       imputeSurQD
@@ -286,24 +305,48 @@ export function applyReductions(
 export function computeRapport(
   patrimony: PatrimonySnapshot,
   liberalites: Liberalite[],
-  reductions: ReductionResult
+  reductions: ReductionResult,
+  childrenIds: string[]
 ): { massePartageable: number; rapports: { personId: string; montantRapport: number }[] } {
   // Biens existants - libéralités à cause de mort maintenues + rapports + indemnités de réduction
   let massePartageable = patrimony.biensExistants - patrimony.passifs;
-  
+
   const rapports: { personId: string; montantRapport: number }[] = [];
-  
-  // Soustraire les legs maintenus (après réduction)
+
+  // Un legs 'hors_part' (ou à un non-réservataire) est prélevé sur le pot
+  // avant division, puis réattribué en totalité à son légataire (index.ts::
+  // liberalitesMaintenues) — il vient en plus de sa part normale.
+  // Un legs 'avance_part' ('sur part successorale') à un enfant réservataire
+  // n'a en revanche jamais quitté la succession : il reste dans le pot à
+  // diviser, et vient simplement en déduction de la part théorique de
+  // l'héritier (comme une donation rapportable), pour que la distinction
+  // avec 'hors_part' ait un effet réel sur le partage final.
   const legs = liberalites.filter(lib => lib.type === "legs");
   for (const legLib of legs) {
     const reduction = reductions.reductions.find(r => r.liberaliteId === legLib.id);
     const montantMaintenu = legLib.valeur - (reduction?.montantReduit || 0);
-    massePartageable -= montantMaintenu;
+
+    const estSurPartReservataire = legLib.typeImputation === "avance_part" &&
+      childrenIds.includes(legLib.beneficiaireId as string);
+
+    if (estSurPartReservataire) {
+      if (montantMaintenu > 0) {
+        rapports.push({
+          personId: legLib.beneficiaireId as string,
+          montantRapport: montantMaintenu
+        });
+      }
+    } else {
+      massePartageable -= montantMaintenu;
+    }
   }
   
-  // Ajouter les rapports de donations rapportables
-  const donations = liberalites.filter(lib => 
-    lib.type === "donation" && (lib.rapportable === undefined || lib.rapportable === true)
+  // Ajouter les rapports de donations rapportables : seules les donations
+  // en avancement de part sont rapportables ('hors_part' est par nature
+  // exclue du rapport, 'partage' est exclue car sa valeur est figée au
+  // jour de l'acte et n'est jamais réévaluée au partage).
+  const donations = liberalites.filter(lib =>
+    lib.type === "donation" && lib.typeImputation === "avance_part"
   );
   
   for (const donation of donations) {

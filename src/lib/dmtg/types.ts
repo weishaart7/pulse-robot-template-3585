@@ -9,6 +9,13 @@ export interface Beneficiary {
   representedOf?: string | null; // id de l'enfant prédécédé/renonçant/indigne
   representationGroup?: string | null; // identifiant de souche
   comesFromRepresentationWithPlurality?: boolean; // pour neveux/nièces
+  // Nombre de représentants se partageant l'abattement de la personne
+  // représentée (même souche). Défaut 1 si non renseigné.
+  numberOfRepresentants?: number;
+  // Adoption simple (art. 786 CGI) : abattement réduit à 1 594€ sauf
+  // exception déclarée par le conseiller (adoptionSimpleAbattementPlein).
+  isAdoptionSimple?: boolean;
+  adoptionSimpleAbattementPlein?: boolean;
 }
 
 export interface Asset {

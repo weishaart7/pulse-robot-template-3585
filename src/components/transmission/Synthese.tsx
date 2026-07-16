@@ -9,8 +9,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePassifs } from '@/hooks/usePassifs';
-import { buildFamilyGraph, buildPatrimonySnapshot } from '@/utils/transmissionHelpers';
-import { computeTransmission, FamilyGraph, PatrimonySnapshot, Liberalite, TransmissionParams } from '@/lib/transmission';
+import { buildFamilyGraph, buildPatrimonySnapshot, buildTransmissionLiberalites, LegsCaduc } from '@/utils/transmissionHelpers';
+import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission';
 import { computeDMTG, DMTGContext, DEFAULT_DMTG_PARAMS } from '@/lib/dmtg';
 import transmissionParamsData from '@/data/transmission-params.json';
 import './kairos-transmission.css';
@@ -28,6 +28,7 @@ export const Synthese = () => {
   const [transmissionResult, setTransmissionResult] = useState<any>(null);
   const [hasAssets, setHasAssets] = useState(false);
   const [hasCustomClausesToCheck, setHasCustomClausesToCheck] = useState(false);
+  const [legsCaducs, setLegsCaducs] = useState<LegsCaduc[]>([]);
 
   useEffect(() => {
     if (user && !passifsLoading) {
@@ -89,16 +90,14 @@ export const Synthese = () => {
       const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], passifs, totalAV);
       // Asset portfolio analysis completed
 
-      // Transformer les libéralités
-      const liberalitesFormatted: Liberalite[] = (liberalites || []).map(lib => ({
-        id: lib.id!,
-        type: lib.type as 'donation' | 'legs',
-        beneficiaireId: lib.beneficiaire || 'tiers',
-        valeur: Number(lib.montant) || 0,
-        date: lib.date_acte || new Date().toISOString().split('T')[0],
-        denomination: lib.denomination,
-        beneficiaireName: lib.beneficiaire
-      }));
+      // Transformer les libéralités : jointure live vers assets pour la valeur
+      // des legs (jamais figée en base), et exclusion des legs caducs (bien
+      // légué supprimé — cf. buildTransmissionLiberalites).
+      const { liberalites: liberalitesFormatted, legsCaducs } = buildTransmissionLiberalites(
+        liberalites || [],
+        assets || []
+      );
+      setLegsCaducs(legsCaducs);
 
       // Paramètres fiscaux - conversion de type appropriée
       const params: TransmissionParams = {
@@ -148,25 +147,36 @@ export const Synthese = () => {
           source: 'legal' as const
         })),
         beneficiaries: civilResult.heirs.map(heir => {
-          // Corriger le mapping des liens familiaux depuis la base de données
-          const person = family.persons.find(p => p.id === heir.personId);
-          const lienFamilial = person?.lienFamilial || heir.lien;
-
-          // Family link mapping in progress
-
-          const lienNormalise = lienFamilial?.toLowerCase();
+          // Le lien retenu pour la fiscalité DMTG est celui calculé par la
+          // dévolution civile (heir.lien), pas la catégorie du formulaire
+          // famille (ex: "Petit-enfant") : c'est la seule source qui sait
+          // si la personne hérite par représentation, et de qui.
           let dmtgLien: any = 'autre';
-          if (lienNormalise === 'conjoint') dmtgLien = 'conjoint';
-          else if (lienNormalise === 'enfant') dmtgLien = 'enfant';
-          else if (lienNormalise === 'parent') dmtgLien = 'ascendant';
-          else if (lienNormalise === 'frère/sœur') dmtgLien = 'frere_soeur';
-          else if (lienNormalise === 'neveu/nièce') dmtgLien = 'neveu_niece';
+          if (heir.lien === 'conjoint') dmtgLien = 'conjoint';
+          else if (heir.lien === 'enfant' || heir.lien === 'petit_enfant') dmtgLien = 'enfant';
+          else if (heir.lien === 'parent') dmtgLien = 'ascendant';
+          else if (heir.lien === 'frere_soeur') dmtgLien = 'frere_soeur';
+          else if (heir.lien === 'neveu_niece') dmtgLien = 'neveu_niece';
 
-          // DMTG link mapping completed
+          // Représentation : un petit-enfant représentant un enfant
+          // prédécédé/renonçant partage l'abattement enfant (100 000€) de
+          // la souche ; un neveu/nièce représentant un frère/sœur
+          // prédécédé partage l'abattement frère/sœur (15 932€) et relève
+          // du barème frère/sœur plutôt que du barème collatéral à 55%.
+          const isRepresentation = !!heir.representation && (heir.lien === 'petit_enfant' || heir.lien === 'neveu_niece');
+          const representationRootId = isRepresentation ? (heir.representationRootId || heir.personId) : null;
+
+          const person = family.persons.find(p => p.id === heir.personId);
 
           return {
             id: heir.personId,
-            lien: dmtgLien
+            lien: dmtgLien,
+            representedOf: representationRootId,
+            representationGroup: representationRootId,
+            numberOfRepresentants: isRepresentation ? heir.representationCount : undefined,
+            comesFromRepresentationWithPlurality: heir.lien === 'neveu_niece' && !!heir.representation,
+            isAdoptionSimple: person?.enfantAdopte === 'Adoption simple',
+            adoptionSimpleAbattementPlein: person?.adoptionSimpleAbattementPlein || false
           };
         }),
         donations: [], // À récupérer depuis les libéralités si besoin
@@ -344,6 +354,22 @@ export const Synthese = () => {
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             Une ou plusieurs clauses personnalisées existent dans le contrat de mariage et doivent être vérifiées manuellement.
+          </AlertDescription>
+        </Alert>
+      )}
+      {legsCaducs.length > 0 && (
+        <Alert className="bg-[var(--warning-soft)] border-[var(--warning)]/30">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            {legsCaducs.length === 1 ? 'Un legs est caduc' : `${legsCaducs.length} legs sont caducs`} (bien légué introuvable) et {legsCaducs.length === 1 ? "n'a" : "n'ont"} pas été pris en compte dans le calcul :
+            <ul className="mt-1 ml-4 list-disc">
+              {legsCaducs.map((legs, index) => (
+                <li key={index}>{legs.denomination} — {legs.beneficiaireNom}</li>
+              ))}
+            </ul>
+            <p className="mt-1 text-xs">
+              Seule la suppression du bien est détectée. Un bien vendu mais toujours présent dans votre patrimoine n'est pas identifié automatiquement — vérifiez manuellement la validité de vos legs après une vente.
+            </p>
           </AlertDescription>
         </Alert>
       )}

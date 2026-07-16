@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,27 +9,47 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useAssets } from '@/hooks/useAssets';
 import { useFamilyData } from '@/hooks/useFamilyData';
+import { useToast } from '@/hooks/use-toast';
+import { liberaliteService, Liberalite, LiberaliteTypeImputation } from '@/services/liberaliteService';
 import { X } from 'lucide-react';
 
 interface LegsFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  // Lignes existantes partageant un même groupe_id, à modifier. Undefined =
+  // création. Même sémantique "remplacement du groupe" que DonationForm.
+  editingGroup?: Liberalite[];
+  onSaved?: () => void;
 }
 
-export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange }) => {
+const TYPE_LEG_TO_IMPUTATION: Record<string, LiberaliteTypeImputation> = {
+  'Sur part successorale': 'avance_part',
+  'Hors part successorale': 'hors_part',
+};
+
+const IMPUTATION_TO_TYPE_LEG: Record<string, string> = {
+  avance_part: 'Sur part successorale',
+  hors_part: 'Hors part successorale',
+};
+
+const DEFAULT_FORM_DATA = {
+  libelle: 'Leg n°1',
+  nature: '',
+  typeLeg: '',
+  realiseePar: '',
+  testamentRealise: '',
+  biensSelectionnes: [] as string[],
+  clausesSelectionnees: [] as string[],
+  legataires: [] as { id: string; nom: string; pourcentage: number }[]
+};
+
+export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingGroup, onSaved }) => {
   const { assets } = useAssets();
   const { familyMembers: familyLinks } = useFamilyData();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [formData, setFormData] = useState({
-    libelle: 'Leg n°1',
-    nature: '',
-    typeLeg: '',
-    realiseePar: '',
-    testamentRealise: '',
-    biensSelectionnes: [] as string[],
-    clausesSelectionnees: [] as string[],
-    legataires: [] as { id: string; nom: string; pourcentage: number }[]
-  });
+  const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
 
   const naturesOptions = [
     'Legs universel',
@@ -114,12 +134,158 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange }) => {
 
   const totalPourcentage = formData.legataires.reduce((sum, l) => sum + l.pourcentage, 0);
 
+  // Montant calculé automatiquement, lecture seule : somme des valeurs
+  // actuelles des biens légués sélectionnés. Jamais stocké tel quel en base
+  // pour un legs — le moteur de calcul le relit en live depuis assets, ce
+  // montant ne sert ici qu'à vérifier la saisie à l'écran.
+  const montantTotal = assets
+    .filter(asset => formData.biensSelectionnes.includes(asset.id!))
+    .reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
+
+  // Pré-remplissage (édition) ou réinitialisation (création), à chaque
+  // ouverture du dialogue.
+  useEffect(() => {
+    if (!open) return;
+
+    if (editingGroup && editingGroup.length > 0) {
+      const first = editingGroup[0];
+      setFormData({
+        libelle: first.denomination,
+        nature: first.nature || '',
+        typeLeg: first.type_imputation ? (IMPUTATION_TO_TYPE_LEG[first.type_imputation] || '') : '',
+        realiseePar: first.realise_par || '',
+        testamentRealise: first.testament_realise || '',
+        biensSelectionnes: (first.biens || []).map(b => b.asset_id),
+        clausesSelectionnees: first.clauses || [],
+        legataires: [],
+      });
+    } else {
+      setFormData(DEFAULT_FORM_DATA);
+    }
+  }, [open, editingGroup]);
+
+  // Reconstruction des légataires : nécessite familyLinks chargé pour
+  // retrouver nom/prénom à partir de beneficiaire_id.
+  useEffect(() => {
+    if (!open || !editingGroup || editingGroup.length === 0 || familyLinks.length === 0) return;
+    const rebuilt = editingGroup
+      .map(row => {
+        const member = familyLinks.find(m => m.id === row.beneficiaire_id);
+        if (!member) return null;
+        return {
+          id: member.id!,
+          nom: `${member.nom} ${member.prenom || ''}`.trim(),
+          pourcentage: row.pourcentage ?? 100,
+        };
+      })
+      .filter((l): l is { id: string; nom: string; pourcentage: number } => l !== null);
+    setFormData(prev => ({ ...prev, legataires: rebuilt }));
+  }, [open, editingGroup, familyLinks]);
+
+  const handleSubmit = async () => {
+    if (formData.legataires.length === 0) {
+      toast({
+        title: "Erreur",
+        description: "Sélectionnez au moins un légataire.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (Math.abs(totalPourcentage - 100) > 0.01) {
+      toast({
+        title: "Erreur",
+        description: `La somme des pourcentages des légataires doit être égale à 100% (actuellement ${totalPourcentage.toFixed(2)}%).`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    const createdIds: string[] = [];
+    try {
+      const biens = formData.biensSelectionnes.map(assetId => ({ asset_id: assetId }));
+      const groupeId = formData.legataires.length > 1 ? crypto.randomUUID() : undefined;
+
+      // Ordre inversé : on crée les nouvelles lignes avant de toucher aux
+      // anciennes. Pas de RPC/transaction Postgres côté projet — c'est
+      // l'ordre qui garantit qu'un échec ne laisse jamais le groupe vide.
+      for (const legataire of formData.legataires) {
+        const created = await liberaliteService.createLiberalite({
+          type: 'legs',
+          denomination: formData.libelle,
+          beneficiaire_id: legataire.id,
+          beneficiaire_nom: legataire.nom,
+          groupe_id: groupeId,
+          // Proratise la valeur relue en live des biens légués entre les
+          // légataires (cf. buildTransmissionLiberalites) — sans ça, un legs
+          // à plusieurs légataires compterait sa valeur totale sur chaque ligne.
+          pourcentage: legataire.pourcentage,
+          nature: formData.nature || undefined,
+          type_imputation: TYPE_LEG_TO_IMPUTATION[formData.typeLeg],
+          realise_par: formData.realiseePar || undefined,
+          clauses: formData.clausesSelectionnees.length > 0 ? formData.clausesSelectionnees : undefined,
+          biens: biens.length > 0 ? biens : undefined,
+          testament_realise: formData.testamentRealise || undefined,
+        });
+        createdIds.push(created.id!);
+      }
+
+      if (editingGroup && editingGroup.length > 0) {
+        try {
+          for (const oldRow of editingGroup) {
+            await liberaliteService.deleteLiberalite(oldRow.id!);
+          }
+        } catch (deleteError) {
+          console.error('Error deleting previous legs rows:', deleteError);
+          toast({
+            title: "Attention",
+            description: "Le legs a été mis à jour, mais l'ancienne version n'a pas pu être supprimée automatiquement. Supprimez-la manuellement dans le tableau.",
+            variant: "destructive",
+          });
+          onSaved?.();
+          onOpenChange(false);
+          return;
+        }
+      }
+
+      toast({
+        title: "Succès",
+        description: editingGroup ? "Legs modifié avec succès" : "Legs enregistré avec succès",
+      });
+      onSaved?.();
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error saving legs:', error);
+      // Création interrompue en cours de route : nettoyage best-effort des
+      // lignes déjà créées. Les anciennes lignes (si édition) sont intactes.
+      for (const id of createdIds) {
+        try {
+          await liberaliteService.deleteLiberalite(id);
+        } catch (cleanupError) {
+          console.error('Cleanup error after failed legs save:', cleanupError);
+        }
+      }
+      toast({
+        title: "Erreur",
+        description: editingGroup
+          ? "Impossible de modifier le legs. Vos données d'origine sont intactes."
+          : "Impossible d'enregistrer le legs",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-2xl">Legs (Testament)</DialogTitle>
+            <DialogTitle className="text-2xl">
+              {editingGroup ? 'Modifier le legs' : 'Legs (Testament)'}
+            </DialogTitle>
             <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
               <X className="h-4 w-4" />
             </Button>
@@ -234,6 +400,16 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange }) => {
                   ))}
                 </div>
               )}
+              {formData.biensSelectionnes.length > 0 && (
+                <div className="mt-4 p-3 bg-muted rounded-lg">
+                  <p className="text-sm font-medium">
+                    Montant total du legs (calculé automatiquement) : {formatCurrency(montantTotal)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Recalculé à partir de la valeur actuelle des biens sélectionnés — non figé, la valeur retenue au décès pourra différer.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -318,16 +494,12 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange }) => {
 
           {/* Actions */}
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
               Annuler
             </Button>
-            <Button 
-              disabled={totalPourcentage > 100}
-              onClick={() => {
-                // TODO: Implement actual save logic when backend is ready
-                // saveLeg(formData);
-                onOpenChange(false);
-              }}
+            <Button
+              disabled={totalPourcentage > 100 || isSubmitting}
+              onClick={handleSubmit}
             >
               Enregistrer le legs
             </Button>

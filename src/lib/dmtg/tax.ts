@@ -1,10 +1,11 @@
 import { Money, Lien, DmtgParams, ProgressiveTaxResult } from './types';
 
 export function computeProgressiveTax(
-  amountAfterAllowance: Money, 
-  lien: Lien, 
-  consumedBracketsAmount: Money, 
-  params: DmtgParams
+  amountAfterAllowance: Money,
+  lien: Lien,
+  consumedBracketsAmount: Money,
+  params: DmtgParams,
+  comesFromRepresentationWithPlurality: boolean = false
 ): ProgressiveTaxResult {
   // Conjoint/PACS : exonération totale
   if (lien === 'conjoint' || lien === 'pacs') {
@@ -20,28 +21,10 @@ export function computeProgressiveTax(
     };
   }
 
-  // Sélectionner le barème approprié
-  let bareme: Array<{ upTo: number | null; rate: number }> = [];
-  
-  switch (lien) {
-    case 'enfant':
-    case 'ascendant':
-      bareme = params.baremes.ligne_directe;
-      break;
-    case 'frere_soeur':
-      bareme = params.baremes.frere_soeur;
-      break;
-    case 'neveu_niece':
-      // Règle spéciale : tarif frères/sœurs si représentation avec pluralité de souches
-      // Pour simplifier, on utilise le barème neveu/nièce par défaut
-      bareme = [{ upTo: null, rate: 0.55 }];
-      break;
-    case 'collateral_4':
-      bareme = params.baremes.collateral_4;
-      break;
-    default:
-      bareme = params.baremes.autre;
-  }
+  // Sélectionner le barème approprié (un neveu/nièce venant en
+  // représentation d'un frère/sœur prédécédé relève du barème frère/sœur,
+  // pas du barème collatéral à 55%, cf. getBaremeForLien).
+  const bareme = getBaremeForLien(lien, params, comesFromRepresentationWithPlurality);
 
   // Calcul progressif en tenant compte des tranches déjà consommées
   const trancheDetails: Array<{ from: Money; to: Money; rate: number; base: Money; duty: Money }> = [];

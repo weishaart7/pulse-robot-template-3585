@@ -41,22 +41,30 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   
   // 2. Masse de calcul / réserve / QD
   const masseCalcul = computeMasseCalcul(patrimony, liberalites);
-  const nbEnfants = family.childrenOfDecedent.filter(childId => 
-    !family.persons.find(p => p.id === childId)?.estDecede
-  ).length;
-  
+  // Nombre d'enfants au sens de la réserve = nombre de souches (enfants
+  // vivants ou représentés) déjà calculé par calculateSuccessionLegale, qui
+  // tient compte des décès ET des renonciations (successionLegale.ts).
+  // Ne pas recalculer séparément à partir de family.childrenOfDecedent : ce
+  // dernier liste tous les enfants au sens civil (vivants, décédés,
+  // renonçants) et ne reflète pas les souches réellement héritières.
+  const nbEnfants = successionLegaleResult.nbSouchesEnfants;
+
   const reserveResult = computeReserveAndQD(
-    masseCalcul, 
-    nbEnfants, 
+    masseCalcul,
+    nbEnfants,
     family.hasSurvivingSpouse,
     conjointOption
   );
-  
+
   // 3. Imputation donations -> legs
+  // childrenIds = uniquement les souches encore actives dans cette
+  // succession (cf. Règle D : un enfant renonçant sans descendance ne doit
+  // pas diluer la réserve personnelle des autres souches dans le calcul
+  // d'imputation ci-dessous).
   const imputationResult = imputeLiberalites(
-    liberalites, 
-    reserveResult, 
-    family.childrenOfDecedent
+    liberalites,
+    reserveResult,
+    successionLegaleResult.souchesEnfantsRootIds
   );
   
   // 4. Réduction si nécessaire
@@ -66,9 +74,17 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     reserveResult
   );
   
-  // 5. Rapport pour partage (égalité entre héritiers)
-  const rapportResult = computeRapport(patrimony, liberalites, reductionResult);
-  
+  // 5. Rapport pour partage (égalité entre héritiers) — souchesEnfantsRootIds
+  // permet à computeRapport de distinguer un legs 'sur part successorale' à
+  // un enfant réservataire (rééquilibré comme une donation rapportable) d'un
+  // legs 'hors part' (prélevé sur le pot avant division).
+  const rapportResult = computeRapport(
+    patrimony,
+    liberalites,
+    reductionResult,
+    successionLegaleResult.souchesEnfantsRootIds
+  );
+
   // 6. Calcul des parts finales et fiscalité
   const personIdsDejaImputes = new Set<PersonId>();
   const heirs = heirsShares.map(heir => {
@@ -81,11 +97,13 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     personIdsDejaImputes.add(heir.personId);
 
     if (!dejaImpute) {
-      // Soustraire le rapport si applicable
-      const rapport = rapportResult.rapports.find(r => r.personId === heir.personId);
-      if (rapport) {
-        partFinale -= rapport.montantRapport;
-      }
+      // Somme de tous les rapports de cet héritier (pas juste le premier
+      // trouvé) : un même enfant peut cumuler une donation en avance de
+      // part ET un legs sur part successorale, les deux doivent se déduire.
+      const rapportTotal = rapportResult.rapports
+        .filter(r => r.personId === heir.personId)
+        .reduce((sum, r) => sum + r.montantRapport, 0);
+      partFinale -= rapportTotal;
 
       // Ajouter les libéralités maintenues
       const liberalitesMaintenues = liberalites
@@ -130,7 +148,9 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       droitsSuccession,
       droits990I: prelevement990I.droits990I,
       typeQuotePart: heir.typeQuotePart,
-      representation: heir.representation
+      representation: heir.representation,
+      representationRootId: heir.representationRootId,
+      representationCount: heir.representationCount
     };
   });
   
@@ -155,6 +175,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     totalDroitsSuccession,
     total990I,
     fraisNotaire: notaryFeesResult.frais,
+    nbSouchesEnfants: successionLegaleResult.nbSouchesEnfants,
     details: {
       reductions: reductionResult.reductions,
       rapports: rapportResult.rapports

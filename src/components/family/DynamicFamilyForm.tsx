@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Info } from 'lucide-react';
 
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -20,6 +21,10 @@ interface DynamicFamilyFormProps {
 
 const civilites = ['M.', 'Mme', 'Mlle'];
 const adoptionTypes = ['Non', 'Adoption simple', 'Adoption plénière'];
+const adoptionSimpleMotifs = [
+  { value: 'enfant_du_conjoint', label: 'Enfant du conjoint adopté simple' },
+  { value: 'soins_secours_5ans', label: 'Soins et secours ininterrompus (5 ans min. durant la minorité)' },
+];
 const brancheFamiliale = ['Branche paternelle', 'Branche maternelle'];
 const mesuresProtectionJuridique = [
   'Aucune',
@@ -45,6 +50,8 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
   const form = useFormContext();
   const watchDecede = form.watch('est_decede');
   const watchRenoncant = form.watch('enfant_renoncant');
+  const watchAdoption = form.watch('enfant_adopte');
+  const watchAdoptionAbattementPlein = form.watch('adoption_simple_abattement_plein');
   const watchDateNaissance = form.watch('date_naissance');
   const watchMandatProtectionFuture = form.watch('mandat_protection_future');
   const isFirstRender = useRef(true);
@@ -652,6 +659,70 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
               </FormItem>
             )}
           />
+        )}
+
+        {/* Adoption simple : exception à l'abattement réduit (art. 786 CGI) */}
+        {showAdoption && watchAdoption === 'Adoption simple' && (
+          <>
+            <FormField
+              control={form.control}
+              name="adoption_simple_abattement_plein"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none flex items-center gap-1.5">
+                    <FormLabel>Bénéficie de l'abattement plein (100 000 €) malgré l'adoption simple</FormLabel>
+                    <Tooltip delayDuration={150}>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="inline-flex p-1 -m-1 rounded hover:bg-muted/50" aria-label="Base légale">
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        Par défaut, un enfant adopté simple ne bénéficie que de l'abattement des tiers (1 594 €, art. 786 CGI).
+                        L'abattement plein (100 000 €) ne s'applique que par exception : enfant du conjoint adopté simple,
+                        ou soins et secours ininterrompus pendant au moins 5 ans durant la minorité (10 ans si soins durant
+                        minorité et majorité). Cette case doit être cochée uniquement si vous avez vérifié qu'une de ces
+                        exceptions s'applique — l'application ne le déduit jamais automatiquement.
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            {watchAdoptionAbattementPlein && (
+              <FormField
+                control={form.control}
+                name="adoption_simple_motif"
+                render={({ field }) => (
+                  <FormItem className="ml-6">
+                    <FormLabel>Motif de l'exception</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger size="lg">
+                          <SelectValue placeholder="Sélectionner un motif" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {adoptionSimpleMotifs.map((motif) => (
+                          <SelectItem key={motif.value} value={motif.value}>
+                            {motif.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+          </>
         )}
 
         {/* Enfant renonçant */}

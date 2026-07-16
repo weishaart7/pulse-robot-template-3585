@@ -32,16 +32,35 @@ export function computeRecallAndAllowances(input: {
   
   if (import.meta.env.DEV) console.log(`Abattement de base: ${abattementBase}€`);
 
+  // Adoption simple (art. 786 CGI) : abattement réduit à celui des tiers
+  // (1 594€) sauf exception légale déclarée explicitement par le conseiller
+  // (enfant du conjoint adopté simple, ou soins et secours ininterrompus
+  // d'au moins 5 ans durant la minorité). Ne s'applique qu'à l'enfant
+  // lui-même (lien === 'enfant'), pas à un représentant venant à sa place.
+  if (beneficiary.lien === 'enfant' && beneficiary.isAdoptionSimple && !beneficiary.adoptionSimpleAbattementPlein) {
+    abattementBase = params.abattements.tiers;
+  }
+
+  // Gestion de la représentation fiscale (partage de l'abattement, art. 779
+  // CGI) : le représentant reprend l'abattement de la personne représentée
+  // (enfant prédécédé/renonçant → 100 000€, frère/sœur prédécédé pour un
+  // neveu/nièce → 15 932€), divisé à parts égales entre tous les
+  // représentants de la même souche. Doit s'appliquer avant l'abattement
+  // handicap ci-dessous pour que celui-ci reste cumulable (il était
+  // auparavant écrasé par cette étape).
+  if (beneficiary.representedOf) {
+    const abattementRepresente = beneficiary.lien === 'neveu_niece'
+      ? params.abattements.frere_soeur
+      : params.abattements.enfant_ascendant;
+    const nbRepresentants = beneficiary.numberOfRepresentants && beneficiary.numberOfRepresentants > 0
+      ? beneficiary.numberOfRepresentants
+      : 1;
+    abattementBase = abattementRepresente / nbRepresentants;
+  }
+
   // Abattement handicap (cumulable sauf avec tiers)
   if (beneficiary.isHandicapped && beneficiary.lien !== 'autre') {
     abattementBase += params.abattements.handicap;
-  }
-
-  // Gestion de la représentation fiscale (partage de l'abattement)
-  if (beneficiary.representedOf && beneficiary.representationGroup) {
-    // Pour la représentation, on partage l'abattement de l'enfant prédécédé
-    // même en souche unique (règle spéciale française)
-    abattementBase = params.abattements.enfant_ascendant; // Toujours 100k pour représentation
   }
 
   // Calculer l'abattement consommé par les donations dans les 15 ans

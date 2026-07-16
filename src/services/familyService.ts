@@ -85,6 +85,8 @@ export interface FamilyLink {
   date_deces?: string;
   handicap?: boolean;
   enfant_adopte?: string;
+  adoption_simple_abattement_plein?: boolean;
+  adoption_simple_motif?: string;
   enfant_renoncant?: boolean;
   enfant_renoncant_de?: string;
   branche_familiale?: string;

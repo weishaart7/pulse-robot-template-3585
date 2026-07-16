@@ -1363,45 +1363,86 @@ export type Database = {
       }
       liberalites: {
         Row: {
-          beneficiaire: string
+          beneficiaire_id: string | null
+          beneficiaire_nom: string
+          biens: Json | null
+          clauses: string[] | null
           created_at: string
           date_acte: string | null
+          demembrement: string | null
           denomination: string
           description: string | null
+          groupe_id: string | null
           id: string
           montant: number | null
+          nature: string | null
           notaire: string | null
+          pourcentage: number | null
+          prise_en_charge_droits: boolean | null
+          realise_par: string | null
+          testament_realise: string | null
           type: string
+          type_imputation: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
-          beneficiaire: string
+          beneficiaire_id?: string | null
+          beneficiaire_nom: string
+          biens?: Json | null
+          clauses?: string[] | null
           created_at?: string
           date_acte?: string | null
+          demembrement?: string | null
           denomination: string
           description?: string | null
+          groupe_id?: string | null
           id?: string
           montant?: number | null
+          nature?: string | null
           notaire?: string | null
+          pourcentage?: number | null
+          prise_en_charge_droits?: boolean | null
+          realise_par?: string | null
+          testament_realise?: string | null
           type: string
+          type_imputation?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
-          beneficiaire?: string
+          beneficiaire_id?: string | null
+          beneficiaire_nom?: string
+          biens?: Json | null
+          clauses?: string[] | null
           created_at?: string
           date_acte?: string | null
+          demembrement?: string | null
           denomination?: string
           description?: string | null
+          groupe_id?: string | null
           id?: string
           montant?: number | null
+          nature?: string | null
           notaire?: string | null
+          pourcentage?: number | null
+          prise_en_charge_droits?: boolean | null
+          realise_par?: string | null
+          testament_realise?: string | null
           type?: string
+          type_imputation?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "liberalites_beneficiaire_id_fkey"
+            columns: ["beneficiaire_id"]
+            isOneToOne: false
+            referencedRelation: "family_links"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       marital_status: {
         Row: {

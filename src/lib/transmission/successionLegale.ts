@@ -9,6 +9,13 @@ export interface HeritierLegal {
   typeQuotePart: TypeQuotePart;
   ordre: number;
   representation?: boolean;
+  // Renseignés uniquement quand representation === true : id de la
+  // personne représentée (racine de la souche : enfant ou frère/sœur
+  // prédécédé/renonçant) et nombre de représentants se partageant sa part
+  // — nécessaires en aval pour le partage de l'abattement fiscal par
+  // souche (art. 779 CGI).
+  representationRootId?: PersonId;
+  representationCount?: number;
 }
 
 export interface SuccessionLegaleResult {
@@ -20,6 +27,14 @@ export interface SuccessionLegaleResult {
   };
   masseBrutePart: number;
   explicationsTexte: string[];
+  // Nombre de souches d'enfants prises en compte pour la réserve héréditaire
+  // (enfants vivants ou représentés ; un enfant décédé ou renonçant sans
+  // descendance ne compte pas). 0 si le défunt n'a pas d'enfant.
+  nbSouchesEnfants: number;
+  // Ids des liens family_links 'Enfant' dont la souche est encore active
+  // dans cette succession (utilisé pour l'imputation des libéralités sur
+  // la réserve, cf. reserve.ts::imputeLiberalites).
+  souchesEnfantsRootIds: PersonId[];
 }
 
 /**
@@ -34,14 +49,18 @@ export function calculateSuccessionLegale(
     return {
       heritiers: [],
       masseBrutePart: 0,
-      explicationsTexte: ["Des dispositions testamentaires ou libéralités existent. La succession légale ne s'applique pas."]
+      explicationsTexte: ["Des dispositions testamentaires ou libéralités existent. La succession légale ne s'applique pas."],
+      nbSouchesEnfants: 0,
+      souchesEnfantsRootIds: []
     };
   }
 
   const result: SuccessionLegaleResult = {
     heritiers: [],
     masseBrutePart: 1,
-    explicationsTexte: []
+    explicationsTexte: [],
+    nbSouchesEnfants: 0,
+    souchesEnfantsRootIds: []
   };
 
   const personnesVivantes = graph.persons.filter(p => !p.estDecede && p.id !== graph.decedentId);
@@ -67,7 +86,9 @@ function calculateBrancheA(
   if (!conjoint) return result;
 
   // A1. Y a-t-il des enfants (vivants ou représentés) ?
-  const souchesEnfants = buildSouchesEnfants(graph);
+  const souchesEnfants = buildSouchesEnfants(graph, result);
+  result.nbSouchesEnfants = souchesEnfants.length;
+  result.souchesEnfantsRootIds = souchesEnfants.map(s => s.rootChildId);
 
   if (souchesEnfants.length > 0) {
     // Il y a des enfants vivants ou représentés
@@ -206,7 +227,9 @@ function calculateBrancheB(
   result: SuccessionLegaleResult
 ): SuccessionLegaleResult {
   // B1. Y a-t-il des enfants vivants ou représentables ?
-  const souchesEnfants = buildSouchesEnfants(graph);
+  const souchesEnfants = buildSouchesEnfants(graph, result);
+  result.nbSouchesEnfants = souchesEnfants.length;
+  result.souchesEnfantsRootIds = souchesEnfants.map(s => s.rootChildId);
 
   if (souchesEnfants.length > 0) {
     distributeToSouches(result, souchesEnfants, 1.0);
@@ -304,37 +327,56 @@ interface Souche {
  * il hérite de sa souche entière. S'il est décédé, ses descendants le
  * représentent récursivement.
  */
-function buildSouchesEnfants(graph: FamilyGraph): Souche[] {
+function buildSouchesEnfants(graph: FamilyGraph, result?: SuccessionLegaleResult): Souche[] {
   const allDirectChildren = graph.links
     .filter(link => link.from === graph.decedentId && link.relation === 'child')
     .map(link => link.to);
 
+  const decedent = graph.persons.find(p => p.id === graph.decedentId);
   const souches: Souche[] = [];
 
   for (const childId of allDirectChildren) {
     const child = graph.persons.find(p => p.id === childId);
     if (!child) continue;
 
-    if (!child.estDecede) {
-      // Enfant vivant → il prend toute sa souche
+    // Renonciation à CETTE succession (art. 754 C. civ.) : n'a d'effet que
+    // pour le défunt désigné par renoncantDe. L'enfant reste héritier pour
+    // la succession de l'autre parent le cas échéant.
+    const renonceACetteSuccession = !!child.renoncant && child.renoncantDe === graph.decedentId;
+    const traiterCommePredecede = !!child.estDecede || renonceACetteSuccession;
+
+    if (!traiterCommePredecede) {
+      // Enfant vivant, non renonçant → il prend toute sa souche
       souches.push({
         rootChildId: childId,
         heritiers: [{ person: child, part: 1.0, representation: false }]
       });
-    } else {
-      // Enfant décédé → représentation récursive par ses descendants
-      const representants = collectRepresentantsRecursive(graph, childId);
-      if (representants.length > 0) {
-        souches.push({
-          rootChildId: childId,
-          heritiers: representants.map(r => ({
-            person: r.person,
-            part: r.part,
-            representation: true
-          }))
-        });
-      }
-      // Si aucun représentant, la souche disparaît (pas ajoutée)
+      continue;
+    }
+
+    // Enfant décédé ou renonçant → représentation récursive par ses descendants
+    const representants = collectRepresentantsRecursive(graph, childId);
+    if (representants.length > 0) {
+      souches.push({
+        rootChildId: childId,
+        heritiers: representants.map(r => ({
+          person: r.person,
+          part: r.part,
+          representation: true
+        }))
+      });
+    }
+    // Si aucun représentant, la souche disparaît : sa part est répartie par
+    // accroissement entre les autres souches (distributeToSouches divise
+    // toujours par le nombre de souches réellement présentes).
+
+    if (renonceACetteSuccession && result) {
+      const decedentName = decedent ? `${decedent.prenom} ${decedent.nom}`.trim() : 'le défunt';
+      result.explicationsTexte.push(
+        representants.length > 0
+          ? `${child.prenom} ${child.nom} renonce à la succession de ${decedentName} ; ses descendants viennent en représentation.`
+          : `${child.prenom} ${child.nom} renonce à la succession de ${decedentName}, sans descendance ; sa part est réattribuée par accroissement (aux autres souches d'enfants, ou à l'ordre héréditaire suivant en l'absence d'autre enfant).`
+      );
     }
   }
 
@@ -388,6 +430,7 @@ function distributeToSouches(
   const partParSouche = totalShare / souches.length;
 
   for (const souche of souches) {
+    const nbRepresentants = souche.heritiers.length;
     for (const h of souche.heritiers) {
       result.heritiers.push({
         personId: h.person.id,
@@ -397,7 +440,9 @@ function distributeToSouches(
         quotePart: partParSouche * h.part,
         typeQuotePart: 'pleine_propriete',
         ordre: 1,
-        representation: h.representation
+        representation: h.representation,
+        representationRootId: h.representation ? souche.rootChildId : undefined,
+        representationCount: h.representation ? nbRepresentants : undefined
       });
     }
   }
@@ -412,6 +457,7 @@ function distributeToSouchesWithType(
   const partParSouche = totalShare / souches.length;
 
   for (const souche of souches) {
+    const nbRepresentants = souche.heritiers.length;
     for (const h of souche.heritiers) {
       result.heritiers.push({
         personId: h.person.id,
@@ -421,7 +467,9 @@ function distributeToSouchesWithType(
         quotePart: partParSouche * h.part,
         typeQuotePart,
         ordre: 1,
-        representation: h.representation
+        representation: h.representation,
+        representationRootId: h.representation ? souche.rootChildId : undefined,
+        representationCount: h.representation ? nbRepresentants : undefined
       });
     }
   }
@@ -487,6 +535,7 @@ function distributeToSouchesFratrie(
   const partParSouche = totalShare / souches.length;
 
   for (const souche of souches) {
+    const nbRepresentants = souche.heritiers.length;
     for (const h of souche.heritiers) {
       result.heritiers.push({
         personId: h.person.id,
@@ -496,7 +545,9 @@ function distributeToSouchesFratrie(
         quotePart: partParSouche * h.part,
         typeQuotePart: 'pleine_propriete',
         ordre: 2,
-        representation: h.representation
+        representation: h.representation,
+        representationRootId: h.representation ? souche.rootSiblingId : undefined,
+        representationCount: h.representation ? nbRepresentants : undefined
       });
     }
   }
@@ -574,17 +625,21 @@ function collectFenteHeritiers(
   });
   if (arriereGP.length > 0) return arriereGP;
 
-  // Rang 3 : Oncles et tantes
+  // Rang 3 : Oncles et tantes. Le formulaire famille enregistre une seule
+  // valeur combinée 'Oncle/Tante' (cf. useFamilyLinkLogic.ts) — jamais
+  // 'Oncle' ou 'Tante' isolément — d'où l'usage de includes() et non ===
+  // (une comparaison stricte ne matchait jamais aucune donnée réelle).
   const onclesTantes = personnesVivantes.filter(p => {
     const lien = p.lienFamilial?.toLowerCase() || '';
-    return (lien === 'oncle' || lien === 'tante') && isBranche(p);
+    return (lien.includes('oncle') || lien.includes('tante')) && isBranche(p);
   });
   if (onclesTantes.length > 0) return onclesTantes;
 
-  // Rang 4 : Cousins germains
+  // Rang 4 : Cousins germains. Même remarque : le formulaire enregistre
+  // 'Cousin/Cousine', jamais 'Cousin' ou 'Cousine' isolément.
   const cousins = personnesVivantes.filter(p => {
     const lien = p.lienFamilial?.toLowerCase() || '';
-    return (lien === 'cousin' || lien === 'cousine' || lien === 'cousin_germain') && isBranche(p);
+    return (lien.includes('cousin') || lien.includes('cousin_germain')) && isBranche(p);
   });
   if (cousins.length > 0) return cousins;
 
@@ -627,7 +682,14 @@ function findAllLivingDescendants(graph: FamilyGraph, ancestorId: PersonId): any
   for (const link of childLinks) {
     const child = graph.persons.find(p => p.id === link.to);
     if (!child) continue;
-    if (!child.estDecede) {
+
+    // Un enfant renonçant à la succession du défunt (cf. buildSouchesEnfants)
+    // ne doit pas être pris par ce filet de sécurité : sans ce test, un
+    // enfant vivant mais renonçant serait à tort compté comme héritier
+    // direct, en contradiction avec la renonciation déjà actée plus haut.
+    const renonceACetteSuccession = !!child.renoncant && child.renoncantDe === graph.decedentId;
+
+    if (!child.estDecede && !renonceACetteSuccession) {
       results.push(child);
     } else {
       results.push(...findAllLivingDescendants(graph, child.id));
@@ -640,7 +702,9 @@ function findAllLivingDescendants(graph: FamilyGraph, ancestorId: PersonId): any
 function mapLienFamilial(lien: string): string {
   if (lien.includes('grand-parent') || lien.includes('grand_parent') || lien === 'grand-père' || lien === 'grand-mère') return 'grand_parent';
   if (lien.includes('arriere-grand') || lien.includes('arrière-grand')) return 'arriere_grand_parent';
-  if (lien === 'oncle' || lien === 'tante') return 'oncle_tante';
-  if (lien === 'cousin' || lien === 'cousine') return 'cousin';
+  // Même remarque que dans collectFenteHeritiers : la valeur réelle du
+  // formulaire est 'Oncle/Tante' / 'Cousin/Cousine' (jamais isolée).
+  if (lien.includes('oncle') || lien.includes('tante')) return 'oncle_tante';
+  if (lien.includes('cousin')) return 'cousin';
   return 'autre';
 }

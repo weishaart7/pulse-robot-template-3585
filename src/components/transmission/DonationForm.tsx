@@ -13,15 +13,9 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-
-interface Asset {
-  id: string;
-  denomination: string;
-  nature: string;
-  valeur_estimee: number;
-  date_estimation: string;
-  detenteur: string;
-}
+import { useAssets } from '@/hooks/useAssets';
+import { useToast } from '@/hooks/use-toast';
+import { liberaliteService, Liberalite, LiberaliteTypeImputation } from '@/services/liberaliteService';
 
 interface FamilyMember {
   id: string;
@@ -41,26 +35,37 @@ interface Beneficiary {
 interface DonationFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  // Lignes existantes partageant un même groupe_id, à modifier. Undefined =
+  // création. L'enregistrement recrée systématiquement toutes les lignes du
+  // groupe puis supprime les anciennes (cf. handleSubmit) : il n'y a pas de
+  // mise à jour ligne à ligne, donc pas de risque de désynchronisation du
+  // groupe (garde-fou (c) de la Phase 7).
+  editingGroup?: Liberalite[];
+  onSaved?: () => void;
 }
 
-export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
-  const [formData, setFormData] = useState({
-    libelle: 'Donation appartement Rue de la Paix',
-    nature: '',
-    demembrement: 'aucun',
-    typeDonation: '',
-    droitsParDonateur: false,
-    realiseePar: '',
-    date: undefined as Date | undefined,
-  });
+const DEFAULT_FORM_DATA = {
+  libelle: 'Donation appartement Rue de la Paix',
+  nature: '',
+  demembrement: 'aucun',
+  typeDonation: '',
+  droitsParDonateur: false,
+  realiseePar: '',
+  date: undefined as Date | undefined,
+};
+
+export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: DonationFormProps) => {
+  const { assets, loading } = useAssets();
+  const { toast } = useToast();
+
+  const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
 
   const [selectedClauses, setSelectedClauses] = useState<string[]>([]);
   const [showClauses, setShowClauses] = useState(false);
-  const [assets, setAssets] = useState<Asset[]>([]);
   const [selectedAssets, setSelectedAssets] = useState<{id: string, valeurDonation: number}[]>([]);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const naturesOptions = [
     'Donation simple',
@@ -95,23 +100,6 @@ export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
         ? prev.filter(c => c !== clause)
         : [...prev, clause]
     );
-  };
-
-  const fetchAssets = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('assets')
-        .select('id, denomination, nature, valeur_estimee, date_estimation, detenteur')
-        .order('denomination');
-
-      if (error) throw error;
-      setAssets(data || []);
-    } catch (error) {
-      console.error('Erreur lors du chargement des biens:', error);
-    } finally {
-      setLoading(false);
-    }
   };
 
   const fetchFamilyMembers = async () => {
@@ -162,23 +150,147 @@ export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
     );
   };
 
+  // Pré-remplissage (édition) ou réinitialisation (création) des champs qui
+  // ne dépendent pas de familyMembers, à chaque ouverture du dialogue.
   useEffect(() => {
-    if (open) {
-      fetchAssets();
-      fetchFamilyMembers();
+    if (!open) return;
+    fetchFamilyMembers();
+
+    if (editingGroup && editingGroup.length > 0) {
+      const first = editingGroup[0];
+      setFormData({
+        libelle: first.denomination,
+        nature: first.nature || '',
+        demembrement: first.demembrement || 'aucun',
+        typeDonation: first.type_imputation || '',
+        droitsParDonateur: first.prise_en_charge_droits || false,
+        realiseePar: first.realise_par || '',
+        date: first.date_acte ? new Date(first.date_acte) : undefined,
+      });
+      setSelectedClauses(first.clauses || []);
+      setSelectedAssets((first.biens || []).map(b => ({ id: b.asset_id, valeurDonation: b.valeur || 0 })));
+    } else {
+      setFormData(DEFAULT_FORM_DATA);
+      setSelectedClauses([]);
+      setSelectedAssets([]);
+      setBeneficiaries([]);
     }
-  }, [open]);
+  }, [open, editingGroup]);
+
+  // Reconstruction des donataires : nécessite familyMembers chargé pour
+  // retrouver nom/prénom/lien à partir de beneficiaire_id.
+  useEffect(() => {
+    if (!open || !editingGroup || editingGroup.length === 0 || familyMembers.length === 0) return;
+    const rebuilt = editingGroup
+      .map(row => {
+        const member = familyMembers.find(m => m.id === row.beneficiaire_id);
+        if (!member) return null;
+        return { ...member, pourcentage: row.pourcentage ?? 100 };
+      })
+      .filter((b): b is Beneficiary => b !== null);
+    setBeneficiaries(rebuilt);
+  }, [open, editingGroup, familyMembers]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    const totalPourcentage = beneficiaries.reduce((sum, b) => sum + b.pourcentage, 0);
+
+    if (beneficiaries.length === 0) {
+      toast({
+        title: "Erreur",
+        description: "Sélectionnez au moins un donataire.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (Math.abs(totalPourcentage - 100) > 0.01) {
+      toast({
+        title: "Erreur",
+        description: `La somme des pourcentages des donataires doit être égale à 100% (actuellement ${totalPourcentage.toFixed(2)}%).`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    const createdIds: string[] = [];
     try {
-      // TODO: Implement actual save logic when backend is ready
-      // await saveDonation(formData, selectedAssets, beneficiaries);
-      
+      const montantTotal = selectedAssets.reduce((sum, a) => sum + a.valeurDonation, 0);
+      const biens = selectedAssets.map(a => ({ asset_id: a.id, valeur: a.valeurDonation }));
+      const groupeId = beneficiaries.length > 1 ? crypto.randomUUID() : undefined;
+      const dateActe = formData.date ? formData.date.toISOString().split('T')[0] : undefined;
+
+      // Ordre inversé : on crée les nouvelles lignes avant de toucher aux
+      // anciennes. Pas de RPC/transaction Postgres côté projet — c'est
+      // l'ordre qui garantit qu'un échec ne laisse jamais le groupe vide.
+      for (const beneficiaire of beneficiaries) {
+        const created = await liberaliteService.createLiberalite({
+          type: 'donation',
+          denomination: formData.libelle,
+          beneficiaire_id: beneficiaire.id,
+          beneficiaire_nom: `${beneficiaire.prenom || ''} ${beneficiaire.nom}`.trim(),
+          groupe_id: groupeId,
+          montant: montantTotal * (beneficiaire.pourcentage / 100),
+          pourcentage: beneficiaire.pourcentage,
+          date_acte: dateActe,
+          nature: formData.nature || undefined,
+          type_imputation: (formData.typeDonation || undefined) as LiberaliteTypeImputation | undefined,
+          realise_par: formData.realiseePar || undefined,
+          clauses: selectedClauses.length > 0 ? selectedClauses : undefined,
+          biens: biens.length > 0 ? biens : undefined,
+          demembrement: formData.demembrement !== 'aucun' ? formData.demembrement : undefined,
+          prise_en_charge_droits: formData.droitsParDonateur,
+        });
+        createdIds.push(created.id!);
+      }
+
+      if (editingGroup && editingGroup.length > 0) {
+        try {
+          for (const oldRow of editingGroup) {
+            await liberaliteService.deleteLiberalite(oldRow.id!);
+          }
+        } catch (deleteError) {
+          console.error('Error deleting previous donation rows:', deleteError);
+          toast({
+            title: "Attention",
+            description: "La donation a été mise à jour, mais l'ancienne version n'a pas pu être supprimée automatiquement. Supprimez-la manuellement dans le tableau.",
+            variant: "destructive",
+          });
+          onSaved?.();
+          onOpenChange(false);
+          return;
+        }
+      }
+
+      toast({
+        title: "Succès",
+        description: editingGroup ? "Donation modifiée avec succès" : "Donation enregistrée avec succès",
+      });
+      onSaved?.();
       onOpenChange(false);
     } catch (error) {
       console.error('Error saving donation:', error);
+      // La création a échoué en cours de route : nettoyage best-effort des
+      // lignes déjà créées pour ne pas laisser de doublons partiels. Les
+      // anciennes lignes (si édition) n'ont pas été touchées.
+      for (const id of createdIds) {
+        try {
+          await liberaliteService.deleteLiberalite(id);
+        } catch (cleanupError) {
+          console.error('Cleanup error after failed donation save:', cleanupError);
+        }
+      }
+      toast({
+        title: "Erreur",
+        description: editingGroup
+          ? "Impossible de modifier la donation. Vos données d'origine sont intactes."
+          : "Impossible d'enregistrer la donation",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -186,7 +298,9 @@ export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">Donations</DialogTitle>
+          <DialogTitle className="text-2xl font-bold">
+            {editingGroup ? 'Modifier la donation' : 'Donations'}
+          </DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -353,7 +467,7 @@ export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
                           <Checkbox
                             id={asset.id}
                             checked={!!isSelected}
-                            onCheckedChange={() => handleAssetToggle(asset.id, asset.valeur_estimee || 0)}
+                            onCheckedChange={() => handleAssetToggle(asset.id!, asset.valeur_estimee || 0)}
                           />
                           <div className="flex-1 space-y-2">
                             <div className="grid grid-cols-2 gap-4">
@@ -383,7 +497,7 @@ export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
                                   id={`valeur-${asset.id}`}
                                   type="number"
                                   value={isSelected.valeurDonation}
-                                  onChange={(e) => updateAssetDonationValue(asset.id, Number(e.target.value))}
+                                  onChange={(e) => updateAssetDonationValue(asset.id!, Number(e.target.value))}
                                   placeholder="Valeur de donation"
                                   className="mt-1"
                                 />
@@ -488,10 +602,10 @@ export const DonationForm = ({ open, onOpenChange }: DonationFormProps) => {
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-6">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
               Annuler
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={isSubmitting}>
               Enregistrer
             </Button>
           </div>

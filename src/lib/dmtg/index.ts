@@ -81,7 +81,8 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
       taxableAfterAllowance,
       beneficiary.lien,
       recallResult.consumedBracketsAmount,
-      params
+      params,
+      beneficiary.comesFromRepresentationWithPlurality
     );
     
     if (import.meta.env.DEV) console.log(`Droits calculés: ${taxResult.taxe}€`);

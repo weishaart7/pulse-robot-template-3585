@@ -11,6 +11,19 @@ export interface Person {
   dateDeces?: string;
   handicap?: boolean;
   lienFamilial?: string;
+  // Renonciation à une succession (art. 754 du Code civil) : n'a d'effet
+  // que pour la succession désignée par renoncantDe (id du défunt concerné).
+  renoncant?: boolean;
+  renoncantDe?: PersonId;
+  // Adoption (art. 786 CGI pour l'adoption simple) : valeur brute du
+  // formulaire famille ('Non' | 'Adoption simple' | 'Adoption plénière').
+  enfantAdopte?: string;
+  // Déclaration du conseiller : abattement enfant plein malgré une
+  // adoption simple (exception légale constatée manuellement).
+  adoptionSimpleAbattementPlein?: boolean;
+  // Branche paternelle/maternelle (utilisé par la fente successorale,
+  // cf. successionLegale.ts::collectFenteHeritiers).
+  brancheFamiliale?: string;
 }
 
 export interface FamilyGraph {
@@ -39,8 +52,12 @@ export interface Liberalite {
   nature?: string;
   valeur: number;
   date: string;
-  rapportable?: boolean;
-  horsPart?: boolean;
+  // Non défini est traité différemment selon le consommateur : réserve.ts::imputeLiberalites
+  // impute quand même sur la réserve (permissif, comme l'ancien défaut rapportable=true),
+  // mais réserve.ts::computeRapport exclut du rapport (strict, n'accepte que 'avance_part').
+  // Sans conséquence tant que Synthese.tsx/ProcessusCalcul.tsx renseignent toujours cette
+  // valeur (Phase 4 du chantier libéralités) — à garder en tête si un appelant l'omet.
+  typeImputation?: "avance_part" | "hors_part" | "partage";
   donationEntreEpoux?: boolean;
   beneficiaireName?: string;
 }
@@ -73,6 +90,10 @@ export interface HeirShare {
   droits990I?: number;
   typeQuotePart?: TypeQuotePart;
   representation?: boolean;
+  // cf. HeritierLegal.representationRootId / representationCount
+  // (successionLegale.ts) — propagés jusqu'ici pour le calcul DMTG.
+  representationRootId?: PersonId;
+  representationCount?: number;
 }
 
 export interface TransmissionResult {
@@ -84,6 +105,11 @@ export interface TransmissionResult {
   totalDroitsSuccession: number;
   total990I: number;
   fraisNotaire: number;
+  // Nombre de souches d'enfants retenues pour la réserve (cf.
+  // successionLegale.ts::SuccessionLegaleResult.nbSouchesEnfants) — exposé
+  // ici pour que les écrans d'explication du calcul (ProcessusCalcul.tsx)
+  // n'aient pas à le recalculer eux-mêmes à partir du graphe familial.
+  nbSouchesEnfants: number;
   details: {
     reductions: { liberaliteId: string; montantReduit: number }[];
     rapports: { personId: PersonId; montantRapport: number }[];

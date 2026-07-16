@@ -6,9 +6,9 @@ import { useAssets } from '@/hooks/useAssets';
 import { useFamilyData, useMaritalStatus, useFamilyProfile } from '@/hooks/useFamilyData';
 import { useLiberalites } from '@/hooks/useLiberalites';
 import { usePassifs } from '@/hooks/usePassifs';
-import { buildFamilyGraph, buildPatrimonySnapshot } from '@/utils/transmissionHelpers';
+import { buildFamilyGraph, buildPatrimonySnapshot, buildTransmissionLiberalites } from '@/utils/transmissionHelpers';
 import { computeTransmission, TransmissionContext } from '@/lib/transmission';
-import { FamilyGraph, PatrimonySnapshot, Liberalite, TransmissionParams } from '@/lib/transmission/types';
+import { FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission/types';
 import transmissionParamsData from '@/data/transmission-params.json';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import './kairos-transmission.css';
@@ -32,19 +32,13 @@ export const ProcessusCalcul = () => {
     return buildPatrimonySnapshot(assets, passifs, 0); // Assurance-vie non séparée ici : pas de régression, à traiter séparément si besoin
   }, [assets, passifs]);
 
-  // Convertir les libéralités
-  const transmissionLiberalites: Liberalite[] = useMemo(() => {
-    return liberalites.map(lib => ({
-      id: lib.id!,
-      type: lib.type === 'donation' ? 'donation' : 'legs',
-      beneficiaireId: lib.beneficiaire,
-      valeur: lib.montant || 0,
-      date: lib.date_acte || new Date().toISOString(),
-      rapportable: true,
-      horsPart: false,
-      beneficiaireName: lib.beneficiaire
-    }));
-  }, [liberalites]);
+  // Convertir les libéralités : jointure live vers assets pour la valeur des
+  // legs (jamais figée en base), et exclusion des legs caducs (bien légué
+  // supprimé — cf. buildTransmissionLiberalites).
+  const { liberalites: transmissionLiberalites, legsCaducs } = useMemo(
+    () => buildTransmissionLiberalites(liberalites, assets),
+    [liberalites, assets]
+  );
 
   const params: TransmissionParams = useMemo(() => {
     const rawParams = transmissionParamsData as any;
@@ -110,9 +104,11 @@ export const ProcessusCalcul = () => {
     );
   }
 
-  const nbEnfants = familyGraph.childrenOfDecedent.filter(childId => 
-    !familyGraph.persons.find(p => p.id === childId)?.estDecede
-  ).length;
+  // Nombre de souches réellement héritières (décès et renonciations déjà
+  // pris en compte par calculateSuccessionLegale) — ne pas le redériver
+  // localement de familyGraph.childrenOfDecedent, qui liste tous les
+  // enfants au sens civil sans refléter les souches actives.
+  const nbEnfants = transmissionResult.nbSouchesEnfants;
   const hasConjoint = familyGraph.hasSurvivingSpouse;
   const calculSteps = [
     {
@@ -143,8 +139,11 @@ export const ProcessusCalcul = () => {
         `Patrimoine net : ${(patrimony.biensExistants - patrimony.passifs).toLocaleString('fr-FR')} €`,
         `Donations antérieures : ${transmissionLiberalites.filter(l => l.type === 'donation').reduce((s, l) => s + l.valeur, 0).toLocaleString('fr-FR')} €`,
         `Legs consentis : ${transmissionLiberalites.filter(l => l.type === 'legs').reduce((s, l) => s + l.valeur, 0).toLocaleString('fr-FR')} €`,
-        `= Masse de calcul : ${transmissionResult.masseCalcul.toLocaleString('fr-FR')} €`
-      ],
+        `= Masse de calcul : ${transmissionResult.masseCalcul.toLocaleString('fr-FR')} €`,
+        legsCaducs.length > 0
+          ? `⚠️ ${legsCaducs.length} legs caduc${legsCaducs.length > 1 ? 's' : ''} exclu${legsCaducs.length > 1 ? 's' : ''} du calcul (bien légué introuvable) : ${legsCaducs.map(l => l.denomination).join(', ')}`
+          : null
+      ].filter(Boolean),
       formula: `${patrimony.biensExistants.toLocaleString('fr-FR')} - ${patrimony.passifs.toLocaleString('fr-FR')} + ${transmissionLiberalites.reduce((s, l) => s + l.valeur, 0).toLocaleString('fr-FR')} = ${transmissionResult.masseCalcul.toLocaleString('fr-FR')} €`,
       conseils: [
         "Les donations faites il y a moins de 15 ans sont réintégrées dans la masse",
