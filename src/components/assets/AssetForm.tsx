@@ -84,6 +84,14 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const watchedValeurAcquisition = form.watch('valeur_acquisition');
   const watchedValeurEstimee = form.watch('valeur_estimee');
   const watchedQualificationAuto = form.watch('qualification_auto');
+  const watchedQualificationBien = form.watch('qualification_bien');
+  // "Le couple" (bien commun, 50/50 fixé par la loi) n'a de sens que si la
+  // qualification n'est pas "Bien propre"/"Bien personnel" (100/0 binaire,
+  // aucun pourcentage possible) — cf. useAssetForm.ts pour la resélection
+  // forcée si la qualification change après coup.
+  const filteredDetenteurOptions = watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel'
+    ? detenteurOptions.filter(option => option !== 'Le couple')
+    : detenteurOptions;
   const isImmobilier = getAssetCategory(watchedNature) === 'actifs immobiliers';
   const isSocieteEligible = isSocieteEligibleNature(watchedNature);
   const hideAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature);
@@ -395,59 +403,24 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {detenteurOptions.map(option => (
+                {filteredDetenteurOptions.map(option => (
                   <SelectItem key={option} value={option}>{option}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {(watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel') && (
+              <FormDescription>
+                "Le couple" n'est pas proposé : ce bien est qualifié {watchedQualificationBien.toLowerCase()}, il appartient donc entièrement à une seule personne.
+              </FormDescription>
+            )}
             <FormMessage />
           </FormItem>
         )} />
 
         {watchedDetenteur === 'Le couple' && familyData.hasPartner && (
-          <>
-            <FormField control={form.control} name="pourcentage_utilisateur" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Pourcentage appartenant à {familyData.userFirstName || 'vous'} (%)</FormLabel>
-                <FormControl>
-                  <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    {...field}
-                    onChange={e => {
-                      const value = parseFloat(e.target.value) || 0;
-                      field.onChange(value);
-                      form.setValue('pourcentage_conjoint', 100 - value);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-
-            <FormField control={form.control} name="pourcentage_conjoint" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Pourcentage appartenant à {familyData.partnerFirstName || 'votre conjoint(e)'} (%)</FormLabel>
-                <FormControl>
-                  <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    {...field}
-                    onChange={e => {
-                      const value = parseFloat(e.target.value) || 0;
-                      field.onChange(value);
-                      form.setValue('pourcentage_utilisateur', 100 - value);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          </>
+          <div className="col-span-full text-sm text-muted-foreground bg-muted rounded-[5px] px-3 py-2">
+            Réparti 50% / 50% entre {familyData.userFirstName || 'vous'} et {familyData.partnerFirstName || 'votre conjoint(e)'} — bien commun, fixé par la loi (non modifiable).
+          </div>
         )}
       </div>
 

@@ -5,8 +5,9 @@ import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
-import { getCategoryColor, getPourcentagesRepartition } from '@/lib/patrimoine/utils';
+import { getCategoryColor } from '@/lib/patrimoine/utils';
 import { getAssetCategory } from '@/constants/assetTypes';
+import { getPartSuccessorale, BienNonQualifieError } from '@/lib/patrimoine/succession';
 
 interface PatrimoineParTeteDetailProps {
   onBack?: () => void;
@@ -40,22 +41,24 @@ export const PatrimoineParTeteDetail = ({ onBack }: PatrimoineParTeteDetailProps
     userPassifs, spousePassifs
   } = patrimoineParPersonne;
 
-  // Répartition par catégorie / par personne (parts attribuées)
+  // Répartition par catégorie / par personne (parts attribuées) — même
+  // source unique que patrimoineParPersonne (getPartSuccessorale) : un bien
+  // jamais qualifié est exclu silencieusement ici (déjà signalé une fois par
+  // le résumé principal via unqualifiedItems, pas la peine de dupliquer
+  // l'avertissement dans cette vue détaillée).
   const computeByCategory = (forSpouse: boolean) => {
     const map: Record<string, number> = {};
     assets.forEach((a: any) => {
       const valeur = Number(a.valeur_estimee || 0);
       if (!valeur) return;
-      const { userQuote, spouseQuote } = getPourcentagesRepartition(a.pourcentage_utilisateur, a.pourcentage_conjoint);
-      const detenteur = (a.detenteur || '').toLowerCase();
-      let part = 0;
-      if (detenteur === 'common' || detenteur === 'commun' || detenteur === 'couple' || detenteur === 'le couple') {
-        part = valeur * (forSpouse ? spouseQuote : userQuote);
-      } else if (forSpouse && (detenteur === 'spouse' || detenteur === 'conjoint')) {
-        part = valeur;
-      } else if (!forSpouse && (detenteur === 'user' || detenteur === 'utilisateur' || !detenteur)) {
-        part = valeur;
+      let userFraction: number;
+      try {
+        userFraction = getPartSuccessorale(a, a.denomination || a.nature);
+      } catch (error) {
+        if (error instanceof BienNonQualifieError) return;
+        throw error;
       }
+      const part = valeur * (forSpouse ? (1 - userFraction) : userFraction);
       if (part > 0) {
         const cat = getAssetCategory(a.nature);
         map[cat] = (map[cat] || 0) + part;

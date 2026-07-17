@@ -701,6 +701,8 @@ export type Database = {
           nature: string
           pourcentage_conjoint: number | null
           pourcentage_utilisateur: number | null
+          qualification_auto: boolean | null
+          qualification_bien: string | null
           quotite_assuree_conjoint: number | null
           quotite_assuree_utilisateur: number | null
           reporter_budget: boolean | null
@@ -724,6 +726,8 @@ export type Database = {
           nature: string
           pourcentage_conjoint?: number | null
           pourcentage_utilisateur?: number | null
+          qualification_auto?: boolean | null
+          qualification_bien?: string | null
           quotite_assuree_conjoint?: number | null
           quotite_assuree_utilisateur?: number | null
           reporter_budget?: boolean | null
@@ -747,6 +751,8 @@ export type Database = {
           nature?: string
           pourcentage_conjoint?: number | null
           pourcentage_utilisateur?: number | null
+          qualification_auto?: boolean | null
+          qualification_bien?: string | null
           quotite_assuree_conjoint?: number | null
           quotite_assuree_utilisateur?: number | null
           reporter_budget?: boolean | null
@@ -1612,6 +1618,8 @@ export type Database = {
           nature: string
           pourcentage_conjoint: number | null
           pourcentage_utilisateur: number | null
+          qualification_auto: boolean | null
+          qualification_bien: string | null
           updated_at: string
           user_id: string
         }
@@ -1623,6 +1631,8 @@ export type Database = {
           nature: string
           pourcentage_conjoint?: number | null
           pourcentage_utilisateur?: number | null
+          qualification_auto?: boolean | null
+          qualification_bien?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1634,6 +1644,8 @@ export type Database = {
           nature?: string
           pourcentage_conjoint?: number | null
           pourcentage_utilisateur?: number | null
+          qualification_auto?: boolean | null
+          qualification_bien?: string | null
           updated_at?: string
           user_id?: string
         }

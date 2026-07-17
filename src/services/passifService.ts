@@ -12,6 +12,8 @@ export interface Emprunt {
   detenteur?: string;
   pourcentage_utilisateur?: number;
   pourcentage_conjoint?: number;
+  qualification_bien?: string;
+  qualification_auto?: boolean;
   reporter_budget?: boolean;
   asset_id?: string | null;
   type_garantie?: 'Hypothèque' | 'Caution' | 'Nantissement' | 'Aucune' | string | null;
@@ -31,6 +33,8 @@ export interface Passif {
   detenteur?: string;
   pourcentage_utilisateur?: number;
   pourcentage_conjoint?: number;
+  qualification_bien?: string;
+  qualification_auto?: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -33,7 +33,14 @@ export const PassifEmpruntForm = ({ item, onCancel, onSubmit }: PassifEmpruntFor
   const watchedNature = form.watch('nature');
   const watchedDetenteur = form.watch('detenteur');
   const watchedAssure = form.watch('assure');
+  const watchedQualificationBien = form.watch('qualification_bien');
   const isEmprunt = EMPRUNT_NATURES.includes(watchedNature);
+  // "Le couple" (commun, 50/50 fixé par la loi) n'a de sens que si la dette
+  // n'est pas qualifiée "Bien propre"/"Bien personnel" (100/0 binaire) — même
+  // garde-fou que AssetForm.tsx.
+  const filteredDetenteurOptions = watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel'
+    ? detenteurOptions.filter(option => option !== 'Le couple')
+    : detenteurOptions;
 
   return (
     <Card>
@@ -271,48 +278,24 @@ export const PassifEmpruntForm = ({ item, onCancel, onSubmit }: PassifEmpruntFor
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {detenteurOptions.map((option) => (
+                      {filteredDetenteurOptions.map((option) => (
                         <SelectItem key={option} value={option}>{option}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {(watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel') && (
+                    <FormDescription>
+                      "Le couple" n'est pas proposé : cette dette est qualifiée {watchedQualificationBien.toLowerCase()}, elle appartient donc entièrement à une seule personne.
+                    </FormDescription>
+                  )}
                   <FormMessage />
                 </FormItem>
               )} />
             )}
 
             {watchedDetenteur === 'Le couple' && familyData.hasPartner && (
-              <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="pourcentage_utilisateur" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pourcentage {familyData.userFirstName || 'vous'} (%)</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="0" max="100" step="0.1" {...field}
-                        onChange={e => {
-                          const value = parseFloat(e.target.value) || 0;
-                          field.onChange(value);
-                          form.setValue('pourcentage_conjoint', 100 - value);
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="pourcentage_conjoint" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pourcentage {familyData.partnerFirstName || 'conjoint(e)'} (%)</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="0" max="100" step="0.1" {...field}
-                        onChange={e => {
-                          const value = parseFloat(e.target.value) || 0;
-                          field.onChange(value);
-                          form.setValue('pourcentage_utilisateur', 100 - value);
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+              <div className="text-sm text-muted-foreground bg-muted rounded-[5px] px-3 py-2">
+                Réparti 50% / 50% entre {familyData.userFirstName || 'vous'} et {familyData.partnerFirstName || 'votre conjoint(e)'} — bien commun, fixé par la loi (non modifiable).
               </div>
             )}
 

@@ -1,16 +1,13 @@
 import { useMemo } from 'react';
 import { Asset } from '@/services/assetService';
 import { Passif, Emprunt } from '@/services/passifService';
-import { 
-  checkIsInCouple, 
-  isDetenteurUser, 
-  isDetenteurSpouse, 
-  isDetenteurCommon,
+import {
+  checkIsInCouple,
   calculatePlusValue,
-  getPourcentagesRepartition,
   formatCurrency as formatCurrencyUtil
 } from '@/lib/patrimoine/utils';
 import { getAssetCategory } from '@/constants/assetTypes';
+import { getPartSuccessorale, BienNonQualifieError } from '@/lib/patrimoine/succession';
 
 interface FinancialSummary {
   totalActifs: number;
@@ -33,6 +30,12 @@ interface PatrimoineParPersonne {
   spousePassifs: number;
   totalValue: number;
   showSpouse: boolean;
+}
+
+export interface UnqualifiedItem {
+  id: string;
+  label: string;
+  type: 'actif' | 'passif' | 'emprunt';
 }
 
 interface PlusValuesSummary {
@@ -78,7 +81,19 @@ export const usePatrimoineCalculations = ({
     return { totalActifs, totalPassifs, patrimoineNet };
   }, [assets, passifs, emprunts]);
 
-  const patrimoineParPersonne = useMemo<PatrimoineParPersonne>(() => {
+  // Source unique de vérité pour "part revenant à l'utilisateur" : même
+  // fonction que le module Transmission (lib/patrimoine/succession.ts),
+  // fusionnée ici pour remplacer l'ancienne logique dupliquée basée
+  // uniquement sur `detenteur` (qui ignorait `qualification_bien` et pouvait
+  // diverger du calcul de succession pour un même bien — cf. incident du
+  // 2026-07-18). "Own" = qualification 'Bien propre'/'Bien personnel'
+  // (binaire), "Shared" = 'Bien commun'/'Indivision' (fraction). Un bien/
+  // passif/emprunt jamais qualifié est exclu des totaux (jamais deviné) et
+  // remonté dans `unqualifiedItems`.
+  const { patrimoineParPersonne, unqualifiedItems } = useMemo<{
+    patrimoineParPersonne: PatrimoineParPersonne;
+    unqualifiedItems: UnqualifiedItem[];
+  }>(() => {
     let userOwnValue = 0;
     let userSharedValue = 0;
     let spouseOwnValue = 0;
@@ -87,23 +102,28 @@ export const usePatrimoineCalculations = ({
     let userSharedPassifs = 0;
     let spouseOwnPassifs = 0;
     let spouseSharedPassifs = 0;
+    const unqualified: UnqualifiedItem[] = [];
+
+    const isShared = (qualification?: string | null) =>
+      qualification === 'Bien commun' || qualification === 'Indivision';
 
     // Process assets
     assets.forEach(asset => {
       const estimatedValue = asset.valeur_estimee || 0;
-      const detenteur = asset.detenteur;
-
-      if (!isInCouple) {
-        userOwnValue += estimatedValue;
-      } else {
-        if (isDetenteurUser(detenteur)) {
-          userOwnValue += estimatedValue;
-        } else if (isDetenteurSpouse(detenteur)) {
-          spouseOwnValue += estimatedValue;
-        } else if (isDetenteurCommon(detenteur)) {
-          const { userQuote, spouseQuote } = getPourcentagesRepartition(asset.pourcentage_utilisateur, asset.pourcentage_conjoint);
-          userSharedValue += estimatedValue * userQuote;
-          spouseSharedValue += estimatedValue * spouseQuote;
+      try {
+        const userFraction = getPartSuccessorale(asset, asset.denomination || asset.nature);
+        if (isShared(asset.qualification_bien)) {
+          userSharedValue += estimatedValue * userFraction;
+          spouseSharedValue += estimatedValue * (1 - userFraction);
+        } else {
+          userOwnValue += estimatedValue * userFraction;
+          spouseOwnValue += estimatedValue * (1 - userFraction);
+        }
+      } catch (error) {
+        if (error instanceof BienNonQualifieError) {
+          unqualified.push({ id: asset.id!, label: asset.denomination || asset.nature, type: 'actif' });
+        } else {
+          throw error;
         }
       }
     });
@@ -111,19 +131,20 @@ export const usePatrimoineCalculations = ({
     // Process passifs
     passifs.forEach(passif => {
       const montant = passif.montant_du || 0;
-      const detenteur = passif.detenteur;
-
-      if (!isInCouple) {
-        userOwnPassifs += montant;
-      } else {
-        if (isDetenteurUser(detenteur)) {
-          userOwnPassifs += montant;
-        } else if (isDetenteurSpouse(detenteur)) {
-          spouseOwnPassifs += montant;
-        } else if (isDetenteurCommon(detenteur)) {
-          const { userQuote, spouseQuote } = getPourcentagesRepartition(passif.pourcentage_utilisateur, passif.pourcentage_conjoint);
-          userSharedPassifs += montant * userQuote;
-          spouseSharedPassifs += montant * spouseQuote;
+      try {
+        const userFraction = getPartSuccessorale(passif, passif.nature);
+        if (isShared(passif.qualification_bien)) {
+          userSharedPassifs += montant * userFraction;
+          spouseSharedPassifs += montant * (1 - userFraction);
+        } else {
+          userOwnPassifs += montant * userFraction;
+          spouseOwnPassifs += montant * (1 - userFraction);
+        }
+      } catch (error) {
+        if (error instanceof BienNonQualifieError) {
+          unqualified.push({ id: passif.id, label: passif.nature, type: 'passif' });
+        } else {
+          throw error;
         }
       }
     });
@@ -131,19 +152,20 @@ export const usePatrimoineCalculations = ({
     // Process emprunts
     emprunts.forEach(emprunt => {
       const montant = emprunt.capital_restant_du || 0;
-      const detenteur = emprunt.detenteur;
-
-      if (!isInCouple) {
-        userOwnPassifs += montant;
-      } else {
-        if (isDetenteurUser(detenteur)) {
-          userOwnPassifs += montant;
-        } else if (isDetenteurSpouse(detenteur)) {
-          spouseOwnPassifs += montant;
-        } else if (isDetenteurCommon(detenteur)) {
-          const { userQuote, spouseQuote } = getPourcentagesRepartition(emprunt.pourcentage_utilisateur, emprunt.pourcentage_conjoint);
-          userSharedPassifs += montant * userQuote;
-          spouseSharedPassifs += montant * spouseQuote;
+      try {
+        const userFraction = getPartSuccessorale(emprunt, emprunt.libelle || emprunt.nature);
+        if (isShared(emprunt.qualification_bien)) {
+          userSharedPassifs += montant * userFraction;
+          spouseSharedPassifs += montant * (1 - userFraction);
+        } else {
+          userOwnPassifs += montant * userFraction;
+          spouseOwnPassifs += montant * (1 - userFraction);
+        }
+      } catch (error) {
+        if (error instanceof BienNonQualifieError) {
+          unqualified.push({ id: emprunt.id, label: emprunt.libelle || emprunt.nature, type: 'emprunt' });
+        } else {
+          throw error;
         }
       }
     });
@@ -157,20 +179,23 @@ export const usePatrimoineCalculations = ({
     const totalValue = userValue + spouseValue;
 
     return {
-      userFirstName,
-      spouseFirstName,
-      userValue,
-      spouseValue,
-      userOwnValue,
-      userSharedValue,
-      spouseOwnValue,
-      spouseSharedValue,
-      userActifs,
-      spouseActifs,
-      userPassifs,
-      spousePassifs,
-      totalValue,
-      showSpouse: isInCouple
+      patrimoineParPersonne: {
+        userFirstName,
+        spouseFirstName,
+        userValue,
+        spouseValue,
+        userOwnValue,
+        userSharedValue,
+        spouseOwnValue,
+        spouseSharedValue,
+        userActifs,
+        spouseActifs,
+        userPassifs,
+        spousePassifs,
+        totalValue,
+        showSpouse: isInCouple
+      },
+      unqualifiedItems: unqualified
     };
   }, [assets, passifs, emprunts, userFirstName, spouseFirstName, isInCouple]);
 
@@ -229,6 +254,7 @@ export const usePatrimoineCalculations = ({
     isInCouple,
     financialSummary,
     patrimoineParPersonne,
+    unqualifiedItems,
     plusValuesSummary,
     formatCurrency
   };

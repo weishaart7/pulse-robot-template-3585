@@ -8,6 +8,7 @@ import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, mapDetenteurToDb, FamilyInfo } from '@/lib/patrimoine/utils';
 import { EMPRUNT_NATURES } from '@/constants/assetTypes';
 import { useEmprunts, usePassifs } from '@/hooks/usePassifs';
+import { qualifierBien, QualificationContext } from '@/lib/patrimoine/qualification';
 
 export const isEmpruntRecord = (item: Emprunt | Passif): item is Emprunt => 'libelle' in item;
 
@@ -21,6 +22,8 @@ export const usePassifEmpruntForm = ({ item, onSuccess }: UsePassifEmpruntFormPr
   const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
   const [familyData, setFamilyData] = useState<FamilyInfo>({ hasPartner: false });
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [maritalContext, setMaritalContext] = useState<Pick<QualificationContext, 'statutCouple' | 'regimeMatrimonial' | 'dateMariage' | 'conventionPacs'>>({});
+  const [qualificationRaison, setQualificationRaison] = useState<string>('');
   const { createEmprunt, updateEmprunt } = useEmprunts();
   const { createPassif, updatePassif } = usePassifs();
 
@@ -68,6 +71,12 @@ export const usePassifEmpruntForm = ({ item, onSuccess }: UsePassifEmpruntFormPr
         setDetenteurOptions(options);
         setFamilyData(familyInfo);
         setAssets(assetsList || []);
+        setMaritalContext({
+          statutCouple: maritalStatus?.statut_couple,
+          regimeMatrimonial: maritalStatus?.regime_matrimonial,
+          dateMariage: maritalStatus?.date_mariage,
+          conventionPacs: maritalStatus?.convention_pacs,
+        });
       } catch (error) {
         setDetenteurOptions(['Utilisateur']);
       }
@@ -96,6 +105,8 @@ export const usePassifEmpruntForm = ({ item, onSuccess }: UsePassifEmpruntFormPr
         detenteur: displayDetenteur,
         pourcentage_utilisateur: item.pourcentage_utilisateur ?? 50,
         pourcentage_conjoint: item.pourcentage_conjoint ?? 50,
+        qualification_bien: item.qualification_bien || undefined,
+        qualification_auto: item.qualification_auto !== false,
         asset_id: isEmpruntItem ? (item.asset_id || undefined) : undefined,
         type_garantie: isEmpruntItem ? ((item.type_garantie as 'Aucune' | 'Caution' | 'Hypothèque' | 'Nantissement') || 'Aucune') : 'Aucune',
         assure: isEmpruntItem ? (item.assure || false) : false,
@@ -146,6 +157,55 @@ export const usePassifEmpruntForm = ({ item, onSuccess }: UsePassifEmpruntFormPr
     return () => subscription.unsubscribe();
   }, [form, familyData]);
 
+  // Auto-qualification propre/commun (même modèle que useAssetForm.ts) : une
+  // dette n'a pas d'origine/date d'acquisition dans ce formulaire, donc
+  // qualifierBien() ne s'appuie ici que sur le régime matrimonial et le
+  // détenteur — reste correct pour une dette contractée pendant l'union
+  // (présumée commune sous régime légal, propre sous séparation de biens).
+  useEffect(() => {
+    const watchedFields = ['detenteur', 'qualification_auto'];
+    const recompute = (value: any) => {
+      const { qualification, raison } = qualifierBien({
+        statutCouple: maritalContext.statutCouple,
+        regimeMatrimonial: maritalContext.regimeMatrimonial,
+        dateMariage: maritalContext.dateMariage,
+        conventionPacs: maritalContext.conventionPacs,
+        detenteur: value.detenteur,
+      });
+      form.setValue('qualification_bien', qualification);
+      setQualificationRaison(raison);
+    };
+
+    const initialValues = form.getValues();
+    if (initialValues.qualification_auto !== false) {
+      recompute(initialValues);
+    }
+
+    const subscription = form.watch((value, { name }) => {
+      const autoOn = value.qualification_auto !== false;
+      if (!autoOn) return;
+      if (!watchedFields.includes(name || '')) return;
+      recompute(value);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, maritalContext]);
+
+  // "Le couple" (commun, 50/50 fixé par la loi) n'a de sens que si la
+  // qualification n'est pas "Bien propre"/"Bien personnel" — même garde-fou
+  // que useAssetForm.ts (cf. incident du 2026-07-18).
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name !== 'qualification_bien') return;
+      const invalidPourCouple = value.qualification_bien === 'Bien propre' || value.qualification_bien === 'Bien personnel';
+      if (invalidPourCouple && value.detenteur === 'Le couple') {
+        form.setValue('detenteur', '');
+        form.setValue('pourcentage_utilisateur', undefined);
+        form.setValue('pourcentage_conjoint', undefined);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
   const handleSubmit = async (values: PassifEmpruntFormValues) => {
     setIsLoading(true);
     try {
@@ -174,6 +234,8 @@ export const usePassifEmpruntForm = ({ item, onSuccess }: UsePassifEmpruntFormPr
           detenteur: dbDetenteur,
           pourcentage_utilisateur: finalUserPercentage,
           pourcentage_conjoint: finalSpousePercentage,
+          qualification_bien: values.qualification_bien || null,
+          qualification_auto: values.qualification_auto !== false,
           asset_id: values.asset_id || null,
           type_garantie: values.type_garantie || null,
           assure: values.assure ?? false,
@@ -194,6 +256,8 @@ export const usePassifEmpruntForm = ({ item, onSuccess }: UsePassifEmpruntFormPr
           detenteur: dbDetenteur,
           pourcentage_utilisateur: finalUserPercentage,
           pourcentage_conjoint: finalSpousePercentage,
+          qualification_bien: values.qualification_bien || null,
+          qualification_auto: values.qualification_auto !== false,
         };
 
         if (item && !isEmpruntRecord(item)) {
@@ -216,6 +280,7 @@ export const usePassifEmpruntForm = ({ item, onSuccess }: UsePassifEmpruntFormPr
     familyData,
     assets,
     originalIsEmprunt,
+    qualificationRaison,
     handleSubmit,
   };
 };

@@ -10,7 +10,7 @@ import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
 import { assetValorisationService, AssetValorisation } from '@/services/assetValorisationService';
 import { computeEvolutionPatrimoine } from '@/lib/patrimoine/evolutionPatrimoine';
-import { TrendingUp, TrendingDown, Wallet, User, Users, Target } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, User, Users, Target, AlertTriangle } from 'lucide-react';
 
 interface PatrimoineResumeProps {
   onNavigateToPlusValues?: () => void;
@@ -72,6 +72,7 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
   const {
     financialSummary,
     patrimoineParPersonne,
+    unqualifiedItems,
     plusValuesSummary,
     formatCurrency
   } = usePatrimoineCalculations({
@@ -90,6 +91,20 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
 
   return (
     <div className="space-y-8">
+      {unqualifiedItems.length > 0 && (
+        <div className="rounded-lg border border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-800/40 p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" strokeWidth={1.75} />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+              {unqualifiedItems.length} élément{unqualifiedItems.length > 1 ? 's' : ''} non qualifié{unqualifiedItems.length > 1 ? 's' : ''} (propre/commun), exclu{unqualifiedItems.length > 1 ? 's' : ''} des totaux ci-dessous
+            </p>
+            <p className="text-xs text-amber-800/80 dark:text-amber-200/70">
+              {unqualifiedItems.map(i => i.label).join(', ')} — à qualifier dans Patrimoine pour être pris en compte.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Top summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <StatCard

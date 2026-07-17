@@ -237,6 +237,27 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
     return () => subscription.unsubscribe();
   }, [form, familyData]);
 
+  // "Le couple" comme détenteur n'a de sens que pour un bien commun (50/50
+  // fixé par la loi) — jamais pour "Bien propre"/"Bien personnel" (100/0
+  // binaire, cf. getPartSuccessorale). La qualification peut basculer vers
+  // "Bien propre" après coup (changement de régime matrimonial, origine
+  // gratuite...) alors que "Le couple" était déjà sélectionné : on force
+  // alors une resélection plutôt que de laisser cette combinaison invalide
+  // en base (cf. incident du 2026-07-18 — pourcentages saisis mais
+  // silencieusement ignorés par le calcul de succession).
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name !== 'qualification_bien') return;
+      const invalidPourCouple = value.qualification_bien === 'Bien propre' || value.qualification_bien === 'Bien personnel';
+      if (invalidPourCouple && value.detenteur === 'Le couple') {
+        form.setValue('detenteur', '');
+        form.setValue('pourcentage_utilisateur', undefined);
+        form.setValue('pourcentage_conjoint', undefined);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
   const handleSubmit = async (values: AssetFormValues) => {
     setIsLoading(true);
     try {
