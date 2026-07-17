@@ -1482,6 +1482,7 @@ export type Database = {
           nombre_enfants_charges: number | null
           option_conjoint: string | null
           parent_isole: boolean | null
+          partage_envisage: boolean
           pas_de_contrat_mariage: boolean
           pays_conjoint: string | null
           pays_naissance_conjoint: string | null
@@ -1533,6 +1534,7 @@ export type Database = {
           nombre_enfants_charges?: number | null
           option_conjoint?: string | null
           parent_isole?: boolean | null
+          partage_envisage?: boolean
           pas_de_contrat_mariage?: boolean
           pays_conjoint?: string | null
           pays_naissance_conjoint?: string | null
@@ -1584,6 +1586,7 @@ export type Database = {
           nombre_enfants_charges?: number | null
           option_conjoint?: string | null
           parent_isole?: boolean | null
+          partage_envisage?: boolean
           pas_de_contrat_mariage?: boolean
           pays_conjoint?: string | null
           pays_naissance_conjoint?: string | null

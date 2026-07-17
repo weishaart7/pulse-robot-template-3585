@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { Calculator, FileText, DollarSign, Shield, AlertTriangle } from 'lucide-react';
+import { Calculator, FileText, DollarSign, Shield, AlertTriangle, ArrowRight } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePassifs } from '@/hooks/usePassifs';
 import { buildFamilyGraph, buildPatrimonySnapshot, buildTransmissionLiberalites, LegsCaduc } from '@/utils/transmissionHelpers';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission';
-import { computeDMTG, DMTGContext, DEFAULT_DMTG_PARAMS } from '@/lib/dmtg';
+import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import transmissionParamsData from '@/data/transmission-params.json';
 import './kairos-transmission.css';
 
@@ -22,6 +23,7 @@ const TYPE_QUOTE_PART_LABELS: Record<string, string> = {
 };
 
 export const Synthese = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { passifs, loading: passifsLoading } = usePassifs();
   const [loading, setLoading] = useState(true);
@@ -29,6 +31,7 @@ export const Synthese = () => {
   const [hasAssets, setHasAssets] = useState(false);
   const [hasCustomClausesToCheck, setHasCustomClausesToCheck] = useState(false);
   const [legsCaducs, setLegsCaducs] = useState<LegsCaduc[]>([]);
+  const [computeErrorMessage, setComputeErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (user && !passifsLoading) {
@@ -39,6 +42,7 @@ export const Synthese = () => {
   const fetchTransmissionData = async () => {
     try {
       setLoading(true);
+      setComputeErrorMessage(null);
 
       // Récupérer les données famille
       const { data: familyProfile } = await supabase
@@ -54,6 +58,7 @@ export const Synthese = () => {
         .single();
 
       const optionConjoint = (maritalStatus as any)?.option_conjoint as string | null;
+      const partageEnvisage = !!(maritalStatus as any)?.partage_envisage;
 
       const clausesPersonnalisees = (maritalStatus as any)?.clauses_personnalisees;
       const clausesPersonnaliseesList = Array.isArray(clausesPersonnalisees) ? clausesPersonnalisees : [];
@@ -88,7 +93,6 @@ export const Synthese = () => {
 
       // Construire le patrimoine
       const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], passifs, totalAV);
-      // Asset portfolio analysis completed
 
       // Transformer les libéralités : jointure live vers assets pour la valeur
       // des legs (jamais figée en base), et exclusion des legs caducs (bien
@@ -107,106 +111,37 @@ export const Synthese = () => {
         },
         bareme: transmissionParamsData.bareme,
         prelevement990I: transmissionParamsData.prelevement990I,
-        fraisNotaire: {
-          mode: transmissionParamsData.fraisNotaire.mode as "pourcentage" | "forfait",
-          valeur: transmissionParamsData.fraisNotaire.valeur
+        debours: {
+          mode: transmissionParamsData.debours.mode as "pourcentage" | "forfait",
+          valeur: transmissionParamsData.debours.valeur
         }
       };
 
-      // Calculer la transmission civile
-      const civilResult = computeTransmission({
+      // Date de référence unique pour la simulation (pas de date de décès réelle :
+      // le profil "défunt" reste estDecede: false tant que l'utilisateur est en vie).
+      const referenceDate = new Date().toISOString().split('T')[0];
+
+      // Point d'entrée unique : computeTransmission calcule la dévolution civile
+      // ET la fiscalité DMTG en interne (cf. consolidation du moteur), et renvoie
+      // un résultat déjà complet (dmtg, netBreakdown, family...). Ce composant ne
+      // fait plus que l'afficher.
+      const combinedResult = computeTransmission({
         family,
         patrimony,
         liberalites: liberalitesFormatted,
         params,
-        conjointOption: (optionConjoint as any) || undefined
+        conjointOption: (optionConjoint as any) || undefined,
+        referenceDate,
+        rawAssets: assets || [],
+        partageEnvisage
       });
-
-      // Préparer les données pour le calcul DMTG
-      const dmtgContext: DMTGContext = {
-        deathDate: new Date().toISOString().split('T')[0],
-        params: DEFAULT_DMTG_PARAMS,
-        regimeMatrimonial: {
-          regime: maritalStatus?.regime_matrimonial?.toLowerCase().includes('communauté') ? 'communauté' : 'séparation',
-          actifCommun: 0,
-          passifCommun: 0,
-          avantagesMatrimoniaux: []
-        },
-        assets: (assets || []).map(asset => ({
-          id: asset.id!,
-          label: asset.denomination || '',
-          valeurVenale: Number(asset.valeur_estimee) || 0,
-          nature: 'autre',
-          location: 'metropole',
-          isResidencePrincipale: asset.nature === 'immobilier',
-          exclurePour: {}
-        })),
-        civilShares: civilResult.heirs.map(heir => ({
-          beneficiaryId: heir.personId,
-          fraction: heir.partFinale / civilResult.transmissionNette,
-          source: 'legal' as const
-        })),
-        beneficiaries: civilResult.heirs.map(heir => {
-          // Le lien retenu pour la fiscalité DMTG est celui calculé par la
-          // dévolution civile (heir.lien), pas la catégorie du formulaire
-          // famille (ex: "Petit-enfant") : c'est la seule source qui sait
-          // si la personne hérite par représentation, et de qui.
-          let dmtgLien: any = 'autre';
-          if (heir.lien === 'conjoint') dmtgLien = 'conjoint';
-          else if (heir.lien === 'enfant' || heir.lien === 'petit_enfant') dmtgLien = 'enfant';
-          else if (heir.lien === 'parent') dmtgLien = 'ascendant';
-          else if (heir.lien === 'frere_soeur') dmtgLien = 'frere_soeur';
-          else if (heir.lien === 'neveu_niece') dmtgLien = 'neveu_niece';
-
-          // Représentation : un petit-enfant représentant un enfant
-          // prédécédé/renonçant partage l'abattement enfant (100 000€) de
-          // la souche ; un neveu/nièce représentant un frère/sœur
-          // prédécédé partage l'abattement frère/sœur (15 932€) et relève
-          // du barème frère/sœur plutôt que du barème collatéral à 55%.
-          const isRepresentation = !!heir.representation && (heir.lien === 'petit_enfant' || heir.lien === 'neveu_niece');
-          const representationRootId = isRepresentation ? (heir.representationRootId || heir.personId) : null;
-
-          const person = family.persons.find(p => p.id === heir.personId);
-
-          return {
-            id: heir.personId,
-            lien: dmtgLien,
-            representedOf: representationRootId,
-            representationGroup: representationRootId,
-            numberOfRepresentants: isRepresentation ? heir.representationCount : undefined,
-            comesFromRepresentationWithPlurality: heir.lien === 'neveu_niece' && !!heir.representation,
-            isAdoptionSimple: person?.enfantAdopte === 'Adoption simple',
-            adoptionSimpleAbattementPlein: person?.adoptionSimpleAbattementPlein || false
-          };
-        }),
-        donations: [], // À récupérer depuis les libéralités si besoin
-        avContracts: [] // À implémenter si contrats AV
-      };
-
-      // Calculer les droits DMTG
-      const dmtgResult = computeDMTG(dmtgContext);
-      // DMTG tax calculation completed
-
-      // Recalculer la transmission nette avec les droits DMTG
-      const patrimoineNet = patrimony.biensExistants - patrimony.passifs;
-      const transmissionNetteCorrigee = patrimoineNet - dmtgResult.totals.droitsTotaux - totalAV - civilResult.fraisNotaire;
-
-      // Combiner les résultats
-      const combinedResult = {
-        ...civilResult,
-        family,
-        dmtg: dmtgResult,
-        transmissionNette: transmissionNetteCorrigee,
-        heirs: civilResult.heirs.map(heir => ({
-          ...heir,
-          droitsSuccession: dmtgResult.perBeneficiary[heir.personId]?.droitsTotaux || 0
-        })),
-        totalDroitsSuccession: dmtgResult.totals.droitsTotaux
-      };
 
       setTransmissionResult(combinedResult);
     } catch (error) {
       console.error('Erreur lors du calcul de transmission:', error);
+      if (error instanceof BienNonQualifieError) {
+        setComputeErrorMessage(error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -232,10 +167,26 @@ export const Synthese = () => {
   if (!transmissionResult) {
     return (
       <div className="kairos-transmission text-center py-12">
-        <h3 className="text-lg font-semibold mb-2 text-[var(--text-primary)]">Données insuffisantes</h3>
-        <p className="text-[var(--text-secondary)]">
-          Veuillez renseigner vos données dans les sections Famille et Patrimoine.
+        <h3 className="text-lg font-semibold mb-2 text-[var(--text-primary)]">
+          {computeErrorMessage ? 'Bien non qualifié' : 'Données insuffisantes'}
+        </h3>
+        <p className="text-[var(--text-secondary)] mb-4">
+          {computeErrorMessage || 'Veuillez renseigner vos données dans les sections Famille et Patrimoine.'}
         </p>
+        {computeErrorMessage && (
+          // Pas de ciblage direct du bien : l'onglet "Actifs" n'est pas adressable par
+          // URL (state local à PatrimoineSection.tsx, pas de query param ni de route par
+          // bien) — lien générique vers Patrimoine, cohérent avec le seul autre lien
+          // interne du module Transmission (AssuranceVie.tsx, même cible).
+          <Button
+            variant="outline"
+            onClick={() => navigate('/dashboard/patrimoine')}
+            className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
+          >
+            Qualifier ce bien dans Patrimoine
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     );
   }
@@ -259,6 +210,7 @@ export const Synthese = () => {
     }
 
     const grouped = new Map<string, {
+      personId: string;
       name: string;
       lien: string;
       value: number;
@@ -282,6 +234,7 @@ export const Synthese = () => {
         existing.parts.push({ value: heir.partFinale, typeQuotePart: heir.typeQuotePart });
       } else {
         grouped.set(heir.personId, {
+          personId: heir.personId,
           name: displayName,
           lien: lienFamilial,
           value: heir.partFinale,
@@ -291,12 +244,20 @@ export const Synthese = () => {
       }
     });
 
+    // Le montant affiché et son pourcentage viennent de netBreakdown (net d'impôts,
+    // frais de notaire et droit de partage) — pas de heir.partFinale (part civile
+    // brute), qui ne sert plus qu'à répartir les types de quote-part (usufruit/
+    // nue-propriété) au sein d'un même héritier via `parts` ci-dessus.
+    const netByPersonId = new Map(
+      (transmissionResult.netBreakdown?.heirs || []).map((n: any) => [n.personId, n])
+    );
+
     return Array.from(grouped.values())
       .filter(h => h.value > 0)
       .map(h => {
-        const percentage = transmissionResult.transmissionNette > 0
-          ? ((h.value / transmissionResult.transmissionNette) * 100).toFixed(1)
-          : "0";
+        const net = netByPersonId.get(h.personId);
+        const value = net ? net.netARecevoir : h.value;
+        const percentage = net ? net.percentage.toFixed(1) : "0";
 
         const uniqueTypes = Array.from(new Set(h.parts.map(p => p.typeQuotePart).filter(Boolean)));
         const typeQuotePart = uniqueTypes.length === 1 ? uniqueTypes[0] : undefined;
@@ -308,8 +269,9 @@ export const Synthese = () => {
           : undefined;
 
         return {
+          personId: h.personId,
           name: h.name,
-          value: h.value,
+          value,
           percentage,
           lien: h.lien,
           typeQuotePart,
@@ -523,28 +485,16 @@ export const Synthese = () => {
           </CardHeader>
           <CardContent className="p-5 pt-0">
             {(() => {
-              const dmtg = transmissionResult.dmtg;
-              const family = transmissionResult.family;
-              const fraisNotaireTotal = transmissionResult.fraisNotaire || 0;
-              const nbHeritiers = heritiersData.length;
-              // Droit de partage : 2,5% de l'actif net partagé (si >1 héritier)
-              const droitPartageTotal = nbHeritiers > 1 ? Math.round(transmissionResult.transmissionNette * 0.025) : 0;
+              const netByPersonId = new Map(
+                (transmissionResult.netBreakdown?.heirs || []).map((n: any) => [n.personId, n])
+              );
 
               const rows = heritiersData.map((heritier, idx) => {
-                // Trouver le personId correspondant
-                const person = family?.persons?.find((p: any) => {
-                  const fullName = `${p.prenom} ${p.nom}`.trim();
-                  return fullName === heritier.name || p.nom === heritier.name;
-                });
-                const personId = person?.id;
-                const dmtgData = personId ? dmtg.perBeneficiary[personId] : null;
-                const droitsDMTG = dmtgData?.droitsTotaux || 0;
-                const quotePart = transmissionResult.transmissionNette > 0
-                  ? heritier.value / transmissionResult.transmissionNette
-                  : 1 / nbHeritiers;
-                const fraisNotaireHeritier = Math.round(fraisNotaireTotal * quotePart);
-                const droitPartageHeritier = Math.round(droitPartageTotal * quotePart);
-                const totalCouts = droitsDMTG + fraisNotaireHeritier + droitPartageHeritier;
+                const net = netByPersonId.get(heritier.personId);
+                const droitsDMTG = net?.droitsDMTG || 0;
+                const fraisNotaireHeritier = net?.fraisNotaire || 0;
+                const droitPartageHeritier = net?.droitPartage || 0;
+                const totalCouts = net?.totalCouts || 0;
 
                 return {
                   name: heritier.name,

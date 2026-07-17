@@ -1,75 +1,49 @@
 import { TransmissionParams } from './types';
 
-export interface FiscalResult {
-  baseImposable: number;
-  abattement: number;
-  baseNette: number;
-  droitsSuccession: number;
-}
-
-export interface Prelevement990IResult {
-  baseImposable: number;
-  droits990I: number;
-  exonere: boolean;
-}
-
 export interface NotaryFeesResult {
-  base: number;
+  actifSuccessoral: number;
+  valeurImmobiliere: number;
+  emolumentsDeclarationHT: number;
+  emolumentsAttestationHT: number;
+  forfaitNotorieteHT: number;
+  emolumentsTotalHT: number;
+  tva: number;
+  // Émoluments TTC (déclaration + attestation immobilière + forfait notoriété + TVA).
+  // Les débours (cf. computeDebours) ne sont pas TVA-ables et se calculent séparément.
   frais: number;
 }
 
-/**
- * Calcule les droits de succession après abattement et application du barème
- */
-export function computeInheritanceTax(
-  partNette: number,
-  lien: string,
-  params: TransmissionParams
-): FiscalResult {
-  // Appliquer l'abattement selon le lien de parenté
-  const abattement = params.abattements[lien] || 0;
-  const baseNette = Math.max(0, partNette - abattement);
-  
-  // Si abattement infini (ex: conjoint), pas de droits
-  if (abattement === Infinity || baseNette === 0) {
-    return {
-      baseImposable: partNette,
-      abattement,
-      baseNette: 0,
-      droitsSuccession: 0
-    };
-  }
-  
-  // Trouver le barème applicable selon le lien
-  const baremeApplicable = params.bareme.find(b => b.lien === lien);
-  if (!baremeApplicable) {
-    // Barème par défaut (le plus élevé)
-    const baremeDefault = params.bareme.find(b => b.lien === "autre") || 
-                         params.bareme[params.bareme.length - 1];
-    const droitsDefault = calculateTaxFromBareme(baseNette, baremeDefault.tranches);
-    return {
-      baseImposable: partNette,
-      abattement,
-      baseNette,
-      droitsSuccession: droitsDefault
-    };
-  }
-  
-  const droitsSuccession = calculateTaxFromBareme(baseNette, baremeApplicable.tranches);
-  
-  return {
-    baseImposable: partNette,
-    abattement,
-    baseNette,
-    droitsSuccession
-  };
-}
+// Barème des émoluments de notaire — déclaration de succession (art. A444-63
+// Code de commerce), assiette = actif brut successoral total. Dégressif par
+// tranches (même logique que calculateTaxFromBareme : chaque taux ne
+// s'applique qu'à la portion de l'assiette dans sa tranche).
+const EMOLUMENTS_DECLARATION_SUCCESSION: { seuil: number; taux: number }[] = [
+  { seuil: 0, taux: 1.548 },
+  { seuil: 6500, taux: 0.851 },
+  { seuil: 17000, taux: 0.580 },
+  { seuil: 30000, taux: 0.426 }
+];
+
+// Barème des émoluments de notaire — attestation immobilière/notoriété
+// (art. A444-121), assiette = valeur des seuls biens immobiliers réellement
+// transmis (pas le mobilier/valeurs mobilières).
+const EMOLUMENTS_ATTESTATION_IMMOBILIERE: { seuil: number; taux: number }[] = [
+  { seuil: 0, taux: 1.935 },
+  { seuil: 6500, taux: 1.064 },
+  { seuil: 17000, taux: 0.726 },
+  { seuil: 30000, taux: 0.532 }
+];
+
+// Forfait fixe de l'acte de notoriété (HT), et taux de TVA applicable aux
+// émoluments (pas aux débours, cf. computeDebours).
+const FORFAIT_NOTORIETE_HT = 56.60;
+const TVA_NOTAIRE = 0.20;
 
 /**
  * Calcule les droits selon un barème progressif par tranches
  */
 function calculateTaxFromBareme(
-  baseNette: number, 
+  baseNette: number,
   tranches: { seuil: number; taux: number }[]
 ): number {
   let droits = 0;
@@ -97,122 +71,49 @@ function calculateTaxFromBareme(
 }
 
 /**
- * Calcule le prélèvement 990 I sur les contrats d'assurance-vie
- */
-export function compute990I(
-  beneficiaire: string,
-  lien: string,
-  montantCapitaux: number,
-  params: TransmissionParams
-): Prelevement990IResult {
-  const prelevement990I = params.prelevement990I;
-  
-  if (!prelevement990I) {
-    return {
-      baseImposable: montantCapitaux,
-      droits990I: 0,
-      exonere: true
-    };
-  }
-  
-  // Vérifier les exonérations
-  const exonere = prelevement990I.exonerations.includes(lien);
-  if (exonere) {
-    return {
-      baseImposable: montantCapitaux,
-      droits990I: 0,
-      exonere: true
-    };
-  }
-  
-  // Appliquer le seuil par bénéficiaire
-  const baseImposable = Math.max(0, montantCapitaux - prelevement990I.seuilParBenef);
-  
-  if (baseImposable === 0) {
-    return {
-      baseImposable: montantCapitaux,
-      droits990I: 0,
-      exonere: false
-    };
-  }
-  
-  // Calculer les droits selon le barème 990 I
-  const droits990I = calculateTaxFromBareme(baseImposable, prelevement990I.tranches);
-  
-  return {
-    baseImposable: montantCapitaux,
-    droits990I,
-    exonere: false
-  };
-}
-
-/**
- * Calcule les frais de notaire
+ * Calcule les émoluments de notaire (déclaration de succession + attestation
+ * immobilière le cas échéant + forfait notoriété, TVA incluse). Barème légal,
+ * non paramétrable (contrairement aux débours, cf. computeDebours).
  */
 export function computeNotaryFees(
-  base: number,
-  params: TransmissionParams
+  actifSuccessoral: number,
+  valeurImmobiliere: number = 0
 ): NotaryFeesResult {
-  const fraisNotaire = params.fraisNotaire;
-  
-  if (!fraisNotaire) {
-    return {
-      base,
-      frais: 0
-    };
-  }
-  
-  let frais = 0;
-  
-  if (fraisNotaire.mode === "pourcentage") {
-    frais = base * (fraisNotaire.valeur / 100);
-  } else if (fraisNotaire.mode === "forfait") {
-    frais = fraisNotaire.valeur;
-  }
-  
+  const emolumentsDeclarationHT = calculateTaxFromBareme(actifSuccessoral, EMOLUMENTS_DECLARATION_SUCCESSION);
+  const emolumentsAttestationHT = valeurImmobiliere > 0
+    ? calculateTaxFromBareme(valeurImmobiliere, EMOLUMENTS_ATTESTATION_IMMOBILIERE)
+    : 0;
+  const emolumentsTotalHT = emolumentsDeclarationHT + emolumentsAttestationHT + FORFAIT_NOTORIETE_HT;
+  const tva = Math.round(emolumentsTotalHT * TVA_NOTAIRE);
+  const frais = Math.round(emolumentsTotalHT) + tva;
+
   return {
-    base,
-    frais: Math.round(frais)
+    actifSuccessoral,
+    valeurImmobiliere,
+    emolumentsDeclarationHT,
+    emolumentsAttestationHT,
+    forfaitNotorieteHT: FORFAIT_NOTORIETE_HT,
+    emolumentsTotalHT: Math.round(emolumentsTotalHT),
+    tva,
+    frais
   };
 }
 
 /**
- * Barème par défaut pour les droits de succession (2025)
+ * Débours de notaire (frais réels avancés pour le compte du client : copies
+ * d'actes, formalités, géomètre, etc.) — à distinguer des émoluments (barème
+ * officiel, cf. computeNotaryFees). Contrairement aux émoluments, il n'existe
+ * pas de barème légal pour les débours : la valeur par défaut est purement
+ * illustrative et doit être ajustée par l'utilisateur selon ses factures
+ * réelles. Calculé sur la même assiette que la déclaration de succession
+ * (actif brut, avant déduction du passif).
  */
-export const DEFAULT_BAREME_2025 = [
-  {
-    lien: "enfant",
-    tranches: [
-      { seuil: 0, taux: 5 },
-      { seuil: 8072, taux: 10 },
-      { seuil: 12109, taux: 15 },
-      { seuil: 15932, taux: 20 },
-      { seuil: 552324, taux: 30 },
-      { seuil: 902838, taux: 40 },
-      { seuil: 1805677, taux: 45 }
-    ]
-  },
-  {
-    lien: "conjoint",
-    tranches: [] // Exonéré
-  },
-  {
-    lien: "frere_soeur",
-    tranches: [
-      { seuil: 0, taux: 35 },
-      { seuil: 24430, taux: 45 }
-    ]
-  },
-  {
-    lien: "neveu_niece",
-    tranches: [
-      { seuil: 0, taux: 55 }
-    ]
-  },
-  {
-    lien: "autre",
-    tranches: [
-      { seuil: 0, taux: 60 }
-    ]
+export function computeDebours(
+  actifBrut: number,
+  debours: NonNullable<TransmissionParams['debours']>
+): number {
+  if (debours.mode === "pourcentage") {
+    return Math.round(actifBrut * (debours.valeur / 100));
   }
-];
+  return Math.round(debours.valeur);
+}

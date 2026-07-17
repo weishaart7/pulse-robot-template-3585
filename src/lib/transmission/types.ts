@@ -1,3 +1,6 @@
+import { DMTGResult } from '../dmtg/types';
+import { NetBreakdownResult } from './netBreakdown';
+
 export type PersonId = string;
 export type Relationship = "child" | "parent" | "sibling" | "spouse" | "other";
 export type MaritalStatus = "celibataire" | "marie" | "pacs" | "concubinage" | "divorce" | "veuf";
@@ -70,11 +73,32 @@ export interface TransmissionParams {
     tranches: { seuil: number; taux: number }[];
     exonerations: string[];
   };
-  fraisNotaire?: {
+  // Débours (frais réels avancés par le notaire), distincts des émoluments
+  // (barème légal fixe, cf. fiscal.ts::computeNotaryFees — non paramétrable).
+  // Pas de valeur par défaut imposée : à renseigner par l'utilisateur selon
+  // ses factures réelles (cf. fiscal.ts::computeDebours).
+  debours?: {
     mode: "pourcentage" | "forfait";
     valeur: number;
   };
   imputationConjointAvantLegs?: boolean;
+}
+
+// Forme minimale d'une ligne "assets" telle que stockée en base (Supabase),
+// suffisante pour construire les Asset[] attendus par computeDMTG. Ce type
+// vit ici (pas dans dmtg/types.ts) car c'est transmission/index.ts qui fait
+// l'adaptation données-brutes -> moteur fiscal.
+export interface RawAssetInput {
+  id: string;
+  denomination?: string | null;
+  valeur_estimee?: number | null;
+  nature?: string | null;
+  // Régime matrimonial / indivision (cf. lib/patrimoine/succession.ts::getPartSuccessorale) :
+  // détermine la part de ce bien qui entre réellement dans la succession.
+  qualification_bien?: string | null;
+  detenteur?: string | null;
+  pourcentage_utilisateur?: number | null;
+  pourcentage_conjoint?: number | null;
 }
 
 export type TypeQuotePart = "pleine_propriete" | "usufruit" | "nue_propriete";
@@ -85,9 +109,6 @@ export interface HeirShare {
   lien: string;
   partCivile: number;
   partFinale: number;
-  baseFiscale: number;
-  droitsSuccession: number;
-  droits990I?: number;
   typeQuotePart?: TypeQuotePart;
   representation?: boolean;
   // cf. HeritierLegal.representationRootId / representationCount
@@ -102,9 +123,18 @@ export interface TransmissionResult {
   quotiteDisponible: number;
   transmissionNette: number;
   heirs: HeirShare[];
-  totalDroitsSuccession: number;
-  total990I: number;
+  // Fiscalité (droits DMTG, base après abattement, net à recevoir par
+  // héritier) : source unique de vérité, cf. dmtg/index.ts::computeDMTG et
+  // transmission/netBreakdown.ts::computeNetPerHeir. Ne pas dupliquer ces
+  // montants dans HeirShare — c'était la cause du bug d'incohérence entre
+  // Synthese.tsx et ProcessusCalcul.tsx (deux calculs distincts du même
+  // chiffre, qui ont fini par diverger).
+  dmtg: DMTGResult;
+  netBreakdown: NetBreakdownResult;
   fraisNotaire: number;
+  // Graphe familial tel que fourni en entrée, réexposé ici pour que les
+  // écrans d'affichage n'aient pas besoin de le conserver séparément.
+  family: FamilyGraph;
   // Nombre de souches d'enfants retenues pour la réserve (cf.
   // successionLegale.ts::SuccessionLegaleResult.nbSouchesEnfants) — exposé
   // ici pour que les écrans d'explication du calcul (ProcessusCalcul.tsx)

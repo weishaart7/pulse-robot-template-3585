@@ -1,7 +1,9 @@
 import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calculator, Users, Scale, FileText, PiggyBank, Receipt, TrendingUp, Lightbulb, AlertCircle } from 'lucide-react';
+import { Calculator, Users, Scale, FileText, PiggyBank, Receipt, TrendingUp, Lightbulb, AlertCircle, ArrowRight } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 import { useAssets } from '@/hooks/useAssets';
 import { useFamilyData, useMaritalStatus, useFamilyProfile } from '@/hooks/useFamilyData';
 import { useLiberalites } from '@/hooks/useLiberalites';
@@ -9,11 +11,13 @@ import { usePassifs } from '@/hooks/usePassifs';
 import { buildFamilyGraph, buildPatrimonySnapshot, buildTransmissionLiberalites } from '@/utils/transmissionHelpers';
 import { computeTransmission, TransmissionContext } from '@/lib/transmission';
 import { FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission/types';
+import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import transmissionParamsData from '@/data/transmission-params.json';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import './kairos-transmission.css';
 
 export const ProcessusCalcul = () => {
+  const navigate = useNavigate();
   const { assets, loading: assetsLoading } = useAssets();
   const { familyMembers, loading: familyLoading } = useFamilyData();
   const { data: maritalStatus } = useMaritalStatus();
@@ -26,11 +30,6 @@ export const ProcessusCalcul = () => {
     if (!familyMembers || !familyProfile) return null;
     return buildFamilyGraph(familyProfile, maritalStatus, familyMembers);
   }, [familyMembers, familyProfile, maritalStatus]);
-
-  // Calculer le patrimoine
-  const patrimony: PatrimonySnapshot = useMemo(() => {
-    return buildPatrimonySnapshot(assets, passifs, 0); // Assurance-vie non séparée ici : pas de régression, à traiter séparément si besoin
-  }, [assets, passifs]);
 
   // Convertir les libéralités : jointure live vers assets pour la valeur des
   // legs (jamais figée en base), et exclusion des legs caducs (bien légué
@@ -51,25 +50,40 @@ export const ProcessusCalcul = () => {
     } as TransmissionParams;
   }, []);
 
-  // Calcul de transmission
-  const transmissionResult = useMemo(() => {
-    if (!familyGraph) return null;
-
-    const ctx: TransmissionContext = {
-      family: familyGraph,
-      patrimony,
-      liberalites: transmissionLiberalites,
-      params,
-      conjointOption: 'quart_pp'
-    };
+  // Patrimoine + calcul de transmission regroupés dans le même useMemo : les
+  // deux peuvent lever BienNonQualifieError (buildPatrimonySnapshot pondère
+  // déjà chaque bien, cf. lib/patrimoine/succession.ts::getPartSuccessorale),
+  // donc les deux doivent être dans le même try/catch pour que le message
+  // précis atteigne l'écran au lieu de crasher le rendu.
+  const { patrimony, transmissionResult, computeErrorMessage } = useMemo((): {
+    patrimony: PatrimonySnapshot | null;
+    transmissionResult: ReturnType<typeof computeTransmission> | null;
+    computeErrorMessage: string | null;
+  } => {
+    if (!familyGraph) return { patrimony: null, transmissionResult: null, computeErrorMessage: null };
 
     try {
-      return computeTransmission(ctx);
+      // Assurance-vie non séparée ici : pas de régression, à traiter séparément si besoin
+      const patrimony = buildPatrimonySnapshot(assets, passifs, 0);
+      const ctx: TransmissionContext = {
+        family: familyGraph,
+        patrimony,
+        liberalites: transmissionLiberalites,
+        params,
+        conjointOption: 'quart_pp',
+        rawAssets: assets || [],
+        partageEnvisage: !!(maritalStatus as any)?.partage_envisage
+      };
+      return { patrimony, transmissionResult: computeTransmission(ctx), computeErrorMessage: null };
     } catch (error) {
       console.error('Erreur calcul transmission:', error);
-      return null;
+      return {
+        patrimony: null,
+        transmissionResult: null,
+        computeErrorMessage: error instanceof BienNonQualifieError ? error.message : null
+      };
     }
-  }, [familyGraph, patrimony, transmissionLiberalites]);
+  }, [familyGraph, assets, passifs, transmissionLiberalites, params, maritalStatus]);
 
   if (assetsLoading || familyLoading || liberalitesLoading) {
     return (
@@ -84,7 +98,7 @@ export const ProcessusCalcul = () => {
     );
   }
 
-  if (!familyGraph || !transmissionResult) {
+  if (!familyGraph || !transmissionResult || !patrimony) {
     return (
       <div className="kairos-transmission">
         <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
@@ -95,9 +109,22 @@ export const ProcessusCalcul = () => {
             <Alert className="bg-[var(--surface-sunken)] border-[var(--border)]">
               <AlertCircle className="h-4 w-4 text-[var(--ink-400)]" />
               <AlertDescription className="text-[var(--text-secondary)]">
-                Veuillez d'abord renseigner votre situation familiale et votre patrimoine pour visualiser le processus de calcul.
+                {computeErrorMessage || "Veuillez d'abord renseigner votre situation familiale et votre patrimoine pour visualiser le processus de calcul."}
               </AlertDescription>
             </Alert>
+            {computeErrorMessage && (
+              // Pas de ciblage direct du bien : l'onglet "Actifs" n'est pas adressable
+              // par URL (state local à PatrimoineSection.tsx) — lien générique vers
+              // Patrimoine, même cible que Synthese.tsx et AssuranceVie.tsx.
+              <Button
+                variant="outline"
+                onClick={() => navigate('/dashboard/patrimoine')}
+                className="gap-2 mt-4 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
+              >
+                Qualifier ce bien dans Patrimoine
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -255,21 +282,22 @@ export const ProcessusCalcul = () => {
       title: "7. Fiscalité de la transmission",
       description: "Calcul des droits de succession et prélèvements",
       details: [
-        `Total droits de succession : ${transmissionResult.totalDroitsSuccession.toLocaleString('fr-FR')} €`,
-        `Prélèvement 990 I (AV) : ${transmissionResult.total990I.toLocaleString('fr-FR')} €`,
+        `Total droits de succession : ${transmissionResult.dmtg.totals.droitsTotaux.toLocaleString('fr-FR')} €`,
+        `Prélèvement 990 I (AV) : ${transmissionResult.dmtg.totals.prelev990I.toLocaleString('fr-FR')} €`,
         `Frais de notaire : ${transmissionResult.fraisNotaire.toLocaleString('fr-FR')} €`,
-        `= Coût fiscal total : ${(transmissionResult.totalDroitsSuccession + transmissionResult.total990I + transmissionResult.fraisNotaire).toLocaleString('fr-FR')} €`,
+        `= Coût fiscal total : ${(transmissionResult.dmtg.totals.droitsTotaux + transmissionResult.fraisNotaire).toLocaleString('fr-FR')} €`,
         "",
         "Détail par héritier :",
-        ...transmissionResult.heirs.map(h => 
-          `• ${h.nom} : ${h.droitsSuccession.toLocaleString('fr-FR')} € (sur ${h.baseFiscale.toLocaleString('fr-FR')} €)`
-        )
+        ...transmissionResult.heirs.map(h => {
+          const dmtgHeir = transmissionResult.dmtg.perBeneficiary[h.personId];
+          return `• ${h.nom} : ${(dmtgHeir?.droitsTotaux || 0).toLocaleString('fr-FR')} € (sur ${(dmtgHeir?.baseApresFrais || 0).toLocaleString('fr-FR')} €)`;
+        })
       ],
-      formula: `Taux effectif = ${((transmissionResult.totalDroitsSuccession / patrimony.biensExistants) * 100).toFixed(1)}%`,
+      formula: `Taux effectif = ${((transmissionResult.dmtg.totals.droitsTotaux / patrimony.biensExistants) * 100).toFixed(1)}%`,
       conseils: [
         hasConjoint ? "✓ Le conjoint est totalement exonéré de droits de succession" : null,
         `Abattement de 100 000 € par enfant renouvelable tous les 15 ans`,
-        transmissionResult.totalDroitsSuccession > 50000 ? "⚠️ Coût fiscal élevé : étudiez les stratégies d'optimisation (donations, démembrement, etc.)" : null,
+        transmissionResult.dmtg.totals.droitsTotaux > 50000 ? "⚠️ Coût fiscal élevé : étudiez les stratégies d'optimisation (donations, démembrement, etc.)" : null,
         "L'assurance-vie bénéficie d'un régime fiscal très favorable (152 500 € d'abattement par bénéficiaire)",
         `Transmission nette aux héritiers : ${transmissionResult.transmissionNette.toLocaleString('fr-FR')} €`
       ].filter(Boolean)

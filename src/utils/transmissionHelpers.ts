@@ -2,6 +2,7 @@ import { FamilyLink, MaritalStatus, FamilyProfile } from '@/services/familyServi
 import { Asset } from '@/services/assetService';
 import { FamilyGraph, Person, PatrimonySnapshot, Liberalite } from '@/lib/transmission/types';
 import { FamilySituationSummary, PatrimoineSummary } from '@/types/transmission';
+import { getPartSuccessorale } from '@/lib/patrimoine/succession';
 
 /**
  * Ligne liberalites brute (colonnes pertinentes uniquement), telle que
@@ -226,8 +227,15 @@ export function buildPatrimonySnapshot(
   passifs: { montant_du: number }[],
   assuranceVieTotal: number = 0
 ): PatrimonySnapshot {
+  // Pondération par bien (régime matrimonial / indivision) : seule la part du
+  // bien qui revient au défunt entre dans l'assiette successorale, cf.
+  // lib/patrimoine/succession.ts::getPartSuccessorale (source unique de vérité,
+  // partagée avec transmission/index.ts pour que le civil et le fiscal restent
+  // alignés sur la même assiette).
   const totalAssets = assets.reduce((sum, asset) => {
-    return sum + (asset.valeur_estimee || asset.valeur_acquisition || 0);
+    const valeur = asset.valeur_estimee || asset.valeur_acquisition || 0;
+    const partSuccessorale = getPartSuccessorale(asset, asset.denomination || asset.id);
+    return sum + valeur * partSuccessorale;
   }, 0);
 
   const totalPassifs = passifs.reduce((sum, p) => sum + (p.montant_du || 0), 0);

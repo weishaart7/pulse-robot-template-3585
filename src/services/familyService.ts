@@ -71,6 +71,11 @@ export interface MaritalStatus {
   date_donation_conjoint?: string;
   clauses_contrat?: any;
   clauses_personnalisees?: any;
+  // Le droit de partage (2,5% de l'actif net partagé, art. 746 CGI) n'est dû que
+  // si un partage est effectivement envisagé entre les héritiers — jamais présumé
+  // (cf. transmission/netBreakdown.ts::computeNetPerHeir). Sans effet en cas de
+  // démembrement (usufruit/nue-propriété).
+  partage_envisage?: boolean;
 }
 
 export interface FamilyLink {

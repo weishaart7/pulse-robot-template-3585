@@ -52,8 +52,8 @@
     ],
     "exonerations": ["conjoint", "enfant", "parent"]
   },
-  "fraisNotaire": {
+  "debours": {
     "mode": "pourcentage",
-    "valeur": 2.5
+    "valeur": 0.5
   }
 }

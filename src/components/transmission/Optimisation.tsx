@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Heart, Info, Check } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { AlertCircle, Heart, Info, Check, Handshake } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +29,8 @@ export const Optimisation = () => {
   const { data: familyLinks, loading: loadingFamily } = useFamilyLinks();
   const [selectedOption, setSelectedOption] = useState<ConjointOption | ''>('');
   const [saving, setSaving] = useState(false);
+  const [partageEnvisage, setPartageEnvisage] = useState(false);
+  const [savingPartage, setSavingPartage] = useState(false);
 
   const loading = loadingMarital || loadingFamily;
 
@@ -47,6 +50,9 @@ export const Optimisation = () => {
   useEffect(() => {
     if (maritalData && (maritalData as any).option_conjoint) {
       setSelectedOption((maritalData as any).option_conjoint as ConjointOption);
+    }
+    if (maritalData) {
+      setPartageEnvisage(!!maritalData.partage_envisage);
     }
   }, [maritalData]);
 
@@ -79,6 +85,40 @@ export const Optimisation = () => {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Le droit de partage (2,5% de l'actif net partagé, art. 746 CGI) n'est dû
+  // que si un partage est effectivement envisagé — jamais présumé par défaut
+  // (cf. transmission/netBreakdown.ts::computeNetPerHeir). Sans effet en cas
+  // de démembrement (usufruit/nue-propriété), quel que soit ce réglage.
+  const handlePartageEnvisageChange = async (checked: boolean) => {
+    setPartageEnvisage(checked);
+
+    if (!user) return;
+
+    try {
+      setSavingPartage(true);
+      const { error } = await supabase
+        .from('marital_status')
+        .update({ partage_envisage: checked })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Enregistré",
+        description: "L'hypothèse de partage a été enregistrée.",
+      });
+    } catch (error) {
+      console.error('Error saving partage_envisage:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'enregistrer l'hypothèse de partage.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingPartage(false);
     }
   };
 
@@ -233,6 +273,28 @@ export const Optimisation = () => {
               </p>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Hypothèse de partage (droit de partage, art. 746 CGI) */}
+      <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <CardHeader className="p-5">
+          <div className="flex items-center gap-2">
+            <Handshake className="h-5 w-5 text-[var(--ink-400)]" />
+            <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Partage envisagé</CardTitle>
+            {savingPartage && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[var(--ink-900)]" />}
+          </div>
+          <CardDescription className="text-[var(--text-secondary)]">
+            Indiquez si un acte de partage est effectivement envisagé entre les héritiers.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-5 pt-0">
+          <Switch
+            checked={partageEnvisage}
+            onCheckedChange={handlePartageEnvisageChange}
+            label="Partage envisagé"
+            description="Déclenche le droit de partage (2,5% de l'actif net partagé, art. 746 CGI). Sans effet en cas de démembrement (usufruit/nue-propriété) : les héritiers peuvent aussi rester en indivision indéfiniment sans jamais le payer."
+          />
         </CardContent>
       </Card>
     </div>
