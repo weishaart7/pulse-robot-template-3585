@@ -10,9 +10,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePassifs } from '@/hooks/usePassifs';
-import { buildFamilyGraph, buildPatrimonySnapshot, buildTransmissionLiberalites, LegsCaduc } from '@/utils/transmissionHelpers';
+import { buildFamilyGraph, buildPatrimonySnapshot, buildTransmissionLiberalites, buildAVContracts, AVContractRawRow, AVDonneesInsuffisantesError, LegsCaduc } from '@/utils/transmissionHelpers';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
+import { getAssetCategory } from '@/constants/assetTypes';
 import transmissionParamsData from '@/data/transmission-params.json';
 import './kairos-transmission.css';
 
@@ -32,6 +33,13 @@ export const Synthese = () => {
   const [hasCustomClausesToCheck, setHasCustomClausesToCheck] = useState(false);
   const [legsCaducs, setLegsCaducs] = useState<LegsCaduc[]>([]);
   const [computeErrorMessage, setComputeErrorMessage] = useState<string | null>(null);
+  // Distingue la cause du blocage pour orienter vers le bon écran : un bien
+  // non qualifié se corrige dans Patrimoine, une AV sans opération se corrige
+  // dans l'onglet Assurance-vie de ce même module — deux endroits différents,
+  // deux CTA différents (cf. confusion utilisateur constatée le 2026-07-18 :
+  // un seul bouton générique "Qualifier ce bien dans Patrimoine" s'affichait
+  // aussi pour l'erreur AV, sans rapport avec l'action à faire).
+  const [computeErrorKind, setComputeErrorKind] = useState<'bien-non-qualifie' | 'av-donnees-insuffisantes' | null>(null);
 
   useEffect(() => {
     if (user && !passifsLoading) {
@@ -43,6 +51,7 @@ export const Synthese = () => {
     try {
       setLoading(true);
       setComputeErrorMessage(null);
+      setComputeErrorKind(null);
 
       // Récupérer les données famille
       const { data: familyProfile } = await supabase
@@ -77,10 +86,39 @@ export const Synthese = () => {
 
       setHasAssets((assets || []).length > 0);
 
-      // Calculer le total des assurances-vie (hors succession)
-      const totalAV = (assets || [])
-        .filter(a => a.nature === 'assurance-vie')
-        .reduce((sum, a) => sum + (Number(a.valeur_estimee) || 0), 0);
+      // Calculer le total des assurances-vie (hors succession) : nature stocke
+      // le libellé humain du formulaire ("Contrat d'assurance-vie", etc.),
+      // jamais le littéral 'assurance-vie' — même famille de bug que celui
+      // déjà corrigé sur l'immobilier avec getAssetCategory.
+      const avAssets = (assets || []).filter(a => getAssetCategory(a.nature || '') === 'épargne et assurance-vie');
+      const totalAV = avAssets.reduce((sum, a) => sum + (Number(a.valeur_estimee) || 0), 0);
+
+      // Récupérer le détail des contrats AV (clause bénéficiaire structurée +
+      // opérations réelles) pour alimenter le vrai moteur fiscal 990I/757B.
+      const avAssetIds = avAssets.map(a => a.id);
+      const [avDetailsRes, avOperationsRes] = avAssetIds.length > 0
+        ? await Promise.all([
+            supabase.from('av_contract_details').select('asset_id, clause_beneficiaire_structuree').in('asset_id', avAssetIds),
+            supabase.from('av_operations').select('asset_id, type_operation, montant, date_operation').in('asset_id', avAssetIds)
+          ])
+        : [{ data: [] }, { data: [] }];
+
+      const avClauseByAsset = new Map<string, any>(
+        (avDetailsRes.data || []).map((d: any) => [d.asset_id, d.clause_beneficiaire_structuree || null])
+      );
+      const avOperationsByAsset = new Map<string, { type_operation: string; montant: number | null; date_operation: string }[]>();
+      (avOperationsRes.data || []).forEach((op: any) => {
+        const list = avOperationsByAsset.get(op.asset_id) || [];
+        list.push({ type_operation: op.type_operation, montant: op.montant, date_operation: op.date_operation });
+        avOperationsByAsset.set(op.asset_id, list);
+      });
+      const avContractsRaw: AVContractRawRow[] = avAssets.map(a => ({
+        assetId: a.id,
+        label: a.denomination,
+        valeurEstimee: a.valeur_estimee,
+        operations: avOperationsByAsset.get(a.id) || [],
+        clauseBeneficiaireStructuree: avClauseByAsset.get(a.id) || null
+      }));
 
       // Récupérer les libéralités
       const { data: liberalites } = await supabase
@@ -90,6 +128,12 @@ export const Synthese = () => {
 
       // Construire le graphe familial
       const family: FamilyGraph = buildFamilyGraph(familyProfile, maritalStatus, familyLinks || []);
+
+      // Répartition avant/après 70 ans par contrat, à partir des vraies primes
+      // (cf. buildAVContracts) — lève AVDonneesInsuffisantesError si un
+      // contrat n'a aucune opération enregistrée ou si la date de naissance
+      // du défunt simulé est inconnue : jamais de répartition devinée.
+      const avContracts = buildAVContracts(avContractsRaw, familyProfile?.date_naissance, family);
 
       // Construire le patrimoine
       const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], passifs, totalAV);
@@ -133,6 +177,7 @@ export const Synthese = () => {
         conjointOption: (optionConjoint as any) || undefined,
         referenceDate,
         rawAssets: assets || [],
+        avContracts,
         partageEnvisage
       });
 
@@ -141,6 +186,10 @@ export const Synthese = () => {
       console.error('Erreur lors du calcul de transmission:', error);
       if (error instanceof BienNonQualifieError) {
         setComputeErrorMessage(error.message);
+        setComputeErrorKind('bien-non-qualifie');
+      } else if (error instanceof AVDonneesInsuffisantesError) {
+        setComputeErrorMessage(error.message);
+        setComputeErrorKind('av-donnees-insuffisantes');
       }
     } finally {
       setLoading(false);
@@ -168,19 +217,25 @@ export const Synthese = () => {
     return (
       <div className="kairos-transmission text-center py-12">
         <h3 className="text-lg font-semibold mb-2 text-[var(--text-primary)]">
-          {computeErrorMessage ? 'Bien non qualifié' : 'Données insuffisantes'}
+          {computeErrorMessage ? 'Calcul incomplet' : 'Données insuffisantes'}
         </h3>
         <p className="text-[var(--text-secondary)] mb-4">
           {computeErrorMessage || 'Veuillez renseigner vos données dans les sections Famille et Patrimoine.'}
         </p>
-        {computeErrorMessage && (
-          // Pas de ciblage direct du bien : l'onglet "Actifs" n'est pas adressable par
-          // URL (state local à PatrimoineSection.tsx, pas de query param ni de route par
-          // bien) — lien générique vers Patrimoine, cohérent avec le seul autre lien
-          // interne du module Transmission (AssuranceVie.tsx, même cible).
+        {computeErrorKind === 'av-donnees-insuffisantes' && (
           <Button
             variant="outline"
-            onClick={() => navigate('/dashboard/patrimoine')}
+            onClick={() => navigate('/dashboard/transmission?tab=assurance-vie')}
+            className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
+          >
+            Renseigner le contrat dans Assurance-vie
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        )}
+        {computeErrorKind === 'bien-non-qualifie' && (
+          <Button
+            variant="outline"
+            onClick={() => navigate('/dashboard/patrimoine?tab=actifs')}
             className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
           >
             Qualifier ce bien dans Patrimoine
@@ -605,11 +660,8 @@ export const Synthese = () => {
               };
 
               const abattementRows = heritiersData.map((heritier, idx) => {
-                const person = family?.persons?.find((p: any) => {
-                  const fullName = `${p.prenom} ${p.nom}`.trim();
-                  return fullName === heritier.name || p.nom === heritier.name;
-                });
-                const personId = person?.id;
+                const personId = heritier.personId;
+                const person = family?.persons?.find((p: any) => p.id === personId);
                 const dmtgData = personId ? dmtg.perBeneficiary[personId] : null;
                 const lienFamilial = person?.lienFamilial || heritier.lien;
                 const abattementInfo = getAbattementLegal(lienFamilial);

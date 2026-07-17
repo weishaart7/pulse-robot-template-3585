@@ -10,7 +10,17 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { AVContractDetail } from './av/AVContractDetail';
 import { ClauseStructuree, BeneficiaireEntry } from './av/ClauseBeneficiaireBuilder';
-import './kairos-transmission.css';
+import { getAssetCategory } from '@/constants/assetTypes';
+import {
+  buildFamilyGraph,
+  buildPatrimonySnapshot,
+  buildAVContracts,
+  AVContractRawRow,
+  AVDonneesInsuffisantesError
+} from '@/utils/transmissionHelpers';
+import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission';
+import { BienNonQualifieError } from '@/lib/patrimoine/succession';
+import transmissionParamsData from '@/data/transmission-params.json';
 
 const AV_NATURES = [
   "Contrat d'assurance-vie",
@@ -45,6 +55,13 @@ export const AssuranceVie = () => {
   const [beneficiaires, setBeneficiaires] = useState<Beneficiaire[]>([]);
   const [conjointName, setConjointName] = useState<string | null>(null);
   const [contractClauses, setContractClauses] = useState<ContractClause[]>([]);
+  // Résultat du vrai moteur fiscal (computeTransmission -> dmtg.perBeneficiary,
+  // cf. dmtg/assurance-vie.ts::computeAssuranceVie) — remplace l'estimation
+  // simplifiée basée sur l'âge actuel du souscripteur (décision du 2026-07-18).
+  const [transmissionResult, setTransmissionResult] = useState<any>(null);
+  const [computeErrorMessage, setComputeErrorMessage] = useState<string | null>(null);
+  const [avContractsBuilt, setAvContractsBuilt] = useState<ReturnType<typeof buildAVContracts>>([]);
+  const [familyMembersById, setFamilyMembersById] = useState<Map<string, { nom: string; prenom: string; lien: string }>>(new Map());
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -53,7 +70,7 @@ export const AssuranceVie = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const [contractsRes, profileRes, maritalRes, familyRes] = await Promise.all([
+        const [contractsRes, profileRes, maritalRes, familyRes, passifsRes] = await Promise.all([
           supabase
             .from('assets')
             .select('*')
@@ -62,17 +79,21 @@ export const AssuranceVie = () => {
             .order('created_at', { ascending: false }),
           supabase
             .from('family_profiles')
-            .select('date_naissance')
+            .select('*')
             .eq('user_id', user.id)
             .maybeSingle(),
           supabase
             .from('marital_status')
-            .select('statut_couple, nom_conjoint, prenom_conjoint')
+            .select('*')
             .eq('user_id', user.id)
             .maybeSingle(),
           supabase
             .from('family_links')
-            .select('nom, prenom, lien_familial')
+            .select('*')
+            .eq('user_id', user.id),
+          supabase
+            .from('passifs')
+            .select('montant_du')
             .eq('user_id', user.id),
         ]);
 
@@ -89,13 +110,15 @@ export const AssuranceVie = () => {
         const coupleStatus = ['Marié(e)', 'Pacsé(e)'].includes(statut || '');
         setIsCouple(coupleStatus);
 
-        const familyMembers = (familyRes.data || []).map((f: any) => ({
+        const familyLinksRows = familyRes.data || [];
+        const familyMembers = familyLinksRows.map((f: any) => ({
           nom: f.nom,
           prenom: f.prenom,
           lien: f.lien_familial,
         }));
         setBeneficiaires(familyMembers);
         setNbBeneficiaires(Math.max(1, familyMembers.length));
+        setFamilyMembersById(new Map(familyLinksRows.map((f: any) => [f.id, { nom: f.nom, prenom: f.prenom || '', lien: f.lien_familial }])));
 
         // Get spouse name if couple
         if (coupleStatus && maritalRes.data) {
@@ -106,18 +129,23 @@ export const AssuranceVie = () => {
         }
 
          // Fetch all operations and contract details for these contracts
+        let avOperationsRaw: any[] = [];
+        let avClausesRaw: any[] = [];
         if (avContracts.length > 0) {
           const assetIds = avContracts.map(c => c.id);
           const [opsRes2, clausesRes] = await Promise.all([
             supabase
               .from('av_operations')
-              .select('asset_id, type_operation, montant')
+              .select('asset_id, type_operation, montant, date_operation')
               .in('asset_id', assetIds),
             supabase
               .from('av_contract_details')
               .select('asset_id, clause_beneficiaire_structuree')
               .in('asset_id', assetIds),
           ]);
+
+          avOperationsRaw = opsRes2.data || [];
+          avClausesRaw = clausesRes.data || [];
 
           if (opsRes2.data) {
             const grouped: OperationsByContract = {};
@@ -135,6 +163,69 @@ export const AssuranceVie = () => {
             })));
           }
         }
+
+        // Calcul réel via le pipeline de transmission complet (même moteur que
+        // Synthese.tsx/ProcessusCalcul.tsx) : seul point d'entrée qui sait
+        // résoudre correctement les exonérations conjoint/PACS et étendre la
+        // liste des bénéficiaires DMTG aux désignations AV hors héritiers
+        // civils (cf. transmission/index.ts).
+        if (profileRes.data && avContracts.length > 0) {
+          try {
+            const opsByAsset = new Map<string, { type_operation: string; montant: number | null; date_operation: string }[]>();
+            avOperationsRaw.forEach((op: any) => {
+              const list = opsByAsset.get(op.asset_id) || [];
+              list.push({ type_operation: op.type_operation, montant: op.montant, date_operation: op.date_operation });
+              opsByAsset.set(op.asset_id, list);
+            });
+            const clauseByAsset = new Map<string, any>(avClausesRaw.map((d: any) => [d.asset_id, d.clause_beneficiaire_structuree || null]));
+            const avContractsRaw: AVContractRawRow[] = avContracts.map(a => ({
+              assetId: a.id!,
+              label: a.denomination,
+              valeurEstimee: a.valeur_estimee,
+              operations: opsByAsset.get(a.id!) || [],
+              clauseBeneficiaireStructuree: clauseByAsset.get(a.id!) || null
+            }));
+
+            const family: FamilyGraph = buildFamilyGraph(profileRes.data, maritalRes.data, familyLinksRows);
+            const builtAvContracts = buildAVContracts(avContractsRaw, profileRes.data.date_naissance, family);
+            setAvContractsBuilt(builtAvContracts);
+
+            const { data: allAssets } = await supabase.from('assets').select('*').eq('user_id', user.id);
+            const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(
+              allAssets || [],
+              passifsRes.data || [],
+              0
+            );
+            const rawParams = transmissionParamsData as any;
+            const params: TransmissionParams = {
+              ...rawParams,
+              abattements: {
+                ...rawParams.abattements,
+                conjoint: rawParams.abattements.conjoint === 'Infinity' ? Infinity : rawParams.abattements.conjoint
+              }
+            };
+
+            const result = computeTransmission({
+              family,
+              patrimony,
+              liberalites: [],
+              params,
+              rawAssets: allAssets || [],
+              avContracts: builtAvContracts,
+              referenceDate: new Date().toISOString().split('T')[0]
+            });
+            setTransmissionResult(result);
+            setComputeErrorMessage(null);
+          } catch (calcError) {
+            console.error('Erreur calcul fiscal assurance-vie:', calcError);
+            setTransmissionResult(null);
+            setComputeErrorMessage(
+              calcError instanceof AVDonneesInsuffisantesError || calcError instanceof BienNonQualifieError
+                ? calcError.message
+                : null
+            );
+          }
+        }
       } catch (error) {
         console.error('Error fetching AV contracts:', error);
       } finally {
@@ -145,108 +236,69 @@ export const AssuranceVie = () => {
     fetchData();
   }, []);
 
-  // Compute 990I / 757B totals and per-beneficiary breakdown
+  // Répartition par bénéficiaire à partir du vrai moteur fiscal : capital brut
+  // dérivé des contrats réels (avContractsBuilt), prélèvement 990I et
+  // réintégration 757B lus directement dans transmissionResult.dmtg
+  // (dmtg/assurance-vie.ts, jamais recalculés ici).
   const fiscalSummary = useMemo(() => {
     const totalValeur = contracts.reduce((sum, c) => sum + (c.valeur_estimee || 0), 0);
+    const montant990I = avContractsBuilt.reduce((sum, c) => sum + c.primesAvant70, 0);
+    const montant757B = avContractsBuilt.reduce((sum, c) => sum + c.primesApres70, 0);
 
-    const is990I = subscriberAge !== null && subscriberAge < 70;
-    const montant990I = is990I ? totalValeur : 0;
-    const montant757B = !is990I && subscriberAge !== null ? totalValeur : 0;
+    const dmtgPerBeneficiary = transmissionResult?.dmtg?.perBeneficiary || {};
 
-    // Aggregate beneficiaries from each contract's structured clause
-    // Key: beneficiary identifier (familyLinkId or name), Value: accumulated capital
     const benefMap = new Map<string, { nom: string; prenom: string; lien: string; capitalBrut: number }>();
-
-    contracts.forEach(contract => {
-      const contractVal = contract.valeur_estimee || 0;
-      const clauseData = contractClauses.find(c => c.asset_id === contract.id);
-      const clause = clauseData?.clause_beneficiaire_structuree;
-
-      if (clause && clause.niveaux && clause.niveaux.length > 0) {
-        // Use first level beneficiaries (principal)
-        const niveau = clause.niveaux[0];
-        const namedBenefs = niveau.beneficiaires.filter((b: any) => b.nom);
-        if (namedBenefs.length > 0) {
-          const totalPct = namedBenefs.reduce((s: number, b: any) => s + (b.pourcentage || 0), 0);
-          namedBenefs.forEach((b: any) => {
-            const key = b.familyLinkId || `${b.prenom}_${b.nom}`;
-            const pct = totalPct > 0 ? (b.pourcentage || 0) / totalPct : 1 / namedBenefs.length;
-            const amount = contractVal * pct;
-            const existing = benefMap.get(key);
-            if (existing) {
-              existing.capitalBrut += amount;
-            } else {
-              benefMap.set(key, {
-                nom: b.nom,
-                prenom: b.prenom || '',
-                lien: b.lien || '',
-                capitalBrut: amount,
-              });
-            }
+    avContractsBuilt.forEach(contract => {
+      contract.beneficiaires.forEach(b => {
+        const member = familyMembersById.get(b.beneficiaryId);
+        const isSpouse = transmissionResult?.family?.survivingSpouseId === b.beneficiaryId;
+        const amount = contract.capitalDeces * b.quotePart;
+        const existing = benefMap.get(b.beneficiaryId);
+        if (existing) {
+          existing.capitalBrut += amount;
+        } else {
+          benefMap.set(b.beneficiaryId, {
+            nom: isSpouse ? (conjointName?.split(' ').slice(1).join(' ') || conjointName || 'Conjoint') : (member?.nom || 'Bénéficiaire'),
+            prenom: isSpouse ? (conjointName?.split(' ')[0] || '') : (member?.prenom || ''),
+            lien: isSpouse ? 'Conjoint' : (member?.lien || ''),
+            capitalBrut: amount,
           });
-          return; // Done for this contract
         }
-      }
+      });
 
-      // Fallback: no structured clause — skip (will show "Non renseigné" if no contract has a clause)
+      // Bénéficiaire absent de la clause niveau 1 sur tous les contrats —
+      // rien à agréger, le tableau restera vide (cf. allBenefs ci-dessous).
     });
 
-    // If no beneficiaries from clauses, show a single "Non renseigné" row
     const allBenefs = benefMap.size > 0
-      ? Array.from(benefMap.values())
-      : [{ nom: 'Non renseigné', prenom: '', lien: '', capitalBrut: totalValeur }];
+      ? Array.from(benefMap.entries()).map(([id, b]) => ({ id, ...b }))
+      : totalValeur > 0
+        ? [{ id: '', nom: 'Non renseigné', prenom: '', lien: '', capitalBrut: totalValeur }]
+        : [];
 
-    // Count non-spouse for taxation
-    const nonSpouseBenefs = allBenefs.filter(b => b.lien !== 'Conjoint');
-    const nbTaxable = Math.max(1, nonSpouseBenefs.length);
-
-    // 990I global
+    const nbTaxable = Math.max(1, allBenefs.filter(b => b.lien !== 'Conjoint').length);
     const abattement990I = 152500 * nbTaxable;
-    const assiette990I = Math.max(0, montant990I - abattement990I);
-    const seuil700k = 700000;
-    let droits990I = 0;
-    if (assiette990I > 0) {
-      const tranche1 = Math.min(assiette990I, seuil700k);
-      const tranche2 = Math.max(0, assiette990I - seuil700k);
-      droits990I = tranche1 * 0.20 + tranche2 * 0.3125;
-    }
-
-    // 757B
     const abattement757B = 30500;
-    const assiette757B = Math.max(0, montant757B - abattement757B);
-    const droits757B = assiette757B * 0.20;
 
-    const totalDroits = droits990I + droits757B;
+    // Prélèvement 990I / réintégration 757B lus directement dans le résultat
+    // du vrai moteur (dmtg/assurance-vie.ts) — jamais recalculés ici. Le
+    // détail des droits de succession sur la réintégration 757B n'est pas
+    // isolable séparément (mêlé au barème de succession général, cf.
+    // dmtg/index.ts) : seul le montant réintégré est affiché pour ce régime.
+    const droits990I = transmissionResult?.dmtg?.totals?.prelev990I || 0;
+    const totalReintegration757B = allBenefs.reduce(
+      (sum, b) => sum + (b.id ? (dmtgPerBeneficiary[b.id]?.reintegration757B || 0) : 0),
+      0
+    );
 
-    // Per-beneficiary tax computation
     const beneficiaireDetails = allBenefs.map(b => {
       const isSpouse = b.lien === 'Conjoint';
-      if (isSpouse) {
-        return {
-          ...b,
-          droits: 0,
-          capitalNet: b.capitalBrut,
-          exonere: true,
-        };
-      }
-
-      let droitsBenef = 0;
-      if (is990I) {
-        const assietteBenef = Math.max(0, b.capitalBrut - 152500);
-        const t1 = Math.min(assietteBenef, seuil700k);
-        const t2 = Math.max(0, assietteBenef - seuil700k);
-        droitsBenef = t1 * 0.20 + t2 * 0.3125;
-      } else if (subscriberAge !== null) {
-        const abattShare = abattement757B / nbTaxable;
-        const assietteBenef = Math.max(0, b.capitalBrut - abattShare);
-        droitsBenef = assietteBenef * 0.20;
-      }
-
+      const prelev990I = b.id ? (dmtgPerBeneficiary[b.id]?.prelev990I || 0) : 0;
       return {
         ...b,
-        droits: droitsBenef,
-        capitalNet: b.capitalBrut - droitsBenef,
-        exonere: false,
+        droits: prelev990I,
+        capitalNet: b.capitalBrut - prelev990I,
+        exonere: isSpouse,
       };
     });
 
@@ -255,16 +307,16 @@ export const AssuranceVie = () => {
       montant757B,
       abattement990I,
       abattement757B,
-      assiette990I,
-      assiette757B,
+      assiette990I: Math.max(0, montant990I - abattement990I),
+      assiette757B: Math.max(0, montant757B - abattement757B),
       droits990I,
-      droits757B,
+      totalReintegration757B,
       totalValeur,
-      totalDroits,
+      totalDroits: droits990I,
       beneficiaireDetails,
       nbTaxable,
     };
-  }, [contracts, contractClauses, subscriberAge]);
+  }, [contracts, avContractsBuilt, transmissionResult, familyMembersById, conjointName]);
 
   // If a contract is selected, show the detail view
   if (selectedContract) {
@@ -392,7 +444,7 @@ export const AssuranceVie = () => {
       </div>
 
       {/* Fiscal 990I / 757B summary */}
-      {subscriberAge !== null && contracts.length > 0 && (
+      {transmissionResult && contracts.length > 0 && (
         <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardHeader className="pb-3 p-5">
             <CardTitle className="text-[15px] font-semibold flex items-center gap-2 text-[var(--text-primary)]">
@@ -468,17 +520,14 @@ export const AssuranceVie = () => {
                     <span className="text-[var(--text-secondary)]">Assiette taxable</span>
                     <span className="kairos-num font-medium text-[var(--text-primary)]">{formatCurrency(fiscalSummary.assiette757B)}</span>
                   </div>
-                  {fiscalSummary.assiette757B > 0 && (
-                    <div className="flex justify-between text-xs text-[var(--text-secondary)]">
-                      <span>Soumis aux droits de succession</span>
-                      <span>≈ 20 %</span>
-                    </div>
-                  )}
                   <Separator className="bg-[var(--border)]" />
                   <div className="flex justify-between font-semibold">
-                    <span className="text-[var(--text-primary)]">Droits estimés</span>
-                    <span className="kairos-num text-[var(--negative)]">{formatCurrency(fiscalSummary.droits757B)}</span>
+                    <span className="text-[var(--text-primary)]">Réintégré aux droits de succession</span>
+                    <span className="kairos-num text-[var(--negative)]">{formatCurrency(fiscalSummary.totalReintegration757B)}</span>
                   </div>
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    Taxé au barème de succession de chaque bénéficiaire (art. 757 B), pas à un taux fixe — le montant des droits n'est donc pas isolable de la succession, cf. Synthèse.
+                  </p>
                 </div>
               </div>
             </div>
@@ -486,8 +535,7 @@ export const AssuranceVie = () => {
             <div className="mt-4 flex items-start gap-2 p-3 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--border)]">
               <AlertTriangle className="h-4 w-4 text-[var(--warning)] shrink-0 mt-0.5" />
               <p className="text-xs text-[var(--text-secondary)]">
-                Estimation simplifiée basée sur l'âge actuel du souscripteur ({subscriberAge} ans).
-                En réalité, le régime applicable dépend de l'âge au moment de chaque versement.
+                Calcul basé sur l'âge réel du souscripteur à chaque versement enregistré (pas sur son âge actuel).
                 Le conjoint ou partenaire de PACS est exonéré dans tous les cas.
               </p>
             </div>
@@ -495,13 +543,24 @@ export const AssuranceVie = () => {
         </Card>
       )}
 
+      {computeErrorMessage && (
+        <Card className="bg-[var(--negative-soft)] border-[var(--negative)]/30 rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+          <CardContent className="pt-6">
+            <div className="flex gap-3">
+              <AlertTriangle className="h-5 w-5 text-[var(--negative)] shrink-0 mt-0.5" />
+              <p className="text-sm text-[var(--negative)]">{computeErrorMessage}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Beneficiary breakdown */}
-      {subscriberAge !== null && contracts.length > 0 && fiscalSummary.beneficiaireDetails.length > 0 && (
+      {transmissionResult && contracts.length > 0 && fiscalSummary.beneficiaireDetails.length > 0 && (
         <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardHeader className="pb-3 p-5">
             <CardTitle className="text-[15px] font-semibold flex items-center gap-2 text-[var(--text-primary)]">
               <UserCheck className="h-4 w-4 text-[var(--ink-400)]" />
-              Répartition par bénéficiaire (estimation)
+              Répartition par bénéficiaire
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5 pt-0">

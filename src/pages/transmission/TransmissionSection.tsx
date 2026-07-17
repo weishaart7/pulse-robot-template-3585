@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Synthese } from '@/components/transmission/Synthese';
 import { Liberalites } from '@/components/transmission/Liberalites';
@@ -7,8 +8,22 @@ import { ProcessusCalcul } from '@/components/transmission/ProcessusCalcul';
 import { Optimisation } from '@/components/transmission/Optimisation';
 import '@/components/transmission/kairos-transmission.css';
 
+const VALID_TABS = ['synthese', 'optimisation', 'liberalites', 'assurance-vie', 'processus-calcul'];
+
 export const TransmissionSection = () => {
-  const [activeTab, setActiveTab] = useState('synthese');
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(VALID_TABS.includes(tabParam || '') ? tabParam! : 'synthese');
+
+  // Une navigation vers "?tab=..." depuis un écran déjà monté sous /dashboard/transmission
+  // (ex. Synthese.tsx -> onglet Assurance-vie après une erreur) ne remonte pas ce
+  // composant : useState seul ne rejouerait pas son initialisation. Sans ce useEffect,
+  // l'URL changeait mais l'onglet affiché restait bloqué sur l'ancien.
+  useEffect(() => {
+    if (tabParam && VALID_TABS.includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   const TABS = [
     { id: 'synthese', label: 'Synthèse' },

@@ -8,7 +8,8 @@ import { useAssets } from '@/hooks/useAssets';
 import { useFamilyData, useMaritalStatus, useFamilyProfile } from '@/hooks/useFamilyData';
 import { useLiberalites } from '@/hooks/useLiberalites';
 import { usePassifs } from '@/hooks/usePassifs';
-import { buildFamilyGraph, buildPatrimonySnapshot, buildTransmissionLiberalites } from '@/utils/transmissionHelpers';
+import { useAVContracts } from '@/hooks/useAVContracts';
+import { buildFamilyGraph, buildPatrimonySnapshot, buildTransmissionLiberalites, buildAVContracts, AVDonneesInsuffisantesError } from '@/utils/transmissionHelpers';
 import { computeTransmission, TransmissionContext } from '@/lib/transmission';
 import { FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission/types';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
@@ -24,6 +25,7 @@ export const ProcessusCalcul = () => {
   const { data: familyProfile } = useFamilyProfile();
   const { liberalites, loading: liberalitesLoading } = useLiberalites();
   const { passifs } = usePassifs();
+  const { avContractsRaw, loading: avLoading } = useAVContracts(assets);
 
   // Construire le graphe familial
   const familyGraph: FamilyGraph | null = useMemo(() => {
@@ -55,16 +57,21 @@ export const ProcessusCalcul = () => {
   // déjà chaque bien, cf. lib/patrimoine/succession.ts::getPartSuccessorale),
   // donc les deux doivent être dans le même try/catch pour que le message
   // précis atteigne l'écran au lieu de crasher le rendu.
-  const { patrimony, transmissionResult, computeErrorMessage } = useMemo((): {
+  const { patrimony, transmissionResult, computeErrorMessage, computeErrorKind } = useMemo((): {
     patrimony: PatrimonySnapshot | null;
     transmissionResult: ReturnType<typeof computeTransmission> | null;
     computeErrorMessage: string | null;
+    computeErrorKind: 'bien-non-qualifie' | 'av-donnees-insuffisantes' | null;
   } => {
-    if (!familyGraph) return { patrimony: null, transmissionResult: null, computeErrorMessage: null };
+    if (!familyGraph) return { patrimony: null, transmissionResult: null, computeErrorMessage: null, computeErrorKind: null };
 
     try {
       // Assurance-vie non séparée ici : pas de régression, à traiter séparément si besoin
       const patrimony = buildPatrimonySnapshot(assets, passifs, 0);
+      // Répartition avant/après 70 ans à partir des vraies primes (av_operations) —
+      // lève AVDonneesInsuffisantesError si un contrat n'a aucune opération
+      // enregistrée ou si la date de naissance du défunt simulé est inconnue.
+      const avContracts = buildAVContracts(avContractsRaw, familyProfile?.date_naissance, familyGraph);
       const ctx: TransmissionContext = {
         family: familyGraph,
         patrimony,
@@ -72,20 +79,23 @@ export const ProcessusCalcul = () => {
         params,
         conjointOption: 'quart_pp',
         rawAssets: assets || [],
+        avContracts,
         partageEnvisage: !!(maritalStatus as any)?.partage_envisage
       };
-      return { patrimony, transmissionResult: computeTransmission(ctx), computeErrorMessage: null };
+      return { patrimony, transmissionResult: computeTransmission(ctx), computeErrorMessage: null, computeErrorKind: null };
     } catch (error) {
       console.error('Erreur calcul transmission:', error);
-      return {
-        patrimony: null,
-        transmissionResult: null,
-        computeErrorMessage: error instanceof BienNonQualifieError ? error.message : null
-      };
+      if (error instanceof BienNonQualifieError) {
+        return { patrimony: null, transmissionResult: null, computeErrorMessage: error.message, computeErrorKind: 'bien-non-qualifie' };
+      }
+      if (error instanceof AVDonneesInsuffisantesError) {
+        return { patrimony: null, transmissionResult: null, computeErrorMessage: error.message, computeErrorKind: 'av-donnees-insuffisantes' };
+      }
+      return { patrimony: null, transmissionResult: null, computeErrorMessage: null, computeErrorKind: null };
     }
-  }, [familyGraph, assets, passifs, transmissionLiberalites, params, maritalStatus]);
+  }, [familyGraph, assets, passifs, transmissionLiberalites, params, maritalStatus, avContractsRaw, familyProfile]);
 
-  if (assetsLoading || familyLoading || liberalitesLoading) {
+  if (assetsLoading || familyLoading || liberalitesLoading || avLoading) {
     return (
       <div className="kairos-transmission">
         <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
@@ -112,13 +122,20 @@ export const ProcessusCalcul = () => {
                 {computeErrorMessage || "Veuillez d'abord renseigner votre situation familiale et votre patrimoine pour visualiser le processus de calcul."}
               </AlertDescription>
             </Alert>
-            {computeErrorMessage && (
-              // Pas de ciblage direct du bien : l'onglet "Actifs" n'est pas adressable
-              // par URL (state local à PatrimoineSection.tsx) — lien générique vers
-              // Patrimoine, même cible que Synthese.tsx et AssuranceVie.tsx.
+            {computeErrorKind === 'av-donnees-insuffisantes' && (
               <Button
                 variant="outline"
-                onClick={() => navigate('/dashboard/patrimoine')}
+                onClick={() => navigate('/dashboard/transmission?tab=assurance-vie')}
+                className="gap-2 mt-4 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
+              >
+                Renseigner le contrat dans Assurance-vie
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            )}
+            {computeErrorKind === 'bien-non-qualifie' && (
+              <Button
+                variant="outline"
+                onClick={() => navigate('/dashboard/patrimoine?tab=actifs')}
                 className="gap-2 mt-4 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
               >
                 Qualifier ce bien dans Patrimoine

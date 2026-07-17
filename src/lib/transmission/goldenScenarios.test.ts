@@ -41,7 +41,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams } from './index';
-import { buildPatrimonySnapshot } from '../../utils/transmissionHelpers';
+import { buildPatrimonySnapshot, buildAVContracts } from '../../utils/transmissionHelpers';
 import transmissionParamsData from '../../data/transmission-params.json';
 
 const TOLERANCE = 50;
@@ -240,7 +240,91 @@ describe('Golden Scenarios — Transmission (docs/Golden_Scenarios_Transmission.
     });
 
     it.todo('frais de notaire ≈4 950€ total — même blocage que le scénario 1 (limitation 4)');
-    it.todo('prélèvement 990 I sur l\'enfant commun bénéficiaire de l\'AV (abattement 152 500€, distinct et cumulable avec l\'abattement succession 100 000€) — avContracts non implémenté, cf. limitation 2');
+
+    it('prélèvement 990 I sur l\'enfant commun bénéficiaire de l\'AV : 250 000€ de primes réelles (< 70 ans au versement), abattement 152 500€, prélèvement 20% sur 97 500€ = 19 500€', () => {
+      // Primes réelles (av_operations), pas un contournement : souscripteur né
+      // en 1970, versement en 2015 (45 ans, largement avant 70 ans).
+      const avContracts = buildAVContracts(
+        [{
+          assetId: 'av1',
+          label: 'Contrat AV',
+          valeurEstimee: 250000,
+          operations: [{ type_operation: 'versement', montant: 250000, date_operation: '2015-01-01' }],
+          clauseBeneficiaireStructuree: { niveaux: [{ beneficiaires: [{ familyLinkId: 'enfant1', pourcentage: 100 }] }] }
+        }],
+        '1970-01-01',
+        family
+      );
+
+      const resultAvecAV = computeTransmission({
+        family,
+        patrimony,
+        liberalites: [],
+        params: buildParams(),
+        conjointOption: 'usufruit_total',
+        referenceDate: '2026-07-17',
+        rawAssets,
+        avContracts
+      });
+
+      expect(resultAvecAV.dmtg.perBeneficiary['enfant1'].prelev990I).toBeCloseTo(19500, 0);
+      expect(resultAvecAV.dmtg.totals.prelev990I).toBeCloseTo(19500, 0);
+    });
+
+    it('transmissionNette ne soustrait pas l\'assurance-vie deux fois : le contrat AV (250 000€) est exclu de biensExistants par buildPatrimonySnapshot, donc pas à retrancher une seconde fois dans transmissionNette', () => {
+      // Même patrimoine que le reste du scénario 3, plus un vrai bien AV dans
+      // rawAssets (pas seulement le total informatif du 3e argument) — pour
+      // exercer réellement l'exclusion de buildPatrimonySnapshot, pas
+      // seulement la supposer.
+      const rawAssetsWithAV = [
+        ...buildScenario123RawAssets(),
+        { id: 'av1', denomination: 'Contrat AV', valeur_estimee: 250000, nature: "Contrat d'assurance-vie" }
+      ];
+      const patrimonyWithAV = buildPatrimonySnapshot(rawAssetsWithAV as any, [], 250000);
+
+      // Le contrat AV ne doit pas gonfler l'assiette civile : mêmes 305 500€
+      // que le reste du scénario 3, alors que rawAssetsWithAV contient 250 000€
+      // de plus si le filtre échouait à l'exclure.
+      expect(patrimonyWithAV.biensExistants).toBeCloseTo(305500, 0);
+
+      const avContracts = buildAVContracts(
+        [{
+          assetId: 'av1',
+          label: 'Contrat AV',
+          valeurEstimee: 250000,
+          operations: [{ type_operation: 'versement', montant: 250000, date_operation: '2015-01-01' }],
+          clauseBeneficiaireStructuree: { niveaux: [{ beneficiaires: [{ familyLinkId: 'enfant1', pourcentage: 100 }] }] }
+        }],
+        '1970-01-01',
+        family
+      );
+
+      const resultAvecAV = computeTransmission({
+        family,
+        patrimony: patrimonyWithAV,
+        liberalites: [],
+        params: buildParams(),
+        conjointOption: 'usufruit_total',
+        referenceDate: '2026-07-17',
+        rawAssets: rawAssetsWithAV,
+        avContracts
+      });
+
+      // Calcul à la main : masse civile hors AV (déjà exclue par
+      // buildPatrimonySnapshot) − passifs − droits DMTG (hors AV, dmtgAssets
+      // l'exclut aussi) − frais de notaire. Aucun terme AV supplémentaire —
+      // ni la valeur du contrat, ni son prélèvement 990I, ne doivent
+      // apparaître dans cette soustraction.
+      const patrimoineNetAttendu = patrimonyWithAV.biensExistants - patrimonyWithAV.passifs;
+      const transmissionNetteAttendue = patrimoineNetAttendu - resultAvecAV.dmtg.totals.droitsTotaux - resultAvecAV.fraisNotaire;
+
+      expect(resultAvecAV.transmissionNette).toBeCloseTo(transmissionNetteAttendue, 0);
+
+      // Contrôle négatif : si l'AV était encore soustraite en plus (régression
+      // du bug de double-comptage), l'écart serait exactement 250 000€.
+      expect(Math.abs(resultAvecAV.transmissionNette - (transmissionNetteAttendue - 250000))).toBeGreaterThan(1000);
+    });
+
     it.todo('netARecevoir final (succession nette + AV nette) par héritier — cf. limitation 2');
   });
 
@@ -369,6 +453,140 @@ describe('Golden Scenarios — Transmission (docs/Golden_Scenarios_Transmission.
 
       expect(resultAvecPartage.netBreakdown.totals.droitPartage).toBeCloseTo(400000 * 0.025, 0);
       expect(result.netBreakdown.totals.droitPartage).toBe(0);
+    });
+  });
+
+  describe('Rappel fiscal 15 ans — donation réelle alimentant computeDMTG (transmission/index.ts)', () => {
+    // Défunt + enfant unique, pas de conjoint : abattement enfant 100 000€,
+    // pleinement résiduel sans donation. hors_part pour ne pas interférer avec
+    // l'imputation civile sur la réserve (seul le rappel fiscal est sous test ici).
+    const family: FamilyGraph = {
+      persons: [
+        { id: 'defunt', nom: 'Defunt', prenom: 'Jean' },
+        { id: 'enfant1', nom: 'Enfant', prenom: 'Un', lienFamilial: 'Enfant' }
+      ],
+      links: [{ from: 'defunt', to: 'enfant1', relation: 'child' }],
+      marriages: [],
+      decedentId: 'defunt',
+      hasSurvivingSpouse: false,
+      childrenOfDecedent: ['enfant1'],
+      childrenCommonWithSpouse: [],
+      hasDDV: false
+    };
+    const patrimony: PatrimonySnapshot = { date: '2026-07-17', biensExistants: 200000, passifs: 0, assuranceVieTotal: 0 };
+    const rawAssets = [{ id: 'a1', denomination: 'Patrimoine propre', valeur_estimee: 200000, nature: 'valeur_mobiliere', qualification_bien: 'Bien personnel' }];
+
+    it('sans donation : abattement résiduel plein (100 000€)', () => {
+      const result = computeTransmission({
+        family,
+        patrimony,
+        liberalites: [],
+        params: buildParams(),
+        referenceDate: '2026-07-17',
+        rawAssets
+      });
+      expect(result.dmtg.perBeneficiary['enfant1'].allowanceGeneralResidual).toBeCloseTo(100000, 0);
+    });
+
+    it('avec une donation de 100 000€ datant de 6 ans (< 15 ans) : abattement résiduel consommé (0€) et droits de succession alourdis', () => {
+      const resultSansDon = computeTransmission({
+        family,
+        patrimony,
+        liberalites: [],
+        params: buildParams(),
+        referenceDate: '2026-07-17',
+        rawAssets
+      });
+
+      const resultAvecDon = computeTransmission({
+        family,
+        patrimony,
+        liberalites: [{
+          id: 'don1',
+          type: 'donation',
+          beneficiaireId: 'enfant1',
+          valeur: 100000,
+          date: '2020-07-17',
+          typeImputation: 'hors_part'
+        }],
+        params: buildParams(),
+        referenceDate: '2026-07-17',
+        rawAssets
+      });
+
+      expect(resultAvecDon.dmtg.perBeneficiary['enfant1'].allowanceGeneralResidual).toBeCloseTo(0, 0);
+      expect(resultAvecDon.dmtg.perBeneficiary['enfant1'].droitsTotaux)
+        .toBeGreaterThan(resultSansDon.dmtg.perBeneficiary['enfant1'].droitsTotaux);
+    });
+
+    it('une donation vieille de plus de 15 ans ne consomme pas l\'abattement (hors du rappel fiscal)', () => {
+      const result = computeTransmission({
+        family,
+        patrimony,
+        liberalites: [{
+          id: 'don2',
+          type: 'donation',
+          beneficiaireId: 'enfant1',
+          valeur: 100000,
+          date: '2005-07-17',
+          typeImputation: 'hors_part'
+        }],
+        params: buildParams(),
+        referenceDate: '2026-07-17',
+        rawAssets
+      });
+      expect(result.dmtg.perBeneficiary['enfant1'].allowanceGeneralResidual).toBeCloseTo(100000, 0);
+    });
+  });
+
+  describe('Assiette immobilière et abattement résidence principale (getAssetCategory, transmission/index.ts)', () => {
+    // Défunt + enfant unique, pas de conjoint, un seul bien de 300 000€ dont
+    // la nature varie selon le cas — même valeur pour isoler l'effet de la
+    // catégorisation (assiette immobilière) et du libellé exact (abattement RP).
+    const family: FamilyGraph = {
+      persons: [
+        { id: 'defunt', nom: 'Defunt', prenom: 'Jean' },
+        { id: 'enfant1', nom: 'Enfant', prenom: 'Un', lienFamilial: 'Enfant' }
+      ],
+      links: [{ from: 'defunt', to: 'enfant1', relation: 'child' }],
+      marriages: [],
+      decedentId: 'defunt',
+      hasSurvivingSpouse: false,
+      childrenOfDecedent: ['enfant1'],
+      childrenCommonWithSpouse: [],
+      hasDDV: false
+    };
+    const patrimony: PatrimonySnapshot = { date: '2026-07-17', biensExistants: 300000, passifs: 0, assuranceVieTotal: 0 };
+
+    function computeFor(nature: string) {
+      const rawAssets = [{ id: 'a1', denomination: 'Bien', valeur_estimee: 300000, nature, qualification_bien: 'Bien personnel' }];
+      return computeTransmission({
+        family,
+        patrimony,
+        liberalites: [],
+        params: buildParams(),
+        referenceDate: '2026-07-17',
+        rawAssets
+      });
+    }
+
+    it('un bien "Résidences secondaires" entre dans l\'assiette immobilière (frais de notaire) au même titre qu\'une "Résidence principale", mais sans l\'abattement -20%', () => {
+      const resultRP = computeFor('Résidence principale');
+      const resultSecondaire = computeFor('Résidences secondaires');
+      const resultNonImmo = computeFor('Livret A');
+
+      // Les deux biens immobiliers déclenchent l'émolument d'attestation
+      // immobilière (frais de notaire plus élevés qu'un bien non-immobilier
+      // de même valeur) — preuve que getAssetCategory() les classe bien tous
+      // les deux dans "actifs immobiliers", pas seulement la RP.
+      expect(resultRP.fraisNotaire).toBeGreaterThan(resultNonImmo.fraisNotaire);
+      expect(resultSecondaire.fraisNotaire).toBeCloseTo(resultRP.fraisNotaire, 0);
+
+      // Seule la résidence principale bénéficie de l'abattement -20% (art.
+      // 764 bis CGI) : droits de succession plus faibles à valeur égale.
+      const droitsRP = resultRP.dmtg.perBeneficiary['enfant1'].droitsTotaux;
+      const droitsSecondaire = resultSecondaire.dmtg.perBeneficiary['enfant1'].droitsTotaux;
+      expect(droitsRP).toBeLessThan(droitsSecondaire);
     });
   });
 });

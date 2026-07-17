@@ -19,12 +19,15 @@ import {
 import { computeNotaryFees, computeDebours } from './fiscal';
 import { computeNetPerHeir } from './netBreakdown';
 import { getPartSuccessorale } from '../patrimoine/succession';
+import { getAssetCategory } from '../../constants/assetTypes';
 import {
   computeDMTG,
   DEFAULT_DMTG_PARAMS,
   Asset as DmtgAsset,
   Beneficiary as DmtgBeneficiary,
-  CivilShare
+  CivilShare,
+  Donation as DmtgDonation,
+  AVContract as DmtgAVContract
 } from '../dmtg';
 
 export interface TransmissionContext {
@@ -38,6 +41,11 @@ export interface TransmissionContext {
   // consolidation du moteur — computeTransmission est le seul point d'entrée
   // appelé par l'UI, computeDMTG n'est plus jamais invoqué depuis un composant).
   rawAssets?: RawAssetInput[];
+  // Contrats AV déjà construits par utils/transmissionHelpers.ts::buildAVContracts
+  // (primes avant/après 70 ans déjà réparties, bénéficiaires résolus vers de
+  // vrais familyLinkId/survivingSpouseId) — même logique que `liberalites`,
+  // pré-assemblé par l'appelant plutôt que reconstruit ici depuis du brut.
+  avContracts?: DmtgAVContract[];
   // Date de référence pour valoriser l'usufruit (barème art. 669 CGI, fonction
   // de l'âge de l'usufruitier) et pour le calcul DMTG (deathDate). Cet outil
   // simule un décès survenant aujourd'hui (le profil du défunt reste
@@ -95,6 +103,7 @@ export function getConjointAge(family: FamilyGraph, referenceDateISO: string): n
  */
 export function computeTransmission(ctx: TransmissionContext): TransmissionResult {
   const { family, patrimony, liberalites, params, conjointOption, rawAssets, partageEnvisage } = ctx;
+  const avContracts = ctx.avContracts || [];
   const referenceDate = ctx.referenceDate || new Date().toISOString().split('T')[0];
 
   // 1. Dévolution civile (succession légale, source unique de vérité)
@@ -254,30 +263,65 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     };
   });
 
+  // Un bénéficiaire désigné dans une clause AV n'est pas forcément un héritier
+  // civil (ex. petit-enfant désigné alors que les enfants sont vivants) : sans
+  // extension, computeAssuranceVie() l'ignorerait silencieusement (il ne
+  // résout que contre `beneficiaries`, cf. dmtg/assurance-vie.ts). On complète
+  // donc la liste avec les bénéficiaires AV absents, en dérivant leur `lien`
+  // depuis le graphe familial plutôt que depuis leur statut d'héritier — seul
+  // conjoint/frère-sœur importent réellement ici (le barème 990I/757B est
+  // plat, `lien` ne sert qu'aux exonérations, cf. dmtg/assurance-vie.ts).
+  const dmtgBeneficiaryIds = new Set(beneficiaries.map(b => b.id));
+  avContracts.forEach(contract => {
+    contract.beneficiaires.forEach(b => {
+      if (dmtgBeneficiaryIds.has(b.beneficiaryId)) return;
+      dmtgBeneficiaryIds.add(b.beneficiaryId);
+
+      let lien: DmtgBeneficiary['lien'] = 'autre';
+      if (b.beneficiaryId === family.survivingSpouseId) {
+        lien = 'conjoint';
+      } else {
+        const person = family.persons.find(p => p.id === b.beneficiaryId);
+        if (person?.lienFamilial === 'Frère/Sœur') lien = 'frere_soeur';
+      }
+
+      beneficiaries.push({ id: b.beneficiaryId, lien });
+    });
+  });
+
   // Adaptation des lignes "assets" brutes (forme Supabase) vers les Asset[]
-  // attendus par computeDMTG. NB : nature toujours forcée à 'autre' et
-  // isResidencePrincipale déduit de nature === 'immobilier' (marque TOUT bien
-  // immobilier, pas seulement la résidence principale réelle) — défaut
-  // préexistant repris tel quel, hors périmètre de cette consolidation.
-  // `nature` en revanche est désormais mappée correctement (elle était
-  // forcée à 'autre' auparavant) : nécessaire pour l'assiette de l'attestation
-  // immobilière du calcul des frais de notaire (cf. étape 9 ci-dessous). Ce
-  // champ n'était lu par aucune règle fiscale DMTG existante avant cet ajout
-  // (vérifié), donc ce correctif ne change aucun calcul de droits déjà en place.
+  // attendus par computeDMTG. `nature` provient de la valeur humaine saisie
+  // dans le formulaire Immobilier (ex. "Résidence principale", "Résidences
+  // secondaires" — cf. constants/assetTypes.ts::ASSET_NATURES), jamais du
+  // littéral 'immobilier' : on passe donc par getAssetCategory() (même
+  // fonction que PatrimoineTreeView/AssetForm) pour rattacher un bien à
+  // l'assiette immobilière — l'ancienne comparaison `nature === 'immobilier'`
+  // ne matchait jamais aucune donnée réelle (diagnostic du 2026-07-17).
+  // isResidencePrincipale ne dépend que du libellé exact "Résidence
+  // principale" (pas de la catégorie générale) : abattement -20% (art. 764
+  // bis CGI, dmtg/assets.ts) appliqué dès la saisie de ce libellé, sans
+  // condition d'occupation (hypothèse simplificatrice actée, cohérente avec
+  // l'abattement IFI équivalent).
   //
   // valeurVenale est pondérée par lib/patrimoine/succession.ts::getPartSuccessorale
   // (régime matrimonial / indivision) : même fonction que le chemin civil
   // (transmissionHelpers.ts::buildPatrimonySnapshot), pour que le fiscal et le
   // civil restent alignés sur la même assiette successorale.
-  const dmtgAssets: DmtgAsset[] = (rawAssets || []).map(asset => ({
-    id: asset.id,
-    label: asset.denomination || '',
-    valeurVenale: (Number(asset.valeur_estimee) || 0) * getPartSuccessorale(asset, asset.denomination || asset.id),
-    nature: asset.nature === 'immobilier' ? 'immobilier' : 'autre',
-    location: 'metropole',
-    isResidencePrincipale: asset.nature === 'immobilier',
-    exclurePour: {}
-  }));
+  // Les contrats d'assurance-vie sont hors succession (art. L132-12 code des
+  // assurances) : exclus de l'assiette DMTG, taxés séparément via avContracts
+  // (990 I / 757 B, cf. dmtg/assurance-vie.ts) — sans cette exclusion, un même
+  // contrat serait taxé deux fois dès qu'avContracts est réellement alimenté.
+  const dmtgAssets: DmtgAsset[] = (rawAssets || [])
+    .filter(asset => getAssetCategory(asset.nature || '') !== 'épargne et assurance-vie')
+    .map(asset => ({
+      id: asset.id,
+      label: asset.denomination || '',
+      valeurVenale: (Number(asset.valeur_estimee) || 0) * getPartSuccessorale(asset, asset.denomination || asset.id),
+      nature: getAssetCategory(asset.nature || '') === 'actifs immobiliers' ? 'immobilier' : 'autre',
+      location: 'metropole',
+      isResidencePrincipale: asset.nature === 'Résidence principale',
+      exclurePour: {}
+    }));
 
   // Pas de regimeMatrimonial transmis à computeDMTG : la liquidation de
   // communauté (mécanisme B, dmtg/matrimonial.ts::computeMatrimonialLiquidation)
@@ -289,10 +333,24 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // ses défauts internes 'séparation'/0€, qui ne sont lus par aucune règle
   // fiscale — seuls des textes de notes non affichés par l'UI en dépendent).
   //
-  // 8. Calcul DMTG (seul moteur fiscal, cf. dmtg/index.ts) — donations et
-  // avContracts restent vides : rappel fiscal 15 ans et assurance-vie par
-  // bénéficiaire ne sont pas encore modélisés côté saisie (cf. décision du
-  // 2026-07-17 : reporté à un chantier dédié, pas un fix de code).
+  // 8. Calcul DMTG (seul moteur fiscal, cf. dmtg/index.ts) — donations
+  // alimentées depuis les libéralités réelles (mêmes lignes que l'imputation
+  // civile ci-dessus) pour le rappel fiscal 15 ans ; donorId est toujours le
+  // défunt simulé (un seul défunt dans cet outil, pas de colonne dédiée).
+  // Les legs sont exclus : ils prennent effet au décès, hors périmètre du
+  // rappel des donations antérieures. avContracts : contrats réels construits
+  // par l'appelant (buildAVContracts), primes déjà réparties avant/après 70
+  // ans par versement réel (cf. décision du 2026-07-18).
+  const dmtgDonations: DmtgDonation[] = liberalites
+    .filter(l => l.type === 'donation')
+    .map(l => ({
+      id: l.id,
+      date: l.date,
+      donorId: family.decedentId,
+      doneeId: l.beneficiaireId,
+      valeurDon: l.valeur
+    }));
+
   const dmtgResult = computeDMTG({
     deathDate: referenceDate,
     params: DEFAULT_DMTG_PARAMS,
@@ -300,8 +358,8 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     assets: dmtgAssets,
     civilShares,
     beneficiaries,
-    donations: [],
-    avContracts: []
+    donations: dmtgDonations,
+    avContracts
   });
 
   // 9. Frais de notaire : émoluments (barème dégressif déclaration de
@@ -316,11 +374,13 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   const deboursMontant = params.debours ? computeDebours(patrimony.biensExistants, params.debours) : 0;
   const fraisNotaireTotal = notaryFeesResult.frais + deboursMontant;
 
-  // 10. Transmission nette = Patrimoine net - droits DMTG réels - AV (hors
-  // succession) - frais de notaire (émoluments + débours).
+  // 10. Transmission nette = Patrimoine net - droits DMTG réels - frais de
+  // notaire (émoluments + débours). L'AV n'est plus à soustraire séparément
+  // depuis que buildPatrimonySnapshot exclut déjà les contrats AV de
+  // `biensExistants` en amont (cf. décision du 2026-07-18) : la resoustraire
+  // ici la compterait deux fois.
   const patrimoineNet = patrimony.biensExistants - patrimony.passifs;
-  const transmissionNette = patrimoineNet - dmtgResult.totals.droitsTotaux -
-                           (patrimony.assuranceVieTotal || 0) - fraisNotaireTotal;
+  const transmissionNette = patrimoineNet - dmtgResult.totals.droitsTotaux - fraisNotaireTotal;
 
   // 11. Répartition nette par héritier (droits DMTG + frais de notaire +
   // droit de partage, prorata part civile) : source unique de vérité pour

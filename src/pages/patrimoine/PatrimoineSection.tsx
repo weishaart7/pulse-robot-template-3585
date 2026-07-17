@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SegmentedTabs } from '@/components/ui/segmented-tabs';
@@ -10,8 +11,22 @@ import { PatrimoinePlusValues } from '@/components/patrimoine/PatrimoinePlusValu
 import { IncompleteAssetsBanner } from '@/components/patrimoine/IncompleteAssetsBanner';
 import { useAssets } from '@/hooks/useAssets';
 
+const VALID_TABS = ['resume', 'actifs', 'passifs'];
+
 export const PatrimoineSection = () => {
-  const [activeTab, setActiveTab] = useState('resume');
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(VALID_TABS.includes(tabParam || '') ? tabParam! : 'resume');
+
+  // Cf. TransmissionSection.tsx : une navigation "?tab=..." vers cette section
+  // déjà montée (sans changement de :section) ne rejouerait pas l'initialisation
+  // de useState seul — resynchronise l'onglet affiché sur l'URL.
+  useEffect(() => {
+    if (tabParam && VALID_TABS.includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
   const { assets } = useAssets();
 
   const [showPlusValuesDetail, setShowPlusValuesDetail] = useState(false);

@@ -1,8 +1,10 @@
 import { FamilyLink, MaritalStatus, FamilyProfile } from '@/services/familyService';
 import { Asset } from '@/services/assetService';
 import { FamilyGraph, Person, PatrimonySnapshot, Liberalite } from '@/lib/transmission/types';
+import { AVContract } from '@/lib/dmtg/types';
 import { FamilySituationSummary, PatrimoineSummary } from '@/types/transmission';
 import { getPartSuccessorale } from '@/lib/patrimoine/succession';
+import { getAssetCategory } from '@/constants/assetTypes';
 
 /**
  * Ligne liberalites brute (colonnes pertinentes uniquement), telle que
@@ -98,6 +100,138 @@ export function buildTransmissionLiberalites(
   }
 
   return { liberalites, legsCaducs };
+}
+
+/**
+ * Garde-fou dédié pour l'assurance-vie, sur le même modèle que
+ * `BienNonQualifieError` (lib/patrimoine/succession.ts) : permet aux écrans
+ * appelants (Synthese.tsx, ProcessusCalcul.tsx) de distinguer ce cas des
+ * autres erreurs de calcul et d'afficher un message précis, plutôt que de
+ * deviner une répartition avant/après 70 ans par défaut.
+ */
+export class AVDonneesInsuffisantesError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AVDonneesInsuffisantesError';
+  }
+}
+
+export interface AVOperationRow {
+  type_operation: string;
+  montant?: number | null;
+  date_operation: string;
+}
+
+/**
+ * Agrège les opérations d'un contrat AV en deux totaux de primes
+ * (avant/après le 70e anniversaire du souscripteur), à partir de l'âge exact
+ * du souscripteur à la date de chaque versement — jamais de son âge actuel.
+ * Les rachats (`type_operation: 'rachat'`) ne sont pas des primes : exclus.
+ *
+ * Ne devine jamais une répartition par défaut (cf. CLAUDE.md, décisions
+ * d'architecture IFI) : lève `AVDonneesInsuffisantesError` si le contrat n'a
+ * aucun versement enregistré, ou si la date de naissance du souscripteur est
+ * inconnue (sans elle, l'âge à chaque versement ne peut pas être calculé).
+ */
+export function splitPrimesAvantApres70(
+  operations: AVOperationRow[],
+  dateNaissance: string | null | undefined,
+  contractLabel?: string
+): { primesAvant70: number; primesApres70: number } {
+  const label = contractLabel ? ` ${contractLabel}` : '';
+  const versements = operations.filter(op => op.type_operation === 'versement');
+
+  if (versements.length === 0) {
+    throw new AVDonneesInsuffisantesError(
+      `Aucune opération enregistrée pour le contrat${label} — impossible de déterminer la répartition avant/après 70 ans.`
+    );
+  }
+  if (!dateNaissance) {
+    throw new AVDonneesInsuffisantesError(
+      `Date de naissance du souscripteur non renseignée — impossible de déterminer l'âge aux versements du contrat${label}.`
+    );
+  }
+
+  const birthTime = new Date(dateNaissance).getTime();
+  let primesAvant70 = 0;
+  let primesApres70 = 0;
+
+  for (const op of versements) {
+    const ageAuVersement = (new Date(op.date_operation).getTime() - birthTime) / (365.25 * 24 * 60 * 60 * 1000);
+    const montant = Number(op.montant) || 0;
+    if (ageAuVersement < 70) {
+      primesAvant70 += montant;
+    } else {
+      primesApres70 += montant;
+    }
+  }
+
+  return { primesAvant70, primesApres70 };
+}
+
+export interface AVContractRawRow {
+  assetId: string;
+  label?: string | null;
+  valeurEstimee?: number | null;
+  operations: AVOperationRow[];
+  // Structure identique à ClauseStructuree (av/ClauseBeneficiaireBuilder.tsx),
+  // dupliquée ici en type minimal pour ne pas faire dépendre utils/ d'un
+  // composant. Seul le niveau 1 (bénéficiaires principaux) est retenu : aucun
+  // mécanisme ne relie aujourd'hui les niveaux "à défaut" à une renonciation
+  // ou un décès de bénéficiaire (décision actée le 2026-07-18 — pas de
+  // croisement avec family_links.est_decede).
+  clauseBeneficiaireStructuree?: {
+    niveaux: Array<{
+      beneficiaires: Array<{ familyLinkId: string; pourcentage: number }>;
+    }>;
+  } | null;
+}
+
+/**
+ * Construit les `AVContract[]` attendus par `computeDMTG` (dmtg/assurance-vie.ts)
+ * à partir des lignes brutes `av_contract_details` + `av_operations`. Ne
+ * modélise que le niveau 1 de la clause bénéficiaire (cf. AVContractRawRow).
+ * `familyLinkId: 'conjoint'` (marqueur utilisé par ClauseBeneficiaireBuilder)
+ * est traduit vers le vrai `family.survivingSpouseId` du graphe civil — les
+ * deux ne partagent pas le même identifiant.
+ *
+ * L'exonération conjoint/PACS (art. 990 I, 2e alinéa) est inconditionnelle en
+ * droit : appliquée dès qu'un contrat désigne le conjoint survivant, sans
+ * condition supplémentaire à vérifier.
+ */
+export function buildAVContracts(
+  rows: AVContractRawRow[],
+  dateNaissance: string | null | undefined,
+  family: FamilyGraph
+): AVContract[] {
+  return rows.map(row => {
+    const { primesAvant70, primesApres70 } = splitPrimesAvantApres70(
+      row.operations,
+      dateNaissance,
+      row.label || undefined
+    );
+
+    const niveau1 = row.clauseBeneficiaireStructuree?.niveaux?.[0];
+    const beneficiaires = (niveau1?.beneficiaires || [])
+      .filter(b => !!b.familyLinkId)
+      .map(b => ({
+        beneficiaryId: b.familyLinkId === 'conjoint'
+          ? (family.survivingSpouseId || b.familyLinkId)
+          : b.familyLinkId,
+        quotePart: (b.pourcentage || 0) / 100
+      }));
+
+    const hasConjointBeneficiaire = beneficiaires.some(b => b.beneficiaryId === family.survivingSpouseId);
+
+    return {
+      id: row.assetId,
+      beneficiaires,
+      capitalDeces: Number(row.valeurEstimee) || 0,
+      primesAvant70,
+      primesApres70,
+      isExonereBeneficiaireConjointPacs: hasConjointBeneficiaire
+    };
+  });
 }
 
 /**
@@ -232,11 +366,21 @@ export function buildPatrimonySnapshot(
   // lib/patrimoine/succession.ts::getPartSuccessorale (source unique de vérité,
   // partagée avec transmission/index.ts pour que le civil et le fiscal restent
   // alignés sur la même assiette).
-  const totalAssets = assets.reduce((sum, asset) => {
-    const valeur = asset.valeur_estimee || asset.valeur_acquisition || 0;
-    const partSuccessorale = getPartSuccessorale(asset, asset.denomination || asset.id);
-    return sum + valeur * partSuccessorale;
-  }, 0);
+  //
+  // Les contrats d'assurance-vie sont hors succession civile (art. L132-13
+  // code des assurances, hors primes manifestement exagérées — non modélisé,
+  // hors périmètre) : exclus ici avec la même condition que dmtgAssets côté
+  // fiscal (transmission/index.ts), pour que les deux assiettes restent
+  // alignées. Sans cette exclusion, un contrat AV réel (une fois les
+  // opérations renseignées) aurait été compté à la fois dans la masse
+  // successorale civile ET dans `assuranceVieTotal` (double compte).
+  const totalAssets = assets
+    .filter(asset => getAssetCategory(asset.nature || '') !== 'épargne et assurance-vie')
+    .reduce((sum, asset) => {
+      const valeur = asset.valeur_estimee || asset.valeur_acquisition || 0;
+      const partSuccessorale = getPartSuccessorale(asset, asset.denomination || asset.id);
+      return sum + valeur * partSuccessorale;
+    }, 0);
 
   const totalPassifs = passifs.reduce((sum, p) => sum + (p.montant_du || 0), 0);
 
