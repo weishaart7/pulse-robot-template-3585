@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useSocieteParticipations } from '@/hooks/useSocieteParticipations';
 import { SocieteParticipationsGraph } from './SocieteParticipationsGraph';
+import { SocieteParticipationsDialog } from './SocieteParticipationsDialog';
 
 interface SocietesMesSocietesProps {
   onEdit: (societeId: string) => void;
@@ -76,10 +77,17 @@ export const SocietesMesSocietes = ({ onEdit, onAdd }: SocietesMesSocietesProps)
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Mes sociétés</h3>
-        <Button onClick={onAdd} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Ajouter une société
-        </Button>
+        <div className="flex items-center gap-3">
+          <SocieteParticipationsDialog
+            societes={societes}
+            participations={participations}
+            onChanged={refetchParticipations}
+          />
+          <Button onClick={onAdd} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Ajouter une société
+          </Button>
+        </div>
       </div>
 
       <SocieteParticipationsGraph
