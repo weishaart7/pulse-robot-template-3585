@@ -2119,6 +2119,60 @@ export type Database = {
           },
         ]
       }
+      societe_participations: {
+        Row: {
+          commentaire: string | null
+          created_at: string
+          date_debut: string | null
+          id: string
+          nombre_titres: number | null
+          pourcentage: number
+          societe_fille_id: string
+          societe_mere_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          commentaire?: string | null
+          created_at?: string
+          date_debut?: string | null
+          id?: string
+          nombre_titres?: number | null
+          pourcentage: number
+          societe_fille_id: string
+          societe_mere_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          commentaire?: string | null
+          created_at?: string
+          date_debut?: string | null
+          id?: string
+          nombre_titres?: number | null
+          pourcentage?: number
+          societe_fille_id?: string
+          societe_mere_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "societe_participations_fille_fk"
+            columns: ["societe_fille_id"]
+            isOneToOne: false
+            referencedRelation: "societes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "societe_participations_mere_fk"
+            columns: ["societe_mere_id"]
+            isOneToOne: false
+            referencedRelation: "societes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       societe_valorisations: {
         Row: {
           commentaire: string | null
@@ -2175,6 +2229,7 @@ export type Database = {
           date_creation: string | null
           date_dernier_bilan: string | null
           denomination: string
+          detenteur: string
           forme_societe_civile: string | null
           holding: string | null
           id: string
@@ -2186,13 +2241,13 @@ export type Database = {
           pourcentage_conjoint: number | null
           pourcentage_ifi: number | null
           pourcentage_utilisateur: number | null
+          qualification_bien: string
           regime_fiscal: string | null
           reserves: number | null
           resultat_net: number | null
           rue_adresse: string | null
           siret: string | null
           tresorerie_disponible: number | null
-          type_activite: string | null
           type_societe: string
           updated_at: string
           user_id: string
@@ -2210,6 +2265,7 @@ export type Database = {
           date_creation?: string | null
           date_dernier_bilan?: string | null
           denomination: string
+          detenteur: string
           forme_societe_civile?: string | null
           holding?: string | null
           id?: string
@@ -2221,13 +2277,13 @@ export type Database = {
           pourcentage_conjoint?: number | null
           pourcentage_ifi?: number | null
           pourcentage_utilisateur?: number | null
+          qualification_bien: string
           regime_fiscal?: string | null
           reserves?: number | null
           resultat_net?: number | null
           rue_adresse?: string | null
           siret?: string | null
           tresorerie_disponible?: number | null
-          type_activite?: string | null
           type_societe: string
           updated_at?: string
           user_id: string
@@ -2245,6 +2301,7 @@ export type Database = {
           date_creation?: string | null
           date_dernier_bilan?: string | null
           denomination?: string
+          detenteur?: string
           forme_societe_civile?: string | null
           holding?: string | null
           id?: string
@@ -2256,13 +2313,13 @@ export type Database = {
           pourcentage_conjoint?: number | null
           pourcentage_ifi?: number | null
           pourcentage_utilisateur?: number | null
+          qualification_bien?: string
           regime_fiscal?: string | null
           reserves?: number | null
           resultat_net?: number | null
           rue_adresse?: string | null
           siret?: string | null
           tresorerie_disponible?: number | null
-          type_activite?: string | null
           type_societe?: string
           updated_at?: string
           user_id?: string
