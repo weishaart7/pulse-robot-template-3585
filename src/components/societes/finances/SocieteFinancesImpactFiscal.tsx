@@ -2,11 +2,11 @@ import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calculator, Scale, Check } from 'lucide-react';
+import { isHoldingAnimatrice } from '@/hooks/useSocietesIntegration';
 
 interface SocieteFormData {
   type_societe: string;
   holding?: string;
-  type_activite?: string;
   regime_fiscal?: string;
   valeur_estimee?: number;
   pourcentage_ifi?: number;
@@ -29,10 +29,8 @@ export const SocieteFinancesImpactFiscal: React.FC<SocieteFinancesImpactFiscalPr
 
   // Determine if eligible for IFI professional exemption
   const isIFIExempt = useMemo(() => {
-    // Holdings animatrices and sociétés opérationnelles can be exempt
-    return formData.holding === 'animatrice' || 
-           (formData.type_activite && ['commerciale', 'artisanale', 'industrielle', 'liberale'].includes(formData.type_activite));
-  }, [formData.holding, formData.type_activite]);
+    return isHoldingAnimatrice({ holding: formData.holding });
+  }, [formData.holding]);
 
   // Calculate IS estimate
   const isEstimate = useMemo(() => {

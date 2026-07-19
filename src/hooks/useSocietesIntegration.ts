@@ -28,7 +28,7 @@ const isPatrimoineSCI = (societe: Societe): boolean => {
 };
 
 // Determine if a company is an operational holding (animatrice)
-const isHoldingAnimatrice = (societe: Societe): boolean => {
+export const isHoldingAnimatrice = (societe: Pick<Societe, 'holding'>): boolean => {
   return societe.holding === 'Animatrice';
 };
 

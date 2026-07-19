@@ -9,6 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Search, Building2 } from 'lucide-react';
 import { sireneService, type SireneData } from '@/services/sireneService';
 import { toast } from 'sonner';
+import { QUALIFICATION_OPTIONS } from '@/lib/patrimoine/qualification';
+import { mapDetenteurToDisplay, mapDetenteurToDb, type FamilyInfo } from '@/lib/patrimoine/utils';
+import { familyService } from '@/services/familyService';
 
 interface SocieteFormData {
   denomination: string;
@@ -26,7 +29,6 @@ interface SocieteFormData {
   codePostal: string;
   commune: string;
   pays: string;
-  typeActivite: string;
   regimeFiscal: string;
   valeurIFI: number;
   activite?: string;
@@ -34,6 +36,10 @@ interface SocieteFormData {
   formeSocieteCivile?: string;
   transfertVersActifs?: boolean;
   natureActif?: string;
+  pourcentageUtilisateur?: number;
+  pourcentageConjoint?: number;
+  qualificationBien: string;
+  detenteur: string;
 }
 
 interface SocieteFormProps {
@@ -126,22 +132,77 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
     codePostal: '',
     commune: '',
     pays: 'France',
-    typeActivite: '',
     regimeFiscal: '',
     valeurIFI: 0,
     activite: '',
     holding: 'Non',
     formeSocieteCivile: '',
-    transfertVersActifs: true
+    transfertVersActifs: true,
+    pourcentageUtilisateur: 100,
+    pourcentageConjoint: 0,
+    qualificationBien: '',
+    detenteur: ''
   });
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SireneData[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
+  const [familyData, setFamilyData] = useState<FamilyInfo>({ hasPartner: false });
+  const [familyLoaded, setFamilyLoaded] = useState(false);
 
   useEffect(() => {
+    const loadFamilyData = async () => {
+      try {
+        const [familyProfile, maritalStatus] = await Promise.all([
+          familyService.getFamilyProfile(),
+          familyService.getMaritalStatus()
+        ]);
+
+        const options: string[] = [];
+        const familyInfo: FamilyInfo = { hasPartner: false, userFirstName: '', partnerFirstName: '' };
+
+        if (familyProfile?.prenom) {
+          options.push(familyProfile.prenom);
+          familyInfo.userFirstName = familyProfile.prenom;
+        }
+
+        const hasPartner = maritalStatus?.statut_couple &&
+          ['Marié(e)', 'Pacsé(e)', 'Concubinage', 'MARIE', 'PACS', 'PACSE', 'CONCUBINAGE'].includes(maritalStatus.statut_couple) &&
+          maritalStatus.prenom_conjoint;
+
+        if (hasPartner) {
+          options.push(maritalStatus.prenom_conjoint);
+          familyInfo.hasPartner = true;
+          familyInfo.partnerFirstName = maritalStatus.prenom_conjoint;
+        }
+
+        if (familyInfo.hasPartner) {
+          options.push('Le couple');
+        }
+
+        options.push('Indivision');
+
+        setDetenteurOptions(options);
+        setFamilyData(familyInfo);
+      } catch (error) {
+        setDetenteurOptions(['Utilisateur']);
+      } finally {
+        setFamilyLoaded(true);
+      }
+    };
+
+    loadFamilyData();
+  }, []);
+
+  useEffect(() => {
+    if (!familyLoaded) return;
+
     if (initialData) {
-      setFormData(initialData);
+      setFormData({
+        ...initialData,
+        detenteur: mapDetenteurToDisplay(initialData.detenteur, familyData)
+      });
     } else {
       // Reset form when initialData is null (new society)
       setFormData({
@@ -160,18 +221,21 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
         codePostal: '',
         commune: '',
         pays: 'France',
-        typeActivite: '',
         regimeFiscal: '',
         valeurIFI: 0,
         activite: '',
         holding: 'Non',
         formeSocieteCivile: '',
-        transfertVersActifs: true
+        transfertVersActifs: true,
+        pourcentageUtilisateur: 100,
+        pourcentageConjoint: 0,
+        qualificationBien: '',
+        detenteur: ''
       });
       setSearchQuery('');
       setSearchResults([]);
     }
-  }, [initialData]);
+  }, [initialData, familyLoaded, familyData]);
 
   const handleInputChange = (field: keyof SocieteFormData, value: string | number | boolean) => {
     setFormData(prev => ({
@@ -180,9 +244,22 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
     }));
   };
 
+  const totalQuotites = (formData.pourcentageUtilisateur || 0) + (formData.pourcentageConjoint || 0);
+  const quotitesInvalides = totalQuotites > 100;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    if (quotitesInvalides) {
+      toast.error('La somme des quotités de détention dépasse 100%. Corrigez la répartition avant d\'enregistrer.');
+      return;
+    }
+
+    if (!formData.qualificationBien || !formData.detenteur) {
+      toast.error('La qualification du bien et le détenteur sont obligatoires.');
+      return;
+    }
+
     // Determine asset nature based on holding and type
     let natureActif = '';
     if (formData.holding === 'Animatrice' || formData.holding === 'Passive') {
@@ -192,8 +269,8 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
     } else {
       natureActif = 'Autres biens professionnels';
     }
-    
-    onSubmit({ ...formData, natureActif });
+
+    onSubmit({ ...formData, natureActif, detenteur: mapDetenteurToDb(formData.detenteur, familyData) });
   };
 
   const getDefaultRegimeFiscal = (typeSociete: string) => {
@@ -534,6 +611,77 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
               value={formData.nombreSalaries || ''}
               onChange={(e) => handleInputChange('nombreSalaries', Number(e.target.value))}
             />
+          </div>
+        </div>
+
+        <div>
+          <Label>Quotités de détention</Label>
+          <div className="grid grid-cols-2 gap-4 mt-2">
+            <div>
+              <Label htmlFor="pourcentageUtilisateur" className="text-xs text-muted-foreground">Quote-part utilisateur (%)</Label>
+              <Input
+                id="pourcentageUtilisateur"
+                type="number"
+                min="0"
+                max="100"
+                value={formData.pourcentageUtilisateur ?? ''}
+                onChange={(e) => handleInputChange('pourcentageUtilisateur', Number(e.target.value))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="pourcentageConjoint" className="text-xs text-muted-foreground">Quote-part conjoint (%)</Label>
+              <Input
+                id="pourcentageConjoint"
+                type="number"
+                min="0"
+                max="100"
+                value={formData.pourcentageConjoint ?? ''}
+                onChange={(e) => handleInputChange('pourcentageConjoint', Number(e.target.value))}
+              />
+            </div>
+          </div>
+          {quotitesInvalides && (
+            <p className="text-sm text-destructive mt-2">
+              La somme des quotités ({totalQuotites}%) dépasse 100%. Corrigez la répartition entre l'utilisateur et le conjoint.
+            </p>
+          )}
+        </div>
+
+        <div>
+          <Label>Qualification civile des parts</Label>
+          <div className="grid grid-cols-2 gap-4 mt-2">
+            <div>
+              <Label htmlFor="qualificationBien" className="text-xs text-muted-foreground">Qualification du bien *</Label>
+              <Select
+                value={formData.qualificationBien}
+                onValueChange={(value) => handleInputChange('qualificationBien', value)}
+              >
+                <SelectTrigger id="qualificationBien" size="lg">
+                  <SelectValue placeholder="Sélectionnez la qualification" />
+                </SelectTrigger>
+                <SelectContent>
+                  {QUALIFICATION_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="detenteur" className="text-xs text-muted-foreground">Détenteur *</Label>
+              <Select
+                value={formData.detenteur}
+                onValueChange={(value) => handleInputChange('detenteur', value)}
+              >
+                <SelectTrigger id="detenteur" size="lg">
+                  <SelectValue placeholder="Sélectionnez le détenteur" />
+                </SelectTrigger>
+                <SelectContent>
+                  {detenteurOptions.map((option) => (
+                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 

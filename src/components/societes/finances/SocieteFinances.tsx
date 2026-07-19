@@ -17,7 +17,6 @@ interface SocieteFormData {
   code_postal?: string;
   commune?: string;
   pays?: string;
-  type_activite?: string;
   regime_fiscal?: string;
   activite?: string;
   holding?: string;

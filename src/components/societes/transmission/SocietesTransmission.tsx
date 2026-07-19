@@ -10,8 +10,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { useSocietes } from '@/hooks/useSocietes';
 import { useSocieteDutreil } from '@/hooks/useSocieteExtended';
 import { societeDutreilService } from '@/services/societeExtendedService';
-import { Gift, Handshake, ArrowRightLeft, Building2, CheckCircle2, XCircle } from 'lucide-react';
+import { Gift, Handshake, ArrowRightLeft, Building2, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { getPartSuccessorale, BienNonQualifieError } from '@/lib/patrimoine/succession';
 
 // Barème DMTG ligne directe simplifié 2024
 const computeDMTG = (base: number, abattement = 100000) => {
@@ -40,7 +41,25 @@ export const SocietesTransmission: React.FC = () => {
   const [ebitda, setEbitda] = useState(100000);
 
   const d = draft || dutreil || {};
-  const valeurParts = d.valeur_parts_transmises ?? societe?.valeur_estimee ?? 0;
+
+  // Valeur successorale de la société, pondérée par qualification_bien/detenteur
+  // (lib/patrimoine/succession.ts::getPartSuccessorale, source unique de vérité
+  // déjà utilisée pour ce même calcul côté module Transmission), plutôt que la
+  // valeur brute de la société qui ignorait la quotité de détention réelle.
+  const societePart = useMemo(() => {
+    if (!societe) return { valeur: 0, error: null as string | null };
+    try {
+      const part = getPartSuccessorale(societe, societe.denomination);
+      return { valeur: (societe.valeur_estimee || 0) * part, error: null };
+    } catch (err) {
+      if (err instanceof BienNonQualifieError) {
+        return { valeur: 0, error: err.message };
+      }
+      throw err;
+    }
+  }, [societe]);
+
+  const valeurParts = d.valeur_parts_transmises ?? societePart.valeur;
 
   const eligibilite = useMemo(() => {
     if (!d.engagement_collectif_date || !d.engagement_individuel_date) return null;
@@ -98,6 +117,13 @@ export const SocietesTransmission: React.FC = () => {
 
       {societeId && (
         <>
+          {societePart.error && d.valeur_parts_transmises == null && (
+            <div className="flex items-center gap-2 p-3 rounded-[5px] bg-destructive/10 text-destructive text-sm">
+              <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+              {societePart.error} Vous pouvez saisir manuellement une valeur des parts transmises ci-dessous en attendant, ou qualifier la société dans l'onglet "Mes sociétés".
+            </div>
+          )}
+
           {/* Pacte Dutreil */}
           <Card>
             <CardHeader>
@@ -109,7 +135,7 @@ export const SocietesTransmission: React.FC = () => {
                 <div><Label>Date engagement collectif (≥ 2 ans)</Label><Input type="date" value={d.engagement_collectif_date || ''} onChange={e => setDraft({ ...d, engagement_collectif_date: e.target.value })} /></div>
                 <div><Label>Date engagement individuel (≥ 4 ans)</Label><Input type="date" value={d.engagement_individuel_date || ''} onChange={e => setDraft({ ...d, engagement_individuel_date: e.target.value })} /></div>
                 <div><Label>Fonction de direction exercée</Label><Input value={d.fonction_direction || ''} onChange={e => setDraft({ ...d, fonction_direction: e.target.value })} placeholder="Gérant, président..." /></div>
-                <div><Label>Valeur des parts transmises (€)</Label><Input type="number" value={d.valeur_parts_transmises ?? ''} onChange={e => setDraft({ ...d, valeur_parts_transmises: e.target.value ? Number(e.target.value) : null })} placeholder={String(societe?.valeur_estimee || 0)} /></div>
+                <div><Label>Valeur des parts transmises (€)</Label><Input type="number" value={d.valeur_parts_transmises ?? ''} onChange={e => setDraft({ ...d, valeur_parts_transmises: e.target.value ? Number(e.target.value) : null })} placeholder={String(societePart.valeur || 0)} /></div>
               </div>
 
               {eligibilite && (

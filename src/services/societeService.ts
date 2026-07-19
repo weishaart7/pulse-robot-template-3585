@@ -20,7 +20,6 @@ export interface Societe {
   code_postal?: string;
   commune?: string;
   pays?: string;
-  type_activite?: string;
   regime_fiscal?: string;
   valeur_ifi?: number;
   activite?: string;
@@ -28,6 +27,8 @@ export interface Societe {
   forme_societe_civile?: string;
   pourcentage_utilisateur?: number;
   pourcentage_conjoint?: number;
+  qualification_bien?: string;
+  detenteur?: string;
   // Financial fields
   chiffre_affaires?: number;
   resultat_net?: number;
@@ -38,6 +39,45 @@ export interface Societe {
   created_at?: string;
   updated_at?: string;
 }
+
+// Pousse qualification_bien/detenteur/pourcentage_utilisateur/pourcentage_conjoint
+// de la société vers son actif lié (assets.societe_id) à chaque sauvegarde d'une
+// société existante — sens unique société → actif, jamais l'inverse (societes fait
+// autorité sur ces 4 champs, cf. décision du chantier "valeur successorale").
+// N'agit que si exactement un actif est lié ; ne devine jamais lequel synchroniser
+// si plusieurs le sont.
+const syncQualificationToLinkedAsset = async (societe: Societe): Promise<void> => {
+  const { data: linkedAssets, error } = await supabase
+    .from('assets')
+    .select('id')
+    .eq('societe_id', societe.id);
+
+  if (error) {
+    if (import.meta.env.DEV) console.error('Erreur lors de la recherche de l\'actif lié à la société:', error);
+    return;
+  }
+
+  if (!linkedAssets || linkedAssets.length === 0) return;
+
+  if (linkedAssets.length > 1) {
+    if (import.meta.env.DEV) console.warn(`Société ${societe.id} : plusieurs actifs liés, synchronisation ignorée.`);
+    return;
+  }
+
+  const { error: updateError } = await supabase
+    .from('assets')
+    .update({
+      qualification_bien: societe.qualification_bien,
+      detenteur: societe.detenteur,
+      pourcentage_utilisateur: societe.pourcentage_utilisateur,
+      pourcentage_conjoint: societe.pourcentage_conjoint,
+    })
+    .eq('id', linkedAssets[0].id);
+
+  if (updateError && import.meta.env.DEV) {
+    console.error('Erreur lors de la synchronisation société → actif:', updateError);
+  }
+};
 
 export const societeService = {
   async getAll(): Promise<Societe[]> {
@@ -114,7 +154,9 @@ export const societeService = {
     
     // Log modification of sensitive financial data
     await secureService.logDataModification(user.id, 'societes', `Updated company: ${id}`);
-    
+
+    await syncQualificationToLinkedAsset(data);
+
     return data;
   },
 

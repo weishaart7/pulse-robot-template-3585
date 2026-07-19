@@ -10,46 +10,12 @@ import { SocietesBilans } from '@/components/societes/bilans/SocietesBilans';
 import { SocieteActifsDetenus } from '@/components/societes/actifs/SocieteActifsDetenus';
 import { SocieteForm } from '@/components/societes/SocieteForm';
 import { SocieteFinances } from '@/components/societes/finances/SocieteFinances';
-import { societeService, type Societe } from '@/services/societeService';
+import { societeService } from '@/services/societeService';
 import { assetService } from '@/services/assetService';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface SocieteFormData {
-  denomination: string;
-  typeSociete: string;
-  dateCreation: string;
-  valeurEstimee: number;
-  pourcentageIFI: number;
-  capitalSocial: number;
-  nombreTitres: number;
-  nombreSalaries: number;
-  jourCloture: string;
-  moisCloture: string;
-  siret: string;
-  rueAdresse: string;
-  codePostal: string;
-  commune: string;
-  pays: string;
-  typeActivite: string;
-  regimeFiscal: string;
-  valeurIFI: number;
-  activite?: string;
-  holding?: string;
-  formeSocieteCivile?: string;
-  transfertVersActifs?: boolean;
-  natureActif?: string;
-  pourcentageUtilisateur?: number;
-  pourcentageConjoint?: number;
-  // New financial fields
-  chiffreAffaires?: number;
-  resultatNet?: number;
-  tresorerieDisponible?: number;
-  compteCourantAssocies?: number;
-  reserves?: number;
-  dateDernierBilan?: string;
-}
+import { type SocieteFormData, societeToFormData, formDataToSociete } from '@/lib/societes/formMapping';
 
 export const SocietesSection = () => {
   const [activeTab, setActiveTab] = useState('synthese');
@@ -97,73 +63,6 @@ export const SocietesSection = () => {
       setLoading(false);
     }
   };
-
-  const societeToFormData = (societe: Societe): SocieteFormData => ({
-    denomination: societe.denomination || '',
-    typeSociete: societe.type_societe || '',
-    dateCreation: societe.date_creation || '',
-    valeurEstimee: societe.valeur_estimee || 0,
-    pourcentageIFI: societe.pourcentage_ifi || 0,
-    capitalSocial: societe.capital_social || 0,
-    nombreTitres: societe.nombre_titres || 0,
-    nombreSalaries: societe.nombre_salaries || 0,
-    jourCloture: societe.jour_cloture || '31',
-    moisCloture: societe.mois_cloture || 'Décembre',
-    siret: societe.siret || '',
-    rueAdresse: societe.rue_adresse || '',
-    codePostal: societe.code_postal || '',
-    commune: societe.commune || '',
-    pays: societe.pays || 'France',
-    typeActivite: societe.type_activite || '',
-    regimeFiscal: societe.regime_fiscal || '',
-    valeurIFI: societe.valeur_ifi || 0,
-    activite: societe.activite || '',
-    holding: societe.holding || 'Non',
-    formeSocieteCivile: societe.forme_societe_civile || '',
-    transfertVersActifs: false,
-    pourcentageUtilisateur: societe.pourcentage_utilisateur || 100,
-    pourcentageConjoint: societe.pourcentage_conjoint || 0,
-    // New financial fields
-    chiffreAffaires: (societe as any).chiffre_affaires || undefined,
-    resultatNet: (societe as any).resultat_net || undefined,
-    tresorerieDisponible: (societe as any).tresorerie_disponible || undefined,
-    compteCourantAssocies: (societe as any).compte_courant_associes || undefined,
-    reserves: (societe as any).reserves || undefined,
-    dateDernierBilan: (societe as any).date_dernier_bilan || undefined,
-  });
-
-  const formDataToSociete = (data: SocieteFormData): Omit<Societe, 'id' | 'user_id' | 'created_at' | 'updated_at'> => ({
-    denomination: data.denomination,
-    type_societe: data.typeSociete,
-    date_creation: data.dateCreation || null,
-    valeur_estimee: data.valeurEstimee || null,
-    pourcentage_ifi: data.pourcentageIFI || null,
-    capital_social: data.capitalSocial || null,
-    nombre_titres: data.nombreTitres || null,
-    nombre_salaries: data.nombreSalaries || null,
-    jour_cloture: data.jourCloture || null,
-    mois_cloture: data.moisCloture || null,
-    siret: data.siret || null,
-    rue_adresse: data.rueAdresse || null,
-    code_postal: data.codePostal || null,
-    commune: data.commune || null,
-    pays: data.pays || null,
-    type_activite: data.typeActivite || null,
-    regime_fiscal: data.regimeFiscal || null,
-    valeur_ifi: data.valeurIFI || null,
-    activite: data.activite || null,
-    holding: data.holding || null,
-    forme_societe_civile: data.formeSocieteCivile || null,
-    pourcentage_utilisateur: data.pourcentageUtilisateur || null,
-    pourcentage_conjoint: data.pourcentageConjoint || null,
-    // New financial fields
-    chiffre_affaires: data.chiffreAffaires || null,
-    resultat_net: data.resultatNet || null,
-    tresorerie_disponible: data.tresorerieDisponible || null,
-    compte_courant_associes: data.compteCourantAssocies || null,
-    reserves: data.reserves || null,
-    date_dernier_bilan: data.dateDernierBilan || null,
-  } as any);
 
   const handleEditSociete = (societeId: string) => {
     setEditingSocieteId(societeId);
@@ -311,7 +210,6 @@ export const SocietesSection = () => {
                   pourcentage_ifi: formData.pourcentageIFI,
                   valeur_ifi: formData.valeurIFI,
                   regime_fiscal: formData.regimeFiscal,
-                  type_activite: formData.typeActivite,
                   holding: formData.holding,
                   chiffre_affaires: formData.chiffreAffaires,
                   resultat_net: formData.resultatNet,

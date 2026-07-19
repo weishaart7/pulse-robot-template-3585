@@ -7,6 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { useSocietes } from '@/hooks/useSocietes';
 import { Calculator, Scale, TrendingUp, Building2 } from 'lucide-react';
+import { computeImpotSocietes } from '@/lib/societes/impotSocietes';
 
 // Tranches IR 2024 simplifiées
 const computeIR = (rev: number) => {
@@ -38,8 +39,7 @@ export const SocietesStrategiesFiscales: React.FC = () => {
   const isHolding = (societes.length >= 2);
 
   const isVsIr = useMemo(() => {
-    const tauxIS = resultat <= 42500 ? 0.15 : 0.25;
-    const impotIS = resultat * tauxIS;
+    const impotIS = computeImpotSocietes(resultat);
     const apresIS = resultat - impotIS;
     const flatTax = apresIS * 0.30;
     const totalIS = impotIS + flatTax;
@@ -62,7 +62,7 @@ export const SocietesStrategiesFiscales: React.FC = () => {
   const holdingGain = useMemo(() => {
     const dividendesEstimes = societes.reduce((s, c) => s + ((c.valeur_estimee || 0) * 0.03), 0);
     const sansHolding = dividendesEstimes * 0.30;
-    const avecHolding = dividendesEstimes * 0.05 * 0.25; // mère-fille 95% exonéré, IS 25% sur 5%
+    const avecHolding = computeImpotSocietes(dividendesEstimes * 0.05); // mère-fille 95% exonéré, IS sur la quote-part de frais de 5%
     return { dividendesEstimes, sansHolding, avecHolding, gain: sansHolding - avecHolding };
   }, [societes]);
 
