@@ -19,7 +19,7 @@ import { useAssets } from '@/hooks/useAssets';
 import { useToast } from '@/hooks/use-toast';
 import { liberaliteService, Liberalite } from '@/services/liberaliteService';
 import { buildTransmissionLiberalites } from '@/utils/transmissionHelpers';
-import { Plus, Edit, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, Edit, Trash2, AlertTriangle, StickyNote } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { DonationForm } from './DonationForm';
@@ -34,6 +34,9 @@ interface LiberaliteGroup {
   dateActe?: string;
   beneficiairesLabel: string;
   hasBeneficiaireInconnu: boolean;
+  // Note libre du conseiller (purement informative) — identique pour toutes
+  // les lignes d'un même groupe, saisie une seule fois par DonationForm/LegsForm.
+  notes?: string;
 }
 
 export const Liberalites = () => {
@@ -83,6 +86,7 @@ export const Liberalites = () => {
         dateActe: first.date_acte,
         beneficiairesLabel: groupRows.map(r => r.beneficiaire_nom).join(', '),
         hasBeneficiaireInconnu: groupRows.some(r => !r.beneficiaire_id),
+        notes: first.description || undefined,
       };
     });
   };
@@ -152,7 +156,21 @@ export const Liberalites = () => {
   const renderGroupRows = (groups: LiberaliteGroup[], onEdit: (group: LiberaliteGroup) => void) =>
     groups.map((group) => (
       <TableRow key={group.groupKey} className="border-[var(--border)]">
-        <TableCell className="font-medium text-[var(--text-primary)]">{group.denomination}</TableCell>
+        <TableCell className="font-medium text-[var(--text-primary)]">
+          <div className="flex items-center gap-2">
+            <span>{group.denomination}</span>
+            {group.notes && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <StickyNote className="h-3.5 w-3.5 text-[var(--text-secondary)] shrink-0" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs whitespace-pre-wrap">
+                  {group.notes}
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        </TableCell>
         <TableCell className="text-[var(--text-primary)]">
           <div className="flex items-center gap-2">
             {group.hasBeneficiaireInconnu && (

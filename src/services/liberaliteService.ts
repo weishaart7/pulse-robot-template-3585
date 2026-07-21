@@ -25,7 +25,8 @@ export interface Liberalite {
   // reconstruire la répartition à l'édition d'un groupe multi-bénéficiaires.
   pourcentage?: number;
   date_acte?: string;
-  notaire?: string;
+  // Note libre côté conseiller — purement informative, jamais lue par le
+  // moteur de calcul (buildTransmissionLiberalites/computeTransmission).
   description?: string;
   nature?: string;
   type_imputation?: LiberaliteTypeImputation;

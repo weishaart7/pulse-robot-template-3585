@@ -1382,7 +1382,6 @@ export type Database = {
           id: string
           montant: number | null
           nature: string | null
-          notaire: string | null
           pourcentage: number | null
           prise_en_charge_droits: boolean | null
           realise_par: string | null
@@ -1406,7 +1405,6 @@ export type Database = {
           id?: string
           montant?: number | null
           nature?: string | null
-          notaire?: string | null
           pourcentage?: number | null
           prise_en_charge_droits?: boolean | null
           realise_par?: string | null
@@ -1430,7 +1428,6 @@ export type Database = {
           id?: string
           montant?: number | null
           nature?: string | null
-          notaire?: string | null
           pourcentage?: number | null
           prise_en_charge_droits?: boolean | null
           realise_par?: string | null

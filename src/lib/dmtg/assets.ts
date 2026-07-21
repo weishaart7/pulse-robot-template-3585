@@ -51,12 +51,6 @@ export function filterAndValueEstateAssets(
         baseTaxable *= 0.25;
         justifs.push("Bois/forêts ou parts de GF : abattement 75%");
       }
-
-      // Extinction d'usufruit avec taxation totale
-      if (asset.exclurePour.extinctionUsufruitTaxationTotale) {
-        // La valeur totale est taxable (crédit de droits éventuels à prévoir)
-        justifs.push("Extinction d'usufruit : valeur totale taxable");
-      }
     }
 
     baseTaxable = Math.round(baseTaxable);

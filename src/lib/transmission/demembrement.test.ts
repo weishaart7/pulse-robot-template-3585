@@ -147,3 +147,41 @@ describe('computeTransmission — non-régression : usufruit + nue-propriété n
     expect(conjoint.partFinale).toBeCloseTo(840000 * 0.25, 0);
   });
 });
+
+describe('computeTransmission — non-régression : la quotité disponible ne dépend pas de l\'option du conjoint', () => {
+  it('usufruit_total (2 enfants) : QD = masse - réserve enfants (1/3), pas 0', () => {
+    const family = buildFamily('1961-01-01');
+    const patrimony: PatrimonySnapshot = { date: '2026-07-17', biensExistants: 394000, passifs: 0, assuranceVieTotal: 0 };
+
+    const result = computeTransmission({
+      family,
+      patrimony,
+      liberalites: [],
+      params,
+      conjointOption: 'usufruit_total',
+      referenceDate: '2026-07-17'
+    });
+
+    // 2 enfants → réserve = 2/3 de la masse, QD = 1/3 (art. 913 C. civ.),
+    // indépendamment du fait que le conjoint exerce l'usufruit total.
+    expect(result.reserve).toBeCloseTo(394000 * (2 / 3), 0);
+    expect(result.quotiteDisponible).toBeCloseTo(394000 * (1 / 3), 0);
+    expect(result.quotiteDisponible).not.toBe(0);
+  });
+
+  it('quart_pp_3quarts_us (2 enfants) : QD identique à usufruit_total, pas 1/4', () => {
+    const family = buildFamily('1996-01-01');
+    const patrimony: PatrimonySnapshot = { date: '2026-07-17', biensExistants: 500000, passifs: 0, assuranceVieTotal: 0 };
+
+    const result = computeTransmission({
+      family,
+      patrimony,
+      liberalites: [],
+      params,
+      conjointOption: 'quart_pp_3quarts_us',
+      referenceDate: '2026-07-17'
+    });
+
+    expect(result.quotiteDisponible).toBeCloseTo(500000 * (1 / 3), 0);
+  });
+});

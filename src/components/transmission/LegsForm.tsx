@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -38,6 +39,7 @@ const DEFAULT_FORM_DATA = {
   typeLeg: '',
   realiseePar: '',
   testamentRealise: '',
+  notes: '',
   biensSelectionnes: [] as string[],
   clausesSelectionnees: [] as string[],
   legataires: [] as { id: string; nom: string; pourcentage: number }[]
@@ -155,6 +157,7 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
         typeLeg: first.type_imputation ? (IMPUTATION_TO_TYPE_LEG[first.type_imputation] || '') : '',
         realiseePar: first.realise_par || '',
         testamentRealise: first.testament_realise || '',
+        notes: first.description || '',
         biensSelectionnes: (first.biens || []).map(b => b.asset_id),
         clausesSelectionnees: first.clauses || [],
         legataires: [],
@@ -227,6 +230,7 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
           clauses: formData.clausesSelectionnees.length > 0 ? formData.clausesSelectionnees : undefined,
           biens: biens.length > 0 ? biens : undefined,
           testament_realise: formData.testamentRealise || undefined,
+          description: formData.notes || undefined,
         });
         createdIds.push(created.id!);
       }
@@ -364,6 +368,17 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Informations complémentaires (contexte, précisions utiles au dossier)..."
+                  rows={3}
+                />
               </div>
             </CardContent>
           </Card>

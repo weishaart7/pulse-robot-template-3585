@@ -59,11 +59,11 @@ describe('buildAVContracts', () => {
       '1970-01-01',
       family
     );
-    expect(contract.beneficiaires).toEqual([{ beneficiaryId: 'conjoint-defunt', quotePart: 1 }]);
+    expect(contract.niveaux).toEqual([{ beneficiaires: [{ beneficiaryId: 'conjoint-defunt', quotePart: 1, statut: undefined }] }]);
     expect(contract.isExonereBeneficiaireConjointPacs).toBe(true);
   });
 
-  it('ne retient que le niveau 1 de la clause (pas de croisement avec une éventuelle renonciation)', () => {
+  it('reprend désormais tous les niveaux de la clause (plus seulement le niveau 1) — la cascade elle-même est résolue au calcul, pas ici', () => {
     const [contract] = buildAVContracts(
       [{
         assetId: 'av1',
@@ -79,6 +79,67 @@ describe('buildAVContracts', () => {
       '1970-01-01',
       family
     );
-    expect(contract.beneficiaires).toEqual([{ beneficiaryId: 'enfant1', quotePart: 1 }]);
+    expect(contract.niveaux).toEqual([
+      { beneficiaires: [{ beneficiaryId: 'enfant1', quotePart: 1, statut: undefined }] },
+      { beneficiaires: [{ beneficiaryId: 'conjoint-defunt', quotePart: 1, statut: undefined }] }
+    ]);
+  });
+
+  it('démembrement de la clause : résout le pourcentage d\'usufruit de l\'usufruitier désigné selon son âge à la date de référence (barème art. 669 CGI)', () => {
+    const familyAvecDateNaissance: FamilyGraph = {
+      ...family,
+      persons: family.persons.map(p =>
+        p.id === 'conjoint-defunt' ? { ...p, dateNaissance: '1961-01-01' } : p // 65 ans au 17/07/2026
+      )
+    };
+
+    const [contract] = buildAVContracts(
+      [{
+        assetId: 'av1',
+        valeurEstimee: 100000,
+        operations: [{ type_operation: 'versement', montant: 100000, date_operation: '2010-01-01' }],
+        clauseBeneficiaireStructuree: {
+          niveaux: [{
+            beneficiaires: [{
+              familyLinkId: 'conjoint',
+              pourcentage: 100,
+              typeDetention: 'usufruit',
+              nuProprietaireId: 'enfant1'
+            }]
+          }]
+        }
+      }],
+      '1970-01-01',
+      familyAvecDateNaissance,
+      '2026-07-17'
+    );
+
+    const [benef] = contract.niveaux[0].beneficiaires;
+    expect(benef.beneficiaryId).toBe('conjoint-defunt');
+    expect(benef.nuProprietaireId).toBe('enfant1');
+    expect(benef.usufruitPct).toBeCloseTo(0.4, 6); // 61-70 ans → 40% usufruit (barème 669 CGI)
+  });
+
+  it('démembrement de la clause : lève AVDonneesInsuffisantesError si la date de naissance de l\'usufruitier désigné est inconnue', () => {
+    expect(() => buildAVContracts(
+      [{
+        assetId: 'av1',
+        valeurEstimee: 100000,
+        operations: [{ type_operation: 'versement', montant: 100000, date_operation: '2010-01-01' }],
+        clauseBeneficiaireStructuree: {
+          niveaux: [{
+            beneficiaires: [{
+              familyLinkId: 'conjoint', // pas de dateNaissance dans `family` (fixture de base)
+              pourcentage: 100,
+              typeDetention: 'usufruit',
+              nuProprietaireId: 'enfant1'
+            }]
+          }]
+        }
+      }],
+      '1970-01-01',
+      family,
+      '2026-07-17'
+    )).toThrow(AVDonneesInsuffisantesError);
   });
 });

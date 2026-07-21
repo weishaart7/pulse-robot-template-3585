@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -52,6 +53,7 @@ const DEFAULT_FORM_DATA = {
   droitsParDonateur: false,
   realiseePar: '',
   date: undefined as Date | undefined,
+  notes: '',
 };
 
 export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: DonationFormProps) => {
@@ -166,6 +168,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
         droitsParDonateur: first.prise_en_charge_droits || false,
         realiseePar: first.realise_par || '',
         date: first.date_acte ? new Date(first.date_acte) : undefined,
+        notes: first.description || '',
       });
       setSelectedClauses(first.clauses || []);
       setSelectedAssets((first.biens || []).map(b => ({ id: b.asset_id, valeurDonation: b.valeur || 0 })));
@@ -242,6 +245,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
           biens: biens.length > 0 ? biens : undefined,
           demembrement: formData.demembrement !== 'aucun' ? formData.demembrement : undefined,
           prise_en_charge_droits: formData.droitsParDonateur,
+          description: formData.notes || undefined,
         });
         createdIds.push(created.id!);
       }
@@ -417,6 +421,18 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
                 <SelectItem value="communaute">Communauté</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              placeholder="Informations complémentaires (contexte, précisions utiles au dossier)..."
+              rows={3}
+            />
           </div>
 
           {/* Date */}

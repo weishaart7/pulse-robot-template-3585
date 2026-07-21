@@ -75,6 +75,24 @@ export function getDemembrementPct(age: number, type: 'usufruit' | 'nue_propriet
 }
 
 /**
+ * Âge d'une personne à une date de référence, à partir de sa date de
+ * naissance — seule variable du barème 669 CGI. Factorisé pour être
+ * réutilisable par tout usufruitier (conjoint via getConjointAge, ou tout
+ * autre bénéficiaire désigné en usufruit dans une clause d'assurance-vie,
+ * cf. transmissionHelpers.ts::buildAVContracts).
+ */
+export function getAgeAtDate(dateNaissance: string, referenceDateISO: string): number {
+  const naissance = new Date(dateNaissance);
+  const reference = new Date(referenceDateISO);
+  let age = reference.getFullYear() - naissance.getFullYear();
+  const moisPasse = reference.getMonth() - naissance.getMonth();
+  if (moisPasse < 0 || (moisPasse === 0 && reference.getDate() < naissance.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+/**
  * Âge du conjoint survivant à la date de référence, seule variable du barème
  * 669 CGI. Pas de valeur par défaut en cas de date de naissance manquante :
  * un âge deviné produirait un montant fiscal silencieusement faux.
@@ -86,14 +104,7 @@ export function getConjointAge(family: FamilyGraph, referenceDateISO: string): n
       "Date de naissance du conjoint manquante : impossible de valoriser l'usufruit (barème art. 669 CGI)."
     );
   }
-  const naissance = new Date(conjoint.dateNaissance);
-  const reference = new Date(referenceDateISO);
-  let age = reference.getFullYear() - naissance.getFullYear();
-  const moisPasse = reference.getMonth() - naissance.getMonth();
-  if (moisPasse < 0 || (moisPasse === 0 && reference.getDate() < naissance.getDate())) {
-    age--;
-  }
-  return age;
+  return getAgeAtDate(conjoint.dateNaissance, referenceDateISO);
 }
 
 /**
@@ -125,8 +136,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   const reserveResult = computeReserveAndQD(
     masseCalcul,
     nbEnfants,
-    family.hasSurvivingSpouse,
-    conjointOption
+    family.hasSurvivingSpouse
   );
 
   // 3. Imputation donations -> legs
@@ -272,20 +282,31 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // conjoint/frère-sœur importent réellement ici (le barème 990I/757B est
   // plat, `lien` ne sert qu'aux exonérations, cf. dmtg/assurance-vie.ts).
   const dmtgBeneficiaryIds = new Set(beneficiaries.map(b => b.id));
+  const registerAvBeneficiary = (id: string) => {
+    if (dmtgBeneficiaryIds.has(id)) return;
+    dmtgBeneficiaryIds.add(id);
+
+    let lien: DmtgBeneficiary['lien'] = 'autre';
+    if (id === family.survivingSpouseId) {
+      lien = 'conjoint';
+    } else {
+      const person = family.persons.find(p => p.id === id);
+      if (person?.lienFamilial === 'Frère/Sœur') lien = 'frere_soeur';
+    }
+
+    beneficiaries.push({ id, lien });
+  };
   avContracts.forEach(contract => {
-    contract.beneficiaires.forEach(b => {
-      if (dmtgBeneficiaryIds.has(b.beneficiaryId)) return;
-      dmtgBeneficiaryIds.add(b.beneficiaryId);
-
-      let lien: DmtgBeneficiary['lien'] = 'autre';
-      if (b.beneficiaryId === family.survivingSpouseId) {
-        lien = 'conjoint';
-      } else {
-        const person = family.persons.find(p => p.id === b.beneficiaryId);
-        if (person?.lienFamilial === 'Frère/Sœur') lien = 'frere_soeur';
-      }
-
-      beneficiaries.push({ id: b.beneficiaryId, lien });
+    contract.niveaux.forEach(niveau => {
+      niveau.beneficiaires.forEach(b => {
+        registerAvBeneficiary(b.beneficiaryId);
+        // Le nu-propriétaire d'une clause démembrée (barème art. 669 CGI) est
+        // un bénéficiaire fiscal à part entière, potentiellement absent des
+        // niveaux et des héritiers civils — même raisonnement que ci-dessus.
+        if (b.typeDetention === 'usufruit' && b.nuProprietaireId) {
+          registerAvBeneficiary(b.nuProprietaireId);
+        }
+      });
     });
   });
 
@@ -419,6 +440,101 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     },
     explicationsTexte: successionLegaleResult.explicationsTexte,
     optionConjoint: successionLegaleResult.optionConjoint
+  };
+}
+
+// ─── Chaînage 2nd décès (réunion d'usufruit, art. 1133 CGI) ─────────
+
+export interface ChainedTransmissionInput {
+  // Contexte complet du 1er décès (défunt + patrimoine qui entre dans SA
+  // succession). Symétrique au 2nd décès ci-dessous : rien ici ne présuppose
+  // qui du couple meurt en premier — l'appelant choisit l'ordre en
+  // construisant firstDeath/secondDeath en conséquence (un seul chemin de
+  // code pour les deux ordres, cf. décision actée).
+  firstDeath: TransmissionContext;
+  // Contexte complet du 2nd décès : patrimony doit être le patrimoine PROPRE
+  // du conjoint survivant (cf. transmissionHelpers.ts::buildSurvivingSpousePatrimony),
+  // SANS l'usufruit qu'il détenait sur la part du 1er défunt — cet usufruit
+  // est traité à part ci-dessous, jamais dans l'assiette taxable de ce
+  // second computeTransmission (cf. diagnostic chiffré sur le cas Imeris :
+  // l'inclure y produirait une masse fiscale et des droits trop élevés).
+  secondDeath: TransmissionContext;
+}
+
+export interface ReunionUsufruitShare {
+  personId: PersonId;
+  montant: number;
+}
+
+export interface ChainedTransmissionResult {
+  firstDeath: TransmissionResult;
+  secondDeath: TransmissionResult;
+  // Valeur de l'usufruit détenu par le conjoint sur la part du 1er défunt,
+  // réunie à la nue-propriété à son propre décès (art. 1133 CGI, sans
+  // taxation) — valorisée au barème 669 CGI figé au 1er décès (pas de
+  // réévaluation), répartie entre les nu-propriétaires identifiés à l'issue
+  // du 1er décès au prorata de leur part en nue-propriété respective.
+  reunionUsufruit: {
+    total: number;
+    parNuProprietaire: ReunionUsufruitShare[];
+  };
+  // Transmission nette de chaque personne, 2nd décès + réunion d'usufruit
+  // combinés : un nu-propriétaire du 1er décès qui n'est pas lui-même
+  // héritier du conjoint au 2nd décès (ex. enfant non commun du 1er défunt)
+  // n'apparaît que via sa part de réunion, jamais via secondDeath.netBreakdown.
+  transmissionNetteCombinee: { personId: PersonId; montant: number }[];
+}
+
+/**
+ * Chaîne deux décès successifs (couple marié) : calcule normalement la
+ * succession du 1er défunt, calcule normalement la succession propre du
+ * conjoint survivant (sans l'usufruit qu'il détenait), puis ajoute la
+ * réunion de cet usufruit hors taxation directement sur la transmission
+ * nette des nu-propriétaires du 1er décès — jamais dans l'assiette du 2nd
+ * décès (cf. ChainedTransmissionInput.secondDeath). Mécanisme validé sur le
+ * cas-test Imeris Patrimoine (pages 6 et 25 : masse fiscale du conjoint =
+ * son patrimoine propre seul ; réunion ajoutée à part, après droits).
+ */
+export function computeChainedTransmission(input: ChainedTransmissionInput): ChainedTransmissionResult {
+  const firstDeath = computeTransmission(input.firstDeath);
+  const secondDeath = computeTransmission(input.secondDeath);
+
+  const survivingSpouseId = input.firstDeath.family.survivingSpouseId;
+
+  // Usufruit détenu par le conjoint sur la part du 1er défunt (une seule
+  // ligne en pratique, mais on somme par sécurité — un même héritier peut
+  // porter plusieurs lignes de parts, cf. quart_pp_3quarts_us).
+  const reunionTotalBrut = survivingSpouseId
+    ? firstDeath.heirs
+        .filter(h => h.personId === survivingSpouseId && h.typeQuotePart === 'usufruit')
+        .reduce((sum, h) => sum + h.partFinale, 0)
+    : 0;
+  const reunionTotal = Math.round(reunionTotalBrut);
+
+  const nuProprietaires = firstDeath.heirs.filter(h => h.typeQuotePart === 'nue_propriete');
+  const totalNP = nuProprietaires.reduce((sum, h) => sum + h.partFinale, 0);
+
+  const parNuProprietaire: ReunionUsufruitShare[] = nuProprietaires.map(h => ({
+    personId: h.personId,
+    montant: totalNP > 0 ? Math.round(reunionTotalBrut * (h.partFinale / totalNP)) : 0
+  }));
+
+  const netMap = new Map<PersonId, number>();
+  secondDeath.netBreakdown.heirs.forEach(h => netMap.set(h.personId, h.netARecevoir));
+  parNuProprietaire.forEach(r => {
+    netMap.set(r.personId, (netMap.get(r.personId) || 0) + r.montant);
+  });
+
+  const transmissionNetteCombinee = Array.from(netMap.entries()).map(([personId, montant]) => ({
+    personId,
+    montant
+  }));
+
+  return {
+    firstDeath,
+    secondDeath,
+    reunionUsufruit: { total: reunionTotal, parNuProprietaire },
+    transmissionNetteCombinee
   };
 }
 

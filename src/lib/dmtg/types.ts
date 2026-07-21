@@ -41,7 +41,6 @@ export interface Asset {
     retourConventionnel?: boolean;
     reversionUsufruitExoneree?: boolean;
     liberaliteGraduelleResiduelle?: boolean;
-    extinctionUsufruitTaxationTotale?: boolean; // si true: valeur totale taxable selon règle spéciale
   };
 }
 
@@ -51,9 +50,37 @@ export interface CivilShare {
   source: 'legal'|'legs'|'donation_entre_epoux'|'autre'; 
 }
 
+// Bénéficiaire d'un niveau de clause AV. `statut` gouverne la cascade
+// (cf. dmtg/assurance-vie.ts::resolveEffectiveAVBeneficiaires) : absent ou
+// 'accepte'/'decede' → compte normalement dans son niveau ; 'renoncant' → sa
+// part est redistribuée aux autres bénéficiaires acceptants du même niveau,
+// ou le niveau bascule entièrement sur le suivant si aucun n'accepte.
+// 'decede' ne déclenche volontairement aucune cascade (décision actée) : à
+// ce jour seule l'UI en avertit l'utilisateur, cf. ClauseBeneficiaireBuilder.tsx.
+export interface AVBeneficiaireEntry {
+  beneficiaryId: string;
+  quotePart: Money; // fraction du niveau, 0 à 1
+  statut?: 'accepte' | 'renoncant' | 'decede';
+  typeDetention?: 'pleine-propriete' | 'usufruit';
+  nuProprietaireId?: string; // requis si typeDetention === 'usufruit'
+  // Pourcentage de la valeur en usufruit (barème art. 669 CGI), résolu en
+  // amont à partir de l'âge de CE bénéficiaire à la date de référence —
+  // dmtg/ reste agnostique des dates de naissance, comme pour l'usufruit
+  // civil (cf. transmission/index.ts::getDemembrementPct). Requis si
+  // typeDetention === 'usufruit', ignoré sinon.
+  usufruitPct?: number;
+}
+
+export interface AVBeneficiaireNiveau {
+  beneficiaires: AVBeneficiaireEntry[];
+}
+
 export interface AVContract {
   id: string;
-  beneficiaires: Array<{ beneficiaryId: string; quotePart: number }>;
+  // niveaux[0] = bénéficiaires principaux, niveaux[1+] = "à défaut" —
+  // remplace l'ancienne liste plate, insuffisante pour représenter une
+  // clause à plusieurs rangs (cf. diagnostic renonciation clause AV).
+  niveaux: AVBeneficiaireNiveau[];
   capitalDeces: Money;
   primesAvant70: Money; // pour 990 I (soumis au prélèvement)
   primesApres70: Money; // pour 757 B (à réintégrer au-delà de 30 500 partagé)

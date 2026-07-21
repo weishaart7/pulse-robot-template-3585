@@ -6,9 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, ChevronDown, Users, Eye, ArrowDown } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, Users, Eye, ArrowDown, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/patrimoine/utils';
+import { resolveEffectiveAVBeneficiaires } from '@/lib/dmtg/assurance-vie';
 
 export interface BeneficiaireEntry {
   familyLinkId: string;
@@ -19,6 +20,14 @@ export interface BeneficiaireEntry {
   typeDetention: 'pleine-propriete' | 'usufruit';
   nuProprietaireId?: string;
   nuProprietaireNom?: string;
+  // Renonciation (art. 788 al. 2 C. civ.) : redistribue sa part aux autres
+  // bénéficiaires acceptants du même niveau, ou fait basculer intégralement
+  // sur le niveau suivant si personne n'accepte dans ce niveau — cf.
+  // dmtg/assurance-vie.ts::resolveEffectiveAVBeneficiaires. Le prédécès
+  // ('decede') ne déclenche aucune cascade automatique : signal d'alerte
+  // uniquement (cf. avertissement ci-dessous), la répartition n'est pas
+  // recalculée pour ce cas.
+  statut?: 'accepte' | 'renoncant' | 'decede';
 }
 
 export interface ClauseNiveau {
@@ -51,6 +60,7 @@ const EMPTY_BENEFICIAIRE: BeneficiaireEntry = {
   lien: '',
   pourcentage: 100,
   typeDetention: 'pleine-propriete',
+  statut: 'accepte',
 };
 
 export const ClauseBeneficiaireBuilder: React.FC<ClauseBeneficiaireBuilderProps> = ({
@@ -152,17 +162,54 @@ export const ClauseBeneficiaireBuilder: React.FC<ClauseBeneficiaireBuilderProps>
       .filter(Boolean);
   };
 
+  // Parts EFFECTIVES (cascade de renonciation résolue) : même fonction que
+  // le moteur de calcul (dmtg/assurance-vie.ts::resolveEffectiveAVBeneficiaires),
+  // pas une redistribution ad hoc côté UI — pour que l'aperçu reste toujours
+  // fidèle à ce que computeAssuranceVie calculerait réellement. Le
+  // démembrement (typeDetention/nuProprietaireId) n'est volontairement pas
+  // transmis ici : son pourcentage dépend de l'âge de l'usufruitier à la
+  // date du décès simulé (barème art. 669 CGI), résolu plus tard par
+  // buildAVContracts — l'aperçu affiche donc la part effective du
+  // bénéficiaire désigné sans la scinder avec son nu-propriétaire.
+  const resolvedPctById = useMemo(() => {
+    const dmtgNiveaux = clause.niveaux.map(niveau => ({
+      beneficiaires: niveau.beneficiaires
+        .filter(b => !!b.familyLinkId)
+        .map(b => ({
+          beneficiaryId: b.familyLinkId,
+          quotePart: b.pourcentage / 100,
+          statut: b.statut,
+        })),
+    }));
+
+    const map = new Map<string, number>();
+    resolveEffectiveAVBeneficiaires(dmtgNiveaux).forEach(share => {
+      map.set(share.beneficiaryId, (map.get(share.beneficiaryId) || 0) + share.quotePart);
+    });
+    return map;
+  }, [clause]);
+
   // Real-time preview computation
   const preview = useMemo(() => {
     return clause.niveaux.map((niveau, idx) => {
       const total = niveau.beneficiaires.reduce((s, b) => s + b.pourcentage, 0);
       const isValid = total === 100;
+      // Niveau "atteint" par la cascade : au moins un de ses bénéficiaires
+      // acceptants porte effectivement une part résolue non nulle — dérivé
+      // du résultat de resolveEffectiveAVBeneficiaires, pas d'une nouvelle
+      // logique de sélection de niveau.
+      const niveauAtteint = niveau.beneficiaires.some(
+        b => b.statut !== 'renoncant' && (resolvedPctById.get(b.familyLinkId) || 0) > 0
+      );
       return {
         label: idx === 0 ? 'Bénéficiaire(s) principal(aux)' : `À défaut (niveau ${idx + 1})`,
+        niveauAtteint,
         beneficiaires: niveau.beneficiaires.map(b => {
-          const amount = isValid ? (contractValue * b.pourcentage) / 100 : 0;
+          const pctEffectif = isValid ? (resolvedPctById.get(b.familyLinkId) || 0) * 100 : 0;
+          const amount = isValid ? (contractValue * pctEffectif) / 100 : 0;
           return {
             ...b,
+            pctEffectif,
             montantEstime: amount,
           };
         }),
@@ -170,7 +217,7 @@ export const ClauseBeneficiaireBuilder: React.FC<ClauseBeneficiaireBuilderProps>
         isValid,
       };
     });
-  }, [clause, contractValue]);
+  }, [clause, contractValue, resolvedPctById]);
 
   // Generate clause text
   const generatedClauseText = useMemo(() => {
@@ -347,6 +394,35 @@ export const ClauseBeneficiaireBuilder: React.FC<ClauseBeneficiaireBuilderProps>
                       </div>
                     )}
                   </div>
+
+                  {/* Statut du bénéficiaire (acceptation / renonciation / prédécès) */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Statut</Label>
+                    <Select
+                      value={benef.statut || 'accepte'}
+                      onValueChange={(val: 'accepte' | 'renoncant' | 'decede') =>
+                        updateBeneficiaire(niveauIdx, benefIdx, { statut: val })
+                      }
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="accepte">Accepte</SelectItem>
+                        <SelectItem value="renoncant">Renonçant (sa part est redistribuée)</SelectItem>
+                        <SelectItem value="decede">Décédé</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {benef.statut === 'decede' && (
+                    <div className="flex items-start gap-2 px-3 py-2 rounded-md bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200 text-xs">
+                      <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                      <span>
+                        Bénéficiaire marqué décédé : la répartition n'est pas recalculée automatiquement, vérifiez la clause.
+                      </span>
+                    </div>
+                  )}
                 </div>
               ))}
 
@@ -390,16 +466,25 @@ export const ClauseBeneficiaireBuilder: React.FC<ClauseBeneficiaireBuilderProps>
           Aperçu en temps réel
         </div>
 
-        {/* Amount breakdown */}
+        {/* Amount breakdown — parts EFFECTIVES après cascade de renonciation */}
         {preview.map((niveau, idx) => (
           <div key={idx} className="space-y-2">
             {idx > 0 && (
-              <p className="text-xs text-muted-foreground italic">↳ À défaut :</p>
+              <p className="text-xs text-muted-foreground italic">
+                ↳ À défaut {!niveau.niveauAtteint && '(non atteint : un niveau précédent absorbe déjà la totalité)'} :
+              </p>
             )}
             {niveau.beneficiaires.map((b, bIdx) => {
               if (!b.nom) return null;
+              const estRenoncant = b.statut === 'renoncant';
               return (
-                <div key={bIdx} className="flex items-center justify-between px-3 py-2 rounded-md bg-muted/30">
+                <div
+                  key={bIdx}
+                  className={cn(
+                    "flex items-center justify-between px-3 py-2 rounded-md bg-muted/30",
+                    (estRenoncant || !niveau.niveauAtteint) && "opacity-50"
+                  )}
+                >
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
                       {(b.prenom?.[0] || '').toUpperCase()}{b.nom[0]?.toUpperCase()}
@@ -407,8 +492,21 @@ export const ClauseBeneficiaireBuilder: React.FC<ClauseBeneficiaireBuilderProps>
                     <div>
                       <span className="text-sm font-medium">{b.prenom} {b.nom}</span>
                       <span className="text-xs text-muted-foreground ml-2">
-                        {b.pourcentage}% · {b.typeDetention === 'usufruit' ? 'Usufruit' : 'PP'}
+                        {niveau.isValid ? `${Math.round(b.pctEffectif)}%` : `${b.pourcentage}% (nominal)`} · {b.typeDetention === 'usufruit' ? 'Usufruit' : 'PP'}
+                        {!estRenoncant && niveau.isValid && Math.round(b.pctEffectif) !== b.pourcentage && (
+                          <span className="italic"> (nominal {b.pourcentage}%)</span>
+                        )}
                       </span>
+                      {estRenoncant && (
+                        <Badge variant="outline" className="ml-2 text-xs border-amber-300 text-amber-800 dark:text-amber-200">
+                          Renonçant — redistribué
+                        </Badge>
+                      )}
+                      {b.statut === 'decede' && (
+                        <Badge variant="outline" className="ml-2 text-xs border-destructive/40 text-destructive">
+                          Décédé
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <span className="text-sm font-semibold">

@@ -1,4 +1,4 @@
-import { PatrimonySnapshot, Liberalite, ConjointOption } from './types';
+import { PatrimonySnapshot, Liberalite } from './types';
 
 export interface ReserveResult {
   masseCalcul: number;
@@ -48,8 +48,7 @@ export function computeMasseCalcul(
 export function computeReserveAndQD(
   masseCalcul: number,
   nbEnfants: number,
-  hasConjoint: boolean,
-  conjointOption?: ConjointOption
+  hasConjoint: boolean
 ): ReserveResult {
   let reserveEnfants = 0;
   let reserveConjoint = 0;
@@ -71,27 +70,15 @@ export function computeReserveAndQD(
     reserveConjoint = masseCalcul * 0.25; // 1/4 en PP
   }
   
-  // Quotité disponible
-  if (hasConjoint && nbEnfants > 0 && conjointOption) {
-    // QD spéciale entre époux
-    switch (conjointOption) {
-      case "quart_pp":
-      case "qd_pp":
-        // QD ordinaire
-        quotiteDisponible = masseCalcul - reserveEnfants;
-        break;
-      case "quart_pp_3quarts_us":
-        // Réserve enfants = 3/4 en NP
-        quotiteDisponible = masseCalcul * 0.25; // 1/4 PP seulement
-        break;
-      case "usufruit_total":
-        // Réserve enfants = totalité en NP
-        quotiteDisponible = 0; // Pas de QD en PP
-        break;
-    }
-  } else {
-    quotiteDisponible = masseCalcul - reserveEnfants - reserveConjoint;
-  }
+  // Quotité disponible (art. 913-914 C. civ.) : fixée uniquement par le nombre
+  // d'enfants, jamais par l'option d'exercice choisie par le conjoint survivant
+  // au titre de l'art. 757 C. civ. (quart_pp / usufruit_total / etc.). Cette
+  // option ne détermine que la répartition civile réelle des biens
+  // (successionLegale.ts), pas le montant de la QD elle-même — la confondre
+  // avec la QD conduisait par exemple à afficher 0 € de quotité disponible dès
+  // que le conjoint choisissait l'usufruit total, alors que la QD reste 1/3
+  // (masse - réserve enfants) pour 2 enfants.
+  quotiteDisponible = masseCalcul - reserveEnfants - reserveConjoint;
   
   const reserveGlobale = reserveEnfants + reserveConjoint;
   

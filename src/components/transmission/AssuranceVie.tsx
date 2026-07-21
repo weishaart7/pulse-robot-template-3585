@@ -19,6 +19,7 @@ import {
   AVDonneesInsuffisantesError
 } from '@/utils/transmissionHelpers';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission';
+import { resolveEffectiveAVBeneficiaires } from '@/lib/dmtg/assurance-vie';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import transmissionParamsData from '@/data/transmission-params.json';
 
@@ -249,7 +250,11 @@ export const AssuranceVie = () => {
 
     const benefMap = new Map<string, { nom: string; prenom: string; lien: string; capitalBrut: number }>();
     avContractsBuilt.forEach(contract => {
-      contract.beneficiaires.forEach(b => {
+      // Bénéficiaires EFFECTIFS (cascade de renonciation + démembrement déjà
+      // résolus, cf. dmtg/assurance-vie.ts::resolveEffectiveAVBeneficiaires) —
+      // plus la seule liste plate du niveau 1, pour que ce résumé reste
+      // cohérent avec ce que le moteur fiscal calcule réellement.
+      resolveEffectiveAVBeneficiaires(contract.niveaux).forEach(b => {
         const member = familyMembersById.get(b.beneficiaryId);
         const isSpouse = transmissionResult?.family?.survivingSpouseId === b.beneficiaryId;
         const amount = contract.capitalDeces * b.quotePart;
@@ -266,8 +271,8 @@ export const AssuranceVie = () => {
         }
       });
 
-      // Bénéficiaire absent de la clause niveau 1 sur tous les contrats —
-      // rien à agréger, le tableau restera vide (cf. allBenefs ci-dessous).
+      // Bénéficiaire absent de la clause (tous niveaux renoncés) — rien à
+      // agréger, le tableau restera vide (cf. allBenefs ci-dessous).
     });
 
     const allBenefs = benefMap.size > 0

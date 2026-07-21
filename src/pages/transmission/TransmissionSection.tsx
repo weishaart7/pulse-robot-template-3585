@@ -6,14 +6,36 @@ import { Liberalites } from '@/components/transmission/Liberalites';
 import { AssuranceVie } from '@/components/transmission/AssuranceVie';
 import { ProcessusCalcul } from '@/components/transmission/ProcessusCalcul';
 import { Optimisation } from '@/components/transmission/Optimisation';
+import { Succession2ndDeces } from '@/components/transmission/Succession2ndDeces';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import '@/components/transmission/kairos-transmission.css';
 
-const VALID_TABS = ['synthese', 'optimisation', 'liberalites', 'assurance-vie', 'processus-calcul'];
+const VALID_TABS = ['synthese', 'optimisation', 'liberalites', 'assurance-vie', 'processus-calcul', 'succession-2nd-deces'];
 
 export const TransmissionSection = () => {
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState(VALID_TABS.includes(tabParam || '') ? tabParam! : 'synthese');
+  // Onglet "Succession 2nd décès" : n'apparaît que si un conjoint survivant
+  // existe dans le graphe familial (décision actée) — requête légère dédiée
+  // (un seul champ), pour ne pas faire dépendre TransmissionSection du
+  // chargement complet de chaque onglet (chacun reste responsable de son
+  // propre fetch, cf. Synthese.tsx/Succession2ndDeces.tsx).
+  const [hasConjoint, setHasConjoint] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('marital_status')
+      .select('statut_couple')
+      .eq('user_id', user.id)
+      .single()
+      .then(({ data }) => {
+        setHasConjoint(!!data?.statut_couple && ['Marié(e)', 'Pacsé(e)'].includes(data.statut_couple));
+      });
+  }, [user]);
 
   // Une navigation vers "?tab=..." depuis un écran déjà monté sous /dashboard/transmission
   // (ex. Synthese.tsx -> onglet Assurance-vie après une erreur) ne remonte pas ce
@@ -30,7 +52,8 @@ export const TransmissionSection = () => {
     { id: 'optimisation', label: 'Optimisation' },
     { id: 'liberalites', label: 'Libéralités' },
     { id: 'assurance-vie', label: 'Assurance-vie' },
-    { id: 'processus-calcul', label: 'Processus de calcul' }
+    { id: 'processus-calcul', label: 'Processus de calcul' },
+    ...(hasConjoint ? [{ id: 'succession-2nd-deces', label: 'Succession 2nd décès' }] : [])
   ];
 
   const renderContent = () => {
@@ -45,6 +68,8 @@ export const TransmissionSection = () => {
         return <AssuranceVie />;
       case 'processus-calcul':
         return <ProcessusCalcul />;
+      case 'succession-2nd-deces':
+        return hasConjoint ? <Succession2ndDeces /> : <Synthese />;
       default:
         return <Synthese />;
     }

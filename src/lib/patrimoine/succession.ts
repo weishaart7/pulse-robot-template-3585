@@ -78,3 +78,48 @@ export function getPartSuccessorale(asset: SuccessionAssetInput, label?: string)
   // bien appartient en propre, seul `detenteur` le sait.
   return isDetenteurSpouse(asset.detenteur ?? undefined) ? 0 : 1;
 }
+
+/**
+ * Fraction (0 à 1) de la valeur du bien qui appartient en propre au CONJOINT
+ * (pas au défunt) — miroir de `getPartSuccessorale`, pour construire le
+ * patrimoine propre du conjoint survivant en vue d'une 2nde succession
+ * chaînée (cf. transmissionHelpers.ts::buildSurvivingSpousePatrimony).
+ *
+ * Ne fait pas `1 - getPartSuccessorale(...)` : en 'Indivision', les deux
+ * pourcentages (`pourcentage_utilisateur`/`pourcentage_conjoint`) sont deux
+ * champs indépendants en base, pas garantis complémentaires à 100% en cas de
+ * saisie incomplète — `getPourcentagesRepartition` leur applique déjà
+ * chacun un défaut 50% indépendant, donc lire `spouseQuote` directement
+ * reste fidèle à ce comportement au lieu d'introduire une interprétation
+ * par complément qui diverge silencieusement dès que la saisie est partielle.
+ */
+export function getPartConjointSuccession(asset: SuccessionAssetInput, label?: string): number {
+  const qualification = asset.qualification_bien;
+
+  if (qualification === 'À qualifier') {
+    throw new BienNonQualifieError(
+      `Bien non qualifié${label ? ` : ${label}` : ''} — à trancher avant de calculer la transmission.`
+    );
+  }
+
+  if (!qualification) {
+    throw new BienNonQualifieError(
+      `Bien non qualifié${label ? ` : ${label}` : ''} — la qualification (bien propre/commun/indivision) n'a jamais été renseignée, à trancher avant de calculer la transmission.`
+    );
+  }
+
+  if (qualification === 'Indivision') {
+    const { spouseQuote } = getPourcentagesRepartition(
+      asset.pourcentage_utilisateur ?? undefined,
+      asset.pourcentage_conjoint ?? undefined
+    );
+    return spouseQuote;
+  }
+
+  if (qualification === 'Bien commun') {
+    return 0.5;
+  }
+
+  // 'Bien propre' ou 'Bien personnel' : inverse exact de getPartSuccessorale.
+  return isDetenteurSpouse(asset.detenteur ?? undefined) ? 1 : 0;
+}
