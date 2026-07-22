@@ -16,7 +16,7 @@ const columns = [
 
 export function LandingFooter() {
   return (
-    <RuixenGradientFooter gradientHeight="40vh" className="bg-white">
+    <RuixenGradientFooter gradientHeight="40vh" minReveal={0} className="bg-[var(--lp-mist)]">
       <div className="mx-auto w-full max-w-[1200px] px-6 pt-12">
         <div className="grid gap-10 pb-10 sm:grid-cols-2 lg:grid-cols-6">
           <div className="lg:col-span-2">

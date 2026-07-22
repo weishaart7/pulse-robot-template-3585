@@ -1,15 +1,18 @@
+import { Lock, MapPin, Ban } from "lucide-react";
+import { EditorialChecklistSection } from "./EditorialChecklistSection";
+
 export function ConfianceSection() {
   return (
-    <section className="bg-[var(--lp-mist)] px-6 py-20 text-center sm:py-28">
-      <div className="mx-auto max-w-[720px]">
-        <h2 className="lp-display mb-5 text-[36px]">Vos données, protégées</h2>
-        <p className="text-base leading-[1.35] text-[var(--lp-graphite)]">
-          Vos informations patrimoniales sont hébergées en Europe et ne
-          quittent jamais l'infrastructure sécurisée de Kairos. Aucune donnée
-          n'est revendue ni partagée à des tiers&nbsp;: c'est un outil de
-          travail, pas une source de données.
-        </p>
-      </div>
-    </section>
+    <EditorialChecklistSection
+      heading="Vos données, protégées"
+      paragraphs={[
+        "Vos informations patrimoniales sont hébergées en Europe et ne quittent jamais l'infrastructure sécurisée de Kairos. Aucune donnée n'est revendue ni partagée à des tiers : c'est un outil de travail, pas une source de données.",
+      ]}
+      items={[
+        { icon: Lock, color: "#007aff", label: "Données chiffrées" },
+        { icon: MapPin, color: "#22c55e", label: "Hébergement en Europe" },
+        { icon: Ban, color: "#ec4899", label: "Aucune revente à des tiers" },
+      ]}
+    />
   );
 }

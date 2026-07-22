@@ -7,25 +7,38 @@ export function HeroCommon() {
       style={{ background: "var(--lp-gradient)" }}
     >
       <div className="relative z-10 mx-auto flex max-w-[720px] flex-col items-center gap-6">
-        <p className="text-sm font-medium tracking-tight text-white/80">
-          Gestion de patrimoine
-        </p>
-        <h1 className="lp-display text-white text-[36px] sm:text-[48px]">
-          Votre patrimoine, enfin lisible.
+        <h1
+          className="lp-display text-[36px] sm:text-[48px]"
+          style={{
+            color: "#ffffff",
+            fontFamily: "'DM Serif Display', 'Playfair Display', serif",
+            fontWeight: 400,
+          }}
+        >
+          Votre patrimoine, enfin <em className="italic">lisible</em>.
           <br />
-          Comprendre avant de gérer, décider avant d'agir.
+          Comprendre avant de <em className="italic">gérer</em>, décider avant d'
+          <em className="italic">agir</em>.
         </h1>
-        <p className="max-w-[560px] text-base leading-[1.35] text-white/90">
+        <p className="max-w-[560px] text-base leading-[1.35] text-white">
           Kairos éclaire votre patrimoine dans son ensemble — actifs, fiscalité,
           transmission — pour que chaque décision s'appuie sur une vision
           claire, pas sur des suppositions.
         </p>
-        <Link
-          to="/login"
-          className="mt-2 rounded-[50px] bg-white px-6 py-3.5 text-sm font-semibold text-black transition-transform hover:scale-[1.02] sm:text-base"
-        >
-          Se connecter
-        </Link>
+        <div className="mt-2 flex items-center gap-3">
+          <Link
+            to="/login"
+            className="rounded-[4px] border border-white bg-transparent px-6 py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-80 sm:text-base"
+          >
+            S'inscrire
+          </Link>
+          <Link
+            to="/login"
+            className="rounded-[4px] bg-white px-6 py-3.5 text-sm font-semibold text-black transition-transform hover:scale-[1.02] sm:text-base"
+          >
+            Se connecter
+          </Link>
+        </div>
 
         {/*
           Device Mockup Card (design.md) — dips into the landscape silhouette
@@ -48,22 +61,26 @@ export function HeroCommon() {
         </div>
       </div>
 
-      {/* landscape silhouette, bottom ~18% of the hero */}
-      <svg
+      {/* landscape photo, set back behind the gradient — fades in from the sky */}
+      <img
+        src="/hero-background.png"
+        alt=""
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[18%] w-full"
-        viewBox="0 0 1200 160"
-        preserveAspectRatio="none"
-      >
-        <path
-          d="M0,160 L0,90 L120,60 L220,100 L340,50 L460,95 L600,40 L740,100 L860,65 L980,105 L1080,55 L1200,90 L1200,160 Z"
-          fill="rgba(20,15,20,0.35)"
-        />
-        <path
-          d="M0,160 L0,120 L150,95 L300,130 L480,85 L650,125 L820,90 L1000,135 L1200,110 L1200,160 Z"
-          fill="rgba(15,10,15,0.5)"
-        />
-      </svg>
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[65%] w-full object-cover object-bottom opacity-50"
+        style={{
+          maskImage: "linear-gradient(to bottom, transparent 0%, black 45%)",
+          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 45%)",
+        }}
+      />
+
+      {/* blends the hero's bottom edge into the mist canvas of the next section */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-32 sm:h-44"
+        style={{
+          background: "linear-gradient(to bottom, transparent, var(--lp-mist))",
+        }}
+      />
     </section>
   );
 }

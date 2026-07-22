@@ -74,6 +74,12 @@ export interface RuixenGradientFooterProps {
   valley?: number;
   /** Vertical rainbow gradient stops, floor (0) → top (1). */
   stops?: Stop[];
+  /**
+   * Accordion behavior: once the reveal reaches full height (the very bottom
+   * of the page), smoothly scroll back up to just before the glow starts
+   * rising, so the page recoils instead of resting at the bottom.
+   */
+  bounceBack?: boolean;
   className?: string;
   style?: CSSProperties;
 }
@@ -87,6 +93,7 @@ export function RuixenGradientFooter({
   peak = 0.98,
   valley = 0.55,
   stops = RUIXEN_STOPS,
+  bounceBack = true,
   className,
   style,
 }: RuixenGradientFooterProps) {
@@ -102,24 +109,57 @@ export function RuixenGradientFooter({
     // on a real page and inside the docs preview iframe alike.
     const doc = el.ownerDocument;
     const win = doc.defaultView ?? window;
-    const measure = () => {
-      // offsetHeight ignores the transform, so the band can measure itself.
-      const h = el.offsetHeight || 1;
-      // How much scroll is left before the end of the page. The glow starts
-      // rising once that's within its own height, and is full at the bottom.
+    let rafId: number | null = null;
+
+    const computeT = (h: number) => {
       const left =
         doc.documentElement.scrollHeight - win.innerHeight - win.scrollY;
-      const t = clamp01((h - left) / h);
+      return clamp01((h - left) / h);
+    };
+
+    // Accordion: any moment the glow is open at all recoils back to just
+    // before the reveal starts, like the glow snapping shut. A single
+    // scrollTo({behavior:"smooth"}) call gets cancelled by the browser the
+    // moment new scroll input arrives (trackpad/wheel momentum), which made
+    // the old approach jerky and occasionally stick half-open. Instead this
+    // eases the scroll position toward the target every frame ourselves —
+    // a continuous, self-controlled pull that stays smooth under continued
+    // user scrolling and always converges.
+    const tick = () => {
+      const h = el.offsetHeight || 1;
+      const t = computeT(h);
       setProgress(minReveal + (1 - minReveal) * t);
+
+      if (bounceBack && t > 0) {
+        const target = doc.documentElement.scrollHeight - win.innerHeight - h;
+        const current = win.scrollY;
+        const diff = target - current;
+        if (Math.abs(diff) > 0.5) {
+          win.scrollTo(0, current + diff * 0.18);
+          rafId = win.requestAnimationFrame(tick);
+          return;
+        }
+      }
+      rafId = null;
     };
-    measure();
-    win.addEventListener("scroll", measure, { passive: true });
-    win.addEventListener("resize", measure, { passive: true });
+
+    const onScroll = () => {
+      const h = el.offsetHeight || 1;
+      setProgress(minReveal + (1 - minReveal) * computeT(h));
+      if (bounceBack && rafId === null && computeT(h) > 0) {
+        rafId = win.requestAnimationFrame(tick);
+      }
+    };
+
+    onScroll();
+    win.addEventListener("scroll", onScroll, { passive: true });
+    win.addEventListener("resize", onScroll, { passive: true });
     return () => {
-      win.removeEventListener("scroll", measure);
-      win.removeEventListener("resize", measure);
+      win.removeEventListener("scroll", onScroll);
+      win.removeEventListener("resize", onScroll);
+      if (rafId !== null) win.cancelAnimationFrame(rafId);
     };
-  }, [minReveal]);
+  }, [minReveal, bounceBack]);
 
   const colW = VBW / bars;
 
