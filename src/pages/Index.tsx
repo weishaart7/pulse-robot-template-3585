@@ -1,73 +1,29 @@
-import React, { useEffect } from "react";
-import Navbar from "@/components/Navbar";
-import Hero from "@/components/Hero";
-import Features from "@/components/Features";
-import StatsSection from "@/components/ui/stats-section";
-import PricingComparison from "@/components/ui/pricing-comparison";
-import ImageShowcaseSection from "@/components/ImageShowcaseSection";
-import { FeatureGrid } from "@/components/ui/feature-section";
-import { PieChart, TrendingUp, Shield, Building, Users, FileText } from "lucide-react";
-import Testimonials from "@/components/ui/testimonials";
-import Newsletter from "@/components/Newsletter";
-import { StickyFooter } from "@/components/ui/sticky-footer";
-const Index = () => {
-  // Initialize intersection observer to detect when elements enter viewport
-  useEffect(() => {
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("animate-fade-in");
-          observer.unobserve(entry.target);
-        }
-      });
-    }, {
-      threshold: 0.1
-    });
-    const elements = document.querySelectorAll(".animate-on-scroll");
-    elements.forEach(el => observer.observe(el));
-    return () => {
-      elements.forEach(el => observer.unobserve(el));
-    };
-  }, []);
-  useEffect(() => {
-    // This helps ensure smooth scrolling for the anchor links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const targetId = this.getAttribute('href')?.substring(1);
-        if (!targetId) return;
-        const targetElement = document.getElementById(targetId);
-        if (!targetElement) return;
+import { LandingNav } from "@/components/landing/LandingNav";
+import { HeroCommon } from "@/components/landing/HeroCommon";
+import { ParticuliersSection } from "@/components/landing/ParticuliersSection";
+import { ProfessionnelsSection } from "@/components/landing/ProfessionnelsSection";
+import { CredibiliteSection } from "@/components/landing/CredibiliteSection";
+import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
+import { ConfianceSection } from "@/components/landing/ConfianceSection";
+import { FAQSection } from "@/components/landing/FAQSection";
+import { LandingFooter } from "@/components/landing/LandingFooter";
 
-        // Increased offset to account for mobile nav
-        const offset = window.innerWidth < 768 ? 100 : 80;
-        window.scrollTo({
-          top: targetElement.offsetTop - offset,
-          behavior: 'smooth'
-        });
-      });
-    });
-  }, []);
-  return <div className="min-h-screen bg-[#f3f3f3]">
-      <Navbar />
-      <main className="space-y-0">
-        <Hero />
-        
-        
-        <section className="py-20 bg-background">
-          <Features />
-        </section>
-        <section className="py-20 bg-muted/30">
-          <PricingComparison />
-        </section>
-        <section className="py-20 bg-background">
-          <Testimonials />
-        </section>
-        <section className="py-20 bg-muted/30">
-          <Newsletter />
-        </section>
+const Index = () => {
+  return (
+    <div className="landing-portal min-h-screen">
+      <LandingNav />
+      <main>
+        <HeroCommon />
+        <ParticuliersSection />
+        <ProfessionnelsSection />
+        <CredibiliteSection />
+        <HowItWorksSection />
+        <ConfianceSection />
+        <FAQSection />
       </main>
-      <StickyFooter />
-    </div>;
+      <LandingFooter />
+    </div>
+  );
 };
+
 export default Index;
