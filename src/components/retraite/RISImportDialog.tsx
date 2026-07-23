@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,21 +10,44 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RegimeDetecte } from '@/lib/retraite/parseRIS';
+import { PeriodeCarriere, RegimeDetecte } from '@/lib/retraite/parseRIS';
+import { calculerSAM } from '@/lib/retraite/calculSAM';
+
+const formatEuro = (valeur: number) =>
+  valeur.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
 
 interface RISImportDialogProps {
   open: boolean;
   regimes: RegimeDetecte[];
-  onValidate: (regimes: RegimeDetecte[]) => void;
+  detailCarriere: PeriodeCarriere[];
+  anneeNaissance: number | null;
+  onValidate: (regimes: RegimeDetecte[], detailCarriere: PeriodeCarriere[], samPropose: number | null) => void;
   onCancel: () => void;
 }
 
-export function RISImportDialog({ open, regimes, onValidate, onCancel }: RISImportDialogProps) {
+export function RISImportDialog({
+  open,
+  regimes,
+  detailCarriere,
+  anneeNaissance,
+  onValidate,
+  onCancel,
+}: RISImportDialogProps) {
   const [regimesEdites, setRegimesEdites] = useState<RegimeDetecte[]>(regimes);
+  const [samValeur, setSamValeur] = useState<string>('');
+
+  const resultatSAM = useMemo(() => {
+    if (anneeNaissance === null || detailCarriere.length === 0) return null;
+    return calculerSAM(detailCarriere, anneeNaissance);
+  }, [detailCarriere, anneeNaissance]);
 
   // Réinitialise l'état éditable à chaque nouvel import (nouvelle ouverture du dialogue).
   useEffect(() => {
-    if (open) setRegimesEdites(regimes);
+    if (open) {
+      setRegimesEdites(regimes);
+      setSamValeur(resultatSAM ? resultatSAM.sam.toFixed(2) : '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, regimes]);
 
   const updateRegime = (index: number, updates: Partial<RegimeDetecte>) => {
@@ -107,13 +130,63 @@ export function RISImportDialog({ open, regimes, onValidate, onCancel }: RISImpo
               )}
             </div>
           ))}
+
+          {detailCarriere.length > 0 && (
+            <div className="border rounded-lg p-4 space-y-3">
+              <div className="space-y-1">
+                <Label className="text-base font-semibold">
+                  Détail de carrière ({detailCarriere.length} période{detailCarriere.length > 1 ? 's' : ''} détectée{detailCarriere.length > 1 ? 's' : ''})
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Le détail complet est éditable après validation, dans la sous-section "Détail de carrière".
+                </p>
+              </div>
+
+              {anneeNaissance === null ? (
+                <p className="text-sm text-orange-600">
+                  Date de naissance non renseignée dans la fiche famille : le salaire annuel moyen ne peut pas être
+                  estimé automatiquement. Renseignez-la, puis réimportez le relevé pour obtenir une estimation.
+                </p>
+              ) : (
+                resultatSAM && (
+                  <div className="space-y-2">
+                    <p className="text-sm">
+                      SAM estimé à {formatEuro(resultatSAM.sam)}
+                      {resultatSAM.nombreAnneesProjetees > 0 && (
+                        <>
+                          , dont {resultatSAM.nombreAnneesProjetees} année{resultatSAM.nombreAnneesProjetees > 1 ? 's' : ''}{' '}
+                          sur {resultatSAM.nombreAnneesRequis} projetée{resultatSAM.nombreAnneesProjetees > 1 ? 's' : ''} à
+                          revenu constant ({formatEuro(resultatSAM.anneesRetenues.find((a) => a.projete)?.revenuPlafonne ?? 0)}/an)
+                        </>
+                      )}
+                      , en supposant un départ à {resultatSAM.ageDepartHypothese} ans (année{' '}
+                      {anneeNaissance + resultatSAM.ageDepartHypothese}).
+                    </p>
+                    <div className="space-y-1">
+                      <Label htmlFor="sam-propose">Salaire annuel moyen à appliquer (€)</Label>
+                      <Input
+                        id="sam-propose"
+                        type="number"
+                        value={samValeur}
+                        onChange={(e) => setSamValeur(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+          )}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={onCancel}>
             Annuler
           </Button>
-          <Button onClick={() => onValidate(regimesEdites)}>
+          <Button
+            onClick={() =>
+              onValidate(regimesEdites, detailCarriere, samValeur === '' ? null : parseFloat(samValeur))
+            }
+          >
             Valider
           </Button>
         </DialogFooter>

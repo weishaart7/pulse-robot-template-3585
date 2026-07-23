@@ -5,15 +5,35 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Save, Upload, Trash2 } from 'lucide-react';
 import { useRetraiteData } from '@/hooks/useRetraiteData';
+import { useCarriereDetail } from '@/hooks/useCarriereDetail';
 import { useToast } from '@/hooks/use-toast';
-import { parseRIS, RegimeDetecte } from '@/lib/retraite/parseRIS';
+import { parseRIS, PeriodeCarriere, RegimeDetecte, TypeActivite } from '@/lib/retraite/parseRIS';
 import { RISImportDialog } from '@/components/retraite/RISImportDialog';
 import { tauxProratisation, decoteSurTrimestres, pensionBase, pensionComplementaireAnnuelle } from '@/lib/retraite/calcul';
 import { CarriereFonctionPublique } from '@/components/retraite/CarriereFonctionPublique';
 import { CarriereCNAVPL } from '@/components/retraite/CarriereCNAVPL';
+import { familyService } from '@/services/familyService';
+
+const LIBELLE_TYPE_ACTIVITE: Record<TypeActivite, string> = {
+  employeur: 'Employeur',
+  chomage: 'Chômage',
+  maladie: 'Maladie',
+  micro_entrepreneur: 'Micro-entrepreneur',
+};
+
+const formatDateFr = (dateIso: string) => {
+  const [annee, mois, jour] = dateIso.split('-');
+  return `${jour}/${mois}/${annee}`;
+};
 
 export const Carriere = () => {
   const { data, loading, saving, saveRetraiteData } = useRetraiteData();
+  const {
+    periodes: periodesEnregistrees,
+    loading: loadingCarriereDetail,
+    saving: savingCarriereDetail,
+    remplacerPeriodes,
+  } = useCarriereDetail();
   const { toast } = useToast();
   const [salaireAnnuelMoyen, setSalaireAnnuelMoyen] = useState<string>('');
   const [trimestresValides, setTrimestresValides] = useState<string>('');
@@ -47,6 +67,30 @@ export const Carriere = () => {
   const [risDialogOpen, setRisDialogOpen] = useState(false);
   const [risImporting, setRisImporting] = useState(false);
 
+  // Détail de carrière (import RIS) — periodesDetectees alimente le dialogue
+  // de vérification (calcul du SAM), detailCarriere est la liste éditable
+  // affichée dans la sous-section dédiée et effectivement enregistrée.
+  const [periodesDetectees, setPeriodesDetectees] = useState<PeriodeCarriere[]>([]);
+  const [detailCarriere, setDetailCarriere] = useState<PeriodeCarriere[]>([]);
+
+  // Date de naissance du client — nécessaire pour le calcul du SAM (nombre
+  // d'années requis selon la génération, année de départ en retraite
+  // prévue). Même source que Trimestres.tsx : family_profiles via
+  // familyService, il n'existe pas d'entité "client" séparée dans l'appli.
+  const [anneeNaissance, setAnneeNaissance] = useState<number | null>(null);
+
+  useEffect(() => {
+    familyService.getFamilyProfile()
+      .then((profil) => {
+        if (profil?.date_naissance) {
+          setAnneeNaissance(new Date(profil.date_naissance).getFullYear());
+        }
+      })
+      .catch((error) => {
+        console.error('Erreur lors du chargement du profil famille:', error);
+      });
+  }, []);
+
   // Chargement des données depuis Supabase
   useEffect(() => {
     if (!loading && data) {
@@ -62,13 +106,25 @@ export const Carriere = () => {
     }
   }, [data, loading]);
 
+  // Chargement du détail de carrière déjà enregistré (table dédiée, à part
+  // de retraite_data) — synchronisé dans l'état éditable local une fois
+  // chargé, tant qu'aucun import RIS n'a encore modifié la liste localement.
+  useEffect(() => {
+    if (!loadingCarriereDetail) {
+      setDetailCarriere(periodesEnregistrees.map(({ id: _id, ...periode }) => periode));
+    }
+  }, [loadingCarriereDetail, periodesEnregistrees]);
+
   // Détection des changements
   useEffect(() => {
     const salaireDifferent = parseFloat(salaireAnnuelMoyen) !== (data.salaire_annuel_moyen || 0);
     const trimestresDifferent = parseInt(trimestresValides) !== (data.trimestres_valides || 0);
     const regimesPointsDifferent = JSON.stringify(regimesPoints) !== JSON.stringify(data.regimes_points || []);
-    setHasChanges(salaireDifferent || trimestresDifferent || regimesPointsDifferent);
-  }, [salaireAnnuelMoyen, trimestresValides, regimesPoints, data]);
+    const detailCarriereDifferent =
+      JSON.stringify(detailCarriere) !==
+      JSON.stringify(periodesEnregistrees.map(({ id: _id, ...periode }) => periode));
+    setHasChanges(salaireDifferent || trimestresDifferent || regimesPointsDifferent || detailCarriereDifferent);
+  }, [salaireAnnuelMoyen, trimestresValides, regimesPoints, detailCarriere, periodesEnregistrees, data]);
 
   // Calcul de la pension de base brute (moteur : src/lib/retraite/calcul.ts)
   useEffect(() => {
@@ -123,9 +179,12 @@ export const Carriere = () => {
       trimestres_valides: parseInt(trimestresValides) || 0,
       regimes_points: regimesPoints,
     };
-    
-    const success = await saveRetraiteData(updates);
-    if (success) {
+
+    const [successRetraiteData, successDetailCarriere] = await Promise.all([
+      saveRetraiteData(updates),
+      remplacerPeriodes(detailCarriere),
+    ]);
+    if (successRetraiteData && successDetailCarriere) {
       setHasChanges(false);
     }
   };
@@ -142,7 +201,7 @@ export const Carriere = () => {
 
     setRisImporting(true);
     try {
-      const { regimes, texteIllisible } = await parseRIS(file);
+      const { regimes, detailCarriere: detailDetecte, texteIllisible } = await parseRIS(file);
       if (texteIllisible || regimes.length === 0) {
         toast({
           title: 'Import impossible',
@@ -152,6 +211,7 @@ export const Carriere = () => {
         return;
       }
       setRegimesDetectes(regimes);
+      setPeriodesDetectees(detailDetecte);
       setRisDialogOpen(true);
     } catch (error) {
       console.error('Erreur lors de la lecture du RIS:', error);
@@ -165,7 +225,11 @@ export const Carriere = () => {
     }
   };
 
-  const handleValidateRIS = (regimesValides: RegimeDetecte[]) => {
+  const handleValidateRIS = (
+    regimesValides: RegimeDetecte[],
+    detailCarriereValide: PeriodeCarriere[],
+    samPropose: number | null
+  ) => {
     // CNAVPL a sa propre carte dédiée (CarriereCNAVPL.tsx, décote/surcote
     // spécifique) : on l'exclut explicitement des deux paniers génériques
     // ci-dessous (trimestres régime général ET regimesPoints), sinon un bloc
@@ -194,11 +258,22 @@ export const Carriere = () => {
     // persistance effective se fait via handleSave, comme les autres champs.
     setRegimesPoints(regimesHorsCNAVPL.filter(r => r.type === 'points'));
 
+    // Détail de carrière et SAM proposé : même logique de remplacement
+    // intégral qu'au-dessus, la persistance se fait via handleSave.
+    setDetailCarriere(detailCarriereValide);
+    if (samPropose !== null && !Number.isNaN(samPropose)) {
+      setSalaireAnnuelMoyen(samPropose.toString());
+    }
+
     setRisDialogOpen(false);
   };
 
   const handleRemoveRegimePoint = (index: number) => {
     setRegimesPoints(regimesPoints.filter((_, i) => i !== index));
+  };
+
+  const handleRemovePeriode = (index: number) => {
+    setDetailCarriere(detailCarriere.filter((_, i) => i !== index));
   };
 
   const formatEuro2 = (valeur: number) =>
@@ -232,13 +307,13 @@ export const Carriere = () => {
     <div className="space-y-6">
       {hasChanges && (
         <div className="flex justify-end">
-          <Button 
-            onClick={handleSave} 
-            disabled={saving}
+          <Button
+            onClick={handleSave}
+            disabled={saving || savingCarriereDetail}
             className="gap-2"
           >
             <Save className="h-4 w-4" />
-            {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+            {saving || savingCarriereDetail ? 'Enregistrement...' : 'Enregistrer les modifications'}
           </Button>
         </div>
       )}
@@ -525,6 +600,53 @@ export const Carriere = () => {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Détail de carrière</CardTitle>
+          <CardDescription>
+            Employeur / activité détectés lors de l'import de votre relevé de carrière (RIS)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {detailCarriere.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Aucune période enregistrée. Importez votre relevé de carrière pour les détecter automatiquement.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {detailCarriere.map((periode, index) => (
+                <div
+                  key={`${periode.employeur}-${periode.dateDebut}-${index}`}
+                  className="flex items-center justify-between gap-4 p-4 border rounded-lg"
+                >
+                  <div className="space-y-1">
+                    <div className="font-semibold">{periode.employeur}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {LIBELLE_TYPE_ACTIVITE[periode.typeActivite]} · {formatDateFr(periode.dateDebut)} →{' '}
+                      {formatDateFr(periode.dateFin)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {periode.revenu !== null
+                        ? `${formatEuro2(periode.revenu)}${periode.estChiffreAffaires ? ' (chiffre d\'affaires)' : ''}`
+                        : 'Revenu non renseigné'}
+                      {periode.regimes.length > 0 && <> · {periode.regimes.join(', ')}</>}
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemovePeriode(index)}
+                    aria-label={`Supprimer la période ${periode.employeur}`}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <CarriereFonctionPublique
         trimestresRequis={trimestresRequis}
         trimestresAutresRegimes={(parseInt(trimestresValides) || 0) + (hasCNAVPL ? parseInt(trimestresCNAVPL) || 0 : 0)}
@@ -548,6 +670,8 @@ export const Carriere = () => {
       <RISImportDialog
         open={risDialogOpen}
         regimes={regimesDetectes}
+        detailCarriere={periodesDetectees}
+        anneeNaissance={anneeNaissance}
         onValidate={handleValidateRIS}
         onCancel={() => setRisDialogOpen(false)}
       />

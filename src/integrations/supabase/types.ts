@@ -1666,6 +1666,48 @@ export type Database = {
         }
         Relationships: []
       }
+      retraite_carriere_detail: {
+        Row: {
+          created_at: string
+          date_debut: string
+          date_fin: string
+          employeur: string | null
+          est_chiffre_affaires: boolean
+          id: string
+          regimes: string[]
+          revenu: number | null
+          type_activite: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_debut: string
+          date_fin: string
+          employeur?: string | null
+          est_chiffre_affaires?: boolean
+          id?: string
+          regimes?: string[]
+          revenu?: number | null
+          type_activite: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_debut?: string
+          date_fin?: string
+          employeur?: string | null
+          est_chiffre_affaires?: boolean
+          id?: string
+          regimes?: string[]
+          revenu?: number | null
+          type_activite?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       retraite_data: {
         Row: {
           autres_epargnes: number | null

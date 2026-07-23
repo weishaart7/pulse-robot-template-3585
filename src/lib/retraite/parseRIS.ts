@@ -1,5 +1,5 @@
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
-import type { TextItem } from 'pdfjs-dist/types/src/display/api';
+import type { PDFDocumentProxy, TextItem } from 'pdfjs-dist/types/src/display/api';
 // Import `?url` : Vite résout ce fichier comme un asset statique et renvoie
 // son URL finale (avec hash) dans le bundle de prod. Le pattern
 // `new URL('pdfjs-dist/...', import.meta.url)` casse silencieusement en
@@ -23,7 +23,26 @@ export interface RegimeDetecte {
 
 export interface ParseRISResult {
   regimes: RegimeDetecte[];
+  detailCarriere: PeriodeCarriere[];
   texteIllisible: boolean;
+}
+
+export type TypeActivite = 'employeur' | 'chomage' | 'maladie' | 'micro_entrepreneur';
+
+export interface PeriodeCarriere {
+  // Libellé de la ligne source (nom d'employeur, ou libellé de catégorie tel
+  // que "MICRO-ENTREPRENEUR - Activité de vente BIC") — jamais null, y
+  // compris pour les catégories non-employeur : c'est la seule information
+  // qui distingue par exemple les 3 sous-types de micro-entrepreneur
+  // (vente / prestation BNC / prestation BIC) qui apparaissent comme des
+  // blocs distincts dans le RIS.
+  employeur: string;
+  typeActivite: TypeActivite;
+  dateDebut: string; // ISO yyyy-mm-dd
+  dateFin: string; // ISO yyyy-mm-dd
+  revenu: number | null; // null = non renseigné dans le RIS, à distinguer d'un revenu nul
+  estChiffreAffaires: boolean;
+  regimes: string[];
 }
 
 /**
@@ -201,6 +220,170 @@ export function parseRegimesDepuisTexte(lignes: string[]): RegimeDetecte[] {
   return regimes;
 }
 
+// --- Détail de carrière ("Détail de votre carrière") ------------------------
+//
+// Contrairement à la page "Mes régimes", chaque période occupe DEUX lignes Y
+// distinctes reconstruites par reconstruireLignes : une ligne "nom" (employeur
+// ou catégorie, ex: "TITANE MOTOR") suivie d'une ligne "données" (dates,
+// revenu, régime(s)), et non une seule ligne combinée comme on l'imaginait
+// avant vérification sur un relevé réel. Une ligne de continuation est une
+// ligne "données" supplémentaire sans nouvelle ligne "nom" avant elle (pas un
+// champ nom vide sur la même ligne).
+
+const RE_TITRE_DETAIL_CARRIERE = /détail de votre carrière/i;
+const RE_LIGNE_ENTETE_COLONNES_CARRIERE = /^Employeur\/activit/i;
+// Notes de bas de page ("*Revenu d'activité...", "(1) Pour votre activité...")
+const RE_LIGNE_NOTE_BAS_DE_PAGE = /^(\*|\(1\))/;
+// Bandeau bas de page ("Edité le dd/mm/yyyy n / n") — contient une date, donc
+// doit être exclu explicitement avant tout test de présence de date sur la
+// page (sinon la tolérance multi-page ci-dessous ne s'arrêterait jamais).
+const RE_LIGNE_PIED_DE_PAGE = /^[EÉ]dit[ée] le \d{2}\/\d{2}\/\d{4}/i;
+const RE_LIGNE_CODE_DOCUMENT = /^DAICRISE/i;
+const RE_LIGNE_ENTETE_PAGE = /^Relevé de carrière/i;
+
+// Ligne "données" : deux dates en tête, puis optionnellement un revenu
+// ("6 585 €", parfois suivi du repère "(1)" pour un chiffre d'affaires
+// micro-entrepreneur), puis le reste de la ligne = régime(s) (vide sur
+// certaines lignes de continuation).
+const RE_LIGNE_DONNEES_CARRIERE =
+  /^(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})\s*((?:\d[\d\u00a0\u202f ]*€\s*(?:\(1\))?))?\s*(.*)$/;
+
+function estLigneChromeOuIgnorable(ligne: string): boolean {
+  return (
+    RE_TITRE_DETAIL_CARRIERE.test(ligne) ||
+    RE_LIGNE_ENTETE_COLONNES_CARRIERE.test(ligne) ||
+    RE_LIGNE_NOTE_BAS_DE_PAGE.test(ligne) ||
+    RE_LIGNE_PIED_DE_PAGE.test(ligne) ||
+    RE_LIGNE_CODE_DOCUMENT.test(ligne) ||
+    RE_LIGNE_ENTETE_PAGE.test(ligne)
+  );
+}
+
+function classifierTypeActivite(nomLigne: string): TypeActivite {
+  const normalise = nomLigne
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+  if (normalise.includes('CHOMAGE')) return 'chomage';
+  if (normalise.includes('MALADIE')) return 'maladie';
+  if (normalise.includes('MICRO-ENTREPRENEUR') || normalise.includes('MICRO ENTREPRENEUR')) {
+    return 'micro_entrepreneur';
+  }
+  return 'employeur';
+}
+
+function convertirDateFrEnIso(dateFr: string): string {
+  const [jour, mois, annee] = dateFr.split('/');
+  return `${annee}-${mois}-${jour}`;
+}
+
+function parserRevenu(revenuBrut: string | undefined): { revenu: number | null; estChiffreAffaires: boolean } {
+  if (!revenuBrut) return { revenu: null, estChiffreAffaires: false };
+  const estChiffreAffaires = /\(1\)/.test(revenuBrut);
+  // Retirer le repère "(1)" avant le nettoyage générique : son chiffre "1"
+  // serait sinon confondu avec un chiffre du montant (ex: "2 922 € (1)" ne
+  // doit pas devenir "29221").
+  const chiffres = revenuBrut.replace(/\(1\)/, '').replace(/[^\d,]/g, '');
+  return { revenu: chiffres ? parseFloat(chiffres.replace(',', '.')) : null, estChiffreAffaires };
+}
+
+/**
+ * Parse les lignes déjà reconstruites (potentiellement concaténées depuis
+ * plusieurs pages, voir extraireDetailCarriere) du tableau "Détail de votre
+ * carrière" en périodes de carrière.
+ */
+export function parseDetailCarriereDepuisTexte(lignes: string[]): PeriodeCarriere[] {
+  const periodes: PeriodeCarriere[] = [];
+  let nomCourant: string | null = null;
+  let typeActiviteCourant: TypeActivite = 'employeur';
+  let regimesCourants: string[] = [];
+
+  for (const ligneBrute of lignes) {
+    const ligne = ligneBrute.trim();
+    if (!ligne || estLigneChromeOuIgnorable(ligne)) continue;
+
+    const matchDonnees = ligne.match(RE_LIGNE_DONNEES_CARRIERE);
+    if (matchDonnees) {
+      // Ligne de données sans bloc employeur/activité ouvert au préalable :
+      // ne devrait pas arriver avec un RIS conforme au format observé, on
+      // l'ignore plutôt que de deviner un employeur.
+      if (nomCourant === null) continue;
+
+      const [, dateDebutBrute, dateFinBrute, revenuBrut, regimeBrut] = matchDonnees;
+      const regimeTexte = regimeBrut.trim();
+      if (regimeTexte) {
+        regimesCourants = regimeTexte
+          .split(',')
+          .map((r) => r.trim())
+          .filter(Boolean);
+      }
+      // Sinon (ligne de continuation sans régime) : on garde regimesCourants
+      // hérité du dernier bloc.
+
+      const { revenu, estChiffreAffaires } = parserRevenu(revenuBrut);
+
+      periodes.push({
+        employeur: nomCourant,
+        typeActivite: typeActiviteCourant,
+        dateDebut: convertirDateFrEnIso(dateDebutBrute),
+        dateFin: convertirDateFrEnIso(dateFinBrute),
+        revenu,
+        estChiffreAffaires,
+        regimes: regimesCourants,
+      });
+      continue;
+    }
+
+    // Ligne "nom" : ouverture d'un nouveau bloc employeur/activité.
+    nomCourant = ligne;
+    typeActiviteCourant = classifierTypeActivite(ligne);
+    regimesCourants = [];
+  }
+
+  return periodes;
+}
+
+/**
+ * Localise la (ou les) page(s) "Détail de votre carrière" par recherche de
+ * titre — pas par index fixe — puis reconstruit et concatène leurs lignes.
+ *
+ * Tolérance multi-page NON VÉRIFIÉE sur un relevé réel (l'exemple disponible
+ * ne s'étalait que sur une page) : une fois la page de titre trouvée, on
+ * continue à inclure les pages suivantes tant qu'elles contiennent au moins
+ * une ligne avec un motif de date (hors bandeau bas de page), et on s'arrête
+ * dès qu'une page n'en contient plus (ex: la page "En savoir plus" qui suit
+ * le tableau dans l'exemple analysé). À vérifier dès qu'un relevé avec un
+ * tableau réellement étalé sur plusieurs pages sera disponible.
+ */
+export async function extraireDetailCarriere(pdf: PDFDocumentProxy): Promise<PeriodeCarriere[]> {
+  let lignesTable: string[] = [];
+  let tableEnCours = false;
+
+  for (let numeroPage = 1; numeroPage <= pdf.numPages; numeroPage++) {
+    const page = await pdf.getPage(numeroPage);
+    const textContent = await page.getTextContent();
+    const items = textContent.items.filter((item): item is TextItem => 'str' in item);
+    if (items.length === 0) continue;
+
+    const lignes = reconstruireLignes(items);
+
+    if (!tableEnCours) {
+      const indexTitre = lignes.findIndex((ligne) => RE_TITRE_DETAIL_CARRIERE.test(ligne));
+      if (indexTitre === -1) continue;
+      tableEnCours = true;
+      lignesTable = lignesTable.concat(lignes.slice(indexTitre + 1));
+      continue;
+    }
+
+    const lignesUtiles = lignes.filter((ligne) => !estLigneChromeOuIgnorable(ligne));
+    const contientUneDate = lignesUtiles.some((ligne) => /\d{2}\/\d{2}\/\d{4}/.test(ligne));
+    if (!contientUneDate) break;
+    lignesTable = lignesTable.concat(lignes);
+  }
+
+  return parseDetailCarriereDepuisTexte(lignesTable);
+}
+
 /**
  * Exécute une étape du parsing en loguant clairement, en console, à quelle
  * étape une erreur technique inattendue survient (ex: souci de chargement du
@@ -229,7 +412,7 @@ export async function parseRIS(file: File): Promise<ParseRISResult> {
   const pdf = await etape('ouverture du PDF', () => getDocument({ data: arrayBuffer }).promise);
 
   if (pdf.numPages < 2) {
-    return { regimes: [], texteIllisible: true };
+    return { regimes: [], detailCarriere: [], texteIllisible: true };
   }
 
   const page = await etape('accès à la page 2', () => pdf.getPage(2));
@@ -238,11 +421,12 @@ export async function parseRIS(file: File): Promise<ParseRISResult> {
 
   if (items.length === 0) {
     // Page sans texte extractible (scan image) : rien à parser.
-    return { regimes: [], texteIllisible: true };
+    return { regimes: [], detailCarriere: [], texteIllisible: true };
   }
 
   const lignes = await etape('reconstruction des lignes', () => reconstruireLignes(items));
   const regimes = await etape('parsing des régimes', () => parseRegimesDepuisTexte(lignes));
+  const detailCarriere = await etape('extraction du détail de carrière', () => extraireDetailCarriere(pdf));
 
-  return { regimes, texteIllisible: regimes.length === 0 };
+  return { regimes, detailCarriere, texteIllisible: regimes.length === 0 };
 }
