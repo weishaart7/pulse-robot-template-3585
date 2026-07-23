@@ -78,7 +78,7 @@ export const ProcessusCalcul = () => {
         liberalites: transmissionLiberalites,
         params,
         conjointOption: 'quart_pp',
-        rawAssets: assets || [],
+        rawAssets: (assets || []) as any,
         avContracts,
         partageEnvisage: !!(maritalStatus as any)?.partage_envisage
       };
