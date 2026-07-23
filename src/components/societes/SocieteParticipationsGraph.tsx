@@ -5,6 +5,8 @@ import {
   Background,
   Node,
   Edge,
+  Handle,
+  Position,
   useNodesState,
   useEdgesState,
   NodeMouseHandler,
@@ -34,6 +36,12 @@ const SocieteNode = ({ data }: { data: SocieteNodeData }) => {
         data.depasse100 ? 'border-destructive' : 'border-primary/40'
       }`}
     >
+      {/* Sans ces handles, @xyflow/react ne peut pas calculer l'ancrage des arêtes sur
+          ce type de nœud custom (handleBounds reste vide) : les liens de participation
+          existent en données mais ne se dessinent jamais. Invisibles car nodesConnectable
+          est désactivé (pas de reconnexion manuelle depuis ce graphe en lecture seule). */}
+      <Handle type="target" position={Position.Top} style={{ opacity: 0 }} />
+      <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
       <Button
         variant="ghost"
         size="sm"
