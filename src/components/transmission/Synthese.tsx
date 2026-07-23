@@ -303,7 +303,7 @@ export const Synthese = () => {
     // frais de notaire et droit de partage) — pas de heir.partFinale (part civile
     // brute), qui ne sert plus qu'à répartir les types de quote-part (usufruit/
     // nue-propriété) au sein d'un même héritier via `parts` ci-dessus.
-    const netByPersonId = new Map(
+    const netByPersonId = new Map<string, any>(
       (transmissionResult.netBreakdown?.heirs || []).map((n: any) => [n.personId, n])
     );
 
@@ -540,7 +540,7 @@ export const Synthese = () => {
           </CardHeader>
           <CardContent className="p-5 pt-0">
             {(() => {
-              const netByPersonId = new Map(
+              const netByPersonId = new Map<string, any>(
                 (transmissionResult.netBreakdown?.heirs || []).map((n: any) => [n.personId, n])
               );
 

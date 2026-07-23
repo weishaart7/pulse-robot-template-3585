@@ -42,7 +42,7 @@ export const useRetraiteData = () => {
       }
 
       if (retraiteData) {
-        setData(retraiteData);
+        setData(retraiteData as any);
       }
     } catch (error) {
       console.error('Error loading retirement data:', error);
@@ -68,7 +68,7 @@ export const useRetraiteData = () => {
         // Mise à jour d'un enregistrement existant
         const { error } = await supabase
           .from('retraite_data')
-          .update(updates)
+          .update(updates as any)
           .eq('id', data.id)
           .eq('user_id', user.id);
 
@@ -85,7 +85,7 @@ export const useRetraiteData = () => {
         // Création d'un nouvel enregistrement
         const { data: newRecord, error } = await supabase
           .from('retraite_data')
-          .insert([{ ...updates, user_id: user.id }])
+          .insert([{ ...updates, user_id: user.id }] as any)
           .select()
           .single();
 
@@ -100,7 +100,7 @@ export const useRetraiteData = () => {
         }
 
         if (newRecord) {
-          setData(newRecord);
+          setData(newRecord as any);
         }
       }
 
