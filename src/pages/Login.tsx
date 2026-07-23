@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { SignInPage, Testimonial } from '@/components/ui/sign-in';
+import { SignInPage } from '@/components/ui/sign-in';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -112,33 +112,10 @@ const Login = () => {
     }
   };
 
-  const sampleTestimonials: Testimonial[] = [
-    {
-      avatarSrc: "https://randomuser.me/api/portraits/women/57.jpg",
-      name: "Sophie Martin",
-      handle: "@sophiefinance",
-      text: "Une plateforme exceptionnelle pour gérer mon patrimoine. Interface intuitive et fonctionnalités puissantes."
-    },
-    {
-      avatarSrc: "https://randomuser.me/api/portraits/men/64.jpg",
-      name: "Thomas Dubois",
-      handle: "@thomasinvest",
-      text: "Cet outil a transformé ma gestion patrimoniale. Design épuré et analyses précises."
-    },
-    {
-      avatarSrc: "https://randomuser.me/api/portraits/men/32.jpg",
-      name: "Pierre Laurent",
-      handle: "@pierregestion",
-      text: "J'ai testé plusieurs plateformes, mais celle-ci se démarque vraiment. Fiable et efficace."
-    },
-  ];
-
   return (
     <SignInPage
-      title={<span className="font-light text-foreground tracking-tighter">Connexion</span>}
+      title="Connexion"
       description="Connectez-vous à votre compte pour accéder au tableau de bord"
-      heroImageSrc="https://images.unsplash.com/photo-1642615835477-d303d7dc9ee9?w=2160&q=80"
-      testimonials={sampleTestimonials}
       onSignIn={handleSubmit}
       onResetPassword={() => {
         toast({

@@ -3,18 +3,10 @@ import { Eye, EyeOff } from 'lucide-react';
 
 // --- TYPE DEFINITIONS ---
 
-export interface Testimonial {
-  avatarSrc: string;
-  name: string;
-  handle: string;
-  text: string;
-}
-
 interface SignInPageProps {
   title?: React.ReactNode;
   description?: React.ReactNode;
-  heroImageSrc?: string;
-  testimonials?: Testimonial[];
+  heroTitle?: React.ReactNode;
   onSignIn?: (event: React.FormEvent<HTMLFormElement>) => void;
   onResetPassword?: () => void;
   onCreateAccount?: () => void;
@@ -30,30 +22,24 @@ interface SignInPageProps {
 
 // --- SUB-COMPONENTS ---
 
-const GlassInputWrapper = ({ children }: { children: React.ReactNode }) => (
-  <div className="rounded-md border border-border bg-foreground/5 backdrop-blur-sm transition-colors focus-within:border-primary/70 focus-within:bg-primary/5">
+const InputField = ({ children }: { children: React.ReactNode }) => (
+  <div className="rounded-lg border border-border bg-background transition-colors focus-within:border-[var(--lp-blue)] focus-within:ring-1 focus-within:ring-[var(--lp-blue)]/30">
     {children}
-  </div>
-);
-
-const TestimonialCard = ({ testimonial, delay }: { testimonial: Testimonial, delay: string }) => (
-  <div className={`animate-testimonial ${delay} flex items-start gap-3 rounded-md bg-card/40 backdrop-blur-xl border border-border p-5 w-64`}>
-    <img src={testimonial.avatarSrc} className="h-10 w-10 object-cover rounded-md" alt="avatar" />
-    <div className="text-sm leading-snug">
-      <p className="flex items-center gap-1 font-medium text-foreground">{testimonial.name}</p>
-      <p className="text-muted-foreground">{testimonial.handle}</p>
-      <p className="mt-1 text-foreground/80">{testimonial.text}</p>
-    </div>
   </div>
 );
 
 // --- MAIN COMPONENT ---
 
 export const SignInPage: React.FC<SignInPageProps> = ({
-  title = <span className="font-light text-foreground tracking-tighter">Bienvenue</span>,
-  description = "Accédez à votre compte pour continuer",
-  heroImageSrc,
-  testimonials = [],
+  title = 'Connexion',
+  description = 'Accédez à votre espace pour continuer',
+  heroTitle = (
+    <>
+      Suivez votre patrimoine,
+      <br />
+      posez vos questions.
+    </>
+  ),
   onSignIn,
   onResetPassword,
   onCreateAccount,
@@ -69,143 +55,166 @@ export const SignInPage: React.FC<SignInPageProps> = ({
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <div className="h-[100dvh] flex flex-col md:flex-row w-[100dvw]">
-      {/* Logo en haut à gauche */}
-      <div className="absolute top-6 left-8 z-10">
-        <a href="/" className="block transition-opacity hover:opacity-80">
-          <img 
-            src="/lovable-uploads/3f46b218-16fb-43cf-8206-7af4be7cbfd0.png" 
-            alt="Logo" 
-            className="h-8 w-auto object-contain" 
-          />
-        </a>
-      </div>
-      
-      {/* Left column: sign-in form */}
-      <section className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          <div className="flex flex-col gap-6">
-            <h1 className="animate-element animate-delay-100 text-4xl md:text-5xl font-semibold leading-tight">
-              {isSignUp ? 'Créer un compte' : title}
-            </h1>
-            <p className="animate-element animate-delay-200 text-muted-foreground">
-              {isSignUp ? 'Créez votre compte pour accéder au tableau de bord' : description}
-            </p>
+    <div className="min-h-[100dvh] w-full bg-[var(--lp-mist,#f5f5f5)] flex items-center justify-center p-4 md:p-6">
+      <div className="w-full max-w-6xl grid md:grid-cols-2 gap-4 md:h-[88vh] md:min-h-[640px]">
+        {/* Left column: sign-in form */}
+        <div className="relative rounded-2xl bg-white border border-border shadow-sm flex items-center justify-center p-8 md:p-12">
+          <div className="w-full max-w-sm flex flex-col items-center text-center gap-6">
+            <a href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
+              <span
+                aria-hidden
+                className="h-6 w-6 rounded-full"
+                style={{ background: 'linear-gradient(180deg, #4a7ff2 0%, #c98ab5 100%)' }}
+              />
+              <span className="text-lg font-medium text-foreground">Kairos</span>
+            </a>
 
-            <form className="space-y-5" onSubmit={onSignIn}>
-              <div className="animate-element animate-delay-300">
-                <label className="text-sm font-medium text-muted-foreground">Email</label>
-                <GlassInputWrapper>
-                  <input 
-                    name="email" 
-                    type="email" 
-                    placeholder="votre@email.com" 
+            <div className="flex flex-col gap-2">
+              <h1 className="font-playfair text-3xl md:text-4xl font-light tracking-tight text-foreground">
+                {isSignUp ? 'Créer un compte' : title}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {isSignUp ? 'Créez votre compte pour accéder au tableau de bord' : description}
+              </p>
+            </div>
+
+            <form className="w-full flex flex-col gap-4 text-left" onSubmit={onSignIn}>
+              <div>
+                <InputField>
+                  <input
+                    name="email"
+                    type="email"
+                    placeholder="Email"
                     value={emailValue}
                     onChange={(e) => onEmailChange?.(e.target.value)}
-                    className="w-full bg-transparent text-sm p-4 rounded-md focus:outline-none text-foreground" 
+                    className="w-full bg-transparent text-sm px-4 py-3.5 rounded-lg focus:outline-none text-foreground placeholder:text-muted-foreground"
                   />
-                </GlassInputWrapper>
-                {emailError && (
-                  <p className="text-sm text-destructive mt-1">{emailError}</p>
-                )}
+                </InputField>
+                {emailError && <p className="text-sm text-destructive mt-1">{emailError}</p>}
               </div>
 
-              <div className="animate-element animate-delay-400">
-                <label className="text-sm font-medium text-muted-foreground">Mot de passe</label>
-                <GlassInputWrapper>
+              <div>
+                <InputField>
                   <div className="relative">
-                    <input 
-                      name="password" 
-                      type={showPassword ? 'text' : 'password'} 
-                      placeholder="••••••••" 
+                    <input
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Mot de passe"
                       value={passwordValue}
                       onChange={(e) => onPasswordChange?.(e.target.value)}
-                      className="w-full bg-transparent text-sm p-4 pr-12 rounded-md focus:outline-none text-foreground" 
+                      className="w-full bg-transparent text-sm px-4 py-3.5 pr-11 rounded-lg focus:outline-none text-foreground placeholder:text-muted-foreground"
                     />
-                    <button 
-                      type="button" 
-                      onClick={() => setShowPassword(!showPassword)} 
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
                       className="absolute inset-y-0 right-3 flex items-center"
                     >
                       {showPassword ? (
-                        <EyeOff className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
+                        <EyeOff className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
                       ) : (
-                        <Eye className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
+                        <Eye className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
                       )}
                     </button>
                   </div>
-                </GlassInputWrapper>
-                {passwordError && (
-                  <p className="text-sm text-destructive mt-1">{passwordError}</p>
-                )}
+                </InputField>
+                {passwordError && <p className="text-sm text-destructive mt-1">{passwordError}</p>}
               </div>
 
-              <div className="animate-element animate-delay-500 flex items-center justify-between text-sm">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" name="rememberMe" className="rounded border-border text-primary focus:ring-primary" />
-                  <span className="text-foreground/90">Rester connecté</span>
-                </label>
-                {!isSignUp && (
-                  <a 
-                    href="#" 
-                    onClick={(e) => { e.preventDefault(); onResetPassword?.(); }} 
-                    className="hover:underline text-primary transition-colors"
+              {!isSignUp && (
+                <div className="flex items-center justify-end text-sm -mt-1">
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onResetPassword?.();
+                    }}
+                    className="text-muted-foreground hover:text-foreground hover:underline transition-colors"
                   >
                     Mot de passe oublié ?
                   </a>
-                )}
-              </div>
+                </div>
+              )}
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={isLoading}
-                className="animate-element animate-delay-600 w-full rounded-md bg-primary py-4 font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full rounded-lg bg-black py-3.5 font-medium text-white hover:bg-black/85 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading 
-                  ? (isSignUp ? 'Création...' : 'Connexion...') 
-                  : (isSignUp ? 'Créer un compte' : 'Se connecter')
-                }
+                {isLoading
+                  ? isSignUp
+                    ? 'Création...'
+                    : 'Connexion...'
+                  : isSignUp
+                    ? 'Créer un compte'
+                    : 'Se connecter'}
               </button>
             </form>
 
-            <p className="animate-element animate-delay-700 text-center text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {isSignUp ? 'Déjà un compte ?' : 'Pas encore de compte ?'}{' '}
-              <a 
-                href="#" 
-                onClick={(e) => { e.preventDefault(); onCreateAccount?.(); }} 
-                className="text-primary hover:underline transition-colors"
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onCreateAccount?.();
+                }}
+                className="text-foreground font-medium hover:underline transition-colors"
               >
                 {isSignUp ? 'Se connecter' : 'Créer un compte'}
               </a>
             </p>
           </div>
         </div>
-      </section>
 
-      {/* Right column: hero image + testimonials */}
-      {heroImageSrc && (
-        <section className="hidden md:block flex-1 relative p-4">
-          <div 
-            className="animate-slide-right animate-delay-300 absolute inset-4 rounded-md bg-cover bg-center" 
-            style={{ backgroundImage: `url(${heroImageSrc})` }}
-          ></div>
-          {testimonials.length > 0 && (
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-4 px-8 w-full justify-center">
-              <TestimonialCard testimonial={testimonials[0]} delay="animate-delay-1000" />
-              {testimonials[1] && (
-                <div className="hidden xl:flex">
-                  <TestimonialCard testimonial={testimonials[1]} delay="animate-delay-1200" />
-                </div>
-              )}
-              {testimonials[2] && (
-                <div className="hidden 2xl:flex">
-                  <TestimonialCard testimonial={testimonials[2]} delay="animate-delay-1400" />
-                </div>
-              )}
+        {/* Right column: branded night panel */}
+        <div className="hidden md:block relative rounded-2xl overflow-hidden">
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(ellipse at 50% 100%, #1c2b4a 0%, #0a0f1e 55%, #05070f 100%)',
+            }}
+          />
+          {/* starfield */}
+          <div
+            className="absolute inset-0 opacity-70"
+            style={{
+              backgroundImage:
+                'radial-gradient(1px 1px at 20% 30%, white 100%, transparent 0), radial-gradient(1px 1px at 70% 20%, white 100%, transparent 0), radial-gradient(1.5px 1.5px at 40% 60%, white 100%, transparent 0), radial-gradient(1px 1px at 85% 45%, white 100%, transparent 0), radial-gradient(1px 1px at 10% 70%, white 100%, transparent 0), radial-gradient(1.5px 1.5px at 60% 85%, white 100%, transparent 0), radial-gradient(1px 1px at 90% 80%, white 100%, transparent 0), radial-gradient(1px 1px at 30% 10%, white 100%, transparent 0)',
+              backgroundSize: '100% 100%',
+            }}
+          />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 px-10 text-center">
+            <h2 className="font-playfair text-3xl lg:text-4xl leading-snug text-white/95">
+              {heroTitle}
+            </h2>
+
+            <div className="w-full max-w-xs rounded-xl bg-white/10 backdrop-blur-md border border-white/10 p-5 text-left">
+              <p className="text-[11px] tracking-wide uppercase text-white/50">Patrimoine net</p>
+              <p className="mt-1 text-2xl font-semibold text-white">1 284 500 €</p>
+              <svg viewBox="0 0 240 70" className="mt-4 w-full h-14">
+                <path
+                  d="M0,55 C30,52 45,40 65,38 C90,35 100,20 130,15 C160,10 190,18 240,5"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.85)"
+                  strokeWidth="2"
+                />
+                <path
+                  d="M0,55 C30,52 45,40 65,38 C90,35 100,20 130,15 C160,10 190,18 240,5 L240,70 L0,70 Z"
+                  fill="url(#chartFade)"
+                  stroke="none"
+                />
+                <defs>
+                  <linearGradient id="chartFade" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="rgba(255,255,255,0.25)" />
+                    <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                  </linearGradient>
+                </defs>
+              </svg>
             </div>
-          )}
-        </section>
-      )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
