@@ -126,7 +126,7 @@ export const societeService = {
 
     const { data, error } = await supabase
       .from('societes')
-      .insert([{ ...sanitizedSociete, user_id: user.id }] as any)
+      .insert([{ ...sanitizedSociete, user_id: user.id }])
       .select()
       .single();
 
