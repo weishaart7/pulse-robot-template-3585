@@ -7,6 +7,7 @@ import { useAVContracts } from '@/hooks/useAVContracts';
 import { useSocietes } from '@/hooks/useSocietes';
 import { usePatrimoineOriginaire } from '@/hooks/usePatrimoineOriginaire';
 import { evaluerAlertes, AlerteContext } from '@/lib/alertes';
+import { hasNonCommonChildren, hasDDV } from '@/utils/transmissionHelpers';
 
 // Compose les hooks atomiques déjà utilisés ailleurs dans l'app (pas de
 // nouvel appel Supabase, pas de réutilisation de TransmissionContext — trop
@@ -52,6 +53,8 @@ export function useAlertesConseil() {
       liberalites,
       avContracts: avContractsRaw,
       familyLinks,
+      hasNonCommonChildren: hasNonCommonChildren(familyLinks),
+      hasDDV: hasDDV(maritalStatus),
       assets,
       emprunts,
       societes,

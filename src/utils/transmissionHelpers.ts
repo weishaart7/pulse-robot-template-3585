@@ -348,6 +348,28 @@ export function parseClausesData(clausesContratRaw: unknown): ClausesData {
 }
 
 /**
+ * Le couple a-t-il une donation au dernier vivant / donation entre époux ?
+ */
+export function hasDDV(
+  maritalStatus: Pick<MaritalStatus, 'donation_dernier_vivant_personne' | 'donation_dernier_vivant_conjoint'> | null | undefined
+): boolean {
+  return !!maritalStatus?.donation_dernier_vivant_personne || !!maritalStatus?.donation_dernier_vivant_conjoint;
+}
+
+/**
+ * Le couple a-t-il au moins un enfant non commun (issu d'un premier lit) ?
+ * Même critère que `childrenCommonWithSpouse` plus bas (parent_de ===
+ * 'both_parents' pour un enfant commun) — ici on teste juste le
+ * complément, indépendamment de tout FamilyGraph/décédent particulier,
+ * pour les besoins des alertes de conseil (§12.8, art. 1094-1).
+ */
+export function hasNonCommonChildren(familyLinks: FamilyLink[]): boolean {
+  return familyLinks.some(
+    (link) => link.lien_familial === 'Enfant' && link.parent_de !== 'both_parents'
+  );
+}
+
+/**
  * Converts family data from the database to the transmission library format
  */
 export function buildFamilyGraph(
@@ -461,9 +483,6 @@ export function buildFamilyGraph(
     }
   });
 
-  const hasDDV = !!maritalStatus?.donation_dernier_vivant_personne ||
-    !!maritalStatus?.donation_dernier_vivant_conjoint;
-
   return {
     persons,
     links,
@@ -473,7 +492,7 @@ export function buildFamilyGraph(
     survivingSpouseId,
     childrenOfDecedent,
     childrenCommonWithSpouse,
-    hasDDV
+    hasDDV: hasDDV(maritalStatus)
   };
 }
 
@@ -587,7 +606,7 @@ export function buildSpouseAsDecedentFamilyGraph(
     hasSurvivingSpouse: false,
     childrenOfDecedent,
     childrenCommonWithSpouse: [],
-    hasDDV: false
+    hasDDV: hasDDV(maritalStatus)
   };
 }
 

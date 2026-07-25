@@ -26,6 +26,8 @@ export interface AlerteContext {
   liberalites: Liberalite[];
   avContracts: AVContractRawRow[];
   familyLinks: FamilyLink[];
+  hasNonCommonChildren: boolean;
+  hasDDV: boolean;
   assets: Asset[];
   emprunts: Emprunt[];
   societes: Societe[];

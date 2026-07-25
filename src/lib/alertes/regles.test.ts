@@ -10,6 +10,8 @@ const baseContext = (): AlerteContext => ({
   liberalites: [],
   avContracts: [],
   familyLinks: [],
+  hasNonCommonChildren: false,
+  hasDDV: false,
   assets: [],
   emprunts: [],
   societes: [],
@@ -157,5 +159,77 @@ describe('exclusion_biens_professionnels_sans_maintien_divorce', () => {
 
     expect(() => evaluerAlertes(ctx)).not.toThrow();
     expect(idsOf(evaluerAlertes(ctx))).not.toContain('exclusion_biens_professionnels_sans_maintien_divorce');
+  });
+});
+
+describe('enfants_non_communs_sans_ddv', () => {
+  it('se déclenche : enfant non commun et aucune donation au dernier vivant', () => {
+    const ctx = baseContext();
+    ctx.hasNonCommonChildren = true;
+    ctx.hasDDV = false;
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('enfants_non_communs_sans_ddv');
+  });
+
+  it('ne se déclenche pas : aucun enfant non commun', () => {
+    const ctx = baseContext();
+    ctx.hasNonCommonChildren = false;
+    ctx.hasDDV = false;
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('enfants_non_communs_sans_ddv');
+  });
+
+  it('ne se déclenche pas : donation au dernier vivant présente', () => {
+    const ctx = baseContext();
+    ctx.hasNonCommonChildren = true;
+    ctx.hasDDV = true;
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('enfants_non_communs_sans_ddv');
+  });
+
+  it('ne plante pas et ne se déclenche pas à tort : contexte par défaut (aucune donnée renseignée)', () => {
+    const ctx = baseContext();
+
+    expect(() => evaluerAlertes(ctx)).not.toThrow();
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('enfants_non_communs_sans_ddv');
+  });
+});
+
+describe('enfants_non_communs_communaute_universelle', () => {
+  it('se déclenche : enfant non commun + communauté universelle + clause d\'attribution intégrale active', () => {
+    const ctx = baseContext();
+    ctx.hasNonCommonChildren = true;
+    ctx.regimeMatrimonial = 'Communauté universelle';
+    ctx.clausesContrat = { attribution_integrale: { enabled: true } };
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('enfants_non_communs_communaute_universelle');
+  });
+
+  it('ne se déclenche pas : aucun enfant non commun', () => {
+    const ctx = baseContext();
+    ctx.hasNonCommonChildren = false;
+    ctx.regimeMatrimonial = 'Communauté universelle';
+    ctx.clausesContrat = { attribution_integrale: { enabled: true } };
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('enfants_non_communs_communaute_universelle');
+  });
+
+  it('ne se déclenche pas : régime différent (communauté légale)', () => {
+    const ctx = baseContext();
+    ctx.hasNonCommonChildren = true;
+    ctx.regimeMatrimonial = 'Communauté légale';
+    ctx.clausesContrat = { attribution_integrale: { enabled: true } };
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('enfants_non_communs_communaute_universelle');
+  });
+
+  it('ne plante pas et ne se déclenche pas à tort : clause d\'attribution intégrale non activée', () => {
+    const ctx = baseContext();
+    ctx.hasNonCommonChildren = true;
+    ctx.regimeMatrimonial = 'Communauté universelle';
+    ctx.clausesContrat = { attribution_integrale: { enabled: false } };
+
+    expect(() => evaluerAlertes(ctx)).not.toThrow();
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('enfants_non_communs_communaute_universelle');
   });
 });

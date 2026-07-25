@@ -157,4 +157,21 @@ export const REGLES_ALERTES_CONSEIL: AlerteDefinition[] = [
     condition: (ctx) => !!ctx.clientResidenceFiscaleEtranger || !!ctx.conjointResidenceFiscaleEtranger,
     message: 'La loi applicable au régime matrimonial doit être vérifiée (§ 4.4).',
   },
+  {
+    id: 'enfants_non_communs_sans_ddv',
+    niveau: 'eleve',
+    condition: (ctx) => ctx.hasNonCommonChildren && !ctx.hasDDV,
+    message:
+      "Le conjoint ne pourra prétendre qu'à 1/4 en pleine propriété (art. 757). Une donation au dernier vivant lui ouvrirait l'option de l'usufruit total.",
+  },
+  {
+    id: 'enfants_non_communs_communaute_universelle',
+    niveau: 'critique',
+    condition: (ctx) =>
+      ctx.hasNonCommonChildren &&
+      isCommunauteUniverselle(ctx.regimeMatrimonial) &&
+      !!ctx.clausesContrat?.attribution_integrale?.enabled,
+    message:
+      "Risque d'action en retranchement (art. 1527 al. 2). Envisager une renonciation anticipée (art. 1527 al. 3).",
+  },
 ];
