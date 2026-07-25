@@ -167,8 +167,8 @@ export const CHARGES_CATEGORIES = {
 } as const;
 
 // Fonction utilitaire pour obtenir toutes les natures d'une catégorie donnée
-export const getNaturesByCategory = (categories: typeof REVENUS_CATEGORIES | typeof CHARGES_CATEGORIES, category: string): string[] => {
-  return categories[category as keyof typeof categories] || [];
+export const getNaturesByCategory = (categories: Record<string, readonly string[]>, category: string): string[] => {
+  return [...(categories[category] || [])];
 };
 
 // Fonction utilitaire pour rechercher dans toutes les natures
