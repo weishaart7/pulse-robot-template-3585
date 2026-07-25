@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { MatrimonialRegimeOptions } from "@/components/famille/MatrimonialRegimeOptions";
 import { ClausesPersonnaliseesSection } from "@/components/famille/matrimonial/ClausesPersonnaliseesSection";
+import { determinerRegimeLegal } from "@/lib/patrimoine/regimeLegal";
 
 const formSchema = z.object({
   conventionPacs: z.enum(['Régime de la séparation des biens', 'Indivision']).default('Régime de la séparation des biens'),
@@ -167,14 +168,15 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
 
   const regimeMatrimonial = form.watch("regimeMatrimonial");
   const pasDeContrat = form.watch("pasDeContrat");
+  const dateMariage = form.watch("dateMariage");
   const mariagePrecedentPersonne = form.watch("mariagePrecedentPersonne");
   const mariagePrecedentConjoint = form.watch("mariagePrecedentConjoint");
 
   useEffect(() => {
     if (pasDeContrat) {
-      form.setValue('regimeMatrimonial', 'Communauté réduite aux acquêts (option sans contrat de mariage)');
+      form.setValue('regimeMatrimonial', determinerRegimeLegal(dateMariage?.toISOString()));
     }
-  }, [pasDeContrat, form]);
+  }, [pasDeContrat, dateMariage, form]);
 
   useEffect(() => {
     if (!mariagePrecedentPersonne) {
