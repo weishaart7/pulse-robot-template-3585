@@ -115,4 +115,35 @@ describe('getFractionAjustee — cas de test obligatoires', () => {
     expect(resolvePreciputMode({ pleineProprietee: true, usufruit: false })).toBe('pleine_propriete');
     expect(resolvePreciputMode(undefined)).toBe(null);
   });
+
+  it("6. Préciput résiduel sous participation aux acquêts (bien 'Bien propre') : neutralisé, le bien reste intégralement dans la succession (diagnostic chantier participation aux acquêts)", () => {
+    // Reproduit l'exemple chiffré du diagnostic : résidence de 300 000 €,
+    // qualifiée 'Bien propre' (systématique sous participation aux acquêts),
+    // avec un résidu de clause de préciput pleine propriété issu d'un régime
+    // antérieur — sans le garde-fou, la résidence sortait à tort à 0 € de la
+    // succession, en plus de la créance de participation de 150 000 €
+    // (calculée séparément par computeParticipationAcquets), inversant le
+    // signe du résultat (+150 000 € attendu vs -150 000 € avec le bug).
+    const residence = { id: 'residence', qualification_bien: 'Bien propre', valeur: 300_000 };
+
+    const ctx = baseCtx({
+      preciputAssetIds: ['residence'],
+      preciputMode: 'pleine_propriete',
+    });
+
+    const fraction = getFractionAjustee(residence, ctx) ?? getPartSuccessorale({
+      qualification_bien: residence.qualification_bien,
+      detenteur: 'user',
+    });
+
+    // null (neutralisé) → repli sur getPartSuccessorale, qui renvoie 1 pour
+    // un bien propre détenu par le défunt : le bien entre en totalité dans
+    // la succession, comme si le préciput résiduel n'existait pas.
+    expect(getFractionAjustee(residence, ctx)).toBe(null);
+    expect(fraction).toBe(1);
+
+    const creanceParticipation = 150_000; // calculée séparément, cf. participationAcquets.ts
+    const masseNette = residence.valeur * fraction - creanceParticipation;
+    expect(masseNette).toBe(150_000);
+  });
 });

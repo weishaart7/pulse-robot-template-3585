@@ -19,8 +19,14 @@ import { ClausesData } from '../../types/matrimonial';
 export interface AvantageMatrimonialAssetInput {
   id: string;
   /** Qualification civile du bien (cf. qualification.ts::qualifierBien). Seuls
-   * les biens communs sont concernés par attribution intégrale / partage
-   * inégal — un bien propre ou en indivision suit son régime normal. */
+   * les biens communs sont concernés par préciput / attribution intégrale /
+   * partage inégal (art. 1515 à 1524 C. civ. : ces clauses portent sur la
+   * communauté) — un bien propre ou en indivision suit son régime normal.
+   * Sans ce garde-fou, un résidu de clause de préciput actif alors que le
+   * régime a changé pour la participation aux acquêts (où qualifierBien()
+   * renvoie toujours 'Bien propre') neutraliserait à tort la valeur d'un
+   * bien qui doit entrer en totalité dans la succession — diagnostic du
+   * chantier participation aux acquêts / avantages matrimoniaux. */
   qualification_bien?: string | null;
 }
 
@@ -53,11 +59,22 @@ export interface AvantageMatrimonialContext {
  * s'appliquent qu'aux biens communs non préciputés — cohérence assurée en
  * amont par la mutuelle exclusion (cf. `isClauseAllowedGivenOthers`), qui
  * empêche attribution intégrale et partage inégal d'être actives ensemble.
+ *
+ * Les trois clauses ne portent que sur un bien commun (art. 1515 à 1524
+ * C. civ. : elles aménagent le partage de la communauté) — le garde-fou
+ * `qualification_bien !== 'Bien commun'` s'applique donc avant même la
+ * branche préciput, pas seulement aux deux clauses globales, pour rester
+ * neutre sur un bien propre (ex. résidu de clause sous participation aux
+ * acquêts, où qualifierBien() renvoie toujours 'Bien propre').
  */
 export function getFractionAjustee(
   asset: AvantageMatrimonialAssetInput,
   ctx: AvantageMatrimonialContext
 ): number | null {
+  if (asset.qualification_bien !== 'Bien commun') {
+    return null;
+  }
+
   if (ctx.preciputMode && ctx.preciputAssetIds.includes(asset.id)) {
     // Pleine propriété : le bien sort intégralement du pot commun, rien à
     // taxer chez les héritiers au titre de ce bien.
@@ -66,10 +83,6 @@ export function getFractionAjustee(
     // héritiers, taxée sur 100% de la valeur du bien (jamais réintégré au
     // partage, donc pas de moitié défunt/moitié conjoint à distinguer ici).
     return ctx.preciputMode === 'pleine_propriete' ? 0 : ctx.npSurvivant;
-  }
-
-  if (asset.qualification_bien !== 'Bien commun') {
-    return null;
   }
 
   if (ctx.attributionIntegraleMode) {
