@@ -86,7 +86,7 @@ export const Synthese = () => {
 
       const clausesPersonnalisees = (maritalStatus as any)?.clauses_personnalisees;
       const clausesPersonnaliseesList = Array.isArray(clausesPersonnalisees) ? clausesPersonnalisees : [];
-      setHasCustomClausesToCheck(clausesPersonnaliseesList.some((c: any) => Array.isArray(c?.tags) && c.tags.length > 0));
+      setHasCustomClausesToCheck(clausesPersonnaliseesList.some((c: any) => c?.impacteCalcul === true));
 
       const { data: familyLinks } = await supabase
         .from('family_links')
