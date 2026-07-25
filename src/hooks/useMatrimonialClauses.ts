@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useMaritalStatus } from '@/hooks/useFamilyData';
 import { useToast } from '@/hooks/use-toast';
 import { ClausesData, ClauseState, DonationDernierVivant, RegimeType, MatrimonialAnalysisResult, getSimplifiedRegime } from '@/types/matrimonial';
 import { CLAUSES_BY_REGIME, CLAUSES_IMPACTING_TRANSMISSION, isClauseCompatibleWithRegime } from '@/constants/matrimonialClauses';
 import { useAssets } from '@/hooks/useAssets';
+import { parseClausesData } from '@/utils/transmissionHelpers';
 
 interface UseMatrimonialClausesReturn {
   clauses: ClausesData;
@@ -31,6 +32,16 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
     enFaveurConjoint: false
   });
   const [isSaving, setIsSaving] = useState(false);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Nettoyage du debounce au démontage (même pattern que LMNPDetailView.tsx:191-209).
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Charger les données existantes
   useEffect(() => {
@@ -38,14 +49,7 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
       const dataAny = maritalData as any;
       
       if (dataAny.clauses_contrat) {
-        try {
-          const parsedClauses = typeof dataAny.clauses_contrat === 'string' 
-            ? JSON.parse(dataAny.clauses_contrat) 
-            : dataAny.clauses_contrat;
-          setClauses(parsedClauses);
-        } catch (error) {
-          console.error('Erreur de parsing clauses:', error);
-        }
+        setClauses(parseClausesData(dataAny.clauses_contrat));
       }
       
       // Charger les donations au dernier vivant depuis les champs existants
@@ -58,8 +62,8 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
     }
   }, [maritalData]);
 
-  // Sauvegarder les données
-  const saveClausesData = useCallback(async (newClauses: ClausesData, newDonation: DonationDernierVivant) => {
+  // Sauvegarde effective (appelée après le debounce, cf. saveClausesData ci-dessous)
+  const performSave = useCallback(async (newClauses: ClausesData, newDonation: DonationDernierVivant) => {
     setIsSaving(true);
     try {
       const dataToSave = {
@@ -85,6 +89,20 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
       setIsSaving(false);
     }
   }, [saveData, toast]);
+
+  // Sauvegarder les données, avec un debounce de 800ms (même pattern que
+  // LMNPDetailView.tsx:191-209 : useRef + setTimeout/clearTimeout, pas de lib
+  // externe). Uniforme pour tous les appelants (toggleClause, updateClauseAssets,
+  // updateClausePercentages, updateClausePercentage, updateClauseOptions,
+  // updateDonation) puisqu'ils passent tous par cette même fonction.
+  const saveClausesData = useCallback((newClauses: ClausesData, newDonation: DonationDernierVivant) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      performSave(newClauses, newDonation);
+    }, 800);
+  }, [performSave]);
 
   const toggleClause = useCallback((clauseName: string) => {
     const wasEnabled = clauses[clauseName]?.enabled || false;
