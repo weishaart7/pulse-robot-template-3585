@@ -10,6 +10,16 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { CalendarIcon, Loader2, Heart, FileText, Gift, History, Scale, Coins } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -21,7 +31,9 @@ import { CreancesEntreEpouxSection } from "@/components/famille/matrimonial/Crea
 import { PatrimoineOriginaireSection } from "@/components/famille/matrimonial/PatrimoineOriginaireSection";
 import { PatrimoineFinalSection } from "@/components/famille/matrimonial/PatrimoineFinalSection";
 import { determinerRegimeLegal } from "@/lib/patrimoine/regimeLegal";
-import { getSimplifiedRegime, RegimeType } from "@/types/matrimonial";
+import { getSimplifiedRegime, RegimeType, ClausesData } from "@/types/matrimonial";
+import { parseClausesData } from "@/utils/transmissionHelpers";
+import { toRegimeType, getClausesIncompatibles } from "@/lib/patrimoine/regimeChangeClauses";
 
 const formSchema = z.object({
   conventionPacs: z.enum(['Régime de la séparation des biens', 'Indivision']).default('Régime de la séparation des biens'),
@@ -89,6 +101,16 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
   const { toast } = useToast();
   const { data: maritalData, saving, saveData } = useMaritalStatus();
   const [activeSection, setActiveSection] = useState<Section>('informations-generales');
+  // Changement de régime en attente de confirmation : rempli uniquement
+  // quand au moins une clause active (clauses_contrat, lu depuis l'instance
+  // locale de maritalData — cf. diagnostic étape B, désynchronisation
+  // possible mais acceptée avec l'onglet "Clauses du contrat") devient
+  // incompatible avec le nouveau régime sélectionné.
+  const [pendingRegimeChange, setPendingRegimeChange] = useState<{
+    nouveauRegime: FormData['regimeMatrimonial'];
+    clausesIncompatibles: { key: string; label: string }[];
+  } | null>(null);
+  const [disablingClauses, setDisablingClauses] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -174,6 +196,62 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
     });
   };
 
+  // Appelé à chaque sélection dans le <Select> du régime, AVANT que
+  // field.onChange ne mette à jour l'état du formulaire. Compare les clauses
+  // actuellement enabled: true (maritalData.clauses_contrat, instance locale
+  // de ce composant) à la liste des clauses compatibles avec le régime
+  // candidat — si au moins une clause active en devient incompatible,
+  // suspend le changement dans une boîte de confirmation plutôt que de
+  // l'appliquer directement (cf. diagnostic étape B : le garde-fou de
+  // l'étape A reste le filet de sécurité si un résidu passe malgré tout).
+  const handleRegimeSelect = (nouveauRegime: string) => {
+    const nouveauRegimeType = toRegimeType(nouveauRegime);
+    const clausesActuelles = parseClausesData((maritalData as any)?.clauses_contrat);
+    const clausesIncompatibles = getClausesIncompatibles(clausesActuelles, nouveauRegimeType);
+
+    if (clausesIncompatibles.length === 0) {
+      form.setValue('regimeMatrimonial', nouveauRegime as FormData['regimeMatrimonial']);
+      return;
+    }
+
+    setPendingRegimeChange({
+      nouveauRegime: nouveauRegime as FormData['regimeMatrimonial'],
+      clausesIncompatibles,
+    });
+  };
+
+  // Confirmation : applique le changement de régime ET désactive les
+  // clauses incompatibles en base, via le même saveData (donc le même
+  // upsert partiel Supabase) que celui déjà utilisé par
+  // useMatrimonialClauses.ts::performSave pour clauses_contrat — pas de
+  // nouveau chemin de sauvegarde.
+  const confirmRegimeChange = async () => {
+    if (!pendingRegimeChange) return;
+
+    try {
+      setDisablingClauses(true);
+      const clausesActuelles = parseClausesData((maritalData as any)?.clauses_contrat);
+      const clausesMisesAJour: ClausesData = { ...clausesActuelles };
+      pendingRegimeChange.clausesIncompatibles.forEach(({ key }) => {
+        clausesMisesAJour[key] = { enabled: false };
+      });
+
+      await saveData({ clauses_contrat: clausesMisesAJour } as any);
+      form.setValue('regimeMatrimonial', pendingRegimeChange.nouveauRegime);
+    } catch (error) {
+      console.error('Erreur lors de la désactivation des clauses incompatibles:', error);
+    } finally {
+      setDisablingClauses(false);
+      setPendingRegimeChange(null);
+    }
+  };
+
+  // Annulation : aucune modification, le <Select> reste sur le régime
+  // précédent car field.onChange n'a jamais été appelé pour ce candidat.
+  const cancelRegimeChange = () => {
+    setPendingRegimeChange(null);
+  };
+
   const regimeMatrimonial = form.watch("regimeMatrimonial");
   const pasDeContrat = form.watch("pasDeContrat");
   const dateMariage = form.watch("dateMariage");
@@ -204,14 +282,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
   // pertinentes en présence d'une masse commune (régimes communautaires +
   // séparation de biens avec société d'acquêts) ; créances entre époux, elles,
   // s'appliquent dans tous les régimes matrimoniaux (art. 1479, 1543 C. civ.).
-  const simplifiedRegimeType: RegimeType =
-    regimeMatrimonial === 'Communauté réduite aux acquêts (option sans contrat de mariage)' ? 'communaute_reduite' :
-    regimeMatrimonial === "Communauté de meubles et d'acquêts" ? 'communaute_meubles' :
-    regimeMatrimonial === 'Communauté universelle' ? 'communaute_universelle' :
-    regimeMatrimonial === 'Séparation de biens' ? 'separation_biens' :
-    regimeMatrimonial === "Séparation de biens avec société d'acquêts" ? 'separation_societe_acquets' :
-    regimeMatrimonial === 'Participation aux acquêts' ? 'participation_acquets' :
-    'communaute_reduite';
+  const simplifiedRegimeType: RegimeType = toRegimeType(regimeMatrimonial);
   const hasMasseCommune = getSimplifiedRegime(simplifiedRegimeType) === 'communauté' || simplifiedRegimeType === 'separation_societe_acquets';
 
   const sections = relationStatus === "Marié(e)" ? [
@@ -308,7 +379,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                     render={({ field }) => (
                       <FormItem className="space-y-1 mb-5">
                         <FormLabel className="text-xs">Régime</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={pasDeContrat}>
+                        <Select onValueChange={handleRegimeSelect} value={field.value} disabled={pasDeContrat}>
                           <FormControl>
                             <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
                               <SelectValue />
@@ -606,6 +677,33 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
           </Button>
         </div>
       </form>
+
+      <AlertDialog open={!!pendingRegimeChange} onOpenChange={(open) => { if (!open) cancelRegimeChange(); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clause(s) devenue(s) incompatible(s) avec ce régime</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingRegimeChange && (
+                <>
+                  Passer au régime « {pendingRegimeChange.nouveauRegime} » rend incompatible{pendingRegimeChange.clausesIncompatibles.length > 1 ? 's' : ''} la clause suivante{pendingRegimeChange.clausesIncompatibles.length > 1 ? 's' : ''} actuellement active{pendingRegimeChange.clausesIncompatibles.length > 1 ? 's' : ''} :
+                  <ul className="list-disc pl-5 mt-2">
+                    {pendingRegimeChange.clausesIncompatibles.map((c) => (
+                      <li key={c.key}>{c.label}</li>
+                    ))}
+                  </ul>
+                  <p className="mt-2">Confirmer changera le régime ET désactivera ce{pendingRegimeChange.clausesIncompatibles.length > 1 ? 's' : ''} clause{pendingRegimeChange.clausesIncompatibles.length > 1 ? 's' : ''}. Annuler ne modifie rien.</p>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelRegimeChange}>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRegimeChange} disabled={disablingClauses}>
+              {disablingClauses ? 'Application...' : 'Confirmer'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Form>
   );
 }
