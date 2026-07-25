@@ -10,6 +10,8 @@ export interface SocieteFormData {
   denomination: string;
   typeSociete: string;
   dateCreation: string;
+  partsNegociables?: boolean;
+  dateSouscription?: string;
   valeurEstimee: number;
   pourcentageIFI: number;
   capitalSocial: number;
@@ -46,6 +48,8 @@ export const societeToFormData = (societe: Societe): SocieteFormData => ({
   denomination: societe.denomination || '',
   typeSociete: societe.type_societe || '',
   dateCreation: societe.date_creation || '',
+  partsNegociables: societe.parts_negociables || false,
+  dateSouscription: societe.date_souscription || '',
   valeurEstimee: societe.valeur_estimee || 0,
   pourcentageIFI: societe.pourcentage_ifi || 0,
   capitalSocial: societe.capital_social || 0,
@@ -82,6 +86,8 @@ export const formDataToSociete = (
   denomination: data.denomination,
   type_societe: data.typeSociete,
   date_creation: data.dateCreation || null,
+  parts_negociables: data.partsNegociables || false,
+  date_souscription: data.dateSouscription || null,
   valeur_estimee: data.valeurEstimee || null,
   pourcentage_ifi: data.pourcentageIFI || null,
   capital_social: data.capitalSocial || null,

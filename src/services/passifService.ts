@@ -10,6 +10,7 @@ export interface Emprunt {
   mensualite?: number;
   duree_restante?: number;
   detenteur?: string;
+  contributeur_remboursement?: 'utilisateur' | 'conjoint' | 'les_deux' | string | null;
   pourcentage_utilisateur?: number;
   pourcentage_conjoint?: number;
   qualification_bien?: string;

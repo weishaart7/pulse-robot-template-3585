@@ -14,6 +14,8 @@ export interface FamilyProfile {
   telephone?: string;
   email?: string;
   personne_handicapee?: boolean;
+  est_dirigeant?: boolean;
+  residence_fiscale_etranger?: boolean;
   ancien_combattant?: boolean;
   adresse_postale?: string;
   code_postal?: string;
@@ -37,6 +39,8 @@ export interface MaritalStatus {
   profession_conjoint?: string;
   profession_csp_conjoint?: string;
   personne_handicapee_conjoint?: boolean;
+  est_dirigeant_conjoint?: boolean;
+  residence_fiscale_etranger_conjoint?: boolean;
   ancien_combattant_conjoint?: boolean;
   capacite_juridique_conjoint?: string;
   mandat_protection_future_conjoint?: boolean;
@@ -104,6 +108,7 @@ export interface FamilyLink {
   mandat_protection_future?: boolean;
   date_mandat_protection_future?: string;
   personne_a_charge?: boolean;
+  est_dirigeant?: boolean;
   created_at?: string;
   updated_at?: string;
 }

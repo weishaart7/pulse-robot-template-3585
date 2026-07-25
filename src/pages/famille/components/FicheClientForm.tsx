@@ -57,6 +57,8 @@ const formSchema = z.object({
     required_error: 'Veuillez sélectionner une mesure de protection juridique',
   }),
   handicape: z.boolean().default(false),
+  dirigeant: z.boolean().default(false),
+  residenceFiscaleEtranger: z.boolean().default(false),
   ancienCombattant: z.boolean().default(false),
   mandatProtectionFuture: z.boolean().default(false),
   dateMandatProtectionFuture: z.union([z.date(), z.literal(''), z.undefined()]).optional(),
@@ -152,6 +154,8 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
         nationalite: data.nationalite || '',
         capaciteJuridique: (data.capacite_juridique as FormData['capaciteJuridique']) || 'Aucune',
         handicape: data.personne_handicapee || false,
+        dirigeant: data.est_dirigeant || false,
+        residenceFiscaleEtranger: data.residence_fiscale_etranger || false,
         ancienCombattant: data.ancien_combattant || false,
         mandatProtectionFuture: data.mandat_protection_future || false,
         dateMandatProtectionFuture: data.date_mandat_protection_future ? new Date(data.date_mandat_protection_future) : undefined,
@@ -217,6 +221,8 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
         nationalite: sanitizedFormData.nationalite,
         capacite_juridique: sanitizedFormData.capaciteJuridique,
         personne_handicapee: sanitizedFormData.handicape,
+        est_dirigeant: sanitizedFormData.dirigeant,
+        residence_fiscale_etranger: sanitizedFormData.residenceFiscaleEtranger,
         ancien_combattant: sanitizedFormData.ancienCombattant,
         mandat_protection_future: sanitizedFormData.mandatProtectionFuture,
         date_mandat_protection_future: sanitizedFormData.dateMandatProtectionFuture instanceof Date ? format(sanitizedFormData.dateMandatProtectionFuture, 'yyyy-MM-dd') : undefined,
@@ -616,6 +622,54 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                             <path d="m10.092.952-.005-.006-.006-.005A.45.45 0 0 0 9.43.939L4.162 6.23 1.585 3.636a.45.45 0 0 0-.652 0 .47.47 0 0 0 0 .657l.002.002L3.58 6.958a.8.8 0 0 0 .567.242.78.78 0 0 0 .567-.242l5.333-5.356a.474.474 0 0 0 .044-.65Zm-5.86 5.349V6.3Z" fill="currentColor" stroke="currentColor" strokeWidth=".4" className="text-primary"/>
                           </svg>
                           <span className="text-foreground select-none text-sm">Personne handicapée</span>
+                        </label>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="dirigeant"
+                  render={({ field }) => (
+                    <FormItem className="pb-1">
+                      <FormControl>
+                        <label className="flex gap-3 items-center cursor-pointer relative">
+                          <input
+                            type="checkbox"
+                            className="hidden peer"
+                            checked={field.value}
+                            onChange={field.onChange}
+                          />
+                          <span className="w-5 h-5 border border-input rounded relative flex items-center justify-center peer-checked:border-primary"></span>
+                          <svg className="absolute hidden peer-checked:inline left-1 top-1/2 transform -translate-y-1/2" width="11" height="8" viewBox="0 0 11 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="m10.092.952-.005-.006-.006-.005A.45.45 0 0 0 9.43.939L4.162 6.23 1.585 3.636a.45.45 0 0 0-.652 0 .47.47 0 0 0 0 .657l.002.002L3.58 6.958a.8.8 0 0 0 .567.242.78.78 0 0 0 .567-.242l5.333-5.356a.474.474 0 0 0 .044-.65Zm-5.86 5.349V6.3Z" fill="currentColor" stroke="currentColor" strokeWidth=".4" className="text-primary"/>
+                          </svg>
+                          <span className="text-foreground select-none text-sm">Dirigeant d'entreprise</span>
+                        </label>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="residenceFiscaleEtranger"
+                  render={({ field }) => (
+                    <FormItem className="pb-1">
+                      <FormControl>
+                        <label className="flex gap-3 items-center cursor-pointer relative">
+                          <input
+                            type="checkbox"
+                            className="hidden peer"
+                            checked={field.value}
+                            onChange={field.onChange}
+                          />
+                          <span className="w-5 h-5 border border-input rounded relative flex items-center justify-center peer-checked:border-primary"></span>
+                          <svg className="absolute hidden peer-checked:inline left-1 top-1/2 transform -translate-y-1/2" width="11" height="8" viewBox="0 0 11 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="m10.092.952-.005-.006-.006-.005A.45.45 0 0 0 9.43.939L4.162 6.23 1.585 3.636a.45.45 0 0 0-.652 0 .47.47 0 0 0 0 .657l.002.002L3.58 6.958a.8.8 0 0 0 .567.242.78.78 0 0 0 .567-.242l5.333-5.356a.474.474 0 0 0 .044-.65Zm-5.86 5.349V6.3Z" fill="currentColor" stroke="currentColor" strokeWidth=".4" className="text-primary"/>
+                          </svg>
+                          <span className="text-foreground select-none text-sm">Résidence fiscale à l'étranger</span>
                         </label>
                       </FormControl>
                     </FormItem>

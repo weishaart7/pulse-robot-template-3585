@@ -299,6 +299,30 @@ export const PassifEmpruntForm = ({ item, onCancel, onSubmit }: PassifEmpruntFor
               </div>
             )}
 
+            {isEmprunt && (
+              <FormField control={form.control} name="contributeur_remboursement" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contributeur au remboursement</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger size="lg">
+                        <SelectValue placeholder="Qui règle les mensualités ?" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="utilisateur">{familyData.userFirstName || 'Vous'}</SelectItem>
+                      <SelectItem value="conjoint">{familyData.partnerFirstName || 'Conjoint(e)'}</SelectItem>
+                      <SelectItem value="les_deux">Les deux</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Qui règle effectivement les mensualités, indépendamment de la titularité juridique de la dette ci-dessus.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            )}
+
             <div className="flex justify-end gap-2 pt-4">
               <Button type="button" variant="outline" onClick={onCancel}>
                 Annuler

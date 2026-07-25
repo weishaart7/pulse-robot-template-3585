@@ -479,6 +479,25 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
           )}
         />
 
+        {/* Dirigeant d'entreprise */}
+        <FormField
+          control={form.control}
+          name="est_dirigeant"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>Dirigeant d'entreprise</FormLabel>
+              </div>
+            </FormItem>
+          )}
+        />
+
         {/* Mandat de protection future */}
         <FormField
           control={form.control}

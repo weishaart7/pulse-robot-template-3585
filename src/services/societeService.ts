@@ -8,6 +8,8 @@ export interface Societe {
   denomination: string;
   type_societe: string;
   date_creation?: string;
+  parts_negociables?: boolean;
+  date_souscription?: string;
   valeur_estimee?: number;
   pourcentage_ifi?: number;
   capital_social?: number;

@@ -103,6 +103,9 @@ export const usePassifEmpruntForm = ({ item, onSuccess }: UsePassifEmpruntFormPr
         duree_restante: isEmpruntItem ? item.duree_restante : undefined,
         reporter_budget: isEmpruntItem ? (item.reporter_budget ?? false) : false,
         detenteur: displayDetenteur,
+        contributeur_remboursement: isEmpruntItem
+          ? ((item.contributeur_remboursement as 'utilisateur' | 'conjoint' | 'les_deux') || undefined)
+          : undefined,
         pourcentage_utilisateur: item.pourcentage_utilisateur ?? 50,
         pourcentage_conjoint: item.pourcentage_conjoint ?? 50,
         qualification_bien: item.qualification_bien || undefined,
@@ -232,6 +235,7 @@ export const usePassifEmpruntForm = ({ item, onSuccess }: UsePassifEmpruntFormPr
           duree_restante: values.duree_restante,
           reporter_budget: values.reporter_budget ?? false,
           detenteur: dbDetenteur,
+          contributeur_remboursement: values.contributeur_remboursement || null,
           pourcentage_utilisateur: finalUserPercentage,
           pourcentage_conjoint: finalSpousePercentage,
           qualification_bien: values.qualification_bien || null,

@@ -17,6 +17,8 @@ interface SocieteFormData {
   denomination: string;
   typeSociete: string;
   dateCreation: string;
+  partsNegociables?: boolean;
+  dateSouscription?: string;
   valeurEstimee: number;
   pourcentageIFI: number;
   capitalSocial: number;
@@ -120,6 +122,8 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
     denomination: '',
     typeSociete: '',
     dateCreation: '',
+    partsNegociables: false,
+    dateSouscription: '',
     valeurEstimee: 0,
     pourcentageIFI: 0,
     capitalSocial: 0,
@@ -566,6 +570,28 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
               type="number"
               value={formData.valeurEstimee || ''}
               onChange={(e) => handleInputChange('valeurEstimee', Number(e.target.value))}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 items-end">
+          <div className="flex items-center space-x-2 pb-2">
+            <Checkbox
+              id="partsNegociables"
+              checked={formData.partsNegociables}
+              onCheckedChange={(checked) => handleInputChange('partsNegociables', checked as boolean)}
+            />
+            <Label htmlFor="partsNegociables" className="cursor-pointer">
+              Parts négociables (actions)
+            </Label>
+          </div>
+          <div>
+            <Label htmlFor="dateSouscription">Date de souscription des parts par le client</Label>
+            <Input
+              id="dateSouscription"
+              type="date"
+              value={formData.dateSouscription || ''}
+              onChange={(e) => handleInputChange('dateSouscription', e.target.value)}
             />
           </div>
         </div>
