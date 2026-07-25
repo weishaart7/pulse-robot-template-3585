@@ -10,10 +10,25 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePassifs } from '@/hooks/usePassifs';
-import { buildFamilyGraph, buildPatrimonySnapshot, buildTransmissionLiberalites, buildAVContracts, AVContractRawRow, AVDonneesInsuffisantesError, LegsCaduc } from '@/utils/transmissionHelpers';
+import {
+  buildFamilyGraph,
+  buildPatrimonySnapshot,
+  buildTransmissionLiberalites,
+  buildAVContracts,
+  buildRecompensesCalcInput,
+  buildCreancesCalcInput,
+  buildParticipationAcquetsContext,
+  AVContractRawRow,
+  AVDonneesInsuffisantesError,
+  LegsCaduc,
+  parseClausesData
+} from '@/utils/transmissionHelpers';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { getAssetCategory } from '@/constants/assetTypes';
+import { Recompense } from '@/types/recompense';
+import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
+import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcquets';
 import transmissionParamsData from '@/data/transmission-params.json';
 import './kairos-transmission.css';
 
@@ -126,6 +141,27 @@ export const Synthese = () => {
         .select('*')
         .eq('user_id', user!.id);
 
+      // Récompenses/créances entre époux + participation aux acquêts : trou
+      // pré-existant comblé ici (jamais transmis à computeTransmission avant
+      // ce chantier) — moteur déjà agnostique, aucun impact tant qu'aucune
+      // ligne n'est renseignée (cf. diagnostic).
+      const { data: recompensesRows } = await supabase
+        .from('recompenses')
+        .select('*')
+        .eq('user_id', user!.id);
+      const { data: creancesRows } = await supabase
+        .from('creances_entre_epoux')
+        .select('*')
+        .eq('user_id', user!.id);
+      const { data: patrimoineOriginaireRows } = await supabase
+        .from('patrimoine_originaire')
+        .select('*')
+        .eq('user_id', user!.id);
+      const { data: patrimoineFinalRows } = await supabase
+        .from('patrimoine_final')
+        .select('*')
+        .eq('user_id', user!.id);
+
       // Construire le graphe familial
       const family: FamilyGraph = buildFamilyGraph(familyProfile, maritalStatus, familyLinks || []);
 
@@ -169,6 +205,9 @@ export const Synthese = () => {
       // ET la fiscalité DMTG en interne (cf. consolidation du moteur), et renvoie
       // un résultat déjà complet (dmtg, netBreakdown, family...). Ce composant ne
       // fait plus que l'afficher.
+      const clausesData = parseClausesData((maritalStatus as any)?.clauses_contrat);
+      const exclusionBiensProfessionnelsParticipation = !!clausesData['exclusion_biens_professionnels']?.enabled;
+
       const combinedResult = computeTransmission({
         family,
         patrimony,
@@ -178,7 +217,16 @@ export const Synthese = () => {
         referenceDate,
         rawAssets: assets || [],
         avContracts,
-        partageEnvisage
+        partageEnvisage,
+        clausesData,
+        regimeMatrimonial: (maritalStatus as any)?.regime_matrimonial,
+        recompenses: buildRecompensesCalcInput((recompensesRows || []) as Recompense[]),
+        creancesEntreEpoux: buildCreancesCalcInput((creancesRows || []) as CreanceEntreEpoux[]),
+        participationAcquets: buildParticipationAcquetsContext(
+          (patrimoineOriginaireRows || []) as PatrimoineOriginaire[],
+          (patrimoineFinalRows || []) as PatrimoineFinal[],
+          exclusionBiensProfessionnelsParticipation
+        )
       });
 
       setTransmissionResult(combinedResult);
