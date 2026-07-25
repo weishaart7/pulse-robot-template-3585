@@ -21,13 +21,7 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
   // transmission/index.ts, seul appelant réel — la liquidation de communauté
   // est désormais faite en amont, bien par bien, par
   // lib/patrimoine/succession.ts::getPartSuccessorale (appliquée directement
-  // sur `assets[].valeurVenale` ci-dessous). Appeler
-  // dmtg/matrimonial.ts::computeMatrimonialLiquidation ici avec des valeurs
-  // par défaut (regime 'séparation', 0€) ne ferait que produire un texte
-  // trompeur (ex. "Régime de séparation : pas de communauté à partager" pour
-  // un couple réellement en communauté légale déjà liquidée ailleurs) —
-  // supprimé pour ne pas contredire le calcul réel. dmtg/matrimonial.ts
-  // lui-même n'est pas modifié, seul cet appel l'est.
+  // sur `assets[].valeurVenale` ci-dessous).
 
   // Phase 2 : Évaluation des actifs
   const assetValuations = filterAndValueEstateAssets(assets, params, deathDate);
@@ -129,7 +123,6 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
 
 // Fonctions utilitaires exportées
 export * from './types';
-export * from './matrimonial';
 export * from './assets';
 export * from './beneficiary';
 export * from './recall';

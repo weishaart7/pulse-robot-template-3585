@@ -312,10 +312,12 @@ export type Database = {
           date_estimation: string | null
           denomination: string | null
           detenteur: string | null
+          est_propre_par_nature: boolean | null
           etablissement: string | null
           financement_actif: boolean | null
           financement_apport: number | null
           financement_duree_mois: number | null
+          financement_mixte_apport_propre: number | null
           financement_taux_assurance: number | null
           financement_taux_credit: number | null
           frais_acquisition: number | null
@@ -324,11 +326,13 @@ export type Database = {
           frais_hypotheque: number | null
           frais_notaire: number | null
           id: string
+          licitation_acquereur: string | null
           meubles: number | null
           mode_detention: string | null
           montant_immeuble: number | null
           nature: string
           origine_actif: string[] | null
+          part_licitation_personnelle: number | null
           pourcentage_conjoint: number | null
           pourcentage_terrain_force: number | null
           pourcentage_utilisateur: number | null
@@ -365,10 +369,12 @@ export type Database = {
           date_estimation?: string | null
           denomination?: string | null
           detenteur?: string | null
+          est_propre_par_nature?: boolean | null
           etablissement?: string | null
           financement_actif?: boolean | null
           financement_apport?: number | null
           financement_duree_mois?: number | null
+          financement_mixte_apport_propre?: number | null
           financement_taux_assurance?: number | null
           financement_taux_credit?: number | null
           frais_acquisition?: number | null
@@ -377,11 +383,13 @@ export type Database = {
           frais_hypotheque?: number | null
           frais_notaire?: number | null
           id?: string
+          licitation_acquereur?: string | null
           meubles?: number | null
           mode_detention?: string | null
           montant_immeuble?: number | null
           nature: string
           origine_actif?: string[] | null
+          part_licitation_personnelle?: number | null
           pourcentage_conjoint?: number | null
           pourcentage_terrain_force?: number | null
           pourcentage_utilisateur?: number | null
@@ -418,10 +426,12 @@ export type Database = {
           date_estimation?: string | null
           denomination?: string | null
           detenteur?: string | null
+          est_propre_par_nature?: boolean | null
           etablissement?: string | null
           financement_actif?: boolean | null
           financement_apport?: number | null
           financement_duree_mois?: number | null
+          financement_mixte_apport_propre?: number | null
           financement_taux_assurance?: number | null
           financement_taux_credit?: number | null
           frais_acquisition?: number | null
@@ -430,11 +440,13 @@ export type Database = {
           frais_hypotheque?: number | null
           frais_notaire?: number | null
           id?: string
+          licitation_acquereur?: string | null
           meubles?: number | null
           mode_detention?: string | null
           montant_immeuble?: number | null
           nature?: string
           origine_actif?: string[] | null
+          part_licitation_personnelle?: number | null
           pourcentage_conjoint?: number | null
           pourcentage_terrain_force?: number | null
           pourcentage_utilisateur?: number | null
@@ -686,12 +698,66 @@ export type Database = {
         }
         Relationships: []
       }
+      creances_entre_epoux: {
+        Row: {
+          bien_concerne_id: string | null
+          created_at: string
+          depense_faite: number
+          epoux_creancier: string
+          epoux_debiteur: string
+          id: string
+          mode_evaluation_conventionnel: string | null
+          nature_depense: string
+          updated_at: string
+          user_id: string
+          valeur_bien_apres: number | null
+          valeur_bien_avant: number | null
+        }
+        Insert: {
+          bien_concerne_id?: string | null
+          created_at?: string
+          depense_faite: number
+          epoux_creancier: string
+          epoux_debiteur: string
+          id?: string
+          mode_evaluation_conventionnel?: string | null
+          nature_depense: string
+          updated_at?: string
+          user_id: string
+          valeur_bien_apres?: number | null
+          valeur_bien_avant?: number | null
+        }
+        Update: {
+          bien_concerne_id?: string | null
+          created_at?: string
+          depense_faite?: number
+          epoux_creancier?: string
+          epoux_debiteur?: string
+          id?: string
+          mode_evaluation_conventionnel?: string | null
+          nature_depense?: string
+          updated_at?: string
+          user_id?: string
+          valeur_bien_apres?: number | null
+          valeur_bien_avant?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creances_entre_epoux_bien_concerne_id_fkey"
+            columns: ["bien_concerne_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       emprunts: {
         Row: {
           asset_id: string | null
           assure: boolean | null
           capital_garanti_deces: number | null
           capital_restant_du: number | null
+          contributeur_remboursement: string | null
           created_at: string
           detenteur: string | null
           duree_restante: number | null
@@ -717,6 +783,7 @@ export type Database = {
           assure?: boolean | null
           capital_garanti_deces?: number | null
           capital_restant_du?: number | null
+          contributeur_remboursement?: string | null
           created_at?: string
           detenteur?: string | null
           duree_restante?: number | null
@@ -742,6 +809,7 @@ export type Database = {
           assure?: boolean | null
           capital_garanti_deces?: number | null
           capital_restant_du?: number | null
+          contributeur_remboursement?: string | null
           created_at?: string
           detenteur?: string | null
           duree_restante?: number | null
@@ -793,6 +861,7 @@ export type Database = {
           enfant_renoncant: boolean | null
           enfant_renoncant_de: string | null
           est_decede: boolean | null
+          est_dirigeant: boolean | null
           exoneration_succession: boolean | null
           fiscalement_a_charge: boolean | null
           handicap: boolean | null
@@ -821,6 +890,7 @@ export type Database = {
           enfant_renoncant?: boolean | null
           enfant_renoncant_de?: string | null
           est_decede?: boolean | null
+          est_dirigeant?: boolean | null
           exoneration_succession?: boolean | null
           fiscalement_a_charge?: boolean | null
           handicap?: boolean | null
@@ -849,6 +919,7 @@ export type Database = {
           enfant_renoncant?: boolean | null
           enfant_renoncant_de?: string | null
           est_decede?: boolean | null
+          est_dirigeant?: boolean | null
           exoneration_succession?: boolean | null
           fiscalement_a_charge?: boolean | null
           handicap?: boolean | null
@@ -878,6 +949,7 @@ export type Database = {
           date_mandat_protection_future: string | null
           date_naissance: string | null
           email: string | null
+          est_dirigeant: boolean | null
           id: string
           mandat_protection_future: boolean
           nationalite: string | null
@@ -888,6 +960,7 @@ export type Database = {
           personne_handicapee: boolean | null
           prenom: string | null
           profession: string | null
+          residence_fiscale_etranger: boolean | null
           telephone: string | null
           updated_at: string | null
           user_id: string
@@ -904,6 +977,7 @@ export type Database = {
           date_mandat_protection_future?: string | null
           date_naissance?: string | null
           email?: string | null
+          est_dirigeant?: boolean | null
           id?: string
           mandat_protection_future?: boolean
           nationalite?: string | null
@@ -914,6 +988,7 @@ export type Database = {
           personne_handicapee?: boolean | null
           prenom?: string | null
           profession?: string | null
+          residence_fiscale_etranger?: boolean | null
           telephone?: string | null
           updated_at?: string | null
           user_id: string
@@ -930,6 +1005,7 @@ export type Database = {
           date_mandat_protection_future?: string | null
           date_naissance?: string | null
           email?: string | null
+          est_dirigeant?: boolean | null
           id?: string
           mandat_protection_future?: boolean
           nationalite?: string | null
@@ -940,6 +1016,7 @@ export type Database = {
           personne_handicapee?: boolean | null
           prenom?: string | null
           profession?: string | null
+          residence_fiscale_etranger?: boolean | null
           telephone?: string | null
           updated_at?: string | null
           user_id?: string
@@ -1471,6 +1548,7 @@ export type Database = {
           duree_mariage_precedent_personne_annees: number | null
           duree_mariage_precedent_personne_mois: number | null
           email_conjoint: string | null
+          est_dirigeant_conjoint: boolean | null
           id: string
           imposition_distincte: boolean | null
           lieu_mariage: string | null
@@ -1494,6 +1572,7 @@ export type Database = {
           profession_conjoint: string | null
           profession_csp_conjoint: string | null
           regime_matrimonial: string | null
+          residence_fiscale_etranger_conjoint: boolean | null
           statut_couple: string | null
           telephone_conjoint: string | null
           updated_at: string | null
@@ -1523,6 +1602,7 @@ export type Database = {
           duree_mariage_precedent_personne_annees?: number | null
           duree_mariage_precedent_personne_mois?: number | null
           email_conjoint?: string | null
+          est_dirigeant_conjoint?: boolean | null
           id?: string
           imposition_distincte?: boolean | null
           lieu_mariage?: string | null
@@ -1546,6 +1626,7 @@ export type Database = {
           profession_conjoint?: string | null
           profession_csp_conjoint?: string | null
           regime_matrimonial?: string | null
+          residence_fiscale_etranger_conjoint?: boolean | null
           statut_couple?: string | null
           telephone_conjoint?: string | null
           updated_at?: string | null
@@ -1575,6 +1656,7 @@ export type Database = {
           duree_mariage_precedent_personne_annees?: number | null
           duree_mariage_precedent_personne_mois?: number | null
           email_conjoint?: string | null
+          est_dirigeant_conjoint?: boolean | null
           id?: string
           imposition_distincte?: boolean | null
           lieu_mariage?: string | null
@@ -1598,6 +1680,7 @@ export type Database = {
           profession_conjoint?: string | null
           profession_csp_conjoint?: string | null
           regime_matrimonial?: string | null
+          residence_fiscale_etranger_conjoint?: boolean | null
           statut_couple?: string | null
           telephone_conjoint?: string | null
           updated_at?: string | null
@@ -1648,6 +1731,100 @@ export type Database = {
         }
         Relationships: []
       }
+      patrimoine_final: {
+        Row: {
+          bien_concerne_id: string | null
+          bien_professionnel: boolean
+          created_at: string
+          epoux: string
+          id: string
+          nature: string
+          updated_at: string
+          user_id: string
+          valeur: number
+        }
+        Insert: {
+          bien_concerne_id?: string | null
+          bien_professionnel?: boolean
+          created_at?: string
+          epoux: string
+          id?: string
+          nature: string
+          updated_at?: string
+          user_id: string
+          valeur: number
+        }
+        Update: {
+          bien_concerne_id?: string | null
+          bien_professionnel?: boolean
+          created_at?: string
+          epoux?: string
+          id?: string
+          nature?: string
+          updated_at?: string
+          user_id?: string
+          valeur?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patrimoine_final_bien_concerne_id_fkey"
+            columns: ["bien_concerne_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patrimoine_originaire: {
+        Row: {
+          bien_concerne_id: string | null
+          bien_professionnel: boolean
+          created_at: string
+          date_signature: string | null
+          epoux: string
+          id: string
+          nature: string
+          signe: boolean | null
+          updated_at: string
+          user_id: string
+          valeur: number
+        }
+        Insert: {
+          bien_concerne_id?: string | null
+          bien_professionnel?: boolean
+          created_at?: string
+          date_signature?: string | null
+          epoux: string
+          id?: string
+          nature: string
+          signe?: boolean | null
+          updated_at?: string
+          user_id: string
+          valeur: number
+        }
+        Update: {
+          bien_concerne_id?: string | null
+          bien_professionnel?: boolean
+          created_at?: string
+          date_signature?: string | null
+          epoux?: string
+          id?: string
+          nature?: string
+          signe?: boolean | null
+          updated_at?: string
+          user_id?: string
+          valeur?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patrimoine_originaire_bien_concerne_id_fkey"
+            columns: ["bien_concerne_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       Profils: {
         Row: {
           created_at: string
@@ -1665,6 +1842,59 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      recompenses: {
+        Row: {
+          bien_concerne_id: string | null
+          created_at: string
+          depense_faite: number
+          epoux: string
+          id: string
+          mode_evaluation_conventionnel: string | null
+          nature_depense: string
+          sens: string
+          updated_at: string
+          user_id: string
+          valeur_bien_acquisition: number | null
+          valeur_bien_liquidation: number | null
+        }
+        Insert: {
+          bien_concerne_id?: string | null
+          created_at?: string
+          depense_faite: number
+          epoux: string
+          id?: string
+          mode_evaluation_conventionnel?: string | null
+          nature_depense: string
+          sens: string
+          updated_at?: string
+          user_id: string
+          valeur_bien_acquisition?: number | null
+          valeur_bien_liquidation?: number | null
+        }
+        Update: {
+          bien_concerne_id?: string | null
+          created_at?: string
+          depense_faite?: number
+          epoux?: string
+          id?: string
+          mode_evaluation_conventionnel?: string | null
+          nature_depense?: string
+          sens?: string
+          updated_at?: string
+          user_id?: string
+          valeur_bien_acquisition?: number | null
+          valeur_bien_liquidation?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recompenses_bien_concerne_id_fkey"
+            columns: ["bien_concerne_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       retraite_carriere_detail: {
         Row: {
@@ -2267,6 +2497,7 @@ export type Database = {
           created_at: string
           date_creation: string | null
           date_dernier_bilan: string | null
+          date_souscription: string | null
           denomination: string
           detenteur: string
           forme_societe_civile: string | null
@@ -2276,6 +2507,7 @@ export type Database = {
           mois_cloture: string | null
           nombre_salaries: number | null
           nombre_titres: number | null
+          parts_negociables: boolean | null
           pays: string | null
           pourcentage_conjoint: number | null
           pourcentage_ifi: number | null
@@ -2303,6 +2535,7 @@ export type Database = {
           created_at?: string
           date_creation?: string | null
           date_dernier_bilan?: string | null
+          date_souscription?: string | null
           denomination: string
           detenteur: string
           forme_societe_civile?: string | null
@@ -2312,6 +2545,7 @@ export type Database = {
           mois_cloture?: string | null
           nombre_salaries?: number | null
           nombre_titres?: number | null
+          parts_negociables?: boolean | null
           pays?: string | null
           pourcentage_conjoint?: number | null
           pourcentage_ifi?: number | null
@@ -2339,6 +2573,7 @@ export type Database = {
           created_at?: string
           date_creation?: string | null
           date_dernier_bilan?: string | null
+          date_souscription?: string | null
           denomination?: string
           detenteur?: string
           forme_societe_civile?: string | null
@@ -2348,6 +2583,7 @@ export type Database = {
           mois_cloture?: string | null
           nombre_salaries?: number | null
           nombre_titres?: number | null
+          parts_negociables?: boolean | null
           pays?: string | null
           pourcentage_conjoint?: number | null
           pourcentage_ifi?: number | null

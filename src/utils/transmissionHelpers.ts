@@ -1,9 +1,17 @@
+import { z } from 'zod';
 import { FamilyLink, MaritalStatus, FamilyProfile } from '@/services/familyService';
 import { Asset } from '@/services/assetService';
 import { FamilyGraph, Person, PatrimonySnapshot, Liberalite, PersonId, TransmissionResult, RawAssetInput } from '@/lib/transmission/types';
 import { AVContract } from '@/lib/dmtg/types';
 import { FamilySituationSummary, PatrimoineSummary } from '@/types/transmission';
 import { getPartSuccessorale, getPartConjointSuccession } from '@/lib/patrimoine/succession';
+import { getFractionPassifAjustee, getPartConjointAjustee, buildAvantageMatrimonialCtx } from '@/lib/patrimoine/avantagesMatrimoniaux';
+import { PatrimoineLigneCalcInput } from '@/lib/patrimoine/participationAcquets';
+import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcquets';
+import { RecompenseCalcInput, CreanceCalcInput } from '@/lib/patrimoine/recompensesCreances';
+import { Recompense } from '@/types/recompense';
+import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
+import { ClausesData } from '@/types/matrimonial';
 import { getAssetCategory } from '@/constants/assetTypes';
 import { getAgeAtDate, getDemembrementPct } from '@/lib/transmission';
 import { resolveEffectiveAVBeneficiaires } from '@/lib/dmtg/assurance-vie';
@@ -279,6 +287,66 @@ export function buildAVContracts(
   });
 }
 
+// Schéma calqué sur ClauseState (src/types/matrimonial.ts:69-88). `.passthrough()`
+// sur les objets pour ne jamais faire disparaître silencieusement un champ que ce
+// schéma ignorerait : parseClausesData ré-alimente l'état édité par
+// useMatrimonialClauses avant sa prochaine sauvegarde, donc une troncature ici se
+// propagerait en base.
+const clauseStateSchema = z
+  .object({
+    enabled: z.boolean(),
+    selectedAssets: z.array(z.string()).optional(),
+    partPleineProprietee: z.number().optional(),
+    partUsufruit: z.number().optional(),
+    options: z
+      .object({
+        pleineProprietee: z.boolean().optional(),
+        usufruit: z.boolean().optional(),
+        residencePrincipale: z.boolean().optional(),
+        maintienDivorce: z.boolean().optional(),
+        porteSur: z.enum(['pleine_propriete', 'usufruit']).optional(),
+      })
+      .passthrough()
+      .optional(),
+  })
+  .passthrough();
+
+const clausesDataSchema = z.record(z.string(), clauseStateSchema);
+
+/**
+ * Parse `marital_status.clauses_contrat` (texte JSON ou déjà objet selon le
+ * point d'entrée Supabase) vers `ClausesData` — source unique de vérité pour
+ * ce parsing, réutilisée à la fois par le formulaire de saisie
+ * (useMatrimonialClauses.ts) et par tous les sites qui alimentent
+ * `TransmissionContext.clausesData` (cf. lib/transmission/index.ts), pour
+ * qu'ils ne divergent jamais sur la façon de lire cette colonne.
+ *
+ * Valide la forme via Zod (clauseStateSchema/clausesDataSchema) : en cas de
+ * structure invalide, retombe sur `{}`, comme le faisait déjà le catch de
+ * JSON.parse ci-dessous — cohérent avec la façon dont tous les appelants
+ * traitent déjà une absence de clauses (`clausesData['x']?.enabled` etc.).
+ */
+export function parseClausesData(clausesContratRaw: unknown): ClausesData {
+  if (!clausesContratRaw) return {};
+  try {
+    const parsed =
+      typeof clausesContratRaw === 'string' ? JSON.parse(clausesContratRaw) : clausesContratRaw;
+    const result = clausesDataSchema.safeParse(parsed);
+    if (!result.success) {
+      if (import.meta.env.DEV) {
+        console.error('clauses_contrat invalide selon le schéma Zod:', result.error);
+      }
+      return {};
+    }
+    return result.data as ClausesData;
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error('Erreur de parsing clauses_contrat:', error);
+    }
+    return {};
+  }
+}
+
 /**
  * Converts family data from the database to the transmission library format
  */
@@ -528,8 +596,17 @@ export function buildSpouseAsDecedentFamilyGraph(
  */
 export function buildPatrimonySnapshot(
   assets: Asset[],
-  passifs: { montant_du: number }[],
-  assuranceVieTotal: number = 0
+  passifs: { montant_du: number; qualification_bien?: string | null }[],
+  assuranceVieTotal: number = 0,
+  // Partage inégal (art. 1520 C. civ.) : seule clause dont l'effet est
+  // symétrique entre actif et passif communs (art. 1521 C. civ.) — le
+  // conjoint supportant une part inégale de l'actif commun en supporte le
+  // même ratio au passif. Le préciput et l'attribution intégrale ne suivent
+  // PAS cette symétrie (cf. lib/patrimoine/avantagesMatrimoniaux.ts::
+  // getFractionPassifAjustee) : ce paramètre n'a donc d'effet que si une
+  // clause de partage inégal est active, `null` par défaut = comportement
+  // historique inchangé (passif commun compté à 100%, pas 50%).
+  partConjointInegal: number | null = null
 ): PatrimonySnapshot {
   // Pondération par bien (régime matrimonial / indivision) : seule la part du
   // bien qui revient au défunt entre dans l'assiette successorale, cf.
@@ -552,7 +629,13 @@ export function buildPatrimonySnapshot(
       return sum + valeur * partSuccessorale;
     }, 0);
 
-  const totalPassifs = passifs.reduce((sum, p) => sum + (p.montant_du || 0), 0);
+  const totalPassifs = passifs.reduce((sum, p) => {
+    const fractionAjustee = getFractionPassifAjustee(
+      { id: '', qualification_bien: p.qualification_bien },
+      { partConjointInegal }
+    );
+    return sum + (p.montant_du || 0) * (fractionAjustee ?? 1);
+  }, 0);
 
   return {
     date: new Date().toISOString().split('T')[0],
@@ -665,19 +748,56 @@ export function buildSurvivingSpousePatrimony(
  * `nature` est conservée telle quelle : l'abattement résidence principale et
  * l'assiette immobilière (frais de notaire) doivent continuer à s'appliquer
  * normalement sur la part du conjoint.
+ *
+ * Avantages matrimoniaux (préciput, attribution intégrale, partage inégal) :
+ * appliqués ICI, PENDANT que la vraie `qualification_bien` de chaque `asset`
+ * est encore disponible (avant sa neutralisation à 'Bien propre' ci-dessous),
+ * via `getPartConjointAjustee` (lib/patrimoine/avantagesMatrimoniaux.ts —
+ * miroir de `getFractionAjustee`, pour le sens "le conjoint décède"). Sans
+ * clause active concernant un bien donné, comportement inchangé
+ * (`getPartConjointSuccession`). `clausesData`/`utilisateurDateNaissance`
+ * sont optionnels pour ne rien changer aux appelants existants qui ne les
+ * fournissent pas encore.
  */
-export function buildSpouseRawAssets(assets: Asset[]): RawAssetInput[] {
+export function buildSpouseRawAssets(
+  assets: Asset[],
+  clausesData?: ClausesData,
+  utilisateurDateNaissance?: string | null,
+  referenceDate: string = new Date().toISOString().split('T')[0]
+): RawAssetInput[] {
+  // npSurvivant = nue-propriété (barème art. 669 CGI) du SURVIVANT réel de ce
+  // sens de décès simulé, càd l'UTILISATEUR (c'est le conjoint qui décède
+  // ici) — jamais l'âge du conjoint, cf. getPartConjointAjustee. Résolu
+  // paresseusement par buildAvantageMatrimonialCtx, uniquement si une clause
+  // en modalité usufruit est réellement active.
+  const avantageMatrimonialCtx = buildAvantageMatrimonialCtx(clausesData, () => {
+    if (!utilisateurDateNaissance) {
+      throw new Error(
+        "Date de naissance de l'utilisateur manquante : impossible de valoriser l'usufruit (barème art. 669 CGI) pour la clause matrimoniale côté conjoint."
+      );
+    }
+    return getDemembrementPct(getAgeAtDate(utilisateurDateNaissance, referenceDate), 'nue_propriete');
+  });
+
   return assets
     .filter(asset => getAssetCategory(asset.nature || '') !== 'épargne et assurance-vie')
-    .map(asset => ({
-      id: asset.id!,
-      denomination: asset.denomination,
-      valeur_estimee: (asset.valeur_estimee || asset.valeur_acquisition || 0) *
-        getPartConjointSuccession(asset, asset.denomination || asset.id),
-      nature: asset.nature,
-      qualification_bien: 'Bien propre',
-      detenteur: undefined
-    }));
+    .map(asset => {
+      const partConjoint = avantageMatrimonialCtx
+        ? getPartConjointAjustee(
+            { id: asset.id!, qualification_bien: asset.qualification_bien },
+            avantageMatrimonialCtx
+          ) ?? getPartConjointSuccession(asset, asset.denomination || asset.id)
+        : getPartConjointSuccession(asset, asset.denomination || asset.id);
+
+      return {
+        id: asset.id!,
+        denomination: asset.denomination,
+        valeur_estimee: (asset.valeur_estimee || asset.valeur_acquisition || 0) * partConjoint,
+        nature: asset.nature,
+        qualification_bien: 'Bien propre',
+        detenteur: undefined
+      };
+    });
 }
 
 /**
@@ -841,11 +961,79 @@ export function createPatrimoinySummary(assets: Asset[]): PatrimoineSummary {
   });
 
   const passifs = 0; // TODO: Calculate from asset charges
-  
+
   return {
     actifs: summary,
     passifs,
     actifNet: summary.total - passifs,
     assuranceVie: 0 // TODO: Extract from specific asset types
   };
+}
+
+/**
+ * Construit le contexte `participationAcquets` attendu par
+ * `computeTransmission` à partir des lignes brutes Supabase
+ * (`patrimoine_originaire`/`patrimoine_final`) et du booléen d'exclusion des
+ * biens professionnels déjà résolu par l'appelant.
+ *
+ * Prend volontairement ce booléen en paramètre plutôt que `ClausesData` en
+ * entier : ce module ne doit jamais réexposer l'objet clauses complet vers un
+ * contexte "conjoint décède en premier" (cf. commentaire de
+ * TransmissionContext.participationAcquets sur le risque de double
+ * pondération par bien si clausesData y était transmis).
+ */
+export function buildParticipationAcquetsContext(
+  patrimoineOriginaireRows: PatrimoineOriginaire[],
+  patrimoineFinalRows: PatrimoineFinal[],
+  exclusionBiensProfessionnels: boolean
+): {
+  patrimoineOriginaire: PatrimoineLigneCalcInput[];
+  patrimoineFinal: PatrimoineLigneCalcInput[];
+  exclusionBiensProfessionnels: boolean;
+} {
+  const toLigneCalcInput = (row: PatrimoineOriginaire | PatrimoineFinal): PatrimoineLigneCalcInput => ({
+    epoux: row.epoux,
+    valeur: row.valeur,
+    bienProfessionnel: row.bien_professionnel
+  });
+
+  return {
+    patrimoineOriginaire: patrimoineOriginaireRows.map(toLigneCalcInput),
+    patrimoineFinal: patrimoineFinalRows.map(toLigneCalcInput),
+    exclusionBiensProfessionnels
+  };
+}
+
+/**
+ * Mappe les lignes brutes Supabase (`recompenses`, snake_case) vers les
+ * entrées attendues par computeSoldeRecompenses (camelCase) — aucun mapper de
+ * ce type n'existait avant ce chantier, y compris sur Succession2ndDeces.tsx
+ * (recompenses/creancesEntreEpoux n'y sont pas branchés).
+ */
+export function buildRecompensesCalcInput(rows: Recompense[]): RecompenseCalcInput[] {
+  return rows.map(r => ({
+    sens: r.sens,
+    epoux: r.epoux,
+    depenseFaite: r.depense_faite,
+    valeurBienAcquisition: r.valeur_bien_acquisition,
+    valeurBienLiquidation: r.valeur_bien_liquidation,
+    natureDepense: r.nature_depense,
+    modeEvaluationConventionnel: r.mode_evaluation_conventionnel
+  }));
+}
+
+/**
+ * Mappe les lignes brutes Supabase (`creances_entre_epoux`, snake_case) vers
+ * les entrées attendues par computeSoldeCreancesEntreEpoux (camelCase).
+ */
+export function buildCreancesCalcInput(rows: CreanceEntreEpoux[]): CreanceCalcInput[] {
+  return rows.map(c => ({
+    epouxCreancier: c.epoux_creancier,
+    epouxDebiteur: c.epoux_debiteur,
+    depenseFaite: c.depense_faite,
+    valeurBienAvant: c.valeur_bien_avant,
+    valeurBienApres: c.valeur_bien_apres,
+    natureDepense: c.nature_depense,
+    modeEvaluationConventionnel: c.mode_evaluation_conventionnel
+  }));
 }

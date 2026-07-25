@@ -18,9 +18,13 @@ import {
   buildSpouseOwnBasePatrimony,
   addReunifiedFullOwnership,
   widowFamilyGraph,
+  buildParticipationAcquetsContext,
+  buildRecompensesCalcInput,
+  buildCreancesCalcInput,
   AVContractRawRow,
   AVDonneesInsuffisantesError,
-  SpouseSuccessionNonModelisableError
+  SpouseSuccessionNonModelisableError,
+  parseClausesData
 } from '@/utils/transmissionHelpers';
 import {
   computeTransmission,
@@ -31,6 +35,9 @@ import {
   TransmissionContext
 } from '@/lib/transmission';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
+import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcquets';
+import { Recompense } from '@/types/recompense';
+import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
 import { getAssetCategory } from '@/constants/assetTypes';
 import transmissionParamsData from '@/data/transmission-params.json';
 import './kairos-transmission.css';
@@ -155,6 +162,34 @@ export const Succession2ndDeces = () => {
         .eq('user_id', user!.id);
       const { liberalites: liberalitesFormatted } = buildTransmissionLiberalites(liberalites || [], assets || []);
 
+      // Participation aux acquêts (art. 1569-1581 C. civ.) : lignes globales
+      // au couple, identiques quel que soit le sens de décès simulé — cf.
+      // diagnostic chantier participation aux acquêts (symétrie confirmée,
+      // contrairement aux avantages matrimoniaux ci-dessous qui restent
+      // asymétriques par construction).
+      const { data: patrimoineOriginaireRows } = await supabase
+        .from('patrimoine_originaire')
+        .select('*')
+        .eq('user_id', user!.id);
+      const { data: patrimoineFinalRows } = await supabase
+        .from('patrimoine_final')
+        .select('*')
+        .eq('user_id', user!.id);
+
+      // Récompenses/créances entre époux (chantier 3A) : dernier trou du
+      // module Transmission comblé ici — même raisonnement de symétrie que
+      // participationAcquets ci-dessus (delta scalaire sur patrimony.
+      // biensExistants + ligne DMTG synthétique, jamais sur rawAssets/
+      // qualification_bien), donc mêmes données passées aux deux sens.
+      const { data: recompensesRows } = await supabase
+        .from('recompenses')
+        .select('*')
+        .eq('user_id', user!.id);
+      const { data: creancesRows } = await supabase
+        .from('creances_entre_epoux')
+        .select('*')
+        .eq('user_id', user!.id);
+
       setNomUtilisateur(`${familyProfile?.prenom || ''} ${familyProfile?.nom || ''}`.trim() || 'Vous');
       setNomConjoint(`${maritalStatus?.prenom_conjoint || ''} ${maritalStatus?.nom_conjoint || ''}`.trim() || 'Votre conjoint');
 
@@ -162,6 +197,7 @@ export const Succession2ndDeces = () => {
       const referenceDate = new Date().toISOString().split('T')[0];
       const optionConjoint = (maritalStatus as any)?.option_conjoint as string | null;
       const partageEnvisage = !!(maritalStatus as any)?.partage_envisage;
+      const regimeMatrimonial = (maritalStatus as any)?.regime_matrimonial as string | null;
 
       // Graphe et contexte "Utilisateur décède en premier" : identiques à ce
       // que Synthese.tsx construit déjà pour le 1er décès — même fonctions,
@@ -169,6 +205,33 @@ export const Succession2ndDeces = () => {
       const familyUtilisateur: FamilyGraph = buildFamilyGraph(familyProfile, maritalStatus, familyLinks || []);
       const avContractsUtilisateur = buildAVContracts(avContractsRaw, familyProfile?.date_naissance, familyUtilisateur);
       const patrimonyUtilisateur = buildPatrimonySnapshot(assets || [], passifs, totalAV);
+      // clausesData est transmis à ctxUtilisateurDecede (1er décès
+      // Utilisateur, rawAssets bruts avec leur vraie qualification_bien) —
+      // ET, désormais, aux contextes "conjoint" ci-dessous (chained.
+      // secondDeath, ctxConjointDecede) via buildSpouseRawAssets(assets,
+      // clausesData, familyProfile?.date_naissance, referenceDate) :
+      // buildSpouseRawAssets applique lui-même getPartConjointAjustee (miroir
+      // de getFractionAjustee, cf. lib/patrimoine/avantagesMatrimoniaux.ts)
+      // PENDANT que la vraie qualification_bien est encore disponible, avant
+      // de neutraliser qualification_bien à 'Bien propre' et de préponderer
+      // valeur_estimee — donc plus de double pondération ni de trou sur les
+      // avantages matrimoniaux côté conjoint. npSurvivant y est calculé sur
+      // l'âge de l'UTILISATEUR (le survivant réel quand le conjoint décède),
+      // jamais sur celui du conjoint.
+      const clausesData = parseClausesData((maritalStatus as any)?.clauses_contrat);
+      // Créance de participation : seul le booléen d'exclusion des biens
+      // professionnels sort de clausesData (jamais l'objet en entier, cf.
+      // TransmissionContext.participationAcquets) — safe à passer aux DEUX
+      // sens de décès, contrairement à clausesData qui reste réservé à
+      // ctxUtilisateurDecede ci-dessus.
+      const exclusionBiensProfessionnelsParticipation = !!clausesData['exclusion_biens_professionnels']?.enabled;
+      const participationAcquets = buildParticipationAcquetsContext(
+        (patrimoineOriginaireRows || []) as PatrimoineOriginaire[],
+        (patrimoineFinalRows || []) as PatrimoineFinal[],
+        exclusionBiensProfessionnelsParticipation
+      );
+      const recompenses = buildRecompensesCalcInput((recompensesRows || []) as Recompense[]);
+      const creancesEntreEpoux = buildCreancesCalcInput((creancesRows || []) as CreanceEntreEpoux[]);
       const ctxUtilisateurDecede: TransmissionContext = {
         family: familyUtilisateur,
         patrimony: patrimonyUtilisateur,
@@ -178,7 +241,12 @@ export const Succession2ndDeces = () => {
         referenceDate,
         rawAssets: assets || [],
         avContracts: avContractsUtilisateur,
-        partageEnvisage
+        partageEnvisage,
+        clausesData,
+        regimeMatrimonial,
+        participationAcquets,
+        recompenses,
+        creancesEntreEpoux
       };
 
       // --- Ordre normal (Utilisateur d'abord) ---
@@ -205,7 +273,7 @@ export const Succession2ndDeces = () => {
             liberalites: [],
             params,
             referenceDate,
-            rawAssets: buildSpouseRawAssets(assets || []),
+            rawAssets: buildSpouseRawAssets(assets || [], clausesData, familyProfile?.date_naissance, referenceDate),
             avContracts: []
           }
         });
@@ -225,8 +293,23 @@ export const Succession2ndDeces = () => {
           liberalites: [],
           params,
           referenceDate,
-          rawAssets: buildSpouseRawAssets(assets || []),
-          avContracts: []
+          rawAssets: buildSpouseRawAssets(assets || [], clausesData, familyProfile?.date_naissance, referenceDate),
+          avContracts: [],
+          // regimeMatrimonial + participationAcquets + recompenses/
+          // creancesEntreEpoux : safe côté conjoint, aucun de ces mécanismes
+          // n'opère sur rawAssets/qualification_bien, cf. commentaire
+          // ctxUtilisateurDecede ci-dessus. clausesData n'est PAS répété ici
+          // (dans ce TransmissionContext) : il ne sert qu'à
+          // buildSpouseRawAssets ci-dessus (avantages matrimoniaux déjà
+          // appliqués dans rawAssets) — le passer aussi ici activerait à tort
+          // avantageMatrimonialCtx/getFractionAjustee dans computeTransmission
+          // sur des rawAssets déjà pré-pondérés et à qualification_bien
+          // neutralisée (cf. lib/transmission/index.ts, commentaire de
+          // TransmissionContext.participationAcquets sur ce même risque).
+          regimeMatrimonial,
+          participationAcquets,
+          recompenses,
+          creancesEntreEpoux
         };
         const firstDeathConjoint = computeTransmission(ctxConjointDecede);
 

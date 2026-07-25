@@ -21,6 +21,7 @@ export function ClausesPersonnaliseesSection() {
   const [assetModalOpen, setAssetModalOpen] = useState(false);
   const [beneficiaire, setBeneficiaire] = useState('');
   const [parametres, setParametres] = useState<string[]>(['']);
+  const [impacteCalcul, setImpacteCalcul] = useState(false);
 
   const resetForm = () => {
     setTexte('');
@@ -28,6 +29,7 @@ export function ClausesPersonnaliseesSection() {
     setBiensVises([]);
     setBeneficiaire('');
     setParametres(['']);
+    setImpacteCalcul(false);
     setIsAdding(false);
   };
 
@@ -50,6 +52,7 @@ export function ClausesPersonnaliseesSection() {
       biensVises,
       beneficiaire: beneficiaire.trim() || undefined,
       parametres: parametres.map(p => p.trim()).filter(Boolean),
+      impacteCalcul,
     });
     resetForm();
   };
@@ -68,7 +71,12 @@ export function ClausesPersonnaliseesSection() {
           {clauses.map(clause => (
             <div key={clause.id} className="rounded-md border p-4 space-y-2">
               <div className="flex items-start justify-between gap-3">
-                <p className="text-sm whitespace-pre-wrap">{clause.texte}</p>
+                <div className="space-y-1.5">
+                  {clause.impacteCalcul && (
+                    <Badge variant="destructive" className="text-xs font-normal">Impacte le calcul — à vérifier manuellement</Badge>
+                  )}
+                  <p className="text-sm whitespace-pre-wrap">{clause.texte}</p>
+                </div>
                 <Button
                   type="button"
                   variant="ghost"
@@ -109,6 +117,13 @@ export function ClausesPersonnaliseesSection() {
           <div className="space-y-1">
             <Label className="text-xs">Texte de la clause (fidèle à l'acte notarié)</Label>
             <Textarea value={texte} onChange={(e) => setTexte(e.target.value)} rows={3} placeholder="Texte de la clause" />
+          </div>
+
+          <div className="space-y-1">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <Checkbox checked={impacteCalcul} onCheckedChange={(checked) => setImpacteCalcul(checked === true)} />
+              Cette clause peut affecter le calcul de transmission (à vérifier manuellement)
+            </label>
           </div>
 
           <div className="space-y-1">

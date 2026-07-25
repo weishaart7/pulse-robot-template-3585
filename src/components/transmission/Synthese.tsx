@@ -10,10 +10,25 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePassifs } from '@/hooks/usePassifs';
-import { buildFamilyGraph, buildPatrimonySnapshot, buildTransmissionLiberalites, buildAVContracts, AVContractRawRow, AVDonneesInsuffisantesError, LegsCaduc } from '@/utils/transmissionHelpers';
+import {
+  buildFamilyGraph,
+  buildPatrimonySnapshot,
+  buildTransmissionLiberalites,
+  buildAVContracts,
+  buildRecompensesCalcInput,
+  buildCreancesCalcInput,
+  buildParticipationAcquetsContext,
+  AVContractRawRow,
+  AVDonneesInsuffisantesError,
+  LegsCaduc,
+  parseClausesData
+} from '@/utils/transmissionHelpers';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { getAssetCategory } from '@/constants/assetTypes';
+import { Recompense } from '@/types/recompense';
+import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
+import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcquets';
 import transmissionParamsData from '@/data/transmission-params.json';
 import './kairos-transmission.css';
 
@@ -32,6 +47,8 @@ export const Synthese = () => {
   const [hasAssets, setHasAssets] = useState(false);
   const [hasCustomClausesToCheck, setHasCustomClausesToCheck] = useState(false);
   const [legsCaducs, setLegsCaducs] = useState<LegsCaduc[]>([]);
+  const [hasDeceasedAVBeneficiaire, setHasDeceasedAVBeneficiaire] = useState(false);
+  const [hasAVContracts, setHasAVContracts] = useState(false);
   const [computeErrorMessage, setComputeErrorMessage] = useState<string | null>(null);
   // Distingue la cause du blocage pour orienter vers le bon écran : un bien
   // non qualifié se corrige dans Patrimoine, une AV sans opération se corrige
@@ -71,7 +88,7 @@ export const Synthese = () => {
 
       const clausesPersonnalisees = (maritalStatus as any)?.clauses_personnalisees;
       const clausesPersonnaliseesList = Array.isArray(clausesPersonnalisees) ? clausesPersonnalisees : [];
-      setHasCustomClausesToCheck(clausesPersonnaliseesList.some((c: any) => Array.isArray(c?.tags) && c.tags.length > 0));
+      setHasCustomClausesToCheck(clausesPersonnaliseesList.some((c: any) => c?.impacteCalcul === true));
 
       const { data: familyLinks } = await supabase
         .from('family_links')
@@ -92,6 +109,7 @@ export const Synthese = () => {
       // déjà corrigé sur l'immobilier avec getAssetCategory.
       const avAssets = (assets || []).filter(a => getAssetCategory(a.nature || '') === 'épargne et assurance-vie');
       const totalAV = avAssets.reduce((sum, a) => sum + (Number(a.valeur_estimee) || 0), 0);
+      setHasAVContracts(avAssets.length > 0);
 
       // Récupérer le détail des contrats AV (clause bénéficiaire structurée +
       // opérations réelles) pour alimenter le vrai moteur fiscal 990I/757B.
@@ -120,9 +138,42 @@ export const Synthese = () => {
         clauseBeneficiaireStructuree: avClauseByAsset.get(a.id) || null
       }));
 
+      // Statut 'decede' de la clause bénéficiaire AV : aucune cascade automatique
+      // (cf. dmtg/assurance-vie.ts::resolveEffectiveAVBeneficiaires), seule l'UI
+      // avertit — jusqu'ici uniquement dans ClauseBeneficiaireBuilder.tsx, on relaie
+      // ici pour un utilisateur qui ne consulte que la synthèse.
+      setHasDeceasedAVBeneficiaire(
+        avContractsRaw.some(row =>
+          row.clauseBeneficiaireStructuree?.niveaux?.some(niveau =>
+            niveau.beneficiaires?.some(b => b.statut === 'decede')
+          )
+        )
+      );
+
       // Récupérer les libéralités
       const { data: liberalites } = await supabase
         .from('liberalites')
+        .select('*')
+        .eq('user_id', user!.id);
+
+      // Récompenses/créances entre époux + participation aux acquêts : trou
+      // pré-existant comblé ici (jamais transmis à computeTransmission avant
+      // ce chantier) — moteur déjà agnostique, aucun impact tant qu'aucune
+      // ligne n'est renseignée (cf. diagnostic).
+      const { data: recompensesRows } = await supabase
+        .from('recompenses')
+        .select('*')
+        .eq('user_id', user!.id);
+      const { data: creancesRows } = await supabase
+        .from('creances_entre_epoux')
+        .select('*')
+        .eq('user_id', user!.id);
+      const { data: patrimoineOriginaireRows } = await supabase
+        .from('patrimoine_originaire')
+        .select('*')
+        .eq('user_id', user!.id);
+      const { data: patrimoineFinalRows } = await supabase
+        .from('patrimoine_final')
         .select('*')
         .eq('user_id', user!.id);
 
@@ -169,6 +220,9 @@ export const Synthese = () => {
       // ET la fiscalité DMTG en interne (cf. consolidation du moteur), et renvoie
       // un résultat déjà complet (dmtg, netBreakdown, family...). Ce composant ne
       // fait plus que l'afficher.
+      const clausesData = parseClausesData((maritalStatus as any)?.clauses_contrat);
+      const exclusionBiensProfessionnelsParticipation = !!clausesData['exclusion_biens_professionnels']?.enabled;
+
       const combinedResult = computeTransmission({
         family,
         patrimony,
@@ -178,7 +232,16 @@ export const Synthese = () => {
         referenceDate,
         rawAssets: assets || [],
         avContracts,
-        partageEnvisage
+        partageEnvisage,
+        clausesData,
+        regimeMatrimonial: (maritalStatus as any)?.regime_matrimonial,
+        recompenses: buildRecompensesCalcInput((recompensesRows || []) as Recompense[]),
+        creancesEntreEpoux: buildCreancesCalcInput((creancesRows || []) as CreanceEntreEpoux[]),
+        participationAcquets: buildParticipationAcquetsContext(
+          (patrimoineOriginaireRows || []) as PatrimoineOriginaire[],
+          (patrimoineFinalRows || []) as PatrimoineFinal[],
+          exclusionBiensProfessionnelsParticipation
+        )
       });
 
       setTransmissionResult(combinedResult);
@@ -371,6 +434,22 @@ export const Synthese = () => {
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             Une ou plusieurs clauses personnalisées existent dans le contrat de mariage et doivent être vérifiées manuellement.
+          </AlertDescription>
+        </Alert>
+      )}
+      {hasAVContracts && (
+        <Alert className="bg-[var(--warning-soft)] border-[var(--warning)]/30">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Assurance-vie hors succession civile, sous réserve des primes manifestement exagérées (art. L. 132-13 C. assur.) — critère d'appréciation multicritère (âge, situation patrimoniale et familiale, utilité du contrat) laissé à votre analyse, non automatisé dans cet outil.
+          </AlertDescription>
+        </Alert>
+      )}
+      {hasDeceasedAVBeneficiaire && (
+        <Alert className="bg-[var(--warning-soft)] border-[var(--warning)]/30">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Un bénéficiaire de la clause assurance-vie est marqué décédé — la répartition n'est pas recalculée automatiquement. Vérifiez la clause bénéficiaire.
           </AlertDescription>
         </Alert>
       )}

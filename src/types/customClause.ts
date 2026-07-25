@@ -21,4 +21,6 @@ export interface ClausePersonnalisee {
   biensVises: string[];
   beneficiaire?: string;
   parametres: string[];
+  /** Signal purement déclaratif : la clause peut affecter le calcul de transmission, à vérifier manuellement. Aucun branchement sur le moteur de calcul. */
+  impacteCalcul: boolean;
 }

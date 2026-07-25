@@ -10,12 +10,18 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CalendarIcon, Loader2, Heart, FileText, Gift, History } from "lucide-react";
+import { CalendarIcon, Loader2, Heart, FileText, Gift, History, Scale, Coins } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { MatrimonialRegimeOptions } from "@/components/famille/MatrimonialRegimeOptions";
 import { ClausesPersonnaliseesSection } from "@/components/famille/matrimonial/ClausesPersonnaliseesSection";
+import { RecompensesSection } from "@/components/famille/matrimonial/RecompensesSection";
+import { CreancesEntreEpouxSection } from "@/components/famille/matrimonial/CreancesEntreEpouxSection";
+import { PatrimoineOriginaireSection } from "@/components/famille/matrimonial/PatrimoineOriginaireSection";
+import { PatrimoineFinalSection } from "@/components/famille/matrimonial/PatrimoineFinalSection";
+import { determinerRegimeLegal } from "@/lib/patrimoine/regimeLegal";
+import { getSimplifiedRegime, RegimeType } from "@/types/matrimonial";
 
 const formSchema = z.object({
   conventionPacs: z.enum(['Régime de la séparation des biens', 'Indivision']).default('Régime de la séparation des biens'),
@@ -25,6 +31,7 @@ const formSchema = z.object({
     'Communauté de meubles et d\'acquêts',
     'Communauté universelle',
     'Séparation de biens',
+    'Séparation de biens avec société d\'acquêts',
     'Participation aux acquêts'
   ]).default('Communauté réduite aux acquêts (option sans contrat de mariage)'),
   dateMariage: z.date().optional(),
@@ -44,11 +51,13 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
-type Section = 'informations-generales' | 'clauses-contrat' | 'donation' | 'historique';
+type Section = 'informations-generales' | 'clauses-contrat' | 'recompenses-creances' | 'participation-acquets' | 'donation' | 'historique';
 
 const SECTION_LABELS: Record<Section, string> = {
   'informations-generales': 'Informations générales',
   'clauses-contrat': 'Clauses du contrat',
+  'recompenses-creances': 'Récompenses & créances',
+  'participation-acquets': 'Participation aux acquêts',
   'donation': 'Donation au dernier vivant',
   'historique': 'Historique matrimonial',
 };
@@ -167,14 +176,15 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
 
   const regimeMatrimonial = form.watch("regimeMatrimonial");
   const pasDeContrat = form.watch("pasDeContrat");
+  const dateMariage = form.watch("dateMariage");
   const mariagePrecedentPersonne = form.watch("mariagePrecedentPersonne");
   const mariagePrecedentConjoint = form.watch("mariagePrecedentConjoint");
 
   useEffect(() => {
     if (pasDeContrat) {
-      form.setValue('regimeMatrimonial', 'Communauté réduite aux acquêts (option sans contrat de mariage)');
+      form.setValue('regimeMatrimonial', determinerRegimeLegal(dateMariage?.toISOString()));
     }
-  }, [pasDeContrat, form]);
+  }, [pasDeContrat, dateMariage, form]);
 
   useEffect(() => {
     if (!mariagePrecedentPersonne) {
@@ -190,9 +200,30 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
     }
   }, [mariagePrecedentConjoint, form]);
 
+  // Mécanisme A (cf. src/lib/patrimoine/succession.ts) : recompenses uniquement
+  // pertinentes en présence d'une masse commune (régimes communautaires +
+  // séparation de biens avec société d'acquêts) ; créances entre époux, elles,
+  // s'appliquent dans tous les régimes matrimoniaux (art. 1479, 1543 C. civ.).
+  const simplifiedRegimeType: RegimeType =
+    regimeMatrimonial === 'Communauté réduite aux acquêts (option sans contrat de mariage)' ? 'communaute_reduite' :
+    regimeMatrimonial === "Communauté de meubles et d'acquêts" ? 'communaute_meubles' :
+    regimeMatrimonial === 'Communauté universelle' ? 'communaute_universelle' :
+    regimeMatrimonial === 'Séparation de biens' ? 'separation_biens' :
+    regimeMatrimonial === "Séparation de biens avec société d'acquêts" ? 'separation_societe_acquets' :
+    regimeMatrimonial === 'Participation aux acquêts' ? 'participation_acquets' :
+    'communaute_reduite';
+  const hasMasseCommune = getSimplifiedRegime(simplifiedRegimeType) === 'communauté' || simplifiedRegimeType === 'separation_societe_acquets';
+
   const sections = relationStatus === "Marié(e)" ? [
     { id: 'informations-generales' as Section, label: 'Informations générales', icon: Heart },
     { id: 'clauses-contrat' as Section, label: 'Clauses du contrat', icon: FileText },
+    { id: 'recompenses-creances' as Section, label: 'Récompenses & créances', icon: Scale },
+    // Pill conditionnée au régime (contrairement à recompenses-creances,
+    // toujours affichée) : la participation aux acquêts n'a de sens que sous
+    // ce régime, cf. diagnostic chantier participation aux acquêts.
+    ...(simplifiedRegimeType === 'participation_acquets'
+      ? [{ id: 'participation-acquets' as Section, label: 'Participation aux acquêts', icon: Coins }]
+      : []),
     { id: 'donation' as Section, label: 'Donation au dernier vivant', icon: Gift },
     { id: 'historique' as Section, label: 'Historique matrimonial', icon: History },
   ] : [];
@@ -288,6 +319,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                             <SelectItem value="Communauté de meubles et d'acquêts">Communauté de meubles et d'acquêts</SelectItem>
                             <SelectItem value="Communauté universelle">Communauté universelle</SelectItem>
                             <SelectItem value="Séparation de biens">Séparation de biens</SelectItem>
+                            <SelectItem value="Séparation de biens avec société d'acquêts">Séparation de biens avec société d'acquêts</SelectItem>
                             <SelectItem value="Participation aux acquêts">Participation aux acquêts</SelectItem>
                           </SelectContent>
                         </Select>
@@ -329,20 +361,28 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                   {pasDeContrat ? (
                     <p className="text-sm text-muted-foreground">Pas de contrat de mariage sélectionné</p>
                   ) : (
-                    <MatrimonialRegimeOptions
-                      regimeType={
-                        regimeMatrimonial === 'Communauté réduite aux acquêts (option sans contrat de mariage)' ? 'communaute_reduite' :
-                        regimeMatrimonial === "Communauté de meubles et d'acquêts" ? 'communaute_meubles' :
-                        regimeMatrimonial === 'Communauté universelle' ? 'communaute_universelle' :
-                        regimeMatrimonial === 'Séparation de biens' ? 'separation_biens' :
-                        regimeMatrimonial === 'Participation aux acquêts' ? 'participation_acquets' :
-                        'communaute_reduite'
-                      }
-                    />
+                    <MatrimonialRegimeOptions regimeType={simplifiedRegimeType} />
                   )}
                 </div>
 
                 <ClausesPersonnaliseesSection />
+              </div>
+            )}
+
+            {activeSection === 'recompenses-creances' && (
+              <div className="space-y-6">
+                {hasMasseCommune && <RecompensesSection />}
+                <CreancesEntreEpouxSection />
+              </div>
+            )}
+
+            {/* Régime-gardée en plus du gating de la pill ci-dessus : évite
+                d'afficher ce contenu si le régime change pendant que cette
+                section reste active (la pill disparaît, pas le state). */}
+            {activeSection === 'participation-acquets' && simplifiedRegimeType === 'participation_acquets' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <PatrimoineOriginaireSection />
+                <PatrimoineFinalSection />
               </div>
             )}
 

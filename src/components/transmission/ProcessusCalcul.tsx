@@ -9,7 +9,21 @@ import { useFamilyData, useMaritalStatus, useFamilyProfile } from '@/hooks/useFa
 import { useLiberalites } from '@/hooks/useLiberalites';
 import { usePassifs } from '@/hooks/usePassifs';
 import { useAVContracts } from '@/hooks/useAVContracts';
-import { buildFamilyGraph, buildPatrimonySnapshot, buildTransmissionLiberalites, buildAVContracts, AVDonneesInsuffisantesError } from '@/utils/transmissionHelpers';
+import { useRecompenses } from '@/hooks/useRecompenses';
+import { useCreancesEntreEpoux } from '@/hooks/useCreancesEntreEpoux';
+import { usePatrimoineOriginaire } from '@/hooks/usePatrimoineOriginaire';
+import { usePatrimoineFinal } from '@/hooks/usePatrimoineFinal';
+import {
+  buildFamilyGraph,
+  buildPatrimonySnapshot,
+  buildTransmissionLiberalites,
+  buildAVContracts,
+  buildRecompensesCalcInput,
+  buildCreancesCalcInput,
+  buildParticipationAcquetsContext,
+  AVDonneesInsuffisantesError,
+  parseClausesData
+} from '@/utils/transmissionHelpers';
 import { computeTransmission, TransmissionContext } from '@/lib/transmission';
 import { FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission/types';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
@@ -26,6 +40,10 @@ export const ProcessusCalcul = () => {
   const { liberalites, loading: liberalitesLoading } = useLiberalites();
   const { passifs } = usePassifs();
   const { avContractsRaw, loading: avLoading } = useAVContracts(assets);
+  const { data: recompenses, loading: recompensesLoading } = useRecompenses();
+  const { data: creancesEntreEpoux, loading: creancesLoading } = useCreancesEntreEpoux();
+  const { data: patrimoineOriginaire, loading: patrimoineOriginaireLoading } = usePatrimoineOriginaire();
+  const { data: patrimoineFinal, loading: patrimoineFinalLoading } = usePatrimoineFinal();
 
   // Construire le graphe familial
   const familyGraph: FamilyGraph | null = useMemo(() => {
@@ -72,6 +90,8 @@ export const ProcessusCalcul = () => {
       // lève AVDonneesInsuffisantesError si un contrat n'a aucune opération
       // enregistrée ou si la date de naissance du défunt simulé est inconnue.
       const avContracts = buildAVContracts(avContractsRaw, familyProfile?.date_naissance, familyGraph);
+      const clausesData = parseClausesData((maritalStatus as any)?.clauses_contrat);
+      const exclusionBiensProfessionnelsParticipation = !!clausesData['exclusion_biens_professionnels']?.enabled;
       const ctx: TransmissionContext = {
         family: familyGraph,
         patrimony,
@@ -80,7 +100,12 @@ export const ProcessusCalcul = () => {
         conjointOption: 'quart_pp',
         rawAssets: assets || [],
         avContracts,
-        partageEnvisage: !!(maritalStatus as any)?.partage_envisage
+        partageEnvisage: !!(maritalStatus as any)?.partage_envisage,
+        clausesData,
+        regimeMatrimonial: (maritalStatus as any)?.regime_matrimonial,
+        recompenses: buildRecompensesCalcInput(recompenses),
+        creancesEntreEpoux: buildCreancesCalcInput(creancesEntreEpoux),
+        participationAcquets: buildParticipationAcquetsContext(patrimoineOriginaire, patrimoineFinal, exclusionBiensProfessionnelsParticipation)
       };
       return { patrimony, transmissionResult: computeTransmission(ctx), computeErrorMessage: null, computeErrorKind: null };
     } catch (error) {
@@ -93,9 +118,15 @@ export const ProcessusCalcul = () => {
       }
       return { patrimony: null, transmissionResult: null, computeErrorMessage: null, computeErrorKind: null };
     }
-  }, [familyGraph, assets, passifs, transmissionLiberalites, params, maritalStatus, avContractsRaw, familyProfile]);
+  }, [
+    familyGraph, assets, passifs, transmissionLiberalites, params, maritalStatus, avContractsRaw, familyProfile,
+    recompenses, creancesEntreEpoux, patrimoineOriginaire, patrimoineFinal
+  ]);
 
-  if (assetsLoading || familyLoading || liberalitesLoading || avLoading) {
+  if (
+    assetsLoading || familyLoading || liberalitesLoading || avLoading ||
+    recompensesLoading || creancesLoading || patrimoineOriginaireLoading || patrimoineFinalLoading
+  ) {
     return (
       <div className="kairos-transmission">
         <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">

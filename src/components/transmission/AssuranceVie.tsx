@@ -15,12 +15,19 @@ import {
   buildFamilyGraph,
   buildPatrimonySnapshot,
   buildAVContracts,
+  buildRecompensesCalcInput,
+  buildCreancesCalcInput,
+  buildParticipationAcquetsContext,
   AVContractRawRow,
-  AVDonneesInsuffisantesError
+  AVDonneesInsuffisantesError,
+  parseClausesData
 } from '@/utils/transmissionHelpers';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission';
 import { resolveEffectiveAVBeneficiaires } from '@/lib/dmtg/assurance-vie';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
+import { Recompense } from '@/types/recompense';
+import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
+import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcquets';
 import transmissionParamsData from '@/data/transmission-params.json';
 
 const AV_NATURES = [
@@ -71,7 +78,7 @@ export const AssuranceVie = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const [contractsRes, profileRes, maritalRes, familyRes, passifsRes] = await Promise.all([
+        const [contractsRes, profileRes, maritalRes, familyRes, passifsRes, recompensesRes, creancesRes, patrimoineOriginaireRes, patrimoineFinalRes] = await Promise.all([
           supabase
             .from('assets')
             .select('*')
@@ -95,6 +102,26 @@ export const AssuranceVie = () => {
           supabase
             .from('passifs')
             .select('montant_du')
+            .eq('user_id', user.id),
+          // Récompenses/créances entre époux + participation aux acquêts :
+          // trou pré-existant comblé ici (jamais transmis à computeTransmission
+          // avant ce chantier) — moteur déjà agnostique, aucun impact tant
+          // qu'aucune ligne n'est renseignée (cf. diagnostic).
+          supabase
+            .from('recompenses')
+            .select('*')
+            .eq('user_id', user.id),
+          supabase
+            .from('creances_entre_epoux')
+            .select('*')
+            .eq('user_id', user.id),
+          supabase
+            .from('patrimoine_originaire')
+            .select('*')
+            .eq('user_id', user.id),
+          supabase
+            .from('patrimoine_final')
+            .select('*')
             .eq('user_id', user.id),
         ]);
 
@@ -206,6 +233,9 @@ export const AssuranceVie = () => {
               }
             };
 
+            const clausesData = parseClausesData((maritalRes.data as any)?.clauses_contrat);
+            const exclusionBiensProfessionnelsParticipation = !!clausesData['exclusion_biens_professionnels']?.enabled;
+
             const result = computeTransmission({
               family,
               patrimony,
@@ -213,7 +243,16 @@ export const AssuranceVie = () => {
               params,
               rawAssets: allAssets || [],
               avContracts: builtAvContracts,
-              referenceDate: new Date().toISOString().split('T')[0]
+              referenceDate: new Date().toISOString().split('T')[0],
+              clausesData,
+              regimeMatrimonial: (maritalRes.data as any)?.regime_matrimonial,
+              recompenses: buildRecompensesCalcInput((recompensesRes.data || []) as Recompense[]),
+              creancesEntreEpoux: buildCreancesCalcInput((creancesRes.data || []) as CreanceEntreEpoux[]),
+              participationAcquets: buildParticipationAcquetsContext(
+                (patrimoineOriginaireRes.data || []) as PatrimoineOriginaire[],
+                (patrimoineFinalRes.data || []) as PatrimoineFinal[],
+                exclusionBiensProfessionnelsParticipation
+              )
             });
             setTransmissionResult(result);
             setComputeErrorMessage(null);

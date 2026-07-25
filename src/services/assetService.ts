@@ -59,6 +59,16 @@ export interface Asset {
   cto_nature_sous_jacent?: string;
   clause_entree_communaute?: boolean;
   clause_remploi?: boolean;
+  est_propre_par_nature?: boolean;
+  // Financement mixte (art. 1436, régimes communautaires uniquement) : montant
+  // de fonds propres apportés à l'acquisition, comparé à valeur_acquisition.
+  // Sans effet si clause_remploi est actée (remploi total, cas distinct).
+  financement_mixte_apport_propre?: number;
+  // PACS-indivision (art. 515-5-2 C. civ.) : part rachetée par licitation aux
+  // autres indivisaires, au-delà de la part initiale de l'acquéreur — reste
+  // personnelle. Champ déclaratif, non injecté dans qualifierBien().
+  part_licitation_personnelle?: number;
+  licitation_acquereur?: 'utilisateur' | 'conjoint';
   created_at?: string;
   updated_at?: string;
 }

@@ -83,6 +83,10 @@ export const assetSchema = z.object({
   cto_nature_sous_jacent: z.string().optional(),
   clause_entree_communaute: z.boolean().optional(),
   clause_remploi: z.boolean().optional(),
+  est_propre_par_nature: z.boolean().optional(),
+  financement_mixte_apport_propre: z.number().min(0).optional(),
+  part_licitation_personnelle: z.number().min(0).max(100).optional(),
+  licitation_acquereur: z.enum(['utilisateur', 'conjoint']).optional(),
 });
 
 export type AssetFormValues = z.infer<typeof assetSchema>;

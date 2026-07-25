@@ -125,11 +125,6 @@ export interface DmtgParams {
   fraisFunerairesForfait: Money; // 1500
 }
 
-export interface MatrimonialLiquidationResult {
-  demiBoniPourSuccession: Money;
-  notes: string[];
-}
-
 export interface AssetValuationResult {
   lignes: Array<{ assetId: string; baseTaxableGlobale: Money; justifs: string[] }>;
   totalBaseTaxable: Money;

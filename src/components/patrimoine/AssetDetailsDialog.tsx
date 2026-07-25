@@ -98,6 +98,12 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
     detenteur: asset.detenteur,
     clauseEntreeCommunaute: asset.clause_entree_communaute,
     clauseRemploi: asset.clause_remploi,
+    natureActif: asset.nature,
+    assetId: asset.id,
+    societeAcquetsAssetIds: (maritalStatus as any)?.clauses_contrat?.societe_acquets?.selectedAssets,
+    societeAcquetsResidencePrincipale: (maritalStatus as any)?.clauses_contrat?.societe_acquets?.options?.residencePrincipale,
+    valeurAcquisition: asset.valeur_acquisition,
+    apportFondsPropres: asset.financement_mixte_apport_propre,
   });
   const displayedQualification = qualificationAuto
     ? qualificationResult.qualification
@@ -195,6 +201,19 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
                 Clause d'entrée en communauté : {asset.clause_entree_communaute ? 'Oui' : 'Non'}
                 {' · '}
                 Clause de remploi : {asset.clause_remploi ? 'Oui' : 'Non'}
+              </p>
+            )}
+            {asset.part_licitation_personnelle != null && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Licitation de plus de moitié (art. 515-5-2) : {asset.part_licitation_personnelle}% rachetés par{' '}
+                {asset.licitation_acquereur === 'conjoint' ? (maritalStatus?.prenom_conjoint || 'Conjoint') : (familyProfile?.prenom || 'Vous')}
+                , part personnelle exclue de l'indivision PACS.
+              </p>
+            )}
+            {asset.financement_mixte_apport_propre != null && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Financement mixte (art. 1436) : {asset.financement_mixte_apport_propre} € de fonds propres
+                {asset.valeur_acquisition ? ` sur ${asset.valeur_acquisition} € de prix d'acquisition` : ''}.
               </p>
             )}
             <p className="text-xs text-muted-foreground italic mt-2">{displayedQualificationRaison}</p>

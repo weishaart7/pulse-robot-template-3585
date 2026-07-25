@@ -36,7 +36,16 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
   const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
   const [familyMembers, setFamilyMembers] = useState<Array<{ id?: string; nom: string; prenom?: string; date_naissance?: string }>>([]);
   const [familyData, setFamilyData] = useState<FamilyInfo>({ hasPartner: false });
-  const [maritalContext, setMaritalContext] = useState<{ statutCouple?: string; regimeMatrimonial?: string; dateMariage?: string; conventionPacs?: string }>({});
+  const [maritalContext, setMaritalContext] = useState<{
+    statutCouple?: string;
+    regimeMatrimonial?: string;
+    dateMariage?: string;
+    conventionPacs?: string;
+    datePacs?: string;
+    societeAcquetsAssetIds?: string[];
+    societeAcquetsResidencePrincipale?: boolean;
+    extensionProprsParNature?: boolean;
+  }>({});
   const [indivisaires, setIndivisaires] = useState<IndivisaireDraft[]>([]);
   const [demembrements, setDemembrements] = useState<DemembrementDraft[]>([]);
   const [qualificationRaison, setQualificationRaison] = useState<string | undefined>(undefined);
@@ -86,11 +95,17 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         setDetenteurOptions(options);
         setFamilyData(familyInfo);
         setFamilyMembers(familyLinks || []);
+        const clausesContrat = maritalStatus?.clauses_contrat;
+        const societeAcquets = clausesContrat?.societe_acquets;
         setMaritalContext({
           statutCouple: maritalStatus?.statut_couple,
           regimeMatrimonial: maritalStatus?.regime_matrimonial,
           dateMariage: maritalStatus?.date_mariage,
           conventionPacs: maritalStatus?.convention_pacs,
+          datePacs: maritalStatus?.date_pacs,
+          societeAcquetsAssetIds: societeAcquets?.selectedAssets,
+          societeAcquetsResidencePrincipale: societeAcquets?.options?.residencePrincipale,
+          extensionProprsParNature: clausesContrat?.extension_propres_par_nature?.enabled,
         });
       } catch (error) {
         setDetenteurOptions(['Utilisateur']);
@@ -163,6 +178,10 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         cto_nature_sous_jacent: (asset as any).cto_nature_sous_jacent || undefined,
         clause_entree_communaute: (asset as any).clause_entree_communaute || false,
         clause_remploi: (asset as any).clause_remploi || false,
+        est_propre_par_nature: (asset as any).est_propre_par_nature || false,
+        financement_mixte_apport_propre: (asset as any).financement_mixte_apport_propre ?? undefined,
+        part_licitation_personnelle: (asset as any).part_licitation_personnelle ?? undefined,
+        licitation_acquereur: (asset as any).licitation_acquereur ?? undefined,
       });
     }
   }, [asset, familyData, form]);
@@ -171,7 +190,8 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
   useEffect(() => {
     const watchedFields = [
       'origine_actif', 'date_acquisition', 'detenteur', 'mode_detention', 'qualification_auto',
-      'clause_entree_communaute', 'clause_remploi',
+      'clause_entree_communaute', 'clause_remploi', 'est_propre_par_nature', 'nature',
+      'financement_mixte_apport_propre', 'valeur_acquisition',
     ];
     const recompute = (value: any) => {
       const { qualification, raison } = qualifierBien({
@@ -179,12 +199,21 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         regimeMatrimonial: maritalContext.regimeMatrimonial,
         dateMariage: maritalContext.dateMariage,
         conventionPacs: maritalContext.conventionPacs,
+        datePacs: maritalContext.datePacs,
         dateAcquisition: value.date_acquisition ? new Date(value.date_acquisition).toISOString() : undefined,
         origineActif: value.origine_actif as string[] | undefined,
         modeDetention: value.mode_detention,
         detenteur: value.detenteur,
         clauseEntreeCommunaute: value.clause_entree_communaute,
         clauseRemploi: value.clause_remploi,
+        natureActif: value.nature,
+        assetId: asset?.id,
+        societeAcquetsAssetIds: maritalContext.societeAcquetsAssetIds,
+        societeAcquetsResidencePrincipale: maritalContext.societeAcquetsResidencePrincipale,
+        estPropreParNature: value.est_propre_par_nature,
+        extensionProprsParNature: maritalContext.extensionProprsParNature,
+        valeurAcquisition: value.valeur_acquisition,
+        apportFondsPropres: value.financement_mixte_apport_propre,
       });
       form.setValue('qualification_bien', qualification);
       setQualificationRaison(raison);
@@ -204,7 +233,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
       recompute(value);
     });
     return () => subscription.unsubscribe();
-  }, [form, maritalContext]);
+  }, [form, maritalContext, asset?.id]);
 
   // Auto-adjust percentages when detenteur changes, and auto-set origine for NP
   useEffect(() => {

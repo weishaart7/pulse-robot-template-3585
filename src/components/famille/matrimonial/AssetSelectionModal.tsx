@@ -12,6 +12,8 @@ interface AssetSelectionModalProps {
   onClose: () => void;
   onConfirm: (selectedAssets: string[]) => void;
   preSelectedAssets?: string[];
+  /** Si fourni, restreint les biens sélectionnables à cette liste d'IDs (ex. sous-clauses limitées aux biens déjà désignés dans la société d'acquêts). */
+  assetIdsFilter?: string[];
 }
 
 export const AssetSelectionModal: React.FC<AssetSelectionModalProps> = ({
@@ -19,9 +21,11 @@ export const AssetSelectionModal: React.FC<AssetSelectionModalProps> = ({
   isOpen,
   onClose,
   onConfirm,
-  preSelectedAssets = []
+  preSelectedAssets = [],
+  assetIdsFilter
 }) => {
-  const { assets } = useAssets();
+  const { assets: allAssets } = useAssets();
+  const assets = assetIdsFilter ? allAssets?.filter(a => assetIdsFilter.includes(a.id)) : allAssets;
   const [selectedAssets, setSelectedAssets] = useState<string[]>(preSelectedAssets);
 
   // Reset selection when modal opens with new preSelectedAssets
@@ -115,7 +119,9 @@ export const AssetSelectionModal: React.FC<AssetSelectionModalProps> = ({
           ) : (
             <div className="p-6 text-center border border-dashed rounded-lg">
               <p className="text-muted-foreground">
-                Aucun bien trouvé. Veuillez d'abord ajouter des biens dans la section Patrimoine.
+                {assetIdsFilter
+                  ? "Aucun bien n'est encore désigné dans la société d'acquêts. Désignez d'abord des biens dans la clause principale."
+                  : "Aucun bien trouvé. Veuillez d'abord ajouter des biens dans la section Patrimoine."}
               </p>
             </div>
           )}

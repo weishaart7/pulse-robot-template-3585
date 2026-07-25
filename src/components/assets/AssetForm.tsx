@@ -25,7 +25,7 @@ import {
   NATURES_LIQUIDITES_FR
 } from '@/schemas/assetSchema';
 import { isSocieteEligibleNature } from '@/lib/patrimoine/societeTransfer';
-import { QUALIFICATION_OPTIONS } from '@/lib/patrimoine/qualification';
+import { QUALIFICATION_OPTIONS, isPacsIndivision, isRegimeCommunautaire } from '@/lib/patrimoine/qualification';
 import { calculatePlusValue } from '@/lib/patrimoine/utils';
 import { computeAge, getTrancheBaremeForYoungest } from '@/lib/patrimoine/bareme669CGI';
 
@@ -100,8 +100,17 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const isPER = NATURES_PER.includes(watchedNature);
   const isCTO = watchedNature === 'Compte-titres (CTO)';
   const watchedOrigineActif = form.watch('origine_actif');
-  const showClauseEntreeCommunaute = (watchedOrigineActif || []).includes('Donation');
+  const showClauseEntreeCommunaute = (watchedOrigineActif || []).includes('Donation') || (watchedOrigineActif || []).includes('Héritage');
   const showClauseRemploi = (watchedOrigineActif || []).includes('Acquisition à titre onéreux');
+  const showLicitationPacs = isPacsIndivision(maritalContext.statutCouple, maritalContext.conventionPacs, maritalContext.datePacs)
+    && watchedDetenteur === 'Le couple';
+  const watchedClauseRemploi = form.watch('clause_remploi');
+  // Financement mixte (art. 1436) : ne se pose qu'en régime communautaire,
+  // pour une acquisition à titre onéreux, et n'a plus de sens si le remploi
+  // total est déjà acté (clause_remploi couvre alors la totalité du prix).
+  const showFinancementMixte = isRegimeCommunautaire(maritalContext.regimeMatrimonial)
+    && showClauseRemploi
+    && !watchedClauseRemploi;
   const watchedCtoMultiActifs = form.watch('cto_multi_actifs');
   const watchedModeDetention = form.watch('mode_detention');
   const isDemembre = watchedModeDetention === 'Usufruit' || watchedModeDetention === 'Nue-propriété';
@@ -528,7 +537,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                 <div className="space-y-1 leading-none">
                   <FormLabel>Clause d'entrée en communauté</FormLabel>
                   <FormDescription>
-                    Le donateur a explicitement choisi que ce bien tombe dans la communauté, malgré l'origine gratuite.
+                    Le donateur (ou le testateur) a explicitement choisi que ce bien tombe dans la communauté, malgré l'origine gratuite.
                   </FormDescription>
                 </div>
               </FormItem>
@@ -557,6 +566,82 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               </FormItem>
             )}
           />
+        )}
+
+        {showFinancementMixte && (
+          <FormField control={form.control} name="financement_mixte_apport_propre" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Financement mixte : contribution en fonds propres (€)</FormLabel>
+              <FormDescription>
+                Montant financé par des fonds propres, à comparer au prix d'acquisition total renseigné ci-dessus. Si cette contribution couvre au moins la moitié du prix : bien propre (art. 1436), récompense due à la communauté pour le solde. Sinon : bien commun, récompense due à l'époux apporteur. Sans effet si la clause de remploi ci-dessus est cochée.
+              </FormDescription>
+              <FormControl>
+                <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" min="0" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        )}
+
+        <FormField
+          control={form.control}
+          name="est_propre_par_nature"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>Bien propre par nature (art. 1404)</FormLabel>
+                <FormDescription>
+                  Vêtements, actions en réparation d'un dommage corporel ou moral, créances et pensions incessibles, instruments de travail nécessaires à la profession : reste propre même en communauté (y compris universelle), sauf clause d'extension de la communauté aux biens propres par nature.
+                </FormDescription>
+              </div>
+            </FormItem>
+          )}
+        />
+
+        {showLicitationPacs && (
+          <div className="space-y-4 rounded-md border p-4">
+            <div className="space-y-1 leading-none">
+              <FormLabel>Licitation de plus de moitié (art. 515-5-2)</FormLabel>
+              <FormDescription>
+                Si l'un des partenaires a racheté aux autres indivisaires une part du bien au-delà de sa propre part initiale, cette portion rachetée reste personnelle et n'entre pas dans l'indivision du PACS. Champ déclaratif : n'est pas répercuté automatiquement dans la qualification calculée ci-dessous.
+              </FormDescription>
+            </div>
+
+            <FormField control={form.control} name="licitation_acquereur" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Partenaire acquéreur</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px]">
+                      <SelectValue placeholder="Sélectionner" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="utilisateur">{familyData.userFirstName || 'Vous'}</SelectItem>
+                    <SelectItem value="conjoint">{familyData.partnerFirstName || 'Conjoint'}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="part_licitation_personnelle" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Part rachetée par licitation (%)</FormLabel>
+                <FormDescription>Pourcentage de la valeur du bien acquis au-delà de la part initiale de l'acquéreur.</FormDescription>
+                <FormControl>
+                  <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" min="0" max="100" step="0.1" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          </div>
         )}
 
         <FormField control={form.control} name="qualification_bien" render={({ field }) => (
