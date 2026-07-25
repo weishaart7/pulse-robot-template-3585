@@ -4,8 +4,10 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ClauseDefinition, ClauseState } from '@/types/matrimonial';
 import { PercentageInputs } from './PercentageInputs';
+import { PartConjointInput } from './PartConjointInput';
 
 interface ClauseItemProps {
   clause: ClauseDefinition;
@@ -13,6 +15,7 @@ interface ClauseItemProps {
   onToggle: () => void;
   onAssetSelect: () => void;
   onPercentageChange: (partPP: number, partUsufruit: number) => void;
+  onSinglePercentageChange: (partPP: number) => void;
   onOptionsChange: (options: any) => void;
   renderSubClauses?: () => React.ReactNode;
 }
@@ -23,6 +26,7 @@ export const ClauseItem: React.FC<ClauseItemProps> = ({
   onToggle,
   onAssetSelect,
   onPercentageChange,
+  onSinglePercentageChange,
   onOptionsChange,
   renderSubClauses
 }) => {
@@ -97,6 +101,56 @@ export const ClauseItem: React.FC<ClauseItemProps> = ({
             </Button>
           )}
 
+          {clause.hasResidencePrincipaleOption && (
+            <div className="flex items-center space-x-2 p-2 bg-muted/30 rounded-md">
+              <Checkbox
+                id={`${clause.key}_residence_principale`}
+                checked={state?.options?.residencePrincipale || false}
+                onCheckedChange={(checked) => onOptionsChange({ residencePrincipale: checked })}
+              />
+              <Label htmlFor={`${clause.key}_residence_principale`} className="text-sm cursor-pointer">
+                Résidence principale (quel que soit le bien)
+              </Label>
+            </div>
+          )}
+
+          {clause.hasMaintienDivorceOption && (
+            <div className="flex items-center space-x-2 p-2 bg-muted/30 rounded-md">
+              <Checkbox
+                id={`${clause.key}_maintien_divorce`}
+                checked={state?.options?.maintienDivorce || false}
+                onCheckedChange={(checked) => onOptionsChange({ maintienDivorce: checked })}
+              />
+              <Label htmlFor={`${clause.key}_maintien_divorce`} className="text-sm cursor-pointer">
+                Maintien exprès en cas de divorce
+              </Label>
+            </div>
+          )}
+
+          {clause.hasPorteSurOption && (
+            <div className="space-y-2 p-2 bg-muted/30 rounded-md">
+              <p className="text-xs text-muted-foreground">Porte sur (art. 1524 al. 2) :</p>
+              <RadioGroup
+                value={state?.options?.porteSur || 'pleine_propriete'}
+                onValueChange={(value) => onOptionsChange({ porteSur: value as 'pleine_propriete' | 'usufruit' })}
+                className="gap-2"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="pleine_propriete" id={`${clause.key}_porte_sur_pp`} />
+                  <Label htmlFor={`${clause.key}_porte_sur_pp`} className="text-sm cursor-pointer">
+                    Pleine propriété
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="usufruit" id={`${clause.key}_porte_sur_usufruit`} />
+                  <Label htmlFor={`${clause.key}_porte_sur_usufruit`} className="text-sm cursor-pointer">
+                    Usufruit seulement (les héritiers reçoivent la nue-propriété)
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+          )}
+
           {clause.hasOptions && clause.key === 'preciput' && (
             <div className="space-y-2 p-2 bg-muted/30 rounded-md">
               <div className="flex items-center space-x-2">
@@ -122,8 +176,15 @@ export const ClauseItem: React.FC<ClauseItemProps> = ({
             </div>
           )}
 
-          {clause.hasPercentages && (
-            <PercentageInputs 
+          {clause.hasPercentages && clause.key === 'partage_inegal' && (
+            <PartConjointInput
+              partPleineProprietee={state?.partPleineProprietee || 50}
+              onChange={onSinglePercentageChange}
+            />
+          )}
+
+          {clause.hasPercentages && clause.key !== 'partage_inegal' && (
+            <PercentageInputs
               partPleineProprietee={state?.partPleineProprietee || 50}
               partUsufruit={state?.partUsufruit || 50}
               onChange={onPercentageChange}

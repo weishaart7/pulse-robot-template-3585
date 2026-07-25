@@ -1,24 +1,24 @@
 // Types for matrimonial regime clauses and their impact on transmission
 
-export type RegimeType = 
-  | 'communaute_reduite' 
-  | 'communaute_meubles' 
-  | 'communaute_universelle' 
-  | 'separation_biens' 
-  | 'participation_acquets';
+export type RegimeType =
+  | 'communaute_reduite'
+  | 'communaute_meubles'
+  | 'communaute_universelle'
+  | 'separation_biens'
+  | 'participation_acquets'
+  | 'separation_societe_acquets';
 
 export type ClauseType = 
   | 'attribution_integrale'
   | 'preciput'
   | 'partage_inegal'
   | 'mise_en_communaute'
+  | 'extension_propres_par_nature'
   | 'reprise_apports'
   | 'stipulation_bien_propre'
   | 'modification_recompenses'
   | 'prelevement_biens_communs'
   | 'prelevement_indemnisation'
-  | 'exclusion_bien_communaute'
-  | 'attribution_integrale_survivant'
   | 'exclusion_certains_biens'
   | 'societe_acquets'
   | 'contribution_charges'
@@ -35,7 +35,13 @@ export type ClauseType =
   | 'indexation'
   | 'partage_inegal_sub'
   | 'attribution_integrale_sub'
-  | 'preciput_sub';
+  | 'preciput_sub'
+  | 'administration_conjointe'
+  | 'presomption_propriete'
+  | 'apport_franc_et_quitte'
+  | 'separation_de_dettes'
+  | 'apport_plafonne'
+  | 'dissolution_alternative';
 
 export interface ClauseDefinition {
   key: ClauseType;
@@ -44,8 +50,20 @@ export interface ClauseDefinition {
   hasPercentages?: boolean;
   hasOptions?: boolean;
   hasSubClauses?: boolean;
+  /** Expose une case « Résidence principale (quel que soit le bien) » à côté de la sélection de biens par ID. */
+  hasResidencePrincipaleOption?: boolean;
+  /** Expose une case « Maintien exprès en cas de divorce », pour écarter la révocation de plein droit (Cass. 1re civ., 18 déc. 2019). */
+  hasMaintienDivorceOption?: boolean;
+  /** Expose un choix pleine_propriete / usufruit (art. 1524 al. 2 pour l'attribution intégrale). */
+  hasPorteSurOption?: boolean;
   description?: string;
   impactTransmission?: 'exclut_succession' | 'reduit_masse' | 'avantage_matrimonial' | 'neutre';
+  /** Quand la clause prend effet : en cours de mariage, ou seulement à la dissolution (pilote la révocation de plein droit au divorce, art. 265). */
+  momentEffet?: 'cours_mariage' | 'dissolution';
+  /** Avantage matrimonial soumis à l'action en retranchement (art. 1527 al. 2) en présence d'enfants non communs. */
+  soumisRetranchement?: boolean;
+  /** Masse sur laquelle porte l'effet de la clause. */
+  assietteImpactee?: 'masse_commune' | 'succession' | 'aucune';
 }
 
 export interface ClauseState {
@@ -56,6 +74,12 @@ export interface ClauseState {
   options?: {
     pleineProprietee?: boolean;
     usufruit?: boolean;
+    /** Désignation par catégorie : suit l'actif marqué "Résidence principale", pas un ID figé. */
+    residencePrincipale?: boolean;
+    /** Stipulation expresse de maintien de la clause en cas de divorce, pour écarter la révocation de plein droit (Cass. 1re civ., 18 déc. 2019). */
+    maintienDivorce?: boolean;
+    /** Attribution intégrale (art. 1524 al. 2) : pleine propriété (défaut) ou seulement l'usufruit. */
+    porteSur?: 'pleine_propriete' | 'usufruit';
   };
 }
 

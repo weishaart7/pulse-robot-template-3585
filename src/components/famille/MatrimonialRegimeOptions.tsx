@@ -7,10 +7,9 @@ import { Plus, FileText, AlertTriangle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useMatrimonialClauses } from '@/hooks/useMatrimonialClauses';
 import { RegimeType } from '@/types/matrimonial';
-import { SOCIETE_ACQUETS_SUB_CLAUSES } from '@/constants/matrimonialClauses';
+import { SOCIETE_ACQUETS_SUB_CLAUSES, isClauseCompatibleWithRegime } from '@/constants/matrimonialClauses';
 import { AssetSelectionModal } from './matrimonial/AssetSelectionModal';
 import { ClauseItem } from './matrimonial/ClauseItem';
-import { PercentageInputs } from './matrimonial/PercentageInputs';
 
 interface MatrimonialRegimeOptionsProps {
   regimeType: RegimeType;
@@ -30,6 +29,7 @@ export const MatrimonialRegimeOptions: React.FC<MatrimonialRegimeOptionsProps> =
     toggleClause,
     updateClauseAssets,
     updateClausePercentages,
+    updateClausePercentage,
     updateClauseOptions,
     getClausesForRegime,
     analyzeForTransmission
@@ -57,9 +57,7 @@ export const MatrimonialRegimeOptions: React.FC<MatrimonialRegimeOptionsProps> =
   const renderSubClauses = (clauseName: string) => {
     if (clauseName !== 'societe_acquets' || !clauses[clauseName]?.enabled) return null;
 
-    const subClauses = regimeType === 'participation_acquets' 
-      ? SOCIETE_ACQUETS_SUB_CLAUSES 
-      : SOCIETE_ACQUETS_SUB_CLAUSES.filter(c => c.key !== 'preciput_sub');
+    const subClauses = SOCIETE_ACQUETS_SUB_CLAUSES.filter((c) => isClauseCompatibleWithRegime(c.key, regimeType));
 
     return (
       <div className="mt-3 space-y-3 border-l-2 border-primary/20 pl-4">
@@ -79,13 +77,6 @@ export const MatrimonialRegimeOptions: React.FC<MatrimonialRegimeOptionsProps> =
             
             {clauses[subClause.key]?.enabled && (
               <div className="ml-6">
-                {subClause.hasPercentages && (
-                  <PercentageInputs 
-                    partPleineProprietee={clauses[subClause.key]?.partPleineProprietee || 50}
-                    partUsufruit={clauses[subClause.key]?.partUsufruit || 50}
-                    onChange={(pp, usufruit) => updateClausePercentages(subClause.key, pp, usufruit)}
-                  />
-                )}
                 {subClause.hasAssets && (
                   <Button 
                     variant="outline" 
@@ -157,6 +148,7 @@ export const MatrimonialRegimeOptions: React.FC<MatrimonialRegimeOptionsProps> =
                   onToggle={() => toggleClause(clause.key)}
                   onAssetSelect={() => handleAssetSelect(clause.key)}
                   onPercentageChange={(pp, usufruit) => updateClausePercentages(clause.key, pp, usufruit)}
+                  onSinglePercentageChange={(pp) => updateClausePercentage(clause.key, pp)}
                   onOptionsChange={(options) => updateClauseOptions(clause.key, options)}
                   renderSubClauses={clause.hasSubClauses ? () => renderSubClauses(clause.key) : undefined}
                 />
@@ -175,13 +167,17 @@ export const MatrimonialRegimeOptions: React.FC<MatrimonialRegimeOptionsProps> =
         </DialogContent>
       </Dialog>
 
-      {/* Modal de sélection d'actifs */}
-      <AssetSelectionModal 
-        title="Sélectionner les biens" 
-        isOpen={assetModalOpen} 
-        onClose={() => setAssetModalOpen(false)} 
-        onConfirm={handleAssetConfirm} 
-        preSelectedAssets={clauses[currentAssetClause]?.selectedAssets || []} 
+      {/* Modal de sélection d'actifs. Pour les sous-clauses de la société
+          d'acquêts (ex. préciput_sub), la sélection est restreinte aux biens
+          déjà désignés dans la société d'acquêts : ces sous-clauses ne
+          portent que sur cette masse, pas sur les propres de chaque époux. */}
+      <AssetSelectionModal
+        title="Sélectionner les biens"
+        isOpen={assetModalOpen}
+        onClose={() => setAssetModalOpen(false)}
+        onConfirm={handleAssetConfirm}
+        preSelectedAssets={clauses[currentAssetClause]?.selectedAssets || []}
+        assetIdsFilter={currentAssetClause === 'preciput_sub' ? (clauses['societe_acquets']?.selectedAssets || []) : undefined}
       />
     </div>
   );

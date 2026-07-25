@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useMaritalStatus } from '@/hooks/useFamilyData';
 import { useToast } from '@/hooks/use-toast';
 import { ClausesData, ClauseState, DonationDernierVivant, RegimeType, MatrimonialAnalysisResult, getSimplifiedRegime } from '@/types/matrimonial';
-import { CLAUSES_BY_REGIME, CLAUSES_IMPACTING_TRANSMISSION } from '@/constants/matrimonialClauses';
+import { CLAUSES_BY_REGIME, CLAUSES_IMPACTING_TRANSMISSION, isClauseCompatibleWithRegime } from '@/constants/matrimonialClauses';
 import { useAssets } from '@/hooks/useAssets';
 
 interface UseMatrimonialClausesReturn {
@@ -13,6 +13,7 @@ interface UseMatrimonialClausesReturn {
   toggleClause: (clauseName: string) => void;
   updateClauseAssets: (clauseName: string, assetIds: string[]) => void;
   updateClausePercentages: (clauseName: string, partPP: number, partUsufruit: number) => void;
+  updateClausePercentage: (clauseName: string, partPP: number) => void;
   updateClauseOptions: (clauseName: string, options: any) => void;
   updateDonation: (updates: Partial<DonationDernierVivant>) => void;
   getClausesForRegime: (regimeType: RegimeType) => typeof CLAUSES_BY_REGIME[RegimeType];
@@ -125,6 +126,21 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
     saveClausesData(newClauses, donation);
   }, [clauses, donation, saveClausesData]);
 
+  // Dédié à partage_inegal (top-level) : seul partPleineProprietee est lu par
+  // le moteur pour cette clause, contrairement à updateClausePercentages
+  // (encore utilisée par les sous-clauses société d'acquêts).
+  const updateClausePercentage = useCallback((clauseName: string, partPP: number) => {
+    const newClauses: ClausesData = {
+      ...clauses,
+      [clauseName]: {
+        ...clauses[clauseName],
+        partPleineProprietee: partPP
+      }
+    };
+    setClauses(newClauses);
+    saveClausesData(newClauses, donation);
+  }, [clauses, donation, saveClausesData]);
+
   const updateClauseOptions = useCallback((clauseName: string, options: any) => {
     const newClauses: ClausesData = {
       ...clauses,
@@ -146,8 +162,11 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
     saveClausesData(clauses, newDonation);
   }, [clauses, donation, saveClausesData]);
 
+  // Filtre par la matrice de compatibilité référentielle (§8.11), en plus de
+  // ce qui est déjà exposé par régime : une garde-fou en cas de future entrée
+  // mal placée dans CLAUSES_BY_REGIME, jamais une source d'ajout de clauses.
   const getClausesForRegime = useCallback((regime: RegimeType) => {
-    return CLAUSES_BY_REGIME[regime] || [];
+    return (CLAUSES_BY_REGIME[regime] || []).filter((clause) => isClauseCompatibleWithRegime(clause.key, regime));
   }, []);
 
   // Analyser les clauses pour le calcul de transmission
@@ -212,6 +231,7 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
     toggleClause,
     updateClauseAssets,
     updateClausePercentages,
+    updateClausePercentage,
     updateClauseOptions,
     updateDonation,
     getClausesForRegime,
