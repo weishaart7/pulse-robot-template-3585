@@ -9,10 +9,11 @@ export interface ReserveResult {
 }
 
 export interface ImputationResult {
-  donations: { liberaliteId: string; imputeSurReserve: number; imputeSurQD: number }[];
-  legs: { liberaliteId: string; imputeSurQD: number }[];
+  donations: { liberaliteId: string; imputeSurReserve: number; imputeSurQD: number; besoinSurQD: number }[];
+  legs: { liberaliteId: string; imputeSurQD: number; besoinSurQD: number }[];
   qdRestante: number;
   reserveAtteinte: boolean;
+  besoinTotalSurQD: number;
 }
 
 export interface ReductionResult {
@@ -106,17 +107,18 @@ export function imputeLiberalites(
   
   const legs = liberalites.filter(lib => lib.type === "legs");
   
-  const donationResults: { liberaliteId: string; imputeSurReserve: number; imputeSurQD: number }[] = [];
-  const legResults: { liberaliteId: string; imputeSurQD: number }[] = [];
-  
+  const donationResults: { liberaliteId: string; imputeSurReserve: number; imputeSurQD: number; besoinSurQD: number }[] = [];
+  const legResults: { liberaliteId: string; imputeSurQD: number; besoinSurQD: number }[] = [];
+
   let qdRestante = reserveResult.quotiteDisponible;
   let reserveEnfantsRestante = reserveResult.reserveEnfants;
-  
+
   // 1. Imputer d'abord les donations (ordre chronologique)
   for (const donation of donations) {
     let imputeSurReserve = 0;
     let imputeSurQD = 0;
-    
+    let besoinSurQD = 0;
+
     // Si donation à un héritier réservataire (enfant) et pas explicitement hors part :
     // 'avance_part' et 'partage' suivent le même chemin d'imputation sur la réserve
     // (seule 'partage' diffère ensuite sur le rapport, cf. computeRapport).
@@ -126,32 +128,39 @@ export function imputeLiberalites(
       const reservePersonnelle = reserveResult.reserveEnfants / childrenIds.length;
       imputeSurReserve = Math.min(donation.valeur, reservePersonnelle);
       reserveEnfantsRestante -= imputeSurReserve;
-      
+
       const excedent = donation.valeur - imputeSurReserve;
       if (excedent > 0) {
-        // L'excédent s'impute sur la quotité disponible
+        // L'excédent s'impute sur la quotité disponible. besoinSurQD garde
+        // l'excédent réel, non plafonné par le reliquat de QD déjà entamé par
+        // les libéralités précédentes : sert à détecter le dépassement réel
+        // (reserveAtteinte) et à répartir la réduction proportionnellement.
+        besoinSurQD = excedent;
         imputeSurQD = Math.min(excedent, qdRestante);
         qdRestante -= imputeSurQD;
       }
     } else {
       // Donation hors part successorale ou à un non-réservataire : s'impute sur QD
+      besoinSurQD = donation.valeur;
       imputeSurQD = Math.min(donation.valeur, qdRestante);
       qdRestante -= imputeSurQD;
     }
-    
+
     donationResults.push({
       liberaliteId: donation.id,
       imputeSurReserve,
-      imputeSurQD
+      imputeSurQD,
+      besoinSurQD
     });
   }
-  
+
   // 2. Imputer ensuite les legs concurremment avec donations entre époux (s'il y en a)
   // Un legs 'hors_part' (ou à un non-réservataire) s'impute directement sur QD.
   // Un legs 'avance_part' à un enfant réservataire suit le même chemin que la
   // donation en avance de part : réserve personnelle d'abord, excédent sur QD.
   for (const legItem of legs) {
     let imputeSurQD = 0;
+    let besoinSurQD = 0;
 
     if (childrenIds.includes(legItem.beneficiaireId as string) &&
         legItem.typeImputation === "avance_part") {
@@ -161,30 +170,36 @@ export function imputeLiberalites(
 
       const excedent = legItem.valeur - imputeSurReserve;
       if (excedent > 0) {
+        besoinSurQD = excedent;
         imputeSurQD = Math.min(excedent, qdRestante);
         qdRestante -= imputeSurQD;
       }
     } else {
+      besoinSurQD = legItem.valeur;
       imputeSurQD = Math.min(legItem.valeur, qdRestante);
       qdRestante -= imputeSurQD;
     }
 
     legResults.push({
       liberaliteId: legItem.id,
-      imputeSurQD
+      imputeSurQD,
+      besoinSurQD
     });
   }
-  
-  // Vérifier si la réserve est atteinte (empiètement sur la QD)
-  const totalImputeSurQD = donationResults.reduce((sum, d) => sum + d.imputeSurQD, 0) +
-                          legResults.reduce((sum, l) => sum + l.imputeSurQD, 0);
-  const reserveAtteinte = totalImputeSurQD > reserveResult.quotiteDisponible;
-  
+
+  // Vérifier si la réserve est atteinte : comparer le besoin brut total (non
+  // plafonné par l'ordre de traitement) à la QD, et non la somme des
+  // imputeSurQD capés — qui ne peut structurellement jamais dépasser qdRestante.
+  const besoinTotalSurQD = donationResults.reduce((sum, d) => sum + d.besoinSurQD, 0) +
+                          legResults.reduce((sum, l) => sum + l.besoinSurQD, 0);
+  const reserveAtteinte = besoinTotalSurQD > reserveResult.quotiteDisponible;
+
   return {
     donations: donationResults,
     legs: legResults,
     qdRestante,
-    reserveAtteinte
+    reserveAtteinte,
+    besoinTotalSurQD
   };
 }
 
@@ -203,11 +218,10 @@ export function applyReductions(
     return { reductions, totalReduit };
   }
   
-  // Calculer le montant total qui dépasse la QD
-  const totalLiberalitesSurQD = imputationResult.donations.reduce((sum, d) => sum + d.imputeSurQD, 0) +
-                               imputationResult.legs.reduce((sum, l) => sum + l.imputeSurQD, 0);
-  
-  const depassement = totalLiberalitesSurQD - reserveResult.quotiteDisponible;
+  // Calculer le montant total qui dépasse la QD, à partir du besoin brut non
+  // plafonné (besoinTotalSurQD) — les imputeSurQD capés ne peuvent, par
+  // construction, jamais dépasser la QD et sous-estiment le dépassement réel.
+  const depassement = imputationResult.besoinTotalSurQD - reserveResult.quotiteDisponible;
   
   if (depassement <= 0) {
     return { reductions, totalReduit };
@@ -224,22 +238,27 @@ export function applyReductions(
   
   // Réduction proportionnelle des legs
   if (legsToReduce.length > 0) {
+    // Base de répartition : besoinSurQD (brut, non plafonné par l'ordre de
+    // traitement) — sinon un legs traité après saturation de la QD par un
+    // autre legs concurrent se verrait attribuer 0 dans la répartition,
+    // alors qu'en droit les legs concurrents de même rang sont réduits au
+    // marc le franc (art. 926 C. civ.), indépendamment de l'ordre de calcul.
     const totalLegsValue = legsToReduce.reduce((sum, leg) => {
       const legResult = imputationResult.legs.find(l => l.liberaliteId === leg.id);
-      return sum + (legResult?.imputeSurQD || 0);
+      return sum + (legResult?.besoinSurQD || 0);
     }, 0);
-    
+
     if (totalLegsValue > 0) {
       for (const legLib of legsToReduce) {
         if (depassementRestant <= 0) break;
-        
+
         const legResult = imputationResult.legs.find(l => l.liberaliteId === legLib.id);
-        if (!legResult || legResult.imputeSurQD === 0) continue;
-        
+        if (!legResult || legResult.besoinSurQD === 0) continue;
+
         // Réduction proportionnelle
         const proportionalReduction = Math.min(
-          legResult.imputeSurQD,
-          (legResult.imputeSurQD / totalLegsValue) * depassement
+          legResult.besoinSurQD,
+          (legResult.besoinSurQD / totalLegsValue) * depassement
         );
         
         const reduction = Math.min(proportionalReduction, depassementRestant);
@@ -267,9 +286,9 @@ export function applyReductions(
       if (depassementRestant <= 0) break;
       
       const donationResult = imputationResult.donations.find(d => d.liberaliteId === donationLib.id);
-      if (!donationResult || donationResult.imputeSurQD === 0) continue;
-      
-      const reduction = Math.min(donationResult.imputeSurQD, depassementRestant);
+      if (!donationResult || donationResult.besoinSurQD === 0) continue;
+
+      const reduction = Math.min(donationResult.besoinSurQD, depassementRestant);
       const ratio = reduction / donationLib.valeur;
       
       reductions.push({
