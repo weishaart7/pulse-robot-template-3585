@@ -230,6 +230,12 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
   // upsert partiel Supabase) que celui déjà utilisé par
   // useMatrimonialClauses.ts::performSave pour clauses_contrat — pas de
   // nouveau chemin de sauvegarde.
+  // regime_matrimonial est inclus dans ce même appel (et non laissé au seul
+  // form.setValue ci-dessous) : sinon le saveData({clauses_contrat}) seul
+  // renvoie une ligne avec l'ancien régime, ce qui retrigger le useEffect de
+  // reset du formulaire (cf. plus haut) et écrase silencieusement le
+  // form.setValue — le nouveau régime n'était alors jamais persisté malgré
+  // le message du dialogue.
   const confirmRegimeChange = async () => {
     if (!pendingRegimeChange) return;
 
@@ -241,7 +247,10 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
         clausesMisesAJour[key] = { enabled: false };
       });
 
-      await saveData({ clauses_contrat: clausesMisesAJour } as any);
+      await saveData({
+        clauses_contrat: clausesMisesAJour,
+        regime_matrimonial: pendingRegimeChange.nouveauRegime,
+      } as any);
       form.setValue('regimeMatrimonial', pendingRegimeChange.nouveauRegime);
     } catch (error) {
       console.error('Erreur lors de la désactivation des clauses incompatibles:', error);
