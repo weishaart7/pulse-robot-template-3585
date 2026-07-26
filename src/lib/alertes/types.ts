@@ -8,6 +8,17 @@ import type { PatrimoineOriginaire } from '@/types/participationAcquets';
 
 export type NiveauAlerte = 'critique' | 'eleve' | 'moyen';
 
+// Vue allégée d'un scenarios_regime pour le moteur d'alertes (camelCase,
+// alignée sur le pattern des autres champs de AlerteContext mappés depuis
+// les lignes brutes Supabase dans useAlertesConseil.ts).
+export interface ScenarioRegime {
+  id: string;
+  type: 'realise' | 'envisage';
+  regimeCible: string;
+  date: string;
+  motivationCivile?: string;
+}
+
 // Contexte volontairement plus léger que TransmissionContext (src/lib/transmission/index.ts) :
 // ce dernier est construit pour le calcul fiscal (récompenses, créances, patrimoine
 // originaire/final...), bien plus que ce dont les règles de conseil ont besoin.
@@ -24,6 +35,7 @@ export interface AlerteContext {
   clientResidenceFiscaleEtranger?: boolean;
   conjointResidenceFiscaleEtranger?: boolean;
   liberalites: Liberalite[];
+  scenariosRegime: ScenarioRegime[];
   avContracts: AVContractRawRow[];
   familyLinks: FamilyLink[];
   hasNonCommonChildren: boolean;

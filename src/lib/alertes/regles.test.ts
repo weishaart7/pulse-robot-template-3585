@@ -8,6 +8,7 @@ const baseContext = (): AlerteContext => ({
   statutCouple: undefined,
   regimeMatrimonial: undefined,
   liberalites: [],
+  scenariosRegime: [],
   avContracts: [],
   familyLinks: [],
   hasNonCommonChildren: false,
@@ -231,5 +232,90 @@ describe('enfants_non_communs_communaute_universelle', () => {
 
     expect(() => evaluerAlertes(ctx)).not.toThrow();
     expect(idsOf(evaluerAlertes(ctx))).not.toContain('enfants_non_communs_communaute_universelle');
+  });
+});
+
+describe('changement_regime_proche_donation', () => {
+  it('se déclenche : scénario envisagé et donation en projet séparés de moins de 3 ans', () => {
+    const ctx = baseContext();
+    ctx.scenariosRegime = [
+      { id: 's1', type: 'envisage', regimeCible: 'Communauté universelle', date: '2026-06-01', motivationCivile: undefined },
+    ];
+    ctx.liberalites = [
+      { type: 'donation', denomination: 'Donation appartement', beneficiaire_nom: 'Enfant 1', date_acte: '2027-01-01', statut: 'projet' },
+    ];
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('changement_regime_proche_donation');
+  });
+
+  it('ne se déclenche pas : scénario et donation actée séparés de plus de 3 ans', () => {
+    const ctx = baseContext();
+    ctx.scenariosRegime = [
+      { id: 's1', type: 'realise', regimeCible: 'Séparation de biens', date: '2015-01-01' },
+    ];
+    ctx.liberalites = [
+      { type: 'donation', denomination: 'Donation appartement', beneficiaire_nom: 'Enfant 1', date_acte: '2026-01-01', statut: 'acte' },
+    ];
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('changement_regime_proche_donation');
+  });
+
+  it('ne se déclenche pas : donation antérieure au scénario de régime, même à moins de 3 ans (sens "avant" non respecté)', () => {
+    // Le risque d'abus de droit (art. L. 64 LPF) vise un changement de régime
+    // organisé en vue de faciliter une donation à venir, pas l'inverse : une
+    // donation suivie d'un changement de régime plus tard n'a pas la même
+    // charge probatoire et ne doit pas déclencher l'alerte, même à moins de
+    // 3 ans d'écart.
+    const ctx = baseContext();
+    ctx.scenariosRegime = [
+      { id: 's1', type: 'realise', regimeCible: 'Communauté universelle', date: '2026-06-01' },
+    ];
+    ctx.liberalites = [
+      { type: 'donation', denomination: 'Donation appartement', beneficiaire_nom: 'Enfant 1', date_acte: '2025-01-01', statut: 'acte' },
+    ];
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('changement_regime_proche_donation');
+  });
+
+  it('ne plante pas et ne se déclenche pas à tort : aucun scénario et aucune donation', () => {
+    const ctx = baseContext();
+
+    expect(() => evaluerAlertes(ctx)).not.toThrow();
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('changement_regime_proche_donation');
+  });
+
+  it('message invite à documenter la motivation civile quand elle est déjà renseignée sur le scénario concerné', () => {
+    const ctx = baseContext();
+    ctx.scenariosRegime = [
+      {
+        id: 's1',
+        type: 'realise',
+        regimeCible: 'Communauté universelle',
+        date: '2026-03-01',
+        motivationCivile: 'Protection du conjoint suite à un changement de situation professionnelle',
+      },
+    ];
+    ctx.liberalites = [
+      { type: 'donation', denomination: 'Donation appartement', beneficiaire_nom: 'Enfant 1', date_acte: '2026-06-01', statut: 'acte' },
+    ];
+
+    const alerte = evaluerAlertes(ctx).find((a) => a.id === 'changement_regime_proche_donation');
+    expect(alerte).toBeDefined();
+    expect(alerte!.message).toContain('Vérifiez que la motivation civile déjà renseignée');
+    expect(alerte!.message).not.toContain('Documentez la motivation civile');
+  });
+
+  it('message invite à saisir la motivation civile quand elle est vide sur le scénario concerné', () => {
+    const ctx = baseContext();
+    ctx.scenariosRegime = [
+      { id: 's1', type: 'envisage', regimeCible: 'Communauté universelle', date: '2026-03-01' },
+    ];
+    ctx.liberalites = [
+      { type: 'donation', denomination: 'Donation appartement', beneficiaire_nom: 'Enfant 1', date_acte: '2026-06-01', statut: 'acte' },
+    ];
+
+    const alerte = evaluerAlertes(ctx).find((a) => a.id === 'changement_regime_proche_donation');
+    expect(alerte).toBeDefined();
+    expect(alerte!.message).toContain('Documentez la motivation civile');
   });
 });

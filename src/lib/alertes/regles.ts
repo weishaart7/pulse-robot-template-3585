@@ -40,6 +40,34 @@ const hasAVBeneficiaireDesigne = (avContracts: AlerteContext['avContracts']) =>
     )
   );
 
+// Écart maximal entre un scénario de changement de régime (réalisé ou
+// envisagé) et une donation postérieure ou concomitante pour caractériser un
+// risque de requalification en abus de droit (art. L. 64 LPF) — 3 ans. Le
+// sens "changement avant donation" est respecté strictement : un changement
+// de régime survenant après une donation ne caractérise pas le même risque
+// (cf. échange de conception, doctrine L. 64 LPF sur le montage préparatoire).
+const ECART_ABUS_DROIT_MS = 3 * 365 * 24 * 60 * 60 * 1000;
+
+// Scénarios de scenariosRegime suivis d'au moins une donation (actée ou en
+// projet) dans les 3 ans (date_donation >= date_scenario). Factorisé pour
+// être utilisé à la fois par la condition et par le message (qui adapte son
+// texte selon que la motivation civile du scénario est déjà renseignée).
+const scenariosProchesDuneDonation = (ctx: AlerteContext) => {
+  const donations = ctx.liberalites.filter((l) => l.type === 'donation' && l.date_acte);
+  if (donations.length === 0) return [];
+
+  return ctx.scenariosRegime.filter((scenario) => {
+    const dateScenario = new Date(scenario.date);
+    if (isNaN(dateScenario.getTime())) return false;
+    return donations.some((d) => {
+      const dateDonation = new Date(d.date_acte!);
+      if (isNaN(dateDonation.getTime())) return false;
+      const ecart = dateDonation.getTime() - dateScenario.getTime();
+      return ecart >= 0 && ecart <= ECART_ABUS_DROIT_MS;
+    });
+  });
+};
+
 export const REGLES_ALERTES_CONSEIL: AlerteDefinition[] = [
   {
     id: 'pacse_sans_testament',
@@ -173,5 +201,17 @@ export const REGLES_ALERTES_CONSEIL: AlerteDefinition[] = [
       !!ctx.clausesContrat?.attribution_integrale?.enabled,
     message:
       "Risque d'action en retranchement (art. 1527 al. 2). Envisager une renonciation anticipée (art. 1527 al. 3).",
+  },
+  {
+    id: 'changement_regime_proche_donation',
+    niveau: 'eleve',
+    condition: (ctx) => scenariosProchesDuneDonation(ctx).length > 0,
+    message: (ctx) => {
+      const scenariosConcernes = scenariosProchesDuneDonation(ctx);
+      const motivationManquante = scenariosConcernes.some((s) => !s.motivationCivile?.trim());
+      return motivationManquante
+        ? "Un changement de régime matrimonial (réalisé ou envisagé) et une donation sont séparés de moins de 3 ans : risque de requalification en abus de droit (art. L. 64 LPF). Documentez la motivation civile du changement de régime, indépendante de toute optimisation fiscale."
+        : "Un changement de régime matrimonial (réalisé ou envisagé) et une donation sont séparés de moins de 3 ans : risque de requalification en abus de droit (art. L. 64 LPF). Vérifiez que la motivation civile déjà renseignée reste pertinente et documentée.";
+    },
   },
 ];

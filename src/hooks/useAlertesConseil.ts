@@ -3,6 +3,7 @@ import { useMaritalStatus, useFamilyLinks, useFamilyProfile } from '@/hooks/useF
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { useLiberalites } from '@/hooks/useLiberalites';
+import { useScenariosRegime } from '@/hooks/useScenariosRegime';
 import { useAVContracts } from '@/hooks/useAVContracts';
 import { useSocietes } from '@/hooks/useSocietes';
 import { usePatrimoineOriginaire } from '@/hooks/usePatrimoineOriginaire';
@@ -20,13 +21,14 @@ export function useAlertesConseil() {
   const { passifs, loading: passifsLoading } = usePassifs();
   const { emprunts, loading: empruntsLoading } = useEmprunts();
   const { liberalites, loading: liberalitesLoading } = useLiberalites();
+  const { scenariosRegime, loading: scenariosRegimeLoading } = useScenariosRegime();
   const { avContractsRaw, loading: avLoading } = useAVContracts(assets);
   const { societes, isLoading: societesLoading } = useSocietes();
   const { data: patrimoineOriginaire, loading: patrimoineOriginaireLoading } = usePatrimoineOriginaire();
 
   const loading =
     maritalLoading || profileLoading || familyLoading || assetsLoading || passifsLoading || empruntsLoading ||
-    liberalitesLoading || avLoading || societesLoading || patrimoineOriginaireLoading;
+    liberalitesLoading || avLoading || societesLoading || patrimoineOriginaireLoading || scenariosRegimeLoading;
 
   const alertes = useMemo(() => {
     if (loading) return [];
@@ -51,6 +53,13 @@ export function useAlertesConseil() {
       clientResidenceFiscaleEtranger: familyProfile?.residence_fiscale_etranger,
       conjointResidenceFiscaleEtranger: maritalStatus?.residence_fiscale_etranger_conjoint,
       liberalites,
+      scenariosRegime: scenariosRegime.map((s) => ({
+        id: s.id || '',
+        type: s.type,
+        regimeCible: s.regime_cible,
+        date: s.date,
+        motivationCivile: s.motivation_civile || undefined,
+      })),
       avContracts: avContractsRaw,
       familyLinks,
       hasNonCommonChildren: hasNonCommonChildren(familyLinks),
@@ -63,7 +72,7 @@ export function useAlertesConseil() {
     };
 
     return evaluerAlertes(ctx);
-  }, [loading, maritalStatus, familyProfile, liberalites, avContractsRaw, familyLinks, assets, passifs, emprunts, societes, patrimoineOriginaire]);
+  }, [loading, maritalStatus, familyProfile, liberalites, scenariosRegime, avContractsRaw, familyLinks, assets, passifs, emprunts, societes, patrimoineOriginaire]);
 
   return { alertes, loading };
 }
