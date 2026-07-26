@@ -38,6 +38,9 @@ interface LiberaliteGroup {
   // Note libre du conseiller (purement informative) — identique pour toutes
   // les lignes d'un même groupe, saisie une seule fois par DonationForm/LegsForm.
   notes?: string;
+  // Défaut 'acte' en base ; seul DonationForm expose la bascule vers
+  // 'projet' — toujours 'acte' pour les groupes de legs.
+  statut?: 'acte' | 'projet';
 }
 
 export const Liberalites = () => {
@@ -89,6 +92,7 @@ export const Liberalites = () => {
         beneficiairesLabel: groupRows.map(r => r.beneficiaire_nom).join(', '),
         hasBeneficiaireInconnu: groupRows.some(r => !r.beneficiaire_id),
         notes: first.description || undefined,
+        statut: first.statut,
       };
     });
   };
@@ -161,6 +165,11 @@ export const Liberalites = () => {
         <TableCell className="font-medium text-[var(--text-primary)]">
           <div className="flex items-center gap-2">
             <span>{group.denomination}</span>
+            {group.statut === 'projet' && (
+              <Badge variant="outline" className="shrink-0 text-amber-700 border-amber-300 dark:text-amber-400 dark:border-amber-800">
+                Projet
+              </Badge>
+            )}
             {group.notes && (
               <Tooltip>
                 <TooltipTrigger asChild>

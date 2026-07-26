@@ -54,6 +54,7 @@ const DEFAULT_FORM_DATA = {
   realiseePar: '',
   date: undefined as Date | undefined,
   notes: '',
+  statut: 'acte' as 'acte' | 'projet',
 };
 
 export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: DonationFormProps) => {
@@ -169,6 +170,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
         realiseePar: first.realise_par || '',
         date: first.date_acte ? new Date(first.date_acte) : undefined,
         notes: first.description || '',
+        statut: first.statut || 'acte',
       });
       setSelectedClauses(first.clauses || []);
       setSelectedAssets((first.biens || []).map(b => ({ id: b.asset_id, valeurDonation: b.valeur || 0 })));
@@ -246,6 +248,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
           demembrement: formData.demembrement !== 'aucun' ? formData.demembrement : undefined,
           prise_en_charge_droits: formData.droitsParDonateur,
           description: formData.notes || undefined,
+          statut: formData.statut,
         });
         createdIds.push(created.id!);
       }
@@ -364,6 +367,25 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
                 <SelectItem value="partage">Partage</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Statut */}
+          <div>
+            <Label>Statut</Label>
+            <Select value={formData.statut} onValueChange={(value) => setFormData({ ...formData, statut: value as 'acte' | 'projet' })}>
+              <SelectTrigger size="lg">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="acte">Donation actée</SelectItem>
+                <SelectItem value="projet">Projet / simulation</SelectItem>
+              </SelectContent>
+            </Select>
+            {formData.statut === 'projet' && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Ce projet n'entre pas dans les calculs fiscaux et civils réels du dossier (réserve héréditaire, DMTG). À basculer en "Donation actée" une fois l'acte réalisé.
+              </p>
+            )}
           </div>
 
           {/* Clauses insérées */}

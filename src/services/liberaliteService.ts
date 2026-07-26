@@ -36,6 +36,10 @@ export interface Liberalite {
   demembrement?: string;
   prise_en_charge_droits?: boolean;
   testament_realise?: string;
+  // 'acte' (défaut) = acte réalisé, intègre les calculs fiscaux/civils réels.
+  // 'projet' = simulation, exclue de ces calculs (cf. excludeProjets dans
+  // buildTransmissionLiberalites).
+  statut?: 'acte' | 'projet';
   created_at?: string;
   updated_at?: string;
 }
