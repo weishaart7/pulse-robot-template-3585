@@ -376,10 +376,7 @@ describe('concubin_sans_protection', () => {
   });
 
   it(
-    "se déclenche À TORT (bug connu) : assurance-vie avec bénéficiaire désigné dans la clause structurée ne neutralise pas l'alerte — " +
-      "hasAVBeneficiaireDesigne (regles.ts) lit `b.nom`, un champ qui n'existe pas sur AVContractRawRow.clauseBeneficiaireStructuree " +
-      '(le type réel expose `familyLinkId`, pas `nom` — cf. transmissionHelpers.ts:203-213). Ce test documente le comportement ' +
-      'actuel tel quel, sans le corriger (hors périmètre couverture).',
+    "ne se déclenche pas : assurance-vie avec le partenaire (marqueur 'conjoint') désigné bénéficiaire, sans statut renseigné",
     () => {
       const ctx = baseContext();
       ctx.statutCouple = 'Concubinage';
@@ -389,14 +386,65 @@ describe('concubin_sans_protection', () => {
           assetId: 'av-1',
           operations: [],
           clauseBeneficiaireStructuree: {
-            niveaux: [{ beneficiaires: [{ familyLinkId: 'concubin-1', pourcentage: 100 }] }],
+            niveaux: [{ beneficiaires: [{ familyLinkId: 'conjoint', pourcentage: 100 }] }],
           },
         },
       ];
 
-      expect(idsOf(evaluerAlertes(ctx))).toContain('concubin_sans_protection');
+      expect(idsOf(evaluerAlertes(ctx))).not.toContain('concubin_sans_protection');
     }
   );
+
+  it('se déclenche : partenaire désigné mais renonçant', () => {
+    const ctx = baseContext();
+    ctx.statutCouple = 'Concubinage';
+    ctx.liberalites = [];
+    ctx.avContracts = [
+      {
+        assetId: 'av-1',
+        operations: [],
+        clauseBeneficiaireStructuree: {
+          niveaux: [{ beneficiaires: [{ familyLinkId: 'conjoint', pourcentage: 100, statut: 'renoncant' }] }],
+        },
+      },
+    ];
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('concubin_sans_protection');
+  });
+
+  it('se déclenche : partenaire désigné mais pourcentage à 0', () => {
+    const ctx = baseContext();
+    ctx.statutCouple = 'Concubinage';
+    ctx.liberalites = [];
+    ctx.avContracts = [
+      {
+        assetId: 'av-1',
+        operations: [],
+        clauseBeneficiaireStructuree: {
+          niveaux: [{ beneficiaires: [{ familyLinkId: 'conjoint', pourcentage: 0 }] }],
+        },
+      },
+    ];
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('concubin_sans_protection');
+  });
+
+  it("se déclenche : bénéficiaire désigné n'est pas le partenaire (ex : un enfant)", () => {
+    const ctx = baseContext();
+    ctx.statutCouple = 'Concubinage';
+    ctx.liberalites = [];
+    ctx.avContracts = [
+      {
+        assetId: 'av-1',
+        operations: [],
+        clauseBeneficiaireStructuree: {
+          niveaux: [{ beneficiaires: [{ familyLinkId: 'enfant-1', pourcentage: 100 }] }],
+        },
+      },
+    ];
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('concubin_sans_protection');
+  });
 
   it('ne se déclenche pas : statut couple différent (marié)', () => {
     const ctx = baseContext();

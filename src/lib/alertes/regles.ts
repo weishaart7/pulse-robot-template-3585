@@ -33,10 +33,15 @@ const ABATTEMENT_LIGNE_DIRECTE = 100000;
 const hasTestamentRealise = (liberalites: AlerteContext['liberalites']) =>
   liberalites.some((l) => l.type === 'legs' && l.testament_realise === 'Oui');
 
+// Ne prend pas en compte typeDetention/nuProprietaireId : un concubin désigné
+// uniquement en nue-propriété (sans usufruit) neutralise quand même l'alerte
+// aujourd'hui — cas volontairement non traité, à trancher plus tard.
 const hasAVBeneficiaireDesigne = (avContracts: AlerteContext['avContracts']) =>
   avContracts.some((c) =>
     c.clauseBeneficiaireStructuree?.niveaux?.some((n) =>
-      n.beneficiaires?.some((b) => !!b.nom?.trim())
+      n.beneficiaires?.some(
+        (b) => b.familyLinkId === 'conjoint' && b.statut !== 'renoncant' && b.statut !== 'decede' && b.pourcentage > 0
+      )
     )
   );
 
