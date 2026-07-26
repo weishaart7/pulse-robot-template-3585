@@ -9,6 +9,23 @@
 
 export const REGIME_COMMUNAUTE_MEUBLES_ET_ACQUETS = "Communauté de meubles et d'acquêts";
 export const REGIME_COMMUNAUTE_REDUITE_AUX_ACQUETS = 'Communauté réduite aux acquêts (option sans contrat de mariage)';
+export const REGIME_COMMUNAUTE_UNIVERSELLE = 'Communauté universelle';
+export const REGIME_SEPARATION_DE_BIENS = 'Séparation de biens';
+export const REGIME_SEPARATION_BIENS_SOCIETE_ACQUETS = "Séparation de biens avec société d'acquêts";
+export const REGIME_PARTICIPATION_AUX_ACQUETS = 'Participation aux acquêts';
+
+// Les 6 valeurs fermées du champ marital_status.regime_matrimonial, source
+// unique pour tout Select de saisie du régime (RelationInfoForm.tsx,
+// ScenarioRegimeSection.tsx) — pas de CHECK constraint en base, la fermeture
+// de la liste est assurée côté UI par cette constante.
+export const REGIMES_MATRIMONIAUX = [
+  REGIME_COMMUNAUTE_REDUITE_AUX_ACQUETS,
+  REGIME_COMMUNAUTE_MEUBLES_ET_ACQUETS,
+  REGIME_COMMUNAUTE_UNIVERSELLE,
+  REGIME_SEPARATION_DE_BIENS,
+  REGIME_SEPARATION_BIENS_SOCIETE_ACQUETS,
+  REGIME_PARTICIPATION_AUX_ACQUETS,
+] as const;
 
 const DATE_ENTREE_VIGUEUR_COMMUNAUTE_REDUITE = new Date('1966-02-01');
 

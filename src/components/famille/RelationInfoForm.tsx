@@ -30,7 +30,7 @@ import { RecompensesSection } from "@/components/famille/matrimonial/Recompenses
 import { CreancesEntreEpouxSection } from "@/components/famille/matrimonial/CreancesEntreEpouxSection";
 import { PatrimoineOriginaireSection } from "@/components/famille/matrimonial/PatrimoineOriginaireSection";
 import { PatrimoineFinalSection } from "@/components/famille/matrimonial/PatrimoineFinalSection";
-import { determinerRegimeLegal } from "@/lib/patrimoine/regimeLegal";
+import { determinerRegimeLegal, REGIMES_MATRIMONIAUX } from "@/lib/patrimoine/regimeLegal";
 import { getSimplifiedRegime, RegimeType, ClausesData } from "@/types/matrimonial";
 import { parseClausesData } from "@/utils/transmissionHelpers";
 import { toRegimeType, getClausesIncompatibles } from "@/lib/patrimoine/regimeChangeClauses";
@@ -386,12 +386,9 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="Communauté réduite aux acquêts (option sans contrat de mariage)">Communauté réduite aux acquêts (option sans contrat de mariage)</SelectItem>
-                            <SelectItem value="Communauté de meubles et d'acquêts">Communauté de meubles et d'acquêts</SelectItem>
-                            <SelectItem value="Communauté universelle">Communauté universelle</SelectItem>
-                            <SelectItem value="Séparation de biens">Séparation de biens</SelectItem>
-                            <SelectItem value="Séparation de biens avec société d'acquêts">Séparation de biens avec société d'acquêts</SelectItem>
-                            <SelectItem value="Participation aux acquêts">Participation aux acquêts</SelectItem>
+                            {REGIMES_MATRIMONIAUX.map(regime => (
+                              <SelectItem key={regime} value={regime}>{regime}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />

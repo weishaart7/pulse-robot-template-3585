@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,7 +20,7 @@ import { useAssets } from '@/hooks/useAssets';
 import { useToast } from '@/hooks/use-toast';
 import { liberaliteService, Liberalite } from '@/services/liberaliteService';
 import { buildTransmissionLiberalites } from '@/utils/transmissionHelpers';
-import { Plus, Edit, Trash2, AlertTriangle, StickyNote } from 'lucide-react';
+import { Plus, Edit, Trash2, AlertTriangle, StickyNote, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { DonationForm } from './DonationForm';
@@ -40,6 +41,7 @@ interface LiberaliteGroup {
 }
 
 export const Liberalites = () => {
+  const navigate = useNavigate();
   const { liberalites, loading, fetchLiberalites } = useLiberalites();
   const { assets } = useAssets();
   const { toast } = useToast();
@@ -243,6 +245,15 @@ export const Liberalites = () => {
 
   return (
     <div className="kairos-transmission space-y-6">
+      <Button
+        variant="outline"
+        onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
+        className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
+      >
+        Déclarer un scénario de changement de régime
+        <ArrowRight className="h-4 w-4" />
+      </Button>
+
       {/* Bloc Donations */}
       <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
         <CardHeader className="p-5">

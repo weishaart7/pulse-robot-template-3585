@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useMaritalStatus } from '@/hooks/useFamilyData';
 import { RelationInfoForm } from '@/components/famille/RelationInfoForm';
+import { ScenarioRegimeSection } from '@/components/famille/matrimonial/ScenarioRegimeSection';
 
 export default function SituationMatrimonialePage() {
   const navigate = useNavigate();
@@ -29,8 +30,9 @@ export default function SituationMatrimonialePage() {
         </p>
       </div>
 
-      <div className="w-full mx-auto px-4 sm:px-6 pb-12">
+      <div className="w-full mx-auto px-4 sm:px-6 pb-12 space-y-6">
         <RelationInfoForm relationStatus={relationStatus} />
+        <ScenarioRegimeSection />
       </div>
     </div>
   );
