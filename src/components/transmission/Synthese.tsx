@@ -194,7 +194,8 @@ export const Synthese = () => {
       // légué supprimé — cf. buildTransmissionLiberalites).
       const { liberalites: liberalitesFormatted, legsCaducs } = buildTransmissionLiberalites(
         liberalites || [],
-        assets || []
+        assets || [],
+        true
       );
       setLegsCaducs(legsCaducs);
 

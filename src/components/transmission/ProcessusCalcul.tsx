@@ -55,7 +55,7 @@ export const ProcessusCalcul = () => {
   // legs (jamais figée en base), et exclusion des legs caducs (bien légué
   // supprimé — cf. buildTransmissionLiberalites).
   const { liberalites: transmissionLiberalites, legsCaducs } = useMemo(
-    () => buildTransmissionLiberalites(liberalites, assets),
+    () => buildTransmissionLiberalites(liberalites, assets, true),
     [liberalites, assets]
   );
 

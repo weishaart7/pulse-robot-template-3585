@@ -160,7 +160,7 @@ export const Succession2ndDeces = () => {
         .from('liberalites')
         .select('*')
         .eq('user_id', user!.id);
-      const { liberalites: liberalitesFormatted } = buildTransmissionLiberalites(liberalites || [], assets || []);
+      const { liberalites: liberalitesFormatted } = buildTransmissionLiberalites(liberalites || [], assets || [], true);
 
       // Participation aux acquêts (art. 1569-1581 C. civ.) : lignes globales
       // au couple, identiques quel que soit le sens de décès simulé — cf.

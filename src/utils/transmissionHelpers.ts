@@ -33,6 +33,7 @@ export interface LiberaliteRow {
   type_imputation?: string | null;
   biens?: unknown;
   pourcentage?: number | null;
+  statut?: string | null;
 }
 
 interface AssetValeur {
@@ -61,10 +62,16 @@ export interface LegsCaduc {
  * par `pourcentage` pour ne pas compter plusieurs fois la valeur totale des
  * biens. Les donations, elles, gardent leur `montant` déjà proratisé et figé
  * à la création, sans reproratisation ici.
+ *
+ * `excludeProjets` (défaut false) exclut les lignes `statut === 'projet'` :
+ * à activer pour les calculs fiscaux/civils réels (Synthese.tsx,
+ * Succession2ndDeces.tsx, ProcessusCalcul.tsx), à laisser absent pour un
+ * écran de gestion qui doit afficher les deux statuts (Liberalites.tsx).
  */
 export function buildTransmissionLiberalites(
   rows: LiberaliteRow[],
-  assets: AssetValeur[]
+  assets: AssetValeur[],
+  excludeProjets: boolean = false
 ): { liberalites: Liberalite[]; legsCaducs: LegsCaduc[] } {
   const assetsById = new Map(
     assets.filter((a): a is AssetValeur & { id: string } => !!a.id).map(a => [a.id, a])
@@ -73,7 +80,9 @@ export function buildTransmissionLiberalites(
   const liberalites: Liberalite[] = [];
   const legsCaducs: LegsCaduc[] = [];
 
-  for (const row of rows) {
+  const sourceRows = excludeProjets ? rows.filter(row => row.statut !== 'projet') : rows;
+
+  for (const row of sourceRows) {
     const biens = Array.isArray(row.biens) ? (row.biens as { asset_id: string }[]) : [];
 
     let valeur: number;
