@@ -109,6 +109,10 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
   const [pendingRegimeChange, setPendingRegimeChange] = useState<{
     nouveauRegime: FormData['regimeMatrimonial'];
     clausesIncompatibles: { key: string; label: string }[];
+    // Origine de la demande : distingue une sélection manuelle (Select) d'un
+    // changement forcé par la case "pas de contrat de mariage", pour que
+    // cancelRegimeChange puisse redécocher pasDeContrat dans ce dernier cas.
+    origin: 'manual' | 'pasDeContrat';
   } | null>(null);
   const [disablingClauses, setDisablingClauses] = useState(false);
 
@@ -204,7 +208,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
   // suspend le changement dans une boîte de confirmation plutôt que de
   // l'appliquer directement (cf. diagnostic étape B : le garde-fou de
   // l'étape A reste le filet de sécurité si un résidu passe malgré tout).
-  const handleRegimeSelect = (nouveauRegime: string) => {
+  const handleRegimeSelect = (nouveauRegime: string, origin: 'manual' | 'pasDeContrat' = 'manual') => {
     const nouveauRegimeType = toRegimeType(nouveauRegime);
     const clausesActuelles = parseClausesData((maritalData as any)?.clauses_contrat);
     const clausesIncompatibles = getClausesIncompatibles(clausesActuelles, nouveauRegimeType);
@@ -217,6 +221,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
     setPendingRegimeChange({
       nouveauRegime: nouveauRegime as FormData['regimeMatrimonial'],
       clausesIncompatibles,
+      origin,
     });
   };
 
@@ -246,9 +251,16 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
     }
   };
 
-  // Annulation : aucune modification, le <Select> reste sur le régime
-  // précédent car field.onChange n'a jamais été appelé pour ce candidat.
+  // Annulation : aucune modification du régime, le <Select> reste sur le
+  // régime précédent car field.onChange n'a jamais été appelé pour ce
+  // candidat. Si la demande provenait de la case "pas de contrat de mariage"
+  // (useEffect ci-dessous), on la redécoche pour revenir intégralement à
+  // l'état d'avant — sinon la case resterait cochée sans que le régime légal
+  // ne soit jamais appliqué, un état visuellement incohérent.
   const cancelRegimeChange = () => {
+    if (pendingRegimeChange?.origin === 'pasDeContrat') {
+      form.setValue('pasDeContrat', false);
+    }
     setPendingRegimeChange(null);
   };
 
@@ -259,9 +271,13 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
   const mariagePrecedentConjoint = form.watch("mariagePrecedentConjoint");
 
   useEffect(() => {
-    if (pasDeContrat) {
-      form.setValue('regimeMatrimonial', determinerRegimeLegal(dateMariage?.toISOString()));
+    // Garde contre la réouverture répétée du dialogue : ne relance pas
+    // handleRegimeSelect tant qu'un changement (manuel ou issu de cet effet)
+    // est déjà en attente de confirmation.
+    if (pasDeContrat && !pendingRegimeChange) {
+      handleRegimeSelect(determinerRegimeLegal(dateMariage?.toISOString()), 'pasDeContrat');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pasDeContrat, dateMariage, form]);
 
   useEffect(() => {

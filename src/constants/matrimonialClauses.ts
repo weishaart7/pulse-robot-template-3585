@@ -64,6 +64,11 @@ export const CLAUSES_BY_REGIME: Record<RegimeType, ClauseDefinition[]> = {
     {
       key: 'exclusion_certains_biens',
       label: 'Exclusion de certains biens',
+      // Purement déclarative à ce stade : les biens sélectionnés ici documentent
+      // l'acte mais ne sont lus ni par qualifierBien ni par le moteur de
+      // transmission — aucun effet chiffré sur la qualification du bien ou la
+      // masse successorale (dette technique connue, câblage non prioritaire).
+      description: "Documente les biens exclus de la communauté dans l'acte. N'a actuellement aucun effet sur les calculs (qualification des biens, succession) : purement informatif.",
       hasAssets: true,
       impactTransmission: 'neutre',
       momentEffet: 'cours_mariage',
@@ -211,6 +216,11 @@ export const CLAUSES_BY_REGIME: Record<RegimeType, ClauseDefinition[]> = {
     {
       key: 'exclusion_certains_biens',
       label: 'Exclusion de certains biens',
+      // Purement déclarative à ce stade : les biens sélectionnés ici documentent
+      // l'acte mais ne sont lus ni par qualifierBien ni par le moteur de
+      // transmission — aucun effet chiffré sur la qualification du bien ou la
+      // masse successorale (dette technique connue, câblage non prioritaire).
+      description: "Documente les biens exclus de la communauté dans l'acte. N'a actuellement aucun effet sur les calculs (qualification des biens, succession) : purement informatif.",
       hasAssets: true,
       impactTransmission: 'neutre',
       momentEffet: 'cours_mariage',
@@ -315,6 +325,11 @@ export const CLAUSES_BY_REGIME: Record<RegimeType, ClauseDefinition[]> = {
     {
       key: 'exclusion_certains_biens',
       label: 'Exclusion de certains biens',
+      // Purement déclarative à ce stade : les biens sélectionnés ici documentent
+      // l'acte mais ne sont lus ni par qualifierBien ni par le moteur de
+      // transmission — aucun effet chiffré sur la qualification du bien ou la
+      // masse successorale (dette technique connue, câblage non prioritaire).
+      description: "Documente les biens exclus de la communauté dans l'acte. N'a actuellement aucun effet sur les calculs (qualification des biens, succession) : purement informatif.",
       hasAssets: true,
       impactTransmission: 'neutre',
       momentEffet: 'cours_mariage',
@@ -494,6 +509,13 @@ export const CLAUSES_BY_REGIME: Record<RegimeType, ClauseDefinition[]> = {
     {
       key: 'partage_inegal_acquets',
       label: 'Clause de partage inégal des acquêts',
+      // Purement déclarative à ce stade : aucun champ de saisie du taux de
+      // répartition n'existe (contrairement à partage_inegal), et
+      // computeParticipationAcquets (participationAcquets.ts) répartit
+      // toujours la créance de participation 50/50, sans lire cette clause —
+      // dette technique connue, câblage non prioritaire (nécessiterait à la
+      // fois l'UI de saisie du taux et l'adaptation de la formule de créance).
+      description: "Documente une répartition inégale de la créance de participation dans l'acte. N'a actuellement aucun effet sur le calcul : la créance reste calculée à parts égales (50/50).",
       impactTransmission: 'avantage_matrimonial',
       momentEffet: 'dissolution',
       soumisRetranchement: false,
@@ -561,6 +583,11 @@ export const CLAUSES_BY_REGIME: Record<RegimeType, ClauseDefinition[]> = {
     {
       key: 'exclusion_certains_biens',
       label: 'Exclusion de certains biens',
+      // Purement déclarative à ce stade : les biens sélectionnés ici documentent
+      // l'acte mais ne sont lus ni par qualifierBien ni par le moteur de
+      // transmission — aucun effet chiffré sur la qualification du bien ou la
+      // masse successorale (dette technique connue, câblage non prioritaire).
+      description: "Documente les biens exclus de la communauté dans l'acte. N'a actuellement aucun effet sur les calculs (qualification des biens, succession) : purement informatif.",
       hasAssets: true,
       impactTransmission: 'neutre',
       momentEffet: 'cours_mariage',
@@ -698,10 +725,10 @@ export const CLAUSE_REGIME_COMPATIBILITY: Partial<Record<ClauseType, RegimeType[
   prelevement_biens_communs: ['communaute_reduite', 'communaute_meubles', 'communaute_universelle', 'separation_societe_acquets'],
   preciput: ['communaute_reduite', 'communaute_meubles', 'communaute_universelle', 'separation_societe_acquets'],
   preciput_sub: ['separation_societe_acquets'],
-  partage_inegal: ['communaute_reduite', 'communaute_meubles', 'communaute_universelle', 'separation_biens', 'separation_societe_acquets', 'participation_acquets'],
+  partage_inegal: ['communaute_reduite', 'communaute_meubles', 'communaute_universelle', 'separation_biens', 'separation_societe_acquets'],
   partage_inegal_sub: ['separation_societe_acquets'],
   partage_inegal_acquets: ['participation_acquets'],
-  attribution_integrale: ['communaute_reduite', 'communaute_meubles', 'communaute_universelle', 'separation_societe_acquets', 'participation_acquets'],
+  attribution_integrale: ['communaute_reduite', 'communaute_meubles', 'communaute_universelle', 'separation_societe_acquets'],
   attribution_integrale_sub: ['separation_societe_acquets'],
   prelevement_indemnisation: ['communaute_reduite', 'communaute_meubles', 'communaute_universelle', 'separation_biens', 'participation_acquets', 'separation_societe_acquets'],
   modification_recompenses: ['communaute_reduite', 'communaute_meubles', 'communaute_universelle', 'separation_societe_acquets'],

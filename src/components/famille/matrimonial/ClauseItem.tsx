@@ -6,7 +6,6 @@ import { Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ClauseDefinition, ClauseState } from '@/types/matrimonial';
-import { PercentageInputs } from './PercentageInputs';
 import { PartConjointInput } from './PartConjointInput';
 
 interface ClauseItemProps {
@@ -14,7 +13,6 @@ interface ClauseItemProps {
   state: ClauseState | undefined;
   onToggle: () => void;
   onAssetSelect: () => void;
-  onPercentageChange: (partPP: number, partUsufruit: number) => void;
   onSinglePercentageChange: (partPP: number) => void;
   onOptionsChange: (options: any) => void;
   renderSubClauses?: () => React.ReactNode;
@@ -25,7 +23,6 @@ export const ClauseItem: React.FC<ClauseItemProps> = ({
   state,
   onToggle,
   onAssetSelect,
-  onPercentageChange,
   onSinglePercentageChange,
   onOptionsChange,
   renderSubClauses
@@ -180,14 +177,6 @@ export const ClauseItem: React.FC<ClauseItemProps> = ({
             <PartConjointInput
               partPleineProprietee={state?.partPleineProprietee || 50}
               onChange={onSinglePercentageChange}
-            />
-          )}
-
-          {clause.hasPercentages && clause.key !== 'partage_inegal' && (
-            <PercentageInputs
-              partPleineProprietee={state?.partPleineProprietee || 50}
-              partUsufruit={state?.partUsufruit || 50}
-              onChange={onPercentageChange}
             />
           )}
 

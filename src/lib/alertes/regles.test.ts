@@ -319,3 +319,390 @@ describe('changement_regime_proche_donation', () => {
     expect(alerte!.message).toContain('Documentez la motivation civile');
   });
 });
+
+describe('pacse_sans_testament', () => {
+  it('se déclenche : pacsé sans testament réalisé', () => {
+    const ctx = baseContext();
+    ctx.statutCouple = 'Pacsé(e)';
+    ctx.liberalites = [];
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('pacse_sans_testament');
+  });
+
+  it('ne se déclenche pas : testament réalisé (legs avec testament_realise = Oui)', () => {
+    const ctx = baseContext();
+    ctx.statutCouple = 'Pacsé(e)';
+    ctx.liberalites = [
+      { type: 'legs', denomination: 'Legs partenaire', beneficiaire_nom: 'Partenaire', testament_realise: 'Oui' },
+    ];
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('pacse_sans_testament');
+  });
+
+  it('ne se déclenche pas : statut couple différent (marié)', () => {
+    const ctx = baseContext();
+    ctx.statutCouple = 'Marié(e)';
+    ctx.liberalites = [];
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('pacse_sans_testament');
+  });
+
+  it('ne plante pas et ne se déclenche pas à tort : statutCouple non renseigné', () => {
+    const ctx = baseContext();
+
+    expect(() => evaluerAlertes(ctx)).not.toThrow();
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('pacse_sans_testament');
+  });
+});
+
+describe('concubin_sans_protection', () => {
+  it('se déclenche : concubinage, aucun testament, aucune assurance-vie avec clause structurée', () => {
+    const ctx = baseContext();
+    ctx.statutCouple = 'Concubinage';
+    ctx.liberalites = [];
+    ctx.avContracts = [];
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('concubin_sans_protection');
+  });
+
+  it('ne se déclenche pas : testament réalisé', () => {
+    const ctx = baseContext();
+    ctx.statutCouple = 'Concubinage';
+    ctx.liberalites = [
+      { type: 'legs', denomination: 'Legs concubin', beneficiaire_nom: 'Concubin', testament_realise: 'Oui' },
+    ];
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('concubin_sans_protection');
+  });
+
+  it(
+    "se déclenche À TORT (bug connu) : assurance-vie avec bénéficiaire désigné dans la clause structurée ne neutralise pas l'alerte — " +
+      "hasAVBeneficiaireDesigne (regles.ts) lit `b.nom`, un champ qui n'existe pas sur AVContractRawRow.clauseBeneficiaireStructuree " +
+      '(le type réel expose `familyLinkId`, pas `nom` — cf. transmissionHelpers.ts:203-213). Ce test documente le comportement ' +
+      'actuel tel quel, sans le corriger (hors périmètre couverture).',
+    () => {
+      const ctx = baseContext();
+      ctx.statutCouple = 'Concubinage';
+      ctx.liberalites = [];
+      ctx.avContracts = [
+        {
+          assetId: 'av-1',
+          operations: [],
+          clauseBeneficiaireStructuree: {
+            niveaux: [{ beneficiaires: [{ familyLinkId: 'concubin-1', pourcentage: 100 }] }],
+          },
+        },
+      ];
+
+      expect(idsOf(evaluerAlertes(ctx))).toContain('concubin_sans_protection');
+    }
+  );
+
+  it('ne se déclenche pas : statut couple différent (marié)', () => {
+    const ctx = baseContext();
+    ctx.statutCouple = 'Marié(e)';
+    ctx.liberalites = [];
+    ctx.avContracts = [];
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('concubin_sans_protection');
+  });
+});
+
+describe('mariage_avant_1966_sans_contrat', () => {
+  it('se déclenche : mariage sans contrat avant le 1er février 1966', () => {
+    const ctx = baseContext();
+    ctx.statutCouple = 'Marié(e)';
+    ctx.pasDeContratMariage = true;
+    ctx.dateMariage = '1960-06-15';
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('mariage_avant_1966_sans_contrat');
+  });
+
+  it('ne se déclenche pas : mariage après le 1er février 1966', () => {
+    const ctx = baseContext();
+    ctx.statutCouple = 'Marié(e)';
+    ctx.pasDeContratMariage = true;
+    ctx.dateMariage = '1970-01-01';
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('mariage_avant_1966_sans_contrat');
+  });
+
+  it('ne se déclenche pas : un contrat de mariage existe', () => {
+    const ctx = baseContext();
+    ctx.statutCouple = 'Marié(e)';
+    ctx.pasDeContratMariage = false;
+    ctx.dateMariage = '1960-06-15';
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('mariage_avant_1966_sans_contrat');
+  });
+
+  it('ne plante pas et ne se déclenche pas à tort : dateMariage absente', () => {
+    const ctx = baseContext();
+    ctx.statutCouple = 'Marié(e)';
+    ctx.pasDeContratMariage = true;
+    ctx.dateMariage = undefined;
+
+    expect(() => evaluerAlertes(ctx)).not.toThrow();
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('mariage_avant_1966_sans_contrat');
+  });
+});
+
+describe('pacs_avant_2007_sans_convention', () => {
+  it('se déclenche : pacs sans convention avant le 1er janvier 2007', () => {
+    const ctx = baseContext();
+    ctx.statutCouple = 'Pacsé(e)';
+    ctx.conventionPacs = undefined;
+    ctx.datePacs = '2005-03-10';
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('pacs_avant_2007_sans_convention');
+  });
+
+  it('ne se déclenche pas : pacs après le 1er janvier 2007', () => {
+    const ctx = baseContext();
+    ctx.statutCouple = 'Pacsé(e)';
+    ctx.conventionPacs = undefined;
+    ctx.datePacs = '2010-01-01';
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('pacs_avant_2007_sans_convention');
+  });
+
+  it('ne se déclenche pas : une convention de pacs existe', () => {
+    const ctx = baseContext();
+    ctx.statutCouple = 'Pacsé(e)';
+    ctx.conventionPacs = 'Séparation de patrimoines';
+    ctx.datePacs = '2005-03-10';
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('pacs_avant_2007_sans_convention');
+  });
+
+  it('ne plante pas et ne se déclenche pas à tort : datePacs absente', () => {
+    const ctx = baseContext();
+    ctx.statutCouple = 'Pacsé(e)';
+    ctx.conventionPacs = undefined;
+    ctx.datePacs = undefined;
+
+    expect(() => evaluerAlertes(ctx)).not.toThrow();
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('pacs_avant_2007_sans_convention');
+  });
+});
+
+describe('communaute_universelle_double_abattement', () => {
+  it('se déclenche : communauté universelle, patrimoine net supérieur à 2x abattement x nombre d\'enfants', () => {
+    const ctx = baseContext();
+    ctx.regimeMatrimonial = 'Communauté universelle';
+    ctx.patrimoineNet = 300000;
+    ctx.familyLinks = [{ id: 'e1', lien_familial: 'Enfant', nom: 'TEST', est_decede: false }];
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('communaute_universelle_double_abattement');
+  });
+
+  it('ne se déclenche pas : patrimoine net sous le seuil', () => {
+    const ctx = baseContext();
+    ctx.regimeMatrimonial = 'Communauté universelle';
+    ctx.patrimoineNet = 150000;
+    ctx.familyLinks = [{ id: 'e1', lien_familial: 'Enfant', nom: 'TEST', est_decede: false }];
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('communaute_universelle_double_abattement');
+  });
+
+  it("ne se déclenche pas : aucun enfant vivant (nombreEnfants = 0)", () => {
+    const ctx = baseContext();
+    ctx.regimeMatrimonial = 'Communauté universelle';
+    ctx.patrimoineNet = 300000;
+    ctx.familyLinks = [{ id: 'e1', lien_familial: 'Enfant', nom: 'TEST', est_decede: true }];
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('communaute_universelle_double_abattement');
+  });
+
+  it('ne plante pas et ne se déclenche pas à tort : régime différent (communauté légale)', () => {
+    const ctx = baseContext();
+    ctx.regimeMatrimonial = 'Communauté légale';
+    ctx.patrimoineNet = 300000;
+    ctx.familyLinks = [{ id: 'e1', lien_familial: 'Enfant', nom: 'TEST', est_decede: false }];
+
+    expect(() => evaluerAlertes(ctx)).not.toThrow();
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('communaute_universelle_double_abattement');
+  });
+});
+
+describe('dirigeant_regime_communautaire', () => {
+  it('se déclenche : régime communautaire et client dirigeant', () => {
+    const ctx = baseContext();
+    ctx.regimeMatrimonial = 'Communauté légale';
+    ctx.clientEstDirigeant = true;
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('dirigeant_regime_communautaire');
+  });
+
+  it('se déclenche : régime communautaire et conjoint dirigeant', () => {
+    const ctx = baseContext();
+    ctx.regimeMatrimonial = 'Communauté universelle';
+    ctx.conjointEstDirigeant = true;
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('dirigeant_regime_communautaire');
+  });
+
+  it('ne se déclenche pas : régime non communautaire (séparation de biens)', () => {
+    const ctx = baseContext();
+    ctx.regimeMatrimonial = 'Séparation de biens';
+    ctx.clientEstDirigeant = true;
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('dirigeant_regime_communautaire');
+  });
+
+  it('ne plante pas et ne se déclenche pas à tort : ni client ni conjoint dirigeant', () => {
+    const ctx = baseContext();
+    ctx.regimeMatrimonial = 'Communauté légale';
+    ctx.clientEstDirigeant = false;
+    ctx.conjointEstDirigeant = false;
+
+    expect(() => evaluerAlertes(ctx)).not.toThrow();
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('dirigeant_regime_communautaire');
+  });
+});
+
+describe('dirigeant_societe_acquets_residence_principale', () => {
+  it("se déclenche : société d'acquêts, clause résidence principale activée, dirigeant", () => {
+    const ctx = baseContext();
+    ctx.regimeMatrimonial = "Séparation de biens avec société d'acquêts";
+    ctx.clausesContrat = { societe_acquets: { enabled: true, options: { residencePrincipale: true } } };
+    ctx.clientEstDirigeant = true;
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('dirigeant_societe_acquets_residence_principale');
+  });
+
+  it("ne se déclenche pas : option résidence principale non incluse dans la clause", () => {
+    const ctx = baseContext();
+    ctx.regimeMatrimonial = "Séparation de biens avec société d'acquêts";
+    ctx.clausesContrat = { societe_acquets: { enabled: true, options: { residencePrincipale: false } } };
+    ctx.clientEstDirigeant = true;
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('dirigeant_societe_acquets_residence_principale');
+  });
+
+  it('ne se déclenche pas : ni client ni conjoint dirigeant', () => {
+    const ctx = baseContext();
+    ctx.regimeMatrimonial = "Séparation de biens avec société d'acquêts";
+    ctx.clausesContrat = { societe_acquets: { enabled: true, options: { residencePrincipale: true } } };
+    ctx.clientEstDirigeant = false;
+    ctx.conjointEstDirigeant = false;
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('dirigeant_societe_acquets_residence_principale');
+  });
+
+  it('ne plante pas et ne se déclenche pas à tort : clausesContrat absent', () => {
+    const ctx = baseContext();
+    ctx.regimeMatrimonial = "Séparation de biens avec société d'acquêts";
+    ctx.clausesContrat = undefined;
+    ctx.clientEstDirigeant = true;
+
+    expect(() => evaluerAlertes(ctx)).not.toThrow();
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('dirigeant_societe_acquets_residence_principale');
+  });
+});
+
+describe('parts_non_negociables_souscrites_pendant_mariage', () => {
+  it('se déclenche : régime communautaire, parts non négociables souscrites après le mariage', () => {
+    const ctx = baseContext();
+    ctx.regimeMatrimonial = 'Communauté légale';
+    ctx.dateMariage = '2010-01-01';
+    ctx.societes = [
+      {
+        id: 'soc-1',
+        user_id: 'u1',
+        denomination: 'SCI Test',
+        type_societe: 'SCI',
+        parts_negociables: false,
+        date_souscription: '2015-06-01',
+      },
+    ];
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('parts_non_negociables_souscrites_pendant_mariage');
+  });
+
+  it('ne se déclenche pas : souscription antérieure au mariage', () => {
+    const ctx = baseContext();
+    ctx.regimeMatrimonial = 'Communauté légale';
+    ctx.dateMariage = '2010-01-01';
+    ctx.societes = [
+      {
+        id: 'soc-1',
+        user_id: 'u1',
+        denomination: 'SCI Test',
+        type_societe: 'SCI',
+        parts_negociables: false,
+        date_souscription: '2005-06-01',
+      },
+    ];
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('parts_non_negociables_souscrites_pendant_mariage');
+  });
+
+  it('ne se déclenche pas : parts négociables', () => {
+    const ctx = baseContext();
+    ctx.regimeMatrimonial = 'Communauté légale';
+    ctx.dateMariage = '2010-01-01';
+    ctx.societes = [
+      {
+        id: 'soc-1',
+        user_id: 'u1',
+        denomination: 'SCI Test',
+        type_societe: 'SCI',
+        parts_negociables: true,
+        date_souscription: '2015-06-01',
+      },
+    ];
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('parts_non_negociables_souscrites_pendant_mariage');
+  });
+
+  it('ne plante pas et ne se déclenche pas à tort : régime non communautaire', () => {
+    const ctx = baseContext();
+    ctx.regimeMatrimonial = 'Séparation de biens';
+    ctx.dateMariage = '2010-01-01';
+    ctx.societes = [
+      {
+        id: 'soc-1',
+        user_id: 'u1',
+        denomination: 'SCI Test',
+        type_societe: 'SCI',
+        parts_negociables: false,
+        date_souscription: '2015-06-01',
+      },
+    ];
+
+    expect(() => evaluerAlertes(ctx)).not.toThrow();
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('parts_non_negociables_souscrites_pendant_mariage');
+  });
+});
+
+describe('extraneite_residence_fiscale_etranger', () => {
+  it('se déclenche : client résident fiscal à l\'étranger', () => {
+    const ctx = baseContext();
+    ctx.clientResidenceFiscaleEtranger = true;
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('extraneite_residence_fiscale_etranger');
+  });
+
+  it('se déclenche : conjoint résident fiscal à l\'étranger', () => {
+    const ctx = baseContext();
+    ctx.conjointResidenceFiscaleEtranger = true;
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('extraneite_residence_fiscale_etranger');
+  });
+
+  it('ne se déclenche pas : ni client ni conjoint résident fiscal à l\'étranger', () => {
+    const ctx = baseContext();
+    ctx.clientResidenceFiscaleEtranger = false;
+    ctx.conjointResidenceFiscaleEtranger = false;
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('extraneite_residence_fiscale_etranger');
+  });
+
+  it('ne plante pas et ne se déclenche pas à tort : champs non renseignés', () => {
+    const ctx = baseContext();
+
+    expect(() => evaluerAlertes(ctx)).not.toThrow();
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('extraneite_residence_fiscale_etranger');
+  });
+});

@@ -28,7 +28,6 @@ export const MatrimonialRegimeOptions: React.FC<MatrimonialRegimeOptionsProps> =
     isSaving,
     toggleClause,
     updateClauseAssets,
-    updateClausePercentages,
     updateClausePercentage,
     updateClauseOptions,
     getClausesForRegime,
@@ -147,7 +146,6 @@ export const MatrimonialRegimeOptions: React.FC<MatrimonialRegimeOptionsProps> =
                   state={clauses[clause.key]}
                   onToggle={() => toggleClause(clause.key)}
                   onAssetSelect={() => handleAssetSelect(clause.key)}
-                  onPercentageChange={(pp, usufruit) => updateClausePercentages(clause.key, pp, usufruit)}
                   onSinglePercentageChange={(pp) => updateClausePercentage(clause.key, pp)}
                   onOptionsChange={(options) => updateClauseOptions(clause.key, options)}
                   renderSubClauses={clause.hasSubClauses ? () => renderSubClauses(clause.key) : undefined}

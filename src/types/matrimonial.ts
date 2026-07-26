@@ -69,8 +69,8 @@ export interface ClauseDefinition {
 export interface ClauseState {
   enabled: boolean;
   selectedAssets?: string[];
+  /** Uniquement lu/écrit pour partage_inegal (cf. useMatrimonialClauses.ts::updateClausePercentage). */
   partPleineProprietee?: number;
-  partUsufruit?: number;
   options?: {
     pleineProprietee?: boolean;
     usufruit?: boolean;
@@ -101,7 +101,6 @@ export interface MatrimonialClauseImpact {
   valeur: number;
   assetIds?: string[];
   partPleineProprietee?: number;
-  partUsufruit?: number;
 }
 
 // Résultat de l'analyse des clauses pour la transmission

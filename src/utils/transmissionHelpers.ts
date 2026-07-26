@@ -306,7 +306,6 @@ const clauseStateSchema = z
     enabled: z.boolean(),
     selectedAssets: z.array(z.string()).optional(),
     partPleineProprietee: z.number().optional(),
-    partUsufruit: z.number().optional(),
     options: z
       .object({
         pleineProprietee: z.boolean().optional(),

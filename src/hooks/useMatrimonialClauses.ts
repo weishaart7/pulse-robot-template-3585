@@ -13,7 +13,6 @@ interface UseMatrimonialClausesReturn {
   isSaving: boolean;
   toggleClause: (clauseName: string) => void;
   updateClauseAssets: (clauseName: string, assetIds: string[]) => void;
-  updateClausePercentages: (clauseName: string, partPP: number, partUsufruit: number) => void;
   updateClausePercentage: (clauseName: string, partPP: number) => void;
   updateClauseOptions: (clauseName: string, options: any) => void;
   updateDonation: (updates: Partial<DonationDernierVivant>) => void;
@@ -93,8 +92,8 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
   // Sauvegarder les données, avec un debounce de 800ms (même pattern que
   // LMNPDetailView.tsx:191-209 : useRef + setTimeout/clearTimeout, pas de lib
   // externe). Uniforme pour tous les appelants (toggleClause, updateClauseAssets,
-  // updateClausePercentages, updateClausePercentage, updateClauseOptions,
-  // updateDonation) puisqu'ils passent tous par cette même fonction.
+  // updateClausePercentage, updateClauseOptions, updateDonation) puisqu'ils
+  // passent tous par cette même fonction.
   const saveClausesData = useCallback((newClauses: ClausesData, newDonation: DonationDernierVivant) => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -108,9 +107,14 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
     const wasEnabled = clauses[clauseName]?.enabled || false;
     // Décocher une clause efface tout son état associé (biens sélectionnés, %, options) :
     // sinon ces données restent enregistrées en arrière-plan bien que la clause soit désactivée.
+    // partPleineProprietee n'a de sens que pour partage_inegal (seule clause qui le lit,
+    // via updateClausePercentage/PartConjointInput) : l'écrire par défaut sur toute autre
+    // clause activée ne faisait que persister une donnée jamais affichée ni lue.
     const newClauseState: ClauseState = wasEnabled
       ? { enabled: false }
-      : { enabled: true, partPleineProprietee: 50, partUsufruit: 50 };
+      : clauseName === 'partage_inegal'
+        ? { enabled: true, partPleineProprietee: 50 }
+        : { enabled: true };
     const newClauses: ClausesData = {
       ...clauses,
       [clauseName]: newClauseState
@@ -131,22 +135,9 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
     saveClausesData(newClauses, donation);
   }, [clauses, donation, saveClausesData]);
 
-  const updateClausePercentages = useCallback((clauseName: string, partPP: number, partUsufruit: number) => {
-    const newClauses: ClausesData = {
-      ...clauses,
-      [clauseName]: {
-        ...clauses[clauseName],
-        partPleineProprietee: partPP,
-        partUsufruit: partUsufruit
-      }
-    };
-    setClauses(newClauses);
-    saveClausesData(newClauses, donation);
-  }, [clauses, donation, saveClausesData]);
-
-  // Dédié à partage_inegal (top-level) : seul partPleineProprietee est lu par
-  // le moteur pour cette clause, contrairement à updateClausePercentages
-  // (encore utilisée par les sous-clauses société d'acquêts).
+  // Dédié à partage_inegal (top-level), seule clause qui définit hasPercentages
+  // dans CLAUSES_BY_REGIME : partPleineProprietee est le seul champ lu par le
+  // moteur pour cette clause (partUsufruit a été retiré, jamais lu ni affiché).
   const updateClausePercentage = useCallback((clauseName: string, partPP: number) => {
     const newClauses: ClausesData = {
       ...clauses,
@@ -228,8 +219,7 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
         type: typeAvantage,
         valeur: valeurClause,
         assetIds: clauseState.selectedAssets,
-        partPleineProprietee: clauseState.partPleineProprietee,
-        partUsufruit: clauseState.partUsufruit
+        partPleineProprietee: clauseState.partPleineProprietee
       });
     }
 
@@ -248,7 +238,6 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
     isSaving,
     toggleClause,
     updateClauseAssets,
-    updateClausePercentages,
     updateClausePercentage,
     updateClauseOptions,
     updateDonation,
