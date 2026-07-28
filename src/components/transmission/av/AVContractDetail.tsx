@@ -42,6 +42,14 @@ interface AVDetails {
   rachats_programmes: boolean;
   rachats_programmes_montant: number | null;
   rachats_programmes_periodicite: string | null;
+  // Origine des fonds ayant alimenté le contrat (doctrine Ciot, §9.6.1) :
+  // ne sert qu'à déterminer si la valeur de rachat d'un contrat non dénoué
+  // doit être réintégrée dans la masse commune à liquider civilement, sous
+  // régime de communauté (cf. utils/transmissionHelpers.ts::
+  // computeAVReintegrationCivile). Champ binaire déclaratif, pas de
+  // financement mixte proportionnel comme pour les biens ordinaires
+  // (art. 1436) : un contrat n'a pas de prix d'acquisition unique.
+  origine_fonds: 'deniers_propres' | 'deniers_communs';
 }
 
 interface AVOperation {
@@ -68,6 +76,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
     rachats_programmes: false,
     rachats_programmes_montant: null,
     rachats_programmes_periodicite: null,
+    origine_fonds: 'deniers_communs',
   });
   const [operations, setOperations] = useState<AVOperation[]>([]);
   const [beneficiaires, setBeneficiaires] = useState<{ id: string; nom: string; prenom: string | null; lien: string }[]>([]);
@@ -150,6 +159,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
           rachats_programmes: d.rachats_programmes || false,
           rachats_programmes_montant: d.rachats_programmes_montant || null,
           rachats_programmes_periodicite: d.rachats_programmes_periodicite || null,
+          origine_fonds: d.origine_fonds === 'deniers_propres' ? 'deniers_propres' : 'deniers_communs',
         });
         // Restore structured clause if exists
         if (d.clause_beneficiaire_structuree) {
@@ -205,6 +215,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
         rachats_programmes_montant: details.rachats_programmes_montant,
         rachats_programmes_periodicite: details.rachats_programmes_periodicite,
         clause_beneficiaire_structuree: clauseMode === 'assistee' ? clauseStructuree : null,
+        origine_fonds: details.origine_fonds,
       };
 
       if (details.id) {
@@ -441,6 +452,38 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left - 2/3 */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Origine des fonds (doctrine Ciot, §9.6.1) */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Origine des fonds
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RadioGroup
+                value={details.origine_fonds}
+                onValueChange={(val: 'deniers_propres' | 'deniers_communs') =>
+                  setDetails(prev => ({ ...prev, origine_fonds: val }))
+                }
+                className="flex flex-wrap gap-4"
+              >
+                {[
+                  { value: 'deniers_communs', label: 'Deniers communs' },
+                  { value: 'deniers_propres', label: 'Deniers propres' },
+                ].map(opt => (
+                  <div key={opt.value} className="flex items-center space-x-2">
+                    <RadioGroupItem value={opt.value} id={`origine-fonds-${opt.value}`} />
+                    <Label htmlFor={`origine-fonds-${opt.value}`} className="cursor-pointer">{opt.label}</Label>
+                  </div>
+                ))}
+              </RadioGroup>
+              <p className="text-xs text-muted-foreground mt-2">
+                Détermine, si ce contrat n'est pas dénoué au décès simulé, si sa valeur de rachat est réintégrée dans la masse commune à liquider (régime de communauté uniquement).
+              </p>
+            </CardContent>
+          </Card>
+
           {/* Objectif */}
           <Card>
             <CardHeader className="pb-3">

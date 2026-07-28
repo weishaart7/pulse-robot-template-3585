@@ -15,6 +15,8 @@ import { ClausesData } from '@/types/matrimonial';
 import { getAssetCategory } from '@/constants/assetTypes';
 import { getAgeAtDate, getDemembrementPct } from '@/lib/transmission';
 import { resolveEffectiveAVBeneficiaires } from '@/lib/dmtg/assurance-vie';
+import { isDetenteurSpouse } from '@/lib/patrimoine/utils';
+import { isRegimeCommunautaire } from '@/lib/patrimoine/qualification';
 
 /**
  * Ligne liberalites brute (colonnes pertinentes uniquement), telle que
@@ -192,6 +194,15 @@ export interface AVContractRawRow {
   assetId: string;
   label?: string | null;
   valeurEstimee?: number | null;
+  // assets.detenteur (texte libre, 'user'/'spouse' par convention, cf.
+  // lib/patrimoine/utils.ts::isDetenteurSpouse) — détenteur réel du contrat,
+  // pour distinguer un contrat de l'Utilisateur de celui du conjoint
+  // survivant (doctrine Ciot, §9.6.1).
+  detenteur?: string | null;
+  // av_contract_details.origine_fonds ('deniers_propres'/'deniers_communs') —
+  // ne sert qu'à la réintégration civile d'un contrat non dénoué détenu par
+  // le conjoint, sous régime de communauté.
+  origineFonds?: string | null;
   operations: AVOperationRow[];
   // Structure identique à ClauseStructuree (av/ClauseBeneficiaireBuilder.tsx),
   // dupliquée ici en type minimal pour ne pas faire dépendre utils/ d'un
@@ -291,9 +302,37 @@ export function buildAVContracts(
       capitalDeces: Number(row.valeurEstimee) || 0,
       primesAvant70,
       primesApres70,
-      isExonereBeneficiaireConjointPacs: hasConjointBeneficiaire
+      isExonereBeneficiaireConjointPacs: hasConjointBeneficiaire,
+      detenteur: isDetenteurSpouse(row.detenteur || undefined) ? 'spouse' : 'user',
+      origineFonds: row.origineFonds === 'deniers_propres' ? 'deniers_propres' : 'deniers_communs'
     };
   });
+}
+
+/**
+ * Valeur de rachat des contrats AV non dénoués du conjoint survivant à
+ * réintégrer dans la masse commune à liquider civilement (doctrine Ciot,
+ * §9.6.1) : uniquement sous régime de communauté, pour les contrats détenus
+ * par `holderNonDenoue` (le détenteur qui n'est PAS le défunt simulé dans ce
+ * calcul) dont l'origine des fonds est 'deniers_communs'. Un contrat financé
+ * en 'deniers_propres' reste hors masse commune (bien propre du conjoint,
+ * pas de récompense). Sous séparation de biens ou participation aux acquêts,
+ * le contrat reste un bien propre du conjoint dans tous les cas : retourne
+ * toujours 0.
+ *
+ * Le résultat alimente `TransmissionContext.avReintegrationCivileMontant`,
+ * jamais `avContracts` (qui reste réservé au calcul fiscal 990I/757B d'un
+ * contrat réellement dénoué par CE décès) — cf. commentaire de ce champ.
+ */
+export function computeAVReintegrationCivile(
+  avContracts: AVContract[],
+  holderNonDenoue: 'user' | 'spouse',
+  regimeMatrimonial: string | null | undefined
+): number {
+  if (!isRegimeCommunautaire(regimeMatrimonial || undefined)) return 0;
+  return avContracts
+    .filter(c => c.detenteur === holderNonDenoue && c.origineFonds === 'deniers_communs')
+    .reduce((sum, c) => sum + c.capitalDeces, 0);
 }
 
 // Schéma calqué sur ClauseState (src/types/matrimonial.ts:69-88). `.passthrough()`

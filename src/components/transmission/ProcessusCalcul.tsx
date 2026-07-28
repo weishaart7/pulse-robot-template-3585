@@ -21,6 +21,7 @@ import {
   buildRecompensesCalcInput,
   buildCreancesCalcInput,
   buildParticipationAcquetsContext,
+  computeAVReintegrationCivile,
   AVDonneesInsuffisantesError,
   parseClausesData
 } from '@/utils/transmissionHelpers';
@@ -100,6 +101,12 @@ export const ProcessusCalcul = () => {
         conjointOption: 'quart_pp',
         rawAssets: assets || [],
         avContracts,
+        // Contrat AV détenu par le conjoint survivant, non dénoué puisque
+        // l'Utilisateur décède en premier ici : réintégré civilement (doctrine
+        // Ciot, §9.6.1) sous régime de communauté + origine_fonds deniers
+        // communs, jamais dans avContracts (déjà filtré par détenteur dans
+        // computeTransmission).
+        avReintegrationCivileMontant: computeAVReintegrationCivile(avContracts, 'spouse', (maritalStatus as any)?.regime_matrimonial),
         partageEnvisage: !!(maritalStatus as any)?.partage_envisage,
         clausesData,
         regimeMatrimonial: (maritalStatus as any)?.regime_matrimonial,

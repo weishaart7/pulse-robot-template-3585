@@ -59,10 +59,21 @@ export interface MaritalStatus {
   date_mariage?: string;
   lieu_mariage?: string;
   regime_matrimonial?: string;
+  // Éléments d'extranéité du régime matrimonial (DIP, §4.4, §12.1) : simple
+  // signalement déclaratif, sans automatisation des régimes de rattachement
+  // (Convention de La Haye 1978, Règlement Rome III) — cf. RelationInfoForm.tsx
+  // et lib/alertes/regles.ts (alerte dédiée, distincte de
+  // extraneite_residence_fiscale_etranger).
+  loi_applicable_regime?: string;
+  pays_premier_domicile_matrimonial?: string;
   pas_de_contrat_mariage?: boolean;
   parent_isole?: boolean;
   nombre_enfants_charges?: number;
   imposition_distincte?: boolean;
+  // Condition nécessaire (avec le régime séparation de biens / participation aux
+  // acquêts) pour autoriser imposition_distincte (art. 6, 4-a CGI) côté UI —
+  // cf. RelationInfoForm.tsx.
+  residence_separee?: boolean;
   mariage_precedent_personne?: boolean;
   mariage_precedent_conjoint?: boolean;
   duree_mariage_precedent_personne_annees?: number | null;

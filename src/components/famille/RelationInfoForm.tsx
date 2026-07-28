@@ -10,6 +10,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
+import SelectMenu from "@/components/ui/select-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,6 +51,12 @@ const formSchema = z.object({
   lieuMariage: z.string().optional(),
   pasDeContrat: z.boolean().default(false),
   impositionDistincte: z.boolean().default(false),
+  residenceSeparee: z.boolean().default(false),
+  // Éléments d'extranéité du régime matrimonial (DIP, §4.4, §12.1) : simple
+  // signalement déclaratif, sans validation de format ni automatisation des
+  // régimes de rattachement (Convention de La Haye 1978, Règlement Rome III).
+  loiApplicableRegime: z.string().optional(),
+  paysPremierDomicileMatrimonial: z.string().optional(),
   donationDernierVivantPersonne: z.boolean().default(false),
   dateDonationPersonne: z.date().optional(),
   donationDernierVivantConjoint: z.boolean().default(false),
@@ -80,6 +87,9 @@ const FIELD_TO_SECTION: Partial<Record<keyof FormData, Section>> = {
   regimeMatrimonial: 'informations-generales',
   pasDeContrat: 'informations-generales',
   impositionDistincte: 'informations-generales',
+  residenceSeparee: 'informations-generales',
+  loiApplicableRegime: 'informations-generales',
+  paysPremierDomicileMatrimonial: 'informations-generales',
   donationDernierVivantPersonne: 'donation',
   dateDonationPersonne: 'donation',
   donationDernierVivantConjoint: 'donation',
@@ -124,6 +134,9 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
       lieuMariage: "",
       pasDeContrat: false,
       impositionDistincte: false,
+      residenceSeparee: false,
+      loiApplicableRegime: "",
+      paysPremierDomicileMatrimonial: "",
       donationDernierVivantPersonne: false,
       donationDernierVivantConjoint: false,
       mariagePrecedentPersonne: false,
@@ -141,6 +154,9 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
         lieuMariage: maritalData.lieu_mariage || "",
         pasDeContrat: maritalData.pas_de_contrat_mariage || false,
         impositionDistincte: maritalData.imposition_distincte || false,
+        residenceSeparee: maritalData.residence_separee || false,
+        loiApplicableRegime: maritalData.loi_applicable_regime || "",
+        paysPremierDomicileMatrimonial: maritalData.pays_premier_domicile_matrimonial || "",
         donationDernierVivantPersonne: maritalData.donation_dernier_vivant_personne || false,
         dateDonationPersonne: maritalData.date_donation_personne ? new Date(maritalData.date_donation_personne) : undefined,
         donationDernierVivantConjoint: maritalData.donation_dernier_vivant_conjoint || false,
@@ -165,6 +181,9 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
         lieu_mariage: data.lieuMariage,
         pas_de_contrat_mariage: data.pasDeContrat,
         imposition_distincte: data.impositionDistincte,
+        residence_separee: data.residenceSeparee,
+        loi_applicable_regime: data.loiApplicableRegime || null,
+        pays_premier_domicile_matrimonial: data.paysPremierDomicileMatrimonial || null,
         donation_dernier_vivant_personne: data.donationDernierVivantPersonne,
         date_donation_personne: data.dateDonationPersonne?.toISOString().split('T')[0],
         donation_dernier_vivant_conjoint: data.donationDernierVivantConjoint,
@@ -274,6 +293,8 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
   };
 
   const regimeMatrimonial = form.watch("regimeMatrimonial");
+  const conventionPacs = form.watch("conventionPacs");
+  const residenceSeparee = form.watch("residenceSeparee");
   const pasDeContrat = form.watch("pasDeContrat");
   const dateMariage = form.watch("dateMariage");
   const mariagePrecedentPersonne = form.watch("mariagePrecedentPersonne");
@@ -309,6 +330,21 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
   // s'appliquent dans tous les régimes matrimoniaux (art. 1479, 1543 C. civ.).
   const simplifiedRegimeType: RegimeType = toRegimeType(regimeMatrimonial);
   const hasMasseCommune = getSimplifiedRegime(simplifiedRegimeType) === 'communauté' || simplifiedRegimeType === 'separation_societe_acquets';
+
+  // Imposition distincte (art. 6, 4-a CGI) : réservée aux régimes séparation de
+  // biens / participation aux acquêts, et seulement si la résidence séparée est
+  // renseignée. Un régime communautaire ou une résidence commune l'exclut.
+  // Ne force aucune correction si la case est déjà cochée en base pour un
+  // profil qui ne remplit plus ces conditions (ex. changement de régime après
+  // coup) : le champ reste simplement grisé, sans écraser la valeur existante.
+  const impositionDistincteEligible =
+    (regimeMatrimonial === 'Séparation de biens' || regimeMatrimonial === 'Participation aux acquêts') &&
+    residenceSeparee;
+
+  // Idem pour le PACS : pas d'équivalent "participation aux acquêts", donc un
+  // seul critère de régime (convention de PACS en séparation de biens).
+  const impositionDistinctePacsEligible =
+    conventionPacs === 'Régime de la séparation des biens' && residenceSeparee;
 
   const sections = relationStatus === "Marié(e)" ? [
     { id: 'informations-generales' as Section, label: 'Informations générales', icon: Heart },
@@ -434,11 +470,70 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                     />
                     <FormField
                       control={form.control}
-                      name="impositionDistincte"
+                      name="residenceSeparee"
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                           <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                          <FormLabel className="text-sm">Imposition distincte</FormLabel>
+                          <FormLabel className="text-sm">Résidence séparée</FormLabel>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="impositionDistincte"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              disabled={!impositionDistincteEligible}
+                            />
+                          </FormControl>
+                          <FormLabel className={cn("text-sm", !impositionDistincteEligible && "text-muted-foreground")}>
+                            Imposition distincte
+                          </FormLabel>
+                        </FormItem>
+                      )}
+                    />
+                    {!impositionDistincteEligible && (
+                      <p className="text-xs text-muted-foreground">
+                        Réservée aux régimes séparation de biens ou participation aux acquêts, avec résidence séparée (art. 6, 4-a CGI).
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Éléments d'extranéité (DIP, §4.4, §12.1) : signalement déclaratif
+                      uniquement, sans automatisation des régimes de rattachement
+                      (Convention de La Haye 1978, Règlement Rome III). */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
+                    <FormField
+                      control={form.control}
+                      name="paysPremierDomicileMatrimonial"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1">
+                          <FormLabel className="text-xs">Pays du premier domicile matrimonial</FormLabel>
+                          <FormControl>
+                            <SelectMenu
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              placeholder="Sélectionner un pays"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="loiApplicableRegime"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1">
+                          <FormLabel className="text-xs">Loi applicable au régime matrimonial</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex : loi française" {...field} />
+                          </FormControl>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -667,17 +762,40 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                   )}
                 />
               </div>
-              <div className="mt-5">
+              <div className="mt-5 flex flex-col gap-3">
+                <FormField
+                  control={form.control}
+                  name="residenceSeparee"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                      <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      <FormLabel className="text-sm">Résidence séparée</FormLabel>
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="impositionDistincte"
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                      <FormLabel className="text-sm">Imposition distincte</FormLabel>
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={!impositionDistinctePacsEligible}
+                        />
+                      </FormControl>
+                      <FormLabel className={cn("text-sm", !impositionDistinctePacsEligible && "text-muted-foreground")}>
+                        Imposition distincte
+                      </FormLabel>
                     </FormItem>
                   )}
                 />
+                {!impositionDistinctePacsEligible && (
+                  <p className="text-xs text-muted-foreground">
+                    Réservée à la convention de PACS en séparation de biens, avec résidence séparée (art. 6, 4-a CGI).
+                  </p>
+                )}
               </div>
             </div>
           </div>

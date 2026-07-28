@@ -754,3 +754,33 @@ describe('extraneite_residence_fiscale_etranger', () => {
     expect(idsOf(evaluerAlertes(ctx))).not.toContain('extraneite_residence_fiscale_etranger');
   });
 });
+
+describe('extraneite_regime_matrimonial', () => {
+  it('se déclenche : pays du premier domicile matrimonial renseigné et différent de la France', () => {
+    const ctx = baseContext();
+    ctx.paysPremierDomicileMatrimonial = 'Belgique';
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('extraneite_regime_matrimonial');
+  });
+
+  it('se déclenche : loi applicable au régime renseignée', () => {
+    const ctx = baseContext();
+    ctx.loiApplicableRegime = 'Loi belge';
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('extraneite_regime_matrimonial');
+  });
+
+  it('ne se déclenche pas : pays du premier domicile matrimonial = France, loi applicable non renseignée', () => {
+    const ctx = baseContext();
+    ctx.paysPremierDomicileMatrimonial = 'France';
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('extraneite_regime_matrimonial');
+  });
+
+  it('ne plante pas et ne se déclenche pas à tort : champs non renseignés', () => {
+    const ctx = baseContext();
+
+    expect(() => evaluerAlertes(ctx)).not.toThrow();
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('extraneite_regime_matrimonial');
+  });
+});

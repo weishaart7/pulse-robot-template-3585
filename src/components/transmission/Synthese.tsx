@@ -18,6 +18,7 @@ import {
   buildRecompensesCalcInput,
   buildCreancesCalcInput,
   buildParticipationAcquetsContext,
+  computeAVReintegrationCivile,
   AVContractRawRow,
   AVDonneesInsuffisantesError,
   LegsCaduc,
@@ -116,13 +117,16 @@ export const Synthese = () => {
       const avAssetIds = avAssets.map(a => a.id);
       const [avDetailsRes, avOperationsRes] = avAssetIds.length > 0
         ? await Promise.all([
-            supabase.from('av_contract_details').select('asset_id, clause_beneficiaire_structuree').in('asset_id', avAssetIds),
+            supabase.from('av_contract_details').select('asset_id, clause_beneficiaire_structuree, origine_fonds').in('asset_id', avAssetIds),
             supabase.from('av_operations').select('asset_id, type_operation, montant, date_operation').in('asset_id', avAssetIds)
           ])
         : [{ data: [] }, { data: [] }];
 
       const avClauseByAsset = new Map<string, any>(
         (avDetailsRes.data || []).map((d: any) => [d.asset_id, d.clause_beneficiaire_structuree || null])
+      );
+      const avOrigineFondsByAsset = new Map<string, string | null>(
+        (avDetailsRes.data || []).map((d: any) => [d.asset_id, d.origine_fonds || null])
       );
       const avOperationsByAsset = new Map<string, { type_operation: string; montant: number | null; date_operation: string }[]>();
       (avOperationsRes.data || []).forEach((op: any) => {
@@ -134,6 +138,8 @@ export const Synthese = () => {
         assetId: a.id,
         label: a.denomination,
         valeurEstimee: a.valeur_estimee,
+        detenteur: a.detenteur,
+        origineFonds: avOrigineFondsByAsset.get(a.id) || null,
         operations: avOperationsByAsset.get(a.id) || [],
         clauseBeneficiaireStructuree: avClauseByAsset.get(a.id) || null
       }));
@@ -233,6 +239,12 @@ export const Synthese = () => {
         referenceDate,
         rawAssets: assets || [],
         avContracts,
+        // Contrat AV détenu par le conjoint survivant, non dénoué puisque
+        // l'Utilisateur décède en premier ici : réintégré civilement (doctrine
+        // Ciot, §9.6.1) sous régime de communauté + origine_fonds deniers
+        // communs, jamais dans avContracts (déjà filtré par détenteur dans
+        // computeTransmission).
+        avReintegrationCivileMontant: computeAVReintegrationCivile(avContracts, 'spouse', (maritalStatus as any)?.regime_matrimonial),
         partageEnvisage,
         clausesData,
         regimeMatrimonial: (maritalStatus as any)?.regime_matrimonial,

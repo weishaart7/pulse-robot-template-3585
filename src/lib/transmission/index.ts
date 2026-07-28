@@ -111,6 +111,15 @@ export interface TransmissionContext {
     patrimoineFinal: PatrimoineLigneCalcInput[];
     exclusionBiensProfessionnels: boolean;
   };
+  // Valeur de rachat d'un contrat AV non dénoué du conjoint survivant, à
+  // réintégrer dans la masse commune à liquider civilement (doctrine Ciot,
+  // §9.6.1 : régime de communauté + origine_fonds deniers_communs, cf.
+  // utils/transmissionHelpers.ts::computeAVReintegrationCivile). Canal
+  // volontairement séparé d'`avContracts` (qui reste réservé au calcul fiscal
+  // 990I/757B) : un contrat non dénoué ne doit jamais transiter par
+  // `avContracts` de CE contexte, sous peine d'être taxé à tort dans cette
+  // succession — précalculé par l'appelant, jamais dérivé ici d'`avContracts`.
+  avReintegrationCivileMontant?: number;
 }
 
 /**
@@ -185,7 +194,6 @@ export function getConjointAge(family: FamilyGraph, referenceDateISO: string): n
  */
 export function computeTransmission(ctx: TransmissionContext): TransmissionResult {
   const { family, liberalites, params, conjointOption, rawAssets, partageEnvisage } = ctx;
-  const avContracts = ctx.avContracts || [];
   const referenceDate = ctx.referenceDate || new Date().toISOString().split('T')[0];
 
   // 0. Récompenses (art. 1468-1478 C. civ.) et créances entre époux
@@ -196,6 +204,19 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // ensemble pour rester alignés, comme le reste du mécanisme A
   // (cf. commentaire de valeurVenale plus bas sur cet alignement).
   const decedentRole = getDecedentRole(family.decedentId);
+
+  // Un contrat AV n'est dénoué — et donc fiscalement taxable (990I/757B) —
+  // que par le décès de son détenteur réel (souscripteur/assuré). Un contrat
+  // détenu par le conjoint survivant n'est jamais dénoué par le décès simulé
+  // ici : il ne doit jamais entrer dans l'assiette fiscale de CETTE
+  // succession (doctrine Ciot, §9.6.1), quel que soit le régime matrimonial —
+  // sa réintégration civile éventuelle passe par `avReintegrationCivileMontant`
+  // (canal séparé, cf. TransmissionContext), jamais par ce tableau. Détenteur
+  // absent (contrats existants non renseignés) : rattaché à l'Utilisateur par
+  // défaut, même convention que `assets.detenteur`/isDetenteurUser.
+  const avContracts = (ctx.avContracts || []).filter(
+    contract => (contract.detenteur ?? 'user') === decedentRole
+  );
   const soldeRecompenses = computeSoldeRecompenses(ctx.recompenses || []);
   const soldeCreances = computeSoldeCreancesEntreEpoux(ctx.creancesEntreEpoux || []);
 
@@ -300,7 +321,8 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // bougerait, désalignant à nouveau le civil et le fiscal (cf. le bug déjà
   // corrigé une fois entre Synthese.tsx et ProcessusCalcul.tsx sur
   // netBreakdown, lib/patrimoine/succession.ts).
-  const deltaCivilTotal = deltaRecompensesCreances + deltaParticipationAcquets + deltaAvantageMatrimonial;
+  const deltaCivilTotal = deltaRecompensesCreances + deltaParticipationAcquets + deltaAvantageMatrimonial
+    + (ctx.avReintegrationCivileMontant || 0);
   const patrimony: PatrimonySnapshot = deltaCivilTotal !== 0
     ? { ...ctx.patrimony, biensExistants: ctx.patrimony.biensExistants + deltaCivilTotal }
     : ctx.patrimony;

@@ -86,6 +86,16 @@ export interface AVContract {
   primesApres70: Money; // pour 757 B (à réintégrer au-delà de 30 500 partagé)
   isExonereBeneficiaireConjointPacs?: boolean; // true si conj/pacs applicable
   isSiblingExonEligible?: boolean; // conditions remplies (flags calculés ailleurs)
+  // Détenteur réel du contrat (souscripteur/assuré, cf. assets.detenteur) —
+  // détermine si ce contrat est dénoué par le décès simulé (transmission/
+  // index.ts::computeTransmission filtre dessus avant le calcul fiscal
+  // 990I/757B) ou non dénoué (réintégration civile éventuelle, doctrine Ciot
+  // §9.6.1, via TransmissionContext.avReintegrationCivileMontant — jamais ici).
+  detenteur?: 'user' | 'spouse';
+  // Origine des fonds ayant alimenté le contrat (av_contract_details.
+  // origine_fonds) — ne sert qu'à la réintégration civile d'un contrat non
+  // dénoué sous régime de communauté ; sans effet sur le calcul fiscal.
+  origineFonds?: 'deniers_propres' | 'deniers_communs';
 }
 
 export interface Donation {

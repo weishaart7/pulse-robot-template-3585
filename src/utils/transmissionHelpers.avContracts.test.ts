@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { buildAVContracts, splitPrimesAvantApres70, AVDonneesInsuffisantesError } from './transmissionHelpers';
-import { FamilyGraph } from '@/lib/transmission/types';
+import { buildAVContracts, splitPrimesAvantApres70, computeAVReintegrationCivile, AVDonneesInsuffisantesError } from './transmissionHelpers';
+import { FamilyGraph, TransmissionParams, PatrimonySnapshot } from '@/lib/transmission/types';
+import { computeTransmission } from '@/lib/transmission';
+import { AVContract } from '@/lib/dmtg/types';
+import transmissionParamsData from '@/data/transmission-params.json';
 
 const family: FamilyGraph = {
   persons: [
@@ -141,5 +144,126 @@ describe('buildAVContracts', () => {
       family,
       '2026-07-17'
     )).toThrow(AVDonneesInsuffisantesError);
+  });
+});
+
+describe('computeAVReintegrationCivile (doctrine Ciot, §9.6.1)', () => {
+  const contratConjointDeniersCommuns: AVContract = {
+    id: 'av-conjoint-commun',
+    niveaux: [],
+    capitalDeces: 50000,
+    primesAvant70: 50000,
+    primesApres70: 0,
+    detenteur: 'spouse',
+    origineFonds: 'deniers_communs'
+  };
+  const contratConjointDeniersPropres: AVContract = {
+    id: 'av-conjoint-propre',
+    niveaux: [],
+    capitalDeces: 30000,
+    primesAvant70: 30000,
+    primesApres70: 0,
+    detenteur: 'spouse',
+    origineFonds: 'deniers_propres'
+  };
+  const contratUtilisateur: AVContract = {
+    id: 'av-utilisateur',
+    niveaux: [],
+    capitalDeces: 40000,
+    primesAvant70: 40000,
+    primesApres70: 0,
+    detenteur: 'user',
+    origineFonds: 'deniers_communs'
+  };
+
+  it('régime de communauté + deniers communs + contrat détenu par le conjoint : réintègre la valeur de rachat', () => {
+    expect(
+      computeAVReintegrationCivile([contratConjointDeniersCommuns], 'spouse', 'Communauté réduite aux acquêts (option sans contrat de mariage)')
+    ).toBe(50000);
+  });
+
+  it('régime de communauté + deniers propres : pas de réintégration civile', () => {
+    expect(
+      computeAVReintegrationCivile([contratConjointDeniersPropres], 'spouse', 'Communauté réduite aux acquêts (option sans contrat de mariage)')
+    ).toBe(0);
+  });
+
+  it.each(['Séparation de biens', 'Participation aux acquêts'])(
+    'régime séparatiste (%s) : pas de réintégration civile, même en deniers communs',
+    (regime) => {
+      expect(computeAVReintegrationCivile([contratConjointDeniersCommuns], 'spouse', regime)).toBe(0);
+    }
+  );
+
+  it('un contrat détenu par l\'Utilisateur (dénoué par son propre décès) n\'est jamais réintégré civilement pour le conjoint survivant', () => {
+    expect(computeAVReintegrationCivile([contratUtilisateur], 'spouse', 'Communauté universelle')).toBe(0);
+  });
+
+  it('additionne plusieurs contrats éligibles et ignore les non-éligibles dans le même appel', () => {
+    expect(
+      computeAVReintegrationCivile(
+        [contratConjointDeniersCommuns, contratConjointDeniersPropres, contratUtilisateur],
+        'spouse',
+        'Communauté réduite aux acquêts (option sans contrat de mariage)'
+      )
+    ).toBe(50000);
+  });
+});
+
+describe('computeTransmission — filtrage fiscal des contrats AV par détenteur (doctrine Ciot, §9.6.1)', () => {
+  const params: TransmissionParams = {
+    abattements: {
+      ...transmissionParamsData.abattements,
+      conjoint: transmissionParamsData.abattements.conjoint === 'Infinity' ? Infinity : Number(transmissionParamsData.abattements.conjoint)
+    },
+    bareme: transmissionParamsData.bareme,
+    prelevement990I: transmissionParamsData.prelevement990I
+  };
+  const patrimony: PatrimonySnapshot = { date: '2026-07-28', biensExistants: 100000, passifs: 0 };
+
+  // capitalDeces/primesAvant70 volontairement > abattement 990I (152 500€) :
+  // sans cela, un contrat réellement dénoué et taxé produirait quand même un
+  // prélèvement nul (base sous abattement), rendant le test inconcluant.
+  const contratConjoint: AVContract = {
+    id: 'av-conjoint',
+    niveaux: [{ beneficiaires: [{ beneficiaryId: 'enfant1', quotePart: 1 }] }],
+    capitalDeces: 250000,
+    primesAvant70: 250000,
+    primesApres70: 0,
+    detenteur: 'spouse',
+    origineFonds: 'deniers_communs'
+  };
+  const contratUtilisateur: AVContract = {
+    id: 'av-utilisateur',
+    niveaux: [{ beneficiaires: [{ beneficiaryId: 'enfant1', quotePart: 1 }] }],
+    capitalDeces: 250000,
+    primesAvant70: 250000,
+    primesApres70: 0,
+    detenteur: 'user',
+    origineFonds: 'deniers_communs'
+  };
+
+  it("l'Utilisateur décède en premier : un contrat détenu par le conjoint (non dénoué) est absent de l'assiette 990I de cette succession", () => {
+    const result = computeTransmission({
+      family,
+      patrimony,
+      liberalites: [],
+      params,
+      referenceDate: '2026-07-28',
+      avContracts: [contratConjoint]
+    });
+    expect(result.dmtg.perBeneficiary['enfant1']?.prelev990I || 0).toBe(0);
+  });
+
+  it("l'Utilisateur décède en premier : un contrat qu'il détient lui-même reste dénoué et taxé normalement (traitement fiscal inchangé)", () => {
+    const result = computeTransmission({
+      family,
+      patrimony,
+      liberalites: [],
+      params,
+      referenceDate: '2026-07-28',
+      avContracts: [contratUtilisateur]
+    });
+    expect(result.dmtg.perBeneficiary['enfant1']?.prelev990I || 0).toBeGreaterThan(0);
   });
 });

@@ -191,6 +191,14 @@ export const REGLES_ALERTES_CONSEIL: AlerteDefinition[] = [
     message: 'La loi applicable au régime matrimonial doit être vérifiée (§ 4.4).',
   },
   {
+    id: 'extraneite_regime_matrimonial',
+    niveau: 'moyen',
+    condition: (ctx) =>
+      (!!ctx.paysPremierDomicileMatrimonial && ctx.paysPremierDomicileMatrimonial !== 'France') ||
+      !!ctx.loiApplicableRegime,
+    message: 'Élément d\'extranéité déclaré sur le régime matrimonial : la loi applicable doit être vérifiée (§ 4.4, § 12.1). Orienter vers un notaire si besoin — non automatisé dans cet outil.',
+  },
+  {
     id: 'enfants_non_communs_sans_ddv',
     niveau: 'eleve',
     condition: (ctx) => ctx.hasNonCommonChildren && !ctx.hasDDV,

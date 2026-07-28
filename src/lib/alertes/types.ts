@@ -34,6 +34,12 @@ export interface AlerteContext {
   conjointEstDirigeant?: boolean;
   clientResidenceFiscaleEtranger?: boolean;
   conjointResidenceFiscaleEtranger?: boolean;
+  // Éléments d'extranéité du régime matrimonial (DIP, §4.4, §12.1) : simple
+  // signalement déclaratif (marital_status.loi_applicable_regime /
+  // pays_premier_domicile_matrimonial), distinct de la résidence fiscale
+  // ci-dessus — cf. alerte extraneite_regime_matrimonial dans regles.ts.
+  loiApplicableRegime?: string;
+  paysPremierDomicileMatrimonial?: string;
   liberalites: Liberalite[];
   scenariosRegime: ScenarioRegime[];
   avContracts: AVContractRawRow[];

@@ -36,13 +36,16 @@ export function useAVContracts(assets: Asset[]) {
     (async () => {
       setLoading(true);
       const [detailsRes, opsRes] = await Promise.all([
-        supabase.from('av_contract_details').select('asset_id, clause_beneficiaire_structuree').in('asset_id', ids),
+        supabase.from('av_contract_details').select('asset_id, clause_beneficiaire_structuree, origine_fonds').in('asset_id', ids),
         supabase.from('av_operations').select('asset_id, type_operation, montant, date_operation').in('asset_id', ids)
       ]);
       if (cancelled) return;
 
       const clauseByAsset = new Map<string, any>(
         (detailsRes.data || []).map((d: any) => [d.asset_id, d.clause_beneficiaire_structuree || null])
+      );
+      const origineFondsByAsset = new Map<string, string | null>(
+        (detailsRes.data || []).map((d: any) => [d.asset_id, d.origine_fonds || null])
       );
       const opsByAsset = new Map<string, { type_operation: string; montant: number | null; date_operation: string }[]>();
       (opsRes.data || []).forEach((op: any) => {
@@ -56,6 +59,8 @@ export function useAVContracts(assets: Asset[]) {
         assetId: a.id!,
         label: a.denomination,
         valeurEstimee: a.valeur_estimee,
+        detenteur: a.detenteur,
+        origineFonds: origineFondsByAsset.get(a.id!) || null,
         operations: opsByAsset.get(a.id!) || [],
         clauseBeneficiaireStructuree: clauseByAsset.get(a.id!) || null
       }));

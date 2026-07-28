@@ -493,6 +493,7 @@ export type Database = {
           frais_versement: number | null
           id: string
           objectif: string | null
+          origine_fonds: string
           part_fonds_euros: number | null
           part_unites_compte: number | null
           rachats_programmes: boolean | null
@@ -515,6 +516,7 @@ export type Database = {
           frais_versement?: number | null
           id?: string
           objectif?: string | null
+          origine_fonds?: string
           part_fonds_euros?: number | null
           part_unites_compte?: number | null
           rachats_programmes?: boolean | null
@@ -537,6 +539,7 @@ export type Database = {
           frais_versement?: number | null
           id?: string
           objectif?: string | null
+          origine_fonds?: string
           part_fonds_euros?: number | null
           part_unites_compte?: number | null
           rachats_programmes?: boolean | null
@@ -1554,6 +1557,7 @@ export type Database = {
           lieu_mariage: string | null
           lieu_naissance_conjoint: string | null
           lieu_pacs: string | null
+          loi_applicable_regime: string | null
           mandat_protection_future_conjoint: boolean
           mariage_precedent_conjoint: boolean | null
           mariage_precedent_personne: boolean | null
@@ -1567,12 +1571,14 @@ export type Database = {
           pas_de_contrat_mariage: boolean
           pays_conjoint: string | null
           pays_naissance_conjoint: string | null
+          pays_premier_domicile_matrimonial: string | null
           personne_handicapee_conjoint: boolean | null
           prenom_conjoint: string | null
           profession_conjoint: string | null
           profession_csp_conjoint: string | null
           regime_matrimonial: string | null
           residence_fiscale_etranger_conjoint: boolean | null
+          residence_separee: boolean
           statut_couple: string | null
           telephone_conjoint: string | null
           updated_at: string | null
@@ -1608,6 +1614,7 @@ export type Database = {
           lieu_mariage?: string | null
           lieu_naissance_conjoint?: string | null
           lieu_pacs?: string | null
+          loi_applicable_regime?: string | null
           mandat_protection_future_conjoint?: boolean
           mariage_precedent_conjoint?: boolean | null
           mariage_precedent_personne?: boolean | null
@@ -1621,12 +1628,14 @@ export type Database = {
           pas_de_contrat_mariage?: boolean
           pays_conjoint?: string | null
           pays_naissance_conjoint?: string | null
+          pays_premier_domicile_matrimonial?: string | null
           personne_handicapee_conjoint?: boolean | null
           prenom_conjoint?: string | null
           profession_conjoint?: string | null
           profession_csp_conjoint?: string | null
           regime_matrimonial?: string | null
           residence_fiscale_etranger_conjoint?: boolean | null
+          residence_separee?: boolean
           statut_couple?: string | null
           telephone_conjoint?: string | null
           updated_at?: string | null
@@ -1662,6 +1671,7 @@ export type Database = {
           lieu_mariage?: string | null
           lieu_naissance_conjoint?: string | null
           lieu_pacs?: string | null
+          loi_applicable_regime?: string | null
           mandat_protection_future_conjoint?: boolean
           mariage_precedent_conjoint?: boolean | null
           mariage_precedent_personne?: boolean | null
@@ -1675,12 +1685,14 @@ export type Database = {
           pas_de_contrat_mariage?: boolean
           pays_conjoint?: string | null
           pays_naissance_conjoint?: string | null
+          pays_premier_domicile_matrimonial?: string | null
           personne_handicapee_conjoint?: boolean | null
           prenom_conjoint?: string | null
           profession_conjoint?: string | null
           profession_csp_conjoint?: string | null
           regime_matrimonial?: string | null
           residence_fiscale_etranger_conjoint?: boolean | null
+          residence_separee?: boolean
           statut_couple?: string | null
           telephone_conjoint?: string | null
           updated_at?: string | null

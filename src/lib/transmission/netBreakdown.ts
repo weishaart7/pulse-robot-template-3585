@@ -75,9 +75,14 @@ export interface NetBreakdownParams {
   passif: number;
   /** transmissionResult.fraisNotaire (ou notaryFeesResult.frais) */
   fraisNotaireTotal: number;
-  /** Taux du droit de partage : 2,5 % en régime normal (art. 746 CGI),
-   *  1,1 % en cas de rupture d'union (divorce, séparation, PACS). Par
-   *  défaut 0.025 — ne pas oublier de passer 0.011 si applicable. */
+  /** Taux du droit de partage applicable : ce module ne modélise que le partage
+   *  successoral (indivision entre héritiers après décès, art. 746/748 CGI),
+   *  toujours à 2,5 % — les licitations restent également à 2,5 % même en cas
+   *  de divorce (art. 750-II CGI). Le taux réduit de 1,10 % (art. 746 CGI) pour
+   *  les partages consécutifs à un divorce, une séparation de corps ou une
+   *  rupture de PACS est hors périmètre : Transmission ne simule aucun scénario
+   *  de ce type (diagnostic du 2026-07-26). Par défaut 0.025 ; ce paramètre
+   *  reste configurable si le périmètre du module évolue un jour vers ces cas. */
   tauxDroitPartage?: number;
   /** Le droit de partage (art. 746 CGI) n'est dû que si un acte de partage est
    *  effectivement dressé — les héritiers peuvent rester en indivision indéfiniment

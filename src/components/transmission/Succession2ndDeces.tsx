@@ -21,6 +21,7 @@ import {
   buildParticipationAcquetsContext,
   buildRecompensesCalcInput,
   buildCreancesCalcInput,
+  computeAVReintegrationCivile,
   AVContractRawRow,
   AVDonneesInsuffisantesError,
   SpouseSuccessionNonModelisableError,
@@ -134,13 +135,16 @@ export const Succession2ndDeces = () => {
       const avAssetIds = avAssets.map(a => a.id);
       const [avDetailsRes, avOperationsRes] = avAssetIds.length > 0
         ? await Promise.all([
-            supabase.from('av_contract_details').select('asset_id, clause_beneficiaire_structuree').in('asset_id', avAssetIds),
+            supabase.from('av_contract_details').select('asset_id, clause_beneficiaire_structuree, origine_fonds').in('asset_id', avAssetIds),
             supabase.from('av_operations').select('asset_id, type_operation, montant, date_operation').in('asset_id', avAssetIds)
           ])
         : [{ data: [] }, { data: [] }];
 
       const avClauseByAsset = new Map<string, any>(
         (avDetailsRes.data || []).map((d: any) => [d.asset_id, d.clause_beneficiaire_structuree || null])
+      );
+      const avOrigineFondsByAsset = new Map<string, string | null>(
+        (avDetailsRes.data || []).map((d: any) => [d.asset_id, d.origine_fonds || null])
       );
       const avOperationsByAsset = new Map<string, { type_operation: string; montant: number | null; date_operation: string }[]>();
       (avOperationsRes.data || []).forEach((op: any) => {
@@ -152,6 +156,8 @@ export const Succession2ndDeces = () => {
         assetId: a.id,
         label: a.denomination,
         valeurEstimee: a.valeur_estimee,
+        detenteur: a.detenteur,
+        origineFonds: avOrigineFondsByAsset.get(a.id) || null,
         operations: avOperationsByAsset.get(a.id) || [],
         clauseBeneficiaireStructuree: avClauseByAsset.get(a.id) || null
       }));
@@ -241,6 +247,12 @@ export const Succession2ndDeces = () => {
         referenceDate,
         rawAssets: assets || [],
         avContracts: avContractsUtilisateur,
+        // Contrat AV détenu par le conjoint survivant, non dénoué puisque
+        // l'Utilisateur décède en premier ici : réintégré civilement (doctrine
+        // Ciot, §9.6.1) sous régime de communauté + origine_fonds deniers
+        // communs, jamais dans avContracts (déjà filtré par détenteur dans
+        // computeTransmission, cf. commentaire de ce champ).
+        avReintegrationCivileMontant: computeAVReintegrationCivile(avContractsUtilisateur, 'spouse', regimeMatrimonial),
         partageEnvisage,
         clausesData,
         regimeMatrimonial,
@@ -294,7 +306,19 @@ export const Succession2ndDeces = () => {
           params,
           referenceDate,
           rawAssets: buildSpouseRawAssets(assets || [], clausesData, familyProfile?.date_naissance, referenceDate),
+          // avContracts volontairement vide : limitation connue (décision du
+          // 2026-07-17, chantier séparé, pas rouverte ici) — les contrats
+          // construits par buildAVContracts résolvent les bénéficiaires contre
+          // familyUtilisateur, pas spouseFamilyFirst, donc inutilisables tels
+          // quels pour le calcul fiscal 990I/757B de CETTE succession.
           avContracts: [],
+          // Contrat AV détenu par l'Utilisateur, non dénoué puisque c'est le
+          // conjoint qui décède en premier ici : réintégré civilement (doctrine
+          // Ciot, §9.6.1), via le même mécanisme que ctxUtilisateurDecede —
+          // n'a pas besoin de la résolution des bénéficiaires (capitalDeces/
+          // detenteur/origineFonds uniquement), donc safe malgré la limitation
+          // ci-dessus.
+          avReintegrationCivileMontant: computeAVReintegrationCivile(avContractsUtilisateur, 'user', regimeMatrimonial),
           // regimeMatrimonial + participationAcquets + recompenses/
           // creancesEntreEpoux : safe côté conjoint, aucun de ces mécanismes
           // n'opère sur rawAssets/qualification_bien, cf. commentaire
