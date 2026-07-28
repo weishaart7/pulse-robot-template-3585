@@ -426,10 +426,46 @@ export const AssetForm: React.FC<AssetFormProps> = ({
           </FormItem>
         )} />
 
+        {/* Quote-part : librement saisissable en indivision (elle dépend de ce
+            que chacun a réellement financé), mais figée à 50/50 pour un bien
+            commun, où la moitié revient de droit à chaque époux — cf.
+            getPartSuccessorale, qui retourne 0,5 en dur dans ce cas. */}
         {watchedDetenteur === 'Le couple' && familyData.hasPartner && (
-          <div className="col-span-full text-sm text-muted-foreground bg-muted rounded-[5px] px-3 py-2">
-            Réparti 50% / 50% entre {familyData.userFirstName || 'vous'} et {familyData.partnerFirstName || 'votre conjoint(e)'} — bien commun, fixé par la loi (non modifiable).
-          </div>
+          watchedQualificationBien === 'Indivision' ? (
+            <FormField control={form.control} name="pourcentage_utilisateur" render={({ field }) => {
+              const partUtilisateur = field.value ?? 50;
+              const partConjoint = 100 - Math.min(100, Math.max(0, partUtilisateur));
+              return (
+                <FormItem className="col-span-full">
+                  <FormLabel>Quote-part de {familyData.userFirstName || 'vous'} dans l'indivision (%)</FormLabel>
+                  <FormDescription>
+                    La quote-part de {familyData.partnerFirstName || 'votre conjoint(e)'} est le complément à 100 % : {partConjoint} %.
+                  </FormDescription>
+                  <FormControl>
+                    <Input
+                      className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={field.value ?? ''}
+                      onChange={e => {
+                        const saisi = parseFloat(e.target.value);
+                        const valeur = isNaN(saisi) ? undefined : Math.min(100, Math.max(0, saisi));
+                        field.onChange(valeur);
+                        form.setValue('pourcentage_conjoint', valeur === undefined ? undefined : 100 - valeur);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              );
+            }} />
+          ) : (
+            <div className="col-span-full text-sm text-muted-foreground bg-muted rounded-[5px] px-3 py-2">
+              Réparti 50% / 50% entre {familyData.userFirstName || 'vous'} et {familyData.partnerFirstName || 'votre conjoint(e)'} — bien commun, fixé par la loi (non modifiable).
+            </div>
+          )
         )}
       </div>
 

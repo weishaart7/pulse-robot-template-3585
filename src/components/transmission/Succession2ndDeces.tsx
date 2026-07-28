@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePassifs } from '@/hooks/usePassifs';
+import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import {
   buildFamilyGraph,
   buildPatrimonySnapshot,
+  buildPassifLines,
   buildTransmissionLiberalites,
   buildAVContracts,
   buildSpouseAsDecedentFamilyGraph,
@@ -57,6 +58,7 @@ export const Succession2ndDeces = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { passifs, loading: passifsLoading } = usePassifs();
+  const { emprunts, loading: empruntsLoading } = useEmprunts();
   const [loading, setLoading] = useState(true);
   const [ordre, setOrdre] = useState<Ordre>('normal');
   const [nomUtilisateur, setNomUtilisateur] = useState('Vous');
@@ -67,11 +69,11 @@ export const Succession2ndDeces = () => {
   });
 
   useEffect(() => {
-    if (user && !passifsLoading) {
+    if (user && !passifsLoading && !empruntsLoading) {
       fetchAndCompute();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, passifsLoading, passifs]);
+  }, [user, passifsLoading, passifs, empruntsLoading, emprunts]);
 
   const buildParams = (): TransmissionParams => ({
     abattements: {
@@ -210,7 +212,12 @@ export const Succession2ndDeces = () => {
       // aucune logique nouvelle.
       const familyUtilisateur: FamilyGraph = buildFamilyGraph(familyProfile, maritalStatus, familyLinks || []);
       const avContractsUtilisateur = buildAVContracts(avContractsRaw, familyProfile?.date_naissance, familyUtilisateur);
-      const patrimonyUtilisateur = buildPatrimonySnapshot(assets || [], passifs, totalAV);
+      // Passifs + emprunts fusionnés une seule fois : les quatre constructeurs
+      // de patrimoine de cet écran (1er décès et 2nd décès, dans les deux
+      // ordres) doivent partir du même passif, sans quoi le même écran serait
+      // cohérent sur un décès et pas sur l'autre.
+      const passifLines = buildPassifLines(passifs, emprunts);
+      const patrimonyUtilisateur = buildPatrimonySnapshot(assets || [], passifLines, totalAV);
       // clausesData est transmis à ctxUtilisateurDecede (1er décès
       // Utilisateur, rawAssets bruts avec leur vraie qualification_bien) —
       // ET, désormais, aux contextes "conjoint" ci-dessous (chained.
@@ -272,7 +279,7 @@ export const Succession2ndDeces = () => {
         // limitation documentée dans le résumé remis à l'utilisateur).
         const spousePatrimony = buildSurvivingSpousePatrimony(
           assets || [],
-          passifs,
+          passifLines,
           firstDeathUtilisateur,
           familyUtilisateur.survivingSpouseId!,
           []
@@ -298,7 +305,7 @@ export const Succession2ndDeces = () => {
       let inverseResult: OrdreResult;
       try {
         const spouseFamilyFirst = buildSpouseAsDecedentFamilyGraph(familyProfile, maritalStatus, familyLinks || []);
-        const spouseBasePatrimony = buildSpouseOwnBasePatrimony(assets || [], passifs);
+        const spouseBasePatrimony = buildSpouseOwnBasePatrimony(assets || [], passifLines);
         const ctxConjointDecede: TransmissionContext = {
           family: spouseFamilyFirst,
           patrimony: spouseBasePatrimony,
@@ -338,7 +345,7 @@ export const Succession2ndDeces = () => {
         const firstDeathConjoint = computeTransmission(ctxConjointDecede);
 
         const utilisateurVeufFamily = widowFamilyGraph(familyUtilisateur, familyLinks || []);
-        const utilisateurBasePatrimony = buildPatrimonySnapshot(assets || [], passifs, 0);
+        const utilisateurBasePatrimony = buildPatrimonySnapshot(assets || [], passifLines, 0);
         const utilisateurVeufPatrimony = addReunifiedFullOwnership(
           utilisateurBasePatrimony,
           firstDeathConjoint,

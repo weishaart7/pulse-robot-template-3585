@@ -301,6 +301,15 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
       } else if (dbDetenteur === 'spouse') {
         finalUserPercentage = 0;
         finalSpousePercentage = 100;
+      } else if (dbDetenteur === 'common') {
+        // Détention par le couple : la quote-part du conjoint est toujours le
+        // complément à 100 de celle de l'utilisateur, jamais une valeur
+        // indépendante — les deux colonnes ne peuvent donc pas diverger en
+        // base (cf. getPourcentagesRepartition). En "Bien commun", la saisie
+        // n'est pas proposée et le couple reste à 50/50, part de droit.
+        const saisi = values.pourcentage_utilisateur;
+        finalUserPercentage = saisi === undefined ? 50 : Math.min(100, Math.max(0, saisi));
+        finalSpousePercentage = 100 - finalUserPercentage;
       }
 
       const dbValues = {

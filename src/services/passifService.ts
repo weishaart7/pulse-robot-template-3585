@@ -17,6 +17,10 @@ export interface Emprunt {
   qualification_auto?: boolean;
   reporter_budget?: boolean;
   asset_id?: string | null;
+  // Emprunt porté par une société : exclu du passif successoral du particulier
+  // (cf. transmissionHelpers.ts::buildPassifLines). Déjà renvoyé par le
+  // `select('*')` de getEmprunts, simplement jamais typé jusqu'ici.
+  societe_id?: string | null;
   type_garantie?: 'Hypothèque' | 'Caution' | 'Nantissement' | 'Aucune' | string | null;
   assure?: boolean;
   quotite_assuree_utilisateur?: number;

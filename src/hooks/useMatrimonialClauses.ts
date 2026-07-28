@@ -5,6 +5,9 @@ import { ClausesData, ClauseState, DonationDernierVivant, RegimeType, Matrimonia
 import { CLAUSES_BY_REGIME, CLAUSES_IMPACTING_TRANSMISSION, isClauseCompatibleWithRegime } from '@/constants/matrimonialClauses';
 import { useAssets } from '@/hooks/useAssets';
 import { parseClausesData } from '@/utils/transmissionHelpers';
+import { resolvePreciputMode } from '@/lib/patrimoine/avantagesMatrimoniaux';
+import { computeValeurExclueClause, ModaliteClause } from '@/lib/patrimoine/analyseClausesTransmission';
+import { getAgeAtDate, getDemembrementPct } from '@/lib/transmission';
 
 interface UseMatrimonialClausesReturn {
   clauses: ClausesData;
@@ -184,28 +187,56 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
     const notes: string[] = [];
     let totalExcluSuccession = 0;
 
+    // % de nue-propriété du conjoint survivant au barème art. 669 CGI, seule
+    // variable de la pondération des clauses en modalité usufruit. Même
+    // mécanisme que computeTransmission (getAgeAtDate + getDemembrementPct sur
+    // DEFAULT_DMTG_PARAMS.demembrementViager), pour que l'écran de saisie
+    // affiche le même montant que le calcul de transmission.
+    // `null` si la date de naissance du conjoint est absente ou invalide : les
+    // clauses en usufruit affichent alors 0 (aucun âge deviné, cf. le refus
+    // symétrique de getConjointAge de retomber sur une valeur par défaut).
+    const dateNaissanceConjoint = (maritalData as any)?.date_naissance_conjoint as string | undefined;
+    let npSurvivant: number | null = null;
+    if (dateNaissanceConjoint) {
+      try {
+        npSurvivant = getDemembrementPct(
+          getAgeAtDate(dateNaissanceConjoint, new Date().toISOString()),
+          'nue_propriete'
+        );
+      } catch {
+        npSurvivant = null;
+      }
+    }
+
     // Parcourir les clauses actives qui impactent la transmission
     for (const clauseKey of CLAUSES_IMPACTING_TRANSMISSION) {
       const clauseState = clauses[clauseKey];
       if (!clauseState?.enabled) continue;
 
-      // Calculer la valeur des biens concernés
-      let valeurClause = 0;
-      if (clauseState.selectedAssets?.length && assets) {
-        valeurClause = assets
-          .filter(a => clauseState.selectedAssets?.includes(a.id))
-          .reduce((sum, a) => sum + (a.valeur_estimee || 0), 0);
-      }
-
       // Déterminer le type d'avantage
       let typeAvantage: 'attribution_integrale' | 'preciput' | 'parts_inegales' | 'autre' = 'autre';
-      
+      // Valeur des biens désignés effectivement exclue de la succession :
+      // pondérée par la modalité de la clause (pleine propriété = totalité,
+      // usufruit = usufruit seul, la nue-propriété restant successorale), même
+      // pondération que getFractionAjustee (lib/patrimoine/avantagesMatrimoniaux.ts).
+      let valeurClause = 0;
+
       if (clauseKey.includes('attribution_integrale')) {
         typeAvantage = 'attribution_integrale';
+        // Modalité par défaut 'pleine_propriete' si la clause est active sans
+        // porteSur renseigné, comme dans computeTransmission.
+        const mode = (clauseState.options?.porteSur || 'pleine_propriete') as ModaliteClause;
+        valeurClause = computeValeurExclueClause(assets, clauseState.selectedAssets, mode, npSurvivant);
         notes.push(`Attribution intégrale activée - Valeur exclue de la succession: ${valeurClause.toLocaleString()}€`);
         totalExcluSuccession += valeurClause;
       } else if (clauseKey.includes('preciput')) {
         typeAvantage = 'preciput';
+        valeurClause = computeValeurExclueClause(
+          assets,
+          clauseState.selectedAssets,
+          resolvePreciputMode(clauseState.options),
+          npSurvivant
+        );
         notes.push(`Préciput activé - Valeur exclue de la succession: ${valeurClause.toLocaleString()}€`);
         totalExcluSuccession += valeurClause;
       } else if (clauseKey.includes('partage_inegal')) {
@@ -229,7 +260,7 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
       totalExcluSuccession,
       notes
     };
-  }, [clauses, assets, regimeType]);
+  }, [clauses, assets, regimeType, maritalData]);
 
   return {
     clauses,

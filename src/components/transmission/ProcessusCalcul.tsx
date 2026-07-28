@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useAssets } from '@/hooks/useAssets';
 import { useFamilyData, useMaritalStatus, useFamilyProfile } from '@/hooks/useFamilyData';
 import { useLiberalites } from '@/hooks/useLiberalites';
-import { usePassifs } from '@/hooks/usePassifs';
+import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { useAVContracts } from '@/hooks/useAVContracts';
 import { useRecompenses } from '@/hooks/useRecompenses';
 import { useCreancesEntreEpoux } from '@/hooks/useCreancesEntreEpoux';
@@ -16,6 +16,7 @@ import { usePatrimoineFinal } from '@/hooks/usePatrimoineFinal';
 import {
   buildFamilyGraph,
   buildPatrimonySnapshot,
+  buildPassifLines,
   buildTransmissionLiberalites,
   buildAVContracts,
   buildRecompensesCalcInput,
@@ -40,6 +41,7 @@ export const ProcessusCalcul = () => {
   const { data: familyProfile } = useFamilyProfile();
   const { liberalites, loading: liberalitesLoading } = useLiberalites();
   const { passifs } = usePassifs();
+  const { emprunts } = useEmprunts();
   const { avContractsRaw, loading: avLoading } = useAVContracts(assets);
   const { data: recompenses, loading: recompensesLoading } = useRecompenses();
   const { data: creancesEntreEpoux, loading: creancesLoading } = useCreancesEntreEpoux();
@@ -86,7 +88,7 @@ export const ProcessusCalcul = () => {
 
     try {
       // Assurance-vie non séparée ici : pas de régression, à traiter séparément si besoin
-      const patrimony = buildPatrimonySnapshot(assets, passifs, 0);
+      const patrimony = buildPatrimonySnapshot(assets, buildPassifLines(passifs, emprunts), 0);
       // Répartition avant/après 70 ans à partir des vraies primes (av_operations) —
       // lève AVDonneesInsuffisantesError si un contrat n'a aucune opération
       // enregistrée ou si la date de naissance du défunt simulé est inconnue.
@@ -126,7 +128,7 @@ export const ProcessusCalcul = () => {
       return { patrimony: null, transmissionResult: null, computeErrorMessage: null, computeErrorKind: null };
     }
   }, [
-    familyGraph, assets, passifs, transmissionLiberalites, params, maritalStatus, avContractsRaw, familyProfile,
+    familyGraph, assets, passifs, emprunts, transmissionLiberalites, params, maritalStatus, avContractsRaw, familyProfile,
     recompenses, creancesEntreEpoux, patrimoineOriginaire, patrimoineFinal
   ]);
 

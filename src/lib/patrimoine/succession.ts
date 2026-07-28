@@ -86,12 +86,13 @@ export function getPartSuccessorale(asset: SuccessionAssetInput, label?: string)
  * chaînée (cf. transmissionHelpers.ts::buildSurvivingSpousePatrimony).
  *
  * Ne fait pas `1 - getPartSuccessorale(...)` : en 'Indivision', les deux
- * pourcentages (`pourcentage_utilisateur`/`pourcentage_conjoint`) sont deux
- * champs indépendants en base, pas garantis complémentaires à 100% en cas de
- * saisie incomplète — `getPourcentagesRepartition` leur applique déjà
- * chacun un défaut 50% indépendant, donc lire `spouseQuote` directement
- * reste fidèle à ce comportement au lieu d'introduire une interprétation
- * par complément qui diverge silencieusement dès que la saisie est partielle.
+ * pourcentages (`pourcentage_utilisateur`/`pourcentage_conjoint`) restent deux
+ * champs indépendants en base. `getPourcentagesRepartition` complète bien à
+ * 100% la valeur manquante en cas de saisie partielle, mais respecte les deux
+ * valeurs telles quelles lorsqu'elles sont toutes deux renseignées : lire
+ * `spouseQuote` directement reste donc fidèle à la donnée saisie, là où un
+ * complément calculé masquerait une incohérence de saisie au lieu de la
+ * laisser apparaître.
  */
 export function getPartConjointSuccession(asset: SuccessionAssetInput, label?: string): number {
   const qualification = asset.qualification_bien;

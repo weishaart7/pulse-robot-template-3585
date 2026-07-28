@@ -658,6 +658,58 @@ export function buildSpouseAsDecedentFamilyGraph(
 }
 
 /**
+ * Ligne de passif telle que consommée par les constructeurs de
+ * `PatrimonySnapshot` ci-dessous : seuls `montant_du` et `qualification_bien`
+ * sont lus (jamais `detenteur` ni les pourcentages).
+ */
+export interface PassifLine {
+  montant_du: number;
+  qualification_bien?: string | null;
+}
+
+/**
+ * Fusionne les deux tables de passif du projet en une seule liste homogène :
+ * `passifs` (colonne `montant_du`) et `emprunts` (colonne `capital_restant_du`).
+ *
+ * Jusqu'ici seuls les `passifs` alimentaient le calcul de transmission : un
+ * crédit en cours n'était déduit ni de la masse successorale civile, ni de
+ * l'assiette DMTG, ni de la base du droit de partage (trou relevé à l'audit
+ * du module Patrimoine/Transmission). Ce point de fusion unique évite de
+ * dupliquer le mapping sur les six appels concernés, et garantit que tous les
+ * écrans (Synthèse, Processus de calcul, 2nd décès, Assurance-vie) partent du
+ * même passif.
+ *
+ * Deux règles portées ici :
+ * - Les emprunts rattachés à une société (`societe_id` non nul) sont exclus :
+ *   ce sont des passifs de la personne morale, déjà pris en compte dans la
+ *   valorisation des parts — les compter ici serait un double emploi.
+ * - Aucune pondération n'est appliquée : `montant_du` est repris brut, la
+ *   pondération éventuelle reste du ressort de l'appelant (cf.
+ *   `buildPatrimonySnapshot`, qui applique `getFractionPassifAjustee`).
+ */
+export function buildPassifLines(
+  passifs: { montant_du?: number | null; qualification_bien?: string | null }[],
+  emprunts: {
+    capital_restant_du?: number | null;
+    qualification_bien?: string | null;
+    societe_id?: string | null;
+  }[]
+): PassifLine[] {
+  return [
+    ...passifs.map(p => ({
+      montant_du: p.montant_du || 0,
+      qualification_bien: p.qualification_bien
+    })),
+    ...emprunts
+      .filter(e => !e.societe_id)
+      .map(e => ({
+        montant_du: e.capital_restant_du || 0,
+        qualification_bien: e.qualification_bien
+      }))
+  ];
+}
+
+/**
  * Converts asset data to patrimony snapshot for transmission calculations
  */
 export function buildPatrimonySnapshot(

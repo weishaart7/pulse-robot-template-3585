@@ -9,10 +9,11 @@ import { Calculator, FileText, DollarSign, Shield, AlertTriangle, ArrowRight } f
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePassifs } from '@/hooks/usePassifs';
+import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import {
   buildFamilyGraph,
   buildPatrimonySnapshot,
+  buildPassifLines,
   buildTransmissionLiberalites,
   buildAVContracts,
   buildRecompensesCalcInput,
@@ -43,6 +44,7 @@ export const Synthese = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { passifs, loading: passifsLoading } = usePassifs();
+  const { emprunts, loading: empruntsLoading } = useEmprunts();
   const [loading, setLoading] = useState(true);
   const [transmissionResult, setTransmissionResult] = useState<any>(null);
   const [hasAssets, setHasAssets] = useState(false);
@@ -60,10 +62,10 @@ export const Synthese = () => {
   const [computeErrorKind, setComputeErrorKind] = useState<'bien-non-qualifie' | 'av-donnees-insuffisantes' | null>(null);
 
   useEffect(() => {
-    if (user && !passifsLoading) {
+    if (user && !passifsLoading && !empruntsLoading) {
       fetchTransmissionData();
     }
-  }, [user, passifsLoading, passifs]);
+  }, [user, passifsLoading, passifs, empruntsLoading, emprunts]);
 
   const fetchTransmissionData = async () => {
     try {
@@ -193,7 +195,7 @@ export const Synthese = () => {
       const avContracts = buildAVContracts(avContractsRaw, familyProfile?.date_naissance, family);
 
       // Construire le patrimoine
-      const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], passifs, totalAV);
+      const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], buildPassifLines(passifs, emprunts), totalAV);
 
       // Transformer les libéralités : jointure live vers assets pour la valeur
       // des legs (jamais figée en base), et exclusion des legs caducs (bien
