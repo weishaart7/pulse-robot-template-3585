@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Plus } from 'lucide-react';
+import { Trash2, Plus, AlertTriangle } from 'lucide-react';
 import { useRecompenses } from '@/hooks/useRecompenses';
 import { useAssets } from '@/hooks/useAssets';
 import { Recompense, SensRecompense, EpouxConcerne, NatureDepense, ModeEvaluationConventionnel } from '@/types/recompense';
@@ -66,6 +66,8 @@ export function RecompensesSection() {
   const assetLabel = (id?: string | null) => assets?.find(a => a.id === id)?.denomination || 'Bien sans nom';
 
   const describe = (r: Recompense) => `${SENS_LABELS[r.sens]} (${r.epoux === 'user' ? 'vous' : 'conjoint'})`;
+
+  const valeursManquantes = modeEvaluation !== 'nominal' && (!valeurBienAcquisition || !valeurBienLiquidation);
 
   return (
     <div className="rounded-md border bg-card p-6 shadow-sm">
@@ -171,9 +173,18 @@ export function RecompensesSection() {
             </Select>
           </div>
 
+          {valeursManquantes && (
+            <div className="flex items-start gap-2 px-3 py-2 rounded-md bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200 text-xs">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+              <span>
+                Il manque la valeur du bien à l'acquisition et/ou à la liquidation. Sans ces deux montants, le calcul retiendra la dépense telle quelle (montant nominal), même si vous avez choisi un autre mode d'évaluation ci-dessus.
+              </span>
+            </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={resetForm}>Annuler</Button>
-            <Button type="button" onClick={handleSubmit} disabled={!depenseFaite || saving}>
+            <Button type="button" onClick={handleSubmit} disabled={!depenseFaite || valeursManquantes || saving}>
               {saving ? 'Enregistrement...' : 'Ajouter la récompense'}
             </Button>
           </div>
