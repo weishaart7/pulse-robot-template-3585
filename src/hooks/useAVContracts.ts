@@ -15,6 +15,7 @@ export function useAVContracts(assets: Asset[]) {
   const { user } = useAuth();
   const [avContractsRaw, setAvContractsRaw] = useState<AVContractRawRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const avAssetIds = assets
     .filter(a => getAssetCategory(a.nature || '') === 'épargne et assurance-vie')
@@ -35,11 +36,20 @@ export function useAVContracts(assets: Asset[]) {
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setError(null);
       const [detailsRes, opsRes] = await Promise.all([
         supabase.from('av_contract_details').select('asset_id, clause_beneficiaire_structuree, origine_fonds').in('asset_id', ids),
         supabase.from('av_operations').select('asset_id, type_operation, montant, date_operation').in('asset_id', ids)
       ]);
       if (cancelled) return;
+
+      if (detailsRes.error || opsRes.error) {
+        console.error('Erreur chargement contrats assurance-vie:', detailsRes.error || opsRes.error);
+        setAvContractsRaw([]);
+        setError("Les données d'assurance-vie n'ont pas pu être chargées.");
+        setLoading(false);
+        return;
+      }
 
       const clauseByAsset = new Map<string, any>(
         (detailsRes.data || []).map((d: any) => [d.asset_id, d.clause_beneficiaire_structuree || null])
@@ -75,5 +85,5 @@ export function useAVContracts(assets: Asset[]) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, avAssetIds]);
 
-  return { avContractsRaw, loading };
+  return { avContractsRaw, loading, error };
 }

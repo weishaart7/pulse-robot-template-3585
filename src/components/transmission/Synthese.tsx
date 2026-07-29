@@ -122,7 +122,16 @@ export const Synthese = () => {
             supabase.from('av_contract_details').select('asset_id, clause_beneficiaire_structuree, origine_fonds').in('asset_id', avAssetIds),
             supabase.from('av_operations').select('asset_id, type_operation, montant, date_operation').in('asset_id', avAssetIds)
           ])
-        : [{ data: [] }, { data: [] }];
+        : [{ data: [], error: null }, { data: [], error: null }];
+
+      if (avDetailsRes.error) {
+        console.error('Erreur chargement détails assurance-vie:', avDetailsRes.error);
+        throw new Error("Les données d'assurance-vie n'ont pas pu être chargées, le calcul ne peut pas être fiable.");
+      }
+      if (avOperationsRes.error) {
+        console.error('Erreur chargement opérations assurance-vie:', avOperationsRes.error);
+        throw new Error("Les opérations d'assurance-vie n'ont pas pu être chargées, le calcul ne peut pas être fiable.");
+      }
 
       const avClauseByAsset = new Map<string, any>(
         (avDetailsRes.data || []).map((d: any) => [d.asset_id, d.clause_beneficiaire_structuree || null])
@@ -268,6 +277,8 @@ export const Synthese = () => {
       } else if (error instanceof AVDonneesInsuffisantesError) {
         setComputeErrorMessage(error.message);
         setComputeErrorKind('av-donnees-insuffisantes');
+      } else if (error instanceof Error) {
+        setComputeErrorMessage(error.message);
       }
     } finally {
       setLoading(false);
