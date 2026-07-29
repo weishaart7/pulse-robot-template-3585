@@ -679,13 +679,20 @@ export interface PassifLine {
  * écrans (Synthèse, Processus de calcul, 2nd décès, Assurance-vie) partent du
  * même passif.
  *
- * Deux règles portées ici :
+ * Règles portées ici :
  * - Les emprunts rattachés à une société (`societe_id` non nul) sont exclus :
  *   ce sont des passifs de la personne morale, déjà pris en compte dans la
  *   valorisation des parts — les compter ici serait un double emploi.
  * - Aucune pondération n'est appliquée : `montant_du` est repris brut, la
  *   pondération éventuelle reste du ressort de l'appelant (cf.
  *   `buildPatrimonySnapshot`, qui applique `getFractionPassifAjustee`).
+ * - Part du capital restant dû couverte par l'assurance décès (deux
+ *   mécanismes non cumulables, `capital_garanti_deces` prime sur la
+ *   quotité) : déduite ICI, avant le mapping vers `PassifLine`, uniquement
+ *   si `defunt` est fourni — l'assureur rembourse directement le créancier,
+ *   ce montant ne doit pas apparaître comme passif transmis à la succession
+ *   de la personne dont c'est le décès (`defunt`). Sans `defunt` (appelants
+ *   historiques, ex. tests), comportement inchangé : `montant_du` brut.
  */
 export function buildPassifLines(
   passifs: { montant_du?: number | null; qualification_bien?: string | null }[],
@@ -693,7 +700,11 @@ export function buildPassifLines(
     capital_restant_du?: number | null;
     qualification_bien?: string | null;
     societe_id?: string | null;
-  }[]
+    capital_garanti_deces?: number | null;
+    quotite_assuree_utilisateur?: number | null;
+    quotite_assuree_conjoint?: number | null;
+  }[],
+  defunt?: 'user' | 'spouse'
 ): PassifLine[] {
   return [
     ...passifs.map(p => ({
@@ -702,10 +713,30 @@ export function buildPassifLines(
     })),
     ...emprunts
       .filter(e => !e.societe_id)
-      .map(e => ({
-        montant_du: e.capital_restant_du || 0,
-        qualification_bien: e.qualification_bien
-      }))
+      .map(e => {
+        const capitalRestantDu = e.capital_restant_du || 0;
+
+        if (!defunt) {
+          return { montant_du: capitalRestantDu, qualification_bien: e.qualification_bien };
+        }
+
+        const quotiteAssuree = defunt === 'spouse'
+          ? e.quotite_assuree_conjoint
+          : e.quotite_assuree_utilisateur;
+
+        let montantAssure = 0;
+        if (e.capital_garanti_deces != null) {
+          montantAssure = e.capital_garanti_deces;
+        } else if (quotiteAssuree != null) {
+          const quotiteClampee = Math.min(100, Math.max(0, quotiteAssuree));
+          montantAssure = capitalRestantDu * (quotiteClampee / 100);
+        }
+
+        return {
+          montant_du: Math.max(0, capitalRestantDu - montantAssure),
+          qualification_bien: e.qualification_bien
+        };
+      })
   ];
 }
 

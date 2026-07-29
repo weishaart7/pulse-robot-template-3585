@@ -88,7 +88,7 @@ export const ProcessusCalcul = () => {
 
     try {
       // Assurance-vie non séparée ici : pas de régression, à traiter séparément si besoin
-      const patrimony = buildPatrimonySnapshot(assets, buildPassifLines(passifs, emprunts), 0);
+      const patrimony = buildPatrimonySnapshot(assets, buildPassifLines(passifs, emprunts, 'user'), 0);
       // Répartition avant/après 70 ans à partir des vraies primes (av_operations) —
       // lève AVDonneesInsuffisantesError si un contrat n'a aucune opération
       // enregistrée ou si la date de naissance du défunt simulé est inconnue.

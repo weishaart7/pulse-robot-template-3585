@@ -25,11 +25,14 @@ export const BAREME_669_CGI: TrancheBareme669[] = [
   { ageMax: Infinity, usufruit: 0.10, nuePropriete: 0.90 },
 ];
 
-export const computeAge = (dateNaissance: string | undefined | null): number | null => {
+export const computeAge = (
+  dateNaissance: string | undefined | null,
+  referenceDate: Date = new Date()
+): number | null => {
   if (!dateNaissance) return null;
   const d = new Date(dateNaissance);
   if (isNaN(d.getTime())) return null;
-  return differenceInYears(new Date(), d);
+  return differenceInYears(referenceDate, d);
 };
 
 export const getTrancheBareme669 = (age: number): TrancheBareme669 => {

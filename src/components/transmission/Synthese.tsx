@@ -195,7 +195,7 @@ export const Synthese = () => {
       const avContracts = buildAVContracts(avContractsRaw, familyProfile?.date_naissance, family);
 
       // Construire le patrimoine
-      const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], buildPassifLines(passifs, emprunts), totalAV);
+      const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], buildPassifLines(passifs, emprunts, 'user'), totalAV);
 
       // Transformer les libéralités : jointure live vers assets pour la valeur
       // des legs (jamais figée en base), et exclusion des legs caducs (bien

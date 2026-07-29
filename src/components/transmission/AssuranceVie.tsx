@@ -129,7 +129,7 @@ export const AssuranceVie = () => {
           // écran afficherait un patrimoine net divergent de la Synthèse.
           supabase
             .from('emprunts')
-            .select('capital_restant_du, qualification_bien, societe_id')
+            .select('capital_restant_du, qualification_bien, societe_id, capital_garanti_deces, quotite_assuree_utilisateur, quotite_assuree_conjoint')
             .eq('user_id', user.id),
         ]);
 
@@ -229,7 +229,7 @@ export const AssuranceVie = () => {
             const { data: allAssets } = await supabase.from('assets').select('*').eq('user_id', user.id);
             const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(
               allAssets || [],
-              buildPassifLines(passifsRes.data || [], empruntsRes.data || []),
+              buildPassifLines(passifsRes.data || [], empruntsRes.data || [], 'user'),
               0
             );
             const rawParams = transmissionParamsData as any;

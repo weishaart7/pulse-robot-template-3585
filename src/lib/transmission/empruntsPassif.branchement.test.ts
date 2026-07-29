@@ -130,3 +130,131 @@ describe('Branchement — un emprunt seul réduit le patrimoine transmis', () =>
     expect(apres.passifs).toBe(avant.passifs);
   });
 });
+
+describe('buildPassifLines — déduction de la part couverte par l\'assurance décès', () => {
+  it('capital_garanti_deces renseigné : prime sur la quotité, montant fixe déduit', () => {
+    const lignes = buildPassifLines(
+      [],
+      [{
+        capital_restant_du: 150000,
+        qualification_bien: 'Bien commun',
+        societe_id: null,
+        capital_garanti_deces: 100000,
+        quotite_assuree_utilisateur: 50 // doit être ignorée, capital_garanti_deces prime
+      }],
+      'user'
+    );
+    expect(lignes).toEqual([{ montant_du: 50000, qualification_bien: 'Bien commun' }]);
+  });
+
+  it('quotite_assuree_utilisateur seule, defunt = user : réduit le montant net en proportion', () => {
+    const lignes = buildPassifLines(
+      [],
+      [{
+        capital_restant_du: 100000,
+        qualification_bien: 'Bien commun',
+        societe_id: null,
+        quotite_assuree_utilisateur: 60
+      }],
+      'user'
+    );
+    expect(lignes).toEqual([{ montant_du: 40000, qualification_bien: 'Bien commun' }]);
+  });
+
+  it('quotite_assuree_conjoint seule, defunt = spouse : s\'applique, pas la quotité utilisateur', () => {
+    const lignes = buildPassifLines(
+      [],
+      [{
+        capital_restant_du: 100000,
+        qualification_bien: 'Bien commun',
+        societe_id: null,
+        quotite_assuree_utilisateur: 100,
+        quotite_assuree_conjoint: 30
+      }],
+      'spouse'
+    );
+    expect(lignes).toEqual([{ montant_du: 70000, qualification_bien: 'Bien commun' }]);
+  });
+
+  it('quotité hors bornes (150 ou -20) : clampée avant calcul', () => {
+    const lignesTropHaute = buildPassifLines(
+      [],
+      [{ capital_restant_du: 100000, qualification_bien: 'Bien commun', societe_id: null, quotite_assuree_utilisateur: 150 }],
+      'user'
+    );
+    expect(lignesTropHaute).toEqual([{ montant_du: 0, qualification_bien: 'Bien commun' }]);
+
+    const lignesNegative = buildPassifLines(
+      [],
+      [{ capital_restant_du: 100000, qualification_bien: 'Bien commun', societe_id: null, quotite_assuree_utilisateur: -20 }],
+      'user'
+    );
+    expect(lignesNegative).toEqual([{ montant_du: 100000, qualification_bien: 'Bien commun' }]);
+  });
+
+  it('capital_garanti_deces > capital_restant_du : montant net à 0, jamais négatif', () => {
+    const lignes = buildPassifLines(
+      [],
+      [{ capital_restant_du: 50000, qualification_bien: 'Bien commun', societe_id: null, capital_garanti_deces: 80000 }],
+      'user'
+    );
+    expect(lignes).toEqual([{ montant_du: 0, qualification_bien: 'Bien commun' }]);
+  });
+
+  it('non-régression : sans defunt fourni, aucune déduction (comportement historique)', () => {
+    const lignes = buildPassifLines(
+      [],
+      [{
+        capital_restant_du: 100000,
+        qualification_bien: 'Bien commun',
+        societe_id: null,
+        capital_garanti_deces: 100000,
+        quotite_assuree_utilisateur: 100
+      }]
+      // pas de 3e argument
+    );
+    expect(lignes).toEqual([{ montant_du: 100000, qualification_bien: 'Bien commun' }]);
+  });
+
+  it('non-régression : emprunt sans aucune donnée d\'assurance, defunt fourni : capital transmis intégralement', () => {
+    const lignes = buildPassifLines(
+      [],
+      [{ capital_restant_du: 100000, qualification_bien: 'Bien commun', societe_id: null }],
+      'user'
+    );
+    expect(lignes).toEqual([{ montant_du: 100000, qualification_bien: 'Bien commun' }]);
+  });
+});
+
+describe('Succession2ndDeces — les deux variantes passifLinesUtilisateur/passifLinesBrut', () => {
+  // Reproduit le motif exact de Succession2ndDeces.tsx : `buildPatrimonySnapshot`
+  // modélise toujours le patrimoine de l'Utilisateur (jamais celui du
+  // conjoint), donc `passifLinesUtilisateur` doit systématiquement recevoir
+  // `defunt: 'user'` — quel que soit l'ordre de décès simulé (normal ou
+  // inversé). `passifLinesBrut` (sans `defunt`) alimente les deux fonctions
+  // qui approximent le passif du conjoint et reste volontairement non netté.
+  const emprunts = [{
+    capital_restant_du: 100000,
+    qualification_bien: 'Bien commun',
+    societe_id: null,
+    quotite_assuree_utilisateur: 100,
+    quotite_assuree_conjoint: 40
+  }];
+
+  it('passifLinesUtilisateur (defunt: \'user\') applique la quotité utilisateur, jamais celle du conjoint', () => {
+    const passifLinesUtilisateur = buildPassifLines([], emprunts, 'user');
+    // quotite_assuree_utilisateur = 100% → capital intégralement couvert.
+    expect(passifLinesUtilisateur).toEqual([{ montant_du: 0, qualification_bien: 'Bien commun' }]);
+  });
+
+  it('passifLinesBrut (sans defunt) ignore les données d\'assurance, même présentes', () => {
+    const passifLinesBrut = buildPassifLines([], emprunts);
+    expect(passifLinesBrut).toEqual([{ montant_du: 100000, qualification_bien: 'Bien commun' }]);
+  });
+
+  it('la même donnée d\'emprunt produit deux résultats différents selon la variante utilisée', () => {
+    const passifLinesUtilisateur = buildPassifLines([], emprunts, 'user');
+    const passifLinesBrut = buildPassifLines([], emprunts);
+    expect(passifLinesUtilisateur[0].montant_du).not.toBe(passifLinesBrut[0].montant_du);
+  });
+});
