@@ -33,6 +33,131 @@ describe('computeMontantRecompense', () => {
   });
 });
 
+describe('computeMontantRecompense — 4 branches art. 1469 (chantier 3)', () => {
+  // Constat sur les branches 1/2 : la nature 'autre' donne toujours un
+  // profit subsistant null (computeProfitSubsistant ne définit de formule
+  // que pour acquisition/conservation/amelioration), donc ces deux branches
+  // ne peuvent pas être exercées avec un profit subsistant réel — seul le
+  // filet de sécurité (chantier 1, profitSubsistant == null → depenseFaite)
+  // s'applique, quelle que soit la comparaison depenseFaite/profitSubsistant.
+
+  it('branche 1 — ni nécessaire ni qualifiante (nature \'autre\') : profit subsistant non calculable, filet → dépense faite', () => {
+    const montant = computeMontantRecompense({
+      sens: 'epoux_vers_communaute',
+      epoux: 'user',
+      depenseFaite: 100000,
+      valeurBienAcquisition: 200000,
+      valeurBienLiquidation: 500000, // sans effet : 'autre' ne produit jamais de profit subsistant
+      natureDepense: 'autre',
+      depenseNecessaire: false,
+    });
+    expect(montant).toBe(100000);
+  });
+
+  it('branche 1 (bis) — même constat avec des valeurs de bien en moins-value', () => {
+    const montant = computeMontantRecompense({
+      sens: 'epoux_vers_communaute',
+      epoux: 'user',
+      depenseFaite: 100000,
+      valeurBienAcquisition: 200000,
+      valeurBienLiquidation: 50000,
+      natureDepense: 'autre',
+      depenseNecessaire: false,
+    });
+    expect(montant).toBe(100000);
+  });
+
+  it('branche 2 — nécessaire seule (nature \'autre\') : plancher dépense faite (al. 2) — coïncide ici avec le filet ci-dessus', () => {
+    const montant = computeMontantRecompense({
+      sens: 'epoux_vers_communaute',
+      epoux: 'user',
+      depenseFaite: 100000,
+      valeurBienAcquisition: 200000,
+      valeurBienLiquidation: 500000,
+      natureDepense: 'autre',
+      depenseNecessaire: true,
+    });
+    expect(montant).toBe(100000);
+  });
+
+  it('branche 2 (bis) — idem, moins-value', () => {
+    const montant = computeMontantRecompense({
+      sens: 'epoux_vers_communaute',
+      epoux: 'user',
+      depenseFaite: 100000,
+      valeurBienAcquisition: 200000,
+      valeurBienLiquidation: 50000,
+      natureDepense: 'autre',
+      depenseNecessaire: true,
+    });
+    expect(montant).toBe(100000);
+  });
+
+  it('branche 3 — qualifiante seule, depenseFaite > profitSubsistant : plancher profit subsistant (al. 3) l\'emporte quand même', () => {
+    // acquisition 100 000 sur bien à 200 000, bien à 100 000 à la liquidation (moins-value)
+    // → profitSubsistant = 100000 * (100000/200000) = 50000, < depenseFaite (100000)
+    const montant = computeMontantRecompense({
+      sens: 'epoux_vers_communaute',
+      epoux: 'user',
+      depenseFaite: 100000,
+      valeurBienAcquisition: 200000,
+      valeurBienLiquidation: 100000,
+      natureDepense: 'acquisition',
+      depenseNecessaire: false,
+    });
+    expect(montant).toBe(50000);
+  });
+
+  it('branche 3 (bis) — qualifiante seule, depenseFaite < profitSubsistant : plancher profit subsistant (al. 3)', () => {
+    // acquisition 100 000 sur bien à 200 000, bien à 500 000 à la liquidation (plus-value)
+    // → profitSubsistant = 500000 * (100000/200000) = 250000, > depenseFaite (100000)
+    const montant = computeMontantRecompense({
+      sens: 'epoux_vers_communaute',
+      epoux: 'user',
+      depenseFaite: 100000,
+      valeurBienAcquisition: 200000,
+      valeurBienLiquidation: 500000,
+      natureDepense: 'acquisition',
+      depenseNecessaire: false,
+    });
+    expect(montant).toBe(250000);
+  });
+
+  it('branche 4 — nécessaire ET qualifiante, depenseFaite > profitSubsistant : les deux planchers cumulés retiennent la dépense faite', () => {
+    // Mêmes valeurs que la branche 3 (moins-value) : profitSubsistant = 50000 < depenseFaite = 100000.
+    // Cible légale (al. 2 + al. 3 cumulés) : max(depenseFaite, profitSubsistant) = 100000.
+    // AVANT LA MIGRATION : le moteur ignore depenseNecessaire et retombe sur le comportement
+    // "qualifiante seule" (toujours profitSubsistant) → ce test échoue sur le code actuel,
+    // c'est précisément le bug que ce chantier corrige.
+    const montant = computeMontantRecompense({
+      sens: 'epoux_vers_communaute',
+      epoux: 'user',
+      depenseFaite: 100000,
+      valeurBienAcquisition: 200000,
+      valeurBienLiquidation: 100000,
+      natureDepense: 'acquisition',
+      depenseNecessaire: true,
+    });
+    expect(montant).toBe(100000);
+  });
+
+  it('branche 4 (bis) — nécessaire ET qualifiante, depenseFaite < profitSubsistant : le profit subsistant l\'emporte, cas déjà correct aujourd\'hui', () => {
+    // Mêmes valeurs que la branche 3 bis (plus-value) : profitSubsistant = 250000 > depenseFaite = 100000.
+    // Cible légale : max(depenseFaite, profitSubsistant) = 250000 — coïncide avec le
+    // comportement actuel du moteur (déjà correct dans ce cas précis).
+    const montant = computeMontantRecompense({
+      sens: 'epoux_vers_communaute',
+      epoux: 'user',
+      depenseFaite: 100000,
+      valeurBienAcquisition: 200000,
+      valeurBienLiquidation: 500000,
+      natureDepense: 'acquisition',
+      depenseNecessaire: true,
+    });
+    expect(montant).toBe(250000);
+  });
+});
+
 describe('computeSoldeRecompenses', () => {
   it('cas 3 — récompenses réciproques pour le même époux : compensation nette (art. 1470-1474)', () => {
     const solde = computeSoldeRecompenses([

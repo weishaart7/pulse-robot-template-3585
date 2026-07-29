@@ -19,6 +19,8 @@ export interface Recompense {
   valeur_bien_acquisition?: number | null;
   valeur_bien_liquidation?: number | null;
   nature_depense: NatureDepense;
+  /** Dépense nécessaire (art. 1469 al. 2), indépendant du caractère qualifiant de nature_depense (al. 3) — les deux planchers se cumulent. */
+  depense_necessaire: boolean;
   /** Défaut applicatif 'profit_subsistant' (art. 1469 al. 3) si non renseigné. */
   mode_evaluation_conventionnel?: ModeEvaluationConventionnel | null;
   created_at?: string;

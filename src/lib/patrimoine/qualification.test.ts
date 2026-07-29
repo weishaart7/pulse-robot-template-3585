@@ -178,3 +178,43 @@ describe('qualifierBien — exclusions art. 515-5-2 sous PACS-indivision', () =>
     expect(result.qualification).toBe('Indivision');
   });
 });
+
+describe('qualifierBien — concubinage (art. 515-8, aucune masse commune)', () => {
+  const base = {
+    statutCouple: 'Concubinage',
+    dateAcquisition: '2020-03-10',
+    origineActif: ['Achat'],
+  };
+
+  it('bien détenu par l\'utilisateur seul : bien personnel (jamais "Bien commun")', () => {
+    const result = qualifierBien({ ...base, detenteur: 'user' });
+
+    expect(result.qualification).toBe('Bien personnel');
+  });
+
+  it('bien détenu par le concubin seul : bien personnel', () => {
+    const result = qualifierBien({ ...base, detenteur: 'spouse' });
+
+    expect(result.qualification).toBe('Bien personnel');
+  });
+
+  it('bien détenu par le couple : indivision de droit commun', () => {
+    const result = qualifierBien({ ...base, detenteur: 'common' });
+
+    expect(result.qualification).toBe('Indivision');
+  });
+
+  it('bien détenu par le couple, valeur d\'affichage "Le couple" : indivision (les deux conventions de détenteur cohabitent selon l\'appelant)', () => {
+    const result = qualifierBien({ ...base, detenteur: 'Le couple' });
+
+    expect(result.qualification).toBe('Indivision');
+  });
+
+  it('origine gratuite ou remploi ne font pas revenir la notion de "Bien propre", inexistante hors régime communautaire', () => {
+    const donation = qualifierBien({ ...base, origineActif: ['Donation'], detenteur: 'user' });
+    const remploi = qualifierBien({ ...base, clauseRemploi: true, detenteur: 'user' });
+
+    expect(donation.qualification).toBe('Bien personnel');
+    expect(remploi.qualification).toBe('Bien personnel');
+  });
+});

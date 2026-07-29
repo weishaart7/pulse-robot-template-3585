@@ -219,12 +219,13 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
       };
 
       if (details.id) {
-        await supabase
+        const { error } = await supabase
           .from('av_contract_details')
           .update(payload as any)
           .eq('id', details.id);
+        if (error) throw error;
       } else {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('av_contract_details')
           .insert({
             user_id: user.id,
@@ -233,6 +234,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
           } as any)
           .select()
           .single();
+        if (error) throw error;
         if (data) setDetails(prev => ({ ...prev, id: data.id }));
       }
       toast.success('Détails enregistrés');

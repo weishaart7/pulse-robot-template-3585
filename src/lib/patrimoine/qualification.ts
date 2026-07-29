@@ -28,10 +28,14 @@
  * - PACS avec convention de séparation de patrimoines (par défaut) → bien propre
  * - PACS avec convention d'indivision → bien commun (assimilé, pas de notion
  *   distincte pour les besoins de cet outil : répartition/transmission identiques)
+ * - Concubinage → aucune masse commune ni régime légal (le concubinage n'est
+ *   pas une union juridique, art. 515-8) : bien personnel s'il est détenu par
+ *   un seul concubin, indivision de droit commun s'il est détenu par les deux
  * - Sans union (célibataire / divorcé / veuf) → bien personnel
  */
 
 import { getAssetCategory } from '@/constants/assetTypes';
+import { isDetenteurCommon } from './utils';
 
 export type QualificationBien =
   | 'Bien propre'
@@ -140,6 +144,12 @@ const isPacse = (statut?: string): boolean => {
   return s.includes('pacs');
 };
 
+const isConcubinage = (statut?: string): boolean => {
+  if (!statut) return false;
+  const s = statut.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return s.includes('concubin');
+};
+
 const isConventionPacsIndivision = (convention?: string): boolean => {
   if (!convention) return false;
   return convention.toLowerCase().includes('indivision');
@@ -201,6 +211,26 @@ export const qualifierBien = (ctx: QualificationContext): {
   // Pas en couple → bien personnel
   if (!isInCouple(statutCouple)) {
     return { qualification: 'Bien personnel', raison: 'Vous n\'êtes pas en couple : bien personnel.' };
+  }
+
+  // Concubinage : union de fait (art. 515-8), sans régime légal ni masse
+  // commune — aucune des règles matrimoniales ou pacsimoniales de la cascade
+  // ci-dessous ne lui est applicable, d'où le traitement en amont de toutes
+  // (y compris remploi et origine gratuite, qui renverraient à tort "Bien
+  // propre", notion qui n'a de sens que face à une communauté). Un bien
+  // détenu par les deux concubins relève de l'indivision de droit commun
+  // (art. 815) ; détenu par un seul, il lui appartient personnellement.
+  if (isConcubinage(statutCouple)) {
+    if (isDetenteurCommon(detenteur)) {
+      return {
+        qualification: 'Indivision',
+        raison: 'Concubinage : bien acquis par les deux concubins — indivision de droit commun (art. 815), le concubinage ne crée aucune masse commune.',
+      };
+    }
+    return {
+      qualification: 'Bien personnel',
+      raison: 'Concubinage : union de fait sans régime légal (art. 515-8) — le bien appartient personnellement au concubin qui l\'a acquis.',
+    };
   }
 
   const pacsIndivision = isPacsIndivision(statutCouple, conventionPacs, datePacs);

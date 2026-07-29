@@ -14,6 +14,7 @@ import { getAssetCategory } from '@/constants/assetTypes';
 import {
   buildFamilyGraph,
   buildPatrimonySnapshot,
+  buildPassifLines,
   buildAVContracts,
   buildRecompensesCalcInput,
   buildCreancesCalcInput,
@@ -78,7 +79,7 @@ export const AssuranceVie = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const [contractsRes, profileRes, maritalRes, familyRes, passifsRes, recompensesRes, creancesRes, patrimoineOriginaireRes, patrimoineFinalRes] = await Promise.all([
+        const [contractsRes, profileRes, maritalRes, familyRes, passifsRes, recompensesRes, creancesRes, patrimoineOriginaireRes, patrimoineFinalRes, empruntsRes] = await Promise.all([
           supabase
             .from('assets')
             .select('*')
@@ -122,6 +123,13 @@ export const AssuranceVie = () => {
           supabase
             .from('patrimoine_final')
             .select('*')
+            .eq('user_id', user.id),
+          // Emprunts : même passif que les autres écrans de Transmission
+          // (cf. transmissionHelpers.ts::buildPassifLines), sans quoi cet
+          // écran afficherait un patrimoine net divergent de la Synthèse.
+          supabase
+            .from('emprunts')
+            .select('capital_restant_du, qualification_bien, societe_id, capital_garanti_deces, quotite_assuree_utilisateur, quotite_assuree_conjoint')
             .eq('user_id', user.id),
         ]);
 
@@ -221,7 +229,7 @@ export const AssuranceVie = () => {
             const { data: allAssets } = await supabase.from('assets').select('*').eq('user_id', user.id);
             const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(
               allAssets || [],
-              passifsRes.data || [],
+              buildPassifLines(passifsRes.data || [], empruntsRes.data || [], 'user'),
               0
             );
             const rawParams = transmissionParamsData as any;

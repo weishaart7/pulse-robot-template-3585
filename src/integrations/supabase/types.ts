@@ -852,6 +852,8 @@ export type Database = {
       }
       family_links: {
         Row: {
+          adoption_simple_abattement_plein: boolean
+          adoption_simple_motif: string | null
           branche_familiale: string | null
           civilite: string | null
           created_at: string | null
@@ -881,6 +883,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          adoption_simple_abattement_plein?: boolean
+          adoption_simple_motif?: string | null
           branche_familiale?: string | null
           civilite?: string | null
           created_at?: string | null
@@ -910,6 +914,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          adoption_simple_abattement_plein?: boolean
+          adoption_simple_motif?: string | null
           branche_familiale?: string | null
           civilite?: string | null
           created_at?: string | null
@@ -1465,6 +1471,7 @@ export type Database = {
           pourcentage: number | null
           prise_en_charge_droits: boolean | null
           realise_par: string | null
+          statut: string
           testament_realise: string | null
           type: string
           type_imputation: string | null
@@ -1488,6 +1495,7 @@ export type Database = {
           pourcentage?: number | null
           prise_en_charge_droits?: boolean | null
           realise_par?: string | null
+          statut?: string
           testament_realise?: string | null
           type: string
           type_imputation?: string | null
@@ -1511,6 +1519,7 @@ export type Database = {
           pourcentage?: number | null
           prise_en_charge_droits?: boolean | null
           realise_par?: string | null
+          statut?: string
           testament_realise?: string | null
           type?: string
           type_imputation?: string | null
@@ -1860,6 +1869,7 @@ export type Database = {
           bien_concerne_id: string | null
           created_at: string
           depense_faite: number
+          depense_necessaire: boolean
           epoux: string
           id: string
           mode_evaluation_conventionnel: string | null
@@ -1874,6 +1884,7 @@ export type Database = {
           bien_concerne_id?: string | null
           created_at?: string
           depense_faite: number
+          depense_necessaire?: boolean
           epoux: string
           id?: string
           mode_evaluation_conventionnel?: string | null
@@ -1888,6 +1899,7 @@ export type Database = {
           bien_concerne_id?: string | null
           created_at?: string
           depense_faite?: number
+          depense_necessaire?: boolean
           epoux?: string
           id?: string
           mode_evaluation_conventionnel?: string | null
@@ -2038,6 +2050,39 @@ export type Database = {
           nature?: string
           periodicite?: string | null
           revenu_disponible?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      scenarios_regime: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          motivation_civile: string | null
+          regime_cible: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          motivation_civile?: string | null
+          regime_cible: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          motivation_civile?: string | null
+          regime_cible?: string
+          type?: string
           updated_at?: string
           user_id?: string
         }

@@ -47,6 +47,8 @@ export interface RecompenseCalcInput {
   valeurBienAcquisition?: number | null;
   valeurBienLiquidation?: number | null;
   natureDepense: NatureDepense;
+  /** Dépense nécessaire (art. 1469 al. 2), indépendant du caractère qualifiant (al. 3) — les deux planchers se cumulent. Défaut applicatif `false` si non renseigné. */
+  depenseNecessaire?: boolean;
   modeEvaluationConventionnel?: 'nominal' | 'profit_subsistant' | 'plafonne' | null;
 }
 
@@ -84,11 +86,19 @@ export function computeProfitSubsistant(
 }
 
 /**
- * Montant d'une récompense individuelle, règle en 3 temps de l'art. 1469 :
- * dépense faite (al. 1), plafonnée au profit subsistant (al. 2), avec
- * plancher au profit subsistant si la dépense était nécessaire à
- * l'acquisition/la conservation/l'amélioration d'un bien qui se retrouve à
- * la liquidation (al. 3).
+ * Montant d'une récompense individuelle (art. 1469), 4 cas légaux distincts
+ * selon deux conditions indépendantes :
+ * - "nécessaire" (al. 2, `depenseNecessaire`) : plancher = dépense faite.
+ * - "qualifiante" (al. 3, nature_depense ∈ acquisition/conservation/amelioration) :
+ *   plancher = profit subsistant.
+ * Les deux planchers se cumulent si les deux conditions sont réunies. La base
+ * (al. 1, avant tout plancher) est toujours min(dépense faite, profit
+ * subsistant) — c'est aussi le résultat du cas où aucune des deux conditions
+ * n'est réunie.
+ *
+ * Mode 'plafonne' : clause contraire du contrat de mariage écartant les deux
+ * planchers légaux (art. 1469 n'étant pas d'ordre public) — reste prioritaire
+ * sur les 4 branches, comportement inchangé par ce chantier.
  */
 export function computeMontantRecompense(input: RecompenseCalcInput): number {
   const mode = input.modeEvaluationConventionnel || 'profit_subsistant';
@@ -102,17 +112,32 @@ export function computeMontantRecompense(input: RecompenseCalcInput): number {
   );
   if (profitSubsistant == null) return input.depenseFaite;
 
-  // al. 2 : plafond au profit subsistant.
-  let montant = Math.min(input.depenseFaite, profitSubsistant);
+  // al. 1 : base = la plus faible des deux sommes.
+  const base = Math.min(input.depenseFaite, profitSubsistant);
 
-  // al. 3 : plancher au profit subsistant si nature qualifiante — clause
-  // 'plafonne' l'exclut délibérément (convention contraire écartant le
-  // plancher légal, art. 1469 n'étant pas d'ordre public).
-  if (mode === 'profit_subsistant' && NATURES_QUALIFIANTES.includes(input.natureDepense)) {
-    montant = Math.max(montant, profitSubsistant);
+  // Clause 'plafonne' : convention contraire écartant les deux planchers légaux.
+  if (mode === 'plafonne') return base;
+
+  const necessaire = input.depenseNecessaire ?? false;
+  const qualifiante = NATURES_QUALIFIANTES.includes(input.natureDepense);
+
+  if (necessaire && qualifiante) {
+    // al. 2 + al. 3 cumulés : la plus forte des deux sommes.
+    return Math.max(input.depenseFaite, profitSubsistant);
+  }
+  if (necessaire) {
+    // al. 2 seul : plancher = dépense faite. Toujours ≥ la base (min(...)),
+    // donc ce plancher l'emporte systématiquement → montant = dépense faite.
+    return input.depenseFaite;
+  }
+  if (qualifiante) {
+    // al. 3 seul : plancher = profit subsistant. Toujours ≥ la base (min(...)),
+    // donc ce plancher l'emporte systématiquement → montant = profit subsistant.
+    return profitSubsistant;
   }
 
-  return montant;
+  // Ni nécessaire ni qualifiante : pas de plancher, la base s'applique telle quelle.
+  return base;
 }
 
 /**

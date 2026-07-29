@@ -109,20 +109,48 @@ export const checkIsInCouple = (statutCouple: string | undefined): boolean => {
   return false;
 };
 
-// Répartition user/conjoint pour un bien détenu en commun (défaut 50/50)
+// Répartition user/conjoint pour un bien détenu en commun (défaut 50/50).
+//
+// Les deux colonnes (`pourcentage_utilisateur` / `pourcentage_conjoint`) sont
+// indépendantes en base : une saisie partielle est donc possible. Le défaut
+// appliqué à la valeur manquante est le COMPLÉMENT À 100 de celle qui est
+// renseignée (et 50/50 si aucune ne l'est), de sorte que la somme des deux
+// quotes-parts fasse toujours 100 % — auparavant chacune recevait un défaut
+// de 50 % indépendant, ce qui faisait qu'une saisie « 30 % pour
+// l'utilisateur » produisait 30 % + 50 % = 80 % du bien, le solde
+// disparaissant silencieusement des calculs de succession.
 export interface PourcentagesRepartition {
   userQuote: number;
   spouseQuote: number;
 }
 
+const clampPourcentage = (n: number): number => Math.min(100, Math.max(0, n));
+
 export const getPourcentagesRepartition = (
   pourcentageUtilisateur: number | undefined,
   pourcentageConjoint: number | undefined
 ): PourcentagesRepartition => {
-  return {
-    userQuote: (pourcentageUtilisateur ?? 50) / 100,
-    spouseQuote: (pourcentageConjoint ?? 50) / 100,
-  };
+  // Les deux valeurs sont renseignées : on les respecte telles quelles, sans
+  // rien recalculer (une éventuelle incohérence de saisie reste visible
+  // plutôt que corrigée en silence).
+  if (pourcentageUtilisateur !== undefined && pourcentageConjoint !== undefined) {
+    return {
+      userQuote: pourcentageUtilisateur / 100,
+      spouseQuote: pourcentageConjoint / 100,
+    };
+  }
+
+  if (pourcentageUtilisateur !== undefined) {
+    const user = clampPourcentage(pourcentageUtilisateur);
+    return { userQuote: user / 100, spouseQuote: (100 - user) / 100 };
+  }
+
+  if (pourcentageConjoint !== undefined) {
+    const spouse = clampPourcentage(pourcentageConjoint);
+    return { userQuote: (100 - spouse) / 100, spouseQuote: spouse / 100 };
+  }
+
+  return { userQuote: 0.5, spouseQuote: 0.5 };
 };
 
 // Plus-value calculation

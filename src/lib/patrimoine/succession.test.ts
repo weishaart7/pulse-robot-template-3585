@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getPartSuccessorale, BienNonQualifieError } from './succession';
+import { getPartSuccessorale, getPartConjointSuccession, BienNonQualifieError } from './succession';
 
 describe('getPartSuccessorale', () => {
   it("'À qualifier' bloque avec une erreur explicite dédiée (BienNonQualifieError), ne devine jamais", () => {
@@ -27,6 +27,14 @@ describe('getPartSuccessorale', () => {
 
   it("'Indivision' sans pourcentage renseigné → défaut 50/50 (convention existante de lib/patrimoine/utils.ts)", () => {
     expect(getPartSuccessorale({ qualification_bien: 'Indivision' })).toBeCloseTo(0.5);
+  });
+
+  it("'Indivision' en saisie partielle → la part manquante est le complément à 100%, pas un second défaut de 50%", () => {
+    const asset = { qualification_bien: 'Indivision', pourcentage_utilisateur: 30 };
+
+    expect(getPartSuccessorale(asset)).toBeCloseTo(0.3);
+    expect(getPartConjointSuccession(asset)).toBeCloseTo(0.7);
+    expect(getPartSuccessorale(asset) + getPartConjointSuccession(asset)).toBeCloseTo(1);
   });
 
   it("'Bien propre' détenu par le défunt (user) → 100%", () => {
