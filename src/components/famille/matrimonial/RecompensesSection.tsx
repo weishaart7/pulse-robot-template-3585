@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Trash2, Plus, AlertTriangle, Info, ChevronDown } from 'lucide-react';
+import { Trash2, Plus, AlertTriangle, Info, ChevronDown, Wand2 } from 'lucide-react';
 import { useRecompenses } from '@/hooks/useRecompenses';
 import { useAssets } from '@/hooks/useAssets';
 import { Recompense, SensRecompense, EpouxConcerne, NatureDepense, ModeEvaluationConventionnel } from '@/types/recompense';
@@ -110,6 +110,30 @@ export function RecompensesSection() {
 
   const describe = (r: Recompense) => `${SENS_LABELS[r.sens]} (${r.epoux === 'user' ? 'vous' : 'conjoint'})`;
 
+  // Chantier 2 : biens avec financement mixte déclaré (assets.financement_mixte_apport_propre)
+  // sans récompense déjà enregistrée pour ce bien — comparaison purement
+  // côté client, assets et recompenses sont déjà chargés par les hooks
+  // ci-dessus, aucune requête supplémentaire nécessaire.
+  const biensFinancementMixteNonCouverts = (assets || []).filter(a =>
+    a.financement_mixte_apport_propre != null
+    && a.financement_mixte_apport_propre > 0
+    && !recompenses.some(r => r.bien_concerne_id === a.id)
+  );
+
+  // Pré-remplit uniquement le bien concerné et la dépense faite (hypothèse
+  // nature_depense = 'acquisition', cf. résumé de chantier) ; tous les autres
+  // champs (sens, époux, dépense nécessaire, valeurs du bien, mode
+  // d'évaluation) restent à la charge de l'utilisateur via le flux habituel
+  // du Chantier 4 — aucune ligne recompenses n'est créée avant sa validation
+  // explicite du formulaire.
+  const prefillFromAsset = (assetId: string, montant: number) => {
+    setBienConcerneId(assetId);
+    setDepenseFaite(String(montant));
+    setNatureChoice('bien');
+    setNatureDetail('acquisition');
+    setIsAdding(true);
+  };
+
   return (
     <div className="rounded-md border bg-card p-6 shadow-sm">
       <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">Récompenses</h3>
@@ -133,6 +157,29 @@ export function RecompensesSection() {
               </Button>
             </div>
           ))}
+        </div>
+      )}
+
+      {!isAdding && biensFinancementMixteNonCouverts.length > 0 && (
+        <div className="rounded-md border border-dashed p-4 mb-4 space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">
+            Financement mixte déclaré sans récompense associée
+          </p>
+          <div className="flex flex-col gap-2">
+            {biensFinancementMixteNonCouverts.map(a => (
+              <Button
+                key={a.id}
+                type="button"
+                variant="outline"
+                size="sm"
+                className="justify-start"
+                onClick={() => prefillFromAsset(a.id!, a.financement_mixte_apport_propre!)}
+              >
+                <Wand2 className="h-3.5 w-3.5 mr-2 shrink-0" />
+                Créer la récompense correspondant à {a.denomination || 'ce bien'}
+              </Button>
+            ))}
+          </div>
         </div>
       )}
 
