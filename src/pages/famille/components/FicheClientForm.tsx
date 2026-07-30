@@ -198,6 +198,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
         nationalite: formData.nationalite,
         capaciteJuridique: formData.capaciteJuridique,
         handicape: formData.handicape,
+        residenceFiscaleEtranger: formData.residenceFiscaleEtranger,
         ancienCombattant: formData.ancienCombattant,
         mandatProtectionFuture: formData.mandatProtectionFuture,
         dateMandatProtectionFuture: formData.dateMandatProtectionFuture,
