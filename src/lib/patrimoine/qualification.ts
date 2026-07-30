@@ -150,6 +150,12 @@ const isConcubinage = (statut?: string): boolean => {
   return s.includes('concubin');
 };
 
+const isMarie = (statut?: string): boolean => {
+  if (!statut) return false;
+  const s = statut.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return s.includes('mari');
+};
+
 const isConventionPacsIndivision = (convention?: string): boolean => {
   if (!convention) return false;
   return convention.toLowerCase().includes('indivision');
@@ -187,7 +193,6 @@ export const qualifierBien = (ctx: QualificationContext): {
 } => {
   const {
     statutCouple,
-    regimeMatrimonial,
     dateMariage,
     conventionPacs,
     datePacs,
@@ -202,6 +207,13 @@ export const qualifierBien = (ctx: QualificationContext): {
     valeurAcquisition,
     apportFondsPropres,
   } = ctx;
+
+  // regime_matrimonial n'a de sens que sous Marié(e) : les statuts en base ne
+  // sont jamais effacés en changeant de statut (cf. RelationInfoForm.tsx),
+  // donc un ex-marié devenu Pacsé(e)/Concubinage peut garder une valeur
+  // périmée. Neutralisé ici une bonne fois pour toutes plutôt que de
+  // reporter la vérification sur chacun des 8 usages ci-dessous.
+  const regimeMatrimonial = isMarie(statutCouple) ? ctx.regimeMatrimonial : undefined;
 
   // Cas indivision (plusieurs détenteurs hors couple)
   if (detenteur && detenteur.toLowerCase().includes('indivision')) {

@@ -95,6 +95,12 @@ export const ProcessusCalcul = () => {
       const avContracts = buildAVContracts(avContractsRaw, familyProfile?.date_naissance, familyGraph);
       const clausesData = parseClausesData((maritalStatus as any)?.clauses_contrat);
       const exclusionBiensProfessionnelsParticipation = !!clausesData['exclusion_biens_professionnels']?.enabled;
+      // regime_matrimonial n'a de sens que sous Marié(e) : ce champ n'est
+      // jamais effacé en changeant de statut (cf. RelationInfoForm.tsx), donc
+      // un ex-marié devenu Pacsé/Concubin peut garder une valeur périmée.
+      const regimeMatrimonialSiMarie = (maritalStatus as any)?.statut_couple === 'Marié(e)'
+        ? (maritalStatus as any)?.regime_matrimonial
+        : undefined;
       const ctx: TransmissionContext = {
         family: familyGraph,
         patrimony,
@@ -108,10 +114,10 @@ export const ProcessusCalcul = () => {
         // Ciot, §9.6.1) sous régime de communauté + origine_fonds deniers
         // communs, jamais dans avContracts (déjà filtré par détenteur dans
         // computeTransmission).
-        avReintegrationCivileMontant: computeAVReintegrationCivile(avContracts, 'spouse', (maritalStatus as any)?.regime_matrimonial),
+        avReintegrationCivileMontant: computeAVReintegrationCivile(avContracts, 'spouse', regimeMatrimonialSiMarie),
         partageEnvisage: !!(maritalStatus as any)?.partage_envisage,
         clausesData,
-        regimeMatrimonial: (maritalStatus as any)?.regime_matrimonial,
+        regimeMatrimonial: regimeMatrimonialSiMarie,
         recompenses: buildRecompensesCalcInput(recompenses),
         creancesEntreEpoux: buildCreancesCalcInput(creancesEntreEpoux),
         participationAcquets: buildParticipationAcquetsContext(patrimoineOriginaire, patrimoineFinal, exclusionBiensProfessionnelsParticipation)

@@ -35,6 +35,7 @@ import { determinerRegimeLegal, REGIMES_MATRIMONIAUX } from "@/lib/patrimoine/re
 import { getSimplifiedRegime, RegimeType, ClausesData } from "@/types/matrimonial";
 import { parseClausesData } from "@/utils/transmissionHelpers";
 import { toRegimeType, getClausesIncompatibles } from "@/lib/patrimoine/regimeChangeClauses";
+import { buildRelationInfoPayload } from "@/lib/family/relationInfoPayload";
 
 const formSchema = z.object({
   conventionPacs: z.enum(['Régime de la séparation des biens', 'Indivision']).default('Régime de la séparation des biens'),
@@ -173,28 +174,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
 
   const onSubmit = async (data: FormData) => {
     try {
-      await saveData({
-        convention_pacs: data.conventionPacs,
-        date_pacs: data.datePacs instanceof Date ? format(data.datePacs, 'yyyy-MM-dd') : undefined,
-        regime_matrimonial: data.regimeMatrimonial,
-        date_mariage: data.dateMariage instanceof Date ? format(data.dateMariage, 'yyyy-MM-dd') : undefined,
-        lieu_mariage: data.lieuMariage,
-        pas_de_contrat_mariage: data.pasDeContrat,
-        imposition_distincte: data.impositionDistincte,
-        residence_separee: data.residenceSeparee,
-        loi_applicable_regime: data.loiApplicableRegime || null,
-        pays_premier_domicile_matrimonial: data.paysPremierDomicileMatrimonial || null,
-        donation_dernier_vivant_personne: data.donationDernierVivantPersonne,
-        date_donation_personne: data.dateDonationPersonne instanceof Date ? format(data.dateDonationPersonne, 'yyyy-MM-dd') : undefined,
-        donation_dernier_vivant_conjoint: data.donationDernierVivantConjoint,
-        date_donation_conjoint: data.dateDonationConjoint instanceof Date ? format(data.dateDonationConjoint, 'yyyy-MM-dd') : undefined,
-        mariage_precedent_personne: data.mariagePrecedentPersonne,
-        duree_mariage_precedent_personne_annees: data.dureeMariagePrecedentPersonneAnnees ?? null,
-        duree_mariage_precedent_personne_mois: data.dureeMariagePrecedentPersonneMois ?? null,
-        mariage_precedent_conjoint: data.mariagePrecedentConjoint,
-        duree_mariage_precedent_conjoint_annees: data.dureeMariagePrecedentConjointAnnees ?? null,
-        duree_mariage_precedent_conjoint_mois: data.dureeMariagePrecedentConjointMois ?? null,
-      });
+      await saveData(buildRelationInfoPayload(relationStatus, data) as any);
 
       onSuccess?.();
     } catch (error) {

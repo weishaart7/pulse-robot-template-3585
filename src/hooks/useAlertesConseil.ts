@@ -40,9 +40,16 @@ export function useAlertesConseil() {
       passifs.reduce((sum, p) => sum + (p.montant_du || 0), 0) -
       emprunts.reduce((sum, e) => sum + (e.capital_restant_du || 0), 0);
 
+    // regime_matrimonial / loi_applicable_regime / pays_premier_domicile_matrimonial
+    // n'ont de sens que sous Marié(e) : ces champs ne sont jamais effacés en
+    // changeant de statut (cf. RelationInfoForm.tsx), donc un ex-marié devenu
+    // Pacsé/Concubin peut garder des valeurs périmées qui déclencheraient à
+    // tort des alertes réservées au mariage.
+    const estMarie = maritalStatus?.statut_couple === 'Marié(e)';
+
     const ctx: AlerteContext = {
       statutCouple: maritalStatus?.statut_couple,
-      regimeMatrimonial: maritalStatus?.regime_matrimonial,
+      regimeMatrimonial: estMarie ? maritalStatus?.regime_matrimonial : undefined,
       dateMariage: maritalStatus?.date_mariage,
       datePacs: maritalStatus?.date_pacs,
       conventionPacs: maritalStatus?.convention_pacs,
@@ -50,8 +57,8 @@ export function useAlertesConseil() {
       clausesContrat: maritalStatus?.clauses_contrat,
       clientResidenceFiscaleEtranger: familyProfile?.residence_fiscale_etranger,
       conjointResidenceFiscaleEtranger: maritalStatus?.residence_fiscale_etranger_conjoint,
-      loiApplicableRegime: maritalStatus?.loi_applicable_regime,
-      paysPremierDomicileMatrimonial: maritalStatus?.pays_premier_domicile_matrimonial,
+      loiApplicableRegime: estMarie ? maritalStatus?.loi_applicable_regime : undefined,
+      paysPremierDomicileMatrimonial: estMarie ? maritalStatus?.pays_premier_domicile_matrimonial : undefined,
       liberalites,
       scenariosRegime: scenariosRegime.map((s) => ({
         id: s.id || '',

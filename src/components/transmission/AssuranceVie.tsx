@@ -253,7 +253,11 @@ export const AssuranceVie = () => {
               avContracts: builtAvContracts,
               referenceDate: new Date().toISOString().split('T')[0],
               clausesData,
-              regimeMatrimonial: (maritalRes.data as any)?.regime_matrimonial,
+              // regime_matrimonial n'a de sens que sous Marié(e) : ce champ
+              // n'est jamais effacé en changeant de statut (cf.
+              // RelationInfoForm.tsx), donc un ex-marié devenu Pacsé/Concubin
+              // peut garder une valeur périmée.
+              regimeMatrimonial: statut === 'Marié(e)' ? (maritalRes.data as any)?.regime_matrimonial : undefined,
               recompenses: buildRecompensesCalcInput((recompensesRes.data || []) as Recompense[]),
               creancesEntreEpoux: buildCreancesCalcInput((creancesRes.data || []) as CreanceEntreEpoux[]),
               participationAcquets: buildParticipationAcquetsContext(

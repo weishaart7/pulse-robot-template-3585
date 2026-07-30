@@ -179,6 +179,23 @@ describe('qualifierBien — exclusions art. 515-5-2 sous PACS-indivision', () =>
   });
 });
 
+describe('qualifierBien — regime_matrimonial périmé après un changement de statut (Option A, non effacé en base)', () => {
+  it('statut Pacsé(e) avec un regime_matrimonial resté en base d\'un mariage précédent : ignoré, ne bascule pas en "Bien commun" via la clause d\'extension propre au mariage', () => {
+    const result = qualifierBien({
+      statutCouple: 'Pacsé(e)',
+      regimeMatrimonial: 'Communauté universelle',
+      datePacs: '2015-09-01',
+      dateAcquisition: '2020-03-10',
+      origineActif: ['Achat'],
+      detenteur: 'user',
+      estPropreParNature: true,
+      extensionProprsParNature: true,
+    });
+
+    expect(result.qualification).toBe('Bien propre');
+  });
+});
+
 describe('qualifierBien — concubinage (art. 515-8, aucune masse commune)', () => {
   const base = {
     statutCouple: 'Concubinage',

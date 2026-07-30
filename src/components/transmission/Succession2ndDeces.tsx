@@ -214,7 +214,12 @@ export const Succession2ndDeces = () => {
       const referenceDate = new Date().toISOString().split('T')[0];
       const optionConjoint = (maritalStatus as any)?.option_conjoint as string | null;
       const partageEnvisage = !!(maritalStatus as any)?.partage_envisage;
-      const regimeMatrimonial = (maritalStatus as any)?.regime_matrimonial as string | null;
+      // regime_matrimonial n'a de sens que sous Marié(e) : ce champ n'est
+      // jamais effacé en changeant de statut (cf. RelationInfoForm.tsx), donc
+      // un ex-marié devenu Pacsé/Concubin peut garder une valeur périmée.
+      const regimeMatrimonial = (maritalStatus as any)?.statut_couple === 'Marié(e)'
+        ? ((maritalStatus as any)?.regime_matrimonial as string | null)
+        : undefined;
 
       // Graphe et contexte "Utilisateur décède en premier" : identiques à ce
       // que Synthese.tsx construit déjà pour le 1er décès — même fonctions,
