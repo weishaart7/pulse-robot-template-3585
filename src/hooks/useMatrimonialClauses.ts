@@ -25,7 +25,7 @@ interface UseMatrimonialClausesReturn {
 
 export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialClausesReturn {
   const { toast } = useToast();
-  const { data: maritalData, saveData, loading: isLoadingMarital } = useMaritalStatus();
+  const { data: maritalData, saveData, setDonationDernierVivant, loading: isLoadingMarital } = useMaritalStatus();
   const { assets } = useAssets();
   
   const [clauses, setClauses] = useState<ClausesData>({});
@@ -64,18 +64,27 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
     }
   }, [maritalData]);
 
-  // Sauvegarde effective (appelée après le debounce, cf. saveClausesData ci-dessous)
-  const performSave = useCallback(async (newClauses: ClausesData, newDonation: DonationDernierVivant) => {
+  // Sauvegarde effective (appelée après le debounce, cf. saveClausesData
+  // ci-dessous). `donationChange: null` signifie que cet appel ne touche pas
+  // à la donation (cas de tous les mutateurs de clauses) : setDonationDernierVivant
+  // relit alors l'état frais en base plutôt que de réembarquer la copie
+  // locale de `donation`, potentiellement périmée si l'onglet Donation de
+  // RelationInfoForm.tsx a été modifié entre-temps — seul updateDonation
+  // passe une vraie nouvelle valeur.
+  const performSave = useCallback(async (newClauses: ClausesData, donationChange: DonationDernierVivant | null) => {
     setIsSaving(true);
     try {
-      const dataToSave = {
-        clauses_contrat: newClauses,
-        donation_dernier_vivant_personne: newDonation.enFaveurUtilisateur,
-        donation_dernier_vivant_conjoint: newDonation.enFaveurConjoint,
-        date_donation_personne: newDonation.dateUtilisateur,
-        date_donation_conjoint: newDonation.dateConjoint
-      };
-      await saveData(dataToSave as any);
+      await setDonationDernierVivant(
+        donationChange
+          ? {
+              donation_dernier_vivant_personne: donationChange.enFaveurUtilisateur,
+              donation_dernier_vivant_conjoint: donationChange.enFaveurConjoint,
+              date_donation_personne: donationChange.dateUtilisateur,
+              date_donation_conjoint: donationChange.dateConjoint,
+            }
+          : null,
+        { clauses_contrat: newClauses }
+      );
       toast({
         title: "Sauvegardé",
         description: "Les clauses ont été mises à jour."
@@ -90,19 +99,19 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
     } finally {
       setIsSaving(false);
     }
-  }, [saveData, toast]);
+  }, [setDonationDernierVivant, toast]);
 
   // Sauvegarder les données, avec un debounce de 800ms (même pattern que
   // LMNPDetailView.tsx:191-209 : useRef + setTimeout/clearTimeout, pas de lib
   // externe). Uniforme pour tous les appelants (toggleClause, updateClauseAssets,
   // updateClausePercentage, updateClauseOptions, updateDonation) puisqu'ils
   // passent tous par cette même fonction.
-  const saveClausesData = useCallback((newClauses: ClausesData, newDonation: DonationDernierVivant) => {
+  const saveClausesData = useCallback((newClauses: ClausesData, donationChange: DonationDernierVivant | null) => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
     saveTimeoutRef.current = setTimeout(() => {
-      performSave(newClauses, newDonation);
+      performSave(newClauses, donationChange);
     }, 800);
   }, [performSave]);
 
@@ -123,8 +132,8 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
       [clauseName]: newClauseState
     };
     setClauses(newClauses);
-    saveClausesData(newClauses, donation);
-  }, [clauses, donation, saveClausesData]);
+    saveClausesData(newClauses, null);
+  }, [clauses, saveClausesData]);
 
   const updateClauseAssets = useCallback((clauseName: string, assetIds: string[]) => {
     const newClauses: ClausesData = {
@@ -135,8 +144,8 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
       }
     };
     setClauses(newClauses);
-    saveClausesData(newClauses, donation);
-  }, [clauses, donation, saveClausesData]);
+    saveClausesData(newClauses, null);
+  }, [clauses, saveClausesData]);
 
   // Dédié à partage_inegal (top-level), seule clause qui définit hasPercentages
   // dans CLAUSES_BY_REGIME : partPleineProprietee est le seul champ lu par le
@@ -150,8 +159,8 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
       }
     };
     setClauses(newClauses);
-    saveClausesData(newClauses, donation);
-  }, [clauses, donation, saveClausesData]);
+    saveClausesData(newClauses, null);
+  }, [clauses, saveClausesData]);
 
   const updateClauseOptions = useCallback((clauseName: string, options: any) => {
     const newClauses: ClausesData = {
@@ -165,8 +174,8 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
       }
     };
     setClauses(newClauses);
-    saveClausesData(newClauses, donation);
-  }, [clauses, donation, saveClausesData]);
+    saveClausesData(newClauses, null);
+  }, [clauses, saveClausesData]);
 
   const updateDonation = useCallback((updates: Partial<DonationDernierVivant>) => {
     const newDonation = { ...donation, ...updates };

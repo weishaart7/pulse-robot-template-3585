@@ -110,7 +110,7 @@ type Props = {
 
 export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
   const { toast } = useToast();
-  const { data: maritalData, saving, saveData } = useMaritalStatus();
+  const { data: maritalData, saving, saveData, setDonationDernierVivant } = useMaritalStatus();
   const [activeSection, setActiveSection] = useState<Section>('informations-generales');
   // Changement de régime en attente de confirmation : rempli uniquement
   // quand au moins une clause active (clauses_contrat, lu depuis l'instance
@@ -174,7 +174,28 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
 
   const onSubmit = async (data: FormData) => {
     try {
-      await saveData(buildRelationInfoPayload(relationStatus, data) as any);
+      const payload = buildRelationInfoPayload(relationStatus, data) as Record<string, unknown>;
+
+      if (relationStatus === 'Marié(e)') {
+        const {
+          donation_dernier_vivant_personne,
+          date_donation_personne,
+          donation_dernier_vivant_conjoint,
+          date_donation_conjoint,
+          ...rest
+        } = payload;
+        await setDonationDernierVivant(
+          {
+            donation_dernier_vivant_personne: donation_dernier_vivant_personne as boolean,
+            date_donation_personne: date_donation_personne as string | undefined,
+            donation_dernier_vivant_conjoint: donation_dernier_vivant_conjoint as boolean,
+            date_donation_conjoint: date_donation_conjoint as string | undefined,
+          },
+          rest
+        );
+      } else {
+        await saveData(payload as any);
+      }
 
       onSuccess?.();
     } catch (error) {
