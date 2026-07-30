@@ -417,6 +417,27 @@ export function hasNonCommonChildren(familyLinks: FamilyLink[]): boolean {
 }
 
 /**
+ * Traduit la valeur brute du <Select> "Renonce à la succession de"
+ * ('user' | 'spouse' | 'both', cf. useFamilyLinkLogic.ts::getParentsForRenunciation
+ * et enfant_renoncant_de en base) vers l'id réel du défunt concerné, tel
+ * qu'attendu par successionLegale.ts (`child.renoncantDe === graph.decedentId`).
+ * 'both' se résout à l'id du défunt COURANT : buildFamilyGraph et
+ * buildSpouseAsDecedentFamilyGraph sont chacune appelées avec un decedentId
+ * différent (chaînage 2nd décès), donc 'both' matche naturellement dans les
+ * deux graphes construits successivement pour un même enfant renonçant.
+ */
+function resolveRenoncantDe(
+  raw: string | null | undefined,
+  ownRole: 'user' | 'spouse',
+  ownDecedentId: PersonId,
+  otherDecedentId: PersonId
+): PersonId | undefined {
+  if (!raw) return undefined;
+  if (raw === ownRole || raw === 'both') return ownDecedentId;
+  return otherDecedentId;
+}
+
+/**
  * Converts family data from the database to the transmission library format
  */
 export function buildFamilyGraph(
@@ -488,7 +509,7 @@ export function buildFamilyGraph(
       handicap: link.handicap || false,
       lienFamilial: link.lien_familial,
       renoncant: link.enfant_renoncant || false,
-      renoncantDe: link.enfant_renoncant_de || undefined,
+      renoncantDe: resolveRenoncantDe(link.enfant_renoncant_de, 'user', decedentId, `conjoint-${decedentId}`),
       enfantAdopte: link.enfant_adopte || undefined,
       adoptionSimpleAbattementPlein: link.adoption_simple_abattement_plein || false,
       brancheFamiliale: link.branche_familiale || undefined
@@ -617,7 +638,7 @@ export function buildSpouseAsDecedentFamilyGraph(
       handicap: link.handicap || false,
       lienFamilial: link.lien_familial,
       renoncant: link.enfant_renoncant || false,
-      renoncantDe: link.enfant_renoncant_de || undefined,
+      renoncantDe: resolveRenoncantDe(link.enfant_renoncant_de, 'spouse', decedentId, familyProfile.id),
       enfantAdopte: link.enfant_adopte || undefined,
       adoptionSimpleAbattementPlein: link.adoption_simple_abattement_plein || false,
       brancheFamiliale: link.branche_familiale || undefined
