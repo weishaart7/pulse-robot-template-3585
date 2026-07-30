@@ -200,4 +200,36 @@ describe('computeAssuranceVie — intégration cascade + démembrement dans le c
     expect(resultAvecDeces.perBeneficiary['enfant1']).toEqual(resultSansDeces.perBeneficiary['enfant1']);
     expect(resultAvecDeces.perBeneficiary['enfant2']).toEqual(resultSansDeces.perBeneficiary['enfant2']);
   });
+
+  it('exonération frère/sœur (art. 796-0 ter CGI) déclarée sur le contrat : échappe au prélèvement 990 I', () => {
+    const beneficiariesAvecFrere: Beneficiary[] = [...beneficiaries, { id: 'frere1', lien: 'frere_soeur' }];
+    const contracts: AVContract[] = [{
+      id: 'av1',
+      capitalDeces: 400000,
+      primesAvant70: 400000,
+      primesApres70: 0,
+      niveaux: [{ beneficiaires: [{ beneficiaryId: 'frere1', quotePart: 1 }] }],
+      isSiblingExonEligible: true
+    }];
+
+    const result = computeAssuranceVie(contracts, beneficiariesAvecFrere, params, '2026-07-20');
+
+    expect(result.perBeneficiary['frere1'].prelev990I).toBe(0);
+  });
+
+  it('frère/sœur sans isSiblingExonEligible sur le contrat : reste soumis normalement au 990 I, non-régression', () => {
+    const beneficiariesAvecFrere: Beneficiary[] = [...beneficiaries, { id: 'frere1', lien: 'frere_soeur' }];
+    const contracts: AVContract[] = [{
+      id: 'av1',
+      capitalDeces: 400000,
+      primesAvant70: 400000,
+      primesApres70: 0,
+      niveaux: [{ beneficiaires: [{ beneficiaryId: 'frere1', quotePart: 1 }] }]
+    }];
+
+    const result = computeAssuranceVie(contracts, beneficiariesAvecFrere, params, '2026-07-20');
+
+    // 400 000€, abattement 152 500€ → base imposable 247 500€ (barème 990I : 20% jusqu'à 700 000€ au-delà de l'abattement).
+    expect(result.perBeneficiary['frere1'].prelev990I).toBeCloseTo(49500, 0);
+  });
 });

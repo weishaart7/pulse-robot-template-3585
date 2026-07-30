@@ -296,6 +296,13 @@ export function buildAVContracts(
       n.beneficiaires.some(b => b.beneficiaryId === family.survivingSpouseId || b.nuProprietaireId === family.survivingSpouseId)
     );
 
+    const hasExoneratedSiblingBeneficiaire = niveaux.some(n =>
+      n.beneficiaires.some(b => {
+        const isExonere = (id: string) => family.persons.find(p => p.id === id)?.exonerationSuccession === true;
+        return isExonere(b.beneficiaryId) || (!!b.nuProprietaireId && isExonere(b.nuProprietaireId));
+      })
+    );
+
     return {
       id: row.assetId,
       niveaux,
@@ -303,6 +310,7 @@ export function buildAVContracts(
       primesAvant70,
       primesApres70,
       isExonereBeneficiaireConjointPacs: hasConjointBeneficiaire,
+      isSiblingExonEligible: hasExoneratedSiblingBeneficiaire,
       detenteur: isDetenteurSpouse(row.detenteur || undefined) ? 'spouse' : 'user',
       origineFonds: row.origineFonds === 'deniers_propres' ? 'deniers_propres' : 'deniers_communs'
     };

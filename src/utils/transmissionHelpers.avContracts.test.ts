@@ -123,6 +123,46 @@ describe('buildAVContracts', () => {
     expect(benef.usufruitPct).toBeCloseTo(0.4, 6); // 61-70 ans → 40% usufruit (barème 669 CGI)
   });
 
+  it('frère/sœur avec exoneration_succession déclarée : isSiblingExonEligible = true sur le contrat', () => {
+    const familyAvecFrereExonere: FamilyGraph = {
+      ...family,
+      persons: [...family.persons, { id: 'frere1', nom: 'Frere', prenom: 'Un', lienFamilial: 'Frère/Soeur', exonerationSuccession: true }]
+    };
+
+    const [contract] = buildAVContracts(
+      [{
+        assetId: 'av1',
+        valeurEstimee: 100000,
+        operations: [{ type_operation: 'versement', montant: 100000, date_operation: '2010-01-01' }],
+        clauseBeneficiaireStructuree: { niveaux: [{ beneficiaires: [{ familyLinkId: 'frere1', pourcentage: 100 }] }] }
+      }],
+      '1970-01-01',
+      familyAvecFrereExonere
+    );
+
+    expect(contract.isSiblingExonEligible).toBe(true);
+  });
+
+  it('frère/sœur sans exoneration_succession déclarée : isSiblingExonEligible = false, non-régression', () => {
+    const familyAvecFrereNonExonere: FamilyGraph = {
+      ...family,
+      persons: [...family.persons, { id: 'frere1', nom: 'Frere', prenom: 'Un', lienFamilial: 'Frère/Soeur', exonerationSuccession: false }]
+    };
+
+    const [contract] = buildAVContracts(
+      [{
+        assetId: 'av1',
+        valeurEstimee: 100000,
+        operations: [{ type_operation: 'versement', montant: 100000, date_operation: '2010-01-01' }],
+        clauseBeneficiaireStructuree: { niveaux: [{ beneficiaires: [{ familyLinkId: 'frere1', pourcentage: 100 }] }] }
+      }],
+      '1970-01-01',
+      familyAvecFrereNonExonere
+    );
+
+    expect(contract.isSiblingExonEligible).toBe(false);
+  });
+
   it('démembrement de la clause : lève AVDonneesInsuffisantesError si la date de naissance de l\'usufruitier désigné est inconnue', () => {
     expect(() => buildAVContracts(
       [{
