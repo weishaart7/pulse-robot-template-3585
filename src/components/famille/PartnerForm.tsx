@@ -131,7 +131,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
         nom_conjoint: formData.nomPartenaire,
         nom_jeune_fille_conjoint: formData.nomJeuneFillePartenaire,
         prenom_conjoint: formData.prenomPartenaire,
-        date_naissance_conjoint: formData.dateNaissancePartenaire?.toISOString().split('T')[0],
+        date_naissance_conjoint: formData.dateNaissancePartenaire instanceof Date ? format(formData.dateNaissancePartenaire, 'yyyy-MM-dd') : undefined,
         lieu_naissance_conjoint: formData.lieuNaissancePartenaire,
         pays_naissance_conjoint: formData.paysNaissancePartenaire,
         profession_csp_conjoint: formData.professionCSP,

@@ -175,9 +175,9 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
     try {
       await saveData({
         convention_pacs: data.conventionPacs,
-        date_pacs: data.datePacs?.toISOString().split('T')[0],
+        date_pacs: data.datePacs instanceof Date ? format(data.datePacs, 'yyyy-MM-dd') : undefined,
         regime_matrimonial: data.regimeMatrimonial,
-        date_mariage: data.dateMariage?.toISOString().split('T')[0],
+        date_mariage: data.dateMariage instanceof Date ? format(data.dateMariage, 'yyyy-MM-dd') : undefined,
         lieu_mariage: data.lieuMariage,
         pas_de_contrat_mariage: data.pasDeContrat,
         imposition_distincte: data.impositionDistincte,
@@ -185,9 +185,9 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
         loi_applicable_regime: data.loiApplicableRegime || null,
         pays_premier_domicile_matrimonial: data.paysPremierDomicileMatrimonial || null,
         donation_dernier_vivant_personne: data.donationDernierVivantPersonne,
-        date_donation_personne: data.dateDonationPersonne?.toISOString().split('T')[0],
+        date_donation_personne: data.dateDonationPersonne instanceof Date ? format(data.dateDonationPersonne, 'yyyy-MM-dd') : undefined,
         donation_dernier_vivant_conjoint: data.donationDernierVivantConjoint,
-        date_donation_conjoint: data.dateDonationConjoint?.toISOString().split('T')[0],
+        date_donation_conjoint: data.dateDonationConjoint instanceof Date ? format(data.dateDonationConjoint, 'yyyy-MM-dd') : undefined,
         mariage_precedent_personne: data.mariagePrecedentPersonne,
         duree_mariage_precedent_personne_annees: data.dureeMariagePrecedentPersonneAnnees ?? null,
         duree_mariage_precedent_personne_mois: data.dureeMariagePrecedentPersonneMois ?? null,
