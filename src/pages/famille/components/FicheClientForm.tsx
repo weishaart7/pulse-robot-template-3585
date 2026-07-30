@@ -182,7 +182,9 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
         throw new Error('Format d\'email invalide');
       }
 
-      const professionFinale = formData.professionLibre?.trim() || '';
+      const professionFinale = formData.profession === 'Autre'
+        ? (formData.professionLibre?.trim() || '')
+        : (formData.profession || '');
       
       const sanitizedFormData = {
         civilite: formData.civilite,
@@ -483,22 +485,49 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                 <FormField
                   control={form.control}
-                  name="professionLibre"
+                  name="profession"
                   render={({ field }) => (
-                    <FormItem className="space-y-1">
-                      <FormControl>
-                        <ActionHubInput
-                          label="Profession"
-                          placeholder="Profession"
-                          value={field.value}
-                          onChange={field.onChange}
-                          historyEnabled={false}
-                        />
-                      </FormControl>
+                    <FormItem>
+                      <div className="relative w-full flex flex-col gap-1">
+                        <FormLabel className="text-xs">Profession</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
+                              <SelectValue placeholder="Sélectionner une profession" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {professions.map((option) => (
+                              <SelectItem key={option} value={option}>{option}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
+                {form.watch('profession') === 'Autre' && (
+                  <FormField
+                    control={form.control}
+                    name="professionLibre"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormControl>
+                          <ActionHubInput
+                            label="Précisez la profession"
+                            placeholder="Profession"
+                            value={field.value}
+                            onChange={field.onChange}
+                            historyEnabled={false}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
