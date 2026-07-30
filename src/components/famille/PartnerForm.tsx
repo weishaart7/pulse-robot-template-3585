@@ -57,6 +57,18 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+const professions = [
+  'Agriculteur exploitant',
+  'Artisan, commerçant, chef d\'entreprise',
+  'Cadre, profession intellectuelle supérieure',
+  'Profession intermédiaire',
+  'Employé',
+  'Ouvrier',
+  'Retraité',
+  'Sans activité professionnelle',
+  'Autre',
+];
+
 type Section = 'informations-generales' | 'coordonnees';
 
 export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
@@ -134,8 +146,8 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
         date_naissance_conjoint: formData.dateNaissancePartenaire instanceof Date ? format(formData.dateNaissancePartenaire, 'yyyy-MM-dd') : undefined,
         lieu_naissance_conjoint: formData.lieuNaissancePartenaire,
         pays_naissance_conjoint: formData.paysNaissancePartenaire,
-        profession_csp_conjoint: formData.professionCSP,
-        profession_conjoint: formData.professionLibelle,
+        profession_csp_conjoint: formData.professionCSP || '',
+        profession_conjoint: formData.professionCSP === 'Autre' ? (formData.professionLibelle?.trim() || '') : '',
         nationalite_conjoint: formData.nationalitePartenaire,
         personne_handicapee_conjoint: formData.personneHandicapee,
         residence_fiscale_etranger_conjoint: formData.residenceFiscaleEtrangerPartenaire,
@@ -372,22 +384,49 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                     <FormField
                       control={form.control}
-                      name="professionLibelle"
+                      name="professionCSP"
                       render={({ field }) => (
-                        <FormItem className="space-y-1">
-                          <FormControl>
-                            <ActionHubInput
-                              label="Profession"
-                              placeholder="Profession"
-                              value={field.value}
-                              onChange={field.onChange}
-                              historyEnabled={false}
-                            />
-                          </FormControl>
+                        <FormItem>
+                          <div className="relative w-full flex flex-col gap-1">
+                            <FormLabel className="text-xs">Profession</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
+                              <FormControl>
+                                <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
+                                  <SelectValue placeholder="Sélectionner une profession" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {professions.map((option) => (
+                                  <SelectItem key={option} value={option}>{option}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+
+                    {form.watch('professionCSP') === 'Autre' && (
+                      <FormField
+                        control={form.control}
+                        name="professionLibelle"
+                        render={({ field }) => (
+                          <FormItem className="space-y-1">
+                            <FormControl>
+                              <ActionHubInput
+                                label="Précisez la profession"
+                                placeholder="Profession"
+                                value={field.value}
+                                onChange={field.onChange}
+                                historyEnabled={false}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
