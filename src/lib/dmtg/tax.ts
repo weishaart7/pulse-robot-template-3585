@@ -5,10 +5,14 @@ export function computeProgressiveTax(
   lien: Lien,
   consumedBracketsAmount: Money,
   params: DmtgParams,
-  comesFromRepresentationWithPlurality: boolean = false
+  comesFromRepresentationWithPlurality: boolean = false,
+  exonerationSuccession: boolean = false
 ): ProgressiveTaxResult {
-  // Conjoint/PACS : exonération totale
-  if (lien === 'conjoint' || lien === 'pacs') {
+  // Conjoint/PACS : exonération totale. Frère/sœur exonéré (art. 796-0 ter
+  // CGI, déclaratif — cf. recall.ts) : même traitement explicite, plutôt que
+  // de compter sur le seul abattement infini de recall.ts pour retomber sur
+  // une base taxable nulle.
+  if (lien === 'conjoint' || lien === 'pacs' || (lien === 'frere_soeur' && exonerationSuccession)) {
     return {
       taxe: 0,
       trancheDetails: [{

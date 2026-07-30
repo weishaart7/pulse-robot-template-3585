@@ -192,3 +192,41 @@ describe('buildSpouseAsDecedentFamilyGraph — renoncantDe traduit depuis enfant
     expect(result.heritiers.every(h => h.personId !== 'enfant-1')).toBe(true);
   });
 });
+
+function buildSiblingLink(overrides: Partial<FamilyLink>): FamilyLink {
+  return {
+    id: 'frere-1',
+    lien_familial: 'Frère/Sœur',
+    nom: 'TEST',
+    prenom: 'Alex',
+    date_naissance: '1995-01-01',
+    ...overrides
+  };
+}
+
+describe('buildFamilyGraph / buildSpouseAsDecedentFamilyGraph — exonerationSuccession traduit depuis exoneration_succession (art. 796-0 ter CGI)', () => {
+  it("buildFamilyGraph : exoneration_succession true → Person.exonerationSuccession true", () => {
+    const link = buildSiblingLink({ exoneration_succession: true });
+    const graph = buildFamilyGraph(familyProfile, maritalStatus, [link]);
+
+    expect(graph.persons.find(p => p.id === 'frere-1')?.exonerationSuccession).toBe(true);
+  });
+
+  it("buildFamilyGraph : exoneration_succession false/absent → Person.exonerationSuccession false, non-régression", () => {
+    const link = buildSiblingLink({ exoneration_succession: false });
+    const graph = buildFamilyGraph(familyProfile, maritalStatus, [link]);
+
+    expect(graph.persons.find(p => p.id === 'frere-1')?.exonerationSuccession).toBe(false);
+  });
+
+  it("buildSpouseAsDecedentFamilyGraph (miroir) : exoneration_succession true → Person.exonerationSuccession true", () => {
+    // buildSpouseAsDecedentFamilyGraph exige au moins un enfant du conjoint
+    // renseigné (sinon SpouseSuccessionNonModelisableError) — sans rapport
+    // avec exonerationSuccession, juste une précondition de la fonction.
+    const child = buildChildLink({ parent_de: 'both_parents' });
+    const link = buildSiblingLink({ exoneration_succession: true });
+    const graph = buildSpouseAsDecedentFamilyGraph(familyProfile, maritalStatus, [child, link]);
+
+    expect(graph.persons.find(p => p.id === 'frere-1')?.exonerationSuccession).toBe(true);
+  });
+});

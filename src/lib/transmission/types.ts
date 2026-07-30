@@ -27,6 +27,11 @@ export interface Person {
   // Branche paternelle/maternelle (utilisé par la fente successorale,
   // cf. successionLegale.ts::collectFenteHeritiers).
   brancheFamiliale?: string;
+  // Exonération de droits de succession pour frère/sœur (art. 796-0 ter
+  // CGI) : déclaratif — reprend family_links.exoneration_succession tel
+  // quel, aucune des 3 conditions légales (âge/infirmité, situation
+  // matrimoniale, 5 ans de cohabitation) n'est vérifiée par l'app.
+  exonerationSuccession?: boolean;
 }
 
 export interface FamilyGraph {

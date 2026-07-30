@@ -512,7 +512,8 @@ export function buildFamilyGraph(
       renoncantDe: resolveRenoncantDe(link.enfant_renoncant_de, 'user', decedentId, `conjoint-${decedentId}`),
       enfantAdopte: link.enfant_adopte || undefined,
       adoptionSimpleAbattementPlein: link.adoption_simple_abattement_plein || false,
-      brancheFamiliale: link.branche_familiale || undefined
+      brancheFamiliale: link.branche_familiale || undefined,
+      exonerationSuccession: link.exoneration_succession || false
     });
 
     // Enfant direct du défunt : le lien vers le défunt doit exister que
@@ -641,7 +642,8 @@ export function buildSpouseAsDecedentFamilyGraph(
       renoncantDe: resolveRenoncantDe(link.enfant_renoncant_de, 'spouse', decedentId, familyProfile.id),
       enfantAdopte: link.enfant_adopte || undefined,
       adoptionSimpleAbattementPlein: link.adoption_simple_abattement_plein || false,
-      brancheFamiliale: link.branche_familiale || undefined
+      brancheFamiliale: link.branche_familiale || undefined,
+      exonerationSuccession: link.exoneration_succession || false
     });
 
     if (link.lien_familial === 'Enfant') {

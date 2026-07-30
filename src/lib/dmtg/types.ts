@@ -16,6 +16,11 @@ export interface Beneficiary {
   // exception déclarée par le conseiller (adoptionSimpleAbattementPlein).
   isAdoptionSimple?: boolean;
   adoptionSimpleAbattementPlein?: boolean;
+  // Exonération totale pour frère/sœur (art. 796-0 ter CGI) : déclaratif,
+  // reprend family_links.exoneration_succession sans vérifier les 3
+  // conditions légales — cf. recall.ts (abattement infini) et tax.ts
+  // (retour anticipé taxe: 0), même mécanique que conjoint/pacs.
+  exonerationSuccession?: boolean;
 }
 
 export interface Asset {

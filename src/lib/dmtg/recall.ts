@@ -21,7 +21,11 @@ export function computeRecallAndAllowances(input: {
       abattementBase = params.abattements.enfant_ascendant;
       break;
     case 'frere_soeur':
-      abattementBase = params.abattements.frere_soeur;
+      // Exonération totale (art. 796-0 ter CGI) : déclaratif (cf.
+      // exoneration_succession sur family_links, aucune des 3 conditions
+      // légales vérifiée par l'app) — même mécanique que conjoint/pacs
+      // ci-dessus.
+      abattementBase = beneficiary.exonerationSuccession ? Infinity : params.abattements.frere_soeur;
       break;
     case 'neveu_niece':
       abattementBase = params.abattements.neveu_niece;

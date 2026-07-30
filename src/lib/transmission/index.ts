@@ -479,7 +479,8 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       numberOfRepresentants: isRepresentation ? heir.representationCount : undefined,
       comesFromRepresentationWithPlurality: heir.lien === 'neveu_niece' && !!heir.representation,
       isAdoptionSimple: person?.enfantAdopte === 'Adoption simple',
-      adoptionSimpleAbattementPlein: person?.adoptionSimpleAbattementPlein || false
+      adoptionSimpleAbattementPlein: person?.adoptionSimpleAbattementPlein || false,
+      exonerationSuccession: person?.exonerationSuccession || false
     };
   });
 
