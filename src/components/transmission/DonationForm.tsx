@@ -225,7 +225,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
       const montantTotal = selectedAssets.reduce((sum, a) => sum + a.valeurDonation, 0);
       const biens = selectedAssets.map(a => ({ asset_id: a.id, valeur: a.valeurDonation }));
       const groupeId = beneficiaries.length > 1 ? crypto.randomUUID() : undefined;
-      const dateActe = formData.date ? formData.date.toISOString().split('T')[0] : undefined;
+      const dateActe = formData.date ? format(formData.date, 'yyyy-MM-dd') : undefined;
 
       // Ordre inversé : on crée les nouvelles lignes avant de toucher aux
       // anciennes. Pas de RPC/transaction Postgres côté projet — c'est

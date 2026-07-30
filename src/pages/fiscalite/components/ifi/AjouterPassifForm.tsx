@@ -46,7 +46,7 @@ export const AjouterPassifForm = ({ onClose, onPassifAdded }: AjouterPassifFormP
         type_passif: categorie,
         designation: formData.designation,
         montant: formData.detteDeductible ? parseFloat(formData.detteDeductible) : null,
-        date_creation: formData.dateDette ? formData.dateDette.toISOString().split('T')[0] : null,
+        date_creation: formData.dateDette ? format(formData.dateDette, 'yyyy-MM-dd') : null,
         commentaire: formData.nomCreancier || null,
       });
 
