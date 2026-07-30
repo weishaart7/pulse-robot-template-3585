@@ -89,14 +89,21 @@ Ordre d'apparition réel dans `REGLES_ALERTES_CONSEIL` ([regles.ts](../src/lib/a
   - `family_links.lien_familial`, `family_links.parent_de` (via `hasNonCommonChildren`)
   - `marital_status.donation_dernier_vivant_personne`, `marital_status.donation_dernier_vivant_conjoint` (via `hasDDV`)
 
-### 13. `enfants_non_communs_communaute_universelle`
+### 13. `ddv_enfant_non_commun_substitution_1098`
+- **Message** : « Donation au dernier vivant en présence d'enfant(s) non commun(s) : si l'acte ne laisse pas le choix entre les 3 quotités de l'art. 1094-1, l'enfant non commun dispose d'une faculté de substitution en usufruit sur l'excédent (art. 1098). À vérifier dans la rédaction de l'acte — non déductible depuis les données de cet outil. »
+- **Champs/tables lus** :
+  - `family_links.lien_familial`, `family_links.parent_de` (via `hasNonCommonChildren`)
+  - `marital_status.donation_dernier_vivant_personne`, `marital_status.donation_dernier_vivant_conjoint` (via `hasDDV`)
+- **Note** : signal déclaratif volontairement partiel, sur le même principe que l'alerte assurance-vie L. 132-13 ([`Synthese.tsx:470`](../src/components/transmission/Synthese.tsx#L470)) — l'application ne capture que l'existence de la DDV (booléen + date), pas la quotité/l'option retenue dans l'acte (cf. diagnostic préalable). Ne détecte donc que le signal large « DDV + enfant non commun », pas le cas précis de l'art. 1098.
+
+### 14. `enfants_non_communs_communaute_universelle`
 - **Message** : « Risque d'action en retranchement (art. 1527 al. 2). Envisager une renonciation anticipée (art. 1527 al. 3). »
 - **Champs/tables lus** :
   - `family_links.lien_familial`, `family_links.parent_de` (via `hasNonCommonChildren`)
   - `marital_status.regime_matrimonial`
   - `marital_status.clauses_contrat` (clé `attribution_integrale.enabled`)
 
-### 14. `changement_regime_proche_donation`
+### 15. `changement_regime_proche_donation`
 - **Message** (variable selon si la motivation civile est déjà renseignée) : « Un changement de régime matrimonial (réalisé ou envisagé) et une donation sont séparés de moins de 3 ans : risque de requalification en abus de droit (art. L. 64 LPF). Documentez la motivation civile du changement de régime, indépendante de toute optimisation fiscale. » (ou, si déjà renseignée : « Vérifiez que la motivation civile déjà renseignée reste pertinente et documentée. »)
 - **Champs/tables lus** :
   - `liberalites.type`, `liberalites.date_acte`
@@ -131,7 +138,7 @@ supposition de correspondance numérique :
 | `#7` (référentiel §12.8) | [`20260724170000_add_parts_negociables_date_souscription_societes.sql`](../supabase/migrations/20260724170000_add_parts_negociables_date_souscription_societes.sql) | Colonnes `societes.parts_negociables` / `date_souscription` — « le conjoint peut revendiquer la qualité d'associé, art. 1832-2 » | **7** `parts_non_negociables_souscrites_pendant_mariage` | Champs ajoutés = champs lus par la règle 7 ; art. 1832-2 cité dans le message affiché |
 | `#8` (référentiel §12.8) | [`20260724180000_add_signe_date_signature_patrimoine_originaire.sql`](../supabase/migrations/20260724180000_add_signe_date_signature_patrimoine_originaire.sql) | Colonnes `patrimoine_originaire.signe` / `date_signature` — « participation aux acquêts sans état descriptif du patrimoine originaire signé (art. 1570) » | **8** `participation_acquets_sans_etat_descriptif_signe` | Champ ajouté = champ lu par la règle 8 ; art. 1570 cité dans le message affiché |
 | `#13` (référentiel §12.8) | [`20260724190000_add_residence_fiscale_etranger.sql`](../supabase/migrations/20260724190000_add_residence_fiscale_etranger.sql) | Colonnes `family_profiles.residence_fiscale_etranger` / `marital_status.residence_fiscale_etranger_conjoint` — « élément d'extranéité détecté (résidence fiscale à l'étranger) » | **10** `extraneite_residence_fiscale_etranger` | Champs ajoutés = champs lus par la règle 10 |
-| `#15` (sans tag §12.8 explicite, même famille de numérotation — cf. [`docs/recapitulatif-2026-07-29.md`](recapitulatif-2026-07-29.md) « Alerte #15 ») | [`20260726120000_create_scenarios_regime.sql`](../supabase/migrations/20260726120000_create_scenarios_regime.sql) + [`20260726120100_add_statut_liberalites.sql`](../supabase/migrations/20260726120100_add_statut_liberalites.sql) | « support de l'alerte #15 (changement de régime avant donation, risque d'abus de droit L. 64 LPF) » / « une donation en projet ne doit pas être traitée comme un acte réalisé » | **14** `changement_regime_proche_donation` | Table `scenarios_regime` + colonne `liberalites.statut` = données lues par la règle 14 ; art. L. 64 LPF cité dans le message affiché |
+| `#15` (sans tag §12.8 explicite, même famille de numérotation — cf. [`docs/recapitulatif-2026-07-29.md`](recapitulatif-2026-07-29.md) « Alerte #15 ») | [`20260726120000_create_scenarios_regime.sql`](../supabase/migrations/20260726120000_create_scenarios_regime.sql) + [`20260726120100_add_statut_liberalites.sql`](../supabase/migrations/20260726120100_add_statut_liberalites.sql) | « support de l'alerte #15 (changement de régime avant donation, risque d'abus de droit L. 64 LPF) » / « une donation en projet ne doit pas être traitée comme un acte réalisé » | **15** `changement_regime_proche_donation` | Table `scenarios_regime` + colonne `liberalites.statut` = données lues par la règle 15 ; art. L. 64 LPF cité dans le message affiché |
 
 **Repère complémentaire (non numéroté §12.8)** : le commentaire `// Simplification
 assumée (cf. Vague 0, alertes #1/#2)` dans [regles.ts:19](../src/lib/alertes/regles.ts#L19)
@@ -143,10 +150,11 @@ numérotation actuelle.
 Le commentaire de [`transmissionHelpers.ts:411`](../src/utils/transmissionHelpers.ts#L411)
 (« pour les besoins des alertes de conseil (§12.8, art. 1094-1) ») documente la
 fonction `hasNonCommonChildren`, partagée par les règles **12**
-(`enfants_non_communs_sans_ddv`) et **13**
-(`enfants_non_communs_communaute_universelle`). L'article 1094-1 CC (quotité
-disponible entre époux / option du conjoint survivant) correspond plus précisément au
-contenu de la règle **12**, qui traite explicitement de la donation au dernier vivant.
+(`enfants_non_communs_sans_ddv`), **13** (`ddv_enfant_non_commun_substitution_1098`,
+ajoutée le 2026-07-30) et **14** (`enfants_non_communs_communaute_universelle`).
+L'article 1094-1 CC (quotité disponible entre époux / option du conjoint survivant)
+correspond plus précisément au contenu des règles **12** et **13**, qui traitent
+explicitement de la donation au dernier vivant.
 
 ## 4. Références externes non résolues
 

@@ -182,6 +182,13 @@ export const REGLES_ALERTES_CONSEIL: AlerteDefinition[] = [
       "Le conjoint ne pourra prétendre qu'à 1/4 en pleine propriété (art. 757). Une donation au dernier vivant lui ouvrirait l'option de l'usufruit total.",
   },
   {
+    id: 'ddv_enfant_non_commun_substitution_1098',
+    niveau: 'moyen',
+    condition: (ctx) => ctx.hasNonCommonChildren && ctx.hasDDV,
+    message:
+      "Donation au dernier vivant en présence d'enfant(s) non commun(s) : si l'acte ne laisse pas le choix entre les 3 quotités de l'art. 1094-1, l'enfant non commun dispose d'une faculté de substitution en usufruit sur l'excédent (art. 1098). À vérifier dans la rédaction de l'acte — non déductible depuis les données de cet outil.",
+  },
+  {
     id: 'enfants_non_communs_communaute_universelle',
     niveau: 'critique',
     condition: (ctx) =>

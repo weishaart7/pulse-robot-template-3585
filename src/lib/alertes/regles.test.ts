@@ -196,6 +196,39 @@ describe('enfants_non_communs_sans_ddv', () => {
   });
 });
 
+describe('ddv_enfant_non_commun_substitution_1098', () => {
+  it('se déclenche : enfant non commun et donation au dernier vivant présente', () => {
+    const ctx = baseContext();
+    ctx.hasNonCommonChildren = true;
+    ctx.hasDDV = true;
+
+    expect(idsOf(evaluerAlertes(ctx))).toContain('ddv_enfant_non_commun_substitution_1098');
+  });
+
+  it('ne se déclenche pas : aucun enfant non commun (tous communs)', () => {
+    const ctx = baseContext();
+    ctx.hasNonCommonChildren = false;
+    ctx.hasDDV = true;
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('ddv_enfant_non_commun_substitution_1098');
+  });
+
+  it('ne se déclenche pas : pas de donation au dernier vivant', () => {
+    const ctx = baseContext();
+    ctx.hasNonCommonChildren = true;
+    ctx.hasDDV = false;
+
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('ddv_enfant_non_commun_substitution_1098');
+  });
+
+  it('ne plante pas et ne se déclenche pas à tort : contexte par défaut (aucune donnée renseignée)', () => {
+    const ctx = baseContext();
+
+    expect(() => evaluerAlertes(ctx)).not.toThrow();
+    expect(idsOf(evaluerAlertes(ctx))).not.toContain('ddv_enfant_non_commun_substitution_1098');
+  });
+});
+
 describe('enfants_non_communs_communaute_universelle', () => {
   it('se déclenche : enfant non commun + communauté universelle + clause d\'attribution intégrale active', () => {
     const ctx = baseContext();
