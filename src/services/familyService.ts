@@ -110,8 +110,8 @@ export interface FamilyLink {
   enfant_renoncant?: boolean;
   enfant_renoncant_de?: string;
   branche_familiale?: string;
-  enfant_de?: string;
-  parent_de?: string;
+  enfant_de?: string | null;
+  parent_de?: string | null;
   exoneration_succession?: boolean;
   enfant_a_charge?: boolean;
   fiscalement_a_charge?: boolean;

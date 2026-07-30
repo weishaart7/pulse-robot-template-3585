@@ -264,6 +264,50 @@ export const useFamilyLinks = () => {
     }
   };
 
+  // Supprime un membre après avoir nullifié enfant_de/parent_de des membres
+  // qui en dépendent (Petit-enfant → Enfant, Arrière petit-enfant →
+  // Petit-enfant, Grand-parent → Parent, Neveu/Nièce → Frère/Sœur, Petit
+  // neveu/nièce → Neveu/Nièce, Cousin/Cousine → Oncle/Tante — cf.
+  // useFamilyLinkLogic.ts::getParentOptions). Sans ce nettoyage, ces membres
+  // gardent une référence fantôme vers un id supprimé, invisible dans le
+  // FamilyGraph de transmissionHelpers.ts (le lien 'child' construit à
+  // partir de link.enfant_de ne peut alors pointer vers personne) : la
+  // souche disparaît silencieusement du calcul de dévolution légale plutôt
+  // que d'échouer bruyamment.
+  const deleteLinkWithCascade = async (id: string) => {
+    try {
+      setSaving(true);
+      const dependents = data.filter(item => item.enfant_de === id);
+      await Promise.all(
+        dependents.map(dep => familyService.updateFamilyLink(dep.id!, { enfant_de: null, parent_de: null }))
+      );
+      await familyService.deleteFamilyLink(id);
+      setData(prev => {
+        const updated = prev
+          .filter(item => item.id !== id)
+          .map(item => (item.enfant_de === id ? { ...item, enfant_de: null, parent_de: null } : item));
+        syncNombreEnfantsCharges(updated);
+        return updated;
+      });
+      toast({
+        title: "Succès",
+        description: dependents.length > 0
+          ? `Membre supprimé avec succès. Rattachement de ${dependents.length} membre(s) réinitialisé.`
+          : "Membre de la famille supprimé avec succès",
+      });
+    } catch (error) {
+      console.error('Error deleting family link with cascade:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le membre de la famille",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const deleteLinks = async (ids: string[]) => {
     try {
       setSaving(true);
@@ -300,8 +344,9 @@ export const useFamilyLinks = () => {
     saving, 
     addLink, 
     updateLink, 
-    deleteLink, 
+    deleteLink,
+    deleteLinkWithCascade,
     deleteLinks,
-    refetch: fetchData 
+    refetch: fetchData
   };
 };

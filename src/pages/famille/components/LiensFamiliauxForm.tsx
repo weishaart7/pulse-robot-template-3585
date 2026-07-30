@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { Plus, Trash2, Edit, Loader2, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useFamilyLinks, useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { FamilyLink } from '@/services/familyService';
 import { FamilyMemberFormDialog, FamilyMemberFormDialogHandle } from '@/components/family/FamilyMemberFormDialog';
@@ -57,17 +67,28 @@ export function LiensFamiliauxForm() {
     saving,
     addLink,
     updateLink,
-    deleteLink
+    deleteLinkWithCascade
   } = useFamilyLinks();
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
   const dialogRef = useRef<FamilyMemberFormDialogHandle>(null);
+  const [memberToDelete, setMemberToDelete] = useState<FamilyLink | null>(null);
 
-  const handleDeleteMember = async (id: string) => {
+  // Membres dont enfant_de pointe vers ce membre (Petit-enfant → Enfant,
+  // Arrière petit-enfant → Petit-enfant, etc. — cf. useFamilyLinkLogic.ts::
+  // getParentOptions) : à afficher dans la confirmation, car leur
+  // rattachement sera réinitialisé par deleteLinkWithCascade.
+  const dependentsOf = (member: FamilyLink) =>
+    familyLinks.filter(link => link.enfant_de === member.id);
+
+  const confirmDeleteMember = async () => {
+    if (!memberToDelete?.id) return;
     try {
-      await deleteLink(id);
+      await deleteLinkWithCascade(memberToDelete.id);
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
+    } finally {
+      setMemberToDelete(null);
     }
   };
 
@@ -146,7 +167,7 @@ export function LiensFamiliauxForm() {
                             <Edit className="h-4 w-4 mr-2" />
                             Modifier
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDeleteMember(member.id!)}>
+                          <DropdownMenuItem onClick={() => setMemberToDelete(member)}>
                             <Trash2 className="h-4 w-4 mr-2" />
                             Supprimer
                           </DropdownMenuItem>
@@ -168,5 +189,40 @@ export function LiensFamiliauxForm() {
         addLink={addLink}
         updateLink={updateLink}
       />
+
+      <AlertDialog open={!!memberToDelete} onOpenChange={(open) => { if (!open) setMemberToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce membre de la famille ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {memberToDelete && (
+                <>
+                  Cette action supprimera définitivement{' '}
+                  <strong>{memberToDelete.prenom ? `${memberToDelete.prenom} ` : ''}{memberToDelete.nom}</strong>{' '}
+                  ({memberToDelete.lien_familial}). Cette action est irréversible.
+                  {dependentsOf(memberToDelete).length > 0 && (
+                    <>
+                      <p className="mt-2">
+                        Le rattachement des membres suivants sera réinitialisé, car ils dépendent de ce membre :
+                      </p>
+                      <ul className="list-disc pl-5 mt-1">
+                        {dependentsOf(memberToDelete).map(dep => (
+                          <li key={dep.id}>{dep.prenom ? `${dep.prenom} ` : ''}{dep.nom} ({dep.lien_familial})</li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setMemberToDelete(null)}>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteMember} disabled={saving}>
+              {saving ? 'Suppression...' : 'Supprimer'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>;
 }
