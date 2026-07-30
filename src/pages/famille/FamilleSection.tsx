@@ -8,6 +8,7 @@ import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
 import { FamilyTreeCards } from '@/components/famille/FamilyTreeCards';
 import { FamilyMemberFormDialog, FamilyMemberFormDialogHandle } from '@/components/family/FamilyMemberFormDialog';
 import { getInitials } from '@/lib/family/initials';
+import { isSingleStatus } from '@/lib/family/maritalStatus';
 import { User, Plus, ArrowLeft } from 'lucide-react';
 
 type EditView = 'client';
@@ -23,9 +24,8 @@ const FamilleSection = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('ma-famille');
   const [editView, setEditView] = useState<EditView | null>(null);
-  const [isSingle, setIsSingle] = useState(false);
   const { data: familyProfile, refetch: refetchProfile } = useFamilyProfile();
-  const { data: maritalData, saveData: saveMaritalData } = useMaritalStatus();
+  const { data: maritalData, setStatutCouple } = useMaritalStatus();
   const { data: familyLinks = [], saving: savingLinks, addLink, updateLink } = useFamilyLinks();
   const memberDialogRef = useRef<FamilyMemberFormDialogHandle>(null);
 
@@ -34,15 +34,17 @@ const FamilleSection = () => {
     { id: 'liens-familiaux', label: 'Liens familiaux' },
   ];
 
+  const relationStatus = (maritalData?.statut_couple as string) || '';
+  const isSingle = isSingleStatus(relationStatus);
+  const hasPartner = ['Concubinage', 'Pacsé(e)', 'Marié(e)'].includes(relationStatus);
+
   const handleToggleSingle = async (checked: boolean) => {
-    setIsSingle(checked);
     if (checked) {
-      await saveMaritalData({ statut_couple: 'Célibataire', parent_isole: false } as any);
+      await setStatutCouple('Célibataire', { parent_isole: false });
+    } else {
+      await setStatutCouple(null);
     }
   };
-
-  const relationStatus = (maritalData?.statut_couple as string) || '';
-  const hasPartner = ['Concubinage', 'Pacsé(e)', 'Marié(e)'].includes(relationStatus);
 
   const partnerName = maritalData?.prenom_conjoint && maritalData?.nom_conjoint
     ? `${maritalData.prenom_conjoint} ${maritalData.nom_conjoint}`

@@ -3,6 +3,7 @@ import { familyService, FamilyProfile, MaritalStatus, FamilyLink } from '@/servi
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { compterEnfantsFiscalementACharge } from '@/lib/fiscal';
+import { buildStatutCoupleWrite } from '@/lib/family/maritalStatus';
 
 const syncNombreEnfantsCharges = async (links: FamilyLink[]) => {
   try {
@@ -147,11 +148,18 @@ export const useMaritalStatus = () => {
     }
   };
 
+  // Point d'écriture unique de statut_couple, appelé par FamilleSection.tsx
+  // (case Célibataire), FicheClientForm.tsx (select fiche client) et
+  // PartnerForm.tsx (payload conjoint) — plutôt que chacun n'upsert sa propre
+  // construction partielle du champ.
+  const setStatutCouple = (statutCouple: string | null, extra?: Partial<MaritalStatus>) =>
+    saveData(buildStatutCoupleWrite(statutCouple, extra));
+
   useEffect(() => {
     fetchData();
   }, [isAuthenticated]);
 
-  return { data, loading, saving, saveData, refetch: fetchData };
+  return { data, loading, saving, saveData, setStatutCouple, refetch: fetchData };
 };
 
 export const useFamilyData = () => {

@@ -74,7 +74,7 @@ type Section = 'informations-generales' | 'coordonnees';
 export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { data: maritalData, loading, saving, saveData } = useMaritalStatus();
+  const { data: maritalData, loading, saving, setStatutCouple } = useMaritalStatus();
   const [activeSection, setActiveSection] = useState<Section>('informations-generales');
 
   const form = useForm<FormData>({
@@ -138,7 +138,6 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
   const onSubmit = async (formData: FormData) => {
     try {
       const supabaseData = {
-        statut_couple: formData.statutCouple,
         civilite_conjoint: formData.civilitePartenaire,
         nom_conjoint: formData.nomPartenaire,
         nom_jeune_fille_conjoint: formData.nomJeuneFillePartenaire,
@@ -163,7 +162,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
         pays_conjoint: formData.paysPartenaire,
       };
 
-      await saveData(supabaseData);
+      await setStatutCouple(formData.statutCouple ?? null, supabaseData);
       toast({ title: "Succès", description: "Les informations ont été sauvegardées avec succès." });
       onSuccess?.();
     } catch (error) {

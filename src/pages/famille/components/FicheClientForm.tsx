@@ -88,7 +88,7 @@ type Section = 'informations-generales' | 'coordonnees';
 export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) {
   const [activeSection, setActiveSection] = useState<Section>('informations-generales');
   const { data, loading, saving, saveData } = useFamilyProfile();
-  const { data: maritalData, saveData: saveMaritalData } = useMaritalStatus();
+  const { data: maritalData, setStatutCouple } = useMaritalStatus();
   const { user } = useAuth();
   const { submitSecureForm } = useSecureForm({ 
     formName: 'family_profile',
@@ -241,9 +241,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
         },
         user?.id
       );
-      if (formData.statutCouple) {
-        await saveMaritalData({ statut_couple: formData.statutCouple } as any);
-      }
+      await setStatutCouple(formData.statutCouple ?? null);
       onSuccess?.();
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);

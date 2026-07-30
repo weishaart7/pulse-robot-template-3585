@@ -29,7 +29,7 @@ export interface FamilyProfile {
 export interface MaritalStatus {
   id?: string;
   user_id?: string;
-  statut_couple?: string;
+  statut_couple?: string | null;
   nom_conjoint?: string;
   prenom_conjoint?: string;
   civilite_conjoint?: string;
