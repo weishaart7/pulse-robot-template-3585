@@ -39,7 +39,6 @@ export const membreFamilleSchema = z.object({
   mandat_protection_future: z.boolean().default(false),
   date_mandat_protection_future: z.date().optional(),
   personne_a_charge: z.boolean().default(false),
-  est_dirigeant: z.boolean().default(false)
 });
 export type MembreFamille = z.infer<typeof membreFamilleSchema>;
 
@@ -57,7 +56,6 @@ const DEFAULT_VALUES: MembreFamille = {
   mesure_protection_juridique: 'Aucune',
   mandat_protection_future: false,
   personne_a_charge: false,
-  est_dirigeant: false,
 };
 
 export interface FamilyMemberFormDialogHandle {
@@ -132,7 +130,6 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
           mandat_protection_future: member.mandat_protection_future || false,
           date_mandat_protection_future: member.date_mandat_protection_future ? new Date(member.date_mandat_protection_future) : undefined,
           personne_a_charge: member.personne_a_charge || false,
-          est_dirigeant: member.est_dirigeant || false,
         });
         setDialogOpen(true);
       },
@@ -164,7 +161,6 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
           mandat_protection_future: data.mandat_protection_future,
           date_mandat_protection_future: data.date_mandat_protection_future ? format(data.date_mandat_protection_future, 'yyyy-MM-dd') : undefined,
           personne_a_charge: data.personne_a_charge,
-          est_dirigeant: data.est_dirigeant,
         };
         if (editingMember) {
           await updateLink(editingMember.id!, memberData);

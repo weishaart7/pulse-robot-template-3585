@@ -30,8 +30,6 @@ export interface AlerteContext {
   conventionPacs?: string;
   pasDeContratMariage?: boolean;
   clausesContrat?: Record<string, { enabled?: boolean; options?: { residencePrincipale?: boolean; maintienDivorce?: boolean } }>;
-  clientEstDirigeant?: boolean;
-  conjointEstDirigeant?: boolean;
   clientResidenceFiscaleEtranger?: boolean;
   conjointResidenceFiscaleEtranger?: boolean;
   // Éléments d'extranéité du régime matrimonial (DIP, §4.4, §12.1) : simple

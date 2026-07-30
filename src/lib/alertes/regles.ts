@@ -13,14 +13,6 @@ const isCommunauteUniverselle = (regime?: string) => normalize(regime).includes(
 // (cf. src/components/famille/RelationInfoForm.tsx pour les libellés exacts).
 const isRegimeCommunautaire = (regime?: string) => normalize(regime).includes('communaute');
 
-const isSocieteAcquets = (regime?: string) => {
-  const r = normalize(regime);
-  return r.includes('separation') && r.includes('societe') && r.includes('acquets');
-};
-
-const isDirigeant = (ctx: Pick<AlerteContext, 'clientEstDirigeant' | 'conjointEstDirigeant'>) =>
-  !!ctx.clientEstDirigeant || !!ctx.conjointEstDirigeant;
-
 // Abattement en ligne directe (art. 779 CGI), par parent et par enfant.
 const ABATTEMENT_LIGNE_DIRECTE = 100000;
 
@@ -121,22 +113,6 @@ export const REGLES_ALERTES_CONSEIL: AlerteDefinition[] = [
       return ctx.patrimoineNet > 2 * ABATTEMENT_LIGNE_DIRECTE * nombreEnfants;
     },
     message: "Comparer le coût fiscal global sur les deux décès avec l'option usufruit au premier décès.",
-  },
-  {
-    id: 'dirigeant_regime_communautaire',
-    niveau: 'eleve',
-    condition: (ctx) => isRegimeCommunautaire(ctx.regimeMatrimonial) && isDirigeant(ctx),
-    message: 'Les dettes professionnelles engagent la masse commune (art. 1413). Vérifier les cautionnements (art. 1415).',
-  },
-  {
-    id: 'dirigeant_societe_acquets_residence_principale',
-    niveau: 'moyen',
-    condition: (ctx) =>
-      isSocieteAcquets(ctx.regimeMatrimonial) &&
-      !!ctx.clausesContrat?.societe_acquets?.enabled &&
-      !!ctx.clausesContrat?.societe_acquets?.options?.residencePrincipale &&
-      isDirigeant(ctx),
-    message: 'Le logement devient le gage des créanciers professionnels (art. 1413). Arbitrage à documenter.',
   },
   {
     id: 'separation_biens_rp_indivise_remboursement_unilateral',
