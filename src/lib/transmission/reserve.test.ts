@@ -1,9 +1,29 @@
 import { describe, it, expect } from 'vitest';
-import { computeReserveAndQD, imputeLiberalites, computeRapport, applyReductions, ReductionResult } from './reserve';
+import { computeMasseCalcul, computeReserveAndQD, imputeLiberalites, computeRapport, applyReductions, ReductionResult } from './reserve';
 import { Liberalite, PatrimonySnapshot } from './types';
 
 const noReduction: ReductionResult = { reductions: [], totalReduit: 0 };
 const patrimony300k: PatrimonySnapshot = { date: '2026-07-17', biensExistants: 300000, passifs: 0 };
+
+describe('computeMasseCalcul', () => {
+  it('écrête à 0 le solde (biens - passifs) avant réunion fictive quand le passif excède l\'actif (art. 922)', () => {
+    // Audit 2026-08 (T2) : biens 100 000, passifs 150 000 -> solde -50 000, écrêté à 0.
+    // + donation 200 000 -> masse de calcul attendue 200 000 (et non 150 000 sans écrêtement).
+    const patrimony: PatrimonySnapshot = { date: '2026-08-05', biensExistants: 100000, passifs: 150000 };
+    const liberalites: Liberalite[] = [
+      {
+        id: 'don-1',
+        type: 'donation',
+        beneficiaireId: 'enfant1',
+        valeur: 200000,
+        date: '2020-01-01',
+        typeImputation: 'avance_part',
+      },
+    ];
+
+    expect(computeMasseCalcul(patrimony, liberalites)).toBe(200000);
+  });
+});
 
 // 2 enfants, pas de conjoint : réserve enfants = 2/3, QD = 1/3.
 // masseCalcul = 300 000 -> reserveEnfants = 200 000, quotiteDisponible = 100 000.

@@ -28,8 +28,9 @@ export function computeMasseCalcul(
   patrimony: PatrimonySnapshot, 
   liberalites: Liberalite[]
 ): number {
-  // Biens existants au décès - dettes
-  let masseCalcul = patrimony.biensExistants - patrimony.passifs;
+  // Biens existants au décès - dettes, écrêté à 0 si le passif excède l'actif
+  // (art. 922 : le solde n'est jamais négatif pour la masse de calcul)
+  let masseCalcul = Math.max(0, patrimony.biensExistants - patrimony.passifs);
   
   // + toutes donations pour leur valeur au décès
   const donations = liberalites.filter(lib => lib.type === "donation");
