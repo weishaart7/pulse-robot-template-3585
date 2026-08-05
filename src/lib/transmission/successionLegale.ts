@@ -285,16 +285,16 @@ function calculateBrancheB(
         });
         result.explicationsTexte.push(`Chaque parent reçoit 1/2.`);
       } else {
-        // Un seul parent sans fratrie → parent 1/4, reste 3/4 passe à la fente (B5)
+        // Un seul parent sans fratrie → parent 1/2, reste 1/2 passe à la fente (B5, art. 738-1)
         result.heritiers.push({
           personId: parentsVivants[0].id, nom: parentsVivants[0].nom, prenom: parentsVivants[0].prenom || '',
-          lien: 'parent', quotePart: 0.25,
+          lien: 'parent', quotePart: 0.5,
           typeQuotePart: 'pleine_propriete', ordre: 2
         });
-        // 3/4 restants vont à la fente pour l'autre branche
-        applyFenteSuccessorale(graph, result, personnesVivantes, 0.75);
+        // 1/2 restant va à la fente pour l'autre branche
+        applyFenteSuccessorale(graph, result, personnesVivantes, 0.5);
         result.explicationsTexte.push(
-          `Le parent survivant reçoit 1/4, les 3/4 restants sont attribués via la fente successorale.`
+          `Le parent survivant reçoit 1/2, l'autre 1/2 est attribuée via la fente successorale.`
         );
       }
     }

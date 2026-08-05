@@ -126,6 +126,33 @@ describe('fente successorale (applyFenteSuccessorale)', () => {
   });
 });
 
+describe('un seul parent sans fratrie, ascendants dans l\'autre branche (art. 738-1, §2.6)', () => {
+  it('mère seule survivante, pas de frère/sœur, grand-père paternel vivant, 300 000 € → mère 150 000 €, branche paternelle 150 000 €', () => {
+    // Reprend l'exemple chiffré de docs/audit-transmission-devolution-conjoint-2026-08.md §2.6 :
+    // le code attribuait à tort 1/4 au parent survivant (confusion avec la ligne "parent + fratrie"
+    // du tableau, qui ne s'applique pas ici puisque ce cas exclut explicitement la fratrie) et 3/4
+    // à la fente, au lieu des 1/2 et 1/2 prescrits par l'art. 738-1.
+    const patrimoine = 300_000;
+    const g = graph({
+      persons: [
+        defunt,
+        person({ id: 'MERE', nom: 'Mere', lienFamilial: 'Parent' }),
+        person({ id: 'GPP', nom: 'GrandPereP', lienFamilial: 'Grand-parent', brancheFamiliale: 'Branche paternelle' }),
+      ],
+    });
+
+    const result = calculateSuccessionLegale(g);
+
+    expect(result.heritiers).toHaveLength(2);
+    const mere = result.heritiers.find(h => h.personId === 'MERE');
+    const gpp = result.heritiers.find(h => h.personId === 'GPP');
+    expect(mere?.quotePart).toBe(0.5);
+    expect(gpp?.quotePart).toBe(0.5);
+    expect((mere?.quotePart ?? 0) * patrimoine).toBe(150_000);
+    expect((gpp?.quotePart ?? 0) * patrimoine).toBe(150_000);
+  });
+});
+
 describe('renonciation à succession (Règle A)', () => {
   it('5. enfant unique renonçant sans descendance → bascule sur le régime "pas d\'enfant" (les parents héritent), pas de part orpheline', () => {
     const g = graph({
