@@ -258,6 +258,28 @@ describe('computeRapport', () => {
     expect(result.massePartageable).toBe(330000);
   });
 
+  it('donation avance_part au conjoint : jamais tenu au rapport (art. 857), non réintégrée dans la masse partageable', () => {
+    // Audit 2026-08 (T5) : le conjoint n'est pas dans childrenIds. Une donation
+    // marquée 'avance_part' à son profit ne doit pas être réintégrée dans la
+    // masse à partager, contrairement à une donation à un enfant réservataire.
+    const donations: Liberalite[] = [
+      {
+        id: 'don-conjoint',
+        type: 'donation',
+        beneficiaireId: 'conjoint',
+        valeur: 50000,
+        date: '2020-01-01',
+        typeImputation: 'avance_part',
+      },
+    ];
+
+    const result = computeRapport(patrimony300k, donations, noReduction, ['enfant1', 'enfant2']);
+
+    expect(result.rapports).toEqual([]);
+    // Non réintégrée : massePartageable reste biensExistants - passifs = 300 000.
+    expect(result.massePartageable).toBe(300000);
+  });
+
   it('scénario combiné : legs avance_part + legs hors_part + donation avance_part, 2 enfants, sans dépassement de QD', () => {
     const liberalites: Liberalite[] = [
       {
