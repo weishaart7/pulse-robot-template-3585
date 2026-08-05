@@ -17,7 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAssets } from '@/hooks/useAssets';
 import { useToast } from '@/hooks/use-toast';
 import { liberaliteService, Liberalite, LiberaliteTypeImputation } from '@/services/liberaliteService';
-import { CLAUSE_DISPENSE_RAPPORT } from '@/lib/transmission/types';
+import { CLAUSE_DISPENSE_RAPPORT, CLAUSE_RAPPORT_FORFAITAIRE } from '@/lib/transmission/types';
 
 interface FamilyMember {
   id: string;
@@ -59,6 +59,9 @@ const DEFAULT_FORM_DATA = {
   date: undefined as Date | undefined,
   notes: '',
   statut: 'acte' as 'acte' | 'projet',
+  // Montant forfaitaire de rapport (art. 860 al. 4, §9.8), pertinent
+  // uniquement si CLAUSE_RAPPORT_FORFAITAIRE est cochée (audit T6, 2026-08).
+  montantRapportForfaitaire: undefined as number | undefined,
 };
 
 export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: DonationFormProps) => {
@@ -93,7 +96,9 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
     // Chaîne partagée avec reserve.ts (via lib/transmission/types.ts) : ne pas
     // modifier ce libellé sans mettre à jour CLAUSE_DISPENSE_RAPPORT.
     CLAUSE_DISPENSE_RAPPORT,
-    'Rapport forfaitaire : fixer contractuellement une valeur figée au rapport',
+    // Chaîne partagée avec reserve.ts : ne pas modifier ce libellé sans
+    // mettre à jour CLAUSE_RAPPORT_FORFAITAIRE.
+    CLAUSE_RAPPORT_FORFAITAIRE,
     'Exclusion ou inclusion dans la communauté : déterminer si le bien reste propre',
     'Administration spéciale : désigner un administrateur autre que les parents',
     'Obligation d\'emploi : imposer une affectation précise des fonds',
@@ -177,6 +182,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
         date: first.date_acte ? new Date(first.date_acte) : undefined,
         notes: first.description || '',
         statut: first.statut || 'acte',
+        montantRapportForfaitaire: first.montant_rapport_forfaitaire ?? undefined,
       });
       setSelectedClauses(first.clauses || []);
       setSelectedAssets((first.biens || []).map(b => ({ id: b.asset_id, valeurDonation: b.valeur || 0 })));
@@ -234,6 +240,22 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
       return;
     }
 
+    // Audit T6, 2026-08 : une clause "Rapport forfaitaire" cochée sans montant
+    // renseigné serait silencieusement sans effet sur le calcul (même défaut
+    // que celui corrigé pour "Type de donation", cf. T4) — bloquée ici plutôt
+    // que sauvegardée dans cet état.
+    if (
+      selectedClauses.includes(CLAUSE_RAPPORT_FORFAITAIRE) &&
+      (formData.montantRapportForfaitaire === undefined || formData.montantRapportForfaitaire <= 0)
+    ) {
+      toast({
+        title: "Erreur",
+        description: "Renseignez un montant forfaitaire de rapport strictement positif, ou décochez la clause.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     const createdIds: string[] = [];
     try {
@@ -259,6 +281,9 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
           type_imputation: (formData.typeDonation || undefined) as LiberaliteTypeImputation | undefined,
           realise_par: formData.realiseePar || undefined,
           clauses: selectedClauses.length > 0 ? selectedClauses : undefined,
+          montant_rapport_forfaitaire: selectedClauses.includes(CLAUSE_RAPPORT_FORFAITAIRE)
+            ? formData.montantRapportForfaitaire
+            : undefined,
           biens: biens.length > 0 ? biens : undefined,
           demembrement: formData.demembrement !== 'aucun' ? formData.demembrement : undefined,
           prise_en_charge_droits: formData.droitsParDonateur,
@@ -420,15 +445,41 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
             {showClauses && (
               <CardContent className="space-y-3">
                 {clausesOptions.map((clause) => (
-                  <div key={clause} className="flex items-start space-x-2">
-                    <Checkbox
-                      id={clause}
-                      checked={selectedClauses.includes(clause)}
-                      onCheckedChange={() => handleClauseToggle(clause)}
-                    />
-                    <Label htmlFor={clause} className="text-sm leading-5">
-                      {clause}
-                    </Label>
+                  <div key={clause} className="space-y-2">
+                    <div className="flex items-start space-x-2">
+                      <Checkbox
+                        id={clause}
+                        checked={selectedClauses.includes(clause)}
+                        onCheckedChange={() => handleClauseToggle(clause)}
+                      />
+                      <Label htmlFor={clause} className="text-sm leading-5">
+                        {clause}
+                      </Label>
+                    </div>
+                    {clause === CLAUSE_RAPPORT_FORFAITAIRE && selectedClauses.includes(clause) && (
+                      <div className="ml-6">
+                        <Label htmlFor="montantRapportForfaitaire" className="text-sm font-medium">
+                          Montant forfaitaire de rapport *
+                        </Label>
+                        <Input
+                          id="montantRapportForfaitaire"
+                          type="number"
+                          min="0"
+                          value={formData.montantRapportForfaitaire ?? ''}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            montantRapportForfaitaire: e.target.value === '' ? undefined : Number(e.target.value)
+                          })}
+                          placeholder="Ex : 100000"
+                          className="mt-1 max-w-xs"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Ce montant remplace la valeur pleine dans le rapport ; l'écart avec la valeur
+                          réelle constitue un avantage hors part successorale imputé sur la quotité
+                          disponible (art. 860 al. 4).
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ))}
               </CardContent>

@@ -36,10 +36,12 @@ export interface LiberaliteRow {
   biens?: unknown;
   pourcentage?: number | null;
   statut?: string | null;
-  // Clauses insérées dans l'acte (DonationForm.tsx::clausesOptions). Seule
-  // CLAUSE_DISPENSE_RAPPORT (cf. lib/transmission/types.ts) a un effet sur le
-  // calcul à ce jour — audit Bloc 1, T6, 2026-08.
+  // Clauses insérées dans l'acte (DonationForm.tsx::clausesOptions). Seules
+  // CLAUSE_DISPENSE_RAPPORT et CLAUSE_RAPPORT_FORFAITAIRE (cf.
+  // lib/transmission/types.ts) ont un effet sur le calcul à ce jour — audit
+  // Bloc 1, T6, 2026-08.
   clauses?: string[] | null;
+  montant_rapport_forfaitaire?: number | null;
 }
 
 interface AssetValeur {
@@ -121,7 +123,8 @@ export function buildTransmissionLiberalites(
       date: row.date_acte || new Date().toISOString().split('T')[0],
       typeImputation: (row.type_imputation as Liberalite['typeImputation']) || undefined,
       beneficiaireName: row.beneficiaire_nom,
-      clauses: row.clauses || undefined
+      clauses: row.clauses || undefined,
+      montantRapportForfaitaire: row.montant_rapport_forfaitaire ?? undefined
     });
   }
 

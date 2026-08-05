@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { computeMasseCalcul, computeReserveAndQD, imputeLiberalites, computeRapport, applyReductions, ReductionResult } from './reserve';
-import { Liberalite, PatrimonySnapshot, CLAUSE_DISPENSE_RAPPORT } from './types';
+import { Liberalite, PatrimonySnapshot, CLAUSE_DISPENSE_RAPPORT, CLAUSE_RAPPORT_FORFAITAIRE } from './types';
 
 const noReduction: ReductionResult = { reductions: [], totalReduit: 0 };
 const patrimony300k: PatrimonySnapshot = { date: '2026-07-17', biensExistants: 300000, passifs: 0 };
@@ -245,6 +245,76 @@ describe('dispense de rapport (audit Bloc 1, T6, §9.4)', () => {
     expect(result.rapports).toEqual([]);
     // Non réintégrée : massePartageable reste biensExistants - passifs = 300 000.
     expect(result.massePartageable).toBe(300000);
+  });
+});
+
+describe('rapport forfaitaire (audit Bloc 1, T6, §9.8)', () => {
+  // Exemple référentiel (§9.8) adapté à un cas complet à 2 enfants, pas de
+  // conjoint : maison donnée à Aurélien, rapport forfaitaire fixé à
+  // 100 000 €, valeur réelle 120 000 € -> 100 000 € sur la réserve
+  // d'Aurélien, 20 000 € en avantage hors part sur la QD, 100 000 € rapportés.
+  const donationForfaitaire = (): Liberalite => ({
+    id: 'don-forfaitaire',
+    type: 'donation',
+    beneficiaireId: 'aurelien',
+    valeur: 120000,
+    date: '2020-01-01',
+    typeImputation: 'avance_part',
+    clauses: [CLAUSE_RAPPORT_FORFAITAIRE],
+    montantRapportForfaitaire: 100000,
+  });
+
+  it('imputeLiberalites : le forfait (pas la valeur pleine) est imputé sur la réserve, l\'écart est un avantage hors part sur la QD', () => {
+    // 2 enfants, pas de conjoint : masseCalcul = 300 000 + 120 000 = 420 000.
+    // reserveEnfants = 2/3 * 420 000 = 280 000, QD = 140 000.
+    // réserve personnelle par enfant = 280 000 / 2 = 140 000.
+    const reserveResult = computeReserveAndQD(420000, 2, false);
+    const donations = [donationForfaitaire()];
+
+    const result = imputeLiberalites(donations, reserveResult, ['aurelien', 'blandine']);
+
+    const don = result.donations.find((d) => d.liberaliteId === 'don-forfaitaire');
+    // Forfait (100 000) < réserve personnelle (140 000) : intégralement absorbé par la réserve.
+    expect(don?.imputeSurReserve).toBe(100000);
+    // Avantage hors part = 120 000 - 100 000 = 20 000, imputé sur la QD.
+    expect(don?.imputeSurQD).toBe(20000);
+    expect(result.qdRestante).toBe(reserveResult.quotiteDisponible - 20000);
+    expect(result.reserveAtteinte).toBe(false);
+  });
+
+  it('computeRapport : le forfait est rapporté, pas la valeur pleine', () => {
+    const donations = [donationForfaitaire()];
+
+    const result = computeRapport(patrimony300k, donations, noReduction, ['aurelien', 'blandine']);
+
+    expect(result.rapports).toEqual([{ personId: 'aurelien', montantRapport: 100000 }]);
+    // Réintégrée pour le seul montant du forfait : 300 000 + 100 000 = 400 000.
+    // Les 20 000 € d'avantage hors part ne sont jamais rapportés.
+    expect(result.massePartageable).toBe(400000);
+  });
+
+  it('la clause est ignorée si aucun montant n\'est renseigné (défense en profondeur) : comportement d\'une donation avance_part ordinaire', () => {
+    const donations: Liberalite[] = [
+      {
+        id: 'don-forfaitaire-sans-montant',
+        type: 'donation',
+        beneficiaireId: 'aurelien',
+        valeur: 120000,
+        date: '2020-01-01',
+        typeImputation: 'avance_part',
+        clauses: [CLAUSE_RAPPORT_FORFAITAIRE],
+        // montantRapportForfaitaire volontairement absent
+      },
+    ];
+    const reserveResult = computeReserveAndQD(420000, 2, false);
+
+    const imputation = imputeLiberalites(donations, reserveResult, ['aurelien', 'blandine']);
+    const don = imputation.donations.find((d) => d.liberaliteId === 'don-forfaitaire-sans-montant');
+    expect(don?.imputeSurReserve).toBe(120000);
+    expect(don?.imputeSurQD).toBe(0);
+
+    const rapport = computeRapport(patrimony300k, donations, noReduction, ['aurelien', 'blandine']);
+    expect(rapport.rapports).toEqual([{ personId: 'aurelien', montantRapport: 120000 }]);
   });
 });
 

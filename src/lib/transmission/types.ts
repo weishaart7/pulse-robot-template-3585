@@ -61,6 +61,11 @@ export interface PatrimonySnapshot {
 export const CLAUSE_DISPENSE_RAPPORT =
   "Dispense de rapport : la donation n'est pas rapportée à la succession";
 
+// Libellé exact de la clause "Rapport forfaitaire" — même principe de
+// partage que CLAUSE_DISPENSE_RAPPORT ci-dessus (audit Bloc 1, T6, 2026-08).
+export const CLAUSE_RAPPORT_FORFAITAIRE =
+  'Rapport forfaitaire : fixer contractuellement une valeur figée au rapport';
+
 export interface Liberalite {
   id: string;
   type: "donation" | "legs";
@@ -97,8 +102,18 @@ export interface Liberalite {
   // la porte est réputée "hors part successorale" pour l'imputation ET le
   // rapport (§9.4 — la dispense reclasse la donation, elle ne fait pas que
   // supprimer le rapport d'une donation par ailleurs en avancement de part).
-  // Les 9 autres clauses du catalogue restent purement déclaratives.
+  // CLAUSE_RAPPORT_FORFAITAIRE est également lue par reserve.ts (couplée à
+  // montantRapportForfaitaire ci-dessous). Les 9 autres clauses du catalogue
+  // restent purement déclaratives.
   clauses?: string[];
+  // Montant forfaitaire de rapport (art. 860 al. 4, §9.8), pertinent
+  // uniquement si `clauses` porte CLAUSE_RAPPORT_FORFAITAIRE. Remplace la
+  // valeur pleine dans le rapport ; l'écart avec `valeur` (si positif)
+  // constitue un avantage hors part successorale imputé sur la QD
+  // (reserve.ts::imputeLiberalites) — cf. exemple référentiel : donation
+  // 100 000 €, rapport forfaitaire 100 000 €, valeur au partage 120 000 €
+  // → 100 000 € sur la réserve, 20 000 € sur la QD, 100 000 € rapportés.
+  montantRapportForfaitaire?: number;
 }
 
 export interface TransmissionParams {

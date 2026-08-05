@@ -39,6 +39,11 @@ export interface Liberalite {
   type_imputation?: LiberaliteTypeImputation;
   realise_par?: string;
   clauses?: string[];
+  // Montant forfaitaire de rapport (art. 860 al. 4, §9.8), pertinent
+  // uniquement si `clauses` porte la clause "Rapport forfaitaire" — cf.
+  // lib/transmission/types.ts::CLAUSE_RAPPORT_FORFAITAIRE. DonationForm.tsx
+  // bloque la sauvegarde de cette clause sans montant renseigné.
+  montant_rapport_forfaitaire?: number;
   biens?: LiberaliteBien[];
   demembrement?: string;
   prise_en_charge_droits?: boolean;

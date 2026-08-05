@@ -1,4 +1,4 @@
-import { PatrimonySnapshot, Liberalite, CLAUSE_DISPENSE_RAPPORT } from './types';
+import { PatrimonySnapshot, Liberalite, CLAUSE_DISPENSE_RAPPORT, CLAUSE_RAPPORT_FORFAITAIRE } from './types';
 
 /**
  * Une donation dispensée de rapport (art. 860 al. 3, §9.4) est reclassée
@@ -8,6 +8,20 @@ import { PatrimonySnapshot, Liberalite, CLAUSE_DISPENSE_RAPPORT } from './types'
  */
 function isDispenseeDeRapport(liberalite: Liberalite): boolean {
   return !!liberalite.clauses?.includes(CLAUSE_DISPENSE_RAPPORT);
+}
+
+/**
+ * Montant forfaitaire de rapport (art. 860 al. 4, §9.8), si la clause est
+ * active ET qu'un montant strictement positif a été renseigné — sinon
+ * `undefined`, pour retomber sur le comportement normal (défense en
+ * profondeur : DonationForm.tsx bloque déjà la sauvegarde d'une clause sans
+ * montant, mais une ligne créée avant ce correctif ne doit pas planter ni
+ * produire un résultat silencieusement faux).
+ */
+function getMontantRapportForfaitaire(liberalite: Liberalite): number | undefined {
+  if (!liberalite.clauses?.includes(CLAUSE_RAPPORT_FORFAITAIRE)) return undefined;
+  const montant = liberalite.montantRapportForfaitaire;
+  return typeof montant === 'number' && montant > 0 ? montant : undefined;
 }
 
 export interface ReserveResult {
@@ -137,21 +151,39 @@ export function imputeLiberalites(
     if (childrenIds.includes(donation.beneficiaireId as string) &&
         donation.typeImputation !== "hors_part" &&
         !isDispenseeDeRapport(donation)) {
-      // Donation en avancement de part : s'impute d'abord sur la part de réserve du bénéficiaire
+      // Donation en avancement de part : s'impute d'abord sur la part de réserve du bénéficiaire.
+      // Rapport forfaitaire (art. 860 al. 4, §9.8) : c'est le FORFAIT, pas la valeur pleine,
+      // qui suit ce chemin normal (réserve puis excédent sur QD) — l'écart entre la valeur
+      // réelle et le forfait est un avantage hors part successorale distinct, imputé
+      // directement sur la QD, jamais sur la réserve personnelle du bénéficiaire.
+      const forfait = getMontantRapportForfaitaire(donation);
+      const valeurImputable = forfait ?? donation.valeur;
       const reservePersonnelle = reserveResult.reserveEnfants / childrenIds.length;
-      imputeSurReserve = Math.min(donation.valeur, reservePersonnelle);
+      imputeSurReserve = Math.min(valeurImputable, reservePersonnelle);
       reserveEnfantsRestante -= imputeSurReserve;
 
-      const excedent = donation.valeur - imputeSurReserve;
-      if (excedent > 0) {
-        // L'excédent s'impute sur la quotité disponible. besoinSurQD garde
+      const excedentForfait = valeurImputable - imputeSurReserve;
+      let besoinSurQDprincipal = 0;
+      let imputeSurQDprincipal = 0;
+      if (excedentForfait > 0) {
+        // L'excédent s'impute sur la quotité disponible. besoinSurQDprincipal garde
         // l'excédent réel, non plafonné par le reliquat de QD déjà entamé par
         // les libéralités précédentes : sert à détecter le dépassement réel
         // (reserveAtteinte) et à répartir la réduction proportionnellement.
-        besoinSurQD = excedent;
-        imputeSurQD = Math.min(excedent, qdRestante);
-        qdRestante -= imputeSurQD;
+        besoinSurQDprincipal = excedentForfait;
+        imputeSurQDprincipal = Math.min(excedentForfait, qdRestante);
+        qdRestante -= imputeSurQDprincipal;
       }
+
+      const avantageHorsPart = forfait !== undefined ? Math.max(0, donation.valeur - forfait) : 0;
+      let imputeSurQDavantage = 0;
+      if (avantageHorsPart > 0) {
+        imputeSurQDavantage = Math.min(avantageHorsPart, qdRestante);
+        qdRestante -= imputeSurQDavantage;
+      }
+
+      besoinSurQD = besoinSurQDprincipal + avantageHorsPart;
+      imputeSurQD = imputeSurQDprincipal + imputeSurQDavantage;
     } else {
       // Donation hors part successorale ou à un non-réservataire : s'impute sur QD
       besoinSurQD = donation.valeur;
@@ -378,8 +410,25 @@ export function computeRapport(
   
   for (const donation of donations) {
     const reduction = reductions.reductions.find(r => r.liberaliteId === donation.id);
-    const montantRapport = donation.valeur - (reduction?.montantReduit || 0);
-    
+    const reductionTotal = reduction?.montantReduit || 0;
+    const forfait = getMontantRapportForfaitaire(donation);
+
+    let montantRapport: number;
+    if (forfait !== undefined) {
+      // Rapport forfaitaire (art. 860 al. 4, §9.8) : c'est le forfait qui est
+      // rapporté, pas la valeur pleine — l'écart (avantage hors part) n'est
+      // jamais rapporté, au même titre qu'une donation 'hors_part' ordinaire.
+      // Une éventuelle réduction est imputée en priorité sur cet avantage
+      // (composante la moins protégée, déjà hors part), et seulement
+      // au-delà sur le forfait rapportable lui-même.
+      const avantageHorsPart = Math.max(0, donation.valeur - forfait);
+      const reductionSurAvantage = Math.min(reductionTotal, avantageHorsPart);
+      const reductionSurForfait = reductionTotal - reductionSurAvantage;
+      montantRapport = forfait - reductionSurForfait;
+    } else {
+      montantRapport = donation.valeur - reductionTotal;
+    }
+
     if (montantRapport > 0) {
       massePartageable += montantRapport;
       rapports.push({
