@@ -1,4 +1,14 @@
-import { PatrimonySnapshot, Liberalite } from './types';
+import { PatrimonySnapshot, Liberalite, CLAUSE_DISPENSE_RAPPORT } from './types';
+
+/**
+ * Une donation dispensée de rapport (art. 860 al. 3, §9.4) est reclassée
+ * "hors part successorale" : la clause ne fait pas que retirer le rapport
+ * d'une donation par ailleurs en avancement de part, elle change aussi son
+ * imputation (art. 843 — présomption inversée par stipulation expresse).
+ */
+function isDispenseeDeRapport(liberalite: Liberalite): boolean {
+  return !!liberalite.clauses?.includes(CLAUSE_DISPENSE_RAPPORT);
+}
 
 export interface ReserveResult {
   masseCalcul: number;
@@ -120,11 +130,13 @@ export function imputeLiberalites(
     let imputeSurQD = 0;
     let besoinSurQD = 0;
 
-    // Si donation à un héritier réservataire (enfant) et pas explicitement hors part :
-    // 'avance_part' et 'partage' suivent le même chemin d'imputation sur la réserve
-    // (seule 'partage' diffère ensuite sur le rapport, cf. computeRapport).
+    // Si donation à un héritier réservataire (enfant) et pas explicitement hors part
+    // (ni reclassée hors part par une dispense de rapport, §9.4) : 'avance_part' et
+    // 'partage' suivent le même chemin d'imputation sur la réserve (seule 'partage'
+    // diffère ensuite sur le rapport, cf. computeRapport).
     if (childrenIds.includes(donation.beneficiaireId as string) &&
-        donation.typeImputation !== "hors_part") {
+        donation.typeImputation !== "hors_part" &&
+        !isDispenseeDeRapport(donation)) {
       // Donation en avancement de part : s'impute d'abord sur la part de réserve du bénéficiaire
       const reservePersonnelle = reserveResult.reserveEnfants / childrenIds.length;
       imputeSurReserve = Math.min(donation.valeur, reservePersonnelle);
@@ -353,12 +365,14 @@ export function computeRapport(
   // renseigné est traité comme avancement de part, donc rapportable, plutôt
   // que silencieusement exclu). 'hors_part' est par nature exclue du rapport ;
   // 'partage' reste exclue car sa valeur est figée au jour de l'acte et n'est
-  // jamais réévaluée au partage. Le conjoint n'est jamais tenu au rapport
-  // (art. 857), d'où le même filtre childrenIds que celui déjà appliqué à la
-  // boucle des legs ci-dessus.
+  // jamais réévaluée au partage. Une donation dispensée de rapport (§9.4) est
+  // exclue au même titre qu'une donation 'hors_part' explicite. Le conjoint
+  // n'est jamais tenu au rapport (art. 857), d'où le même filtre childrenIds
+  // que celui déjà appliqué à la boucle des legs ci-dessus.
   const donations = liberalites.filter(lib =>
     lib.type === "donation" && lib.typeImputation !== "hors_part" &&
     lib.typeImputation !== "partage" &&
+    !isDispenseeDeRapport(lib) &&
     childrenIds.includes(lib.beneficiaireId as string)
   );
   

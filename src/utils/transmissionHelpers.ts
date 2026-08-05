@@ -36,6 +36,10 @@ export interface LiberaliteRow {
   biens?: unknown;
   pourcentage?: number | null;
   statut?: string | null;
+  // Clauses insérées dans l'acte (DonationForm.tsx::clausesOptions). Seule
+  // CLAUSE_DISPENSE_RAPPORT (cf. lib/transmission/types.ts) a un effet sur le
+  // calcul à ce jour — audit Bloc 1, T6, 2026-08.
+  clauses?: string[] | null;
 }
 
 interface AssetValeur {
@@ -116,7 +120,8 @@ export function buildTransmissionLiberalites(
       valeur,
       date: row.date_acte || new Date().toISOString().split('T')[0],
       typeImputation: (row.type_imputation as Liberalite['typeImputation']) || undefined,
-      beneficiaireName: row.beneficiaire_nom
+      beneficiaireName: row.beneficiaire_nom,
+      clauses: row.clauses || undefined
     });
   }
 

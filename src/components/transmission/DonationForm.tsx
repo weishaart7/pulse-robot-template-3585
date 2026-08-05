@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAssets } from '@/hooks/useAssets';
 import { useToast } from '@/hooks/use-toast';
 import { liberaliteService, Liberalite, LiberaliteTypeImputation } from '@/services/liberaliteService';
+import { CLAUSE_DISPENSE_RAPPORT } from '@/lib/transmission/types';
 
 interface FamilyMember {
   id: string;
@@ -89,7 +90,9 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
   const clausesOptions = [
     'Inaliénabilité : empêche de vendre le bien (temporaire, intérêt légitime)',
     'Retour conventionnel : le bien retourne au donateur si le donataire décède',
-    'Dispense de rapport : la donation n\'est pas rapportée à la succession',
+    // Chaîne partagée avec reserve.ts (via lib/transmission/types.ts) : ne pas
+    // modifier ce libellé sans mettre à jour CLAUSE_DISPENSE_RAPPORT.
+    CLAUSE_DISPENSE_RAPPORT,
     'Rapport forfaitaire : fixer contractuellement une valeur figée au rapport',
     'Exclusion ou inclusion dans la communauté : déterminer si le bien reste propre',
     'Administration spéciale : désigner un administrateur autre que les parents',

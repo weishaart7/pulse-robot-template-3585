@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { computeMasseCalcul, computeReserveAndQD, imputeLiberalites, computeRapport, applyReductions, ReductionResult } from './reserve';
-import { Liberalite, PatrimonySnapshot } from './types';
+import { Liberalite, PatrimonySnapshot, CLAUSE_DISPENSE_RAPPORT } from './types';
 
 const noReduction: ReductionResult = { reductions: [], totalReduit: 0 };
 const patrimony300k: PatrimonySnapshot = { date: '2026-07-17', biensExistants: 300000, passifs: 0 };
@@ -197,6 +197,54 @@ describe('imputeLiberalites — donations avance_part', () => {
     // QD entamée uniquement par l'excédent d'enfant2 : 100 000 - 20 000 = 80 000 restants.
     expect(result.qdRestante).toBe(80000);
     expect(result.reserveAtteinte).toBe(false);
+  });
+});
+
+describe('dispense de rapport (audit Bloc 1, T6, §9.4)', () => {
+  it('imputeLiberalites : une donation avance_part dispensée de rapport est reclassée hors part, imputée intégralement sur la QD', () => {
+    const reserveResult = reserveResult2Enfants();
+    // réserve personnelle par enfant = 100 000. Sans dispense, une donation de
+    // 80 000 en avance_part resterait entièrement dans la réserve personnelle
+    // (imputeSurQD = 0). Avec la dispense, elle doit s'imputer sur la QD comme
+    // une donation hors_part, quel que soit le typeImputation affiché.
+    const donations: Liberalite[] = [
+      {
+        id: 'don-dispense',
+        type: 'donation',
+        beneficiaireId: 'enfant1',
+        valeur: 80000,
+        date: '2020-01-01',
+        typeImputation: 'avance_part',
+        clauses: [CLAUSE_DISPENSE_RAPPORT],
+      },
+    ];
+
+    const result = imputeLiberalites(donations, reserveResult, ['enfant1', 'enfant2']);
+
+    const don = result.donations.find((d) => d.liberaliteId === 'don-dispense');
+    expect(don?.imputeSurReserve).toBe(0);
+    expect(don?.imputeSurQD).toBe(80000);
+    expect(result.qdRestante).toBe(reserveResult.quotiteDisponible - 80000);
+  });
+
+  it('computeRapport : une donation avance_part dispensée de rapport n\'est jamais rapportée, quel que soit typeImputation', () => {
+    const donations: Liberalite[] = [
+      {
+        id: 'don-dispense',
+        type: 'donation',
+        beneficiaireId: 'enfant1',
+        valeur: 80000,
+        date: '2020-01-01',
+        typeImputation: 'avance_part',
+        clauses: [CLAUSE_DISPENSE_RAPPORT],
+      },
+    ];
+
+    const result = computeRapport(patrimony300k, donations, noReduction, ['enfant1', 'enfant2']);
+
+    expect(result.rapports).toEqual([]);
+    // Non réintégrée : massePartageable reste biensExistants - passifs = 300 000.
+    expect(result.massePartageable).toBe(300000);
   });
 });
 

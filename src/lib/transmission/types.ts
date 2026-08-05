@@ -53,6 +53,14 @@ export interface PatrimonySnapshot {
   assuranceVieTotal?: number;
 }
 
+// Libellé exact de la clause "Dispense de rapport" dans DonationForm.tsx::
+// clausesOptions — partagé ici pour que reserve.ts puisse reconnaître la
+// clause sans dupliquer le texte (audit Bloc 1, T6, 2026-08). Seules 2 des
+// 11 clauses de ce catalogue sont aujourd'hui branchées au calcul ; les
+// autres restent purement déclaratives (cf. audit).
+export const CLAUSE_DISPENSE_RAPPORT =
+  "Dispense de rapport : la donation n'est pas rapportée à la succession";
+
 export interface Liberalite {
   id: string;
   type: "donation" | "legs";
@@ -83,6 +91,14 @@ export interface Liberalite {
   typeImputation?: "avance_part" | "hors_part" | "partage";
   donationEntreEpoux?: boolean;
   beneficiaireName?: string;
+  // Clauses insérées dans l'acte (DonationForm.tsx::clausesOptions), reprises
+  // telles quelles depuis liberalites.clauses. Seule CLAUSE_DISPENSE_RAPPORT
+  // est aujourd'hui lue par reserve.ts (audit Bloc 1, T6) : une donation qui
+  // la porte est réputée "hors part successorale" pour l'imputation ET le
+  // rapport (§9.4 — la dispense reclasse la donation, elle ne fait pas que
+  // supprimer le rapport d'une donation par ailleurs en avancement de part).
+  // Les 9 autres clauses du catalogue restent purement déclaratives.
+  clauses?: string[];
 }
 
 export interface TransmissionParams {
