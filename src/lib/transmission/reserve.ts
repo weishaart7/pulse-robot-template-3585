@@ -348,15 +348,17 @@ export function computeRapport(
     }
   }
   
-  // Ajouter les rapports de donations rapportables : seules les donations
-  // en avancement de part à un enfant réservataire sont rapportables
-  // ('hors_part' est par nature exclue du rapport, 'partage' est exclue car
-  // sa valeur est figée au jour de l'acte et n'est jamais réévaluée au
-  // partage). Le conjoint n'est jamais tenu au rapport (art. 857), d'où le
-  // même filtre childrenIds que celui déjà appliqué à la boucle des legs
-  // ci-dessus.
+  // Ajouter les rapports de donations rapportables à un enfant réservataire :
+  // alignée sur imputeLiberalites (même présomption art. 843 — un type non
+  // renseigné est traité comme avancement de part, donc rapportable, plutôt
+  // que silencieusement exclu). 'hors_part' est par nature exclue du rapport ;
+  // 'partage' reste exclue car sa valeur est figée au jour de l'acte et n'est
+  // jamais réévaluée au partage. Le conjoint n'est jamais tenu au rapport
+  // (art. 857), d'où le même filtre childrenIds que celui déjà appliqué à la
+  // boucle des legs ci-dessus.
   const donations = liberalites.filter(lib =>
-    lib.type === "donation" && lib.typeImputation === "avance_part" &&
+    lib.type === "donation" && lib.typeImputation !== "hors_part" &&
+    lib.typeImputation !== "partage" &&
     childrenIds.includes(lib.beneficiaireId as string)
   );
   

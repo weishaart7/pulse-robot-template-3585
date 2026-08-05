@@ -60,11 +60,11 @@ export interface Liberalite {
   nature?: string;
   valeur: number;
   date: string;
-  // Non défini est traité différemment selon le consommateur : réserve.ts::imputeLiberalites
-  // impute quand même sur la réserve (permissif, comme l'ancien défaut rapportable=true),
-  // mais réserve.ts::computeRapport exclut du rapport (strict, n'accepte que 'avance_part').
-  // Sans conséquence tant que Synthese.tsx/ProcessusCalcul.tsx renseignent toujours cette
-  // valeur (Phase 4 du chantier libéralités) — à garder en tête si un appelant l'omet.
+  // Non défini est traité comme 'avance_part' (présomption art. 843 C. civ.
+  // pour un bénéficiaire réservataire) de façon cohérente par
+  // réserve.ts::imputeLiberalites et réserve.ts::computeRapport (audit T4,
+  // 2026-08). DonationForm.tsx impose désormais une valeur explicite à la
+  // saisie ; ce cas ne subsiste que pour des lignes créées avant ce correctif.
   typeImputation?: "avance_part" | "hors_part" | "partage";
   donationEntreEpoux?: boolean;
   beneficiaireName?: string;

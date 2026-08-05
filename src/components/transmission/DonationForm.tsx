@@ -49,7 +49,10 @@ const DEFAULT_FORM_DATA = {
   libelle: 'Donation appartement Rue de la Paix',
   nature: '',
   demembrement: 'aucun',
-  typeDonation: '',
+  // Présomption art. 843 C. civ. : une donation à un héritier réservataire
+  // est présumée en avancement de part successorale, sauf stipulation
+  // contraire. Défaut aligné sur cette présomption (audit T4, 2026-08).
+  typeDonation: 'avance_part',
   droitsParDonateur: false,
   realiseePar: '',
   date: undefined as Date | undefined,
@@ -165,7 +168,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
         libelle: first.denomination,
         nature: first.nature || '',
         demembrement: first.demembrement || 'aucun',
-        typeDonation: first.type_imputation || '',
+        typeDonation: first.type_imputation || 'avance_part',
         droitsParDonateur: first.prise_en_charge_droits || false,
         realiseePar: first.realise_par || '',
         date: first.date_acte ? new Date(first.date_acte) : undefined,
@@ -200,6 +203,15 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
     e.preventDefault();
 
     const totalPourcentage = beneficiaries.reduce((sum, b) => sum + b.pourcentage, 0);
+
+    if (!formData.typeDonation) {
+      toast({
+        title: "Erreur",
+        description: "Sélectionnez un type de donation.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (beneficiaries.length === 0) {
       toast({
@@ -356,7 +368,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
 
           {/* Type de donation */}
           <div>
-            <Label>Type de donation</Label>
+            <Label>Type de donation *</Label>
             <Select value={formData.typeDonation} onValueChange={(value) => setFormData({ ...formData, typeDonation: value })}>
               <SelectTrigger size="lg">
                 <SelectValue placeholder="Sélectionnez le type" />

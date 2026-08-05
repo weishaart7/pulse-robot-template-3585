@@ -280,6 +280,50 @@ describe('computeRapport', () => {
     expect(result.massePartageable).toBe(300000);
   });
 
+  it('donation à un enfant réservataire sans typeImputation renseigné : traitée comme avance_part de bout en bout (art. 843)', () => {
+    // Audit 2026-08 (T4) : Marie, 2 enfants (Aurélien, Blandine), pas de conjoint.
+    // Donation à Aurélien de 100 000 €, type de donation non choisi (undefined).
+    // Doit désormais être rapportée comme une donation avance_part explicite,
+    // cohérent avec imputeLiberalites qui l'impute déjà sur la réserve d'Aurélien.
+    const donations: Liberalite[] = [
+      {
+        id: 'don-aurelien-sans-type',
+        type: 'donation',
+        beneficiaireId: 'aurelien',
+        valeur: 100000,
+        date: '2020-01-01',
+        // typeImputation volontairement omis
+      },
+    ];
+
+    const result = computeRapport(patrimony300k, donations, noReduction, ['aurelien', 'blandine']);
+
+    expect(result.rapports).toEqual([{ personId: 'aurelien', montantRapport: 100000 }]);
+    // Réintégrée : biensExistants + donation rapportée = 300 000 + 100 000 = 400 000.
+    expect(result.massePartageable).toBe(400000);
+  });
+
+  it('donation-partage à un enfant réservataire : reste exclue du rapport malgré l\'alignement sur imputeLiberalites', () => {
+    // Non-régression : l'alignement de computeRapport sur imputeLiberalites (T4)
+    // ne doit pas rendre une donation-partage rapportable — sa valeur est figée
+    // au jour de l'acte et n'est jamais réévaluée au partage (§8.4/§9.4).
+    const donations: Liberalite[] = [
+      {
+        id: 'don-partage-enfant1',
+        type: 'donation',
+        beneficiaireId: 'enfant1',
+        valeur: 60000,
+        date: '2020-01-01',
+        typeImputation: 'partage',
+      },
+    ];
+
+    const result = computeRapport(patrimony300k, donations, noReduction, ['enfant1', 'enfant2']);
+
+    expect(result.rapports).toEqual([]);
+    expect(result.massePartageable).toBe(300000);
+  });
+
   it('scénario combiné : legs avance_part + legs hors_part + donation avance_part, 2 enfants, sans dépassement de QD', () => {
     const liberalites: Liberalite[] = [
       {
