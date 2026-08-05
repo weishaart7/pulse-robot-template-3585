@@ -115,8 +115,11 @@ export const IndivisairesSection: React.FC<Props> = ({ familyMembers, value, onC
               </div>
             </Card>
           ))}
-          <p className={`text-xs ${total === 100 ? 'text-emerald-600' : 'text-amber-600'}`}>
-            Total des parts : {total.toFixed(1)}% {total !== 100 && '(devrait être 100%)'}
+          <p className={`text-xs ${total > 100 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+            Total des parts des autres co-indivisaires : {total.toFixed(1)}%
+            {total > 100
+              ? ' (dépasse 100% — à corriger)'
+              : ` — votre part serait de ${(100 - total).toFixed(1)}%`}
           </p>
         </div>
       )}
