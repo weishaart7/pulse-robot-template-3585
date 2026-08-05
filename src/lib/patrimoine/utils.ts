@@ -126,6 +126,25 @@ export interface PourcentagesRepartition {
 
 const clampPourcentage = (n: number): number => Math.min(100, Math.max(0, n));
 
+// Part de l'utilisateur pour un bien détenu en indivision avec des tiers
+// (`detenteur === 'Indivision'`, distinct de "Le couple" — cf.
+// getPourcentagesRepartition ci-dessus pour ce second cas). Source de vérité :
+// la liste des co-indivisaires saisie via IndivisairesSection/
+// asset_indivisaires, jamais un 50/50 par défaut (cf. succession.ts, P14).
+//
+// Le conjoint n'a structurellement aucune part sur ce type de bien : les
+// co-indivisaires viennent de `family_links`, dont les types de lien
+// (Enfant, Parent, Petit-enfant, ...) n'incluent pas "Conjoint" — le conjoint
+// est modélisé séparément (`marital_status`) et ne peut donc jamais figurer
+// dans `asset_indivisaires`. Sa quote-part sur ce bien est donc 0, pas un
+// complément déduit.
+export const getPartUtilisateurIndivisionTiers = (
+  coIndivisaires: Array<{ pourcentage: number }>
+): number => {
+  const totalTiers = coIndivisaires.reduce((acc, i) => acc + (Number(i.pourcentage) || 0), 0);
+  return clampPourcentage(100 - totalTiers);
+};
+
 export const getPourcentagesRepartition = (
   pourcentageUtilisateur: number | undefined,
   pourcentageConjoint: number | undefined

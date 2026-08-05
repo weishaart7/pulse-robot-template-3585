@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getPartSuccessorale, getPartConjointSuccession, BienNonQualifieError } from './succession';
+import { getPartUtilisateurIndivisionTiers } from './utils';
 
 describe('getPartSuccessorale', () => {
   it("'À qualifier' bloque avec une erreur explicite dédiée (BienNonQualifieError), ne devine jamais", () => {
@@ -47,6 +48,17 @@ describe('getPartSuccessorale', () => {
 
   it("'Bien personnel' (pas de conjoint) → 100%", () => {
     expect(getPartSuccessorale({ qualification_bien: 'Bien personnel' })).toBe(1);
+  });
+
+  it("Indivision avec un tiers (P14) : la part utilisateur vient de asset_indivisaires, pas d'un 50/50 figé — Maison de famille 300 000 €, utilisateur 70% / sœur 30%", () => {
+    const pourcentageUtilisateur = getPartUtilisateurIndivisionTiers([{ pourcentage: 30 }]);
+    expect(pourcentageUtilisateur).toBe(70);
+
+    const asset = { qualification_bien: 'Indivision', pourcentage_utilisateur: pourcentageUtilisateur, pourcentage_conjoint: 0 };
+    const part = getPartSuccessorale(asset);
+
+    expect(part).toBeCloseTo(0.7);
+    expect(part * 300_000).toBeCloseTo(210_000);
   });
 
   it("qualification_bien absente/NULL (ex. bien créé via le chemin société, qui ne renseigne jamais ce champ) bloque avec BienNonQualifieError, comme 'À qualifier'", () => {

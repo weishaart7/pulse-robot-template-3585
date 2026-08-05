@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { assetSchema, AssetFormValues, getDefaultAssetValues } from '@/schemas/assetSchema';
 import { Asset, AssetCharge } from '@/services/assetService';
 import { familyService } from '@/services/familyService';
-import { mapDetenteurToDisplay, mapDetenteurToDb, FamilyInfo } from '@/lib/patrimoine/utils';
+import { mapDetenteurToDisplay, mapDetenteurToDb, getPartUtilisateurIndivisionTiers, FamilyInfo } from '@/lib/patrimoine/utils';
 import { ASSET_CATEGORIES } from '@/constants/assetTypes';
 import { qualifierBien } from '@/lib/patrimoine/qualification';
 import { assetIndivisaireService, AssetIndivisaire } from '@/services/assetIndivisaireService';
@@ -150,6 +150,9 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
       } else if (displayDetenteur === 'Le couple') {
         userPercentage = asset.pourcentage_utilisateur || 50;
         spousePercentage = asset.pourcentage_conjoint || 50;
+      } else if (displayDetenteur === 'Indivision') {
+        userPercentage = getPartUtilisateurIndivisionTiers(indivisaires);
+        spousePercentage = 0;
       }
 
       form.reset({
@@ -184,7 +187,11 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         licitation_acquereur: (asset as any).licitation_acquereur ?? undefined,
       });
     }
-  }, [asset, familyData, form]);
+    // `indivisaires` est chargé de façon asynchrone par l'effet précédent
+    // (assetIndivisaireService.getByAsset) : cet effet doit se redéclencher
+    // une fois cette liste disponible pour ne pas figer la part utilisateur
+    // à sa valeur par défaut (100%, liste encore vide) le temps du chargement.
+  }, [asset, familyData, form, indivisaires]);
 
   // Auto-qualification : recalcule la qualification quand auto et que les inputs changent
   useEffect(() => {
@@ -254,6 +261,9 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
             form.setValue('pourcentage_utilisateur', 50);
             form.setValue('pourcentage_conjoint', 50);
           }
+        } else if (detenteur === 'Indivision') {
+          form.setValue('pourcentage_utilisateur', getPartUtilisateurIndivisionTiers(indivisaires));
+          form.setValue('pourcentage_conjoint', 0);
         }
       }
 
@@ -264,7 +274,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
     });
 
     return () => subscription.unsubscribe();
-  }, [form, familyData]);
+  }, [form, familyData, indivisaires]);
 
   // "Le couple" comme détenteur n'a de sens que pour un bien commun (50/50
   // fixé par la loi) — jamais pour "Bien propre"/"Bien personnel" (100/0
@@ -310,6 +320,12 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         const saisi = values.pourcentage_utilisateur;
         finalUserPercentage = saisi === undefined ? 50 : Math.min(100, Math.max(0, saisi));
         finalSpousePercentage = 100 - finalUserPercentage;
+      } else if (dbDetenteur === 'Indivision') {
+        // Source de vérité = la liste des co-indivisaires (asset_indivisaires),
+        // pas la valeur du champ de formulaire (jamais éditable pour ce cas,
+        // cf. AssetForm.tsx — aucun input rendu pour `detenteur === 'Indivision'`).
+        finalUserPercentage = getPartUtilisateurIndivisionTiers(indivisaires);
+        finalSpousePercentage = 0;
       }
 
       const dbValues = {
