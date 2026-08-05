@@ -2,9 +2,16 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface LiberaliteBien {
   asset_id: string;
-  // Valeur au jour de l'acte, uniquement pour une donation (figée en base).
-  // Absente pour un legs : sa valeur se relit en live depuis assets au
-  // moment du calcul de transmission (cf. buildTransmissionLiberalites).
+  // Figée en base à la saisie, uniquement pour une donation. Sa sémantique
+  // dépend du type de donation (cf. type_imputation ci-dessous, décision
+  // audit Bloc 1 T1, 2026-08) : valeur au jour de l'ACTE pour une
+  // donation-partage (typeImputation === 'partage', art. 1078 — la valeur
+  // à l'acte est la bonne valeur légale) ; valeur au jour du DÉCÈS pour
+  // toute autre donation (avance_part/hors_part, art. 922 — réunion
+  // fictive), saisie en pratique comme l'estimation actuelle du bien
+  // puisque l'outil simule un décès survenant aujourd'hui. Absente pour un
+  // legs : sa valeur se relit en live depuis assets au moment du calcul de
+  // transmission (cf. buildTransmissionLiberalites).
   valeur?: number;
 }
 

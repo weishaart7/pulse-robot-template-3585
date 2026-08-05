@@ -58,6 +58,21 @@ export interface Liberalite {
   type: "donation" | "legs";
   beneficiaireId: PersonId | "tiers";
   nature?: string;
+  // Valeur unique, dont la sémantique dépend de typeImputation ci-dessous
+  // (décision audit Bloc 1 T1, 2026-08 : relabel plutôt que refonte du
+  // schéma, aucune donnée réelle en base au moment de la décision).
+  // - typeImputation === 'partage' (donation-partage) : valeur au jour de
+  //   l'ACTE (art. 1078), c'est la bonne valeur légale pour la réunion
+  //   fictive comme pour l'exclusion du rapport — cf. reserve.ts.
+  // - Toute autre donation ('avance_part' / 'hors_part' / non défini) :
+  //   valeur au jour du DÉCÈS (art. 922, réunion fictive), utilisée telle
+  //   quelle aussi pour l'imputation et la réduction. En pratique la valeur
+  //   actuelle du bien, puisque cet outil simule un décès survenant
+  //   aujourd'hui (referenceDate = date du jour, cf. index.ts).
+  // Dans les deux cas, la valeur au jour du PARTAGE (art. 860, distincte du
+  // décès) n'est jamais capturée séparément : le rapport et la réévaluation
+  // de l'indemnité de réduction (art. 924-2) réutilisent cette même valeur.
+  // Limite documentée, non corrigée en V1 — cf. audit Bloc 1, finding T3.
   valeur: number;
   date: string;
   // Non défini est traité comme 'avance_part' (présomption art. 843 C. civ.

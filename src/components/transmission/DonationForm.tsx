@@ -541,8 +541,16 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
                             {isSelected && (
                               <div className="mt-3">
                                 <Label htmlFor={`valeur-${asset.id}`} className="text-sm font-medium">
-                                  Valeur au jour de la donation
+                                  {formData.typeDonation === 'partage'
+                                    ? "Valeur au jour de l'acte (donation-partage)"
+                                    : "Valeur au jour du décès (estimation actuelle du bien)"}
                                 </Label>
+                                {formData.typeDonation !== 'partage' && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    Pas la valeur au moment du don : ce que vaudrait le bien aujourd'hui
+                                    (réunion fictive, art. 922 — cf. audit Bloc 1, T1).
+                                  </p>
+                                )}
                                 <Input
                                   id={`valeur-${asset.id}`}
                                   type="number"
