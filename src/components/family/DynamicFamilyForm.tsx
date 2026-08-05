@@ -76,10 +76,10 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchDateNaissance, linkType]);
 
-  const showParentField = ['Enfant', 'Parent', 'Frère/Sœur', 'Oncle/Tante', 'Petit-enfant', 'Arrière petit-enfant', 'Grand-parent', 'Neveu/Nièce', 'Petit neveu/nièce', 'Cousin/Cousine'].includes(linkType);
+  const showParentField = ['Enfant', 'Parent', 'Frère/Sœur', 'Oncle/Tante', 'Petit-enfant', 'Arrière petit-enfant', 'Grand-parent', 'Arrière grand-parent', 'Neveu/Nièce', 'Petit neveu/nièce', 'Cousin/Cousine'].includes(linkType);
   const showAdoption = ['Enfant', 'Petit-enfant', 'Arrière petit-enfant'].includes(linkType);
   const showRenunciation = linkType === 'Enfant';
-  const showBranche = linkType === 'Oncle/Tante';
+  const showBranche = ['Oncle/Tante', 'Grand-parent', 'Cousin/Cousine', 'Arrière grand-parent'].includes(linkType);
   const showExoneration = linkType === 'Frère/Sœur';
 
   const getParentLabel = () => {
@@ -90,6 +90,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
         return 'Enfant de';
       case 'Parent':
       case 'Grand-parent':
+      case 'Arrière grand-parent':
         return 'Parent de';
       case 'Frère/Sœur':
         return 'Frère/sœur de';

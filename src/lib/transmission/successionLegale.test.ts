@@ -30,6 +30,12 @@ describe('fente successorale (applyFenteSuccessorale)', () => {
     const g = graph({
       persons: [
         defunt,
+        // 'Grand-parent' avec branche_familiale renseignée est désormais un
+        // parcours utilisateur réel : DynamicFamilyForm.tsx affiche le champ
+        // "Branche familiale" pour ce type depuis le correctif F18 (showBranche
+        // étendu au-delà d'Oncle/Tante). Avant ce correctif, ce champ ne
+        // pouvait jamais être saisi pour un grand-parent (cf. audit
+        // docs/audit-transmission-devolution-conjoint-2026-08.md §6.1).
         person({ id: 'GPP', nom: 'GrandPereP', lienFamilial: 'Grand-parent', brancheFamiliale: 'Branche paternelle' }),
         person({ id: 'GPM', nom: 'GrandMereM', lienFamilial: 'Grand-parent', brancheFamiliale: 'Branche maternelle' }),
       ],
@@ -48,6 +54,7 @@ describe('fente successorale (applyFenteSuccessorale)', () => {
     const g = graph({
       persons: [
         defunt,
+        // Cf. commentaire du test 1 : parcours réel depuis le correctif F18.
         person({ id: 'GPP', nom: 'GrandPereP', lienFamilial: 'Grand-parent', brancheFamiliale: 'Branche paternelle' }),
       ],
     });
@@ -88,6 +95,34 @@ describe('fente successorale (applyFenteSuccessorale)', () => {
     expect(result.heritiers[0].lien).toBe('oncle_tante');
     expect(result.heritiers[0].ordre).toBe(4);
     expect(result.heritiers[0].quotePart).toBe(1);
+  });
+
+  it("5. régression F18 — grand-père paternel + grand-mère maternelle vivants, aucun autre héritier, 500 000 € → 250 000 €/250 000 €, pas de déshérence", () => {
+    // Reprend l'exemple chiffré de docs/audit-transmission-devolution-conjoint-2026-08.md §6.1 :
+    // avant le correctif F18 (showBranche limité à 'Oncle/Tante'), un grand-parent ne pouvait
+    // jamais avoir de branche_familiale renseignée, donc collectFenteHeritiers ne matchait
+    // aucun des deux grands-parents et le patrimoine était attribué à l'État par déshérence
+    // alors que deux grands-parents vivants existaient.
+    const patrimoine = 500_000;
+    const g = graph({
+      persons: [
+        defunt,
+        person({ id: 'GPP', nom: 'GrandPereP', lienFamilial: 'Grand-parent', brancheFamiliale: 'Branche paternelle' }),
+        person({ id: 'GMM', nom: 'GrandMereM', lienFamilial: 'Grand-parent', brancheFamiliale: 'Branche maternelle' }),
+      ],
+    });
+
+    const result = calculateSuccessionLegale(g);
+
+    expect(result.explicationsTexte.some(t => t.includes("L'État français hérite"))).toBe(false);
+    expect(result.heritiers).toHaveLength(2);
+
+    const gpp = result.heritiers.find(h => h.personId === 'GPP');
+    const gmm = result.heritiers.find(h => h.personId === 'GMM');
+    expect(gpp?.quotePart).toBe(0.5);
+    expect(gmm?.quotePart).toBe(0.5);
+    expect((gpp?.quotePart ?? 0) * patrimoine).toBe(250_000);
+    expect((gmm?.quotePart ?? 0) * patrimoine).toBe(250_000);
   });
 });
 

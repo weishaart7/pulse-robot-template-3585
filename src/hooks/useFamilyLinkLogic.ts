@@ -94,6 +94,15 @@ export const useFamilyLinkLogic = (
       });
     }
 
+    if ((existingLinks['Grand-parent'] || []).length > 0) {
+      const grandParentIndex = links.findIndex(link => link.value === 'Grand-parent');
+      links.splice(grandParentIndex + 1, 0, {
+        value: 'Arrière grand-parent',
+        label: 'Arrière grand-parent',
+        enabled: true
+      });
+    }
+
     if ((existingLinks['Frère/Sœur'] || []).length > 0) {
       const siblingIndex = links.findIndex(link => link.value === 'Frère/Sœur');
       links.splice(siblingIndex + 1, 0, {
@@ -129,7 +138,7 @@ export const useFamilyLinkLogic = (
 
     // For direct descendants (Petit-enfant, Arrière petit-enfant, etc.), 
     // only show appropriate family members, not the user/spouse
-    const isDescendant = ['Petit-enfant', 'Arrière petit-enfant', 'Petit neveu/nièce', 'Cousin/Cousine'].includes(linkType);
+    const isDescendant = ['Petit-enfant', 'Arrière petit-enfant', 'Petit neveu/nièce', 'Cousin/Cousine', 'Arrière grand-parent'].includes(linkType);
     
     if (!isDescendant) {
       // Always add user as default option for direct links
@@ -174,6 +183,15 @@ export const useFamilyLinkLogic = (
           const parentName = `${parent.prenom || ''} ${parent.nom || ''}`.trim();
           if (parent.id) {
             options.push({ value: parent.id, label: parentName });
+          }
+        });
+        break;
+
+      case 'Arrière grand-parent':
+        (existingLinks['Grand-parent'] || []).forEach(grandParent => {
+          const grandParentName = `${grandParent.prenom || ''} ${grandParent.nom || ''}`.trim();
+          if (grandParent.id) {
+            options.push({ value: grandParent.id, label: grandParentName });
           }
         });
         break;
