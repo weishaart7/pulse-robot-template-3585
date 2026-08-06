@@ -421,9 +421,19 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       partFinale -= rapportTotal;
       dejaDetenu = rapportTotal;
 
-      // Ajouter les libéralités maintenues
+      // Ajouter les libéralités maintenues. Une donation-partage
+      // transgénérationnelle (art. 1078-8) a pour beneficiaireId un
+      // petit-enfant (jamais un heir.personId ici) : sa valeur doit être
+      // créditée au PARENT désigné par generationIntermediaireId, dont la
+      // réserve a été consommée par cette donation (cf. reserve.ts::
+      // imputeLiberalites) — sinon la souche du parent reçoit sa part de
+      // succession pleine en plus de ce que le petit-enfant détient déjà,
+      // sur-créditant le total de la branche du montant de la donation.
       const liberalitesMaintenues = liberalites
-        .filter(lib => lib.beneficiaireId === heir.personId)
+        .filter(lib =>
+          lib.beneficiaireId === heir.personId ||
+          (lib.typeImputation === "partage" && lib.generationIntermediaireId === heir.personId)
+        )
         .reduce((sum, lib) => {
           const reduction = reductionResult.reductions.find(r => r.liberaliteId === lib.id);
           return sum + (lib.valeur - (reduction?.montantReduit || 0));

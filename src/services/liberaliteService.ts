@@ -44,6 +44,10 @@ export interface Liberalite {
   // lib/transmission/types.ts::CLAUSE_RAPPORT_FORFAITAIRE. DonationForm.tsx
   // bloque la sauvegarde de cette clause sans montant renseigné.
   montant_rapport_forfaitaire?: number;
+  // Donation-partage transgénérationnelle (art. 1078-8) : id du parent
+  // (génération intermédiaire consentante) sur la réserve duquel la donation
+  // s'impute — cf. lib/transmission/types.ts::Liberalite.generationIntermediaireId.
+  generation_intermediaire_id?: string | null;
   biens?: LiberaliteBien[];
   demembrement?: string;
   prise_en_charge_droits?: boolean;

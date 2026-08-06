@@ -114,6 +114,14 @@ export interface Liberalite {
   // 100 000 €, rapport forfaitaire 100 000 €, valeur au partage 120 000 €
   // → 100 000 € sur la réserve, 20 000 € sur la QD, 100 000 € rapportés.
   montantRapportForfaitaire?: number;
+  // Donation-partage transgénérationnelle (art. 1078-8, référentiel §8.6.2) :
+  // id du parent (génération intermédiaire consentante) sur la réserve duquel
+  // cette donation-partage au petit-enfant s'impute, au lieu de la QD comme le
+  // ferait une donation ordinaire à un petit-enfant (art. 847). Pertinent
+  // uniquement si typeImputation === 'partage' et que beneficiaireId désigne
+  // un petit-enfant plutôt qu'un enfant du défunt — cf. reserve.ts::
+  // imputeLiberalites et index.ts (liberalitesMaintenues, crédite ce parent).
+  generationIntermediaireId?: PersonId;
 }
 
 export interface TransmissionParams {

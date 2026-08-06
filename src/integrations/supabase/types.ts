@@ -1464,6 +1464,7 @@ export type Database = {
           demembrement: string | null
           denomination: string
           description: string | null
+          generation_intermediaire_id: string | null
           groupe_id: string | null
           id: string
           montant: number | null
@@ -1488,6 +1489,7 @@ export type Database = {
           demembrement?: string | null
           denomination: string
           description?: string | null
+          generation_intermediaire_id?: string | null
           groupe_id?: string | null
           id?: string
           montant?: number | null
@@ -1512,6 +1514,7 @@ export type Database = {
           demembrement?: string | null
           denomination?: string
           description?: string | null
+          generation_intermediaire_id?: string | null
           groupe_id?: string | null
           id?: string
           montant?: number | null
@@ -1530,6 +1533,13 @@ export type Database = {
           {
             foreignKeyName: "liberalites_beneficiaire_id_fkey"
             columns: ["beneficiaire_id"]
+            isOneToOne: false
+            referencedRelation: "family_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "liberalites_generation_intermediaire_id_fkey"
+            columns: ["generation_intermediaire_id"]
             isOneToOne: false
             referencedRelation: "family_links"
             referencedColumns: ["id"]

@@ -144,11 +144,22 @@ export function imputeLiberalites(
     let imputeSurQD = 0;
     let besoinSurQD = 0;
 
-    // Si donation à un héritier réservataire (enfant) et pas explicitement hors part
-    // (ni reclassée hors part par une dispense de rapport, §9.4) : 'avance_part' et
-    // 'partage' suivent le même chemin d'imputation sur la réserve (seule 'partage'
-    // diffère ensuite sur le rapport, cf. computeRapport).
-    if (childrenIds.includes(donation.beneficiaireId as string) &&
+    // Donation-partage transgénérationnelle (art. 1078-8, référentiel §8.6.2) :
+    // le bénéficiaire est un petit-enfant (jamais dans childrenIds), mais la
+    // donation s'impute sur la réserve du PARENT désigné par
+    // generationIntermediaireId, à la place de la QD (art. 847, traitement
+    // d'une donation ordinaire à un petit-enfant).
+    const imputeSurReserveDuParent =
+      donation.typeImputation === "partage" &&
+      !!donation.generationIntermediaireId &&
+      childrenIds.includes(donation.generationIntermediaireId as string);
+
+    // Si donation à un héritier réservataire (enfant, ou petit-enfant via
+    // donation-partage transgénérationnelle ci-dessus) et pas explicitement
+    // hors part (ni reclassée hors part par une dispense de rapport, §9.4) :
+    // 'avance_part' et 'partage' suivent le même chemin d'imputation sur la
+    // réserve (seule 'partage' diffère ensuite sur le rapport, cf. computeRapport).
+    if ((childrenIds.includes(donation.beneficiaireId as string) || imputeSurReserveDuParent) &&
         donation.typeImputation !== "hors_part" &&
         !isDispenseeDeRapport(donation)) {
       // Donation en avancement de part : s'impute d'abord sur la part de réserve du bénéficiaire.

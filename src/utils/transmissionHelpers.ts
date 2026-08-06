@@ -42,6 +42,7 @@ export interface LiberaliteRow {
   // Bloc 1, T6, 2026-08.
   clauses?: string[] | null;
   montant_rapport_forfaitaire?: number | null;
+  generation_intermediaire_id?: string | null;
 }
 
 interface AssetValeur {
@@ -124,7 +125,8 @@ export function buildTransmissionLiberalites(
       typeImputation: (row.type_imputation as Liberalite['typeImputation']) || undefined,
       beneficiaireName: row.beneficiaire_nom,
       clauses: row.clauses || undefined,
-      montantRapportForfaitaire: row.montant_rapport_forfaitaire ?? undefined
+      montantRapportForfaitaire: row.montant_rapport_forfaitaire ?? undefined,
+      generationIntermediaireId: row.generation_intermediaire_id || undefined
     });
   }
 

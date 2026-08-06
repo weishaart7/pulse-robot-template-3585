@@ -200,6 +200,81 @@ describe('imputeLiberalites — donations avance_part', () => {
   });
 });
 
+describe('donation-partage transgénérationnelle (art. 1078-8, référentiel §8.6.2)', () => {
+  it("donation-partage à un petit-enfant, generationIntermediaireId renseigné et actif : imputée sur la réserve du PARENT désigné, pas sur la QD", () => {
+    const reserveResult = reserveResult2Enfants();
+    // réserve personnelle par enfant = 100 000, QD = 100 000. Donation-partage
+    // de 60 000 € au petit-enfant 'petit-enfant1', génération intermédiaire =
+    // 'enfant1' (son parent, souche active).
+    const donations: Liberalite[] = [
+      {
+        id: 'don-transgen',
+        type: 'donation',
+        beneficiaireId: 'petit-enfant1',
+        valeur: 60000,
+        date: '2020-01-01',
+        typeImputation: 'partage',
+        generationIntermediaireId: 'enfant1',
+      },
+    ];
+
+    const result = imputeLiberalites(donations, reserveResult, ['enfant1', 'enfant2']);
+
+    // Comme une donation avance_part normale à enfant1 : imputée sur sa
+    // réserve personnelle (100 000), aucun excédent sur la QD.
+    expect(result.donations).toEqual([
+      { liberaliteId: 'don-transgen', imputeSurReserve: 60000, imputeSurQD: 0, besoinSurQD: 0 },
+    ]);
+    expect(result.qdRestante).toBe(reserveResult.quotiteDisponible);
+  });
+
+  it("donation-partage à un petit-enfant SANS generationIntermediaireId (ou non actif dans childrenIds) : comportement inchangé, imputée sur la QD (art. 847, donation ordinaire à un petit-enfant)", () => {
+    const reserveResult = reserveResult2Enfants();
+    const donations: Liberalite[] = [
+      {
+        id: 'don-ordinaire',
+        type: 'donation',
+        beneficiaireId: 'petit-enfant1',
+        valeur: 60000,
+        date: '2020-01-01',
+        typeImputation: 'partage',
+        // generationIntermediaireId absent : pas de mécanisme transgénérationnel identifié.
+      },
+    ];
+
+    const result = imputeLiberalites(donations, reserveResult, ['enfant1', 'enfant2']);
+
+    expect(result.donations).toEqual([
+      { liberaliteId: 'don-ordinaire', imputeSurReserve: 0, imputeSurQD: 60000, besoinSurQD: 60000 },
+    ]);
+    // QD (100 000) entamée du montant de la donation.
+    expect(result.qdRestante).toBe(40000);
+  });
+
+  it("donation-partage transgénérationnelle dépassant la réserve personnelle du parent désigné : excédent basculé sur la QD, comme pour une donation avance_part normale", () => {
+    const reserveResult = reserveResult2Enfants();
+    // réserve personnelle par enfant = 100 000, QD = 100 000.
+    const donations: Liberalite[] = [
+      {
+        id: 'don-transgen-depasse',
+        type: 'donation',
+        beneficiaireId: 'petit-enfant1',
+        valeur: 150000,
+        date: '2020-01-01',
+        typeImputation: 'partage',
+        generationIntermediaireId: 'enfant1',
+      },
+    ];
+
+    const result = imputeLiberalites(donations, reserveResult, ['enfant1', 'enfant2']);
+
+    const don = result.donations.find(d => d.liberaliteId === 'don-transgen-depasse');
+    expect(don?.imputeSurReserve).toBe(100000);
+    expect(don?.imputeSurQD).toBe(50000);
+    expect(result.qdRestante).toBe(50000);
+  });
+});
+
 describe('dispense de rapport (audit Bloc 1, T6, §9.4)', () => {
   it('imputeLiberalites : une donation avance_part dispensée de rapport est reclassée hors part, imputée intégralement sur la QD', () => {
     const reserveResult = reserveResult2Enfants();

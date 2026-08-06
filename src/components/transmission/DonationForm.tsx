@@ -62,6 +62,11 @@ const DEFAULT_FORM_DATA = {
   // Montant forfaitaire de rapport (art. 860 al. 4, §9.8), pertinent
   // uniquement si CLAUSE_RAPPORT_FORFAITAIRE est cochée (audit T6, 2026-08).
   montantRapportForfaitaire: undefined as number | undefined,
+  // Génération intermédiaire consentante (art. 1078-8) : id (family_links)
+  // du parent sur la réserve duquel s'impute une donation-partage
+  // transgénérationnelle. Pertinent uniquement si nature ===
+  // 'Donation-partage transgénérationnelle' et typeDonation === 'partage'.
+  generationIntermediaireId: undefined as string | undefined,
 };
 
 export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: DonationFormProps) => {
@@ -76,6 +81,17 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Donation-partage transgénérationnelle (art. 1078-8) : condition affichant
+  // le sélecteur de génération intermédiaire et déterminant si
+  // generationIntermediaireId a un effet calculatoire (cf. reserve.ts::
+  // imputeLiberalites) plutôt que d'être une simple valeur orpheline si
+  // l'utilisateur change ensuite de nature/type sans la retirer.
+  const isTransgenerationnelle =
+    formData.nature === 'Donation-partage transgénérationnelle' &&
+    formData.typeDonation === 'partage';
+
+  const enfantsDuDefunt = familyMembers.filter(m => m.lien_familial === 'Enfant');
 
   const naturesOptions = [
     'Donation simple',
@@ -183,6 +199,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
         notes: first.description || '',
         statut: first.statut || 'acte',
         montantRapportForfaitaire: first.montant_rapport_forfaitaire ?? undefined,
+        generationIntermediaireId: first.generation_intermediaire_id ?? undefined,
       });
       setSelectedClauses(first.clauses || []);
       setSelectedAssets((first.biens || []).map(b => ({ id: b.asset_id, valeurDonation: b.valeur || 0 })));
@@ -240,6 +257,19 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
       return;
     }
 
+    // Même principe que la clause "Rapport forfaitaire" ci-dessous (T6/T4) :
+    // une donation-partage transgénérationnelle sans génération intermédiaire
+    // désignée serait silencieusement traitée comme une donation ordinaire
+    // (imputation sur la QD, art. 847, au lieu de la réserve du parent).
+    if (isTransgenerationnelle && !formData.generationIntermediaireId) {
+      toast({
+        title: "Erreur",
+        description: "Sélectionnez la génération intermédiaire consentante, ou changez la nature/le type de donation.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Audit T6, 2026-08 : une clause "Rapport forfaitaire" cochée sans montant
     // renseigné serait silencieusement sans effet sur le calcul (même défaut
     // que celui corrigé pour "Type de donation", cf. T4) — bloquée ici plutôt
@@ -283,6 +313,9 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
           clauses: selectedClauses.length > 0 ? selectedClauses : undefined,
           montant_rapport_forfaitaire: selectedClauses.includes(CLAUSE_RAPPORT_FORFAITAIRE)
             ? formData.montantRapportForfaitaire
+            : undefined,
+          generation_intermediaire_id: isTransgenerationnelle
+            ? formData.generationIntermediaireId
             : undefined,
           biens: biens.length > 0 ? biens : undefined,
           demembrement: formData.demembrement !== 'aucun' ? formData.demembrement : undefined,
@@ -408,6 +441,32 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
               </SelectContent>
             </Select>
           </div>
+
+          {/* Génération intermédiaire consentante (art. 1078-8) : uniquement
+              pertinent pour une donation-partage transgénérationnelle. */}
+          {isTransgenerationnelle && (
+            <div>
+              <Label>Génération intermédiaire consentante *</Label>
+              <Select
+                value={formData.generationIntermediaireId}
+                onValueChange={(value) => setFormData({ ...formData, generationIntermediaireId: value })}
+              >
+                <SelectTrigger size="lg">
+                  <SelectValue placeholder="Sélectionnez le parent consentant" />
+                </SelectTrigger>
+                <SelectContent>
+                  {enfantsDuDefunt.map((enfant) => (
+                    <SelectItem key={enfant.id} value={enfant.id}>
+                      {`${enfant.prenom || ''} ${enfant.nom}`.trim()}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Le parent dont la réserve est consommée par cette donation-partage au petit-enfant (art. 1078-8), au lieu de la quotité disponible.
+              </p>
+            </div>
+          )}
 
           {/* Statut */}
           <div>
