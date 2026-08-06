@@ -508,6 +508,29 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     );
   }
 
+  // 6ter. Droit de jouissance temporaire du logement (C. civ. art. 763,
+  // référentiel §5.8) — effet DIRECT du mariage, non successoral : ne s'impute
+  // JAMAIS sur la part civile du conjoint (heirs ci-dessus n'est pas modifié
+  // par ce bloc), il s'ajoute à celle-ci. Automatique, gratuit, sans
+  // formalité, durée 1 an. Purement informatif ici : aucune donnée du
+  // patrimoine ne permet aujourd'hui de distinguer un logement loué (jamais
+  // un actif détenu, donc invisible de rawAssets) d'un logement en SCI ou
+  // d'un usufruit exclusif du défunt (exclusions légales) — le notaire doit
+  // vérifier l'assiette réelle avant d'en confirmer le bénéfice, cf.
+  // caveat dans le texte ci-dessous plutôt qu'une nouvelle donnée saisie.
+  if (family.hasSurvivingSpouse) {
+    successionLegaleResult.explicationsTexte.push(
+      `Le conjoint survivant bénéficie de plein droit, pendant un an à compter du décès, ` +
+      `de la jouissance gratuite du logement qui constituait sa résidence principale effective ` +
+      `(C. civ. art. 763) — que ce logement soit détenu en propre par les époux, en indivision, ` +
+      `commun, ou loué. Ce droit est un effet direct du mariage : il ne s'impute pas sur sa part ` +
+      `successorale, il s'ajoute à celle-ci. Sont exclus : résidence secondaire, logement détenu ` +
+      `via une SCI (sauf bail entre la société et les époux), logement dont le défunt n'était ` +
+      `qu'usufruitier. Si les époux étaient locataires, les loyers remboursés par la succession ` +
+      `sont déductibles de l'actif en cas d'exécution en espèces (art. 768 CGI) — à confirmer au cas par cas.`
+    );
+  }
+
   // 7. Construction des entrées DMTG (déplacé depuis Synthese.tsx — Phase 2
   // de la consolidation du moteur : computeTransmission appelle lui-même
   // computeDMTG, l'UI n'a plus à connaître la forme du contexte DMTG).
