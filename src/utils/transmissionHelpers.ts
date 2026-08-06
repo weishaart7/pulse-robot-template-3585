@@ -495,13 +495,21 @@ export function buildFamilyGraph(
       estDecede: false,
       lienFamilial: 'conjoint'
     });
-    // Époux séparé de corps : reste conjoint successible (C. civ. art. 732,
-    // référentiel §5.1), sauf si la convention de séparation contient une
-    // clause de renonciation aux droits successoraux.
-    const perdQualiteSuccessible =
-      maritalStatus.separation_de_corps === true &&
-      maritalStatus.separation_corps_clause_renonciation === true;
-    hasSurvivingSpouse = !perdQualiteSuccessible;
+    // Le partenaire pacsé n'est JAMAIS héritier légal (référentiel §5.1) :
+    // il n'hérite que par legs ou donation, jamais par dévolution légale. La
+    // personne est tout de même ajoutée au graphe (persons/survivingSpouseId)
+    // pour rester désignable comme bénéficiaire AV ou légataire — seule
+    // `hasSurvivingSpouse` (qui pilote successionLegale.ts et la réserve
+    // légale du conjoint) doit distinguer Marié(e) de Pacsé(e).
+    if (maritalStatus.statut_couple === 'Marié(e)') {
+      // Époux séparé de corps : reste conjoint successible (C. civ. art. 732,
+      // référentiel §5.1), sauf si la convention de séparation contient une
+      // clause de renonciation aux droits successoraux.
+      const perdQualiteSuccessible =
+        maritalStatus.separation_de_corps === true &&
+        maritalStatus.separation_corps_clause_renonciation === true;
+      hasSurvivingSpouse = !perdQualiteSuccessible;
+    }
     survivingSpouseId = spouseId;
 
     links.push({ from: decedentId, to: spouseId, relation: 'spouse' });
