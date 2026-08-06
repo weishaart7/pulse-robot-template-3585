@@ -75,13 +75,27 @@ function calculateTaxFromBareme(
  * immobilière le cas échéant + forfait notoriété, TVA incluse). Barème légal,
  * non paramétrable (contrairement aux débours, cf. computeDebours).
  */
+// Écrêtement des émoluments proportionnels sur les mutations immobilières
+// (C. com. art. A. 444-175, §20.5 L2013-2018) : la rémunération de l'acte
+// portant sur l'immeuble est plafonnée à 10% de la valeur du bien, avec un
+// plancher de 90€. Ne s'applique qu'à `emolumentsAttestationHT` (l'acte
+// immobilier), pas à la déclaration de succession (acte distinct, portant
+// sur l'ensemble de la succession, non concerné par ce plafond).
+const ECRETEMENT_TAUX_PLAFOND = 0.10;
+const ECRETEMENT_PLANCHER_HT = 90;
+
+function applyEcretement(emolumentsHT: number, valeurBien: number): number {
+  const plafond = valeurBien * ECRETEMENT_TAUX_PLAFOND;
+  return Math.min(Math.max(emolumentsHT, ECRETEMENT_PLANCHER_HT), plafond);
+}
+
 export function computeNotaryFees(
   actifSuccessoral: number,
   valeurImmobiliere: number = 0
 ): NotaryFeesResult {
   const emolumentsDeclarationHT = calculateTaxFromBareme(actifSuccessoral, EMOLUMENTS_DECLARATION_SUCCESSION);
   const emolumentsAttestationHT = valeurImmobiliere > 0
-    ? calculateTaxFromBareme(valeurImmobiliere, EMOLUMENTS_ATTESTATION_IMMOBILIERE)
+    ? applyEcretement(calculateTaxFromBareme(valeurImmobiliere, EMOLUMENTS_ATTESTATION_IMMOBILIERE), valeurImmobiliere)
     : 0;
   const emolumentsTotalHT = emolumentsDeclarationHT + emolumentsAttestationHT + FORFAIT_NOTORIETE_HT;
   const tva = Math.round(emolumentsTotalHT * TVA_NOTAIRE);
