@@ -133,6 +133,10 @@ export interface TransmissionParams {
     valeur: number;
   };
   imputationConjointAvantLegs?: boolean;
+  // Inventaire notarié du mobilier produit (art. 764 CGI) : si absent/false,
+  // computeDMTG ajoute d'office un forfait mobilier de 5% de l'actif brut
+  // successoral (présomption légale, cf. dmtg/assets.ts). Défaut false.
+  inventaireNotarieProduit?: boolean;
 }
 
 // Forme minimale d'une ligne "assets" telle que stockée en base (Supabase),

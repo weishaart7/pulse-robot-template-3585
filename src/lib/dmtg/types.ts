@@ -143,6 +143,10 @@ export interface DmtgParams {
 export interface AssetValuationResult {
   lignes: Array<{ assetId: string; baseTaxableGlobale: Money; justifs: string[] }>;
   totalBaseTaxable: Money;
+  // Forfait mobilier 5% (art. 764 CGI) : fiction fiscale, à ajouter à
+  // l'assiette taxable pour le calcul des droits (beneficiary.ts,
+  // dmtg/index.ts) mais jamais à `totalBaseTaxable` — cf. assets.ts.
+  forfaitMobilier: Money;
 }
 
 export interface DismemberedRightResult {
@@ -152,6 +156,10 @@ export interface DismemberedRightResult {
 
 export interface TaxBaseResult {
   perBeneficiary: Record<string, Money>;
+  // Quote-part du forfait mobilier (art. 764 CGI) imputée à chaque
+  // bénéficiaire selon sa part civile — à ajouter uniquement à l'assiette
+  // fiscale (calcul des droits), jamais à `perBeneficiary` (patrimoine réel).
+  perBeneficiaryForfaitMobilier: Record<string, Money>;
   total: Money;
   justifs: string[];
 }
@@ -176,6 +184,10 @@ export interface DMTGBeneficiaryResult {
   baseHorsAV: Money;
   fraisFunerairesImputes: Money;
   baseApresFrais: Money;
+  // Quote-part du forfait mobilier 5% (art. 764 CGI) imputée à ce
+  // bénéficiaire pour le calcul des droits — n'est PAS incluse dans
+  // baseApresFrais (patrimoine réel), uniquement dans taxableAfterAllowance.
+  forfaitMobilierImpute: Money;
   allowanceGeneralResidual: Money;
   taxableAfterAllowance: Money;
   consumedBracketsAmount: Money;
@@ -202,4 +214,10 @@ export interface DMTGContext {
   beneficiaries: Beneficiary[];
   donations: Donation[]; // toutes donations ; on filtre <15 ans par date à date
   avContracts: AVContract[];
+  // Inventaire notarié du mobilier produit (art. 764 CGI, §19.5 L1835) : si
+  // absent/false, un forfait mobilier de 5% de l'actif brut successoral est
+  // ajouté d'office à l'assiette taxable (présomption légale, seule
+  // alternative à un inventaire réel). true = inventaire produit, pas de
+  // forfait. Défaut false = comportement le plus prudent fiscalement.
+  inventaireNotarieProduit?: boolean;
 }

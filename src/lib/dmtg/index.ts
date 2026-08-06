@@ -11,7 +11,7 @@ import dmtgParamsData from './params-dmtg.json';
  */
 export function computeDMTG(ctx: DMTGContext): DMTGResult {
   const logs: string[] = [];
-  const { deathDate, params, assets, civilShares, beneficiaries, donations, avContracts } = ctx;
+  const { deathDate, params, assets, civilShares, beneficiaries, donations, avContracts, inventaireNotarieProduit } = ctx;
 
   logs.push(`=== Calcul DMTG pour décès du ${deathDate} ===`);
   if (import.meta.env.DEV) console.log('Context DMTG:', ctx);
@@ -24,7 +24,7 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
   // sur `assets[].valeurVenale` ci-dessous).
 
   // Phase 2 : Évaluation des actifs
-  const assetValuations = filterAndValueEstateAssets(assets, params, deathDate);
+  const assetValuations = filterAndValueEstateAssets(assets, params, deathDate, inventaireNotarieProduit);
   logs.push(`Masse taxable après abattements : ${assetValuations.totalBaseTaxable}€`);
 
   // Phase 3 : Base par bénéficiaire (hors AV)
@@ -58,6 +58,12 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
     const baseApresFrais = baseHorsAV + reintegration757B;
     if (import.meta.env.DEV) console.log(`Base après frais: ${baseApresFrais}€`);
 
+    // Forfait mobilier (art. 764 CGI) : fiction fiscale, s'ajoute à
+    // l'assiette taxable (ci-dessous) mais jamais à baseApresFrais, qui
+    // reste le patrimoine réel reçu (consommé par netBreakdown.ts).
+    const forfaitMobilierImpute = taxBaseResult.perBeneficiaryForfaitMobilier[benId] || 0;
+    const baseFiscale = baseApresFrais + forfaitMobilierImpute;
+
     // Phase 4 : Rappel fiscal (15 ans)
     const donations15y = filterDonations15Years(donations, deathDate, benId);
     const recallResult = computeRecallAndAllowances({
@@ -65,12 +71,12 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
       donations15y,
       params
     });
-    
+
     if (import.meta.env.DEV) console.log(`Abattement résiduel: ${recallResult.allowanceGeneralResidual}€`);
     if (import.meta.env.DEV) console.log(`Tranches consommées: ${recallResult.consumedBracketsAmount}€`);
 
-    // Base taxable après abattements
-    const taxableAfterAllowance = Math.max(0, baseApresFrais - (recallResult.allowanceGeneralResidual === Infinity ? baseApresFrais : recallResult.allowanceGeneralResidual));
+    // Base taxable après abattements (assiette fiscale, forfait mobilier inclus)
+    const taxableAfterAllowance = Math.max(0, baseFiscale - (recallResult.allowanceGeneralResidual === Infinity ? baseFiscale : recallResult.allowanceGeneralResidual));
     if (import.meta.env.DEV) console.log(`Base taxable après abattement: ${taxableAfterAllowance}€`);
 
     // Phase 5 : Barème & calcul de droits
@@ -95,6 +101,7 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
       baseHorsAV: Math.round(baseHorsAV),
       fraisFunerairesImputes: Math.round(baseHorsAV > 0 ? params.fraisFunerairesForfait * (baseHorsAV / taxBaseResult.total) : 0),
       baseApresFrais: Math.round(baseApresFrais),
+      forfaitMobilierImpute: Math.round(forfaitMobilierImpute),
       allowanceGeneralResidual: recallResult.allowanceGeneralResidual,
       taxableAfterAllowance: Math.round(taxableAfterAllowance),
       consumedBracketsAmount: recallResult.consumedBracketsAmount,

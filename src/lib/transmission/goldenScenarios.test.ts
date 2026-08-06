@@ -126,12 +126,12 @@ describe('Golden Scenarios — Transmission (docs/Golden_Scenarios_Transmission.
       enfants.forEach(e => expect(e.partFinale).toBeCloseTo(114562.5, 0));
     });
 
-    it('droits de succession : épouse exonérée, enfants ≈1 091€ chacun (base après frais funéraires 114 000€)', () => {
+    it('droits de succession : épouse exonérée, enfants ≈2 140€ chacun (base après frais funéraires 114 000€ + quote-part du forfait mobilier 5%, art. 764 CGI)', () => {
       expect(result.dmtg.perBeneficiary['conjoint'].droitsTotaux).toBe(0);
       const droitsEnfant1 = result.dmtg.perBeneficiary['enfant1'].droitsTotaux;
       const droitsEnfant2 = result.dmtg.perBeneficiary['enfant2'].droitsTotaux;
-      expect(Math.abs(droitsEnfant1 - 1091)).toBeLessThanOrEqual(TOLERANCE);
-      expect(Math.abs(droitsEnfant2 - 1091)).toBeLessThanOrEqual(TOLERANCE);
+      expect(Math.abs(droitsEnfant1 - 2140)).toBeLessThanOrEqual(TOLERANCE);
+      expect(Math.abs(droitsEnfant2 - 2140)).toBeLessThanOrEqual(TOLERANCE);
     });
 
     it.todo('frais de notaire ≈4 950€ total — bloqué par l\'assiette immobilière (limitation 4)');
@@ -231,12 +231,12 @@ describe('Golden Scenarios — Transmission (docs/Golden_Scenarios_Transmission.
       enfants.forEach(e => expect(e.partFinale).toBeCloseTo(114562.5, 0));
     });
 
-    it('droits de succession identiques au scénario 1 (l\'assurance-vie ne modifie pas l\'assiette de succession) : ≈1 091€ chacun', () => {
+    it('droits de succession identiques au scénario 1 (l\'assurance-vie ne modifie pas l\'assiette de succession) : ≈2 140€ chacun', () => {
       expect(result.dmtg.perBeneficiary['conjoint'].droitsTotaux).toBe(0);
       const droitsEnfant1 = result.dmtg.perBeneficiary['enfant1'].droitsTotaux;
       const droitsEnfant2 = result.dmtg.perBeneficiary['enfant2'].droitsTotaux;
-      expect(Math.abs(droitsEnfant1 - 1091)).toBeLessThanOrEqual(TOLERANCE);
-      expect(Math.abs(droitsEnfant2 - 1091)).toBeLessThanOrEqual(TOLERANCE);
+      expect(Math.abs(droitsEnfant1 - 2140)).toBeLessThanOrEqual(TOLERANCE);
+      expect(Math.abs(droitsEnfant2 - 2140)).toBeLessThanOrEqual(TOLERANCE);
     });
 
     it.todo('frais de notaire ≈4 950€ total — même blocage que le scénario 1 (limitation 4)');
@@ -369,21 +369,21 @@ describe('Golden Scenarios — Transmission (docs/Golden_Scenarios_Transmission.
       expect(enfant.partFinale).toBeCloseTo(250000, 0);
     });
 
-    it('droits de succession : conjoint exonéré, enfant ≈28 044€ (base après frais funéraires 149 250€, tranche à 20%)', () => {
+    it('droits de succession : conjoint exonéré, enfant ≈30 544€ (base après frais funéraires 149 250€ + quote-part du forfait mobilier 5%, art. 764 CGI, tranche à 20%)', () => {
       expect(result.dmtg.perBeneficiary['conjoint'].droitsTotaux).toBe(0);
       const droitsEnfant = result.dmtg.perBeneficiary['enfant1'].droitsTotaux;
-      expect(Math.abs(droitsEnfant - 28044)).toBeLessThanOrEqual(TOLERANCE);
+      expect(Math.abs(droitsEnfant - 30544)).toBeLessThanOrEqual(TOLERANCE);
     });
 
     it('frais de notaire ≈5 289€ total (barème dégressif déclaration + forfait + TVA + débours 0,5%, pas d\'immobilier)', () => {
       expect(Math.abs(result.fraisNotaire - 5289)).toBeLessThanOrEqual(TOLERANCE);
     });
 
-    it('netARecevoir ≈246 605€ (conjoint) / ≈218 561€ (enfant)', () => {
+    it('netARecevoir ≈246 605€ (conjoint) / ≈216 061€ (enfant, en baisse de 2 500€ du fait des droits supplémentaires liés au forfait mobilier)', () => {
       const conjointNet = result.netBreakdown.heirs.find(h => h.personId === 'conjoint')!;
       const enfantNet = result.netBreakdown.heirs.find(h => h.personId === 'enfant1')!;
       expect(Math.abs(conjointNet.netARecevoir - 246605)).toBeLessThanOrEqual(TOLERANCE);
-      expect(Math.abs(enfantNet.netARecevoir - 218561)).toBeLessThanOrEqual(TOLERANCE);
+      expect(Math.abs(enfantNet.netARecevoir - 216061)).toBeLessThanOrEqual(TOLERANCE);
     });
   });
 
@@ -423,20 +423,20 @@ describe('Golden Scenarios — Transmission (docs/Golden_Scenarios_Transmission.
       result.heirs.forEach(h => expect(h.partFinale).toBeCloseTo(200000, 0));
     });
 
-    it('droits de succession (barème frère/sœur 35%/45%, abattement 15 932€, base après frais funéraires 199 250€) : ≈80 050€ chacun', () => {
+    it('droits de succession (barème frère/sœur 35%/45%, abattement 15 932€, base après frais funéraires 199 250€ + quote-part du forfait mobilier 5%, art. 764 CGI) : ≈84 550€ chacun', () => {
       const droits1 = result.dmtg.perBeneficiary['frere1'].droitsTotaux;
       const droits2 = result.dmtg.perBeneficiary['frere2'].droitsTotaux;
-      expect(Math.abs(droits1 - 80050)).toBeLessThanOrEqual(TOLERANCE);
-      expect(Math.abs(droits2 - 80050)).toBeLessThanOrEqual(TOLERANCE);
+      expect(Math.abs(droits1 - 84550)).toBeLessThanOrEqual(TOLERANCE);
+      expect(Math.abs(droits2 - 84550)).toBeLessThanOrEqual(TOLERANCE);
     });
 
     it('frais de notaire ≈4 278€ total (barème dégressif déclaration + forfait + TVA + débours 0,5%, pas d\'immobilier)', () => {
       expect(Math.abs(result.fraisNotaire - 4278)).toBeLessThanOrEqual(TOLERANCE);
     });
 
-    it('netARecevoir ≈117 061€ chacun', () => {
+    it('netARecevoir ≈112 560€ chacun (en baisse de ≈4 500€ du fait des droits supplémentaires liés au forfait mobilier)', () => {
       result.netBreakdown.heirs.forEach(h => {
-        expect(Math.abs(h.netARecevoir - 117061)).toBeLessThanOrEqual(TOLERANCE);
+        expect(Math.abs(h.netARecevoir - 112560)).toBeLessThanOrEqual(TOLERANCE);
       });
     });
 

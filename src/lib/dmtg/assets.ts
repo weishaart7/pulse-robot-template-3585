@@ -1,9 +1,10 @@
 import { Asset, DmtgParams, AssetValuationResult, DismemberedRightResult } from './types';
 
 export function filterAndValueEstateAssets(
-  assets: Asset[], 
-  params: DmtgParams, 
-  deathDate: string
+  assets: Asset[],
+  params: DmtgParams,
+  deathDate: string,
+  inventaireNotarieProduit: boolean = false
 ): AssetValuationResult {
   const lignes: Array<{ assetId: string; baseTaxableGlobale: number; justifs: string[] }> = [];
   let totalBaseTaxable = 0;
@@ -63,9 +64,20 @@ export function filterAndValueEstateAssets(
     });
   }
 
+  // Forfait mobilier de 5% (art. 764 CGI, présomption légale sur l'actif
+  // brut successoral hors le forfait lui-même — pas d'effet cumulatif), sauf
+  // inventaire notarié produit. Fiction fiscale pure : gonfle l'assiette
+  // taxable (renvoyée séparément ci-dessous, consommée par
+  // beneficiary.ts/dmtg/index.ts pour le calcul des droits) mais ne doit
+  // JAMAIS s'ajouter à `totalBaseTaxable`, qui sert aussi de valeur de
+  // patrimoine réel réparti entre héritiers (netBreakdown.ts) — un bien qui
+  // n'existe pas ne peut pas être "reçu".
+  const forfaitMobilier = inventaireNotarieProduit ? 0 : Math.round(totalBaseTaxable * 0.05);
+
   return {
     lignes,
-    totalBaseTaxable: Math.round(totalBaseTaxable)
+    totalBaseTaxable: Math.round(totalBaseTaxable),
+    forfaitMobilier
   };
 }
 

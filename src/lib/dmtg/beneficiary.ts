@@ -8,11 +8,13 @@ export function buildTaxBaseByBeneficiary(
   deathDate: string
 ): TaxBaseResult {
   const perBeneficiary: Record<string, number> = {};
+  const perBeneficiaryForfaitMobilier: Record<string, number> = {};
   const justifs: string[] = [];
 
   // Initialiser les bases pour chaque bénéficiaire
   beneficiaries.forEach(ben => {
     perBeneficiary[ben.id] = 0;
+    perBeneficiaryForfaitMobilier[ben.id] = 0;
   });
 
   // Répartir selon les parts civiles
@@ -21,6 +23,12 @@ export function buildTaxBaseByBeneficiary(
       const partBrute = assetValuations.totalBaseTaxable * share.fraction;
       perBeneficiary[share.beneficiaryId] += partBrute;
       justifs.push(`${share.beneficiaryId} : ${(share.fraction * 100)}% = ${Math.round(partBrute)}€`);
+
+      // Forfait mobilier (art. 764 CGI) : même clé de répartition, mais
+      // jamais mêlé à perBeneficiary (fiction fiscale, cf. types.ts).
+      if (assetValuations.forfaitMobilier > 0) {
+        perBeneficiaryForfaitMobilier[share.beneficiaryId] += assetValuations.forfaitMobilier * share.fraction;
+      }
     }
   });
 
@@ -41,8 +49,13 @@ export function buildTaxBaseByBeneficiary(
 
   const total = Object.values(perBeneficiary).reduce((sum, val) => sum + val, 0);
 
+  beneficiaries.forEach(ben => {
+    perBeneficiaryForfaitMobilier[ben.id] = Math.round(perBeneficiaryForfaitMobilier[ben.id]);
+  });
+
   return {
     perBeneficiary,
+    perBeneficiaryForfaitMobilier,
     total: Math.round(total),
     justifs
   };

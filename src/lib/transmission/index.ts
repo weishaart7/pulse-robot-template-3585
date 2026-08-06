@@ -685,7 +685,8 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     civilShares,
     beneficiaries,
     donations: dmtgDonations,
-    avContracts
+    avContracts,
+    inventaireNotarieProduit: params.inventaireNotarieProduit
   });
 
   // 9. Frais de notaire : émoluments (barème dégressif déclaration de

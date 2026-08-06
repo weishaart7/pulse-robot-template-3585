@@ -127,11 +127,11 @@ describe('computeChainedTransmission — cas-test Imeris Patrimoine (Titouan/Jul
       expect(result.secondDeath.masseCalcul).toBeCloseTo(643570, 0);
     });
 
-    it('2nd décès (Julie) : droits de succession ≈85 103€ (écart ≈300€ vs Imeris dû au forfait de frais funéraires, cf. en-tête du fichier)', () => {
+    it('2nd décès (Julie) : droits de succession ≈91 238€ (Imeris 85 103€ + forfait mobilier 5% art. 764 CGI, non modélisé côté Imeris — cf. en-tête du fichier)', () => {
       // Valeur produite par notre moteur (forfait frais funéraires art. 775
-      // CGI inclus) — volontairement pas toBe(85103), cf. en-tête du fichier.
-      expect(result.secondDeath.dmtg.totals.droitsTotaux).toBeCloseTo(84802, 0);
-      expect(Math.abs(result.secondDeath.dmtg.totals.droitsTotaux - 85103)).toBeLessThan(500);
+      // CGI + forfait mobilier art. 764 CGI inclus) — volontairement pas
+      // toBe(85103), cf. en-tête du fichier.
+      expect(result.secondDeath.dmtg.totals.droitsTotaux).toBeCloseTo(91238, 0);
     });
 
     it('réunion d\'usufruit : 315 200€ au total, répartis 157 600€ chacun entre Romy et Austin (nu-propriétaires du 1er décès), hors taxation', () => {
@@ -143,7 +143,7 @@ describe('computeChainedTransmission — cas-test Imeris Patrimoine (Titouan/Jul
 
       // Hors taxation : la réunion ne modifie jamais les droits du 2nd décès,
       // déjà vérifiés ci-dessus indépendamment de ce montant.
-      expect(result.secondDeath.dmtg.totals.droitsTotaux).toBeLessThan(90000);
+      expect(result.secondDeath.dmtg.totals.droitsTotaux).toBeLessThan(95000);
     });
 
     it('transmission nette combinée : Romy et Austin reçoivent leur héritage net du 2nd décès + leur part de réunion', () => {
@@ -235,8 +235,8 @@ describe('computeChainedTransmission — cas-test Imeris Patrimoine (Titouan/Jul
       expect(result.secondDeath.masseCalcul).toBeCloseTo(386183, 0);
     });
 
-    it('2nd décès (Titouan) : droits de succession ≈33 625€ (même écart méthodologique que l\'ordre normal, cf. en-tête du fichier)', () => {
-      expect(Math.abs(result.secondDeath.dmtg.totals.droitsTotaux - 33625)).toBeLessThan(500);
+    it('2nd décès (Titouan) : droits de succession ≈37 188€ (Imeris 33 625€ + forfait mobilier 5% art. 764 CGI, même écart méthodologique que l\'ordre normal, cf. en-tête du fichier)', () => {
+      expect(Math.abs(result.secondDeath.dmtg.totals.droitsTotaux - 37188)).toBeLessThan(500);
     });
 
     it('le même chemin de code (computeChainedTransmission) produit les deux ordres — aucune fonction dédiée à "Julie d\'abord"', () => {

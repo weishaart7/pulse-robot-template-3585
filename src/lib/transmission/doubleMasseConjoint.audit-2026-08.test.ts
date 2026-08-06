@@ -184,8 +184,12 @@ describe('Audit 2026-08 — double masse du conjoint (art. 758-5), correctif "ra
     // identiques ici).
     expect(e1Net?.netARecevoir).toBe(0);
     expect(conjointNet?.netARecevoir).toBe(165237);
-    expect(e2Net?.netARecevoir).toBe(153809);
-    expect(e3Net?.netARecevoir).toBe(153809);
+    // e2/e3 : 152 143€ (au lieu de 153 809€) depuis l'ajout du forfait
+    // mobilier 5% (art. 764 CGI) : conjoint exonéré donc net inchangé, e2/e3
+    // paient plus de droits sur leur quote-part du forfait, donc reçoivent
+    // 1 666€ de moins chacun.
+    expect(e2Net?.netARecevoir).toBe(152143);
+    expect(e3Net?.netARecevoir).toBe(152143);
 
     expect(result.explicationsTexte?.some(t => AVERTISSEMENT_RESIDUEL_INSUFFISANT.test(t))).toBe(true);
   });
