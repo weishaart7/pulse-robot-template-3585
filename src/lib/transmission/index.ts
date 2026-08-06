@@ -382,6 +382,14 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // démembrement usufruit/nue-propriété est appliqué ici, pas dans
   // successionLegale.ts qui ne fait que qualifier le type de droit).
   const personIdsDejaImputes = new Set<PersonId>();
+  // dejaDetenus[i] (aligné avec heirs[i]) = donations RAPPORTABLES déjà
+  // détenues par cet héritier (= le rapportTotal soustrait ci-dessous, avant
+  // réintégration des libéralités maintenues) — nécessaire en aval (§6bis)
+  // pour distinguer, dans partFinale, ce qui est déjà en possession de
+  // l'héritier de ce qui reste réellement à recevoir en cash de la
+  // succession. Comme rapportTotal/liberalitesMaintenues, n'est renseigné
+  // qu'une seule fois par personId (première ligne rencontrée), 0 sinon.
+  const dejaDetenus: number[] = [];
   const heirs = heirsShares.map(heir => {
     // Usufruit et nue-propriété portent chacun quotePart = 1.0 sur la MÊME
     // assiette : sans ce facteur, la somme des partFinale double la masse
@@ -402,6 +410,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     const dejaImpute = personIdsDejaImputes.has(heir.personId);
     personIdsDejaImputes.add(heir.personId);
 
+    let dejaDetenu = 0;
     if (!dejaImpute) {
       // Somme de tous les rapports de cet héritier (pas juste le premier
       // trouvé) : un même enfant peut cumuler une donation en avance de
@@ -410,6 +419,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
         .filter(r => r.personId === heir.personId)
         .reduce((sum, r) => sum + r.montantRapport, 0);
       partFinale -= rapportTotal;
+      dejaDetenu = rapportTotal;
 
       // Ajouter les libéralités maintenues
       const liberalitesMaintenues = liberalites
@@ -421,6 +431,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
 
       partFinale += liberalitesMaintenues;
     }
+    dejaDetenus.push(dejaDetenu);
 
     return {
       personId: heir.personId,
@@ -435,17 +446,69 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     };
   });
 
+  // 6bis. Répartition du CASH RÉEL par « rapport en moins prenant » (art. 858
+  // C. civ., Annexe 1 Étape 7.2-7.3) — corrige l'absence de masse d'exercice
+  // distincte pour le conjoint (art. 758-5). `partFinale` reste la part
+  // théorique TOTALE en valeur (donation antérieure comprise) : on n'y touche
+  // pas. La fraction utilisée en aval pour répartir le cash réellement
+  // disponible (civilShares → assiette fiscale DMTG ET netBreakdown, un seul
+  // point de correction pour les deux, cf. docs/audit-transmission-clamp-
+  // double-masse-2026-08.md Étape 0) doit en revanche exclure ce qu'un
+  // héritier détient déjà via une donation rapportable maintenue (dejaDetenu),
+  // sous peine de continuer à faire percevoir au donataire déjà sur-doté une
+  // part du résiduel réel qui devrait revenir aux héritiers sous-dotés (dont
+  // le conjoint en priorité). Cf. docs/design-rapport-moins-prenant-2026-08.md
+  // pour la démonstration et la vérification contre 5 scénarios.
+  const residuelReel = Math.max(0, patrimony.biensExistants - patrimony.passifs);
+  const cashDus = heirs.map((h, i) => Math.max(0, h.partFinale - dejaDetenus[i]));
+  const sumCashDu = cashDus.reduce((sum, c) => sum + c, 0);
+
+  let cashReparti: number[];
+  if (sumCashDu <= residuelReel) {
+    cashReparti = cashDus.slice();
+    const surplus = residuelReel - sumCashDu;
+    if (surplus > 0) {
+      // Résiduel réel strictement supérieur à la somme des cashDu théoriques :
+      // sous-cas non rencontré dans les 5 scénarios de docs/design-rapport-
+      // moins-prenant-2026-08.md (§1.1 — ne peut structurellement survenir
+      // qu'en l'absence de donation rapportable significative, cas où
+      // sumCashDu == résiduelReel par construction). Réparti au prorata des
+      // quoteParts d'origine (avant rapport/démembrement), faute de scénario
+      // testé validant une autre clé pour ce sous-cas précis.
+      const sumQuotePart = heirsShares.reduce((sum, h) => sum + h.quotePart, 0);
+      cashReparti = cashReparti.map((c, i) =>
+        c + (sumQuotePart > 0 ? surplus * (heirsShares[i].quotePart / sumQuotePart) : 0)
+      );
+    }
+  } else {
+    // Résiduel réel insuffisant pour couvrir tous les cashDu simultanément
+    // (conjoint exhérédé de fait, art. 758-5, éventuellement en concurrence
+    // avec un autre héritier sous-doté) : répartition proportionnelle aux
+    // cashDu respectifs — arbitrage rendu le 2026-08 (docs/design-rapport-
+    // moins-prenant-2026-08.md §1.2), faute de clé de répartition explicite
+    // dans le référentiel entre plusieurs héritiers simultanément sous-dotés.
+    // Approximation à confirmer par le notaire, pas un partage légalement figé.
+    cashReparti = cashDus.map(c => sumCashDu > 0 ? residuelReel * (c / sumCashDu) : 0);
+    successionLegaleResult.explicationsTexte.push(
+      `Le résiduel réellement disponible (${Math.round(residuelReel).toLocaleString('fr-FR')} €) ` +
+      `est insuffisant pour couvrir les parts dues aux héritiers non intégralement couvertes ` +
+      `par leurs libéralités déjà perçues (${Math.round(sumCashDu).toLocaleString('fr-FR')} € au total, art. 758-5, 858 C. civ.). ` +
+      `La répartition affichée est une approximation proportionnelle aux montants dus par chacun, ` +
+      `pas un partage légalement figé — à confirmer par le notaire.`
+    );
+  }
+
   // 7. Construction des entrées DMTG (déplacé depuis Synthese.tsx — Phase 2
   // de la consolidation du moteur : computeTransmission appelle lui-même
   // computeDMTG, l'UI n'a plus à connaître la forme du contexte DMTG).
 
-  // civilShares[].fraction = part de CE bien dans la masse totale, calculée
-  // sur la somme réelle des partFinale (pas sur transmissionNette, déjà nette
-  // d'impôts — c'était le bug corrigé ici, à sa vraie source).
-  const sumPartFinale = heirs.reduce((sum, h) => sum + h.partFinale, 0);
-  const civilShares: CivilShare[] = heirs.map(heir => ({
+  // civilShares[].fraction = part de CHAQUE héritier dans le résiduel réel
+  // disponible (cashReparti, ci-dessus), PAS dans la masse théorique totale
+  // (partFinale) — c'est ce qui distingue « ce qui est dû en valeur » de « ce
+  // qui reste réellement à recevoir en cash de la succession ».
+  const civilShares: CivilShare[] = heirs.map((heir, i) => ({
     beneficiaryId: heir.personId,
-    fraction: sumPartFinale > 0 ? heir.partFinale / sumPartFinale : 0,
+    fraction: residuelReel > 0 ? cashReparti[i] / residuelReel : 0,
     source: 'legal'
   }));
 

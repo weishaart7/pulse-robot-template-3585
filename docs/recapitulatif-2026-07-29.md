@@ -114,3 +114,22 @@ Sources : historique git (`main`, jusqu'à `2835f30`), `docs/audit-patrimoine-20
 
 - Deux audits diagnostics existent déjà dans `docs/` : [`audit-patrimoine-2026-07-28.md`](audit-patrimoine-2026-07-28.md) (fond du module Patrimoine, dette technique §7) et [`audit-recompenses-creances-2026-07-28.md`](audit-recompenses-creances-2026-07-28.md) (module récompenses/créances). Ce récapitulatif en reprend et actualise les points encore ouverts au 29/07, sans tout ré-auditer.
 - Certains points marqués "à reconfirmer" ci-dessus datent de l'audit du 28/07 et ont pu être résolus par les commits du 29/07 (999a24c, 462777d) sans qu'un nouvel audit ne l'ait vérifié formellement.
+
+## 5. Note de résolution (2026-08) — double masse du conjoint (art. 758-5)
+
+Le chantier ouvert par `docs/audit-transmission-devolution-conjoint-2026-08.md` §4.4
+(absence de masse d'exercice distincte pour le conjoint), creusé par
+`docs/audit-transmission-clamp-double-masse-2026-08.md` (cas chiffré confirmé, le
+clamp `Math.max(0, partFinale)` était en réalité mort — le vrai bug se trouvait dans la
+fraction `civilShares` utilisée pour répartir le cash réel) puis conçu par
+`docs/design-rapport-moins-prenant-2026-08.md`, est **implémenté** dans `index.ts`
+(§6bis, mécanisme « rapport en moins prenant », art. 858 C. civ.) : `partFinale` reste
+la part théorique totale, mais `civilShares.fraction` répartit désormais le résiduel
+réel en excluant ce que chaque héritier détient déjà via une donation rapportable
+maintenue. Un seul point de correction a suffi pour le civil (`netBreakdown`) et le
+fiscal (assiette DMTG), cf. Étape 0 du design. Quand le résiduel réel ne couvre pas
+tous les héritiers simultanément sous-dotés (ex. conjoint en concurrence avec un autre
+enfant non-donataire), la répartition est proportionnelle aux montants dus par chacun
+(arbitrage rendu le 2026-08) avec un avertissement explicite dans
+`explicationsTexte` («&nbsp;à confirmer par le notaire&nbsp;»). Tests de régression :
+`src/lib/transmission/doubleMasseConjoint.audit-2026-08.test.ts` (5 scénarios).
