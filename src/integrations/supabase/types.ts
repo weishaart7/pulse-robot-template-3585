@@ -1588,6 +1588,8 @@ export type Database = {
           regime_matrimonial: string | null
           residence_fiscale_etranger_conjoint: boolean | null
           residence_separee: boolean
+          separation_corps_clause_renonciation: boolean
+          separation_de_corps: boolean
           statut_couple: string | null
           telephone_conjoint: string | null
           updated_at: string | null
@@ -1645,6 +1647,8 @@ export type Database = {
           regime_matrimonial?: string | null
           residence_fiscale_etranger_conjoint?: boolean | null
           residence_separee?: boolean
+          separation_corps_clause_renonciation?: boolean
+          separation_de_corps?: boolean
           statut_couple?: string | null
           telephone_conjoint?: string | null
           updated_at?: string | null
@@ -1702,6 +1706,8 @@ export type Database = {
           regime_matrimonial?: string | null
           residence_fiscale_etranger_conjoint?: boolean | null
           residence_separee?: boolean
+          separation_corps_clause_renonciation?: boolean
+          separation_de_corps?: boolean
           statut_couple?: string | null
           telephone_conjoint?: string | null
           updated_at?: string | null

@@ -193,6 +193,47 @@ describe('buildSpouseAsDecedentFamilyGraph — renoncantDe traduit depuis enfant
   });
 });
 
+describe('buildFamilyGraph — séparation de corps (C. civ. art. 732, référentiel §5.1)', () => {
+  it("séparé de corps SANS clause de renonciation : reste conjoint successible (hasSurvivingSpouse true), chiffré 2 enfants + conjoint sur 600 000 €", () => {
+    const maritalStatusSeparation: MaritalStatus = {
+      ...maritalStatus,
+      separation_de_corps: true,
+      separation_corps_clause_renonciation: false
+    };
+    const enfant1 = buildChildLink({ id: 'enfant-1', parent_de: 'both_parents' });
+    const enfant2 = buildChildLink({ id: 'enfant-2', prenom: 'Léo', parent_de: 'both_parents' });
+    const graph = buildFamilyGraph(familyProfile, maritalStatusSeparation, [enfant1, enfant2]);
+
+    expect(graph.hasSurvivingSpouse).toBe(true);
+
+    const result = calculateSuccessionLegale(graph);
+    const conjointPart = result.heritiers.find(h => h.lien === 'conjoint');
+    // Option légale par défaut du conjoint en présence d'enfants communs : 1/4 en pleine propriété.
+    expect(conjointPart?.quotePart).toBe(0.25);
+    expect(conjointPart!.quotePart * 600000).toBe(150000);
+  });
+
+  it("séparé de corps AVEC clause de renonciation aux droits successoraux : perd la qualité de conjoint successible (hasSurvivingSpouse false), les enfants se partagent 100%", () => {
+    const maritalStatusSeparation: MaritalStatus = {
+      ...maritalStatus,
+      separation_de_corps: true,
+      separation_corps_clause_renonciation: true
+    };
+    const enfant1 = buildChildLink({ id: 'enfant-1', parent_de: 'both_parents' });
+    const enfant2 = buildChildLink({ id: 'enfant-2', prenom: 'Léo', parent_de: 'both_parents' });
+    const graph = buildFamilyGraph(familyProfile, maritalStatusSeparation, [enfant1, enfant2]);
+
+    expect(graph.hasSurvivingSpouse).toBe(false);
+
+    const result = calculateSuccessionLegale(graph);
+    expect(result.heritiers.some(h => h.lien === 'conjoint')).toBe(false);
+    const totalEnfants = result.heritiers
+      .filter(h => h.personId === 'enfant-1' || h.personId === 'enfant-2')
+      .reduce((sum, h) => sum + h.quotePart, 0);
+    expect(totalEnfants).toBe(1);
+  });
+});
+
 function buildSiblingLink(overrides: Partial<FamilyLink>): FamilyLink {
   return {
     id: 'frere-1',

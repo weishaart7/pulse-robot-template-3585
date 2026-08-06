@@ -493,7 +493,13 @@ export function buildFamilyGraph(
       estDecede: false,
       lienFamilial: 'conjoint'
     });
-    hasSurvivingSpouse = true;
+    // Époux séparé de corps : reste conjoint successible (C. civ. art. 732,
+    // référentiel §5.1), sauf si la convention de séparation contient une
+    // clause de renonciation aux droits successoraux.
+    const perdQualiteSuccessible =
+      maritalStatus.separation_de_corps === true &&
+      maritalStatus.separation_corps_clause_renonciation === true;
+    hasSurvivingSpouse = !perdQualiteSuccessible;
     survivingSpouseId = spouseId;
 
     links.push({ from: decedentId, to: spouseId, relation: 'spouse' });

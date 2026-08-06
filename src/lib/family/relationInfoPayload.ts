@@ -15,6 +15,8 @@ export interface RelationInfoFormValues {
   pasDeContrat?: boolean;
   impositionDistincte?: boolean;
   residenceSeparee?: boolean;
+  separationDeCorps?: boolean;
+  separationCorpsClauseRenonciation?: boolean;
   loiApplicableRegime?: string;
   paysPremierDomicileMatrimonial?: string;
   donationDernierVivantPersonne?: boolean;
@@ -63,6 +65,8 @@ export const buildRelationInfoPayload = (
       mariage_precedent_conjoint: data.mariagePrecedentConjoint ?? false,
       duree_mariage_precedent_conjoint_annees: data.dureeMariagePrecedentConjointAnnees ?? null,
       duree_mariage_precedent_conjoint_mois: data.dureeMariagePrecedentConjointMois ?? null,
+      separation_de_corps: data.separationDeCorps ?? false,
+      separation_corps_clause_renonciation: data.separationCorpsClauseRenonciation ?? false,
     };
   }
 

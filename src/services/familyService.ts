@@ -30,6 +30,8 @@ export interface MaritalStatus {
   id?: string;
   user_id?: string;
   statut_couple?: string | null;
+  separation_de_corps?: boolean;
+  separation_corps_clause_renonciation?: boolean;
   nom_conjoint?: string;
   prenom_conjoint?: string;
   civilite_conjoint?: string;

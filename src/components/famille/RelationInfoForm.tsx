@@ -53,6 +53,8 @@ const formSchema = z.object({
   pasDeContrat: z.boolean().default(false),
   impositionDistincte: z.boolean().default(false),
   residenceSeparee: z.boolean().default(false),
+  separationDeCorps: z.boolean().default(false),
+  separationCorpsClauseRenonciation: z.boolean().default(false),
   // Éléments d'extranéité du régime matrimonial (DIP, §4.4, §12.1) : simple
   // signalement déclaratif, sans validation de format ni automatisation des
   // régimes de rattachement (Convention de La Haye 1978, Règlement Rome III).
@@ -89,6 +91,8 @@ const FIELD_TO_SECTION: Partial<Record<keyof FormData, Section>> = {
   pasDeContrat: 'informations-generales',
   impositionDistincte: 'informations-generales',
   residenceSeparee: 'informations-generales',
+  separationDeCorps: 'informations-generales',
+  separationCorpsClauseRenonciation: 'informations-generales',
   loiApplicableRegime: 'informations-generales',
   paysPremierDomicileMatrimonial: 'informations-generales',
   donationDernierVivantPersonne: 'donation',
@@ -136,6 +140,8 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
       pasDeContrat: false,
       impositionDistincte: false,
       residenceSeparee: false,
+      separationDeCorps: false,
+      separationCorpsClauseRenonciation: false,
       loiApplicableRegime: "",
       paysPremierDomicileMatrimonial: "",
       donationDernierVivantPersonne: false,
@@ -156,6 +162,8 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
         pasDeContrat: maritalData.pas_de_contrat_mariage || false,
         impositionDistincte: maritalData.imposition_distincte || false,
         residenceSeparee: maritalData.residence_separee || false,
+        separationDeCorps: maritalData.separation_de_corps || false,
+        separationCorpsClauseRenonciation: maritalData.separation_corps_clause_renonciation || false,
         loiApplicableRegime: maritalData.loi_applicable_regime || "",
         paysPremierDomicileMatrimonial: maritalData.pays_premier_domicile_matrimonial || "",
         donationDernierVivantPersonne: maritalData.donation_dernier_vivant_personne || false,
@@ -296,6 +304,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
   const regimeMatrimonial = form.watch("regimeMatrimonial");
   const conventionPacs = form.watch("conventionPacs");
   const residenceSeparee = form.watch("residenceSeparee");
+  const separationDeCorps = form.watch("separationDeCorps");
   const pasDeContrat = form.watch("pasDeContrat");
   const dateMariage = form.watch("dateMariage");
   const mariagePrecedentPersonne = form.watch("mariagePrecedentPersonne");
@@ -502,6 +511,36 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                         Réservée aux régimes séparation de biens ou participation aux acquêts, avec résidence séparée (art. 6, 4-a CGI).
                       </p>
                     )}
+                    <FormField
+                      control={form.control}
+                      name="separationDeCorps"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                          <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                          <FormLabel className="text-sm">Séparation de corps</FormLabel>
+                        </FormItem>
+                      )}
+                    />
+                    {/* L'époux séparé de corps reste conjoint successible sauf clause de
+                        renonciation dans la convention (C. civ. art. 732, référentiel §5.1) */}
+                    <FormField
+                      control={form.control}
+                      name="separationCorpsClauseRenonciation"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              disabled={!separationDeCorps}
+                            />
+                          </FormControl>
+                          <FormLabel className={cn("text-sm", !separationDeCorps && "text-muted-foreground")}>
+                            Clause de renonciation aux droits successoraux (convention de séparation)
+                          </FormLabel>
+                        </FormItem>
+                      )}
+                    />
                   </div>
 
                   {/* Éléments d'extranéité (DIP, §4.4, §12.1) : signalement déclaratif
