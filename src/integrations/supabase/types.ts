@@ -1468,6 +1468,7 @@ export type Database = {
           groupe_id: string | null
           id: string
           montant: number | null
+          montant_rapport_forfaitaire: number | null
           nature: string | null
           pourcentage: number | null
           prise_en_charge_droits: boolean | null
@@ -1493,6 +1494,7 @@ export type Database = {
           groupe_id?: string | null
           id?: string
           montant?: number | null
+          montant_rapport_forfaitaire?: number | null
           nature?: string | null
           pourcentage?: number | null
           prise_en_charge_droits?: boolean | null
@@ -1518,6 +1520,7 @@ export type Database = {
           groupe_id?: string | null
           id?: string
           montant?: number | null
+          montant_rapport_forfaitaire?: number | null
           nature?: string | null
           pourcentage?: number | null
           prise_en_charge_droits?: boolean | null
