@@ -1568,6 +1568,7 @@ export type Database = {
           date_pacs: string | null
           donation_dernier_vivant_conjoint: boolean | null
           donation_dernier_vivant_personne: boolean | null
+          duh_opte: boolean
           duree_mariage_precedent_conjoint_annees: number | null
           duree_mariage_precedent_conjoint_mois: number | null
           duree_mariage_precedent_personne_annees: number | null
@@ -1627,6 +1628,7 @@ export type Database = {
           date_pacs?: string | null
           donation_dernier_vivant_conjoint?: boolean | null
           donation_dernier_vivant_personne?: boolean | null
+          duh_opte?: boolean
           duree_mariage_precedent_conjoint_annees?: number | null
           duree_mariage_precedent_conjoint_mois?: number | null
           duree_mariage_precedent_personne_annees?: number | null
@@ -1686,6 +1688,7 @@ export type Database = {
           date_pacs?: string | null
           donation_dernier_vivant_conjoint?: boolean | null
           donation_dernier_vivant_personne?: boolean | null
+          duh_opte?: boolean
           duree_mariage_precedent_conjoint_annees?: number | null
           duree_mariage_precedent_conjoint_mois?: number | null
           duree_mariage_precedent_personne_annees?: number | null

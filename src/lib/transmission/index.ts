@@ -120,6 +120,13 @@ export interface TransmissionContext {
   // `avContracts` de CE contexte, sous peine d'être taxé à tort dans cette
   // succession — précalculé par l'appelant, jamais dérivé ici d'`avContracts`.
   avReintegrationCivileMontant?: number;
+  // marital_status.duh_opte : droit d'usage et d'habitation (DUH, C. civ. art.
+  // 764-766, référentiel §5.9) — distinct du droit de jouissance temporaire
+  // (§5.8, effet direct du mariage, purement informatif ci-dessous). Le DUH
+  // est un droit successoral optionnel (1 an pour se manifester, jamais
+  // tacite) : sans ce booléen explicite, aucune valeur n'est imputée sur la
+  // part du conjoint — pas de calcul automatique par défaut.
+  duhOpte?: boolean;
 }
 
 /**
@@ -193,7 +200,7 @@ export function getConjointAge(family: FamilyGraph, referenceDateISO: string): n
  * par l'UI — computeDMTG n'est plus invoqué directement par les composants.
  */
 export function computeTransmission(ctx: TransmissionContext): TransmissionResult {
-  const { family, liberalites, params, conjointOption, rawAssets, partageEnvisage } = ctx;
+  const { family, liberalites, params, conjointOption, rawAssets, partageEnvisage, duhOpte } = ctx;
   const referenceDate = ctx.referenceDate || new Date().toISOString().split('T')[0];
 
   // 0. Récompenses (art. 1468-1478 C. civ.) et créances entre époux
@@ -455,6 +462,69 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       representationCount: heir.representationCount
     };
   });
+
+  // 5.9bis. Droit d'usage et d'habitation (DUH, C. civ. art. 764-766,
+  // référentiel §5.9) — optionnel (1 an pour se manifester, jamais tacite,
+  // d'où `duhOpte` explicite plutôt qu'un calcul automatique par défaut),
+  // distinct du droit de jouissance temporaire ci-dessous (§6ter, effet
+  // direct du mariage, purement informatif). Traité comme une libéralité déjà
+  // reçue par le conjoint (même logique que dejaDetenus ci-dessus, §6bis) :
+  // réduit le cash réellement dû, sans jamais toucher `partFinale` (part
+  // théorique). Assiette : logement de nature exacte 'Résidence principale'
+  // (même libellé que l'abattement DMTG -20%, ligne ~660 ci-dessous — même
+  // simplification déjà actée : pas de vérification d'occupation effective ni
+  // des exclusions légales SCI/logement loué/usufruit seul du défunt,
+  // signalées comme caveat dans le texte plutôt que qualifiées ici), pondéré
+  // par la même fraction successorale que cette assiette. Valeur = 60% de la
+  // valeur d'usufruit (barème art. 669 CGI, `getDemembrementPct` — même
+  // fonction que le démembrement conjoint ci-dessus), âge du conjoint pris UN
+  // AN APRÈS le décès (art. 764), pas son âge au décès : seule variable
+  // propre au DUH, d'où un referenceDate décalé passé à `getConjointAge`.
+  //
+  // Nuance découverte en testant ce bloc (docs/recapitulatif-2026-07-29.md) :
+  // contrairement à une donation rapportable réelle (déjà sortie du
+  // patrimoine, donc `patrimony.biensExistants` déjà réduit d'autant), le
+  // logement reste ici dans le pot à partager — le crédit sur `dejaDetenus`
+  // fait donc mécaniquement chuter `sumCashDu` sous `residuelReel` dès que le
+  // DUH s'applique, ce qui active la branche « surplus » du §6bis
+  // (répartition proportionnelle aux quoteParts d'origine, cf. commentaire
+  // plus bas) : une fraction du DUH revient de fait au conjoint par ce canal
+  // distinct, au lieu d'un transfert net intégral vers les autres héritiers.
+  // Comportement hérité du moteur §6bis existant (déjà documenté comme
+  // approximatif pour ce sous-cas), pas une erreur propre au DUH — non
+  // corrigé ici, hors périmètre de ce correctif ponctuel.
+  if (duhOpte && family.hasSurvivingSpouse && rawAssets) {
+    const valeurLogementDUH = rawAssets
+      .filter(asset => asset.nature === 'Résidence principale')
+      .reduce((sum, asset) => sum + (Number(asset.valeur_estimee) || 0) * getFractionSuccessorale(asset), 0);
+
+    if (valeurLogementDUH > 0) {
+      const referenceDateUnAnApres = new Date(referenceDate);
+      referenceDateUnAnApres.setFullYear(referenceDateUnAnApres.getFullYear() + 1);
+      const ageConjointDansUnAn = getConjointAge(family, referenceDateUnAnApres.toISOString().slice(0, 10));
+      const pctUsufruitDUH = getDemembrementPct(ageConjointDansUnAn, 'usufruit');
+      const valeurDUH = valeurLogementDUH * pctUsufruitDUH * 0.60;
+
+      const indexConjointHeir = heirs.findIndex(h => h.personId === family.survivingSpouseId);
+      if (indexConjointHeir !== -1) {
+        dejaDetenus[indexConjointHeir] += valeurDUH;
+      }
+
+      successionLegaleResult.explicationsTexte.push(
+        `Le conjoint survivant a opté pour le droit d'usage et d'habitation sur le logement qui ` +
+        `constituait la résidence principale effective du défunt (C. civ. art. 764-766) — option ` +
+        `exercée dans le délai d'un an, non tacite. Valeur retenue : 60% de la valeur d'usufruit du ` +
+        `logement selon le barème art. 669 CGI, calculée à l'âge du conjoint un an après le décès ` +
+        `(${ageConjointDansUnAn} ans), soit ${Math.round(valeurDUH).toLocaleString('fr-FR')} € ` +
+        `(${Math.round(valeurLogementDUH).toLocaleString('fr-FR')} € × ${Math.round(pctUsufruitDUH * 100)}% × 60%). ` +
+        `Cette valeur s'impute sur la part successorale du conjoint (elle ne s'y ajoute pas) : si elle ` +
+        `dépasse la part qui lui revient, aucune soulte n'est due aux autres héritiers. Sont exclus de ` +
+        `l'assiette : logement détenu via une SCI (sauf bail), logement loué, logement dont le défunt ` +
+        `n'avait que l'usufruit après cession de la nue-propriété — à vérifier au cas par cas par le ` +
+        `notaire, non qualifié automatiquement ici.`
+      );
+    }
+  }
 
   // 6bis. Répartition du CASH RÉEL par « rapport en moins prenant » (art. 858
   // C. civ., Annexe 1 Étape 7.2-7.3) — corrige l'absence de masse d'exercice

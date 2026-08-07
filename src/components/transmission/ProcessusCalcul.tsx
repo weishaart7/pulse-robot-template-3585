@@ -116,6 +116,7 @@ export const ProcessusCalcul = () => {
         // computeTransmission).
         avReintegrationCivileMontant: computeAVReintegrationCivile(avContracts, 'spouse', regimeMatrimonialSiMarie),
         partageEnvisage: !!(maritalStatus as any)?.partage_envisage,
+        duhOpte: !!(maritalStatus as any)?.duh_opte,
         clausesData,
         regimeMatrimonial: regimeMatrimonialSiMarie,
         recompenses: buildRecompensesCalcInput(recompenses),

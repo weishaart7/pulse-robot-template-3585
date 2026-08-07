@@ -88,6 +88,7 @@ export const Synthese = () => {
 
       const optionConjoint = (maritalStatus as any)?.option_conjoint as string | null;
       const partageEnvisage = !!(maritalStatus as any)?.partage_envisage;
+      const duhOpte = !!(maritalStatus as any)?.duh_opte;
 
       const clausesPersonnalisees = (maritalStatus as any)?.clauses_personnalisees;
       const clausesPersonnaliseesList = Array.isArray(clausesPersonnalisees) ? clausesPersonnalisees : [];
@@ -263,6 +264,7 @@ export const Synthese = () => {
         // computeTransmission).
         avReintegrationCivileMontant: computeAVReintegrationCivile(avContracts, 'spouse', regimeMatrimonialSiMarie),
         partageEnvisage,
+        duhOpte,
         clausesData,
         regimeMatrimonial: regimeMatrimonialSiMarie,
         recompenses: buildRecompensesCalcInput((recompensesRows || []) as Recompense[]),

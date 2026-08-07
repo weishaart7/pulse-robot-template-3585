@@ -4,7 +4,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { AlertCircle, Heart, Info, Check, Handshake } from 'lucide-react';
+import { AlertCircle, Heart, Info, Check, Handshake, Home } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,6 +31,8 @@ export const Optimisation = () => {
   const [saving, setSaving] = useState(false);
   const [partageEnvisage, setPartageEnvisage] = useState(false);
   const [savingPartage, setSavingPartage] = useState(false);
+  const [duhOpte, setDuhOpte] = useState(false);
+  const [savingDuh, setSavingDuh] = useState(false);
 
   const loading = loadingMarital || loadingFamily;
 
@@ -53,6 +55,7 @@ export const Optimisation = () => {
     }
     if (maritalData) {
       setPartageEnvisage(!!maritalData.partage_envisage);
+      setDuhOpte(!!(maritalData as any).duh_opte);
     }
   }, [maritalData]);
 
@@ -119,6 +122,42 @@ export const Optimisation = () => {
       });
     } finally {
       setSavingPartage(false);
+    }
+  };
+
+  // Droit d'usage et d'habitation (DUH, C. civ. art. 764-766, référentiel
+  // §5.9) : option successorale distincte du droit de jouissance temporaire
+  // (art. 763, effet direct du mariage, non successoral, jamais affiché ici
+  // — cf. index.ts §6ter). Optionnel, 1 an pour se manifester, jamais tacite
+  // : sans ce booléen explicite, aucune valeur n'est imputée sur la part du
+  // conjoint (cf. lib/transmission/index.ts, bloc "5.9bis").
+  const handleDuhOpteChange = async (checked: boolean) => {
+    setDuhOpte(checked);
+
+    if (!user) return;
+
+    try {
+      setSavingDuh(true);
+      const { error } = await supabase
+        .from('marital_status')
+        .update({ duh_opte: checked } as any)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Enregistré",
+        description: "L'option du droit d'usage et d'habitation a été enregistrée.",
+      });
+    } catch (error) {
+      console.error('Error saving duh_opte:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'enregistrer l'option.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingDuh(false);
     }
   };
 
@@ -275,6 +314,30 @@ export const Optimisation = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Droit d'usage et d'habitation (DUH, C. civ. art. 764-766) */}
+      {isMarried && (
+        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+          <CardHeader className="p-5">
+            <div className="flex items-center gap-2">
+              <Home className="h-5 w-5 text-[var(--ink-400)]" />
+              <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Droit d'usage et d'habitation</CardTitle>
+              {savingDuh && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[var(--ink-900)]" />}
+            </div>
+            <CardDescription className="text-[var(--text-secondary)]">
+              Indiquez si le conjoint survivant a opté pour le droit d'usage et d'habitation sur le logement (C. civ. art. 764-766) — option distincte du droit de jouissance temporaire d'un an, à exercer dans le délai légal d'un an, jamais tacite.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-5 pt-0">
+            <Switch
+              checked={duhOpte}
+              onCheckedChange={handleDuhOpteChange}
+              label="Droit d'usage et d'habitation optée"
+              description="La valeur retenue (60% de la valeur d'usufruit du logement, barème art. 669 CGI) s'impute sur la part successorale du conjoint plutôt que de s'y ajouter."
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Hypothèse de partage (droit de partage, art. 746 CGI) */}
       <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">

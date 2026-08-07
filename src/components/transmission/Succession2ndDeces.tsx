@@ -214,6 +214,7 @@ export const Succession2ndDeces = () => {
       const referenceDate = new Date().toISOString().split('T')[0];
       const optionConjoint = (maritalStatus as any)?.option_conjoint as string | null;
       const partageEnvisage = !!(maritalStatus as any)?.partage_envisage;
+      const duhOpte = !!(maritalStatus as any)?.duh_opte;
       // regime_matrimonial n'a de sens que sous Marié(e) : ce champ n'est
       // jamais effacé en changeant de statut (cf. RelationInfoForm.tsx), donc
       // un ex-marié devenu Pacsé/Concubin peut garder une valeur périmée.
@@ -285,6 +286,7 @@ export const Succession2ndDeces = () => {
         // computeTransmission, cf. commentaire de ce champ).
         avReintegrationCivileMontant: computeAVReintegrationCivile(avContractsUtilisateur, 'spouse', regimeMatrimonial),
         partageEnvisage,
+        duhOpte,
         clausesData,
         regimeMatrimonial,
         participationAcquets,
