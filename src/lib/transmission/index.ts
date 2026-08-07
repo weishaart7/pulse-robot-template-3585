@@ -601,6 +601,56 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     );
   }
 
+  // 6quater. Faculté de conversion de l'usufruit du conjoint (C. civ. art.
+  // 759 à 762, référentiel §5.7) — purement informatif, aucun montant
+  // calculé : la rente est fixée par le juge selon le revenu net de
+  // l'usufruit estimé au jour de la conversion (pouvoir souverain
+  // d'appréciation, Cass. civ. 1, 9 sept. 2015, n° 14-15957), et le capital
+  // suppose un accord amiable de toutes les parties (prix librement
+  // négocié) — aucun barème ni convention de calcul n'existe dans le
+  // référentiel pour l'une ou l'autre voie (vérifié à nouveau sur l'ensemble
+  // du document avant ce correctif), donc aucune calculette n'est possible
+  // ici contrairement au DUH ci-dessus (§5.9, qui a un barème art. 669 CGI).
+  //
+  // Ciblage : ne se déclenche que si `heirs` porte une part du conjoint en
+  // typeQuotePart 'usufruit', c.-à-d. un usufruit issu de la dévolution
+  // LÉGALE (conjointOption 'usufruit_total' ou 'quart_pp_3quarts_us', seule
+  // origine que ce moteur qualifie explicitement). Le référentiel inclut
+  // aussi l'usufruit testamentaire et celui issu d'une DDV dans l'assiette
+  // de la conversion — mais `Liberalite` (types.ts) ne porte aucun champ
+  // typeQuotePart : un legs ou une DDV en usufruit au conjoint n'est nulle
+  // part distingué d'un legs en pleine propriété par ce moteur. Ce
+  // déclencheur est donc un sous-ensemble de l'assiette réelle (limite
+  // signalée dans le texte ci-dessous plutôt que silencieuse). À l'inverse,
+  // l'usufruit issu d'une convention matrimoniale (préciput/attribution
+  // intégrale en usufruit, cf. `needsNpSurvivant` plus haut) n'est jamais
+  // capturé par typeQuotePart ici et n'active donc jamais ce message à
+  // tort — cohérent avec l'exclusion légale de l'art. 759.
+  if (family.hasSurvivingSpouse) {
+    const conjointUsufruitier = heirs.some(
+      h => h.personId === family.survivingSpouseId && h.typeQuotePart === 'usufruit'
+    );
+    if (conjointUsufruitier) {
+      successionLegaleResult.explicationsTexte.push(
+        `Le conjoint survivant dispose ici d'un usufruit (dévolution légale) qui peut faire l'objet ` +
+        `d'une conversion (C. civ. art. 759 à 762) : en rente viagère, à la demande du conjoint OU ` +
+        `des héritiers nus-propriétaires, par voie amiable ou judiciaire ; ou en capital, uniquement ` +
+        `par accord de toutes les parties (pas de voie judiciaire, prix librement négocié). L'assiette ` +
+        `couvre l'usufruit légal, testamentaire, ou issu d'une donation de biens à venir — mais exclut ` +
+        `l'usufruit né d'une convention matrimoniale ou d'une donation entre vifs. Le juge ne peut pas ` +
+        `imposer cette conversion contre la volonté du conjoint pour le logement occupé à titre de ` +
+        `résidence principale et son mobilier. Coût fiscal : droit fixe des actes innomés de 125 €, sauf ` +
+        `si la conversion est stipulée rétroactive au décès (possible uniquement par accord des parties, ` +
+        `jamais imposée par le juge), ce qui modifie l'assiette des droits de succession — non chiffré ` +
+        `ici. Aucun montant de rente ou de capital n'est calculé par cet outil : en cas de conversion en ` +
+        `rente, son montant est fixé par le juge selon le revenu net de l'usufruit estimé au jour de la ` +
+        `conversion, sans barème légal de capitalisation (pouvoir souverain d'appréciation) ; en cas de ` +
+        `conversion en capital, le prix résulte d'une négociation libre entre les parties. À déterminer ` +
+        `au cas par cas, hors périmètre de cet outil.`
+      );
+    }
+  }
+
   // 7. Construction des entrées DMTG (déplacé depuis Synthese.tsx — Phase 2
   // de la consolidation du moteur : computeTransmission appelle lui-même
   // computeDMTG, l'UI n'a plus à connaître la forme du contexte DMTG).
