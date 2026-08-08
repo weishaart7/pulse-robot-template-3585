@@ -10,7 +10,6 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
-import SelectMenu from "@/components/ui/select-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,11 +54,6 @@ const formSchema = z.object({
   residenceSeparee: z.boolean().default(false),
   separationDeCorps: z.boolean().default(false),
   separationCorpsClauseRenonciation: z.boolean().default(false),
-  // Éléments d'extranéité du régime matrimonial (DIP, §4.4, §12.1) : simple
-  // signalement déclaratif, sans validation de format ni automatisation des
-  // régimes de rattachement (Convention de La Haye 1978, Règlement Rome III).
-  loiApplicableRegime: z.string().optional(),
-  paysPremierDomicileMatrimonial: z.string().optional(),
   donationDernierVivantPersonne: z.boolean().default(false),
   dateDonationPersonne: z.date().optional(),
   donationDernierVivantConjoint: z.boolean().default(false),
@@ -93,8 +87,6 @@ const FIELD_TO_SECTION: Partial<Record<keyof FormData, Section>> = {
   residenceSeparee: 'informations-generales',
   separationDeCorps: 'informations-generales',
   separationCorpsClauseRenonciation: 'informations-generales',
-  loiApplicableRegime: 'informations-generales',
-  paysPremierDomicileMatrimonial: 'informations-generales',
   donationDernierVivantPersonne: 'donation',
   dateDonationPersonne: 'donation',
   donationDernierVivantConjoint: 'donation',
@@ -142,8 +134,6 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
       residenceSeparee: false,
       separationDeCorps: false,
       separationCorpsClauseRenonciation: false,
-      loiApplicableRegime: "",
-      paysPremierDomicileMatrimonial: "",
       donationDernierVivantPersonne: false,
       donationDernierVivantConjoint: false,
       mariagePrecedentPersonne: false,
@@ -164,8 +154,6 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
         residenceSeparee: maritalData.residence_separee || false,
         separationDeCorps: maritalData.separation_de_corps || false,
         separationCorpsClauseRenonciation: maritalData.separation_corps_clause_renonciation || false,
-        loiApplicableRegime: maritalData.loi_applicable_regime || "",
-        paysPremierDomicileMatrimonial: maritalData.pays_premier_domicile_matrimonial || "",
         donationDernierVivantPersonne: maritalData.donation_dernier_vivant_personne || false,
         dateDonationPersonne: maritalData.date_donation_personne ? new Date(maritalData.date_donation_personne) : undefined,
         donationDernierVivantConjoint: maritalData.donation_dernier_vivant_conjoint || false,
@@ -548,42 +536,6 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                           <FormLabel className={cn("text-sm", !separationDeCorps && "text-muted-foreground")}>
                             Clause de renonciation aux droits successoraux (convention de séparation)
                           </FormLabel>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  {/* Éléments d'extranéité (DIP, §4.4, §12.1) : signalement déclaratif
-                      uniquement, sans automatisation des régimes de rattachement
-                      (Convention de La Haye 1978, Règlement Rome III). */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
-                    <FormField
-                      control={form.control}
-                      name="paysPremierDomicileMatrimonial"
-                      render={({ field }) => (
-                        <FormItem className="space-y-1">
-                          <FormLabel className="text-xs">Pays du premier domicile matrimonial</FormLabel>
-                          <FormControl>
-                            <SelectMenu
-                              value={field.value}
-                              onValueChange={field.onChange}
-                              placeholder="Sélectionner un pays"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="loiApplicableRegime"
-                      render={({ field }) => (
-                        <FormItem className="space-y-1">
-                          <FormLabel className="text-xs">Loi applicable au régime matrimonial</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Ex : loi française" {...field} />
-                          </FormControl>
-                          <FormMessage />
                         </FormItem>
                       )}
                     />

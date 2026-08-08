@@ -8,8 +8,6 @@ const baseData: RelationInfoFormValues = {
   pasDeContrat: false,
   impositionDistincte: false,
   residenceSeparee: false,
-  loiApplicableRegime: '',
-  paysPremierDomicileMatrimonial: '',
   donationDernierVivantPersonne: false,
   dateDonationPersonne: undefined,
   donationDernierVivantConjoint: false,

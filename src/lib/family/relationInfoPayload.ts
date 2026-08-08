@@ -17,8 +17,6 @@ export interface RelationInfoFormValues {
   residenceSeparee?: boolean;
   separationDeCorps?: boolean;
   separationCorpsClauseRenonciation?: boolean;
-  loiApplicableRegime?: string;
-  paysPremierDomicileMatrimonial?: string;
   donationDernierVivantPersonne?: boolean;
   dateDonationPersonne?: Date;
   donationDernierVivantConjoint?: boolean;
@@ -53,8 +51,6 @@ export const buildRelationInfoPayload = (
       date_mariage: formatDate(data.dateMariage),
       lieu_mariage: data.lieuMariage,
       pas_de_contrat_mariage: data.pasDeContrat ?? false,
-      loi_applicable_regime: data.loiApplicableRegime || null,
-      pays_premier_domicile_matrimonial: data.paysPremierDomicileMatrimonial || null,
       donation_dernier_vivant_personne: data.donationDernierVivantPersonne ?? false,
       date_donation_personne: formatDate(data.dateDonationPersonne),
       donation_dernier_vivant_conjoint: data.donationDernierVivantConjoint ?? false,
