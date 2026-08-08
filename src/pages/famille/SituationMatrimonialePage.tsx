@@ -4,6 +4,9 @@ import { useMaritalStatus } from '@/hooks/useFamilyData';
 import { RelationInfoForm } from '@/components/famille/RelationInfoForm';
 import { ScenarioRegimeSection } from '@/components/famille/matrimonial/ScenarioRegimeSection';
 
+// Masqué en attendant la réactivation avec le dossier sandbox.
+const SHOW_SCENARIOS_REGIME = false;
+
 export default function SituationMatrimonialePage() {
   const navigate = useNavigate();
   const { data: maritalData } = useMaritalStatus();
@@ -32,7 +35,7 @@ export default function SituationMatrimonialePage() {
 
       <div className="w-full mx-auto px-4 sm:px-6 pb-12 space-y-6">
         <RelationInfoForm relationStatus={relationStatus} />
-        <ScenarioRegimeSection />
+        {SHOW_SCENARIOS_REGIME && <ScenarioRegimeSection />}
       </div>
     </div>
   );
