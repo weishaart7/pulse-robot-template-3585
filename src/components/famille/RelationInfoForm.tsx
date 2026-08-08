@@ -351,6 +351,12 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
     (regimeMatrimonial === 'Séparation de biens' || regimeMatrimonial === 'Participation aux acquêts') &&
     residenceSeparee;
 
+  // Visibilité de la case (indépendante de l'éligibilité ci-dessus) : seuls
+  // les deux régimes visés par l'art. 6, 4-a CGI l'affichent, elle est
+  // masquée pour tous les régimes de communauté.
+  const impositionDistincteVisible =
+    regimeMatrimonial === 'Séparation de biens' || regimeMatrimonial === 'Participation aux acquêts';
+
   // Idem pour le PACS : pas d'équivalent "participation aux acquêts", donc un
   // seul critère de régime (convention de PACS en séparation de biens).
   const impositionDistinctePacsEligible =
@@ -488,28 +494,32 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name="impositionDistincte"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              disabled={!impositionDistincteEligible}
-                            />
-                          </FormControl>
-                          <FormLabel className={cn("text-sm", !impositionDistincteEligible && "text-muted-foreground")}>
-                            Imposition distincte
-                          </FormLabel>
-                        </FormItem>
-                      )}
-                    />
-                    {!impositionDistincteEligible && (
-                      <p className="text-xs text-muted-foreground">
-                        Réservée aux régimes séparation de biens ou participation aux acquêts, avec résidence séparée (art. 6, 4-a CGI).
-                      </p>
+                    {impositionDistincteVisible && (
+                      <>
+                        <FormField
+                          control={form.control}
+                          name="impositionDistincte"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  disabled={!impositionDistincteEligible}
+                                />
+                              </FormControl>
+                              <FormLabel className={cn("text-sm", !impositionDistincteEligible && "text-muted-foreground")}>
+                                Imposition distincte
+                              </FormLabel>
+                            </FormItem>
+                          )}
+                        />
+                        {!impositionDistincteEligible && (
+                          <p className="text-xs text-muted-foreground">
+                            Réservée aux régimes séparation de biens ou participation aux acquêts, avec résidence séparée (art. 6, 4-a CGI).
+                          </p>
+                        )}
+                      </>
                     )}
                     <FormField
                       control={form.control}
