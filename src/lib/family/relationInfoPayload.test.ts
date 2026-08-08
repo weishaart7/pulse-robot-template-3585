@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { buildRelationInfoPayload, RelationInfoFormValues } from './relationInfoPayload';
 
 const baseData: RelationInfoFormValues = {
-  regimeMatrimonial: 'Communauté réduite aux acquêts (option sans contrat de mariage)',
+  regimeMatrimonial: 'Communauté réduite aux acquêts',
   dateMariage: undefined,
   lieuMariage: '',
   pasDeContrat: false,
@@ -89,7 +89,7 @@ describe('buildRelationInfoPayload — Concubinage', () => {
   it("n'écrit aucun champ, même avec des valeurs par défaut du schéma renseignées", () => {
     const payload = buildRelationInfoPayload('Concubinage', {
       ...baseData,
-      regimeMatrimonial: 'Communauté réduite aux acquêts (option sans contrat de mariage)',
+      regimeMatrimonial: 'Communauté réduite aux acquêts',
       conventionPacs: 'Régime de la séparation des biens',
       impositionDistincte: true,
     });

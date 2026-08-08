@@ -8,7 +8,7 @@
  */
 
 export const REGIME_COMMUNAUTE_MEUBLES_ET_ACQUETS = "Communauté de meubles et d'acquêts";
-export const REGIME_COMMUNAUTE_REDUITE_AUX_ACQUETS = 'Communauté réduite aux acquêts (option sans contrat de mariage)';
+export const REGIME_COMMUNAUTE_REDUITE_AUX_ACQUETS = 'Communauté réduite aux acquêts';
 export const REGIME_COMMUNAUTE_UNIVERSELLE = 'Communauté universelle';
 export const REGIME_SEPARATION_DE_BIENS = 'Séparation de biens';
 export const REGIME_SEPARATION_BIENS_SOCIETE_ACQUETS = "Séparation de biens avec société d'acquêts";

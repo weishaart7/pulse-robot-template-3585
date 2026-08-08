@@ -106,7 +106,7 @@ describe('Branchement réel — récompenses/créances entre époux dans compute
     const recompenses = [
       { sens: 'epoux_vers_communaute' as const, epoux: 'user' as const, depenseFaite: 60000, natureDepense: 'autre' as const, modeEvaluationConventionnel: 'nominal' as const }
     ];
-    const regimeMatrimonial = 'Communauté réduite aux acquêts (option sans contrat de mariage)';
+    const regimeMatrimonial = 'Communauté réduite aux acquêts';
 
     // Récompense due à la communauté par l'un des époux : accroît la masse
     // commune (art. 1470-1474), donc la masse successorale, pour moitié

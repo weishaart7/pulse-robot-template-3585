@@ -41,13 +41,13 @@ const formSchema = z.object({
   conventionPacs: z.enum(['Régime de la séparation des biens', 'Indivision']).default('Régime de la séparation des biens'),
   datePacs: z.date().optional(),
   regimeMatrimonial: z.enum([
-    'Communauté réduite aux acquêts (option sans contrat de mariage)',
+    'Communauté réduite aux acquêts',
     'Communauté de meubles et d\'acquêts',
     'Communauté universelle',
     'Séparation de biens',
     'Séparation de biens avec société d\'acquêts',
     'Participation aux acquêts'
-  ]).default('Communauté réduite aux acquêts (option sans contrat de mariage)'),
+  ]).default('Communauté réduite aux acquêts'),
   dateMariage: z.date().optional(),
   lieuMariage: z.string().optional(),
   pasDeContrat: z.boolean().default(false),
@@ -135,7 +135,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       conventionPacs: 'Régime de la séparation des biens',
-      regimeMatrimonial: 'Communauté réduite aux acquêts (option sans contrat de mariage)',
+      regimeMatrimonial: 'Communauté réduite aux acquêts',
       lieuMariage: "",
       pasDeContrat: false,
       impositionDistincte: false,
@@ -156,7 +156,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
       form.reset({
         conventionPacs: (maritalData.convention_pacs as any) || 'Régime de la séparation des biens',
         datePacs: maritalData.date_pacs ? new Date(maritalData.date_pacs) : undefined,
-        regimeMatrimonial: (maritalData.regime_matrimonial as any) || 'Communauté réduite aux acquêts (option sans contrat de mariage)',
+        regimeMatrimonial: (maritalData.regime_matrimonial as any) || 'Communauté réduite aux acquêts',
         dateMariage: maritalData.date_mariage ? new Date(maritalData.date_mariage) : undefined,
         lieuMariage: maritalData.lieu_mariage || "",
         pasDeContrat: maritalData.pas_de_contrat_mariage || false,

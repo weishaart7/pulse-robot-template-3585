@@ -4,7 +4,7 @@ import { ClausesData } from '@/types/matrimonial';
 
 describe('toRegimeType', () => {
   it('mappe chaque libellé humain vers son RegimeType simplifié', () => {
-    expect(toRegimeType('Communauté réduite aux acquêts (option sans contrat de mariage)')).toBe('communaute_reduite');
+    expect(toRegimeType('Communauté réduite aux acquêts')).toBe('communaute_reduite');
     expect(toRegimeType("Communauté de meubles et d'acquêts")).toBe('communaute_meubles');
     expect(toRegimeType('Communauté universelle')).toBe('communaute_universelle');
     expect(toRegimeType('Séparation de biens')).toBe('separation_biens');

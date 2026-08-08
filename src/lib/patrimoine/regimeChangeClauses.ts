@@ -17,7 +17,7 @@ import { CLAUSES_BY_REGIME, SOCIETE_ACQUETS_SUB_CLAUSES, isClauseCompatibleWithR
 // → RegimeType simplifié attendu par CLAUSES_BY_REGIME/isClauseCompatibleWithRegime.
 export function toRegimeType(regimeMatrimonial: string | undefined): RegimeType {
   switch (regimeMatrimonial) {
-    case 'Communauté réduite aux acquêts (option sans contrat de mariage)':
+    case 'Communauté réduite aux acquêts':
       return 'communaute_reduite';
     case "Communauté de meubles et d'acquêts":
       return 'communaute_meubles';

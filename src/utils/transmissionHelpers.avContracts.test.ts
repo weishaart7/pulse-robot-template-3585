@@ -218,13 +218,13 @@ describe('computeAVReintegrationCivile (doctrine Ciot, §9.6.1)', () => {
 
   it('régime de communauté + deniers communs + contrat détenu par le conjoint : réintègre la valeur de rachat', () => {
     expect(
-      computeAVReintegrationCivile([contratConjointDeniersCommuns], 'spouse', 'Communauté réduite aux acquêts (option sans contrat de mariage)')
+      computeAVReintegrationCivile([contratConjointDeniersCommuns], 'spouse', 'Communauté réduite aux acquêts')
     ).toBe(50000);
   });
 
   it('régime de communauté + deniers propres : pas de réintégration civile', () => {
     expect(
-      computeAVReintegrationCivile([contratConjointDeniersPropres], 'spouse', 'Communauté réduite aux acquêts (option sans contrat de mariage)')
+      computeAVReintegrationCivile([contratConjointDeniersPropres], 'spouse', 'Communauté réduite aux acquêts')
     ).toBe(0);
   });
 
@@ -244,7 +244,7 @@ describe('computeAVReintegrationCivile (doctrine Ciot, §9.6.1)', () => {
       computeAVReintegrationCivile(
         [contratConjointDeniersCommuns, contratConjointDeniersPropres, contratUtilisateur],
         'spouse',
-        'Communauté réduite aux acquêts (option sans contrat de mariage)'
+        'Communauté réduite aux acquêts'
       )
     ).toBe(50000);
   });

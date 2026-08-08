@@ -231,7 +231,7 @@ describe('computeSoldeCreancesEntreEpoux', () => {
 
 describe('regimeHasMasseCommune', () => {
   it('true pour un régime communautaire', () => {
-    expect(regimeHasMasseCommune('Communauté réduite aux acquêts (option sans contrat de mariage)')).toBe(true);
+    expect(regimeHasMasseCommune('Communauté réduite aux acquêts')).toBe(true);
     expect(regimeHasMasseCommune('Communauté universelle')).toBe(true);
   });
 
