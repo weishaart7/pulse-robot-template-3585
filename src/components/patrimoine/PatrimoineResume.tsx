@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { format } from 'date-fns';
+import RangeNavigator from '@/components/ui/range-navigator';
 import { PatrimoineChart } from './PatrimoineChart';
 import { PlusValuesCard } from './PlusValuesCard';
 import { useAssets } from '@/hooks/useAssets';
@@ -89,6 +88,11 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
     [assets, valorisations]
   );
 
+  const evolutionPoints = useMemo(
+    () => evolutionPatrimoine.map((p) => ({ date: p.date, value: p.total })),
+    [evolutionPatrimoine]
+  );
+
   return (
     <div className="space-y-8">
       {unqualifiedItems.length > 0 && (
@@ -154,33 +158,7 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
               Pas encore d'historique de valorisation. Ajoutez des valorisations à vos actifs pour voir l'évolution de votre patrimoine dans le temps.
             </p>
           ) : (
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={evolutionPatrimoine} margin={{ top: 5, right: 12, bottom: 0, left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis
-                    dataKey="date"
-                    tickFormatter={(date: string) => format(new Date(date), 'dd/MM/yy')}
-                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                  />
-                  <YAxis
-                    tickFormatter={(value: number) => formatCurrency(value)}
-                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                    width={80}
-                  />
-                  <Tooltip
-                    labelFormatter={(date: string) => format(new Date(date), 'dd/MM/yyyy')}
-                    formatter={(value: number) => [formatCurrency(value), 'Patrimoine']}
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--background))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '6px'
-                    }}
-                  />
-                  <Line type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <RangeNavigator points={evolutionPoints} formatValue={formatCurrency} />
           )}
         </CardContent>
       </Card>
