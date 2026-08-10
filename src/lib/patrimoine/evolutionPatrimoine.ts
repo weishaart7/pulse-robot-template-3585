@@ -11,9 +11,10 @@ export interface EvolutionPatrimoinePoint {
  * date où au moins un actif a une entrée dans asset_valorisations.
  *
  * Pour un actif donné à une date donnée : dernière valorisation connue à
- * cette date ou avant ; si aucune valorisation connue à cette date ou avant
- * n'existe (pas d'historique du tout, ou historique entièrement postérieur),
- * repli sur `valeur_estimee` (valeur courante).
+ * cette date ou avant. Si aucune n'existe : repli sur `valeur_estimee`
+ * (valeur courante) uniquement si l'actif n'a aucun historique du tout ;
+ * s'il a un historique mais entièrement postérieur à cette date, l'actif
+ * n'était pas encore suivi et ne contribue pas au total (valeur 0).
  */
 export const computeEvolutionPatrimoine = (
   assets: Asset[],
@@ -43,7 +44,12 @@ export const computeEvolutionPatrimoine = (
         }
       }
       if (valeur === undefined) {
-        valeur = asset.valeur_estimee || 0;
+        // Aucune valorisation connue à cette date ou avant :
+        // - sans historique du tout, on n'a que la valeur courante -> meilleure estimation disponible.
+        // - avec un historique qui démarre après cette date, l'actif n'était pas encore
+        //   suivi à cette date -> il ne doit pas contribuer au total (sinon on lui prête
+        //   rétroactivement une valeur qu'il n'a eue que plus tard).
+        valeur = historique.length === 0 ? (asset.valeur_estimee || 0) : 0;
       }
       return sum + valeur;
     }, 0);
