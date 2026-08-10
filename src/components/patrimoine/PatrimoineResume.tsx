@@ -138,30 +138,32 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
       </div>
 
       {/* Chart section */}
-      <Card className="border border-border hover:shadow-sm transition-shadow duration-500 animate-fade-in" style={{ animationDelay: '180ms' }}>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-[15px] font-semibold tracking-tight">Répartition du patrimoine</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PatrimoineChart assets={assets} passifs={passifs} emprunts={emprunts} selectedCategory={null} />
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-1 border border-border hover:shadow-sm transition-shadow duration-500 animate-fade-in" style={{ animationDelay: '180ms' }}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-[15px] font-semibold tracking-tight">Répartition du patrimoine</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PatrimoineChart assets={assets} passifs={passifs} emprunts={emprunts} selectedCategory={null} />
+          </CardContent>
+        </Card>
 
-      {/* Evolution chart */}
-      <Card className="border border-border hover:shadow-sm transition-shadow duration-500 animate-fade-in" style={{ animationDelay: '210ms' }}>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-[15px] font-semibold tracking-tight">Évolution du patrimoine</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {evolutionPatrimoine.length === 0 ? (
-            <p className="text-muted-foreground/70 text-center py-10 text-sm">
-              Pas encore d'historique de valorisation. Ajoutez des valorisations à vos actifs pour voir l'évolution de votre patrimoine dans le temps.
-            </p>
-          ) : (
-            <RangeNavigator points={evolutionPoints} formatValue={formatCurrency} />
-          )}
-        </CardContent>
-      </Card>
+        {/* Evolution chart */}
+        <Card className="lg:col-span-2 border border-border hover:shadow-sm transition-shadow duration-500 animate-fade-in" style={{ animationDelay: '210ms' }}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-[15px] font-semibold tracking-tight">Évolution du patrimoine</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {evolutionPatrimoine.length === 0 ? (
+              <p className="text-muted-foreground/70 text-center py-10 text-sm">
+                Pas encore d'historique de valorisation. Ajoutez des valorisations à vos actifs pour voir l'évolution de votre patrimoine dans le temps.
+              </p>
+            ) : (
+              <RangeNavigator points={evolutionPoints} formatValue={formatCurrency} />
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Bottom row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
