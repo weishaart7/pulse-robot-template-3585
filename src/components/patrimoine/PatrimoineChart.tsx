@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { SectorsDonut } from '@/components/ui/sectors-donut';
 import { Asset } from '@/services/assetService';
 import { Passif, Emprunt } from '@/services/passifService';
 import { getAssetCategory } from '@/constants/assetTypes';
@@ -70,6 +70,7 @@ export const PatrimoineChart = ({
   const totalActifs = chartData.filter(item => item.type === 'actif').reduce((sum, item) => sum + item.value, 0);
   const totalPassifs = chartData.filter(item => item.type === 'passif').reduce((sum, item) => sum + item.value, 0);
   const patrimoineNet = totalActifs - totalPassifs;
+  const totalBrut = totalActifs + totalPassifs;
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -78,33 +79,28 @@ export const PatrimoineChart = ({
       maximumFractionDigits: 0
     }).format(value);
   };
-  return <div className="relative h-64">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie data={chartData} cx="50%" cy="50%" innerRadius={70} outerRadius={85} paddingAngle={2} dataKey="value" stroke="hsl(var(--background))" strokeWidth={2}>
-            {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-          </Pie>
-          <Tooltip 
-            formatter={(value: number) => formatCurrency(value)}
-            contentStyle={{
-              backgroundColor: 'hsl(var(--background))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '6px'
-            }}
-          />
-        </PieChart>
-      </ResponsiveContainer>
-      
-      {/* Valeur totale au centre */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="text-center">
-          <div className="text-xl font-bold text-foreground">
-            {formatCurrency(patrimoineNet)}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            Patrimoine net
-          </div>
-        </div>
-      </div>
-    </div>;
+  const formatCompact = (value: number) => {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+      notation: 'compact',
+      maximumFractionDigits: 1
+    }).format(value);
+  };
+  const sectors = chartData.map(item => ({
+    label: item.name,
+    pct: totalBrut > 0 ? (item.value / totalBrut) * 100 : 0,
+    value: item.value,
+    color: item.color
+  }));
+  return (
+    <div title={formatCurrency(patrimoineNet)}>
+      <SectorsDonut
+        sectors={sectors}
+        formatValue={formatCompact}
+        centerLabel={formatCompact(patrimoineNet)}
+        centerCaption="Patrimoine net"
+      />
+    </div>
+  );
 };
