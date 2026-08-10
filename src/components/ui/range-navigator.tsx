@@ -112,12 +112,16 @@ export default function RangeNavigator({
     const n = windowPoints.length;
     if (n === 0) return null;
     const values = windowPoints.map((p) => p.value);
+    const times = windowPoints.map((p) => new Date(p.date).getTime());
+    const t0 = times[0];
+    const tSpan = times[n - 1] - t0 || 1;
     const lo = Math.min(...values);
     const hi = Math.max(...values);
     const pad = (hi - lo) * 0.1 || Math.max(1, Math.abs(lo) * 0.05);
     const min = lo - pad;
     const max = hi + pad;
-    const x = (i: number) => PAD.l + (n === 1 ? 0.5 : i / (n - 1)) * plotW;
+    // espacement proportionnel au temps écoulé entre les dates, pas à leur index
+    const x = (i: number) => PAD.l + (n === 1 ? 0.5 : (times[i] - t0) / tSpan) * plotW;
     const y = (v: number) => PAD.t + (1 - (v - min) / (max - min || 1)) * (MAIN_H - PAD.t - PAD.b);
     const line = values.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
     const area = `${line} L${x(n - 1).toFixed(1)},${MAIN_H - PAD.b} L${x(0).toFixed(1)},${MAIN_H - PAD.b} Z`;
@@ -130,7 +134,18 @@ export default function RangeNavigator({
     const r = mainRef.current?.getBoundingClientRect();
     if (!r) return;
     const px = e.clientX - r.left;
-    setHover(clamp(Math.round(((px - PAD.l) / plotW) * (detail.n - 1)), 0, detail.n - 1));
+    // les points ne sont plus équidistants (espacement proportionnel au temps) :
+    // on cherche le point dont la position x réelle est la plus proche du curseur.
+    let nearest = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < detail.n; i++) {
+      const dist = Math.abs(detail.x(i) - px);
+      if (dist < bestDist) {
+        bestDist = dist;
+        nearest = i;
+      }
+    }
+    setHover(nearest);
   };
   const hv =
     detail && hover != null && hover < detail.n
