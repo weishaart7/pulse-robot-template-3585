@@ -1,0 +1,209 @@
+/**
+ * Dérivation automatique des trimestres cotisés/assimilés à partir du détail
+ * de carrière (`retraite_carriere_detail`). Fonctions pures, sans JSX ni
+ * state React — sur le modèle de calculSAM.ts.
+ *
+ * ⚠️ Périmètre restreint (phase 1, cf. docs/audit/cartographie-trimestres-cotises.md) :
+ * ne couvre que les périodes `employeur`, `chomage` et `maladie`. Les
+ * périodes `micro_entrepreneur` sont explicitement ignorées — ni cotisées,
+ * ni assimilées, ni comptées dans le total — cf. dette technique documentée
+ * dans docs/audit/audit-retraite.md (deux décisions volontairement hors
+ * périmètre de cette phase : conversion CA → assiette sociale, et
+ * chronologie de franchissement des seuils pour la surcote).
+ *
+ * ⚠️ Cette fonction n'est PAS branchée dans decoteSurTrimestres() ni dans
+ * aucun écran à ce stade — production de la fonction et de ses tests
+ * uniquement, le branchement fera l'objet d'un commit séparé une fois
+ * validé (cf. consigne de la session qui l'a introduite, 2026-08-11).
+ */
+
+import { PeriodeCarriere } from './parseRIS';
+
+/**
+ * Seuil de revenu validant un trimestre cotisé (art. R.351-9 CSS) :
+ * 150 × SMIC horaire brut en vigueur au 1er janvier de l'année considérée.
+ *
+ * Valeurs DÉRIVÉES des SMIC horaires bruts officiels publiés (Urssaf,
+ * info.gouv.fr, Insee), pas recopiées d'une circulaire CNAV publiant
+ * directement ce barème année par année — à la différence de
+ * `PASS_PAR_ANNEE` (calculSAM.ts), qui a une source CNAV directe. Recherche
+ * effectuée le 2026-08-11 et validée avec l'utilisateur avant intégration.
+ * Recoupement de cohérence : 150 × 12,02 € (SMIC au 01/01/2026) = 1 803,00 €,
+ * valeur confirmée indépendamment pour 2026 par l'utilisateur.
+ *
+ * ⚠️ À compléter chaque année lors de la revalorisation du SMIC (aucune
+ * extrapolation au-delà des années listées — cf. comportement de repli
+ * volontairement absent dans trimestresCotisesEtAssimilesDepuisCarriere()).
+ */
+export const SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE: Record<number, number> = {
+  2018: 1482.0,
+  2019: 1504.5,
+  2020: 1522.5,
+  2021: 1537.5,
+  2022: 1585.5,
+  2023: 1690.5,
+  2024: 1747.5,
+  2025: 1782.0,
+  2026: 1803.0,
+};
+
+/**
+ * Nombre de jours assimilés à un trimestre pour les périodes `chomage` et
+ * `maladie`, faute de revenu exploitable pour ces catégories (le champ
+ * `revenu` est le plus souvent `null` en base pour ces types d'activité,
+ * confirmé sur les données réelles du client Titouan Weishaar : lignes
+ * "Revenu non renseigné"). Approximation du principe légal réel (ex. 50
+ * jours de chômage indemnisé ≈ 1 trimestre), retenue avec l'utilisateur le
+ * 2026-08-11 — **pas une valeur officielle vérifiée** au même niveau que le
+ * seuil SMIC ci-dessus, à affiner si une source CNAV précise est trouvée.
+ */
+const JOURS_PAR_TRIMESTRE_ASSIMILE = 90;
+
+const PLAFOND_TRIMESTRES_PAR_AN = 4;
+
+const unJourMs = 24 * 60 * 60 * 1000;
+
+// Le RIS produit parfois deux lignes distinctes pour une même période
+// employeur (mêmes dates, même employeur), une par régime — ex. une ligne
+// "L'Assurance retraite", une ligne "Agirc-Arrco", avec un revenu quasi
+// identique à un euro près. Sans filtrage, ces deux lignes seraient
+// additionnées et doubleraient artificiellement le revenu cotisé de
+// l'année. Même mécanisme et même regex que `estPeriodeRegimeDeBase()`
+// dans calculSAM.ts (non exportée par ce fichier, dupliquée ici). N'est
+// PAS appliqué aux périodes `chomage`/`maladie` : celles-ci sont comptées
+// en jours (pas en revenu), et aucun doublon de ce type n'a été observé
+// pour ces catégories dans les données réelles examinées lors de cette
+// session — à surveiller si un cas contraire apparaît (dette technique,
+// cf. docs/audit/audit-retraite.md).
+const RE_REGIME_ASSURANCE_RETRAITE = /assurance retraite/i;
+
+function estPeriodeRegimeDeBase(periode: PeriodeCarriere): boolean {
+  return periode.regimes.some((regime) => RE_REGIME_ASSURANCE_RETRAITE.test(regime));
+}
+
+/**
+ * Répartit une période entre les années civiles qu'elle traverse, au
+ * prorata du nombre de jours dans chaque année — même principe que
+ * `repartirRevenuParAnnee()` dans calculSAM.ts (fonction sœur, dupliquée
+ * plutôt qu'importée : calculSAM.ts ne l'exporte pas, et les deux usages
+ * divergent ensuite — celui-ci accumule soit un revenu soit un simple
+ * décompte de jours selon l'appelant).
+ */
+function joursDansAnnee(debut: Date, fin: Date, annee: number): number {
+  const anneeDebut = debut.getUTCFullYear();
+  const anneeFin = fin.getUTCFullYear();
+  if (annee < anneeDebut || annee > anneeFin) return 0;
+
+  const borneDebut = annee === anneeDebut ? debut : new Date(Date.UTC(annee, 0, 1));
+  const borneFin = annee === anneeFin ? fin : new Date(Date.UTC(annee, 11, 31));
+  return Math.round((borneFin.getTime() - borneDebut.getTime()) / unJourMs) + 1;
+}
+
+function anneesTraversees(periode: PeriodeCarriere): number[] {
+  const debut = new Date(`${periode.dateDebut}T00:00:00Z`);
+  const fin = new Date(`${periode.dateFin}T00:00:00Z`);
+  const annees: number[] = [];
+  for (let annee = debut.getUTCFullYear(); annee <= fin.getUTCFullYear(); annee++) {
+    annees.push(annee);
+  }
+  return annees;
+}
+
+/**
+ * Répartit le revenu d'une période `employeur` par année civile, au prorata
+ * du nombre de jours (même mécanique que `repartirRevenuParAnnee()` dans
+ * calculSAM.ts). Chevauchements : plusieurs périodes `employeur` sur la même
+ * année s'additionnent naturellement dans `revenuParAnnee` (une entrée par
+ * année, incrémentée à chaque période), conformément à la règle officielle
+ * (tous les revenus cotisés d'une année s'additionnent, indépendamment du
+ * nombre d'employeurs).
+ */
+function repartirRevenuEmployeurParAnnee(periode: PeriodeCarriere, revenuParAnnee: Map<number, number>): void {
+  const debut = new Date(`${periode.dateDebut}T00:00:00Z`);
+  const fin = new Date(`${periode.dateFin}T00:00:00Z`);
+  const revenu = periode.revenu ?? 0;
+  const joursTotal = Math.round((fin.getTime() - debut.getTime()) / unJourMs) + 1;
+
+  for (const annee of anneesTraversees(periode)) {
+    const joursDansCetteAnnee = joursDansAnnee(debut, fin, annee);
+    const part = joursTotal > 0 ? revenu * (joursDansCetteAnnee / joursTotal) : 0;
+    revenuParAnnee.set(annee, (revenuParAnnee.get(annee) || 0) + part);
+  }
+}
+
+/**
+ * Répartit le nombre de jours d'une période `chomage`/`maladie` par année
+ * civile (pas de revenu à proratiser : ces catégories n'ont pas de revenu
+ * exploitable, cf. commentaire sur `JOURS_PAR_TRIMESTRE_ASSIMILE`).
+ * Chevauchements : plusieurs périodes assimilées sur la même année
+ * s'additionnent, même principe que pour les périodes `employeur`.
+ */
+function repartirJoursAssimilesParAnnee(periode: PeriodeCarriere, joursParAnnee: Map<number, number>): void {
+  const debut = new Date(`${periode.dateDebut}T00:00:00Z`);
+  const fin = new Date(`${periode.dateFin}T00:00:00Z`);
+
+  for (const annee of anneesTraversees(periode)) {
+    const joursDansCetteAnnee = joursDansAnnee(debut, fin, annee);
+    joursParAnnee.set(annee, (joursParAnnee.get(annee) || 0) + joursDansCetteAnnee);
+  }
+}
+
+export interface ResultatTrimestresCotisesEtAssimiles {
+  cotises: number;
+  assimiles: number;
+  total: number;
+}
+
+/**
+ * Dérive un nombre de trimestres cotisés et assimilés à partir du détail de
+ * carrière, périodes `employeur`/`chomage`/`maladie` uniquement
+ * (`micro_entrepreneur` explicitement ignoré — cf. en-tête de fichier).
+ *
+ * - `employeur` : revenu de l'année (toutes périodes `employeur` confondues,
+ *   après filtrage des doublons régime/revenu du RIS — cf.
+ *   `estPeriodeRegimeDeBase()`) ÷ seuil de validation de l'année, plafonné à
+ *   4/an → cotisé. Les années hors barème connu
+ *   (`SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE`) ne contribuent aucun trimestre
+ *   plutôt que d'extrapoler un seuil.
+ * - `chomage`/`maladie` : aucun trimestre cotisé ; jours de l'année (toutes
+ *   périodes confondues) ÷ 90, plafonné à 4/an → assimilé.
+ * - Le plafond de 4/an est appliqué séparément pour le total cotisé et pour
+ *   le total assimilé de chaque année (pas de plafond combiné cotisé +
+ *   assimilé par année civile) — limitation connue, cf. dette technique
+ *   dans docs/audit/audit-retraite.md : une année où plusieurs catégories se
+ *   cumulent peut donc afficher plus de 4 trimestres au total sur cette
+ *   année, ce qui surestime légèrement le total dans ce cas précis (à
+ *   l'inverse de la sous-estimation liée à l'exclusion des
+ *   micro-entrepreneurs, qui domine largement en pratique).
+ */
+export function trimestresCotisesEtAssimilesDepuisCarriere(
+  periodes: PeriodeCarriere[]
+): ResultatTrimestresCotisesEtAssimiles {
+  const periodesEmployeur = periodes.filter((p) => p.typeActivite === 'employeur' && estPeriodeRegimeDeBase(p));
+  const periodesAssimilees = periodes.filter((p) => p.typeActivite === 'chomage' || p.typeActivite === 'maladie');
+  // periodes.typeActivite === 'micro_entrepreneur' : ignoré, cf. en-tête.
+
+  const revenuParAnnee = new Map<number, number>();
+  for (const periode of periodesEmployeur) {
+    repartirRevenuEmployeurParAnnee(periode, revenuParAnnee);
+  }
+
+  const joursParAnnee = new Map<number, number>();
+  for (const periode of periodesAssimilees) {
+    repartirJoursAssimilesParAnnee(periode, joursParAnnee);
+  }
+
+  let cotises = 0;
+  for (const [annee, revenu] of revenuParAnnee) {
+    const seuil = SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE[annee];
+    if (seuil === undefined) continue;
+    cotises += Math.min(Math.floor(revenu / seuil), PLAFOND_TRIMESTRES_PAR_AN);
+  }
+
+  let assimiles = 0;
+  for (const jours of joursParAnnee.values()) {
+    assimiles += Math.min(Math.floor(jours / JOURS_PAR_TRIMESTRE_ASSIMILE), PLAFOND_TRIMESTRES_PAR_AN);
+  }
+
+  return { cotises, assimiles, total: cotises + assimiles };
+}
