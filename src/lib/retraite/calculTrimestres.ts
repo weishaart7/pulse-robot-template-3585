@@ -60,17 +60,37 @@ export const SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE: Record<number, number> = {
  *   trimestre validé tous les 60 jours, plafonné à 4/an. Source :
  *   service-public.gouv.fr.
  *
- * ⚠️ `type_activite = 'chomage'` ne distingue pas chômage indemnisé de
- * chômage non indemnisé (confirmé sur les données réelles de Titouan
- * Weishaar : les libellés "CHÔMAGE" et "CHÔMAGE NON INDEMNISÉ" coexistent,
- * tous deux `type_activite = 'chomage'`, cf.
- * docs/audit/cartographie-trimestres-cotises.md §1.2). Cette fonction
- * applique donc la règle du chômage INDEMNISÉ (50 jours) à toutes les
- * périodes `chomage`, y compris non indemnisées — ce qui **surestime
- * probablement** les trimestres assimilés pour les périodes de chômage non
- * indemnisé, qui suivent en réalité des règles de plafonnement différentes
- * (une durée totale sur l'ensemble de la carrière, pas un ratio jours/
- * trimestre par période) — dette technique documentée dans
+ * ⚠️ `JOURS_PAR_TRIMESTRE_CHOMAGE = 50` ne vaut que pour le chômage
+ * INDEMNISÉ. Le chômage NON indemnisé suit un mécanisme légal différent,
+ * non implémenté ici — recherché et confirmé le 2026-08-11, décision de ne
+ * pas l'implémenter cette session (chantier trop éloigné d'un calcul
+ * période par période) :
+ * - Première période de chômage non indemnisé de toute la carrière : prise
+ *   en compte jusqu'à 6 trimestres (1,5 an), sans ratio jours/trimestre —
+ *   un plafond forfaitaire unique, pas une division.
+ * - Périodes suivantes : prises en compte seulement si elles succèdent
+ *   SANS INTERRUPTION à une période de chômage indemnisé, limite 1 an (4
+ *   trimestres), portée à 5 ans si la personne a ≥ 20 ans de cotisation et
+ *   ≥ 55 ans à la cessation du revenu de remplacement.
+ * - Toute activité, même partielle, interrompt la validation.
+ * - Nécessite un ÉTAT DE CARRIÈRE ENTIÈRE pour être évalué (s'agit-il de la
+ *   première période non indemnisée ? succède-t-elle sans interruption à
+ *   une période indemnisée ? âge à la cessation ? durée de cotisation déjà
+ *   acquise ?) — incompatible avec le traitement période par période
+ *   utilisé par le reste de cette fonction (chaque période `chomage` est
+ *   convertie indépendamment, sans mémoire de ce qui précède).
+ *
+ * `type_activite = 'chomage'` ne distingue de toute façon pas indemnisé de
+ * non indemnisé dans le modèle de données actuel (confirmé sur les données
+ * réelles de Titouan Weishaar : les libellés "CHÔMAGE" et "CHÔMAGE NON
+ * INDEMNISÉ" coexistent, tous deux `type_activite = 'chomage'`, cf.
+ * docs/audit/cartographie-trimestres-cotises.md §1.2) — même si cette
+ * distinction existait, la règle non-indemnisée ci-dessus resterait à
+ * implémenter séparément. Cette fonction applique donc la règle du chômage
+ * INDEMNISÉ (50 jours) à toutes les périodes `chomage` sans exception, ce
+ * qui **surestime probablement** les trimestres assimilés pour les
+ * périodes de chômage non indemnisé (plafond réel bien plus restrictif que
+ * le simple ratio jours/50) — dette technique documentée dans
  * docs/audit/audit-retraite.md.
  */
 const JOURS_PAR_TRIMESTRE_CHOMAGE = 50;
