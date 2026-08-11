@@ -9,7 +9,7 @@ import { useCarriereDetail } from '@/hooks/useCarriereDetail';
 import { useToast } from '@/hooks/use-toast';
 import { parseRIS, PeriodeCarriere, RegimeDetecte, TypeActivite } from '@/lib/retraite/parseRIS';
 import { RISImportDialog } from '@/components/retraite/RISImportDialog';
-import { tauxProratisation, decoteSurTrimestres, pensionBase, pensionComplementaireAnnuelle } from '@/lib/retraite/calcul';
+import { tauxProratisation, decoteSurTrimestres, pensionBase, pensionComplementaireAnnuelle, minimumContributif } from '@/lib/retraite/calcul';
 import { CarriereFonctionPublique } from '@/components/retraite/CarriereFonctionPublique';
 import { CarriereCNAVPL } from '@/components/retraite/CarriereCNAVPL';
 import { familyService } from '@/services/familyService';
@@ -293,7 +293,14 @@ export const Carriere = () => {
     (regime) => pensionComplementaireAnnuelle(regime) === undefined
   ).length;
 
-  const pensionBaseAjustee = pensionBaseBrute * (1 + decoteSurcote / 100);
+  // Minimum contributif (MiCo, régime général, version non majorée) :
+  // ne relève le montant que si la pension est liquidée sans décote (cf.
+  // minimumContributif() dans calcul.ts pour la condition d'éligibilité).
+  const trimValidesRegimeGeneral = parseInt(trimestresValides) || 0;
+  const pensionBaseAjustee = Math.max(
+    pensionBaseBrute * (1 + decoteSurcote / 100),
+    minimumContributif(trimValidesRegimeGeneral, trimestresRequis, decoteSurcote)
+  );
   const pensionTotaleRegimeGeneral = pensionBaseAjustee + totalPensionComplementaireAnnuelle;
   const pensionTotaleFonctionPublique = hasFonctionPublique
     ? resultatFonctionPublique.pensionFinale + resultatFonctionPublique.rafpAnnuelle

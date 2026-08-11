@@ -109,6 +109,39 @@ export function decoteApplicable(decoteSurTrimestres: number, decoteSurAge: numb
 }
 
 /**
+ * Montant annuel du minimum contributif (MiCo) non majoré, régime général.
+ *
+ * Source : circulaire CNAV n° 2025-34 du 23/12/2025, montant applicable au
+ * 1er janvier 2026 (756,29 €/mois × 12). ⚠️ À réviser chaque année lors de
+ * la revalorisation.
+ *
+ * Ne couvre que la version de base (non majorée). Le MiCo majoré, réservé
+ * aux carrières longues (120 trimestres cotisés requis), n'est pas
+ * implémenté — cf. dette technique documentée dans docs/audit/audit-retraite.md.
+ */
+export const MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 = 9075.50;
+
+/**
+ * Minimum contributif proratisé, régime général, version non majorée
+ * uniquement.
+ *
+ * Éligibilité stricte : le MiCo ne s'applique qu'à une pension liquidée à
+ * taux plein, c'est-à-dire sans décote (decote < 0 déclenche une exclusion
+ * totale, pas un plafonnement — un assuré décoté n'est pas éligible, quel
+ * que soit son nombre de trimestres).
+ */
+export function minimumContributif(
+  trimestresValides: number,
+  trimestresRequis: number,
+  decote: number
+): number {
+  if (decote < 0) {
+    return 0;
+  }
+  return MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 * Math.min(trimestresValides / trimestresRequis, 1);
+}
+
+/**
  * Pension de base ajustée : SAM × 50 % × taux de proratisation, puis
  * application de la décote/surcote.
  */
