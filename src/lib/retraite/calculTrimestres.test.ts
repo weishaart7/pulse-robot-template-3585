@@ -23,10 +23,11 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
   // et inclut des micro-entrepreneurs), une reproduction exacte de ces chiffres
   // est IMPOSSIBLE depuis ce dépôt — ce test ne cherche donc pas à forcer cette
   // correspondance. Il documente l'écart en calculant, sur les seules données
-  // réelles disponibles (2018-2025, retraite_carriere_detail, périmètre
-  // employeur/chomage/maladie de cette phase), ce que produit la fonction, et
-  // constate que l'écart avec 66/170 est structurel (périmètre temporel et
-  // exclusion micro-entrepreneur), pas un signe de bug.
+  // réelles disponibles (2018-2025, retraite_carriere_detail — ce jeu de
+  // données ne contient ici aucune ligne micro_entrepreneur, cf. le test
+  // suivant pour ce cas), ce que produit la fonction, et constate que l'écart
+  // avec 66/170 est structurel (périmètre temporel, carrière projetée jusqu'en
+  // 2067 dans le référentiel), pas un signe de bug.
   it('cas référentiel PDF : comparaison non reproductible depuis ce dépôt (documentation de l’écart, pas de correspondance forcée)', () => {
     const periodesReelles2018a2025: PeriodeCarriere[] = [
       periode({ employeur: 'TITANE MOTOR', dateDebut: '2018-07-17', dateFin: '2018-07-28', revenu: 966 }),
@@ -72,11 +73,31 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
   // périmètre complet incluant les 13 lignes micro_entrepreneur et les
   // chevauchements 2025 déjà repérés dans comparatif-retraite.md (plusieurs
   // micro-entreprises simultanées, elles-mêmes chevauchant des périodes de
-  // chômage). Ce test vérifie que ces chevauchements micro-entrepreneur/chômage
-  // n'affectent PAS le résultat : les lignes micro_entrepreneur doivent être
-  // intégralement ignorées, seules les 4 lignes chômage/maladie et les 12 lignes
-  // employeur (dont un doublon régime en 2022) doivent contribuer.
-  it('cas réel Titouan Weishaar : 27 lignes réelles avec chevauchements micro-entrepreneur/chômage en 2025, micro-entrepreneur ignoré', () => {
+  // chômage). Seules 2 des 13 lignes micro_entrepreneur portent un revenu
+  // (CA) non nul : "Prestation de service BIC" 2025-01-01→05-31 (2 922 €) et
+  // "Prestation de service BNC" 2025-06-01→12-31 (2 824 €) — les autres ont
+  // `revenu: null` (aucun CA déclaré sur la période) et ne contribuent donc
+  // rien, même une fois leur sous-type identifié.
+  //
+  // Calcul à la main pour 2025 (seule année concernée) :
+  // - revenu retenu service BIC = 2 922 × (1 − 0,50) = 1 461 €
+  // - revenu retenu service BNC = 2 824 × (1 − 0,34) = 1 863,84 €
+  // - total revenu cotisé 2025 = 1 461 + 1 863,84 = 3 324,84 € (aucun revenu
+  //   `employeur` sur 2025) ; seuil 2025 = 1 782 € → floor(3 324,84 / 1 782)
+  //   = 1 trimestre cotisé.
+  // - jours chômage 2025 (3 périodes : 01/01→30/04 = 120j, 01/07→31/12 =
+  //   184j) = 304j → floor(304 / 50) = 6 bruts.
+  // - plafond combiné 2025 : 1 cotisé retenu, place restante 4 − 1 = 3 →
+  //   assimilé 2025 = min(6, 3) = 3 (au lieu de 4 sans le cotisé
+  //   micro-entrepreneur : le trimestre gagné en cotisé déplace un
+  //   trimestre d'assimilé, le total annuel 2025 reste à 4).
+  // - Années 2018-2024 : inchangées par rapport au test précédent (aucune
+  //   ligne micro_entrepreneur avec revenu non nul avant 2025 dans ce jeu de
+  //   données) → 24 cotisés / 0 assimilé cumulés sur cette période.
+  // - Total : cotises = 24 + 1 = 25, assimiles = 0 + 3 = 3, total = 28
+  //   (le total annuel plafonné à 4/an ne change pas, seule sa répartition
+  //   cotisé/assimilé se déplace pour 2025).
+  it('cas réel Titouan Weishaar : 27 lignes réelles avec chevauchements micro-entrepreneur/chômage en 2025, micro-entrepreneur abattu et cumulé au cotisé', () => {
     const periodesCompletes2018a2025: PeriodeCarriere[] = [
       periode({ employeur: 'TITANE MOTOR', dateDebut: '2018-07-17', dateFin: '2018-07-28', revenu: 966 }),
       periode({ employeur: 'AUCHAN HYPERMARCHE', dateDebut: '2018-11-10', dateFin: '2018-12-29', revenu: 716 }),
@@ -113,10 +134,11 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
     );
     const resultatSansMicroEntrepreneur = trimestresCotisesEtAssimilesDepuisCarriere(periodesSansMicroEntrepreneur);
 
-    expect(resultatComplet).toEqual({ cotises: 24, assimiles: 4, total: 28 });
-    // Les 13 lignes micro_entrepreneur (dont les chevauchements avec les 3
-    // périodes chômage de 2025) sont sans effet sur le résultat.
-    expect(resultatComplet).toEqual(resultatSansMicroEntrepreneur);
+    expect(resultatComplet).toEqual({ cotises: 25, assimiles: 3, total: 28 });
+    // Sans les lignes micro_entrepreneur, on retrouve le résultat du test
+    // précédent (24 cotisés / 4 assimilés) — le micro-entrepreneur déplace 1
+    // trimestre d'assimilé vers du cotisé sur 2025, sans changer le total.
+    expect(resultatSansMicroEntrepreneur).toEqual({ cotises: 24, assimiles: 4, total: 28 });
   });
 
   // Cas de chevauchement 'employeur' isolé : deux périodes employeur distinctes
@@ -138,17 +160,45 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
     expect(trimestresCotisesEtAssimilesDepuisCarriere(periodes)).toEqual({ cotises: 1, assimiles: 0, total: 1 });
   });
 
-  it('micro_entrepreneur explicitement ignoré, même avec un revenu élevé (limitation documentée, pas un oubli)', () => {
+  it('micro_entrepreneur avec sous-type non identifiable dans le libellé : période exclue (ni cotisée, ni comptée)', () => {
     const resultat = trimestresCotisesEtAssimilesDepuisCarriere([
       periode({
+        employeur: 'MICRO-ENTREPRENEUR - Libellé inconnu',
         typeActivite: 'micro_entrepreneur',
-        dateDebut: '2023-01-01',
-        dateFin: '2023-12-31',
+        dateDebut: '2026-01-01',
+        dateFin: '2026-12-31',
         revenu: 100000,
         estChiffreAffaires: true,
       }),
     ]);
     expect(resultat).toEqual({ cotises: 0, assimiles: 0, total: 0 });
+  });
+
+  // Cas test du diagnostic (docs/audit/micro-entrepreneur-trimestres.md) :
+  // 12 100 € de CA en 2026 (seuil 2026 = 1 803 €), un test isolé par
+  // sous-type, chacun sur sa propre carrière d'une seule période.
+  // - vente BIC (71 %) : revenu retenu = 12 100 × 0,29 = 3 509 € →
+  //   floor(3 509 / 1 803) = 1.
+  // - service BIC (50 %) : revenu retenu = 12 100 × 0,50 = 6 050 € →
+  //   floor(6 050 / 1 803) = 3.
+  // - service BNC (34 %) : revenu retenu = 12 100 × 0,66 = 7 986 € →
+  //   floor(7 986 / 1 803) = 4 (plafonné, déjà atteint avant le plafond).
+  it('cas test diagnostic : 12 100 € de CA en 2026 par sous-type micro-entrepreneur', () => {
+    const carrierePour = (employeur: string) =>
+      trimestresCotisesEtAssimilesDepuisCarriere([
+        periode({
+          employeur,
+          typeActivite: 'micro_entrepreneur',
+          dateDebut: '2026-01-01',
+          dateFin: '2026-12-31',
+          revenu: 12100,
+          estChiffreAffaires: true,
+        }),
+      ]);
+
+    expect(carrierePour('MICRO-ENTREPRENEUR - Activité de vente BIC').cotises).toBe(1);
+    expect(carrierePour('MICRO-ENTREPRENEUR - Prestation de service BIC').cotises).toBe(3);
+    expect(carrierePour('MICRO-ENTREPRENEUR - Prestation de service BNC').cotises).toBe(4);
   });
 
   it('année hors barème connu (avant 2018) : aucun trimestre cotisé, pas d’extrapolation', () => {

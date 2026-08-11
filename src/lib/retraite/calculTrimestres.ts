@@ -3,13 +3,17 @@
  * de carrière (`retraite_carriere_detail`). Fonctions pures, sans JSX ni
  * state React — sur le modèle de calculSAM.ts.
  *
- * ⚠️ Périmètre restreint (phase 1, cf. docs/audit/cartographie-trimestres-cotises.md) :
- * ne couvre que les périodes `employeur`, `chomage` et `maladie`. Les
- * périodes `micro_entrepreneur` sont explicitement ignorées — ni cotisées,
- * ni assimilées, ni comptées dans le total — cf. dette technique documentée
- * dans docs/audit/audit-retraite.md (deux décisions volontairement hors
- * périmètre de cette phase : conversion CA → assiette sociale, et
- * chronologie de franchissement des seuils pour la surcote).
+ * Couvre désormais les quatre valeurs de `type_activite` : `employeur`,
+ * `chomage`, `maladie`, et `micro_entrepreneur` (abattement forfaitaire CA →
+ * revenu retenu, cf. `ABATTEMENT_MICRO_ENTREPRENEUR` ci-dessous — méthode
+ * confirmée en primaire sur Légifrance, art. L613-7 CSS, cf.
+ * docs/audit/micro-entrepreneur-trimestres.md). Limites assumées de cette
+ * couverture, documentées à leur endroit respectif dans ce fichier :
+ * - sous-type micro-entrepreneur (vente/service BIC/service BNC) non
+ *   identifiable depuis le texte libre du champ `employeur` → période exclue
+ *   (cf. `classifierSousTypeMicroEntrepreneur()`) ;
+ * - abattements version 2026 uniquement (art. D613-4 CSS), pas de barème par
+ *   année comme `SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE`.
  *
  * ⚠️ Cette fonction n'est PAS branchée dans decoteSurTrimestres() ni dans
  * aucun écran à ce stade — production de la fonction et de ses tests
@@ -46,6 +50,64 @@ export const SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE: Record<number, number> = {
   2025: 1782.0,
   2026: 1803.0,
 };
+
+/**
+ * Abattement forfaitaire appliqué au chiffre d'affaires déclaré pour obtenir
+ * le « revenu retenu » servant au calcul des trimestres (revenu retenu = CA
+ * × (1 − abattement)). Base légale vérifiée en lecture primaire directe sur
+ * Légifrance, art. L613-7 du code de la sécurité sociale
+ * ([LEGIARTI000048683570](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000048683570)) :
+ * « Les prestations attribuées aux personnes mentionnées au présent article
+ * sont calculées sur la base de leur chiffre d'affaires ou de leurs recettes
+ * après application d'un taux d'abattement de 71 % [...] » (+ 50 % et 34 %
+ * selon la catégorie, art. D613-4 CSS). Recherche et vérification effectuées
+ * le 2026-08-11, cf. docs/audit/micro-entrepreneur-trimestres.md — cette
+ * méthode écarte explicitement l'hypothèse concurrente (reconstitution via
+ * le taux de cotisation retraite ÷ 17,87 %), sans base légale identifiée.
+ *
+ * ⚠️ Valeurs 2026 uniquement — contrairement à
+ * `SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE`, aucun barème par année n'est
+ * encodé ici. Les taux L613-7/D613-4 sont stables dans le temps (pas de
+ * revalorisation annuelle comme le SMIC), mais n'ont pas été vérifiés pour
+ * les années antérieures à 2026 — à confirmer avant d'appliquer cette
+ * fonction à des périodes anciennes si les taux venaient à différer.
+ */
+export const ABATTEMENT_MICRO_ENTREPRENEUR = {
+  vente_bic: 0.71,
+  service_bic: 0.5,
+  service_bnc: 0.34,
+} as const;
+
+type SousTypeMicroEntrepreneur = keyof typeof ABATTEMENT_MICRO_ENTREPRENEUR;
+
+/**
+ * Identifie le sous-type d'activité micro-entrepreneur depuis le texte libre
+ * du champ `employeur` — aucun champ structuré dédié n'existe en base (même
+ * limitation que `classifierTypeActivite()` dans parseRIS.ts, cf.
+ * docs/audit/cartographie-trimestres-cotises.md §2.3). Mots-clés confirmés
+ * sur les libellés réels observés côté RIS : « Activité de vente BIC »,
+ * « Prestation de service BIC », « Prestation de service BNC ». BNC est
+ * testé avant BIC : les libellés BNC observés ne contiennent jamais « BIC »,
+ * mais l'inverse n'est pas garanti si un libellé futur combinait les deux
+ * mots — l'ordre de test fige ce choix.
+ *
+ * Retourne `null` si aucun sous-type n'est reconnaissable (libellé RIS
+ * inhabituel ou absent) — la période est alors exclue du calcul (ni cotisée,
+ * ni assimilée, ni comptée) par l'appelant plutôt que de deviner un
+ * abattement. Cas non couvert par les tests actuels faute de libellé réel
+ * observé qui déclencherait ce cas — à surveiller si un relevé futur en
+ * produit un.
+ */
+function classifierSousTypeMicroEntrepreneur(employeurTexte: string): SousTypeMicroEntrepreneur | null {
+  const normalise = employeurTexte
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+  if (normalise.includes('BNC')) return 'service_bnc';
+  if (normalise.includes('VENTE') && normalise.includes('BIC')) return 'vente_bic';
+  if (normalise.includes('BIC')) return 'service_bic';
+  return null;
+}
 
 /**
  * Nombre de jours ouvrant droit à un trimestre assimilé, faute de revenu
@@ -147,18 +209,23 @@ function anneesTraversees(periode: PeriodeCarriere): number[] {
 }
 
 /**
- * Répartit le revenu d'une période `employeur` par année civile, au prorata
- * du nombre de jours (même mécanique que `repartirRevenuParAnnee()` dans
- * calculSAM.ts). Chevauchements : plusieurs périodes `employeur` sur la même
- * année s'additionnent naturellement dans `revenuParAnnee` (une entrée par
- * année, incrémentée à chaque période), conformément à la règle officielle
- * (tous les revenus cotisés d'une année s'additionnent, indépendamment du
- * nombre d'employeurs).
+ * Répartit un revenu cotisé par année civile, au prorata du nombre de jours
+ * de la période (même mécanique que `repartirRevenuParAnnee()` dans
+ * calculSAM.ts). Usage élargi depuis l'ajout du micro-entrepreneur : le
+ * revenu n'est plus lu directement sur `periode.revenu` mais passé en
+ * paramètre explicite, pour pouvoir y injecter le revenu déjà abattu (CA ×
+ * (1 − abattement)) sans dupliquer la logique de répartition temporelle —
+ * l'appelant employeur passe `periode.revenu ?? 0` tel quel, l'appelant
+ * micro-entrepreneur passe le revenu retenu post-abattement. Chevauchements :
+ * plusieurs périodes (employeur et/ou micro-entrepreneur) sur la même année
+ * s'additionnent naturellement dans `revenuParAnnee` (une entrée par année,
+ * incrémentée à chaque période), conformément à la règle officielle (tous
+ * les revenus cotisés d'une année s'additionnent, indépendamment du nombre
+ * d'employeurs ou d'activités).
  */
-function repartirRevenuEmployeurParAnnee(periode: PeriodeCarriere, revenuParAnnee: Map<number, number>): void {
+function repartirRevenuCotiseParAnnee(periode: PeriodeCarriere, revenu: number, revenuParAnnee: Map<number, number>): void {
   const debut = new Date(`${periode.dateDebut}T00:00:00Z`);
   const fin = new Date(`${periode.dateFin}T00:00:00Z`);
-  const revenu = periode.revenu ?? 0;
   const joursTotal = Math.round((fin.getTime() - debut.getTime()) / unJourMs) + 1;
 
   for (const annee of anneesTraversees(periode)) {
@@ -197,8 +264,7 @@ export interface ResultatTrimestresCotisesEtAssimiles {
 
 /**
  * Dérive un nombre de trimestres cotisés et assimilés à partir du détail de
- * carrière, périodes `employeur`/`chomage`/`maladie` uniquement
- * (`micro_entrepreneur` explicitement ignoré — cf. en-tête de fichier).
+ * carrière, couvrant les quatre valeurs de `type_activite`.
  *
  * - `employeur` : revenu de l'année (toutes périodes `employeur` confondues,
  *   après filtrage des doublons régime/revenu du RIS — cf.
@@ -206,6 +272,21 @@ export interface ResultatTrimestresCotisesEtAssimiles {
  *   4/an → cotisé. Les années hors barème connu
  *   (`SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE`) ne contribuent aucun trimestre
  *   plutôt que d'extrapoler un seuil.
+ * - `micro_entrepreneur` : CA de la période × (1 − abattement du sous-type
+ *   identifié, cf. `classifierSousTypeMicroEntrepreneur()` /
+ *   `ABATTEMENT_MICRO_ENTREPRENEUR`) = revenu retenu, réparti par année et
+ *   **cumulé dans la même `revenuParAnnee` que le revenu `employeur`** avant
+ *   division par le seuil — les deux sources de revenu cotisé s'additionnent
+ *   pour une même année civile, conformément à la règle officielle (tous les
+ *   revenus cotisés d'une année s'additionnent, indépendamment de la source
+ *   d'activité). Périodes dont le sous-type n'est pas identifiable : exclues
+ *   (ni cotisées, ni comptées), pas de repli par défaut sur un abattement
+ *   arbitraire. Aucun filtrage doublon régime/revenu appliqué à ces périodes
+ *   (contrairement à `employeur`) : le format RIS observé pour le
+ *   micro-entrepreneur présente une seule ligne listant plusieurs régimes
+ *   ensemble (ex. `["L'Assurance retraite", 'RCI']`), pas une ligne par
+ *   régime comme pour `employeur` — aucun doublon de ce type observé sur les
+ *   données réelles examinées.
  * - `chomage` : aucun trimestre cotisé ; jours de l'année (toutes périodes
  *   `chomage` confondues) ÷ 50 (règle du chômage indemnisé, appliquée à
  *   toutes les périodes `chomage` faute de distinction indemnisé/non
@@ -215,30 +296,37 @@ export interface ResultatTrimestresCotisesEtAssimiles {
  *   `maladie` confondues) ÷ 60, plafonné à 4/an → assimilé.
  * - Chômage et maladie sont comptés sur deux `Map` par année distinctes
  *   (pas fusionnées) puisque leur seuil de conversion en trimestres diffère.
- * - Le plafond de 4/an s'applique au TOTAL cotisé + assimilé (chômage +
- *   maladie confondus) de chaque année, pas séparément à chaque catégorie
- *   (règle officielle : 4 trimestres maximum par année civile, tous types
- *   confondus). En cas de dépassement combiné sur une même année, les
- *   trimestres **cotisés sont prioritaires** : ils sont comptés en premier
- *   (jusqu'à 4), l'assimilé (chômage + maladie) ne prend que la place
- *   restante. Confirmé conforme à la règle officielle (priorité cotisés en
- *   cas de dépassement du plafond combiné) — source : CFDT Retraités,
- *   citant les modalités d'attribution CNAV (« Les trimestres cotisés sont
- *   pris en priorité »), vérifiée le 2026-08-11. Le seul cas réel où ce
- *   conflit se produit dans les données de test est 2024 (4 cotisés + 2
- *   chômage bruts → 4 cotisés / 0 assimilé retenus pour cette année).
+ * - Le plafond de 4/an s'applique au TOTAL cotisé (employeur + micro-
+ *   entrepreneur confondus) + assimilé (chômage + maladie confondus) de
+ *   chaque année, pas séparément à chaque catégorie (règle officielle : 4
+ *   trimestres maximum par année civile, tous types confondus). En cas de
+ *   dépassement combiné sur une même année, les trimestres **cotisés sont
+ *   prioritaires** : ils sont comptés en premier (jusqu'à 4), l'assimilé
+ *   (chômage + maladie) ne prend que la place restante. Confirmé conforme à
+ *   la règle officielle (priorité cotisés en cas de dépassement du plafond
+ *   combiné) — source : CFDT Retraités, citant les modalités d'attribution
+ *   CNAV (« Les trimestres cotisés sont pris en priorité »), vérifiée le
+ *   2026-08-11. Le seul cas réel où ce conflit se produit dans les données de
+ *   test est 2024 (4 cotisés + 2 chômage bruts → 4 cotisés / 0 assimilé
+ *   retenus pour cette année).
  */
 export function trimestresCotisesEtAssimilesDepuisCarriere(
   periodes: PeriodeCarriere[]
 ): ResultatTrimestresCotisesEtAssimiles {
   const periodesEmployeur = periodes.filter((p) => p.typeActivite === 'employeur' && estPeriodeRegimeDeBase(p));
+  const periodesMicroEntrepreneur = periodes.filter((p) => p.typeActivite === 'micro_entrepreneur');
   const periodesChomage = periodes.filter((p) => p.typeActivite === 'chomage');
   const periodesMaladie = periodes.filter((p) => p.typeActivite === 'maladie');
-  // periodes.typeActivite === 'micro_entrepreneur' : ignoré, cf. en-tête.
 
   const revenuParAnnee = new Map<number, number>();
   for (const periode of periodesEmployeur) {
-    repartirRevenuEmployeurParAnnee(periode, revenuParAnnee);
+    repartirRevenuCotiseParAnnee(periode, periode.revenu ?? 0, revenuParAnnee);
+  }
+  for (const periode of periodesMicroEntrepreneur) {
+    const sousType = classifierSousTypeMicroEntrepreneur(periode.employeur);
+    if (sousType === null) continue; // sous-type non identifiable : période exclue, cf. docstring.
+    const revenuRetenu = (periode.revenu ?? 0) * (1 - ABATTEMENT_MICRO_ENTREPRENEUR[sousType]);
+    repartirRevenuCotiseParAnnee(periode, revenuRetenu, revenuParAnnee);
   }
 
   const joursChomageParAnnee = new Map<number, number>();
