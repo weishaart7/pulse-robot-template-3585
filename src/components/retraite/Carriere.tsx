@@ -494,7 +494,7 @@ export const Carriere = () => {
             <div className="mt-4 p-4 bg-muted/50 rounded-lg">
               <Label>Pension ajustée (avec décote/surcote)</Label>
               <div className="text-xl font-semibold text-primary">
-                {(pensionBaseBrute * (1 + decoteSurcote / 100)).toLocaleString('fr-FR', {
+                {pensionBaseAjustee.toLocaleString('fr-FR', {
                   style: 'currency',
                   currency: 'EUR',
                   minimumFractionDigits: 0,
