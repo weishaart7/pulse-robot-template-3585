@@ -195,14 +195,16 @@ export interface ResultatTrimestresCotisesEtAssimiles {
  *   `maladie` confondues) ÷ 60, plafonné à 4/an → assimilé.
  * - Chômage et maladie sont comptés sur deux `Map` par année distinctes
  *   (pas fusionnées) puisque leur seuil de conversion en trimestres diffère.
- * - Le plafond de 4/an est appliqué séparément au total cotisé, au total
- *   chômage et au total maladie de chaque année (pas de plafond combiné
- *   entre les trois par année civile) — limitation connue, cf. dette
- *   technique dans docs/audit/audit-retraite.md : une année où plusieurs
- *   catégories se cumulent peut donc afficher plus de 4 trimestres au total
- *   sur cette année, ce qui surestime légèrement le total dans ce cas
- *   précis (à l'inverse de la sous-estimation liée à l'exclusion des
- *   micro-entrepreneurs, qui domine largement en pratique).
+ * - Le plafond de 4/an s'applique au TOTAL cotisé + assimilé (chômage +
+ *   maladie confondus) de chaque année, pas séparément à chaque catégorie
+ *   (règle officielle : 4 trimestres maximum par année civile, tous types
+ *   confondus). En cas de dépassement combiné sur une même année, les
+ *   trimestres **cotisés sont prioritaires** : ils sont comptés en premier
+ *   (jusqu'à 4), l'assimilé (chômage + maladie) ne prend que la place
+ *   restante — décision validée avec l'utilisateur le 2026-08-11, le seul
+ *   cas réel où ce conflit se produit dans les données de test étant 2024
+ *   (4 cotisés + 2 chômage bruts → 4 cotisés / 0 assimilé retenus pour
+ *   cette année).
  */
 export function trimestresCotisesEtAssimilesDepuisCarriere(
   periodes: PeriodeCarriere[]
@@ -227,19 +229,33 @@ export function trimestresCotisesEtAssimilesDepuisCarriere(
     repartirJoursAssimilesParAnnee(periode, joursMaladieParAnnee);
   }
 
-  let cotises = 0;
-  for (const [annee, revenu] of revenuParAnnee) {
-    const seuil = SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE[annee];
-    if (seuil === undefined) continue;
-    cotises += Math.min(Math.floor(revenu / seuil), PLAFOND_TRIMESTRES_PAR_AN);
-  }
+  const annees = new Set<number>([
+    ...revenuParAnnee.keys(),
+    ...joursChomageParAnnee.keys(),
+    ...joursMaladieParAnnee.keys(),
+  ]);
 
+  let cotises = 0;
   let assimiles = 0;
-  for (const jours of joursChomageParAnnee.values()) {
-    assimiles += Math.min(Math.floor(jours / JOURS_PAR_TRIMESTRE_CHOMAGE), PLAFOND_TRIMESTRES_PAR_AN);
-  }
-  for (const jours of joursMaladieParAnnee.values()) {
-    assimiles += Math.min(Math.floor(jours / JOURS_PAR_TRIMESTRE_MALADIE), PLAFOND_TRIMESTRES_PAR_AN);
+  for (const annee of annees) {
+    const seuil = SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE[annee];
+    const revenu = revenuParAnnee.get(annee) ?? 0;
+    // Année hors barème connu : aucun trimestre cotisé, pas d'extrapolation
+    // (même comportement qu'avant — le plafond combiné ci-dessous laisse
+    // alors toute la place disponible à l'assimilé de cette année).
+    const cotisesBruts = seuil !== undefined ? Math.floor(revenu / seuil) : 0;
+
+    const joursChomage = joursChomageParAnnee.get(annee) ?? 0;
+    const joursMaladie = joursMaladieParAnnee.get(annee) ?? 0;
+    const assimilesBruts =
+      Math.floor(joursChomage / JOURS_PAR_TRIMESTRE_CHOMAGE) + Math.floor(joursMaladie / JOURS_PAR_TRIMESTRE_MALADIE);
+
+    const cotisesAnnee = Math.min(cotisesBruts, PLAFOND_TRIMESTRES_PAR_AN);
+    const placeRestante = PLAFOND_TRIMESTRES_PAR_AN - cotisesAnnee;
+    const assimilesAnnee = Math.min(assimilesBruts, placeRestante);
+
+    cotises += cotisesAnnee;
+    assimiles += assimilesAnnee;
   }
 
   return { cotises, assimiles, total: cotises + assimiles };

@@ -51,9 +51,13 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
 
     const resultat = trimestresCotisesEtAssimilesDepuisCarriere(periodesReelles2018a2025);
 
-    // Valeurs recalculées à la main (cf. corps du test) : 24 cotisés, 6 assimilés
-    // (chômage : 2 en 2024 + 4 plafonnés en 2025 ; maladie : 0 en 2022).
-    expect(resultat).toEqual({ cotises: 24, assimiles: 6, total: 30 });
+    // Valeurs recalculées à la main (cf. corps du test), plafond combiné
+    // cotisé+assimilé à 4/an avec priorité cotisés : 24 cotisés, 4 assimilés.
+    // Détail assimilé : 2022 maladie 0 ; 2024 chômage brut 2, mais cotisé
+    // brut 2024 = 4 (déjà au plafond) → 0 place restante, assimilé cède
+    // entièrement ; 2025 chômage brut 6 plafonné à 4 (aucun cotisé cette
+    // année-là, toute la place reste disponible).
+    expect(resultat).toEqual({ cotises: 24, assimiles: 4, total: 28 });
     // Écart avec le référentiel (66 cotisés / 170 assimilés) : massif et attendu,
     // pas un signe de défaut de la fonction — le référentiel couvre une carrière
     // projetée jusqu'en 2067 (dont d'importantes périodes hypothétiques de
@@ -109,7 +113,7 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
     );
     const resultatSansMicroEntrepreneur = trimestresCotisesEtAssimilesDepuisCarriere(periodesSansMicroEntrepreneur);
 
-    expect(resultatComplet).toEqual({ cotises: 24, assimiles: 6, total: 30 });
+    expect(resultatComplet).toEqual({ cotises: 24, assimiles: 4, total: 28 });
     // Les 13 lignes micro_entrepreneur (dont les chevauchements avec les 3
     // périodes chômage de 2025) sont sans effet sur le résultat.
     expect(resultatComplet).toEqual(resultatSansMicroEntrepreneur);
@@ -175,5 +179,23 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
     // 100 / 50 = 2 trimestres chômage ; 100 / 60 = 1,67 → 1 trimestre maladie.
     expect(resultatChomage).toEqual({ cotises: 0, assimiles: 2, total: 2 });
     expect(resultatMaladie).toEqual({ cotises: 0, assimiles: 1, total: 1 });
+  });
+
+  // Isole le plafond COMBINÉ 4/an (cotisé + assimilé confondus) avec priorité
+  // cotisés : une même année 2023 avec 3 trimestres cotisés bruts (employeur)
+  // et 3 trimestres assimilés bruts (chômage), combiné 6 > 4. Sans plafond
+  // combiné, on obtiendrait {cotises: 3, assimiles: 3, total: 6} — ce test
+  // vérifie que le total reste bien plafonné à 4, avec le cotisé conservé en
+  // entier et l'assimilé réduit à la place restante (4 - 3 = 1).
+  it('plafond combiné 4/an (cotisé + assimilé) avec priorité cotisés, cas isolé', () => {
+    const seuil2023 = 1690.5;
+    const resultat = trimestresCotisesEtAssimilesDepuisCarriere([
+      // Revenu 2023 = 3 × seuil + 100 → 3 trimestres cotisés bruts (floor).
+      periode({ employeur: 'Employeur A', dateDebut: '2023-01-01', dateFin: '2023-12-31', revenu: 3 * seuil2023 + 100 }),
+      // 150 jours de chômage 2023 → 150 / 50 = 3 trimestres assimilés bruts.
+      periode({ typeActivite: 'chomage', dateDebut: '2023-01-01', dateFin: '2023-05-30' }), // 150 jours
+    ]);
+
+    expect(resultat).toEqual({ cotises: 3, assimiles: 1, total: 4 });
   });
 });
