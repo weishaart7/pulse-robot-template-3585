@@ -201,10 +201,12 @@ export interface ResultatTrimestresCotisesEtAssimiles {
  *   confondus). En cas de dépassement combiné sur une même année, les
  *   trimestres **cotisés sont prioritaires** : ils sont comptés en premier
  *   (jusqu'à 4), l'assimilé (chômage + maladie) ne prend que la place
- *   restante — décision validée avec l'utilisateur le 2026-08-11, le seul
- *   cas réel où ce conflit se produit dans les données de test étant 2024
- *   (4 cotisés + 2 chômage bruts → 4 cotisés / 0 assimilé retenus pour
- *   cette année).
+ *   restante. Confirmé conforme à la règle officielle (priorité cotisés en
+ *   cas de dépassement du plafond combiné) — source : CFDT Retraités,
+ *   citant les modalités d'attribution CNAV (« Les trimestres cotisés sont
+ *   pris en priorité »), vérifiée le 2026-08-11. Le seul cas réel où ce
+ *   conflit se produit dans les données de test est 2024 (4 cotisés + 2
+ *   chômage bruts → 4 cotisés / 0 assimilé retenus pour cette année).
  */
 export function trimestresCotisesEtAssimilesDepuisCarriere(
   periodes: PeriodeCarriere[]
