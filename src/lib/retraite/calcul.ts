@@ -38,6 +38,100 @@ export function trimestresRequisPourGeneration(anneeNaissance: number): number {
   return tranche ? tranche.trimestres : 172;
 }
 
+export interface AgeLegal {
+  ans: number;
+  mois: number;
+}
+
+/**
+ * Résultat de `ageLegalPourGeneration()` — union discriminée plutôt qu'un
+ * objet `{ valeur, stable }` à un seul champ numérique toujours présent :
+ * pour les générations 1964-1968, le barème réel n'est PAS une valeur
+ * ponctuelle en attente de confirmation, c'est une véritable alternative
+ * légale non tranchée (cf. génération 1968 ci-dessous, qui a deux issues
+ * concrètes possibles, pas une seule estimation incertaine). Un champ
+ * `valeur` toujours renseigné inciterait un appelant pressé à le lire sans
+ * vérifier `stable`, produisant un chiffre silencieusement faux. Avec cette
+ * union, TypeScript interdit d'accéder à `age` tant que `stable` n'a pas été
+ * vérifié (narrowing), et le cas instable ne renvoie explicitement PAS de
+ * nombre — seulement une explication.
+ *
+ * Fonction volontairement isolée cette session : non branchée dans
+ * `decoteSurTrimestres()` ni ailleurs. Généraliser ce design aux appelants
+ * (Carriere.tsx, Trimestres.tsx) est un choix à valider séparément une fois
+ * un cas d'usage réel identifié — cf. docs/audit/audit-retraite.md.
+ */
+export type AgeLegalResultat = { stable: true; age: AgeLegal } | { stable: false; raison: string };
+
+/**
+ * Âge légal de départ à la retraite par génération. Barème et sources
+ * fournis par l'utilisateur (info-retraite.fr, lassuranceretraite.fr,
+ * service-public.gouv.fr, document RH interne avec barème complet) —
+ * corroboré par une recherche complémentaire le 2026-08-12 confirmant la
+ * réalité de la zone d'instabilité 1964-1968 (LFSS 2026, loi n° 2025-1403 du
+ * 30 décembre 2025, suspension applicable aux pensions liquidées à compter
+ * du 1er septembre 2026, jusqu'au 1er janvier 2028), mais sans reconstituer
+ * ici le détail des âges gelés par trimestre de naissance au sein de cette
+ * zone — non nécessaire dès lors que la fonction renvoie une indétermination
+ * explicite pour toute cette tranche plutôt qu'une valeur.
+ *
+ * - Avant le 01/09/1961 : 62 ans (toute année < 1961, ou 1961 avant
+ *   septembre).
+ * - 1961 à partir de septembre : 62 ans et 3 mois. Contrairement à
+ *   `trimestresRequisPourGeneration()` (qui documente ignorer sciemment la
+ *   granularité mensuelle de la génération 1961, faute d'en avoir besoin
+ *   pour son propre barème), l'âge légal a une vraie coupure au milieu de
+ *   l'année 1961 : `moisNaissance` est donc utilisé ici quand il est
+ *   fourni. Le mois de naissance existe déjà dans le modèle de données
+ *   (`family_profiles.date_naissance`, confirmé dans l'audit initial) — les
+ *   appelants qui en disposent (`Trimestres.tsx` extrait déjà une
+ *   `dateNaissance` complète avant de la réduire à l'année pour l'appel
+ *   existant à `trimestresRequisPourGeneration()`) peuvent le passer.
+ * - 1962 : 62 ans et 6 mois. 1963 : 62 ans et 9 mois.
+ * - 1964 à 1968 : INSTABLE, cf. `AgeLegalResultat`.
+ * - 1969 et après : 64 ans — stable quelle que soit l'issue de la
+ *   suspension (confirmé par service-public.gouv.fr : la suspension ne
+ *   fait que repousser le seuil des 64 ans de la génération 1968 à la
+ *   génération 1969, elle ne change rien pour 1969 et les générations
+ *   suivantes).
+ *
+ * @param moisNaissance 1-12, optionnel. N'est utile que pour distinguer les
+ *   deux sous-cas de l'année 1961 (avant/à partir de septembre) — sans
+ *   effet sur toute autre année, y compris les bornes de la zone instable.
+ *   Si omis pour 1961 : repli conservateur sur 62 ans et 3 mois (le cas
+ *   « à partir de septembre »), pour ne jamais afficher un âge légal
+ *   inférieur à la réalité par défaut d'information — simplification
+ *   documentée, même logique que la valeur unique par année civile
+ *   retenue par `trimestresRequisPourGeneration()`.
+ */
+export function ageLegalPourGeneration(anneeNaissance: number, moisNaissance?: number): AgeLegalResultat {
+  if (anneeNaissance < 1961 || (anneeNaissance === 1961 && (moisNaissance ?? 9) < 9)) {
+    return { stable: true, age: { ans: 62, mois: 0 } };
+  }
+  if (anneeNaissance === 1961) {
+    return { stable: true, age: { ans: 62, mois: 3 } };
+  }
+  if (anneeNaissance === 1962) {
+    return { stable: true, age: { ans: 62, mois: 6 } };
+  }
+  if (anneeNaissance === 1963) {
+    return { stable: true, age: { ans: 62, mois: 9 } };
+  }
+  if (anneeNaissance >= 1964 && anneeNaissance <= 1968) {
+    return {
+      stable: false,
+      raison:
+        `Génération ${anneeNaissance} : âge légal suspendu par la LFSS 2026 (loi n° 2025-1403 du ` +
+        `30 décembre 2025) jusqu'au 1er janvier 2028 — la trajectoire de la réforme 2023 (progression ` +
+        `continue jusqu'à 64 ans pour la génération 1968) est gelée à une valeur intermédiaire non modélisée ` +
+        `ici, variable au sein même de la génération selon le trimestre de naissance précis. Génération 1968 ` +
+        `en particulier : 64 ans si la trajectoire de la réforme 2023 reprend en 2028, ou 63 ans et 9 mois si ` +
+        `le barème suspendu devient définitif — indéterminé tant que la suspension n'est pas levée.`,
+    };
+  }
+  return { stable: true, age: { ans: 64, mois: 0 } };
+}
+
 /**
  * Taux de proratisation, plafonné à 100 % : au-delà de trimestresRequis,
  * l'avantage supplémentaire relève de la surcote (calculée séparément),
