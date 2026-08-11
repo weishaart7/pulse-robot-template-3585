@@ -51,8 +51,9 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
 
     const resultat = trimestresCotisesEtAssimilesDepuisCarriere(periodesReelles2018a2025);
 
-    // Valeurs recalculées à la main (cf. corps du test) : 24 cotisés, 4 assimilés.
-    expect(resultat).toEqual({ cotises: 24, assimiles: 4, total: 28 });
+    // Valeurs recalculées à la main (cf. corps du test) : 24 cotisés, 6 assimilés
+    // (chômage : 2 en 2024 + 4 plafonnés en 2025 ; maladie : 0 en 2022).
+    expect(resultat).toEqual({ cotises: 24, assimiles: 6, total: 30 });
     // Écart avec le référentiel (66 cotisés / 170 assimilés) : massif et attendu,
     // pas un signe de défaut de la fonction — le référentiel couvre une carrière
     // projetée jusqu'en 2067 (dont d'importantes périodes hypothétiques de
@@ -108,7 +109,7 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
     );
     const resultatSansMicroEntrepreneur = trimestresCotisesEtAssimilesDepuisCarriere(periodesSansMicroEntrepreneur);
 
-    expect(resultatComplet).toEqual({ cotises: 24, assimiles: 4, total: 28 });
+    expect(resultatComplet).toEqual({ cotises: 24, assimiles: 6, total: 30 });
     // Les 13 lignes micro_entrepreneur (dont les chevauchements avec les 3
     // périodes chômage de 2025) sont sans effet sur le résultat.
     expect(resultatComplet).toEqual(resultatSansMicroEntrepreneur);
@@ -158,5 +159,21 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
       periode({ dateDebut: '2023-01-01', dateFin: '2023-12-31', revenu: 1000000 }),
     ]);
     expect(resultat.cotises).toBe(4);
+  });
+
+  // Isole les deux seuils désormais distincts : une même durée de 100 jours
+  // ne donne pas le même nombre de trimestres selon qu'elle est classée
+  // chômage (÷ 50 jours) ou maladie (÷ 60 jours).
+  it('seuils distincts chômage (50 jours) vs maladie (60 jours) pour une même durée', () => {
+    const resultatChomage = trimestresCotisesEtAssimilesDepuisCarriere([
+      periode({ typeActivite: 'chomage', dateDebut: '2023-01-01', dateFin: '2023-04-10' }), // 100 jours
+    ]);
+    const resultatMaladie = trimestresCotisesEtAssimilesDepuisCarriere([
+      periode({ typeActivite: 'maladie', dateDebut: '2023-01-01', dateFin: '2023-04-10' }), // 100 jours
+    ]);
+
+    // 100 / 50 = 2 trimestres chômage ; 100 / 60 = 1,67 → 1 trimestre maladie.
+    expect(resultatChomage).toEqual({ cotises: 0, assimiles: 2, total: 2 });
+    expect(resultatMaladie).toEqual({ cotises: 0, assimiles: 1, total: 1 });
   });
 });

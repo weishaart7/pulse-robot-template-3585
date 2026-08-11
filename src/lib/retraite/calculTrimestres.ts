@@ -48,16 +48,33 @@ export const SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE: Record<number, number> = {
 };
 
 /**
- * Nombre de jours assimilés à un trimestre pour les périodes `chomage` et
- * `maladie`, faute de revenu exploitable pour ces catégories (le champ
- * `revenu` est le plus souvent `null` en base pour ces types d'activité,
- * confirmé sur les données réelles du client Titouan Weishaar : lignes
- * "Revenu non renseigné"). Approximation du principe légal réel (ex. 50
- * jours de chômage indemnisé ≈ 1 trimestre), retenue avec l'utilisateur le
- * 2026-08-11 — **pas une valeur officielle vérifiée** au même niveau que le
- * seuil SMIC ci-dessus, à affiner si une source CNAV précise est trouvée.
+ * Nombre de jours ouvrant droit à un trimestre assimilé, faute de revenu
+ * exploitable pour ces catégories (le champ `revenu` est le plus souvent
+ * `null` en base pour `chomage`/`maladie`, confirmé sur les données réelles
+ * du client Titouan Weishaar : lignes "Revenu non renseigné"). Seuils
+ * officiels distincts par catégorie, vérifiés le 2026-08-11 :
+ * - Chômage indemnisé : 1 trimestre validé tous les 50 jours (consécutifs
+ *   ou non), plafonné à 4/an. Source : service-public.gouv.fr, circulaire
+ *   CNAV n° 2020-25.
+ * - Maladie / accident du travail avec indemnités journalières : 1
+ *   trimestre validé tous les 60 jours, plafonné à 4/an. Source :
+ *   service-public.gouv.fr.
+ *
+ * ⚠️ `type_activite = 'chomage'` ne distingue pas chômage indemnisé de
+ * chômage non indemnisé (confirmé sur les données réelles de Titouan
+ * Weishaar : les libellés "CHÔMAGE" et "CHÔMAGE NON INDEMNISÉ" coexistent,
+ * tous deux `type_activite = 'chomage'`, cf.
+ * docs/audit/cartographie-trimestres-cotises.md §1.2). Cette fonction
+ * applique donc la règle du chômage INDEMNISÉ (50 jours) à toutes les
+ * périodes `chomage`, y compris non indemnisées — ce qui **surestime
+ * probablement** les trimestres assimilés pour les périodes de chômage non
+ * indemnisé, qui suivent en réalité des règles de plafonnement différentes
+ * (une durée totale sur l'ensemble de la carrière, pas un ratio jours/
+ * trimestre par période) — dette technique documentée dans
+ * docs/audit/audit-retraite.md.
  */
-const JOURS_PAR_TRIMESTRE_ASSIMILE = 90;
+const JOURS_PAR_TRIMESTRE_CHOMAGE = 50;
+const JOURS_PAR_TRIMESTRE_MALADIE = 60;
 
 const PLAFOND_TRIMESTRES_PAR_AN = 4;
 
@@ -132,11 +149,15 @@ function repartirRevenuEmployeurParAnnee(periode: PeriodeCarriere, revenuParAnne
 }
 
 /**
- * Répartit le nombre de jours d'une période `chomage`/`maladie` par année
- * civile (pas de revenu à proratiser : ces catégories n'ont pas de revenu
- * exploitable, cf. commentaire sur `JOURS_PAR_TRIMESTRE_ASSIMILE`).
- * Chevauchements : plusieurs périodes assimilées sur la même année
- * s'additionnent, même principe que pour les périodes `employeur`.
+ * Répartit le nombre de jours d'une période `chomage` ou `maladie` par
+ * année civile (pas de revenu à proratiser : ces catégories n'ont pas de
+ * revenu exploitable, cf. commentaire sur `JOURS_PAR_TRIMESTRE_CHOMAGE` /
+ * `JOURS_PAR_TRIMESTRE_MALADIE`). Chevauchements : plusieurs périodes de la
+ * même catégorie sur la même année s'additionnent, même principe que pour
+ * les périodes `employeur`. Fonction commune aux deux catégories — seul le
+ * seuil de conversion en trimestres diffère, appliqué séparément par
+ * l'appelant sur deux `Map` distinctes (`joursChomageParAnnee` /
+ * `joursMaladieParAnnee`).
  */
 function repartirJoursAssimilesParAnnee(periode: PeriodeCarriere, joursParAnnee: Map<number, number>): void {
   const debut = new Date(`${periode.dateDebut}T00:00:00Z`);
@@ -165,22 +186,30 @@ export interface ResultatTrimestresCotisesEtAssimiles {
  *   4/an → cotisé. Les années hors barème connu
  *   (`SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE`) ne contribuent aucun trimestre
  *   plutôt que d'extrapoler un seuil.
- * - `chomage`/`maladie` : aucun trimestre cotisé ; jours de l'année (toutes
- *   périodes confondues) ÷ 90, plafonné à 4/an → assimilé.
- * - Le plafond de 4/an est appliqué séparément pour le total cotisé et pour
- *   le total assimilé de chaque année (pas de plafond combiné cotisé +
- *   assimilé par année civile) — limitation connue, cf. dette technique
- *   dans docs/audit/audit-retraite.md : une année où plusieurs catégories se
- *   cumulent peut donc afficher plus de 4 trimestres au total sur cette
- *   année, ce qui surestime légèrement le total dans ce cas précis (à
- *   l'inverse de la sous-estimation liée à l'exclusion des
+ * - `chomage` : aucun trimestre cotisé ; jours de l'année (toutes périodes
+ *   `chomage` confondues) ÷ 50 (règle du chômage indemnisé, appliquée à
+ *   toutes les périodes `chomage` faute de distinction indemnisé/non
+ *   indemnisé dans `type_activite` — cf. commentaire sur
+ *   `JOURS_PAR_TRIMESTRE_CHOMAGE`), plafonné à 4/an → assimilé.
+ * - `maladie` : aucun trimestre cotisé ; jours de l'année (toutes périodes
+ *   `maladie` confondues) ÷ 60, plafonné à 4/an → assimilé.
+ * - Chômage et maladie sont comptés sur deux `Map` par année distinctes
+ *   (pas fusionnées) puisque leur seuil de conversion en trimestres diffère.
+ * - Le plafond de 4/an est appliqué séparément au total cotisé, au total
+ *   chômage et au total maladie de chaque année (pas de plafond combiné
+ *   entre les trois par année civile) — limitation connue, cf. dette
+ *   technique dans docs/audit/audit-retraite.md : une année où plusieurs
+ *   catégories se cumulent peut donc afficher plus de 4 trimestres au total
+ *   sur cette année, ce qui surestime légèrement le total dans ce cas
+ *   précis (à l'inverse de la sous-estimation liée à l'exclusion des
  *   micro-entrepreneurs, qui domine largement en pratique).
  */
 export function trimestresCotisesEtAssimilesDepuisCarriere(
   periodes: PeriodeCarriere[]
 ): ResultatTrimestresCotisesEtAssimiles {
   const periodesEmployeur = periodes.filter((p) => p.typeActivite === 'employeur' && estPeriodeRegimeDeBase(p));
-  const periodesAssimilees = periodes.filter((p) => p.typeActivite === 'chomage' || p.typeActivite === 'maladie');
+  const periodesChomage = periodes.filter((p) => p.typeActivite === 'chomage');
+  const periodesMaladie = periodes.filter((p) => p.typeActivite === 'maladie');
   // periodes.typeActivite === 'micro_entrepreneur' : ignoré, cf. en-tête.
 
   const revenuParAnnee = new Map<number, number>();
@@ -188,9 +217,14 @@ export function trimestresCotisesEtAssimilesDepuisCarriere(
     repartirRevenuEmployeurParAnnee(periode, revenuParAnnee);
   }
 
-  const joursParAnnee = new Map<number, number>();
-  for (const periode of periodesAssimilees) {
-    repartirJoursAssimilesParAnnee(periode, joursParAnnee);
+  const joursChomageParAnnee = new Map<number, number>();
+  for (const periode of periodesChomage) {
+    repartirJoursAssimilesParAnnee(periode, joursChomageParAnnee);
+  }
+
+  const joursMaladieParAnnee = new Map<number, number>();
+  for (const periode of periodesMaladie) {
+    repartirJoursAssimilesParAnnee(periode, joursMaladieParAnnee);
   }
 
   let cotises = 0;
@@ -201,8 +235,11 @@ export function trimestresCotisesEtAssimilesDepuisCarriere(
   }
 
   let assimiles = 0;
-  for (const jours of joursParAnnee.values()) {
-    assimiles += Math.min(Math.floor(jours / JOURS_PAR_TRIMESTRE_ASSIMILE), PLAFOND_TRIMESTRES_PAR_AN);
+  for (const jours of joursChomageParAnnee.values()) {
+    assimiles += Math.min(Math.floor(jours / JOURS_PAR_TRIMESTRE_CHOMAGE), PLAFOND_TRIMESTRES_PAR_AN);
+  }
+  for (const jours of joursMaladieParAnnee.values()) {
+    assimiles += Math.min(Math.floor(jours / JOURS_PAR_TRIMESTRE_MALADIE), PLAFOND_TRIMESTRES_PAR_AN);
   }
 
   return { cotises, assimiles, total: cotises + assimiles };
