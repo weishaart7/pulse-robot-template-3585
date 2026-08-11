@@ -115,48 +115,72 @@ function classifierSousTypeMicroEntrepreneur(employeurTexte: string): SousTypeMi
  * `null` en base pour `chomage`/`maladie`, confirmé sur les données réelles
  * du client Titouan Weishaar : lignes "Revenu non renseigné"). Seuils
  * officiels distincts par catégorie, vérifiés le 2026-08-11 :
- * - Chômage indemnisé : 1 trimestre validé tous les 50 jours (consécutifs
- *   ou non), plafonné à 4/an. Source : service-public.gouv.fr, circulaire
- *   CNAV n° 2020-25.
+ * - Chômage (indemnisé ou non) : 1 trimestre validé tous les 50 jours
+ *   (consécutifs ou non), plafonné à 4/an — même ratio pour les deux, art.
+ *   R351-12 CSS (vérifié en lecture primaire directe sur Légifrance le
+ *   2026-08-12 : le texte renvoie implicitement à la règle générale du même
+ *   article pour la conversion jours→trimestres, et n'introduit un
+ *   mécanisme différent que sur la DURÉE prise en compte pour le chômage
+ *   non indemnisé, cf. `JOURS_PLAFOND_PREMIERE_PERIODE_NON_INDEMNISEE` /
+ *   `JOURS_PLAFOND_PERIODE_ULTERIEURE_NON_INDEMNISEE` ci-dessous — pas sur
+ *   le ratio de conversion lui-même). Confirmation initiale du ratio
+ *   chômage indemnisé : service-public.gouv.fr, circulaire CNAV n° 2020-25.
  * - Maladie / accident du travail avec indemnités journalières : 1
  *   trimestre validé tous les 60 jours, plafonné à 4/an. Source :
  *   service-public.gouv.fr.
- *
- * ⚠️ `JOURS_PAR_TRIMESTRE_CHOMAGE = 50` ne vaut que pour le chômage
- * INDEMNISÉ. Le chômage NON indemnisé suit un mécanisme légal différent,
- * non implémenté ici — recherché et confirmé le 2026-08-11, décision de ne
- * pas l'implémenter cette session (chantier trop éloigné d'un calcul
- * période par période) :
- * - Première période de chômage non indemnisé de toute la carrière : prise
- *   en compte jusqu'à 6 trimestres (1,5 an), sans ratio jours/trimestre —
- *   un plafond forfaitaire unique, pas une division.
- * - Périodes suivantes : prises en compte seulement si elles succèdent
- *   SANS INTERRUPTION à une période de chômage indemnisé, limite 1 an (4
- *   trimestres), portée à 5 ans si la personne a ≥ 20 ans de cotisation et
- *   ≥ 55 ans à la cessation du revenu de remplacement.
- * - Toute activité, même partielle, interrompt la validation.
- * - Nécessite un ÉTAT DE CARRIÈRE ENTIÈRE pour être évalué (s'agit-il de la
- *   première période non indemnisée ? succède-t-elle sans interruption à
- *   une période indemnisée ? âge à la cessation ? durée de cotisation déjà
- *   acquise ?) — incompatible avec le traitement période par période
- *   utilisé par le reste de cette fonction (chaque période `chomage` est
- *   convertie indépendamment, sans mémoire de ce qui précède).
- *
- * `type_activite = 'chomage'` ne distingue de toute façon pas indemnisé de
- * non indemnisé dans le modèle de données actuel (confirmé sur les données
- * réelles de Titouan Weishaar : les libellés "CHÔMAGE" et "CHÔMAGE NON
- * INDEMNISÉ" coexistent, tous deux `type_activite = 'chomage'`, cf.
- * docs/audit/cartographie-trimestres-cotises.md §1.2) — même si cette
- * distinction existait, la règle non-indemnisée ci-dessus resterait à
- * implémenter séparément. Cette fonction applique donc la règle du chômage
- * INDEMNISÉ (50 jours) à toutes les périodes `chomage` sans exception, ce
- * qui **surestime probablement** les trimestres assimilés pour les
- * périodes de chômage non indemnisé (plafond réel bien plus restrictif que
- * le simple ratio jours/50) — dette technique documentée dans
- * docs/audit/audit-retraite.md.
  */
 const JOURS_PAR_TRIMESTRE_CHOMAGE = 50;
 const JOURS_PAR_TRIMESTRE_MALADIE = 60;
+
+/**
+ * Plafonds du chômage NON indemnisé (art. R351-12 CSS, vérifié en lecture
+ * primaire directe sur Légifrance le 2026-08-12,
+ * [LEGIARTI000031828370](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000031828370)) :
+ * plafond de CARRIÈRE (pas annuel, à la différence du plafond 4/an qui
+ * s'applique en plus, séparément, cf. `trimestresChomageNonIndemniseParAnnee()`).
+ *
+ * Citations exactes :
+ * - « la première période de chômage non indemnisé, qu'elle soit continue ou
+ *   non, est prise en compte dans la limite d'un an et demi, sans que plus
+ *   de six trimestres d'assurance puissent être comptés à ce titre » → deux
+ *   plafonds cumulatifs pour la première période : 547 jours ET 6
+ *   trimestres. Le plafond en trimestres est presque toujours le plus
+ *   contraignant en pratique (floor(547/50) = 10 > 6).
+ * - « chaque période ultérieure de chômage non indemnisé est prise en
+ *   compte à condition qu'elle succède sans solution de continuité à une
+ *   période de chômage indemnisé, dans la limite d'un an » → 365 jours par
+ *   période, MAIS seulement si adjacente (aucun jour de vide) à une période
+ *   de chômage INDEMNISÉ immédiatement précédente ; sinon 0 jour retenu.
+ * - « cette dernière limite est portée à cinq ans lorsque l'assuré justifie
+ *   d'une durée de cotisation d'au moins vingt ans, est âgé d'au moins
+ *   cinquante-cinq ans à la date où il cesse de bénéficier de [...] » —
+ *   extension NON implémentée (dette technique, cf. docs/audit/audit-retraite.md) :
+ *   nécessite un calcul de durée de cotisation à une date précise, qui n'existe
+ *   pas encore dans ce module. Toute période ultérieure qui serait éligible à
+ *   cette extension mais dépasse 365 jours est donc sous-comptée par cette
+ *   fonction (les jours au-delà de 365 ne comptent pour aucun trimestre).
+ */
+const JOURS_PLAFOND_PREMIERE_PERIODE_NON_INDEMNISEE = 547;
+const PLAFOND_TRIMESTRES_PREMIERE_PERIODE_NON_INDEMNISEE = 6;
+const JOURS_PLAFOND_PERIODE_ULTERIEURE_NON_INDEMNISEE = 365;
+
+// Heuristique de détection du chômage NON indemnisé : aucun champ structuré
+// n'existe en base pour cette distinction (confirmé dans
+// docs/audit/cartographie-trimestres-cotises.md §1.2 — les libellés réels
+// "CHÔMAGE" et "CHÔMAGE NON INDEMNISÉ" coexistent, tous deux
+// `type_activite = 'chomage'`). Recherche du seul mot-clé observé dans les
+// données réelles ("NON INDEMNISÉ"), insensible à la casse et à l'accent
+// final (la variante "NON-INDEMNISÉ" avec tiret est également couverte).
+// ⚠️ Absence du mot-clé = présumé INDEMNISÉ (comportement par défaut
+// inchangé) : si le libellé RIS réel diffère de ces deux variantes connues,
+// une période réellement non indemnisée serait à tort traitée comme
+// indemnisée (surestimation possible, même limitation de principe que
+// `classifierSousTypeMicroEntrepreneur()` pour le micro-entrepreneur).
+const RE_CHOMAGE_NON_INDEMNISE = /NON[\s-]?INDEMNIS/i;
+
+function estChomageNonIndemnise(periode: PeriodeCarriere): boolean {
+  return RE_CHOMAGE_NON_INDEMNISE.test(periode.employeur);
+}
 
 const PLAFOND_TRIMESTRES_PAR_AN = 4;
 
@@ -198,14 +222,22 @@ function joursDansAnnee(debut: Date, fin: Date, annee: number): number {
   return Math.round((borneFin.getTime() - borneDebut.getTime()) / unJourMs) + 1;
 }
 
-function anneesTraversees(periode: PeriodeCarriere): number[] {
-  const debut = new Date(`${periode.dateDebut}T00:00:00Z`);
-  const fin = new Date(`${periode.dateFin}T00:00:00Z`);
+// Extraite de `anneesTraversees()` pour être réutilisable sur des dates déjà
+// construites (ex. une date de fin tronquée par un plafond de jours), sans
+// avoir à fabriquer un `PeriodeCarriere` complet juste pour ses deux dates —
+// cf. `trimestresChomageNonIndemniseParAnnee()`.
+function anneesTraverseesDates(debut: Date, fin: Date): number[] {
   const annees: number[] = [];
   for (let annee = debut.getUTCFullYear(); annee <= fin.getUTCFullYear(); annee++) {
     annees.push(annee);
   }
   return annees;
+}
+
+function anneesTraversees(periode: PeriodeCarriere): number[] {
+  const debut = new Date(`${periode.dateDebut}T00:00:00Z`);
+  const fin = new Date(`${periode.dateFin}T00:00:00Z`);
+  return anneesTraverseesDates(debut, fin);
 }
 
 /**
@@ -256,6 +288,107 @@ function repartirJoursAssimilesParAnnee(periode: PeriodeCarriere, joursParAnnee:
   }
 }
 
+/**
+ * Calcule les trimestres assimilés issus du chômage NON indemnisé, par
+ * année civile, en appliquant le plafond de CARRIÈRE de l'art. R351-12 CSS
+ * (cf. constantes ci-dessus) — distinct du plafond annuel de 4/an, qui reste
+ * appliqué séparément par l'appelant en plus de celui-ci.
+ *
+ * Retourne des TRIMESTRES déjà calculés par année (pas des jours) : la
+ * première période non indemnisée doit respecter un plafond explicite de 6
+ * trimestres au total, qui peut porter sur plusieurs années civiles si la
+ * période les chevauche — un simple cumul de jours par année suivi d'un
+ * `floor(/50)` par année, sans étape supplémentaire, pourrait dépasser 6 au
+ * total (ex. 200 jours sur une année + 347 sur la suivante = 4 + 6 = 10). Le
+ * calcul se fait donc en 2 temps par période : jours retenus (plafond de
+ * durée) → trimestres par année (floor 50) → si première période et total >
+ * 6, retrait de l'excédent en partant de l'année la PLUS RÉCENTE de la
+ * période (choix arbitraire non précisé par le texte légal, cf. limite
+ * documentée en tête de fichier).
+ *
+ * `periodesChomage` doit contenir TOUTES les périodes `chomage` (indemnisées
+ * et non indemnisées confondues) : les indemnisées servent uniquement à
+ * vérifier l'adjacence des périodes non indemnisées ultérieures, mais ne
+ * contribuent elles-mêmes aucun trimestre depuis cette fonction (elles sont
+ * comptées séparément par `repartirJoursAssimilesParAnnee()`, appelée par
+ * l'appelant sur le sous-ensemble indemnisé uniquement).
+ *
+ * ⚠️ « Première période » = la période non indemnisée la plus ancienne par
+ * date de début parmi celles présentes dans `periodesChomage`, traitée comme
+ * un bloc unique même si elle est en réalité composée de plusieurs lignes
+ * RIS distinctes mais consécutives (simplification : ce module ne fusionne
+ * pas les lignes RIS contiguës en une seule « période » avant classification
+ * — chaque `PeriodeCarriere` est traitée indépendamment, avec son propre
+ * plafond selon son rang chronologique parmi les non-indemnisées). Aucun cas
+ * réel observé à ce jour où cette simplification changerait le résultat.
+ *
+ * ⚠️ Adjacence testée au jour près (`dateFin` d'une période indemnisée =
+ * `dateDebut` de la période non indemnisée − 1 jour) : un trou d'un seul
+ * jour dans les données (erreur de saisie RIS, par exemple) ferait perdre
+ * l'intégralité d'une période ultérieure plutôt que de la réduire
+ * proportionnellement — comportement fidèle au texte légal (« sans solution
+ * de continuité »), mais à surveiller si un tel cas apparaît dans des
+ * données réelles (aucun cas de ce type observé à ce jour).
+ */
+function trimestresChomageNonIndemniseParAnnee(periodesChomage: PeriodeCarriere[]): Map<number, number> {
+  const periodesNonIndemnisees = periodesChomage
+    .filter(estChomageNonIndemnise)
+    .slice()
+    .sort((a, b) => a.dateDebut.localeCompare(b.dateDebut));
+
+  const resultat = new Map<number, number>();
+  if (periodesNonIndemnisees.length === 0) return resultat;
+
+  const finsPeriodesIndemnisees = new Set(
+    periodesChomage.filter((p) => !estChomageNonIndemnise(p)).map((p) => p.dateFin)
+  );
+
+  periodesNonIndemnisees.forEach((periode, index) => {
+    const debut = new Date(`${periode.dateDebut}T00:00:00Z`);
+    const finReelle = new Date(`${periode.dateFin}T00:00:00Z`);
+    const totalJours = Math.round((finReelle.getTime() - debut.getTime()) / unJourMs) + 1;
+
+    let plafondJours: number;
+    if (index === 0) {
+      plafondJours = JOURS_PLAFOND_PREMIERE_PERIODE_NON_INDEMNISEE;
+    } else {
+      const veilleISO = new Date(debut.getTime() - unJourMs).toISOString().slice(0, 10);
+      if (!finsPeriodesIndemnisees.has(veilleISO)) return; // pas adjacente à une période indemnisée : 0 trimestre.
+      plafondJours = JOURS_PLAFOND_PERIODE_ULTERIEURE_NON_INDEMNISEE;
+    }
+
+    const joursRetenus = Math.min(totalJours, plafondJours);
+    const finTronquee = new Date(debut.getTime() + (joursRetenus - 1) * unJourMs);
+
+    const trimestresParAnneeCettePeriode = new Map<number, number>();
+    let totalTrimestresCettePeriode = 0;
+    for (const annee of anneesTraverseesDates(debut, finTronquee)) {
+      const jours = joursDansAnnee(debut, finTronquee, annee);
+      const trimestres = Math.floor(jours / JOURS_PAR_TRIMESTRE_CHOMAGE);
+      trimestresParAnneeCettePeriode.set(annee, trimestres);
+      totalTrimestresCettePeriode += trimestres;
+    }
+
+    if (index === 0 && totalTrimestresCettePeriode > PLAFOND_TRIMESTRES_PREMIERE_PERIODE_NON_INDEMNISEE) {
+      let excedent = totalTrimestresCettePeriode - PLAFOND_TRIMESTRES_PREMIERE_PERIODE_NON_INDEMNISEE;
+      const anneesDecroissant = [...trimestresParAnneeCettePeriode.keys()].sort((a, b) => b - a);
+      for (const annee of anneesDecroissant) {
+        if (excedent === 0) break;
+        const trimestresCetteAnnee = trimestresParAnneeCettePeriode.get(annee)!;
+        const retrait = Math.min(trimestresCetteAnnee, excedent);
+        trimestresParAnneeCettePeriode.set(annee, trimestresCetteAnnee - retrait);
+        excedent -= retrait;
+      }
+    }
+
+    for (const [annee, trimestres] of trimestresParAnneeCettePeriode) {
+      resultat.set(annee, (resultat.get(annee) ?? 0) + trimestres);
+    }
+  });
+
+  return resultat;
+}
+
 export interface ResultatTrimestresCotisesEtAssimiles {
   cotises: number;
   assimiles: number;
@@ -287,11 +420,15 @@ export interface ResultatTrimestresCotisesEtAssimiles {
  *   ensemble (ex. `["L'Assurance retraite", 'RCI']`), pas une ligne par
  *   régime comme pour `employeur` — aucun doublon de ce type observé sur les
  *   données réelles examinées.
- * - `chomage` : aucun trimestre cotisé ; jours de l'année (toutes périodes
- *   `chomage` confondues) ÷ 50 (règle du chômage indemnisé, appliquée à
- *   toutes les périodes `chomage` faute de distinction indemnisé/non
- *   indemnisé dans `type_activite` — cf. commentaire sur
- *   `JOURS_PAR_TRIMESTRE_CHOMAGE`), plafonné à 4/an → assimilé.
+ * - `chomage` : aucun trimestre cotisé. Périodes indemnisées (présumées par
+ *   défaut, cf. `estChomageNonIndemnise()`) : jours de l'année ÷ 50, comme
+ *   avant. Périodes non indemnisées (détectées par heuristique sur le
+ *   libellé) : traitées séparément par `trimestresChomageNonIndemniseParAnnee()`,
+ *   avec le même ratio 50 jours mais un plafond de CARRIÈRE (pas annuel,
+ *   art. R351-12 CSS) plutôt qu'un simple cumul par année — cf. docstring de
+ *   cette fonction pour le détail (première période vs périodes ultérieures
+ *   adjacentes). Le tout plafonné à 4/an → assimilé, comme les autres
+ *   sources assimilées.
  * - `maladie` : aucun trimestre cotisé ; jours de l'année (toutes périodes
  *   `maladie` confondues) ÷ 60, plafonné à 4/an → assimilé.
  * - Chômage et maladie sont comptés sur deux `Map` par année distinctes
@@ -329,10 +466,12 @@ export function trimestresCotisesEtAssimilesDepuisCarriere(
     repartirRevenuCotiseParAnnee(periode, revenuRetenu, revenuParAnnee);
   }
 
+  const periodesChomageIndemnise = periodesChomage.filter((p) => !estChomageNonIndemnise(p));
   const joursChomageParAnnee = new Map<number, number>();
-  for (const periode of periodesChomage) {
+  for (const periode of periodesChomageIndemnise) {
     repartirJoursAssimilesParAnnee(periode, joursChomageParAnnee);
   }
+  const trimestresChomageNonIndemniseParAn = trimestresChomageNonIndemniseParAnnee(periodesChomage);
 
   const joursMaladieParAnnee = new Map<number, number>();
   for (const periode of periodesMaladie) {
@@ -342,6 +481,7 @@ export function trimestresCotisesEtAssimilesDepuisCarriere(
   const annees = new Set<number>([
     ...revenuParAnnee.keys(),
     ...joursChomageParAnnee.keys(),
+    ...trimestresChomageNonIndemniseParAn.keys(),
     ...joursMaladieParAnnee.keys(),
   ]);
 
@@ -357,8 +497,11 @@ export function trimestresCotisesEtAssimilesDepuisCarriere(
 
     const joursChomage = joursChomageParAnnee.get(annee) ?? 0;
     const joursMaladie = joursMaladieParAnnee.get(annee) ?? 0;
+    const trimestresChomageNonIndemnise = trimestresChomageNonIndemniseParAn.get(annee) ?? 0;
     const assimilesBruts =
-      Math.floor(joursChomage / JOURS_PAR_TRIMESTRE_CHOMAGE) + Math.floor(joursMaladie / JOURS_PAR_TRIMESTRE_MALADIE);
+      Math.floor(joursChomage / JOURS_PAR_TRIMESTRE_CHOMAGE) +
+      Math.floor(joursMaladie / JOURS_PAR_TRIMESTRE_MALADIE) +
+      trimestresChomageNonIndemnise;
 
     const cotisesAnnee = Math.min(cotisesBruts, PLAFOND_TRIMESTRES_PAR_AN);
     const placeRestante = PLAFOND_TRIMESTRES_PAR_AN - cotisesAnnee;

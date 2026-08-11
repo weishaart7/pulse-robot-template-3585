@@ -248,4 +248,81 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
 
     expect(resultat).toEqual({ cotises: 3, assimiles: 1, total: 4 });
   });
+
+  // Première période de chômage non indemnisé de la carrière, art. R351-12
+  // CSS : plafonnée à 547 jours ET 6 trimestres au total. Période unique
+  // 2020-01-01 → 2022-12-31 (1096 jours, largement au-delà des deux
+  // plafonds). Calcul à la main :
+  // - jours retenus = min(1096, 547) = 547, tronqués à partir du
+  //   2020-01-01 → fin tronquée 2021-06-30 (2020 = 366 jours restants dans
+  //   le plafond : 547 - 366 = 181 jours en 2021, soit jusqu'au 30/06/2021).
+  // - trimestres bruts par année : 2020 → floor(366/50) = 7 ; 2021 →
+  //   floor(181/50) = 3. Total brut = 10 > 6 → excédent de 4, retiré en
+  //   partant de l'année la plus récente (2021 d'abord) : 2021 (3 → 0,
+  //   excédent restant 1), puis 2020 (7 → 6, excédent épuisé).
+  // - Résultat par année avant plafond 4/an : {2020: 6, 2021: 0}.
+  // - Plafond 4/an (aucun cotisé, aucun autre assimilé cette année-là) :
+  //   2020 → min(6, 4) = 4 ; 2021 → 0.
+  // - Total : cotises = 0, assimiles = 4 + 0 = 4, total = 4. Ce test
+  //   vérifie donc À LA FOIS le plafond de carrière (10 → 6) ET le plafond
+  //   annuel 4/an qui s'applique en plus, séparément (6 → 4 sur 2020).
+  it('chômage non indemnisé, première période de carrière : plafonnée à 547 jours et 6 trimestres, plus le plafond annuel 4/an', () => {
+    const resultat = trimestresCotisesEtAssimilesDepuisCarriere([
+      periode({
+        employeur: 'CHÔMAGE NON INDEMNISÉ',
+        typeActivite: 'chomage',
+        dateDebut: '2020-01-01',
+        dateFin: '2022-12-31',
+      }),
+    ]);
+
+    expect(resultat).toEqual({ cotises: 0, assimiles: 4, total: 4 });
+  });
+
+  // Période ultérieure de chômage non indemnisé, ADJACENTE (aucun jour de
+  // vide) à une période de chômage indemnisé immédiatement précédente : art.
+  // R351-12 CSS, plafond 365 jours, même ratio 50 jours/trimestre.
+  // - Période A (non indemnisée, 2018-01-01 → 2018-01-01, 1 jour) : établit
+  //   le statut de "première période de la carrière" (résultat trivial, 0
+  //   trimestre) pour que la période B ci-dessous soit bien traitée comme
+  //   "ultérieure", pas comme la première.
+  // - Période indemnisée 2023-01-01 → 2023-03-31 (90 jours).
+  // - Période B (non indemnisée, ultérieure) 2023-04-01 → 2023-06-30 (91
+  //   jours), démarre le lendemain exact de la fin de la période indemnisée
+  //   → adjacente, sous le plafond de 365 jours (pas de troncature).
+  // Calcul : jours chômage indemnisé 2023 = 90 → floor(90/50) = 1.
+  // Jours chômage non indemnisé retenus (période B) = 91 → floor(91/50) = 1.
+  // Total assimilé 2023 = 1 + 1 = 2 (bien sous le plafond 4/an).
+  it('chômage non indemnisé ultérieur, adjacent à une période indemnisée : compté au même ratio 50 jours, sous le plafond de 365 jours', () => {
+    const resultat = trimestresCotisesEtAssimilesDepuisCarriere([
+      periode({ employeur: 'CHÔMAGE NON INDEMNISÉ', typeActivite: 'chomage', dateDebut: '2018-01-01', dateFin: '2018-01-01' }),
+      periode({ employeur: 'CHÔMAGE', typeActivite: 'chomage', dateDebut: '2023-01-01', dateFin: '2023-03-31' }),
+      periode({ employeur: 'CHÔMAGE NON INDEMNISÉ', typeActivite: 'chomage', dateDebut: '2023-04-01', dateFin: '2023-06-30' }),
+    ]);
+
+    expect(resultat).toEqual({ cotises: 0, assimiles: 2, total: 2 });
+  });
+
+  // Période ultérieure de chômage non indemnisé NON adjacente à une période
+  // indemnisée (ici : précédée uniquement d'une autre période non
+  // indemnisée, jamais d'une période indemnisée) : condition légale non
+  // remplie ("à condition qu'elle succède [...] à une période de chômage
+  // indemnisé") → 0 trimestre retenu pour cette période, quelle que soit sa
+  // durée, même si elle est immédiatement contiguë (aucun jour de vide) à la
+  // période précédente.
+  it('chômage non indemnisé ultérieur non adjacent à une période indemnisée : exclu entièrement, même sans jour de vide', () => {
+    const resultat = trimestresCotisesEtAssimilesDepuisCarriere([
+      periode({ employeur: 'CHÔMAGE NON INDEMNISÉ', typeActivite: 'chomage', dateDebut: '2018-01-01', dateFin: '2018-01-01' }),
+      // Contiguë (2018-01-02, sans trou) mais précédée d'une période non
+      // indemnisée, pas indemnisée : condition d'adjacence non remplie.
+      periode({
+        employeur: 'CHÔMAGE NON INDEMNISÉ',
+        typeActivite: 'chomage',
+        dateDebut: '2018-01-02',
+        dateFin: '2019-12-31',
+      }),
+    ]);
+
+    expect(resultat).toEqual({ cotises: 0, assimiles: 0, total: 0 });
+  });
 });
