@@ -8,8 +8,10 @@ import {
   jeuBaremeApplicable,
   dateNaissanceDepuisISO,
   dateEffetSimuleeParAge,
+  dateDepuisISO,
   DateNaissance,
 } from './calcul';
+import { computeAge } from '../patrimoine/bareme669CGI';
 
 const dn = (annee: number, mois: number): DateNaissance => ({ annee, mois });
 const D = (annee: number, mois: number, jour = 1) => new Date(Date.UTC(annee, mois - 1, jour));
@@ -45,6 +47,51 @@ describe('dateNaissanceDepuisISO', () => {
   it('parse une date ISO sans décalage de fuseau horaire', () => {
     expect(dateNaissanceDepuisISO('1965-04-01')).toEqual({ annee: 1965, mois: 4 });
     expect(dateNaissanceDepuisISO('1965-03-31')).toEqual({ annee: 1965, mois: 3 });
+  });
+});
+
+describe('dateDepuisISO', () => {
+  it('parse une date ISO en instant UTC à minuit, sans décalage de fuseau horaire', () => {
+    const date = dateDepuisISO('2026-09-01');
+    expect(date.getUTCFullYear()).toBe(2026);
+    expect(date.getUTCMonth()).toBe(8); // septembre, 0-indexé
+    expect(date.getUTCDate()).toBe(1);
+  });
+
+  it('reproduit exactement les bornes de bascule attendues par jeuBaremeApplicable', () => {
+    expect(jeuBaremeApplicable(dateDepuisISO('2026-08-31'))).toBe('calendrier_2023');
+    expect(jeuBaremeApplicable(dateDepuisISO('2026-09-01'))).toBe('lfss_2026');
+  });
+});
+
+describe('conversion date → âge affiché (Session B, sélecteur de date de liquidation)', () => {
+  // Scénario du point d'entrée #1/#3 (docs/audit/implementation-date-effet-ui.md) :
+  // deux dates de liquidation "proches" (un mois d'écart), de part et d'autre
+  // de la bascule du 1er septembre 2026, mais qui produisent le MÊME âge
+  // affiché (computeAge() ne change qu'à l'anniversaire) — la raison d'être
+  // du sélecteur de date plutôt que d'un simple curseur d'âge : un curseur
+  // n'aurait aucun moyen de distinguer ces deux scénarios.
+  const NAISSANCE = '1965-04-15'; // génération 1965 T2 (à partir d'avril) : zone instable
+  const AVANT_BASCULE = '2026-08-15';
+  const APRES_BASCULE = '2026-09-15';
+
+  it('les deux dates produisent le même âge affiché (61 ans)', () => {
+    expect(computeAge(NAISSANCE, dateDepuisISO(AVANT_BASCULE))).toBe(61);
+    expect(computeAge(NAISSANCE, dateDepuisISO(APRES_BASCULE))).toBe(61);
+  });
+
+  it('mais un âge légal différent (63 ans et 3 mois vs 63 ans pile) — l’âge simulé seul l’aurait masqué', () => {
+    const naissance = dateNaissanceDepuisISO(NAISSANCE);
+    const avant = ageLegalPourGeneration(naissance, dateDepuisISO(AVANT_BASCULE));
+    const apres = ageLegalPourGeneration(naissance, dateDepuisISO(APRES_BASCULE));
+    expect(avant).toEqual({ stable: true, age: { ans: 63, mois: 3 } });
+    expect(apres).toEqual({ stable: true, age: { ans: 63, mois: 0 } });
+  });
+
+  it('et un nombre de trimestres requis différent (172 vs 171)', () => {
+    const naissance = dateNaissanceDepuisISO(NAISSANCE);
+    expect(trimestresRequisPourGeneration(naissance, dateDepuisISO(AVANT_BASCULE))).toBe(172);
+    expect(trimestresRequisPourGeneration(naissance, dateDepuisISO(APRES_BASCULE))).toBe(171);
   });
 });
 

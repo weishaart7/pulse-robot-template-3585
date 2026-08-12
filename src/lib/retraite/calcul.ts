@@ -33,13 +33,28 @@ export function dateNaissanceDepuisISO(dateISO: string): DateNaissance {
 }
 
 /**
- * Date d'effet approximée à partir d'un âge de départ simulé plutôt que
+ * Parse une date ISO ("YYYY-MM-DD", format des champs `<input type="date">`
+ * et des colonnes `date` Postgres) en `Date` UTC à minuit — même précaution
+ * que `dateNaissanceDepuisISO()` (construction explicite plutôt que
+ * `new Date(dateISO)` seul, pour ne dépendre d'aucune conversion de fuseau
+ * horaire local). Utilisée pour une date d'effet saisie directement par
+ * l'utilisateur (ex. date de liquidation, Trimestres.tsx depuis la Session
+ * B), par opposition à `dateEffetSimuleeParAge()` ci-dessous qui reste une
+ * approximation à partir d'un âge.
+ */
+export function dateDepuisISO(dateISO: string): Date {
+  return new Date(`${dateISO}T00:00:00Z`);
+}
+
+/**
+ * Date d'effet approximée à partir d'un âge de départ plutôt que d'une date
  * saisie explicitement : anniversaire (mois de naissance) de l'année
- * `dateNaissance.annee + age`. C'est le proxy utilisé aujourd'hui par les
- * écrans qui simulent un « âge de départ » plutôt que de demander une date
- * de liquidation (Trimestres.tsx) — à remplacer par une vraie date saisie
- * par l'utilisateur si un champ dédié est introduit, cf.
- * docs/audit/conception-date-effet.md (Option B, Session B).
+ * `dateNaissance.annee + age`. Depuis la Session B, ce proxy ne sert plus
+ * qu'au tableau comparatif non interactif de Trimestres.tsx (une ligne par
+ * âge fixe 62-70 ans, pas un contrôle de saisie) — le scénario réellement
+ * sélectionné par l'utilisateur y est désormais piloté par une vraie date de
+ * liquidation (`dateDepuisISO()` ci-dessus), cf.
+ * docs/audit/implementation-date-effet-ui.md.
  */
 export function dateEffetSimuleeParAge(dateNaissance: DateNaissance, age: number): Date {
   return new Date(Date.UTC(dateNaissance.annee + age, dateNaissance.mois - 1, 1));
