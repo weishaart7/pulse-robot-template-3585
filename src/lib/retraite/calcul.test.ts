@@ -4,7 +4,24 @@ import {
   MINIMUM_CONTRIBUTIF_NON_MAJORE_2026,
   decoteSurTrimestres,
   ageLegalPourGeneration,
+  trimestresRequisPourGeneration,
 } from './calcul';
+
+describe('trimestresRequisPourGeneration', () => {
+  // Référentiel §2.1.1 : 1955-1957 → 166, 1958-1960 → 167, 1961 → 168.
+  // Couvre la borne 1957/1958 (audit-retraite.md §7, écart #1 : 1958 retournait
+  // à tort 166 au lieu de 167) et ses générations voisines, pour s'assurer que
+  // l'erreur ne se répète pas ailleurs sur l'intervalle.
+  it.each([
+    [1957, 166],
+    [1958, 167],
+    [1959, 167],
+    [1960, 167],
+    [1961, 168],
+  ])('génération %i → %i trimestres requis', (anneeNaissance, trimestresAttendus) => {
+    expect(trimestresRequisPourGeneration(anneeNaissance)).toBe(trimestresAttendus);
+  });
+});
 
 describe('minimumContributif', () => {
   it('cas référentiel PDF : taux plein (192/172 trimestres, decote positive) → MiCo plafonné à 100%', () => {

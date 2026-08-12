@@ -25,7 +25,7 @@ import { RegimeDetecte } from './parseRIS';
  * civile — à affiner si une granularité mensuelle est disponible.
  */
 const TRIMESTRES_REQUIS_PAR_GENERATION: { anneeMax: number; trimestres: number }[] = [
-  { anneeMax: 1958, trimestres: 166 },
+  { anneeMax: 1957, trimestres: 166 },
   { anneeMax: 1960, trimestres: 167 },
   { anneeMax: 1961, trimestres: 168 },
   { anneeMax: 1962, trimestres: 169 },
