@@ -3,6 +3,8 @@ import {
   minimumContributif,
   MINIMUM_CONTRIBUTIF_NON_MAJORE_2026,
   decoteSurTrimestres,
+  decoteSurAge,
+  decoteApplicable,
   ageLegalPourGeneration,
   trimestresRequisPourGeneration,
   jeuBaremeApplicable,
@@ -308,5 +310,62 @@ describe('ageLegalPourGeneration', () => {
         expect(resultat.raison).toContain('1er septembre 2023');
       }
     );
+  });
+});
+
+describe('Carriere.tsx — combinaison decoteSurTrimestres + decoteSurAge (écart #4, audit-retraite.md §7)', () => {
+  // Reproduit exactement le calcul de decoteSurcote dans Carriere.tsx après
+  // correction : decoteApplicable(decoteSurTrimestres(...), decoteSurAge(...)),
+  // même logique que l'onglet Optimisation (Trimestres.tsx) — pas une
+  // nouvelle implémentation. Scénario explicite demandé par la mission :
+  // assuré de 67 ans ou plus, trimestres incomplets.
+  const trimestresValides = 140;
+  const trimestresRequis = 172; // génération 1969+, valeur stable
+  const ageActuel = 67; // âge du taux plein automatique (référentiel §2.1.4)
+
+  it("« avant correction » (bug reproduit) : decoteSurTrimestres seule, décote à tort de -20 %", () => {
+    const decoteAvantCorrection = decoteSurTrimestres(trimestresValides, trimestresRequis);
+    expect(decoteAvantCorrection).toBe(-20); // (140-172)*1.25 = -40, plafonné à -20
+
+    // Cascade vers le MICO : minimumContributif() exclut toute pension
+    // décotée (decote < 0) — l'éligibilité est donc refusée à tort.
+    expect(minimumContributif(trimestresValides, trimestresRequis, decoteAvantCorrection)).toBe(0);
+  });
+
+  it('« après correction » : decoteApplicable retient l’âge (0 %, taux plein automatique), pas la décote sur trimestres', () => {
+    const decoteTrimestres = decoteSurTrimestres(trimestresValides, trimestresRequis);
+    const decoteAge = decoteSurAge(ageActuel);
+    const decoteApresCorrection = decoteApplicable(decoteTrimestres, decoteAge);
+
+    expect(decoteAge).toBe(0); // 67 ans = âge du taux plein automatique, aucune décote
+    expect(decoteApresCorrection).toBe(0); // le plus favorable des deux (max(-20, 0))
+
+    // Cascade vers le MICO : decote >= 0 → éligible, proratisé sur les
+    // trimestres régime général (référentiel §3.5.1, condition 1 : « atteinte
+    // de l'âge du taux plein » suffit, la durée n'est pas exigée).
+    const micoApresCorrection = minimumContributif(trimestresValides, trimestresRequis, decoteApresCorrection);
+    expect(micoApresCorrection).toBeGreaterThan(0);
+    expect(micoApresCorrection).toBeCloseTo(
+      MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 * (trimestresValides / trimestresRequis),
+      6
+    );
+  });
+
+  it('68 ans, mêmes trimestres incomplets : même résultat (l’âge du taux plein est atteint, pas seulement égalé)', () => {
+    const decoteApresCorrection = decoteApplicable(
+      decoteSurTrimestres(trimestresValides, trimestresRequis),
+      decoteSurAge(68)
+    );
+    expect(decoteApresCorrection).toBe(0);
+    expect(minimumContributif(trimestresValides, trimestresRequis, decoteApresCorrection)).toBeGreaterThan(0);
+  });
+
+  it('66 ans (avant l’âge du taux plein) : toujours décoté (le plus favorable des deux reste négatif), MICO non éligible', () => {
+    const decoteTrimestres = decoteSurTrimestres(trimestresValides, trimestresRequis); // -20
+    const decoteAge = decoteSurAge(66); // (66-67)*4 trimestres * 1,25 % = -5, moins sévère
+    const decoteApresCorrection = decoteApplicable(decoteTrimestres, decoteAge);
+    expect(decoteApresCorrection).toBe(-5); // le plus favorable des deux, mais reste négatif
+    expect(decoteApresCorrection).toBeLessThan(0);
+    expect(minimumContributif(trimestresValides, trimestresRequis, decoteApresCorrection)).toBe(0);
   });
 });

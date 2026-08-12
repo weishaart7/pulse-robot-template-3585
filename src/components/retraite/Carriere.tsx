@@ -14,6 +14,8 @@ import { PeriodeCarriereEditDialog } from '@/components/retraite/PeriodeCarriere
 import {
   tauxProratisation,
   decoteSurTrimestres,
+  decoteSurAge,
+  decoteApplicable,
   pensionBase,
   pensionComplementaireAnnuelle,
   minimumContributif,
@@ -25,6 +27,7 @@ import { trimestresCotisesEtAssimilesDepuisCarriere } from '@/lib/retraite/calcu
 import { CarriereFonctionPublique } from '@/components/retraite/CarriereFonctionPublique';
 import { CarriereCNAVPL } from '@/components/retraite/CarriereCNAVPL';
 import { familyService } from '@/services/familyService';
+import { computeAge } from '@/lib/patrimoine/bareme669CGI';
 
 // Seuil de tolérance pour l'indicateur de cohérence RIS ↔ carrière saisie
 // (cf. ci-dessous, section "Détail de carrière") : un écart de 4 trimestres
@@ -116,6 +119,11 @@ export const Carriere = () => {
   // (dureeSAMPourGeneration(), non concerné par ces découpages), donc
   // conservé en parallèle plutôt que remplacé.
   const [dateNaissanceDetail, setDateNaissanceDetail] = useState<DateNaissance | null>(null);
+  // Date de naissance ISO brute — nécessaire pour computeAge() (âge actuel,
+  // utilisé par decoteSurAge() ci-dessous, cf. écart #4 de l'audit
+  // référentiel, docs/audit/audit-retraite.md §7 et
+  // docs/audit/correction-decote-age-carriere.md).
+  const [dateNaissanceISO, setDateNaissanceISO] = useState<string | null>(null);
 
   useEffect(() => {
     familyService.getFamilyProfile()
@@ -123,12 +131,20 @@ export const Carriere = () => {
         if (profil?.date_naissance) {
           setAnneeNaissance(new Date(profil.date_naissance).getFullYear());
           setDateNaissanceDetail(dateNaissanceDepuisISO(profil.date_naissance));
+          setDateNaissanceISO(profil.date_naissance);
         }
       })
       .catch((error) => {
         console.error('Erreur lors du chargement du profil famille:', error);
       });
   }, []);
+
+  // Âge actuel : cet écran n'a pas de simulation de date de départ (à la
+  // différence de l'onglet Optimisation) — le proxy de date d'effet retenu
+  // pour cette carte est « aujourd'hui » (cf. l'effet trimestresRequis
+  // ci-dessous), donc l'âge à comparer à l'âge du taux plein automatique
+  // (decoteSurAge()) est l'âge actuel du client, pas un âge de départ simulé.
+  const ageActuel = computeAge(dateNaissanceISO);
 
   // Trimestres requis pour le taux plein : résolus depuis la génération
   // réelle du client, plutôt que la constante 172 figée auparavant (écart
@@ -198,12 +214,26 @@ export const Carriere = () => {
   // publique + CNAVPL, chacun si saisi), pas seulement les trimestres
   // régime général. Le nombre de régimes est amené à grandir : cette somme
   // reste générique plutôt que d'empiler une addition par régime.
+  //
+  // Retient la règle du plus petit des deux comptages (référentiel §2.2.1) —
+  // decoteSurTrimestres() ET decoteSurAge(), combinées via decoteApplicable()
+  // — même logique que l'onglet Optimisation (Trimestres.tsx). Auparavant,
+  // seule decoteSurTrimestres() était utilisée ici : un client de 67 ans ou
+  // plus sans tous ses trimestres se voyait appliquer une décote alors que
+  // l'âge du taux plein automatique l'en exonère (écart #4 de l'audit
+  // référentiel, docs/audit/audit-retraite.md §7). Tant que l'âge actuel
+  // n'est pas encore connu (chargement du profil famille), on retombe sur
+  // decoteSurTrimestres() seule — comportement historique, pas de régression
+  // pendant ce court intervalle.
   useEffect(() => {
     const trimValides = parseInt(trimestresValides) || 0;
     const trimAutresRegimes =
       (hasFonctionPublique ? parseInt(trimestresLiquidablesFP) || 0 : 0) +
       (hasCNAVPL ? parseInt(trimestresCNAVPL) || 0 : 0);
-    setDecoteSurcote(decoteSurTrimestres(trimValides + trimAutresRegimes, trimestresRequis));
+    const decoteTrimestres = decoteSurTrimestres(trimValides + trimAutresRegimes, trimestresRequis);
+    const decoteFinale =
+      ageActuel !== null ? decoteApplicable(decoteTrimestres, decoteSurAge(ageActuel)) : decoteTrimestres;
+    setDecoteSurcote(decoteFinale);
   }, [
     trimestresValides,
     trimestresRequis,
@@ -211,6 +241,7 @@ export const Carriere = () => {
     trimestresLiquidablesFP,
     hasCNAVPL,
     trimestresCNAVPL,
+    ageActuel,
   ]);
 
   // Calcul de l'âge du taux plein
