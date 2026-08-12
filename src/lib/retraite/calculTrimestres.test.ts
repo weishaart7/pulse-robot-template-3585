@@ -13,6 +13,43 @@ const periode = (overrides: Partial<PeriodeCarriere>): PeriodeCarriere => ({
   ...overrides,
 });
 
+// Les 27 lignes réelles de retraite_carriere_detail pour Titouan Weishaar
+// (lues en base le 2026-08-11, user_id fa1dedda-c4f1-43c4-b67f-7a02b2efddf6),
+// périmètre complet incluant les 13 lignes micro_entrepreneur et les
+// chevauchements 2025 déjà repérés dans comparatif-retraite.md. Hissé au
+// niveau du module (plutôt que local à un seul test) pour être réutilisé par
+// le test de l'indicateur de cohérence RIS ↔ carrière saisie en bas de
+// fichier, sans dupliquer ce jeu de données.
+const periodesReellesTitouanWeishaar2018a2025: PeriodeCarriere[] = [
+  periode({ employeur: 'TITANE MOTOR', dateDebut: '2018-07-17', dateFin: '2018-07-28', revenu: 966 }),
+  periode({ employeur: 'AUCHAN HYPERMARCHE', dateDebut: '2018-11-10', dateFin: '2018-12-29', revenu: 716 }),
+  periode({ employeur: 'TITANE MOTOR', dateDebut: '2019-05-21', dateFin: '2019-08-21', revenu: 6585 }),
+  periode({ employeur: 'ADECCO', dateDebut: '2019-06-08', dateFin: '2019-06-09', revenu: 212 }),
+  periode({ employeur: 'TITANE MOTOR', dateDebut: '2020-06-16', dateFin: '2020-09-05', revenu: 5858 }),
+  periode({ employeur: 'TITANE MOTOR', dateDebut: '2021-05-04', dateFin: '2021-08-31', revenu: 8056 }),
+  periode({ employeur: 'TITANE MOTOR', dateDebut: '2021-09-04', dateFin: '2021-12-31', revenu: 1647 }),
+  periode({ employeur: 'TITANE MOTOR', dateDebut: '2022-01-01', dateFin: '2022-08-31', revenu: 10457, regimes: ["L'Assurance retraite"] }),
+  periode({ employeur: 'TITANE MOTOR', dateDebut: '2022-01-01', dateFin: '2022-08-31', revenu: 10456, regimes: ['Agirc-Arrco'] }),
+  periode({ employeur: 'MALADIE, ACCIDENT DU TRAVAIL', typeActivite: 'maladie', dateDebut: '2022-01-24', dateFin: '2022-01-31', regimes: ['Agirc-Arrco'] }),
+  periode({ employeur: 'L ATELIER IMMOBILIER', dateDebut: '2022-08-31', dateFin: '2022-12-31', revenu: 3900 }),
+  periode({ employeur: 'L ATELIER IMMOBILIER', dateDebut: '2023-01-01', dateFin: '2023-07-06', revenu: 6194 }),
+  periode({ employeur: 'IMERIS PATRIMOINE SOCIATY', dateDebut: '2023-11-01', dateFin: '2023-12-31', revenu: 2239 }),
+  periode({ employeur: 'IMERIS PATRIMOINE SOCIATY', dateDebut: '2024-01-01', dateFin: '2024-08-01', revenu: 8728 }),
+  periode({ employeur: 'CHÔMAGE NON INDEMNISÉ', typeActivite: 'chomage', dateDebut: '2024-09-01', dateFin: '2024-09-07', regimes: ["L'Assurance retraite"] }),
+  periode({ employeur: 'MICRO-ENTREPRENEUR - Prestation de service BIC', typeActivite: 'micro_entrepreneur', dateDebut: '2024-09-02', dateFin: '2024-12-31', regimes: ["L'Assurance retraite", 'RCI'] }),
+  periode({ employeur: 'MICRO-ENTREPRENEUR - Prestation de service BNC', typeActivite: 'micro_entrepreneur', dateDebut: '2024-09-02', dateFin: '2024-12-31', regimes: ["L'Assurance retraite", 'RCI'] }),
+  periode({ employeur: 'MICRO-ENTREPRENEUR - Activité de vente BIC', typeActivite: 'micro_entrepreneur', dateDebut: '2024-09-02', dateFin: '2024-12-31', regimes: ["L'Assurance retraite", 'RCI'] }),
+  periode({ employeur: 'CHÔMAGE', typeActivite: 'chomage', dateDebut: '2024-09-08', dateFin: '2024-12-31' }),
+  periode({ employeur: 'MICRO-ENTREPRENEUR - Prestation de service BIC', typeActivite: 'micro_entrepreneur', dateDebut: '2025-01-01', dateFin: '2025-05-31', revenu: 2922, estChiffreAffaires: true, regimes: ["L'Assurance retraite", 'RCI'] }),
+  periode({ employeur: 'MICRO-ENTREPRENEUR - Activité de vente BIC', typeActivite: 'micro_entrepreneur', dateDebut: '2025-01-01', dateFin: '2025-04-30', regimes: ["L'Assurance retraite", 'RCI'] }),
+  periode({ employeur: 'MICRO-ENTREPRENEUR - Prestation de service BNC', typeActivite: 'micro_entrepreneur', dateDebut: '2025-01-01', dateFin: '2025-04-30', regimes: ["L'Assurance retraite", 'RCI'] }),
+  periode({ employeur: 'CHÔMAGE', typeActivite: 'chomage', dateDebut: '2025-01-01', dateFin: '2025-04-30' }),
+  periode({ employeur: 'MICRO-ENTREPRENEUR - Prestation de service BNC', typeActivite: 'micro_entrepreneur', dateDebut: '2025-06-01', dateFin: '2025-12-31', revenu: 2824, estChiffreAffaires: true, regimes: ["L'Assurance retraite", 'RCI'] }),
+  periode({ employeur: 'CHÔMAGE', typeActivite: 'chomage', dateDebut: '2025-07-01', dateFin: '2025-12-31' }),
+  periode({ employeur: 'MICRO-ENTREPRENEUR - Activité de vente BIC', typeActivite: 'micro_entrepreneur', dateDebut: '2025-07-01', dateFin: '2025-12-31', regimes: ["L'Assurance retraite", 'RCI'] }),
+  periode({ employeur: 'MICRO-ENTREPRENEUR - Prestation de service BIC', typeActivite: 'micro_entrepreneur', dateDebut: '2025-07-01', dateFin: '2025-12-31', regimes: ["L'Assurance retraite", 'RCI'] }),
+];
+
 describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
   // Cas référentiel PDF : le référentiel externe (referentiel-retraite-externe.md,
   // cité dans docs/audit/comparatif-retraite.md mais ABSENT de ce dépôt) annonce
@@ -98,38 +135,8 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
   //   (le total annuel plafonné à 4/an ne change pas, seule sa répartition
   //   cotisé/assimilé se déplace pour 2025).
   it('cas réel Titouan Weishaar : 27 lignes réelles avec chevauchements micro-entrepreneur/chômage en 2025, micro-entrepreneur abattu et cumulé au cotisé', () => {
-    const periodesCompletes2018a2025: PeriodeCarriere[] = [
-      periode({ employeur: 'TITANE MOTOR', dateDebut: '2018-07-17', dateFin: '2018-07-28', revenu: 966 }),
-      periode({ employeur: 'AUCHAN HYPERMARCHE', dateDebut: '2018-11-10', dateFin: '2018-12-29', revenu: 716 }),
-      periode({ employeur: 'TITANE MOTOR', dateDebut: '2019-05-21', dateFin: '2019-08-21', revenu: 6585 }),
-      periode({ employeur: 'ADECCO', dateDebut: '2019-06-08', dateFin: '2019-06-09', revenu: 212 }),
-      periode({ employeur: 'TITANE MOTOR', dateDebut: '2020-06-16', dateFin: '2020-09-05', revenu: 5858 }),
-      periode({ employeur: 'TITANE MOTOR', dateDebut: '2021-05-04', dateFin: '2021-08-31', revenu: 8056 }),
-      periode({ employeur: 'TITANE MOTOR', dateDebut: '2021-09-04', dateFin: '2021-12-31', revenu: 1647 }),
-      periode({ employeur: 'TITANE MOTOR', dateDebut: '2022-01-01', dateFin: '2022-08-31', revenu: 10457, regimes: ["L'Assurance retraite"] }),
-      periode({ employeur: 'TITANE MOTOR', dateDebut: '2022-01-01', dateFin: '2022-08-31', revenu: 10456, regimes: ['Agirc-Arrco'] }),
-      periode({ employeur: 'MALADIE, ACCIDENT DU TRAVAIL', typeActivite: 'maladie', dateDebut: '2022-01-24', dateFin: '2022-01-31', regimes: ['Agirc-Arrco'] }),
-      periode({ employeur: 'L ATELIER IMMOBILIER', dateDebut: '2022-08-31', dateFin: '2022-12-31', revenu: 3900 }),
-      periode({ employeur: 'L ATELIER IMMOBILIER', dateDebut: '2023-01-01', dateFin: '2023-07-06', revenu: 6194 }),
-      periode({ employeur: 'IMERIS PATRIMOINE SOCIATY', dateDebut: '2023-11-01', dateFin: '2023-12-31', revenu: 2239 }),
-      periode({ employeur: 'IMERIS PATRIMOINE SOCIATY', dateDebut: '2024-01-01', dateFin: '2024-08-01', revenu: 8728 }),
-      periode({ employeur: 'CHÔMAGE NON INDEMNISÉ', typeActivite: 'chomage', dateDebut: '2024-09-01', dateFin: '2024-09-07', regimes: ["L'Assurance retraite"] }),
-      periode({ employeur: 'MICRO-ENTREPRENEUR - Prestation de service BIC', typeActivite: 'micro_entrepreneur', dateDebut: '2024-09-02', dateFin: '2024-12-31', regimes: ["L'Assurance retraite", 'RCI'] }),
-      periode({ employeur: 'MICRO-ENTREPRENEUR - Prestation de service BNC', typeActivite: 'micro_entrepreneur', dateDebut: '2024-09-02', dateFin: '2024-12-31', regimes: ["L'Assurance retraite", 'RCI'] }),
-      periode({ employeur: 'MICRO-ENTREPRENEUR - Activité de vente BIC', typeActivite: 'micro_entrepreneur', dateDebut: '2024-09-02', dateFin: '2024-12-31', regimes: ["L'Assurance retraite", 'RCI'] }),
-      periode({ employeur: 'CHÔMAGE', typeActivite: 'chomage', dateDebut: '2024-09-08', dateFin: '2024-12-31' }),
-      periode({ employeur: 'MICRO-ENTREPRENEUR - Prestation de service BIC', typeActivite: 'micro_entrepreneur', dateDebut: '2025-01-01', dateFin: '2025-05-31', revenu: 2922, estChiffreAffaires: true, regimes: ["L'Assurance retraite", 'RCI'] }),
-      periode({ employeur: 'MICRO-ENTREPRENEUR - Activité de vente BIC', typeActivite: 'micro_entrepreneur', dateDebut: '2025-01-01', dateFin: '2025-04-30', regimes: ["L'Assurance retraite", 'RCI'] }),
-      periode({ employeur: 'MICRO-ENTREPRENEUR - Prestation de service BNC', typeActivite: 'micro_entrepreneur', dateDebut: '2025-01-01', dateFin: '2025-04-30', regimes: ["L'Assurance retraite", 'RCI'] }),
-      periode({ employeur: 'CHÔMAGE', typeActivite: 'chomage', dateDebut: '2025-01-01', dateFin: '2025-04-30' }),
-      periode({ employeur: 'MICRO-ENTREPRENEUR - Prestation de service BNC', typeActivite: 'micro_entrepreneur', dateDebut: '2025-06-01', dateFin: '2025-12-31', revenu: 2824, estChiffreAffaires: true, regimes: ["L'Assurance retraite", 'RCI'] }),
-      periode({ employeur: 'CHÔMAGE', typeActivite: 'chomage', dateDebut: '2025-07-01', dateFin: '2025-12-31' }),
-      periode({ employeur: 'MICRO-ENTREPRENEUR - Activité de vente BIC', typeActivite: 'micro_entrepreneur', dateDebut: '2025-07-01', dateFin: '2025-12-31', regimes: ["L'Assurance retraite", 'RCI'] }),
-      periode({ employeur: 'MICRO-ENTREPRENEUR - Prestation de service BIC', typeActivite: 'micro_entrepreneur', dateDebut: '2025-07-01', dateFin: '2025-12-31', regimes: ["L'Assurance retraite", 'RCI'] }),
-    ];
-
-    const resultatComplet = trimestresCotisesEtAssimilesDepuisCarriere(periodesCompletes2018a2025);
-    const periodesSansMicroEntrepreneur = periodesCompletes2018a2025.filter(
+    const resultatComplet = trimestresCotisesEtAssimilesDepuisCarriere(periodesReellesTitouanWeishaar2018a2025);
+    const periodesSansMicroEntrepreneur = periodesReellesTitouanWeishaar2018a2025.filter(
       (p) => p.typeActivite !== 'micro_entrepreneur'
     );
     const resultatSansMicroEntrepreneur = trimestresCotisesEtAssimilesDepuisCarriere(periodesSansMicroEntrepreneur);
@@ -324,5 +331,54 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
     ]);
 
     expect(resultat).toEqual({ cotises: 0, assimiles: 0, total: 0 });
+  });
+});
+
+// Indicateur de cohérence RIS ↔ carrière saisie (Carriere.tsx) : ce total
+// dérivé alimente un indicateur d'écart affiché à l'écran, comparé à
+// trimestres_valides (source RIS) avec un seuil de tolérance de 4
+// trimestres (`SEUIL_ECART_COHERENCE_TRIMESTRES`, Carriere.tsx — dupliqué
+// ici en commentaire faute de pouvoir l'importer depuis un composant React,
+// ce projet n'ayant pas d'infrastructure de test de rendu de composants —
+// aucun `@testing-library/react`, environnement vitest en `node` et non
+// `jsdom`, confirmé dans vitest.config.ts, aucun fichier `*.test.tsx`
+// nulle part dans le dépôt). Ces deux tests vérifient donc le calcul qui
+// alimente l'indicateur, pas le rendu JSX (icône, couleur, texte) lui-même
+// — limite assumée, documentée dans docs/audit/audit-retraite.md plutôt que
+// laissée implicite.
+describe('indicateur de cohérence RIS ↔ carrière saisie (calcul sous-jacent à Carriere.tsx)', () => {
+  const SEUIL_ECART_COHERENCE_TRIMESTRES = 4; // dupliqué de Carriere.tsx, cf. commentaire ci-dessus.
+
+  // Cas réel Titouan Weishaar (cf. test dédié plus haut, "cas réel Titouan
+  // Weishaar") : trimestres_valides = 28 (confirmé dans
+  // docs/audit/comparatif-retraite.md §1, `retraite_data.trimestres_valides`),
+  // total dérivé = 28 (résultat déjà vérifié par le test dédié). Écart = 0,
+  // sous le seuil → l'indicateur doit afficher "cohérent", pas
+  // d'avertissement. Coïncidence exacte, pas un résultat cherché : les deux
+  // valeurs proviennent de sources et de logiques totalement indépendantes
+  // (RIS importé pour l'une, calcul depuis retraite_carriere_detail pour
+  // l'autre).
+  it('cas réel Titouan Weishaar : écart nul avec trimestres_valides = 28, sous le seuil de cohérence', () => {
+    const trimestresValidesRIS = 28;
+    const totalDeriveCarriere = trimestresCotisesEtAssimilesDepuisCarriere(periodesReellesTitouanWeishaar2018a2025).total;
+
+    expect(totalDeriveCarriere).toBe(28);
+    expect(Math.abs(trimestresValidesRIS - totalDeriveCarriere)).toBeLessThanOrEqual(SEUIL_ECART_COHERENCE_TRIMESTRES);
+  });
+
+  // Cas synthétique avec écart volontaire : carrière saisie manifestement
+  // incomplète (une seule année, 2023, 4 trimestres cotisés bruts) comparée
+  // à un trimestres_valides RIS de 28 (carrière complète, comme le cas réel
+  // ci-dessus) — écart de 24 trimestres, très au-delà du seuil de 4 →
+  // l'indicateur doit afficher l'avertissement explicite.
+  it('cas synthétique : carrière saisie manifestement incomplète, écart au-delà du seuil de cohérence', () => {
+    const trimestresValidesRIS = 28;
+    const carriereIncomplete: PeriodeCarriere[] = [
+      periode({ employeur: 'Employeur unique', dateDebut: '2023-01-01', dateFin: '2023-12-31', revenu: 1000000 }),
+    ];
+    const totalDeriveCarriere = trimestresCotisesEtAssimilesDepuisCarriere(carriereIncomplete).total;
+
+    expect(totalDeriveCarriere).toBe(4); // plafond 4/an, un seul employeur sur une seule année.
+    expect(Math.abs(trimestresValidesRIS - totalDeriveCarriere)).toBeGreaterThan(SEUIL_ECART_COHERENCE_TRIMESTRES);
   });
 });

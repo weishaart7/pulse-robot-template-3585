@@ -1,18 +1,32 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Save, Upload, Trash2 } from 'lucide-react';
+import { Save, Upload, Trash2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useRetraiteData } from '@/hooks/useRetraiteData';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
 import { useToast } from '@/hooks/use-toast';
 import { parseRIS, PeriodeCarriere, RegimeDetecte, TypeActivite } from '@/lib/retraite/parseRIS';
 import { RISImportDialog } from '@/components/retraite/RISImportDialog';
 import { tauxProratisation, decoteSurTrimestres, pensionBase, pensionComplementaireAnnuelle, minimumContributif } from '@/lib/retraite/calcul';
+import { trimestresCotisesEtAssimilesDepuisCarriere } from '@/lib/retraite/calculTrimestres';
 import { CarriereFonctionPublique } from '@/components/retraite/CarriereFonctionPublique';
 import { CarriereCNAVPL } from '@/components/retraite/CarriereCNAVPL';
 import { familyService } from '@/services/familyService';
+
+// Seuil de tolérance pour l'indicateur de cohérence RIS ↔ carrière saisie
+// (cf. ci-dessous, section "Détail de carrière") : un écart de 4 trimestres
+// ou moins (l'équivalent d'une seule année civile) peut s'expliquer par les
+// limites connues et documentées de trimestresCotisesEtAssimilesDepuisCarriere()
+// (sous-type micro-entrepreneur non identifiable depuis un libellé atypique,
+// heuristique indemnisé/non-indemnisé sur texte libre, extension à 5 ans du
+// chômage non indemnisé non implémentée, arrondis par floor() par année) sans
+// qu'il s'agisse d'une carrière réellement incomplète. Au-delà, l'écart
+// dépasse ce que ces limites peuvent plausiblement expliquer à elles seules
+// et mérite un vrai regard sur la carrière saisie — cf.
+// docs/audit/audit-retraite.md pour le détail de ce choix.
+const SEUIL_ECART_COHERENCE_TRIMESTRES = 4;
 
 const LIBELLE_TYPE_ACTIVITE: Record<TypeActivite, string> = {
   employeur: 'Employeur',
@@ -297,6 +311,18 @@ export const Carriere = () => {
   // ne relève le montant que si la pension est liquidée sans décote (cf.
   // minimumContributif() dans calcul.ts pour la condition d'éligibilité).
   const trimValidesRegimeGeneral = parseInt(trimestresValides) || 0;
+
+  // Indicateur de cohérence RIS ↔ carrière saisie — PAS une source
+  // concurrente de trimestres_valides (le RIS reste la source de vérité, cf.
+  // en-tête de fichier et docs/audit/audit-retraite.md) : ce total dérivé
+  // sert uniquement de contrôle de cohérence à l'écran, jamais injecté dans
+  // trimestresValides ni dans aucun calcul de pension ci-dessous.
+  const totalDeriveCarriere = useMemo(
+    () => trimestresCotisesEtAssimilesDepuisCarriere(detailCarriere).total,
+    [detailCarriere]
+  );
+  const ecartCoherenceTrimestres = trimValidesRegimeGeneral - totalDeriveCarriere;
+
   const pensionBaseAjustee = Math.max(
     pensionBaseBrute * (1 + decoteSurcote / 100),
     minimumContributif(trimValidesRegimeGeneral, trimestresRequis, decoteSurcote)
@@ -614,7 +640,26 @@ export const Carriere = () => {
             Employeur / activité détectés lors de l'import de votre relevé de carrière (RIS)
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {trimestresValides && detailCarriere.length > 0 && (
+            Math.abs(ecartCoherenceTrimestres) <= SEUIL_ECART_COHERENCE_TRIMESTRES ? (
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                Cohérent avec la carrière saisie ({totalDeriveCarriere} trimestres dérivés de la carrière, contre{' '}
+                {trimValidesRegimeGeneral} trimestres validés au RIS)
+              </div>
+            ) : (
+              <div className="flex items-start gap-2 text-sm text-orange-600 p-3 border border-orange-500/20 rounded-lg bg-orange-500/10">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>
+                  Écart détecté entre le RIS importé ({trimValidesRegimeGeneral} trimestres) et la carrière saisie
+                  ({totalDeriveCarriere} trimestres) — vérifier que la carrière est complète. Le RIS reste la
+                  référence retenue pour le calcul de pension ci-dessus ; cet écart n'est pas corrigé
+                  automatiquement.
+                </span>
+              </div>
+            )
+          )}
           {detailCarriere.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Aucune période enregistrée. Importez votre relevé de carrière pour les détecter automatiquement.
