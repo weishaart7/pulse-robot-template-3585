@@ -11,6 +11,7 @@ import { familyService, FamilyProfile } from '@/services/familyService';
 import { computeAge } from '@/lib/patrimoine/bareme669CGI';
 import {
   trimestresRequisPourGeneration,
+  ageLegalPourGeneration,
   tauxProratisation,
   decoteSurTrimestres,
   decoteSurAge,
@@ -19,6 +20,8 @@ import {
   pensionComplementaireAnnuelle,
   coutRachatTrimestre,
   pointMort,
+  dateNaissanceDepuisISO,
+  dateEffetSimuleeParAge,
   OptionRachat,
 } from '@/lib/retraite/calcul';
 
@@ -71,7 +74,12 @@ export const Trimestres = () => {
 
   const dateNaissance = familyProfile?.date_naissance;
   const ageActuel = computeAge(dateNaissance);
-  const anneeNaissance = dateNaissance ? new Date(dateNaissance).getFullYear() : undefined;
+  // Date de naissance complète (année + mois), pas seulement l'année : le
+  // barème légal a des découpages infra-annuels (1951, 1961, 1965 — cf.
+  // trimestresRequisPourGeneration()) qu'une simple année ne peut pas
+  // résoudre. Auparavant tronquée ici via `.getFullYear()` — écart #3 de
+  // l'audit référentiel (docs/audit/audit-retraite.md §7).
+  const dateNaissanceDetail = dateNaissance ? dateNaissanceDepuisISO(dateNaissance) : undefined;
 
   // Initialise le slider sur l'âge actuel (borné 60-70) dès qu'il est connu,
   // une seule fois, pour ne pas écraser une sélection déjà faite par l'utilisateur.
@@ -108,7 +116,7 @@ export const Trimestres = () => {
     );
   }
 
-  if (!dateNaissance || ageActuel === null || anneeNaissance === undefined) {
+  if (!dateNaissance || ageActuel === null || dateNaissanceDetail === undefined) {
     return (
       <div className="space-y-6">
         <Card>
@@ -135,14 +143,27 @@ export const Trimestres = () => {
   }
 
   // Narrowing explicite : garantit que les closures ci-dessous capturent des
-  // number non nullables, indépendamment de l'inférence TS sur les closures.
+  // valeurs non nullables, indépendamment de l'inférence TS sur les closures.
   const ageActuelConfirme: number = ageActuel;
-  const anneeNaissanceConfirmee: number = anneeNaissance;
+  const dateNaissanceConfirmee = dateNaissanceDetail;
 
   const simulerPourAge = (age: number) => {
     const trimestresValidesProjetes =
       trimestresValidesActuels + 4 * Math.max(0, age - ageActuelConfirme);
-    const trimestresRequis = trimestresRequisPourGeneration(anneeNaissanceConfirmee);
+    // Proxy de date d'effet : cet écran simule un « âge de départ » plutôt
+    // que de demander une date de liquidation explicite (pas de nouveau
+    // champ dans cette session, cf. docs/audit/conception-date-effet.md
+    // Option B, réservée à la Session B) — chaque âge simulé (slider ou
+    // ligne du tableau comparatif) produit donc potentiellement une date
+    // d'effet différente, et peut donc retomber d'un côté ou de l'autre de
+    // la bascule du 1er septembre 2026 (référentiel §2.1.3, §12.3).
+    const dateEffet = dateEffetSimuleeParAge(dateNaissanceConfirmee, age);
+    const trimestresRequis = trimestresRequisPourGeneration(dateNaissanceConfirmee, dateEffet);
+    // Calculée mais non encore affichée (aucun écran ne montre l'âge légal à
+    // ce jour) — reconnecte ageLegalPourGeneration() à un appelant réel,
+    // prête pour un futur affichage (Session B) sans travail d'engine
+    // supplémentaire. Cf. docs/audit/audit-retraite.md §7, écart #2/#3.
+    const ageLegal = ageLegalPourGeneration(dateNaissanceConfirmee, dateEffet);
     const taux = tauxProratisation(trimestresValidesProjetes, trimestresRequis);
     const decote = decoteApplicable(
       decoteSurTrimestres(trimestresValidesProjetes, trimestresRequis),
@@ -152,6 +173,7 @@ export const Trimestres = () => {
     return {
       trimestresValidesProjetes,
       trimestresRequis,
+      ageLegal,
       decote,
       pensionBaseValue,
       pensionTotale: pensionBaseValue + totalPensionComplementaireAnnuelle,
