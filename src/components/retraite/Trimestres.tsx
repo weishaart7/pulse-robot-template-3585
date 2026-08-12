@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Slider } from '@/components/ui/slider';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useRetraiteData } from '@/hooks/useRetraiteData';
 import { familyService, FamilyProfile } from '@/services/familyService';
@@ -22,8 +21,15 @@ import {
   pointMort,
   dateNaissanceDepuisISO,
   dateEffetSimuleeParAge,
+  dateDepuisISO,
   OptionRachat,
 } from '@/lib/retraite/calcul';
+
+// Format ISO ("YYYY-MM-DD") d'une date UTC-midnight, pour la valeur d'un
+// <input type="date"> — .toISOString() ne décale pas ce cas puisque
+// dateEffetSimuleeParAge()/dateDepuisISO() construisent déjà un instant UTC
+// à minuit (aucune conversion de fuseau horaire local en jeu).
+const isoDate = (date: Date) => date.toISOString().slice(0, 10);
 
 const AGE_MIN = 60;
 const AGE_MAX = 70;
@@ -45,8 +51,13 @@ export const Trimestres = () => {
   const { data: retraiteData, loading: loadingRetraite } = useRetraiteData();
   const [familyProfile, setFamilyProfile] = useState<FamilyProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
-  const [ageSimule, setAgeSimule] = useState<number>(AGE_MIN);
-  const [ageSimuleInitialise, setAgeSimuleInitialise] = useState(false);
+  // Date de liquidation envisagée : source de vérité du scénario simulé
+  // (Option 2, docs/audit/conception-date-effet.md) — l'âge de départ n'est
+  // plus qu'une valeur dérivée affichée, cf. `resultatSelection.ageAffiche`
+  // plus bas. Stockée en chaîne ISO ("YYYY-MM-DD"), format natif de
+  // <input type="date"> (même convention que PeriodeCarriereEditDialog.tsx).
+  const [dateLiquidation, setDateLiquidation] = useState<string>('');
+  const [dateLiquidationInitialisee, setDateLiquidationInitialisee] = useState(false);
 
   // Rachat de trimestres — sandbox éphémère, aucune persistance.
   const [regimeRachat, setRegimeRachat] = useState<RegimeRachat>('salarieIndependant');
@@ -81,14 +92,17 @@ export const Trimestres = () => {
   // l'audit référentiel (docs/audit/audit-retraite.md §7).
   const dateNaissanceDetail = dateNaissance ? dateNaissanceDepuisISO(dateNaissance) : undefined;
 
-  // Initialise le slider sur l'âge actuel (borné 60-70) dès qu'il est connu,
-  // une seule fois, pour ne pas écraser une sélection déjà faite par l'utilisateur.
+  // Initialise la date de liquidation sur l'anniversaire de l'âge actuel
+  // (borné 60-70) dès qu'elle est connue, une seule fois, pour ne pas
+  // écraser une sélection déjà faite par l'utilisateur — même logique que
+  // l'ancienne initialisation du slider, transposée en date.
   useEffect(() => {
-    if (ageActuel !== null && !ageSimuleInitialise) {
-      setAgeSimule(Math.min(AGE_MAX, Math.max(AGE_MIN, ageActuel)));
-      setAgeSimuleInitialise(true);
+    if (dateNaissanceDetail && ageActuel !== null && !dateLiquidationInitialisee) {
+      const ageDepart = Math.min(AGE_MAX, Math.max(AGE_MIN, ageActuel));
+      setDateLiquidation(isoDate(dateEffetSimuleeParAge(dateNaissanceDetail, ageDepart)));
+      setDateLiquidationInitialisee(true);
     }
-  }, [ageActuel, ageSimuleInitialise]);
+  }, [dateNaissanceDetail, ageActuel, dateLiquidationInitialisee]);
 
   const trimestresValidesActuels = retraiteData.trimestres_valides || 0;
   const salaireAnnuelMoyen = retraiteData.salaire_annuel_moyen || 0;
@@ -147,30 +161,39 @@ export const Trimestres = () => {
   const ageActuelConfirme: number = ageActuel;
   const dateNaissanceConfirmee = dateNaissanceDetail;
 
-  const simulerPourAge = (age: number) => {
+  const dateLiquidationMin = isoDate(dateEffetSimuleeParAge(dateNaissanceConfirmee, AGE_MIN));
+  const dateLiquidationMax = isoDate(dateEffetSimuleeParAge(dateNaissanceConfirmee, AGE_MAX));
+  // Repli avant que l'effet d'initialisation n'ait posé la valeur par défaut
+  // (premier rendu, dateLiquidation encore vide) — même valeur que ce que
+  // l'effet posera de toute façon, pour ne jamais calculer sur une date vide.
+  const dateLiquidationEffet = dateLiquidation
+    ? dateDepuisISO(dateLiquidation)
+    : dateEffetSimuleeParAge(dateNaissanceConfirmee, Math.min(AGE_MAX, Math.max(AGE_MIN, ageActuelConfirme)));
+
+  // Calcule le scénario pour une date d'effet donnée — la source de vérité
+  // depuis cette session (Option 2, docs/audit/conception-date-effet.md) :
+  // l'ancien paramètre `age` ne pilote plus rien, il est dérivé de la date
+  // via `computeAge()` uniquement pour l'affichage et pour les besoins
+  // internes qui restent exprimés en âge (projection des trimestres,
+  // decoteSurAge — non concernée par la bascule de barème, cf.
+  // docs/audit/implementation-date-effet-moteur.md, point d'entrée #4).
+  const simulerPourDateEffet = (dateEffet: Date) => {
+    const ageAffiche = computeAge(dateNaissance, dateEffet) ?? ageActuelConfirme;
     const trimestresValidesProjetes =
-      trimestresValidesActuels + 4 * Math.max(0, age - ageActuelConfirme);
-    // Proxy de date d'effet : cet écran simule un « âge de départ » plutôt
-    // que de demander une date de liquidation explicite (pas de nouveau
-    // champ dans cette session, cf. docs/audit/conception-date-effet.md
-    // Option B, réservée à la Session B) — chaque âge simulé (slider ou
-    // ligne du tableau comparatif) produit donc potentiellement une date
-    // d'effet différente, et peut donc retomber d'un côté ou de l'autre de
-    // la bascule du 1er septembre 2026 (référentiel §2.1.3, §12.3).
-    const dateEffet = dateEffetSimuleeParAge(dateNaissanceConfirmee, age);
+      trimestresValidesActuels + 4 * Math.max(0, ageAffiche - ageActuelConfirme);
     const trimestresRequis = trimestresRequisPourGeneration(dateNaissanceConfirmee, dateEffet);
     // Calculée mais non encore affichée (aucun écran ne montre l'âge légal à
     // ce jour) — reconnecte ageLegalPourGeneration() à un appelant réel,
-    // prête pour un futur affichage (Session B) sans travail d'engine
-    // supplémentaire. Cf. docs/audit/audit-retraite.md §7, écart #2/#3.
+    // cf. docs/audit/audit-retraite.md §7, écart #2/#3.
     const ageLegal = ageLegalPourGeneration(dateNaissanceConfirmee, dateEffet);
     const taux = tauxProratisation(trimestresValidesProjetes, trimestresRequis);
     const decote = decoteApplicable(
       decoteSurTrimestres(trimestresValidesProjetes, trimestresRequis),
-      decoteSurAge(age)
+      decoteSurAge(ageAffiche)
     );
     const pensionBaseValue = pensionBase(salaireAnnuelMoyen, taux, decote);
     return {
+      ageAffiche,
       trimestresValidesProjetes,
       trimestresRequis,
       ageLegal,
@@ -180,12 +203,21 @@ export const Trimestres = () => {
     };
   };
 
-  const resultatSelection = simulerPourAge(ageSimule);
+  // Tableau comparatif par âge fixe (62-70 ans, cf. plus bas) : pas un
+  // contrôle de saisie, seulement une liste de scénarios de référence —
+  // reste piloté par âge via l'ancien proxy `dateEffetSimuleeParAge()`,
+  // inchangé par cette session (point d'entrée interne, cf.
+  // docs/audit/implementation-date-effet-ui.md §1).
+  const simulerPourAge = (age: number) =>
+    simulerPourDateEffet(dateEffetSimuleeParAge(dateNaissanceConfirmee, age));
+
+  const resultatSelection = simulerPourDateEffet(dateLiquidationEffet);
 
   // Rachat de trimestres : le coût dépend de l'âge actuel (âge auquel le
-  // rachat serait effectué aujourd'hui), pas de l'âge de départ simulé.
-  // Les trimestres rachetés viennent s'ajouter aux trimestres projetés à
-  // l'âge de départ simulé ci-dessus, pour recalculer la pension de base.
+  // rachat serait effectué aujourd'hui), pas de la date de liquidation
+  // simulée. Les trimestres rachetés viennent s'ajouter aux trimestres
+  // projetés à la date de liquidation ci-dessus, pour recalculer la pension
+  // de base.
   const revenuMoyen3AnsNum = parseFloat(revenuMoyen3Ans) || 0;
   const nombreTrimestresRachatNum = Math.min(
     TRIMESTRES_RACHAT_MAX,
@@ -208,7 +240,7 @@ export const Trimestres = () => {
   );
   const decoteAvecRachat = decoteApplicable(
     decoteSurTrimestres(trimestresValidesProjetesAvecRachat, resultatSelection.trimestresRequis),
-    decoteSurAge(ageSimule)
+    decoteSurAge(resultatSelection.ageAffiche)
   );
   const pensionBaseAvecRachat = pensionBase(salaireAnnuelMoyen, tauxAvecRachat, decoteAvecRachat);
   const gainPensionAnnuelRachat = pensionBaseAvecRachat - resultatSelection.pensionBaseValue;
@@ -221,7 +253,7 @@ export const Trimestres = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Simulation d'âge de départ</CardTitle>
+          <CardTitle>Simulation de départ à la retraite</CardTitle>
           <CardDescription>
             Simulation indicative, ne remplace pas un relevé officiel de l'Assurance retraite.
           </CardDescription>
@@ -229,23 +261,25 @@ export const Trimestres = () => {
         <CardContent className="space-y-6">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <label htmlFor="age-simule" className="text-sm font-medium">
-                Âge de départ simulé
+              <label htmlFor="date-liquidation" className="text-sm font-medium">
+                Date de liquidation envisagée
               </label>
-              <span className="text-lg font-semibold text-primary">{ageSimule} ans</span>
+              <span className="text-lg font-semibold text-primary">
+                {resultatSelection.ageAffiche} ans
+              </span>
             </div>
-            <Slider
-              id="age-simule"
-              min={AGE_MIN}
-              max={AGE_MAX}
-              step={1}
-              value={[ageSimule]}
-              onValueChange={(value) => setAgeSimule(value[0])}
+            <Input
+              id="date-liquidation"
+              type="date"
+              value={dateLiquidation || dateLiquidationEffet.toISOString().slice(0, 10)}
+              min={dateLiquidationMin}
+              max={dateLiquidationMax}
+              onChange={(e) => setDateLiquidation(e.target.value)}
             />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{AGE_MIN} ans</span>
-              <span>{AGE_MAX} ans</span>
-            </div>
+            <p className="text-xs text-muted-foreground">
+              Âge calculé automatiquement à partir de cette date et de votre date de naissance —
+              simulation possible entre {AGE_MIN} et {AGE_MAX} ans.
+            </p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
@@ -280,7 +314,7 @@ export const Trimestres = () => {
 
           <div className="p-4 bg-muted/50 rounded-lg">
             <div className="text-sm text-muted-foreground mb-1">
-              Pension totale consolidée à {ageSimule} ans (base + complémentaire)
+              Pension totale consolidée à {resultatSelection.ageAffiche} ans (base + complémentaire)
             </div>
             <div className="text-2xl font-semibold text-primary">
               {formatEuro2(resultatSelection.pensionTotale)} / an
@@ -403,7 +437,7 @@ export const Trimestres = () => {
                     </div>
                     <div>
                       <div className="text-sm text-muted-foreground">
-                        Nouvelle pension de base à {ageSimule} ans
+                        Nouvelle pension de base à {resultatSelection.ageAffiche} ans
                       </div>
                       <div className="text-xl font-semibold text-primary">
                         {formatEuro2(pensionBaseAvecRachat)} / an
@@ -425,7 +459,7 @@ export const Trimestres = () => {
                     </p>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      À {ageSimule} ans, vos trimestres validés projetés couvrent déjà les trimestres
+                      À {resultatSelection.ageAffiche} ans, vos trimestres validés projetés couvrent déjà les trimestres
                       requis : ce rachat n'améliore pas la pension de base à cet âge de départ.
                     </p>
                   )}
@@ -458,7 +492,10 @@ export const Trimestres = () => {
               {AGES_COMPARATIF.map((age) => {
                 const resultat = simulerPourAge(age);
                 return (
-                  <TableRow key={age} className={age === ageSimule ? 'bg-muted/50' : undefined}>
+                  <TableRow
+                    key={age}
+                    className={age === resultatSelection.ageAffiche ? 'bg-muted/50' : undefined}
+                  >
                     <TableCell className="font-medium">{age} ans</TableCell>
                     <TableCell>{resultat.trimestresValidesProjetes}</TableCell>
                     <TableCell
