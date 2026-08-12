@@ -7,35 +7,74 @@
 import { RegimeDetecte } from './parseRIS';
 
 /**
- * Trimestres requis pour le taux plein, par année de naissance.
- * Source : trajectoire de la réforme des retraites 2023 (loi n° 2023-270 du
- * 14 avril 2023), telle que suspendue par la LFSS 2026 jusqu'au 1er janvier
- * 2028 — les générations 1964 et 1965, qui auraient dû voir leur durée
- * d'assurance continuer à augmenter (171, puis 171 ou 172 selon le mois de
- * naissance), restent gelées à 170 trimestres pendant la suspension.
- *
- * ⚠️ Barème à réviser si la suspension prend fin au 1er janvier 2028 (retour
- * à la trajectoire pleine de la réforme 2023) ou si une nouvelle réforme
- * intervient d'ici là.
- *
- * Simplification assumée : la réforme applique en réalité une granularité
- * mensuelle sur certaines générations (ex : la génération 1961 est scindée
- * selon le mois de naissance exact). Cet outil de simulation indicative ne
- * connaît pas le mois de naissance et retient une seule valeur par année
- * civile — à affiner si une granularité mensuelle est disponible.
+ * Date de naissance décomposée en année + mois (1-12) — nécessaire pour
+ * résoudre correctement les générations à découpage infra-annuel du barème
+ * légal (1951, 1961, 1965 ; cf. `BAREME_STABLE_AVANT_1964` et
+ * `BAREME_INSTABLE_1964_1968` ci-dessous). Le jour n'intervient dans aucune
+ * des bornes du référentiel retenues ici — seul le mois compte.
  */
-const TRIMESTRES_REQUIS_PAR_GENERATION: { anneeMax: number; trimestres: number }[] = [
-  { anneeMax: 1957, trimestres: 166 },
-  { anneeMax: 1960, trimestres: 167 },
-  { anneeMax: 1961, trimestres: 168 },
-  { anneeMax: 1962, trimestres: 169 },
-  { anneeMax: 1965, trimestres: 170 },
-  { anneeMax: Infinity, trimestres: 172 },
-];
+export interface DateNaissance {
+  annee: number;
+  mois: number; // 1-12
+}
 
-export function trimestresRequisPourGeneration(anneeNaissance: number): number {
-  const tranche = TRIMESTRES_REQUIS_PAR_GENERATION.find((t) => anneeNaissance <= t.anneeMax);
-  return tranche ? tranche.trimestres : 172;
+/**
+ * Parse une date ISO ("YYYY-MM-DD", format des colonnes `date` Postgres) en
+ * `DateNaissance`, par découpage de chaîne plutôt que via `new Date(...)`.
+ * `new Date("1965-04-01")` est interprétée comme minuit UTC puis relue avec
+ * `.getMonth()` en heure LOCALE : un fuseau horaire en décalage négatif peut
+ * faire retomber le résultat sur le mois civil précédent — un décalage
+ * silencieux exactement sur les bornes qui comptent ici (1er avril 1965, 1er
+ * septembre 1961...). Le découpage de chaîne élimine ce risque.
+ */
+export function dateNaissanceDepuisISO(dateISO: string): DateNaissance {
+  const [annee, mois] = dateISO.split('-').map(Number);
+  return { annee, mois };
+}
+
+/**
+ * Date d'effet approximée à partir d'un âge de départ simulé plutôt que
+ * saisie explicitement : anniversaire (mois de naissance) de l'année
+ * `dateNaissance.annee + age`. C'est le proxy utilisé aujourd'hui par les
+ * écrans qui simulent un « âge de départ » plutôt que de demander une date
+ * de liquidation (Trimestres.tsx) — à remplacer par une vraie date saisie
+ * par l'utilisateur si un champ dédié est introduit, cf.
+ * docs/audit/conception-date-effet.md (Option B, Session B).
+ */
+export function dateEffetSimuleeParAge(dateNaissance: DateNaissance, age: number): Date {
+  return new Date(Date.UTC(dateNaissance.annee + age, dateNaissance.mois - 1, 1));
+}
+
+function moisAbsolu(date: DateNaissance): number {
+  return date.annee * 12 + (date.mois - 1);
+}
+
+/**
+ * Trois jeux de paramètres légaux coexistent selon la date d'effet de la
+ * pension (référentiel §2.1.3) :
+ * - `lfss_2026` : barème issu de l'art. 105 de la loi 2025-1403 (LFSS 2026),
+ *   opposable aux pensions prenant effet à compter du 1er septembre 2026
+ *   (référentiel §2.1.1).
+ * - `calendrier_2023` : barème de la loi 2023-270, opposable aux pensions
+ *   prenant effet entre le 1er septembre 2023 et le 31 août 2026
+ *   (référentiel §2.1.2) — reste seul opposable à ces dates malgré la
+ *   publication ultérieure de la LFSS 2026.
+ * - `anterieur_2023` : barème antérieur à la réforme 2023 (réformes 2010 /
+ *   2014). Le référentiel ne le détaille pas (§12.2 point 4 : « barème
+ *   antérieur (réformes 2010/2014) » mentionné mais non chiffré) — ce jeu
+ *   n'est donc PAS couvert par ce module. Cf. `trimestresRequisPourGeneration()`
+ *   et `ageLegalPourGeneration()` pour la façon dont chacune gère ce cas.
+ */
+export type JeuBareme = 'anterieur_2023' | 'calendrier_2023' | 'lfss_2026';
+
+const BASCULE_CALENDRIER_2023 = Date.UTC(2023, 8, 1); // 1er septembre 2023
+const BASCULE_LFSS_2026 = Date.UTC(2026, 8, 1); // 1er septembre 2026
+
+export function jeuBaremeApplicable(dateEffet: Date): JeuBareme {
+  const instant = dateEffet.getTime();
+  if (instant >= BASCULE_LFSS_2026) return 'lfss_2026';
+  if (instant >= BASCULE_CALENDRIER_2023) return 'calendrier_2023';
+  return 'anterieur_2023';
 }
 
 export interface AgeLegal {
@@ -43,93 +82,195 @@ export interface AgeLegal {
   mois: number;
 }
 
+interface ParametresGeneration {
+  ageLegal: AgeLegal;
+  trimestresRequis: number;
+}
+
+interface TrancheStable {
+  naissanceMax: DateNaissance; // borne haute incluse
+  parametres: ParametresGeneration;
+}
+
+/**
+ * Barème identique pour les jeux `calendrier_2023` et `lfss_2026` — vérifié
+ * ligne à ligne entre le référentiel §2.1.1 et §2.1.2 : aucun écart hors de
+ * la zone 1964-1968 (`BAREME_INSTABLE_1964_1968` ci-dessous), qui seule
+ * justifie de stocker deux valeurs. Couvre les découpages infra-annuels 1951
+ * (1er juillet) et 1961 (1er septembre) — référentiel §2.1.1, §12.3.
+ *
+ * ⚠️ Pour la tranche « avant le 01/07/1951 », le référentiel indique une
+ * durée requise « — » (non chiffrée). Faute de valeur documentée, et cette
+ * génération n'étant pas un cas d'usage réaliste pour un outil utilisé en
+ * 2026 (76 ans et plus), la valeur de la tranche suivante (163) est retenue
+ * par défaut plutôt que de fabriquer un nombre non sourcé — l'âge légal, lui
+ * documenté (60 ans), reste exact.
+ */
+const BAREME_STABLE_AVANT_1964: TrancheStable[] = [
+  { naissanceMax: { annee: 1951, mois: 6 }, parametres: { ageLegal: { ans: 60, mois: 0 }, trimestresRequis: 163 } },
+  { naissanceMax: { annee: 1951, mois: 12 }, parametres: { ageLegal: { ans: 60, mois: 4 }, trimestresRequis: 163 } },
+  { naissanceMax: { annee: 1952, mois: 12 }, parametres: { ageLegal: { ans: 60, mois: 9 }, trimestresRequis: 164 } },
+  { naissanceMax: { annee: 1953, mois: 12 }, parametres: { ageLegal: { ans: 61, mois: 2 }, trimestresRequis: 165 } },
+  { naissanceMax: { annee: 1954, mois: 12 }, parametres: { ageLegal: { ans: 61, mois: 7 }, trimestresRequis: 165 } },
+  { naissanceMax: { annee: 1957, mois: 12 }, parametres: { ageLegal: { ans: 62, mois: 0 }, trimestresRequis: 166 } },
+  { naissanceMax: { annee: 1960, mois: 12 }, parametres: { ageLegal: { ans: 62, mois: 0 }, trimestresRequis: 167 } },
+  { naissanceMax: { annee: 1961, mois: 8 }, parametres: { ageLegal: { ans: 62, mois: 0 }, trimestresRequis: 168 } },
+  { naissanceMax: { annee: 1961, mois: 12 }, parametres: { ageLegal: { ans: 62, mois: 3 }, trimestresRequis: 169 } },
+  { naissanceMax: { annee: 1962, mois: 12 }, parametres: { ageLegal: { ans: 62, mois: 6 }, trimestresRequis: 169 } },
+  { naissanceMax: { annee: 1963, mois: 12 }, parametres: { ageLegal: { ans: 62, mois: 9 }, trimestresRequis: 170 } },
+];
+
+const BAREME_1969_ET_APRES: ParametresGeneration = { ageLegal: { ans: 64, mois: 0 }, trimestresRequis: 172 };
+
+interface TrancheInstable {
+  naissanceMin: DateNaissance;
+  naissanceMax: DateNaissance;
+  calendrier2023: ParametresGeneration;
+  lfss2026: ParametresGeneration;
+}
+
+/**
+ * Zone instable 1964-1968 (référentiel §2.1.1 vs §2.1.2, écart détaillé au
+ * §12.1) : seule zone où `calendrier_2023` et `lfss_2026` divergent
+ * réellement — d'où un stockage à deux valeurs limité à ces six lignes
+ * plutôt que dupliqué sur tout le barème (cf.
+ * docs/audit/conception-date-effet.md §3a). Découpage infra-annuel de la
+ * génération 1965 au 1er avril (référentiel §2.1.1, §12.3) : deux lignes
+ * distinctes, pas une par année.
+ */
+const BAREME_INSTABLE_1964_1968: TrancheInstable[] = [
+  {
+    naissanceMin: { annee: 1964, mois: 1 },
+    naissanceMax: { annee: 1964, mois: 12 },
+    calendrier2023: { ageLegal: { ans: 63, mois: 0 }, trimestresRequis: 171 },
+    lfss2026: { ageLegal: { ans: 62, mois: 9 }, trimestresRequis: 170 },
+  },
+  {
+    naissanceMin: { annee: 1965, mois: 1 },
+    naissanceMax: { annee: 1965, mois: 3 },
+    calendrier2023: { ageLegal: { ans: 63, mois: 3 }, trimestresRequis: 172 },
+    lfss2026: { ageLegal: { ans: 62, mois: 9 }, trimestresRequis: 170 },
+  },
+  {
+    naissanceMin: { annee: 1965, mois: 4 },
+    naissanceMax: { annee: 1965, mois: 12 },
+    calendrier2023: { ageLegal: { ans: 63, mois: 3 }, trimestresRequis: 172 },
+    lfss2026: { ageLegal: { ans: 63, mois: 0 }, trimestresRequis: 171 },
+  },
+  {
+    naissanceMin: { annee: 1966, mois: 1 },
+    naissanceMax: { annee: 1966, mois: 12 },
+    calendrier2023: { ageLegal: { ans: 63, mois: 6 }, trimestresRequis: 172 },
+    lfss2026: { ageLegal: { ans: 63, mois: 3 }, trimestresRequis: 172 },
+  },
+  {
+    naissanceMin: { annee: 1967, mois: 1 },
+    naissanceMax: { annee: 1967, mois: 12 },
+    calendrier2023: { ageLegal: { ans: 63, mois: 9 }, trimestresRequis: 172 },
+    lfss2026: { ageLegal: { ans: 63, mois: 6 }, trimestresRequis: 172 },
+  },
+  {
+    naissanceMin: { annee: 1968, mois: 1 },
+    naissanceMax: { annee: 1968, mois: 12 },
+    calendrier2023: { ageLegal: { ans: 64, mois: 0 }, trimestresRequis: 172 },
+    lfss2026: { ageLegal: { ans: 63, mois: 9 }, trimestresRequis: 172 },
+  },
+];
+
+function trouverZoneInstable(dateNaissance: DateNaissance): TrancheInstable | undefined {
+  const m = moisAbsolu(dateNaissance);
+  return BAREME_INSTABLE_1964_1968.find((t) => m >= moisAbsolu(t.naissanceMin) && m <= moisAbsolu(t.naissanceMax));
+}
+
+function resoudreBaremeStable(dateNaissance: DateNaissance): ParametresGeneration {
+  const m = moisAbsolu(dateNaissance);
+  const tranche = BAREME_STABLE_AVANT_1964.find((t) => m <= moisAbsolu(t.naissanceMax));
+  return tranche ? tranche.parametres : BAREME_1969_ET_APRES;
+}
+
+/**
+ * Résout le barème pour un jeu déjà déterminé (`calendrier_2023` ou
+ * `lfss_2026` — jamais `anterieur_2023`, cf. `trimestresRequisPourGeneration()`
+ * et `ageLegalPourGeneration()` pour la façon dont ce troisième cas est géré
+ * par chacune). Hors zone instable, les deux jeux sont rigoureusement
+ * identiques (vérifié référentiel §2.1.1 vs §2.1.2) : la valeur ne dépend
+ * alors même pas du jeu demandé.
+ */
+function resoudreParJeu(dateNaissance: DateNaissance, jeu: 'calendrier_2023' | 'lfss_2026'): ParametresGeneration {
+  const zoneInstable = trouverZoneInstable(dateNaissance);
+  if (zoneInstable) {
+    return jeu === 'lfss_2026' ? zoneInstable.lfss2026 : zoneInstable.calendrier2023;
+  }
+  return resoudreBaremeStable(dateNaissance);
+}
+
+/**
+ * Trimestres requis pour le taux plein, résolus selon la génération ET la
+ * date d'effet de la pension (référentiel §2.1.3) — remplace l'ancienne
+ * version, qui appliquait un seul barème (post-suspension LFSS 2026)
+ * inconditionnellement, sans notion de date d'effet ni découpage infra-
+ * annuel de la génération 1965 (écarts #2 et #3, docs/audit/audit-retraite.md
+ * §7 et docs/audit/conception-date-effet.md).
+ *
+ * Repli documenté pour une `dateEffet` antérieure au 1er septembre 2023 : le
+ * référentiel ne détaille pas ce barème (cf. `JeuBareme`), donc plutôt que de
+ * fabriquer une valeur, cette fonction retombe sur le jeu `lfss_2026` — le
+ * comportement de cet outil AVANT la présente correction (il appliquait déjà
+ * ce jeu inconditionnellement, quelle que soit la date). Aucune régression
+ * pour ce cas ; correction réelle pour toute date d'effet à compter du
+ * 1er septembre 2023. `ageLegalPourGeneration()` ci-dessous, à l'inverse,
+ * signale ce cas explicitement plutôt que d'y appliquer un repli silencieux
+ * — cf. sa docstring pour la justification de cette différence de contrat.
+ */
+export function trimestresRequisPourGeneration(dateNaissance: DateNaissance, dateEffet: Date): number {
+  const jeu = jeuBaremeApplicable(dateEffet);
+  const jeuResolu = jeu === 'anterieur_2023' ? 'lfss_2026' : jeu;
+  return resoudreParJeu(dateNaissance, jeuResolu).trimestresRequis;
+}
+
 /**
  * Résultat de `ageLegalPourGeneration()` — union discriminée plutôt qu'un
- * objet `{ valeur, stable }` à un seul champ numérique toujours présent :
- * pour les générations 1964-1968, le barème réel n'est PAS une valeur
- * ponctuelle en attente de confirmation, c'est une véritable alternative
- * légale non tranchée (cf. génération 1968 ci-dessous, qui a deux issues
- * concrètes possibles, pas une seule estimation incertaine). Un champ
- * `valeur` toujours renseigné inciterait un appelant pressé à le lire sans
- * vérifier `stable`, produisant un chiffre silencieusement faux. Avec cette
- * union, TypeScript interdit d'accéder à `age` tant que `stable` n'a pas été
- * vérifié (narrowing), et le cas instable ne renvoie explicitement PAS de
- * nombre — seulement une explication.
+ * objet `{ age }` toujours renseigné : pour une date d'effet antérieure au
+ * 1er septembre 2023, le référentiel ne documente pas le barème applicable
+ * (cf. `JeuBareme`), et il n'existe ici aucune valeur de repli défendable à
+ * renvoyer silencieusement — contrairement à `trimestresRequisPourGeneration()`,
+ * qui peut légitimement retomber sur son propre comportement historique
+ * (elle ignorait déjà la date d'effet avant cette correction). Un champ
+ * `age` toujours renseigné inciterait un appelant pressé à le lire sans
+ * vérifier `stable`, produisant un âge silencieusement faux.
  *
- * Fonction volontairement isolée cette session : non branchée dans
- * `decoteSurTrimestres()` ni ailleurs. Généraliser ce design aux appelants
- * (Carriere.tsx, Trimestres.tsx) est un choix à valider séparément une fois
- * un cas d'usage réel identifié — cf. docs/audit/audit-retraite.md.
+ * Design conservé de la version précédente de cette fonction (même
+ * principe : union discriminée plutôt que valeur de repli), appliqué
+ * désormais à une indétermination différente — barème antérieur à 2023 non
+ * documenté, plutôt que zone 1964-1968 sans date d'effet. Cette dernière
+ * indétermination est résolue par construction dès lors qu'une date d'effet
+ * est fournie, ce qui est désormais toujours le cas.
  */
 export type AgeLegalResultat = { stable: true; age: AgeLegal } | { stable: false; raison: string };
 
 /**
- * Âge légal de départ à la retraite par génération. Barème et sources
- * fournis par l'utilisateur (info-retraite.fr, lassuranceretraite.fr,
- * service-public.gouv.fr, document RH interne avec barème complet) —
- * corroboré par une recherche complémentaire le 2026-08-12 confirmant la
- * réalité de la zone d'instabilité 1964-1968 (LFSS 2026, loi n° 2025-1403 du
- * 30 décembre 2025, suspension applicable aux pensions liquidées à compter
- * du 1er septembre 2026, jusqu'au 1er janvier 2028), mais sans reconstituer
- * ici le détail des âges gelés par trimestre de naissance au sein de cette
- * zone — non nécessaire dès lors que la fonction renvoie une indétermination
- * explicite pour toute cette tranche plutôt qu'une valeur.
- *
- * - Avant le 01/09/1961 : 62 ans (toute année < 1961, ou 1961 avant
- *   septembre).
- * - 1961 à partir de septembre : 62 ans et 3 mois. Contrairement à
- *   `trimestresRequisPourGeneration()` (qui documente ignorer sciemment la
- *   granularité mensuelle de la génération 1961, faute d'en avoir besoin
- *   pour son propre barème), l'âge légal a une vraie coupure au milieu de
- *   l'année 1961 : `moisNaissance` est donc utilisé ici quand il est
- *   fourni. Le mois de naissance existe déjà dans le modèle de données
- *   (`family_profiles.date_naissance`, confirmé dans l'audit initial) — les
- *   appelants qui en disposent (`Trimestres.tsx` extrait déjà une
- *   `dateNaissance` complète avant de la réduire à l'année pour l'appel
- *   existant à `trimestresRequisPourGeneration()`) peuvent le passer.
- * - 1962 : 62 ans et 6 mois. 1963 : 62 ans et 9 mois.
- * - 1964 à 1968 : INSTABLE, cf. `AgeLegalResultat`.
- * - 1969 et après : 64 ans — stable quelle que soit l'issue de la
- *   suspension (confirmé par service-public.gouv.fr : la suspension ne
- *   fait que repousser le seuil des 64 ans de la génération 1968 à la
- *   génération 1969, elle ne change rien pour 1969 et les générations
- *   suivantes).
- *
- * @param moisNaissance 1-12, optionnel. N'est utile que pour distinguer les
- *   deux sous-cas de l'année 1961 (avant/à partir de septembre) — sans
- *   effet sur toute autre année, y compris les bornes de la zone instable.
- *   Si omis pour 1961 : repli conservateur sur 62 ans et 3 mois (le cas
- *   « à partir de septembre »), pour ne jamais afficher un âge légal
- *   inférieur à la réalité par défaut d'information — simplification
- *   documentée, même logique que la valeur unique par année civile
- *   retenue par `trimestresRequisPourGeneration()`.
+ * Âge légal de départ à la retraite, résolu selon la génération ET la date
+ * d'effet (référentiel §2.1.3), reconnectée à `resoudreParJeu()` — la même
+ * table que `trimestresRequisPourGeneration()` (auparavant deux tables non
+ * synchronisées, cf. docs/audit/conception-date-effet.md §1). Aucun écran ne
+ * consomme aujourd'hui la valeur d'âge légal elle-même pour l'affichage
+ * (recherche confirmée dans la note de conception) ; cette fonction est
+ * néanmoins appelée en production par Trimestres.tsx, dont le résultat est
+ * inclus dans l'objet de scénario retourné par `simulerPourAge()` — prêt
+ * pour un affichage futur (Session B), et n'est donc plus un point d'entrée
+ * mort.
  */
-export function ageLegalPourGeneration(anneeNaissance: number, moisNaissance?: number): AgeLegalResultat {
-  if (anneeNaissance < 1961 || (anneeNaissance === 1961 && (moisNaissance ?? 9) < 9)) {
-    return { stable: true, age: { ans: 62, mois: 0 } };
-  }
-  if (anneeNaissance === 1961) {
-    return { stable: true, age: { ans: 62, mois: 3 } };
-  }
-  if (anneeNaissance === 1962) {
-    return { stable: true, age: { ans: 62, mois: 6 } };
-  }
-  if (anneeNaissance === 1963) {
-    return { stable: true, age: { ans: 62, mois: 9 } };
-  }
-  if (anneeNaissance >= 1964 && anneeNaissance <= 1968) {
+export function ageLegalPourGeneration(dateNaissance: DateNaissance, dateEffet: Date): AgeLegalResultat {
+  const jeu = jeuBaremeApplicable(dateEffet);
+  if (jeu === 'anterieur_2023') {
     return {
       stable: false,
       raison:
-        `Génération ${anneeNaissance} : âge légal suspendu par la LFSS 2026 (loi n° 2025-1403 du ` +
-        `30 décembre 2025) jusqu'au 1er janvier 2028 — la trajectoire de la réforme 2023 (progression ` +
-        `continue jusqu'à 64 ans pour la génération 1968) est gelée à une valeur intermédiaire non modélisée ` +
-        `ici, variable au sein même de la génération selon le trimestre de naissance précis. Génération 1968 ` +
-        `en particulier : 64 ans si la trajectoire de la réforme 2023 reprend en 2028, ou 63 ans et 9 mois si ` +
-        `le barème suspendu devient définitif — indéterminé tant que la suspension n'est pas levée.`,
+        `Barème non documenté pour une date d'effet antérieure au 1er septembre 2023 ` +
+        `(référentiel §2.1.3, §12.2 point 4 : seuls les barèmes à compter de cette date sont détaillés).`,
     };
   }
-  return { stable: true, age: { ans: 64, mois: 0 } };
+  return { stable: true, age: resoudreParJeu(dateNaissance, jeu).ageLegal };
 }
 
 /**
