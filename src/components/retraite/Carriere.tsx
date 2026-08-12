@@ -3,12 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Save, Upload, Trash2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Save, Upload, Trash2, Pencil, CheckCircle2, AlertTriangle, ChevronDown } from 'lucide-react';
 import { useRetraiteData } from '@/hooks/useRetraiteData';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
 import { useToast } from '@/hooks/use-toast';
-import { parseRIS, PeriodeCarriere, RegimeDetecte, TypeActivite } from '@/lib/retraite/parseRIS';
+import { parseRIS, PeriodeCarriere, RegimeDetecte, LIBELLE_TYPE_ACTIVITE } from '@/lib/retraite/parseRIS';
 import { RISImportDialog } from '@/components/retraite/RISImportDialog';
+import { PeriodeCarriereEditDialog } from '@/components/retraite/PeriodeCarriereEditDialog';
 import { tauxProratisation, decoteSurTrimestres, pensionBase, pensionComplementaireAnnuelle, minimumContributif } from '@/lib/retraite/calcul';
 import { trimestresCotisesEtAssimilesDepuisCarriere } from '@/lib/retraite/calculTrimestres';
 import { CarriereFonctionPublique } from '@/components/retraite/CarriereFonctionPublique';
@@ -27,13 +29,6 @@ import { familyService } from '@/services/familyService';
 // et mérite un vrai regard sur la carrière saisie — cf.
 // docs/audit/audit-retraite.md pour le détail de ce choix.
 const SEUIL_ECART_COHERENCE_TRIMESTRES = 4;
-
-const LIBELLE_TYPE_ACTIVITE: Record<TypeActivite, string> = {
-  employeur: 'Employeur',
-  chomage: 'Chômage',
-  maladie: 'Maladie',
-  micro_entrepreneur: 'Micro-entrepreneur',
-};
 
 const formatDateFr = (dateIso: string) => {
   const [annee, mois, jour] = dateIso.split('-');
@@ -86,6 +81,14 @@ export const Carriere = () => {
   // affichée dans la sous-section dédiée et effectivement enregistrée.
   const [periodesDetectees, setPeriodesDetectees] = useState<PeriodeCarriere[]>([]);
   const [detailCarriere, setDetailCarriere] = useState<PeriodeCarriere[]>([]);
+  // Repliée par défaut : la liste période par période est une donnée brute
+  // de contrôle, pas quelque chose à afficher d'emblée — l'utilisateur
+  // clique pour la consulter au besoin.
+  const [detailCarriereOuvert, setDetailCarriereOuvert] = useState(false);
+  // Index de la période en cours de modification dans le dialogue dédié
+  // (null = dialogue fermé) — un seul dialogue partagé pour toute la liste,
+  // plutôt qu'un état par ligne.
+  const [indexPeriodeEditee, setIndexPeriodeEditee] = useState<number | null>(null);
 
   // Date de naissance du client — nécessaire pour le calcul du SAM (nombre
   // d'années requis selon la génération, année de départ en retraite
@@ -288,6 +291,16 @@ export const Carriere = () => {
 
   const handleRemovePeriode = (index: number) => {
     setDetailCarriere(detailCarriere.filter((_, i) => i !== index));
+  };
+
+  const handleEditPeriode = (index: number) => {
+    setIndexPeriodeEditee(index);
+  };
+
+  const handleSaveEditedPeriode = (periodeModifiee: PeriodeCarriere) => {
+    if (indexPeriodeEditee === null) return;
+    setDetailCarriere(detailCarriere.map((p, i) => (i === indexPeriodeEditee ? periodeModifiee : p)));
+    setIndexPeriodeEditee(null);
   };
 
   const formatEuro2 = (valeur: number) =>
@@ -665,36 +678,55 @@ export const Carriere = () => {
               Aucune période enregistrée. Importez votre relevé de carrière pour les détecter automatiquement.
             </p>
           ) : (
-            <div className="space-y-3">
-              {detailCarriere.map((periode, index) => (
-                <div
-                  key={`${periode.employeur}-${periode.dateDebut}-${index}`}
-                  className="flex items-center justify-between gap-4 p-4 border rounded-lg"
-                >
-                  <div className="space-y-1">
-                    <div className="font-semibold">{periode.employeur}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {LIBELLE_TYPE_ACTIVITE[periode.typeActivite]} · {formatDateFr(periode.dateDebut)} →{' '}
-                      {formatDateFr(periode.dateFin)}
+            <Collapsible open={detailCarriereOuvert} onOpenChange={setDetailCarriereOuvert}>
+              <CollapsibleTrigger asChild>
+                <Button type="button" variant="outline" size="sm" className="gap-2">
+                  <ChevronDown className={`h-4 w-4 transition-transform ${detailCarriereOuvert ? 'rotate-180' : ''}`} />
+                  {detailCarriereOuvert ? 'Masquer' : 'Afficher'} le détail ({detailCarriere.length} période
+                  {detailCarriere.length > 1 ? 's' : ''})
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-3 pt-4">
+                {detailCarriere.map((periode, index) => (
+                  <div
+                    key={`${periode.employeur}-${periode.dateDebut}-${index}`}
+                    className="flex items-center justify-between gap-4 p-4 border rounded-lg"
+                  >
+                    <div className="space-y-1">
+                      <div className="font-semibold">{periode.employeur}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {LIBELLE_TYPE_ACTIVITE[periode.typeActivite]} · {formatDateFr(periode.dateDebut)} →{' '}
+                        {formatDateFr(periode.dateFin)}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {periode.revenu !== null
+                          ? `${formatEuro2(periode.revenu)}${periode.estChiffreAffaires ? ' (chiffre d\'affaires)' : ''}`
+                          : 'Revenu non renseigné'}
+                        {periode.regimes.length > 0 && <> · {periode.regimes.join(', ')}</>}
+                      </div>
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {periode.revenu !== null
-                        ? `${formatEuro2(periode.revenu)}${periode.estChiffreAffaires ? ' (chiffre d\'affaires)' : ''}`
-                        : 'Revenu non renseigné'}
-                      {periode.regimes.length > 0 && <> · {periode.regimes.join(', ')}</>}
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditPeriode(index)}
+                        aria-label={`Modifier la période ${periode.employeur}`}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemovePeriode(index)}
+                        aria-label={`Supprimer la période ${periode.employeur}`}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleRemovePeriode(index)}
-                    aria-label={`Supprimer la période ${periode.employeur}`}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
           )}
         </CardContent>
       </Card>
@@ -726,6 +758,13 @@ export const Carriere = () => {
         anneeNaissance={anneeNaissance}
         onValidate={handleValidateRIS}
         onCancel={() => setRisDialogOpen(false)}
+      />
+
+      <PeriodeCarriereEditDialog
+        open={indexPeriodeEditee !== null}
+        periode={indexPeriodeEditee !== null ? detailCarriere[indexPeriodeEditee] : null}
+        onSave={handleSaveEditedPeriode}
+        onCancel={() => setIndexPeriodeEditee(null)}
       />
     </div>
   );

@@ -29,6 +29,16 @@ export interface ParseRISResult {
 
 export type TypeActivite = 'employeur' | 'chomage' | 'maladie' | 'micro_entrepreneur';
 
+// Libellés d'affichage — exportés depuis ce fichier (plutôt que dupliqués ou
+// gardés locaux à Carriere.tsx) pour être partagés avec PeriodeCarriereEditDialog.tsx
+// sans import circulaire entre les deux composants.
+export const LIBELLE_TYPE_ACTIVITE: Record<TypeActivite, string> = {
+  employeur: 'Employeur',
+  chomage: 'Chômage',
+  maladie: 'Maladie',
+  micro_entrepreneur: 'Micro-entrepreneur',
+};
+
 export interface PeriodeCarriere {
   // Libellé de la ligne source (nom d'employeur, ou libellé de catégorie tel
   // que "MICRO-ENTREPRENEUR - Activité de vente BIC") — jamais null, y
