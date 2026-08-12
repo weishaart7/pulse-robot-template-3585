@@ -11,7 +11,16 @@ import { useToast } from '@/hooks/use-toast';
 import { parseRIS, PeriodeCarriere, RegimeDetecte, LIBELLE_TYPE_ACTIVITE } from '@/lib/retraite/parseRIS';
 import { RISImportDialog } from '@/components/retraite/RISImportDialog';
 import { PeriodeCarriereEditDialog } from '@/components/retraite/PeriodeCarriereEditDialog';
-import { tauxProratisation, decoteSurTrimestres, pensionBase, pensionComplementaireAnnuelle, minimumContributif } from '@/lib/retraite/calcul';
+import {
+  tauxProratisation,
+  decoteSurTrimestres,
+  pensionBase,
+  pensionComplementaireAnnuelle,
+  minimumContributif,
+  trimestresRequisPourGeneration,
+  dateNaissanceDepuisISO,
+  DateNaissance,
+} from '@/lib/retraite/calcul';
 import { trimestresCotisesEtAssimilesDepuisCarriere } from '@/lib/retraite/calculTrimestres';
 import { CarriereFonctionPublique } from '@/components/retraite/CarriereFonctionPublique';
 import { CarriereCNAVPL } from '@/components/retraite/CarriereCNAVPL';
@@ -46,7 +55,12 @@ export const Carriere = () => {
   const { toast } = useToast();
   const [salaireAnnuelMoyen, setSalaireAnnuelMoyen] = useState<string>('');
   const [trimestresValides, setTrimestresValides] = useState<string>('');
-  const [trimestresRequis] = useState<number>(172);
+  // 172 : valeur par défaut affichée avant chargement du profil famille
+  // (génération 1969+, la plus fréquente pour un client actif aujourd'hui),
+  // recalculée dès que la date de naissance est connue — cf. l'effet plus
+  // bas. Auparavant une constante figée en permanence : écart #2/#3 de
+  // l'audit référentiel (docs/audit/audit-retraite.md §7).
+  const [trimestresRequis, setTrimestresRequis] = useState<number>(172);
   const [hasChanges, setHasChanges] = useState(false);
   const [pensionBaseBrute, setPensionBaseBrute] = useState<number>(0);
   const [decoteSurcote, setDecoteSurcote] = useState<number>(0);
@@ -95,18 +109,39 @@ export const Carriere = () => {
   // prévue). Même source que Trimestres.tsx : family_profiles via
   // familyService, il n'existe pas d'entité "client" séparée dans l'appli.
   const [anneeNaissance, setAnneeNaissance] = useState<number | null>(null);
+  // Date de naissance complète (année + mois) : nécessaire pour résoudre le
+  // barème de trimestres requis, qui a des découpages infra-annuels (1951,
+  // 1961, 1965 — cf. trimestresRequisPourGeneration()). `anneeNaissance`
+  // (année seule, ci-dessus) reste utilisé tel quel pour le calcul du SAM
+  // (dureeSAMPourGeneration(), non concerné par ces découpages), donc
+  // conservé en parallèle plutôt que remplacé.
+  const [dateNaissanceDetail, setDateNaissanceDetail] = useState<DateNaissance | null>(null);
 
   useEffect(() => {
     familyService.getFamilyProfile()
       .then((profil) => {
         if (profil?.date_naissance) {
           setAnneeNaissance(new Date(profil.date_naissance).getFullYear());
+          setDateNaissanceDetail(dateNaissanceDepuisISO(profil.date_naissance));
         }
       })
       .catch((error) => {
         console.error('Erreur lors du chargement du profil famille:', error);
       });
   }, []);
+
+  // Trimestres requis pour le taux plein : résolus depuis la génération
+  // réelle du client, plutôt que la constante 172 figée auparavant (écart
+  // #2/#3 de l'audit référentiel). Proxy de date d'effet : « aujourd'hui »
+  // (`new Date()`) — cet écran n'a pas de simulation d'âge de départ
+  // (contrairement à l'onglet Optimisation) ; ajouter une vraie date de
+  // liquidation saisie par l'utilisateur est réservé à la Session B, cf.
+  // docs/audit/conception-date-effet.md (Option B).
+  useEffect(() => {
+    if (dateNaissanceDetail) {
+      setTrimestresRequis(trimestresRequisPourGeneration(dateNaissanceDetail, new Date()));
+    }
+  }, [dateNaissanceDetail]);
 
   // Chargement des données depuis Supabase
   useEffect(() => {
