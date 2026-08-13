@@ -13,12 +13,17 @@ import {
   dateDepuisISO,
   dateAnniversaireLegal,
   ageLegalAtteint,
+  ageLegalParentaleEligible,
   surcotePourTrimestresCotises,
+  surcoteParentale,
+  surcoteTotale,
   pensionBase,
   majorationTroisEnfants,
   DateNaissance,
 } from './calcul';
 import { computeAge } from '../patrimoine/bareme669CGI';
+import { trimestresCotisesEtAssimilesDepuisCarriere } from './calculTrimestres';
+import { PeriodeCarriere } from './parseRIS';
 
 const dn = (annee: number, mois: number): DateNaissance => ({ annee, mois });
 const D = (annee: number, mois: number, jour = 1) => new Date(Date.UTC(annee, mois - 1, jour));
@@ -443,6 +448,126 @@ describe('surcotePourTrimestresCotises — porte d’éligibilité (référentie
 
   it('trimestresCotisesDansPeriodeDeReference négatif : jamais de surcote négative', () => {
     expect(surcotePourTrimestresCotises(-4, true, true)).toBe(0);
+  });
+});
+
+describe('ageLegalParentaleEligible — sous-condition n° 2 de la surcote parentale (référentiel §2.3.2)', () => {
+  it('1969 : âge légal 64 ans, toujours ≥ 63 ans, quel que soit le jeu de barème', () => {
+    expect(ageLegalParentaleEligible(dn(1969, 1), EFFET_CALENDRIER_2023)).toBe(true);
+    expect(ageLegalParentaleEligible(dn(1969, 1), EFFET_LFSS_2026)).toBe(true);
+  });
+
+  it("undefined (pas false) quand le barème n'est pas déterminé — dateEffet antérieure au 01/09/2023", () => {
+    expect(ageLegalParentaleEligible(dn(1969, 1), EFFET_ANTERIEUR_2023)).toBeUndefined();
+  });
+
+  describe('effet de bord LFSS 2026 (référentiel §2.3.2, "conséquence d’implémentation") — générations 1964 et 1965 T1', () => {
+    it('1964 : éligible sous calendrier_2023 (63 ans pile), non éligible sous lfss_2026 (62 ans 9 mois)', () => {
+      expect(ageLegalParentaleEligible(dn(1964, 6), EFFET_CALENDRIER_2023)).toBe(true);
+      expect(ageLegalParentaleEligible(dn(1964, 6), EFFET_LFSS_2026)).toBe(false);
+    });
+
+    it('1965 T1 (janvier-mars) : éligible sous calendrier_2023 (63 ans 3 mois), non éligible sous lfss_2026 (62 ans 9 mois)', () => {
+      expect(ageLegalParentaleEligible(dn(1965, 1), EFFET_CALENDRIER_2023)).toBe(true);
+      expect(ageLegalParentaleEligible(dn(1965, 1), EFFET_LFSS_2026)).toBe(false);
+      expect(ageLegalParentaleEligible(dn(1965, 3), EFFET_LFSS_2026)).toBe(false);
+    });
+
+    it('1965 T2-T4 (avril-décembre) : NON affectée par la suspension — reste éligible sous les deux jeux (63 ans 0 mois sous lfss_2026, contre 62 ans 9 pour 1965 T1)', () => {
+      // Contraste volontaire avec le test précédent : la perte d'éligibilité
+      // ne touche pas toute la génération 1965, seulement son premier
+      // trimestre de naissance — le découpage infra-annuel au 1er avril
+      // (référentiel §2.1.1, §12.3) traverse aussi la surcote parentale.
+      expect(ageLegalParentaleEligible(dn(1965, 4), EFFET_CALENDRIER_2023)).toBe(true);
+      expect(ageLegalParentaleEligible(dn(1965, 4), EFFET_LFSS_2026)).toBe(true);
+    });
+  });
+});
+
+describe('surcoteParentale — porte d’éligibilité et plafond à 5 % (référentiel §2.3.2)', () => {
+  it.each([
+    // [auMoinsUnTrimestre, ageEligible, dureeAtteinte, trimestresCotisesAnnee, attendu]
+    [true, true, true, 2, 2.5], // les trois conditions réunies : 2 × 1,25 %
+    [false, true, true, 2, 0], // condition 1 manquante (pas de déclaration)
+    [true, false, true, 2, 0], // condition 2, volet âge, manquante
+    [true, true, false, 2, 0], // condition 2, volet durée, manquante
+    [false, false, false, 2, 0], // aucune condition
+  ] as const)(
+    'déclaré=%s, âge éligible=%s, durée atteinte=%s, trimestres=%i → surcote=%s%%',
+    (declare, ageEligible, dureeAtteinte, trimestres, attendu) => {
+      expect(surcoteParentale(declare, ageEligible, dureeAtteinte, trimestres)).toBe(attendu);
+    }
+  );
+
+  it('undefined (barème indéterminé pour la sous-condition d’âge) traité comme non éligible', () => {
+    expect(surcoteParentale(true, undefined, true, 4)).toBe(0);
+  });
+
+  it('plafond à 5 % (4 trimestres) : 4 trimestres cotisés → 5 % pile', () => {
+    expect(surcoteParentale(true, true, true, 4)).toBe(5);
+  });
+
+  it('plafond à 5 % : 5 trimestres ou plus cotisés sur l’année de référence → toujours 5 %, jamais 6,25 %', () => {
+    // Mission point 5 : à la différence de surcotePourTrimestresCotises()
+    // (sans plafond), la surcote parentale est explicitement plafonnée à
+    // 5 % par le référentiel §2.3.2 — un 5e trimestre cotisé ne doit rien
+    // ajouter.
+    expect(surcoteParentale(true, true, true, 5)).toBe(5);
+    expect(surcoteParentale(true, true, true, 8)).toBe(5);
+  });
+
+  it('trimestresCotisesAnneeReference négatif : jamais de surcote négative', () => {
+    expect(surcoteParentale(true, true, true, -2)).toBe(0);
+  });
+
+  it('branchement de bout en bout avec parAnnee de trimestresCotisesEtAssimilesDepuisCarriere() (écart #5), pas un nouveau calcul de ventilation annuelle', () => {
+    // Une seule période, entièrement dans l'année de référence : revenu
+    // choisi pour valider 3 trimestres en 2025 (seuil 2025 = 1 782 €,
+    // 6 000 / 1 782 = 3,37 → 3), pas 4 — sert à vérifier que
+    // surcoteParentale() consomme tel quel le nombre déjà filtré par
+    // parAnnee, sans reformuler la logique de ventilation.
+    const carriere: PeriodeCarriere[] = [
+      {
+        employeur: 'Employeur Test',
+        typeActivite: 'employeur',
+        dateDebut: '2025-01-01',
+        dateFin: '2025-09-30',
+        revenu: 6000,
+        estChiffreAffaires: false,
+        regimes: ["L'Assurance retraite"], // seul libellé reconnu par estPeriodeRegimeDeBase()
+      },
+    ];
+    const { parAnnee } = trimestresCotisesEtAssimilesDepuisCarriere(carriere);
+    const anneeReference = parAnnee.find((a) => a.annee === 2025);
+    expect(anneeReference?.cotises).toBe(3);
+
+    const trimestresAnneeReference = anneeReference?.cotises ?? 0;
+    expect(surcoteParentale(true, true, true, trimestresAnneeReference)).toBeCloseTo(3.75, 6); // 3 × 1,25 %
+  });
+});
+
+describe('surcoteTotale — cumul selon le régime (référentiel §2.3.2, §7.4, §12.3)', () => {
+  it('cumulable=true (régime général et régimes hérités) : les deux surcotes s’additionnent', () => {
+    expect(surcoteTotale(5, 3.75, true)).toBeCloseTo(8.75, 6);
+  });
+
+  it('cumulable=false (fonction publique) : la classique dépasse la parentale → la classique seule est retenue, pas la somme', () => {
+    expect(surcoteTotale(7.5, 5, false)).toBe(7.5);
+  });
+
+  it('cumulable=false (fonction publique) : la parentale dépasse la classique → la parentale seule est retenue, pas la somme', () => {
+    expect(surcoteTotale(1.25, 5, false)).toBe(5);
+  });
+
+  it('cumulable=false : jamais la somme, même quand les deux valeurs sont égales', () => {
+    const cumul = surcoteTotale(5, 5, false);
+    expect(cumul).toBe(5);
+    expect(cumul).not.toBe(10);
+  });
+
+  it('cumulable=true : équivalent à une simple addition, y compris quand l’une des deux est nulle', () => {
+    expect(surcoteTotale(5, 0, true)).toBe(5);
+    expect(surcoteTotale(0, 3.75, true)).toBe(3.75);
   });
 });
 

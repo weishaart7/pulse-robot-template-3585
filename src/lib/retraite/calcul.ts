@@ -325,6 +325,39 @@ export function ageLegalAtteint(dateNaissance: DateNaissance, dateEffet: Date): 
 }
 
 /**
+ * Sous-condition n° 2 de la surcote parentale (référentiel §2.3.2) : l'âge
+ * légal de la génération est-il égal ou supérieur à 63 ans ? Distincte de
+ * `ageLegalAtteint()` ci-dessus — celle-ci compare l'âge légal à la date
+ * d'effet (« l'assuré a-t-il atteint son âge légal ? »), alors que cette
+ * fonction compare l'âge légal lui-même à un seuil fixe de 63 ans (« l'âge
+ * légal DE CETTE GÉNÉRATION est-il ≥ 63 ans ? ») — deux questions différentes
+ * qui portent sur la même valeur (`resultat.age.ans`) mais ne doivent pas
+ * être confondues.
+ *
+ * Effet de bord documenté par le référentiel (§2.3.2, conséquence
+ * d'implémentation) : sous le barème LFSS 2026, les générations 1964 et
+ * 1965-T1 ont un âge légal de 62 ans 9 mois — sous le seuil — alors que sous
+ * le calendrier 2023, ces mêmes générations avaient un âge légal de 63 ans
+ * (1964) ou 63 ans 3 mois (1965), et étaient donc éligibles. La suspension
+ * LFSS 2026 les fait donc *sortir* du champ de la surcote parentale, un
+ * effet contre-intuitif que le référentiel demande de tester explicitement
+ * (cf. `calcul.test.ts`). Résolu nativement par la réutilisation de
+ * `ageLegalPourGeneration()` : aucun barème codé en dur ici, comme déjà
+ * vérifié pour l'écart #5 (`docs/audit/implementation-surcote.md` §4).
+ *
+ * `undefined` (pas `false`) quand le barème n'est pas déterminé, même
+ * principe que `ageLegalAtteint()` — ne jamais fabriquer une éligibilité à
+ * partir d'une donnée indéterminée.
+ */
+export function ageLegalParentaleEligible(dateNaissance: DateNaissance, dateEffet: Date): boolean | undefined {
+  const resultat = ageLegalPourGeneration(dateNaissance, dateEffet);
+  if (!resultat.stable) {
+    return undefined;
+  }
+  return resultat.age.ans >= 63;
+}
+
+/**
  * Surcote pour prolongation d'activité (référentiel §2.3.1) — fonction
  * dédiée et séparée de `decoteSurTrimestres()` (celle-ci reste inchangée,
  * cf. docs/audit/conception-surcote.md §2 : décote et surcote sont deux
@@ -362,6 +395,99 @@ export function surcotePourTrimestresCotises(
     return 0;
   }
   return Math.max(0, trimestresCotisesDansPeriodeDeReference) * 1.25;
+}
+
+/**
+ * Surcote parentale (référentiel §2.3.2) — fonction dédiée et séparée de
+ * `surcotePourTrimestresCotises()` (la surcote classique) : mécanisme
+ * distinct du référentiel, avec sa propre porte d'éligibilité et son propre
+ * plafond, sur le modèle déjà posé pour l'écart #5
+ * (`docs/audit/implementation-surcote.md`) et l'écart #7
+ * (`majorationTroisEnfants()`).
+ *
+ * Décision produit actée (option B, cf. `docs/audit/conception-majorations-enfants.md`
+ * §6.3/§7) : champ **déclaratif** plutôt qu'un sous-système de répartition
+ * MDA par enfant (garde, autorité parentale, options cerfa 15046...). La
+ * condition n° 1 ci-dessous se limite donc à un booléen saisi par le
+ * conseiller, pas à un décompte de trimestres MDA reconstitué.
+ *
+ * Trois conditions cumulatives, toutes à la charge de l'appelant :
+ * - `auMoinsUnTrimestreMajorationEnfant` : condition n° 1 (référentiel
+ *   §2.3.2) — au moins 1 trimestre de majoration de durée d'assurance au
+ *   titre de la maternité, de l'adoption, de l'éducation, d'un enfant
+ *   handicapé ou d'un congé parental, quel que soit le régime de base qui
+ *   l'octroie. Une condition binaire déclarative, pas un décompte.
+ * - `ageLegalParentaleEligibleFlag` : premier volet de la condition n° 2 —
+ *   cf. `ageLegalParentaleEligible()` ci-dessus (âge légal de la génération
+ *   ≥ 63 ans). `undefined` traité comme non éligible, même principe que
+ *   `surcotePourTrimestresCotises()`.
+ * - `dureeRequiseAtteinte` : second volet de la condition n° 2 — durée
+ *   requise réunie « dès l'année précédant l'âge légal ». Même
+ *   simplification et même dette technique que `surcotePourTrimestresCotises()`
+ *   (`docs/audit/implementation-surcote.md`) : cette fonction ne résout pas
+ *   la chronologie infra-annuelle de « l'année précédant » — l'appelant
+ *   fournit un booléen déjà tranché (par exemple, en pratique, une
+ *   comparaison trimestresValides >= trimestresRequis à la même date de
+ *   référence que la surcote classique, en l'absence d'un calcul
+ *   chronologique plus précis).
+ *
+ * `trimestresCotisesAnneeReference` : nombre de trimestres COTISÉS sur
+ * l'année de référence (l'année précédant l'âge légal), à obtenir par
+ * l'appelant via `parAnnee` de `trimestresCotisesEtAssimilesDepuisCarriere()`
+ * (écart #5) — pas un nouveau calcul de ventilation annuelle ici.
+ *
+ * Montant : 1,25 % par trimestre cotisé sur cette année, **plafonné à 5 %**
+ * (4 trimestres) — à la différence de `surcotePourTrimestresCotises()`, qui
+ * n'a aucun plafond (référentiel §2.3.1 : « sans plafond » pour la surcote
+ * classique, contre « plafonné à 5 % » explicitement pour la surcote
+ * parentale, §2.3.2).
+ */
+export function surcoteParentale(
+  auMoinsUnTrimestreMajorationEnfant: boolean,
+  ageLegalParentaleEligibleFlag: boolean | undefined,
+  dureeRequiseAtteinte: boolean,
+  trimestresCotisesAnneeReference: number
+): number {
+  if (!auMoinsUnTrimestreMajorationEnfant || !ageLegalParentaleEligibleFlag || !dureeRequiseAtteinte) {
+    return 0;
+  }
+  const trimestresPlafonnes = Math.min(Math.max(0, trimestresCotisesAnneeReference), 4);
+  return trimestresPlafonnes * 1.25;
+}
+
+/**
+ * Cumul de la surcote classique et de la surcote parentale — matérialise la
+ * divergence de règle de cumul entre régimes (référentiel §2.3.2, §7.4,
+ * §12.3 ; cartographiée dans `docs/audit/conception-majorations-enfants.md`
+ * §2) comme un paramètre nommé plutôt qu'un `if` caché dans un composant,
+ * même principe que `decoteApplicable()` pour la règle du plus petit des
+ * deux comptages.
+ *
+ * `cumulable = true` (régime général et régimes qui en héritent
+ * intégralement sur ce point — SSI, CNAVPL, CNBF, agents contractuels,
+ * artistes-auteurs) : les deux surcotes **s'additionnent**.
+ *
+ * `cumulable = false` (fonction publique uniquement, référentiel §7.4 :
+ * « elle ne se cumule pas avec la surcote de droit commun ») : **la plus
+ * élevée des deux est retenue**, pas leur somme.
+ *
+ * ⚠️ Interprétation à signaler pour validation (cf.
+ * `docs/audit/implementation-surcote-parentale.md`) : le référentiel affirme
+ * le non-cumul pour la fonction publique mais ne formule pas explicitement
+ * une règle de choix entre les deux surcotes au-delà de « l'une ou l'autre »
+ * — retenir la plus élevée est une supposition raisonnable (cohérente avec
+ * le reste du droit de la sécurité sociale, qui retient systématiquement la
+ * solution la plus favorable à l'assuré dans ce type d'alternative), pas une
+ * citation directe du référentiel pour ce point précis.
+ */
+export function surcoteTotale(
+  surcoteClassiqueValeur: number,
+  surcoteParentaleValeur: number,
+  cumulable: boolean
+): number {
+  return cumulable
+    ? surcoteClassiqueValeur + surcoteParentaleValeur
+    : Math.max(surcoteClassiqueValeur, surcoteParentaleValeur);
 }
 
 /**
