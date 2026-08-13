@@ -14,6 +14,7 @@ import {
   decoteSurAgeFonctionPublique,
   minimumGaranti,
   pensionFonctionPubliqueFinale,
+  VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
 } from '@/lib/retraite/calculFonctionPublique';
 
 // Valeur de service du point RAFP 2026 (source : rafp.fr, communiqué ERAFP
@@ -72,6 +73,7 @@ export const CarriereFonctionPublique = ({
   const [departAnticipeCategorieActive, setDepartAnticipeCategorieActive] = useState(false);
   const [ageDepartAnticipe, setAgeDepartAnticipe] = useState<string>('');
   const [ageAnnulationDecote, setAgeAnnulationDecote] = useState<string>('');
+  const [departPourInvalidite, setDepartPourInvalidite] = useState(false);
 
   const tib = parseFloat(traitementIndiciaireBrut) || 0;
   const trimestresLiquidablesNum = parseInt(trimestresLiquidables) || 0;
@@ -104,7 +106,12 @@ export const CarriereFonctionPublique = ({
     : decoteTrimestres;
 
   const pensionCalculee = pensionBaseFonctionPublique(tib, taux, decote);
-  const minimumGarantiValue = minimumGaranti(trimestresLiquidablesNum, trimestresRequis);
+  const minimumGarantiValue = minimumGaranti(
+    trimestresLiquidablesNum,
+    trimestresRequis,
+    VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
+    departPourInvalidite
+  );
   const pensionFinale = pensionFonctionPubliqueFinale(pensionCalculee, minimumGarantiValue);
 
   // points et valeurPoint sont toujours définis ici (pointsRAFPNum est un
@@ -205,6 +212,21 @@ export const CarriereFonctionPublique = ({
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
                 <Checkbox
+                  id="depart-pour-invalidite"
+                  checked={departPourInvalidite}
+                  onCheckedChange={(checked) => setDepartPourInvalidite(checked === true)}
+                />
+                <label htmlFor="depart-pour-invalidite" className="text-sm">
+                  Départ pour invalidité (moins de 15 ans de services)
+                </label>
+              </div>
+              <p className="text-xs text-muted-foreground pl-6">
+                Change le mode de calcul du minimum garanti pour une durée de services inférieure
+                à 15 ans (référentiel §7.5) — sans effet à 15 ans de services ou plus.
+              </p>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
                   id="depart-anticipe-categorie-active"
                   checked={departAnticipeCategorieActive}
                   onCheckedChange={(checked) => setDepartAnticipeCategorieActive(checked === true)}
@@ -256,6 +278,11 @@ export const CarriereFonctionPublique = ({
                 <p className="text-xs text-muted-foreground mt-1">
                   Calculée : {formatEuro2(pensionCalculee)} / an · Minimum garanti :{' '}
                   {formatEuro2(minimumGarantiValue)} / an
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Minimum garanti calculé sur la valeur de référence 2025 (1 248,33 €/mois,
+                  indice majoré 227) — la valeur 2026 n'est pas encore confirmée par une source
+                  opposable.
                 </p>
               </div>
 

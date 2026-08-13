@@ -67,23 +67,90 @@ export function decoteSurAgeFonctionPublique(
 }
 
 /**
- * Minimum garanti fonction publique (montant annuel) : plafond de
- * 1 366,35 €/mois (2026, indice majoré 227 revalorisé), soit 16 396,20 €/an,
- * atteint à carrière complète (trimestresLiquidables >= trimestresRequis),
- * réduit proportionnellement en dessous.
+ * Valeur de référence du minimum garanti (traitement indiciaire brut au 1er
+ * janvier 2004 de l'indice majoré 227, revalorisé) — donnée **2025
+ * confirmée** par le référentiel (§7.5), mensuelle. Exportée en constante
+ * plutôt que codée en dur dans `minimumGaranti()` : cette dernière prend la
+ * valeur de référence en paramètre, jamais une valeur par défaut interne.
  *
- * Accessible à l'âge d'annulation de la décote (67 ans en catégorie
- * sédentaire, ou l'âge catégorie active saisi manuellement) — cette
- * fonction ne vérifie pas la condition d'âge, à la charge de l'appelant.
+ * ⚠️ La valeur 2026 (environ 1 366,35 €) n'est **volontairement pas**
+ * retenue ici : le référentiel la qualifie lui-même de « à vérifier auprès
+ * du SRE », donc non confirmée par une source opposable au moment de cette
+ * implémentation. Ne pas ajouter cette valeur en dur tant qu'une source
+ * datée et sourcée ne la confirme pas — passer la valeur 2025 ci-dessous à
+ * `minimumGaranti()` en attendant, ou une valeur mise à jour et sourcée le
+ * cas échéant.
  *
  * Source : Service des Retraites de l'État, "Le minimum garanti".
  */
-const MINIMUM_GARANTI_PLAFOND_MENSUEL = 1366.35;
-const MINIMUM_GARANTI_PLAFOND_ANNUEL = MINIMUM_GARANTI_PLAFOND_MENSUEL * 12;
+export const VALEUR_REFERENCE_MIGA_MENSUELLE_2025 = 1248.33;
+export const VALEUR_REFERENCE_MIGA_ANNUELLE_2025 = VALEUR_REFERENCE_MIGA_MENSUELLE_2025 * 12;
 
-export function minimumGaranti(trimestresLiquidables: number, trimestresRequis: number): number {
-  const tauxCarriere = Math.min(trimestresLiquidables / trimestresRequis, 1);
-  return MINIMUM_GARANTI_PLAFOND_ANNUEL * tauxCarriere;
+/**
+ * Minimum garanti fonction publique, barème par palier (référentiel §7.5,
+ * art. L. 17 CPCMR) — remplace l'ancienne formule linéaire
+ * (`plafond × min(trimestres/trimestresRequis, 1)`) qui sous-évaluait
+ * nettement le minimum pour les carrières de 15 ans et plus (écart audité).
+ *
+ * `valeurReference` doit être exprimée dans la même unité que le résultat
+ * souhaité (mensuelle pour un résultat mensuel, annuelle pour un résultat
+ * annuel) — cette fonction ne fait aucune hypothèse d'unité, contrairement
+ * au reste du module qui travaille exclusivement en annuel : à la charge de
+ * l'appelant de passer `VALEUR_REFERENCE_MIGA_ANNUELLE_2025` pour rester
+ * cohérent avec `pensionBaseFonctionPublique()` et
+ * `pensionFonctionPubliqueFinale()`.
+ *
+ * `trimestresServicesEffectifs` : durée de services effectifs de l'agent
+ * (pas la durée requise tous régimes) — cette fonction ne distingue pas les
+ * bonifications éventuellement incluses dans les trimestres liquidables,
+ * comme le reste de ce module ne le fait pas non plus ailleurs (même
+ * simplification que `tauxProratisation()`/`decoteSurTrimestresPlafond25()`).
+ *
+ * Quatre paliers, appliqués sur la durée de services en années
+ * (`trimestresServicesEffectifs / 4`, calcul continu — pas arrondi à
+ * l'année inférieure, pour éviter un effet de seuil artificiel à chaque
+ * anniversaire de trimestre) :
+ *
+ * 1. **Moins de 15 ans, hors invalidité** : `valeurReference ×
+ *    trimestresServicesEffectifs / trimestresRequis` — seul palier qui
+ *    dépend de la durée requise propre à la génération de l'agent, pas d'un
+ *    pourcentage fixe de la valeur de référence.
+ * 2. **Moins de 15 ans, invalidité** (`estInvalidite = true`) : par année de
+ *    services, 1/15e de 57,5 % de la valeur de référence — ignore
+ *    `trimestresRequis`, contrairement au cas général.
+ * 3. **15 à 39 ans** : 57,5 % pour les 15 premières années, +2,5 points par
+ *    année de 15 à 30 ans, +0,5 point par année de 30 à 40 ans — calcul
+ *    continu en fonction des trimestres, pas seulement des années entières.
+ * 4. **40 ans et plus** : 100 % de la valeur de référence, plafond atteint.
+ *
+ * Accessible à l'âge d'annulation de la décote — cette fonction ne vérifie
+ * aucune condition d'âge, à la charge de l'appelant (même principe que
+ * l'ancienne version).
+ */
+export function minimumGaranti(
+  trimestresServicesEffectifs: number,
+  trimestresRequis: number,
+  valeurReference: number,
+  estInvalidite = false
+): number {
+  const anneesServices = trimestresServicesEffectifs / 4;
+
+  if (anneesServices < 15) {
+    if (estInvalidite) {
+      return ((0.575 * valeurReference) / 15) * anneesServices;
+    }
+    return (valeurReference * trimestresServicesEffectifs) / trimestresRequis;
+  }
+
+  if (anneesServices < 40) {
+    const pourcentage =
+      anneesServices <= 30
+        ? 57.5 + 2.5 * (anneesServices - 15)
+        : 57.5 + 2.5 * 15 + 0.5 * (anneesServices - 30);
+    return valeurReference * (pourcentage / 100);
+  }
+
+  return valeurReference;
 }
 
 /**
