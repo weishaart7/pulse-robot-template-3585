@@ -97,3 +97,49 @@ export function pensionFonctionPubliqueFinale(
 ): number {
   return Math.max(pensionCalculee, minimumGaranti);
 }
+
+/**
+ * Majoration pour 3 enfants ou plus, fonction publique (référentiel §7.6) :
+ * **10 % pour 3 enfants, +5 % par enfant supplémentaire** — dégressive par
+ * palier, à la différence du taux flat 10 % de `majorationTroisEnfants()`
+ * (calcul.ts) partagé par le régime général et les régimes qui en héritent.
+ * Fonction dédiée distincte, pas un paramètre optionnel de sa sœur : ne pas
+ * confondre les deux formules.
+ *
+ * Conditions d'éligibilité par enfant (avoir élevé pendant au moins 9 ans
+ * avant le 16e ou le 20e anniversaire selon le cas, filiation ou garde
+ * effective et permanente...) : à la charge de l'appelant, comme pour
+ * `majorationTroisEnfants()` — porte uniquement sur le cas courant, cf. dette
+ * technique documentée dans docs/audit/implementation-majoration-enfants.md.
+ */
+export function majorationEnfantsFonctionPublique(nombreEnfantsEligibles: number): number {
+  if (nombreEnfantsEligibles < 3) {
+    return 0;
+  }
+  return 10 + (nombreEnfantsEligibles - 3) * 5;
+}
+
+/**
+ * Pension fonction publique avec majoration pour enfants, plafonnée au
+ * dernier traitement (référentiel §7.6) : « la majoration s'applique le cas
+ * échéant sur la pension portée au minimum garanti [...] le total pension +
+ * majoration ne peut excéder le dernier traitement de base. »
+ *
+ * `pensionPorteeAuMinimumGaranti` doit donc déjà être le résultat de
+ * `pensionFonctionPubliqueFinale()` (APRÈS minimum garanti) — cette fonction
+ * ne recalcule pas le minimum garanti, elle applique uniquement la
+ * majoration et son plafond, dans cet ordre précis de l'appelant :
+ * base → décote/surcote → minimum garanti → majoration enfants (plafonnée).
+ *
+ * `dernierTraitementAnnuel` : même convention d'unités que
+ * `pensionBaseFonctionPublique()` (TIB annuel, mensuel × 12 à la charge de
+ * l'appelant).
+ */
+export function pensionFonctionPubliqueAvecMajorationEnfants(
+  pensionPorteeAuMinimumGaranti: number,
+  majorationPourcent: number,
+  dernierTraitementAnnuel: number
+): number {
+  const pensionAvecMajoration = pensionPorteeAuMinimumGaranti * (1 + majorationPourcent / 100);
+  return Math.min(pensionAvecMajoration, dernierTraitementAnnuel);
+}
