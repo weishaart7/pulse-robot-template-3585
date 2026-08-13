@@ -12,6 +12,9 @@ interface RetraiteData {
   epargne_assurance_vie?: number;
   autres_epargnes?: number;
   regimes_points?: RegimeDetecte[];
+  // Condition n°1 (déclarative) de la surcote parentale, référentiel §2.3.2 —
+  // cf. surcoteParentale() dans src/lib/retraite/calcul.ts.
+  au_moins_un_trimestre_majoration_enfant?: boolean;
 }
 
 export const useRetraiteData = () => {

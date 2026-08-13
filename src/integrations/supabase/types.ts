@@ -1986,6 +1986,7 @@ export type Database = {
       }
       retraite_data: {
         Row: {
+          au_moins_un_trimestre_majoration_enfant: boolean
           autres_epargnes: number | null
           created_at: string
           epargne_assurance_vie: number | null
@@ -1999,6 +2000,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          au_moins_un_trimestre_majoration_enfant?: boolean
           autres_epargnes?: number | null
           created_at?: string
           epargne_assurance_vie?: number | null
@@ -2012,6 +2014,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          au_moins_un_trimestre_majoration_enfant?: boolean
           autres_epargnes?: number | null
           created_at?: string
           epargne_assurance_vie?: number | null

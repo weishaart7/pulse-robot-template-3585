@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Save, Upload, Trash2, Pencil, CheckCircle2, AlertTriangle, ChevronDown } from 'lucide-react';
@@ -64,6 +65,14 @@ export const Carriere = () => {
   // bas. Auparavant une constante figée en permanence : écart #2/#3 de
   // l'audit référentiel (docs/audit/audit-retraite.md §7).
   const [trimestresRequis, setTrimestresRequis] = useState<number>(172);
+  // Condition n°1 (déclarative) de la surcote parentale (référentiel §2.3.2,
+  // écart #6) — option B actée : champ déclaratif simple, pas de
+  // sous-système de répartition MDA par enfant. Cf. surcoteParentale() dans
+  // src/lib/retraite/calcul.ts, pas encore branchée au calcul de pension
+  // affiché ci-dessous (même statut que surcotePourTrimestresCotises() et
+  // majorationTroisEnfants(), écarts #5 et #7 : fonction testée, pas encore
+  // de consommateur UI).
+  const [auMoinsUnTrimestreMajorationEnfant, setAuMoinsUnTrimestreMajorationEnfant] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [pensionBaseBrute, setPensionBaseBrute] = useState<number>(0);
   const [decoteSurcote, setDecoteSurcote] = useState<number>(0);
@@ -171,6 +180,9 @@ export const Carriere = () => {
       if (data.regimes_points) {
         setRegimesPoints(data.regimes_points);
       }
+      if (data.au_moins_un_trimestre_majoration_enfant !== undefined) {
+        setAuMoinsUnTrimestreMajorationEnfant(data.au_moins_un_trimestre_majoration_enfant);
+      }
     }
   }, [data, loading]);
 
@@ -191,8 +203,24 @@ export const Carriere = () => {
     const detailCarriereDifferent =
       JSON.stringify(detailCarriere) !==
       JSON.stringify(periodesEnregistrees.map(({ id: _id, ...periode }) => periode));
-    setHasChanges(salaireDifferent || trimestresDifferent || regimesPointsDifferent || detailCarriereDifferent);
-  }, [salaireAnnuelMoyen, trimestresValides, regimesPoints, detailCarriere, periodesEnregistrees, data]);
+    const majorationEnfantDifferente =
+      auMoinsUnTrimestreMajorationEnfant !== (data.au_moins_un_trimestre_majoration_enfant || false);
+    setHasChanges(
+      salaireDifferent ||
+        trimestresDifferent ||
+        regimesPointsDifferent ||
+        detailCarriereDifferent ||
+        majorationEnfantDifferente
+    );
+  }, [
+    salaireAnnuelMoyen,
+    trimestresValides,
+    regimesPoints,
+    detailCarriere,
+    periodesEnregistrees,
+    auMoinsUnTrimestreMajorationEnfant,
+    data,
+  ]);
 
   // Calcul de la pension de base brute (moteur : src/lib/retraite/calcul.ts)
   useEffect(() => {
@@ -261,6 +289,7 @@ export const Carriere = () => {
       salaire_annuel_moyen: parseFloat(salaireAnnuelMoyen) || 0,
       trimestres_valides: parseInt(trimestresValides) || 0,
       regimes_points: regimesPoints,
+      au_moins_un_trimestre_majoration_enfant: auMoinsUnTrimestreMajorationEnfant,
     };
 
     const [successRetraiteData, successDetailCarriere] = await Promise.all([
@@ -502,6 +531,25 @@ export const Carriere = () => {
               />
               <p className="text-sm text-muted-foreground">
                 Valeur fixée selon votre date de naissance
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start space-x-2">
+            <Checkbox
+              id="majoration-enfant"
+              checked={auMoinsUnTrimestreMajorationEnfant}
+              onCheckedChange={(checked) => setAuMoinsUnTrimestreMajorationEnfant(checked === true)}
+            />
+            <div className="space-y-1">
+              <label htmlFor="majoration-enfant" className="text-sm font-medium leading-none">
+                Au moins 1 trimestre de majoration pour enfant
+              </label>
+              <p className="text-xs text-muted-foreground">
+                Maternité, adoption, éducation, enfant handicapé ou congé parental — quel que soit
+                le régime de base qui l'a accordé. Condition d'éligibilité à la surcote parentale
+                (référentiel §2.3.2), déclarative : ne cochez que si ce trimestre figure déjà sur le
+                relevé de carrière du client.
               </p>
             </div>
           </div>
