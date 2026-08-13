@@ -205,10 +205,23 @@ export const CarriereCNAVPL = ({
                 {formatEuro2(pensionFinale)} / an
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {decoteSeule > 0 ? '+' : ''}
-                {decoteSeule.toFixed(2)}% ({decoteSeule < 0 ? 'décote' : decoteSeule > 0 ? 'surcote' : 'aucune décote ni surcote'}
-                ) sur trimestres tous régimes confondus
+                {decoteSeule < 0
+                  ? `${decoteSeule.toFixed(2)}% décote`
+                  : 'Aucune décote'}{' '}
+                sur trimestres tous régimes confondus
+                {surcoteTotalePct > 0 && (
+                  <>
+                    {' '}
+                    · Surcote : +{surcoteTotalePct.toFixed(2)}% ({formatEuro2(surcoteMontant)} / an) —
+                    classique {surcoteClassiquePct.toFixed(2)}% + parentale {surcoteParentalePct.toFixed(2)}%
+                  </>
+                )}
               </p>
+              {majorationEnfantsPct > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Majoration pour {nombreEnfantsEligibles} enfants : +{majorationEnfantsPct}%
+                </p>
+              )}
             </div>
           </>
         )}

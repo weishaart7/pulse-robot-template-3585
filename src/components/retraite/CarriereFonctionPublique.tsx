@@ -364,6 +364,20 @@ export const CarriereFonctionPublique = ({
                   indice majoré 227) — la valeur 2026 n'est pas encore confirmée par une source
                   opposable.
                 </p>
+                {surcoteTotalePct > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Surcote : +{surcoteTotalePct.toFixed(2)}% ({formatEuro2(surcoteMontant)} / an) —
+                    classique {surcoteClassiquePct.toFixed(2)}% / parentale{' '}
+                    {surcoteParentalePct.toFixed(2)}%, la plus élevée des deux est retenue (non
+                    cumulables pour la fonction publique).
+                  </p>
+                )}
+                {majorationEnfantsPct > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Majoration pour {nombreEnfantsEligibles} enfants : +{majorationEnfantsPct}%,
+                    plafonnée au dernier traitement ({formatEuro2(tib)} / an).
+                  </p>
+                )}
               </div>
 
               <div className="p-4 bg-muted/50 rounded-lg">

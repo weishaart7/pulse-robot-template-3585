@@ -738,16 +738,16 @@ export const Carriere = () => {
             <div className="space-y-2">
               <Label>Décote / Surcote</Label>
               <div className={`text-2xl font-semibold ${
-                decoteSurcote < 0 ? 'text-destructive' : 
-                decoteSurcote > 0 ? 'text-green-600' : 'text-muted-foreground'
+                decoteSurcote + surcoteTotalePct < 0 ? 'text-destructive' :
+                decoteSurcote + surcoteTotalePct > 0 ? 'text-green-600' : 'text-muted-foreground'
               }`}>
-                {decoteSurcote > 0 ? '+' : ''}{decoteSurcote.toFixed(2)}%
+                {decoteSurcote + surcoteTotalePct > 0 ? '+' : ''}{(decoteSurcote + surcoteTotalePct).toFixed(2)}%
               </div>
               <p className="text-sm text-muted-foreground">
-                {decoteSurcote < 0 
+                {decoteSurcote < 0
                   ? `Décote de ${Math.abs(decoteSurcote).toFixed(2)}% (-1,25% par trimestre manquant)`
-                  : decoteSurcote > 0 
-                  ? `Surcote de ${decoteSurcote.toFixed(2)}% (+1,25% par trimestre supplémentaire)`
+                  : surcoteTotalePct > 0
+                  ? `Surcote de ${surcoteTotalePct.toFixed(2)}% (classique ${surcoteClassiquePct.toFixed(2)}% + parentale ${surcoteParentalePct.toFixed(2)}%, plafonnée à 5%)`
                   : 'Aucune décote ni surcote'
                 }
               </p>
@@ -756,7 +756,7 @@ export const Carriere = () => {
 
           {pensionBaseBrute > 0 && (
             <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-              <Label>Pension ajustée (avec décote/surcote)</Label>
+              <Label>Pension ajustée (avec décote/surcote/MICO/majoration enfants)</Label>
               <div className="text-xl font-semibold text-primary">
                 {pensionBaseAjustee.toLocaleString('fr-FR', {
                   style: 'currency',
@@ -765,6 +765,15 @@ export const Carriere = () => {
                   maximumFractionDigits: 0
                 })}
               </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                Minimum contributif (MICO) : {formatEuro2(micoMontant)} / an
+                {surcoteTotalePct > 0 && <> · Surcote : {formatEuro2(surcoteMontantRegimeGeneral)} / an</>}
+              </p>
+              {majorationEnfantsPct > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Majoration pour {nombreEnfantsEligibles} enfants : +{majorationEnfantsPct}%
+                </p>
+              )}
             </div>
           )}
 
