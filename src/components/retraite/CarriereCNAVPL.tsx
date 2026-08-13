@@ -3,7 +3,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { decoteSurTrimestresPlafond25 } from '@/lib/retraite/calcul';
+import {
+  decoteSurTrimestresPlafond25,
+  ageLegalAtteint,
+  ageLegalParentaleEligible,
+  surcotePourTrimestresCotises,
+  surcoteParentale,
+  surcoteTotale,
+  DateNaissance,
+} from '@/lib/retraite/calcul';
 import { pensionBaseCNAVPL } from '@/lib/retraite/calculCNAVPL';
 
 // Valeur du point CNAVPL 2026 (source : CNAVPL, cnavpl.fr) — pré-remplie
@@ -31,6 +39,12 @@ interface CarriereCNAVPLProps {
   onHasCNAVPLChange: (value: boolean) => void;
   trimestresCNAVPL: string;
   onTrimestresCNAVPLChange: (value: string) => void;
+  // Date de naissance du client — nécessaire à ageLegalAtteint()/
+  // ageLegalParentaleEligible() pour la surcote (écarts #5/#6), même
+  // principe que CarriereFonctionPublique.
+  dateNaissance: DateNaissance | null;
+  // Condition n°1 (déclarative) de la surcote parentale (référentiel §2.3.2).
+  auMoinsUnTrimestreMajorationEnfant: boolean;
   onResultChange?: (result: { pensionFinale: number }) => void;
 }
 
@@ -41,6 +55,8 @@ export const CarriereCNAVPL = ({
   onHasCNAVPLChange,
   trimestresCNAVPL,
   onTrimestresCNAVPLChange,
+  dateNaissance,
+  auMoinsUnTrimestreMajorationEnfant,
   onResultChange,
 }: CarriereCNAVPLProps) => {
   const [pointsCNAVPL, setPointsCNAVPL] = useState<string>('');
@@ -69,7 +85,39 @@ export const CarriereCNAVPL = ({
     0
   );
 
-  const pensionFinale = pensionBaseCNAVPL(pointsNum, valeurPointNum, decoteSeule);
+  // Surcote (classique écart #5 + parentale écart #6) : assise sur la
+  // pension avant décote (points × valeur, decote=0), ajoutée après la
+  // décote — pas d'étage MICO à intercaler pour ce régime (référentiel
+  // §5.5), donc pas de Math.max ici, contrairement au régime général.
+  const pensionAvantDecoteSurcote = pensionBaseCNAVPL(pointsNum, valeurPointNum, 0);
+  const pensionApresDecote = pensionBaseCNAVPL(pointsNum, valeurPointNum, decoteSeule);
+  const dateEffetProxy = new Date();
+  const ageLegalAtteintFlag = dateNaissance ? ageLegalAtteint(dateNaissance, dateEffetProxy) : undefined;
+  const ageLegalParentaleEligibleFlag = dateNaissance
+    ? ageLegalParentaleEligible(dateNaissance, dateEffetProxy)
+    : undefined;
+  const dureeRequiseAtteinte = trimestresCNAVPLNum + trimestresAutresRegimes >= trimestresRequis;
+  // ⚠️ Même limitation que la fonction publique : pas de détail carrière par
+  // année pour ce régime (trimestresCNAVPL est un total saisi à la main) —
+  // branché à 0, dette technique documentée,
+  // cf. docs/audit/branchement-majorations-pension-finale.md §1.c.
+  const trimestresCotisesAnneeReference = 0;
+  const surcoteClassiquePct = surcotePourTrimestresCotises(
+    trimestresCotisesAnneeReference,
+    ageLegalAtteintFlag,
+    dureeRequiseAtteinte
+  );
+  const surcoteParentalePct = surcoteParentale(
+    auMoinsUnTrimestreMajorationEnfant,
+    ageLegalParentaleEligibleFlag,
+    dureeRequiseAtteinte,
+    trimestresCotisesAnneeReference
+  );
+  // Additif pour CNAVPL (référentiel §5.4 : « mêmes règles qu'au régime
+  // général »), pas d'exclusion comme la fonction publique.
+  const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true);
+  const surcoteMontant = pensionAvantDecoteSurcote * (surcoteTotalePct / 100);
+  const pensionFinale = pensionApresDecote + surcoteMontant;
 
   useEffect(() => {
     onResultChange?.({ pensionFinale });

@@ -22,6 +22,13 @@ import {
   minimumContributif,
   trimestresRequisPourGeneration,
   dateNaissanceDepuisISO,
+  ageLegalPourGeneration,
+  ageLegalAtteint,
+  ageLegalParentaleEligible,
+  dateAnniversaireLegal,
+  surcotePourTrimestresCotises,
+  surcoteParentale,
+  surcoteTotale,
   DateNaissance,
 } from '@/lib/retraite/calcul';
 import { trimestresCotisesEtAssimilesDepuisCarriere } from '@/lib/retraite/calculTrimestres';
@@ -445,16 +452,75 @@ export const Carriere = () => {
   // en-tête de fichier et docs/audit/audit-retraite.md) : ce total dérivé
   // sert uniquement de contrôle de cohérence à l'écran, jamais injecté dans
   // trimestresValides ni dans aucun calcul de pension ci-dessous.
-  const totalDeriveCarriere = useMemo(
-    () => trimestresCotisesEtAssimilesDepuisCarriere(detailCarriere).total,
+  const resultatTrimestresDetailCarriere = useMemo(
+    () => trimestresCotisesEtAssimilesDepuisCarriere(detailCarriere),
     [detailCarriere]
   );
+  const totalDeriveCarriere = resultatTrimestresDetailCarriere.total;
   const ecartCoherenceTrimestres = trimValidesRegimeGeneral - totalDeriveCarriere;
 
-  const pensionBaseAjustee = Math.max(
-    pensionBaseBrute * (1 + decoteSurcote / 100),
-    minimumContributif(trimValidesRegimeGeneral, trimestresRequis, decoteSurcote)
+  // Surcote (classique écart #5 + parentale écart #6), assise sur la
+  // pension AVANT le MICO mais AJOUTÉE après (référentiel §12.3 : « surcote
+  // assise sur la pension avant MICO » — comprendre : calculée sur P0,
+  // ajoutée après comparaison avec le MICO, cf. le scénario de non-régression
+  // déjà écrit pour l'écart #5 dans calcul.test.ts, describe "Ordre
+  // d'application", repris tel quel plus bas pour ce composant).
+  //
+  // Proxy de date d'effet : « aujourd'hui », même convention que
+  // trimestresRequis ci-dessus (pas de simulation de date de liquidation sur
+  // cet écran — réservé à la Session B, cf. docs/audit/conception-date-effet.md).
+  const dateEffetProxy = new Date();
+  const ageLegalResultat = dateNaissanceDetail
+    ? ageLegalPourGeneration(dateNaissanceDetail, dateEffetProxy)
+    : null;
+  const ageLegalAtteintFlag = dateNaissanceDetail
+    ? ageLegalAtteint(dateNaissanceDetail, dateEffetProxy)
+    : undefined;
+  const ageLegalParentaleEligibleFlag = dateNaissanceDetail
+    ? ageLegalParentaleEligible(dateNaissanceDetail, dateEffetProxy)
+    : undefined;
+  // Même condition que l'indicateur "Taux plein atteint" ci-dessus (référentiel
+  // §2.3.1 condition n°1) — pas une nouvelle règle.
+  const dureeRequiseAtteinte = trimValidesRegimeGeneral >= trimestresRequis;
+  // Année de référence de la surcote = l'année précédant l'âge légal
+  // (référentiel §2.3.2) — déterminée précisément via dateAnniversaireLegal()
+  // (Session A), pas une approximation : la génération est déjà résolue par
+  // ageLegalPourGeneration() ci-dessus.
+  const anneeReferenceSurcote =
+    ageLegalResultat?.stable && dateNaissanceDetail
+      ? dateAnniversaireLegal(dateNaissanceDetail, ageLegalResultat.age).getUTCFullYear() - 1
+      : null;
+  // Chronologie infra-annuelle (quel trimestre EXACT de cette année) non
+  // résolue — dette technique déjà documentée pour l'écart #5
+  // (docs/audit/implementation-surcote.md) : seul le total annuel est
+  // disponible via parAnnee, pas la date d'acquisition de chaque trimestre.
+  const trimestresCotisesAnneeReference =
+    anneeReferenceSurcote !== null
+      ? resultatTrimestresDetailCarriere.parAnnee.find((a) => a.annee === anneeReferenceSurcote)
+          ?.cotises ?? 0
+      : 0;
+  const surcoteClassiquePct = surcotePourTrimestresCotises(
+    trimestresCotisesAnneeReference,
+    ageLegalAtteintFlag,
+    dureeRequiseAtteinte
   );
+  const surcoteParentalePct = surcoteParentale(
+    auMoinsUnTrimestreMajorationEnfant,
+    ageLegalParentaleEligibleFlag,
+    dureeRequiseAtteinte,
+    trimestresCotisesAnneeReference
+  );
+  // Additif pour le régime général et les régimes qui en héritent
+  // intégralement sur ce point (référentiel §2.3.2, §12.3).
+  const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true);
+
+  // MICO : montant isolé (pas seulement consommé dans le Math.max ci-dessous)
+  // pour pouvoir l'afficher comme ligne de détail à l'écran — absent
+  // auparavant (docs/audit/branchement-majorations-pension-finale.md §1.d).
+  const micoMontant = minimumContributif(trimValidesRegimeGeneral, trimestresRequis, decoteSurcote);
+  const pensionApresMico = Math.max(pensionBaseBrute * (1 + decoteSurcote / 100), micoMontant);
+  const surcoteMontantRegimeGeneral = pensionBaseBrute * (surcoteTotalePct / 100);
+  const pensionBaseAjustee = pensionApresMico + surcoteMontantRegimeGeneral;
   const pensionTotaleRegimeGeneral = pensionBaseAjustee + totalPensionComplementaireAnnuelle;
   const pensionTotaleFonctionPublique = hasFonctionPublique
     ? resultatFonctionPublique.pensionFinale + resultatFonctionPublique.rafpAnnuelle
@@ -872,6 +938,8 @@ export const Carriere = () => {
         onHasFonctionPubliqueChange={setHasFonctionPublique}
         trimestresLiquidables={trimestresLiquidablesFP}
         onTrimestresLiquidablesChange={setTrimestresLiquidablesFP}
+        dateNaissance={dateNaissanceDetail}
+        auMoinsUnTrimestreMajorationEnfant={auMoinsUnTrimestreMajorationEnfant}
         onResultChange={setResultatFonctionPublique}
       />
 
@@ -882,6 +950,8 @@ export const Carriere = () => {
         onHasCNAVPLChange={setHasCNAVPL}
         trimestresCNAVPL={trimestresCNAVPL}
         onTrimestresCNAVPLChange={setTrimestresCNAVPL}
+        dateNaissance={dateNaissanceDetail}
+        auMoinsUnTrimestreMajorationEnfant={auMoinsUnTrimestreMajorationEnfant}
         onResultChange={setResultatCNAVPL}
       />
 

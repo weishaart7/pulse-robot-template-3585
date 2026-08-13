@@ -8,6 +8,12 @@ import {
   decoteApplicable,
   decoteSurTrimestresPlafond25,
   pensionComplementaireAnnuelle,
+  ageLegalAtteint,
+  ageLegalParentaleEligible,
+  surcotePourTrimestresCotises,
+  surcoteParentale,
+  surcoteTotale,
+  DateNaissance,
 } from '@/lib/retraite/calcul';
 import {
   pensionBaseFonctionPublique,
@@ -52,6 +58,15 @@ interface CarriereFonctionPubliqueProps {
   onHasFonctionPubliqueChange: (value: boolean) => void;
   trimestresLiquidables: string;
   onTrimestresLiquidablesChange: (value: string) => void;
+  // Date de naissance du client (family_profiles, chargée une fois dans
+  // Carriere.tsx) — nécessaire à ageLegalAtteint()/ageLegalParentaleEligible()
+  // pour la surcote (écarts #5/#6). `null` tant que le profil famille n'est
+  // pas encore chargé.
+  dateNaissance: DateNaissance | null;
+  // Condition n°1 (déclarative) de la surcote parentale (référentiel §2.3.2,
+  // écart #6) — état du parent (case à cocher unique par client, pas propre
+  // à un régime).
+  auMoinsUnTrimestreMajorationEnfant: boolean;
   // Reporte les résultats déjà calculés ici (pas les entrées brutes) au
   // parent, pour le total consolidé tous régimes de Carriere.tsx — évite de
   // dupliquer la logique de calcul FP ou de remonter le TIB/les points RAFP/
@@ -66,6 +81,8 @@ export const CarriereFonctionPublique = ({
   onHasFonctionPubliqueChange,
   trimestresLiquidables,
   onTrimestresLiquidablesChange,
+  dateNaissance,
+  auMoinsUnTrimestreMajorationEnfant,
   onResultChange,
 }: CarriereFonctionPubliqueProps) => {
   const [traitementIndiciaireBrut, setTraitementIndiciaireBrut] = useState<string>('');
@@ -120,7 +137,44 @@ export const CarriereFonctionPublique = ({
     VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
     departPourInvalidite
   );
-  const pensionFinale = pensionFonctionPubliqueFinale(pensionCalculee, minimumGarantiValue);
+  const pensionApresMiga = pensionFonctionPubliqueFinale(pensionCalculee, minimumGarantiValue);
+
+  // Surcote (classique écart #5 + parentale écart #6), assise sur la pension
+  // AVANT décote/MIGA — cf. pensionCalculeeAvantDecote ci-dessous — puis
+  // ajoutée APRÈS le MIGA (référentiel §12.3), même principe que le régime
+  // général dans Carriere.tsx.
+  const pensionCalculeeAvantDecote = pensionBaseFonctionPublique(tib, taux, 0);
+  const dateEffetProxy = new Date();
+  const ageLegalAtteintFlag = dateNaissance ? ageLegalAtteint(dateNaissance, dateEffetProxy) : undefined;
+  const ageLegalParentaleEligibleFlag = dateNaissance
+    ? ageLegalParentaleEligible(dateNaissance, dateEffetProxy)
+    : undefined;
+  const dureeRequiseAtteinte = trimestresLiquidablesNum + trimestresAutresRegimes >= trimestresRequis;
+  // ⚠️ Aucun détail de carrière par année pour ce régime (trimestresLiquidables
+  // est un simple total saisi à la main, contrairement au détail carrière
+  // daté du régime général) : le nombre de trimestres cotisés sur l'année de
+  // référence n'est pas calculable ici. Branché à 0 plutôt qu'une valeur
+  // fabriquée — la porte d'éligibilité reste correctement évaluée, seul le
+  // montant reste nul faute de donnée. Dette technique documentée,
+  // cf. docs/audit/branchement-majorations-pension-finale.md §1.c.
+  const trimestresCotisesAnneeReference = 0;
+  const surcoteClassiquePct = surcotePourTrimestresCotises(
+    trimestresCotisesAnneeReference,
+    ageLegalAtteintFlag,
+    dureeRequiseAtteinte
+  );
+  const surcoteParentalePct = surcoteParentale(
+    auMoinsUnTrimestreMajorationEnfant,
+    ageLegalParentaleEligibleFlag,
+    dureeRequiseAtteinte,
+    trimestresCotisesAnneeReference
+  );
+  // Exclusif pour la fonction publique (référentiel §7.4, §12.3) : la plus
+  // élevée des deux est retenue, pas leur somme — interprétation signalée
+  // pour validation dans implementation-surcote-parentale.md §2.
+  const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, false);
+  const surcoteMontant = pensionCalculeeAvantDecote * (surcoteTotalePct / 100);
+  const pensionFinale = pensionApresMiga + surcoteMontant;
 
   // points et valeurPoint sont toujours définis ici (pointsRAFPNum est un
   // number, la valeur de service est une constante) : le résultat n'est
