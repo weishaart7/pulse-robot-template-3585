@@ -289,6 +289,82 @@ export function ageLegalPourGeneration(dateNaissance: DateNaissance, dateEffet: 
 }
 
 /**
+ * Convertit un âge légal (`{ ans, mois }`, tel que retourné par
+ * `ageLegalPourGeneration()`) en date exacte d'anniversaire, à partir d'une
+ * date de naissance — même principe que `dateEffetSimuleeParAge()` ci-dessus
+ * (âge → date), appliqué ici à un âge en années ET mois plutôt qu'à un
+ * nombre entier d'années. Aucun nouveau calcul de barème : consomme
+ * directement le résultat de `ageLegalPourGeneration()` (Session A).
+ */
+export function dateAnniversaireLegal(dateNaissance: DateNaissance, ageLegal: AgeLegal): Date {
+  const moisAbsoluNaissance = dateNaissance.mois - 1 + ageLegal.mois; // 0-indexé
+  const anneesSupplementaires = Math.floor(moisAbsoluNaissance / 12);
+  const moisResultat = moisAbsoluNaissance % 12;
+  return new Date(Date.UTC(dateNaissance.annee + ageLegal.ans + anneesSupplementaires, moisResultat, 1));
+}
+
+/**
+ * Indique si l'âge légal (référentiel §2.1, §2.3.1 condition n° 2) est
+ * atteint à la date d'effet — condition cumulative de la surcote, avec
+ * `dureeRequiseAtteinte` (simple comparaison trimestresValides >=
+ * trimestresRequis, à la charge de l'appelant, cf. `surcotePourTrimestresCotises()`
+ * ci-dessous).
+ *
+ * `undefined` (pas `false`) quand `ageLegalPourGeneration()` ne peut pas
+ * déterminer le barème applicable (dateEffet antérieure au 01/09/2023,
+ * cf. sa docstring) — ne jamais fabriquer une réponse binaire à partir d'une
+ * donnée indéterminée. Un appelant qui reçoit `undefined` doit traiter le cas
+ * comme non tranché, pas comme "non atteint".
+ */
+export function ageLegalAtteint(dateNaissance: DateNaissance, dateEffet: Date): boolean | undefined {
+  const resultat = ageLegalPourGeneration(dateNaissance, dateEffet);
+  if (!resultat.stable) {
+    return undefined;
+  }
+  return dateEffet.getTime() >= dateAnniversaireLegal(dateNaissance, resultat.age).getTime();
+}
+
+/**
+ * Surcote pour prolongation d'activité (référentiel §2.3.1) — fonction
+ * dédiée et séparée de `decoteSurTrimestres()` (celle-ci reste inchangée,
+ * cf. docs/audit/conception-surcote.md §2 : décote et surcote sont deux
+ * mécanismes distincts du référentiel, pas deux lectures d'un même
+ * excédent).
+ *
+ * Deux conditions cumulatives, explicitement des booléens à la charge de
+ * l'appelant plutôt que recalculées ici :
+ * - `ageLegalAtteintFlag` : cf. `ageLegalAtteint()` ci-dessus — `undefined`
+ *   traité comme non éligible (`false` implicite via `!ageLegalAtteintFlag`),
+ *   par prudence : un barème non déterminé ne doit jamais produire une
+ *   surcote fabriquée.
+ * - `dureeRequiseAtteinte` : trimestresValides >= trimestresRequis, tous
+ *   régimes confondus (référentiel §2.3.1 condition n° 1) — simple
+ *   comparaison, aucune fonction dédiée nécessaire.
+ *
+ * `trimestresCotisesDansPeriodeDeReference` : nombre de trimestres COTISÉS
+ * (pas assimilés, référentiel §2.3.1/§2.5) situés dans la période de
+ * référence de la surcote — À LA CHARGE DE L'APPELANT de fournir ce nombre
+ * déjà filtré et borné dans le temps. Cette fonction ne fait aucune
+ * hypothèse sur la façon dont ce nombre a été obtenu : elle n'implémente pas
+ * la chronologie infra-annuelle de la période de référence (dette technique
+ * documentée, cf. docs/audit/implementation-surcote.md) — seule la formule
+ * et la porte d'éligibilité relèvent de cette fonction.
+ *
+ * 1,25 % par trimestre, sans plafond (référentiel §2.3.1 : « soit 5 % par
+ * an, sans plafond »).
+ */
+export function surcotePourTrimestresCotises(
+  trimestresCotisesDansPeriodeDeReference: number,
+  ageLegalAtteintFlag: boolean | undefined,
+  dureeRequiseAtteinte: boolean
+): number {
+  if (!ageLegalAtteintFlag || !dureeRequiseAtteinte) {
+    return 0;
+  }
+  return Math.max(0, trimestresCotisesDansPeriodeDeReference) * 1.25;
+}
+
+/**
  * Taux de proratisation, plafonné à 100 % : au-delà de trimestresRequis,
  * l'avantage supplémentaire relève de la surcote (calculée séparément),
  * pas d'un ratio > 1 ici.

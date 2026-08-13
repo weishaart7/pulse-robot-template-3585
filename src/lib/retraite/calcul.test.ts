@@ -11,6 +11,10 @@ import {
   dateNaissanceDepuisISO,
   dateEffetSimuleeParAge,
   dateDepuisISO,
+  dateAnniversaireLegal,
+  ageLegalAtteint,
+  surcotePourTrimestresCotises,
+  pensionBase,
   DateNaissance,
 } from './calcul';
 import { computeAge } from '../patrimoine/bareme669CGI';
@@ -367,5 +371,118 @@ describe('Carriere.tsx — combinaison decoteSurTrimestres + decoteSurAge (écar
     expect(decoteApresCorrection).toBe(-5); // le plus favorable des deux, mais reste négatif
     expect(decoteApresCorrection).toBeLessThan(0);
     expect(minimumContributif(trimestresValides, trimestresRequis, decoteApresCorrection)).toBe(0);
+  });
+});
+
+describe('dateAnniversaireLegal', () => {
+  it("construit l'anniversaire exact d'un âge légal {ans, mois} sans report d'année", () => {
+    // Né en avril 1965, âge légal 63 ans 0 mois (1965 T2, jeu lfss_2026) →
+    // anniversaire en avril 2028.
+    const date = dateAnniversaireLegal(dn(1965, 4), { ans: 63, mois: 0 });
+    expect(date.getUTCFullYear()).toBe(2028);
+    expect(date.getUTCMonth()).toBe(3); // avril, 0-indexé
+  });
+
+  it('reporte correctement sur l’année suivante quand mois + ageLegal.mois dépasse 12', () => {
+    // Né en octobre 1965, âge légal 62 ans 9 mois → 62 ans en octobre 2027,
+    // + 9 mois = juillet 2028 (pas juillet 2027).
+    const date = dateAnniversaireLegal(dn(1965, 10), { ans: 62, mois: 9 });
+    expect(date.getUTCFullYear()).toBe(2028);
+    expect(date.getUTCMonth()).toBe(6); // juillet, 0-indexé
+  });
+});
+
+describe('ageLegalAtteint', () => {
+  // Génération 1969, âge légal stable 64 ans 0 mois quel que soit le jeu de
+  // barème post-2023 (référentiel §2.1.1) — anniversaire légal : 01/01/2033.
+  const NAISSANCE_1969 = dn(1969, 1);
+
+  it('true à la date anniversaire légale exacte (borne incluse)', () => {
+    expect(ageLegalAtteint(NAISSANCE_1969, D(2033, 1, 1))).toBe(true);
+  });
+
+  it('true après', () => {
+    expect(ageLegalAtteint(NAISSANCE_1969, D(2035, 1, 1))).toBe(true);
+  });
+
+  it('false avant', () => {
+    expect(ageLegalAtteint(NAISSANCE_1969, D(2032, 12, 31))).toBe(false);
+  });
+
+  it("undefined (pas false) quand le barème n'est pas déterminé — dateEffet antérieure au 01/09/2023", () => {
+    expect(ageLegalAtteint(NAISSANCE_1969, EFFET_ANTERIEUR_2023)).toBeUndefined();
+  });
+});
+
+describe('surcotePourTrimestresCotises — porte d’éligibilité (référentiel §2.3.1)', () => {
+  const TRIMESTRES_COTISES = 4; // 4 trimestres cotisés au-delà de la durée requise
+
+  it.each([
+    // [ageLegalAtteint, dureeRequiseAtteinte, surcoteAttendue]
+    [true, true, 5], // les deux conditions réunies : 4 × 1,25 % = 5 %
+    [true, false, 0], // âge atteint seul : pas de surcote
+    [false, true, 0], // durée atteinte seule : pas de surcote
+    [false, false, 0], // aucune des deux conditions
+  ] as const)(
+    'âge atteint=%s, durée atteinte=%s → surcote=%i%%',
+    (ageAtteintFlag, dureeAtteinte, surcoteAttendue) => {
+      expect(surcotePourTrimestresCotises(TRIMESTRES_COTISES, ageAtteintFlag, dureeAtteinte)).toBe(
+        surcoteAttendue
+      );
+    }
+  );
+
+  it('undefined (barème indéterminé) traité comme non éligible, jamais comme une surcote fabriquée', () => {
+    expect(surcotePourTrimestresCotises(TRIMESTRES_COTISES, undefined, true)).toBe(0);
+  });
+
+  it('aucun plafond sur le nombre de trimestres (référentiel §2.3.1 : "sans plafond")', () => {
+    expect(surcotePourTrimestresCotises(40, true, true)).toBe(50); // 40 × 1,25 % = 50 %, non plafonné
+  });
+
+  it('trimestresCotisesDansPeriodeDeReference négatif : jamais de surcote négative', () => {
+    expect(surcotePourTrimestresCotises(-4, true, true)).toBe(0);
+  });
+});
+
+describe('Ordre d’application : surcote assise sur P0, ajoutée après le MICO (référentiel §3.7, §12.3)', () => {
+  // Scénario : durée requise dépassée de 4 trimestres cotisés (surcote 5 %),
+  // salaire modeste, pension de base (P0) sous le plancher du MICO — le cas
+  // où "surcote avant MICO" et "MICO avant surcote" produisent des résultats
+  // numériquement différents (dès que P0 < MICO et surcote > 0, cf.
+  // docs/audit/implementation-surcote.md §5).
+  const trimestresRequis = 172;
+  const trimestresValides = 176; // 172 + 4, tous supposés cotisés pour ce scénario
+  const salaireAnnuelMoyen = 15000;
+
+  const taux = Math.min(trimestresValides / trimestresRequis, 1);
+  const decote = decoteSurTrimestres(trimestresValides, trimestresRequis); // inchangée (mission point 4)
+  const p0 = pensionBase(salaireAnnuelMoyen, taux, 0); // P0 = SAM × taux × prorata, AVANT décote/surcote
+  const surcotePct = surcotePourTrimestresCotises(4, true, true); // 5 %
+  const surcoteMontant = p0 * (surcotePct / 100);
+  const mico = minimumContributif(trimestresValides, trimestresRequis, decote);
+
+  it('préconditions du scénario : P0 sous le plancher MICO, surcote strictement positive', () => {
+    expect(p0).toBe(7500);
+    expect(mico).toBe(MINIMUM_CONTRIBUTIF_NON_MAJORE_2026); // ratio plafonné à 1, MICO plein
+    expect(p0).toBeLessThan(mico);
+    expect(surcoteMontant).toBeGreaterThan(0);
+  });
+
+  it('ordre CORRECT (référentiel) : le plancher MICO est établi sur P0 seul, la surcote est ajoutée ensuite', () => {
+    const pensionCorrecte = Math.max(p0, mico) + surcoteMontant;
+    expect(pensionCorrecte).toBeCloseTo(9450.5, 6);
+  });
+
+  it('ordre INCORRECT (régression à ne jamais réintroduire) : la surcote pliée dans P0 avant le MICO fait disparaître son effet', () => {
+    const pensionIncorrecte = Math.max(p0 + surcoteMontant, mico);
+    expect(pensionIncorrecte).toBeCloseTo(9075.5, 6); // le MICO absorbe entièrement la surcote
+  });
+
+  it('les deux ordres divergent : la non-régression porte sur un écart réel, pas un cas dégénéré', () => {
+    const pensionCorrecte = Math.max(p0, mico) + surcoteMontant;
+    const pensionIncorrecte = Math.max(p0 + surcoteMontant, mico);
+    expect(pensionCorrecte).not.toBeCloseTo(pensionIncorrecte, 6);
+    expect(pensionCorrecte).toBeGreaterThan(pensionIncorrecte);
   });
 });
