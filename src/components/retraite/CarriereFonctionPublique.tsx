@@ -85,9 +85,17 @@ export const CarriereFonctionPublique = ({
   // Décote basée sur le total de trimestres tous régimes confondus
   // (fonction publique + autres régimes saisis), avec le plafond propre à la
   // fonction publique (-25 %).
-  const decoteTrimestres = decoteSurTrimestresPlafond25(
-    trimestresLiquidablesNum + trimestresAutresRegimes,
-    trimestresRequis
+  //
+  // ⚠️ decoteSurTrimestresPlafond25() est symétrique : au-delà de
+  // trimestresRequis, elle renvoie une valeur positive qui n'est PAS une
+  // surcote légitime (aucune porte d'éligibilité, aucun plafond à 5 % pour
+  // la parentale) — écrêtée à 0 ci-dessous. La vraie surcote (classique +
+  // parentale, exclusive pour ce régime) est calculée séparément plus bas
+  // via surcoteTotale(). Cf. docs/audit/branchement-majorations-pension-finale.md
+  // §1.b.
+  const decoteTrimestres = Math.min(
+    decoteSurTrimestresPlafond25(trimestresLiquidablesNum + trimestresAutresRegimes, trimestresRequis),
+    0
   );
 
   // La décote basée sur l'âge n'est prise en compte que si un départ

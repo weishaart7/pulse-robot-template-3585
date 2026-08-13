@@ -253,14 +253,34 @@ export const Carriere = () => {
   // n'est pas encore connu (chargement du profil famille), on retombe sur
   // decoteSurTrimestres() seule — comportement historique, pas de régression
   // pendant ce court intervalle.
+  //
+  // ⚠️ decoteSurTrimestres() est une formule SYMÉTRIQUE : au-delà de
+  // trimestresRequis, elle renvoie une valeur positive (difference × 1,25 %,
+  // sans plafond ni porte d'éligibilité) qui n'est PAS une surcote légitime
+  // au sens du référentiel (§2.3.1/§2.3.2 : porte d'éligibilité sur l'âge
+  // légal + durée requise, plafond à 5 % pour la surcote parentale). Cette
+  // branche positive est donc explicitement écrêtée à 0 ci-dessous
+  // (`Math.min(..., 0)`) : `decoteSurcote` ne représente plus désormais QUE
+  // la décote (toujours ≤ 0). La vraie surcote (classique + parentale) est
+  // calculée séparément via `surcoteTotale()` plus bas, et ajoutée après le
+  // MICO — pas ici — conformément à l'ordre d'application du référentiel
+  // §12.3 et au scénario de non-régression déjà écrit pour l'écart #5
+  // (`calcul.test.ts`, describe "Ordre d'application"). Cf.
+  // docs/audit/branchement-majorations-pension-finale.md §1.b pour le
+  // diagnostic complet de cette branche fautive.
   useEffect(() => {
     const trimValides = parseInt(trimestresValides) || 0;
     const trimAutresRegimes =
       (hasFonctionPublique ? parseInt(trimestresLiquidablesFP) || 0 : 0) +
       (hasCNAVPL ? parseInt(trimestresCNAVPL) || 0 : 0);
-    const decoteTrimestres = decoteSurTrimestres(trimValides + trimAutresRegimes, trimestresRequis);
+    const decoteTrimestresSeule = Math.min(
+      decoteSurTrimestres(trimValides + trimAutresRegimes, trimestresRequis),
+      0
+    );
     const decoteFinale =
-      ageActuel !== null ? decoteApplicable(decoteTrimestres, decoteSurAge(ageActuel)) : decoteTrimestres;
+      ageActuel !== null
+        ? decoteApplicable(decoteTrimestresSeule, decoteSurAge(ageActuel))
+        : decoteTrimestresSeule;
     setDecoteSurcote(decoteFinale);
   }, [
     trimestresValides,

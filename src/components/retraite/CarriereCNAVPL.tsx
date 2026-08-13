@@ -57,12 +57,19 @@ export const CarriereCNAVPL = ({
   // plafond -25 % partagé (identique fonction publique). Pas de taux de
   // proratisation ici : les points CNAVPL accumulés reflètent déjà la
   // carrière réelle, contrairement au régime général (SAM × durée requise).
-  const decoteOuSurcote = decoteSurTrimestresPlafond25(
-    trimestresCNAVPLNum + trimestresAutresRegimes,
-    trimestresRequis
+  //
+  // ⚠️ decoteSurTrimestresPlafond25() est symétrique : au-delà de
+  // trimestresRequis, elle renvoie une valeur positive qui n'est PAS une
+  // surcote légitime — écrêtée à 0 ci-dessous. La vraie surcote (classique +
+  // parentale, additive pour ce régime) est calculée séparément plus bas via
+  // surcoteTotale(), sans étage MICO à intercaler (référentiel §5.5). Cf.
+  // docs/audit/branchement-majorations-pension-finale.md §1.b.
+  const decoteSeule = Math.min(
+    decoteSurTrimestresPlafond25(trimestresCNAVPLNum + trimestresAutresRegimes, trimestresRequis),
+    0
   );
 
-  const pensionFinale = pensionBaseCNAVPL(pointsNum, valeurPointNum, decoteOuSurcote);
+  const pensionFinale = pensionBaseCNAVPL(pointsNum, valeurPointNum, decoteSeule);
 
   useEffect(() => {
     onResultChange?.({ pensionFinale });
@@ -138,8 +145,8 @@ export const CarriereCNAVPL = ({
                 {formatEuro2(pensionFinale)} / an
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {decoteOuSurcote > 0 ? '+' : ''}
-                {decoteOuSurcote.toFixed(2)}% ({decoteOuSurcote < 0 ? 'décote' : decoteOuSurcote > 0 ? 'surcote' : 'aucune décote ni surcote'}
+                {decoteSeule > 0 ? '+' : ''}
+                {decoteSeule.toFixed(2)}% ({decoteSeule < 0 ? 'décote' : decoteSeule > 0 ? 'surcote' : 'aucune décote ni surcote'}
                 ) sur trimestres tous régimes confondus
               </p>
             </div>
