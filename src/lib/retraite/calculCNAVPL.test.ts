@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { pensionBaseCNAVPL } from './calculCNAVPL';
-import { majorationTroisEnfants } from './calcul';
+import {
+  majorationTroisEnfants,
+  surcotePourTrimestresCotises,
+  surcoteParentale,
+  surcoteTotale,
+  decoteSurTrimestresPlafond25,
+} from './calcul';
 
 describe('CNAVPL — majoration pour 3 enfants (référentiel §5.4 : « mêmes règles qu\'au régime général »)', () => {
   // Pas de MICO à ce régime (référentiel §5.5) : l'ordre d'application se
@@ -24,6 +30,58 @@ describe('CNAVPL — majoration pour 3 enfants (référentiel §5.4 : « mêmes 
   it('sans 3 enfants éligibles, aucune majoration', () => {
     const majorationNulle = majorationTroisEnfants(2);
     expect(pensionAvantMajoration * (1 + majorationNulle / 100)).toBeCloseTo(pensionAvantMajoration, 6);
+  });
+});
+
+describe('Profil complet — CNAVPL (mission : branchement des majorations sur la pension finale)', () => {
+  // Assemblage désormais utilisé par CarriereCNAVPL.tsx : points × valeur ×
+  // (1 + décote/100), puis surcote ajoutée séparément (assise sur la
+  // pension avant décote), puis majoration — sans étage MICO (référentiel
+  // §5.5), à la différence du régime général.
+  const points = 10000;
+  const valeurPoint = 0.6599;
+  const trimestresRequis = 172;
+
+  it('profil avec décote (durée requise non atteinte) : ni surcote ni majoration', () => {
+    const trimestresCNAVPL = 150;
+    const decoteSeule = Math.min(decoteSurTrimestresPlafond25(trimestresCNAVPL, trimestresRequis), 0);
+    expect(decoteSeule).toBe(-25); // plafond -25 %, propre à ce régime (identique fonction publique)
+
+    const pensionFinale = pensionBaseCNAVPL(points, valeurPoint, decoteSeule);
+    expect(pensionFinale).toBeCloseTo(6599 * 0.75, 6);
+  });
+
+  it('profil avec surcote classique et parentale cumulées (additif, référentiel §5.4) — assemblage validé, indépendamment de la donnée manquante en production', () => {
+    // ⚠️ En production, trimestresCotisesAnneeReference vaut toujours 0 pour
+    // ce régime (aucun détail carrière par année dans le modèle de données,
+    // cf. docs/audit/branchement-majorations-pension-finale.md §1.c) : la
+    // surcote CNAVPL affichée à l'écran est donc actuellement toujours nulle,
+    // quelle que soit l'éligibilité. Ce test valide que L'ASSEMBLAGE
+    // (surcoteTotale, additif) est correct dès qu'une valeur non nulle sera
+    // disponible — pas le comportement actuellement observable à l'écran.
+    const trimestresCotisesAnneeReference = 4;
+    const pensionAvantDecoteSurcote = pensionBaseCNAVPL(points, valeurPoint, 0);
+    const surcoteClassiquePct = surcotePourTrimestresCotises(trimestresCotisesAnneeReference, true, true);
+    const surcoteParentalePct = surcoteParentale(true, true, true, trimestresCotisesAnneeReference);
+    const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true);
+    expect(surcoteTotalePct).toBe(10); // 5 % + 5 %
+
+    const surcoteMontant = pensionAvantDecoteSurcote * (surcoteTotalePct / 100);
+    const pensionFinale = pensionAvantDecoteSurcote + surcoteMontant;
+    expect(pensionFinale).toBeCloseTo(6599 * 1.1, 6);
+  });
+
+  it('profil réel (donnée manquante) : surcote nulle malgré une éligibilité complète, faute de trimestresCotisesAnneeReference', () => {
+    const surcoteClassiquePct = surcotePourTrimestresCotises(0, true, true);
+    const surcoteParentalePct = surcoteParentale(true, true, true, 0);
+    expect(surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true)).toBe(0);
+  });
+
+  it('profil avec majoration pour 3 enfants, assise sur la pension après surcote', () => {
+    const pensionAvantDecoteSurcote = pensionBaseCNAVPL(points, valeurPoint, 0);
+    const majorationPct = majorationTroisEnfants(3);
+    const pensionFinale = pensionAvantDecoteSurcote * (1 + majorationPct / 100);
+    expect(pensionFinale).toBeCloseTo(6599 * 1.1, 6);
   });
 });
 

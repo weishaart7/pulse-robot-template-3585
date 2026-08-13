@@ -8,6 +8,13 @@ import {
   VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
   VALEUR_REFERENCE_MIGA_MENSUELLE_2025,
 } from './calculFonctionPublique';
+import {
+  tauxProratisation,
+  decoteSurTrimestresPlafond25,
+  surcotePourTrimestresCotises,
+  surcoteParentale,
+  surcoteTotale,
+} from './calcul';
 
 describe('minimumGaranti — barème par palier (référentiel §7.5, art. L. 17 CPCMR)', () => {
   // Valeur de référence utilisée sous sa forme MENSUELLE ici, pour comparer
@@ -216,5 +223,95 @@ describe('Plafonnement au dernier traitement (référentiel §7.6 : « le total 
     );
 
     expect(pensionFinale).toBeCloseTo(11000, 6);
+  });
+});
+
+describe('Profil complet — fonction publique (mission : branchement des majorations sur la pension finale)', () => {
+  // Assemblage désormais utilisé par CarriereFonctionPublique.tsx : base →
+  // décote → MIGA → surcote (assise sur la pension avant décote, ajoutée
+  // après MIGA, exclusive — la plus élevée des deux) → majoration enfants
+  // (plafonnée au dernier traitement).
+  const trimestresRequis = 172;
+  const tib = 30000;
+
+  it('profil avec décote (durée de services insuffisante) : la pension calculée est sous le MIGA, qui l’emporte', () => {
+    const trimestresLiquidables = 100;
+    const taux = tauxProratisation(trimestresLiquidables, trimestresRequis);
+    const decote = Math.min(decoteSurTrimestresPlafond25(trimestresLiquidables, trimestresRequis), 0);
+    expect(decote).toBe(-25); // plafond -25 %
+
+    const pensionCalculee = pensionBaseFonctionPublique(tib, taux, decote);
+    const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2025);
+    const pensionApresMiga = pensionFonctionPubliqueFinale(pensionCalculee, mg);
+
+    expect(pensionApresMiga).toBe(mg);
+    expect(pensionApresMiga).toBeGreaterThan(pensionCalculee);
+  });
+
+  it('profil avec surcote classique et parentale — EXCLUSIVE (le plus élevé des deux, pas la somme, référentiel §7.4)', () => {
+    // ⚠️ Comme pour CNAVPL, trimestresCotisesAnneeReference vaut toujours 0
+    // en production pour ce régime (pas de détail carrière par année) : la
+    // surcote fonction publique affichée à l'écran est donc actuellement
+    // toujours nulle. Ce test valide l'assemblage (surcoteTotale, exclusif)
+    // indépendamment de cette limitation actuelle,
+    // cf. docs/audit/branchement-majorations-pension-finale.md §1.c.
+    const trimestresLiquidables = 180; // carrière complète, surcote éligible
+    const taux = tauxProratisation(trimestresLiquidables, trimestresRequis);
+    const decote = Math.min(decoteSurTrimestresPlafond25(trimestresLiquidables, trimestresRequis), 0);
+    expect(decote).toBe(0);
+
+    const pensionCalculee = pensionBaseFonctionPublique(tib, taux, decote);
+    const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2025);
+    const pensionApresMiga = pensionFonctionPubliqueFinale(pensionCalculee, mg);
+
+    const trimestresCotisesAnneeReference = 4;
+    const surcoteClassiquePct = surcotePourTrimestresCotises(trimestresCotisesAnneeReference, true, true);
+    const surcoteParentalePct = surcoteParentale(true, true, true, trimestresCotisesAnneeReference);
+    const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, false);
+    expect(surcoteTotalePct).toBe(5); // max(5, 5) — PAS 10, contrairement au régime général/CNAVPL
+
+    const surcoteMontant = pensionCalculee * (surcoteTotalePct / 100);
+    const pensionFinale = pensionApresMiga + surcoteMontant;
+    expect(pensionFinale).toBeCloseTo(pensionApresMiga * 1.05, 6);
+  });
+
+  it('profil réel (donnée manquante) : surcote nulle malgré une éligibilité complète, faute de trimestresCotisesAnneeReference', () => {
+    const surcoteClassiquePct = surcotePourTrimestresCotises(0, true, true);
+    const surcoteParentalePct = surcoteParentale(true, true, true, 0);
+    expect(surcoteTotale(surcoteClassiquePct, surcoteParentalePct, false)).toBe(0);
+  });
+
+  it('profil avec majoration pour 4 enfants (dégressif) assise après MIGA et surcote, plafonnée au dernier traitement', () => {
+    const trimestresLiquidables = 180;
+    const taux = tauxProratisation(trimestresLiquidables, trimestresRequis);
+    const pensionCalculee = pensionBaseFonctionPublique(tib, taux, 0);
+    const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2025);
+    const pensionApresMiga = pensionFonctionPubliqueFinale(pensionCalculee, mg);
+
+    const surcoteTotalePct = surcoteTotale(
+      surcotePourTrimestresCotises(4, true, true),
+      surcoteParentale(true, true, true, 4),
+      false
+    ); // 5 %
+    const pensionApresSurcote = pensionApresMiga + pensionCalculee * (surcoteTotalePct / 100);
+
+    const majorationPct = majorationEnfantsFonctionPublique(4); // 15 %
+    const pensionFinale = pensionFonctionPubliqueAvecMajorationEnfants(pensionApresSurcote, majorationPct, tib);
+
+    const pensionSansPlafond = pensionApresSurcote * 1.15;
+    if (pensionSansPlafond > tib) {
+      expect(pensionFinale).toBe(tib); // écrêtée
+    } else {
+      expect(pensionFinale).toBeCloseTo(pensionSansPlafond, 6);
+    }
+
+    // Régression à ne jamais réintroduire : majoration assise sur la pension
+    // calculée brute, avant MIGA et surcote.
+    const pensionIncorrecte = pensionFonctionPubliqueAvecMajorationEnfants(
+      pensionCalculee,
+      majorationPct,
+      tib
+    );
+    expect(pensionIncorrecte).not.toBeCloseTo(pensionFinale, 6);
   });
 });

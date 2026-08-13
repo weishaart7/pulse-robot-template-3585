@@ -666,3 +666,80 @@ describe('Ordre d’application, majoration enfants incluse : base → surcote �
     expect(p1 * (1 + majorationNulle / 100)).toBeCloseTo(p1, 6);
   });
 });
+
+describe('Profil complet — régime général (mission : branchement des majorations sur la pension finale, cf. docs/audit/branchement-majorations-pension-finale.md)', () => {
+  // Étend le scénario déjà établi ci-dessus (écart #5 : P0 = 7 500 €,
+  // MICO = 9 075,50 €, surcote classique = 5 %) avec la surcote parentale
+  // (écart #6) et la majoration enfants (écart #7), dans l'ordre exact
+  // désormais utilisé par Carriere.tsx : base → décote/surcote → MICO →
+  // surcote → majoration enfants.
+  const trimestresRequis = 172;
+  const trimestresValides = 176; // durée requise atteinte, surcote éligible
+  const salaireAnnuelMoyen = 15000;
+  const taux = Math.min(trimestresValides / trimestresRequis, 1);
+  const p0 = pensionBase(salaireAnnuelMoyen, taux, 0);
+  const trimestresCotisesAnneeReference = 4;
+
+  it('profil avec décote (durée requise non atteinte) : ni surcote ni MICO, pension réduite de 20 %', () => {
+    const trimValidesIncomplet = 150; // 22 trimestres manquants
+    const tauxIncomplet = Math.min(trimValidesIncomplet / trimestresRequis, 1);
+    const p0Incomplet = pensionBase(salaireAnnuelMoyen, tauxIncomplet, 0);
+    const decote = decoteSurTrimestres(trimValidesIncomplet, trimestresRequis); // -20 % (plafonné)
+    const mico = minimumContributif(trimValidesIncomplet, trimestresRequis, decote); // 0 € (decote < 0 → inéligible)
+    const dureeRequiseAtteinte = trimValidesIncomplet >= trimestresRequis; // false
+
+    expect(decote).toBe(-20);
+    expect(mico).toBe(0);
+
+    const surcoteClassiquePct = surcotePourTrimestresCotises(0, true, dureeRequiseAtteinte);
+    const surcoteParentalePct = surcoteParentale(true, true, dureeRequiseAtteinte, 0);
+    expect(surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true)).toBe(0);
+
+    const pensionFinale = Math.max(p0Incomplet * (1 + decote / 100), mico);
+    expect(pensionFinale).toBeCloseTo(p0Incomplet * 0.8, 6);
+  });
+
+  it('profil avec surcote classique ET parentale cumulées (écarts #5+#6, additif régime général)', () => {
+    const surcoteClassiquePct = surcotePourTrimestresCotises(trimestresCotisesAnneeReference, true, true); // 5 %
+    const surcoteParentalePct = surcoteParentale(true, true, true, trimestresCotisesAnneeReference); // 5 % (plafond)
+    const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true);
+    expect(surcoteTotalePct).toBe(10); // 5 % + 5 %, additif — pas juste la classique seule
+
+    const mico = minimumContributif(trimestresValides, trimestresRequis, 0);
+    const pensionApresMico = Math.max(p0, mico); // 9 075,50 € (MICO gagne, cf. scénario établi)
+    const surcoteMontant = p0 * (surcoteTotalePct / 100); // 750 €
+    const pensionFinale = pensionApresMico + surcoteMontant;
+
+    expect(pensionFinale).toBeCloseTo(9825.5, 6);
+  });
+
+  it('profil avec majoration pour 3 enfants (écart #7), sans surcote', () => {
+    const mico = minimumContributif(trimestresValides, trimestresRequis, 0);
+    const pensionApresMico = Math.max(p0, mico);
+    const majorationPct = majorationTroisEnfants(3);
+    const pensionFinale = pensionApresMico * (1 + majorationPct / 100);
+
+    expect(pensionFinale).toBeCloseTo(9983.05, 6); // 9 075,50 × 1,10
+  });
+
+  it('profil combinant surcote cumulée ET majoration enfants : vérifie l’ordre MICO → surcote → majoration', () => {
+    const surcoteClassiquePct = surcotePourTrimestresCotises(trimestresCotisesAnneeReference, true, true);
+    const surcoteParentalePct = surcoteParentale(true, true, true, trimestresCotisesAnneeReference);
+    const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true); // 10 %
+    const mico = minimumContributif(trimestresValides, trimestresRequis, 0);
+    const pensionApresMico = Math.max(p0, mico); // 9 075,50 €
+    const surcoteMontant = p0 * (surcoteTotalePct / 100); // 750 €
+    const pensionApresSurcote = pensionApresMico + surcoteMontant; // 9 825,50 €
+    const majorationPct = majorationTroisEnfants(3);
+    const pensionFinaleCorrecte = pensionApresSurcote * (1 + majorationPct / 100);
+
+    expect(pensionFinaleCorrecte).toBeCloseTo(10808.05, 6); // 9 825,50 × 1,10
+
+    // Régression à ne jamais réintroduire : majoration assise sur P0 seul
+    // (avant MICO et surcote) donne un résultat different, plus faible.
+    const pensionFinaleIncorrecte =
+      Math.max(p0 * (1 + majorationPct / 100), mico) + surcoteMontant;
+    expect(pensionFinaleIncorrecte).not.toBeCloseTo(pensionFinaleCorrecte, 6);
+    expect(pensionFinaleIncorrecte).toBeLessThan(pensionFinaleCorrecte);
+  });
+});
