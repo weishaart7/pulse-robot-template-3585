@@ -20,6 +20,8 @@ import {
   decoteSurAgeFonctionPublique,
   minimumGaranti,
   pensionFonctionPubliqueFinale,
+  majorationEnfantsFonctionPublique,
+  pensionFonctionPubliqueAvecMajorationEnfants,
   VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
 } from '@/lib/retraite/calculFonctionPublique';
 
@@ -67,6 +69,11 @@ interface CarriereFonctionPubliqueProps {
   // écart #6) — état du parent (case à cocher unique par client, pas propre
   // à un régime).
   auMoinsUnTrimestreMajorationEnfant: boolean;
+  // Nombre d'enfants éligibles à la majoration pour 3 enfants ou plus
+  // (écart #7, cas courant) — calculé une fois dans Carriere.tsx à partir de
+  // family_links, partagé entre les régimes (même enfants, chaque régime
+  // applique sa propre majoration sur sa propre pension).
+  nombreEnfantsEligibles: number;
   // Reporte les résultats déjà calculés ici (pas les entrées brutes) au
   // parent, pour le total consolidé tous régimes de Carriere.tsx — évite de
   // dupliquer la logique de calcul FP ou de remonter le TIB/les points RAFP/
@@ -83,6 +90,7 @@ export const CarriereFonctionPublique = ({
   onTrimestresLiquidablesChange,
   dateNaissance,
   auMoinsUnTrimestreMajorationEnfant,
+  nombreEnfantsEligibles,
   onResultChange,
 }: CarriereFonctionPubliqueProps) => {
   const [traitementIndiciaireBrut, setTraitementIndiciaireBrut] = useState<string>('');
@@ -174,7 +182,17 @@ export const CarriereFonctionPublique = ({
   // pour validation dans implementation-surcote-parentale.md §2.
   const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, false);
   const surcoteMontant = pensionCalculeeAvantDecote * (surcoteTotalePct / 100);
-  const pensionFinale = pensionApresMiga + surcoteMontant;
+  const pensionApresSurcote = pensionApresMiga + surcoteMontant;
+
+  // Majoration pour 3 enfants ou plus (écart #7) — dégressive, plafonnée au
+  // dernier traitement (référentiel §7.6), assise sur la pension APRÈS MIGA
+  // et surcote (référentiel §12.3).
+  const majorationEnfantsPct = majorationEnfantsFonctionPublique(nombreEnfantsEligibles);
+  const pensionFinale = pensionFonctionPubliqueAvecMajorationEnfants(
+    pensionApresSurcote,
+    majorationEnfantsPct,
+    tib
+  );
 
   // points et valeurPoint sont toujours définis ici (pointsRAFPNum est un
   // number, la valeur de service est une constante) : le résultat n'est

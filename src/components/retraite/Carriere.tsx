@@ -29,12 +29,14 @@ import {
   surcotePourTrimestresCotises,
   surcoteParentale,
   surcoteTotale,
+  majorationTroisEnfants,
   DateNaissance,
 } from '@/lib/retraite/calcul';
 import { trimestresCotisesEtAssimilesDepuisCarriere } from '@/lib/retraite/calculTrimestres';
 import { CarriereFonctionPublique } from '@/components/retraite/CarriereFonctionPublique';
 import { CarriereCNAVPL } from '@/components/retraite/CarriereCNAVPL';
-import { familyService } from '@/services/familyService';
+import { familyService, FamilyLink } from '@/services/familyService';
+import { nombreEnfantsEligiblesMajorationTroisEnfants } from '@/lib/retraite/enfantsEligiblesMajoration';
 import { computeAge } from '@/lib/patrimoine/bareme669CGI';
 
 // Seuil de tolérance pour l'indicateur de cohérence RIS ↔ carrière saisie
@@ -74,11 +76,9 @@ export const Carriere = () => {
   const [trimestresRequis, setTrimestresRequis] = useState<number>(172);
   // Condition n°1 (déclarative) de la surcote parentale (référentiel §2.3.2,
   // écart #6) — option B actée : champ déclaratif simple, pas de
-  // sous-système de répartition MDA par enfant. Cf. surcoteParentale() dans
-  // src/lib/retraite/calcul.ts, pas encore branchée au calcul de pension
-  // affiché ci-dessous (même statut que surcotePourTrimestresCotises() et
-  // majorationTroisEnfants(), écarts #5 et #7 : fonction testée, pas encore
-  // de consommateur UI).
+  // sous-système de répartition MDA par enfant. Branchée sur la pension
+  // affichée via surcoteParentale()/surcoteTotale(), cf.
+  // docs/audit/branchement-majorations-pension-finale.md.
   const [auMoinsUnTrimestreMajorationEnfant, setAuMoinsUnTrimestreMajorationEnfant] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [pensionBaseBrute, setPensionBaseBrute] = useState<number>(0);
@@ -141,6 +141,13 @@ export const Carriere = () => {
   // docs/audit/correction-decote-age-carriere.md).
   const [dateNaissanceISO, setDateNaissanceISO] = useState<string | null>(null);
 
+  // Liens familiaux (family_links) — nécessaires à majorationTroisEnfants()/
+  // majorationEnfantsFonctionPublique() (écart #7) pour compter les enfants
+  // éligibles. Non chargés avant cette session : aucun autre usage de
+  // family_links sur cet écran (cf. docs/audit/branchement-majorations-pension-finale.md
+  // §1.c).
+  const [familyLinks, setFamilyLinks] = useState<FamilyLink[]>([]);
+
   useEffect(() => {
     familyService.getFamilyProfile()
       .then((profil) => {
@@ -152,6 +159,12 @@ export const Carriere = () => {
       })
       .catch((error) => {
         console.error('Erreur lors du chargement du profil famille:', error);
+      });
+
+    familyService.getFamilyLinks()
+      .then(setFamilyLinks)
+      .catch((error) => {
+        console.error('Erreur lors du chargement des liens familiaux:', error);
       });
   }, []);
 
@@ -520,7 +533,19 @@ export const Carriere = () => {
   const micoMontant = minimumContributif(trimValidesRegimeGeneral, trimestresRequis, decoteSurcote);
   const pensionApresMico = Math.max(pensionBaseBrute * (1 + decoteSurcote / 100), micoMontant);
   const surcoteMontantRegimeGeneral = pensionBaseBrute * (surcoteTotalePct / 100);
-  const pensionBaseAjustee = pensionApresMico + surcoteMontantRegimeGeneral;
+  const pensionApresSurcoteRegimeGeneral = pensionApresMico + surcoteMontantRegimeGeneral;
+
+  // Majoration pour 3 enfants ou plus (écart #7), assise sur la pension
+  // APRÈS MICO et surcote (référentiel §3.7, §12.3) — cas courant
+  // uniquement (filiation directe ou adoption plénière), cf.
+  // nombreEnfantsEligiblesMajorationTroisEnfants().
+  const nombreEnfantsEligibles = useMemo(
+    () => nombreEnfantsEligiblesMajorationTroisEnfants(familyLinks),
+    [familyLinks]
+  );
+  const majorationEnfantsPct = majorationTroisEnfants(nombreEnfantsEligibles);
+  const pensionBaseAjustee =
+    pensionApresSurcoteRegimeGeneral * (1 + majorationEnfantsPct / 100);
   const pensionTotaleRegimeGeneral = pensionBaseAjustee + totalPensionComplementaireAnnuelle;
   const pensionTotaleFonctionPublique = hasFonctionPublique
     ? resultatFonctionPublique.pensionFinale + resultatFonctionPublique.rafpAnnuelle
@@ -940,6 +965,7 @@ export const Carriere = () => {
         onTrimestresLiquidablesChange={setTrimestresLiquidablesFP}
         dateNaissance={dateNaissanceDetail}
         auMoinsUnTrimestreMajorationEnfant={auMoinsUnTrimestreMajorationEnfant}
+        nombreEnfantsEligibles={nombreEnfantsEligibles}
         onResultChange={setResultatFonctionPublique}
       />
 
@@ -952,6 +978,7 @@ export const Carriere = () => {
         onTrimestresCNAVPLChange={setTrimestresCNAVPL}
         dateNaissance={dateNaissanceDetail}
         auMoinsUnTrimestreMajorationEnfant={auMoinsUnTrimestreMajorationEnfant}
+        nombreEnfantsEligibles={nombreEnfantsEligibles}
         onResultChange={setResultatCNAVPL}
       />
 

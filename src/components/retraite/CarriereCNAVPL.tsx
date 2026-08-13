@@ -10,6 +10,7 @@ import {
   surcotePourTrimestresCotises,
   surcoteParentale,
   surcoteTotale,
+  majorationTroisEnfants,
   DateNaissance,
 } from '@/lib/retraite/calcul';
 import { pensionBaseCNAVPL } from '@/lib/retraite/calculCNAVPL';
@@ -45,6 +46,9 @@ interface CarriereCNAVPLProps {
   dateNaissance: DateNaissance | null;
   // Condition n°1 (déclarative) de la surcote parentale (référentiel §2.3.2).
   auMoinsUnTrimestreMajorationEnfant: boolean;
+  // Nombre d'enfants éligibles à la majoration pour 3 enfants ou plus
+  // (écart #7, cas courant) — calculé une fois dans Carriere.tsx.
+  nombreEnfantsEligibles: number;
   onResultChange?: (result: { pensionFinale: number }) => void;
 }
 
@@ -57,6 +61,7 @@ export const CarriereCNAVPL = ({
   onTrimestresCNAVPLChange,
   dateNaissance,
   auMoinsUnTrimestreMajorationEnfant,
+  nombreEnfantsEligibles,
   onResultChange,
 }: CarriereCNAVPLProps) => {
   const [pointsCNAVPL, setPointsCNAVPL] = useState<string>('');
@@ -117,7 +122,14 @@ export const CarriereCNAVPL = ({
   // général »), pas d'exclusion comme la fonction publique.
   const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true);
   const surcoteMontant = pensionAvantDecoteSurcote * (surcoteTotalePct / 100);
-  const pensionFinale = pensionApresDecote + surcoteMontant;
+  const pensionApresSurcote = pensionApresDecote + surcoteMontant;
+
+  // Majoration pour 3 enfants ou plus (écart #7), 10 % flat (référentiel
+  // §5.4 : « mêmes règles qu'au régime général »), assise sur la pension
+  // après surcote — pas de plafond spécifique à ce régime (contrairement à
+  // la fonction publique).
+  const majorationEnfantsPct = majorationTroisEnfants(nombreEnfantsEligibles);
+  const pensionFinale = pensionApresSurcote * (1 + majorationEnfantsPct / 100);
 
   useEffect(() => {
     onResultChange?.({ pensionFinale });
