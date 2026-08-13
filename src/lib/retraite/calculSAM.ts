@@ -11,6 +11,7 @@
 import { PeriodeCarriere } from './parseRIS';
 import { COEFFICIENT_REVALORISATION_CNAV } from './coefficientsRevalorisationCNAV';
 import { dureeSAMPourGeneration } from './dureeSAMParGeneration';
+import { trimestresCotisesEtAssimilesDepuisCarriere } from './calculTrimestres';
 
 /**
  * Plafond annuel de la Sécurité sociale (PASS), par année.
@@ -86,6 +87,54 @@ function repartirRevenuParAnnee(periode: PeriodeCarriere, revenuParAnnee: Map<nu
   }
 }
 
+/**
+ * Années exclues du pool des N meilleures années (référentiel §3.4.4),
+ * avant sélection — pas un filtrage a posteriori sur `anneesRetenues`.
+ *
+ * Deux des quatre catégories prévues par le référentiel sont implémentées
+ * ici ; les deux autres restent une dette technique documentée, faute de
+ * donnée fiable (cf. docs/audit/implementation-sam-exclusions.md) :
+ *
+ * 1. **Année n'ayant validé aucun trimestre** : implémentée. Dérivée de
+ *    `trimestresCotisesEtAssimilesDepuisCarriere()` (cotisés + assimilés
+ *    === 0 pour l'année).
+ * 2. **Année de la date d'effet de la pension** : implémentée, mais
+ *    seulement si `dateEffet` est fourni par l'appelant. `calculerSAM()`
+ *    n'a aujourd'hui aucun appelant qui dispose d'une date d'effet réelle
+ *    (cf. docstring de `calculerSAM()`) — le paramètre reste donc inactif
+ *    en pratique tant qu'aucun composant ne le branche.
+ * 3. **Année ne comportant que des périodes assimilées** (hors IJ
+ *    maternité) : **non implémentée**. Aucune donnée de ce dépôt ne permet
+ *    de distinguer une IJ de congé maternité d'une maladie ordinaire
+ *    (`TypeActivite` ne connaît que `'chomage'`/`'maladie'`, pas de
+ *    catégorie maternité) — exclure les années "assimilé seul" sans cette
+ *    distinction risquerait d'exclure à tort une maternité, ce que le
+ *    référentiel interdit explicitement. Décision : ne pas exclure plutôt
+ *    que sur-exclure, tant que la distinction n'existe pas.
+ * 4. **Année comportant un rachat de trimestres** : **non implémentée**.
+ *    Aucune donnée n'existe nulle part dans ce dépôt pour détecter un
+ *    rachat sur une période de carrière donnée (le seul "rachat" du
+ *    dépôt est une simulation éphémère non persistée, sans rapport avec
+ *    `retraite_carriere_detail`) — nécessite une décision produit et une
+ *    migration de schéma, hors périmètre d'un filtre de calcul.
+ */
+function anneesExclues(periodes: PeriodeCarriere[], dateEffet?: Date): Set<number> {
+  const exclues = new Set<number>();
+
+  const { parAnnee } = trimestresCotisesEtAssimilesDepuisCarriere(periodes);
+  for (const { annee, cotises, assimiles } of parAnnee) {
+    if (cotises + assimiles === 0) {
+      exclues.add(annee);
+    }
+  }
+
+  if (dateEffet) {
+    exclues.add(dateEffet.getUTCFullYear());
+  }
+
+  return exclues;
+}
+
 export interface AnneeSAM {
   annee: number;
   revenuBrut: number;
@@ -98,6 +147,7 @@ export interface ResultatSAM {
   sam: number;
   anneesRetenues: AnneeSAM[];
   anneesDisponibles: AnneeSAM[];
+  anneesExclues: number[];
   nombreAnneesRequis: number;
   nombreAnneesProjetees: number;
   ageDepartHypothese: number;
@@ -112,6 +162,13 @@ export interface ResultatSAM {
  * employeur, mêmes dates, deux lignes une par régime) sont exclues pour ne
  * pas fausser le revenu réel de la période.
  *
+ * `dateEffet` (optionnel) exclut l'année de liquidation du pool des
+ * meilleures années (référentiel §3.4.4, critère 2) — cf. `anneesExclues()`
+ * ci-dessus pour le détail des critères couverts et non couverts. Paramètre
+ * volontairement optionnel et non branché par défaut : aucun appelant actuel
+ * de cette fonction ne dispose d'une date d'effet réelle (cf.
+ * docs/audit/implementation-sam-exclusions.md).
+ *
  * Quand la carrière connue est plus courte que le nombre d'années requis,
  * complète avec des années "projetées" (revenu constant = dernière année
  * connue, déjà revalorisée/plafonnée) pour CHAQUE année manquante jusqu'à
@@ -123,9 +180,13 @@ export interface ResultatSAM {
  * atteint : une mauvaise année réelle (ex: arrêt maladie longue durée à
  * faible revenu) peut ainsi être exclue au profit d'une année projetée plus
  * favorable, au lieu d'être conservée simplement parce qu'elle a été
- * rencontrée avant que le quota ne soit rempli.
+ * rencontrée avant que le quota ne soit rempli. Les années exclues
+ * (`anneesExclues()`) restent visibles dans `anneesDisponibles` (années
+ * réellement connues, pour l'affichage) mais sont retirées du pool avant la
+ * sélection des N meilleures — une année exclue ne peut ni être retenue, ni
+ * compter dans le quota atteint par les années projetées.
  */
-export function calculerSAM(periodes: PeriodeCarriere[], anneeNaissance: number): ResultatSAM {
+export function calculerSAM(periodes: PeriodeCarriere[], anneeNaissance: number, dateEffet?: Date): ResultatSAM {
   const periodesRegimeDeBase = periodes.filter(estPeriodeRegimeDeBase);
 
   const revenuParAnnee = new Map<number, number>();
@@ -165,7 +226,18 @@ export function calculerSAM(periodes: PeriodeCarriere[], anneeNaissance: number)
 
   const anneesDisponibles = [...anneesConnues, ...anneesProjetees].sort((a, b) => a.annee - b.annee);
 
-  const anneesRetenues = [...anneesDisponibles]
+  // Exclusion des années hors pool AVANT sélection (référentiel §3.4.4) —
+  // une année exclue reste visible dans `anneesDisponibles` (années
+  // réellement connues) mais ne peut pas être retenue parmi les N
+  // meilleures. Les années projetées ne sont jamais exclues : elles ne
+  // représentent aucune période réelle, les 4 critères d'exclusion ne
+  // s'appliquent qu'aux années issues de la carrière connue.
+  const anneesExcluesSet = anneesExclues(periodes, dateEffet);
+  const anneesEligibles = anneesDisponibles.filter(
+    (a) => a.projete || !anneesExcluesSet.has(a.annee)
+  );
+
+  const anneesRetenues = [...anneesEligibles]
     .sort((a, b) => b.revenuPlafonne - a.revenuPlafonne)
     .slice(0, nombreAnneesRequis)
     .sort((a, b) => a.annee - b.annee);
@@ -179,6 +251,7 @@ export function calculerSAM(periodes: PeriodeCarriere[], anneeNaissance: number)
     sam,
     anneesRetenues,
     anneesDisponibles,
+    anneesExclues: Array.from(anneesExcluesSet).sort((a, b) => a - b),
     nombreAnneesRequis,
     nombreAnneesProjetees: anneesRetenues.filter((a) => a.projete).length,
     ageDepartHypothese: AGE_DEPART_PAR_DEFAUT,
