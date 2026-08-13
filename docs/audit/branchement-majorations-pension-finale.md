@@ -130,5 +130,92 @@ Aucune modification de code n'a eu lieu avant la rédaction de cette section.
 
 ## 2. Implémentation
 
-*(Complétée au fil des commits suivants — voir §3 pour le détail par sous-tâche et §4 pour la
-synthèse des tests.)*
+### 2.1. Retrait de la branche fautive
+
+`Math.min(decoteSurTrimestres(...), 0)` (régime général) et
+`Math.min(decoteSurTrimestresPlafond25(...), 0)` (fonction publique, CNAVPL) — écrête la branche
+positive symétrique à la source de consommation, sans modifier `calcul.ts`. Les trois variables de
+décote ne représentent plus désormais que la décote (toujours ≤ 0).
+
+### 2.2. Branchement de `surcoteTotale()`
+
+Pour chaque régime : `surcotePourTrimestresCotises()` + `surcoteParentale()`, combinées via
+`surcoteTotale()` — additif pour le régime général et CNAVPL, exclusif (le plus élevé des deux) pour
+la fonction publique. Assise sur la pension avant décote/MICO, ajoutée après (référentiel §12.3),
+suivant le même schéma que le scénario de non-régression déjà écrit pour l'écart #5.
+
+`trimestresCotisesAnneeReference` déterminé précisément pour le régime général (via
+`ageLegalPourGeneration()` + `dateAnniversaireLegal()` + `parAnnee`), branché à `0` pour la fonction
+publique et CNAVPL faute de détail carrière par année dans leur modèle de données (cf. §1.c) —
+**conséquence directe, découverte en écrivant les tests (§4 ci-dessous) : la surcote de ces deux
+régimes est aujourd'hui toujours nulle à l'écran**, quelle que soit l'éligibilité (âge légal,
+déclaration parentale). La porte d'éligibilité et la règle de cumul (additif/exclusif) sont
+correctement câblées et testées ; seul le montant reste nul tant que cette donnée n'existe pas.
+
+### 2.3. Branchement de la majoration enfants
+
+`family_links` chargé dans `Carriere.tsx` (`familyService.getFamilyLinks()`, absent jusqu'ici) et
+filtré par `nombreEnfantsEligiblesMajorationTroisEnfants()` (nouveau fichier testé,
+`src/lib/retraite/enfantsEligiblesMajoration.ts`) — cas courant uniquement (filiation directe ou
+adoption plénière, jamais adoption simple, cf. le correctif documenté au §1.c). Le nombre d'enfants
+est calculé une fois dans le composant parent et transmis en props aux trois régimes, chacun
+appliquant sa propre majoration sur sa propre pension (comportement légal correct pour un
+polypensionné, pas un double comptage). Appliquée après le MICO/MIGA et la surcote :
+`majorationTroisEnfants()` (régime général, CNAVPL, 10 % flat) ou
+`majorationEnfantsFonctionPublique()` + `pensionFonctionPubliqueAvecMajorationEnfants()` (fonction
+publique, dégressif, plafonné au dernier traitement).
+
+### 2.4. Détail à l'écran
+
+Extension des captions déjà utilisées pour le MIGA (fonction publique) à tous les régimes : ligne
+MICO ajoutée pour le régime général (absente jusqu'ici, cf. §1.d), ligne surcote (classique +
+parentale + total) et ligne majoration enfants pour les trois régimes — même convention visuelle,
+aucune refonte d'écran.
+
+---
+
+## 3. Tests
+
+Trois nouveaux describe « Profil complet », un par régime affiché à l'écran
+(`calcul.test.ts`, `calculCNAVPL.test.ts`, `calculFonctionPublique.test.ts`), plus le test de
+`nombreEnfantsEligiblesMajorationTroisEnfants()` :
+
+- **Régime général** : étend directement le scénario de non-régression déjà écrit pour l'écart #5
+  (mêmes `trimestresRequis`/`trimestresValides`/`salaireAnnuelMoyen`) — profil décote, profil
+  surcote classique + parentale cumulées (10 %, additif), profil majoration enfants, profil combiné
+  avec test de régression explicite sur l'ordre incorrect.
+- **CNAVPL et fonction publique** : mêmes quatre profils, avec une nuance assumée pour la
+  surcote — un test « assemblage » (trimestres cotisés hypothétiques, prouve que `surcoteTotale()`
+  compose correctement : additif pour CNAVPL, exclusif pour la fonction publique) **et** un test
+  « profil réel » qui confirme explicitement que la surcote observée à l'écran aujourd'hui est nulle
+  (cf. §2.2) — pas seulement un test optimiste qui masquerait la limitation actuelle.
+
+**Suite complète : 566 tests passés (554 + 12), 0 régression, `npx tsc --noEmit` propre, `npx vite
+build` réussi.** Application démarrée en local sans erreur console (vérification limitée par
+l'absence d'identifiants de test pour l'écran protégé par authentification, comme pour les sessions
+précédentes portant sur cet écran).
+
+---
+
+## 4. Conséquence à surveiller — pas une nouvelle dette, une conséquence déjà annoncée
+
+Le §1.c avait anticipé que la surcote resterait à 0 pour la fonction publique et CNAVPL faute de
+donnée par année ; les tests du §3 le confirment noir sur blanc. **Conséquence pratique pour un
+conseiller utilisant l'écran aujourd'hui** : un client polypensionné avec une carrière fonction
+publique ou CNAVPL et un excédent de trimestres ne verra jamais de surcote sur cette portion de sa
+pension, même s'il coche la case surcote parentale et que son âge légal est atteint — seule sa
+portion régime général (si carrière mixte) en bénéficiera. Ce n'est pas un bug de cette session : la
+porte d'éligibilité et la règle de cumul sont correctement câblées, seule la donnée manque. Résolu le
+jour où un détail de carrière par année existera pour ces deux régimes (hors périmètre de cette
+session).
+
+---
+
+## 5. Hors périmètre (rappel, non touché)
+
+- **`Trimestres.tsx`** (onglet Optimisation) : utilise toujours `decoteSurTrimestres()` de façon
+  symétrique pour son propre affichage — signalé au §1.a, non corrigé (pas la « pension finale »
+  visée par la mission).
+- **Écarts #9 à #15** : non touchés.
+- **Valeur 2026 du MIGA, articulation MICO/MIGA polypensionnés, formules MIGA pré-2014** : dettes
+  déjà documentées dans `docs/audit/implementation-miga.md`, non concernées par cette session.
