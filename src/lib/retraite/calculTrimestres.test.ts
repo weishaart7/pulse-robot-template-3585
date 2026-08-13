@@ -95,7 +95,7 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
     // brut 2024 = 4 (déjà au plafond) → 0 place restante, assimilé cède
     // entièrement ; 2025 chômage brut 6 plafonné à 4 (aucun cotisé cette
     // année-là, toute la place reste disponible).
-    expect(resultat).toEqual({ cotises: 24, assimiles: 4, total: 28 });
+    expect(resultat).toEqual(expect.objectContaining({ cotises: 24, assimiles: 4, total: 28 }));
     // Écart avec le référentiel (66 cotisés / 170 assimilés) : massif et attendu,
     // pas un signe de défaut de la fonction — le référentiel couvre une carrière
     // projetée jusqu'en 2067 (dont d'importantes périodes hypothétiques de
@@ -141,11 +141,64 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
     );
     const resultatSansMicroEntrepreneur = trimestresCotisesEtAssimilesDepuisCarriere(periodesSansMicroEntrepreneur);
 
-    expect(resultatComplet).toEqual({ cotises: 25, assimiles: 3, total: 28 });
+    expect(resultatComplet).toEqual(expect.objectContaining({ cotises: 25, assimiles: 3, total: 28 }));
     // Sans les lignes micro_entrepreneur, on retrouve le résultat du test
     // précédent (24 cotisés / 4 assimilés) — le micro-entrepreneur déplace 1
     // trimestre d'assimilé vers du cotisé sur 2025, sans changer le total.
-    expect(resultatSansMicroEntrepreneur).toEqual({ cotises: 24, assimiles: 4, total: 28 });
+    expect(resultatSansMicroEntrepreneur).toEqual(expect.objectContaining({ cotises: 24, assimiles: 4, total: 28 }));
+
+    // parAnnee (extension additive, docs/audit/implementation-surcote.md) :
+    // la somme des cotises/assimiles par année doit reconstituer les totaux
+    // agrégés ci-dessus, et la liste doit être triée par année croissante.
+    const sommeCotisesParAnnee = resultatComplet.parAnnee.reduce((s, a) => s + a.cotises, 0);
+    const sommeAssimilesParAnnee = resultatComplet.parAnnee.reduce((s, a) => s + a.assimiles, 0);
+    expect(sommeCotisesParAnnee).toBe(resultatComplet.cotises);
+    expect(sommeAssimilesParAnnee).toBe(resultatComplet.assimiles);
+    const annees = resultatComplet.parAnnee.map((a) => a.annee);
+    expect(annees).toEqual([...annees].sort((a, b) => a - b));
+    // Détail 2025, calculé à la main dans le commentaire ci-dessus : 1 cotisé
+    // (micro-entrepreneur abattu), 3 assimilé (chômage, plafond combiné).
+    expect(resultatComplet.parAnnee.find((a) => a.annee === 2025)).toEqual({
+      annee: 2025,
+      cotises: 1,
+      assimiles: 3,
+    });
+  });
+
+  describe('parAnnee — détail annuel (extension additive)', () => {
+    it('reconstitue les totaux agrégés et reste trié par année croissante, y compris avec des périodes fournies dans le désordre', () => {
+      // Périodes volontairement fournies dans le désordre chronologique
+      // (2024 avant 2019 avant 2021) pour vérifier que le tri de parAnnee ne
+      // dépend pas de l'ordre d'entrée.
+      const periodesDesordonnees: PeriodeCarriere[] = [
+        periode({ employeur: 'A', dateDebut: '2024-01-01', dateFin: '2024-12-31', revenu: 20000 }),
+        periode({ employeur: 'B', dateDebut: '2019-01-01', dateFin: '2019-12-31', revenu: 20000 }),
+        periode({
+          employeur: 'CHÔMAGE',
+          typeActivite: 'chomage',
+          dateDebut: '2021-01-01',
+          dateFin: '2021-12-31',
+        }),
+      ];
+
+      const resultat = trimestresCotisesEtAssimilesDepuisCarriere(periodesDesordonnees);
+
+      expect(resultat.parAnnee.map((a) => a.annee)).toEqual([2019, 2021, 2024]);
+      expect(resultat.parAnnee.find((a) => a.annee === 2019)).toEqual({ annee: 2019, cotises: 4, assimiles: 0 });
+      expect(resultat.parAnnee.find((a) => a.annee === 2021)).toEqual({ annee: 2021, cotises: 0, assimiles: 4 });
+      expect(resultat.parAnnee.find((a) => a.annee === 2024)).toEqual({ annee: 2024, cotises: 4, assimiles: 0 });
+      expect(resultat).toEqual(
+        expect.objectContaining({
+          cotises: 8, // 2019 + 2024
+          assimiles: 4, // 2021
+          total: 12,
+        })
+      );
+    });
+
+    it('carrière vide : parAnnee est un tableau vide, pas undefined', () => {
+      expect(trimestresCotisesEtAssimilesDepuisCarriere([]).parAnnee).toEqual([]);
+    });
   });
 
   // Cas de chevauchement 'employeur' isolé : deux périodes employeur distinctes
@@ -164,7 +217,7 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
     // = 0 trimestre. Sommés : 1900/1690,50 = 1,124 → 1 trimestre.
     expect(trimestresCotisesEtAssimilesDepuisCarriere([periodes[0]]).cotises).toBe(0);
     expect(trimestresCotisesEtAssimilesDepuisCarriere([periodes[1]]).cotises).toBe(0);
-    expect(trimestresCotisesEtAssimilesDepuisCarriere(periodes)).toEqual({ cotises: 1, assimiles: 0, total: 1 });
+    expect(trimestresCotisesEtAssimilesDepuisCarriere(periodes)).toEqual(expect.objectContaining({ cotises: 1, assimiles: 0, total: 1 }));
   });
 
   it('micro_entrepreneur avec sous-type non identifiable dans le libellé : période exclue (ni cotisée, ni comptée)', () => {
@@ -178,7 +231,7 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
         estChiffreAffaires: true,
       }),
     ]);
-    expect(resultat).toEqual({ cotises: 0, assimiles: 0, total: 0 });
+    expect(resultat).toEqual(expect.objectContaining({ cotises: 0, assimiles: 0, total: 0 }));
   });
 
   // Cas test du diagnostic (docs/audit/micro-entrepreneur-trimestres.md) :
@@ -212,7 +265,7 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
     const resultat = trimestresCotisesEtAssimilesDepuisCarriere([
       periode({ dateDebut: '2017-01-01', dateFin: '2017-12-31', revenu: 30000 }),
     ]);
-    expect(resultat).toEqual({ cotises: 0, assimiles: 0, total: 0 });
+    expect(resultat).toEqual(expect.objectContaining({ cotises: 0, assimiles: 0, total: 0 }));
   });
 
   it('plafond de 4 trimestres/an : un revenu très élevé sur une seule année ne dépasse jamais 4 cotisés', () => {
@@ -234,8 +287,8 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
     ]);
 
     // 100 / 50 = 2 trimestres chômage ; 100 / 60 = 1,67 → 1 trimestre maladie.
-    expect(resultatChomage).toEqual({ cotises: 0, assimiles: 2, total: 2 });
-    expect(resultatMaladie).toEqual({ cotises: 0, assimiles: 1, total: 1 });
+    expect(resultatChomage).toEqual(expect.objectContaining({ cotises: 0, assimiles: 2, total: 2 }));
+    expect(resultatMaladie).toEqual(expect.objectContaining({ cotises: 0, assimiles: 1, total: 1 }));
   });
 
   // Isole le plafond COMBINÉ 4/an (cotisé + assimilé confondus) avec priorité
@@ -253,7 +306,7 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
       periode({ typeActivite: 'chomage', dateDebut: '2023-01-01', dateFin: '2023-05-30' }), // 150 jours
     ]);
 
-    expect(resultat).toEqual({ cotises: 3, assimiles: 1, total: 4 });
+    expect(resultat).toEqual(expect.objectContaining({ cotises: 3, assimiles: 1, total: 4 }));
   });
 
   // Première période de chômage non indemnisé de la carrière, art. R351-12
@@ -283,7 +336,7 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
       }),
     ]);
 
-    expect(resultat).toEqual({ cotises: 0, assimiles: 4, total: 4 });
+    expect(resultat).toEqual(expect.objectContaining({ cotises: 0, assimiles: 4, total: 4 }));
   });
 
   // Période ultérieure de chômage non indemnisé, ADJACENTE (aucun jour de
@@ -307,7 +360,7 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
       periode({ employeur: 'CHÔMAGE NON INDEMNISÉ', typeActivite: 'chomage', dateDebut: '2023-04-01', dateFin: '2023-06-30' }),
     ]);
 
-    expect(resultat).toEqual({ cotises: 0, assimiles: 2, total: 2 });
+    expect(resultat).toEqual(expect.objectContaining({ cotises: 0, assimiles: 2, total: 2 }));
   });
 
   // Période ultérieure de chômage non indemnisé NON adjacente à une période
@@ -330,7 +383,7 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
       }),
     ]);
 
-    expect(resultat).toEqual({ cotises: 0, assimiles: 0, total: 0 });
+    expect(resultat).toEqual(expect.objectContaining({ cotises: 0, assimiles: 0, total: 0 }));
   });
 });
 

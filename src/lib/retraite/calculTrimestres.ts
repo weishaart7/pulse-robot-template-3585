@@ -393,6 +393,25 @@ export interface ResultatTrimestresCotisesEtAssimiles {
   cotises: number;
   assimiles: number;
   total: number;
+  /**
+   * Détail par année civile, triée par année croissante — extension additive
+   * du total agrégé ci-dessus, qui ne casse aucun appelant existant (`.total`,
+   * `.cotises`, `.assimiles` restent inchangés). Les valeurs par année
+   * étaient déjà calculées en interne (boucle ci-dessous) mais jamais
+   * exposées : nécessaire pour borner un calcul de surcote à une période de
+   * référence (référentiel §2.3.1), qui exige de savoir QUELLES années ont
+   * produit des trimestres cotisés, pas seulement leur total sur toute la
+   * carrière. Cf. docs/audit/conception-surcote.md §4 et
+   * docs/audit/implementation-surcote.md.
+   *
+   * ⚠️ Ne résout pas la chronologie infra-annuelle (cf.
+   * docs/audit/implementation-surcote.md, dette technique) : une année
+   * contenant un mélange de trimestres avant/après un pivot donné (âge légal
+   * atteint, date d'effet) ne peut pas être décomposée plus finement par ce
+   * champ — seul le total annuel est disponible, pas la date d'acquisition de
+   * chaque trimestre.
+   */
+  parAnnee: { annee: number; cotises: number; assimiles: number }[];
 }
 
 /**
@@ -487,6 +506,7 @@ export function trimestresCotisesEtAssimilesDepuisCarriere(
 
   let cotises = 0;
   let assimiles = 0;
+  const parAnnee: { annee: number; cotises: number; assimiles: number }[] = [];
   for (const annee of annees) {
     const seuil = SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE[annee];
     const revenu = revenuParAnnee.get(annee) ?? 0;
@@ -509,7 +529,9 @@ export function trimestresCotisesEtAssimilesDepuisCarriere(
 
     cotises += cotisesAnnee;
     assimiles += assimilesAnnee;
+    parAnnee.push({ annee, cotises: cotisesAnnee, assimiles: assimilesAnnee });
   }
+  parAnnee.sort((a, b) => a.annee - b.annee);
 
-  return { cotises, assimiles, total: cotises + assimiles };
+  return { cotises, assimiles, total: cotises + assimiles, parAnnee };
 }
