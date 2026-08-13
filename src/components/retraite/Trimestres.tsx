@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -6,11 +6,15 @@ import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useRetraiteData } from '@/hooks/useRetraiteData';
+import { useCarriereDetail } from '@/hooks/useCarriereDetail';
 import { familyService, FamilyProfile } from '@/services/familyService';
 import { computeAge } from '@/lib/patrimoine/bareme669CGI';
 import {
   trimestresRequisPourGeneration,
   ageLegalPourGeneration,
+  ageLegalAtteint,
+  ageLegalParentaleEligible,
+  dateAnniversaireLegal,
   tauxProratisation,
   decoteSurTrimestres,
   decoteSurAge,
@@ -22,8 +26,12 @@ import {
   dateNaissanceDepuisISO,
   dateEffetSimuleeParAge,
   dateDepuisISO,
+  surcotePourTrimestresCotises,
+  surcoteParentale,
+  surcoteTotale,
   OptionRachat,
 } from '@/lib/retraite/calcul';
+import { trimestresCotisesEtAssimilesDepuisCarriere } from '@/lib/retraite/calculTrimestres';
 
 // Format ISO ("YYYY-MM-DD") d'une date UTC-midnight, pour la valeur d'un
 // <input type="date"> — .toISOString() ne décale pas ce cas puisque
@@ -49,6 +57,12 @@ const formatEuro2 = (valeur: number) =>
 
 export const Trimestres = () => {
   const { data: retraiteData, loading: loadingRetraite } = useRetraiteData();
+  // Détail de carrière par année (import RIS), même source que Carriere.tsx —
+  // nécessaire à trimestresCotisesAnneeReference (surcote classique/parentale,
+  // cf. docs/audit/branchement-surcote-optimisation.md §1.3) : sans cette
+  // donnée, la surcote resterait figée à 0 ici alors qu'elle ne l'est pas sur
+  // l'écran Carrière pour le même client, ce qui romprait la parité visée.
+  const { periodes: detailCarriere, loading: loadingCarriereDetail } = useCarriereDetail();
   const [familyProfile, setFamilyProfile] = useState<FamilyProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   // Date de liquidation envisagée : source de vérité du scénario simulé
@@ -107,6 +121,10 @@ export const Trimestres = () => {
   const trimestresValidesActuels = retraiteData.trimestres_valides || 0;
   const salaireAnnuelMoyen = retraiteData.salaire_annuel_moyen || 0;
   const regimesPoints = retraiteData.regimes_points || [];
+  // Condition n°1 (déclarative) de la surcote parentale — déjà chargée par
+  // useRetraiteData(), simplement pas encore lue ici (même champ que
+  // Carriere.tsx, cf. docs/audit/branchement-surcote-optimisation.md §1.3).
+  const auMoinsUnTrimestreMajorationEnfant = retraiteData.au_moins_un_trimestre_majoration_enfant || false;
 
   // Pension complémentaire : constante, indépendante de l'âge de départ simulé.
   const totalPensionComplementaireAnnuelle = regimesPoints.reduce((total, regime) => {
@@ -118,7 +136,15 @@ export const Trimestres = () => {
     (regime) => pensionComplementaireAnnuelle(regime) === undefined
   ).length;
 
-  const loading = loadingRetraite || loadingProfile;
+  // Trimestres cotisés par année, dérivés du détail de carrière (import RIS)
+  // — même calcul que Carriere.tsx, réutilisé tel quel pour déterminer
+  // trimestresCotisesAnneeReference plus bas (surcote classique/parentale).
+  const resultatTrimestresDetailCarriere = useMemo(
+    () => trimestresCotisesEtAssimilesDepuisCarriere(detailCarriere),
+    [detailCarriere]
+  );
+
+  const loading = loadingRetraite || loadingProfile || loadingCarriereDetail;
 
   if (loading) {
     return (
@@ -187,17 +213,61 @@ export const Trimestres = () => {
     // cf. docs/audit/audit-retraite.md §7, écart #2/#3.
     const ageLegal = ageLegalPourGeneration(dateNaissanceConfirmee, dateEffet);
     const taux = tauxProratisation(trimestresValidesProjetes, trimestresRequis);
-    const decote = decoteApplicable(
-      decoteSurTrimestres(trimestresValidesProjetes, trimestresRequis),
-      decoteSurAge(ageAffiche)
+    // decoteSurTrimestres() est symétrique : au-delà de trimestresRequis, sa
+    // branche positive (sans plafond ni porte d'éligibilité) n'est pas une
+    // surcote légitime (référentiel §2.3.1/§2.3.2) — écrêtée à 0 ci-dessous,
+    // même correctif que Carriere.tsx (cf.
+    // docs/audit/branchement-majorations-pension-finale.md §1.b et
+    // docs/audit/branchement-surcote-optimisation.md §2).
+    const decote = Math.min(
+      decoteApplicable(
+        decoteSurTrimestres(trimestresValidesProjetes, trimestresRequis),
+        decoteSurAge(ageAffiche)
+      ),
+      0
     );
-    const pensionBaseValue = pensionBase(salaireAnnuelMoyen, taux, decote);
+
+    // Surcote (classique + parentale), assise sur la pension avant décote
+    // mais ajoutée après (référentiel §12.3) — même schéma de branchement que
+    // Carriere.tsx, reproduit tel quel : régime général, donc cumul additif
+    // (pas de fonction publique/CNAVPL sur cet écran, cf. diagnostic
+    // docs/audit/branchement-surcote-optimisation.md §1.4).
+    const ageLegalAtteintFlag = ageLegalAtteint(dateNaissanceConfirmee, dateEffet);
+    const ageLegalParentaleEligibleFlag = ageLegalParentaleEligible(dateNaissanceConfirmee, dateEffet);
+    const dureeRequiseAtteinte = trimestresValidesProjetes >= trimestresRequis;
+    const anneeReferenceSurcote =
+      ageLegal.stable
+        ? dateAnniversaireLegal(dateNaissanceConfirmee, ageLegal.age).getUTCFullYear() - 1
+        : null;
+    const trimestresCotisesAnneeReference =
+      anneeReferenceSurcote !== null
+        ? resultatTrimestresDetailCarriere.parAnnee.find((a) => a.annee === anneeReferenceSurcote)
+            ?.cotises ?? 0
+        : 0;
+    const surcoteClassiquePct = surcotePourTrimestresCotises(
+      trimestresCotisesAnneeReference,
+      ageLegalAtteintFlag,
+      dureeRequiseAtteinte
+    );
+    const surcoteParentalePct = surcoteParentale(
+      auMoinsUnTrimestreMajorationEnfant,
+      ageLegalParentaleEligibleFlag,
+      dureeRequiseAtteinte,
+      trimestresCotisesAnneeReference
+    );
+    const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true);
+
+    const pensionBaseBrute = pensionBase(salaireAnnuelMoyen, taux, 0);
+    const pensionBaseValue =
+      pensionBaseBrute * (1 + decote / 100) + pensionBaseBrute * (surcoteTotalePct / 100);
     return {
       ageAffiche,
       trimestresValidesProjetes,
       trimestresRequis,
       ageLegal,
       decote,
+      surcoteTotalePct,
+      pensionBaseBrute,
       pensionBaseValue,
       pensionTotale: pensionBaseValue + totalPensionComplementaireAnnuelle,
     };
@@ -212,6 +282,10 @@ export const Trimestres = () => {
     simulerPourDateEffet(dateEffetSimuleeParAge(dateNaissanceConfirmee, age));
 
   const resultatSelection = simulerPourDateEffet(dateLiquidationEffet);
+  // Pourcentage combiné affiché — même convention que Carriere.tsx (somme
+  // décote + surcote pour l'indicateur unique), `decote` étant toujours ≤ 0
+  // et `surcoteTotalePct` toujours ≥ 0 après l'écrêtage ci-dessus.
+  const decoteOuSurcoteSelection = resultatSelection.decote + resultatSelection.surcoteTotalePct;
 
   // Rachat de trimestres : le coût dépend de l'âge actuel (âge auquel le
   // rachat serait effectué aujourd'hui), pas de la date de liquidation
@@ -238,11 +312,28 @@ export const Trimestres = () => {
     trimestresValidesProjetesAvecRachat,
     resultatSelection.trimestresRequis
   );
-  const decoteAvecRachat = decoteApplicable(
-    decoteSurTrimestres(trimestresValidesProjetesAvecRachat, resultatSelection.trimestresRequis),
-    decoteSurAge(resultatSelection.ageAffiche)
+  // Même écrêtage de la branche fautive que dans simulerPourDateEffet()
+  // ci-dessus (cf. commentaire associé). La surcote n'est pas recalculée ici
+  // pour l'hypothèse « avec rachat » : le rachat porte uniquement sur des
+  // trimestres manquants (réduction de la décote), il ne recrée pas de
+  // trimestres cotisés dans l'année de référence de la surcote — le montant
+  // de surcote (`resultatSelection.surcoteTotalePct`, gelé sur le scénario
+  // sans rachat) est donc réutilisé tel quel plutôt que remodélisé, pour
+  // éviter que "Gain de pension" ne paraisse faussement négatif si la
+  // sélection sans rachat inclut déjà une surcote. Documenté comme
+  // simplification assumée (sandbox éphémère, hors périmètre d'un modèle
+  // rachat/surcote), cf. docs/audit/branchement-surcote-optimisation.md §2.
+  const decoteAvecRachat = Math.min(
+    decoteApplicable(
+      decoteSurTrimestres(trimestresValidesProjetesAvecRachat, resultatSelection.trimestresRequis),
+      decoteSurAge(resultatSelection.ageAffiche)
+    ),
+    0
   );
-  const pensionBaseAvecRachat = pensionBase(salaireAnnuelMoyen, tauxAvecRachat, decoteAvecRachat);
+  const pensionBaseBruteAvecRachat = pensionBase(salaireAnnuelMoyen, tauxAvecRachat, 0);
+  const pensionBaseAvecRachat =
+    pensionBaseBruteAvecRachat * (1 + decoteAvecRachat / 100) +
+    pensionBaseBruteAvecRachat * (resultatSelection.surcoteTotalePct / 100);
   const gainPensionAnnuelRachat = pensionBaseAvecRachat - resultatSelection.pensionBaseValue;
   const pointMortRachat =
     coutTotalRachat !== undefined && gainPensionAnnuelRachat > 0
@@ -298,15 +389,15 @@ export const Trimestres = () => {
             <div className="text-center p-4 border rounded-lg">
               <div
                 className={`text-2xl font-bold ${
-                  resultatSelection.decote < 0
+                  decoteOuSurcoteSelection < 0
                     ? 'text-destructive'
-                    : resultatSelection.decote > 0
+                    : decoteOuSurcoteSelection > 0
                     ? 'text-green-600'
                     : 'text-muted-foreground'
                 }`}
               >
-                {resultatSelection.decote > 0 ? '+' : ''}
-                {resultatSelection.decote.toFixed(2)}%
+                {decoteOuSurcoteSelection > 0 ? '+' : ''}
+                {decoteOuSurcoteSelection.toFixed(2)}%
               </div>
               <div className="text-sm text-muted-foreground">Décote / surcote applicable</div>
             </div>
@@ -491,6 +582,7 @@ export const Trimestres = () => {
             <TableBody>
               {AGES_COMPARATIF.map((age) => {
                 const resultat = simulerPourAge(age);
+                const decoteOuSurcoteLigne = resultat.decote + resultat.surcoteTotalePct;
                 return (
                   <TableRow
                     key={age}
@@ -500,15 +592,15 @@ export const Trimestres = () => {
                     <TableCell>{resultat.trimestresValidesProjetes}</TableCell>
                     <TableCell
                       className={
-                        resultat.decote < 0
+                        decoteOuSurcoteLigne < 0
                           ? 'text-destructive'
-                          : resultat.decote > 0
+                          : decoteOuSurcoteLigne > 0
                           ? 'text-green-600'
                           : undefined
                       }
                     >
-                      {resultat.decote > 0 ? '+' : ''}
-                      {resultat.decote.toFixed(2)}%
+                      {decoteOuSurcoteLigne > 0 ? '+' : ''}
+                      {decoteOuSurcoteLigne.toFixed(2)}%
                     </TableCell>
                     <TableCell>{formatEuro2(resultat.pensionBaseValue)}</TableCell>
                     <TableCell className="font-semibold">
