@@ -482,6 +482,45 @@ export function pensionBase(
 }
 
 /**
+ * Majoration pour 3 enfants ou plus (référentiel §3.8) : 10 % flat de la
+ * pension de base dès 3 enfants éligibles, sans palier ni plafond. Accordée
+ * même en l'absence de taux plein — cette fonction ne vérifie donc aucune
+ * condition de durée d'assurance ou d'âge, à la différence de
+ * `surcotePourTrimestresCotises()`.
+ *
+ * Régimes concernés par cette formule flat, tous confirmés « mêmes règles
+ * qu'au régime général » par le référentiel : régime général lui-même,
+ * SSI (§4.3.1), agents contractuels (§8.1), artistes-auteurs (§9.5), CNAVPL
+ * et CNBF (§5.4, §6.3) — réutiliser directement cette fonction pour ces six
+ * régimes, pas de fonction dupliquée par régime (même principe que
+ * `decoteSurTrimestresPlafond25()`, réutilisée telle quelle par CNAVPL et la
+ * fonction publique). Seule la fonction publique a une formule dégressive
+ * différente (+5 %/enfant au-delà de 3, plafonnée au dernier traitement) —
+ * voir `majorationEnfantsFonctionPublique()` dans `calculFonctionPublique.ts`.
+ *
+ * Porte uniquement sur le cas courant : filiation directe (naissance,
+ * reconnaissance, possession d'état) et adoption simple/plénière. La branche
+ * « enfant recueilli sans filiation » (enfant du conjoint/PACS/concubin,
+ * condition de 9 ans de charge avant le 16e anniversaire) n'est pas couverte
+ * — aucune donnée disponible pour la distinguer du cas courant, cf. dette
+ * technique documentée dans docs/audit/implementation-majoration-enfants.md.
+ *
+ * Ordre d'application : cette fonction ne connaît ni le MICO ni la surcote —
+ * comme `surcotePourTrimestresCotises()`, c'est à l'appelant d'appliquer le
+ * pourcentage retourné APRÈS le MICO pour les régimes qui en ont un (régime
+ * général et régimes hérités), ou directement sur la pension issue de la
+ * décote/surcote pour CNAVPL/CNBF qui n'ont pas d'étage MICO (référentiel
+ * §5.5 : « pas de MICO ») — cette fonction n'introduit donc jamais de MICO
+ * par elle-même, quel que soit le régime appelant.
+ */
+export function majorationTroisEnfants(nombreEnfantsEligibles: number): number {
+  if (nombreEnfantsEligibles < 3) {
+    return 0;
+  }
+  return 10;
+}
+
+/**
  * Pension complémentaire annuelle d'un régime à points : uniquement
  * calculable si points et valeurPoint sont tous deux connus (pas de valeur
  * par défaut inventée si l'un des deux manque). Constante dans le temps :

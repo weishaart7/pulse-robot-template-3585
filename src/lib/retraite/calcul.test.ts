@@ -15,6 +15,7 @@ import {
   ageLegalAtteint,
   surcotePourTrimestresCotises,
   pensionBase,
+  majorationTroisEnfants,
   DateNaissance,
 } from './calcul';
 import { computeAge } from '../patrimoine/bareme669CGI';
@@ -484,5 +485,59 @@ describe('Ordre d’application : surcote assise sur P0, ajoutée après le MICO
     const pensionIncorrecte = Math.max(p0 + surcoteMontant, mico);
     expect(pensionCorrecte).not.toBeCloseTo(pensionIncorrecte, 6);
     expect(pensionCorrecte).toBeGreaterThan(pensionIncorrecte);
+  });
+});
+
+describe('majorationTroisEnfants — taux flat 10 % (référentiel §3.8)', () => {
+  it.each([
+    [0, 0],
+    [1, 0],
+    [2, 0],
+    [3, 10],
+    [4, 10], // pas de palier supplémentaire, contrairement à la fonction publique
+    [8, 10], // aucun plafond sur le nombre d'enfants
+  ] as const)('%i enfant(s) éligible(s) → majoration=%i%%', (nombreEnfants, majorationAttendue) => {
+    expect(majorationTroisEnfants(nombreEnfants)).toBe(majorationAttendue);
+  });
+
+  it('régime général, SSI (§4.3.1), agents contractuels (§8.1), artistes-auteurs (§9.5) et CNBF (§6.3) : même fonction, même taux, réutilisée telle quelle', () => {
+    // Le référentiel décrit ces régimes comme suivant intégralement les
+    // règles du régime général sur ce point — aucune fonction dédiée par
+    // régime, cf. commentaire de majorationTroisEnfants().
+    expect(majorationTroisEnfants(3)).toBe(10);
+  });
+});
+
+describe('Ordre d’application, majoration enfants incluse : base → surcote → MICO → majoration (référentiel §3.7)', () => {
+  // Même scénario que le bloc "Ordre d'application" ci-dessus (P0 sous le
+  // plancher MICO, surcote strictement positive), étendu d'une 5e étape :
+  // la majoration pour 3 enfants, assise sur P1 = max(P0, MICO) + surcote,
+  // PAS sur P0 seul ni sur le MICO seul.
+  const trimestresRequis = 172;
+  const trimestresValides = 176;
+  const salaireAnnuelMoyen = 15000;
+
+  const taux = Math.min(trimestresValides / trimestresRequis, 1);
+  const decote = decoteSurTrimestres(trimestresValides, trimestresRequis);
+  const p0 = pensionBase(salaireAnnuelMoyen, taux, 0);
+  const surcotePct = surcotePourTrimestresCotises(4, true, true); // 5 %
+  const surcoteMontant = p0 * (surcotePct / 100);
+  const mico = minimumContributif(trimestresValides, trimestresRequis, decote);
+  const p1 = Math.max(p0, mico) + surcoteMontant; // 9 450,50 € (cf. bloc précédent)
+  const majorationPct = majorationTroisEnfants(3); // 10 %
+
+  it('ordre CORRECT : la majoration enfants est assise sur P1 (après MICO et surcote), pas sur P0 ni sur le MICO seuls', () => {
+    const pensionAvecMajoration = p1 * (1 + majorationPct / 100);
+    expect(pensionAvecMajoration).toBeCloseTo(10395.55, 6); // 9 450,50 × 1,10
+  });
+
+  it('ordre INCORRECT (régression à ne jamais réintroduire) : majoration assise sur P0 seul, avant MICO et surcote', () => {
+    const pensionIncorrecte = Math.max(p0 * (1 + majorationPct / 100), mico) + surcoteMontant;
+    expect(pensionIncorrecte).not.toBeCloseTo(10395.55, 6);
+  });
+
+  it('sans 3 enfants éligibles, la majoration est nulle et P1 reste inchangé', () => {
+    const majorationNulle = majorationTroisEnfants(2);
+    expect(p1 * (1 + majorationNulle / 100)).toBeCloseTo(p1, 6);
   });
 });
