@@ -18,6 +18,7 @@ import {
   surcoteParentale,
   surcoteTotale,
   pensionBase,
+  tauxProratisation,
   majorationTroisEnfants,
   DateNaissance,
 } from './calcul';
@@ -741,5 +742,105 @@ describe('Profil complet — régime général (mission : branchement des majora
       Math.max(p0 * (1 + majorationPct / 100), mico) + surcoteMontant;
     expect(pensionFinaleIncorrecte).not.toBeCloseTo(pensionFinaleCorrecte, 6);
     expect(pensionFinaleIncorrecte).toBeLessThan(pensionFinaleCorrecte);
+  });
+});
+
+describe('Parité Trimestres.tsx / Carriere.tsx — même surcote pour un même client (mission : docs/audit/branchement-surcote-optimisation.md)', () => {
+  // Profil auto-suffisant (génération 1960, ageLegal stable 62 ans 0 mois,
+  // trimestresRequis 167 — cf. BAREME_STABLE_AVANT_1964) : contrairement aux
+  // générations 1964+ utilisées ailleurs dans ce fichier, l'anniversaire
+  // légal de cette génération (janvier 2022) tombe avant même la fenêtre
+  // 01/09/2023-31/08/2026, donc ageLegalAtteint() est vrai pour toute date
+  // d'effet simulée post-2023 sans ambiguïté de jeu de barème — condition
+  // nécessaire pour que le scénario soit "un même client, un même âge de
+  // liquidation" reproductible identiquement par les deux écrans (Carriere.tsx
+  // fige la date d'effet à "aujourd'hui", Trimestres.tsx la fait varier :
+  // ce choix de génération élimine cette différence pour le test).
+  const dateNaissance = dn(1960, 1);
+  const dateEffet = EFFET_CALENDRIER_2023; // 2024-06, post légal (janvier 2022)
+  const trimestresRequis = trimestresRequisPourGeneration(dateNaissance, dateEffet);
+  const trimestresValidesProjetes = 171; // 167 + 4, durée requise dépassée
+  const salaireAnnuelMoyen = 15000;
+
+  // Détail de carrière (import RIS) : 4 trimestres cotisés en 2021, seul
+  // ingrédient qui n'existait pas dans les tests "Profil complet" plus haut
+  // (qui passaient trimestresCotisesAnneeReference en dur) — ici dérivé d'un
+  // vrai `detailCarriere`, comme le fait désormais Trimestres.tsx via
+  // useCarriereDetail().
+  const detailCarriere: PeriodeCarriere[] = [
+    {
+      employeur: 'Test',
+      typeActivite: 'employeur',
+      dateDebut: '2021-01-01',
+      dateFin: '2021-12-31',
+      revenu: 6200, // 6200 / 1537,5 (seuil 2021) = 4,03 → floor 4, plafond 4 trimestres/an
+      estChiffreAffaires: false,
+      regimes: ["L'Assurance retraite"],
+    },
+  ];
+  const resultatTrimestresDetailCarriere = trimestresCotisesEtAssimilesDepuisCarriere(detailCarriere);
+
+  it('préconditions : trimestresRequis=167, 4 trimestres cotisés dérivés pour 2021 (année précédant l’âge légal, 2022)', () => {
+    expect(trimestresRequis).toBe(167);
+    const ageLegal = ageLegalPourGeneration(dateNaissance, dateEffet);
+    expect(ageLegal).toEqual({ stable: true, age: { ans: 62, mois: 0 } });
+    const anneeReference = dateAnniversaireLegal(dateNaissance, ageLegal.stable ? ageLegal.age : { ans: 0, mois: 0 }).getUTCFullYear() - 1;
+    expect(anneeReference).toBe(2021);
+    expect(resultatTrimestresDetailCarriere.parAnnee.find((a) => a.annee === 2021)?.cotises).toBe(4);
+  });
+
+  // Réplique exacte du branchement de Carriere.tsx (surcotePourTrimestresCotises
+  // + surcoteParentale + surcoteTotale, cumul additif régime général — cf.
+  // Carriere.tsx lignes ~486-528) et du branchement désormais identique de
+  // Trimestres.tsx (simulerPourDateEffet()) : les deux écrans partent des
+  // mêmes primitives calcul.ts, appliquées au même dateNaissance/dateEffet.
+  const calculerSurcote = (auMoinsUnTrimestreMajorationEnfant: boolean) => {
+    const ageLegal = ageLegalPourGeneration(dateNaissance, dateEffet);
+    const ageLegalAtteintFlag = ageLegalAtteint(dateNaissance, dateEffet);
+    const ageLegalParentaleEligibleFlag = ageLegalParentaleEligible(dateNaissance, dateEffet);
+    const dureeRequiseAtteinte = trimestresValidesProjetes >= trimestresRequis;
+    const anneeReferenceSurcote = ageLegal.stable
+      ? dateAnniversaireLegal(dateNaissance, ageLegal.age).getUTCFullYear() - 1
+      : null;
+    const trimestresCotisesAnneeReference =
+      anneeReferenceSurcote !== null
+        ? resultatTrimestresDetailCarriere.parAnnee.find((a) => a.annee === anneeReferenceSurcote)
+            ?.cotises ?? 0
+        : 0;
+    const surcoteClassiquePct = surcotePourTrimestresCotises(
+      trimestresCotisesAnneeReference,
+      ageLegalAtteintFlag,
+      dureeRequiseAtteinte
+    );
+    const surcoteParentalePct = surcoteParentale(
+      auMoinsUnTrimestreMajorationEnfant,
+      ageLegalParentaleEligibleFlag,
+      dureeRequiseAtteinte,
+      trimestresCotisesAnneeReference
+    );
+    return surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true);
+  };
+
+  it('surcote classique seule (génération 1960 : âge légal 62 ans, sous le seuil de 63 ans de la surcote parentale)', () => {
+    const surcoteTrimestresTsx = calculerSurcote(false);
+    const surcoteCarriereTsx = calculerSurcote(false);
+    expect(surcoteTrimestresTsx).toBe(5); // 4 trimestres × 1,25 %
+    expect(surcoteTrimestresTsx).toBe(surcoteCarriereTsx); // même client, même résultat sur les deux écrans
+  });
+
+  it('case surcote parentale cochée : sans effet pour cette génération (ageLegal 62 ans < 63 ans requis, référentiel §2.3.2) — même résultat sur les deux écrans', () => {
+    const surcoteTrimestresTsx = calculerSurcote(true);
+    const surcoteCarriereTsx = calculerSurcote(true);
+    expect(surcoteTrimestresTsx).toBe(5); // inchangé : porte ageLegalParentaleEligible fermée
+    expect(surcoteTrimestresTsx).toBe(surcoteCarriereTsx);
+  });
+
+  it('montant de surcote en euros, assis sur P0 (pension avant décote/surcote) — identique dans les deux écrans', () => {
+    const taux = tauxProratisation(trimestresValidesProjetes, trimestresRequis);
+    const p0 = pensionBase(salaireAnnuelMoyen, taux, 0);
+    const surcoteTotalePct = calculerSurcote(false);
+    const surcoteMontant = p0 * (surcoteTotalePct / 100);
+    expect(p0).toBe(7500); // taux plafonné à 1 (171 > 167)
+    expect(surcoteMontant).toBeCloseTo(375, 6); // 7 500 × 5 %
   });
 });
