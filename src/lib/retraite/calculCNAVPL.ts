@@ -18,6 +18,12 @@
  * Source : CNAVPL (cnavpl.fr), confirmé par plusieurs guides 2026
  * concordants. Valeur du point 2026 : 0,6599 € — à passer en paramètre
  * `valeurPoint` par l'appelant (UI), pas codée en dur ici.
+ *
+ * Majoration pour 3 enfants ou plus (référentiel §3.8, §5.4 : « mêmes règles
+ * qu'au régime général ») : réutilise `majorationTroisEnfants()` de
+ * calcul.ts directement, appliquée sur le résultat de `pensionBaseCNAVPL()`
+ * — PAS d'étage MICO à intercaler (référentiel §5.5 : « pas de MICO » pour
+ * ce régime), à la différence du régime général. Aucune fonction dédiée ici.
  */
 
 /**
