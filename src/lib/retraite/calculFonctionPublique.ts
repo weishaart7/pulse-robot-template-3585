@@ -40,6 +40,39 @@ export function pensionBaseFonctionPublique(
 }
 
 /**
+ * Taux de décote par trimestre manquant, fonction publique, selon l'année
+ * d'ouverture des droits (référentiel §7.3) — barème figé au millésime de
+ * l'année où l'agent réunit la condition d'âge (ou de durée) ouvrant droit à
+ * pension, **distinct de la date d'effet** (l'année de liquidation
+ * effective) : un agent ayant ouvert ses droits en 2014 conserve 1,125 %
+ * même s'il liquide sa pension en 2015 ou après.
+ *
+ * | Année d'ouverture des droits | Taux par trimestre |
+ * |---|---|
+ * | 2011 (et avant, par repli) | 0,75 % |
+ * | 2012 | 0,875 % |
+ * | 2013 | 1 % |
+ * | 2014 | 1,125 % |
+ * | 2015 et au-delà | 1,25 % |
+ *
+ * `anneeOuvertureDroits` est une saisie déclarative (champ libre, conseiller)
+ * — cet outil ne calcule pas l'année d'ouverture des droits à partir de la
+ * date de naissance/carrière (le référentiel qualifie lui-même cette donnée
+ * de non triviale à déduire). `undefined` (champ non renseigné) retombe sur
+ * 1,25 %, soit le comportement historique de cette fonction avant
+ * l'introduction du barème — pas de régression pour un utilisateur qui ne
+ * renseigne pas ce champ.
+ */
+export function tauxDecoteParTrimestreFonctionPublique(anneeOuvertureDroits?: number): number {
+  if (anneeOuvertureDroits === undefined) return 1.25;
+  if (anneeOuvertureDroits <= 2011) return 0.75;
+  if (anneeOuvertureDroits === 2012) return 0.875;
+  if (anneeOuvertureDroits === 2013) return 1;
+  if (anneeOuvertureDroits === 2014) return 1.125;
+  return 1.25;
+}
+
+/**
  * Décote fonction publique basée sur l'écart d'âge par rapport à l'âge
  * d'annulation de la décote (67 ans par défaut en catégorie sédentaire —
  * même valeur que le régime général, mais plafond différent : -25 % ici
@@ -47,7 +80,15 @@ export function pensionBaseFonctionPublique(
  *
  * Pour un départ anticipé catégorie active, ageAnnulationDecote doit être
  * saisi manuellement par l'utilisateur (pas de table de corps encodée ici —
- * voir CarriereFonctionPublique.tsx).
+ * voir CarriereFonctionPublique.tsx) : l'âge d'annulation variant par
+ * catégorie (67 ans sédentaire, 62 ans active, 57 ans super-active,
+ * référentiel §7.3) n'est donc pas un écart au référentiel — le paramètre
+ * est déjà libre, sans valeur unique supposée.
+ *
+ * `tauxParTrimestre` : taux de décote par trimestre manquant (référentiel
+ * §7.3), par défaut 1,25 % — voir
+ * `tauxDecoteParTrimestreFonctionPublique()` pour le barème par année
+ * d'ouverture des droits.
  *
  * ⚠️ Variante locale de decoteSurAge() de calcul.ts (le plafond -25 % côté
  * trimestres a été généralisé et déplacé dans calcul.ts en
@@ -57,13 +98,14 @@ export function pensionBaseFonctionPublique(
  */
 export function decoteSurAgeFonctionPublique(
   ageDepart: number,
-  ageAnnulationDecote = 67
+  ageAnnulationDecote = 67,
+  tauxParTrimestre = 1.25
 ): number {
   if (ageDepart >= ageAnnulationDecote) {
     return 0;
   }
   const ecartTrimestres = (ageDepart - ageAnnulationDecote) * 4;
-  return Math.max(ecartTrimestres * 1.25, -25);
+  return Math.max(ecartTrimestres * tauxParTrimestre, -25);
 }
 
 /**

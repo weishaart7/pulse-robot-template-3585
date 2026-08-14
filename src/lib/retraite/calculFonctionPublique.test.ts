@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   pensionBaseFonctionPublique,
+  decoteSurAgeFonctionPublique,
+  tauxDecoteParTrimestreFonctionPublique,
   minimumGaranti,
   pensionFonctionPubliqueFinale,
   majorationEnfantsFonctionPublique,
@@ -15,6 +17,57 @@ import {
   surcoteParentale,
   surcoteTotale,
 } from './calcul';
+
+describe('tauxDecoteParTrimestreFonctionPublique — barème par année d\'ouverture des droits (référentiel §7.3, écart #12)', () => {
+  it.each([
+    [2011, 0.75],
+    [2012, 0.875],
+    [2013, 1],
+    [2014, 1.125],
+    [2015, 1.25],
+  ])('année d\'ouverture des droits %s → taux %s%% par trimestre', (annee, tauxAttendu) => {
+    expect(tauxDecoteParTrimestreFonctionPublique(annee)).toBe(tauxAttendu);
+  });
+
+  it('année postérieure à 2015 reste à 1,25 % (palier final, pas de nouveau seuil)', () => {
+    expect(tauxDecoteParTrimestreFonctionPublique(2026)).toBe(1.25);
+  });
+
+  it('année antérieure à 2011 retombe sur 0,75 % par repli (borne basse du barème)', () => {
+    expect(tauxDecoteParTrimestreFonctionPublique(2005)).toBe(0.75);
+  });
+
+  it('non renseigné (undefined) → 1,25 % par défaut, comportement historique inchangé', () => {
+    expect(tauxDecoteParTrimestreFonctionPublique(undefined)).toBe(1.25);
+    expect(tauxDecoteParTrimestreFonctionPublique()).toBe(1.25);
+  });
+});
+
+describe('decoteSurAgeFonctionPublique — millésime figé à l\'année d\'ouverture des droits, indépendant de la date de liquidation (référentiel §7.3)', () => {
+  it('un agent ayant ouvert ses droits en 2014 garde 1,125 %/trimestre même en liquidant après 2015', () => {
+    const taux2014 = tauxDecoteParTrimestreFonctionPublique(2014);
+    // 2 ans d'écart (62 vs 64) = 8 trimestres manquants.
+    const decote = decoteSurAgeFonctionPublique(62, 64, taux2014);
+    expect(decote).toBeCloseTo(-9, 5); // -8 × 1,125
+  });
+
+  it('sans année d\'ouverture des droits renseignée, le taux par défaut (1,25 %) s\'applique (non-régression)', () => {
+    const decoteParDefaut = decoteSurAgeFonctionPublique(62, 64);
+    const decoteExplicite = decoteSurAgeFonctionPublique(62, 64, tauxDecoteParTrimestreFonctionPublique(undefined));
+    expect(decoteParDefaut).toBe(decoteExplicite);
+    expect(decoteParDefaut).toBeCloseTo(-10, 5); // -8 × 1,25
+  });
+
+  it('plafond à -25 %, quel que soit le taux par trimestre appliqué', () => {
+    const taux2015 = tauxDecoteParTrimestreFonctionPublique(2015);
+    // Écart d'âge large (20 trimestres manquants) : -20 × 1,25 = -25, déjà au plafond.
+    expect(decoteSurAgeFonctionPublique(57, 62, taux2015)).toBe(-25);
+  });
+
+  it('aucune décote si l\'âge de départ atteint ou dépasse l\'âge d\'annulation, quel que soit le taux', () => {
+    expect(decoteSurAgeFonctionPublique(67, 67, tauxDecoteParTrimestreFonctionPublique(2011))).toBe(0);
+  });
+});
 
 describe('minimumGaranti — barème par palier (référentiel §7.5, art. L. 17 CPCMR)', () => {
   // Valeur de référence utilisée sous sa forme MENSUELLE ici, pour comparer

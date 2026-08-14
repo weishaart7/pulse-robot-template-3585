@@ -18,6 +18,7 @@ import {
 import {
   pensionBaseFonctionPublique,
   decoteSurAgeFonctionPublique,
+  tauxDecoteParTrimestreFonctionPublique,
   minimumGaranti,
   pensionFonctionPubliqueFinale,
   majorationEnfantsFonctionPublique,
@@ -99,12 +100,20 @@ export const CarriereFonctionPublique = ({
   const [ageDepartAnticipe, setAgeDepartAnticipe] = useState<string>('');
   const [ageAnnulationDecote, setAgeAnnulationDecote] = useState<string>('');
   const [departPourInvalidite, setDepartPourInvalidite] = useState(false);
+  const [anneeOuvertureDroits, setAnneeOuvertureDroits] = useState<string>('');
 
   const tib = parseFloat(traitementIndiciaireBrut) || 0;
   const trimestresLiquidablesNum = parseInt(trimestresLiquidables) || 0;
   const pointsRAFPNum = parseFloat(pointsRAFP) || 0;
   const ageDepartAnticipeNum = parseFloat(ageDepartAnticipe);
   const ageAnnulationDecoteNum = parseFloat(ageAnnulationDecote);
+  // Champ déclaratif (référentiel §7.3) : année où l'agent réunit la
+  // condition d'âge/durée ouvrant droit à pension, distincte de la date
+  // d'effet — non calculée par cet outil (cf. tauxDecoteParTrimestreFonctionPublique).
+  // undefined si non renseigné, pour retomber sur le défaut 1,25 % (comportement
+  // historique inchangé en l'absence de saisie).
+  const anneeOuvertureDroitsNum = anneeOuvertureDroits === '' ? undefined : parseInt(anneeOuvertureDroits, 10);
+  const tauxDecoteParTrimestre = tauxDecoteParTrimestreFonctionPublique(anneeOuvertureDroitsNum);
 
   const taux = tauxProratisation(trimestresLiquidablesNum, trimestresRequis);
   // Décote basée sur le total de trimestres tous régimes confondus
@@ -134,7 +143,7 @@ export const CarriereFonctionPublique = ({
   const decote = decoteAgeUtilisable
     ? decoteApplicable(
         decoteTrimestres,
-        decoteSurAgeFonctionPublique(ageDepartAnticipeNum, ageAnnulationDecoteNum)
+        decoteSurAgeFonctionPublique(ageDepartAnticipeNum, ageAnnulationDecoteNum, tauxDecoteParTrimestre)
       )
     : decoteTrimestres;
 
@@ -304,6 +313,26 @@ export const CarriereFonctionPublique = ({
                 Change le mode de calcul du minimum garanti pour une durée de services inférieure
                 à 15 ans (référentiel §7.5) — sans effet à 15 ans de services ou plus.
               </p>
+
+              <div className="space-y-2">
+                <Label htmlFor="annee-ouverture-droits">
+                  Année d'ouverture des droits (optionnel)
+                </Label>
+                <Input
+                  id="annee-ouverture-droits"
+                  type="number"
+                  placeholder="Ex: 2014"
+                  value={anneeOuvertureDroits}
+                  onChange={(e) => setAnneeOuvertureDroits(e.target.value)}
+                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring max-w-xs"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Année où l'agent a réuni la condition d'âge/durée ouvrant droit à pension —
+                  distincte de l'année de liquidation. Détermine le taux de décote par trimestre
+                  (0,75 % en 2011 jusqu'à 1,25 % à partir de 2015, référentiel §7.3). Non
+                  renseigné = 1,25 % par défaut.
+                </p>
+              </div>
 
               <div className="flex items-center space-x-2">
                 <Checkbox
