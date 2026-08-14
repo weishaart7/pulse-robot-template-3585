@@ -21,6 +21,8 @@ import {
   pensionBase,
   pensionComplementaireAnnuelle,
   minimumContributif,
+  majorationPalier2MICO,
+  ecretementMICO,
   trimestresRequisPourGeneration,
   dateNaissanceDepuisISO,
   ageLegalPourGeneration,
@@ -81,6 +83,13 @@ export const Carriere = () => {
   // affichée via surcoteParentale()/surcoteTotale(), cf.
   // docs/audit/branchement-majorations-pension-finale.md.
   const [auMoinsUnTrimestreMajorationEnfant, setAuMoinsUnTrimestreMajorationEnfant] = useState(false);
+  // Champ déclaratif pour l'écrêtement du MICO (référentiel §3.5.5, écart
+  // #10) — pensions personnelles brutes d'autres régimes non modélisés par
+  // cet outil (étranger, complémentaires non saisies...), mensuel, optionnel.
+  // Local et non persisté, sur le modèle de l'année d'ouverture des droits
+  // fonction publique (écart #12) : défaut vide → 0 → comportement inchangé
+  // (aucune réduction) tant que le champ n'est pas renseigné.
+  const [autresPensionsMensuelles, setAutresPensionsMensuelles] = useState<string>('');
   const [hasChanges, setHasChanges] = useState(false);
   const [pensionBaseBrute, setPensionBaseBrute] = useState<number>(0);
   const [decoteSurcote, setDecoteSurcote] = useState<number>(0);
@@ -482,11 +491,19 @@ export const Carriere = () => {
     (hasFonctionPublique ? parseInt(trimestresLiquidablesFP) || 0 : 0) +
     (hasCNAVPL ? parseInt(trimestresCNAVPL) || 0 : 0);
 
-  // Indicateur de cohérence RIS ↔ carrière saisie — PAS une source
-  // concurrente de trimestres_valides (le RIS reste la source de vérité, cf.
-  // en-tête de fichier et docs/audit/audit-retraite.md) : ce total dérivé
-  // sert uniquement de contrôle de cohérence à l'écran, jamais injecté dans
-  // trimestresValides ni dans aucun calcul de pension ci-dessous.
+  // Détail de carrière ↔ RIS : source dérivée, PAS une source concurrente de
+  // trimestres_valides (le RIS reste la source de vérité pour le nombre TOTAL
+  // de trimestres, cf. en-tête de fichier et docs/audit/audit-retraite.md) —
+  // `.total` sert uniquement de contrôle de cohérence à l'écran (jamais
+  // injecté dans trimestresValides). En revanche, la répartition cotisés/
+  // assimilés (`.cotises`, `.parAnnee`) N'A PAS d'équivalent ailleurs dans
+  // l'app et est déjà utilisée dans un calcul de pension (surcote, écart #5 :
+  // trimestresCotisesAnneeReference ci-dessous) — et l'est désormais aussi
+  // pour l'éligibilité au MICO majoré (`.cotises`, écart #10, palier 2,
+  // cf. docs/audit/implementation-mico-majore.md). Approximation
+  // volontairement prudente dans les deux cas : ne peut que SOUS-compter
+  // (jamais accorder à tort), cf. limites documentées en tête de
+  // calculTrimestres.ts.
   const resultatTrimestresDetailCarriere = useMemo(
     () => trimestresCotisesEtAssimilesDepuisCarriere(detailCarriere),
     [detailCarriere]
@@ -549,11 +566,50 @@ export const Carriere = () => {
   // intégralement sur ce point (référentiel §2.3.2, §12.3).
   const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true);
 
-  // MICO : montant isolé (pas seulement consommé dans le Math.max ci-dessous)
-  // pour pouvoir l'afficher comme ligne de détail à l'écran — absent
-  // auparavant (docs/audit/branchement-majorations-pension-finale.md §1.d).
+  // MICO palier 1 : montant isolé (pas seulement consommé dans le Math.max
+  // ci-dessous) pour pouvoir l'afficher comme ligne de détail à l'écran —
+  // absent auparavant (docs/audit/branchement-majorations-pension-finale.md §1.d).
+  // Fonction et logique inchangées (écart #9, déjà correcte et testée).
   const micoMontant = minimumContributif(trimValidesRegimeGeneral, trimestresRequis, decoteSurcote, trimestresTousRegimes);
-  const pensionApresMico = Math.max(pensionBaseBrute * (1 + decoteSurcote / 100), micoMontant);
+  // P0 hors MICO, hors surcote (référentiel §3.7, étape 3 : « comparaison au
+  // montant P0, hors surcote ») — même valeur que l'ancien premier argument
+  // du Math.max ci-dessous, isolée ici pour être réutilisée par le palier 2
+  // et l'écrêtement.
+  const pensionBaseHorsMicoHorsSurcote = pensionBaseBrute * (1 + decoteSurcote / 100);
+  // Majoration palier 1 explicite (delta), équivalente par construction à
+  // l'ancien `Math.max(P0, micoMontant)` : P0 + majorationPalier1 ===
+  // Math.max(P0, micoMontant) dans tous les cas, cf.
+  // docs/audit/implementation-mico-majore.md pour la démonstration — aucun
+  // changement de comportement pour un profil sans palier 2 ni écrêtement.
+  const majorationPalier1 = Math.max(0, micoMontant - pensionBaseHorsMicoHorsSurcote);
+
+  // MICO palier 2 (référentiel §3.5.4, écart #10) : trimestres cotisés
+  // régime général/aligné dérivés du détail de carrière (cf. commentaire de
+  // `resultatTrimestresDetailCarriere` ci-dessus pour les limites assumées :
+  // rachats non modélisés, approximation prudente).
+  const trimestresCotisesRegimeGeneral = resultatTrimestresDetailCarriere.cotises;
+  const majorationPalier2 = majorationPalier2MICO(
+    trimestresCotisesRegimeGeneral,
+    trimValidesRegimeGeneral,
+    trimestresRequis,
+    decoteSurcote,
+    trimestresTousRegimes
+  );
+
+  // Écrêtement (référentiel §3.5.5, écart #10) : réduit la majoration MICO
+  // totale (palier 1 + palier 2) si le total dépasse le plafond global,
+  // compte tenu des pensions perçues d'autres régimes non modélisés par cet
+  // outil (champ déclaratif, défaut 0 = comportement inchangé).
+  const autresPensionsAnnuelles = (parseFloat(autresPensionsMensuelles) || 0) * 12;
+  const majorationMicoTotaleAvantEcretement = majorationPalier1 + majorationPalier2;
+  const majorationMicoTotaleApresEcretement = ecretementMICO(
+    pensionBaseHorsMicoHorsSurcote,
+    majorationMicoTotaleAvantEcretement,
+    autresPensionsAnnuelles
+  );
+  const ecretementApplique = majorationMicoTotaleApresEcretement < majorationMicoTotaleAvantEcretement;
+
+  const pensionApresMico = pensionBaseHorsMicoHorsSurcote + majorationMicoTotaleApresEcretement;
   const surcoteMontantRegimeGeneral = pensionBaseBrute * (surcoteTotalePct / 100);
   const pensionApresSurcoteRegimeGeneral = pensionApresMico + surcoteMontantRegimeGeneral;
 
@@ -776,6 +832,25 @@ export const Carriere = () => {
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="autres-pensions-mensuelles">
+              Autres pensions perçues, mensuel (optionnel)
+            </Label>
+            <Input
+              id="autres-pensions-mensuelles"
+              type="number"
+              placeholder="Ex: 600"
+              value={autresPensionsMensuelles}
+              onChange={(e) => setAutresPensionsMensuelles(e.target.value)}
+              className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring max-w-xs"
+            />
+            <p className="text-xs text-muted-foreground">
+              Pensions personnelles brutes d'autres régimes non modélisés par cet outil (étranger,
+              complémentaires non saisies...) — sert uniquement à l'écrêtement du MICO (référentiel
+              §3.5.5). Non renseigné = 0, aucun effet sur le calcul.
+            </p>
+          </div>
+
           {pensionBaseBrute > 0 && (
             <div className="mt-4 p-4 bg-muted/50 rounded-lg">
               <Label>Pension ajustée (avec décote/surcote/MICO/majoration enfants)</Label>
@@ -791,6 +866,19 @@ export const Carriere = () => {
                 Minimum contributif (MICO) : {formatEuro2(micoMontant)} / an
                 {surcoteTotalePct > 0 && <> · Surcote : {formatEuro2(surcoteMontantRegimeGeneral)} / an</>}
               </p>
+              {majorationPalier2 > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  dont palier 1 (base) : {formatEuro2(majorationPalier1)} / an · palier 2 (majoré,{' '}
+                  {trimestresCotisesRegimeGeneral} trimestres cotisés) : {formatEuro2(majorationPalier2)} / an
+                </p>
+              )}
+              {ecretementApplique && (
+                <p className="text-xs text-orange-600 mt-1">
+                  Écrêtement appliqué : majoration MICO réduite de{' '}
+                  {formatEuro2(majorationMicoTotaleAvantEcretement - majorationMicoTotaleApresEcretement)} / an
+                  (plafond global de pensions dépassé, référentiel §3.5.5).
+                </p>
+              )}
               {majorationEnfantsPct > 0 && (
                 <p className="text-sm text-muted-foreground">
                   Majoration pour {nombreEnfantsEligibles} enfants : +{majorationEnfantsPct}%
