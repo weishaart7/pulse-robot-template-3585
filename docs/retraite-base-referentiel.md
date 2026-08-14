@@ -962,7 +962,96 @@ La majoration s'applique le cas échéant sur la pension **portée au minimum ga
 
 ## 7.7. Prestations supplémentaires
 
-**Supplément de pension NBI** : les agents ayant perçu la nouvelle bonification indiciaire bénéficient d'un supplément de pension calculé sur les points de NBI détenus et leur durée de perception.
+**Supplément de pension NBI** : les agents ayant perçu la nouvelle bonification indiciaire bénéficient d'un supplément de pension calculé sur les points de NBI détenus et leur durée de perception. Formule complète et sources ci-dessous, §7.7.1 — ajoutée le 2026-08-15 en vue d'une future session de conception (écart #13-NBI, sur le modèle de #6).
+
+### 7.7.1. Supplément de pension NBI — formule sourcée
+
+> Recherche effectuée le 2026-08-15. Source primaire directement citée verbatim depuis Légifrance ;
+> sources secondaires (portails officiels et syndicaux) corroborant la même structure de calcul.
+> Cf. `docs/audit/audit-retraite.md` écart #13-NBI pour le détail complet de la recherche, y compris
+> le point non résolu signalé en fin de section.
+
+**Texte source (Décret n° 2003-1306 du 26 décembre 2003 relatif au régime de retraite des
+fonctionnaires affiliés à la CNRACL, article 28)**, cité verbatim depuis Légifrance
+([lien](https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000006400895)) :
+
+> « Le fonctionnaire [...] admis à faire valoir ses droits à la retraite à compter du 1er août 1990 et
+> titulaire d'une pension servie en application de l'article 7, ayant perçu au cours de sa carrière la
+> nouvelle bonification indiciaire a droit à un supplément de pension s'ajoutant à la pension liquidée
+> en application des dispositions du présent décret.
+>
+> Les conditions d'obtention et de réversion de ce supplément sont identiques à celles de la pension
+> elle-même.
+>
+> Ce supplément de pension est égal à la moyenne annuelle de la somme perçue au titre de la nouvelle
+> bonification indiciaire, multipliée, d'une part, par la durée de perception exprimée en trimestres
+> liquidables selon les modalités prévues par l'article 16, et d'autre part par le rapport défini au
+> dernier alinéa du I de ce même article. Pour le calcul de la moyenne annuelle, la somme perçue au
+> titre de la nouvelle bonification indiciaire est revalorisée dans les conditions prévues à
+> l'article 19. Le supplément de pension est revalorisé dans les conditions prévues à l'article 19. »
+
+**« Le rapport défini au dernier alinéa du I » de l'article 16 du même décret** (« Taux maximum de
+pension ») : le nombre de trimestres nécessaires pour obtenir le pourcentage maximum de la pension
+(75 %) est celui prévu à l'art. L. 161-17-3 du code de la sécurité sociale (= la durée requise pour le
+taux plein, déjà modélisée dans cet outil via `trimestresRequisPourGeneration()`). « Chaque trimestre
+est rémunéré en appliquant le pourcentage maximum [...] au nombre de trimestres [requis] » — le
+« rapport » est donc **75 % ÷ durée requise pour le taux plein**, le même taux d'annuité par trimestre
+que celui de la pension de base (référentiel §7.2).
+
+**Formule complète reconstituée** :
+
+```
+supplément_NBI = moyenne_annuelle_NBI_revalorisée
+                 × trimestres_liquidables_pendant_lesquels_la_NBI_a_été_perçue
+                 × (75% / durée_requise_taux_plein)
+```
+
+Où :
+- `moyenne_annuelle_NBI_revalorisée` : moyenne annuelle des sommes réellement perçues au titre de la
+  NBI sur la période où l'agent l'a détenue, chaque année étant revalorisée « dans les conditions
+  prévues à l'article 19 » — soit la même revalorisation que la pension elle-même (art. 19 du décret
+  n'a pas été consulté dans cette session, mais l'article 28 le cite explicitement à deux reprises :
+  pour la moyenne ET pour le supplément final).
+- `trimestres_liquidables_pendant_lesquels_la_NBI_a_été_perçue` : PAS la durée totale de carrière, mais
+  seulement les trimestres liquidables (comptés selon les mêmes modalités que la pension générale, art.
+  16) correspondant aux périodes où la NBI était effectivement perçue.
+- `75% / durée_requise_taux_plein` : structurellement identique au taux d'annuité par trimestre de la
+  pension de base (référentiel §7.2, §7.2.3) — la formule du supplément NBI est donc l'analogue exact
+  de la formule de la pension de base, appliquée à la « moyenne annuelle NBI » comme s'il s'agissait
+  d'un traitement de référence, et aux trimestres de perception NBI comme s'il s'agissait des
+  trimestres liquidables.
+- **Aucun seuil minimal de perception** : le texte de l'article 28 n'en pose aucun — toute perception de
+  la NBI, même brève, ouvre droit au supplément, proportionnellement à sa durée. Confirmé par lecture
+  directe du texte intégral (pas une déduction par absence de mention dans une source secondaire).
+- **Conditions d'obtention et de réversion** : identiques à celles de la pension principale (pas de
+  condition supplémentaire propre au supplément NBI).
+
+**Sources secondaires corroborant la même structure** (sans formule légale citée, donc non retenues
+comme source primaire, mais cohérentes avec le texte ci-dessus) :
+- [Service-public.gouv.fr — Estimer le montant du supplément de pension NBI](https://www.service-public.gouv.fr/particuliers/vosdroits/R71903)
+  (portail officiel, formule reformulée en langage courant identique à l'article 28 ; cite Code général
+  de la fonction publique art. L712-7 à L712-13 et Loi n° 91-73 du 18 janvier 1991, art. 27 — cette
+  dernière étant la loi d'habilitation d'origine, commune aux trois versants de la fonction publique).
+- [CNRACL — Nouvelle bonification indiciaire (NBI)](https://www.cnracl.retraites.fr/actif/ma-carriere-mes-droits/nouvelle-bonification-indiciaire-nbi)
+  (cite Loi n° 91-73 du 18/01/1991, Décret n° 91-613 du 28/06/1991, Décret n° 2007-173 du 07/02/2007 —
+  sans formule chiffrée).
+- Sources syndicales (UNSA Développement durable — agents de l'État ; emploi-collectivites.fr) :
+  reformulent la même formule (« moyenne de la NBI perçue × durée de perception en trimestres
+  liquidables × taux de rémunération/pourcentage de la pension par trimestre »), sans texte légal
+  propre cité.
+
+**⚠️ Point non résolu, à vérifier avant toute implémentation** : le texte source ci-dessus (Décret
+n° 2003-1306, art. 28) régit spécifiquement la **CNRACL** (fonction publique territoriale et
+hospitalière). Aucune disposition équivalente n'a été localisée et vérifiée directement dans le **code
+des pensions civiles et militaires de retraite** (fonction publique d'État, SRE) au cours de cette
+session — la recherche de l'article correspondant (probablement un L. ou R. article du CPCMR) n'a pas
+abouti à un texte consultable et cité avec certitude. Les sources secondaires (service-public.gouv.fr,
+qui couvre les trois versants ; CNRACL elle-même, dont le simulateur est présenté comme valable « si
+vous êtes fonctionnaire de l'État ») suggèrent fortement que la MÊME formule s'applique au SRE, ce qui
+serait cohérent avec le traitement déjà unifié CNRACL/SRE de `calculFonctionPublique.ts` dans cet
+outil — mais ce point reste une corroboration indirecte, pas une vérification directe du texte
+réglementaire applicable au SRE. À confirmer en priorité au début d'une future session de conception,
+avant de coder quoi que ce soit pour le versant État.
 
 **Surpension** : majoration applicable aux pensions des agents résidant dans certaines collectivités d'outre-mer, régime modifié depuis le 1er janvier 2009.
 
