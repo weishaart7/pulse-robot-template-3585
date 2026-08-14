@@ -571,7 +571,7 @@ export function decoteApplicable(decoteSurTrimestres: number, decoteSurAge: numb
  * aux carrières longues (120 trimestres cotisés requis), n'est pas
  * implémenté — cf. dette technique documentée dans docs/audit/audit-retraite.md.
  */
-export const MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 = 9075.50;
+export const MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 = 9075.48;
 
 /**
  * Minimum contributif proratisé, régime général, version non majorée

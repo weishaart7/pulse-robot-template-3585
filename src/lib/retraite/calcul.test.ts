@@ -598,12 +598,12 @@ describe('Ordre d’application : surcote assise sur P0, ajoutée après le MICO
 
   it('ordre CORRECT (référentiel) : le plancher MICO est établi sur P0 seul, la surcote est ajoutée ensuite', () => {
     const pensionCorrecte = Math.max(p0, mico) + surcoteMontant;
-    expect(pensionCorrecte).toBeCloseTo(9450.5, 6);
+    expect(pensionCorrecte).toBeCloseTo(9450.48, 6);
   });
 
   it('ordre INCORRECT (régression à ne jamais réintroduire) : la surcote pliée dans P0 avant le MICO fait disparaître son effet', () => {
     const pensionIncorrecte = Math.max(p0 + surcoteMontant, mico);
-    expect(pensionIncorrecte).toBeCloseTo(9075.5, 6); // le MICO absorbe entièrement la surcote
+    expect(pensionIncorrecte).toBeCloseTo(9075.48, 6); // le MICO absorbe entièrement la surcote
   });
 
   it('les deux ordres divergent : la non-régression porte sur un écart réel, pas un cas dégénéré', () => {
@@ -611,6 +611,12 @@ describe('Ordre d’application : surcote assise sur P0, ajoutée après le MICO
     const pensionIncorrecte = Math.max(p0 + surcoteMontant, mico);
     expect(pensionCorrecte).not.toBeCloseTo(pensionIncorrecte, 6);
     expect(pensionCorrecte).toBeGreaterThan(pensionIncorrecte);
+  });
+});
+
+describe('MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 — arrondi (référentiel §3.5.2, §11.3, écart #15)', () => {
+  it('vaut 9 075,48 € (756,29 €/mois × 12), pas 9 075,50 €', () => {
+    expect(MINIMUM_CONTRIBUTIF_NON_MAJORE_2026).toBe(9075.48);
   });
 });
 
@@ -649,17 +655,17 @@ describe('Ordre d’application, majoration enfants incluse : base → surcote �
   const surcotePct = surcotePourTrimestresCotises(4, true, true); // 5 %
   const surcoteMontant = p0 * (surcotePct / 100);
   const mico = minimumContributif(trimestresValides, trimestresRequis, decote);
-  const p1 = Math.max(p0, mico) + surcoteMontant; // 9 450,50 € (cf. bloc précédent)
+  const p1 = Math.max(p0, mico) + surcoteMontant; // 9 450,48 € (cf. bloc précédent)
   const majorationPct = majorationTroisEnfants(3); // 10 %
 
   it('ordre CORRECT : la majoration enfants est assise sur P1 (après MICO et surcote), pas sur P0 ni sur le MICO seuls', () => {
     const pensionAvecMajoration = p1 * (1 + majorationPct / 100);
-    expect(pensionAvecMajoration).toBeCloseTo(10395.55, 6); // 9 450,50 × 1,10
+    expect(pensionAvecMajoration).toBeCloseTo(10395.528, 6); // 9 450,48 × 1,10
   });
 
   it('ordre INCORRECT (régression à ne jamais réintroduire) : majoration assise sur P0 seul, avant MICO et surcote', () => {
     const pensionIncorrecte = Math.max(p0 * (1 + majorationPct / 100), mico) + surcoteMontant;
-    expect(pensionIncorrecte).not.toBeCloseTo(10395.55, 6);
+    expect(pensionIncorrecte).not.toBeCloseTo(10395.528, 6);
   });
 
   it('sans 3 enfants éligibles, la majoration est nulle et P1 reste inchangé', () => {
@@ -670,7 +676,7 @@ describe('Ordre d’application, majoration enfants incluse : base → surcote �
 
 describe('Profil complet — régime général (mission : branchement des majorations sur la pension finale, cf. docs/audit/branchement-majorations-pension-finale.md)', () => {
   // Étend le scénario déjà établi ci-dessus (écart #5 : P0 = 7 500 €,
-  // MICO = 9 075,50 €, surcote classique = 5 %) avec la surcote parentale
+  // MICO = 9 075,48 €, surcote classique = 5 %) avec la surcote parentale
   // (écart #6) et la majoration enfants (écart #7), dans l'ordre exact
   // désormais utilisé par Carriere.tsx : base → décote/surcote → MICO →
   // surcote → majoration enfants.
@@ -707,11 +713,11 @@ describe('Profil complet — régime général (mission : branchement des majora
     expect(surcoteTotalePct).toBe(10); // 5 % + 5 %, additif — pas juste la classique seule
 
     const mico = minimumContributif(trimestresValides, trimestresRequis, 0);
-    const pensionApresMico = Math.max(p0, mico); // 9 075,50 € (MICO gagne, cf. scénario établi)
+    const pensionApresMico = Math.max(p0, mico); // 9 075,48 € (MICO gagne, cf. scénario établi)
     const surcoteMontant = p0 * (surcoteTotalePct / 100); // 750 €
     const pensionFinale = pensionApresMico + surcoteMontant;
 
-    expect(pensionFinale).toBeCloseTo(9825.5, 6);
+    expect(pensionFinale).toBeCloseTo(9825.48, 6);
   });
 
   it('profil avec majoration pour 3 enfants (écart #7), sans surcote', () => {
@@ -720,7 +726,7 @@ describe('Profil complet — régime général (mission : branchement des majora
     const majorationPct = majorationTroisEnfants(3);
     const pensionFinale = pensionApresMico * (1 + majorationPct / 100);
 
-    expect(pensionFinale).toBeCloseTo(9983.05, 6); // 9 075,50 × 1,10
+    expect(pensionFinale).toBeCloseTo(9983.028, 6); // 9 075,48 × 1,10
   });
 
   it('profil combinant surcote cumulée ET majoration enfants : vérifie l’ordre MICO → surcote → majoration', () => {
@@ -728,13 +734,13 @@ describe('Profil complet — régime général (mission : branchement des majora
     const surcoteParentalePct = surcoteParentale(true, true, true, trimestresCotisesAnneeReference);
     const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true); // 10 %
     const mico = minimumContributif(trimestresValides, trimestresRequis, 0);
-    const pensionApresMico = Math.max(p0, mico); // 9 075,50 €
+    const pensionApresMico = Math.max(p0, mico); // 9 075,48 €
     const surcoteMontant = p0 * (surcoteTotalePct / 100); // 750 €
-    const pensionApresSurcote = pensionApresMico + surcoteMontant; // 9 825,50 €
+    const pensionApresSurcote = pensionApresMico + surcoteMontant; // 9 825,48 €
     const majorationPct = majorationTroisEnfants(3);
     const pensionFinaleCorrecte = pensionApresSurcote * (1 + majorationPct / 100);
 
-    expect(pensionFinaleCorrecte).toBeCloseTo(10808.05, 6); // 9 825,50 × 1,10
+    expect(pensionFinaleCorrecte).toBeCloseTo(10808.028, 6); // 9 825,48 × 1,10
 
     // Régression à ne jamais réintroduire : majoration assise sur P0 seul
     // (avant MICO et surcote) donne un résultat different, plus faible.
