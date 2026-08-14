@@ -614,6 +614,47 @@ describe('Ordre d’application : surcote assise sur P0, ajoutée après le MICO
   });
 });
 
+describe('minimumContributif — bascule de dénominateur, palier 1 (référentiel §3.5.3, écart #9)', () => {
+  it('Cas 1 (non-régression) : mono-pensionné sous la durée requise — dénominateur = durée requise, trimestresTousRegimes ignoré même s\'il est fourni', () => {
+    const trimestresValides = 160;
+    const trimestresRequis = 167;
+    const micoSansTousRegimes = minimumContributif(trimestresValides, trimestresRequis, 0);
+    // trimestresTousRegimes fourni mais <= trimestresRequis : Cas 1 reste actif.
+    const micoAvecTousRegimesSousLeSeuil = minimumContributif(trimestresValides, trimestresRequis, 0, 165);
+
+    const attendu = MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 * (160 / 167);
+    expect(micoSansTousRegimes).toBeCloseTo(attendu, 6);
+    expect(micoAvecTousRegimesSousLeSeuil).toBeCloseTo(attendu, 6);
+  });
+
+  it('Cas 2 : polypensionné dépassant la durée requise tous régimes confondus — dénominateur = trimestresTousRegimes (exemple référentiel §3.5.3 : 174/172)', () => {
+    const trimestresValidesRegimeGeneral = 150;
+    const trimestresRequis = 172;
+    const trimestresTousRegimes = 174; // dépasse la durée requise
+
+    const mico = minimumContributif(trimestresValidesRegimeGeneral, trimestresRequis, 0, trimestresTousRegimes);
+
+    // Dénominateur 174 (pas 172) : le référentiel démontre cet écart avec
+    // l'exemple exact "dénominateur 174, non 172".
+    const attendu = MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 * (150 / 174);
+    expect(mico).toBeCloseTo(attendu, 6);
+
+    // Non-régression : sans le paramètre, l'ancien comportement (dénominateur
+    // = durée requise) donnerait un montant plus élevé — la bascule doit
+    // réellement changer le résultat, pas être un cas dégénéré.
+    const micoSansBascule = minimumContributif(trimestresValidesRegimeGeneral, trimestresRequis, 0);
+    expect(mico).toBeLessThan(micoSansBascule);
+  });
+
+  it('Cas 2, ratio plafonné à 1 : un régime général à lui seul égal au total tous régimes ne change rien', () => {
+    const trimestresValides = 180;
+    const trimestresRequis = 172;
+    const trimestresTousRegimes = 180; // identique au régime général seul, pas de polypension réelle ici
+    const mico = minimumContributif(trimestresValides, trimestresRequis, 0, trimestresTousRegimes);
+    expect(mico).toBe(MINIMUM_CONTRIBUTIF_NON_MAJORE_2026); // 180/180 = 1, plafonné
+  });
+});
+
 describe('MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 — arrondi (référentiel §3.5.2, §11.3, écart #15)', () => {
   it('vaut 9 075,48 € (756,29 €/mois × 12), pas 9 075,50 €', () => {
     expect(MINIMUM_CONTRIBUTIF_NON_MAJORE_2026).toBe(9075.48);

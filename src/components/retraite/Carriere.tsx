@@ -460,6 +460,24 @@ export const Carriere = () => {
   // minimumContributif() dans calcul.ts pour la condition d'éligibilité).
   const trimValidesRegimeGeneral = parseInt(trimestresValides) || 0;
 
+  // Total tous régimes (référentiel §3.5.3, palier 1, Cas 2 — bascule de
+  // dénominateur pour le polypensionné). `trimestresValides` couvre déjà le
+  // régime général et les régimes alignés (fusion LURA, cf. handleValidateRIS
+  // ci-dessus) ; CNAVPL et fonction publique s'ajoutent seulement s'ils sont
+  // effectivement activés — même combinaison que `trimAutresRegimes` dans le
+  // useEffect de decoteSurcote ci-dessus, mais ici le total complet (régime
+  // général inclus), pas la perspective "autres régimes" d'un régime tiers.
+  // Les régimes complémentaires par points (Agirc-Arrco, RAFP — regimesPoints)
+  // n'ont structurellement pas de trimestres et ne font pas partie de ce
+  // total. Un régime de base non modélisé par cet outil (ex. MSA agricole
+  // non-salarié, régime étranger) resterait absent — dette documentée dans
+  // docs/audit/implementation-mico-polypensionne.md, pas une régression de
+  // cette session.
+  const trimestresTousRegimes =
+    trimValidesRegimeGeneral +
+    (hasFonctionPublique ? parseInt(trimestresLiquidablesFP) || 0 : 0) +
+    (hasCNAVPL ? parseInt(trimestresCNAVPL) || 0 : 0);
+
   // Indicateur de cohérence RIS ↔ carrière saisie — PAS une source
   // concurrente de trimestres_valides (le RIS reste la source de vérité, cf.
   // en-tête de fichier et docs/audit/audit-retraite.md) : ce total dérivé
@@ -530,7 +548,7 @@ export const Carriere = () => {
   // MICO : montant isolé (pas seulement consommé dans le Math.max ci-dessous)
   // pour pouvoir l'afficher comme ligne de détail à l'écran — absent
   // auparavant (docs/audit/branchement-majorations-pension-finale.md §1.d).
-  const micoMontant = minimumContributif(trimValidesRegimeGeneral, trimestresRequis, decoteSurcote);
+  const micoMontant = minimumContributif(trimValidesRegimeGeneral, trimestresRequis, decoteSurcote, trimestresTousRegimes);
   const pensionApresMico = Math.max(pensionBaseBrute * (1 + decoteSurcote / 100), micoMontant);
   const surcoteMontantRegimeGeneral = pensionBaseBrute * (surcoteTotalePct / 100);
   const pensionApresSurcoteRegimeGeneral = pensionApresMico + surcoteMontantRegimeGeneral;

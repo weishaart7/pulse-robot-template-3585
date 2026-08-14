@@ -581,16 +581,30 @@ export const MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 = 9075.48;
  * taux plein, c'est-à-dire sans décote (decote < 0 déclenche une exclusion
  * totale, pas un plafonnement — un assuré décoté n'est pas éligible, quel
  * que soit son nombre de trimestres).
+ *
+ * Bascule de dénominateur, palier 1 (référentiel §3.5.3) :
+ * - **Cas 1** (comportement par défaut, `trimestresTousRegimes` absent ou
+ *   `<= trimestresRequis`) : dénominateur = `trimestresRequis`, inchangé.
+ * - **Cas 2** (polypensionné dont le total tous régimes dépasse la durée
+ *   requise) : dénominateur = `trimestresTousRegimes` — exemple référentiel
+ *   « 174 trimestres tous régimes (172 requis) → dénominateur 174, non 172 ».
+ *   `trimestresValides` reste le numérateur (trimestres régime général +
+ *   régimes alignés) dans les deux cas ; seul le dénominateur change.
  */
 export function minimumContributif(
   trimestresValides: number,
   trimestresRequis: number,
-  decote: number
+  decote: number,
+  trimestresTousRegimes?: number
 ): number {
   if (decote < 0) {
     return 0;
   }
-  return MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 * Math.min(trimestresValides / trimestresRequis, 1);
+  const denominateur =
+    trimestresTousRegimes !== undefined && trimestresTousRegimes > trimestresRequis
+      ? trimestresTousRegimes
+      : trimestresRequis;
+  return MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 * Math.min(trimestresValides / denominateur, 1);
 }
 
 /**
