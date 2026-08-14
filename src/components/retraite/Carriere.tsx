@@ -10,6 +10,7 @@ import { useRetraiteData } from '@/hooks/useRetraiteData';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
 import { useToast } from '@/hooks/use-toast';
 import { parseRIS, PeriodeCarriere, RegimeDetecte, LIBELLE_TYPE_ACTIVITE } from '@/lib/retraite/parseRIS';
+import { estRegimeSaisieManuelle } from '@/lib/retraite/regimesSaisieManuelle';
 import { RISImportDialog } from '@/components/retraite/RISImportDialog';
 import { PeriodeCarriereEditDialog } from '@/components/retraite/PeriodeCarriereEditDialog';
 import {
@@ -382,14 +383,17 @@ export const Carriere = () => {
     detailCarriereValide: PeriodeCarriere[],
     samPropose: number | null
   ) => {
-    // CNAVPL a sa propre carte dédiée (CarriereCNAVPL.tsx, décote/surcote
-    // spécifique) : on l'exclut explicitement des deux paniers génériques
+    // CNAVPL et fonction publique (SRE, CNRACL) ont chacun leur propre carte
+    // dédiée (CarriereCNAVPL.tsx, CarriereFonctionPublique.tsx — décote/MIGA
+    // spécifiques) : on les exclut explicitement des deux paniers génériques
     // ci-dessous (trimestres régime général ET regimesPoints), sinon un bloc
-    // "CNAVPL" détecté dans le RIS gonflerait à tort trimestresValides
-    // (régime général) et/ou serait compté deux fois si l'utilisateur le
-    // ressaisit aussi dans CarriereCNAVPL — la saisie CNAVPL reste manuelle,
-    // comme RAFP et la fonction publique, jamais auto-remplie depuis le RIS.
-    const regimesHorsCNAVPL = regimesValides.filter(r => !/cnavpl/i.test(r.nom));
+    // détecté dans le RIS gonflerait à tort trimestresValides (régime
+    // général) et/ou serait compté deux fois si l'utilisateur ressaisit
+    // aussi ses trimestres dans la carte dédiée — cette saisie reste
+    // manuelle, comme RAFP, jamais auto-remplie depuis le RIS. Corrigé le
+    // 2026-08-14 : la fonction publique en manquait, cf.
+    // docs/audit/correction-double-comptage-fp-ris.md.
+    const regimesHorsSaisieManuelle = regimesValides.filter(r => !estRegimeSaisieManuelle(r.nom));
 
     // trimestresValides = somme de tous les régimes de type "trimestres"
     // détectés dans le RIS (Assurance retraite, MSA Salariés, ou tout autre
@@ -397,7 +401,7 @@ export const Carriere = () => {
     // trimestres des régimes alignés se fusionnent dans un seul calcul, donc
     // on ne privilégie plus un unique régime "Assurance retraite" au risque
     // d'ignorer silencieusement les trimestres d'un régime aligné distinct.
-    const regimesTrimestres = regimesHorsCNAVPL.filter(r => r.type === 'trimestres' && r.trimestres !== undefined);
+    const regimesTrimestres = regimesHorsSaisieManuelle.filter(r => r.type === 'trimestres' && r.trimestres !== undefined);
     if (regimesTrimestres.length > 0) {
       const totalTrimestres = regimesTrimestres.reduce((total, r) => total + (r.trimestres || 0), 0);
       setTrimestresValides(totalTrimestres.toString());
@@ -408,7 +412,7 @@ export const Carriere = () => {
     // entièrement la liste précédente (pas de fusion, pour éviter les doublons
     // si un régime a changé de valeur d'une année sur l'autre) ; la
     // persistance effective se fait via handleSave, comme les autres champs.
-    setRegimesPoints(regimesHorsCNAVPL.filter(r => r.type === 'points'));
+    setRegimesPoints(regimesHorsSaisieManuelle.filter(r => r.type === 'points'));
 
     // Détail de carrière et SAM proposé : même logique de remplacement
     // intégral qu'au-dessus, la persistance se fait via handleSave.
