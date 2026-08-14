@@ -288,13 +288,13 @@ Les en-têtes de `calcul.ts` et `calculSAM.ts` mentionnent explicitement être �
 | 6 | Surcote parentale absente (tous régimes) | — (aucune fonction) | §2.3.2, §5.4, §7.4 | **Majeure** |
 | 7 | Majoration pour 3 enfants ou plus absente (tous régimes) | — (aucune fonction) | §3.8, §5.4, §7.6 | **Majeure** |
 | 8 | Minimum garanti fonction publique (MIGA) : formule linéaire au lieu du barème par palier | [calculFonctionPublique.ts:84-87](src/lib/retraite/calculFonctionPublique.ts) | §7.5 | **Majeure** |
-| 9 | MICO palier 1 : bascule de dénominateur (durée requise → total tous régimes) non implémentée | [calcul.ts:227-236](src/lib/retraite/calcul.ts), [Carriere.tsx:335-339](src/components/retraite/Carriere.tsx) | §3.5.3 | Moyenne |
+| 9 | ~~MICO palier 1 : bascule de dénominateur non implémentée~~ **corrigé**, pour les 3 régimes de base modélisés par l'app (RG/aligné, CNAVPL, fonction publique) — un régime de base non modélisé (agricole non-salarié, étranger) resterait hors du total | [calcul.ts](src/lib/retraite/calcul.ts) (`minimumContributif()`), [Carriere.tsx](src/components/retraite/Carriere.tsx) | §3.5.3 | Moyenne → **clos** (limite résiduelle documentée) |
 | 10 | MICO majoré (palier 2) et écrêtement non implémentés | [calcul.ts:212-215](src/lib/retraite/calcul.ts) | §3.5.4, §3.5.5 | Moyenne |
 | 11 | SAM : ~~années sans trimestre validé~~ **corrigé** (critère 1) ; ~~année de la date d'effet~~ **paramètre ajouté, non branché** (critère 2) ; années uniquement assimilées et années de rachat **toujours non exclues** (critères 3 et 4, dette documentée) | [calculSAM.ts](src/lib/retraite/calculSAM.ts) (`anneesExclues()`) | §3.4.4 | Moyenne → **partiellement clos** |
 | 12 | Décote fonction publique figée à 1,25 %/trimestre, sans barème par année d'ouverture des droits, non documenté comme simplification | [calculFonctionPublique.ts:58-67](src/lib/retraite/calculFonctionPublique.ts) | §7.3 | Moyenne |
 | 13 | ~~Majoration enfants~~ implémentée et branchée depuis (commit `252c331`) ; **supplément NBI fonction publique reste absent** | [CarriereFonctionPublique.tsx:190](src/components/retraite/CarriereFonctionPublique.tsx) (majoration, réglé) · aucune fonction (NBI, ouvert) | §7.6 (clos), §7.7 (ouvert) | Moyenne → **partiellement clos** |
 | 14 | ~~Valeur du minimum garanti traitée comme acquise, sans avertissement~~ — **clos** : valeur 2025 confirmée retenue, avertissement en commentaire de code et à l'écran (commit `355e4c9`) | [calculFonctionPublique.ts:69-87](src/lib/retraite/calculFonctionPublique.ts), [CarriereFonctionPublique.tsx:362-366](src/components/retraite/CarriereFonctionPublique.tsx) | §7.5, §11.8 | Faible → **clos** |
-| 15 | `MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 = 9075.50` vs valeur exacte 9 075,48 € | [calcul.ts:216](src/lib/retraite/calcul.ts) | §3.5.2, §11.3 | Faible |
+| 15 | ~~`MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 = 9075.50`~~ **corrigé à 9075.48** | [calcul.ts:574](src/lib/retraite/calcul.ts) | §3.5.2, §11.3 | Faible → **clos** |
 
 ### 7.2. Détail des écarts majeurs
 
@@ -323,7 +323,11 @@ Aucune fonction ni aucun champ de saisie (nombre d'enfants, trimestres de majora
 
 ### 7.3. Détail des écarts moyens
 
-**#9 — MICO palier 1, bascule de dénominateur absente.** Le référentiel (§3.5.3) prévoit deux cas : si le total de trimestres tous régimes est inférieur ou égal à la durée requise, le dénominateur est la durée requise ; s'il la dépasse, le dénominateur devient le total tous régimes (« Cas 2 »), avec l'exemple explicite « dénominateur 174, non 172 » pour un total de 174 trimestres). `minimumContributif()` ([calcul.ts:227-236](src/lib/retraite/calcul.ts)) et son appel dans [Carriere.tsx:335-339](src/components/retraite/Carriere.tsx) ne reçoivent que `trimestresRequis` comme diviseur, plafonné via `Math.min(ratio, 1)` — jamais remplacé par le total réel tous régimes. Pour un polypensionné dépassant la durée requise, le MICO calculé est donc trop élevé par rapport à la règle officielle (dénominateur trop petit).
+**#9 — MICO palier 1, bascule de dénominateur (clos, avec limite résiduelle documentée).** Constat mis à jour le 2026-08-14, cf. [implementation-mico-polypensionne.md](implementation-mico-polypensionne.md) pour le diagnostic complet. Le référentiel (§3.5.3) prévoit deux cas : si le total de trimestres tous régimes est inférieur ou égal à la durée requise, le dénominateur est la durée requise ; s'il la dépasse, le dénominateur devient le total tous régimes (« Cas 2 »), avec l'exemple explicite « dénominateur 174, non 172 » pour un total de 174 trimestres. Avant cette session, `minimumContributif()` ne recevait que `trimestresRequis` comme diviseur, jamais remplacé.
+
+- **Recherche d'une donnée « total tous régimes »** : la piste RIS page 2 seule (`trimestresValides`) ne couvre que le régime général et les régimes alignés — insuffisante seule, comme pressenti. Une seconde source, déjà présente dans `Carriere.tsx` (state `trimestresCNAVPL`/`trimestresLiquidablesFP`, déjà combiné ailleurs dans le même fichier pour un calcul voisin), a permis de construire `trimestresTousRegimes` sans nouvelle collecte de données.
+- **Implémenté** : `minimumContributif()` reçoit un paramètre optionnel `trimestresTousRegimes` ([calcul.ts](src/lib/retraite/calcul.ts)) ; le Cas 1 est inchangé, le Cas 2 bascule le dénominateur quand ce total dépasse `trimestresRequis`. Branché dans `Carriere.tsx` avec le total des trois régimes de base modélisés par l'app (régime général/aligné + CNAVPL si actif + fonction publique si actif).
+- **Limite résiduelle** : un régime de base non modélisé par cet outil (MSA agricole non-salarié, régime étranger) reste absent de ce total — un polypensionné dans un tel régime resterait à tort au Cas 1. Les régimes complémentaires par points (Agirc-Arrco, RAFP) sont, eux, correctement hors de ce total : ils n'ont structurellement pas de trimestres.
 
 **#10 — MICO majoré et écrêtement non implémentés.** Déjà identifié comme dette technique assumée dans le code lui-même ([calcul.ts:212-215](src/lib/retraite/calcul.ts)) et dans la section 5 de ce document. Confirmé comme écart réel vis-à-vis du référentiel §3.5.4 (palier 2, condition des 120 trimestres cotisés) et §3.5.5 (plafond global de pensions 1 410,89 €/mois en 2026). Sévérité maintenue à « moyenne » plutôt que majeure car déjà transparent pour l'équipe (pas une découverte de cet audit).
 
@@ -352,7 +356,7 @@ Une année à revenu nul ou très faible sans aucune activité assimilée (le ca
 
 Les deux conditions de clôture posées par le constat initial (valeur non certaine paramétrée + avertissement) sont donc remplies — pas seulement la première.
 
-**#15 — Arrondi du MICO non majoré.** `MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 = 9075.50` ([calcul.ts:216](src/lib/retraite/calcul.ts)) contre 9 075,48 € exactement (756,29 €/mois × 12, §3.5.2 et §11.3 du référentiel) — écart de 2 centimes, sans impact pratique.
+**#15 — Arrondi du MICO non majoré (clos).** `MINIMUM_CONTRIBUTIF_NON_MAJORE_2026` valait `9075.50` ([calcul.ts:574](src/lib/retraite/calcul.ts)) contre 9 075,48 € exactement (756,29 €/mois × 12, §3.5.2 et §11.3 du référentiel) — écart de 2 centimes, sans impact pratique. Corrigé le 2026-08-14 (cf. [implementation-mico-polypensionne.md](implementation-mico-polypensionne.md)) ; six assertions de test déjà codées en dur avec l'ancienne valeur recalculées en conséquence, sans changement de comportement attendu.
 
 ### 7.5. Points du référentiel hors périmètre actuel de l'outil, non comptés comme écarts
 
