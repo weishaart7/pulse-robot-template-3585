@@ -2,6 +2,11 @@ import { describe, it, expect } from 'vitest';
 import {
   minimumContributif,
   MINIMUM_CONTRIBUTIF_NON_MAJORE_2026,
+  MINIMUM_CONTRIBUTIF_MAJORE_2026,
+  PLAFOND_GLOBAL_PENSIONS_2026,
+  TRIMESTRES_COTISES_SEUIL_PALIER_2,
+  majorationPalier2MICO,
+  ecretementMICO,
   decoteSurTrimestres,
   decoteSurAge,
   decoteApplicable,
@@ -658,6 +663,157 @@ describe('minimumContributif — bascule de dénominateur, palier 1 (référenti
 describe('MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 — arrondi (référentiel §3.5.2, §11.3, écart #15)', () => {
   it('vaut 9 075,48 € (756,29 €/mois × 12), pas 9 075,50 €', () => {
     expect(MINIMUM_CONTRIBUTIF_NON_MAJORE_2026).toBe(9075.48);
+  });
+});
+
+describe('majorationPalier2MICO — MICO majoré, palier 2 (référentiel §3.5.4, écart #10)', () => {
+  // Les exemples 4/5/6 du référentiel utilisent le barème 2025 (747,69 € /
+  // 893,65 €, supplément 145,96 €) alors que cette fonction est câblée sur
+  // les constantes 2026 (même convention que la reproduction de l'exemple
+  // §3.5.3 pour l'écart #9, cf. describe « bascule de dénominateur, palier 1 »
+  // ci-dessus) : on reproduit donc la STRUCTURE de chaque exemple (mêmes
+  // trimestres, même bascule de dénominateur, même double proratisation),
+  // avec un montant « attendu » recalculé à partir du supplément 2026 réel,
+  // pas les euros du référentiel tels quels — cf.
+  // docs/audit/implementation-mico-majore.md pour la justification complète.
+  const SUPPLEMENT_2026 = MINIMUM_CONTRIBUTIF_MAJORE_2026 - MINIMUM_CONTRIBUTIF_NON_MAJORE_2026;
+
+  it('sous le seuil de 120 trimestres cotisés → majoration nulle (non-régression)', () => {
+    expect(majorationPalier2MICO(119, 169, 169, 0)).toBe(0);
+    expect(majorationPalier2MICO(0, 169, 169, 0)).toBe(0);
+  });
+
+  it('decote < 0 (pension décotée) → majoration nulle, même condition d\'éligibilité que le palier 1', () => {
+    expect(majorationPalier2MICO(150, 169, 169, -5)).toBe(0);
+  });
+
+  it('exemple 4 du référentiel — mono-régime aligné, 169/169 trimestres dont 150 cotisés', () => {
+    // référentiel : (893,65 − 747,69) × 150/169 = 130 € (2025)
+    const majoration = majorationPalier2MICO(150, 169, 169, 0);
+    const attendu = SUPPLEMENT_2026 * (150 / 169);
+    expect(majoration).toBeCloseTo(attendu, 6);
+    // Même structure que l'exemple référentiel : un seul prorata (mono-régime).
+    expect(majoration).toBeCloseTo(SUPPLEMENT_2026 * (150 / 169), 6);
+  });
+
+  it('exemple 5 du référentiel — polypensionné, Cas 1 (169 tous régimes = 169 requis), 160 au régime général dont 150 cotisés', () => {
+    // référentiel : (893,65 − 747,69) × (150/169) × (160/169) = 123 € (2025)
+    const majoration = majorationPalier2MICO(150, 160, 169, 0, 169);
+    const attendu = SUPPLEMENT_2026 * (150 / 169) * (160 / 169);
+    expect(majoration).toBeCloseTo(attendu, 6);
+    // Double proratisation effective : strictement inférieure au résultat
+    // mono-régime de l'exemple 4 malgré le même trim_cotisés (150) — c'est
+    // la « part du régime général dans le total validé » qui réduit encore.
+    expect(majoration).toBeLessThan(SUPPLEMENT_2026 * (150 / 169));
+  });
+
+  it('exemple 6 du référentiel — polypensionné, Cas 2 (171 tous régimes > 169 requis) : bascule de dénominateur à 171, comme le palier 1', () => {
+    // Le référentiel affiche « (893,65 − 747,69) × 160/171 = 137 € » pour cet
+    // exemple — une fraction UNIQUE, alors que la formule générale du
+    // référentiel pour un polypensionné prévoit deux facteurs
+    // (trim_cotisés/D × trim_RG_alignés/trim_tous_régimes). Reproduire 137 €
+    // exactement exigerait un trim_cotisés « tous régimes confondus » (171,
+    // pas 160) — une donnée que cet outil ne peut pas calculer pour un
+    // polypensionné fonction publique/CNAVPL (aucune distinction cotisé/
+    // assimilé n'existe pour ces régimes). Écart documenté en détail dans
+    // docs/audit/implementation-mico-majore.md (Étape 1, point a) : ce test
+    // vérifie donc la structure réellement implémentable et calculable ici
+    // (trim_cotisés scopé au régime général/aligné, seule donnée disponible),
+    // volontairement plus prudente (résultat plus bas) que le calcul du
+    // référentiel.
+    const trimestresCotisesRegimeGeneral = 160; // "tous cotisés" côté régime général
+    const trimestresRegimeGeneral = 160;
+    const trimestresRequis = 169;
+    const trimestresTousRegimes = 171;
+
+    const majoration = majorationPalier2MICO(
+      trimestresCotisesRegimeGeneral,
+      trimestresRegimeGeneral,
+      trimestresRequis,
+      0,
+      trimestresTousRegimes
+    );
+
+    // Dénominateur bascule à 171 (comme le palier 1 pour ce même exemple,
+    // cf. describe « bascule de dénominateur, palier 1 » ci-dessus), pas 169.
+    const attendu = SUPPLEMENT_2026 * (160 / 171) * (160 / 171);
+    expect(majoration).toBeCloseTo(attendu, 6);
+
+    // Non-régression de la bascule : sans dénominateur 171, le résultat
+    // serait strictement plus élevé (169 < 171) — la bascule doit réellement
+    // changer le résultat.
+    const sansBascule = SUPPLEMENT_2026 * (160 / 169) * (160 / 169);
+    expect(majoration).toBeLessThan(sansBascule);
+  });
+
+  it('mono-régime au sens large : régime général seul égal au total tous régimes (trimestresTousRegimes fourni mais non supérieur) → un seul prorata', () => {
+    const majoration = majorationPalier2MICO(150, 169, 169, 0, 169);
+    expect(majoration).toBeCloseTo(SUPPLEMENT_2026 * (150 / 169), 6);
+  });
+
+  it('trimestres cotisés plafonnés à 100 % du dénominateur (garde-fou, jamais atteint dans les exemples référentiel mais protège contre une saisie incohérente)', () => {
+    const majoration = majorationPalier2MICO(250, 169, 169, 0);
+    expect(majoration).toBeCloseTo(SUPPLEMENT_2026 * 1, 6);
+  });
+});
+
+describe('ecretementMICO — réduction du MICO au-delà du plafond global (référentiel §3.5.5, écart #10)', () => {
+  it('sous le plafond : majoration inchangée (non-régression, comportement par défaut)', () => {
+    const majoration = ecretementMICO(550 * 12, 100 * 12, 0, PLAFOND_GLOBAL_PENSIONS_2026);
+    expect(majoration).toBe(100 * 12);
+  });
+
+  it('reproduit la structure de l\'exemple référentiel §3.5.5 — reprise de l\'exemple 4 avec 600 €/mois d\'autres pensions', () => {
+    // référentiel (barème 2025) : P0=550, majoration_p1=197,69, majoration_p2=130,
+    // total pension = 877,69 ; + 600 = 1 477,69 > plafond 2025 (1 394,86) →
+    // réduction de 82,83 €, majoration ramenée de 327,69 € à 244,86 €. Même
+    // logique reproduite ici avec les montants 2026 (mensuel × 12, cohérent
+    // avec la convention annuelle du reste du module) plutôt que les euros
+    // 2025 du référentiel — cf. describe majorationPalier2MICO ci-dessus pour
+    // la même justification.
+    const pensionBaseHorsMicoHorsSurcote = 550 * 12;
+    const majorationAvantEcretement = 327.69 * 12; // 197,69 (p1) + 130 (p2), structure de l'exemple 4
+    const autresPensionsAnnuelles = 600 * 12;
+    const plafondAnnuel = 1394.86 * 12; // plafond 2025, pour coller exactement à l'exemple référentiel
+
+    const majorationApresEcretement = ecretementMICO(
+      pensionBaseHorsMicoHorsSurcote,
+      majorationAvantEcretement,
+      autresPensionsAnnuelles,
+      plafondAnnuel
+    );
+
+    expect(majorationApresEcretement).toBeCloseTo(244.86 * 12, 1);
+    expect(majorationAvantEcretement - majorationApresEcretement).toBeCloseTo(82.83 * 12, 1);
+  });
+
+  it('réduction jamais négative : plafonnée à 0, pas de majoration négative même en cas de dépassement massif', () => {
+    const majoration = ecretementMICO(550 * 12, 100 * 12, 100000, PLAFOND_GLOBAL_PENSIONS_2026);
+    expect(majoration).toBe(0);
+  });
+
+  it('utilise PLAFOND_GLOBAL_PENSIONS_2026 par défaut si le plafond n\'est pas fourni explicitement', () => {
+    const majoration = ecretementMICO(550 * 12, 100 * 12, 0);
+    expect(majoration).toBe(100 * 12);
+  });
+
+  it('autres pensions à 0 (défaut, champ non renseigné) : comportement identique à l\'absence du paramètre', () => {
+    const avecZero = ecretementMICO(800 * 12, 100 * 12, 0, PLAFOND_GLOBAL_PENSIONS_2026);
+    expect(avecZero).toBe(100 * 12); // 800+100=900 < plafond mensuel (1410,89), aucune réduction
+  });
+});
+
+describe('PLAFOND_GLOBAL_PENSIONS_2026 et MINIMUM_CONTRIBUTIF_MAJORE_2026 — valeurs 2026 (référentiel §3.5.2, §3.5.5)', () => {
+  it('MINIMUM_CONTRIBUTIF_MAJORE_2026 vaut 10 847,16 € (903,93 €/mois × 12)', () => {
+    expect(MINIMUM_CONTRIBUTIF_MAJORE_2026).toBe(10847.16);
+  });
+
+  it('PLAFOND_GLOBAL_PENSIONS_2026 vaut 16 930,68 € (1 410,89 €/mois × 12)', () => {
+    expect(PLAFOND_GLOBAL_PENSIONS_2026).toBe(16930.68);
+  });
+
+  it('TRIMESTRES_COTISES_SEUIL_PALIER_2 vaut 120', () => {
+    expect(TRIMESTRES_COTISES_SEUIL_PALIER_2).toBe(120);
   });
 });
 

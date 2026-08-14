@@ -567,9 +567,10 @@ export function decoteApplicable(decoteSurTrimestres: number, decoteSurAge: numb
  * 1er janvier 2026 (756,29 €/mois × 12). ⚠️ À réviser chaque année lors de
  * la revalorisation.
  *
- * Ne couvre que la version de base (non majorée). Le MiCo majoré, réservé
- * aux carrières longues (120 trimestres cotisés requis), n'est pas
- * implémenté — cf. dette technique documentée dans docs/audit/audit-retraite.md.
+ * Ne couvre que la version de base (non majorée) — le supplément du MiCo
+ * majoré (palier 2, carrières longues) est calculé séparément par
+ * `majorationPalier2MICO()` ci-dessous, pas ici (cf.
+ * docs/audit/implementation-mico-majore.md).
  */
 export const MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 = 9075.48;
 
@@ -605,6 +606,155 @@ export function minimumContributif(
       ? trimestresTousRegimes
       : trimestresRequis;
   return MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 * Math.min(trimestresValides / denominateur, 1);
+}
+
+/**
+ * Montant annuel du minimum contributif (MiCo) MAJORÉ, régime général
+ * (référentiel §3.5.2, §3.5.4 — palier 2, écart #10).
+ *
+ * Source : circulaire CNAV n° 2025-34 du 23/12/2025, montant applicable au
+ * 1er janvier 2026 (903,93 €/mois × 12). ⚠️ À réviser chaque année lors de
+ * la revalorisation, comme `MINIMUM_CONTRIBUTIF_NON_MAJORE_2026`.
+ */
+export const MINIMUM_CONTRIBUTIF_MAJORE_2026 = 10847.16;
+
+/**
+ * Plafond global annuel des pensions de retraite (référentiel §3.5.5, art.
+ * L. 173-2 et D. 173-21-4) : total des pensions de base et complémentaires,
+ * françaises et étrangères, hors réversion, au-delà duquel la majoration
+ * MICO est réduite (écrêtée), jamais supprimée.
+ *
+ * Source : instruction interministérielle DSS/3A/DB/6BRS/2025/174 du
+ * 15/12/2025, montant applicable au 1er janvier 2026 (1 410,89 €/mois × 12).
+ * ⚠️ Le référentiel précise que le plafond retenu est celui en vigueur à la
+ * date d'ouverture du droit au MICO, pas celui de l'année de calcul — cette
+ * constante n'en tient pas compte (pas de notion de date d'effet du MICO
+ * dans ce module, même simplification assumée qu'ailleurs pour la date
+ * d'effet, cf. écart #2 documenté dans docs/audit/audit-retraite.md).
+ */
+export const PLAFOND_GLOBAL_PENSIONS_2026 = 16930.68;
+
+/**
+ * Seuil de trimestres cotisés (régime général et régimes alignés) ouvrant
+ * droit au palier 2 du MICO (référentiel §3.5.4).
+ */
+export const TRIMESTRES_COTISES_SEUIL_PALIER_2 = 120;
+
+/**
+ * Supplément du MICO majoré (palier 2) par rapport au MICO de base (palier
+ * 1) — les deux montants ne s'additionnent pas (référentiel §3.5.2) : la
+ * pension est d'abord portée au MICO de base (`minimumContributif()`), puis
+ * ce supplément proratisé l'amène éventuellement au MICO majoré.
+ *
+ * Fonction séparée de `minimumContributif()`, pas un paramètre supplémentaire
+ * de celle-ci : `minimumContributif()` retourne un plancher (comparé par
+ * `Math.max()` à la pension calculée côté appelant), alors que cette
+ * fonction retourne un delta additif (la majoration elle-même), avec des
+ * entrées supplémentaires (trimestres cotisés) sans rapport avec la logique
+ * du palier 1. Composer les deux au niveau de l'appelant (P0 + majoration
+ * palier 1 déjà équivalente à `Math.max(P0, minimumContributif(...))`, plus
+ * cette majoration palier 2) est plus sûr que d'étendre la signature d'une
+ * fonction déjà testée et correcte — aucune modification de
+ * `minimumContributif()` dans cette session.
+ *
+ * Éligibilité : même condition de taux plein que le palier 1 (`decote < 0`
+ * → exclusion totale, référentiel §3.5.1 condition n°1 commune aux deux
+ * paliers), PLUS le seuil des 120 trimestres cotisés propre au palier 2
+ * (référentiel §3.5.4) — sous ce seuil, `majoration_p2 = 0`.
+ *
+ * `trimestresCotisesRegimeGeneral` : trimestres cotisés au sens strict
+ * (référentiel §3.5.4) — cotisations à l'assurance vieillesse obligatoire et
+ * rachats option 2 uniquement, excluant assimilés (chômage/maladie/
+ * invalidité), majorations de durée d'assurance et rachats option 1, avec un
+ * plafond de 24 trimestres AVPF/AVA. Dans cet outil, calculé via
+ * `trimestresCotisesEtAssimilesDepuisCarriere()` (`.cotises`,
+ * calculTrimestres.ts) : ce champ exclut déjà nativement les assimilés et ne
+ * modélise ni les MDA, ni l'AVPF/AVA, ni le rachat (aucune donnée de rachat
+ * nulle part dans le schéma, confirmé écart #11) — la valeur obtenue est
+ * donc une approximation PRUDENTE (peut seulement sous-compter le seuil de
+ * 120 et le montant de la majoration, jamais les accorder à tort), documentée
+ * en détail dans docs/audit/implementation-mico-majore.md.
+ *
+ * Double proratisation (référentiel §3.5.4, loi 2023-270 art. 18 V al. 4) :
+ * - mono-régime aligné (ou régime général seul égal au total tous régimes) :
+ *   un seul prorata, `trimestresCotisesRegimeGeneral / D`.
+ * - polypensionné avec régime non aligné (fonction publique, CNAVPL...) :
+ *   second prorata multiplicatif, `trimestresValidesRegimeGeneral /
+ *   trimestresTousRegimes` — la part du régime général dans le total validé.
+ *
+ * Bascule de dénominateur D : même règle et mêmes paramètres que le palier 1
+ * (`trimestresTousRegimes` si fourni et strictement supérieur à
+ * `trimestresRequis`, sinon `trimestresRequis`) — dupliquée ici en 3 lignes
+ * plutôt que factorisée avec `minimumContributif()`, pour ne courir aucun
+ * risque de modifier son comportement déjà testé.
+ */
+export function majorationPalier2MICO(
+  trimestresCotisesRegimeGeneral: number,
+  trimestresValidesRegimeGeneral: number,
+  trimestresRequis: number,
+  decote: number,
+  trimestresTousRegimes?: number
+): number {
+  if (decote < 0) {
+    return 0;
+  }
+  if (trimestresCotisesRegimeGeneral < TRIMESTRES_COTISES_SEUIL_PALIER_2) {
+    return 0;
+  }
+
+  const denominateur =
+    trimestresTousRegimes !== undefined && trimestresTousRegimes > trimestresRequis
+      ? trimestresTousRegimes
+      : trimestresRequis;
+
+  const supplement = MINIMUM_CONTRIBUTIF_MAJORE_2026 - MINIMUM_CONTRIBUTIF_NON_MAJORE_2026;
+  const proratCotises = Math.min(trimestresCotisesRegimeGeneral / denominateur, 1);
+
+  const estPolypensionneRegimeNonAligne =
+    trimestresTousRegimes !== undefined && trimestresValidesRegimeGeneral < trimestresTousRegimes;
+
+  if (!estPolypensionneRegimeNonAligne) {
+    return supplement * proratCotises;
+  }
+
+  const proratRegimeGeneral = trimestresValidesRegimeGeneral / trimestresTousRegimes!;
+  return supplement * proratCotises * proratRegimeGeneral;
+}
+
+/**
+ * Écrêtement du MICO (référentiel §3.5.5) : réduit — sans jamais supprimer —
+ * la majoration MICO totale (palier 1 + palier 2) quand le total des
+ * pensions personnelles brutes, tous régimes confondus, dépasse le plafond
+ * global annuel.
+ *
+ * `pensionBaseHorsMicoHorsSurcote` : P0, la pension calculée avant MICO et
+ * avant surcote (référentiel §3.7, étape 3 : « comparaison au montant P0,
+ * hors surcote ») — PAS `pensionApresMico` : la surcote n'entre jamais dans
+ * cette comparaison, conformément à l'ordre d'application déjà en vigueur
+ * pour le palier 1 dans Carriere.tsx (`pensionBaseBrute × (1 +
+ * decoteSurcote/100)`, calculé avant l'ajout de la surcote).
+ *
+ * `autresPensionsAnnuelles` : pensions personnelles brutes d'autres régimes
+ * non modélisés par cet outil (étranger, complémentaires non saisies...) —
+ * champ déclaratif optionnel côté écran, défaut 0 (comportement inchangé si
+ * non renseigné).
+ *
+ * Ne réduit que la majoration transmise (`majorationMicoTotale` = résultat
+ * de `minimumContributif()` moins P0, si positif, PLUS
+ * `majorationPalier2MICO()`) — jamais en dessous de 0.
+ */
+export function ecretementMICO(
+  pensionBaseHorsMicoHorsSurcote: number,
+  majorationMicoTotale: number,
+  autresPensionsAnnuelles: number,
+  plafondAnnuel: number = PLAFOND_GLOBAL_PENSIONS_2026
+): number {
+  const total = pensionBaseHorsMicoHorsSurcote + majorationMicoTotale + autresPensionsAnnuelles;
+  if (total <= plafondAnnuel) {
+    return majorationMicoTotale;
+  }
+  const reduction = total - plafondAnnuel;
+  return Math.max(0, majorationMicoTotale - reduction);
 }
 
 /**
