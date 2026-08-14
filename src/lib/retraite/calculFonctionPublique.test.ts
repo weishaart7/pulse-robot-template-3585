@@ -6,6 +6,7 @@ import {
   minimumGaranti,
   pensionFonctionPubliqueFinale,
   majorationEnfantsFonctionPublique,
+  supplementNBI,
   pensionFonctionPubliqueAvecMajorationEnfants,
   VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
   VALEUR_REFERENCE_MIGA_MENSUELLE_2025,
@@ -202,6 +203,60 @@ describe('majorationEnfantsFonctionPublique — dégressif 10 % + 5 %/enfant (r�
     // (majorationTroisEnfants(4) === 10, testé dans calcul.test.ts).
     expect(majorationEnfantsFonctionPublique(4)).not.toBe(10);
     expect(majorationEnfantsFonctionPublique(4)).toBe(15);
+  });
+});
+
+describe('supplementNBI — supplément de pension NBI (référentiel §7.7.1, écart #13-NBI)', () => {
+  it('cas CNRACL — reproduit la formule du texte source (Décret n° 2003-1306, art. 28) : moyenne × trimestres × (75% / durée requise)', () => {
+    // Profil arbitraire mais réaliste : 800 €/an de moyenne NBI revalorisée,
+    // perçue pendant 40 trimestres liquidables (10 ans), durée requise 172.
+    const moyenneAnnuelleNBI = 800;
+    const trimestresPerceptionNBI = 40;
+    const dureeRequise = 172;
+
+    const supplement = supplementNBI(moyenneAnnuelleNBI, trimestresPerceptionNBI, dureeRequise);
+
+    const attendu = moyenneAnnuelleNBI * trimestresPerceptionNBI * (0.75 / dureeRequise);
+    expect(supplement).toBeCloseTo(attendu, 6);
+    expect(supplement).toBeCloseTo(139.53, 2); // 800 × 40 × 0,75/172
+  });
+
+  it('0 trimestre de perception → non-éligibilité, supplément nul', () => {
+    expect(supplementNBI(1000, 0, 172)).toBe(0);
+  });
+
+  it('trimestres de perception négatifs (saisie incohérente) → supplément nul, pas une valeur négative', () => {
+    expect(supplementNBI(1000, -5, 172)).toBe(0);
+  });
+
+  it('aucun seuil minimal au-delà de 0 : 1 seul trimestre de perception ouvre déjà droit à un supplément non nul', () => {
+    const supplement = supplementNBI(1000, 1, 172);
+    expect(supplement).toBeGreaterThan(0);
+    expect(supplement).toBeCloseTo(1000 * (0.75 / 172), 6);
+  });
+
+  it('cas limite : trimestres de perception = durée requise → le ratio atteint exactement 1, supplément = moyenne × 75 % (plafond du taux plein)', () => {
+    const moyenneAnnuelleNBI = 500;
+    const dureeRequise = 172;
+    const supplement = supplementNBI(moyenneAnnuelleNBI, dureeRequise, dureeRequise);
+    expect(supplement).toBeCloseTo(moyenneAnnuelleNBI * 0.75, 6);
+  });
+
+  it('garde-fou : trimestres de perception supérieurs à la durée requise (saisie incohérente) → ratio plafonné à 1, jamais au-delà de 75 %', () => {
+    const moyenneAnnuelleNBI = 500;
+    const dureeRequise = 172;
+    const supplementAuPlafond = supplementNBI(moyenneAnnuelleNBI, dureeRequise, dureeRequise);
+    const supplementAuDela = supplementNBI(moyenneAnnuelleNBI, dureeRequise + 20, dureeRequise);
+    expect(supplementAuDela).toBe(supplementAuPlafond); // pas d'effet au-delà du plafond
+    expect(supplementAuDela).toBeCloseTo(moyenneAnnuelleNBI * 0.75, 6);
+  });
+
+  it('proportionnalité : deux fois plus de trimestres de perception (sous le plafond) → deux fois le supplément', () => {
+    const moyenneAnnuelleNBI = 600;
+    const dureeRequise = 172;
+    const supplement20 = supplementNBI(moyenneAnnuelleNBI, 20, dureeRequise);
+    const supplement40 = supplementNBI(moyenneAnnuelleNBI, 40, dureeRequise);
+    expect(supplement40).toBeCloseTo(supplement20 * 2, 6);
   });
 });
 

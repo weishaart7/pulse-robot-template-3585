@@ -229,6 +229,88 @@ export function majorationEnfantsFonctionPublique(nombreEnfantsEligibles: number
 }
 
 /**
+ * Supplément de pension au titre de la NBI (Nouvelle Bonification Indiciaire)
+ * — référentiel §7.7.1, écart #13-NBI.
+ *
+ * Source primaire, citée verbatim dans `docs/retraite-base-referentiel.md`
+ * §7.7.1 : Décret n° 2003-1306 du 26 décembre 2003 (régime CNRACL), art. 28 —
+ * « Ce supplément de pension est égal à la moyenne annuelle de la somme
+ * perçue au titre de la nouvelle bonification indiciaire, multipliée [...]
+ * par la durée de perception exprimée en trimestres liquidables [...] et
+ * [...] par le rapport défini au dernier alinéa du I [de l'article 16] »,
+ * ce rapport étant le taux plein maximum (75 %) divisé par la durée requise
+ * pour l'obtenir — le même taux d'annuité par trimestre que la pension de
+ * base fonction publique (`pensionBaseFonctionPublique()` ci-dessus).
+ *
+ * `moyenneAnnuelleNBIRevalorisee` : un MONTANT en euros (pas un nombre de
+ * points) — le texte source parle explicitement de « la somme perçue au
+ * titre de la NBI », déjà revalorisée « dans les conditions prévues à
+ * l'article 19 » (même revalorisation que la pension elle-même). Cet outil
+ * ne recalcule pas cette revalorisation : le conseiller saisit directement
+ * la moyenne annuelle telle qu'elle figure sur le relevé de carrière ou le
+ * décompte de liquidation du client — champ déclaratif, pas de conversion
+ * points → euros ici (à la différence des points RAFP,
+ * `pensionComplementaireAnnuelle()`, où les points sont saisis puis
+ * convertis via une valeur de service).
+ *
+ * `trimestresLiquidablesPerceptionNBI` : nombre de trimestres liquidables
+ * pendant lesquels la NBI a été effectivement perçue (PAS la durée totale de
+ * carrière ni les trimestres liquidables totaux de la pension) — champ
+ * déclaratif, à renseigner par le conseiller à partir du relevé de carrière
+ * du client, sans calcul automatique dans cet outil (aucune donnée de
+ * fonctions/emplois ouvrant droit à la NBI n'existe dans ce dépôt).
+ *
+ * `dureeRequiseTauxPlein` : même durée requise que celle utilisée pour la
+ * pension de base (`trimestresRequis`, cf. `trimestresRequisPourGeneration()`
+ * dans calcul.ts) — pas une valeur propre au supplément NBI.
+ *
+ * Aucun seuil minimal de perception (texte source, lu intégralement : toute
+ * perception, même brève, ouvre droit au supplément, proportionnellement à
+ * sa durée) — sous 1 trimestre de perception, le supplément est nul par
+ * construction arithmétique (`trimestresLiquidablesPerceptionNBI = 0`), pas
+ * par un seuil ajouté artificiellement.
+ *
+ * Le ratio `trimestresLiquidablesPerceptionNBI / dureeRequiseTauxPlein` est
+ * plafonné à 1 (`Math.min`) : garde-fou défensif, sur le même principe que
+ * `tauxProratisation()` (calcul.ts) et non une règle explicitement énoncée
+ * par le texte source — protège contre une saisie incohérente (durée de
+ * perception NBI supérieure à la durée requise du taux plein), pas un cas
+ * documenté par le décret.
+ *
+ * ⚠️ RÉSERVE CNRACL/SRE — à ne jamais perdre en branchant cette fonction sur
+ * un écran : le texte source ci-dessus régit spécifiquement la CNRACL
+ * (fonction publique territoriale et hospitalière). Aucune disposition
+ * équivalente n'a été vérifiée directement dans le code des pensions civiles
+ * et militaires de retraite (fonction publique d'État, SRE) — seules des
+ * sources secondaires (service-public.gouv.fr, Service des Retraites de
+ * l'État) confirment que le droit à un supplément NBI existe aussi côté
+ * État, sans qu'une formule de liquidation SRE ait été localisée et citée
+ * avec certitude. Cet outil ne distingue aujourd'hui SRE et CNRACL nulle
+ * part (`hasFonctionPublique` est un booléen générique, cf.
+ * docs/audit/implementation-nbi.md §1) : le branchement de cette fonction
+ * sur un écran est volontairement différé tant que ce choix de périmètre
+ * (appliquer partout avec avertissement, ou modéliser un champ
+ * versant/régime pour restreindre) n'a pas été tranché — décision produit,
+ * pas technique, cf. rapport pour le détail de l'arbitrage retenu.
+ */
+export function supplementNBI(
+  moyenneAnnuelleNBIRevalorisee: number,
+  trimestresLiquidablesPerceptionNBI: number,
+  dureeRequiseTauxPlein: number
+): number {
+  if (trimestresLiquidablesPerceptionNBI <= 0) {
+    return 0;
+  }
+  const tauxPleinMaximum = 0.75;
+  // moyenne × trimestres × (75% / dureeRequise), réécrit en
+  // moyenne × ratio × 75% une fois le ratio plafonné à 1 (garde-fou,
+  // cf. docstring) — algébriquement identique à la formule du texte source
+  // tant que le ratio n'est pas plafonné.
+  const ratioPerceptionNBI = Math.min(trimestresLiquidablesPerceptionNBI / dureeRequiseTauxPlein, 1);
+  return moyenneAnnuelleNBIRevalorisee * ratioPerceptionNBI * tauxPleinMaximum;
+}
+
+/**
  * Pension fonction publique avec majoration pour enfants, plafonnée au
  * dernier traitement (référentiel §7.6) : « la majoration s'applique le cas
  * échéant sur la pension portée au minimum garanti [...] le total pension +
