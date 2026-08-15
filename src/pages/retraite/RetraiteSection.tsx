@@ -1,13 +1,35 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SegmentedTabs } from '@/components/ui/segmented-tabs';
 import { THEME_INK } from '@/lib/theme';
 import { Synthese } from '@/components/retraite/Synthese';
 import { Carriere } from '@/components/retraite/Carriere';
 import { EpargneRetraite } from '@/components/retraite/EpargneRetraite';
 import { Trimestres } from '@/components/retraite/Trimestres';
+import { ColonnesPersonnes } from '@/components/retraite/ColonnesPersonnes';
+import { familyService, FamilyProfile, MaritalStatus } from '@/services/familyService';
+import { checkIsInCouple } from '@/lib/patrimoine/utils';
 
 export const RetraiteSection = () => {
   const [activeTab, setActiveTab] = useState('synthese');
+
+  // Conjoint (marié, pacsé ou concubin) : mêmes sources et même prédicat que
+  // Famille (buildFamilyGraph.ts) et Patrimoine (usePatrimoineCalculations) —
+  // pas de nouvelle règle de détection introduite pour Retraite.
+  const [familyProfile, setFamilyProfile] = useState<FamilyProfile | null>(null);
+  const [maritalStatus, setMaritalStatus] = useState<MaritalStatus | null>(null);
+
+  useEffect(() => {
+    familyService.getFamilyProfile().then(setFamilyProfile).catch((error) => {
+      console.error('Erreur lors du chargement du profil famille:', error);
+    });
+    familyService.getMaritalStatus().then(setMaritalStatus).catch((error) => {
+      console.error('Erreur lors du chargement du statut marital:', error);
+    });
+  }, []);
+
+  const hasConjoint = checkIsInCouple(maritalStatus?.statut_couple || undefined);
+  const nomUtilisateur = familyProfile?.prenom || 'Vous';
+  const nomConjoint = maritalStatus?.prenom_conjoint || 'Conjoint';
 
   const TABS = [
     { id: 'synthese', label: 'Synthèse' },
@@ -16,16 +38,35 @@ export const RetraiteSection = () => {
     { id: 'optimisation', label: 'Optimisation' }
   ];
 
+  const colonnesProps = { hasConjoint, nomUtilisateur, nomConjoint };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'synthese':
+        // Placeholder ("bientôt disponible") : pas de duplication utilisateur/
+        // conjoint tant qu'il n'y a pas de contenu réel à dupliquer.
         return <Synthese />;
       case 'carriere':
-        return <Carriere />;
+        return (
+          <ColonnesPersonnes
+            {...colonnesProps}
+            render={(personne) => <Carriere personne={personne} />}
+          />
+        );
       case 'epargne':
-        return <EpargneRetraite />;
+        return (
+          <ColonnesPersonnes
+            {...colonnesProps}
+            render={(personne) => <EpargneRetraite personne={personne} />}
+          />
+        );
       case 'optimisation':
-        return <Trimestres />;
+        return (
+          <ColonnesPersonnes
+            {...colonnesProps}
+            render={(personne) => <Trimestres personne={personne} />}
+          />
+        );
       default:
         return <Synthese />;
     }

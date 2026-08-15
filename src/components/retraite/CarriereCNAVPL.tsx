@@ -137,30 +137,30 @@ export const CarriereCNAVPL = ({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Carrière CNAVPL</CardTitle>
-        <CardDescription>
+      <CardHeader className="p-5">
+        <CardTitle className="text-[15px] font-semibold tracking-tight">Carrière CNAVPL</CardTitle>
+        <CardDescription className="text-xs">
           À cocher si une partie de votre carrière relève de la CNAVPL (professions libérales non
           réglementées)
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="p-5 pt-0 space-y-4">
         <div className="flex items-center space-x-2">
           <Checkbox
             id="has-cnavpl"
             checked={hasCNAVPL}
             onCheckedChange={(checked) => onHasCNAVPLChange(checked === true)}
           />
-          <label htmlFor="has-cnavpl" className="text-sm">
+          <label htmlFor="has-cnavpl" className="text-xs">
             J'ai une carrière en CNAVPL
           </label>
         </div>
 
         {hasCNAVPL && (
           <>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="points-cnavpl">Points CNAVPL déjà accumulés</Label>
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="points-cnavpl" className="text-xs">Points CNAVPL déjà accumulés</Label>
                 <Input
                   id="points-cnavpl"
                   type="number"
@@ -171,8 +171,8 @@ export const CarriereCNAVPL = ({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="valeur-point-cnavpl">Valeur du point (€)</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="valeur-point-cnavpl" className="text-xs">Valeur du point (€)</Label>
                 <Input
                   id="valeur-point-cnavpl"
                   type="number"
@@ -186,8 +186,8 @@ export const CarriereCNAVPL = ({
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="trimestres-cnavpl">Trimestres CNAVPL</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="trimestres-cnavpl" className="text-xs">Trimestres CNAVPL</Label>
                 <Input
                   id="trimestres-cnavpl"
                   type="number"
@@ -199,9 +199,9 @@ export const CarriereCNAVPL = ({
               </div>
             </div>
 
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <div className="text-sm text-muted-foreground mb-1">Pension CNAVPL</div>
-              <div className="text-xl font-semibold text-primary">
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <div className="text-xs text-muted-foreground mb-1">Pension CNAVPL</div>
+              <div className="text-lg font-semibold text-primary">
                 {formatEuro2(pensionFinale)} / an
               </div>
               <p className="text-xs text-muted-foreground mt-1">

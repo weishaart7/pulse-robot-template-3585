@@ -5,9 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useRetraiteData } from '@/hooks/useRetraiteData';
+import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
-import { familyService, FamilyProfile } from '@/services/familyService';
+import { familyService } from '@/services/familyService';
 import { computeAge } from '@/lib/patrimoine/bareme669CGI';
 import {
   trimestresRequisPourGeneration,
@@ -55,15 +55,21 @@ const formatEuro2 = (valeur: number) =>
     maximumFractionDigits: 2,
   });
 
-export const Trimestres = () => {
-  const { data: retraiteData, loading: loadingRetraite } = useRetraiteData();
+interface TrimestresProps {
+  // Colonne conjoint (cf. RetraiteSection.tsx / ColonnesPersonnes.tsx) — même
+  // convention que Carriere.tsx.
+  personne?: Personne;
+}
+
+export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) => {
+  const { data: retraiteData, loading: loadingRetraite } = useRetraiteData(personne);
   // Détail de carrière par année (import RIS), même source que Carriere.tsx —
   // nécessaire à trimestresCotisesAnneeReference (surcote classique/parentale,
   // cf. docs/audit/branchement-surcote-optimisation.md §1.3) : sans cette
   // donnée, la surcote resterait figée à 0 ici alors qu'elle ne l'est pas sur
   // l'écran Carrière pour le même client, ce qui romprait la parité visée.
-  const { periodes: detailCarriere, loading: loadingCarriereDetail } = useCarriereDetail();
-  const [familyProfile, setFamilyProfile] = useState<FamilyProfile | null>(null);
+  const { periodes: detailCarriere, loading: loadingCarriereDetail } = useCarriereDetail(personne);
+  const [dateNaissance, setDateNaissance] = useState<string | null | undefined>(undefined);
   const [loadingProfile, setLoadingProfile] = useState(true);
   // Date de liquidation envisagée : source de vérité du scénario simulé
   // (Option 2, docs/audit/conception-date-effet.md) — l'âge de départ n'est
@@ -81,13 +87,20 @@ export const Trimestres = () => {
 
   useEffect(() => {
     let cancelled = false;
-    familyService
-      .getFamilyProfile()
-      .then((profile) => {
-        if (!cancelled) setFamilyProfile(profile);
+    setLoadingProfile(true);
+    // Conjoint : pas de fiche famille séparée (pas de compte Supabase
+    // propre) — sa date de naissance vit dans marital_status.date_naissance_conjoint,
+    // même source que Carriere.tsx pour la colonne conjoint.
+    const chargerDateNaissance = personne === 'conjoint'
+      ? familyService.getMaritalStatus().then((statut) => statut?.date_naissance_conjoint ?? null)
+      : familyService.getFamilyProfile().then((profil) => profil?.date_naissance ?? null);
+
+    chargerDateNaissance
+      .then((date) => {
+        if (!cancelled) setDateNaissance(date);
       })
       .catch((error) => {
-        console.error('Erreur lors du chargement du profil famille:', error);
+        console.error('Erreur lors du chargement de la date de naissance:', error);
       })
       .finally(() => {
         if (!cancelled) setLoadingProfile(false);
@@ -95,9 +108,8 @@ export const Trimestres = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [personne]);
 
-  const dateNaissance = familyProfile?.date_naissance;
   const ageActuel = computeAge(dateNaissance);
   // Date de naissance complète (année + mois), pas seulement l'année : le
   // barème légal a des découpages infra-annuels (1951, 1961, 1965 — cf.
@@ -160,14 +172,14 @@ export const Trimestres = () => {
     return (
       <div className="space-y-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Simulation d'âge de départ</CardTitle>
-            <CardDescription>
+          <CardHeader className="p-5">
+            <CardTitle className="text-[15px] font-semibold tracking-tight">Simulation d'âge de départ</CardTitle>
+            <CardDescription className="text-xs">
               Simulez l'impact de votre âge de départ sur votre pension
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
+          <CardContent className="p-5 pt-0">
+            <p className="text-xs text-muted-foreground">
               Votre date de naissance n'est pas renseignée. Elle est nécessaire pour déterminer le
               nombre de trimestres requis pour votre génération et calculer la décote ou la surcote
               selon votre âge de départ simulé. Renseignez-la dans{' '}
@@ -343,19 +355,19 @@ export const Trimestres = () => {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Simulation de départ à la retraite</CardTitle>
-          <CardDescription>
+        <CardHeader className="p-5">
+          <CardTitle className="text-[15px] font-semibold tracking-tight">Simulation de départ à la retraite</CardTitle>
+          <CardDescription className="text-xs">
             Simulation indicative, ne remplace pas un relevé officiel de l'Assurance retraite.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-3">
+        <CardContent className="p-5 pt-0 space-y-4">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label htmlFor="date-liquidation" className="text-sm font-medium">
+              <label htmlFor="date-liquidation" className="text-xs font-medium">
                 Date de liquidation envisagée
               </label>
-              <span className="text-lg font-semibold text-primary">
+              <span className="text-sm font-semibold text-primary">
                 {resultatSelection.ageAffiche} ans
               </span>
             </div>
@@ -373,22 +385,22 @@ export const Trimestres = () => {
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="text-center p-4 border rounded-lg">
-              <div className="text-2xl font-bold text-primary">
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="text-center p-3 border rounded-lg">
+              <div className="text-xl font-bold text-primary">
                 {resultatSelection.trimestresValidesProjetes}
               </div>
-              <div className="text-sm text-muted-foreground">Trimestres validés projetés</div>
+              <div className="text-xs text-muted-foreground">Trimestres validés projetés</div>
             </div>
 
-            <div className="text-center p-4 border rounded-lg">
-              <div className="text-2xl font-bold">{resultatSelection.trimestresRequis}</div>
-              <div className="text-sm text-muted-foreground">Trimestres requis</div>
+            <div className="text-center p-3 border rounded-lg">
+              <div className="text-xl font-bold">{resultatSelection.trimestresRequis}</div>
+              <div className="text-xs text-muted-foreground">Trimestres requis</div>
             </div>
 
-            <div className="text-center p-4 border rounded-lg">
+            <div className="text-center p-3 border rounded-lg">
               <div
-                className={`text-2xl font-bold ${
+                className={`text-xl font-bold ${
                   decoteOuSurcoteSelection < 0
                     ? 'text-destructive'
                     : decoteOuSurcoteSelection > 0
@@ -399,23 +411,23 @@ export const Trimestres = () => {
                 {decoteOuSurcoteSelection > 0 ? '+' : ''}
                 {decoteOuSurcoteSelection.toFixed(2)}%
               </div>
-              <div className="text-sm text-muted-foreground">Décote / surcote applicable</div>
+              <div className="text-xs text-muted-foreground">Décote / surcote applicable</div>
             </div>
           </div>
 
-          <div className="p-4 bg-muted/50 rounded-lg">
-            <div className="text-sm text-muted-foreground mb-1">
+          <div className="p-3 bg-muted/50 rounded-lg">
+            <div className="text-xs text-muted-foreground mb-1">
               Pension totale consolidée à {resultatSelection.ageAffiche} ans (base + complémentaire)
             </div>
-            <div className="text-2xl font-semibold text-primary">
+            <div className="text-lg font-semibold text-primary">
               {formatEuro2(resultatSelection.pensionTotale)} / an
             </div>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Pension de base : {formatEuro2(resultatSelection.pensionBaseValue)} + pensions
               complémentaires calculables : {formatEuro2(totalPensionComplementaireAnnuelle)}
             </p>
             {regimesPointsExclusCount > 0 && (
-              <p className="text-sm text-orange-600 mt-1">
+              <p className="text-xs text-orange-600 mt-1">
                 {regimesPointsExclusCount} régime{regimesPointsExclusCount > 1 ? 's' : ''} non
                 inclus, valeur du point manquante
               </p>
@@ -425,30 +437,30 @@ export const Trimestres = () => {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Rachat de trimestres</CardTitle>
-          <CardDescription>
+        <CardHeader className="p-5">
+          <CardTitle className="text-[15px] font-semibold tracking-tight">Rachat de trimestres</CardTitle>
+          <CardDescription className="text-xs">
             Simulation indicative du coût et de la rentabilité d'un versement pour la retraite (rachat de
             trimestres), à l'âge de départ simulé ci-dessus.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label>Régime</Label>
+        <CardContent className="p-5 pt-0 space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Régime</Label>
             <RadioGroup
               value={regimeRachat}
               onValueChange={(value) => setRegimeRachat(value as RegimeRachat)}
-              className="space-y-2"
+              className="space-y-1.5"
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="salarieIndependant" id="regime-salarie-independant" />
-                <label htmlFor="regime-salarie-independant" className="text-sm">
+                <label htmlFor="regime-salarie-independant" className="text-xs">
                   Salarié ou indépendant (régime général / SSI)
                 </label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="professionLiberale" id="regime-profession-liberale" />
-                <label htmlFor="regime-profession-liberale" className="text-sm">
+                <label htmlFor="regime-profession-liberale" className="text-xs">
                   Profession libérale réglementée (CIPAV, CARMF, CARPIMKO...)
                 </label>
               </div>
@@ -456,15 +468,15 @@ export const Trimestres = () => {
           </div>
 
           {regimeRachat === 'professionLiberale' ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Le coût du rachat pour votre régime n'est pas public — contactez votre caisse (CIPAV,
               CARMF, CARPIMKO...) pour un devis personnalisé.
             </p>
           ) : (
             <>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="revenu-moyen-3-ans">Revenu moyen des 3 dernières années (€)</Label>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="revenu-moyen-3-ans" className="text-xs">Revenu moyen des 3 dernières années (€)</Label>
                   <Input
                     id="revenu-moyen-3-ans"
                     type="number"
@@ -474,8 +486,8 @@ export const Trimestres = () => {
                     className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nombre-trimestres-rachat">Nombre de trimestres à racheter</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="nombre-trimestres-rachat" className="text-xs">Nombre de trimestres à racheter</Label>
                   <Input
                     id="nombre-trimestres-rachat"
                     type="number"
@@ -488,22 +500,22 @@ export const Trimestres = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Option de rachat</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Option de rachat</Label>
                 <RadioGroup
                   value={optionRachat}
                   onValueChange={(value) => setOptionRachat(value as OptionRachat)}
-                  className="space-y-2"
+                  className="space-y-1.5"
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="tauxSeul" id="option-taux-seul" />
-                    <label htmlFor="option-taux-seul" className="text-sm">
+                    <label htmlFor="option-taux-seul" className="text-xs">
                       Taux seul (réduit uniquement la décote)
                     </label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="tauxEtDuree" id="option-taux-et-duree" />
-                    <label htmlFor="option-taux-et-duree" className="text-sm">
+                    <label htmlFor="option-taux-et-duree" className="text-xs">
                       Taux et durée d'assurance (réduit la décote et augmente la proratisation)
                     </label>
                   </div>
@@ -511,15 +523,15 @@ export const Trimestres = () => {
               </div>
 
               {coutUnitaireRachat === undefined ? (
-                <p className="text-sm text-orange-600">
+                <p className="text-xs text-orange-600">
                   Rachat non disponible au-delà de 66 ans (votre âge actuel : {ageActuelConfirme} ans).
                 </p>
               ) : (
-                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                  <div className="grid gap-4 md:grid-cols-2">
+                <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+                  <div className="grid gap-3 md:grid-cols-2">
                     <div>
-                      <div className="text-sm text-muted-foreground">Coût total du rachat</div>
-                      <div className="text-xl font-semibold text-primary">
+                      <div className="text-xs text-muted-foreground">Coût total du rachat</div>
+                      <div className="text-lg font-semibold text-primary">
                         {coutTotalRachat !== undefined ? formatEuro2(coutTotalRachat) : '—'}
                       </div>
                       <p className="text-xs text-muted-foreground">
@@ -527,10 +539,10 @@ export const Trimestres = () => {
                       </p>
                     </div>
                     <div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-xs text-muted-foreground">
                         Nouvelle pension de base à {resultatSelection.ageAffiche} ans
                       </div>
-                      <div className="text-xl font-semibold text-primary">
+                      <div className="text-lg font-semibold text-primary">
                         {formatEuro2(pensionBaseAvecRachat)} / an
                       </div>
                       <p className="text-xs text-muted-foreground">
@@ -540,7 +552,7 @@ export const Trimestres = () => {
                   </div>
 
                   {gainPensionAnnuelRachat > 0 ? (
-                    <p className="text-sm">
+                    <p className="text-xs">
                       Gain de pension : <span className="font-semibold text-green-600">
                         +{formatEuro2(gainPensionAnnuelRachat)} / an
                       </span>
@@ -549,7 +561,7 @@ export const Trimestres = () => {
                       )}
                     </p>
                   ) : (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       À {resultatSelection.ageAffiche} ans, vos trimestres validés projetés couvrent déjà les trimestres
                       requis : ce rachat n'améliore pas la pension de base à cet âge de départ.
                     </p>
@@ -562,13 +574,13 @@ export const Trimestres = () => {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Comparatif par âge de départ</CardTitle>
-          <CardDescription>
+        <CardHeader className="p-5">
+          <CardTitle className="text-[15px] font-semibold tracking-tight">Comparatif par âge de départ</CardTitle>
+          <CardDescription className="text-xs">
             Pension totale estimée pour chaque âge de départ entre 62 et 70 ans
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-5 pt-0">
           <Table>
             <TableHeader>
               <TableRow>

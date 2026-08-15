@@ -1347,3 +1347,11 @@ Ces valeurs sont à isoler dans une table de paramètres millésimée, révisabl
 - Sous le barème LFSS 2026, les générations 1964 et 1965-T1 perdent l'accès à la surcote parentale, leur âge légal repassant sous 63 ans.
 - Un départ quelques semaines avant le 1er septembre 2026 peut coûter un à deux trimestres de durée de référence pour les générations 1964 et 1965.
 - Un départ au 1er janvier permet de valider l'année précédente complète et de la retenir dans le SAM.
+
+## 12.4. Dette technique — modélisation du conjoint
+
+Depuis l'ajout d'une colonne conjoint/partenaire (deux instances indépendantes du même moteur, une par personne — cf. `src/pages/retraite/RetraiteSection.tsx`), trois simplifications sont assumées et non traitées :
+
+- **Pension de réversion** : non traitée. Le module calcule uniquement les droits propres de chaque personne (utilisateur et conjoint séparément) ; aucun calcul croisé (réversion, majoration au titre du conjoint décédé) n'est modélisé.
+- **Impact du statut marital sur les droits propres** : non traité. Par exemple, le statut de conjoint collaborateur (affiliation et validation de trimestres au titre du conjoint aidant, régimes SSI/CNAVPL/agricole) n'est pas modélisé — chaque colonne suppose une carrière propre, saisie indépendamment.
+- **Majoration pour 3 enfants ou plus côté conjoint** (§3.8) : `family_links` ne distingue pas la filiation par parent (pas de champ « enfant de l'utilisateur » vs « enfant du conjoint » en base) — la même liste d'enfants du foyer est utilisée pour les deux colonnes. Correct dans le cas courant (enfants communs), imprécis en famille recomposée (un enfant non commun serait à tort compté comme éligible pour le parent qui n'est pas le sien, ou l'inverse).

@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { PeriodeCarriere, TypeActivite } from '@/lib/retraite/parseRIS';
+import { Personne } from '@/hooks/useRetraiteData';
 
 export interface PeriodeCarriereEnregistree extends PeriodeCarriere {
   id: string;
 }
 
-export const useCarriereDetail = () => {
+export const useCarriereDetail = (personne: Personne = 'utilisateur') => {
   const [periodes, setPeriodes] = useState<PeriodeCarriereEnregistree[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -15,17 +16,19 @@ export const useCarriereDetail = () => {
 
   useEffect(() => {
     chargerPeriodes();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [personne]);
 
   const chargerPeriodes = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
-        .from('retraite_carriere_detail')
+      const { data, error } = await (supabase
+        .from('retraite_carriere_detail') as any)
         .select('*')
         .eq('user_id', user.id)
+        .eq('personne', personne)
         .order('date_debut');
 
       if (error) {
@@ -65,7 +68,8 @@ export const useCarriereDetail = () => {
       const { error: erreurSuppression } = await supabase
         .from('retraite_carriere_detail')
         .delete()
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .eq('personne', personne as any);
 
       if (erreurSuppression) throw erreurSuppression;
 
@@ -73,6 +77,7 @@ export const useCarriereDetail = () => {
         const { error: erreurInsertion } = await supabase.from('retraite_carriere_detail').insert(
           nouvellesPeriodes.map((periode) => ({
             user_id: user.id,
+            personne,
             employeur: periode.employeur,
             type_activite: periode.typeActivite,
             date_debut: periode.dateDebut,
@@ -80,7 +85,7 @@ export const useCarriereDetail = () => {
             revenu: periode.revenu,
             est_chiffre_affaires: periode.estChiffreAffaires,
             regimes: periode.regimes,
-          }))
+          })) as any
         );
         if (erreurInsertion) throw erreurInsertion;
       }

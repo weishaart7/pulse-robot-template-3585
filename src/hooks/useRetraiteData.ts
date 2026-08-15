@@ -17,7 +17,13 @@ interface RetraiteData {
   au_moins_un_trimestre_majoration_enfant?: boolean;
 }
 
-export const useRetraiteData = () => {
+// 'conjoint' : même user_id (le conjoint n'a pas de compte séparé, cf.
+// marital_status.prenom_conjoint/nom_conjoint) — seule la colonne `personne`
+// distingue les deux jeux de données, cf. migration
+// 20260815000000_add_personne_to_retraite_tables.sql.
+export type Personne = 'utilisateur' | 'conjoint';
+
+export const useRetraiteData = (personne: Personne = 'utilisateur') => {
   const [data, setData] = useState<RetraiteData>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -26,17 +32,19 @@ export const useRetraiteData = () => {
   // Chargement initial des données
   useEffect(() => {
     loadRetraiteData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [personne]);
 
   const loadRetraiteData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: retraiteData, error } = await supabase
-        .from('retraite_data')
+      const { data: retraiteData, error } = await (supabase
+        .from('retraite_data') as any)
         .select('*')
         .eq('user_id', user.id)
+        .eq('personne', personne)
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
@@ -73,7 +81,8 @@ export const useRetraiteData = () => {
           .from('retraite_data')
           .update(updates as any)
           .eq('id', data.id)
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .eq('personne', personne as any);
 
         if (error) {
           console.error('Error updating retirement data:', error);
@@ -88,7 +97,7 @@ export const useRetraiteData = () => {
         // Création d'un nouvel enregistrement
         const { data: newRecord, error } = await supabase
           .from('retraite_data')
-          .insert([{ ...updates, user_id: user.id }] as any)
+          .insert([{ ...updates, user_id: user.id, personne }] as any)
           .select()
           .single();
 

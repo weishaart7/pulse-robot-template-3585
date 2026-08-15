@@ -5,9 +5,10 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Save, ExternalLink } from 'lucide-react';
-import { useRetraiteData } from '@/hooks/useRetraiteData';
+import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
 import { useAssets } from '@/hooks/useAssets';
 import { NATURES_PER } from '@/constants/assetTypes';
+import { getPartSuccessorale, BienNonQualifieError } from '@/lib/patrimoine/succession';
 
 // Natures de la catégorie "épargne et assurance-vie" (assetTypes.ts) retenues
 // ici pour le total assurance-vie de la section Retraite.
@@ -25,8 +26,14 @@ const formatCurrency = (value: number) => value.toLocaleString('fr-FR', {
   maximumFractionDigits: 0,
 });
 
-export const EpargneRetraite = () => {
-  const { data, loading, saving, saveRetraiteData } = useRetraiteData();
+interface EpargneRetraiteProps {
+  // Colonne conjoint (cf. RetraiteSection.tsx / ColonnesPersonnes.tsx) — même
+  // convention que Carriere.tsx.
+  personne?: Personne;
+}
+
+export const EpargneRetraite = ({ personne = 'utilisateur' }: EpargneRetraiteProps = {}) => {
+  const { data, loading, saving, saveRetraiteData } = useRetraiteData(personne);
   const { assets, loading: loadingAssets } = useAssets();
   const navigate = useNavigate();
   const [autresEpargnes, setAutresEpargnes] = useState<string>('');
@@ -58,11 +65,42 @@ export const EpargneRetraite = () => {
     }
   };
 
-  const perAssets = assets.filter(a => NATURES_PER.includes(a.nature));
-  const assuranceVieAssets = assets.filter(a => NATURES_ASSURANCE_VIE.includes(a.nature));
+  const perAssetsFoyer = assets.filter(a => NATURES_PER.includes(a.nature));
+  const assuranceVieAssetsFoyer = assets.filter(a => NATURES_ASSURANCE_VIE.includes(a.nature));
 
-  const totalPer = perAssets.reduce((sum, a) => sum + (a.valeur_estimee || 0), 0);
-  const totalAssuranceVie = assuranceVieAssets.reduce((sum, a) => sum + (a.valeur_estimee || 0), 0);
+  // Part du conjoint dans un actif détenu par le foyer — même moteur que
+  // Patrimoine > Vue par tête (PatrimoineParTeteDetail.tsx::computeByCategory) :
+  // getPartSuccessorale() renvoie la fraction utilisateur, 1 - fraction pour
+  // le conjoint. Un bien jamais qualifié (qualification_bien absent/"À
+  // qualifier") est exclu silencieusement plutôt que deviné, même convention
+  // que la vue par tête — pas de nouvelle règle introduite ici.
+  const partConjoint = (asset: (typeof assets)[number]): number => {
+    try {
+      return 1 - getPartSuccessorale(asset);
+    } catch (error) {
+      if (error instanceof BienNonQualifieError) return 0;
+      throw error;
+    }
+  };
+
+  // Colonne utilisateur : total foyer inchangé (comportement historique,
+  // écran sans conjoint identique à avant). Colonne conjoint : uniquement sa
+  // part qualifiée de chaque actif — évite d'afficher deux fois le même
+  // total foyer sous deux noms différents.
+  const perAssets = personne === 'conjoint'
+    ? perAssetsFoyer.filter(a => partConjoint(a) > 0)
+    : perAssetsFoyer;
+  const assuranceVieAssets = personne === 'conjoint'
+    ? assuranceVieAssetsFoyer.filter(a => partConjoint(a) > 0)
+    : assuranceVieAssetsFoyer;
+
+  const valeurAffichee = (asset: (typeof assets)[number]) =>
+    personne === 'conjoint'
+      ? (asset.valeur_estimee || 0) * partConjoint(asset)
+      : (asset.valeur_estimee || 0);
+
+  const totalPer = perAssets.reduce((sum, a) => sum + valeurAffichee(a), 0);
+  const totalAssuranceVie = assuranceVieAssets.reduce((sum, a) => sum + valeurAffichee(a), 0);
 
   const totalEpargne = totalPer + totalAssuranceVie + (parseFloat(autresEpargnes) || 0);
 
@@ -82,10 +120,10 @@ export const EpargneRetraite = () => {
       )}
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 p-5">
           <div>
-            <CardTitle>Épargne retraite</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-[15px] font-semibold tracking-tight">Épargne retraite</CardTitle>
+            <CardDescription className="text-xs">
               Actifs PER et assurance-vie déjà déclarés dans le module Patrimoine
             </CardDescription>
           </div>
@@ -99,57 +137,57 @@ export const EpargneRetraite = () => {
             Voir/ajouter dans Patrimoine
           </Button>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>PER (Plan Épargne Retraite)</Label>
-              <div className="text-2xl font-semibold text-primary">
+        <CardContent className="p-5 pt-0 space-y-4">
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs">PER (Plan Épargne Retraite)</Label>
+              <div className="text-xl font-semibold text-primary">
                 {formatCurrency(totalPer)}
               </div>
               {loadingAssets ? (
-                <p className="text-sm text-muted-foreground">Chargement...</p>
+                <p className="text-xs text-muted-foreground">Chargement...</p>
               ) : perAssets.length > 0 ? (
-                <ul className="space-y-1 mt-2">
+                <ul className="space-y-1 mt-1.5">
                   {perAssets.map(asset => (
-                    <li key={asset.id} className="flex items-center justify-between text-sm text-muted-foreground">
+                    <li key={asset.id} className="flex items-center justify-between text-xs text-muted-foreground">
                       <span className="truncate">{asset.denomination || asset.nature}</span>
-                      <span className="shrink-0 ml-2">{formatCurrency(asset.valeur_estimee || 0)}</span>
+                      <span className="shrink-0 ml-2">{formatCurrency(valeurAffichee(asset))}</span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Aucun actif PER déclaré dans Patrimoine.
                 </p>
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label>Assurance vie</Label>
-              <div className="text-2xl font-semibold text-primary">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Assurance vie</Label>
+              <div className="text-xl font-semibold text-primary">
                 {formatCurrency(totalAssuranceVie)}
               </div>
               {loadingAssets ? (
-                <p className="text-sm text-muted-foreground">Chargement...</p>
+                <p className="text-xs text-muted-foreground">Chargement...</p>
               ) : assuranceVieAssets.length > 0 ? (
-                <ul className="space-y-1 mt-2">
+                <ul className="space-y-1 mt-1.5">
                   {assuranceVieAssets.map(asset => (
-                    <li key={asset.id} className="flex items-center justify-between text-sm text-muted-foreground">
+                    <li key={asset.id} className="flex items-center justify-between text-xs text-muted-foreground">
                       <span className="truncate">{asset.denomination || asset.nature}</span>
-                      <span className="shrink-0 ml-2">{formatCurrency(asset.valeur_estimee || 0)}</span>
+                      <span className="shrink-0 ml-2">{formatCurrency(valeurAffichee(asset))}</span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Aucun contrat d'assurance-vie déclaré dans Patrimoine.
                 </p>
               )}
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="autres-epargnes">Autres épargnes retraite - €</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="autres-epargnes" className="text-xs">Autres épargnes retraite - €</Label>
             <Input
               id="autres-epargnes"
               type="number"
@@ -157,15 +195,15 @@ export const EpargneRetraite = () => {
               value={autresEpargnes}
               onChange={(e) => setAutresEpargnes(e.target.value)}
              className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"/>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Comptes épargne, placements divers, etc.
             </p>
           </div>
 
           {totalEpargne > 0 && (
-            <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-              <Label>Total épargne retraite</Label>
-              <div className="text-2xl font-semibold text-primary">
+            <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+              <Label className="text-xs">Total épargne retraite</Label>
+              <div className="text-lg font-semibold text-primary">
                 {formatCurrency(totalEpargne)}
               </div>
             </div>

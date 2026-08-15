@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Save, Upload, Trash2, Pencil, CheckCircle2, AlertTriangle, ChevronDown } from 'lucide-react';
-import { useRetraiteData } from '@/hooks/useRetraiteData';
+import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
 import { useToast } from '@/hooks/use-toast';
 import { parseRIS, PeriodeCarriere, RegimeDetecte, LIBELLE_TYPE_ACTIVITE } from '@/lib/retraite/parseRIS';
@@ -60,14 +60,23 @@ const formatDateFr = (dateIso: string) => {
   return `${jour}/${mois}/${annee}`;
 };
 
-export const Carriere = () => {
-  const { data, loading, saving, saveRetraiteData } = useRetraiteData();
+interface CarriereProps {
+  // Colonne conjoint (cf. RetraiteSection.tsx / ColonnesPersonnes.tsx) :
+  // même composant, deuxième instance, données routées vers la ligne
+  // 'conjoint' de retraite_data/retraite_carriere_detail (même user_id, pas
+  // de compte séparé — cf. migration
+  // 20260815000000_add_personne_to_retraite_tables.sql).
+  personne?: Personne;
+}
+
+export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
+  const { data, loading, saving, saveRetraiteData } = useRetraiteData(personne);
   const {
     periodes: periodesEnregistrees,
     loading: loadingCarriereDetail,
     saving: savingCarriereDetail,
     remplacerPeriodes,
-  } = useCarriereDetail();
+  } = useCarriereDetail(personne);
   const { toast } = useToast();
   const [salaireAnnuelMoyen, setSalaireAnnuelMoyen] = useState<string>('');
   const [trimestresValides, setTrimestresValides] = useState<string>('');
@@ -159,24 +168,35 @@ export const Carriere = () => {
   const [familyLinks, setFamilyLinks] = useState<FamilyLink[]>([]);
 
   useEffect(() => {
-    familyService.getFamilyProfile()
-      .then((profil) => {
-        if (profil?.date_naissance) {
-          setAnneeNaissance(new Date(profil.date_naissance).getFullYear());
-          setDateNaissanceDetail(dateNaissanceDepuisISO(profil.date_naissance));
-          setDateNaissanceISO(profil.date_naissance);
+    // Conjoint : pas de fiche famille séparée (pas de compte Supabase
+    // propre) — sa date de naissance vit dans marital_status.date_naissance_conjoint,
+    // même source que Famille (buildFamilyGraph.ts) et Transmission.
+    const chargerDateNaissance = personne === 'conjoint'
+      ? familyService.getMaritalStatus().then((statut) => statut?.date_naissance_conjoint ?? null)
+      : familyService.getFamilyProfile().then((profil) => profil?.date_naissance ?? null);
+
+    chargerDateNaissance
+      .then((dateNaissance) => {
+        if (dateNaissance) {
+          setAnneeNaissance(new Date(dateNaissance).getFullYear());
+          setDateNaissanceDetail(dateNaissanceDepuisISO(dateNaissance));
+          setDateNaissanceISO(dateNaissance);
         }
       })
       .catch((error) => {
-        console.error('Erreur lors du chargement du profil famille:', error);
+        console.error('Erreur lors du chargement de la date de naissance:', error);
       });
 
+    // family_links n'est pas réparti par personne (pas de champ de
+    // filiation par parent en base) : même liste d'enfants pour
+    // l'utilisateur et le conjoint — approximation assumée, cf.
+    // docs/retraite-base-referentiel.md, dette technique "conjoint".
     familyService.getFamilyLinks()
       .then(setFamilyLinks)
       .catch((error) => {
         console.error('Erreur lors du chargement des liens familiaux:', error);
       });
-  }, []);
+  }, [personne]);
 
   // Âge actuel : cet écran n'a pas de simulation de date de départ (à la
   // différence de l'onglet Optimisation) — le proxy de date d'effet retenu
@@ -648,10 +668,10 @@ export const Carriere = () => {
         </div>
       )}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 p-5">
           <div>
-            <CardTitle>Informations de carrière</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-[15px] font-semibold tracking-tight">Informations de carrière</CardTitle>
+            <CardDescription className="text-xs">
               Renseignez les éléments de votre carrière pour calculer votre pension
             </CardDescription>
           </div>
@@ -673,10 +693,10 @@ export const Carriere = () => {
             onChange={handleFileSelected}
           />
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="salaire-moyen">Salaire annuel moyen (€)</Label>
+        <CardContent className="p-5 pt-0 space-y-4">
+          <div className="grid gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="salaire-moyen" className="text-xs">Salaire annuel moyen (€)</Label>
               <Input
                 id="salaire-moyen"
                 type="number"
@@ -690,16 +710,16 @@ export const Carriere = () => {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Gestion des trimestres</CardTitle>
-          <CardDescription>
+        <CardHeader className="p-5">
+          <CardTitle className="text-[15px] font-semibold tracking-tight">Gestion des trimestres</CardTitle>
+          <CardDescription className="text-xs">
             Suivez vos trimestres validés et calculez l'âge du taux plein
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="trimestres-valides">Trimestres validés</Label>
+        <CardContent className="p-5 pt-0 space-y-4">
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="trimestres-valides" className="text-xs">Trimestres validés</Label>
               <Input
                 id="trimestres-valides"
                 type="number"
@@ -709,8 +729,8 @@ export const Carriere = () => {
                className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"/>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="trimestres-requis">Trimestres requis</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="trimestres-requis" className="text-xs">Trimestres requis</Label>
               <Input
                 id="trimestres-requis"
                 type="number"
@@ -718,7 +738,7 @@ export const Carriere = () => {
                 disabled
                 className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring bg-muted"
               />
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Valeur fixée selon votre date de naissance
               </p>
             </div>
@@ -731,7 +751,7 @@ export const Carriere = () => {
               onCheckedChange={(checked) => setAuMoinsUnTrimestreMajorationEnfant(checked === true)}
             />
             <div className="space-y-1">
-              <label htmlFor="majoration-enfant" className="text-sm font-medium leading-none">
+              <label htmlFor="majoration-enfant" className="text-xs font-medium leading-none">
                 Au moins 1 trimestre de majoration pour enfant
               </label>
               <p className="text-xs text-muted-foreground">
@@ -743,43 +763,43 @@ export const Carriere = () => {
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <Label>Âge du taux plein</Label>
-              <div className="text-lg font-semibold text-primary mt-2">
+          <div className="space-y-3">
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <Label className="text-xs">Âge du taux plein</Label>
+              <div className="text-sm font-semibold text-primary mt-1">
                 {ageTauxPlein}
               </div>
             </div>
 
             {trimestresValides && (
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-primary">
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="text-center p-3 border rounded-lg">
+                  <div className="text-xl font-bold text-primary">
                     {trimestresValides}
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs text-muted-foreground">
                     Trimestres validés
                   </div>
                 </div>
 
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold">
+                <div className="text-center p-3 border rounded-lg">
+                  <div className="text-xl font-bold">
                     {trimestresRequis}
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs text-muted-foreground">
                     Trimestres requis
                   </div>
                 </div>
 
-                <div className="text-center p-4 border rounded-lg">
-                  <div className={`text-2xl font-bold ${
-                    parseInt(trimestresValides) >= trimestresRequis 
-                      ? 'text-green-600' 
+                <div className="text-center p-3 border rounded-lg">
+                  <div className={`text-xl font-bold ${
+                    parseInt(trimestresValides) >= trimestresRequis
+                      ? 'text-green-600'
                       : 'text-orange-600'
                   }`}>
                     {Math.max(0, trimestresRequis - parseInt(trimestresValides))}
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs text-muted-foreground">
                     Trimestres manquants
                   </div>
                 </div>
@@ -790,17 +810,17 @@ export const Carriere = () => {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Calculs de pension</CardTitle>
-          <CardDescription>
+        <CardHeader className="p-5">
+          <CardTitle className="text-[15px] font-semibold tracking-tight">Calculs de pension</CardTitle>
+          <CardDescription className="text-xs">
             Estimation de votre pension de retraite de base
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Pension de base brute</Label>
-              <div className="text-2xl font-semibold text-primary">
+        <CardContent className="p-5 pt-0 space-y-3">
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Pension de base brute</Label>
+              <div className="text-xl font-semibold text-primary">
                 {pensionBaseBrute.toLocaleString('fr-FR', {
                   style: 'currency',
                   currency: 'EUR',
@@ -808,20 +828,20 @@ export const Carriere = () => {
                   maximumFractionDigits: 0
                 })}
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 SAM × 50% × (Trimestres validés / Trimestres requis)
               </p>
             </div>
 
-            <div className="space-y-2">
-              <Label>Décote / Surcote</Label>
-              <div className={`text-2xl font-semibold ${
+            <div className="space-y-1.5">
+              <Label className="text-xs">Décote / Surcote</Label>
+              <div className={`text-xl font-semibold ${
                 decoteSurcote + surcoteTotalePct < 0 ? 'text-destructive' :
                 decoteSurcote + surcoteTotalePct > 0 ? 'text-green-600' : 'text-muted-foreground'
               }`}>
                 {decoteSurcote + surcoteTotalePct > 0 ? '+' : ''}{(decoteSurcote + surcoteTotalePct).toFixed(2)}%
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {decoteSurcote < 0
                   ? `Décote de ${Math.abs(decoteSurcote).toFixed(2)}% (-1,25% par trimestre manquant)`
                   : surcoteTotalePct > 0
@@ -832,8 +852,8 @@ export const Carriere = () => {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="autres-pensions-mensuelles">
+          <div className="space-y-1.5">
+            <Label htmlFor="autres-pensions-mensuelles" className="text-xs">
               Autres pensions perçues, mensuel (optionnel)
             </Label>
             <Input
@@ -852,9 +872,9 @@ export const Carriere = () => {
           </div>
 
           {pensionBaseBrute > 0 && (
-            <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-              <Label>Pension ajustée (avec décote/surcote/MICO/majoration enfants)</Label>
-              <div className="text-xl font-semibold text-primary">
+            <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+              <Label className="text-xs">Pension ajustée (avec décote/surcote/MICO/majoration enfants)</Label>
+              <div className="text-lg font-semibold text-primary">
                 {pensionBaseAjustee.toLocaleString('fr-FR', {
                   style: 'currency',
                   currency: 'EUR',
@@ -862,7 +882,7 @@ export const Carriere = () => {
                   maximumFractionDigits: 0
                 })}
               </div>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Minimum contributif (MICO) : {formatEuro2(micoMontant)} / an
                 {surcoteTotalePct > 0 && <> · Surcote : {formatEuro2(surcoteMontantRegimeGeneral)} / an</>}
               </p>
@@ -880,7 +900,7 @@ export const Carriere = () => {
                 </p>
               )}
               {majorationEnfantsPct > 0 && (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Majoration pour {nombreEnfantsEligibles} enfants : +{majorationEnfantsPct}%
                 </p>
               )}
@@ -888,26 +908,26 @@ export const Carriere = () => {
           )}
 
           {(pensionBaseBrute > 0 || regimesPoints.length > 0 || aDesRegimesSupplementaires) && (
-            <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-              <Label>
+            <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+              <Label className="text-xs">
                 Total consolidé{aDesRegimesSupplementaires ? ' tous régimes' : ''} (pension de base
                 ajustée + pensions complémentaires
                 {hasFonctionPublique ? ' + fonction publique + RAFP' : ''}
                 {hasCNAVPL ? ' + CNAVPL' : ''})
               </Label>
-              <div className="text-xl font-semibold text-primary">
+              <div className="text-lg font-semibold text-primary">
                 {formatEuro2(pensionTotaleConsolidee)} / an
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Pension de base ajustée : {formatEuro2(pensionBaseAjustee)} + pensions complémentaires calculables : {formatEuro2(totalPensionComplementaireAnnuelle)}
               </p>
               {regimesPointsExclusCount > 0 && (
-                <p className="text-sm text-orange-600 mt-1">
+                <p className="text-xs text-orange-600 mt-1">
                   {regimesPointsExclusCount} régime{regimesPointsExclusCount > 1 ? 's' : ''} non inclus, valeur du point manquante
                 </p>
               )}
               {aDesRegimesSupplementaires && (
-                <p className="text-sm text-muted-foreground mt-2 pt-2 border-t">
+                <p className="text-xs text-muted-foreground mt-2 pt-2 border-t">
                   Détail par régime : régime général (base + complémentaires) ={' '}
                   {formatEuro2(pensionTotaleRegimeGeneral)} / an
                   {hasFonctionPublique && (
@@ -922,29 +942,29 @@ export const Carriere = () => {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Régimes de retraite complémentaire (points)</CardTitle>
-          <CardDescription>
+        <CardHeader className="p-5">
+          <CardTitle className="text-[15px] font-semibold tracking-tight">Régimes de retraite complémentaire (points)</CardTitle>
+          <CardDescription className="text-xs">
             Régimes par points détectés lors de l'import de votre relevé de carrière (RIS)
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-5 pt-0">
           {regimesPoints.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Aucun régime à points enregistré. Importez votre relevé de carrière pour les détecter automatiquement.
             </p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {regimesPoints.map((regime, index) => {
                 const pensionAnnuelle = pensionComplementaireAnnuelle(regime);
                 return (
                   <div
                     key={`${regime.nom}-${index}`}
-                    className="flex items-center justify-between gap-4 p-4 border rounded-lg"
+                    className="flex items-center justify-between gap-4 p-3 border rounded-lg"
                   >
-                    <div className="space-y-1">
-                      <div className="font-semibold">{regime.nom}</div>
-                      <div className="text-sm text-muted-foreground">
+                    <div className="space-y-0.5">
+                      <div className="text-sm font-semibold">{regime.nom}</div>
+                      <div className="text-xs text-muted-foreground">
                         {regime.points?.toLocaleString('fr-FR')} points
                         {regime.valeurPoint !== undefined && (
                           <>
@@ -965,11 +985,11 @@ export const Carriere = () => {
                         )}
                       </div>
                       {pensionAnnuelle !== undefined ? (
-                        <div className="text-sm font-medium text-primary">
+                        <div className="text-xs font-medium text-primary">
                           Pension complémentaire : {formatEuro2(pensionAnnuelle)} / an ({formatEuro2(pensionAnnuelle / 12)} / mois)
                         </div>
                       ) : (
-                        <div className="text-sm text-orange-600">
+                        <div className="text-xs text-orange-600">
                           Valeur du point manquante, montant non calculable
                         </div>
                       )}
@@ -991,22 +1011,22 @@ export const Carriere = () => {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Détail de carrière</CardTitle>
-          <CardDescription>
+        <CardHeader className="p-5">
+          <CardTitle className="text-[15px] font-semibold tracking-tight">Détail de carrière</CardTitle>
+          <CardDescription className="text-xs">
             Employeur / activité détectés lors de l'import de votre relevé de carrière (RIS)
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="p-5 pt-0 space-y-3">
           {trimestresValides && detailCarriere.length > 0 && (
             Math.abs(ecartCoherenceTrimestres) <= SEUIL_ECART_COHERENCE_TRIMESTRES ? (
-              <div className="flex items-center gap-2 text-sm text-green-600">
+              <div className="flex items-center gap-2 text-xs text-green-600">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />
                 Cohérent avec la carrière saisie ({totalDeriveCarriere} trimestres dérivés de la carrière, contre{' '}
                 {trimValidesRegimeGeneral} trimestres validés au RIS)
               </div>
             ) : (
-              <div className="flex items-start gap-2 text-sm text-orange-600 p-3 border border-orange-500/20 rounded-lg bg-orange-500/10">
+              <div className="flex items-start gap-2 text-xs text-orange-600 p-2.5 border border-orange-500/20 rounded-lg bg-orange-500/10">
                 <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>
                   Écart détecté entre le RIS importé ({trimValidesRegimeGeneral} trimestres) et la carrière saisie
@@ -1018,7 +1038,7 @@ export const Carriere = () => {
             )
           )}
           {detailCarriere.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Aucune période enregistrée. Importez votre relevé de carrière pour les détecter automatiquement.
             </p>
           ) : (
@@ -1030,19 +1050,19 @@ export const Carriere = () => {
                   {detailCarriere.length > 1 ? 's' : ''})
                 </Button>
               </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-3 pt-4">
+              <CollapsibleContent className="space-y-2 pt-3">
                 {detailCarriere.map((periode, index) => (
                   <div
                     key={`${periode.employeur}-${periode.dateDebut}-${index}`}
-                    className="flex items-center justify-between gap-4 p-4 border rounded-lg"
+                    className="flex items-center justify-between gap-4 p-3 border rounded-lg"
                   >
-                    <div className="space-y-1">
-                      <div className="font-semibold">{periode.employeur}</div>
-                      <div className="text-sm text-muted-foreground">
+                    <div className="space-y-0.5">
+                      <div className="text-sm font-semibold">{periode.employeur}</div>
+                      <div className="text-xs text-muted-foreground">
                         {LIBELLE_TYPE_ACTIVITE[periode.typeActivite]} · {formatDateFr(periode.dateDebut)} →{' '}
                         {formatDateFr(periode.dateFin)}
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-xs text-muted-foreground">
                         {periode.revenu !== null
                           ? `${formatEuro2(periode.revenu)}${periode.estChiffreAffaires ? ' (chiffre d\'affaires)' : ''}`
                           : 'Revenu non renseigné'}

@@ -134,7 +134,7 @@ export function RISImportDialog({
           {detailCarriere.length > 0 && (
             <div className="border rounded-lg p-4 space-y-3">
               <div className="space-y-1">
-                <Label className="text-base font-semibold">
+                <Label className="text-sm font-semibold">
                   Détail de carrière ({detailCarriere.length} période{detailCarriere.length > 1 ? 's' : ''} détectée{detailCarriere.length > 1 ? 's' : ''})
                 </Label>
                 <p className="text-sm text-muted-foreground">

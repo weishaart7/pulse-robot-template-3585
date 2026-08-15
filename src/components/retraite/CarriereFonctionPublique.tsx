@@ -221,30 +221,30 @@ export const CarriereFonctionPublique = ({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Carrière fonction publique</CardTitle>
-        <CardDescription>
+      <CardHeader className="p-5">
+        <CardTitle className="text-[15px] font-semibold tracking-tight">Carrière fonction publique</CardTitle>
+        <CardDescription className="text-xs">
           À cocher si une partie de votre carrière a été effectuée dans la fonction publique
           (polypensionné)
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="p-5 pt-0 space-y-4">
         <div className="flex items-center space-x-2">
           <Checkbox
             id="has-fonction-publique"
             checked={hasFonctionPublique}
             onCheckedChange={(checked) => onHasFonctionPubliqueChange(checked === true)}
           />
-          <label htmlFor="has-fonction-publique" className="text-sm">
+          <label htmlFor="has-fonction-publique" className="text-xs">
             J'ai eu une carrière dans la fonction publique
           </label>
         </div>
 
         {hasFonctionPublique && (
           <>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="tib">Traitement indiciaire brut annuel (€)</Label>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="tib" className="text-xs">Traitement indiciaire brut annuel (€)</Label>
                 <Input
                   id="tib"
                   type="number"
@@ -259,8 +259,8 @@ export const CarriereFonctionPublique = ({
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="trimestres-liquidables-fp">
+              <div className="space-y-1.5">
+                <Label htmlFor="trimestres-liquidables-fp" className="text-xs">
                   Trimestres liquidables fonction publique
                 </Label>
                 <Input
@@ -273,8 +273,8 @@ export const CarriereFonctionPublique = ({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="points-rafp">Points RAFP déjà accumulés</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="points-rafp" className="text-xs">Points RAFP déjà accumulés</Label>
                 <Input
                   id="points-rafp"
                   type="number"
@@ -298,14 +298,14 @@ export const CarriereFonctionPublique = ({
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="depart-pour-invalidite"
                   checked={departPourInvalidite}
                   onCheckedChange={(checked) => setDepartPourInvalidite(checked === true)}
                 />
-                <label htmlFor="depart-pour-invalidite" className="text-sm">
+                <label htmlFor="depart-pour-invalidite" className="text-xs">
                   Départ pour invalidité (moins de 15 ans de services)
                 </label>
               </div>
@@ -314,8 +314,8 @@ export const CarriereFonctionPublique = ({
                 à 15 ans (référentiel §7.5) — sans effet à 15 ans de services ou plus.
               </p>
 
-              <div className="space-y-2">
-                <Label htmlFor="annee-ouverture-droits">
+              <div className="space-y-1.5">
+                <Label htmlFor="annee-ouverture-droits" className="text-xs">
                   Année d'ouverture des droits (optionnel)
                 </Label>
                 <Input
@@ -340,15 +340,15 @@ export const CarriereFonctionPublique = ({
                   checked={departAnticipeCategorieActive}
                   onCheckedChange={(checked) => setDepartAnticipeCategorieActive(checked === true)}
                 />
-                <label htmlFor="depart-anticipe-categorie-active" className="text-sm">
+                <label htmlFor="depart-anticipe-categorie-active" className="text-xs">
                   Départ anticipé catégorie active
                 </label>
               </div>
 
               {departAnticipeCategorieActive && (
-                <div className="grid gap-4 md:grid-cols-2 pl-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="age-depart-anticipe">Âge de départ anticipé</Label>
+                <div className="grid gap-3 md:grid-cols-2 pl-6">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="age-depart-anticipe" className="text-xs">Âge de départ anticipé</Label>
                     <Input
                       id="age-depart-anticipe"
                       type="number"
@@ -358,8 +358,8 @@ export const CarriereFonctionPublique = ({
                       className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="age-annulation-decote">Âge d'annulation de la décote</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="age-annulation-decote" className="text-xs">Âge d'annulation de la décote</Label>
                     <Input
                       id="age-annulation-decote"
                       type="number"
@@ -378,10 +378,10 @@ export const CarriereFonctionPublique = ({
               )}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <div className="text-sm text-muted-foreground mb-1">Pension fonction publique</div>
-                <div className="text-xl font-semibold text-primary">
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <div className="text-xs text-muted-foreground mb-1">Pension fonction publique</div>
+                <div className="text-lg font-semibold text-primary">
                   {formatEuro2(pensionFinale)} / an
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -409,9 +409,9 @@ export const CarriereFonctionPublique = ({
                 )}
               </div>
 
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <div className="text-sm text-muted-foreground mb-1">RAFP</div>
-                <div className="text-xl font-semibold text-primary">
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <div className="text-xs text-muted-foreground mb-1">RAFP</div>
+                <div className="text-lg font-semibold text-primary">
                   {formatEuro2(rafpAnnuelle)} / an
                 </div>
               </div>
