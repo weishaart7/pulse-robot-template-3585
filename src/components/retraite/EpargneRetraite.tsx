@@ -4,8 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Save, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
+import { useAutoSave } from '@/hooks/useAutoSave';
+import { SaveStatusIndicator } from '@/components/ui/save-status-indicator';
 import { useAssets } from '@/hooks/useAssets';
 import { NATURES_PER } from '@/constants/assetTypes';
 import { getPartSuccessorale, BienNonQualifieError } from '@/lib/patrimoine/succession';
@@ -33,11 +35,10 @@ interface EpargneRetraiteProps {
 }
 
 export const EpargneRetraite = ({ personne = 'utilisateur' }: EpargneRetraiteProps = {}) => {
-  const { data, loading, saving, saveRetraiteData } = useRetraiteData(personne);
+  const { data, loading, saveRetraiteData } = useRetraiteData(personne);
   const { assets, loading: loadingAssets } = useAssets();
   const navigate = useNavigate();
   const [autresEpargnes, setAutresEpargnes] = useState<string>('');
-  const [hasChanges, setHasChanges] = useState(false);
 
   // Chargement des données depuis Supabase
   useEffect(() => {
@@ -48,22 +49,10 @@ export const EpargneRetraite = ({ personne = 'utilisateur' }: EpargneRetraitePro
     }
   }, [data, loading]);
 
-  // Détection des changements
-  useEffect(() => {
-    const autresDifferent = parseFloat(autresEpargnes) !== (data.autres_epargnes || 0);
-    setHasChanges(autresDifferent);
-  }, [autresEpargnes, data]);
-
-  const handleSave = async () => {
-    const updates = {
-      autres_epargnes: parseFloat(autresEpargnes) || 0,
-    };
-
-    const success = await saveRetraiteData(updates);
-    if (success) {
-      setHasChanges(false);
-    }
-  };
+  const { status: saveStatus, saveNow } = useAutoSave(
+    () => saveRetraiteData({ autres_epargnes: parseFloat(autresEpargnes) || 0 }, { silent: true }),
+    [autresEpargnes]
+  );
 
   const perAssetsFoyer = assets.filter(a => NATURES_PER.includes(a.nature));
   const assuranceVieAssetsFoyer = assets.filter(a => NATURES_ASSURANCE_VIE.includes(a.nature));
@@ -106,18 +95,9 @@ export const EpargneRetraite = ({ personne = 'utilisateur' }: EpargneRetraitePro
 
   return (
     <div className="space-y-6">
-      {hasChanges && (
-        <div className="flex justify-end">
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="gap-2"
-          >
-            <Save className="h-4 w-4" />
-            {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
-          </Button>
-        </div>
-      )}
+      <div className="flex justify-end">
+        <SaveStatusIndicator status={saveStatus} />
+      </div>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 p-5">
@@ -194,6 +174,7 @@ export const EpargneRetraite = ({ personne = 'utilisateur' }: EpargneRetraitePro
               placeholder="Ex: 25000"
               value={autresEpargnes}
               onChange={(e) => setAutresEpargnes(e.target.value)}
+              onBlur={saveNow}
              className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"/>
             <p className="text-xs text-muted-foreground">
               Comptes épargne, placements divers, etc.

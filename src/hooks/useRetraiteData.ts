@@ -62,7 +62,8 @@ export const useRetraiteData = (personne: Personne = 'utilisateur') => {
     }
   };
 
-  const saveRetraiteData = async (updates: Partial<RetraiteData>) => {
+  const saveRetraiteData = async (updates: Partial<RetraiteData>, options: { silent?: boolean } = {}) => {
+    const { silent = false } = options;
     setSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -116,10 +117,12 @@ export const useRetraiteData = (personne: Personne = 'utilisateur') => {
         }
       }
 
-      toast({
-        title: "Données sauvegardées",
-        description: "Vos informations de retraite ont été sauvegardées avec succès.",
-      });
+      if (!silent) {
+        toast({
+          title: "Données sauvegardées",
+          description: "Vos informations de retraite ont été sauvegardées avec succès.",
+        });
+      }
       return true;
     } catch (error) {
       console.error('Error saving retirement data:', error);
