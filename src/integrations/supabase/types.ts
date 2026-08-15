@@ -1989,49 +1989,88 @@ export type Database = {
       }
       retraite_data: {
         Row: {
+          age_annulation_decote: number | null
+          age_depart_anticipe: number | null
+          annee_ouverture_droits: number | null
           au_moins_un_trimestre_majoration_enfant: boolean
           autres_epargnes: number | null
           created_at: string
+          depart_anticipe_categorie_active: boolean
+          depart_pour_invalidite: boolean
           epargne_assurance_vie: number | null
           epargne_per: number | null
+          has_cnavpl: boolean
+          has_fonction_publique: boolean
           id: string
           personne: string
+          points_cnavpl: number | null
+          points_rafp: number | null
           regimes_points: Json
           salaire_annuel_moyen: number | null
+          traitement_indiciaire_brut: number | null
+          trimestres_cnavpl: number | null
+          trimestres_liquidables_fp: number | null
           trimestres_requis: number | null
           trimestres_valides: number | null
           updated_at: string
           user_id: string
+          valeur_point_cnavpl: number | null
         }
         Insert: {
+          age_annulation_decote?: number | null
+          age_depart_anticipe?: number | null
+          annee_ouverture_droits?: number | null
           au_moins_un_trimestre_majoration_enfant?: boolean
           autres_epargnes?: number | null
           created_at?: string
+          depart_anticipe_categorie_active?: boolean
+          depart_pour_invalidite?: boolean
           epargne_assurance_vie?: number | null
           epargne_per?: number | null
+          has_cnavpl?: boolean
+          has_fonction_publique?: boolean
           id?: string
           personne?: string
+          points_cnavpl?: number | null
+          points_rafp?: number | null
           regimes_points?: Json
           salaire_annuel_moyen?: number | null
+          traitement_indiciaire_brut?: number | null
+          trimestres_cnavpl?: number | null
+          trimestres_liquidables_fp?: number | null
           trimestres_requis?: number | null
           trimestres_valides?: number | null
           updated_at?: string
           user_id: string
+          valeur_point_cnavpl?: number | null
         }
         Update: {
+          age_annulation_decote?: number | null
+          age_depart_anticipe?: number | null
+          annee_ouverture_droits?: number | null
           au_moins_un_trimestre_majoration_enfant?: boolean
           autres_epargnes?: number | null
           created_at?: string
+          depart_anticipe_categorie_active?: boolean
+          depart_pour_invalidite?: boolean
           epargne_assurance_vie?: number | null
           epargne_per?: number | null
+          has_cnavpl?: boolean
+          has_fonction_publique?: boolean
           id?: string
           personne?: string
+          points_cnavpl?: number | null
+          points_rafp?: number | null
           regimes_points?: Json
           salaire_annuel_moyen?: number | null
+          traitement_indiciaire_brut?: number | null
+          trimestres_cnavpl?: number | null
+          trimestres_liquidables_fp?: number | null
           trimestres_requis?: number | null
           trimestres_valides?: number | null
           updated_at?: string
           user_id?: string
+          valeur_point_cnavpl?: number | null
         }
         Relationships: []
       }
