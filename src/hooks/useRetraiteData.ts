@@ -15,6 +15,14 @@ interface RetraiteData {
   // Condition n°1 (déclarative) de la surcote parentale, référentiel §2.3.2 —
   // cf. surcoteParentale() dans src/lib/retraite/calcul.ts.
   au_moins_un_trimestre_majoration_enfant?: boolean;
+  // Carrière fonction publique / CNAVPL (CarriereFonctionPublique.tsx /
+  // CarriereCNAVPL.tsx) — cf. docs/audit/audit-fonction-publique-cnavpl.md :
+  // ces deux blocs n'avaient jusqu'ici aucune colonne pour persister leur
+  // saisie, d'où la perte silencieuse constatée à chaque rechargement.
+  has_fonction_publique?: boolean;
+  trimestres_liquidables_fp?: number;
+  has_cnavpl?: boolean;
+  trimestres_cnavpl?: number;
 }
 
 // 'conjoint' : même user_id (le conjoint n'a pas de compte séparé, cf.

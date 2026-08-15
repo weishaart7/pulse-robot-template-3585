@@ -233,6 +233,18 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       if (data.au_moins_un_trimestre_majoration_enfant !== undefined) {
         setAuMoinsUnTrimestreMajorationEnfant(data.au_moins_un_trimestre_majoration_enfant);
       }
+      if (data.has_fonction_publique !== undefined) {
+        setHasFonctionPublique(data.has_fonction_publique);
+      }
+      if (data.trimestres_liquidables_fp !== undefined && data.trimestres_liquidables_fp !== null) {
+        setTrimestresLiquidablesFP(data.trimestres_liquidables_fp.toString());
+      }
+      if (data.has_cnavpl !== undefined) {
+        setHasCNAVPL(data.has_cnavpl);
+      }
+      if (data.trimestres_cnavpl !== undefined && data.trimestres_cnavpl !== null) {
+        setTrimestresCNAVPL(data.trimestres_cnavpl.toString());
+      }
     }
   }, [data, loading]);
 
@@ -345,6 +357,10 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             trimestres_valides: parseInt(trimestresValides) || 0,
             regimes_points: regimesPoints,
             au_moins_un_trimestre_majoration_enfant: auMoinsUnTrimestreMajorationEnfant,
+            has_fonction_publique: hasFonctionPublique,
+            trimestres_liquidables_fp: parseInt(trimestresLiquidablesFP) || 0,
+            has_cnavpl: hasCNAVPL,
+            trimestres_cnavpl: parseInt(trimestresCNAVPL) || 0,
           },
           { silent: true }
         ),
@@ -358,6 +374,10 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       JSON.stringify(regimesPoints),
       JSON.stringify(detailCarriere),
       auMoinsUnTrimestreMajorationEnfant,
+      hasFonctionPublique,
+      trimestresLiquidablesFP,
+      hasCNAVPL,
+      trimestresCNAVPL,
     ]
   );
 
