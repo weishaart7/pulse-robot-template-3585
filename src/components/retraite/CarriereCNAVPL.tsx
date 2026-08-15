@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,7 @@ import { pensionBaseCNAVPL } from '@/lib/retraite/calculCNAVPL';
 
 // Valeur du point CNAVPL 2026 (source : CNAVPL, cnavpl.fr) — pré-remplie
 // mais modifiable par l'utilisateur, pas codée en dur dans le calcul.
-const VALEUR_POINT_CNAVPL_2026 = 0.6599;
+export const VALEUR_POINT_CNAVPL_2026 = 0.6599;
 
 const formatEuro2 = (valeur: number) =>
   valeur.toLocaleString('fr-FR', {
@@ -49,6 +49,16 @@ interface CarriereCNAVPLProps {
   // Nombre d'enfants éligibles à la majoration pour 3 enfants ou plus
   // (écart #7, cas courant) — calculé une fois dans Carriere.tsx.
   nombreEnfantsEligibles: number;
+  // Remontés au parent pour la même raison que hasCNAVPL/trimestresCNAVPL
+  // ci-dessus (persistance automatique via useAutoSave dans Carriere.tsx,
+  // cf. docs/audit/audit-fonction-publique-cnavpl.md) — purement locaux à
+  // ce composant auparavant. valeurPointCNAVPL est initialisée par le
+  // parent avec VALEUR_POINT_CNAVPL_2026 (exportée ci-dessus), même valeur
+  // par défaut qu'avant le lift.
+  pointsCNAVPL: string;
+  onPointsCNAVPLChange: (value: string) => void;
+  valeurPointCNAVPL: string;
+  onValeurPointCNAVPLChange: (value: string) => void;
   onResultChange?: (result: { pensionFinale: number }) => void;
 }
 
@@ -62,13 +72,12 @@ export const CarriereCNAVPL = ({
   dateNaissance,
   auMoinsUnTrimestreMajorationEnfant,
   nombreEnfantsEligibles,
+  pointsCNAVPL,
+  onPointsCNAVPLChange,
+  valeurPointCNAVPL,
+  onValeurPointCNAVPLChange,
   onResultChange,
 }: CarriereCNAVPLProps) => {
-  const [pointsCNAVPL, setPointsCNAVPL] = useState<string>('');
-  const [valeurPointCNAVPL, setValeurPointCNAVPL] = useState<string>(
-    VALEUR_POINT_CNAVPL_2026.toString()
-  );
-
   const pointsNum = parseFloat(pointsCNAVPL) || 0;
   const valeurPointNum = parseFloat(valeurPointCNAVPL) || 0;
   const trimestresCNAVPLNum = parseInt(trimestresCNAVPL) || 0;
@@ -166,7 +175,7 @@ export const CarriereCNAVPL = ({
                   type="number"
                   placeholder="Ex: 10000"
                   value={pointsCNAVPL}
-                  onChange={(e) => setPointsCNAVPL(e.target.value)}
+                  onChange={(e) => onPointsCNAVPLChange(e.target.value)}
                   className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                 />
               </div>
@@ -178,7 +187,7 @@ export const CarriereCNAVPL = ({
                   type="number"
                   step="0.0001"
                   value={valeurPointCNAVPL}
-                  onChange={(e) => setValeurPointCNAVPL(e.target.value)}
+                  onChange={(e) => onValeurPointCNAVPLChange(e.target.value)}
                   className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                 />
                 <p className="text-xs text-muted-foreground">

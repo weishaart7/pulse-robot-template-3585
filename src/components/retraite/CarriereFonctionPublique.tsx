@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -61,6 +61,25 @@ interface CarriereFonctionPubliqueProps {
   onHasFonctionPubliqueChange: (value: boolean) => void;
   trimestresLiquidables: string;
   onTrimestresLiquidablesChange: (value: string) => void;
+  // Champs ci-dessous : remontés au parent pour la même raison que
+  // hasFonctionPublique/trimestresLiquidables ci-dessus (persistance
+  // automatique via useAutoSave dans Carriere.tsx, cf.
+  // docs/audit/audit-fonction-publique-cnavpl.md) — purement locaux à ce
+  // composant auparavant.
+  traitementIndiciaireBrut: string;
+  onTraitementIndiciaireBrutChange: (value: string) => void;
+  pointsRAFP: string;
+  onPointsRAFPChange: (value: string) => void;
+  departAnticipeCategorieActive: boolean;
+  onDepartAnticipeCategorieActiveChange: (value: boolean) => void;
+  ageDepartAnticipe: string;
+  onAgeDepartAnticipeChange: (value: string) => void;
+  ageAnnulationDecote: string;
+  onAgeAnnulationDecoteChange: (value: string) => void;
+  departPourInvalidite: boolean;
+  onDepartPourInvaliditeChange: (value: boolean) => void;
+  anneeOuvertureDroits: string;
+  onAnneeOuvertureDroitsChange: (value: string) => void;
   // Date de naissance du client (family_profiles, chargée une fois dans
   // Carriere.tsx) — nécessaire à ageLegalAtteint()/ageLegalParentaleEligible()
   // pour la surcote (écarts #5/#6). `null` tant que le profil famille n'est
@@ -89,19 +108,25 @@ export const CarriereFonctionPublique = ({
   onHasFonctionPubliqueChange,
   trimestresLiquidables,
   onTrimestresLiquidablesChange,
+  traitementIndiciaireBrut,
+  onTraitementIndiciaireBrutChange,
+  pointsRAFP,
+  onPointsRAFPChange,
+  departAnticipeCategorieActive,
+  onDepartAnticipeCategorieActiveChange,
+  ageDepartAnticipe,
+  onAgeDepartAnticipeChange,
+  ageAnnulationDecote,
+  onAgeAnnulationDecoteChange,
+  departPourInvalidite,
+  onDepartPourInvaliditeChange,
+  anneeOuvertureDroits,
+  onAnneeOuvertureDroitsChange,
   dateNaissance,
   auMoinsUnTrimestreMajorationEnfant,
   nombreEnfantsEligibles,
   onResultChange,
 }: CarriereFonctionPubliqueProps) => {
-  const [traitementIndiciaireBrut, setTraitementIndiciaireBrut] = useState<string>('');
-  const [pointsRAFP, setPointsRAFP] = useState<string>('');
-  const [departAnticipeCategorieActive, setDepartAnticipeCategorieActive] = useState(false);
-  const [ageDepartAnticipe, setAgeDepartAnticipe] = useState<string>('');
-  const [ageAnnulationDecote, setAgeAnnulationDecote] = useState<string>('');
-  const [departPourInvalidite, setDepartPourInvalidite] = useState(false);
-  const [anneeOuvertureDroits, setAnneeOuvertureDroits] = useState<string>('');
-
   const tib = parseFloat(traitementIndiciaireBrut) || 0;
   const trimestresLiquidablesNum = parseInt(trimestresLiquidables) || 0;
   const pointsRAFPNum = parseFloat(pointsRAFP) || 0;
@@ -250,7 +275,7 @@ export const CarriereFonctionPublique = ({
                   type="number"
                   placeholder="Ex: 36000"
                   value={traitementIndiciaireBrut}
-                  onChange={(e) => setTraitementIndiciaireBrut(e.target.value)}
+                  onChange={(e) => onTraitementIndiciaireBrutChange(e.target.value)}
                   className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -280,7 +305,7 @@ export const CarriereFonctionPublique = ({
                   type="number"
                   placeholder="Ex: 4200"
                   value={pointsRAFP}
-                  onChange={(e) => setPointsRAFP(e.target.value)}
+                  onChange={(e) => onPointsRAFPChange(e.target.value)}
                   className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -303,7 +328,7 @@ export const CarriereFonctionPublique = ({
                 <Checkbox
                   id="depart-pour-invalidite"
                   checked={departPourInvalidite}
-                  onCheckedChange={(checked) => setDepartPourInvalidite(checked === true)}
+                  onCheckedChange={(checked) => onDepartPourInvaliditeChange(checked === true)}
                 />
                 <label htmlFor="depart-pour-invalidite" className="text-xs">
                   Départ pour invalidité (moins de 15 ans de services)
@@ -323,7 +348,7 @@ export const CarriereFonctionPublique = ({
                   type="number"
                   placeholder="Ex: 2014"
                   value={anneeOuvertureDroits}
-                  onChange={(e) => setAnneeOuvertureDroits(e.target.value)}
+                  onChange={(e) => onAnneeOuvertureDroitsChange(e.target.value)}
                   className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring max-w-xs"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -338,7 +363,7 @@ export const CarriereFonctionPublique = ({
                 <Checkbox
                   id="depart-anticipe-categorie-active"
                   checked={departAnticipeCategorieActive}
-                  onCheckedChange={(checked) => setDepartAnticipeCategorieActive(checked === true)}
+                  onCheckedChange={(checked) => onDepartAnticipeCategorieActiveChange(checked === true)}
                 />
                 <label htmlFor="depart-anticipe-categorie-active" className="text-xs">
                   Départ anticipé catégorie active
@@ -354,7 +379,7 @@ export const CarriereFonctionPublique = ({
                       type="number"
                       placeholder="Ex: 57"
                       value={ageDepartAnticipe}
-                      onChange={(e) => setAgeDepartAnticipe(e.target.value)}
+                      onChange={(e) => onAgeDepartAnticipeChange(e.target.value)}
                       className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                     />
                   </div>
@@ -365,7 +390,7 @@ export const CarriereFonctionPublique = ({
                       type="number"
                       placeholder="Ex: 62"
                       value={ageAnnulationDecote}
-                      onChange={(e) => setAgeAnnulationDecote(e.target.value)}
+                      onChange={(e) => onAgeAnnulationDecoteChange(e.target.value)}
                       className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                     />
                   </div>

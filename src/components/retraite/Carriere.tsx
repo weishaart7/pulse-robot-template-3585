@@ -39,7 +39,7 @@ import {
 } from '@/lib/retraite/calcul';
 import { trimestresCotisesEtAssimilesDepuisCarriere } from '@/lib/retraite/calculTrimestres';
 import { CarriereFonctionPublique } from '@/components/retraite/CarriereFonctionPublique';
-import { CarriereCNAVPL } from '@/components/retraite/CarriereCNAVPL';
+import { CarriereCNAVPL, VALEUR_POINT_CNAVPL_2026 } from '@/components/retraite/CarriereCNAVPL';
 import { familyService, FamilyLink } from '@/services/familyService';
 import { nombreEnfantsEligiblesMajorationTroisEnfants } from '@/lib/retraite/enfantsEligiblesMajoration';
 import { computeAge } from '@/lib/patrimoine/bareme669CGI';
@@ -110,6 +110,18 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   // général, fonction publique, CNAVPL), chacun gardant son propre plafond.
   const [hasFonctionPublique, setHasFonctionPublique] = useState(false);
   const [trimestresLiquidablesFP, setTrimestresLiquidablesFP] = useState<string>('');
+  // Champs ci-dessous : lifté depuis CarriereFonctionPublique.tsx (état
+  // purement local avant cette session, cf.
+  // docs/audit/audit-fonction-publique-cnavpl.md) pour suivre le même
+  // chemin de sauvegarde automatique que hasFonctionPublique/
+  // trimestresLiquidablesFP ci-dessus.
+  const [traitementIndiciaireBrut, setTraitementIndiciaireBrut] = useState<string>('');
+  const [pointsRAFP, setPointsRAFP] = useState<string>('');
+  const [departAnticipeCategorieActive, setDepartAnticipeCategorieActive] = useState(false);
+  const [ageDepartAnticipe, setAgeDepartAnticipe] = useState<string>('');
+  const [ageAnnulationDecote, setAgeAnnulationDecote] = useState<string>('');
+  const [departPourInvalidite, setDepartPourInvalidite] = useState(false);
+  const [anneeOuvertureDroits, setAnneeOuvertureDroits] = useState<string>('');
   const [resultatFonctionPublique, setResultatFonctionPublique] = useState({
     pensionFinale: 0,
     rafpAnnuelle: 0,
@@ -118,6 +130,13 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   // Carrière CNAVPL — même pattern que la fonction publique ci-dessus.
   const [hasCNAVPL, setHasCNAVPL] = useState(false);
   const [trimestresCNAVPL, setTrimestresCNAVPL] = useState<string>('');
+  // Liftés depuis CarriereCNAVPL.tsx, même raison que ci-dessus.
+  // valeurPointCNAVPL initialisée avec la même valeur par défaut
+  // qu'auparavant (VALEUR_POINT_CNAVPL_2026, exportée par CarriereCNAVPL.tsx).
+  const [pointsCNAVPL, setPointsCNAVPL] = useState<string>('');
+  const [valeurPointCNAVPL, setValeurPointCNAVPL] = useState<string>(
+    VALEUR_POINT_CNAVPL_2026.toString()
+  );
   const [resultatCNAVPL, setResultatCNAVPL] = useState({ pensionFinale: 0 });
 
   // Import RIS — le fichier n'est jamais conservé au-delà du parsing ni envoyé
@@ -245,6 +264,33 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       if (data.trimestres_cnavpl !== undefined && data.trimestres_cnavpl !== null) {
         setTrimestresCNAVPL(data.trimestres_cnavpl.toString());
       }
+      if (data.traitement_indiciaire_brut !== undefined && data.traitement_indiciaire_brut !== null) {
+        setTraitementIndiciaireBrut(data.traitement_indiciaire_brut.toString());
+      }
+      if (data.points_rafp !== undefined && data.points_rafp !== null) {
+        setPointsRAFP(data.points_rafp.toString());
+      }
+      if (data.depart_anticipe_categorie_active !== undefined) {
+        setDepartAnticipeCategorieActive(data.depart_anticipe_categorie_active);
+      }
+      if (data.age_depart_anticipe !== undefined && data.age_depart_anticipe !== null) {
+        setAgeDepartAnticipe(data.age_depart_anticipe.toString());
+      }
+      if (data.age_annulation_decote !== undefined && data.age_annulation_decote !== null) {
+        setAgeAnnulationDecote(data.age_annulation_decote.toString());
+      }
+      if (data.depart_pour_invalidite !== undefined) {
+        setDepartPourInvalidite(data.depart_pour_invalidite);
+      }
+      if (data.annee_ouverture_droits !== undefined && data.annee_ouverture_droits !== null) {
+        setAnneeOuvertureDroits(data.annee_ouverture_droits.toString());
+      }
+      if (data.points_cnavpl !== undefined && data.points_cnavpl !== null) {
+        setPointsCNAVPL(data.points_cnavpl.toString());
+      }
+      if (data.valeur_point_cnavpl !== undefined && data.valeur_point_cnavpl !== null) {
+        setValeurPointCNAVPL(data.valeur_point_cnavpl.toString());
+      }
     }
   }, [data, loading]);
 
@@ -361,6 +407,15 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             trimestres_liquidables_fp: parseInt(trimestresLiquidablesFP) || 0,
             has_cnavpl: hasCNAVPL,
             trimestres_cnavpl: parseInt(trimestresCNAVPL) || 0,
+            traitement_indiciaire_brut: parseFloat(traitementIndiciaireBrut) || 0,
+            points_rafp: parseFloat(pointsRAFP) || 0,
+            depart_anticipe_categorie_active: departAnticipeCategorieActive,
+            age_depart_anticipe: parseFloat(ageDepartAnticipe) || null,
+            age_annulation_decote: parseFloat(ageAnnulationDecote) || null,
+            depart_pour_invalidite: departPourInvalidite,
+            annee_ouverture_droits: anneeOuvertureDroits === '' ? null : parseInt(anneeOuvertureDroits, 10),
+            points_cnavpl: parseFloat(pointsCNAVPL) || 0,
+            valeur_point_cnavpl: parseFloat(valeurPointCNAVPL) || 0,
           },
           { silent: true }
         ),
@@ -378,6 +433,15 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       trimestresLiquidablesFP,
       hasCNAVPL,
       trimestresCNAVPL,
+      traitementIndiciaireBrut,
+      pointsRAFP,
+      departAnticipeCategorieActive,
+      ageDepartAnticipe,
+      ageAnnulationDecote,
+      departPourInvalidite,
+      anneeOuvertureDroits,
+      pointsCNAVPL,
+      valeurPointCNAVPL,
     ]
   );
 
@@ -1105,6 +1169,20 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         onHasFonctionPubliqueChange={setHasFonctionPublique}
         trimestresLiquidables={trimestresLiquidablesFP}
         onTrimestresLiquidablesChange={setTrimestresLiquidablesFP}
+        traitementIndiciaireBrut={traitementIndiciaireBrut}
+        onTraitementIndiciaireBrutChange={setTraitementIndiciaireBrut}
+        pointsRAFP={pointsRAFP}
+        onPointsRAFPChange={setPointsRAFP}
+        departAnticipeCategorieActive={departAnticipeCategorieActive}
+        onDepartAnticipeCategorieActiveChange={setDepartAnticipeCategorieActive}
+        ageDepartAnticipe={ageDepartAnticipe}
+        onAgeDepartAnticipeChange={setAgeDepartAnticipe}
+        ageAnnulationDecote={ageAnnulationDecote}
+        onAgeAnnulationDecoteChange={setAgeAnnulationDecote}
+        departPourInvalidite={departPourInvalidite}
+        onDepartPourInvaliditeChange={setDepartPourInvalidite}
+        anneeOuvertureDroits={anneeOuvertureDroits}
+        onAnneeOuvertureDroitsChange={setAnneeOuvertureDroits}
         dateNaissance={dateNaissanceDetail}
         auMoinsUnTrimestreMajorationEnfant={auMoinsUnTrimestreMajorationEnfant}
         nombreEnfantsEligibles={nombreEnfantsEligibles}
@@ -1118,6 +1196,10 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         onHasCNAVPLChange={setHasCNAVPL}
         trimestresCNAVPL={trimestresCNAVPL}
         onTrimestresCNAVPLChange={setTrimestresCNAVPL}
+        pointsCNAVPL={pointsCNAVPL}
+        onPointsCNAVPLChange={setPointsCNAVPL}
+        valeurPointCNAVPL={valeurPointCNAVPL}
+        onValeurPointCNAVPLChange={setValeurPointCNAVPL}
         dateNaissance={dateNaissanceDetail}
         auMoinsUnTrimestreMajorationEnfant={auMoinsUnTrimestreMajorationEnfant}
         nombreEnfantsEligibles={nombreEnfantsEligibles}

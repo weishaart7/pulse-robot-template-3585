@@ -23,6 +23,15 @@ interface RetraiteData {
   trimestres_liquidables_fp?: number;
   has_cnavpl?: boolean;
   trimestres_cnavpl?: number;
+  traitement_indiciaire_brut?: number;
+  points_rafp?: number;
+  depart_anticipe_categorie_active?: boolean;
+  age_depart_anticipe?: number;
+  age_annulation_decote?: number;
+  depart_pour_invalidite?: boolean;
+  annee_ouverture_droits?: number;
+  points_cnavpl?: number;
+  valeur_point_cnavpl?: number;
 }
 
 // 'conjoint' : même user_id (le conjoint n'a pas de compte séparé, cf.
