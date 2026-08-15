@@ -25,6 +25,7 @@ import {
   pensionBase,
   tauxProratisation,
   majorationTroisEnfants,
+  pensionTotaleConsolideeTousRegimes,
   DateNaissance,
 } from './calcul';
 import { computeAge } from '../patrimoine/bareme669CGI';
@@ -1045,5 +1046,81 @@ describe('Parité Trimestres.tsx / Carriere.tsx — même surcote pour un même 
     const surcoteMontant = p0 * (surcoteTotalePct / 100);
     expect(p0).toBe(7500); // taux plafonné à 1 (171 > 167)
     expect(surcoteMontant).toBeCloseTo(375, 6); // 7 500 × 5 %
+  });
+});
+
+describe('pensionTotaleConsolideeTousRegimes — non-régression docs/audit/audit-fonction-publique-cnavpl.md', () => {
+  const pensionTotaleRegimeGeneral = 12000;
+  const resultatFonctionPublique = { pensionFinale: 8000, rafpAnnuelle: 500 };
+  const resultatCNAVPL = { pensionFinale: 3000 };
+
+  it('inclut fonction publique et CNAVPL quand les deux blocs sont cochés', () => {
+    const total = pensionTotaleConsolideeTousRegimes(
+      pensionTotaleRegimeGeneral,
+      true,
+      resultatFonctionPublique,
+      true,
+      resultatCNAVPL
+    );
+    expect(total).toBe(12000 + 8500 + 3000);
+  });
+
+  it('exclut fonction publique/CNAVPL quand les blocs ne sont pas cochés, même si un résultat résiduel existe', () => {
+    const total = pensionTotaleConsolideeTousRegimes(
+      pensionTotaleRegimeGeneral,
+      false,
+      resultatFonctionPublique,
+      false,
+      resultatCNAVPL
+    );
+    expect(total).toBe(pensionTotaleRegimeGeneral);
+  });
+
+  it('simule un rechargement de page : has_fonction_publique/has_cnavpl relus depuis retraite_data restent à true, le total consolidé ne redescend plus silencieusement au régime général seul', () => {
+    // Avant la migration 20260815020000 / le branchement de cette session
+    // (cf. docs/audit/audit-fonction-publique-cnavpl.md), aucune colonne
+    // has_fonction_publique/has_cnavpl n'existait en base : au rechargement
+    // de Carriere.tsx, l'état React repartait systématiquement de
+    // useState(false), et ce total retombait silencieusement à
+    // pensionTotaleRegimeGeneral seul, quelle que soit la saisie
+    // précédente de l'utilisateur.
+    const ligneRetraiteDataApresRechargement = {
+      has_fonction_publique: true,
+      trimestres_liquidables_fp: 60,
+      has_cnavpl: true,
+      trimestres_cnavpl: 40,
+    };
+
+    // Reproduit la sémantique de chargement de Carriere.tsx
+    // (`if (data.has_fonction_publique !== undefined) setHasFonctionPublique(...)`) :
+    // une ligne déjà enregistrée a toujours ces deux colonnes définies
+    // (NOT NULL DEFAULT false en base), donc l'état repart bien de la
+    // valeur persistée après la correction, pas du défaut React.
+    const hasFonctionPubliqueApresRechargement =
+      ligneRetraiteDataApresRechargement.has_fonction_publique !== undefined
+        ? ligneRetraiteDataApresRechargement.has_fonction_publique
+        : false;
+    const hasCNAVPLApresRechargement =
+      ligneRetraiteDataApresRechargement.has_cnavpl !== undefined
+        ? ligneRetraiteDataApresRechargement.has_cnavpl
+        : false;
+
+    const totalAvantRechargement = pensionTotaleConsolideeTousRegimes(
+      pensionTotaleRegimeGeneral,
+      true,
+      resultatFonctionPublique,
+      true,
+      resultatCNAVPL
+    );
+    const totalApresRechargement = pensionTotaleConsolideeTousRegimes(
+      pensionTotaleRegimeGeneral,
+      hasFonctionPubliqueApresRechargement,
+      resultatFonctionPublique,
+      hasCNAVPLApresRechargement,
+      resultatCNAVPL
+    );
+
+    expect(totalApresRechargement).toBe(totalAvantRechargement);
+    expect(totalApresRechargement).toBeGreaterThan(pensionTotaleRegimeGeneral);
   });
 });

@@ -811,6 +811,33 @@ export function majorationTroisEnfants(nombreEnfantsEligibles: number): number {
 }
 
 /**
+ * Total consolidé tous régimes, affiché dans Carriere.tsx (« Total consolidé
+ * tous régimes »). Extrait ici pour être testable indépendamment du
+ * composant React — cf. docs/audit/audit-fonction-publique-cnavpl.md : avant
+ * la persistance des champs `hasFonctionPublique`/`hasCNAVPL` (et des
+ * données FP/CNAVPL sous-jacentes), ce total retombait silencieusement à la
+ * seule pension régime général à chaque rechargement de page, ces deux
+ * booléens n'étant jamais réhydratés depuis Supabase. `hasFonctionPublique`/
+ * `hasCNAVPL` gardent un rôle même une fois les données persistées : ils
+ * restent la condition d'affichage du bloc (cf. `resultatFonctionPublique`/
+ * `resultatCNAVPL`, qui peuvent contenir un résidu de calcul même quand le
+ * bloc est décoché).
+ */
+export function pensionTotaleConsolideeTousRegimes(
+  pensionTotaleRegimeGeneral: number,
+  hasFonctionPublique: boolean,
+  resultatFonctionPublique: { pensionFinale: number; rafpAnnuelle: number },
+  hasCNAVPL: boolean,
+  resultatCNAVPL: { pensionFinale: number }
+): number {
+  const pensionTotaleFonctionPublique = hasFonctionPublique
+    ? resultatFonctionPublique.pensionFinale + resultatFonctionPublique.rafpAnnuelle
+    : 0;
+  const pensionTotaleCNAVPL = hasCNAVPL ? resultatCNAVPL.pensionFinale : 0;
+  return pensionTotaleRegimeGeneral + pensionTotaleFonctionPublique + pensionTotaleCNAVPL;
+}
+
+/**
  * Pension complémentaire annuelle d'un régime à points : uniquement
  * calculable si points et valeurPoint sont tous deux connus (pas de valeur
  * par défaut inventée si l'un des deux manque). Constante dans le temps :

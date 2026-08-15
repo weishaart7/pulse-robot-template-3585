@@ -35,6 +35,7 @@ import {
   surcoteParentale,
   surcoteTotale,
   majorationTroisEnfants,
+  pensionTotaleConsolideeTousRegimes,
   DateNaissance,
 } from '@/lib/retraite/calcul';
 import { trimestresCotisesEtAssimilesDepuisCarriere } from '@/lib/retraite/calculTrimestres';
@@ -723,8 +724,13 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
     ? resultatFonctionPublique.pensionFinale + resultatFonctionPublique.rafpAnnuelle
     : 0;
   const pensionTotaleCNAVPL = hasCNAVPL ? resultatCNAVPL.pensionFinale : 0;
-  const pensionTotaleConsolidee =
-    pensionTotaleRegimeGeneral + pensionTotaleFonctionPublique + pensionTotaleCNAVPL;
+  const pensionTotaleConsolidee = pensionTotaleConsolideeTousRegimes(
+    pensionTotaleRegimeGeneral,
+    hasFonctionPublique,
+    resultatFonctionPublique,
+    hasCNAVPL,
+    resultatCNAVPL
+  );
   const aDesRegimesSupplementaires = hasFonctionPublique || hasCNAVPL;
 
   return (
