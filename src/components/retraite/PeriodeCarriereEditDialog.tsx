@@ -27,10 +27,11 @@ interface PeriodeCarriereEditDialogProps {
  * "Détail de carrière"). Édite une copie locale (`brouillon`) et ne remonte
  * la modification au parent qu'au clic sur "Enregistrer" — même principe
  * que RISImportDialog.tsx (rien n'est appliqué tant que l'utilisateur ne
- * valide pas), sauf que la persistance effective en base reste ensuite
- * soumise au même bouton "Enregistrer les modifications" global de
- * Carriere.tsx (`handleSave`) : ce dialogue met seulement à jour l'état
- * React local `detailCarriere`, pas Supabase directement.
+ * valide pas) : ce dialogue met seulement à jour l'état React local
+ * `detailCarriere`, pas Supabase directement. La persistance effective en
+ * base est ensuite automatique (useAutoSave dans Carriere.tsx), déclenchée
+ * dès que `detailCarriere` change — donc dès la fermeture de ce dialogue,
+ * sans action supplémentaire de l'utilisateur.
  */
 export function PeriodeCarriereEditDialog({ open, periode, onSave, onCancel }: PeriodeCarriereEditDialogProps) {
   const [brouillon, setBrouillon] = useState<PeriodeCarriere | null>(periode);
@@ -64,8 +65,8 @@ export function PeriodeCarriereEditDialog({ open, periode, onSave, onCancel }: P
         <DialogHeader>
           <DialogTitle>Modifier la période</DialogTitle>
           <DialogDescription>
-            Rien n'est enregistré tant que vous n'avez pas cliqué sur "Enregistrer" ici, puis sur "Enregistrer les
-            modifications" en haut de page.
+            Cette modification n'est appliquée qu'au clic sur "Enregistrer" ci-dessous — elle est ensuite
+            sauvegardée automatiquement, sans action supplémentaire.
           </DialogDescription>
         </DialogHeader>
 

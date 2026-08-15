@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Save, Upload, Trash2, Pencil, CheckCircle2, AlertTriangle, ChevronDown } from 'lucide-react';
+import { Upload, Trash2, Pencil, CheckCircle2, AlertTriangle, ChevronDown } from 'lucide-react';
 import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
+import { useAutoSave } from '@/hooks/useAutoSave';
+import { SaveStatusIndicator } from '@/components/ui/save-status-indicator';
 import { useToast } from '@/hooks/use-toast';
 import { parseRIS, PeriodeCarriere, RegimeDetecte, LIBELLE_TYPE_ACTIVITE } from '@/lib/retraite/parseRIS';
 import { estRegimeSaisieManuelle } from '@/lib/retraite/regimesSaisieManuelle';
@@ -70,11 +72,10 @@ interface CarriereProps {
 }
 
 export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
-  const { data, loading, saving, saveRetraiteData } = useRetraiteData(personne);
+  const { data, loading, saveRetraiteData } = useRetraiteData(personne);
   const {
     periodes: periodesEnregistrees,
     loading: loadingCarriereDetail,
-    saving: savingCarriereDetail,
     remplacerPeriodes,
   } = useCarriereDetail(personne);
   const { toast } = useToast();
@@ -99,7 +100,6 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   // fonction publique (écart #12) : défaut vide → 0 → comportement inchangé
   // (aucune réduction) tant que le champ n'est pas renseigné.
   const [autresPensionsMensuelles, setAutresPensionsMensuelles] = useState<string>('');
-  const [hasChanges, setHasChanges] = useState(false);
   const [pensionBaseBrute, setPensionBaseBrute] = useState<number>(0);
   const [decoteSurcote, setDecoteSurcote] = useState<number>(0);
   const [ageTauxPlein, setAgeTauxPlein] = useState<string>('');
@@ -245,33 +245,6 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
     }
   }, [loadingCarriereDetail, periodesEnregistrees]);
 
-  // Détection des changements
-  useEffect(() => {
-    const salaireDifferent = parseFloat(salaireAnnuelMoyen) !== (data.salaire_annuel_moyen || 0);
-    const trimestresDifferent = parseInt(trimestresValides) !== (data.trimestres_valides || 0);
-    const regimesPointsDifferent = JSON.stringify(regimesPoints) !== JSON.stringify(data.regimes_points || []);
-    const detailCarriereDifferent =
-      JSON.stringify(detailCarriere) !==
-      JSON.stringify(periodesEnregistrees.map(({ id: _id, ...periode }) => periode));
-    const majorationEnfantDifferente =
-      auMoinsUnTrimestreMajorationEnfant !== (data.au_moins_un_trimestre_majoration_enfant || false);
-    setHasChanges(
-      salaireDifferent ||
-        trimestresDifferent ||
-        regimesPointsDifferent ||
-        detailCarriereDifferent ||
-        majorationEnfantDifferente
-    );
-  }, [
-    salaireAnnuelMoyen,
-    trimestresValides,
-    regimesPoints,
-    detailCarriere,
-    periodesEnregistrees,
-    auMoinsUnTrimestreMajorationEnfant,
-    data,
-  ]);
-
   // Calcul de la pension de base brute (moteur : src/lib/retraite/calcul.ts)
   useEffect(() => {
     const salaire = parseFloat(salaireAnnuelMoyen) || 0;
@@ -354,22 +327,39 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
     }
   }, [trimestresValides, trimestresRequis]);
 
-  const handleSave = async () => {
-    const updates = {
-      salaire_annuel_moyen: parseFloat(salaireAnnuelMoyen) || 0,
-      trimestres_valides: parseInt(trimestresValides) || 0,
-      regimes_points: regimesPoints,
-      au_moins_un_trimestre_majoration_enfant: auMoinsUnTrimestreMajorationEnfant,
-    };
-
-    const [successRetraiteData, successDetailCarriere] = await Promise.all([
-      saveRetraiteData(updates),
-      remplacerPeriodes(detailCarriere),
-    ]);
-    if (successRetraiteData && successDetailCarriere) {
-      setHasChanges(false);
-    }
-  };
+  // Sauvegarde automatique globale (option A retenue) : tout changement sur
+  // cet écran — champs simples ou détail de carrière modifié via
+  // PeriodeCarriereEditDialog — relance le même Promise.all après le
+  // débounce, pour préserver l'atomicité entre retraite_data et
+  // retraite_carriere_detail qu'avait le bouton "Enregistrer les
+  // modifications" unique d'origine. JSON.stringify (plutôt que les
+  // références de tableau) évite qu'un simple rechargement post-sauvegarde
+  // de periodesEnregistrees (même contenu, nouvelle référence) ne redéclenche
+  // une sauvegarde en boucle.
+  const { status: saveStatus, saveNow } = useAutoSave(
+    async () => {
+      const [successRetraiteData, successDetailCarriere] = await Promise.all([
+        saveRetraiteData(
+          {
+            salaire_annuel_moyen: parseFloat(salaireAnnuelMoyen) || 0,
+            trimestres_valides: parseInt(trimestresValides) || 0,
+            regimes_points: regimesPoints,
+            au_moins_un_trimestre_majoration_enfant: auMoinsUnTrimestreMajorationEnfant,
+          },
+          { silent: true }
+        ),
+        remplacerPeriodes(detailCarriere),
+      ]);
+      return successRetraiteData && successDetailCarriere;
+    },
+    [
+      salaireAnnuelMoyen,
+      trimestresValides,
+      JSON.stringify(regimesPoints),
+      JSON.stringify(detailCarriere),
+      auMoinsUnTrimestreMajorationEnfant,
+    ]
+  );
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
@@ -655,18 +645,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
 
   return (
     <div className="space-y-6">
-      {hasChanges && (
-        <div className="flex justify-end">
-          <Button
-            onClick={handleSave}
-            disabled={saving || savingCarriereDetail}
-            className="gap-2"
-          >
-            <Save className="h-4 w-4" />
-            {saving || savingCarriereDetail ? 'Enregistrement...' : 'Enregistrer les modifications'}
-          </Button>
-        </div>
-      )}
+      <div className="flex justify-end">
+        <SaveStatusIndicator status={saveStatus} />
+      </div>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 p-5">
           <div>
@@ -703,6 +684,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                 placeholder="Ex: 45000"
                 value={salaireAnnuelMoyen}
                 onChange={(e) => setSalaireAnnuelMoyen(e.target.value)}
+                onBlur={saveNow}
                className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"/>
             </div>
           </div>
@@ -726,6 +708,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                 placeholder="Ex: 160"
                 value={trimestresValides}
                 onChange={(e) => setTrimestresValides(e.target.value)}
+                onBlur={saveNow}
                className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"/>
             </div>
 
