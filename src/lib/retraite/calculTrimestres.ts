@@ -15,31 +15,134 @@
  * - abattements version 2026 uniquement (art. D613-4 CSS), pas de barème par
  *   année comme `SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE`.
  *
- * ⚠️ Cette fonction n'est PAS branchée dans decoteSurTrimestres() ni dans
- * aucun écran à ce stade — production de la fonction et de ses tests
- * uniquement, le branchement fera l'objet d'un commit séparé une fois
- * validé (cf. consigne de la session qui l'a introduite, 2026-08-11).
+ * Branchement réel (corrigé le 2026-08-15, cf. docs/audit/audit-import-ris.md
+ * §3 — le commentaire précédent affirmait à tort qu'aucun écran n'utilisait
+ * cette fonction) : `trimestresCotisesEtAssimilesDepuisCarriere()` est
+ * appelée par `anneesExclues()` dans calculSAM.ts, elle-même appelée par
+ * `calculerSAM()`, elle-même appelée directement par
+ * `RISImportDialog.tsx` au moment de l'import d'un RIS. Elle est donc
+ * active dès l'import — pas seulement dans un module futur non branché —
+ * via l'exclusion des années sans trimestre validé du pool du SAM, pas via
+ * `decoteSurTrimestres()` (qui, lui, reste effectivement non branché sur
+ * cette fonction à ce stade).
  */
 
 import { PeriodeCarriere } from './parseRIS';
 
 /**
- * Seuil de revenu validant un trimestre cotisé (art. R.351-9 CSS) :
- * 150 × SMIC horaire brut en vigueur au 1er janvier de l'année considérée.
+ * Seuil de revenu validant un trimestre cotisé (art. R.351-9 CSS). La règle
+ * elle-même a changé 2 fois dans l'histoire du régime général (recherche et
+ * vérification du 2026-08-15, Legifrance) :
+ * - 1949-1971 : montant trimestriel de l'AVTS (Allocation aux Vieux
+ *   Travailleurs Salariés) — pas un multiple du SMIC, formule non modélisée
+ *   ici (valeurs déjà calculées directement par le COR, cf. ci-dessous).
+ * - 1972-2013 : 200 × SMIC horaire brut au 1er janvier de l'année (art.
+ *   R.351-9 CSS, rédaction issue de la loi Boulin du 31/12/1971, circulaire
+ *   CNAV 1/73 du 03/01/1973).
+ * - Depuis le 1er janvier 2014 : 150 × SMIC horaire brut au 1er janvier
+ *   (décret n° 2014-349 du 19/03/2014, application rétroactive au
+ *   01/01/2014 malgré la date de publication).
  *
- * Valeurs DÉRIVÉES des SMIC horaires bruts officiels publiés (Urssaf,
- * info.gouv.fr, Insee), pas recopiées d'une circulaire CNAV publiant
- * directement ce barème année par année — à la différence de
- * `PASS_PAR_ANNEE` (calculSAM.ts), qui a une source CNAV directe. Recherche
- * effectuée le 2026-08-11 et validée avec l'utilisateur avant intégration.
- * Recoupement de cohérence : 150 × 12,02 € (SMIC au 01/01/2026) = 1 803,00 €,
- * valeur confirmée indépendamment pour 2026 par l'utilisateur.
+ * Sources des valeurs ci-dessous :
+ * - **1950-2002** : valeurs déjà calculées et publiées en euros par le
+ *   Conseil d'Orientation des Retraites (COR), document "L'évolution des
+ *   paramètres du régime de la CNAV" (doc-1071.pdf, juin 2019, tableau
+ *   p.15) — source directe, pas de recalcul de notre part.
+ * - **2003-2017** : aucune table publiée équivalente trouvée pour cette
+ *   tranche lors de la recherche du 2026-08-15. Valeurs CALCULÉES par nos
+ *   soins (200×SMIC jusqu'en 2013, 150×SMIC à partir de 2014, SMIC horaire
+ *   brut en vigueur au 1er janvier de chaque année, dates de parution au
+ *   Journal Officiel — source : tableau SMIC historique cdg17.fr, recoupé
+ *   avec la série IPP). Méthode validée par recoupement exact avec les
+ *   valeurs déjà en place pour 2018 (150×9,88€=1482,00€) et 2019
+ *   (150×10,03€=1504,50€) et avec la valeur COR 2002 (200×6,67€=1334,00€).
+ * - **2018-2026** : déjà en place avant cette session, source Urssaf/Insee
+ *   (SMIC), non revérifiée ici au-delà du recoupement ci-dessus.
  *
- * ⚠️ À compléter chaque année lors de la revalorisation du SMIC (aucune
- * extrapolation au-delà des années listées — cf. comportement de repli
- * volontairement absent dans trimestresCotisesEtAssimilesDepuisCarriere()).
+ * ⚠️ Lacunes assumées, signalées plutôt que comblées par extrapolation
+ * (cf. `anneesSansBaremeConnu` dans `ResultatTrimestresCotisesEtAssimiles`,
+ * qui remonte explicitement toute année de revenu cotisé hors barème connu
+ * plutôt que de silencieusement compter 0 trimestre) :
+ * - 1946-1949 : seuil fixe pré-AVTS (1 800 F de salaire annuel en
+ *   1946-1948 selon le COR), non repris ici faute de valeur directement en
+ *   euros — cas résiduel (carrière démarrée il y a ~80 ans).
+ * - Avant 1946 : régime général inexistant sous cette forme.
  */
 export const SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE: Record<number, number> = {
+  // 1950-1971 — COR doc-1071.pdf p.15 (montant trimestriel AVTS, déjà en euros)
+  1950: 17.15,
+  1951: 19.82,
+  1952: 22.79,
+  1953: 22.79,
+  1954: 25.08,
+  1955: 25.08,
+  1956: 27.59,
+  1957: 27.59,
+  1958: 27.59,
+  1959: 27.59,
+  1960: 27.59,
+  1961: 27.59,
+  1962: 27.59,
+  1963: 30.49,
+  1964: 34.3,
+  1965: 38.11,
+  1966: 43.83,
+  1967: 49.55,
+  1968: 55.26,
+  1969: 59.07,
+  1970: 62.89,
+  1971: 66.7,
+  // 1972-2002 — COR doc-1071.pdf p.15 (règle des 200h, déjà en euros)
+  1972: 120.13,
+  1973: 138.73,
+  1974: 165.56,
+  1975: 205.81,
+  1976: 240.56,
+  1977: 272.58,
+  1978: 306.73,
+  1979: 344.84,
+  1980: 394.23,
+  1981: 450.94,
+  1982: 553.39,
+  1983: 618.64,
+  1984: 694.56,
+  1985: 742.73,
+  1986: 793.95,
+  1987: 820.79,
+  1988: 848.84,
+  1989: 876.89,
+  1990: 911.95,
+  1991: 973.84,
+  1992: 995.8,
+  1993: 1038.48,
+  1994: 1061.96,
+  1995: 1084.22,
+  1996: 1127.51,
+  1997: 1155.87,
+  1998: 1202.21,
+  1999: 1226.3,
+  2000: 1241.54,
+  2001: 1281.18,
+  2002: 1334.0,
+  // 2003-2017 — calculées (200×SMIC jusqu'en 2013, 150×SMIC à partir de
+  // 2014), SMIC au 1er janvier = dernier taux publié au JO avant le 1er
+  // janvier de l'année (cf. commentaire ci-dessus pour la méthode complète)
+  2003: 1366.0, // SMIC 6,83€ (JO 28/06/2002) × 200
+  2004: 1438.0, // SMIC 7,19€ (JO 28/06/2003) × 200
+  2005: 1522.0, // SMIC 7,61€ (JO 02/07/2004) × 200
+  2006: 1606.0, // SMIC 8,03€ (JO 30/06/2005) × 200
+  2007: 1654.0, // SMIC 8,27€ (JO 30/06/2006) × 200
+  2008: 1688.0, // SMIC 8,44€ (JO 29/06/2007) × 200
+  2009: 1742.0, // SMIC 8,71€ (JO 28/06/2008) × 200
+  2010: 1772.0, // SMIC 8,86€ (JO 17/12/2009) × 200
+  2011: 1800.0, // SMIC 9,00€ (JO 18/12/2010) × 200
+  2012: 1844.0, // SMIC 9,22€ (JO 23/12/2011) × 200
+  2013: 1886.0, // SMIC 9,43€ (JO 17/12/2012) × 200
+  2014: 1429.5, // SMIC 9,53€ (JO 20/12/2013) × 150
+  2015: 1441.5, // SMIC 9,61€ (JO 22/12/2014) × 150
+  2016: 1450.5, // SMIC 9,67€ (JO 18/12/2015) × 150
+  2017: 1464.0, // SMIC 9,76€ (JO 23/12/2016) × 150
+  // 2018-2026 — déjà en place, non revérifiées au-delà du recoupement ci-dessus
   2018: 1482.0,
   2019: 1504.5,
   2020: 1522.5,
@@ -412,6 +515,20 @@ export interface ResultatTrimestresCotisesEtAssimiles {
    * chaque trimestre.
    */
   parAnnee: { annee: number; cotises: number; assimiles: number }[];
+  /**
+   * Années civiles ayant un revenu cotisé (employeur et/ou micro-
+   * entrepreneur retenu) > 0 mais SANS seuil de validation connu dans
+   * `SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE` (avant 1950, ou 1946-1949 —
+   * cf. le commentaire de cette constante) — triée par année croissante.
+   * Ces années comptent 0 trimestre cotisé dans `cotises`/`parAnnee`, mais
+   * ce 0 n'est PAS fiable : il signifie "barème non trouvé", pas "aucun
+   * droit". Ajouté le 2026-08-15 (docs/audit/audit-import-ris.md §3) pour
+   * remonter un signal explicite plutôt que de laisser ce 0 se confondre
+   * avec un vrai 0 trimestre — à l'appelant de décider comment l'afficher
+   * (aucun écran ne le fait à ce stade, cf. portée retenue pour cette
+   * session).
+   */
+  anneesSansBaremeConnu: number[];
 }
 
 /**
@@ -507,12 +624,18 @@ export function trimestresCotisesEtAssimilesDepuisCarriere(
   let cotises = 0;
   let assimiles = 0;
   const parAnnee: { annee: number; cotises: number; assimiles: number }[] = [];
+  const anneesSansBaremeConnu: number[] = [];
   for (const annee of annees) {
     const seuil = SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE[annee];
     const revenu = revenuParAnnee.get(annee) ?? 0;
     // Année hors barème connu : aucun trimestre cotisé, pas d'extrapolation
     // (même comportement qu'avant — le plafond combiné ci-dessous laisse
-    // alors toute la place disponible à l'assimilé de cette année).
+    // alors toute la place disponible à l'assimilé de cette année). Un
+    // revenu cotisé non nul sur une année sans barème est en revanche
+    // signalé via `anneesSansBaremeConnu` : ce 0 trimestre n'est pas fiable.
+    if (seuil === undefined && revenu > 0) {
+      anneesSansBaremeConnu.push(annee);
+    }
     const cotisesBruts = seuil !== undefined ? Math.floor(revenu / seuil) : 0;
 
     const joursChomage = joursChomageParAnnee.get(annee) ?? 0;
@@ -532,6 +655,7 @@ export function trimestresCotisesEtAssimilesDepuisCarriere(
     parAnnee.push({ annee, cotises: cotisesAnnee, assimiles: assimilesAnnee });
   }
   parAnnee.sort((a, b) => a.annee - b.annee);
+  anneesSansBaremeConnu.sort((a, b) => a - b);
 
-  return { cotises, assimiles, total: cotises + assimiles, parAnnee };
+  return { cotises, assimiles, total: cotises + assimiles, parAnnee, anneesSansBaremeConnu };
 }

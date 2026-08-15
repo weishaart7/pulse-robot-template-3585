@@ -261,11 +261,26 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
     expect(carrierePour('MICRO-ENTREPRENEUR - Prestation de service BNC').cotises).toBe(4);
   });
 
-  it('année hors barème connu (avant 2018) : aucun trimestre cotisé, pas d’extrapolation', () => {
+  // SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE couvre désormais 1950-2026 (extension
+  // du 2026-08-15, cf. docs/audit/audit-import-ris.md §2) : 2017 est donc
+  // maintenant couvert (150 × 9,76 € SMIC = 1 464,00 €, cf. commentaire de la
+  // constante) — ce test utilise une année réellement hors barème (avant
+  // 1950) pour continuer à exercer ce chemin.
+  it('année hors barème connu (avant 1950) : aucun trimestre cotisé, pas d’extrapolation, mais signalée', () => {
+    const resultat = trimestresCotisesEtAssimilesDepuisCarriere([
+      periode({ dateDebut: '1945-01-01', dateFin: '1945-12-31', revenu: 30000 }),
+    ]);
+    expect(resultat).toEqual(
+      expect.objectContaining({ cotises: 0, assimiles: 0, total: 0, anneesSansBaremeConnu: [1945] })
+    );
+  });
+
+  it('couverture étendue : 2017 (auparavant hors barème) compte désormais des trimestres cotisés', () => {
     const resultat = trimestresCotisesEtAssimilesDepuisCarriere([
       periode({ dateDebut: '2017-01-01', dateFin: '2017-12-31', revenu: 30000 }),
     ]);
-    expect(resultat).toEqual(expect.objectContaining({ cotises: 0, assimiles: 0, total: 0 }));
+    expect(resultat.cotises).toBe(4);
+    expect(resultat.anneesSansBaremeConnu).toEqual([]);
   });
 
   it('plafond de 4 trimestres/an : un revenu très élevé sur une seule année ne dépasse jamais 4 cotisés', () => {

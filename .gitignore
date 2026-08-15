@@ -3,6 +3,9 @@
 .env.*
 !.env.example
 
+# Test fixtures with real client data — never commit
+/exemples/
+
 # Logs
 logs
 *.log

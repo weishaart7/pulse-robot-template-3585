@@ -15,9 +15,102 @@ import { trimestresCotisesEtAssimilesDepuisCarriere } from './calculTrimestres';
 
 /**
  * Plafond annuel de la Sécurité sociale (PASS), par année.
- * Source : valeurs officielles publiées par l'Urssaf/Sécurité sociale.
+ *
+ * Sources (recherche et vérification du 2026-08-15, cf.
+ * docs/audit/audit-import-ris.md §3) :
+ * - **1950-2000** : Conseil d'Orientation des Retraites (COR), document
+ *   "L'évolution des paramètres du régime de la CNAV" (doc-1071.pdf, juin
+ *   2019, tableau p.15) — valeurs déjà en euros (converties par le COR),
+ *   base légale de la procédure de fixation : art. D.242-16 à D.242-19 CSS.
+ * - **2001-2017** : source secondaire (aops.fr, historique du PSS),
+ *   recoupée avec succès contre deux citations officielles du COR
+ *   (33 276 € en 2008, 32 184 € en 2007) et contre la valeur COR 2001
+ *   (27 348 € vs 27 349,35 € COR — écart de 1,35 € non résolu, valeur
+ *   ronde privilégiée car cohérente avec le reste de la série 2001-2017 en
+ *   euros entiers, probablement la valeur réellement publiée par arrêté).
+ * - **2018-2025** : déjà en place avant cette session, non revérifiées
+ *   au-delà du recoupement ci-dessus.
+ *
+ * ⚠️ Lacune assumée, non comblée par extrapolation : avant 1950, aucune
+ * valeur numérique fiable trouvée (le plafond existe depuis la création du
+ * régime, 1945/1948, mais sans table sourcée disponible) — cas résiduel
+ * (carrière démarrée il y a plus de 75 ans). Contrairement au seuil de
+ * validation de trimestre (calculTrimestres.ts), cette lacune n'est pas
+ * signalée par un champ dédié dans `ResultatSAM` : une année sans PASS
+ * connu reste plafonnée par défaut à sa valeur revalorisée non plafonnée
+ * (`revenuPlafonne = revenuRevalorise`, cf. plus bas) — comportement déjà
+ * défini et sûr (pas de plafond erroné, juste absent), pas un calcul
+ * silencieusement faux au même sens que le seuil de trimestre.
  */
 export const PASS_PAR_ANNEE: Record<number, number> = {
+  1950: 402.47,
+  1951: 525.95,
+  1952: 676.87,
+  1953: 695.17,
+  1954: 695.17,
+  1955: 722.61,
+  1956: 804.93,
+  1957: 804.93,
+  1958: 914.69,
+  1959: 1006.16,
+  1960: 1042.75,
+  1961: 1234.84,
+  1962: 1463.51,
+  1963: 1591.57,
+  1964: 1737.92,
+  1965: 1865.98,
+  1966: 1975.74,
+  1967: 2085.5,
+  1968: 2195.27,
+  1969: 2487.97,
+  1970: 2744.08,
+  1971: 3018.49,
+  1972: 3347.78,
+  1973: 3731.95,
+  1974: 4244.18,
+  1975: 5030.82,
+  1976: 5780.87,
+  1977: 6604.09,
+  1978: 7317.55,
+  1979: 8177.37,
+  1980: 9165.23,
+  1981: 10482.39,
+  1982: 12503.87,
+  1983: 13976.53,
+  1984: 15183.92,
+  1985: 16272.41,
+  1986: 17104.78,
+  1987: 17809.09,
+  1988: 18348.76,
+  1989: 19098.81,
+  1990: 19976.92,
+  1991: 21001.38,
+  1992: 21970.95,
+  1993: 22839.91,
+  1994: 23342.99,
+  1995: 23772.9,
+  1996: 24577.83,
+  1997: 25099.21,
+  1998: 25776.08,
+  1999: 26471.25,
+  2000: 26892.01,
+  2001: 27348,
+  2002: 28224,
+  2003: 29184,
+  2004: 29712,
+  2005: 30192,
+  2006: 31068,
+  2007: 32184,
+  2008: 33276,
+  2009: 34308,
+  2010: 34620,
+  2011: 35352,
+  2012: 36372,
+  2013: 37032,
+  2014: 37548,
+  2015: 38040,
+  2016: 38616,
+  2017: 39228,
   2018: 39732,
   2019: 40524,
   2020: 41136,
