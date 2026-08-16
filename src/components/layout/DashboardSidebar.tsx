@@ -102,7 +102,7 @@ export function DashboardSidebar() {
           className="flex items-center cursor-pointer"
           onClick={() => navigate('/')}
         >
-          <Sparkle className="h-3.5 w-3.5 flex-shrink-0 fill-black text-black" strokeWidth={1.5} />
+          <Sparkle className="h-5 w-5 flex-shrink-0 fill-black text-black" strokeWidth={1.5} />
         </div>
         {open && (
           <button
@@ -127,7 +127,7 @@ export function DashboardSidebar() {
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
+      <nav className="flex-1 p-2 space-y-0 overflow-y-auto overflow-x-hidden">
         {/* Vue d'ensemble */}
         {menuItems.slice(0, 1).map(item => {
           const Icon = item.icon;
@@ -137,7 +137,7 @@ export function DashboardSidebar() {
               key={item.value} 
               onClick={() => handleNavigation(item.href)} 
               className={cn(
-                "relative w-full flex items-center gap-2 px-3 py-2.5 text-xs rounded-md transition-colors text-left",
+                "relative w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded-md transition-colors text-left",
                 isActive
                   ? "text-black font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
                   : "font-normal text-[#8B9095] hover:bg-sidebar-accent",
@@ -171,7 +171,7 @@ export function DashboardSidebar() {
               key={item.value} 
               onClick={() => handleNavigation(item.href)} 
               className={cn(
-                "relative w-full flex items-center gap-2 px-3 py-2.5 text-xs rounded-md transition-colors text-left",
+                "relative w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded-md transition-colors text-left",
                 isActive
                   ? "text-black font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
                   : "font-normal text-[#8B9095] hover:bg-sidebar-accent",
@@ -205,7 +205,7 @@ export function DashboardSidebar() {
               key={item.value} 
               onClick={() => handleNavigation(item.href)} 
               className={cn(
-                "relative w-full flex items-center gap-2 px-3 py-2.5 text-xs rounded-md transition-colors text-left",
+                "relative w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded-md transition-colors text-left",
                 isActive
                   ? "text-black font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
                   : "font-normal text-[#8B9095] hover:bg-sidebar-accent",
@@ -237,7 +237,7 @@ export function DashboardSidebar() {
               key={item.href}
               onClick={() => handleNavigation(item.href)} 
               className={cn(
-                "w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md transition-colors text-left hover:bg-sidebar-accent",
+                "w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors text-left hover:bg-sidebar-accent",
                 !open && "justify-center"
               )}
             >
