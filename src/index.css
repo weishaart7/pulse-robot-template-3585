@@ -34,34 +34,34 @@
     --ds-background-100: hsla(0, 0%, 100%, 1);
     --ds-background-200: hsla(0, 0%, 98%, 1);
     
-    /* Kairos Design System - light mode (canvas gris chaud, cartes blanches, near-black) */
-    --background: 60 5% 96%;    /* --canvas #f6f6f5 */
-    --foreground: 223 14% 10%;  /* --ink-900 #16181d */
+    /* Kairos Design System - light mode (palette sobre inspirée Sana.ai) */
+    --background: 60 9% 98%;    /* #FAFAF9 */
+    --foreground: 220 15% 12%;  /* #1A1D23 */
 
-    --card: 0 0% 100%;          /* --surface #ffffff */
-    --card-foreground: 223 14% 10%;
+    --card: 0 0% 100%;          /* #FFFFFF */
+    --card-foreground: 220 15% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 223 14% 10%;
+    --popover-foreground: 220 15% 12%;
 
-    --primary: 223 14% 10%;     /* --ink-900, boutons primaires quasi-noirs */
+    --primary: 227 42% 20%;     /* #1E2749 - accent principal */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 60 4% 96%;     /* --ink-050 #f4f4f3 */
-    --secondary-foreground: 223 14% 10%;
+    --secondary: 60 9% 96%;
+    --secondary-foreground: 220 15% 12%;
 
-    --muted: 60 4% 96%;         /* --ink-050 */
-    --muted-foreground: 219 6% 49%; /* --ink-500 #767b84 */
+    --muted: 60 9% 96%;
+    --muted-foreground: 220 9% 46%; /* #6B7280 - texte secondaire */
 
-    --accent: 60 4% 95%;        /* --fill-hover #f2f2f1 */
-    --accent-foreground: 223 14% 10%;
+    --accent: 219 100% 94.5%;   /* #E3EDFF - accent clair, fonds de blocs mis en avant */
+    --accent-foreground: 227 42% 20%;
 
     --destructive: 358 75% 59%; /* --negative #e5484d */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 93%;         /* --border #ececec */
-    --input: 60 3% 86%;         /* --border-strong #dcdcda */
-    --ring: 223 14% 10%;        /* --ink-900 */
+    --border: 60 4% 89%;        /* #E5E5E3 */
+    --input: 60 4% 89%;         /* #E5E5E3 */
+    --ring: 227 42% 20%;        /* #1E2749 */
     --form-field-accent: 229 83% 60%; /* accent temporaire #4361ee - bordures des champs de formulaire, le noir & blanc actuel les rend trop peu visibles */
 
     --radius: 0.375rem;
@@ -73,15 +73,15 @@
     --chart-5: 313 49% 49%;     /* --data-magenta */
     --chart-6: 177 77% 39%;     /* --data-teal */
 
-    /* Sidebar colors - Kairos */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 223 14% 10%;
-    --sidebar-primary: 223 14% 10%;
+    /* Sidebar colors - Kairos (même fond que le reste de l'app) */
+    --sidebar-background: 60 9% 98%;   /* #FAFAF9 */
+    --sidebar-foreground: 220 15% 12%; /* #1A1D23 */
+    --sidebar-primary: 227 42% 20%;    /* #1E2749 - accent principal */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 60 4% 95%;
-    --sidebar-accent-foreground: 223 14% 10%;
-    --sidebar-border: 0 0% 93%;
-    --sidebar-ring: 223 14% 10%;
+    --sidebar-accent: 60 4% 93%;
+    --sidebar-accent-foreground: 220 15% 12%;
+    --sidebar-border: 60 4% 89%;       /* #E5E5E3 */
+    --sidebar-ring: 227 42% 20%;
   }
 
   .dark {
