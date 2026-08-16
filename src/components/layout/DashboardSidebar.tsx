@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, Building2, Building, PiggyBank, Calculator, DollarSign, FileText, TrendingUp, BarChart3, BookOpen, Sparkles, Calendar, MessageSquare, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Home, Users, Building2, Building, PiggyBank, Calculator, DollarSign, FileText, TrendingUp, BarChart3, BookOpen, Sparkles, Sparkle, Calendar, MessageSquare, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
@@ -98,18 +98,13 @@ export function DashboardSidebar() {
     >
       {/* Logo + toggle */}
       <div className={cn("px-3 py-4 flex items-center", open ? "mx-[19px] justify-between" : "mx-auto justify-center")}>
-        <motion.img 
-          src="/lovable-uploads/3f46b218-16fb-43cf-8206-7af4be7cbfd0.png" 
-          alt="Merislabs Logo" 
-          className="h-7 cursor-pointer" 
+        <div
+          className="flex items-center gap-2 cursor-pointer"
           onClick={() => navigate('/')}
-          animate={{
-            width: open ? 'auto' : 28,
-            objectFit: open ? 'contain' : 'cover',
-            objectPosition: 'left',
-          }}
-          transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-        />
+        >
+          <Sparkle className="h-5 w-5 flex-shrink-0 fill-black text-black" strokeWidth={1.5} />
+          {open && <span className="whitespace-nowrap text-[18px] font-semibold text-black">Kairos</span>}
+        </div>
         {open && (
           <button
             onClick={() => setOpen(false)}
