@@ -47,7 +47,7 @@ const Dashboard = () => {
 
   const totalRevenus = revenus.reduce((sum, revenu) => sum + toAnnual(revenu.montant, revenu.periodicite), 0) / 12;
   const totalCharges = charges.reduce((sum, charge) => sum + toAnnual(charge.montant, charge.periodicite), 0) / 12;
-  return <div className="p-6">
+  return <div className="px-6 pb-6 pt-1">
       <div className="mb-8">
         <h1 className="font-sana-serif text-[30px] font-normal leading-[1.1]" style={{ color: '#0a1217', letterSpacing: '-0.02em' }}>Vue d'ensemble</h1>
       </div>
