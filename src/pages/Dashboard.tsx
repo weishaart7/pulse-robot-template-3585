@@ -49,23 +49,23 @@ const Dashboard = () => {
   const totalCharges = charges.reduce((sum, charge) => sum + toAnnual(charge.montant, charge.periodicite), 0) / 12;
   return <div className="p-6">
       <div className="mb-8">
-        <h1 className="font-sana-serif text-[56px] font-normal leading-[1.1]" style={{ color: '#0a1217', letterSpacing: '-0.02em' }}>Vue d'ensemble</h1>
+        <h1 className="font-sana-serif text-[30px] font-normal leading-[1.1]" style={{ color: '#0a1217', letterSpacing: '-0.02em' }}>Vue d'ensemble</h1>
       </div>
 
       <div className="mb-6">
         <AlertesConseil />
       </div>
 
-      <div className="mb-6 rounded-3xl p-8" style={{ backgroundColor: '#0a1217', boxShadow: 'none' }}>
+      <div className="mb-6 rounded-3xl p-8" style={{ backgroundColor: '#cdfe00', boxShadow: 'none' }}>
         <div className="flex justify-end items-start">
           <div className="max-w-md">
-            <h3 className="text-xl font-medium text-white mb-3">Parlez avec un expert</h3>
-            <p className="text-base mb-6 leading-relaxed" style={{ color: '#85898b' }}>
+            <h3 className="text-xl font-medium mb-3" style={{ color: '#0a1217' }}>Parlez avec un expert</h3>
+            <p className="text-base mb-6 leading-relaxed" style={{ color: '#0a1217', opacity: 0.7 }}>
               Notre équipe interne de conseillers financiers, de conseillers patrimoniaux et partenaires est à vos côtés pour vous accompagner sereinement, qu'il s'agisse de questions simples ou de décisions stratégiques.
             </p>
             <button
-              className="rounded-full text-sm transition-transform hover:scale-[1.02]"
-              style={{ backgroundColor: '#cdfe00', color: '#0a1217', padding: '10px 18px', fontWeight: 450 }}
+              className="rounded-full text-sm text-white transition-transform hover:scale-[1.02]"
+              style={{ backgroundColor: '#0a1217', padding: '10px 18px', fontWeight: 450 }}
             >
               Planifier un rendez-vous
             </button>
