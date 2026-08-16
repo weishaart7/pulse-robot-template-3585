@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, Building2, Building, PiggyBank, Calculator, DollarSign, FileText, TrendingUp, BarChart3, BookOpen, Sparkles, Sparkle, Calendar, MessageSquare, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Home, Users, Building2, Building, PiggyBank, Calculator, DollarSign, FileText, TrendingUp, BookOpen, Sparkles, Sparkle, MessageSquare, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
@@ -49,16 +49,6 @@ const menuItems = [{
   value: 'transmission',
   href: '/dashboard/transmission',
   icon: TrendingUp
-}, {
-  label: 'Stratégies',
-  value: 'strategies',
-  href: '/dashboard/strategies',
-  icon: BarChart3
-}, {
-  label: 'Agenda',
-  value: 'agenda',
-  href: '/dashboard/agenda',
-  icon: Calendar
 }];
 
 const bottomItems = [
@@ -163,7 +153,7 @@ export function DashboardSidebar() {
         <div className="h-0.5" />
 
         {/* Menu principal (Famille à Transmission) */}
-        {menuItems.slice(1, 9).map(item => {
+        {menuItems.slice(1).map(item => {
           const Icon = item.icon;
           const isActive = currentValue === item.value;
           return (
@@ -193,39 +183,6 @@ export function DashboardSidebar() {
           );
         })}
 
-        {/* Espacement avant Stratégies */}
-        <div className="h-0.5" />
-
-        {/* Stratégies et Mon agenda */}
-        {menuItems.slice(9).map(item => {
-          const Icon = item.icon;
-          const isActive = currentValue === item.value;
-          return (
-            <button 
-              key={item.value} 
-              onClick={() => handleNavigation(item.href)} 
-              className={cn(
-                "relative w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors text-left",
-                isActive
-                  ? "text-black font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
-                  : "font-normal text-[#8B9095] hover:bg-sidebar-accent",
-                !open && "justify-center"
-              )}
-            >
-              <Icon className="h-3.5 w-3.5 flex-shrink-0" strokeWidth={1.5} />
-              <motion.span
-                className="truncate whitespace-nowrap"
-                animate={{
-                  opacity: open ? 1 : 0,
-                  width: open ? 'auto' : 0,
-                }}
-                transition={{ duration: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
-              >
-                {item.label}
-              </motion.span>
-            </button>
-          );
-        })}
       </nav>
 
       {/* Sections du bas */}

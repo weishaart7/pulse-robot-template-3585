@@ -10,7 +10,6 @@ import { SocietesSection } from './societes/SocietesSection';
 import { RetraiteSection } from './retraite/RetraiteSection';
 import FiscaliteSection from './fiscalite/FiscaliteSection';
 import BlogSection from './blog/BlogSection';
-import { AgendaSection } from './agenda/AgendaSection';
 import { THEME_INK } from '@/lib/theme';
 
 const DashboardSection = () => {
@@ -27,8 +26,6 @@ const DashboardSection = () => {
       fiscalite: 'Fiscalité',
       transmission: 'Transmission',
       blog: 'Blog',
-      strategies: 'Stratégies',
-      agenda: 'Agenda'
     };
     return titles[section] || 'Section inconnue';
   };
@@ -78,11 +75,6 @@ const DashboardSection = () => {
     return <BlogSection />;
   }
   
-  // Si la section est "agenda", afficher le composant spécialisé
-  if (section === 'agenda') {
-    return <AgendaSection />;
-  }
-
   return (
     <div className="p-6">
       <div className="mb-6">
