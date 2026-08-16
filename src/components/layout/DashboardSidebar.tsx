@@ -97,13 +97,12 @@ export function DashboardSidebar() {
       }}
     >
       {/* Logo + toggle */}
-      <div className={cn("px-3 py-4 flex items-center", open ? "mx-[19px] justify-between" : "mx-auto justify-center")}>
+      <div className={cn("py-4 flex items-center", open ? "pl-5 pr-3 justify-between" : "justify-center")}>
         <div
-          className="flex items-center gap-2 cursor-pointer"
+          className="flex items-center cursor-pointer"
           onClick={() => navigate('/')}
         >
-          <Sparkle className="h-5 w-5 flex-shrink-0 fill-black text-black" strokeWidth={1.5} />
-          {open && <span className="whitespace-nowrap text-[18px] font-semibold text-black">Kairos</span>}
+          <Sparkle className="h-3.5 w-3.5 flex-shrink-0 fill-black text-black" strokeWidth={1.5} />
         </div>
         {open && (
           <button
