@@ -59,8 +59,8 @@ const Dashboard = () => {
       <div className="mb-6 rounded-3xl p-8" style={{ backgroundColor: '#cdfe00', boxShadow: 'none' }}>
         <div className="flex justify-end items-start">
           <div className="max-w-md">
-            <h3 className="text-base font-medium mb-2.5" style={{ color: '#0a1217' }}>Parlez avec un expert</h3>
-            <p className="text-sm mb-4 leading-relaxed" style={{ color: '#0a1217', opacity: 0.7 }}>
+            <h3 className="font-medium mb-2.5" style={{ color: '#0a1217', fontSize: '14px' }}>Parlez avec un expert</h3>
+            <p className="mb-4 leading-relaxed" style={{ color: '#0a1217', opacity: 0.7, fontSize: '12px' }}>
               Notre équipe interne de conseillers financiers, de conseillers patrimoniaux et partenaires est à vos côtés pour vous accompagner sereinement, qu'il s'agisse de questions simples ou de décisions stratégiques.
             </p>
             <button
