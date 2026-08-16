@@ -34,7 +34,7 @@
     --ds-background-200: hsla(0, 0%, 98%, 1);
     
     /* Kairos Design System - light mode (palette sobre inspirée Sana.ai) */
-    --background: 60 9% 98%;    /* #FAFAF9 */
+    --background: 0 0% 100%;    /* #FFFFFF */
     --foreground: 220 15% 12%;  /* #1A1D23 */
 
     --card: 0 0% 100%;          /* #FFFFFF */
@@ -73,7 +73,7 @@
     --chart-6: 177 77% 39%;     /* --data-teal */
 
     /* Sidebar colors - Kairos (même fond que le reste de l'app) */
-    --sidebar-background: 60 9% 98%;   /* #FAFAF9 */
+    --sidebar-background: 0 0% 100%;   /* #FFFFFF */
     --sidebar-foreground: 220 15% 12%; /* #1A1D23 */
     --sidebar-primary: 227 42% 20%;    /* #1E2749 - accent principal */
     --sidebar-primary-foreground: 0 0% 100%;
@@ -175,6 +175,21 @@
     background: #555;
   }
 }
+
+/* Échelle typographique resserrée pour le dashboard interne (.dashboard-shell
+   uniquement) — Inter a un œil visuellement plus grand qu'Hanken Grotesk à
+   taille rem identique, d'où ce recalage. Hors layer pour primer sur les
+   utilitaires Tailwind sans avoir à toucher les tailles fixées landing/transmission. */
+.dashboard-shell .text-xs { font-size: 0.6875rem; }
+.dashboard-shell .text-sm { font-size: 0.8125rem; }
+.dashboard-shell .text-base { font-size: 0.875rem; }
+.dashboard-shell .text-lg { font-size: 1rem; }
+.dashboard-shell .text-xl { font-size: 1.0625rem; }
+.dashboard-shell .text-2xl { font-size: 1.25rem; }
+.dashboard-shell .text-3xl { font-size: 1.5rem; }
+.dashboard-shell .text-4xl { font-size: 1.75rem; }
+.dashboard-shell .text-5xl { font-size: 2.25rem; }
+.dashboard-shell h1.text-\[34px\] { font-size: 24px; }
 
 @layer components {
   .text-mask-image {
