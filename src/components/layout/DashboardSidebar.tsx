@@ -229,22 +229,26 @@ export function DashboardSidebar() {
       </nav>
 
       {/* Sections du bas */}
-      <div className="p-2 space-y-1">
+      <div className="p-2 space-y-0">
         {bottomItems.map(item => {
           const Icon = item.icon;
+          const isActive = location.pathname === item.href;
           return (
-            <button 
+            <button
               key={item.href}
-              onClick={() => handleNavigation(item.href)} 
+              onClick={() => handleNavigation(item.href)}
               className={cn(
-                "w-full flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors text-left hover:bg-sidebar-accent",
+                "relative w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors text-left",
+                isActive
+                  ? "text-black font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
+                  : "font-normal text-[#8B9095] hover:bg-sidebar-accent",
                 !open && "justify-center"
               )}
             >
               <Icon className="h-3.5 w-3.5 flex-shrink-0" strokeWidth={1.5} />
-              <motion.span 
+              <motion.span
                 className="truncate whitespace-nowrap"
-                animate={{ 
+                animate={{
                   opacity: open ? 1 : 0,
                   width: open ? 'auto' : 0,
                 }}
