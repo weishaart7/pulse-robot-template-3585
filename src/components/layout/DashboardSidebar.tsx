@@ -188,7 +188,7 @@ export function DashboardSidebar() {
       <SidebarSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
       {/* Navigation */}
-      <nav className="flex-1 p-2 space-y-1 overflow-y-auto overflow-x-hidden">
+      <nav className="flex-1 p-2 space-y-1.5 overflow-y-auto overflow-x-hidden">
         {/* Vue d'ensemble */}
         {menuItems.slice(0, 1).map(item => {
           const Icon = item.icon;
@@ -198,15 +198,17 @@ export function DashboardSidebar() {
               key={item.value} 
               onClick={() => handleNavigation(item.href)} 
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors text-left",
-                isActive ? "bg-sidebar-accent text-sidebar-foreground font-semibold" : "hover:bg-sidebar-accent",
+                "relative w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-md transition-colors text-left",
+                isActive
+                  ? "text-foreground font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
+                  : "font-normal text-sidebar-foreground/80 hover:bg-sidebar-accent",
                 !open && "justify-center"
               )}
             >
-              <Icon className="h-4 w-4 flex-shrink-0" />
-              <motion.span 
+              <Icon className="h-4 w-4 flex-shrink-0" strokeWidth={1.5} />
+              <motion.span
                 className="truncate whitespace-nowrap"
-                animate={{ 
+                animate={{
                   opacity: open ? 1 : 0,
                   width: open ? 'auto' : 0,
                 }}
@@ -217,7 +219,7 @@ export function DashboardSidebar() {
             </button>
           );
         })}
-        
+
         {/* Séparateur après Vue d'ensemble */}
         <div className={cn("py-2", open ? "px-4" : "px-2")}>
           <Separator className="bg-sidebar-border h-px" />
@@ -232,15 +234,17 @@ export function DashboardSidebar() {
               key={item.value} 
               onClick={() => handleNavigation(item.href)} 
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors text-left",
-                isActive ? "bg-sidebar-accent text-sidebar-foreground font-semibold" : "hover:bg-sidebar-accent",
+                "relative w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-md transition-colors text-left",
+                isActive
+                  ? "text-foreground font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
+                  : "font-normal text-sidebar-foreground/80 hover:bg-sidebar-accent",
                 !open && "justify-center"
               )}
             >
-              <Icon className="h-4 w-4 flex-shrink-0" />
-              <motion.span 
+              <Icon className="h-4 w-4 flex-shrink-0" strokeWidth={1.5} />
+              <motion.span
                 className="truncate whitespace-nowrap"
-                animate={{ 
+                animate={{
                   opacity: open ? 1 : 0,
                   width: open ? 'auto' : 0,
                 }}
@@ -266,15 +270,17 @@ export function DashboardSidebar() {
               key={item.value} 
               onClick={() => handleNavigation(item.href)} 
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors text-left",
-                isActive ? "bg-sidebar-accent text-sidebar-foreground font-semibold" : "hover:bg-sidebar-accent",
+                "relative w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-md transition-colors text-left",
+                isActive
+                  ? "text-foreground font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
+                  : "font-normal text-sidebar-foreground/80 hover:bg-sidebar-accent",
                 !open && "justify-center"
               )}
             >
-              <Icon className="h-4 w-4 flex-shrink-0" />
-              <motion.span 
+              <Icon className="h-4 w-4 flex-shrink-0" strokeWidth={1.5} />
+              <motion.span
                 className="truncate whitespace-nowrap"
-                animate={{ 
+                animate={{
                   opacity: open ? 1 : 0,
                   width: open ? 'auto' : 0,
                 }}
