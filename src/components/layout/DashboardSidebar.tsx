@@ -129,8 +129,8 @@ export function DashboardSidebar() {
               className={cn(
                 "relative w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors text-left",
                 isActive
-                  ? "text-black font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
-                  : "font-normal text-[#8B9095] hover:bg-sidebar-accent",
+                  ? "text-black font-semibold before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
+                  : "font-medium text-[#8B9095] hover:bg-sidebar-accent",
                 !open && "justify-center"
               )}
             >
@@ -163,8 +163,8 @@ export function DashboardSidebar() {
               className={cn(
                 "relative w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors text-left",
                 isActive
-                  ? "text-black font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
-                  : "font-normal text-[#8B9095] hover:bg-sidebar-accent",
+                  ? "text-black font-semibold before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
+                  : "font-medium text-[#8B9095] hover:bg-sidebar-accent",
                 !open && "justify-center"
               )}
             >
@@ -197,8 +197,8 @@ export function DashboardSidebar() {
               className={cn(
                 "relative w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors text-left",
                 isActive
-                  ? "text-black font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
-                  : "font-normal text-[#8B9095] hover:bg-sidebar-accent",
+                  ? "text-black font-semibold before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
+                  : "font-medium text-[#8B9095] hover:bg-sidebar-accent",
                 !open && "justify-center"
               )}
             >
