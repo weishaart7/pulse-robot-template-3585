@@ -74,7 +74,7 @@
     --chart-6: 177 77% 39%;     /* --data-teal */
 
     /* Sidebar colors - Kairos (même fond que le reste de l'app) */
-    --sidebar-background: 0 0% 100%;   /* #FFFFFF */
+    --sidebar-background: 60 8% 97%;   /* #f9f9f8 */
     --sidebar-foreground: 220 15% 12%; /* #1A1D23 */
     --sidebar-primary: 227 42% 20%;    /* #1E2749 - accent principal */
     --sidebar-primary-foreground: 0 0% 100%;
