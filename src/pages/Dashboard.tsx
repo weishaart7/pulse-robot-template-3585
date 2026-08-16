@@ -74,7 +74,7 @@ const Dashboard = () => {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="rounded-3xl bg-[#ededed]" style={{ boxShadow: 'none' }}>
+        <Card className="rounded-3xl bg-[#f9f9f8]" style={{ boxShadow: 'none' }}>
           <CardHeader>
             <CardTitle className="text-xl font-medium">Patrimoine</CardTitle>
             <CardDescription>
@@ -86,7 +86,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-3xl bg-[#ededed]" style={{ boxShadow: 'none' }}>
+        <Card className="rounded-3xl bg-[#f9f9f8]" style={{ boxShadow: 'none' }}>
           <CardHeader>
             <CardTitle className="text-xl font-medium">Budget</CardTitle>
             <CardDescription>
@@ -98,7 +98,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden rounded-3xl bg-[#ededed]" style={{ boxShadow: 'none' }}>
+        <Card className="overflow-hidden rounded-3xl bg-[#f9f9f8]" style={{ boxShadow: 'none' }}>
           <CardHeader className="pb-4">
             <CardTitle className="text-xl font-medium">Fiscalité</CardTitle>
             <CardDescription>
@@ -158,7 +158,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card className="rounded-3xl bg-[#ededed]" style={{ boxShadow: 'none' }}>
+        <Card className="rounded-3xl bg-[#f9f9f8]" style={{ boxShadow: 'none' }}>
           <CardHeader>
             <CardTitle className="text-xl font-medium">Transmission</CardTitle>
             <CardDescription>
@@ -172,7 +172,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-3xl bg-[#ededed]" style={{ boxShadow: 'none' }}>
+        <Card className="rounded-3xl bg-[#f9f9f8]" style={{ boxShadow: 'none' }}>
           <CardHeader>
             <CardTitle className="text-xl font-medium">Retraite</CardTitle>
             <CardDescription>
