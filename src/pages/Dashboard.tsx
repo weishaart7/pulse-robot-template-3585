@@ -59,13 +59,13 @@ const Dashboard = () => {
       <div className="mb-6 rounded-3xl p-8" style={{ backgroundColor: '#cdfe00', boxShadow: 'none' }}>
         <div className="flex justify-end items-start">
           <div className="max-w-md">
-            <h3 className="text-xs font-medium mb-1.5" style={{ color: '#0a1217' }}>Parlez avec un expert</h3>
-            <p className="text-[10px] mb-3 leading-relaxed" style={{ color: '#0a1217', opacity: 0.7 }}>
+            <h3 className="text-sm font-medium mb-2" style={{ color: '#0a1217' }}>Parlez avec un expert</h3>
+            <p className="text-xs mb-3 leading-relaxed" style={{ color: '#0a1217', opacity: 0.7 }}>
               Notre équipe interne de conseillers financiers, de conseillers patrimoniaux et partenaires est à vos côtés pour vous accompagner sereinement, qu'il s'agisse de questions simples ou de décisions stratégiques.
             </p>
             <button
-              className="rounded-full text-[10px] text-white transition-transform hover:scale-[1.02]"
-              style={{ backgroundColor: '#0a1217', padding: '6px 12px', fontWeight: 450 }}
+              className="rounded-full text-xs text-white transition-transform hover:scale-[1.02]"
+              style={{ backgroundColor: '#0a1217', padding: '7px 14px', fontWeight: 450 }}
             >
               Planifier un rendez-vous
             </button>
