@@ -150,7 +150,7 @@ export function DashboardSidebar() {
                 !open && "justify-center"
               )}
             >
-              <Icon className="h-4 w-4 flex-shrink-0" strokeWidth={1.5} />
+              <Icon className="h-3.5 w-3.5 flex-shrink-0" strokeWidth={1.5} />
               <motion.span
                 className="truncate whitespace-nowrap"
                 animate={{
@@ -166,7 +166,7 @@ export function DashboardSidebar() {
         })}
 
         {/* Espacement après Vue d'ensemble */}
-        <div className="h-1" />
+        <div className="h-0.5" />
 
         {/* Menu principal (Famille à Transmission) */}
         {menuItems.slice(1, 9).map(item => {
@@ -184,7 +184,7 @@ export function DashboardSidebar() {
                 !open && "justify-center"
               )}
             >
-              <Icon className="h-4 w-4 flex-shrink-0" strokeWidth={1.5} />
+              <Icon className="h-3.5 w-3.5 flex-shrink-0" strokeWidth={1.5} />
               <motion.span
                 className="truncate whitespace-nowrap"
                 animate={{
@@ -200,7 +200,7 @@ export function DashboardSidebar() {
         })}
 
         {/* Espacement avant Stratégies */}
-        <div className="h-1" />
+        <div className="h-0.5" />
 
         {/* Stratégies et Mon agenda */}
         {menuItems.slice(9).map(item => {
@@ -218,7 +218,7 @@ export function DashboardSidebar() {
                 !open && "justify-center"
               )}
             >
-              <Icon className="h-4 w-4 flex-shrink-0" strokeWidth={1.5} />
+              <Icon className="h-3.5 w-3.5 flex-shrink-0" strokeWidth={1.5} />
               <motion.span
                 className="truncate whitespace-nowrap"
                 animate={{
@@ -247,7 +247,7 @@ export function DashboardSidebar() {
                 !open && "justify-center"
               )}
             >
-              <Icon className="h-4 w-4 flex-shrink-0" />
+              <Icon className="h-3.5 w-3.5 flex-shrink-0" strokeWidth={1.5} />
               <motion.span 
                 className="truncate whitespace-nowrap"
                 animate={{ 
