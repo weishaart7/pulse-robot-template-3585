@@ -1,7 +1,6 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
-import { THEME_CARD_SHADOW } from "@/lib/theme"
 
 const Card = React.forwardRef<
   HTMLDivElement,
@@ -10,10 +9,10 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-[4px] bg-card text-card-foreground",
+      "rounded-3xl bg-card text-card-foreground",
       className
     )}
-    style={{ boxShadow: THEME_CARD_SHADOW, ...style }}
+    style={{ boxShadow: "none", ...style }}
     {...props}
   />
 ))

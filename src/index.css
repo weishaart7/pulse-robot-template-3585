@@ -35,7 +35,7 @@
     --ds-background-200: hsla(0, 0%, 98%, 1);
     
     /* Kairos Design System - light mode (palette sobre inspirée Sana.ai) */
-    --background: 0 0% 100%;    /* #FFFFFF */
+    --background: 60 8% 97%;    /* #f9f9f8 */
     --foreground: 220 15% 12%;  /* #1A1D23 */
 
     --card: 0 0% 100%;          /* #FFFFFF */
@@ -190,7 +190,11 @@
 .dashboard-shell .text-3xl { font-size: 1.5rem; }
 .dashboard-shell .text-4xl { font-size: 1.75rem; }
 .dashboard-shell .text-5xl { font-size: 2.25rem; }
-.dashboard-shell h1.text-\[34px\] { font-size: 24px; }
+.dashboard-shell h1.text-\[34px\] {
+  font-size: 30px;
+  font-weight: 400;
+  font-family: 'Source Serif 4', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+}
 
 /* Essai ponctuel du style Sana ("Vue d'ensemble" uniquement) — police serif
    éditoriale réservée au titre hero, non utilisée ailleurs dans l'app. */
