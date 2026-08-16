@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, Users, Building2, Building, PiggyBank, Calculator, DollarSign, FileText, TrendingUp, BarChart3, BookOpen, Sparkles, Calendar, MessageSquare, PanelLeftClose, PanelLeftOpen, Search, CircleUserRound, Settings, Gift, CreditCard, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Separator } from '@/components/ui/separator';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -93,7 +92,7 @@ export function DashboardSidebar() {
 
   return (
     <motion.div
-      className="flex flex-col h-full overflow-hidden flex-shrink-0 relative bg-sidebar text-sidebar-foreground border-r border-sidebar-border"
+      className="flex flex-col h-full overflow-hidden flex-shrink-0 relative bg-sidebar text-sidebar-foreground"
       animate={{
         width: open ? 220 : 64,
       }}
@@ -188,7 +187,7 @@ export function DashboardSidebar() {
       <SidebarSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
       {/* Navigation */}
-      <nav className="flex-1 p-2 space-y-1.5 overflow-y-auto overflow-x-hidden">
+      <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
         {/* Vue d'ensemble */}
         {menuItems.slice(0, 1).map(item => {
           const Icon = item.icon;
@@ -200,8 +199,8 @@ export function DashboardSidebar() {
               className={cn(
                 "relative w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-md transition-colors text-left",
                 isActive
-                  ? "text-foreground font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
-                  : "font-normal text-sidebar-foreground/80 hover:bg-sidebar-accent",
+                  ? "text-black font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
+                  : "font-normal text-[#AFB3B4] hover:bg-sidebar-accent",
                 !open && "justify-center"
               )}
             >
@@ -220,10 +219,8 @@ export function DashboardSidebar() {
           );
         })}
 
-        {/* Séparateur après Vue d'ensemble */}
-        <div className={cn("py-2", open ? "px-4" : "px-2")}>
-          <Separator className="bg-sidebar-border h-px" />
-        </div>
+        {/* Espacement après Vue d'ensemble */}
+        <div className="h-3" />
 
         {/* Menu principal (Famille à Transmission) */}
         {menuItems.slice(1, 9).map(item => {
@@ -236,8 +233,8 @@ export function DashboardSidebar() {
               className={cn(
                 "relative w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-md transition-colors text-left",
                 isActive
-                  ? "text-foreground font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
-                  : "font-normal text-sidebar-foreground/80 hover:bg-sidebar-accent",
+                  ? "text-black font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
+                  : "font-normal text-[#AFB3B4] hover:bg-sidebar-accent",
                 !open && "justify-center"
               )}
             >
@@ -256,10 +253,8 @@ export function DashboardSidebar() {
           );
         })}
 
-        {/* Séparateur avant Stratégies */}
-        <div className={cn("py-2", open ? "px-4" : "px-2")}>
-          <Separator className="bg-sidebar-border h-px" />
-        </div>
+        {/* Espacement avant Stratégies */}
+        <div className="h-3" />
 
         {/* Stratégies et Mon agenda */}
         {menuItems.slice(9).map(item => {
@@ -272,8 +267,8 @@ export function DashboardSidebar() {
               className={cn(
                 "relative w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-md transition-colors text-left",
                 isActive
-                  ? "text-foreground font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
-                  : "font-normal text-sidebar-foreground/80 hover:bg-sidebar-accent",
+                  ? "text-black font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
+                  : "font-normal text-[#AFB3B4] hover:bg-sidebar-accent",
                 !open && "justify-center"
               )}
             >
