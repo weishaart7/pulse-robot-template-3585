@@ -47,7 +47,7 @@ const Dashboard = () => {
 
   const totalRevenus = revenus.reduce((sum, revenu) => sum + toAnnual(revenu.montant, revenu.periodicite), 0) / 12;
   const totalCharges = charges.reduce((sum, charge) => sum + toAnnual(charge.montant, charge.periodicite), 0) / 12;
-  return <div className="px-6 pb-6 pt-1">
+  return <div className="-m-6 min-h-full px-6 pb-6 pt-7" style={{ backgroundColor: '#f9f9f8' }}>
       <div className="mb-8">
         <h1 className="font-sana-serif text-[30px] font-normal leading-[1.1]" style={{ color: '#0a1217', letterSpacing: '-0.02em' }}>Vue d'ensemble</h1>
       </div>
@@ -74,7 +74,7 @@ const Dashboard = () => {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="rounded-3xl bg-[#f9f9f8]" style={{ boxShadow: 'none' }}>
+        <Card className="rounded-3xl" style={{ boxShadow: 'none' }}>
           <CardHeader>
             <CardTitle className="text-xl font-medium">Patrimoine</CardTitle>
             <CardDescription>
@@ -86,7 +86,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-3xl bg-[#f9f9f8]" style={{ boxShadow: 'none' }}>
+        <Card className="rounded-3xl" style={{ boxShadow: 'none' }}>
           <CardHeader>
             <CardTitle className="text-xl font-medium">Budget</CardTitle>
             <CardDescription>
@@ -98,7 +98,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden rounded-3xl bg-[#f9f9f8]" style={{ boxShadow: 'none' }}>
+        <Card className="overflow-hidden rounded-3xl" style={{ boxShadow: 'none' }}>
           <CardHeader className="pb-4">
             <CardTitle className="text-xl font-medium">Fiscalité</CardTitle>
             <CardDescription>
@@ -158,7 +158,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card className="rounded-3xl bg-[#f9f9f8]" style={{ boxShadow: 'none' }}>
+        <Card className="rounded-3xl" style={{ boxShadow: 'none' }}>
           <CardHeader>
             <CardTitle className="text-xl font-medium">Transmission</CardTitle>
             <CardDescription>
@@ -172,7 +172,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-3xl bg-[#f9f9f8]" style={{ boxShadow: 'none' }}>
+        <Card className="rounded-3xl" style={{ boxShadow: 'none' }}>
           <CardHeader>
             <CardTitle className="text-xl font-medium">Retraite</CardTitle>
             <CardDescription>
