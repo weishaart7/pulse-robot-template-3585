@@ -17,45 +17,75 @@ interface SyntheseProps {
   nomConjoint: string;
 }
 
-interface CartePensionProps {
-  personne: Personne;
-  nom: string;
+interface CartePensionFoyerProps {
+  hasConjoint: boolean;
+  nomUtilisateur: string;
+  nomConjoint: string;
 }
 
-const CartePension = ({ personne, nom }: CartePensionProps) => {
-  const { pensionTotaleConsolidee, ageTauxPlein, loading, aDesDonnees } = usePensionConsolidee(personne);
+// Une seule carte pour les deux pensions (utilisateur, conjoint) + le total
+// du foyer — remplace les deux cartes séparées d'origine (cf. consigne).
+const CartePensionFoyer = ({ hasConjoint, nomUtilisateur, nomConjoint }: CartePensionFoyerProps) => {
+  const utilisateur = usePensionConsolidee('utilisateur');
+  const conjoint = usePensionConsolidee('conjoint');
 
-  // Conjoint : carte affichée seulement "si son profil existe et contient
-  // des données retraite" (cf. consigne) — "profil existe" est déjà garanti
-  // par hasConjoint côté Synthese ci-dessous, "contient des données" est
-  // vérifié ici une fois le chargement terminé. Pas de message "aucune
-  // donnée" pour le conjoint : contrairement à l'utilisateur, rien n'invite
-  // le conseiller à remplir un onglet Carrière "conjoint" s'il n'en a pas
-  // encore ouvert la conversation avec le client.
-  if (personne === 'conjoint' && !loading && !aDesDonnees) {
-    return null;
-  }
+  const loading = utilisateur.loading || (hasConjoint && conjoint.loading);
+  // Même règle d'affichage que précédemment pour le conjoint : sa ligne
+  // n'apparaît que si son profil existe et contient des données retraite.
+  const afficherConjoint = hasConjoint && !conjoint.loading && conjoint.aDesDonnees;
+
+  const pensionCumulee =
+    (utilisateur.aDesDonnees ? utilisateur.pensionTotaleConsolidee : 0) +
+    (afficherConjoint ? conjoint.pensionTotaleConsolidee : 0);
 
   return (
     <Card>
       <CardHeader className="p-5">
         <CardTitle className="text-[15px] font-semibold tracking-tight">
-          Pension à l'âge du taux plein — {nom}
+          Pension à l'âge du taux plein
         </CardTitle>
       </CardHeader>
       <CardContent className="p-5 pt-0">
         {loading ? (
           <p className="text-xs text-muted-foreground">Chargement…</p>
-        ) : !aDesDonnees ? (
-          <p className="text-xs text-muted-foreground">
-            Aucune donnée de carrière saisie pour l'instant (onglet Carrière).
-          </p>
         ) : (
-          <div className="space-y-1">
-            <div className="text-2xl font-bold text-primary">
-              {formatEuro0(pensionTotaleConsolidee)} / an
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">{nomUtilisateur}</p>
+              {!utilisateur.aDesDonnees ? (
+                <p className="text-xs text-muted-foreground">
+                  Aucune donnée de carrière saisie pour l'instant (onglet Carrière).
+                </p>
+              ) : (
+                <div className="space-y-1">
+                  <div className="text-2xl font-bold text-primary">
+                    {formatEuro0(utilisateur.pensionTotaleConsolidee)} / an
+                  </div>
+                  <p className="text-xs text-muted-foreground">{utilisateur.ageTauxPlein}</p>
+                </div>
+              )}
             </div>
-            <p className="text-xs text-muted-foreground">{ageTauxPlein}</p>
+
+            {afficherConjoint && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">{nomConjoint}</p>
+                <div className="space-y-1">
+                  <div className="text-2xl font-bold text-primary">
+                    {formatEuro0(conjoint.pensionTotaleConsolidee)} / an
+                  </div>
+                  <p className="text-xs text-muted-foreground">{conjoint.ageTauxPlein}</p>
+                </div>
+              </div>
+            )}
+
+            {afficherConjoint && (
+              <div className="pt-3 border-t">
+                <p className="text-xs text-muted-foreground mb-1">Pension cumulée du foyer</p>
+                <div className="text-2xl font-bold text-primary">
+                  {formatEuro0(pensionCumulee)} / an
+                </div>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
@@ -131,10 +161,7 @@ const CarteComplementsRetraite = () => (
 export const Synthese = ({ hasConjoint, nomUtilisateur, nomConjoint }: SyntheseProps) => {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <CartePension personne="utilisateur" nom={nomUtilisateur} />
-        {hasConjoint && <CartePension personne="conjoint" nom={nomConjoint} />}
-      </div>
+      <CartePensionFoyer hasConjoint={hasConjoint} nomUtilisateur={nomUtilisateur} nomConjoint={nomConjoint} />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <CarteTrimestresManquants personne="utilisateur" nom={nomUtilisateur} />
