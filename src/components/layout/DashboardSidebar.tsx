@@ -166,7 +166,7 @@ export function DashboardSidebar() {
         })}
 
         {/* Espacement après Vue d'ensemble */}
-        <div className="h-3" />
+        <div className="h-1" />
 
         {/* Menu principal (Famille à Transmission) */}
         {menuItems.slice(1, 9).map(item => {
@@ -200,7 +200,7 @@ export function DashboardSidebar() {
         })}
 
         {/* Espacement avant Stratégies */}
-        <div className="h-3" />
+        <div className="h-1" />
 
         {/* Stratégies et Mon agenda */}
         {menuItems.slice(9).map(item => {
