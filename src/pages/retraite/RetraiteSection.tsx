@@ -43,9 +43,7 @@ export const RetraiteSection = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'synthese':
-        // Placeholder ("bientôt disponible") : pas de duplication utilisateur/
-        // conjoint tant qu'il n'y a pas de contenu réel à dupliquer.
-        return <Synthese />;
+        return <Synthese hasConjoint={hasConjoint} nomUtilisateur={nomUtilisateur} nomConjoint={nomConjoint} />;
       case 'carriere':
         return (
           <ColonnesPersonnes
@@ -68,7 +66,7 @@ export const RetraiteSection = () => {
           />
         );
       default:
-        return <Synthese />;
+        return <Synthese hasConjoint={hasConjoint} nomUtilisateur={nomUtilisateur} nomConjoint={nomConjoint} />;
     }
   };
 
