@@ -1,11 +1,8 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, Building2, Building, PiggyBank, Calculator, DollarSign, FileText, TrendingUp, BarChart3, BookOpen, Sparkles, Calendar, MessageSquare, PanelLeftClose, PanelLeftOpen, Search, CircleUserRound, Settings, Gift, CreditCard, LogOut } from 'lucide-react';
+import { Home, Users, Building2, Building, PiggyBank, Calculator, DollarSign, FileText, TrendingUp, BarChart3, BookOpen, Sparkles, Calendar, MessageSquare, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { useAuth } from '@/contexts/AuthContext';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { SidebarSearchDialog } from './SidebarSearchDialog';
 
 const menuItems = [{
   label: 'Vue d\'ensemble',
@@ -73,9 +70,7 @@ const bottomItems = [
 export function DashboardSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
   const [open, setOpen] = useState(true);
-  const [searchOpen, setSearchOpen] = useState(false);
 
   const getCurrentValue = () => {
     const path = location.pathname;
@@ -94,7 +89,7 @@ export function DashboardSidebar() {
     <motion.div
       className="flex flex-col h-full overflow-hidden flex-shrink-0 relative bg-sidebar text-sidebar-foreground"
       animate={{
-        width: open ? 220 : 64,
+        width: open ? 196 : 64,
       }}
       transition={{ 
         duration: 0.25, 
@@ -137,55 +132,6 @@ export function DashboardSidebar() {
         </div>
       )}
 
-      {/* Profile + Search */}
-      <div className={cn("px-3 pb-3 flex items-center gap-1", open ? "mx-[19px]" : "flex-col mx-auto")}>
-        <button
-          onClick={() => setSearchOpen(true)}
-          className="p-2 rounded-md hover:bg-sidebar-accent transition-colors"
-          aria-label="Rechercher"
-        >
-          <Search className="h-4 w-4" strokeWidth={1.5} />
-        </button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className="p-2 rounded-md hover:bg-sidebar-accent transition-colors"
-              aria-label="Menu utilisateur"
-            >
-              <CircleUserRound className="h-4 w-4" strokeWidth={1.5} />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="max-w-64" align="start">
-            <DropdownMenuLabel className="flex flex-col">
-              <span>Connecté en tant que</span>
-              <span className="text-xs font-normal text-foreground">{user?.email}</span>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <CreditCard className="h-4 w-4" />
-                Gérer mon abonnement
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Gift className="h-4 w-4" />
-                Parrainage
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="h-4 w-4" />
-                Paramètres
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => logout()}>
-              <LogOut className="h-4 w-4" />
-              Déconnexion
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      <SidebarSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
-
       {/* Navigation */}
       <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
         {/* Vue d'ensemble */}
@@ -197,10 +143,10 @@ export function DashboardSidebar() {
               key={item.value} 
               onClick={() => handleNavigation(item.href)} 
               className={cn(
-                "relative w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-md transition-colors text-left",
+                "relative w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-md transition-colors text-left",
                 isActive
                   ? "text-black font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
-                  : "font-normal text-[#AFB3B4] hover:bg-sidebar-accent",
+                  : "font-normal text-[#8B9095] hover:bg-sidebar-accent",
                 !open && "justify-center"
               )}
             >
@@ -231,10 +177,10 @@ export function DashboardSidebar() {
               key={item.value} 
               onClick={() => handleNavigation(item.href)} 
               className={cn(
-                "relative w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-md transition-colors text-left",
+                "relative w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-md transition-colors text-left",
                 isActive
                   ? "text-black font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
-                  : "font-normal text-[#AFB3B4] hover:bg-sidebar-accent",
+                  : "font-normal text-[#8B9095] hover:bg-sidebar-accent",
                 !open && "justify-center"
               )}
             >
@@ -265,10 +211,10 @@ export function DashboardSidebar() {
               key={item.value} 
               onClick={() => handleNavigation(item.href)} 
               className={cn(
-                "relative w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-md transition-colors text-left",
+                "relative w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-md transition-colors text-left",
                 isActive
                   ? "text-black font-medium before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
-                  : "font-normal text-[#AFB3B4] hover:bg-sidebar-accent",
+                  : "font-normal text-[#8B9095] hover:bg-sidebar-accent",
                 !open && "justify-center"
               )}
             >
@@ -297,7 +243,7 @@ export function DashboardSidebar() {
               key={item.href}
               onClick={() => handleNavigation(item.href)} 
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors text-left hover:bg-sidebar-accent",
+                "w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors text-left hover:bg-sidebar-accent",
                 !open && "justify-center"
               )}
             >
