@@ -1,6 +1,7 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap');
 
@@ -190,6 +191,12 @@
 .dashboard-shell .text-4xl { font-size: 1.75rem; }
 .dashboard-shell .text-5xl { font-size: 2.25rem; }
 .dashboard-shell h1.text-\[34px\] { font-size: 24px; }
+
+/* Essai ponctuel du style Sana ("Vue d'ensemble" uniquement) — police serif
+   éditoriale réservée au titre hero, non utilisée ailleurs dans l'app. */
+.font-sana-serif {
+  font-family: 'Source Serif 4', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+}
 
 @layer components {
   .text-mask-image {

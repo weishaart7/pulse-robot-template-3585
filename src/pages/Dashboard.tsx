@@ -6,7 +6,6 @@ import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { PatrimoineChart } from '@/components/patrimoine/PatrimoineChart';
 import { AlertesConseil } from '@/components/alertes/AlertesConseil';
-import { THEME_INK } from '@/lib/theme';
 const Dashboard = () => {
   const {
     revenus
@@ -49,32 +48,35 @@ const Dashboard = () => {
   const totalRevenus = revenus.reduce((sum, revenu) => sum + toAnnual(revenu.montant, revenu.periodicite), 0) / 12;
   const totalCharges = charges.reduce((sum, charge) => sum + toAnnual(charge.montant, charge.periodicite), 0) / 12;
   return <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>Vue d'ensemble</h1>
+      <div className="mb-8">
+        <h1 className="font-sana-serif text-[56px] font-normal leading-[1.1]" style={{ color: '#0a1217', letterSpacing: '-0.02em' }}>Vue d'ensemble</h1>
       </div>
 
       <div className="mb-6">
         <AlertesConseil />
       </div>
 
-      <div className="mb-6 bg-card rounded-[4px] p-6 shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)]">
+      <div className="mb-6 rounded-3xl p-8" style={{ backgroundColor: '#0a1217', boxShadow: 'none' }}>
         <div className="flex justify-end items-start">
-          <div className="rounded-[4px] p-6 max-w-md" style={{ backgroundColor: '#ebf1f1' }}>
-            <h3 className="text-base font-semibold text-foreground mb-3">Parlez avec un expert</h3>
-            <p className="text-muted-foreground text-xs mb-4 leading-relaxed">
+          <div className="max-w-md">
+            <h3 className="text-xl font-medium text-white mb-3">Parlez avec un expert</h3>
+            <p className="text-base mb-6 leading-relaxed" style={{ color: '#85898b' }}>
               Notre équipe interne de conseillers financiers, de conseillers patrimoniaux et partenaires est à vos côtés pour vous accompagner sereinement, qu'il s'agisse de questions simples ou de décisions stratégiques.
             </p>
-            <button className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-xs font-medium hover:bg-primary/90 transition-colors">
+            <button
+              className="rounded-full text-sm transition-transform hover:scale-[1.02]"
+              style={{ backgroundColor: '#cdfe00', color: '#0a1217', padding: '10px 18px', fontWeight: 450 }}
+            >
               Planifier un rendez-vous
             </button>
           </div>
         </div>
       </div>
-      
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
+        <Card className="rounded-3xl border border-black/10" style={{ boxShadow: 'none' }}>
           <CardHeader>
-            <CardTitle className="text-xl">Patrimoine</CardTitle>
+            <CardTitle className="text-xl font-medium">Patrimoine</CardTitle>
             <CardDescription>
               Suivez l'évolution de votre patrimoine
             </CardDescription>
@@ -83,10 +85,10 @@ const Dashboard = () => {
             <PatrimoineChart assets={assets} passifs={passifs} emprunts={emprunts} selectedCategory={null} />
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card className="rounded-3xl border border-black/10" style={{ boxShadow: 'none' }}>
           <CardHeader>
-            <CardTitle className="text-xl">Budget</CardTitle>
+            <CardTitle className="text-xl font-medium">Budget</CardTitle>
             <CardDescription>
               Contrôlez vos finances au quotidien
             </CardDescription>
@@ -95,10 +97,10 @@ const Dashboard = () => {
             <BudgetStatisticsCard totalRevenus={totalRevenus} totalCharges={totalCharges} revenusCount={revenus.length} chargesCount={charges.length} />
           </CardContent>
         </Card>
-        
-        <Card className="overflow-hidden">
+
+        <Card className="overflow-hidden rounded-3xl border border-black/10" style={{ boxShadow: 'none' }}>
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl">Fiscalité</CardTitle>
+            <CardTitle className="text-xl font-medium">Fiscalité</CardTitle>
             <CardDescription>
               Optimisez votre situation fiscale
             </CardDescription>
@@ -156,9 +158,9 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="rounded-3xl border border-black/10" style={{ boxShadow: 'none' }}>
           <CardHeader>
-            <CardTitle className="text-xl">Transmission</CardTitle>
+            <CardTitle className="text-xl font-medium">Transmission</CardTitle>
             <CardDescription>
               Préparez la transmission de votre patrimoine
             </CardDescription>
@@ -169,10 +171,10 @@ const Dashboard = () => {
             </p>
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card className="rounded-3xl border border-black/10" style={{ boxShadow: 'none' }}>
           <CardHeader>
-            <CardTitle className="text-xl">Retraite</CardTitle>
+            <CardTitle className="text-xl font-medium">Retraite</CardTitle>
             <CardDescription>
               Anticipez votre retraite sereinement
             </CardDescription>
