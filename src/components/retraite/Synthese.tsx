@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Download } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { usePensionConsolidee } from '@/hooks/usePensionConsolidee';
 import { Personne } from '@/hooks/useRetraiteData';
+import { exporterSyntheseRetraitePDF, DonneesPersonneExportPDF } from '@/lib/retraite/exportSyntheseRetraitePDF';
 
 const formatEuro0 = (valeur: number) =>
   valeur.toLocaleString('fr-FR', {
@@ -158,9 +161,59 @@ const CarteComplementsRetraite = () => (
   </Card>
 );
 
+interface BoutonExportPDFProps {
+  hasConjoint: boolean;
+  nomUtilisateur: string;
+  nomConjoint: string;
+}
+
+const BoutonExportPDF = ({ hasConjoint, nomUtilisateur, nomConjoint }: BoutonExportPDFProps) => {
+  const utilisateur = usePensionConsolidee('utilisateur');
+  const conjoint = usePensionConsolidee('conjoint');
+  const [exportEnCours, setExportEnCours] = useState(false);
+
+  const loading = utilisateur.loading || (hasConjoint && conjoint.loading);
+  const afficherConjoint = hasConjoint && !conjoint.loading && conjoint.aDesDonnees;
+
+  const handleExport = async () => {
+    setExportEnCours(true);
+    try {
+      const donneesUtilisateur: DonneesPersonneExportPDF = { ...utilisateur, nom: nomUtilisateur };
+      const donneesConjoint: DonneesPersonneExportPDF | null = afficherConjoint
+        ? { ...conjoint, nom: nomConjoint }
+        : null;
+
+      await exporterSyntheseRetraitePDF({
+        utilisateur: donneesUtilisateur,
+        conjoint: donneesConjoint,
+        dateGeneration: new Date(),
+      });
+    } finally {
+      setExportEnCours(false);
+    }
+  };
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="gap-2"
+      disabled={loading || !utilisateur.aDesDonnees || exportEnCours}
+      onClick={handleExport}
+    >
+      <Download className="h-4 w-4" />
+      {exportEnCours ? 'Génération en cours…' : 'Exporter en PDF'}
+    </Button>
+  );
+};
+
 export const Synthese = ({ hasConjoint, nomUtilisateur, nomConjoint }: SyntheseProps) => {
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <BoutonExportPDF hasConjoint={hasConjoint} nomUtilisateur={nomUtilisateur} nomConjoint={nomConjoint} />
+      </div>
+
       <CartePensionFoyer hasConjoint={hasConjoint} nomUtilisateur={nomUtilisateur} nomConjoint={nomConjoint} />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
