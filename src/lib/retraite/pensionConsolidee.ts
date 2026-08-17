@@ -20,6 +20,7 @@ import { RegimeDetecte, PeriodeCarriere } from './parseRIS';
 import { FamilyLink } from '@/services/familyService';
 import {
   DateNaissance,
+  AgeLegalResultat,
   tauxProratisation,
   decoteSurTrimestres,
   decoteSurAge,
@@ -39,7 +40,10 @@ import {
   majorationTroisEnfants,
   pensionTotaleConsolideeTousRegimes,
 } from './calcul';
-import { trimestresCotisesEtAssimilesDepuisCarriere } from './calculTrimestres';
+import {
+  trimestresCotisesEtAssimilesDepuisCarriere,
+  ResultatTrimestresCotisesEtAssimiles,
+} from './calculTrimestres';
 import { nombreEnfantsEligiblesMajorationTroisEnfants } from './enfantsEligiblesMajoration';
 import {
   pensionBaseFonctionPublique,
@@ -88,9 +92,23 @@ export interface EntreePensionConsolidee {
   cnavpl: DonneesCNAVPL | null;
 }
 
+// Sous-totaux annuels par régime — exposés pour l'annexe de l'export PDF
+// (cf. Synthese.tsx), déjà calculés en interne par calculerPensionConsolidee
+// mais jusqu'ici non retournés.
+export interface RepartitionParRegime {
+  baseRegimeGeneral: number;
+  complementaireRegimeGeneral: number;
+  fonctionPublique: number;
+  rafp: number;
+  cnavpl: number;
+}
+
 export interface ResultatPensionConsolidee {
   pensionTotaleConsolidee: number;
   ageTauxPlein: string;
+  repartitionParRegime: RepartitionParRegime;
+  historiqueTrimestres: ResultatTrimestresCotisesEtAssimiles;
+  ageLegal: AgeLegalResultat | null;
 }
 
 function calculerResultatFonctionPublique(
@@ -361,5 +379,14 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
   return {
     pensionTotaleConsolidee,
     ageTauxPlein: ageTauxPleinAffiche(trimestresValides, trimestresRequis),
+    repartitionParRegime: {
+      baseRegimeGeneral: pensionBaseAjustee,
+      complementaireRegimeGeneral: totalPensionComplementaireAnnuelle,
+      fonctionPublique: resultatFonctionPublique.pensionFinale,
+      rafp: resultatFonctionPublique.rafpAnnuelle,
+      cnavpl: resultatCNAVPL.pensionFinale,
+    },
+    historiqueTrimestres: resultatTrimestresDetailCarriere,
+    ageLegal: ageLegalResultat,
   };
 }
