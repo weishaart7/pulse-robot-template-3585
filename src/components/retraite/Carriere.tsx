@@ -9,6 +9,7 @@ import { Upload, Trash2, Pencil, CheckCircle2, AlertTriangle, ChevronDown } from
 import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { useHypotheseRevenuFutur } from '@/hooks/useHypotheseRevenuFutur';
 import { SaveStatusIndicator } from '@/components/ui/save-status-indicator';
 import { useToast } from '@/hooks/use-toast';
 import { parseRIS, PeriodeCarriere, RegimeDetecte, LIBELLE_TYPE_ACTIVITE } from '@/lib/retraite/parseRIS';
@@ -61,6 +62,90 @@ const SEUIL_ECART_COHERENCE_TRIMESTRES = 4;
 const formatDateFr = (dateIso: string) => {
   const [annee, mois, jour] = dateIso.split('-');
   return `${jour}/${mois}/${annee}`;
+};
+
+const formatEuro0Hypothese = (valeur: number) =>
+  valeur.toLocaleString('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+
+interface ToggleHypotheseRevenuFuturProps {
+  personne: Personne;
+}
+
+// Hypothèse de revenu pour les années futures manquantes (entre l'année en
+// cours et l'âge légal réel) — alimente la projection de trimestres/pension
+// de usePensionConsolidee.ts, cf. src/lib/retraite/hypotheseRevenuFutur.ts.
+// Input, pas un résultat : vit avec salaireAnnuelMoyen/trimestresValides sur
+// l'écran de saisie (Carriere.tsx), pas dans le Synthèse. Auto-save via
+// useAutoSave (même mécanisme que le reste de cet écran), pas
+// d'implémentation parallèle.
+const ToggleHypotheseRevenuFutur = ({ personne }: ToggleHypotheseRevenuFuturProps) => {
+  const { loading, mode, setMode, valeurCalculee, valeurManuelle, setValeurManuelle, saveStatus } =
+    useHypotheseRevenuFutur(personne);
+
+  if (loading) return null;
+
+  return (
+    <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
+      <div>
+        <Label className="text-xs">Hypothèse de revenu futur</Label>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Revenu hypothétique retenu pour les années entre aujourd'hui et l'âge légal, tant qu'aucune donnée de
+          carrière réelle n'est disponible pour ces années.
+        </p>
+      </div>
+
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant={mode === 'derniere_annee_connue' ? 'default' : 'outline'}
+          size="sm"
+          disabled={valeurCalculee === null}
+          onClick={() => setMode('derniere_annee_connue')}
+        >
+          Dernière année connue
+        </Button>
+        <Button
+          type="button"
+          variant={mode === 'revenu_moyen_projete' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setMode('revenu_moyen_projete')}
+        >
+          Revenu moyen projeté
+        </Button>
+      </div>
+
+      {mode === 'derniere_annee_connue' ? (
+        valeurCalculee !== null ? (
+          <p className="text-sm font-semibold text-primary">{formatEuro0Hypothese(valeurCalculee)} / an</p>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Non calculable : aucune année du relevé de carrière n'a de trimestre validé.
+          </p>
+        )
+      ) : (
+        <div className="space-y-1.5 max-w-xs">
+          <Label htmlFor={`revenu-hypothese-${personne}`} className="text-xs">
+            Revenu annuel hypothétique (€)
+          </Label>
+          <Input
+            id={`revenu-hypothese-${personne}`}
+            type="number"
+            placeholder="Ex: 30000"
+            value={valeurManuelle}
+            onChange={(e) => setValeurManuelle(e.target.value)}
+            className="bg-background border-transparent shadow-none rounded-[5px] focus-visible:border-ring"
+          />
+        </div>
+      )}
+
+      {saveStatus === 'saving' && <p className="text-xs text-muted-foreground">Enregistrement…</p>}
+    </div>
+  );
 };
 
 interface CarriereProps {
@@ -816,6 +901,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
               </p>
             </div>
           </div>
+
+          <ToggleHypotheseRevenuFutur personne={personne} />
 
           <div className="flex items-start space-x-2">
             <Checkbox
