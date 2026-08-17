@@ -158,11 +158,13 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
     expect(annees).toEqual([...annees].sort((a, b) => a - b));
     // Détail 2025, calculé à la main dans le commentaire ci-dessus : 1 cotisé
     // (micro-entrepreneur abattu), 3 assimilé (chômage, plafond combiné).
-    expect(resultatComplet.parAnnee.find((a) => a.annee === 2025)).toEqual({
-      annee: 2025,
-      cotises: 1,
-      assimiles: 3,
-    });
+    expect(resultatComplet.parAnnee.find((a) => a.annee === 2025)).toEqual(
+      expect.objectContaining({
+        annee: 2025,
+        cotises: 1,
+        assimiles: 3,
+      })
+    );
   });
 
   describe('parAnnee — détail annuel (extension additive)', () => {
@@ -184,9 +186,15 @@ describe('trimestresCotisesEtAssimilesDepuisCarriere', () => {
       const resultat = trimestresCotisesEtAssimilesDepuisCarriere(periodesDesordonnees);
 
       expect(resultat.parAnnee.map((a) => a.annee)).toEqual([2019, 2021, 2024]);
-      expect(resultat.parAnnee.find((a) => a.annee === 2019)).toEqual({ annee: 2019, cotises: 4, assimiles: 0 });
-      expect(resultat.parAnnee.find((a) => a.annee === 2021)).toEqual({ annee: 2021, cotises: 0, assimiles: 4 });
-      expect(resultat.parAnnee.find((a) => a.annee === 2024)).toEqual({ annee: 2024, cotises: 4, assimiles: 0 });
+      expect(resultat.parAnnee.find((a) => a.annee === 2019)).toEqual(
+        expect.objectContaining({ annee: 2019, cotises: 4, assimiles: 0 })
+      );
+      expect(resultat.parAnnee.find((a) => a.annee === 2021)).toEqual(
+        expect.objectContaining({ annee: 2021, cotises: 0, assimiles: 4 })
+      );
+      expect(resultat.parAnnee.find((a) => a.annee === 2024)).toEqual(
+        expect.objectContaining({ annee: 2024, cotises: 4, assimiles: 0 })
+      );
       expect(resultat).toEqual(
         expect.objectContaining({
           cotises: 8, // 2019 + 2024

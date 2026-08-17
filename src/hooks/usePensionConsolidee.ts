@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
 import { familyService, FamilyLink } from '@/services/familyService';
@@ -11,7 +11,17 @@ import {
   DateNaissance,
   dateNaissanceDepuisISO,
   trimestresRequisPourGeneration,
+  ageLegalPourGeneration,
+  dateAnniversaireLegal,
 } from '@/lib/retraite/calcul';
+import { trimestresCotisesEtAssimilesDepuisCarriere } from '@/lib/retraite/calculTrimestres';
+import { calculerSAM } from '@/lib/retraite/calculSAM';
+import {
+  anneesManquantes,
+  trimestresProjetesAnneesManquantes,
+  periodesSynthetiquesAnneesManquantes,
+  revenuAnnuelHypotheseDerniereAnneeConnue,
+} from '@/lib/retraite/hypotheseRevenuFutur';
 
 export interface UsePensionConsolideeResult extends ResultatPensionConsolidee {
   loading: boolean;
@@ -79,14 +89,65 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
   const salaireAnnuelMoyen = data.salaire_annuel_moyen ?? 0;
   const trimestresValides = data.trimestres_valides ?? 0;
 
+  const detailCarriereSansId = useMemo(
+    () => detailCarriere.map(({ id: _id, ...periode }) => periode),
+    [detailCarriere]
+  );
+
+  // Hypothèse de revenu futur (cf. hypotheseRevenuFutur.ts) : complète les
+  // années manquantes entre l'année en cours et l'âge légal réel par un
+  // revenu hypothétique (dernière année connue du RIS annualisée, ou saisie
+  // manuelle), pour estimer les trimestres futurs et la pension. Purement
+  // additif — ne modifie jamais `data.trimestres_valides`/`salaire_annuel_moyen`
+  // en base (cf. règle documentée dans Carriere.tsx : le RIS/l'hypothèse ne
+  // sont jamais une source concurrente des totaux validés par le
+  // conseiller), seulement l'estimation live retournée par ce hook.
+  const anneeLegaleResultat = dateNaissanceDetail
+    ? ageLegalPourGeneration(dateNaissanceDetail, new Date())
+    : null;
+  const anneeRetraite =
+    dateNaissanceDetail && anneeLegaleResultat?.stable
+      ? dateAnniversaireLegal(dateNaissanceDetail, anneeLegaleResultat.age).getUTCFullYear()
+      : null;
+  const anneeCourante = new Date().getUTCFullYear();
+  const anneesManquantesListe = useMemo(
+    () => (anneeRetraite !== null ? anneesManquantes(anneeCourante, anneeRetraite) : []),
+    [anneeCourante, anneeRetraite]
+  );
+
+  const resultatTrimestresPourHypothese = useMemo(
+    () => trimestresCotisesEtAssimilesDepuisCarriere(detailCarriereSansId),
+    [detailCarriereSansId]
+  );
+  const modeHypothese = data.mode_hypothese_revenu_futur ?? 'derniere_annee_connue';
+  const revenuHypothese =
+    modeHypothese === 'derniere_annee_connue'
+      ? revenuAnnuelHypotheseDerniereAnneeConnue(resultatTrimestresPourHypothese.parAnnee)
+      : data.revenu_hypothese_manuel ?? null;
+
+  const projectionApplicable =
+    revenuHypothese !== null && revenuHypothese > 0 && anneesManquantesListe.length > 0 && dateNaissanceDetail !== null;
+
+  const trimestresProjetes = projectionApplicable ? trimestresProjetesAnneesManquantes(anneesManquantesListe) : 0;
+  const salaireAnnuelMoyenProjete = useMemo(() => {
+    if (!projectionApplicable || !dateNaissanceDetail) return salaireAnnuelMoyen;
+    const periodesSynthetiques = periodesSynthetiquesAnneesManquantes(anneesManquantesListe, revenuHypothese!);
+    return calculerSAM(
+      [...detailCarriereSansId, ...periodesSynthetiques],
+      dateNaissanceDetail.annee,
+      undefined,
+      anneeRetraite!
+    ).sam;
+  }, [projectionApplicable, dateNaissanceDetail, detailCarriereSansId, anneesManquantesListe, revenuHypothese, anneeRetraite, salaireAnnuelMoyen]);
+
   const resultat = calculerPensionConsolidee({
-    salaireAnnuelMoyen,
-    trimestresValides,
+    salaireAnnuelMoyen: salaireAnnuelMoyenProjete,
+    trimestresValides: trimestresValides + trimestresProjetes,
     trimestresRequis,
     dateNaissance: dateNaissanceDetail,
     ageActuel,
     regimesPoints: data.regimes_points ?? [],
-    detailCarriere: detailCarriere.map(({ id: _id, ...periode }) => periode),
+    detailCarriere: detailCarriereSansId,
     familyLinks,
     auMoinsUnTrimestreMajorationEnfant: data.au_moins_un_trimestre_majoration_enfant ?? false,
     autresPensionsMensuelles: 0,
@@ -115,6 +176,7 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
 
   const trimestresValidesTousRegimes =
     trimestresValides +
+    trimestresProjetes +
     (data.has_fonction_publique ? data.trimestres_liquidables_fp ?? 0 : 0) +
     (data.has_cnavpl ? data.trimestres_cnavpl ?? 0 : 0);
 

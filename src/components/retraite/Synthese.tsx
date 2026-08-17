@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { Download } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { usePensionConsolidee } from '@/hooks/usePensionConsolidee';
+import { useHypotheseRevenuFutur } from '@/hooks/useHypotheseRevenuFutur';
 import { Personne } from '@/hooks/useRetraiteData';
 import { exporterSyntheseRetraitePDF, DonneesPersonneExportPDF } from '@/lib/retraite/exportSyntheseRetraitePDF';
 
@@ -146,6 +149,84 @@ const CarteTrimestresManquants = ({ personne, nom }: CarteTrimestresManquantsPro
   );
 };
 
+interface ToggleHypotheseRevenuFuturProps {
+  personne: Personne;
+  nom: string;
+}
+
+// Hypothèse de revenu pour les années futures manquantes (entre l'année en
+// cours et l'âge légal réel) — alimente la projection de trimestres/pension
+// de usePensionConsolidee.ts, cf. src/lib/retraite/hypotheseRevenuFutur.ts.
+// Auto-save via useAutoSave (même mécanisme que Carriere.tsx), pas
+// d'implémentation parallèle.
+const ToggleHypotheseRevenuFutur = ({ personne, nom }: ToggleHypotheseRevenuFuturProps) => {
+  const { loading, mode, setMode, valeurCalculee, valeurManuelle, setValeurManuelle, saveStatus } =
+    useHypotheseRevenuFutur(personne);
+
+  if (loading) return null;
+
+  return (
+    <Card>
+      <CardHeader className="p-5">
+        <CardTitle className="text-[15px] font-semibold tracking-tight">
+          Hypothèse de revenu futur — {nom}
+        </CardTitle>
+        <CardDescription className="text-xs">
+          Revenu hypothétique retenu pour les années entre aujourd'hui et l'âge légal, tant qu'aucune donnée de
+          carrière réelle n'est disponible pour ces années.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-5 pt-0 space-y-3">
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant={mode === 'derniere_annee_connue' ? 'default' : 'outline'}
+            size="sm"
+            disabled={valeurCalculee === null}
+            onClick={() => setMode('derniere_annee_connue')}
+          >
+            Dernière année connue
+          </Button>
+          <Button
+            type="button"
+            variant={mode === 'revenu_moyen_projete' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setMode('revenu_moyen_projete')}
+          >
+            Revenu moyen projeté
+          </Button>
+        </div>
+
+        {mode === 'derniere_annee_connue' ? (
+          valeurCalculee !== null ? (
+            <p className="text-sm font-semibold text-primary">{formatEuro0(valeurCalculee)} / an</p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Non calculable : aucune année du relevé de carrière n'a de trimestre validé.
+            </p>
+          )
+        ) : (
+          <div className="space-y-1.5 max-w-xs">
+            <Label htmlFor={`revenu-hypothese-${personne}`} className="text-xs">
+              Revenu annuel hypothétique (€)
+            </Label>
+            <Input
+              id={`revenu-hypothese-${personne}`}
+              type="number"
+              placeholder="Ex: 30000"
+              value={valeurManuelle}
+              onChange={(e) => setValeurManuelle(e.target.value)}
+              className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+            />
+          </div>
+        )}
+
+        {saveStatus === 'saving' && <p className="text-xs text-muted-foreground">Enregistrement…</p>}
+      </CardContent>
+    </Card>
+  );
+};
+
 const CarteComplementsRetraite = () => (
   <Card>
     <CardHeader className="p-5">
@@ -219,6 +300,11 @@ export const Synthese = ({ hasConjoint, nomUtilisateur, nomConjoint }: SyntheseP
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <CarteTrimestresManquants personne="utilisateur" nom={nomUtilisateur} />
         {hasConjoint && <CarteTrimestresManquants personne="conjoint" nom={nomConjoint} />}
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <ToggleHypotheseRevenuFutur personne="utilisateur" nom={nomUtilisateur} />
+        {hasConjoint && <ToggleHypotheseRevenuFutur personne="conjoint" nom={nomConjoint} />}
       </div>
 
       <CarteComplementsRetraite />

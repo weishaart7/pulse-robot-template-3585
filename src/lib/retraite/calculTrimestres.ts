@@ -513,8 +513,14 @@ export interface ResultatTrimestresCotisesEtAssimiles {
    * atteint, date d'effet) ne peut pas être décomposée plus finement par ce
    * champ — seul le total annuel est disponible, pas la date d'acquisition de
    * chaque trimestre.
+   *
+   * `revenuCotise` : revenu cotisé retenu de l'année (employeur + micro-
+   * entrepreneur post-abattement, avant seuil de validation) — déjà calculé
+   * en interne (`revenuParAnnee`) mais jusqu'ici jamais exposé. Ajouté pour
+   * l'hypothèse de revenu futur (cf. hypotheseRevenuFutur.ts), qui a besoin du
+   * revenu réel de la dernière année connue pour l'annualiser.
    */
-  parAnnee: { annee: number; cotises: number; assimiles: number }[];
+  parAnnee: { annee: number; cotises: number; assimiles: number; revenuCotise: number }[];
   /**
    * Années civiles ayant un revenu cotisé (employeur et/ou micro-
    * entrepreneur retenu) > 0 mais SANS seuil de validation connu dans
@@ -623,7 +629,7 @@ export function trimestresCotisesEtAssimilesDepuisCarriere(
 
   let cotises = 0;
   let assimiles = 0;
-  const parAnnee: { annee: number; cotises: number; assimiles: number }[] = [];
+  const parAnnee: { annee: number; cotises: number; assimiles: number; revenuCotise: number }[] = [];
   const anneesSansBaremeConnu: number[] = [];
   for (const annee of annees) {
     const seuil = SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE[annee];
@@ -652,7 +658,7 @@ export function trimestresCotisesEtAssimilesDepuisCarriere(
 
     cotises += cotisesAnnee;
     assimiles += assimilesAnnee;
-    parAnnee.push({ annee, cotises: cotisesAnnee, assimiles: assimilesAnnee });
+    parAnnee.push({ annee, cotises: cotisesAnnee, assimiles: assimilesAnnee, revenuCotise: revenu });
   }
   parAnnee.sort((a, b) => a.annee - b.annee);
   anneesSansBaremeConnu.sort((a, b) => a - b);

@@ -2002,10 +2002,12 @@ export type Database = {
           has_cnavpl: boolean
           has_fonction_publique: boolean
           id: string
+          mode_hypothese_revenu_futur: string
           personne: string
           points_cnavpl: number | null
           points_rafp: number | null
           regimes_points: Json
+          revenu_hypothese_manuel: number | null
           salaire_annuel_moyen: number | null
           traitement_indiciaire_brut: number | null
           trimestres_cnavpl: number | null
@@ -2030,10 +2032,12 @@ export type Database = {
           has_cnavpl?: boolean
           has_fonction_publique?: boolean
           id?: string
+          mode_hypothese_revenu_futur?: string
           personne?: string
           points_cnavpl?: number | null
           points_rafp?: number | null
           regimes_points?: Json
+          revenu_hypothese_manuel?: number | null
           salaire_annuel_moyen?: number | null
           traitement_indiciaire_brut?: number | null
           trimestres_cnavpl?: number | null
@@ -2058,10 +2062,12 @@ export type Database = {
           has_cnavpl?: boolean
           has_fonction_publique?: boolean
           id?: string
+          mode_hypothese_revenu_futur?: string
           personne?: string
           points_cnavpl?: number | null
           points_rafp?: number | null
           regimes_points?: Json
+          revenu_hypothese_manuel?: number | null
           salaire_annuel_moyen?: number | null
           traitement_indiciaire_brut?: number | null
           trimestres_cnavpl?: number | null

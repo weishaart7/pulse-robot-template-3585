@@ -278,8 +278,22 @@ export interface ResultatSAM {
  * réellement connues, pour l'affichage) mais sont retirées du pool avant la
  * sélection des N meilleures — une année exclue ne peut ni être retenue, ni
  * compter dans le quota atteint par les années projetées.
+ *
+ * `anneeDepartPrevueOverride` (optionnel) : borne la projection sur une
+ * année de départ différente du proxy par défaut (`AGE_DEPART_PAR_DEFAUT` =
+ * 67 ans, taux plein automatique). Ajouté pour l'hypothèse de revenu futur
+ * (cf. hypotheseRevenuFutur.ts), qui projette jusqu'à l'âge légal réel du
+ * client (`ageLegalPourGeneration()`, calcul.ts) plutôt que jusqu'au taux
+ * plein automatique — deux notions de « fin de carrière » distinctes.
+ * N'affecte pas les appelants existants (RISImportDialog.tsx), qui ne
+ * passent pas ce paramètre et conservent le comportement par défaut.
  */
-export function calculerSAM(periodes: PeriodeCarriere[], anneeNaissance: number, dateEffet?: Date): ResultatSAM {
+export function calculerSAM(
+  periodes: PeriodeCarriere[],
+  anneeNaissance: number,
+  dateEffet?: Date,
+  anneeDepartPrevueOverride?: number
+): ResultatSAM {
   const periodesRegimeDeBase = periodes.filter(estPeriodeRegimeDeBase);
 
   const revenuParAnnee = new Map<number, number>();
@@ -301,7 +315,7 @@ export function calculerSAM(periodes: PeriodeCarriere[], anneeNaissance: number,
     .sort((a, b) => a.annee - b.annee);
 
   const nombreAnneesRequis = dureeSAMPourGeneration(anneeNaissance);
-  const anneeDepartPrevue = anneeNaissance + AGE_DEPART_PAR_DEFAUT;
+  const anneeDepartPrevue = anneeDepartPrevueOverride ?? anneeNaissance + AGE_DEPART_PAR_DEFAUT;
 
   const anneesProjetees: AnneeSAM[] = [];
   if (anneesConnues.length > 0 && anneesConnues.length < nombreAnneesRequis) {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { RegimeDetecte } from '@/lib/retraite/parseRIS';
+import { ModeHypotheseRevenuFutur } from '@/lib/retraite/hypotheseRevenuFutur';
 
 interface RetraiteData {
   id?: string;
@@ -32,6 +33,13 @@ interface RetraiteData {
   annee_ouverture_droits?: number;
   points_cnavpl?: number;
   valeur_point_cnavpl?: number;
+  // Hypothèse de revenu pour les années futures manquantes (entre l'année en
+  // cours et l'âge légal réel) — cf. src/lib/retraite/hypotheseRevenuFutur.ts
+  // et le toggle de Synthese.tsx. `revenu_hypothese_manuel` n'est lu qu'en
+  // mode 'revenu_moyen_projete' ; ignoré en mode 'derniere_annee_connue' (la
+  // valeur y est dérivée du RIS, jamais stockée).
+  mode_hypothese_revenu_futur?: ModeHypotheseRevenuFutur;
+  revenu_hypothese_manuel?: number;
 }
 
 // 'conjoint' : même user_id (le conjoint n'a pas de compte séparé, cf.
