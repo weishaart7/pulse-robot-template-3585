@@ -18,6 +18,12 @@ export interface UseHypotheseRevenuFuturResult {
   valeurManuelle: string;
   setValeurManuelle: (valeur: string) => void;
   saveStatus: AutoSaveStatus;
+  // Force un flush immédiat du débounce — à appeler sur les interactions qui
+  // peuvent être immédiatement suivies d'une navigation (changement de mode,
+  // onBlur du champ manuel), sans quoi une sauvegarde en attente est annulée
+  // (pas flushée) si le composant se démonte avant les 1500ms de débounce par
+  // défaut de useAutoSave — cf. audit du 2026-08-18.
+  saveNow: () => void;
 }
 
 /**
@@ -67,7 +73,7 @@ export const useHypotheseRevenuFutur = (personne: Personne = 'utilisateur'): Use
     }
   }, [initialise, mode, valeurCalculee]);
 
-  const { status: saveStatus } = useAutoSave(
+  const { status: saveStatus, saveNow } = useAutoSave(
     async () =>
       saveRetraiteData(
         {
@@ -79,5 +85,5 @@ export const useHypotheseRevenuFutur = (personne: Personne = 'utilisateur'): Use
     [mode, valeurManuelle]
   );
 
-  return { loading, mode, setMode, valeurCalculee, valeurManuelle, setValeurManuelle, saveStatus };
+  return { loading, mode, setMode, valeurCalculee, valeurManuelle, setValeurManuelle, saveStatus, saveNow };
 };

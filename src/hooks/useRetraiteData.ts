@@ -119,6 +119,8 @@ export const useRetraiteData = (personne: Personne = 'utilisateur') => {
           });
           return false;
         }
+
+        setData((prev) => ({ ...prev, ...updates }));
       } else {
         // Création d'un nouvel enregistrement
         const { data: newRecord, error } = await supabase

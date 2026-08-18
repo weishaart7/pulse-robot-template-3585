@@ -84,8 +84,19 @@ interface ToggleHypotheseRevenuFuturProps {
 // useAutoSave (même mécanisme que le reste de cet écran), pas
 // d'implémentation parallèle.
 const ToggleHypotheseRevenuFutur = ({ personne }: ToggleHypotheseRevenuFuturProps) => {
-  const { loading, mode, setMode, valeurCalculee, valeurManuelle, setValeurManuelle, saveStatus } =
+  const { loading, mode, setMode, valeurCalculee, valeurManuelle, setValeurManuelle, saveStatus, saveNow } =
     useHypotheseRevenuFutur(personne);
+
+  // Flush explicite quand le mode change plutôt qu'un saveNow() synchrone
+  // dans le onClick : setMode() ne fait que planifier le re-render, saveNow()
+  // lirait alors encore le mode PRÉCÉDENT (saveRef.current n'est mis à jour
+  // qu'au rendu suivant) — cet effet, lui, se déclenche après que le
+  // changement d'état a été appliqué, ce qui garantit que la valeur flushée
+  // est la bonne (cf. audit du 2026-08-18).
+  useEffect(() => {
+    if (!loading) saveNow();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   if (loading) return null;
 
@@ -138,6 +149,7 @@ const ToggleHypotheseRevenuFutur = ({ personne }: ToggleHypotheseRevenuFuturProp
             placeholder="Ex: 30000"
             value={valeurManuelle}
             onChange={(e) => setValeurManuelle(e.target.value)}
+            onBlur={saveNow}
             className="bg-background border-transparent shadow-none rounded-[5px] focus-visible:border-ring"
           />
         </div>
