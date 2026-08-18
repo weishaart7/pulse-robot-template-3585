@@ -19,7 +19,9 @@
  */
 
 import { PeriodeCarriere } from './parseRIS';
-import { ResultatTrimestresCotisesEtAssimiles } from './calculTrimestres';
+import { ResultatTrimestresCotisesEtAssimiles, trimestresCotisesEtAssimilesDepuisCarriere } from './calculTrimestres';
+import { DateNaissance, ageLegalPourGeneration, dateAnniversaireLegal } from './calcul';
+import { calculerSAM } from './calculSAM';
 
 export type ModeHypotheseRevenuFutur = 'derniere_annee_connue' | 'revenu_moyen_projete';
 
@@ -99,4 +101,67 @@ export function periodesSynthetiquesAnneesManquantes(annees: number[], revenuHyp
     estChiffreAffaires: false,
     regimes: ["L'Assurance retraite"],
   }));
+}
+
+export interface ProjectionRevenuFutur {
+  salaireAnnuelMoyenProjete: number;
+  trimestresValidesProjetes: number;
+}
+
+/**
+ * Glue de la projection de revenu futur — orchestre les fonctions pures
+ * ci-dessus (`anneesManquantes`, `trimestresProjetesAnneesManquantes`,
+ * `periodesSynthetiquesAnneesManquantes`, `revenuAnnuelHypotheseDerniereAnneeConnue`)
+ * pour produire un salaire annuel moyen et un nombre de trimestres projetés,
+ * à ajouter aux valeurs réelles avant de les passer à
+ * `calculerPensionConsolidee()`.
+ *
+ * Extraite pour être appelée à l'identique par `usePensionConsolidee.ts`
+ * (Synthèse) et par `Carriere.tsx` (cf.
+ * docs/audit/audit-pension-consolidation.md, étape 2 de la fusion) — un seul
+ * endroit où corriger cette logique si elle évolue, plutôt que deux copies
+ * à faire diverger.
+ */
+export function calculerProjectionRevenuFutur(
+  dateNaissance: DateNaissance | null,
+  detailCarriere: PeriodeCarriere[],
+  salaireAnnuelMoyen: number,
+  modeHypothese: ModeHypotheseRevenuFutur,
+  revenuHypotheseManuel: number | null,
+  dateEffet: Date
+): ProjectionRevenuFutur {
+  const anneeLegaleResultat = dateNaissance ? ageLegalPourGeneration(dateNaissance, dateEffet) : null;
+  const anneeRetraite =
+    dateNaissance && anneeLegaleResultat?.stable
+      ? dateAnniversaireLegal(dateNaissance, anneeLegaleResultat.age).getUTCFullYear()
+      : null;
+  const anneeCourante = dateEffet.getUTCFullYear();
+  const anneesManquantesListe = anneeRetraite !== null ? anneesManquantes(anneeCourante, anneeRetraite) : [];
+
+  const resultatTrimestresPourHypothese = trimestresCotisesEtAssimilesDepuisCarriere(detailCarriere);
+  const revenuHypothese =
+    modeHypothese === 'derniere_annee_connue'
+      ? revenuAnnuelHypotheseDerniereAnneeConnue(resultatTrimestresPourHypothese.parAnnee)
+      : revenuHypotheseManuel;
+
+  const projectionApplicable =
+    revenuHypothese !== null && revenuHypothese > 0 && anneesManquantesListe.length > 0 && dateNaissance !== null;
+
+  const trimestresValidesProjetes = projectionApplicable
+    ? trimestresProjetesAnneesManquantes(anneesManquantesListe)
+    : 0;
+
+  if (!projectionApplicable || !dateNaissance) {
+    return { salaireAnnuelMoyenProjete: salaireAnnuelMoyen, trimestresValidesProjetes };
+  }
+
+  const periodesSynthetiques = periodesSynthetiquesAnneesManquantes(anneesManquantesListe, revenuHypothese!);
+  const salaireAnnuelMoyenProjete = calculerSAM(
+    [...detailCarriere, ...periodesSynthetiques],
+    dateNaissance.annee,
+    undefined,
+    anneeRetraite!
+  ).sam;
+
+  return { salaireAnnuelMoyenProjete, trimestresValidesProjetes };
 }

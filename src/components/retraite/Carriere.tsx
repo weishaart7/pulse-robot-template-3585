@@ -9,7 +9,7 @@ import { Upload, Trash2, Pencil, CheckCircle2, AlertTriangle, ChevronDown } from
 import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
 import { useAutoSave } from '@/hooks/useAutoSave';
-import { useHypotheseRevenuFutur } from '@/hooks/useHypotheseRevenuFutur';
+import { useHypotheseRevenuFutur, UseHypotheseRevenuFuturResult } from '@/hooks/useHypotheseRevenuFutur';
 import { SaveStatusIndicator } from '@/components/ui/save-status-indicator';
 import { useToast } from '@/hooks/use-toast';
 import { parseRIS, PeriodeCarriere, RegimeDetecte, LIBELLE_TYPE_ACTIVITE } from '@/lib/retraite/parseRIS';
@@ -17,33 +17,14 @@ import { estRegimeSaisieManuelle } from '@/lib/retraite/regimesSaisieManuelle';
 import { RISImportDialog } from '@/components/retraite/RISImportDialog';
 import { PeriodeCarriereEditDialog } from '@/components/retraite/PeriodeCarriereEditDialog';
 import {
-  tauxProratisation,
-  decoteSurTrimestres,
-  decoteSurAge,
-  decoteApplicable,
-  pensionBase,
   pensionComplementaireAnnuelle,
-  minimumContributif,
-  majorationPalier2MICO,
-  ecretementMICO,
   trimestresRequisPourGeneration,
-  dateNaissanceDepuisISO,
-  ageLegalPourGeneration,
-  ageLegalAtteint,
-  ageLegalParentaleEligible,
-  dateAnniversaireLegal,
-  surcotePourTrimestresCotises,
-  surcoteParentale,
-  surcoteTotale,
-  majorationTroisEnfants,
-  pensionTotaleConsolideeTousRegimes,
-  DateNaissance,
 } from '@/lib/retraite/calcul';
-import { trimestresCotisesEtAssimilesDepuisCarriere } from '@/lib/retraite/calculTrimestres';
+import { calculerPensionConsolidee, EntreePensionConsolidee } from '@/lib/retraite/pensionConsolidee';
+import { calculerProjectionRevenuFutur } from '@/lib/retraite/hypotheseRevenuFutur';
 import { CarriereFonctionPublique } from '@/components/retraite/CarriereFonctionPublique';
 import { CarriereCNAVPL, VALEUR_POINT_CNAVPL_2026 } from '@/components/retraite/CarriereCNAVPL';
-import { familyService, FamilyLink } from '@/services/familyService';
-import { nombreEnfantsEligiblesMajorationTroisEnfants } from '@/lib/retraite/enfantsEligiblesMajoration';
+import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
 import { computeAge } from '@/lib/patrimoine/bareme669CGI';
 
 // Seuil de tolérance pour l'indicateur de cohérence RIS ↔ carrière saisie
@@ -74,18 +55,21 @@ const formatEuro0Hypothese = (valeur: number) =>
 
 interface ToggleHypotheseRevenuFuturProps {
   personne: Personne;
+  hypothese: UseHypotheseRevenuFuturResult;
 }
 
 // Hypothèse de revenu pour les années futures manquantes (entre l'année en
-// cours et l'âge légal réel) — alimente la projection de trimestres/pension
-// de usePensionConsolidee.ts, cf. src/lib/retraite/hypotheseRevenuFutur.ts.
-// Input, pas un résultat : vit avec salaireAnnuelMoyen/trimestresValides sur
-// l'écran de saisie (Carriere.tsx), pas dans le Synthèse. Auto-save via
-// useAutoSave (même mécanisme que le reste de cet écran), pas
-// d'implémentation parallèle.
-const ToggleHypotheseRevenuFutur = ({ personne }: ToggleHypotheseRevenuFuturProps) => {
+// cours et l'âge légal réel) — alimente désormais directement le calcul de
+// pension affiché par Carriere.tsx en plus de celui de Synthèse (cf.
+// docs/audit/audit-pension-consolidation.md, étape 2 de la fusion), via
+// calculerProjectionRevenuFutur(). Le hook lui-même (`hypothese`) est
+// désormais appelé une seule fois, par le composant parent `Carriere`, et
+// transmis ici en props plutôt qu'appelé à nouveau localement — évite un
+// second jeu de requêtes retraite_data/retraite_carriere_detail redondant
+// avec celui de Carriere (étape 3 de la fusion).
+const ToggleHypotheseRevenuFutur = ({ personne, hypothese }: ToggleHypotheseRevenuFuturProps) => {
   const { loading, mode, setMode, valeurCalculee, valeurManuelle, setValeurManuelle, saveStatus, saveNow } =
-    useHypotheseRevenuFutur(personne);
+    hypothese;
 
   // Flush explicite quand le mode change plutôt qu'un saveNow() synchrone
   // dans le onClick : setMode() ne fait que planifier le re-render, saveNow()
@@ -194,13 +178,14 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   // Champ déclaratif pour l'écrêtement du MICO (référentiel §3.5.5, écart
   // #10) — pensions personnelles brutes d'autres régimes non modélisés par
   // cet outil (étranger, complémentaires non saisies...), mensuel, optionnel.
-  // Local et non persisté, sur le modèle de l'année d'ouverture des droits
-  // fonction publique (écart #12) : défaut vide → 0 → comportement inchangé
-  // (aucune réduction) tant que le champ n'est pas renseigné.
+  // Persisté (colonne autres_pensions_mensuelles, cf. migration
+  // 20260818000000) depuis la fusion documentée dans
+  // docs/audit/audit-pension-consolidation.md — auparavant local et jamais
+  // enregistré, ce qui faisait que Synthèse ignorait toujours ce champ même
+  // quand un conseiller l'avait renseigné sur Carrière. Défaut vide → 0 →
+  // comportement inchangé (aucune réduction) tant que le champ n'est pas
+  // renseigné.
   const [autresPensionsMensuelles, setAutresPensionsMensuelles] = useState<string>('');
-  const [pensionBaseBrute, setPensionBaseBrute] = useState<number>(0);
-  const [decoteSurcote, setDecoteSurcote] = useState<number>(0);
-  const [ageTauxPlein, setAgeTauxPlein] = useState<string>('');
 
   // Carrière fonction publique — état remonté ici (plutôt que gardé local à
   // CarriereFonctionPublique) car le total de trimestres tous régimes doit
@@ -220,10 +205,6 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   const [ageAnnulationDecote, setAgeAnnulationDecote] = useState<string>('');
   const [departPourInvalidite, setDepartPourInvalidite] = useState(false);
   const [anneeOuvertureDroits, setAnneeOuvertureDroits] = useState<string>('');
-  const [resultatFonctionPublique, setResultatFonctionPublique] = useState({
-    pensionFinale: 0,
-    rafpAnnuelle: 0,
-  });
 
   // Carrière CNAVPL — même pattern que la fonction publique ci-dessus.
   const [hasCNAVPL, setHasCNAVPL] = useState(false);
@@ -235,7 +216,6 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   const [valeurPointCNAVPL, setValeurPointCNAVPL] = useState<string>(
     VALEUR_POINT_CNAVPL_2026.toString()
   );
-  const [resultatCNAVPL, setResultatCNAVPL] = useState({ pensionFinale: 0 });
 
   // Import RIS — le fichier n'est jamais conservé au-delà du parsing ni envoyé
   // à Supabase : il est lu en mémoire par parseRIS() puis abandonné.
@@ -259,61 +239,15 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   // plutôt qu'un état par ligne.
   const [indexPeriodeEditee, setIndexPeriodeEditee] = useState<number | null>(null);
 
-  // Date de naissance du client — nécessaire pour le calcul du SAM (nombre
-  // d'années requis selon la génération, année de départ en retraite
-  // prévue). Même source que Trimestres.tsx : family_profiles via
-  // familyService, il n'existe pas d'entité "client" séparée dans l'appli.
-  const [anneeNaissance, setAnneeNaissance] = useState<number | null>(null);
-  // Date de naissance complète (année + mois) : nécessaire pour résoudre le
-  // barème de trimestres requis, qui a des découpages infra-annuels (1951,
-  // 1961, 1965 — cf. trimestresRequisPourGeneration()). `anneeNaissance`
-  // (année seule, ci-dessus) reste utilisé tel quel pour le calcul du SAM
-  // (dureeSAMPourGeneration(), non concerné par ces découpages), donc
-  // conservé en parallèle plutôt que remplacé.
-  const [dateNaissanceDetail, setDateNaissanceDetail] = useState<DateNaissance | null>(null);
-  // Date de naissance ISO brute — nécessaire pour computeAge() (âge actuel,
-  // utilisé par decoteSurAge() ci-dessous, cf. écart #4 de l'audit
-  // référentiel, docs/audit/audit-retraite.md §7 et
-  // docs/audit/correction-decote-age-carriere.md).
-  const [dateNaissanceISO, setDateNaissanceISO] = useState<string | null>(null);
-
-  // Liens familiaux (family_links) — nécessaires à majorationTroisEnfants()/
-  // majorationEnfantsFonctionPublique() (écart #7) pour compter les enfants
-  // éligibles. Non chargés avant cette session : aucun autre usage de
-  // family_links sur cet écran (cf. docs/audit/branchement-majorations-pension-finale.md
-  // §1.c).
-  const [familyLinks, setFamilyLinks] = useState<FamilyLink[]>([]);
-
-  useEffect(() => {
-    // Conjoint : pas de fiche famille séparée (pas de compte Supabase
-    // propre) — sa date de naissance vit dans marital_status.date_naissance_conjoint,
-    // même source que Famille (buildFamilyGraph.ts) et Transmission.
-    const chargerDateNaissance = personne === 'conjoint'
-      ? familyService.getMaritalStatus().then((statut) => statut?.date_naissance_conjoint ?? null)
-      : familyService.getFamilyProfile().then((profil) => profil?.date_naissance ?? null);
-
-    chargerDateNaissance
-      .then((dateNaissance) => {
-        if (dateNaissance) {
-          setAnneeNaissance(new Date(dateNaissance).getFullYear());
-          setDateNaissanceDetail(dateNaissanceDepuisISO(dateNaissance));
-          setDateNaissanceISO(dateNaissance);
-        }
-      })
-      .catch((error) => {
-        console.error('Erreur lors du chargement de la date de naissance:', error);
-      });
-
-    // family_links n'est pas réparti par personne (pas de champ de
-    // filiation par parent en base) : même liste d'enfants pour
-    // l'utilisateur et le conjoint — approximation assumée, cf.
-    // docs/retraite-base-referentiel.md, dette technique "conjoint".
-    familyService.getFamilyLinks()
-      .then(setFamilyLinks)
-      .catch((error) => {
-        console.error('Erreur lors du chargement des liens familiaux:', error);
-      });
-  }, [personne]);
+  // Date de naissance + liens familiaux — chargés une seule fois par
+  // useProfilFamilialRetraite() (cf. docs/audit/audit-pension-consolidation.md,
+  // étape 3 de la fusion), partagé avec usePensionConsolidee.ts plutôt que
+  // rechargés séparément ici.
+  const { dateNaissanceDetail, dateNaissanceISO, familyLinks } = useProfilFamilialRetraite(personne);
+  // Année de naissance seule — nécessaire pour le dialogue d'import RIS
+  // (calcul du SAM proposé, nombre d'années requis selon la génération).
+  // Dérivée de dateNaissanceISO plutôt que rechargée séparément.
+  const anneeNaissance = dateNaissanceISO ? new Date(dateNaissanceISO).getFullYear() : null;
 
   // Âge actuel : cet écran n'a pas de simulation de date de départ (à la
   // différence de l'onglet Optimisation) — le proxy de date d'effet retenu
@@ -389,6 +323,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       if (data.valeur_point_cnavpl !== undefined && data.valeur_point_cnavpl !== null) {
         setValeurPointCNAVPL(data.valeur_point_cnavpl.toString());
       }
+      if (data.autres_pensions_mensuelles !== undefined && data.autres_pensions_mensuelles !== null) {
+        setAutresPensionsMensuelles(data.autres_pensions_mensuelles.toString());
+      }
     }
   }, [data, loading]);
 
@@ -400,88 +337,6 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       setDetailCarriere(periodesEnregistrees.map(({ id: _id, ...periode }) => periode));
     }
   }, [loadingCarriereDetail, periodesEnregistrees]);
-
-  // Calcul de la pension de base brute (moteur : src/lib/retraite/calcul.ts)
-  useEffect(() => {
-    const salaire = parseFloat(salaireAnnuelMoyen) || 0;
-    const trimValides = parseInt(trimestresValides) || 0;
-
-    if (salaire > 0 && trimValides > 0) {
-      const taux = tauxProratisation(trimValides, trimestresRequis);
-      // decote=0 ici : on veut la pension brute avant décote/surcote,
-      // laquelle est calculée et appliquée séparément ci-dessous.
-      setPensionBaseBrute(pensionBase(salaire, taux, 0));
-    } else {
-      setPensionBaseBrute(0);
-    }
-  }, [salaireAnnuelMoyen, trimestresValides, trimestresRequis]);
-
-  // Calcul décote/surcote (moteur : src/lib/retraite/calcul.ts) — basé sur le
-  // total de trimestres tous régimes confondus (régime général + fonction
-  // publique + CNAVPL, chacun si saisi), pas seulement les trimestres
-  // régime général. Le nombre de régimes est amené à grandir : cette somme
-  // reste générique plutôt que d'empiler une addition par régime.
-  //
-  // Retient la règle du plus petit des deux comptages (référentiel §2.2.1) —
-  // decoteSurTrimestres() ET decoteSurAge(), combinées via decoteApplicable()
-  // — même logique que l'onglet Optimisation (Trimestres.tsx). Auparavant,
-  // seule decoteSurTrimestres() était utilisée ici : un client de 67 ans ou
-  // plus sans tous ses trimestres se voyait appliquer une décote alors que
-  // l'âge du taux plein automatique l'en exonère (écart #4 de l'audit
-  // référentiel, docs/audit/audit-retraite.md §7). Tant que l'âge actuel
-  // n'est pas encore connu (chargement du profil famille), on retombe sur
-  // decoteSurTrimestres() seule — comportement historique, pas de régression
-  // pendant ce court intervalle.
-  //
-  // ⚠️ decoteSurTrimestres() est une formule SYMÉTRIQUE : au-delà de
-  // trimestresRequis, elle renvoie une valeur positive (difference × 1,25 %,
-  // sans plafond ni porte d'éligibilité) qui n'est PAS une surcote légitime
-  // au sens du référentiel (§2.3.1/§2.3.2 : porte d'éligibilité sur l'âge
-  // légal + durée requise, plafond à 5 % pour la surcote parentale). Cette
-  // branche positive est donc explicitement écrêtée à 0 ci-dessous
-  // (`Math.min(..., 0)`) : `decoteSurcote` ne représente plus désormais QUE
-  // la décote (toujours ≤ 0). La vraie surcote (classique + parentale) est
-  // calculée séparément via `surcoteTotale()` plus bas, et ajoutée après le
-  // MICO — pas ici — conformément à l'ordre d'application du référentiel
-  // §12.3 et au scénario de non-régression déjà écrit pour l'écart #5
-  // (`calcul.test.ts`, describe "Ordre d'application"). Cf.
-  // docs/audit/branchement-majorations-pension-finale.md §1.b pour le
-  // diagnostic complet de cette branche fautive.
-  useEffect(() => {
-    const trimValides = parseInt(trimestresValides) || 0;
-    const trimAutresRegimes =
-      (hasFonctionPublique ? parseInt(trimestresLiquidablesFP) || 0 : 0) +
-      (hasCNAVPL ? parseInt(trimestresCNAVPL) || 0 : 0);
-    const decoteTrimestresSeule = Math.min(
-      decoteSurTrimestres(trimValides + trimAutresRegimes, trimestresRequis),
-      0
-    );
-    const decoteFinale =
-      ageActuel !== null
-        ? decoteApplicable(decoteTrimestresSeule, decoteSurAge(ageActuel))
-        : decoteTrimestresSeule;
-    setDecoteSurcote(decoteFinale);
-  }, [
-    trimestresValides,
-    trimestresRequis,
-    hasFonctionPublique,
-    trimestresLiquidablesFP,
-    hasCNAVPL,
-    trimestresCNAVPL,
-    ageActuel,
-  ]);
-
-  // Calcul de l'âge du taux plein
-  useEffect(() => {
-    const trimValides = parseInt(trimestresValides) || 0;
-    
-    if (trimValides >= trimestresRequis) {
-      setAgeTauxPlein('Taux plein atteint avec les trimestres validés');
-    } else {
-      // Âge automatique à 67 ans (calculable avec date de naissance depuis fiche client)
-      setAgeTauxPlein('67 ans (âge automatique du taux plein)');
-    }
-  }, [trimestresValides, trimestresRequis]);
 
   // Sauvegarde automatique globale (option A retenue) : tout changement sur
   // cet écran — champs simples ou détail de carrière modifié via
@@ -514,6 +369,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             annee_ouverture_droits: anneeOuvertureDroits === '' ? null : parseInt(anneeOuvertureDroits, 10),
             points_cnavpl: parseFloat(pointsCNAVPL) || 0,
             valeur_point_cnavpl: parseFloat(valeurPointCNAVPL) || 0,
+            autres_pensions_mensuelles: parseFloat(autresPensionsMensuelles) || 0,
           },
           { silent: true }
         ),
@@ -540,6 +396,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       anneeOuvertureDroits,
       pointsCNAVPL,
       valeurPointCNAVPL,
+      autresPensionsMensuelles,
     ]
   );
 
@@ -651,183 +508,160 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       maximumFractionDigits: 2,
     });
 
-  const totalPensionComplementaireAnnuelle = regimesPoints.reduce((total, regime) => {
-    const pension = pensionComplementaireAnnuelle(regime);
-    return pension !== undefined ? total + pension : total;
-  }, 0);
-
   const regimesPointsExclusCount = regimesPoints.filter(
     (regime) => pensionComplementaireAnnuelle(regime) === undefined
   ).length;
 
-  // Minimum contributif (MiCo, régime général, version non majorée) :
-  // ne relève le montant que si la pension est liquidée sans décote (cf.
-  // minimumContributif() dans calcul.ts pour la condition d'éligibilité).
-  const trimValidesRegimeGeneral = parseInt(trimestresValides) || 0;
+  // Hypothèse de revenu futur — hook appelé une seule fois ici (plutôt que
+  // dans ToggleHypotheseRevenuFutur, cf. commentaire au-dessus de ce
+  // composant) : consomme le `data`/`detailCarriere`/`saveRetraiteData` déjà
+  // chargés par Carriere.tsx au lieu de refaire sa propre requête.
+  const hypotheseRevenuFutur = useHypotheseRevenuFutur(
+    data,
+    detailCarriere,
+    loading || loadingCarriereDetail,
+    saveRetraiteData
+  );
 
-  // Total tous régimes (référentiel §3.5.3, palier 1, Cas 2 — bascule de
-  // dénominateur pour le polypensionné). `trimestresValides` couvre déjà le
-  // régime général et les régimes alignés (fusion LURA, cf. handleValidateRIS
-  // ci-dessus) ; CNAVPL et fonction publique s'ajoutent seulement s'ils sont
-  // effectivement activés — même combinaison que `trimAutresRegimes` dans le
-  // useEffect de decoteSurcote ci-dessus, mais ici le total complet (régime
-  // général inclus), pas la perspective "autres régimes" d'un régime tiers.
-  // Les régimes complémentaires par points (Agirc-Arrco, RAFP — regimesPoints)
-  // n'ont structurellement pas de trimestres et ne font pas partie de ce
-  // total. Un régime de base non modélisé par cet outil (ex. MSA agricole
-  // non-salarié, régime étranger) resterait absent — dette documentée dans
-  // docs/audit/implementation-mico-polypensionne.md, pas une régression de
-  // cette session.
-  const trimestresTousRegimes =
-    trimValidesRegimeGeneral +
-    (hasFonctionPublique ? parseInt(trimestresLiquidablesFP) || 0 : 0) +
-    (hasCNAVPL ? parseInt(trimestresCNAVPL) || 0 : 0);
+  // Projection de revenu futur (cf. docs/audit/audit-pension-consolidation.md,
+  // étape 2 de la fusion) : complète les années manquantes entre aujourd'hui
+  // et l'âge légal réel par un revenu hypothétique, pour estimer les
+  // trimestres/pension futurs — même fonction que Synthèse
+  // (usePensionConsolidee.ts), appliquée ici à la saisie live de l'écran
+  // (`hypotheseRevenuFutur.valeurManuelle`, pas encore forcément sauvegardée)
+  // plutôt qu'à la dernière valeur persistée, cohérent avec le choix déjà
+  // fait pour salaireAnnuelMoyen/trimestresValides ci-dessous (Carrière
+  // reflète la saisie en cours, pas seulement le dernier enregistrement).
+  const projectionRevenuFutur = useMemo(
+    () =>
+      calculerProjectionRevenuFutur(
+        dateNaissanceDetail,
+        detailCarriere,
+        parseFloat(salaireAnnuelMoyen) || 0,
+        hypotheseRevenuFutur.mode,
+        parseFloat(hypotheseRevenuFutur.valeurManuelle) || null,
+        new Date()
+      ),
+    [
+      dateNaissanceDetail,
+      detailCarriere,
+      salaireAnnuelMoyen,
+      hypotheseRevenuFutur.mode,
+      hypotheseRevenuFutur.valeurManuelle,
+    ]
+  );
+
+  // Source unique de calcul (cf. docs/audit/audit-pension-consolidation.md) :
+  // même fonction que Synthese.tsx (via usePensionConsolidee.ts), appelée ici
+  // directement sur le state live de cet écran plutôt que sur les données
+  // rechargées depuis Supabase — Carrière doit refléter la saisie en cours,
+  // pas seulement la dernière version sauvegardée. Salaire/trimestres déjà
+  // augmentés de la projection de revenu futur ci-dessus (étape 2 de la
+  // fusion).
+  const entreePensionConsolidee = useMemo<EntreePensionConsolidee>(
+    () => ({
+      salaireAnnuelMoyen: projectionRevenuFutur.salaireAnnuelMoyenProjete,
+      trimestresValides: (parseInt(trimestresValides) || 0) + projectionRevenuFutur.trimestresValidesProjetes,
+      trimestresRequis,
+      dateNaissance: dateNaissanceDetail,
+      ageActuel,
+      regimesPoints,
+      detailCarriere,
+      familyLinks,
+      auMoinsUnTrimestreMajorationEnfant,
+      autresPensionsMensuelles: parseFloat(autresPensionsMensuelles) || 0,
+      fonctionPublique: hasFonctionPublique
+        ? {
+            traitementIndiciaireBrut: parseFloat(traitementIndiciaireBrut) || 0,
+            trimestresLiquidables: parseInt(trimestresLiquidablesFP) || 0,
+            pointsRAFP: parseFloat(pointsRAFP) || 0,
+            departAnticipeCategorieActive,
+            ageDepartAnticipe: parseFloat(ageDepartAnticipe),
+            ageAnnulationDecote: parseFloat(ageAnnulationDecote),
+            departPourInvalidite,
+            anneeOuvertureDroits: anneeOuvertureDroits === '' ? undefined : parseInt(anneeOuvertureDroits, 10),
+          }
+        : null,
+      cnavpl: hasCNAVPL
+        ? {
+            trimestresCNAVPL: parseInt(trimestresCNAVPL) || 0,
+            pointsCNAVPL: parseFloat(pointsCNAVPL) || 0,
+            valeurPointCNAVPL: parseFloat(valeurPointCNAVPL) || 0,
+          }
+        : null,
+    }),
+    [
+      projectionRevenuFutur,
+      trimestresValides,
+      trimestresRequis,
+      dateNaissanceDetail,
+      ageActuel,
+      regimesPoints,
+      detailCarriere,
+      familyLinks,
+      auMoinsUnTrimestreMajorationEnfant,
+      autresPensionsMensuelles,
+      hasFonctionPublique,
+      traitementIndiciaireBrut,
+      trimestresLiquidablesFP,
+      pointsRAFP,
+      departAnticipeCategorieActive,
+      ageDepartAnticipe,
+      ageAnnulationDecote,
+      departPourInvalidite,
+      anneeOuvertureDroits,
+      hasCNAVPL,
+      trimestresCNAVPL,
+      pointsCNAVPL,
+      valeurPointCNAVPL,
+    ]
+  );
+
+  const resultatPension = useMemo(
+    () => calculerPensionConsolidee(entreePensionConsolidee),
+    [entreePensionConsolidee]
+  );
+
+  const { detailRegimeGeneral, repartitionParRegime, historiqueTrimestres } = resultatPension;
+
+  // Minimum contributif (MiCo, régime général, version non majorée) : le
+  // state brut (non projeté à cette étape) sert aussi à l'indicateur de
+  // cohérence RIS ↔ carrière saisie ci-dessous.
+  const trimValidesRegimeGeneral = parseInt(trimestresValides) || 0;
 
   // Détail de carrière ↔ RIS : source dérivée, PAS une source concurrente de
   // trimestres_valides (le RIS reste la source de vérité pour le nombre TOTAL
   // de trimestres, cf. en-tête de fichier et docs/audit/audit-retraite.md) —
   // `.total` sert uniquement de contrôle de cohérence à l'écran (jamais
-  // injecté dans trimestresValides). En revanche, la répartition cotisés/
-  // assimilés (`.cotises`, `.parAnnee`) N'A PAS d'équivalent ailleurs dans
-  // l'app et est déjà utilisée dans un calcul de pension (surcote, écart #5 :
-  // trimestresCotisesAnneeReference ci-dessous) — et l'est désormais aussi
-  // pour l'éligibilité au MICO majoré (`.cotises`, écart #10, palier 2,
-  // cf. docs/audit/implementation-mico-majore.md). Approximation
-  // volontairement prudente dans les deux cas : ne peut que SOUS-compter
-  // (jamais accorder à tort), cf. limites documentées en tête de
-  // calculTrimestres.ts.
-  const resultatTrimestresDetailCarriere = useMemo(
-    () => trimestresCotisesEtAssimilesDepuisCarriere(detailCarriere),
-    [detailCarriere]
-  );
-  const totalDeriveCarriere = resultatTrimestresDetailCarriere.total;
+  // injecté dans trimestresValides).
+  const totalDeriveCarriere = historiqueTrimestres.total;
   const ecartCoherenceTrimestres = trimValidesRegimeGeneral - totalDeriveCarriere;
+  const trimestresCotisesRegimeGeneral = historiqueTrimestres.cotises;
 
-  // Surcote (classique écart #5 + parentale écart #6), assise sur la
-  // pension AVANT le MICO mais AJOUTÉE après (référentiel §12.3 : « surcote
-  // assise sur la pension avant MICO » — comprendre : calculée sur P0,
-  // ajoutée après comparaison avec le MICO, cf. le scénario de non-régression
-  // déjà écrit pour l'écart #5 dans calcul.test.ts, describe "Ordre
-  // d'application", repris tel quel plus bas pour ce composant).
-  //
-  // Proxy de date d'effet : « aujourd'hui », même convention que
-  // trimestresRequis ci-dessus (pas de simulation de date de liquidation sur
-  // cet écran — réservé à la Session B, cf. docs/audit/conception-date-effet.md).
-  const dateEffetProxy = new Date();
-  const ageLegalResultat = dateNaissanceDetail
-    ? ageLegalPourGeneration(dateNaissanceDetail, dateEffetProxy)
-    : null;
-  const ageLegalAtteintFlag = dateNaissanceDetail
-    ? ageLegalAtteint(dateNaissanceDetail, dateEffetProxy)
-    : undefined;
-  const ageLegalParentaleEligibleFlag = dateNaissanceDetail
-    ? ageLegalParentaleEligible(dateNaissanceDetail, dateEffetProxy)
-    : undefined;
-  // Même condition que l'indicateur "Taux plein atteint" ci-dessus (référentiel
-  // §2.3.1 condition n°1) — pas une nouvelle règle.
-  const dureeRequiseAtteinte = trimValidesRegimeGeneral >= trimestresRequis;
-  // Année de référence de la surcote = l'année précédant l'âge légal
-  // (référentiel §2.3.2) — déterminée précisément via dateAnniversaireLegal()
-  // (Session A), pas une approximation : la génération est déjà résolue par
-  // ageLegalPourGeneration() ci-dessus.
-  const anneeReferenceSurcote =
-    ageLegalResultat?.stable && dateNaissanceDetail
-      ? dateAnniversaireLegal(dateNaissanceDetail, ageLegalResultat.age).getUTCFullYear() - 1
-      : null;
-  // Chronologie infra-annuelle (quel trimestre EXACT de cette année) non
-  // résolue — dette technique déjà documentée pour l'écart #5
-  // (docs/audit/implementation-surcote.md) : seul le total annuel est
-  // disponible via parAnnee, pas la date d'acquisition de chaque trimestre.
-  const trimestresCotisesAnneeReference =
-    anneeReferenceSurcote !== null
-      ? resultatTrimestresDetailCarriere.parAnnee.find((a) => a.annee === anneeReferenceSurcote)
-          ?.cotises ?? 0
-      : 0;
-  const surcoteClassiquePct = surcotePourTrimestresCotises(
-    trimestresCotisesAnneeReference,
-    ageLegalAtteintFlag,
-    dureeRequiseAtteinte
-  );
-  const surcoteParentalePct = surcoteParentale(
-    auMoinsUnTrimestreMajorationEnfant,
-    ageLegalParentaleEligibleFlag,
-    dureeRequiseAtteinte,
-    trimestresCotisesAnneeReference
-  );
-  // Additif pour le régime général et les régimes qui en héritent
-  // intégralement sur ce point (référentiel §2.3.2, §12.3).
-  const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true);
-
-  // MICO palier 1 : montant isolé (pas seulement consommé dans le Math.max
-  // ci-dessous) pour pouvoir l'afficher comme ligne de détail à l'écran —
-  // absent auparavant (docs/audit/branchement-majorations-pension-finale.md §1.d).
-  // Fonction et logique inchangées (écart #9, déjà correcte et testée).
-  const micoMontant = minimumContributif(trimValidesRegimeGeneral, trimestresRequis, decoteSurcote, trimestresTousRegimes);
-  // P0 hors MICO, hors surcote (référentiel §3.7, étape 3 : « comparaison au
-  // montant P0, hors surcote ») — même valeur que l'ancien premier argument
-  // du Math.max ci-dessous, isolée ici pour être réutilisée par le palier 2
-  // et l'écrêtement.
-  const pensionBaseHorsMicoHorsSurcote = pensionBaseBrute * (1 + decoteSurcote / 100);
-  // Majoration palier 1 explicite (delta), équivalente par construction à
-  // l'ancien `Math.max(P0, micoMontant)` : P0 + majorationPalier1 ===
-  // Math.max(P0, micoMontant) dans tous les cas, cf.
-  // docs/audit/implementation-mico-majore.md pour la démonstration — aucun
-  // changement de comportement pour un profil sans palier 2 ni écrêtement.
-  const majorationPalier1 = Math.max(0, micoMontant - pensionBaseHorsMicoHorsSurcote);
-
-  // MICO palier 2 (référentiel §3.5.4, écart #10) : trimestres cotisés
-  // régime général/aligné dérivés du détail de carrière (cf. commentaire de
-  // `resultatTrimestresDetailCarriere` ci-dessus pour les limites assumées :
-  // rachats non modélisés, approximation prudente).
-  const trimestresCotisesRegimeGeneral = resultatTrimestresDetailCarriere.cotises;
-  const majorationPalier2 = majorationPalier2MICO(
-    trimestresCotisesRegimeGeneral,
-    trimValidesRegimeGeneral,
-    trimestresRequis,
-    decoteSurcote,
-    trimestresTousRegimes
-  );
-
-  // Écrêtement (référentiel §3.5.5, écart #10) : réduit la majoration MICO
-  // totale (palier 1 + palier 2) si le total dépasse le plafond global,
-  // compte tenu des pensions perçues d'autres régimes non modélisés par cet
-  // outil (champ déclaratif, défaut 0 = comportement inchangé).
-  const autresPensionsAnnuelles = (parseFloat(autresPensionsMensuelles) || 0) * 12;
-  const majorationMicoTotaleAvantEcretement = majorationPalier1 + majorationPalier2;
-  const majorationMicoTotaleApresEcretement = ecretementMICO(
-    pensionBaseHorsMicoHorsSurcote,
-    majorationMicoTotaleAvantEcretement,
-    autresPensionsAnnuelles
-  );
+  const pensionBaseBrute = detailRegimeGeneral.pensionBaseBrute;
+  const decoteSurcote = detailRegimeGeneral.decote;
+  const surcoteClassiquePct = detailRegimeGeneral.surcoteClassiquePct;
+  const surcoteParentalePct = detailRegimeGeneral.surcoteParentalePct;
+  const surcoteTotalePct = detailRegimeGeneral.surcoteTotalePct;
+  const surcoteMontantRegimeGeneral = detailRegimeGeneral.surcoteMontant;
+  const micoMontant = detailRegimeGeneral.micoMontant;
+  const majorationPalier1 = detailRegimeGeneral.majorationPalier1;
+  const majorationPalier2 = detailRegimeGeneral.majorationPalier2;
+  const majorationMicoTotaleAvantEcretement = detailRegimeGeneral.majorationMicoAvantEcretement;
+  const majorationMicoTotaleApresEcretement = detailRegimeGeneral.majorationMicoApresEcretement;
   const ecretementApplique = majorationMicoTotaleApresEcretement < majorationMicoTotaleAvantEcretement;
+  const majorationEnfantsPct = detailRegimeGeneral.majorationEnfantsPct;
+  const nombreEnfantsEligibles = detailRegimeGeneral.nombreEnfantsEligibles;
 
-  const pensionApresMico = pensionBaseHorsMicoHorsSurcote + majorationMicoTotaleApresEcretement;
-  const surcoteMontantRegimeGeneral = pensionBaseBrute * (surcoteTotalePct / 100);
-  const pensionApresSurcoteRegimeGeneral = pensionApresMico + surcoteMontantRegimeGeneral;
-
-  // Majoration pour 3 enfants ou plus (écart #7), assise sur la pension
-  // APRÈS MICO et surcote (référentiel §3.7, §12.3) — cas courant
-  // uniquement (filiation directe ou adoption plénière), cf.
-  // nombreEnfantsEligiblesMajorationTroisEnfants().
-  const nombreEnfantsEligibles = useMemo(
-    () => nombreEnfantsEligiblesMajorationTroisEnfants(familyLinks),
-    [familyLinks]
-  );
-  const majorationEnfantsPct = majorationTroisEnfants(nombreEnfantsEligibles);
-  const pensionBaseAjustee =
-    pensionApresSurcoteRegimeGeneral * (1 + majorationEnfantsPct / 100);
+  const pensionBaseAjustee = repartitionParRegime.baseRegimeGeneral;
+  const totalPensionComplementaireAnnuelle = repartitionParRegime.complementaireRegimeGeneral;
   const pensionTotaleRegimeGeneral = pensionBaseAjustee + totalPensionComplementaireAnnuelle;
   const pensionTotaleFonctionPublique = hasFonctionPublique
-    ? resultatFonctionPublique.pensionFinale + resultatFonctionPublique.rafpAnnuelle
+    ? repartitionParRegime.fonctionPublique + repartitionParRegime.rafp
     : 0;
-  const pensionTotaleCNAVPL = hasCNAVPL ? resultatCNAVPL.pensionFinale : 0;
-  const pensionTotaleConsolidee = pensionTotaleConsolideeTousRegimes(
-    pensionTotaleRegimeGeneral,
-    hasFonctionPublique,
-    resultatFonctionPublique,
-    hasCNAVPL,
-    resultatCNAVPL
-  );
+  const pensionTotaleCNAVPL = hasCNAVPL ? repartitionParRegime.cnavpl : 0;
+  const pensionTotaleConsolidee = resultatPension.pensionTotaleConsolidee;
+  const ageTauxPlein = resultatPension.ageTauxPlein;
   const aDesRegimesSupplementaires = hasFonctionPublique || hasCNAVPL;
 
   return (
@@ -914,7 +748,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             </div>
           </div>
 
-          <ToggleHypotheseRevenuFutur personne={personne} />
+          <ToggleHypotheseRevenuFutur personne={personne} hypothese={hypotheseRevenuFutur} />
 
           <div className="flex items-start space-x-2">
             <Checkbox
@@ -1291,7 +1125,6 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         dateNaissance={dateNaissanceDetail}
         auMoinsUnTrimestreMajorationEnfant={auMoinsUnTrimestreMajorationEnfant}
         nombreEnfantsEligibles={nombreEnfantsEligibles}
-        onResultChange={setResultatFonctionPublique}
       />
 
       <CarriereCNAVPL
@@ -1308,7 +1141,6 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         dateNaissance={dateNaissanceDetail}
         auMoinsUnTrimestreMajorationEnfant={auMoinsUnTrimestreMajorationEnfant}
         nombreEnfantsEligibles={nombreEnfantsEligibles}
-        onResultChange={setResultatCNAVPL}
       />
 
       <RISImportDialog

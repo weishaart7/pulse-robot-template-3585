@@ -1,27 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
-import { familyService, FamilyLink } from '@/services/familyService';
+import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
 import { computeAge } from '@/lib/patrimoine/bareme669CGI';
 import {
   calculerPensionConsolidee,
   ResultatPensionConsolidee,
 } from '@/lib/retraite/pensionConsolidee';
-import {
-  DateNaissance,
-  dateNaissanceDepuisISO,
-  trimestresRequisPourGeneration,
-  ageLegalPourGeneration,
-  dateAnniversaireLegal,
-} from '@/lib/retraite/calcul';
-import { trimestresCotisesEtAssimilesDepuisCarriere } from '@/lib/retraite/calculTrimestres';
-import { calculerSAM } from '@/lib/retraite/calculSAM';
-import {
-  anneesManquantes,
-  trimestresProjetesAnneesManquantes,
-  periodesSynthetiquesAnneesManquantes,
-  revenuAnnuelHypotheseDerniereAnneeConnue,
-} from '@/lib/retraite/hypotheseRevenuFutur';
+import { trimestresRequisPourGeneration } from '@/lib/retraite/calcul';
+import { calculerProjectionRevenuFutur } from '@/lib/retraite/hypotheseRevenuFutur';
 
 export interface UsePensionConsolideeResult extends ResultatPensionConsolidee {
   loading: boolean;
@@ -43,40 +30,16 @@ export interface UsePensionConsolideeResult extends ResultatPensionConsolidee {
  * Pension consolidée tous régimes pour une personne (utilisateur ou
  * conjoint) — charge les mêmes sources que Carriere.tsx (retraite_data,
  * détail de carrière, date de naissance, liens familiaux) et applique le
- * même pipeline via pensionConsolidee.ts.
- *
- * ⚠️ Cf. docs/audit/audit-retraite.md §5 : ce hook et Carriere.tsx chargent
- * et calculent en parallèle, pas encore fusionnés.
+ * même pipeline via pensionConsolidee.ts. Date de naissance/liens familiaux
+ * partagés avec Carriere.tsx via useProfilFamilialRetraite() plutôt que
+ * chargés séparément (cf. docs/audit/audit-pension-consolidation.md, étape 3
+ * de la fusion).
  */
 export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePensionConsolideeResult => {
   const { data, loading: loadingRetraiteData } = useRetraiteData(personne);
   const { periodes: detailCarriere, loading: loadingCarriereDetail } = useCarriereDetail(personne);
-
-  const [dateNaissanceDetail, setDateNaissanceDetail] = useState<DateNaissance | null>(null);
-  const [dateNaissanceISO, setDateNaissanceISO] = useState<string | null>(null);
-  const [familyLinks, setFamilyLinks] = useState<FamilyLink[]>([]);
-  const [loadingProfil, setLoadingProfil] = useState(true);
-
-  useEffect(() => {
-    const chargerDateNaissance = personne === 'conjoint'
-      ? familyService.getMaritalStatus().then((statut) => statut?.date_naissance_conjoint ?? null)
-      : familyService.getFamilyProfile().then((profil) => profil?.date_naissance ?? null);
-
-    Promise.all([chargerDateNaissance, familyService.getFamilyLinks()])
-      .then(([dateNaissance, liens]) => {
-        if (dateNaissance) {
-          setDateNaissanceDetail(dateNaissanceDepuisISO(dateNaissance));
-          setDateNaissanceISO(dateNaissance);
-        }
-        setFamilyLinks(liens);
-      })
-      .catch((error) => {
-        if (import.meta.env.DEV) {
-          console.error('Erreur lors du chargement du profil retraite:', error);
-        }
-      })
-      .finally(() => setLoadingProfil(false));
-  }, [personne]);
+  const { dateNaissanceDetail, dateNaissanceISO, familyLinks, loading: loadingProfil } =
+    useProfilFamilialRetraite(personne);
 
   const loading = loadingRetraiteData || loadingCarriereDetail || loadingProfil;
 
@@ -101,44 +64,23 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
   // additif — ne modifie jamais `data.trimestres_valides`/`salaire_annuel_moyen`
   // en base (cf. règle documentée dans Carriere.tsx : le RIS/l'hypothèse ne
   // sont jamais une source concurrente des totaux validés par le
-  // conseiller), seulement l'estimation live retournée par ce hook.
-  const anneeLegaleResultat = dateNaissanceDetail
-    ? ageLegalPourGeneration(dateNaissanceDetail, new Date())
-    : null;
-  const anneeRetraite =
-    dateNaissanceDetail && anneeLegaleResultat?.stable
-      ? dateAnniversaireLegal(dateNaissanceDetail, anneeLegaleResultat.age).getUTCFullYear()
-      : null;
-  const anneeCourante = new Date().getUTCFullYear();
-  const anneesManquantesListe = useMemo(
-    () => (anneeRetraite !== null ? anneesManquantes(anneeCourante, anneeRetraite) : []),
-    [anneeCourante, anneeRetraite]
-  );
-
-  const resultatTrimestresPourHypothese = useMemo(
-    () => trimestresCotisesEtAssimilesDepuisCarriere(detailCarriereSansId),
-    [detailCarriereSansId]
-  );
+  // conseiller), seulement l'estimation live retournée par ce hook. Même
+  // fonction que Carriere.tsx (cf. docs/audit/audit-pension-consolidation.md,
+  // étape 2 de la fusion) — glue extraite dans calculerProjectionRevenuFutur()
+  // pour n'exister qu'à un seul endroit.
   const modeHypothese = data.mode_hypothese_revenu_futur ?? 'derniere_annee_connue';
-  const revenuHypothese =
-    modeHypothese === 'derniere_annee_connue'
-      ? revenuAnnuelHypotheseDerniereAnneeConnue(resultatTrimestresPourHypothese.parAnnee)
-      : data.revenu_hypothese_manuel ?? null;
-
-  const projectionApplicable =
-    revenuHypothese !== null && revenuHypothese > 0 && anneesManquantesListe.length > 0 && dateNaissanceDetail !== null;
-
-  const trimestresProjetes = projectionApplicable ? trimestresProjetesAnneesManquantes(anneesManquantesListe) : 0;
-  const salaireAnnuelMoyenProjete = useMemo(() => {
-    if (!projectionApplicable || !dateNaissanceDetail) return salaireAnnuelMoyen;
-    const periodesSynthetiques = periodesSynthetiquesAnneesManquantes(anneesManquantesListe, revenuHypothese!);
-    return calculerSAM(
-      [...detailCarriereSansId, ...periodesSynthetiques],
-      dateNaissanceDetail.annee,
-      undefined,
-      anneeRetraite!
-    ).sam;
-  }, [projectionApplicable, dateNaissanceDetail, detailCarriereSansId, anneesManquantesListe, revenuHypothese, anneeRetraite, salaireAnnuelMoyen]);
+  const { salaireAnnuelMoyenProjete, trimestresValidesProjetes: trimestresProjetes } = useMemo(
+    () =>
+      calculerProjectionRevenuFutur(
+        dateNaissanceDetail,
+        detailCarriereSansId,
+        salaireAnnuelMoyen,
+        modeHypothese,
+        data.revenu_hypothese_manuel ?? null,
+        new Date()
+      ),
+    [dateNaissanceDetail, detailCarriereSansId, salaireAnnuelMoyen, modeHypothese, data.revenu_hypothese_manuel]
+  );
 
   const resultat = calculerPensionConsolidee({
     salaireAnnuelMoyen: salaireAnnuelMoyenProjete,
@@ -150,7 +92,7 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     detailCarriere: detailCarriereSansId,
     familyLinks,
     auMoinsUnTrimestreMajorationEnfant: data.au_moins_un_trimestre_majoration_enfant ?? false,
-    autresPensionsMensuelles: 0,
+    autresPensionsMensuelles: data.autres_pensions_mensuelles ?? 0,
     fonctionPublique: data.has_fonction_publique
       ? {
           traitementIndiciaireBrut: data.traitement_indiciaire_brut ?? 0,

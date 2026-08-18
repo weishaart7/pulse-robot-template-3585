@@ -4,7 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { RegimeDetecte } from '@/lib/retraite/parseRIS';
 import { ModeHypotheseRevenuFutur } from '@/lib/retraite/hypotheseRevenuFutur';
 
-interface RetraiteData {
+export interface RetraiteData {
   id?: string;
   salaire_annuel_moyen?: number;
   trimestres_valides?: number;
@@ -13,6 +13,12 @@ interface RetraiteData {
   epargne_assurance_vie?: number;
   autres_epargnes?: number;
   regimes_points?: RegimeDetecte[];
+  // Pensions personnelles brutes d'autres régimes non modélisés par cet
+  // outil (étranger, complémentaires non saisies...) — sert uniquement à
+  // l'écrêtement du MICO (référentiel §3.5.5). cf.
+  // docs/audit/audit-pension-consolidation.md : auparavant saisi dans
+  // Carriere.tsx mais jamais persisté, donc jamais vu par Synthèse (usePensionConsolidee.ts).
+  autres_pensions_mensuelles?: number;
   // Condition n°1 (déclarative) de la surcote parentale, référentiel §2.3.2 —
   // cf. surcoteParentale() dans src/lib/retraite/calcul.ts.
   au_moins_un_trimestre_majoration_enfant?: boolean;

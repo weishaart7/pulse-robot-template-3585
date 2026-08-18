@@ -5,8 +5,10 @@ import {
   anneesManquantes,
   trimestresProjetesAnneesManquantes,
   periodesSynthetiquesAnneesManquantes,
+  calculerProjectionRevenuFutur,
 } from './hypotheseRevenuFutur';
 import { ResultatTrimestresCotisesEtAssimiles } from './calculTrimestres';
+import { PeriodeCarriere } from './parseRIS';
 
 const parAnnee = (
   entries: { annee: number; cotises: number; assimiles: number; revenuCotise: number }[]
@@ -124,5 +126,93 @@ describe('periodesSynthetiquesAnneesManquantes', () => {
         regimes: ["L'Assurance retraite"],
       },
     ]);
+  });
+});
+
+// calculerProjectionRevenuFutur() : glue appelée à l'identique par
+// Carriere.tsx et usePensionConsolidee.ts (cf.
+// docs/audit/audit-pension-consolidation.md, étape 2 de la fusion).
+describe('calculerProjectionRevenuFutur', () => {
+  const periodeReelle = (annee: number, revenu: number): PeriodeCarriere => ({
+    employeur: 'Test',
+    typeActivite: 'employeur',
+    dateDebut: `${annee}-01-01`,
+    dateFin: `${annee}-12-31`,
+    revenu,
+    estChiffreAffaires: false,
+    regimes: ["L'Assurance retraite"],
+  });
+
+  it('non applicable sans date de naissance : renvoie le salaire réel tel quel, aucun trimestre projeté', () => {
+    const resultat = calculerProjectionRevenuFutur(
+      null,
+      [periodeReelle(2020, 30000)],
+      30000,
+      'derniere_annee_connue',
+      null,
+      new Date('2026-06-01')
+    );
+    expect(resultat).toEqual({ salaireAnnuelMoyenProjete: 30000, trimestresValidesProjetes: 0 });
+  });
+
+  it('non applicable si aucune année manquante (âge légal déjà atteint) : pas de projection', () => {
+    const resultat = calculerProjectionRevenuFutur(
+      { annee: 1955, mois: 1 },
+      [periodeReelle(2020, 30000)],
+      30000,
+      'derniere_annee_connue',
+      null,
+      new Date('2026-06-01')
+    );
+    expect(resultat.trimestresValidesProjetes).toBe(0);
+    expect(resultat.salaireAnnuelMoyenProjete).toBe(30000);
+  });
+
+  it('mode manuel non renseigné (0 ou vide) : pas de projection, même avec des années manquantes', () => {
+    const resultat = calculerProjectionRevenuFutur(
+      { annee: 1995, mois: 1 },
+      [periodeReelle(2020, 30000)],
+      30000,
+      'revenu_moyen_projete',
+      null,
+      new Date('2026-06-01')
+    );
+    expect(resultat.trimestresValidesProjetes).toBe(0);
+    expect(resultat.salaireAnnuelMoyenProjete).toBe(30000);
+  });
+
+  it('mode manuel renseigné, années manquantes : projette 4 trimestres par année manquante et un SAM recalculé', () => {
+    const resultat = calculerProjectionRevenuFutur(
+      { annee: 1995, mois: 1 },
+      [periodeReelle(2020, 30000)],
+      30000,
+      'revenu_moyen_projete',
+      35000,
+      new Date('2026-06-01')
+    );
+    expect(resultat.trimestresValidesProjetes).toBeGreaterThan(0);
+    expect(resultat.trimestresValidesProjetes % 4).toBe(0);
+    expect(resultat.salaireAnnuelMoyenProjete).toBeGreaterThan(0);
+  });
+
+  it('mode dernière année connue : dérive le revenu hypothèse du RIS plutôt que du paramètre manuel', () => {
+    const resultatAvecRevenuManuelIgnore = calculerProjectionRevenuFutur(
+      { annee: 1995, mois: 1 },
+      [periodeReelle(2020, 40000)],
+      30000,
+      'derniere_annee_connue',
+      999999, // ignoré en mode 'derniere_annee_connue'
+      new Date('2026-06-01')
+    );
+    const resultatSansRevenuManuel = calculerProjectionRevenuFutur(
+      { annee: 1995, mois: 1 },
+      [periodeReelle(2020, 40000)],
+      30000,
+      'derniere_annee_connue',
+      null,
+      new Date('2026-06-01')
+    );
+    expect(resultatAvecRevenuManuelIgnore).toEqual(resultatSansRevenuManuel);
+    expect(resultatAvecRevenuManuelIgnore.trimestresValidesProjetes).toBeGreaterThan(0);
   });
 });

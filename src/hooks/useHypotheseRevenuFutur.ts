@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Personne, useRetraiteData } from '@/hooks/useRetraiteData';
-import { useCarriereDetail } from '@/hooks/useCarriereDetail';
+import { RetraiteData } from '@/hooks/useRetraiteData';
 import { useAutoSave, AutoSaveStatus } from '@/hooks/useAutoSave';
+import { PeriodeCarriere } from '@/lib/retraite/parseRIS';
 import { trimestresCotisesEtAssimilesDepuisCarriere } from '@/lib/retraite/calculTrimestres';
 import {
   ModeHypotheseRevenuFutur,
@@ -27,34 +27,44 @@ export interface UseHypotheseRevenuFuturResult {
 }
 
 /**
- * Charge, calcule et persiste l'hypothèse de revenu futur pour le toggle de
- * Synthese.tsx — même composition de hooks que usePensionConsolidee.ts
- * (useRetraiteData + useCarriereDetail), et même mécanisme d'auto-save que
- * Carriere.tsx (useAutoSave), pour rester cohérent avec les conventions du
- * module.
+ * Calcule, expose et persiste l'hypothèse de revenu futur pour le toggle de
+ * Carriere.tsx/Synthese.tsx.
+ *
+ * Contrairement à sa version précédente, ce hook ne charge plus lui-même
+ * `retraite_data`/`retraite_carriere_detail` : ces données sont désormais
+ * fournies par l'appelant (déjà chargées pour ses propres besoins), pour
+ * éviter le doublon de requêtes identifié dans
+ * docs/audit/audit-pension-consolidation.md (étape 3 de la fusion) — avant
+ * cette session, Carriere.tsx et ce hook chargeaient chacun leur propre copie
+ * de `retraite_data`/`retraite_carriere_detail` pour la MÊME personne, sur le
+ * MÊME écran, avec le risque que les deux copies divergent après une
+ * sauvegarde de l'une sans rechargement de l'autre.
  */
-export const useHypotheseRevenuFutur = (personne: Personne = 'utilisateur'): UseHypotheseRevenuFuturResult => {
-  const { data, loading: loadingData, saveRetraiteData } = useRetraiteData(personne);
-  const { periodes: detailCarriere, loading: loadingCarriere } = useCarriereDetail(personne);
-
+export const useHypotheseRevenuFutur = (
+  data: Pick<RetraiteData, 'mode_hypothese_revenu_futur' | 'revenu_hypothese_manuel'>,
+  detailCarriere: PeriodeCarriere[],
+  loadingDonnees: boolean,
+  saveRetraiteData: (
+    updates: Partial<RetraiteData>,
+    options?: { silent?: boolean }
+  ) => Promise<boolean>
+): UseHypotheseRevenuFuturResult => {
   const [mode, setMode] = useState<ModeHypotheseRevenuFutur>('derniere_annee_connue');
   const [valeurManuelle, setValeurManuelle] = useState('');
   const [initialise, setInitialise] = useState(false);
 
-  const loading = loadingData || loadingCarriere;
-
   const valeurCalculee = useMemo(() => {
-    if (loadingCarriere) return null;
+    if (loadingDonnees) return null;
     const { parAnnee } = trimestresCotisesEtAssimilesDepuisCarriere(detailCarriere);
     return revenuAnnuelHypotheseDerniereAnneeConnue(parAnnee);
-  }, [detailCarriere, loadingCarriere]);
+  }, [detailCarriere, loadingDonnees]);
 
   // Chargement initial depuis Supabase — avec bascule automatique vers le
   // mode manuel si le mode enregistré était 'derniere_annee_connue' mais
   // qu'aucune valeur n'est calculable (RIS vide ou inexploitable, cf. besoin
   // fonctionnel « cas limite »).
   useEffect(() => {
-    if (loading || initialise) return;
+    if (loadingDonnees || initialise) return;
     const modeCharge = data.mode_hypothese_revenu_futur ?? 'derniere_annee_connue';
     const pasCalculable = modeCharge === 'derniere_annee_connue' && valeurCalculee === null;
     setMode(pasCalculable ? 'revenu_moyen_projete' : modeCharge);
@@ -62,7 +72,7 @@ export const useHypotheseRevenuFutur = (personne: Personne = 'utilisateur'): Use
       setValeurManuelle(data.revenu_hypothese_manuel.toString());
     }
     setInitialise(true);
-  }, [loading, initialise, data, valeurCalculee]);
+  }, [loadingDonnees, initialise, data, valeurCalculee]);
 
   // Même bascule, mais après le chargement initial : si le détail de
   // carrière change en cours de session (suppression de la seule période
@@ -85,5 +95,5 @@ export const useHypotheseRevenuFutur = (personne: Personne = 'utilisateur'): Use
     [mode, valeurManuelle]
   );
 
-  return { loading, mode, setMode, valeurCalculee, valeurManuelle, setValeurManuelle, saveStatus, saveNow };
+  return { loading: loadingDonnees, mode, setMode, valeurCalculee, valeurManuelle, setValeurManuelle, saveStatus, saveNow };
 };

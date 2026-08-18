@@ -1,14 +1,10 @@
 /**
- * Pension consolidée tous régimes, pour l'écran Synthèse.tsx.
- *
- * ⚠️ DETTE TECHNIQUE ASSUMÉE (cf. docs/audit/audit-retraite.md §5, entrée
- * 2026-08-15) : cette fonction reproduit fidèlement le pipeline aujourd'hui
- * codé en ligne dans Carriere.tsx (régime général : lignes ~307-732) et dans
- * le corps de CarriereFonctionPublique.tsx / CarriereCNAVPL.tsx (FP/CNAVPL)
- * — Carriere.tsx n'a PAS été refactorée pour consommer cette fonction dans
- * cette session, par prudence sur un écran déjà en production. Les deux
- * implémentations coexistent et peuvent diverger si l'une est corrigée sans
- * l'autre : fusion à traiter dans un chantier dédié.
+ * Pension consolidée tous régimes — référence unique, consommée par
+ * Synthese.tsx (via usePensionConsolidee.ts) et par Carriere.tsx (appel
+ * direct, cf. docs/audit/audit-pension-consolidation.md). CarriereFonctionPublique.tsx
+ * et CarriereCNAVPL.tsx conservent leur propre calcul local pour leur affichage
+ * de détail intra-carte (formules identiques, vérifiées par cet audit) — seul
+ * le total consolidé de Carriere.tsx est désormais sourcé exclusivement d'ici.
  *
  * Fonctions pures, sans JSX ni state React — orchestre calcul.ts,
  * calculFonctionPublique.ts et calculCNAVPL.ts, sur le modèle attendu par
@@ -103,12 +99,35 @@ export interface RepartitionParRegime {
   cnavpl: number;
 }
 
+// Détail du calcul régime général — exposé pour les écrans qui affichent la
+// décomposition (Carriere.tsx : décote/surcote, MICO palier 1/2, écrêtement,
+// majoration enfants), en plus du total consolidé déjà retourné ci-dessus.
+// Toutes ces valeurs sont déjà calculées en interne par calculerPensionConsolidee
+// — ce type ne fait que les rendre visibles à l'appelant, aucun calcul
+// supplémentaire.
+export interface DetailRegimeGeneral {
+  pensionBaseBrute: number;
+  decote: number;
+  surcoteClassiquePct: number;
+  surcoteParentalePct: number;
+  surcoteTotalePct: number;
+  surcoteMontant: number;
+  micoMontant: number;
+  majorationPalier1: number;
+  majorationPalier2: number;
+  majorationMicoAvantEcretement: number;
+  majorationMicoApresEcretement: number;
+  majorationEnfantsPct: number;
+  nombreEnfantsEligibles: number;
+}
+
 export interface ResultatPensionConsolidee {
   pensionTotaleConsolidee: number;
   ageTauxPlein: string;
   repartitionParRegime: RepartitionParRegime;
   historiqueTrimestres: ResultatTrimestresCotisesEtAssimiles;
   ageLegal: AgeLegalResultat | null;
+  detailRegimeGeneral: DetailRegimeGeneral;
 }
 
 function calculerResultatFonctionPublique(
@@ -388,5 +407,20 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
     },
     historiqueTrimestres: resultatTrimestresDetailCarriere,
     ageLegal: ageLegalResultat,
+    detailRegimeGeneral: {
+      pensionBaseBrute,
+      decote: decoteSurcote,
+      surcoteClassiquePct,
+      surcoteParentalePct,
+      surcoteTotalePct,
+      surcoteMontant: surcoteMontantRegimeGeneral,
+      micoMontant,
+      majorationPalier1,
+      majorationPalier2,
+      majorationMicoAvantEcretement: majorationMicoTotaleAvantEcretement,
+      majorationMicoApresEcretement: majorationMicoTotaleApresEcretement,
+      majorationEnfantsPct,
+      nombreEnfantsEligibles,
+    },
   };
 }
