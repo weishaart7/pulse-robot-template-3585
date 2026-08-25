@@ -86,7 +86,9 @@ export function LiensFamiliauxForm() {
     try {
       await deleteLinkWithCascade(memberToDelete.id);
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la suppression:', error);
+      }
     } finally {
       setMemberToDelete(null);
     }

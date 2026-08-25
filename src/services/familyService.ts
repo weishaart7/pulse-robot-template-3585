@@ -307,30 +307,5 @@ export const familyService = {
       console.error('Error deleting family link:', error);
       throw error;
     }
-  },
-
-  async deleteFamilyLinks(ids: string[]): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
-
-    // Verify user owns all family links before deleting
-    const { data: existingLinks } = await supabase
-      .from('family_links')
-      .select('id, user_id')
-      .in('id', ids);
-
-    if (!existingLinks || existingLinks.some(link => link.user_id !== user.id)) {
-      throw new Error('Unauthorized: One or more family links not found or access denied');
-    }
-
-    const { error } = await supabase
-      .from('family_links')
-      .delete()
-      .in('id', ids);
-
-    if (error) {
-      console.error('Error deleting family links:', error);
-      throw error;
-    }
   }
 };

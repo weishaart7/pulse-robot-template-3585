@@ -162,7 +162,9 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
       toast({ title: "Succès", description: "Les informations ont été sauvegardées avec succès." });
       onSuccess?.();
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la sauvegarde:', error);
+      }
       toast({ title: "Erreur", description: "Une erreur est survenue lors de la sauvegarde.", variant: "destructive" });
     }
   };

@@ -195,7 +195,9 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
 
       onSuccess?.();
     } catch (error) {
-      console.error('Erreur de sauvegarde:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur de sauvegarde:', error);
+      }
     }
   };
 
@@ -269,7 +271,9 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
       } as any);
       form.setValue('regimeMatrimonial', pendingRegimeChange.nouveauRegime);
     } catch (error) {
-      console.error('Erreur lors de la désactivation des clauses incompatibles:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la désactivation des clauses incompatibles:', error);
+      }
     } finally {
       setDisablingClauses(false);
       setPendingRegimeChange(null);

@@ -12,7 +12,9 @@ const syncNombreEnfantsCharges = async (links: FamilyLink[]) => {
       nombre_enfants_charges: compterEnfantsFiscalementACharge(links),
     });
   } catch (error) {
-    console.error('Error syncing nombre_enfants_charges:', error);
+    if (import.meta.env.DEV) {
+      console.error('Error syncing nombre_enfants_charges:', error);
+    }
   }
 };
 
@@ -30,7 +32,9 @@ export const useFamilyProfile = () => {
       const profile = await familyService.getFamilyProfile();
       setData(profile);
     } catch (error) {
-      console.error('Error fetching family profile:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error fetching family profile:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de charger les données du profil familial",
@@ -70,7 +74,9 @@ export const useFamilyProfile = () => {
       });
       return savedProfile;
     } catch (error) {
-      console.error('Error saving family profile:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error saving family profile:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible d'enregistrer la fiche client",
@@ -106,7 +112,9 @@ export const useMaritalStatus = () => {
       const status = await familyService.getMaritalStatus();
       setData(status);
     } catch (error) {
-      console.error('Error fetching marital status:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error fetching marital status:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de charger les données de situation matrimoniale",
@@ -137,7 +145,9 @@ export const useMaritalStatus = () => {
       });
       return savedStatus;
     } catch (error) {
-      console.error('Error saving marital status:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error saving marital status:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible d'enregistrer la situation matrimoniale",
@@ -197,7 +207,9 @@ export const useFamilyLinks = () => {
       const links = await familyService.getFamilyLinks();
       setData(links);
     } catch (error) {
-      console.error('Error fetching family links:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error fetching family links:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de charger les liens familiaux",
@@ -223,7 +235,9 @@ export const useFamilyLinks = () => {
       });
       return newLink;
     } catch (error) {
-      console.error('Error adding family link:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error adding family link:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible d'ajouter le membre de la famille",
@@ -250,36 +264,12 @@ export const useFamilyLinks = () => {
       });
       return updatedLink;
     } catch (error) {
-      console.error('Error updating family link:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error updating family link:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de modifier le membre de la famille",
-        variant: "destructive",
-      });
-      throw error;
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const deleteLink = async (id: string) => {
-    try {
-      setSaving(true);
-      await familyService.deleteFamilyLink(id);
-      setData(prev => {
-        const updated = prev.filter(item => item.id !== id);
-        syncNombreEnfantsCharges(updated);
-        return updated;
-      });
-      toast({
-        title: "Succès",
-        description: "Membre de la famille supprimé avec succès",
-      });
-    } catch (error) {
-      console.error('Error deleting family link:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de supprimer le membre de la famille",
         variant: "destructive",
       });
       throw error;
@@ -320,36 +310,12 @@ export const useFamilyLinks = () => {
           : "Membre de la famille supprimé avec succès",
       });
     } catch (error) {
-      console.error('Error deleting family link with cascade:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error deleting family link with cascade:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de supprimer le membre de la famille",
-        variant: "destructive",
-      });
-      throw error;
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const deleteLinks = async (ids: string[]) => {
-    try {
-      setSaving(true);
-      await familyService.deleteFamilyLinks(ids);
-      setData(prev => {
-        const updated = prev.filter(item => !ids.includes(item.id!));
-        syncNombreEnfantsCharges(updated);
-        return updated;
-      });
-      toast({
-        title: "Succès",
-        description: `${ids.length} membre(s) de la famille supprimé(s) avec succès`,
-      });
-    } catch (error) {
-      console.error('Error deleting family links:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de supprimer les membres de la famille",
         variant: "destructive",
       });
       throw error;
@@ -362,15 +328,13 @@ export const useFamilyLinks = () => {
     fetchData();
   }, [isAuthenticated]);
 
-  return { 
-    data, 
-    loading, 
-    saving, 
-    addLink, 
-    updateLink, 
-    deleteLink,
+  return {
+    data,
+    loading,
+    saving,
+    addLink,
+    updateLink,
     deleteLinkWithCascade,
-    deleteLinks,
     refetch: fetchData
   };
 };

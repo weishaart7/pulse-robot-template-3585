@@ -172,7 +172,9 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
         setSelectedLinkType('');
         memberForm.reset(DEFAULT_VALUES);
       } catch (error) {
-        console.error('Erreur lors de la sauvegarde du membre:', error);
+        if (import.meta.env.DEV) {
+          console.error('Erreur lors de la sauvegarde du membre:', error);
+        }
       }
     };
 

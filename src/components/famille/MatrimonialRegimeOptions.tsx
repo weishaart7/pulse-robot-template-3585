@@ -13,14 +13,10 @@ import { ClauseItem } from './matrimonial/ClauseItem';
 
 interface MatrimonialRegimeOptionsProps {
   regimeType: RegimeType;
-  userProfile?: any;
-  spouseProfile?: any;
 }
 
 export const MatrimonialRegimeOptions: React.FC<MatrimonialRegimeOptionsProps> = ({
-  regimeType,
-  userProfile,
-  spouseProfile
+  regimeType
 }) => {
   const {
     clauses,

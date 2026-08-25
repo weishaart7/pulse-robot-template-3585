@@ -238,7 +238,9 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
       await setStatutCouple(formData.statutCouple ?? null);
       onSuccess?.();
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la sauvegarde:', error);
+      }
     }
   };
 
