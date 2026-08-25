@@ -153,7 +153,11 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
           enfant_renoncant_de: data.enfant_renoncant_de,
           branche_familiale: data.branche_familiale,
           enfant_de: data.enfant_de,
-          parent_de: data.enfant_de,
+          // parent_de n'a de sens que pour lien_familial === 'Enfant' (valeurs
+          // 'user'/'spouse'/'both_parents' lues par transmissionHelpers.ts pour
+          // la dévolution légale) — null explicite sinon, pour ne pas laisser
+          // traîner un id de membre sans signification sur les autres types de lien.
+          parent_de: data.lien_familial === 'Enfant' ? data.enfant_de : null,
           exoneration_succession: data.exoneration_succession,
           enfant_a_charge: data.enfant_a_charge,
           fiscalement_a_charge: data.fiscalement_a_charge,

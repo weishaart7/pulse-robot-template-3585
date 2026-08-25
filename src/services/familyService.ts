@@ -139,7 +139,9 @@ export const familyService = {
       .maybeSingle();
 
     if (error) {
-      console.error('Error fetching family profile:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error fetching family profile:', error);
+      }
       throw error;
     }
 
@@ -162,7 +164,9 @@ export const familyService = {
       .single();
 
     if (error) {
-      console.error('Error upserting family profile:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error upserting family profile:', error);
+      }
       throw error;
     }
 
@@ -181,7 +185,9 @@ export const familyService = {
       .maybeSingle();
 
     if (error) {
-      console.error('Error fetching marital status:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error fetching marital status:', error);
+      }
       throw error;
     }
 
@@ -204,7 +210,9 @@ export const familyService = {
       .single();
 
     if (error) {
-      console.error('Error upserting marital status:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error upserting marital status:', error);
+      }
       throw error;
     }
 
@@ -223,7 +231,9 @@ export const familyService = {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Error fetching family links:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error fetching family links:', error);
+      }
       throw error;
     }
 
@@ -246,7 +256,9 @@ export const familyService = {
       .single();
 
     if (error) {
-      console.error('Error creating family link:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error creating family link:', error);
+      }
       throw error;
     }
 
@@ -257,26 +269,21 @@ export const familyService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    // Verify user owns this family link before updating
-    const { data: existingLink } = await supabase
-      .from('family_links')
-      .select('user_id')
-      .eq('id', id)
-      .single();
-
-    if (!existingLink || existingLink.user_id !== user.id) {
-      throw new Error('Unauthorized: Family link not found or access denied');
-    }
-
+    // La RLS ("Users can update their own family links", auth.uid() = user_id)
+    // fait déjà foi : le .eq('user_id', ...) ici évite juste de matcher 0 ligne
+    // (et donc une erreur "no rows" peu explicite) sur un id d'un autre user.
     const { data, error } = await supabase
       .from('family_links')
       .update(link)
       .eq('id', id)
+      .eq('user_id', user.id)
       .select()
       .single();
 
     if (error) {
-      console.error('Error updating family link:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error updating family link:', error);
+      }
       throw error;
     }
 
@@ -287,24 +294,18 @@ export const familyService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    // Verify user owns this family link before deleting
-    const { data: existingLink } = await supabase
-      .from('family_links')
-      .select('user_id')
-      .eq('id', id)
-      .single();
-
-    if (!existingLink || existingLink.user_id !== user.id) {
-      throw new Error('Unauthorized: Family link not found or access denied');
-    }
-
+    // Cf. updateFamilyLink ci-dessus : la RLS fait déjà foi, ce .eq('user_id', ...)
+    // évite juste de supprimer 0 ligne silencieusement sur un id d'un autre user.
     const { error } = await supabase
       .from('family_links')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', user.id);
 
     if (error) {
-      console.error('Error deleting family link:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error deleting family link:', error);
+      }
       throw error;
     }
   }
