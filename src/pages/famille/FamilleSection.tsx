@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { SegmentedTabs } from '@/components/ui/segmented-tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
@@ -169,11 +170,9 @@ const FamilleSection = () => {
                   ) : (
                     <div className="flex flex-col gap-3">
                       <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: FOYER_INK }}>
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={isSingle}
-                          onChange={(e) => handleToggleSingle(e.target.checked)}
-                          className="h-4 w-4 rounded border-border"
+                          onCheckedChange={(checked) => handleToggleSingle(checked === true)}
                         />
                         Célibataire (sans partenaire)
                       </label>
