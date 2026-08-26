@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
-  statutCouple: z.enum(['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)']).optional(),
+  statutCouple: z.enum(['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)', 'Divorcé(e)', 'Veuf/Veuve']).optional(),
 
   civilitePartenaire: z.enum(['M.', 'Mme', 'Autre']).optional(),
   nomPartenaire: z.string().optional(),

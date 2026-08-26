@@ -26,7 +26,7 @@ import { sanitizeTextInput, isValidEmail, isValidDate } from '@/lib/security';
 
 
 const formSchema = z.object({
-  statutCouple: z.enum(['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)']).optional(),
+  statutCouple: z.enum(['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)', 'Divorcé(e)', 'Veuf/Veuve']).optional(),
   civilite: z.enum(['M', 'Mme', 'Autre'], {
     required_error: 'Veuillez sélectionner une civilité',
   }),
@@ -306,6 +306,8 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                           <SelectItem value="Concubinage">Concubinage</SelectItem>
                           <SelectItem value="Pacsé(e)">Pacsé(e)</SelectItem>
                           <SelectItem value="Marié(e)">Marié(e)</SelectItem>
+                          <SelectItem value="Divorcé(e)">Divorcé(e)</SelectItem>
+                          <SelectItem value="Veuf/Veuve">Veuf/Veuve</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
