@@ -136,7 +136,12 @@ export function LiensFamiliauxForm() {
               <TableBody>
                 {familyLinks.map(member => <TableRow key={member.id}>
                     <TableCell>
-                      <FamilyTag>{member.lien_familial}</FamilyTag>
+                      <div className="flex gap-1.5 flex-wrap items-center">
+                        <FamilyTag>{member.lien_familial}</FamilyTag>
+                        {member.lien_familial === 'Enfant' && member.parent_de === 'spouse' && (
+                          <FamilyTag>Beau-fils/belle-fille</FamilyTag>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="font-medium">{member.nom}</TableCell>
                     <TableCell>{member.prenom || '-'}</TableCell>
