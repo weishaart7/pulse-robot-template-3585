@@ -91,7 +91,17 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
       }
       assetIndivisaireService.getByFamilyLink(editingMember.id)
         .then(setCoOwnedAssets)
-        .catch(() => setCoOwnedAssets([]));
+        .catch((error) => {
+          if (import.meta.env.DEV) {
+            console.error('Erreur lors du chargement des actifs codétenus:', error);
+          }
+          setCoOwnedAssets([]);
+          toast({
+            title: "Erreur",
+            description: "Impossible de charger les actifs codétenus de ce membre.",
+            variant: "destructive",
+          });
+        });
     }, [dialogOpen, editingMember?.id]);
 
     const memberForm = useForm<MembreFamille>({

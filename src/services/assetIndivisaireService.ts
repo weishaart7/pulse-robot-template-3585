@@ -29,10 +29,16 @@ export const assetIndivisaireService = {
   },
 
   async getByFamilyLink(familyLinkId: string): Promise<AssetIndivisaireWithAsset[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // La RLS fait déjà foi ; ce .eq('user_id', ...) évite juste de matcher
+    // 0 ligne si elle venait à être mal réappliquée, par cohérence avec familyService.ts.
     const { data, error } = await supabase
       .from('asset_indivisaires')
       .select('*, assets(*)')
       .eq('family_link_id', familyLinkId)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: true });
     if (error) throw error;
     return (data || []) as AssetIndivisaireWithAsset[];

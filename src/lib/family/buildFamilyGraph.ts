@@ -25,7 +25,6 @@ export interface FamilyGraph {
 }
 
 // Génération relative à l'utilisateur principal (0), négative = ascendants, positive = descendants.
-// Repris tel quel du calcul historique de FamilyTreeFlow — ne pas modifier sans revalider l'arbre complet.
 const GENERATION_BY_RELATION: Record<string, number> = {
   'Grand-parent': -2,
   'Arrière grand-parent': -3,
@@ -45,7 +44,7 @@ const GENERATION_BY_RELATION: Record<string, number> = {
 /**
  * Construit le graphe générationnel de la famille (nœuds + relations parent-enfant)
  * à partir de family_links, indépendamment de toute librairie de rendu.
- * Consommé par FamilyTreeFlow (vue complète, en dialog) et FamilyTreeCards (arbre en cartes intégré à la page Famille).
+ * Consommé par FamilyTreeCards (arbre en cartes intégré à la page Famille).
  */
 export function buildFamilyGraph(
   familyProfile: FamilyProfile | null,
@@ -92,43 +91,87 @@ export function buildFamilyGraph(
 
   const edges: FamilyGraphEdge[] = [];
 
+  // Résout le nœud "ancêtre" d'un membre pour un type de relation donné, en se basant sur
+  // le lien réellement saisi (member.originalData.enfant_de), plutôt que sur le premier nœud
+  // trouvé de ce type. enfant_de peut être soit l'id exact du membre lié (ex: un Enfant précis
+  // pour un Petit-enfant), soit 'user'/'spouse' (ex: un Parent "de mon côté" vs "du côté conjoint").
+  // Fallback sur le premier nœud du type attendu si enfant_de est absent (données saisies avant
+  // l'ajout de ce champ) ou ne correspond à rien, pour ne pas faire disparaître l'arête.
+  const resolveAncestorId = (member: FamilyGraphNode, targetRelation: string): string | null => {
+    const enfantDe = member.originalData?.enfant_de;
+    if (enfantDe) {
+      const directMatch = nodes.find(n => n.relation === targetRelation && n.id === enfantDe);
+      if (directMatch) return directMatch.id;
+      if (enfantDe === 'user' || enfantDe === 'spouse') {
+        const sameSide = nodes.find(n => n.relation === targetRelation && n.originalData?.enfant_de === enfantDe);
+        if (sameSide) return sameSide.id;
+      }
+    }
+    const fallback = nodes.find(n => n.relation === targetRelation);
+    return fallback ? fallback.id : null;
+  };
+
   nodes.forEach(member => {
     if (member.relation === 'Enfant') {
-      edges.push({ id: `edge-main-${member.id}`, source: 'main', target: member.id });
-      if (nodes.find(m => m.id === 'spouse')) {
-        edges.push({ id: `edge-spouse-${member.id}`, source: 'spouse', target: member.id });
-      }
+      const enfantDe = member.originalData?.enfant_de;
+      const hasSpouse = !!nodes.find(m => m.id === 'spouse');
+      const sources = enfantDe === 'user'
+        ? ['main']
+        : enfantDe === 'spouse' && hasSpouse
+          ? ['spouse']
+          : enfantDe === 'both_parents' || !enfantDe
+            ? hasSpouse ? ['main', 'spouse'] : ['main']
+            : ['main'];
+      sources.forEach(source => {
+        edges.push({ id: `edge-${source}-${member.id}`, source, target: member.id });
+      });
     } else if (member.relation === 'Petit-enfant') {
-      const children = nodes.filter(m => m.relation === 'Enfant');
-      if (children.length > 0) {
-        edges.push({ id: `edge-${children[0].id}-${member.id}`, source: children[0].id, target: member.id });
+      const parentId = resolveAncestorId(member, 'Enfant');
+      if (parentId) {
+        edges.push({ id: `edge-${parentId}-${member.id}`, source: parentId, target: member.id });
+      }
+    } else if (member.relation === 'Arrière petit-enfant') {
+      const parentId = resolveAncestorId(member, 'Petit-enfant');
+      if (parentId) {
+        edges.push({ id: `edge-${parentId}-${member.id}`, source: parentId, target: member.id });
+      }
+    } else if (member.relation === 'Petit neveu/nièce') {
+      const parentId = resolveAncestorId(member, 'Neveu/Nièce');
+      if (parentId) {
+        edges.push({ id: `edge-${parentId}-${member.id}`, source: parentId, target: member.id });
       }
     } else if (member.relation === 'Neveu/Nièce') {
-      const siblings = nodes.filter(m => m.relation === 'Frère/Sœur');
-      if (siblings.length > 0) {
-        edges.push({ id: `edge-${siblings[0].id}-${member.id}`, source: siblings[0].id, target: member.id });
+      const siblingId = resolveAncestorId(member, 'Frère/Sœur');
+      if (siblingId) {
+        edges.push({ id: `edge-${siblingId}-${member.id}`, source: siblingId, target: member.id });
       }
     } else if (member.relation === 'Parent') {
-      edges.push({ id: `edge-${member.id}-main`, source: member.id, target: 'main' });
+      const target = member.originalData?.enfant_de === 'spouse' && nodes.find(m => m.id === 'spouse') ? 'spouse' : 'main';
+      edges.push({ id: `edge-${member.id}-${target}`, source: member.id, target });
     } else if (member.relation === 'Frère/Sœur') {
-      const parents = nodes.filter(m => m.relation === 'Parent');
-      if (parents.length > 0) {
-        edges.push({ id: `edge-${parents[0].id}-${member.id}`, source: parents[0].id, target: member.id });
+      const parentId = resolveAncestorId(member, 'Parent');
+      if (parentId) {
+        edges.push({ id: `edge-${parentId}-${member.id}`, source: parentId, target: member.id });
       }
     } else if (member.relation === 'Grand-parent') {
-      const parents = nodes.filter(m => m.relation === 'Parent');
-      if (parents.length > 0) {
-        edges.push({ id: `edge-${member.id}-${parents[0].id}`, source: member.id, target: parents[0].id });
+      const parentId = resolveAncestorId(member, 'Parent');
+      if (parentId) {
+        edges.push({ id: `edge-${member.id}-${parentId}`, source: member.id, target: parentId });
+      }
+    } else if (member.relation === 'Arrière grand-parent') {
+      const grandparentId = resolveAncestorId(member, 'Grand-parent');
+      if (grandparentId) {
+        edges.push({ id: `edge-${member.id}-${grandparentId}`, source: member.id, target: grandparentId });
       }
     } else if (member.relation === 'Oncle/Tante') {
-      const grandparents = nodes.filter(m => m.relation === 'Grand-parent');
-      if (grandparents.length > 0) {
-        edges.push({ id: `edge-${grandparents[0].id}-${member.id}`, source: grandparents[0].id, target: member.id });
+      const grandparentId = resolveAncestorId(member, 'Grand-parent');
+      if (grandparentId) {
+        edges.push({ id: `edge-${grandparentId}-${member.id}`, source: grandparentId, target: member.id });
       }
     } else if (member.relation === 'Cousin/Cousine') {
-      const uncles = nodes.filter(m => m.relation === 'Oncle/Tante');
-      if (uncles.length > 0) {
-        edges.push({ id: `edge-${uncles[0].id}-${member.id}`, source: uncles[0].id, target: member.id });
+      const uncleId = resolveAncestorId(member, 'Oncle/Tante');
+      if (uncleId) {
+        edges.push({ id: `edge-${uncleId}-${member.id}`, source: uncleId, target: member.id });
       }
     }
   });

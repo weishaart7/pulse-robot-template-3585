@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { FamilyLink } from '@/services/familyService';
+import { isSingleStatus } from '@/lib/family/maritalStatus';
 
 export interface FamilyLinkOption {
   value: string;
@@ -18,7 +19,7 @@ export const useFamilyLinkLogic = (
   }, [familyProfile]);
 
   const spouseDisplayName = useMemo(() => {
-    if (!maritalStatus || !maritalStatus.statut_couple || maritalStatus.statut_couple === 'celibataire') {
+    if (!maritalStatus || !maritalStatus.statut_couple || isSingleStatus(maritalStatus.statut_couple)) {
       return null;
     }
     return `${maritalStatus.prenom_conjoint || ''} ${maritalStatus.nom_conjoint || ''}`.trim() || 'Conjoint';

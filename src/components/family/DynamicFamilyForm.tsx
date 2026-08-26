@@ -1,17 +1,15 @@
 import React, { useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { format } from 'date-fns';
-import { CalendarIcon, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { SmartDateInput } from '@/components/family/SmartDateInput';
+import { CheckboxWithLabel } from '@/components/family/CheckboxWithLabel';
 
 interface DynamicFamilyFormProps {
   linkType: string;
@@ -227,80 +225,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
           render={({ field }) => (
             <FormItem>
               <FormLabel>Date de naissance</FormLabel>
-              <div className="flex gap-2">
-                <FormControl className="flex-1">
-                  <Input
-                    placeholder="JJ/MM/AAAA"
-                    value={
-                      field.value instanceof Date 
-                        ? format(field.value, 'dd/MM/yyyy')
-                        : field.value || ''
-                    }
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      
-                      // Permettre seulement chiffres et /
-                      const cleanValue = value.replace(/[^\d/]/g, '');
-                      
-                      // Limiter à 10 caractères
-                      if (cleanValue.length > 10) return;
-                      
-                      // Auto-formatage pendant la saisie
-                      let formattedValue = cleanValue;
-                      if (cleanValue.length >= 2 && !cleanValue.includes('/')) {
-                        formattedValue = cleanValue.slice(0, 2) + '/' + cleanValue.slice(2);
-                      }
-                      if (cleanValue.length >= 5 && cleanValue.split('/').length === 2) {
-                        const parts = formattedValue.split('/');
-                        formattedValue = parts[0] + '/' + parts[1].slice(0, 2) + '/' + cleanValue.slice(4);
-                      }
-                      
-                      // Validation finale si format complet
-                      if (formattedValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                        try {
-                          const [day, month, year] = formattedValue.split('/').map(Number);
-                          const date = new Date(year, month - 1, day);
-                          
-                          // Vérifier que la date est valide
-                          if (date.getDate() === day && 
-                              date.getMonth() === month - 1 && 
-                              date.getFullYear() === year &&
-                              year >= 1900 && year <= new Date().getFullYear()) {
-                            field.onChange(date);
-                            return;
-                          }
-                        } catch (error) {
-                          // Continue avec la valeur string si parsing échoue
-                        }
-                      }
-                      
-                      // Stocker la valeur formatée comme string pendant la saisie
-                      field.onChange(formattedValue);
-                    }}
-                  />
-                </FormControl>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="icon" className="shrink-0" type="button">
-                      <CalendarIcon className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value instanceof Date ? field.value : undefined}
-                      onSelect={(date) => {
-                        if (date) {
-                          field.onChange(date);
-                        }
-                      }}
-                      disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
-                      initialFocus
-                      className="p-3 pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+              <SmartDateInput value={field.value} onChange={field.onChange} />
               <FormMessage />
             </FormItem>
           )}
@@ -340,17 +265,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
           control={form.control}
           name="est_decede"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>Décédé</FormLabel>
-              </div>
-            </FormItem>
+            <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Décédé" />
           )}
         />
 
@@ -362,80 +277,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
             render={({ field }) => (
               <FormItem className="ml-6">
                 <FormLabel>Date de décès</FormLabel>
-                <div className="flex gap-2">
-                  <FormControl className="flex-1">
-                    <Input
-                      placeholder="JJ/MM/AAAA"
-                      value={
-                        field.value instanceof Date 
-                          ? format(field.value, 'dd/MM/yyyy')
-                          : field.value || ''
-                      }
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        
-                        // Permettre seulement chiffres et /
-                        const cleanValue = value.replace(/[^\d/]/g, '');
-                        
-                        // Limiter à 10 caractères
-                        if (cleanValue.length > 10) return;
-                        
-                        // Auto-formatage pendant la saisie
-                        let formattedValue = cleanValue;
-                        if (cleanValue.length >= 2 && !cleanValue.includes('/')) {
-                          formattedValue = cleanValue.slice(0, 2) + '/' + cleanValue.slice(2);
-                        }
-                        if (cleanValue.length >= 5 && cleanValue.split('/').length === 2) {
-                          const parts = formattedValue.split('/');
-                          formattedValue = parts[0] + '/' + parts[1].slice(0, 2) + '/' + cleanValue.slice(4);
-                        }
-                        
-                        // Validation finale si format complet
-                        if (formattedValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                          try {
-                            const [day, month, year] = formattedValue.split('/').map(Number);
-                            const date = new Date(year, month - 1, day);
-                            
-                            // Vérifier que la date est valide
-                            if (date.getDate() === day && 
-                                date.getMonth() === month - 1 && 
-                                date.getFullYear() === year &&
-                                year >= 1900 && year <= new Date().getFullYear()) {
-                              field.onChange(date);
-                              return;
-                            }
-                          } catch (error) {
-                            // Continue avec la valeur string si parsing échoue
-                          }
-                        }
-                        
-                        // Stocker la valeur formatée comme string pendant la saisie
-                        field.onChange(formattedValue);
-                      }}
-                    />
-                  </FormControl>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" size="icon" className="shrink-0" type="button">
-                        <CalendarIcon className="h-4 w-4" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value instanceof Date ? field.value : undefined}
-                        onSelect={(date) => {
-                          if (date) {
-                            field.onChange(date);
-                          }
-                        }}
-                        disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
-                        initialFocus
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
+                <SmartDateInput value={field.value} onChange={field.onChange} />
                 <FormMessage />
               </FormItem>
             )}
@@ -447,17 +289,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
           control={form.control}
           name="handicap"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>Personne handicapée</FormLabel>
-              </div>
-            </FormItem>
+            <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Personne handicapée" />
           )}
         />
 
@@ -466,17 +298,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
           control={form.control}
           name="personne_a_charge"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>Personne à charge</FormLabel>
-              </div>
-            </FormItem>
+            <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Personne à charge" />
           )}
         />
 
@@ -485,17 +307,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
           control={form.control}
           name="mandat_protection_future"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>Mandat de protection future signé</FormLabel>
-              </div>
-            </FormItem>
+            <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Mandat de protection future signé" />
           )}
         />
 
@@ -507,80 +319,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
             render={({ field }) => (
               <FormItem className="ml-6">
                 <FormLabel>Date du mandat</FormLabel>
-                <div className="flex gap-2">
-                  <FormControl className="flex-1">
-                    <Input
-                      placeholder="JJ/MM/AAAA"
-                      value={
-                        field.value instanceof Date
-                          ? format(field.value, 'dd/MM/yyyy')
-                          : field.value || ''
-                      }
-                      onChange={(e) => {
-                        const value = e.target.value;
-
-                        // Permettre seulement chiffres et /
-                        const cleanValue = value.replace(/[^\d/]/g, '');
-
-                        // Limiter à 10 caractères
-                        if (cleanValue.length > 10) return;
-
-                        // Auto-formatage pendant la saisie
-                        let formattedValue = cleanValue;
-                        if (cleanValue.length >= 2 && !cleanValue.includes('/')) {
-                          formattedValue = cleanValue.slice(0, 2) + '/' + cleanValue.slice(2);
-                        }
-                        if (cleanValue.length >= 5 && cleanValue.split('/').length === 2) {
-                          const parts = formattedValue.split('/');
-                          formattedValue = parts[0] + '/' + parts[1].slice(0, 2) + '/' + cleanValue.slice(4);
-                        }
-
-                        // Validation finale si format complet
-                        if (formattedValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                          try {
-                            const [day, month, year] = formattedValue.split('/').map(Number);
-                            const date = new Date(year, month - 1, day);
-
-                            // Vérifier que la date est valide
-                            if (date.getDate() === day &&
-                                date.getMonth() === month - 1 &&
-                                date.getFullYear() === year &&
-                                year >= 1900 && year <= new Date().getFullYear()) {
-                              field.onChange(date);
-                              return;
-                            }
-                          } catch (error) {
-                            // Continue avec la valeur string si parsing échoue
-                          }
-                        }
-
-                        // Stocker la valeur formatée comme string pendant la saisie
-                        field.onChange(formattedValue);
-                      }}
-                    />
-                  </FormControl>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" size="icon" className="shrink-0" type="button">
-                        <CalendarIcon className="h-4 w-4" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value instanceof Date ? field.value : undefined}
-                        onSelect={(date) => {
-                          if (date) {
-                            field.onChange(date);
-                          }
-                        }}
-                        disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
-                        initialFocus
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
+                <SmartDateInput value={field.value} onChange={field.onChange} />
                 <FormMessage />
               </FormItem>
             )}
@@ -594,20 +333,14 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
               control={form.control}
               name="enfant_a_charge"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={(checked) => {
-                        enfantAChargeManuellementModifie.current = true;
-                        field.onChange(checked);
-                      }}
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>Enfant à charge (autorité parentale / garde)</FormLabel>
-                  </div>
-                </FormItem>
+                <CheckboxWithLabel
+                  checked={field.value}
+                  onCheckedChange={(checked) => {
+                    enfantAChargeManuellementModifie.current = true;
+                    field.onChange(checked);
+                  }}
+                  label="Enfant à charge (autorité parentale / garde)"
+                />
               )}
             />
 
@@ -615,20 +348,14 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
               control={form.control}
               name="fiscalement_a_charge"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={(checked) => {
-                        fiscalementAChargeManuellementModifie.current = true;
-                        field.onChange(checked);
-                      }}
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>Fiscalement à charge (rattaché au foyer fiscal)</FormLabel>
-                  </div>
-                </FormItem>
+                <CheckboxWithLabel
+                  checked={field.value}
+                  onCheckedChange={(checked) => {
+                    fiscalementAChargeManuellementModifie.current = true;
+                    field.onChange(checked);
+                  }}
+                  label="Fiscalement à charge (rattaché au foyer fiscal)"
+                />
               )}
             />
           </>
@@ -733,17 +460,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
               control={form.control}
               name="enfant_renoncant"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>Enfant renonçant à la succession</FormLabel>
-                  </div>
-                </FormItem>
+                <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Enfant renonçant à la succession" />
               )}
             />
 
@@ -782,17 +499,11 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
             control={form.control}
             name="exoneration_succession"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel>Vivant sous le même toit et bénéficiant d'une exonération de droits de succession</FormLabel>
-                </div>
-              </FormItem>
+              <CheckboxWithLabel
+                checked={field.value}
+                onCheckedChange={field.onChange}
+                label="Vivant sous le même toit et bénéficiant d'une exonération de droits de succession"
+              />
             )}
           />
         )}

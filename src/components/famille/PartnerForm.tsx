@@ -6,19 +6,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMaritalStatus } from "@/hooks/useFamilyData";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import ActionHubInput from "@/components/ui/action-hub-input";
 import SelectMenu from "@/components/ui/select-menu";
 import NationalitySelect from "@/components/ui/nationality-select";
-import { CalendarIcon, Loader2, User, MapPin, Info } from "lucide-react";
+import { Loader2, User, MapPin, Info } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { SmartDateInput } from "@/components/family/SmartDateInput";
+import { CheckboxWithLabel } from "@/components/family/CheckboxWithLabel";
 
 const formSchema = z.object({
   statutCouple: z.enum(['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)', 'Divorcé(e)', 'Veuf/Veuve']).optional(),
@@ -375,46 +374,11 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                             <FormLabel className="text-xs">
                               Date de naissance <span className="text-destructive">*</span>
                             </FormLabel>
-                            <div className="flex items-center gap-2">
-                              <FormControl>
-                                <Input
-                                  placeholder="JJ/MM/AAAA"
-                                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
-                                  value={field.value instanceof Date ? format(field.value, 'dd/MM/yyyy') : (field.value as any) || ''}
-                                  onChange={(e) => {
-                                    const value = e.target.value;
-                                    if (value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                                      try {
-                                        const [day, month, year] = value.split('/');
-                                        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                                        if (!isNaN(date.getTime())) {
-                                          field.onChange(date);
-                                          return;
-                                        }
-                                      } catch (error) {}
-                                    }
-                                    field.onChange(value as any);
-                                  }}
-                                />
-                              </FormControl>
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <Button variant="outline" size="icon" className="h-10 w-10 shrink-0">
-                                    <CalendarIcon className="h-4 w-4" />
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                  <Calendar
-                                    mode="single"
-                                    selected={field.value instanceof Date ? field.value : undefined}
-                                    onSelect={(date) => date && field.onChange(date)}
-                                    disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
-                                    initialFocus
-                                    className="p-3 pointer-events-auto"
-                                  />
-                                </PopoverContent>
-                              </Popover>
-                            </div>
+                            <SmartDateInput
+                              value={field.value}
+                              onChange={field.onChange}
+                              className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                            />
                           </div>
                           <FormMessage />
                         </FormItem>
@@ -584,23 +548,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                       control={form.control}
                       name="personneHandicapee"
                       render={({ field }) => (
-                        <FormItem className="pb-1">
-                          <FormControl>
-                            <label className="flex gap-3 items-center cursor-pointer relative">
-                              <input
-                                type="checkbox"
-                                className="hidden peer"
-                                checked={field.value}
-                                onChange={field.onChange}
-                              />
-                              <span className="w-5 h-5 border border-input rounded relative flex items-center justify-center peer-checked:border-primary"></span>
-                              <svg className="absolute hidden peer-checked:inline left-1 top-1/2 transform -translate-y-1/2" width="11" height="8" viewBox="0 0 11 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="m10.092.952-.005-.006-.006-.005A.45.45 0 0 0 9.43.939L4.162 6.23 1.585 3.636a.45.45 0 0 0-.652 0 .47.47 0 0 0 0 .657l.002.002L3.58 6.958a.8.8 0 0 0 .567.242.78.78 0 0 0 .567-.242l5.333-5.356a.474.474 0 0 0 .044-.65Zm-5.86 5.349V6.3Z" fill="currentColor" stroke="currentColor" strokeWidth=".4" className="text-primary"/>
-                              </svg>
-                              <span className="text-foreground select-none text-sm">Personne handicapée</span>
-                            </label>
-                          </FormControl>
-                        </FormItem>
+                        <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Personne handicapée" />
                       )}
                     />
 
@@ -608,23 +556,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                       control={form.control}
                       name="residenceFiscaleEtrangerPartenaire"
                       render={({ field }) => (
-                        <FormItem className="pb-1">
-                          <FormControl>
-                            <label className="flex gap-3 items-center cursor-pointer relative">
-                              <input
-                                type="checkbox"
-                                className="hidden peer"
-                                checked={field.value}
-                                onChange={field.onChange}
-                              />
-                              <span className="w-5 h-5 border border-input rounded relative flex items-center justify-center peer-checked:border-primary"></span>
-                              <svg className="absolute hidden peer-checked:inline left-1 top-1/2 transform -translate-y-1/2" width="11" height="8" viewBox="0 0 11 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="m10.092.952-.005-.006-.006-.005A.45.45 0 0 0 9.43.939L4.162 6.23 1.585 3.636a.45.45 0 0 0-.652 0 .47.47 0 0 0 0 .657l.002.002L3.58 6.958a.8.8 0 0 0 .567.242.78.78 0 0 0 .567-.242l5.333-5.356a.474.474 0 0 0 .044-.65Zm-5.86 5.349V6.3Z" fill="currentColor" stroke="currentColor" strokeWidth=".4" className="text-primary"/>
-                              </svg>
-                              <span className="text-foreground select-none text-sm">Résidence fiscale à l'étranger</span>
-                            </label>
-                          </FormControl>
-                        </FormItem>
+                        <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Résidence fiscale à l'étranger" />
                       )}
                     />
 
@@ -632,23 +564,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                       control={form.control}
                       name="mandatProtectionFuture"
                       render={({ field }) => (
-                        <FormItem className="pb-1">
-                          <FormControl>
-                            <label className="flex gap-3 items-center cursor-pointer relative">
-                              <input
-                                type="checkbox"
-                                className="hidden peer"
-                                checked={field.value}
-                                onChange={field.onChange}
-                              />
-                              <span className="w-5 h-5 border border-input rounded relative flex items-center justify-center peer-checked:border-primary"></span>
-                              <svg className="absolute hidden peer-checked:inline left-1 top-1/2 transform -translate-y-1/2" width="11" height="8" viewBox="0 0 11 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="m10.092.952-.005-.006-.006-.005A.45.45 0 0 0 9.43.939L4.162 6.23 1.585 3.636a.45.45 0 0 0-.652 0 .47.47 0 0 0 0 .657l.002.002L3.58 6.958a.8.8 0 0 0 .567.242.78.78 0 0 0 .567-.242l5.333-5.356a.474.474 0 0 0 .044-.65Zm-5.86 5.349V6.3Z" fill="currentColor" stroke="currentColor" strokeWidth=".4" className="text-primary"/>
-                              </svg>
-                              <span className="text-foreground select-none text-sm">Mandat de protection future signé</span>
-                            </label>
-                          </FormControl>
-                        </FormItem>
+                        <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Mandat de protection future signé" />
                       )}
                     />
 
@@ -660,46 +576,11 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                           <FormItem className="w-72">
                             <div className="relative w-full flex flex-col gap-1">
                               <FormLabel className="text-xs">Date du mandat</FormLabel>
-                              <div className="flex items-center gap-2">
-                                <FormControl>
-                                  <Input
-                                    placeholder="JJ/MM/AAAA"
-                                    className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
-                                    value={field.value instanceof Date ? format(field.value, 'dd/MM/yyyy') : (field.value as any) || ''}
-                                    onChange={(e) => {
-                                      const value = e.target.value;
-                                      if (value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                                        try {
-                                          const [day, month, year] = value.split('/');
-                                          const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                                          if (!isNaN(date.getTime())) {
-                                            field.onChange(date);
-                                            return;
-                                          }
-                                        } catch (error) {}
-                                      }
-                                      field.onChange(value as any);
-                                    }}
-                                  />
-                                </FormControl>
-                                <Popover>
-                                  <PopoverTrigger asChild>
-                                    <Button variant="outline" size="icon" className="h-10 w-10 shrink-0">
-                                      <CalendarIcon className="h-4 w-4" />
-                                    </Button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                      mode="single"
-                                      selected={field.value instanceof Date ? field.value : undefined}
-                                      onSelect={(date) => date && field.onChange(date)}
-                                      disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
-                                      initialFocus
-                                      className="p-3 pointer-events-auto"
-                                    />
-                                  </PopoverContent>
-                                </Popover>
-                              </div>
+                              <SmartDateInput
+                                value={field.value}
+                                onChange={field.onChange}
+                                className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                              />
                             </div>
                             <FormMessage />
                           </FormItem>
