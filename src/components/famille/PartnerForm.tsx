@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,7 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import ActionHubInput from "@/components/ui/action-hub-input";
 import SelectMenu from "@/components/ui/select-menu";
 import NationalitySelect from "@/components/ui/nationality-select";
-import { CalendarIcon, Loader2, User, MapPin } from "lucide-react";
+import { CalendarIcon, Loader2, User, MapPin, Info } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -73,6 +74,7 @@ type Section = 'informations-generales' | 'coordonnees';
 export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { data: maritalData, loading, saving, setStatutCouple } = useMaritalStatus();
   const [activeSection, setActiveSection] = useState<Section>('informations-generales');
 
@@ -215,6 +217,22 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
             {/* Statut & Identité card */}
             <div className="rounded-md border bg-card p-6 shadow-sm">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Identité</h3>
+
+              {!showPartnerFields && (
+                <div className="flex items-start gap-3 rounded-md border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
+                  <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                  <div className="space-y-3">
+                    <p>
+                      Le statut matrimonial n'est pas encore renseigné. Rendez-vous sur la fiche personnelle
+                      (onglet « Ma famille ») pour définir un statut de couple (Concubinage, Pacsé(e) ou Marié(e))
+                      avant de saisir les informations du partenaire.
+                    </p>
+                    <Button type="button" variant="outline" size="sm" onClick={() => navigate('/dashboard/famille')}>
+                      Aller à la fiche personnelle
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               {showPartnerFields && (
                 <>
