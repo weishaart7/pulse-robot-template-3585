@@ -15,6 +15,7 @@ import { DynamicFamilyForm } from '@/components/family/DynamicFamilyForm';
 import { assetIndivisaireService, AssetIndivisaireWithAsset } from '@/services/assetIndivisaireService';
 import { Asset } from '@/services/assetService';
 import { AssetDetailsDialog } from '@/components/patrimoine/AssetDetailsDialog';
+import { useToast } from '@/hooks/use-toast';
 
 export const membreFamilleSchema = z.object({
   lien_familial: z.string().min(1, 'Le lien familial est obligatoire'),
@@ -74,6 +75,7 @@ interface FamilyMemberFormDialogProps {
 
 export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, FamilyMemberFormDialogProps>(
   ({ familyLinks, familyProfile, maritalStatus, saving, addLink, updateLink }, ref) => {
+    const { toast } = useToast();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingMember, setEditingMember] = useState<FamilyLink | null>(null);
     const [selectedLinkType, setSelectedLinkType] = useState('');
@@ -175,10 +177,16 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
         setEditingMember(null);
         setSelectedLinkType('');
         memberForm.reset(DEFAULT_VALUES);
+        toast({ title: "Succès", description: "Les informations ont été sauvegardées avec succès." });
       } catch (error) {
         if (import.meta.env.DEV) {
           console.error('Erreur lors de la sauvegarde du membre:', error);
         }
+        toast({
+          title: "Erreur",
+          description: "Une erreur est survenue lors de la sauvegarde.",
+          variant: "destructive",
+        });
       }
     };
 

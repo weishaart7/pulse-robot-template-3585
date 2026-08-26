@@ -193,11 +193,17 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
         await saveData(payload as any);
       }
 
+      toast({ title: "Succès", description: "Les informations ont été sauvegardées avec succès." });
       onSuccess?.();
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('Erreur de sauvegarde:', error);
       }
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la sauvegarde.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -274,6 +280,11 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
       if (import.meta.env.DEV) {
         console.error('Erreur lors de la désactivation des clauses incompatibles:', error);
       }
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors du changement de régime.",
+        variant: "destructive",
+      });
     } finally {
       setDisablingClauses(false);
       setPendingRegimeChange(null);

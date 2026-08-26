@@ -23,6 +23,7 @@ import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { useSecureForm } from '@/hooks/useSecureForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { sanitizeTextInput, isValidEmail, isValidDate } from '@/lib/security';
+import { useToast } from '@/hooks/use-toast';
 
 
 const formSchema = z.object({
@@ -88,6 +89,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
   const { data, loading, saving, saveData } = useFamilyProfile();
   const { data: maritalData, setStatutCouple } = useMaritalStatus();
   const { user } = useAuth();
+  const { toast } = useToast();
   const { submitSecureForm } = useSecureForm({ 
     formName: 'family_profile',
     enableRateLimit: true,
@@ -239,11 +241,19 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
         user?.id
       );
       await setStatutCouple(formData.statutCouple ?? null);
+      toast({ title: "Succès", description: "Les informations ont été sauvegardées avec succès." });
       onSuccess?.();
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('Erreur lors de la sauvegarde:', error);
       }
+      toast({
+        title: "Erreur",
+        description: error instanceof Error && error.message
+          ? error.message
+          : "Une erreur est survenue lors de la sauvegarde.",
+        variant: "destructive",
+      });
     }
   };
 

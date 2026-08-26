@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useFamilyLinks, useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
+import { useToast } from '@/hooks/use-toast';
 import { FamilyLink } from '@/services/familyService';
 import { FamilyMemberFormDialog, FamilyMemberFormDialogHandle } from '@/components/family/FamilyMemberFormDialog';
 import { THEME_INK, THEME_MONO_FONT } from '@/lib/theme';
@@ -71,6 +72,7 @@ export function LiensFamiliauxForm() {
   } = useFamilyLinks();
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
+  const { toast } = useToast();
   const dialogRef = useRef<FamilyMemberFormDialogHandle>(null);
   const [memberToDelete, setMemberToDelete] = useState<FamilyLink | null>(null);
 
@@ -85,10 +87,16 @@ export function LiensFamiliauxForm() {
     if (!memberToDelete?.id) return;
     try {
       await deleteLinkWithCascade(memberToDelete.id);
+      toast({ title: "Succès", description: "Le membre de la famille a été supprimé." });
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('Erreur lors de la suppression:', error);
       }
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la suppression.",
+        variant: "destructive",
+      });
     } finally {
       setMemberToDelete(null);
     }
