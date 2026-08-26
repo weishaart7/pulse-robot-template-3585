@@ -15,9 +15,9 @@ export const REGIME_SEPARATION_BIENS_SOCIETE_ACQUETS = "Séparation de biens ave
 export const REGIME_PARTICIPATION_AUX_ACQUETS = 'Participation aux acquêts';
 
 // Les 6 valeurs fermées du champ marital_status.regime_matrimonial, source
-// unique pour tout Select de saisie du régime (RelationInfoForm.tsx,
-// ScenarioRegimeSection.tsx) — pas de CHECK constraint en base, la fermeture
-// de la liste est assurée côté UI par cette constante.
+// unique pour tout Select de saisie du régime (RelationInfoForm.tsx) — pas de
+// CHECK constraint en base, la fermeture de la liste est assurée côté UI par
+// cette constante.
 export const REGIMES_MATRIMONIAUX = [
   REGIME_COMMUNAUTE_REDUITE_AUX_ACQUETS,
   REGIME_COMMUNAUTE_MEUBLES_ET_ACQUETS,
