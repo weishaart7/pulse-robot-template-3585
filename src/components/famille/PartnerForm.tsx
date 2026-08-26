@@ -23,7 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 const formSchema = z.object({
   statutCouple: z.enum(['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)', 'Divorcé(e)', 'Veuf/Veuve']).optional(),
 
-  civilitePartenaire: z.enum(['M.', 'Mme', 'Autre']).optional(),
+  civilitePartenaire: z.enum(['M.', 'Mme', 'Mlle', 'Autre']).optional(),
   nomPartenaire: z.string().optional(),
   nomJeuneFillePartenaire: z.string().optional(),
   prenomPartenaire: z.string().optional(),
@@ -251,6 +251,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                             {[
                               { value: 'M.', label: 'M.' },
                               { value: 'Mme', label: 'Mme' },
+                              { value: 'Mlle', label: 'Mlle' },
                               { value: 'Autre', label: 'Autre' },
                             ].map((option) => (
                               <label
@@ -293,7 +294,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                       )}
                     />
 
-                    {(form.watch('civilitePartenaire') === 'Mme' || form.watch('civilitePartenaire') === 'Autre') && (
+                    {(form.watch('civilitePartenaire') === 'Mme' || form.watch('civilitePartenaire') === 'Mlle' || form.watch('civilitePartenaire') === 'Autre') && (
                       <FormField
                         control={form.control}
                         name="nomJeuneFillePartenaire"

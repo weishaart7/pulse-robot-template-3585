@@ -27,7 +27,7 @@ import { sanitizeTextInput, isValidEmail, isValidDate } from '@/lib/security';
 
 const formSchema = z.object({
   statutCouple: z.enum(['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)', 'Divorcé(e)', 'Veuf/Veuve']).optional(),
-  civilite: z.enum(['M', 'Mme', 'Autre'], {
+  civilite: z.enum(['M.', 'Mme', 'Mlle', 'Autre'], {
     required_error: 'Veuillez sélectionner une civilité',
   }),
   nom: z.string().min(1, 'Le nom est obligatoire'),
@@ -135,10 +135,13 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
 
       const rawProfession = data.profession ? unescapeHtml(data.profession) : '';
       const isPredefinedProfession = rawProfession && professions.includes(rawProfession);
-      
+
+      // Compat. fiches existantes enregistrées avant l'ajout du point ('M' -> 'M.')
+      const rawCivilite = data.civility === 'M' ? 'M.' : data.civility;
+
       const formattedData = {
         statutCouple: (maritalData?.statut_couple as any) || undefined,
-        civilite: (data.civility as 'M' | 'Mme' | 'Autre') || undefined,
+        civilite: (rawCivilite as 'M.' | 'Mme' | 'Mlle' | 'Autre') || undefined,
         nom: data.nom ? unescapeHtml(data.nom) : '',
         nomJeuneFille: (data as any).nom_jeune_fille ? unescapeHtml((data as any).nom_jeune_fille) : '',
         prenom: data.prenom ? unescapeHtml(data.prenom) : '',
@@ -331,8 +334,9 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                         className="flex flex-row gap-4"
                       >
                         {[
-                          { value: 'M', label: 'M.' },
+                          { value: 'M.', label: 'M.' },
                           { value: 'Mme', label: 'Mme' },
+                          { value: 'Mlle', label: 'Mlle' },
                           { value: 'Autre', label: 'Autre' },
                         ].map((option) => (
                           <label
@@ -376,7 +380,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                   )}
                 />
 
-                {(form.watch('civilite') === 'Mme' || form.watch('civilite') === 'Autre') && (
+                {(form.watch('civilite') === 'Mme' || form.watch('civilite') === 'Mlle' || form.watch('civilite') === 'Autre') && (
                   <FormField
                     control={form.control}
                     name="nomJeuneFille"
