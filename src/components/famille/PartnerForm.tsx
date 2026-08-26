@@ -53,6 +53,34 @@ const formSchema = z.object({
   codePostalPartenaire: z.string().optional(),
   villePartenaire: z.string().optional(),
   paysPartenaire: z.string().optional(),
+}).superRefine((data, ctx) => {
+  // Mêmes champs obligatoires que la Fiche client (FicheClientForm), mais
+  // uniquement quand le partenaire est réellement présent dans le foyer —
+  // ces champs ne sont d'ailleurs rendus dans le formulaire que dans ce cas.
+  const requiresPartnerFields = ['Concubinage', 'Pacsé(e)', 'Marié(e)'].includes(data.statutCouple ?? '');
+  if (!requiresPartnerFields) return;
+
+  if (!data.civilitePartenaire) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['civilitePartenaire'], message: 'Veuillez sélectionner une civilité' });
+  }
+  if (!data.nomPartenaire?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['nomPartenaire'], message: 'Le nom est obligatoire' });
+  }
+  if (!data.prenomPartenaire?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['prenomPartenaire'], message: 'Le prénom est obligatoire' });
+  }
+  if (!data.dateNaissancePartenaire) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['dateNaissancePartenaire'], message: 'La date de naissance est obligatoire' });
+  }
+  if (!data.lieuNaissancePartenaire?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['lieuNaissancePartenaire'], message: 'La commune de naissance est obligatoire' });
+  }
+  if (!data.paysNaissancePartenaire?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['paysNaissancePartenaire'], message: 'Le pays de naissance est obligatoire' });
+  }
+  if (!data.nationalitePartenaire?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['nationalitePartenaire'], message: 'La nationalité est obligatoire' });
+  }
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -241,7 +269,9 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                     name="civilitePartenaire"
                     render={({ field }) => (
                       <FormItem className="space-y-2 mb-5">
-                        <FormLabel className="text-xs">Civilité</FormLabel>
+                        <FormLabel className="text-xs">
+                          Civilité <span className="text-destructive">*</span>
+                        </FormLabel>
                         <FormControl>
                           <RadioGroup
                             onValueChange={field.onChange}
@@ -286,6 +316,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                               placeholder="Nom de famille"
                               value={field.value}
                               onChange={field.onChange}
+                              required
                               historyEnabled={false}
                             />
                           </FormControl>
@@ -326,6 +357,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                               placeholder="Prénom"
                               value={field.value}
                               onChange={field.onChange}
+                              required
                               historyEnabled={false}
                             />
                           </FormControl>
@@ -340,7 +372,9 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                       render={({ field }) => (
                         <FormItem>
                           <div className="relative w-full flex flex-col gap-1">
-                            <FormLabel className="text-xs">Date de naissance</FormLabel>
+                            <FormLabel className="text-xs">
+                              Date de naissance <span className="text-destructive">*</span>
+                            </FormLabel>
                             <div className="flex items-center gap-2">
                               <FormControl>
                                 <Input
@@ -457,6 +491,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                               placeholder="Commune de naissance"
                               value={field.value}
                               onChange={field.onChange}
+                              required
                               historyEnabled={false}
                             />
                           </FormControl>
@@ -471,7 +506,9 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                       render={({ field }) => (
                         <FormItem>
                           <div className="relative w-full flex flex-col gap-1">
-                            <FormLabel className="text-xs">Pays de naissance</FormLabel>
+                            <FormLabel className="text-xs">
+                              Pays de naissance <span className="text-destructive">*</span>
+                            </FormLabel>
                             <FormControl>
                               <SelectMenu
                                 value={field.value}
@@ -491,7 +528,9 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                       render={({ field }) => (
                         <FormItem>
                           <div className="relative w-full flex flex-col gap-1">
-                            <FormLabel className="text-xs">Nationalité</FormLabel>
+                            <FormLabel className="text-xs">
+                              Nationalité <span className="text-destructive">*</span>
+                            </FormLabel>
                             <FormControl>
                               <NationalitySelect
                                 value={field.value}
