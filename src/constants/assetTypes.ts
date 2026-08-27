@@ -76,9 +76,10 @@ export const ASSET_NATURES = [
   "Compte à terme",
   "Bons de caisse (ou bon d'épargne)",
   "PEP Bancaire",
+  "Dépôt de garantie",
   "Autres dépôts",
   "Autres disponibilités",
-  
+
   // Actifs financiers investis
   "Compte-titres (CTO)",
   "PEA",

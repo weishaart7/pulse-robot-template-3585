@@ -10,8 +10,7 @@ import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
 import { getCategoryColor } from '@/lib/patrimoine/utils';
 import { getNatureDisplayLabel } from '@/constants/assetTypes';
-import { computeFiscalRegime, resolveEffectiveNature } from '@/lib/patrimoine/regimeFiscalPlusValue';
-import { computePVIRegime } from '@/lib/patrimoine/regimeFiscalPVI';
+import { resolveAssetFiscalRegime } from '@/lib/patrimoine/assetFiscalRegime';
 
 interface PatrimoinePlusValuesProps {
   onBack?: () => void;
@@ -271,15 +270,12 @@ const FiscalContent = ({
 }) => {
   const allAssetsWithRegime = assetsWithPlusValue.filter(a => a.plusValue > 0).map(a => {
     const fullAsset = assets.find(asset => asset.id === a.id);
-    const effectiveNature = resolveEffectiveNature(a.nature, fullAsset?.cto_multi_actifs, fullAsset?.cto_nature_sous_jacent);
     return {
       ...a,
-      regime: computePVIRegime({
-        nature: effectiveNature,
-        plusValue: a.plusValue,
-        dateAcquisition: a.dateAcquisition,
-      }) ?? computeFiscalRegime({
-        nature: effectiveNature,
+      regime: resolveAssetFiscalRegime({
+        nature: a.nature,
+        ctoMultiActifs: fullAsset?.cto_multi_actifs,
+        ctoNatureSousJacent: fullAsset?.cto_nature_sous_jacent,
         plusValue: a.plusValue,
         valeurEstimee: a.valeurEstimee,
         dateAcquisition: a.dateAcquisition,

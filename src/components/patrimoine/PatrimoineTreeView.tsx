@@ -19,8 +19,7 @@ import { useEmprunts } from '@/hooks/usePassifs';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { AssetDetailsDialog } from './AssetDetailsDialog';
 import { formatCurrency, getCategoryColor, calculatePlusValue, mapDetenteurToDisplay } from '@/lib/patrimoine/utils';
-import { resolveEffectiveNature, computeFiscalRegime } from '@/lib/patrimoine/regimeFiscalPlusValue';
-import { computePVIRegime } from '@/lib/patrimoine/regimeFiscalPVI';
+import { resolveAssetFiscalRegime } from '@/lib/patrimoine/assetFiscalRegime';
 
 interface PatrimoineTreeViewProps {
   assets: Asset[];
@@ -147,13 +146,10 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
 
     if (!hasData) return { display: '—', className: 'text-muted-foreground', value: 0, regimeNonDetermine: false };
 
-    const effectiveNature = resolveEffectiveNature(asset.nature, asset.cto_multi_actifs, asset.cto_nature_sous_jacent);
-    const regime = computePVIRegime({
-      nature: effectiveNature,
-      plusValue,
-      dateAcquisition: asset.date_acquisition,
-    }) ?? computeFiscalRegime({
-      nature: effectiveNature,
+    const regime = resolveAssetFiscalRegime({
+      nature: asset.nature,
+      ctoMultiActifs: asset.cto_multi_actifs,
+      ctoNatureSousJacent: asset.cto_nature_sous_jacent,
       plusValue,
       valeurEstimee: asset.valeur_estimee || 0,
       dateAcquisition: asset.date_acquisition,
