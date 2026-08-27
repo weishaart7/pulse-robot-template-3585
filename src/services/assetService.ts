@@ -154,12 +154,13 @@ export const assetService = {
     if (!user) throw new Error('User not authenticated');
 
     // Verify user owns this asset before updating
-    const { data: existingAsset } = await supabase
+    const { data: existingAsset, error: existingError } = await supabase
       .from('assets')
       .select('user_id')
       .eq('id', id)
       .single();
 
+    if (existingError) throw existingError;
     if (!existingAsset || existingAsset.user_id !== user.id) {
       throw new Error('Unauthorized: Asset not found or access denied');
     }
@@ -180,12 +181,13 @@ export const assetService = {
     if (!user) throw new Error('User not authenticated');
 
     // Verify user owns this asset before deleting
-    const { data: existingAsset } = await supabase
+    const { data: existingAsset, error: existingError } = await supabase
       .from('assets')
       .select('user_id')
       .eq('id', id)
       .single();
 
+    if (existingError) throw existingError;
     if (!existingAsset || existingAsset.user_id !== user.id) {
       throw new Error('Unauthorized: Asset not found or access denied');
     }

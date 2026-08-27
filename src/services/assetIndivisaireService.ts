@@ -57,15 +57,26 @@ export const assetIndivisaireService = {
       throw new Error(`Le total des parts des co-indivisaires (${total.toFixed(1)}%) dépasse 100%.`);
     }
 
-    // Delete existing
-    const { error: delError } = await supabase
+    // On récupère d'abord les lignes existantes pour ne les supprimer qu'une
+    // fois les nouvelles lignes insérées avec succès : si l'insert échoue,
+    // les co-indivisaires existants restent intacts au lieu d'être perdus.
+    const { data: existing, error: fetchError } = await supabase
       .from('asset_indivisaires')
-      .delete()
+      .select('id')
       .eq('asset_id', assetId)
       .eq('user_id', user.id);
-    if (delError) throw delError;
+    if (fetchError) throw fetchError;
+    const existingIds = (existing || []).map((row) => row.id);
 
-    if (indivisaires.length === 0) return [];
+    if (indivisaires.length === 0) {
+      if (existingIds.length === 0) return [];
+      const { error: delError } = await supabase
+        .from('asset_indivisaires')
+        .delete()
+        .in('id', existingIds);
+      if (delError) throw delError;
+      return [];
+    }
 
     const payload = indivisaires.map((i) => ({
       ...i,
@@ -78,6 +89,19 @@ export const assetIndivisaireService = {
       .insert(payload)
       .select();
     if (error) throw error;
+
+    if (existingIds.length > 0) {
+      const { error: delError } = await supabase
+        .from('asset_indivisaires')
+        .delete()
+        .in('id', existingIds);
+      if (delError) {
+        throw new Error(
+          "Les nouveaux co-indivisaires ont été enregistrés mais les anciens n'ont pas pu être supprimés. Merci de vérifier la répartition de cet actif."
+        );
+      }
+    }
+
     return (data || []) as AssetIndivisaire[];
   },
 };

@@ -22,11 +22,12 @@ export const PatrimoineActifs = () => {
   const { assets, createAsset, updateAsset, deleteAsset } = useAssets();
   const navigate = useNavigate();
 
-  const syncSocieteFromAsset = async (savedAsset: Asset) => {
-    if (!savedAsset?.id) return;
-    if (!isSocieteEligibleNature(savedAsset.nature)) return;
-    if (!savedAsset.transfert_societe) return;
-    if (savedAsset.societe_id) return; // déjà lié
+  // Retourne true en cas de succès (ou si l'étape ne s'applique pas), false en cas d'échec.
+  const syncSocieteFromAsset = async (savedAsset: Asset): Promise<boolean> => {
+    if (!savedAsset?.id) return true;
+    if (!isSocieteEligibleNature(savedAsset.nature)) return true;
+    if (!savedAsset.transfert_societe) return true;
+    if (savedAsset.societe_id) return true; // déjà lié
 
     try {
       const created = await societeService.create({
@@ -35,66 +36,90 @@ export const PatrimoineActifs = () => {
         valeur_estimee: savedAsset.valeur_estimee ?? undefined,
         pourcentage_utilisateur: savedAsset.pourcentage_utilisateur ?? undefined,
         pourcentage_conjoint: savedAsset.pourcentage_conjoint ?? undefined,
-      } as any);
-      await assetService.updateAsset(savedAsset.id, { societe_id: created.id } as any);
+      });
+      await assetService.updateAsset(savedAsset.id, { societe_id: created.id });
       toast.success(`Une société ${created.denomination} a été créée automatiquement`, {
         action: {
           label: 'Voir la fiche société',
           onClick: () => navigate(`/societes/form?id=${created.id}`),
         },
       });
+      return true;
     } catch (err) {
       if (import.meta.env.DEV) console.error('Auto-création société depuis actif échouée:', err);
+      return false;
     }
   };
 
-  const syncValorisationFromAsset = async (savedAsset: Asset, previousValeurEstimee: number | undefined) => {
-    if (savedAsset.valeur_estimee === undefined || savedAsset.valeur_estimee === null) return;
-    if (previousValeurEstimee === savedAsset.valeur_estimee) return; // pas de changement, pas de ligne
+  // Retourne true en cas de succès (ou si l'étape ne s'applique pas), false en cas d'échec.
+  const syncValorisationFromAsset = async (savedAsset: Asset, previousValeurEstimee: number | undefined): Promise<boolean> => {
+    if (savedAsset.valeur_estimee === undefined || savedAsset.valeur_estimee === null) return true;
+    if (previousValeurEstimee === savedAsset.valeur_estimee) return true; // pas de changement, pas de ligne
 
     try {
       const today = format(new Date(), 'yyyy-MM-dd');
       await assetValorisationService.upsertForDate(savedAsset.id!, today, savedAsset.valeur_estimee);
+      return true;
     } catch (err) {
       if (import.meta.env.DEV) console.error('Alimentation historique de valorisation échouée:', err);
+      return false;
     }
   };
 
   const handleAssetSubmit = async (assetData: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[]) => {
+    const previousValeurEstimee = editingAsset?.valeur_estimee;
+    let savedAsset: Asset;
+
+    // L'actif principal est la seule étape bloquante : si elle échoue, rien
+    // n'a été enregistré et useAssets a déjà affiché un message d'erreur.
     try {
-      const previousValeurEstimee = editingAsset?.valeur_estimee;
-      let savedAsset;
-      if (editingAsset) {
-        savedAsset = await updateAsset(editingAsset.id!, assetData);
-      } else {
-        savedAsset = await createAsset(assetData);
-      }
+      savedAsset = editingAsset
+        ? await updateAsset(editingAsset.id!, assetData, { silent: true })
+        : await createAsset(assetData, { silent: true });
+    } catch (error) {
+      if (import.meta.env.DEV) console.error('Error saving asset:', error);
+      return;
+    }
 
-      // Alimentation automatique de l'historique de valorisation si la valeur a changé
-      await syncValorisationFromAsset(savedAsset as Asset, previousValeurEstimee);
+    // Les étapes suivantes sont annexes : l'actif est déjà enregistré, donc
+    // en cas d'échec on le conserve et on informe précisément l'utilisateur
+    // de la ou des parties à vérifier, plutôt que de tout annuler.
+    const stepErrors: string[] = [];
 
-      // Save charges for the asset
-      if (charges.length > 0) {
-        await Promise.all(
-          charges.map(charge => {
-            const chargeData = {
-              ...charge,
-              asset_id: savedAsset.id
-            };
+    const valorisationOk = await syncValorisationFromAsset(savedAsset, previousValeurEstimee);
+    if (!valorisationOk) stepErrors.push("l'historique de valorisation n'a pas pu être mis à jour");
 
-            // Remove temporary id for new charges
-            if (charge.id?.startsWith('temp-')) {
-              delete chargeData.id;
-            }
+    if (charges.length > 0) {
+      const results = await Promise.allSettled(
+        charges.map(charge => {
+          const chargeData: any = {
+            ...charge,
+            asset_id: savedAsset.id
+          };
 
-            return charge.id?.startsWith('temp-')
-              ? assetService.createAssetCharge(chargeData)
-              : assetService.updateAssetCharge(charge.id!, chargeData);
-          })
+          // Remove temporary id for new charges
+          if (charge.id?.startsWith('temp-')) {
+            delete chargeData.id;
+          }
+
+          return charge.id?.startsWith('temp-')
+            ? assetService.createAssetCharge(chargeData)
+            : assetService.updateAssetCharge(charge.id!, chargeData);
+        })
+      );
+      const failed = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+      if (failed.length > 0) {
+        if (import.meta.env.DEV) failed.forEach(f => console.error('Charge non enregistrée:', f.reason));
+        stepErrors.push(
+          failed.length > 1
+            ? `${failed.length} charges n'ont pas pu être enregistrées`
+            : "une charge n'a pas pu être enregistrée"
         );
       }
+    }
 
-      // Sauvegarde des co-indivisaires (remplace l'ensemble existant pour cet actif)
+    // Sauvegarde des co-indivisaires (remplace l'ensemble existant pour cet actif)
+    try {
       await assetIndivisaireService.replaceForAsset(
         savedAsset.id!,
         indivisaires.map((i) => ({
@@ -105,10 +130,19 @@ export const PatrimoineActifs = () => {
           pourcentage: i.pourcentage,
         }))
       );
+    } catch (error) {
+      if (import.meta.env.DEV) console.error('Sauvegarde des co-indivisaires échouée:', error);
+      stepErrors.push(
+        error instanceof Error && error.message.includes('co-indivisaires')
+          ? error.message
+          : "la répartition des co-indivisaires n'a pas pu être enregistrée"
+      );
+    }
 
-      // Sauvegarde de la contrepartie du démembrement (remplace l'ensemble existant pour cet actif)
+    // Sauvegarde de la contrepartie du démembrement (remplace l'ensemble existant pour cet actif)
+    try {
       const demembrementRole: 'Usufruitier' | 'Nu-propriétaire' =
-        (savedAsset as Asset).mode_detention === 'Usufruit' ? 'Nu-propriétaire' : 'Usufruitier';
+        savedAsset.mode_detention === 'Usufruit' ? 'Nu-propriétaire' : 'Usufruitier';
       await assetDemembrementService.replaceForAsset(
         savedAsset.id!,
         demembrements.map((d) => ({
@@ -120,17 +154,24 @@ export const PatrimoineActifs = () => {
           date_naissance_tiers: d.type_partie === 'tiers' ? d.date_naissance_tiers : null,
         }))
       );
-
-      // Création/lien automatique d'une société si applicable
-      await syncSocieteFromAsset(savedAsset as Asset);
-
-      setShowAssetForm(false);
-      setEditingAsset(null);
     } catch (error) {
-      if (import.meta.env.DEV) console.error('Error saving asset:', error);
-      if (error instanceof Error && error.message.includes('co-indivisaires')) {
-        toast.error("Le total des parts des indivisaires dépasse 100%. Merci de corriger la répartition avant d'enregistrer.");
-      }
+      if (import.meta.env.DEV) console.error('Sauvegarde du démembrement échouée:', error);
+      stepErrors.push("la contrepartie de démembrement n'a pas pu être enregistrée");
+    }
+
+    // Création/lien automatique d'une société si applicable
+    const societeOk = await syncSocieteFromAsset(savedAsset);
+    if (!societeOk) stepErrors.push("la société liée n'a pas pu être créée automatiquement");
+
+    setShowAssetForm(false);
+    setEditingAsset(null);
+
+    if (stepErrors.length === 0) {
+      toast.success(editingAsset ? 'Actif mis à jour avec succès' : 'Actif créé avec succès');
+    } else {
+      toast.error(
+        `L'actif a bien été enregistré, mais : ${stepErrors.join(' ; ')}. Merci de rouvrir la fiche pour vérifier.`
+      );
     }
   };
 

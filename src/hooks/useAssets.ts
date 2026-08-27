@@ -23,14 +23,16 @@ export const useAssets = () => {
     }
   };
 
-  const createAsset = async (asset: Omit<Asset, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+  const createAsset = async (asset: Omit<Asset, 'id' | 'user_id' | 'created_at' | 'updated_at'>, options?: { silent?: boolean }) => {
     try {
       const newAsset = await assetService.createAsset(asset);
       setAssets(prev => [newAsset, ...prev]);
-      toast({
-        title: "Succès",
-        description: "Actif créé avec succès",
-      });
+      if (!options?.silent) {
+        toast({
+          title: "Succès",
+          description: "Actif créé avec succès",
+        });
+      }
       return newAsset;
     } catch (error) {
       toast({
@@ -42,14 +44,16 @@ export const useAssets = () => {
     }
   };
 
-  const updateAsset = async (id: string, asset: Partial<Asset>) => {
+  const updateAsset = async (id: string, asset: Partial<Asset>, options?: { silent?: boolean }) => {
     try {
       const updatedAsset = await assetService.updateAsset(id, asset);
       setAssets(prev => prev.map(a => a.id === id ? updatedAsset : a));
-      toast({
-        title: "Succès",
-        description: "Actif mis à jour avec succès",
-      });
+      if (!options?.silent) {
+        toast({
+          title: "Succès",
+          description: "Actif mis à jour avec succès",
+        });
+      }
       return updatedAsset;
     } catch (error) {
       toast({
