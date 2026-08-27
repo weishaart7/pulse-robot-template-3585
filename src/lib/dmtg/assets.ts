@@ -90,26 +90,45 @@ export function valueDismemberedRight(asset: Asset, params: DmtgParams): Dismemb
   }
 
   const { type, usufruitierAge, dureeAns, usufruitierId, nueProprietaires } = asset.demembrement;
-  let usufruitPct = 0;
-  let nuePropPct = 0;
+  let usufruitPct: number;
+  let nuePropPct: number;
 
-  if (type === 'viager' && usufruitierAge !== undefined) {
+  if (type === 'viager') {
+    if (usufruitierAge === undefined) {
+      throw new Error(
+        `Démembrement viager sans âge d'usufruitier pour l'actif "${asset.label}" (id ${asset.id}) : impossible de calculer les droits, merci de corriger la fiche de l'actif.`
+      );
+    }
     // Barème CGI art. 669
     const baremeEntry = params.demembrementViager.find(
       entry => usufruitierAge >= entry.minAge && usufruitierAge <= entry.maxAge
     );
-    
-    if (baremeEntry) {
-      usufruitPct = baremeEntry.usufruitPct;
-      nuePropPct = baremeEntry.nuePropPct;
-      justifs.push(`Usufruit viager (âge ${usufruitierAge}) : ${(usufruitPct * 100)}% / ${(nuePropPct * 100)}%`);
+
+    if (!baremeEntry) {
+      throw new Error(
+        `Âge d'usufruitier (${usufruitierAge}) hors barème CGI art. 669 pour l'actif "${asset.label}" (id ${asset.id}) : impossible de calculer les droits, merci de corriger la fiche de l'actif.`
+      );
     }
-  } else if (type === 'temporaire' && dureeAns !== undefined) {
+    usufruitPct = baremeEntry.usufruitPct;
+    nuePropPct = baremeEntry.nuePropPct;
+    justifs.push(`Usufruit viager (âge ${usufruitierAge}) : ${(usufruitPct * 100)}% / ${(nuePropPct * 100)}%`);
+  } else if (type === 'temporaire') {
+    if (dureeAns === undefined) {
+      throw new Error(
+        `Démembrement temporaire sans durée pour l'actif "${asset.label}" (id ${asset.id}) : impossible de calculer les droits, merci de corriger la fiche de l'actif.`
+      );
+    }
     // 23% par tranche indivisible de 10 ans
     const tranches = Math.ceil(dureeAns / 10);
     usufruitPct = Math.min(tranches * 0.23, 1);
     nuePropPct = 1 - usufruitPct;
     justifs.push(`Usufruit temporaire (${dureeAns} ans = ${tranches} tranches) : ${(usufruitPct * 100)}% / ${(nuePropPct * 100)}%`);
+  } else {
+    throw new Error(
+      type === null
+        ? `Démembrement sans type renseigné (viager/temporaire) pour l'actif "${asset.label}" (id ${asset.id}) : impossible de calculer les droits, merci de compléter la fiche de l'actif.`
+        : `Type de démembrement inconnu ("${type}") pour l'actif "${asset.label}" (id ${asset.id}) : impossible de calculer les droits, merci de corriger la fiche de l'actif.`
+    );
   }
 
   // Calcul des parts

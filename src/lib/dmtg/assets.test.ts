@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { filterAndValueEstateAssets } from './assets';
+import { filterAndValueEstateAssets, valueDismemberedRight } from './assets';
 import { DmtgParams, Asset } from './types';
 
 const params: DmtgParams = {
@@ -43,5 +43,73 @@ describe('filterAndValueEstateAssets — forfait mobilier 5% (art. 764 CGI, §19
     const result = filterAndValueEstateAssets([asset(200000)], params, '2026-08-06', true);
     expect(result.forfaitMobilier).toBe(0);
     expect(result.totalBaseTaxable).toBe(200000);
+  });
+});
+
+const baremeViager: DmtgParams['demembrementViager'] = [
+  { minAge: 0, maxAge: 20, usufruitPct: 0.9, nuePropPct: 0.1 },
+  { minAge: 21, maxAge: 30, usufruitPct: 0.8, nuePropPct: 0.2 },
+];
+
+function demembrementAsset(demembrement: Asset['demembrement']): Asset {
+  return { ...asset(100000), demembrement };
+}
+
+describe('valueDismemberedRight — refus explicite plutôt qu\'assiette à zéro sur donnée invalide', () => {
+  it('viager avec âge dans le barème : calcule normalement les parts', () => {
+    const result = valueDismemberedRight(
+      demembrementAsset({
+        type: 'viager',
+        usufruitierAge: 25,
+        usufruitierId: 'usu1',
+        nueProprietaires: [{ id: 'np1', quotePart: 1 }],
+      }),
+      { ...params, demembrementViager: baremeViager }
+    );
+    expect(result.parts).toEqual([
+      { beneficiaryId: 'usu1', baseTaxable: 80000 },
+      { beneficiaryId: 'np1', baseTaxable: 20000 },
+    ]);
+  });
+
+  it('viager avec âge hors barème : lève une erreur explicite (pas une assiette à zéro)', () => {
+    expect(() =>
+      valueDismemberedRight(
+        demembrementAsset({
+          type: 'viager',
+          usufruitierAge: 150,
+          usufruitierId: 'usu1',
+          nueProprietaires: [],
+        }),
+        { ...params, demembrementViager: baremeViager }
+      )
+    ).toThrow(/hors barème/);
+  });
+
+  it('viager sans âge renseigné : lève une erreur explicite', () => {
+    expect(() =>
+      valueDismemberedRight(
+        demembrementAsset({ type: 'viager', usufruitierId: 'usu1', nueProprietaires: [] }),
+        { ...params, demembrementViager: baremeViager }
+      )
+    ).toThrow(/sans âge/);
+  });
+
+  it('temporaire sans durée renseignée : lève une erreur explicite', () => {
+    expect(() =>
+      valueDismemberedRight(
+        demembrementAsset({ type: 'temporaire', usufruitierId: 'usu1', nueProprietaires: [] }),
+        { ...params, demembrementViager: baremeViager }
+      )
+    ).toThrow(/sans durée/);
+  });
+
+  it('type de démembrement null : lève une erreur explicite', () => {
+    expect(() =>
+      valueDismemberedRight(
+        demembrementAsset({ type: null, usufruitierId: 'usu1', nueProprietaires: [] }),
+        { ...params, demembrementViager: baremeViager }
+      )
+    ).toThrow(/sans type renseigné/);
   });
 });
