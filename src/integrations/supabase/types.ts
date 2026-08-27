@@ -1994,6 +1994,7 @@ export type Database = {
           annee_ouverture_droits: number | null
           au_moins_un_trimestre_majoration_enfant: boolean
           autres_epargnes: number | null
+          autres_pensions_mensuelles: number | null
           created_at: string
           depart_anticipe_categorie_active: boolean
           depart_pour_invalidite: boolean
@@ -2024,6 +2025,7 @@ export type Database = {
           annee_ouverture_droits?: number | null
           au_moins_un_trimestre_majoration_enfant?: boolean
           autres_epargnes?: number | null
+          autres_pensions_mensuelles?: number | null
           created_at?: string
           depart_anticipe_categorie_active?: boolean
           depart_pour_invalidite?: boolean
@@ -2054,6 +2056,7 @@ export type Database = {
           annee_ouverture_droits?: number | null
           au_moins_un_trimestre_majoration_enfant?: boolean
           autres_epargnes?: number | null
+          autres_pensions_mensuelles?: number | null
           created_at?: string
           depart_anticipe_categorie_active?: boolean
           depart_pour_invalidite?: boolean
@@ -2633,6 +2636,7 @@ export type Database = {
           date_souscription: string | null
           denomination: string
           detenteur: string
+          eligible_taux_reduit_pme: boolean
           forme_societe_civile: string | null
           holding: string | null
           id: string
@@ -2671,6 +2675,7 @@ export type Database = {
           date_souscription?: string | null
           denomination: string
           detenteur: string
+          eligible_taux_reduit_pme?: boolean
           forme_societe_civile?: string | null
           holding?: string | null
           id?: string
@@ -2709,6 +2714,7 @@ export type Database = {
           date_souscription?: string | null
           denomination?: string
           detenteur?: string
+          eligible_taux_reduit_pme?: boolean
           forme_societe_civile?: string | null
           holding?: string | null
           id?: string

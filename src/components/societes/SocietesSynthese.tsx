@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useSocietes } from '@/hooks/useSocietes';
 import { useSocietesIFI, useSocietesTransmission, getSocieteCategory } from '@/hooks/useSocietesIntegration';
+import { societeBilanService, SocieteBilan } from '@/services/societeExtendedService';
 import { Building2, TrendingUp, Scale, ShieldCheck, AlertTriangle, Wallet } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
@@ -12,16 +13,33 @@ export const SocietesSynthese = () => {
   const { societes, isLoading } = useSocietes();
   const ifiData = useSocietesIFI(societes);
   const transmissionData = useSocietesTransmission(societes);
+  // Dernier bilan par société : sert de repli quand les champs "snapshot" de
+  // `societes` (onglet Finances) sont vides, pour ne pas afficher des KPI à 0
+  // alors que l'utilisateur a saisi ses comptes via l'onglet Bilans.
+  const [dernierBilanParSociete, setDernierBilanParSociete] = useState<Record<string, SocieteBilan>>({});
+
+  useEffect(() => {
+    societeBilanService.listAllForUser()
+      .then(bilans => {
+        const latest: Record<string, SocieteBilan> = {};
+        for (const b of bilans) {
+          const existing = latest[b.societe_id];
+          if (!existing || b.exercice_annee > existing.exercice_annee) latest[b.societe_id] = b;
+        }
+        setDernierBilanParSociete(latest);
+      })
+      .catch((e) => { if (import.meta.env.DEV) console.error(e); });
+  }, []);
 
   if (isLoading) return <div className="text-center py-12"><p className="text-muted-foreground">Chargement...</p></div>;
 
   const totalSocietes = societes.length;
   const valeurTotale = societes.reduce((s, c) => s + (c.valeur_estimee || 0), 0);
   const capitalTotal = societes.reduce((s, c) => s + (c.capital_social || 0), 0);
-  const tresoTotale = societes.reduce((s, c) => s + ((c as any).tresorerie_disponible || 0), 0);
+  const tresoTotale = societes.reduce((s, c) => s + ((c as any).tresorerie_disponible || dernierBilanParSociete[c.id]?.tresorerie || 0), 0);
   const ccaTotal = societes.reduce((s, c) => s + ((c as any).compte_courant_associes || 0), 0);
-  const caTotal = societes.reduce((s, c) => s + ((c as any).chiffre_affaires || 0), 0);
-  const resultatTotal = societes.reduce((s, c) => s + ((c as any).resultat_net || 0), 0);
+  const caTotal = societes.reduce((s, c) => s + ((c as any).chiffre_affaires || dernierBilanParSociete[c.id]?.chiffre_affaires || 0), 0);
+  const resultatTotal = societes.reduce((s, c) => s + ((c as any).resultat_net || dernierBilanParSociete[c.id]?.resultat_net || 0), 0);
 
   const rentabilite = caTotal > 0 ? (resultatTotal / caTotal * 100) : 0;
   const holdings = societes.filter(s => s.holding && s.holding !== 'Non');

@@ -6,8 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { useSocietes } from '@/hooks/useSocietes';
+import { useSocieteParticipations } from '@/hooks/useSocieteParticipations';
 import { Calculator, Scale, TrendingUp, Building2 } from 'lucide-react';
 import { computeImpotSocietes } from '@/lib/societes/impotSocietes';
+
+// Seuil légal de détention pour l'éligibilité au régime mère-fille (CGI art. 145).
+const SEUIL_PARTICIPATION_MERE_FILLE = 5;
 
 // Tranches IR 2024 simplifiées
 const computeIR = (rev: number) => {
@@ -24,6 +28,7 @@ const computeIR = (rev: number) => {
 
 export const SocietesStrategiesFiscales: React.FC = () => {
   const { societes } = useSocietes();
+  const { participations } = useSocieteParticipations();
   const [societeId, setSocieteId] = useState<string | null>(null);
   const societe = societes.find(s => s.id === societeId);
 
@@ -35,8 +40,14 @@ export const SocietesStrategiesFiscales: React.FC = () => {
   const [enveloppe, setEnveloppe] = useState(100000);
   const [partRemu, setPartRemu] = useState([50]);
 
-  // Sim 3: Holding
-  const isHolding = (societes.length >= 2);
+  // Sim 3: Holding — le régime mère-fille suppose une participation réelle d'au
+  // moins 5% entre deux sociétés de l'utilisateur (societe_participations), pas
+  // simplement la possession de 2 sociétés indépendantes.
+  const participationsEligibles = useMemo(
+    () => participations.filter(p => p.pourcentage >= SEUIL_PARTICIPATION_MERE_FILLE),
+    [participations]
+  );
+  const isHolding = participationsEligibles.length > 0;
 
   const isVsIr = useMemo(() => {
     const impotIS = computeImpotSocietes(resultat);
@@ -60,11 +71,15 @@ export const SocietesStrategiesFiscales: React.FC = () => {
   }, [enveloppe, partRemu]);
 
   const holdingGain = useMemo(() => {
-    const dividendesEstimes = societes.reduce((s, c) => s + ((c.valeur_estimee || 0) * 0.03), 0);
+    // Seules les filiales réellement détenues à ≥5% par une autre société de
+    // l'utilisateur entrent dans l'hypothèse de dividendes distribués en interne.
+    const filialesEligiblesIds = new Set(participationsEligibles.map(p => p.societe_fille_id));
+    const societesFiliales = societes.filter(s => filialesEligiblesIds.has(s.id));
+    const dividendesEstimes = societesFiliales.reduce((s, c) => s + ((c.valeur_estimee || 0) * 0.03), 0);
     const sansHolding = dividendesEstimes * 0.30;
     const avecHolding = computeImpotSocietes(dividendesEstimes * 0.05); // mère-fille 95% exonéré, IS sur la quote-part de frais de 5%
     return { dividendesEstimes, sansHolding, avecHolding, gain: sansHolding - avecHolding };
-  }, [societes]);
+  }, [societes, participationsEligibles]);
 
   return (
     <div className="space-y-6">
@@ -124,15 +139,16 @@ export const SocietesStrategiesFiscales: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-3">
           {!isHolding ? (
-            <p className="text-sm text-muted-foreground">Détection : moins de 2 sociétés. Une structure holding n'est pertinente qu'à partir de 2 entités.</p>
+            <p className="text-sm text-muted-foreground">Détection : aucune participation d'au moins {SEUIL_PARTICIPATION_MERE_FILLE}% entre deux de vos sociétés (table des participations, onglet "Mes sociétés"). Le régime mère-fille suppose une relation mère/fille réelle, pas seulement la possession de plusieurs sociétés.</p>
           ) : (
             <>
-              <p className="text-sm text-muted-foreground">Hypothèse : 3% de la valeur estimée distribués en dividendes ({holdingGain.dividendesEstimes.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €).</p>
+              <p className="text-sm text-muted-foreground">Hypothèse : 3% de la valeur estimée des filiales éligibles (participation ≥{SEUIL_PARTICIPATION_MERE_FILLE}%) distribués en dividendes ({holdingGain.dividendesEstimes.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €).</p>
               <div className="grid grid-cols-3 gap-3">
                 <div className="p-4 rounded-[5px] bg-muted/40"><div className="text-sm text-muted-foreground">Sans holding</div><div className="text-xl font-semibold">{holdingGain.sansHolding.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</div></div>
                 <div className="p-4 rounded-[5px] bg-muted/40"><div className="text-sm text-muted-foreground">Avec holding (mère-fille)</div><div className="text-xl font-semibold">{holdingGain.avecHolding.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</div></div>
                 <div className="p-4 rounded-[5px] bg-primary/10"><div className="text-sm text-muted-foreground">Gain estimé</div><div className="text-xl font-semibold text-primary">{holdingGain.gain.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</div></div>
               </div>
+              <p className="text-xs text-muted-foreground">Simulation simplifiée : conservation des titres ≥2 ans et option formelle pour le régime mère-fille non vérifiées.</p>
             </>
           )}
         </CardContent>

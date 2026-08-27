@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { BarChart3, TrendingUp, Wallet, PiggyBank, Building2, Calendar } from 'lucide-react';
 
 interface SocieteFormData {
@@ -11,6 +12,7 @@ interface SocieteFormData {
   compte_courant_associes?: number;
   reserves?: number;
   date_dernier_bilan?: string;
+  eligible_taux_reduit_pme?: boolean;
 }
 
 interface SocieteFinancesComptablesProps {
@@ -189,6 +191,26 @@ export const SocieteFinancesComptables: React.FC<SocieteFinancesComptablesProps>
               value={formData.date_dernier_bilan || ''}
               onChange={(e) => onFieldChange('date_dernier_bilan', e.target.value)}
             />
+          </div>
+        </div>
+
+        {/* Éligibilité taux réduit IS PME */}
+        <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 mt-4">
+          <Checkbox
+            id="eligible_taux_reduit_pme"
+            checked={formData.eligible_taux_reduit_pme || false}
+            onCheckedChange={(checked) => onFieldChange('eligible_taux_reduit_pme', checked === true)}
+          />
+          <div className="space-y-1 leading-none">
+            <Label htmlFor="eligible_taux_reduit_pme" className="text-sm font-medium">
+              Éligible au taux réduit IS PME
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Capital entièrement libéré et détenu à au moins 75% par des personnes physiques (ou par une
+              société elle-même détenue à 75% par des personnes physiques). Non coché par défaut : le
+              taux normal (25%) s'applique tant que cette case n'est pas cochée. Le CA doit en plus rester
+              sous 10 M€ — coché avec un CA ≥ 10 M€, le taux normal s'applique quand même.
+            </p>
           </div>
         </div>
 

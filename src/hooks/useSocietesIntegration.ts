@@ -47,16 +47,19 @@ export const useSocietesIFI = (societes: Societe[]) => {
       const pourcentageUtilisateur = (societe as any).pourcentage_utilisateur || 100;
       const pourcentageConjoint = (societe as any).pourcentage_conjoint || 0;
       const pourcentageTotal = pourcentageUtilisateur + pourcentageConjoint;
-      
+      // Valeur taxable à l'échelle de la société : `valeur_ifi` prime si saisie
+      // manuellement (correction d'estimation), sinon dérivée de `pourcentage_ifi`.
+      const valeurIfiBase = (societe as any).valeur_ifi || (valeurEstimee * pourcentageIFI / 100);
+
       let type: IFICalculation['type'] = 'non_applicable';
       let categorie = '';
       let valeurIFI = 0;
-      
+
       if (isPatrimoineSCI(societe)) {
         // SCI patrimoniale: IFI applies on the real estate portion
         type = 'patrimoine';
         categorie = 'Biens détenus indirectement';
-        valeurIFI = (valeurEstimee * pourcentageIFI / 100) * (pourcentageTotal / 100);
+        valeurIFI = valeurIfiBase * (pourcentageTotal / 100);
       } else if (isHoldingAnimatrice(societe)) {
         // Holding animatrice: exempt from IFI as professional asset
         type = 'professionnel_exonere';
@@ -66,12 +69,12 @@ export const useSocietesIFI = (societes: Societe[]) => {
         // Holding passive: IFI on real estate portion
         type = 'patrimoine';
         categorie = 'Biens détenus indirectement';
-        valeurIFI = (valeurEstimee * pourcentageIFI / 100) * (pourcentageTotal / 100);
-      } else if (pourcentageIFI > 0) {
-        // Other companies with IFI percentage
+        valeurIFI = valeurIfiBase * (pourcentageTotal / 100);
+      } else if (valeurIfiBase > 0) {
+        // Other companies with an IFI-taxable value
         type = 'patrimoine';
         categorie = 'Biens détenus indirectement';
-        valeurIFI = (valeurEstimee * pourcentageIFI / 100) * (pourcentageTotal / 100);
+        valeurIFI = valeurIfiBase * (pourcentageTotal / 100);
       }
       
       calculations.push({

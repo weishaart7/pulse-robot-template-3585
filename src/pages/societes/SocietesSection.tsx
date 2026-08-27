@@ -209,6 +209,8 @@ export const SocietesSection = () => {
                   nombre_salaries: formData.nombreSalaries,
                   pourcentage_ifi: formData.pourcentageIFI,
                   valeur_ifi: formData.valeurIFI,
+                  pourcentage_utilisateur: formData.pourcentageUtilisateur,
+                  pourcentage_conjoint: formData.pourcentageConjoint,
                   regime_fiscal: formData.regimeFiscal,
                   holding: formData.holding,
                   chiffre_affaires: formData.chiffreAffaires,
@@ -217,6 +219,7 @@ export const SocietesSection = () => {
                   compte_courant_associes: formData.compteCourantAssocies,
                   reserves: formData.reserves,
                   date_dernier_bilan: formData.dateDernierBilan,
+                  eligible_taux_reduit_pme: formData.eligibleTauxReduitPme,
                 }}
                 onFormDataChange={(data) => {
                   setFormData({
@@ -227,6 +230,7 @@ export const SocietesSection = () => {
                     compteCourantAssocies: data.compte_courant_associes,
                     reserves: data.reserves,
                     dateDernierBilan: data.date_dernier_bilan,
+                    eligibleTauxReduitPme: data.eligible_taux_reduit_pme,
                   });
                 }}
                 onSave={handleSaveFinances}

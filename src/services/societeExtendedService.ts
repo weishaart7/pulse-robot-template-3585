@@ -31,6 +31,16 @@ export const societeBilanService = {
     if (error) throw error;
     return (data || []) as SocieteBilan[];
   },
+  async listAllForUser(): Promise<SocieteBilan[]> {
+    const user = await requireUser();
+    const { data, error } = await supabase
+      .from('societe_bilans')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('exercice_annee', { ascending: false });
+    if (error) throw error;
+    return (data || []) as SocieteBilan[];
+  },
   async upsert(bilan: Omit<SocieteBilan, 'id' | 'user_id'> & { id?: string }) {
     const user = await requireUser();
     const payload = { ...bilan, user_id: user.id };

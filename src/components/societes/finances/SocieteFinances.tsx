@@ -38,6 +38,7 @@ interface SocieteFormData {
   compte_courant_associes?: number;
   reserves?: number;
   date_dernier_bilan?: string;
+  eligible_taux_reduit_pme?: boolean;
 }
 
 interface SocieteFinancesProps {

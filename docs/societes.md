@@ -176,68 +176,75 @@ identité SIRENE, régime fiscal, 6 champs comptables « snapshot »), et 8 tabl
 
 ## 3. Dette identifiée
 
-### 🔴 Bloquant (peut fausser un calcul montré au client)
+> Session de correction du 2026-08-27 : les 6 bloquants 🔴 listés dans une version antérieure de cette
+> section ont été traités (voir détail ci-dessous). Deux d'entre eux touchaient une règle fiscale non
+> triviale et ont été arbitrés explicitement avant codage (taux réduit IS PME, régime mère-fille) ; un
+> troisième touchait un composant partagé avec Patrimoine/Immobilier (`AssetForm.tsx`) et a été corrigé
+> sur arbitrage explicite plutôt que différé. Découverte annexe traitée dans la foulée (hors liste
+> initiale, cf. note en fin de sous-section) : la comparaison `regime_fiscal === 'IS'/'IR'` de
+> `SocieteFinancesImpactFiscal.tsx` ne correspondait à aucune valeur réellement stockée en base
+> (toujours le libellé complet `"Impôt sur les sociétés"`/`"Impôt sur le revenu"`), rendant la carte IS
+> invisible en production — corrigée pour rendre les autres corrections de cette section observables.
 
-- **Taux réduit IS PME appliqué sans aucune vérification d'éligibilité.**
-  [impotSocietes.ts:9-13](src/lib/societes/impotSocietes.ts) et sa copie dans
-  [SocieteFinancesImpactFiscal.tsx:41-48](src/components/societes/finances/SocieteFinancesImpactFiscal.tsx)
-  appliquent 15 % jusqu'à 42 500 € puis 25 % à **toute** société au régime IS, quels que soient son
-  chiffre d'affaires (le taux réduit PME est en réalité plafonné à un CA < 10 M€), la libération de son
-  capital ou la détention de son capital par des personnes physiques à au moins 75 %. Une société qui ne
-  remplit pas ces conditions (ex. capital détenu majoritairement par une autre société) devrait payer
-  25 % dès le premier euro ; l'IS affiché au client est alors sous-évalué. Aucun champ ni commentaire ne
-  signale cette simplification à l'utilisateur (contrairement à d'autres simulateurs du module qui
-  affichent un avertissement « simulation simplifiée », cf. plus bas).
-- **Deux implémentations du calcul d'IS coexistent avec le même taux mais des points d'appel non
-  unifiés, malgré une tentative documentée de les unifier.** `SocieteFinancesImpactFiscal.tsx` (onglet
-  Finances d'une société) recalcule l'IS en dur ; `SocietesStrategiesFiscales.tsx` (onglet Stratégies
-  fiscales) appelle `computeImpotSocietes`. Les deux appliquent aujourd'hui la même formule non
-  paramétrée, donc pas d'écart numérique observable en l'état — mais toute correction future de
-  `impotSocietes.ts` (ex. ajout des conditions PME ci-dessus) ne se répercutera **pas** sur l'onglet
-  Finances tant que ce site n'est pas rebranché, recréant silencieusement un écart entre deux écrans
-  affichant un IS pour la même société.
-- **Deux calculs différents de la valeur IFI d'une société, susceptibles de diverger pour la même
-  société.** [SocieteFinancesImpactFiscal.tsx:51-60](src/components/societes/finances/SocieteFinancesImpactFiscal.tsx)
-  affiche `valeur_ifi` si renseignée, sinon `valeur_estimee × pourcentage_ifi / 100` — **sans jamais
-  multiplier par la quotité de détention de l'utilisateur** (`pourcentage_utilisateur` +
-  `pourcentage_conjoint`). `useSocietesIntegration.ts::useSocietesIFI` (consommé par
-  `SocietesSynthese.tsx` et `SocietesStrategies.tsx`, non monté — cf. §2) calcule, lui,
-  `valeur_estimee × pourcentage_ifi/100 × pourcentageTotal/100` — et **ignore totalement** le champ
-  `valeur_ifi` même quand l'utilisateur l'a saisi manuellement pour corriger une estimation. Pour toute
-  société détenue à moins de 100 % par le foyer (indivision, autre associé), ou pour laquelle
-  l'utilisateur a renseigné `valeur_ifi` à la main, la carte « Impact fiscal » de la fiche société et la
-  carte « Impact IFI » du tableau de bord Synthèse afficheront deux montants différents pour le même
-  bien imposable à l'IFI.
-- **Deux sources de données comptables non synchronisées faussent les KPI de la Synthèse.** Les totaux
-  `caTotal`/`resultatTotal`/`tresoTotale`/`ccaTotal` de
-  [SocietesSynthese.tsx:19-24](src/components/societes/SocietesSynthese.tsx) lisent exclusivement les 6
-  champs « snapshot » de `societes` (onglet Finances), jamais `societe_bilans` (onglet Bilans, historique
-  par exercice). Un utilisateur qui saisit ses données comptables uniquement via l'onglet Bilans (ce que
-  l'écran encourage : graphique d'évolution, historique multi-exercices) verra les KPI de rentabilité,
-  trésorerie et CCA de la Synthèse rester à 0 malgré des bilans complets enregistrés.
-- **Régime mère-fille et quote-part de frais et charges présentés comme un calcul mais réduits à un
-  texte informatif ou à une simulation forfaitaire non branchée aux données réelles.** Le taux de 5 %
-  (quote-part sur dividendes reçus, régime mère-fille) n'est utilisé que dans
-  [SocietesStrategiesFiscales.tsx:65](src/components/societes/strategies/SocietesStrategiesFiscales.tsx) :
-  `computeImpotSocietes(dividendesEstimes * 0.05)`, où `dividendesEstimes` est une hypothèse forfaitaire
-  (« 3 % de la valeur estimée de **chaque** société », sommée) déclenchée dès que `societes.length >= 2`
-  — **sans vérifier qu'une relation mère/fille existe réellement** entre deux sociétés de l'utilisateur
-  via `societe_participations`, ni que les conditions d'éligibilité au régime mère-fille sont remplies
-  (détention ≥ 5 %, titres conservés ≥ 2 ans, option formelle). Le taux de 12 % (quote-part sur
-  plus-values de cession de titres de participation) n'apparaît **nulle part en calcul**, uniquement
-  comme texte descriptif dans `SocietesStrategies.tsx` (non monté, cf. §2). Un « gain estimé » peut donc
-  s'afficher pour un utilisateur possédant deux sociétés totalement indépendantes, sans lien de
-  participation entre elles.
-- **Le double transfert d'un même actif vers Immobilier et vers Sociétés, déjà documenté côté
-  Immobilier, est confirmé et systématique côté Sociétés sur les données réelles.**
-  [AssetForm.tsx:241-285](src/components/assets/AssetForm.tsx) affiche les deux cases « Transfert dans
-  Immobilier » et « Transfert dans Sociétés » sans exclusion mutuelle dès qu'une nature est à la fois
-  immobilière et éligible société (ex. « Parts de SCI »). **Vérifié en base : les 4 actifs ayant
-  `transfert_societe = true` ont TOUS également `transfert_immobilier = true`** (4/4, pas seulement une
-  intersection partielle comme dans `docs/immobilier.md` où 4 des 8 biens immobiliers étaient
-  concernés). 3 de ces 4 actifs ont en outre `societe_id IS NULL` malgré `transfert_societe = true` —
-  cohérent avec la duplication de chemins de création documentée en §2 (asset créé sans lien retour) ou
-  avec une case cochée sans qu'une société n'ait jamais été effectivement créée en retour.
+### 🔴 Bloquant — traité
+
+- **Taux réduit IS PME appliqué sans aucune vérification d'éligibilité — corrigé, taux normal par
+  défaut.** `impotSocietes.ts::computeImpotSocietes(resultat, chiffreAffaires, eligiblePME)` : le taux
+  normal (25 %) s'applique par défaut. Le taux réduit PME ne s'applique que si les 2 conditions sont
+  réunies : CA < 10 M€ (vérifié automatiquement, champ déjà présent) **et** la case « Éligible au taux
+  réduit IS PME » cochée explicitement sur la fiche société (capital libéré et détention ≥ 75 % par des
+  personnes physiques — non modélisables automatiquement, aucun champ en base pour ces 2 conditions ;
+  nouveau champ `societes.eligible_taux_reduit_pme boolean not null default false`, migration
+  `20260827000000_add_eligible_taux_reduit_pme_societes.sql`). La case seule ne suffit pas : cochée avec
+  un CA ≥ 10 M€, le taux normal s'applique quand même (garde-fou). Les simulateurs génériques de
+  `SocietesStrategiesFiscales.tsx` (IS vs IR, holding), qui ne portent pas sur une société réelle et n'ont
+  donc ni CA ni case à vérifier, conservent l'ancien comportement (taux réduit supposé) via l'appel sans
+  paramètre CA.
+- **Duplication du calcul d'IS — corrigée.** `SocieteFinancesImpactFiscal.tsx` appelle désormais
+  `computeImpotSocietes(resultat_net, chiffre_affaires)` au lieu de recalculer l'IS en dur ; les deux
+  écrans (fiche société, onglet Stratégies fiscales) partagent la même implémentation.
+- **Double calcul divergent de la valeur IFI — corrigé.** `SocieteFinancesImpactFiscal.tsx` et
+  `useSocietesIntegration.ts::useSocietesIFI` appliquent désormais la même règle : `valeur_ifi` (si
+  saisie manuellement) ou `valeur_estimee × pourcentage_ifi / 100` sert de valeur taxable à l'échelle de
+  la société, **toujours** multipliée ensuite par la quotité de détention du foyer
+  (`pourcentage_utilisateur + pourcentage_conjoint`). Nécessitait aussi de faire remonter
+  `pourcentage_utilisateur`/`pourcentage_conjoint` jusqu'à `SocieteFinancesImpactFiscal.tsx`, absents du
+  `formData` construit par [SocietesSection.tsx:203-220](src/pages/societes/SocietesSection.tsx) avant ce
+  correctif (la carte IFI de la fiche société aurait sinon affiché 0 € pour toute société une fois la
+  pondération ajoutée).
+- **KPI de la Synthèse ignorant `societe_bilans` — corrigé.** `SocietesSynthese.tsx` charge désormais le
+  dernier exercice de `societe_bilans` par société (`societeBilanService.listAllForUser`, nouvelle
+  méthode) et l'utilise en repli pour `caTotal`/`resultatTotal`/`tresoTotale` quand le snapshot
+  `societes` correspondant est vide. `ccaTotal` reste lu uniquement depuis le snapshot : `societe_bilans`
+  ne porte pas de colonne CCA équivalente.
+- **Régime mère-fille déclenché sans participation réelle — corrigé.**
+  `SocietesStrategiesFiscales.tsx` (simulateur Holding) exige désormais au moins une ligne
+  `societe_participations` avec `pourcentage ≥ 5` entre deux sociétés de l'utilisateur pour afficher un
+  gain estimé ; l'hypothèse de dividendes (3 % de la valeur estimée) ne porte plus que sur les filiales
+  effectivement identifiées comme telles. Conservation des titres ≥ 2 ans et option formelle restent non
+  vérifiées (pas de champ en base) — signalé par un texte « simulation simplifiée ». Le taux de 12 % sur
+  plus-values de titres de participation reste hors calcul, uniquement descriptif dans
+  `SocietesStrategies.tsx` (non monté, cf. §2) — inchangé, non couvert par ce bloquant.
+- **Double transfert Immobilier + Sociétés sans exclusion mutuelle — corrigé.**
+  [AssetForm.tsx:241-296](src/components/assets/AssetForm.tsx) : cocher l'une des deux cases
+  (« Transfert dans Immobilier » / « Transfert dans Sociétés ») décoche désormais automatiquement
+  l'autre, avec une mention explicite dans chaque description quand les deux cases coexistent pour la
+  nature choisie. Correction faite dans `AssetForm.tsx`, composant partagé avec Patrimoine/Immobilier,
+  sur arbitrage explicite (plutôt que différée à un audit croisé séparé). **Les 4 lignes déjà en base
+  avec double transfert (`transfert_societe = true` ET `transfert_immobilier = true`) n'ont pas été
+  corrigées rétroactivement** — cette correction empêche le cas de se reproduire, elle ne nettoie pas les
+  données existantes (hors périmètre d'une correction ciblée ; à traiter si besoin comme une migration de
+  données distincte, avec vérification préalable des lignes orphelines par société comme l'exige
+  `CLAUDE.md`).
+
+### Découverte annexe traitée
+
+- **`SocieteFinancesImpactFiscal.tsx` comparait `regime_fiscal` à `'IS'`/`'IR'`, valeurs qui n'existent
+  jamais en base.** `regime_fiscal` stocke toujours le libellé complet (`"Impôt sur les sociétés"` /
+  `"Impôt sur le revenu"`, confirmé en base et dans `SocieteForm.tsx`). Les sections « IS estimé » et
+  « IR » de la carte Impact fiscal ne s'affichaient donc **jamais** en production, quel que soit le
+  régime réel de la société — ce qui rendait les deux premiers bloquants ci-dessus invisibles à l'écran
+  malgré un calcul sous-jacent correct. Comparaison corrigée pour utiliser les libellés réels.
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
@@ -317,10 +324,15 @@ identité SIRENE, régime fiscal, 6 champs comptables « snapshot »), et 8 tabl
   avec Patrimoine.
 - **Différé, déductible du code** :
   - **Éligibilité au taux réduit IS PME** (CA < 10 M€, capital libéré, détention ≥ 75 % par des
-    personnes physiques) : non modélisée, le taux réduit est appliqué à toute société IS (§3).
-  - **Régime mère-fille et quote-part de 12 % sur plus-values de titres** : présents comme simulation
-    pédagogique forfaitaire ou texte informatif, jamais branchés sur les participations réelles
-    (`societe_participations`) ni sur des dividendes réellement perçus entre deux sociétés du foyer.
+    personnes physiques) : le CA est vérifié automatiquement depuis le 2026-08-27, et capital libéré +
+    détention par personnes physiques sont couverts par une confirmation explicite de l'utilisateur (case
+    à cocher `eligible_taux_reduit_pme`, non cochée par défaut — §3), pas par une vérification
+    automatique des deux conditions elles-mêmes (aucun champ dédié en base pour les modéliser
+    individuellement).
+  - **Régime mère-fille** : le déclenchement du simulateur exige depuis le 2026-08-27 une participation
+    réelle ≥ 5 % via `societe_participations` (§3) ; conservation des titres ≥ 2 ans et option formelle
+    restent non vérifiées. La **quote-part de 12 % sur plus-values de titres** reste hors calcul, texte
+    informatif uniquement dans `SocietesStrategies.tsx` (non monté, §2).
   - **Cotisations sociales TNS et CSG/CRDS réelles** : approximées par des coefficients forfaitaires
     (0,45 / 0,17 / 0,9) dans les simulateurs, sans barème ni source citée.
   - **Distinction Holding animatrice / passive au niveau du calcul IFI détaillé** : le module la

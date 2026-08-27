@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calculator, Scale, Check } from 'lucide-react';
 import { isHoldingAnimatrice } from '@/hooks/useSocietesIntegration';
+import { computeImpotSocietes } from '@/lib/societes/impotSocietes';
 
 interface SocieteFormData {
   type_societe: string;
@@ -13,6 +14,10 @@ interface SocieteFormData {
   valeur_ifi?: number;
   resultat_net?: number;
   nombre_salaries?: number;
+  chiffre_affaires?: number | null;
+  pourcentage_utilisateur?: number;
+  pourcentage_conjoint?: number;
+  eligible_taux_reduit_pme?: boolean;
 }
 
 interface SocieteFinancesImpactFiscalProps {
@@ -35,29 +40,26 @@ export const SocieteFinancesImpactFiscal: React.FC<SocieteFinancesImpactFiscalPr
   // Calculate IS estimate
   const isEstimate = useMemo(() => {
     if (formData.resultat_net === undefined || formData.resultat_net === null) return null;
-    if (formData.regime_fiscal !== 'IS') return null;
+    if (formData.regime_fiscal !== 'Impôt sur les sociétés') return null;
     if (formData.resultat_net <= 0) return 0; // Déficit = pas d'IS
 
-    const resultat = formData.resultat_net;
-    // Simplified IS calculation (2024 rates)
-    // 15% up to 42,500€, 25% above
-    if (resultat <= 42500) {
-      return resultat * 0.15;
-    }
-    return (42500 * 0.15) + ((resultat - 42500) * 0.25);
-  }, [formData.resultat_net, formData.regime_fiscal]);
+    return computeImpotSocietes(formData.resultat_net, formData.chiffre_affaires, formData.eligible_taux_reduit_pme);
+  }, [formData.resultat_net, formData.regime_fiscal, formData.chiffre_affaires, formData.eligible_taux_reduit_pme]);
 
-  // Calculate IFI impact
+  // Calculate IFI impact (valeur taxable à l'échelle de la société, puis ramenée
+  // à la quotité détenue par l'utilisateur + son conjoint)
   const ifiImpact = useMemo(() => {
     if (isIFIExempt) return { value: 0, exempt: true };
-    
-    const ifiValue = formData.valeur_ifi || 
-      (formData.valeur_estimee && formData.pourcentage_ifi 
-        ? formData.valeur_estimee * (formData.pourcentage_ifi / 100) 
+
+    const valeurBase = formData.valeur_ifi ||
+      (formData.valeur_estimee && formData.pourcentage_ifi
+        ? formData.valeur_estimee * (formData.pourcentage_ifi / 100)
         : 0);
-    
+    const pourcentageDetention = (formData.pourcentage_utilisateur || 0) + (formData.pourcentage_conjoint || 0);
+    const ifiValue = valeurBase * (pourcentageDetention / 100);
+
     return { value: ifiValue, exempt: false };
-  }, [formData.valeur_estimee, formData.pourcentage_ifi, formData.valeur_ifi, isIFIExempt]);
+  }, [formData.valeur_estimee, formData.pourcentage_ifi, formData.valeur_ifi, formData.pourcentage_utilisateur, formData.pourcentage_conjoint, isIFIExempt]);
 
   return (
     <Card>
@@ -104,7 +106,7 @@ export const SocieteFinancesImpactFiscal: React.FC<SocieteFinancesImpactFiscalPr
         </div>
 
         {/* IS Estimate Section */}
-        {formData.regime_fiscal === 'IS' && (
+        {formData.regime_fiscal === 'Impôt sur les sociétés' && (
           <div className="p-4 bg-muted/30 rounded-lg space-y-3">
             <div className="flex items-center gap-2">
               <Calculator className="h-4 w-4 text-muted-foreground" />
@@ -121,12 +123,16 @@ export const SocieteFinancesImpactFiscal: React.FC<SocieteFinancesImpactFiscalPr
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              Taux réduit 15% jusqu'à 42 500 €, puis 25% au-delà.
+              {formData.eligible_taux_reduit_pme &&
+              (formData.chiffre_affaires ?? null) !== null &&
+              (formData.chiffre_affaires as number) < 10_000_000
+                ? "Taux réduit PME 15% jusqu'à 42 500 €, puis 25% au-delà (CA < 10 M€, éligibilité confirmée)."
+                : "Taux normal 25% appliqué : taux réduit PME non applicable (case \"Éligible au taux réduit IS PME\" non cochée, et/ou CA ≥ 10 M€ ou non renseigné)."}
             </p>
           </div>
         )}
 
-        {formData.regime_fiscal === 'IR' && (
+        {formData.regime_fiscal === 'Impôt sur le revenu' && (
           <div className="p-4 bg-muted/30 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <Calculator className="h-4 w-4 text-muted-foreground" />

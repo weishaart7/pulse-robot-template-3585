@@ -247,13 +247,17 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               <FormControl>
                 <Checkbox
                   checked={field.value}
-                  onCheckedChange={field.onChange}
+                  onCheckedChange={(checked) => {
+                    field.onChange(checked);
+                    if (checked) form.setValue('transfert_societe', false);
+                  }}
                 />
               </FormControl>
               <div className="space-y-1 leading-none">
                 <FormLabel>Transfert dans Immobilier</FormLabel>
                 <FormDescription>
                   Ce bien apparaîtra dans la section "Immobilier" → "Mes biens"
+                  {isSocieteEligible && ' (exclusif avec "Transfert dans Sociétés")'}
                 </FormDescription>
               </div>
             </FormItem>
@@ -270,13 +274,17 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               <FormControl>
                 <Checkbox
                   checked={field.value}
-                  onCheckedChange={field.onChange}
+                  onCheckedChange={(checked) => {
+                    field.onChange(checked);
+                    if (checked) form.setValue('transfert_immobilier', false);
+                  }}
                 />
               </FormControl>
               <div className="space-y-1 leading-none">
                 <FormLabel>Transfert dans Sociétés</FormLabel>
                 <FormDescription>
                   Une fiche société sera créée automatiquement dans la section "Sociétés" → "Mes sociétés"
+                  {isImmobilier && ' (exclusif avec "Transfert dans Immobilier")'}
                 </FormDescription>
               </div>
             </FormItem>

@@ -38,6 +38,7 @@ export interface Societe {
   compte_courant_associes?: number;
   reserves?: number;
   date_dernier_bilan?: string;
+  eligible_taux_reduit_pme?: boolean;
   created_at?: string;
   updated_at?: string;
 }

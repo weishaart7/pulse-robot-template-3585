@@ -42,6 +42,7 @@ export interface SocieteFormData {
   compteCourantAssocies?: number;
   reserves?: number;
   dateDernierBilan?: string;
+  eligibleTauxReduitPme?: boolean;
 }
 
 export const societeToFormData = (societe: Societe): SocieteFormData => ({
@@ -78,6 +79,7 @@ export const societeToFormData = (societe: Societe): SocieteFormData => ({
   compteCourantAssocies: societe.compte_courant_associes || undefined,
   reserves: societe.reserves || undefined,
   dateDernierBilan: societe.date_dernier_bilan || undefined,
+  eligibleTauxReduitPme: societe.eligible_taux_reduit_pme || false,
 });
 
 export const formDataToSociete = (
@@ -115,4 +117,5 @@ export const formDataToSociete = (
   compte_courant_associes: data.compteCourantAssocies || null,
   reserves: data.reserves || null,
   date_dernier_bilan: data.dateDernierBilan || null,
+  eligible_taux_reduit_pme: data.eligibleTauxReduitPme || false,
 });
