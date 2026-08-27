@@ -142,78 +142,79 @@ Accessible aussi depuis « Mes biens » : [ImmobilierGestionDialog.tsx](src/comp
 
 ## 3. Dette identifiée
 
-### 🔴 Bloquant (peut fausser un calcul montré au client)
+### 🔴 Bloquant
 
-- **Les composants du tableau d'amortissement LMNP ne totalisent que 80 % de la valeur du bâtiment,
-  pas 100 %.** [LMNPDetailView.tsx:71-77](src/components/immobilier/lmnp/LMNPDetailView.tsx:71-77) :
-  les quotes-parts déclarées (Aménagements intérieurs 18 %, Étanchéité 7 %, Toiture 8 %, Installations
-  électriques 6 %, Gros œuvre 41 %) totalisent **80 %**, pas 100 %. 20 % de la valeur amortissable du
-  bâtiment n'est donc jamais réparti sur aucun composant ni amorti : l'amortissement annuel total
-  affiché est sous-évalué d'environ 20 % (sur la part bâtiment), donc le « Résultat fiscal » LMNP
-  affiché au client est **surévalué** d'autant — un déficit réel peut être affiché comme un résultat
-  positif imposable, ou un résultat positif comme plus élevé qu'il ne l'est réellement. Aucune source
-  ni commentaire dans le code ne justifie ces pourcentages ni l'écart à 100 %.
+Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifiés par l'audit initial ont
+été corrigés et vérifiés sur cas concret :
 
-- **Aucun plafonnement de l'amortissement déductible au niveau du résultat.** Le résultat fiscal LMNP
-  réel obéit à une règle spécifique (CGI, mécanisme dit du plafonnement des amortissements LMNP) : les
-  amortissements ne peuvent pas créer ni aggraver un déficit — seul l'excédent est reporté sans limite
-  de durée, alors que le résultat de l'exercice s'arrête à 0. `resultatFiscal =
-  totalRevenusAnnuel - totalChargesAnnuel - totalAmortissementAnnuel`
-  ([LMNPDetailView.tsx:229](src/components/immobilier/lmnp/LMNPDetailView.tsx:229)) est calculé sans
-  ce plafond et peut donc apparaître négatif alors que le résultat réel de l'année serait nul avec un
-  simple report d'amortissement — le badge « Déficit reportable » affiché en cas de résultat ≤ 0
-  ([LMNPDetailView.tsx:632-636](src/components/immobilier/lmnp/LMNPDetailView.tsx:632-636)) ne
-  distingue pas un déficit provenant des charges (imputable selon d'autres règles) d'un excédent
-  d'amortissement (report spécifique). *(Point établi à partir de la règle générale du régime réel
-  LMNP telle que je la connais ; non revérifié contre une source officielle dans le cadre de cet audit
-  — à confirmer avant tout redressement du calcul.)*
+- **Les composants du tableau d'amortissement LMNP ne totalisaient que 80 % de la valeur du bâtiment,
+  pas 100 % — corrigé.** Les quotes-parts (Aménagements intérieurs 18 %, Étanchéité 7 %, Toiture 8 %,
+  Installations électriques 6 %, Gros œuvre 41 %) totalisaient 80 %, laissant 20 % de `valeurBatiment`
+  jamais amorti. Fix : chaque quote-part est remise à l'échelle proportionnellement (÷ 0,8) dans
+  `computeAmortissement` ([LMNPDetailView.tsx:71-89](src/components/immobilier/lmnp/LMNPDetailView.tsx:71-89)),
+  poids relatifs et durées d'amortissement inchangés (18/7/8/6/41 → 22,5/8,75/10/7,5/51,25 %, somme
+  100 %). **Vérifié sur cas concret** : bien à 200 000€, zone rurale (terrain 15 %) → `valeurBatiment`
+  = 170 000€, somme des bases par composant = 170 000€ (au lieu de 136 000€ avant correctif).
 
-- **`regime_location` (Micro-BIC / BIC / Micro-foncier / Réel) est saisi mais n'a aucun effet sur le
-  calcul affiché.** Le champ existe dans le formulaire ([PropertyLocationSection.tsx:68-89](src/components/immobilier/property/PropertyLocationSection.tsx:68-89))
-  et est bien persisté par `useImmobilierPropertyForm.ts:75`, mais **aucun composant ne le lit** pour
-  choisir entre un calcul micro-BIC (abattement forfaitaire de 50 %, ou 71 % pour le meublé de
-  tourisme classé, sous plafond de recettes) et le régime réel : `LMNPDetailView` applique
-  systématiquement la logique du régime réel (charges réelles + amortissement), quel que soit le
-  régime sélectionné par ailleurs dans `ImmobilierPropertyDetailView`. Si un client au Micro-BIC est
-  géré via la vue LMNP, le « résultat fiscal » affiché n'a aucun rapport avec l'assiette réelle
-  (recettes − abattement forfaitaire). *(Vérifié en base : `regime_location` n'est renseigné sur
-  aucun des actifs existants — `0` ligne — donc l'impact réel actuel est nul, mais le champ reste
-  fonctionnellement un piège dès qu'il sera utilisé.)*
+- **Aucun plafonnement de l'amortissement déductible au niveau du résultat — corrigé (version limitée,
+  sans report pluriannuel persisté).** Le résultat fiscal réel (`totalRevenusAnnuel - totalChargesAnnuel
+  - totalAmortissementAnnuel`) pouvait apparaître négatif à cause du seul amortissement, alors que la
+  règle CGI l'interdit (l'amortissement ne peut pas créer ni aggraver un déficit). Fix :
+  `amortissementDeductible = min(amortissement calculé, max(0, revenus − charges))`
+  ([LMNPDetailView.tsx:239-252](src/components/immobilier/lmnp/LMNPDetailView.tsx:239-252)) — le
+  résultat ne peut plus descendre sous 0 à cause du seul amortissement ; un déficit provenant des
+  charges seules (revenus − charges déjà négatif) reste un déficit réel, distinct. **Limite assumée** :
+  l'excédent d'amortissement non déduit une année n'est **pas reporté automatiquement** l'année
+  suivante (l'application ne persiste aucun historique par exercice fiscal — un vrai report
+  pluriannuel demanderait une nouvelle table, hors périmètre d'une correction ciblée) ; un avertissement
+  visible affiche le montant non déduit et invite au report manuel. **Vérifié sur cas concret** :
+  revenus 10 000€, charges 2 000€, amortissement 12 000€ → amortissement déduit plafonné à 8 000€
+  (au lieu de 12 000€), 4 000€ affichés comme non déductibles, résultat fiscal = 0 (au lieu de -4 000€
+  avant correctif) ; cas distinct vérifié (revenus 5 000€, charges 9 000€, amortissement 3 000€) :
+  résultat = -4 000€ (déficit réel de charges, 0€ d'amortissement déduit, 3 000€ intégralement
+  reportables) — la distinction déficit de charges / excédent d'amortissement fonctionne.
+  *(Règle CGI utilisée telle que documentée par l'audit initial ; non revérifiée contre une source
+  officielle dans le cadre de cette correction.)*
 
-- **Une charge en périodicité « Trimestrielle » est comptée pour zéro dans les KPI de portefeuille.**
-  [ImmobilierOverview.tsx:103-119](src/components/immobilier/ImmobilierOverview.tsx:103-119) : le
-  test `periodicite === 'mensuelle' ? ×12 : periodicite === 'annuelle' ? ×1 : 0` ne connaît que deux
-  valeurs ; toute charge dont la périodicité est `'trimestrielle'` (valeur pourtant proposée et
-  persistée sans erreur par [ChargeForm.tsx](src/components/immobilier/ChargeForm.tsx:43-48) via
-  `PERIODICITE_OPTIONS`) est silencieusement exclue à la fois de `totalChargesAnnuelles` et de
-  `totalChargesMensuelles` — la rentabilité nette et le cashflow mensuel affichés sont donc surévalués
-  dès qu'une charge trimestrielle existe sur un bien.
+- **`regime_location` (Micro-BIC) était saisi mais sans effet sur le calcul — corrigé pour LMNP/LMP.**
+  `LMNPDetailView` appliquait systématiquement la logique du régime réel, quel que soit
+  `regime_location`. Fix : si `regime_location === 'Micro-BIC'`, le résultat affiché devient
+  `recettes − abattement forfaitaire` (71 % si `type_location_lmnp === 'Tourisme classé'`, 50 % sinon),
+  sans déduction de charges ni d'amortissement
+  ([LMNPDetailView.tsx:239-260](src/components/immobilier/lmnp/LMNPDetailView.tsx:239-260)) ; le
+  comportement réel (BIC/non renseigné) est inchangé. **Limite assumée** : le plafond de recettes
+  légal pour rester éligible au Micro-BIC (variable selon la catégorie de location, seuils révisés en
+  loi de finances jusqu'en 2028) n'est **pas vérifié automatiquement** — un texte d'avertissement
+  invite l'utilisateur à contrôler l'éligibilité manuellement. **Vérifié sur cas concret** : recettes
+  20 000€, LMNP Classique → résultat = 10 000€ (abattement 50 %) ; recettes 20 000€, Tourisme classé →
+  résultat = 5 800€ (abattement 71 %).
 
-- **Une charge ou un revenu en périodicité « Semestrielle » est compté comme si le montant saisi
-  était déjà annuel (sous-évaluation de moitié).** `PERIODICITE_OPTIONS` propose « Semestrielle »
-  ([immobilierPropertySchema.ts:77-82](src/schemas/immobilierPropertySchema.ts:77-82)) pour les
-  revenus (`RevenuForm.tsx`) comme pour les charges. Le propre aperçu « impact mensuel » de
-  `RevenuForm.tsx:36-46` divise correctement par 6 pour ce cas — mais aucun agrégat en aval ne fait de
-  même : ni `ImmobilierOverview.tsx:87-96` (revenus : seule « Mensuelle » est multipliée, tout le reste
-  — dont Semestrielle et Trimestrielle — est ajouté tel quel), ni
-  `LMNPDetailView.tsx:218-227` (revenus : Mensuelle ×12, Trimestrielle ×4, tout le reste — dont
-  Semestrielle — ajouté tel quel), ni les mêmes fichiers côté charges. Un loyer ou une charge saisi en
-  Semestrielle est donc compté pour la moitié de sa vraie valeur annuelle dans tous les totaux
-  affichés (rentabilité, cashflow, résultat fiscal LMNP), et un revenu Trimestrielle marqué comme
-  impactant le budget dans `ImmobilierOverview` (`totalRevenusMensuels += montant / 12` au lieu de
-  `/ 3`, [ImmobilierOverview.tsx:92-97](src/components/immobilier/ImmobilierOverview.tsx:92-97)) est
-  sous-évalué d'un facteur 4 dans le cashflow mensuel.
+- **Une charge en périodicité « Trimestrielle » était comptée pour zéro dans les KPI de portefeuille —
+  corrigé.** [ImmobilierOverview.tsx](src/components/immobilier/ImmobilierOverview.tsx) ne connaissait
+  que « mensuelle » (×12) et « annuelle » (×1), toute autre valeur donnant 0. Fix : `annualFactor()`/
+  `monthlyDivisor()` reconnaissent désormais aussi trimestrielle (×4 / ÷3) et semestrielle (×2 / ÷6),
+  pour les revenus comme pour les charges — les valeurs non reconnues gardent leur comportement
+  d'origine (revenus : traités comme annuels ; charges : exclus/0, comportement volontairement
+  conservé pour les périodicités réellement inconnues). **Vérifié sur cas concret** : charge
+  trimestrielle 300€ + charge semestrielle 600€ → total annuel 2 400€ (au lieu de 0€ avant correctif).
 
-- **`useImmobilierPropertyForm.ts` transforme silencieusement un `0` saisi en `null` à la
-  sauvegarde.** `handleSubmit` construit `updateData` avec le pattern `data.champ || null` pour tous
-  les champs numériques ([useImmobilierPropertyForm.ts:56-76](src/hooks/useImmobilierPropertyForm.ts:56-76)) :
-  `0` étant falsy en JS, une valeur `0` correctement saisie (ex. `valeur_estimee` d'un bien totalement
-  dévalorisé, `frais_agence` nul car agence non utilisée) est écrite en base comme `null`
-  (« non renseigné ») au lieu de `0`. Même défaut que celui déjà documenté côté Patrimoine
-  (`docs/patrimoine.md` §3), mais ici au niveau de la fonction de soumission plutôt que du handler de
-  saisie — les champs de saisie eux-mêmes (`PropertyCostSection.tsx`, `PropertyGeneralSection.tsx`)
-  utilisent, eux, le pattern correct `e.target.value ? parseFloat(...) : ''` qui préserve `0`
-  jusqu'à la sauvegarde, où il est reperdu.
+- **Une charge ou un revenu en périodicité « Semestrielle » était compté comme si le montant saisi
+  était déjà annuel — corrigé.** Même fix que ci-dessus (`annualFactor`/`monthlyDivisor` dans
+  `ImmobilierOverview.tsx`, `periodiciteAnnualFactor` dans
+  [LMNPDetailView.tsx:220-237](src/components/immobilier/lmnp/LMNPDetailView.tsx:220-237)) : la
+  semestrielle est désormais correctement ×2 (annuel) / ÷6 (mensuel), la trimestrielle ×4 (annuel) /
+  ÷3 (mensuel), au lieu d'être ajoutée telle quelle. **Vérifié sur cas concret** : revenu semestriel de
+  3 000€ → total annuel 6 000€ (au lieu de 3 000€ avant correctif), soit 500€/mois (au lieu de 250€/mois).
+
+- **`useImmobilierPropertyForm.ts` transformait silencieusement un `0` saisi en `null` — corrigé.**
+  `handleSubmit` utilisait `data.champ || null` pour tous les champs numériques, écrasant un `0`
+  correctement saisi (bien dévalorisé, frais nul). Fix : nouvel helper `numOrNull()`
+  ([useImmobilierPropertyForm.ts:59-77](src/hooks/useImmobilierPropertyForm.ts:59-77)) qui ne renvoie
+  `null` que pour `''`/`undefined`, jamais pour `0` (les champs numériques sont typés `number | ''`
+  côté schéma, donc sans ambiguïté). Les champs non numériques (`typologie_bien`, `statut_bien`,
+  `type_location`, `regime_location`) gardent leur comportement d'origine, non concernés par ce bug.
+  **Vérifié sur cas concret** : `valeur_estimee = 0` → sauvegardé comme `0` (au lieu de `null`) ;
+  `surface_m2 = ''` (non saisi) → toujours `null` ; valeurs positives inchangées.
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
@@ -237,6 +238,18 @@ Accessible aussi depuis « Mes biens » : [ImmobilierGestionDialog.tsx](src/comp
   en prop) — la case démarre décochée dans le dialogue de création même si le bien a déjà le transfert
   budget actif ; corrigé après coup par l'appel bulk du `onSuccess`, donc sans conséquence sur la
   donnée finale, seulement sur l'affichage transitoire du formulaire.
+- **Plafond de recettes Micro-BIC non vérifié automatiquement.** Depuis le fix du régime Micro-BIC
+  (🔴, résolu), le résultat affiché est `recettes − abattement forfaitaire`, mais l'éligibilité réelle
+  au régime dépend d'un plafond de recettes annuelles qui varie selon la catégorie de location
+  (meublé classique / tourisme classé) et dont les seuils sont révisés en loi de finances jusqu'en
+  2028 — non fiable à coder en dur sans source vérifiée à chaque révision. Un texte d'avertissement
+  est affiché sous le résultat Micro-BIC, mais le contrôle du plafond reste manuel.
+- **Report de l'excédent d'amortissement LMNP non persisté d'une année sur l'autre.** Depuis le fix du
+  plafonnement (🔴, résolu), le résultat de l'année courante ne peut plus être artificiellement négatif
+  à cause du seul amortissement, et le montant non déduit est affiché avec un avertissement — mais ce
+  montant n'est stocké nulle part : rouvrir la fiche l'année suivante ne le réinjecte pas
+  automatiquement dans le calcul. Un vrai report pluriannuel demanderait une nouvelle table (montant
+  reporté par bien et par exercice), hors périmètre d'une correction ciblée.
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
@@ -300,9 +313,9 @@ Accessible aussi depuis « Mes biens » : [ImmobilierGestionDialog.tsx](src/comp
   - **Distinction LMNP/LMP** dans le calcul lui-même : traités par le même moteur, écart documenté en
     §3 comme approximation plutôt que comme lacune assumée explicitement dans le code (aucun
     commentaire ne signale ce choix).
-  - **`regime_location` (Micro-BIC/BIC/Micro-foncier/Réel)** : champ prévu par le schéma mais sans
-    aucune branche de calcul qui le lit — à ce stade plus proche d'un chantier commencé (le champ et
-    son UI existent) qu'un différé volontaire documenté.
+  - **`regime_location` (Micro-foncier/Réel)** pour la location nue : toujours sans branche de calcul
+    qui le lit (`ImmobilierPropertyDetailView`/location nue n'a pas de moteur de calcul dédié, cf.
+    plus haut). Le cas Micro-BIC/BIC (meublé, LMNP/LMP) est en revanche traité depuis le fix §3.
 - **Manque sans explication dans le code** : aucun commentaire ni TODO n'explique pourquoi
   `ImmobilierPropertyDialog.tsx` a été laissé en place après son remplacement apparent par
   `ImmobilierPropertyDetailView.tsx`, ni pourquoi l'onglet « Revenus locatifs »/« Gestion des biens »

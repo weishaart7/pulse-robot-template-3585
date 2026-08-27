@@ -68,12 +68,15 @@ const computeAmortissement = (
     });
   }
 
+  // Quotes-parts d'origine (18/7/8/6/41) ne totalisant que 80 % de valeurBatiment (bug documenté dans
+  // docs/immobilier.md §3) — on les remet à l'échelle proportionnellement (÷ 0,8) pour qu'elles
+  // totalisent 100 %, en conservant leur poids relatif et leur durée d'amortissement respective.
   const composantsBatiment = [
-    { composant: 'Aménagements intérieurs', duree: 12, pct: 18 },
-    { composant: 'Étanchéité', duree: 25, pct: 7 },
-    { composant: 'Toiture', duree: 25, pct: 8 },
-    { composant: 'Installations électriques', duree: 30, pct: 6 },
-    { composant: 'Gros œuvre', duree: 75, pct: 41 },
+    { composant: 'Aménagements intérieurs', duree: 12, pct: 18 / 0.8 },
+    { composant: 'Étanchéité', duree: 25, pct: 7 / 0.8 },
+    { composant: 'Toiture', duree: 25, pct: 8 / 0.8 },
+    { composant: 'Installations électriques', duree: 30, pct: 6 / 0.8 },
+    { composant: 'Gros œuvre', duree: 75, pct: 41 / 0.8 },
   ];
 
   for (const c of composantsBatiment) {
@@ -214,19 +217,46 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
   const amortissementLines = computeAmortissement(prixAchat, terrainPct, valeurMobilier, travaux);
   const totalAmortissementAnnuel = amortissementLines.reduce((s, l) => s + l.amortissementAnnuel, 0);
 
-  // Compute annual revenues & charges
+  // Compute annual revenues & charges — Mensuelle ×12, Trimestrielle ×4, Semestrielle ×2, Annuelle ×1 ;
+  // toute valeur non reconnue reste traitée comme déjà annuelle (comportement existant conservé).
+  const periodiciteAnnualFactor = (periodicite?: string): number => {
+    switch ((periodicite || '').toLowerCase()) {
+      case 'mensuelle': return 12;
+      case 'trimestrielle': return 4;
+      case 'semestrielle': return 2;
+      default: return 1;
+    }
+  };
+
   const totalRevenusAnnuel = revenus.reduce((sum, r) => {
-    const m = r.montant || 0;
-    return sum + (r.periodicite === 'Mensuelle' ? m * 12 : r.periodicite === 'Trimestrielle' ? m * 4 : m);
+    return sum + (r.montant || 0) * periodiciteAnnualFactor(r.periodicite);
   }, 0);
 
   const totalChargesAnnuel = charges.reduce((sum, c) => {
-    const m = c.montant || 0;
-    const p = c.periodicite?.toLowerCase();
-    return sum + (p === 'mensuelle' ? m * 12 : p === 'trimestrielle' ? m * 4 : m);
+    return sum + (c.montant || 0) * periodiciteAnnualFactor(c.periodicite);
   }, 0);
 
-  const resultatFiscal = totalRevenusAnnuel - totalChargesAnnuel - totalAmortissementAnnuel;
+  // Régime Micro-BIC : base = recettes − abattement forfaitaire (71 % meublé de tourisme classé,
+  // 50 % sinon), sans déduction de charges ni d'amortissement — régime BIC réel sinon (comportement
+  // par défaut inchangé si regime_location est vide/'BIC'). Plafond de recettes non vérifié ici (dépend
+  // de la catégorie de location, seuils révisés chaque année) — avertissement affiché à l'utilisateur,
+  // cf. docs/immobilier.md §3.
+  const isMicroBic = asset.regime_location === 'Micro-BIC';
+  const tauxAbattementMicroBic = typeLocationLmnp === 'Tourisme classé' ? 0.71 : 0.50;
+  const abattementMicroBic = totalRevenusAnnuel * tauxAbattementMicroBic;
+
+  // Plafonnement de l'amortissement déductible (régime réel) : l'amortissement ne peut pas créer ni
+  // aggraver un déficit — seul l'excédent sur le résultat avant amortissement est déductible cette
+  // année. L'excédent non déduit n'est pas automatiquement reporté sur l'année suivante (aucun
+  // historique par exercice n'est persisté par l'application) — affiché à l'utilisateur pour un report
+  // manuel, cf. docs/immobilier.md §3.
+  const resultatAvantAmortissement = totalRevenusAnnuel - totalChargesAnnuel;
+  const amortissementDeductible = Math.min(totalAmortissementAnnuel, Math.max(0, resultatAvantAmortissement));
+  const amortissementNonDeductible = totalAmortissementAnnuel - amortissementDeductible;
+
+  const resultatFiscal = isMicroBic
+    ? totalRevenusAnnuel - abattementMicroBic
+    : resultatAvantAmortissement - amortissementDeductible;
 
   const handleToggleImpactBudget = async (checked: boolean) => {
     if (!asset.id) return;
@@ -609,18 +639,45 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Revenus annuels</span>
-                  <span className="font-medium">{formatCurrency(totalRevenusAnnuel)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Charges annuelles</span>
-                  <span className="font-medium text-destructive">-{formatCurrency(totalChargesAnnuel)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Amortissements</span>
-                  <span className="font-medium text-destructive">-{formatCurrency(totalAmortissementAnnuel)}</span>
-                </div>
+                {isMicroBic ? (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Recettes annuelles</span>
+                      <span className="font-medium">{formatCurrency(totalRevenusAnnuel)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Abattement forfaitaire ({(tauxAbattementMicroBic * 100).toFixed(0)}%)</span>
+                      <span className="font-medium text-destructive">-{formatCurrency(abattementMicroBic)}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Régime Micro-BIC : charges et amortissements non déduits, base = recettes − abattement
+                      forfaitaire. Sous réserve du respect du plafond de recettes en vigueur pour cette
+                      catégorie de location — à vérifier manuellement.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Revenus annuels</span>
+                      <span className="font-medium">{formatCurrency(totalRevenusAnnuel)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Charges annuelles</span>
+                      <span className="font-medium text-destructive">-{formatCurrency(totalChargesAnnuel)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Amortissements déduits</span>
+                      <span className="font-medium text-destructive">-{formatCurrency(amortissementDeductible)}</span>
+                    </div>
+                    {amortissementNonDeductible > 0 && (
+                      <p className="text-xs text-amber-600">
+                        {formatCurrency(amortissementNonDeductible)} d'amortissement non déduit cette année
+                        (l'amortissement ne peut pas créer ni aggraver un déficit) — à reporter manuellement
+                        l'année prochaine, ce report n'est pas encore automatisé.
+                      </p>
+                    )}
+                  </>
+                )}
 
                 <div className="border-t pt-3">
                   <div className="flex justify-between">

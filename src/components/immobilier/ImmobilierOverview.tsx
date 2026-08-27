@@ -10,6 +10,30 @@ interface ImmobilierOverviewProps {
   assets: Asset[];
 }
 
+// Facteurs de conversion périodicité -> annuel/mensuel. `PERIODICITE_OPTIONS`
+// (immobilierPropertySchema.ts) propose Mensuelle/Trimestrielle/Semestrielle/Annuelle pour les revenus
+// comme pour les charges. Une valeur non reconnue garde son comportement existant : traitée comme déjà
+// annuelle pour les revenus (`defaultAnnualFactor`/`defaultMonthlyDivisor` = 1/12), exclue (0) pour les
+// charges — cf. docs/immobilier.md §3.
+const annualFactor = (periodicite: string | undefined, defaultFactor: number): number => {
+  switch ((periodicite || '').toLowerCase()) {
+    case 'mensuelle': return 12;
+    case 'trimestrielle': return 4;
+    case 'semestrielle': return 2;
+    case 'annuelle': return 1;
+    default: return defaultFactor;
+  }
+};
+const monthlyDivisor = (periodicite: string | undefined, defaultDivisor: number | null): number | null => {
+  switch ((periodicite || '').toLowerCase()) {
+    case 'mensuelle': return 1;
+    case 'trimestrielle': return 3;
+    case 'semestrielle': return 6;
+    case 'annuelle': return 12;
+    default: return defaultDivisor;
+  }
+};
+
 interface AssetMetrics {
   nombreBiens: number;
   valeurTotaleBiens: number;
@@ -84,37 +108,23 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
           // Revenus
           const revenus = await assetService.getAssetRevenus(asset.id);
           for (const revenu of revenus) {
-            const montantAnnuel = revenu.periodicite === 'Mensuelle' 
-              ? (revenu.montant || 0) * 12 
-              : (revenu.montant || 0);
-            totalLoyerAnnuel += montantAnnuel;
+            const montant = revenu.montant || 0;
+            totalLoyerAnnuel += montant * annualFactor(revenu.periodicite, 1);
 
             if (isLocative) {
-              const montantMensuel = revenu.periodicite === 'Mensuelle'
-                ? (revenu.montant || 0)
-                : (revenu.montant || 0) / 12;
-              totalRevenusMensuels += montantMensuel;
+              totalRevenusMensuels += montant / (monthlyDivisor(revenu.periodicite, 12) as number);
             }
           }
 
           // Charges
           const charges = await assetService.getAssetCharges(asset.id);
           for (const charge of charges) {
-            const periodicite = charge.periodicite?.toLowerCase();
-            const montantAnnuel = periodicite === 'mensuelle'
-              ? (charge.montant || 0) * 12
-              : periodicite === 'annuelle'
-              ? (charge.montant || 0)
-              : 0;
-            totalChargesAnnuelles += montantAnnuel;
+            const montant = charge.montant || 0;
+            totalChargesAnnuelles += montant * annualFactor(charge.periodicite, 0);
 
             if (isLocative) {
-              const montantMensuel = periodicite === 'mensuelle'
-                ? (charge.montant || 0)
-                : periodicite === 'annuelle'
-                ? (charge.montant || 0) / 12
-                : 0;
-              totalChargesMensuelles += montantMensuel;
+              const divisor = monthlyDivisor(charge.periodicite, null);
+              totalChargesMensuelles += divisor ? montant / divisor : 0;
             }
           }
         }

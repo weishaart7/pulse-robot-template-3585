@@ -52,25 +52,31 @@ export const useImmobilierPropertyForm = ({ asset, onSuccess, onClose }: UseImmo
     if (!asset) return;
 
     try {
+      // Les champs numériques sont `number | ''` côté formulaire (immobilierPropertySchema.ts) : `0`
+      // est une valeur saisie valide (bien dévalorisé, frais nul) et ne doit pas devenir `null`
+      // (« non renseigné ») à la sauvegarde — seul `''`/`undefined` doit l'être. `0` étant falsy en JS,
+      // `data.champ || null` écrasait silencieusement un `0` saisi (cf. docs/immobilier.md §3).
+      const numOrNull = (v: number | '' | undefined): number | null => typeof v === 'number' ? v : null;
+
       const updateData: Record<string, any> = {
         typologie_bien: data.typologie_bien || null,
-        surface_m2: data.surface_m2 || null,
+        surface_m2: numOrNull(data.surface_m2),
         date_acquisition: data.date_acquisition?.toISOString() || null,
-        valeur_estimee: data.valeur_estimee || null,
+        valeur_estimee: numOrNull(data.valeur_estimee),
         statut_bien: data.statut_bien || null,
-        montant_immeuble: data.montant_immeuble || null,
-        frais_agence: data.frais_agence || null,
-        frais_notaire: data.frais_notaire || null,
-        frais_bancaires: data.frais_bancaires || null,
-        frais_hypotheque: data.frais_hypotheque || null,
-        travaux_renovation: data.travaux_renovation || null,
-        travaux_construction: data.travaux_construction || null,
-        meubles: data.meubles || null,
+        montant_immeuble: numOrNull(data.montant_immeuble),
+        frais_agence: numOrNull(data.frais_agence),
+        frais_notaire: numOrNull(data.frais_notaire),
+        frais_bancaires: numOrNull(data.frais_bancaires),
+        frais_hypotheque: numOrNull(data.frais_hypotheque),
+        travaux_renovation: numOrNull(data.travaux_renovation),
+        travaux_construction: numOrNull(data.travaux_construction),
+        meubles: numOrNull(data.meubles),
         financement_actif: data.financement_actif || false,
-        financement_duree_mois: data.financement_duree_mois || null,
-        financement_apport: data.financement_apport || null,
-        financement_taux_credit: data.financement_taux_credit || null,
-        financement_taux_assurance: data.financement_taux_assurance || null,
+        financement_duree_mois: numOrNull(data.financement_duree_mois),
+        financement_apport: numOrNull(data.financement_apport),
+        financement_taux_credit: numOrNull(data.financement_taux_credit),
+        financement_taux_assurance: numOrNull(data.financement_taux_assurance),
         type_location: data.type_location || null,
         regime_location: data.regime_location || null,
       };
