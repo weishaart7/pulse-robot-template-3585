@@ -83,11 +83,31 @@ export const BudgetList = ({
     });
   };
 
-  // Calculer les totaux en annuel pour une comparaison cohérente
-  const totalRevenusAnnuel = revenus.reduce((sum, revenu) => sum + toAnnual(revenu.montant, revenu.periodicite), 0);
-  const totalChargesAnnuel = charges.reduce((sum, charge) => sum + toAnnual(charge.montant, charge.periodicite), 0);
+  // Une ligne terminée (date_fin passée) ou pas encore démarrée (date_debut future) ne doit pas
+  // gonfler le total affiché, même si elle reste listée ci-dessous pour que l'utilisateur puisse la
+  // gérer (cf. docs/budget.md §3).
+  const isActiveToday = (dateDebut?: string, dateFin?: string): boolean => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (dateFin && new Date(dateFin) < today) return false;
+    if (dateDebut && new Date(dateDebut) > today) return false;
+    return true;
+  };
+
+  // Calculer les totaux en annuel pour une comparaison cohérente (lignes actives uniquement)
+  const totalRevenusAnnuel = revenus
+    .filter(revenu => isActiveToday(revenu.date_debut, revenu.date_fin))
+    .reduce((sum, revenu) => sum + toAnnual(revenu.montant, revenu.periodicite), 0);
+  const totalChargesAnnuel = charges
+    .filter(charge => isActiveToday(charge.date_debut, charge.date_fin))
+    .reduce((sum, charge) => sum + toAnnual(charge.montant, charge.periodicite), 0);
 
   const isFromImmobilier = (item: Revenu | Charge) => item.source === 'immobilier';
+  // Les charges d'emprunt (mensualités reportées depuis Patrimoine) sont aussi en lecture seule dans
+  // Budget, comme les charges d'actif — même mécanisme, source distincte pour un libellé correct.
+  const isReadOnly = (item: Revenu | Charge) => item.source === 'immobilier' || item.source === 'emprunt';
+  const readOnlySourceLabel = (item: Revenu | Charge) => item.source === 'emprunt' ? 'Emprunt' : 'Immobilier';
+  const readOnlyEditHint = (item: Revenu | Charge) => item.source === 'emprunt' ? 'Modifier depuis Patrimoine' : 'Modifier depuis Immobilier';
 
   return (
     <div className="space-y-6">
@@ -211,10 +231,10 @@ export const BudgetList = ({
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         {charge.libelle}
-                        {isFromImmobilier(charge) && (
+                        {isReadOnly(charge) && (
                           <Badge variant="secondary" className="text-xs gap-1">
                             <Building2 className="h-3 w-3" />
-                            Immobilier
+                            {readOnlySourceLabel(charge)}
                           </Badge>
                         )}
                       </div>
@@ -230,9 +250,9 @@ export const BudgetList = ({
                       }
                     </TableCell>
                     <TableCell className="text-right">
-                      {isFromImmobilier(charge) ? (
+                      {isReadOnly(charge) ? (
                         <span className="text-xs text-muted-foreground">
-                          Modifier depuis Immobilier
+                          {readOnlyEditHint(charge)}
                         </span>
                       ) : (
                         <DropdownMenu>

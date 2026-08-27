@@ -32,18 +32,41 @@ const toAnnual = (montant: number, periodicite?: string): number => {
   }
 };
 
+// Une ligne est active « aujourd'hui » si elle a démarré (ou n'a pas de date_debut) et n'est pas
+// terminée (ou n'a pas de date_fin) — utilisé pour exclure du Solde/Taux/Capacité d'endettement les
+// lignes déjà terminées, cohérent avec le filtrage déjà appliqué par SeasonalityChart plus bas.
+const isActiveToday = (dateDebut?: string, dateFin?: string): boolean => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (dateFin && new Date(dateFin) < today) return false;
+  if (dateDebut && new Date(dateDebut) > today) return false;
+  return true;
+};
+
 export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
   const { revenus, loading: revenusLoading } = useRevenus();
   const { charges, loading: chargesLoading } = useCharges();
 
-  // Calculer les totaux annuels
-  const totalRevenusAnnuel = useMemo(() => 
-    revenus.reduce((sum, r) => sum + toAnnual(r.montant || 0, r.periodicite), 0),
+  // Lignes actives uniquement pour les totaux/KPI/répartitions — une ligne terminée (date_fin passée)
+  // ou pas encore démarrée (date_debut future) ne doit pas gonfler le Solde ni les indicateurs
+  // d'endettement (cf. docs/budget.md §3).
+  const activeRevenus = useMemo(
+    () => revenus.filter(r => isActiveToday(r.date_debut, r.date_fin)),
     [revenus]
   );
-  const totalChargesAnnuel = useMemo(() => 
-    charges.reduce((sum, c) => sum + toAnnual(c.montant || 0, c.periodicite), 0),
+  const activeCharges = useMemo(
+    () => charges.filter(c => isActiveToday(c.date_debut, c.date_fin)),
     [charges]
+  );
+
+  // Calculer les totaux annuels
+  const totalRevenusAnnuel = useMemo(() =>
+    activeRevenus.reduce((sum, r) => sum + toAnnual(r.montant || 0, r.periodicite), 0),
+    [activeRevenus]
+  );
+  const totalChargesAnnuel = useMemo(() =>
+    activeCharges.reduce((sum, c) => sum + toAnnual(c.montant || 0, c.periodicite), 0),
+    [activeCharges]
   );
 
   const divisor = displayMode === 'mensuel' ? 12 : 1;
@@ -70,7 +93,7 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
 
   // Calculer les mensualités de crédits (charges dont la nature appartient à la catégorie fermée "Emprunts & Crédits")
   const creditsNatures = CHARGES_CATEGORIES['Emprunts & Crédits'] as readonly string[];
-  const mensualitesCreditsAnnuel = charges
+  const mensualitesCreditsAnnuel = activeCharges
     .filter(c => c.nature && creditsNatures.includes(c.nature))
     .reduce((sum, c) => sum + toAnnual(c.montant || 0, c.periodicite), 0);
   const displayMensualitesCredits = Math.round(mensualitesCreditsAnnuel / divisor);
@@ -95,7 +118,7 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
 
   // Grouper les revenus par catégories
   const revenusParCategorie = Object.entries(REVENUS_CATEGORIES).map(([categorie, natures]) => {
-    const revenusCategorie = revenus.filter(r => (natures as readonly string[]).includes(r.nature));
+    const revenusCategorie = activeRevenus.filter(r => (natures as readonly string[]).includes(r.nature));
     const total = revenusCategorie.reduce((sum, r) => sum + toAnnual(r.montant || 0, r.periodicite), 0);
     return {
       categorie,
@@ -105,7 +128,7 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
   }).filter(cat => cat.count > 0);
 
   // Ajouter les revenus non catégorisés
-  const revenusNonCategorises = revenus.filter(r => !allRevenusNatures.includes(r.nature));
+  const revenusNonCategorises = activeRevenus.filter(r => !allRevenusNatures.includes(r.nature));
   if (revenusNonCategorises.length > 0) {
     const totalNonCategorises = revenusNonCategorises.reduce((sum, r) => sum + toAnnual(r.montant || 0, r.periodicite), 0);
     const existingIndex = revenusParCategorie.findIndex(c => c.categorie === 'Revenus du patrimoine');
@@ -123,7 +146,7 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
 
   // Grouper les charges par catégories
   const chargesParCategorie = Object.entries(CHARGES_CATEGORIES).map(([categorie, natures]) => {
-    const chargesCategorie = charges.filter(c => (natures as readonly string[]).includes(c.nature));
+    const chargesCategorie = activeCharges.filter(c => (natures as readonly string[]).includes(c.nature));
     const total = chargesCategorie.reduce((sum, c) => sum + toAnnual(c.montant || 0, c.periodicite), 0);
     return {
       categorie,
@@ -133,7 +156,7 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
   }).filter(cat => cat.count > 0);
 
   // Ajouter les charges non catégorisées
-  const chargesNonCategorisees = charges.filter(c => !allChargesNatures.includes(c.nature));
+  const chargesNonCategorisees = activeCharges.filter(c => !allChargesNatures.includes(c.nature));
   if (chargesNonCategorisees.length > 0) {
     const totalNonCategorisees = chargesNonCategorisees.reduce((sum, c) => sum + toAnnual(c.montant || 0, c.periodicite), 0);
     const existingIndex = chargesParCategorie.findIndex(c => c.categorie === 'Logement & Habitation');

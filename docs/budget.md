@@ -18,7 +18,8 @@
 Le module Budget est **un pur agrégateur d'affichage** : il ne possède aucun moteur de calcul dans
 `src/lib/`, et sur ses deux tables propres (`revenus`, `charges`), il n'ajoute par ailleurs strictement
 rien à la saisie brute — pas de rapprochement bancaire, pas d'historique d'exécution, pas de moteur de
-prévision. Il fusionne trois sources hétérogènes en une seule liste affichée :
+prévision. Il fusionne trois sources hétérogènes en une seule liste affichée pour les revenus, quatre
+pour les charges :
 
 1. **Ses deux tables propres** `revenus` et `charges` — saisie manuelle libre, indépendante de tout actif
    (ex. salaire, loyer payé, courses). C'est la seule vraie saisie native du module.
@@ -26,8 +27,9 @@ prévision. Il fusionne trois sources hétérogènes en une seule liste affiché
    (`AssetDetailsDialog.tsx`, onglet Charges de `AssetForm`/`ChargeForm.tsx`) ou dans Immobilier
    (`ImmobilierGestionDialog`, `LMNPDetailView`) sur un actif donné, republiées ici en lecture seule dès
    que la case « Impact sur le budget » est cochée à la source.
-3. **Rien d'autre** — la table `emprunts` (crédits/prêts, colonne `mensualite`, colonne `reporter_budget`)
-   n'est **jamais lue** par ce module malgré son nom et sa description UI (cf. §3, point de friction n°2).
+3. **`emprunts` avec `reporter_budget = true`, côté charges uniquement** — mensualités des emprunts réels
+   de Patrimoine, republiées en lecture seule dans la catégorie « Emprunts & Crédits », dès que le champ
+   « reporter au budget » est coché sur l'emprunt.
 
 **Écrans** (`BudgetSection.tsx`, 3 onglets + un sélecteur Mensuel/Annuel global) :
 
@@ -42,16 +44,18 @@ affiché sur le Dashboard global (`src/pages/Dashboard.tsx`) — **quatrième** 
 conversion de périodicité (voir §2/§3), avec son propre calcul dupliqué de `toAnnual`.
 
 **Tables Supabase** : `revenus`, `charges` (propres au module) ; `asset_revenus`, `asset_charges`
-(consommées en lecture, `impact_budget = true` uniquement) ; `emprunts` (jamais consommée, cf. §3).
+(consommées en lecture, `impact_budget = true` uniquement) ; `emprunts` (consommée en lecture côté
+charges uniquement, `reporter_budget = true` uniquement).
 
 **Flux clés** :
-- `useRevenus()`/`useCharges()` ([useBudget.ts](src/hooks/useBudget.ts)) font chacun deux appels
-  Supabase en parallèle (`Promise.all`) — la table propre + la fonction miroir côté actifs — et
-  concatènent les deux tableaux en un seul état local, sans déduplication ni tri commun (l'ordre est
-  « classiques d'abord, actifs ensuite », `useBudget.ts:14-20,111-117`).
-- Chaque ligne porte un champ `source: 'budget' | 'immobilier'` qui conditionne l'affichage dans
-  `BudgetList.tsx` : les lignes `'immobilier'` affichent un badge et perdent le menu d'édition/suppression
-  (« Modifier depuis Immobilier », `BudgetList.tsx:141-144,233-236`) — cohérent, la donnée source vit
+- `useRevenus()` ([useBudget.ts](src/hooks/useBudget.ts)) fait deux appels Supabase en parallèle
+  (`Promise.all`) — la table propre + la fonction miroir côté actifs. `useCharges()` en fait trois — la
+  table propre + la fonction miroir côté actifs + `getEmpruntsChargesForBudget()` — et concatène les
+  tableaux en un seul état local, sans déduplication ni tri commun (l'ordre est « classiques d'abord »).
+- Chaque ligne porte un champ `source: 'budget' | 'immobilier' | 'emprunt'` (charges uniquement pour la
+  dernière valeur) qui conditionne l'affichage dans `BudgetList.tsx` : les lignes `'immobilier'`/`'emprunt'`
+  affichent un badge (« Immobilier » / « Emprunt ») et perdent le menu d'édition/suppression
+  (« Modifier depuis Immobilier » / « Modifier depuis Patrimoine ») — cohérent, la donnée source vit
   ailleurs.
 - Le formulaire (`useBudgetEntryForm.ts`, factorisé pour `RevenusForm`/`ChargesForm`) ne s'applique qu'aux
   lignes de `revenus`/`charges` ; il n'existe aucun formulaire Budget pour créer une ligne
@@ -95,14 +99,13 @@ conversion de périodicité (voir §2/§3), avec son propre calcul dupliqué de 
   ([budgetService.ts:68-73](src/services/budgetService.ts:68-73)), introduit par le même commit `8274980`
   pour remplacer un `as any` — la seule méthode du service qui type sa jointure Supabase explicitement.
 
-- **Convention de bénéficiaire/débiteur incohérente entre le module et sa source.** Pour les lignes
-  d'origine `'immobilier'`, `getAssetRevenusForBudget`/`getAssetChargesForBudget` déduisent le
-  bénéficiaire/débiteur à afficher à partir de `assets.detenteur` en comparant sa valeur aux libellés
-  français `'Commun'`/`'Le couple'`
-  ([budgetService.ts:121-125,256-260](src/services/budgetService.ts:121-125)) — alors que
-  `docs/patrimoine.md` documente et que la base confirme que `assets.detenteur` est stocké en base sous
-  les codes bruts `'user'`/`'spouse'`/`'common'` (vérifié : `select distinct detenteur from assets` ne
-  retourne que ces trois valeurs, jamais `'Commun'` ni `'Le couple'`). Voir §3 pour la conséquence.
+- **Résolution du bénéficiaire/débiteur via `mapDetenteurToDisplay()`.** Pour les lignes d'origine
+  `'immobilier'`/`'emprunt'`, `getAssetRevenusForBudget`/`getAssetChargesForBudget`/
+  `getEmpruntsChargesForBudget` résolvent `assets.detenteur`/`emprunts.detenteur` (stocké en base sous les
+  codes bruts `'user'`/`'spouse'`/`'common'`, jamais en libellé français) via
+  `mapDetenteurToDisplay()` ([lib/patrimoine/utils.ts](src/lib/patrimoine/utils.ts)) — le même mapping que
+  Patrimoine, alimenté par `familyService.getFamilyProfile()`/`getMaritalStatus()` (`getFamilyInfoForDetenteur()`
+  dans `budgetService.ts`).
 
 - **Catégorisation par « nature » à vocabulaire disjoint entre Budget et Patrimoine/Immobilier.**
   `REVENUS_CATEGORIES`/`CHARGES_CATEGORIES` ([budgetCategories.ts](src/constants/budgetCategories.ts))
@@ -165,14 +168,14 @@ conversion de périodicité (voir §2/§3), avec son propre calcul dupliqué de 
   à un client est nul — mais le bug est bien vivant dans le code et se déclenchera à la première charge
   en `%` cochée « impact budget ».
 - **Point 2 (`docs/patrimoine.md`, cases dormantes) — `emprunts.reporter_budget` jamais lu par le
-  Budget : toujours ouvert, confirmé, et plus large que documenté.** Aucune requête vers la table
-  `emprunts` n'existe dans tout le périmètre Budget (`grep -rl "emprunt" src/components/budget
-  src/services/budgetService.ts src/hooks/useBudget.ts` ne retourne aucun fichier). Le libellé UI de ce
-  champ (« sera ajoutée automatiquement aux charges du budget mensuel », côté
-  `PassifEmpruntForm.tsx:186`) n'a donc aucune traduction technique — mais la portée est plus large qu'un
-  simple champ dormant : **aucune mensualité d'emprunt réel (`emprunts.mensualite`) n'entre jamais dans
-  le Budget**, qu'elle que soit la valeur de `reporter_budget`. Voir plus bas (🔴) pour la conséquence sur
-  le taux d'endettement.
+  Budget : corrigé le 2026-08-27.** `budgetService.getEmpruntsChargesForBudget()` lit désormais
+  `emprunts` filtrés sur `reporter_budget = true` et `user_id`, et les fusionne dans `useCharges()`
+  comme une troisième source de charges en lecture seule (même mécanisme que `asset_charges` :
+  `source: 'emprunt'`, badge « Emprunt », pas de menu d'édition dans `BudgetList.tsx` — modification
+  exclusivement depuis Patrimoine, pour ne jamais inciter à une ressaisie manuelle en double). Le libellé
+  UI du champ (« sera ajoutée automatiquement aux charges du budget mensuel », `PassifEmpruntForm.tsx:186`)
+  correspond maintenant à un comportement réel. Voir 🔴 → déplacé en résolu ci-dessous pour le détail et
+  la vérification.
 - **Point 3 (`docs/immobilier.md` §3) — bug de périodicité (trimestrielle comptée pour zéro, semestrielle
   divisée par deux) : infirmé pour Budget, corrigé en amont.** Le commit `8274980` (2026-07-14, antérieur
   à cet audit) a introduit `normalizeAssetPeriodicite()` et corrigé `toAnnual` pour gérer explicitement
@@ -181,48 +184,57 @@ conversion de périodicité (voir §2/§3), avec son propre calcul dupliqué de 
   se reproduit donc **pas** dans Budget aujourd'hui pour ces deux périodicités. Un bug **différent**,
   plus étroit, subsiste sur le cas par défaut — détaillé ci-dessous.
 
-### 🔴 Bloquant (peut fausser un calcul montré au client)
+### 🔴 Bloquant
 
-- **« Taux d'endettement » et « Capacité d'endettement » — indicateurs bancaires structurants —
-  n'incluent jamais un crédit réel.** `BudgetResume.tsx:71-81` calcule `mensualitesCreditsAnnuel` en
-  filtrant les `charges` (fusion `revenus`/`charges` + `asset_charges`) dont la `nature` appartient à la
-  catégorie fermée `CHARGES_CATEGORIES['Emprunts & Crédits']` (6 libellés fixes, ex. « Crédit immobilier
-  (résidence principale, secondaire, locatif) »). Cette catégorie n'est peuplée que si l'utilisateur
-  **ressaisit manuellement** un crédit comme charge Budget — la table `emprunts`, où vivent les vrais
-  crédits de Patrimoine avec leur vraie mensualité (`emprunts.mensualite`), n'est jamais consultée (cf.
-  point 2 ci-dessus). Concrètement : un client avec un crédit immobilier de 2 000 €/mois correctement
-  saisi dans Patrimoine → Passifs affichera un taux d'endettement de 0 % dans Budget tant qu'il n'aura pas
-  dupliqué cette information à la main dans une charge Budget de la bonne catégorie — un indicateur
-  présenté comme fiable pour une décision de crédit est en réalité vide par défaut pour la quasi-totalité
-  des utilisateurs qui n'ont saisi leurs emprunts que dans Patrimoine.
-- **Bénéficiaire/débiteur affichés comme des codes internes bruts (`user`/`spouse`/`common`) au lieu d'un
-  libellé lisible, pour toute ligne importée d'un actif.** `getAssetRevenusForBudget`/
-  `getAssetChargesForBudget` testent `detenteur !== 'Commun' && detenteur !== 'Le couple'`
-  ([budgetService.ts:123,258](src/services/budgetService.ts:123)) pour décider d'afficher le détenteur
-  brut ou de replier sur `'Le couple'` — mais `assets.detenteur` ne contient jamais ces libellés français
-  en base (valeurs réelles vérifiées : `'user'`, `'spouse'`, `'common'`). La condition est donc **toujours
-  vraie** : la colonne « Bénéficiaire »/« Débiteur » de `BudgetList.tsx` affiche systématiquement le code
-  brut (`user`, `spouse` ou `common`) pour toute ligne d'origine `'immobilier'`, jamais un nom de personne
-  ni « Le couple ». Ce n'est pas un montant erroné mais un champ montré au client qui expose un
-  identifiant technique interne à la place d'une information civile — classé ici plutôt qu'en cosmétique
-  car garanti de se produire à 100 % des occurrences (pas un cas limite) et visible sur un écran client.
-  *(0 ligne actuellement concernée en base, cf. point 1 — latent mais certain dès la première charge/revenu
-  d'actif coché « impact budget ».)*
-- **Aucun filtrage par `date_debut`/`date_fin` sur les totaux principaux (Solde, Taux d'endettement,
-  Capacité d'endettement, totaux de `BudgetList`).** `BudgetResume.tsx:40-47` et
-  `BudgetList.tsx:87-88` calculent `totalRevenusAnnuel`/`totalChargesAnnuel` en sommant **toutes** les
-  lignes de `revenus`/`charges` sans jamais tester `date_debut`/`date_fin`, alors que le champ existe,
-  est saisissable dans les deux formulaires, et **est** effectivement exploité — mais seulement dans le
-  composant `SeasonalityChart` du même fichier ([BudgetResume.tsx:343-383](src/components/budget/BudgetResume.tsx:343-383))
-  pour exclure les mois hors période. Concrètement : une charge avec une `date_fin` dans le passé (crédit
-  soldé, loyer temporaire terminé) disparaît correctement du graphique de saisonnalité mensuelle, mais
-  continue à gonfler indéfiniment le Solde, le Taux d'endettement et la Capacité d'endettement affichés
-  juste au-dessus, sur le même écran, tant que la ligne n'est pas supprimée manuellement — deux sections
-  du même écran donnent des lectures contradictoires de la même donnée pour le même cas (fin de charge
-  passée), l'une corrigeant explicitement ce que l'autre ignore.
+Plus aucun bloquant ouvert à ce jour (2026-08-27) — les trois points identifiés par l'audit initial ont
+été corrigés et vérifiés sur cas concret :
+
+- **« Taux d'endettement » et « Capacité d'endettement » n'incluaient jamais un crédit réel — corrigé.**
+  `mensualitesCreditsAnnuel` (`BudgetResume.tsx`) ne captait que les charges Budget ressaisies
+  manuellement dans la catégorie fermée `CHARGES_CATEGORIES['Emprunts & Crédits']` ; la table `emprunts`
+  (vrais crédits Patrimoine, `emprunts.mensualite`) n'était jamais consultée. Fix : nouvelle méthode
+  `budgetService.getEmpruntsChargesForBudget()` qui lit les `emprunts` avec `reporter_budget = true`,
+  fusionnés en lecture seule dans `useCharges()` (`source: 'emprunt'`, badge « Emprunt », édition
+  redirigée vers Patrimoine dans `BudgetList.tsx` — même mécanisme que `asset_charges`, pour ne jamais
+  inciter à une ressaisie manuelle en double). La `nature` de l'emprunt est mappée vers l'une des 6
+  valeurs fermées de `CHARGES_CATEGORIES['Emprunts & Crédits']`
+  (`EMPRUNT_NATURE_TO_BUDGET_CATEGORY` dans `budgetService.ts`), pour que le filtre par catégorie déjà en
+  place dans `BudgetResume.tsx` la capte sans modification de son calcul. **Vérifié sur cas concret**
+  (simulation isolée) : un crédit immobilier de 2 000 €/mois avec `reporter_budget = true`, jamais
+  ressaisi en charge Budget, produit désormais un taux d'endettement de 33,3 % pour 6 000 €/mois de
+  revenus (au lieu de 0 % avant correctif). Risque résiduel documenté en 🟠.
+- **Bénéficiaire/débiteur affichés comme des codes internes bruts (`user`/`spouse`/`common`) — corrigé.**
+  `getAssetRevenusForBudget`/`getAssetChargesForBudget` comparaient `detenteur` aux libellés français
+  `'Commun'`/`'Le couple'`, qui n'existent jamais en base (valeurs réelles : `'user'`/`'spouse'`/`'common'`),
+  rendant la condition toujours vraie. Fix : les deux méthodes (et la nouvelle
+  `getEmpruntsChargesForBudget`) utilisent désormais `mapDetenteurToDisplay()`
+  ([lib/patrimoine/utils.ts](src/lib/patrimoine/utils.ts)) — le même mapping que Patrimoine — alimenté par
+  `familyService.getFamilyProfile()`/`getMaritalStatus()` (déjà une dépendance légitime de Budget via
+  `useBudgetEntryForm.ts`). **Vérifié en base** (requête directe jointe `assets` × `family_profiles` ×
+  `marital_status`) : un actif `detenteur='user'`/`'spouse'`/`'common'` affiche désormais le prénom réel
+  de l'utilisateur/du conjoint ou « Le couple », plus jamais le code brut.
+- **Aucun filtrage par `date_debut`/`date_fin` sur les totaux principaux — corrigé.**
+  `totalRevenusAnnuel`/`totalChargesAnnuel` (`BudgetResume.tsx`), la répartition par catégories et les
+  totaux de `BudgetList.tsx` sommaient toutes les lignes sans tester `date_debut`/`date_fin`, alors que
+  `SeasonalityChart` les excluait déjà correctement au niveau mensuel — deux sections du même écran se
+  contredisaient sur les lignes terminées. Fix : un filtre `isActiveToday()` (ligne démarrée et non
+  terminée à la date du jour) est appliqué aux totaux et à la répartition par catégories des deux
+  fichiers ; la liste des lignes elle-même reste affichée en entier (pour rester éditable/supprimable), et
+  `SeasonalityChart` garde sa propre logique de lissage mensuel, non modifiée. **Vérifié sur cas
+  concret** : une charge de loyer terminée (`date_fin` passée, 800 €/mois) + une charge active
+  (1 200 €/mois) donnent un total de 1 200 €/mois après correctif, contre 2 000 €/mois avant.
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
+- **Double comptage résiduel possible entre un emprunt réel (`reporter_budget = true`) et une charge
+  Budget ressaisie manuellement pour le même crédit.** Depuis le fix du point ci-dessus (🔴, résolu), un
+  crédit avec `reporter_budget = true` apparaît automatiquement dans Budget — plus besoin de le ressaisir
+  manuellement. Mais si un utilisateur avait déjà créé une charge Budget manuelle pour ce crédit *avant*
+  de cocher `reporter_budget` sur l'emprunt réel, les deux lignes coexistent et sont comptées deux fois
+  dans le taux d'endettement, sans clé commune permettant de détecter le doublon automatiquement.
+  **Vérifié en base au 2026-08-27** : la table `emprunts` est actuellement vide (0 ligne), ce risque est
+  donc nul en pratique aujourd'hui ; à surveiller à mesure que des emprunts réels sont saisis avec ce flag
+  coché.
 - **Cas par défaut de `toAnnual` divergent entre les quatre implémentations, pour une périodicité non
   reconnue.** `BudgetList.tsx:60-62` traite tout défaut comme mensuel (`× 12`) ; `BudgetResume.tsx:27-32`
   et `Dashboard.tsx:43-45` diffèrent aussi entre eux : `BudgetResume` range le défaut dans le même `case`
@@ -283,26 +295,20 @@ conversion de périodicité (voir §2/§3), avec son propre calcul dupliqué de 
 
 - **V1 — en place** : saisie manuelle de revenus/charges avec catégorie/nature/périodicité/bénéficiaire
   ou débiteur, fusion en lecture avec les revenus/charges d'actifs marqués « impact sur le budget » dans
-  Patrimoine/Immobilier, bascule d'affichage Mensuel/Annuel, KPI de synthèse (solde, taux et capacité
-  d'endettement — sous réserve de la limite 🔴 ci-dessus), répartition par catégories (2 donuts),
-  graphique de saisonnalité sur 12 mois avec prise en compte de `date_debut`/`date_fin`, widget de
-  synthèse sur le Dashboard global.
+  Patrimoine/Immobilier, fusion en lecture des mensualités d'emprunts réels marqués « reporter au
+  budget », bascule d'affichage Mensuel/Annuel, KPI de synthèse (solde, taux et capacité d'endettement),
+  répartition par catégories (2 donuts), graphique de saisonnalité sur 12 mois avec prise en compte de
+  `date_debut`/`date_fin`, widget de synthèse sur le Dashboard global.
 - **Différé, déductible du code** :
-  - **Aucun rattachement aux vrais crédits (`emprunts`)** : ni via `reporter_budget` (jamais lu, cf.
-    §3), ni via une fusion explicite comparable à celle déjà faite pour `asset_revenus`/`asset_charges`.
-    Le Budget ne connaît que ce que l'utilisateur ressaisit manuellement dans une charge de catégorie
-    « Emprunts & Crédits ». C'est la limite la plus structurante du module : les deux indicateurs les
-    plus « professionnels » de l'écran Résumé (taux et capacité d'endettement) reposent sur une source de
-    données qui, par défaut, ne contient aucun crédit réel.
   - **Aucun rapprochement bancaire ni suivi d'exécution** : le module ne distingue à aucun moment un
     revenu/charge *prévu* (budget) d'un mouvement *réellement constaté* sur un compte — toutes les lignes
     sont des montants déclaratifs, lissés sur l'année, sans lien avec une transaction réelle.
   - **Pas de prise en compte de l'unité `%` des charges d'actif** (`asset_charges.unite`) — traité comme
     un chantier commencé côté Patrimoine (le champ existe, contraint en base) mais jamais consommé côté
     Budget, plutôt qu'un écart assumé et documenté.
-  - **Pas de vue par bénéficiaire/débiteur agrégée** — le champ existe et est saisi (voire calculé
-    automatiquement pour les lignes d'actif, avec le bug documenté en §3) mais n'alimente aucun total
-    « par personne », contrairement au module Patrimoine qui a une vue « par tête ».
+  - **Pas de vue par bénéficiaire/débiteur agrégée** — le champ existe, est saisi et correctement résolu
+    en libellé civil pour les lignes d'actif/emprunt (§3), mais n'alimente aucun total « par personne »,
+    contrairement au module Patrimoine qui a une vue « par tête ».
 - **Hors périmètre de cet audit, signalé comme travail de suivi** : un audit du bug d'origine Patrimoine
   identifié en passant — `PERIODICITE_OPTIONS` de `assetTypes.ts` propose « Ponctuelle » comme périodicité
   de charge d'actif dans `ChargeForm.tsx`, alors que la contrainte `CHECK` réelle sur

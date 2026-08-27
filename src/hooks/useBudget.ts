@@ -107,14 +107,15 @@ export const useCharges = () => {
   const fetchCharges = async () => {
     setLoading(true);
     try {
-      // Fetch both classic charges and asset charges
-      const [classicCharges, assetCharges] = await Promise.all([
+      // Fetch classic charges, asset charges, and emprunts (reporter_budget = true)
+      const [classicCharges, assetCharges, empruntsCharges] = await Promise.all([
         budgetService.getCharges(),
-        budgetService.getAssetChargesForBudget()
+        budgetService.getAssetChargesForBudget(),
+        budgetService.getEmpruntsChargesForBudget()
       ]);
-      
-      // Merge both sources
-      setCharges([...classicCharges, ...assetCharges]);
+
+      // Merge all sources
+      setCharges([...classicCharges, ...assetCharges, ...empruntsCharges]);
     } catch (error) {
       toast({
         title: "Erreur",

@@ -1,5 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
+import { familyService } from '@/services/familyService';
+import { mapDetenteurToDisplay, FamilyInfo } from '@/lib/patrimoine/utils';
 
 export type Periodicite = 'mensuel' | 'trimestriel' | 'semestriel' | 'annuel' | 'ponctuel';
 
@@ -38,8 +40,8 @@ export interface Charge {
   jour_fixe?: number;
   created_at: string;
   updated_at: string;
-  // Extended fields for immobilier
-  source?: 'budget' | 'immobilier';
+  // Extended fields for immobilier / emprunts
+  source?: 'budget' | 'immobilier' | 'emprunt';
   asset_id?: string;
   asset_name?: string;
 }
@@ -63,6 +65,37 @@ const normalizeAssetPeriodicite = (periodicite: string | null | undefined): stri
       return periodicite || 'mensuel';
   }
 };
+
+// Récupère les prénoms utilisateur/conjoint pour résoudre assets.detenteur ('user'/'spouse'/'common',
+// cf. docs/patrimoine.md) en un libellé civil affichable, via le même mapping que Patrimoine
+// (mapDetenteurToDisplay, src/lib/patrimoine/utils.ts) plutôt qu'une comparaison aux libellés français
+// que la colonne ne contient jamais.
+const getFamilyInfoForDetenteur = async (): Promise<FamilyInfo> => {
+  const [familyProfile, maritalStatus] = await Promise.all([
+    familyService.getFamilyProfile(),
+    familyService.getMaritalStatus(),
+  ]);
+  return {
+    hasPartner: !!maritalStatus?.prenom_conjoint,
+    userFirstName: familyProfile?.prenom,
+    partnerFirstName: maritalStatus?.prenom_conjoint,
+  };
+};
+
+// Fait correspondre la nature libre d'un emprunt (EMPRUNT_NATURES, src/constants/assetTypes.ts) à l'une
+// des 6 natures fermées de CHARGES_CATEGORIES['Emprunts & Crédits'] (budgetCategories.ts), pour que la
+// mensualité remonte dans le calcul du taux/capacité d'endettement de BudgetResume.tsx sans code
+// supplémentaire côté calcul (le filtre par catégorie existant la capte automatiquement).
+const EMPRUNT_NATURE_TO_BUDGET_CATEGORY: Record<string, string> = {
+  'Crédit à la consommation': 'Crédit à la consommation',
+  'Crédit renouvelable / revolving': 'Crédit renouvelable / revolving',
+  'Prêt immobilier (résidence principale)': 'Crédit immobilier (résidence principale, secondaire, locatif)',
+  'Prêt immobilier (résidences secondaires)': 'Crédit immobilier (résidence principale, secondaire, locatif)',
+  'Prêt immobilier locatif (investissement locatif)': 'Crédit immobilier (résidence principale, secondaire, locatif)',
+  'Prêt pour acquisition de SCPI': 'Crédit immobilier (résidence principale, secondaire, locatif)',
+};
+const mapEmpruntNatureToBudgetCategory = (nature: string): string =>
+  EMPRUNT_NATURE_TO_BUDGET_CATEGORY[nature] || 'Autres emprunts';
 
 // Forme des lignes retournées par la jointure asset_charges -> assets (colonnes sélectionnées uniquement)
 type AssetChargeWithAsset = Pick<
@@ -101,11 +134,14 @@ export const budgetService = {
     const assetIds = [...new Set(revenusData.map(r => r.asset_id))];
 
     // Fetch user's assets with detenteur field
-    const { data: assetsData, error: assetsError } = await supabase
-      .from('assets')
-      .select('id, denomination, user_id, detenteur')
-      .eq('user_id', user.id)
-      .in('id', assetIds);
+    const [{ data: assetsData, error: assetsError }, familyInfo] = await Promise.all([
+      supabase
+        .from('assets')
+        .select('id, denomination, user_id, detenteur')
+        .eq('user_id', user.id)
+        .in('id', assetIds),
+      getFamilyInfoForDetenteur(),
+    ]);
 
     if (assetsError) throw assetsError;
 
@@ -117,13 +153,9 @@ export const budgetService = {
       .filter(item => assetsMap.has(item.asset_id))
       .map(item => {
         const asset = assetsMap.get(item.asset_id);
-        // Déterminer le bénéficiaire basé sur le détenteur de l'asset
-        const detenteur = asset?.detenteur;
-        let beneficiaire = 'Le couple';
-        if (detenteur && detenteur !== 'Commun' && detenteur !== 'Le couple') {
-          beneficiaire = detenteur;
-        }
-        
+        // Déterminer le bénéficiaire basé sur le détenteur de l'asset ('user'/'spouse'/'common' en base)
+        const beneficiaire = mapDetenteurToDisplay(asset?.detenteur, familyInfo);
+
         return {
           id: item.id,
           user_id: user.id,
@@ -223,28 +255,31 @@ export const budgetService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    const { data, error } = await supabase
-      .from('asset_charges')
-      .select(`
-        id,
-        asset_id,
-        type_charge,
-        denomination,
-        debiteur,
-        montant,
-        periodicite,
-        date_debut,
-        duree_fin_date,
-        created_at,
-        updated_at,
-        assets!inner (
+    const [{ data, error }, familyInfo] = await Promise.all([
+      supabase
+        .from('asset_charges')
+        .select(`
           id,
+          asset_id,
+          type_charge,
           denomination,
-          user_id,
-          detenteur
-        )
-      `)
-      .eq('impact_budget', true);
+          debiteur,
+          montant,
+          periodicite,
+          date_debut,
+          duree_fin_date,
+          created_at,
+          updated_at,
+          assets!inner (
+            id,
+            denomination,
+            user_id,
+            detenteur
+          )
+        `)
+        .eq('impact_budget', true),
+      getFamilyInfoForDetenteur(),
+    ]);
 
     if (error) throw error;
 
@@ -252,13 +287,9 @@ export const budgetService = {
     return ((data || []) as AssetChargeWithAsset[])
       .filter(item => item.assets?.user_id === user.id)
       .map(item => {
-        // Déterminer le débiteur basé sur le détenteur de l'asset
-        const detenteur = item.assets?.detenteur;
-        let debiteurFinal = 'Le couple';
-        if (detenteur && detenteur !== 'Commun' && detenteur !== 'Le couple') {
-          debiteurFinal = detenteur;
-        }
-        
+        // Déterminer le débiteur basé sur le détenteur de l'asset ('user'/'spouse'/'common' en base)
+        const debiteurFinal = mapDetenteurToDisplay(item.assets?.detenteur, familyInfo);
+
         return {
           id: item.id,
           user_id: user.id,
@@ -277,6 +308,41 @@ export const budgetService = {
           asset_name: item.assets?.denomination || 'Bien immobilier'
         };
       });
+  },
+
+  // Mensualités des emprunts réels de Patrimoine marqués « reporter au budget » — seule source qui
+  // alimente aujourd'hui le taux/capacité d'endettement avec un crédit réel (cf. docs/budget.md §3).
+  // Lecture seule ici (source: 'emprunt'), au même titre que getAssetChargesForBudget : la modification
+  // se fait exclusivement depuis Patrimoine, pour éviter toute ressaisie manuelle en double dans Budget.
+  async getEmpruntsChargesForBudget(): Promise<Charge[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const [{ data, error }, familyInfo] = await Promise.all([
+      supabase
+        .from('emprunts')
+        .select('id, nature, libelle, mensualite, detenteur, created_at, updated_at')
+        .eq('user_id', user.id)
+        .eq('reporter_budget', true),
+      getFamilyInfoForDetenteur(),
+    ]);
+
+    if (error) throw error;
+
+    return (data || [])
+      .filter(item => item.mensualite && item.mensualite > 0)
+      .map(item => ({
+        id: item.id,
+        user_id: user.id,
+        nature: mapEmpruntNatureToBudgetCategory(item.nature),
+        libelle: item.libelle,
+        debiteur: mapDetenteurToDisplay(item.detenteur, familyInfo),
+        montant: item.mensualite,
+        periodicite: 'mensuel',
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        source: 'emprunt' as const,
+      }));
   },
 
   async createCharge(charge: Omit<Charge, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Charge> {
