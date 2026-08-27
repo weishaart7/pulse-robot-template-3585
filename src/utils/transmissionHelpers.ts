@@ -714,12 +714,18 @@ export function buildSpouseAsDecedentFamilyGraph(
 
 /**
  * Ligne de passif telle que consommée par les constructeurs de
- * `PatrimonySnapshot` ci-dessous : seuls `montant_du` et `qualification_bien`
- * sont lus (jamais `detenteur` ni les pourcentages).
+ * `PatrimonySnapshot` ci-dessous. `detenteur`/`pourcentage_utilisateur`/
+ * `pourcentage_conjoint` alimentent `getPartSuccessorale` dans
+ * `buildPatrimonySnapshot` pour pondérer un passif `Bien propre`/
+ * `Bien personnel`/`Indivision` par son détenteur réel, au lieu de le déduire
+ * systématiquement à 100 % (audit module Patrimoine, 2026-08-27).
  */
 export interface PassifLine {
   montant_du: number;
   qualification_bien?: string | null;
+  detenteur?: string | null;
+  pourcentage_utilisateur?: number | null;
+  pourcentage_conjoint?: number | null;
 }
 
 /**
@@ -750,7 +756,13 @@ export interface PassifLine {
  *   historiques, ex. tests), comportement inchangé : `montant_du` brut.
  */
 export function buildPassifLines(
-  passifs: { montant_du?: number | null; qualification_bien?: string | null }[],
+  passifs: {
+    montant_du?: number | null;
+    qualification_bien?: string | null;
+    detenteur?: string | null;
+    pourcentage_utilisateur?: number | null;
+    pourcentage_conjoint?: number | null;
+  }[],
   emprunts: {
     capital_restant_du?: number | null;
     qualification_bien?: string | null;
@@ -758,13 +770,19 @@ export function buildPassifLines(
     capital_garanti_deces?: number | null;
     quotite_assuree_utilisateur?: number | null;
     quotite_assuree_conjoint?: number | null;
+    detenteur?: string | null;
+    pourcentage_utilisateur?: number | null;
+    pourcentage_conjoint?: number | null;
   }[],
   defunt?: 'user' | 'spouse'
 ): PassifLine[] {
   return [
     ...passifs.map(p => ({
       montant_du: p.montant_du || 0,
-      qualification_bien: p.qualification_bien
+      qualification_bien: p.qualification_bien,
+      detenteur: p.detenteur,
+      pourcentage_utilisateur: p.pourcentage_utilisateur,
+      pourcentage_conjoint: p.pourcentage_conjoint
     })),
     ...emprunts
       .filter(e => !e.societe_id)
@@ -772,7 +790,13 @@ export function buildPassifLines(
         const capitalRestantDu = e.capital_restant_du || 0;
 
         if (!defunt) {
-          return { montant_du: capitalRestantDu, qualification_bien: e.qualification_bien };
+          return {
+            montant_du: capitalRestantDu,
+            qualification_bien: e.qualification_bien,
+            detenteur: e.detenteur,
+            pourcentage_utilisateur: e.pourcentage_utilisateur,
+            pourcentage_conjoint: e.pourcentage_conjoint
+          };
         }
 
         const quotiteAssuree = defunt === 'spouse'
@@ -789,10 +813,40 @@ export function buildPassifLines(
 
         return {
           montant_du: Math.max(0, capitalRestantDu - montantAssure),
-          qualification_bien: e.qualification_bien
+          qualification_bien: e.qualification_bien,
+          detenteur: e.detenteur,
+          pourcentage_utilisateur: e.pourcentage_utilisateur,
+          pourcentage_conjoint: e.pourcentage_conjoint
         };
       })
   ];
+}
+
+/**
+ * Fraction (0 à 1) d'un passif `Bien propre`/`Bien personnel`/`Indivision`
+ * entrant dans la succession du défunt, pondérée par son détenteur réel via
+ * `getPartSuccessorale` (même logique que pour un actif, cf.
+ * succession.ts). N'est appelée qu'en l'absence de fraction retournée par
+ * `getFractionPassifAjustee` (pas de clause d'avantage matrimonial
+ * applicable). Un passif `Bien commun` sans clause de partage inégal, ou dont
+ * la qualification est absente/`À qualifier`, reste déduit à 100 % —
+ * comportement historique volontairement inchangé pour ces deux cas (cf.
+ * commentaire de `partConjointInegal` sur `buildPatrimonySnapshot`, et
+ * §3 de docs/transmission.md pour l'absence de qualification : ne jamais
+ * deviner une répartition, la valeur la plus prudente pour un passif est de
+ * le déduire en totalité plutôt que de sous-estimer la dette).
+ */
+function getFractionPassifParDetenteur(passif: PassifLine): number {
+  const qualification = passif.qualification_bien;
+  if (qualification === 'Bien propre' || qualification === 'Bien personnel' || qualification === 'Indivision') {
+    return getPartSuccessorale({
+      qualification_bien: qualification,
+      detenteur: passif.detenteur,
+      pourcentage_utilisateur: passif.pourcentage_utilisateur,
+      pourcentage_conjoint: passif.pourcentage_conjoint
+    });
+  }
+  return 1;
 }
 
 /**
@@ -800,7 +854,7 @@ export function buildPassifLines(
  */
 export function buildPatrimonySnapshot(
   assets: Asset[],
-  passifs: { montant_du: number; qualification_bien?: string | null }[],
+  passifs: PassifLine[],
   assuranceVieTotal: number = 0,
   // Partage inégal (art. 1520 C. civ.) : seule clause dont l'effet est
   // symétrique entre actif et passif communs (art. 1521 C. civ.) — le
@@ -838,7 +892,7 @@ export function buildPatrimonySnapshot(
       { id: '', qualification_bien: p.qualification_bien },
       { partConjointInegal }
     );
-    return sum + (p.montant_du || 0) * (fractionAjustee ?? 1);
+    return sum + (p.montant_du || 0) * (fractionAjustee ?? getFractionPassifParDetenteur(p));
   }, 0);
 
   return {
