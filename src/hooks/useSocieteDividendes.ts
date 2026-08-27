@@ -17,7 +17,7 @@ export const useSocieteDividendes = (societeId: string | null) => {
       const data = await societeDividendeService.getBySociete(societeId);
       setDividendes(data);
     } catch (error) {
-      console.error('Erreur chargement dividendes:', error);
+      if (import.meta.env.DEV) console.error('Erreur chargement dividendes:', error);
       toast.error('Erreur lors du chargement des dividendes');
     } finally {
       setLoading(false);
@@ -34,7 +34,7 @@ export const useSocieteDividendes = (societeId: string | null) => {
       await fetchDividendes();
       toast.success('Dividende ajouté');
     } catch (error) {
-      console.error('Erreur ajout dividende:', error);
+      if (import.meta.env.DEV) console.error('Erreur ajout dividende:', error);
       toast.error('Erreur lors de l\'ajout du dividende');
     }
   };
@@ -45,7 +45,7 @@ export const useSocieteDividendes = (societeId: string | null) => {
       await fetchDividendes();
       toast.success('Dividende mis à jour');
     } catch (error) {
-      console.error('Erreur mise à jour dividende:', error);
+      if (import.meta.env.DEV) console.error('Erreur mise à jour dividende:', error);
       toast.error('Erreur lors de la mise à jour');
     }
   };
@@ -56,7 +56,7 @@ export const useSocieteDividendes = (societeId: string | null) => {
       await fetchDividendes();
       toast.success('Dividende supprimé');
     } catch (error) {
-      console.error('Erreur suppression dividende:', error);
+      if (import.meta.env.DEV) console.error('Erreur suppression dividende:', error);
       toast.error('Erreur lors de la suppression');
     }
   };

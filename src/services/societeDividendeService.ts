@@ -43,10 +43,14 @@ export const societeDividendeService = {
   },
 
   async update(id: string, dividende: Partial<Omit<SocieteDividende, 'id' | 'user_id' | 'created_at' | 'updated_at'>>): Promise<SocieteDividende> {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) throw new Error('Non authentifié');
+
     const { data, error } = await supabase
       .from('societe_dividendes')
       .update(dividende)
       .eq('id', id)
+      .eq('user_id', userData.user.id)
       .select()
       .single();
 
@@ -55,10 +59,14 @@ export const societeDividendeService = {
   },
 
   async delete(id: string): Promise<void> {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) throw new Error('Non authentifié');
+
     const { error } = await supabase
       .from('societe_dividendes')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', userData.user.id);
 
     if (error) throw error;
   },

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Asset } from '@/services/assetService';
 import { Badge } from '@/components/ui/badge';
@@ -43,10 +44,16 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
     if (asset?.id) {
       assetDemembrementService.getByAsset(asset.id)
         .then(setDemembrements)
-        .catch(() => setDemembrements([]));
+        .catch(() => {
+          setDemembrements([]);
+          toast.error('Impossible de charger le démembrement de cet actif');
+        });
       passifService.getEmpruntsByAssetId(asset.id)
         .then(setEmpruntsLies)
-        .catch(() => setEmpruntsLies([]));
+        .catch(() => {
+          setEmpruntsLies([]);
+          toast.error('Impossible de charger les emprunts liés à cet actif');
+        });
     } else {
       setDemembrements([]);
       setEmpruntsLies([]);

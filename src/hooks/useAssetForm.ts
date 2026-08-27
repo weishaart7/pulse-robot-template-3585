@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
@@ -108,7 +109,9 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
           extensionProprsParNature: clausesContrat?.extension_propres_par_nature?.enabled,
         });
       } catch (error) {
+        if (import.meta.env.DEV) console.error('Erreur lors du chargement des données familiales:', error);
         setDetenteurOptions(['Utilisateur']);
+        toast.error('Impossible de charger les informations familiales, options limitées');
       }
     };
 
@@ -120,7 +123,10 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
     if (asset?.id) {
       assetIndivisaireService.getByAsset(asset.id)
         .then((rows) => setIndivisaires(draftsFromIndivisaires(rows)))
-        .catch(() => setIndivisaires([]));
+        .catch(() => {
+          setIndivisaires([]);
+          toast.error('Impossible de charger les co-indivisaires de cet actif');
+        });
     }
   }, [asset?.id]);
 
@@ -129,7 +135,10 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
     if (asset?.id) {
       assetDemembrementService.getByAsset(asset.id)
         .then((rows) => setDemembrements(draftsFromDemembrements(rows)))
-        .catch(() => setDemembrements([]));
+        .catch(() => {
+          setDemembrements([]);
+          toast.error('Impossible de charger le démembrement de cet actif');
+        });
     }
   }, [asset?.id]);
 

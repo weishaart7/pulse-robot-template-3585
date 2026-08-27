@@ -36,20 +36,28 @@ export const assetDemembrementService = {
   },
 
   async getByAsset(assetId: string): Promise<AssetDemembrement[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
     const { data, error } = await supabase
       .from('asset_demembrements')
       .select('*')
       .eq('asset_id', assetId)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: true });
     if (error) throw error;
     return (data || []) as AssetDemembrement[];
   },
 
   async getByFamilyLink(familyLinkId: string): Promise<AssetDemembrementWithAsset[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
     const { data, error } = await supabase
       .from('asset_demembrements')
       .select('*, assets(*)')
       .eq('family_link_id', familyLinkId)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: true });
     if (error) throw error;
     return (data || []) as AssetDemembrementWithAsset[];
@@ -63,7 +71,8 @@ export const assetDemembrementService = {
     const { error: delError } = await supabase
       .from('asset_demembrements')
       .delete()
-      .eq('asset_id', assetId);
+      .eq('asset_id', assetId)
+      .eq('user_id', user.id);
     if (delError) throw delError;
 
     if (demembrements.length === 0) return [];

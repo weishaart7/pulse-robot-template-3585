@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import RangeNavigator from '@/components/ui/range-navigator';
 import { PatrimoineChart } from './PatrimoineChart';
@@ -65,7 +66,10 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
   useEffect(() => {
     assetValorisationService.getAllForUser()
       .then(setValorisations)
-      .catch(() => setValorisations([]));
+      .catch(() => {
+        setValorisations([]);
+        toast.error("Impossible de charger l'historique de valorisation");
+      });
   }, []);
 
   const {

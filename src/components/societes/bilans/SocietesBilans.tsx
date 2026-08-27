@@ -44,7 +44,7 @@ export const SocietesBilans: React.FC = () => {
       toast.success('Bilan enregistré');
       setEditing(null);
       refetch();
-    } catch (e) { toast.error('Erreur'); console.error(e); }
+    } catch (e) { toast.error('Erreur'); if (import.meta.env.DEV) console.error(e); }
   };
 
   const chartData = [...bilans].reverse().map(b => ({

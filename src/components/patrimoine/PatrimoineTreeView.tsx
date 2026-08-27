@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { toast } from 'sonner';
 import { ChevronDown, ChevronRight, MoreHorizontal, Edit, Trash2, Search, TrendingUp, TrendingDown, Scale, Link2, AlertTriangle } from 'lucide-react';
 import { Asset } from '@/services/assetService';
 import { Emprunt } from '@/services/passifService';
@@ -41,7 +42,10 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
   useEffect(() => {
     assetDemembrementService.getAllForUser()
       .then(setDemembrements)
-      .catch(() => setDemembrements([]));
+      .catch(() => {
+        setDemembrements([]);
+        toast.error('Impossible de charger les démembrements de propriété');
+      });
   }, []);
 
   const demembrementsByAsset = useMemo(() => {

@@ -38,9 +38,11 @@ export const toReadableParticipationError = (error: unknown): string => {
 
 export const societeParticipationService = {
   async list(): Promise<SocieteParticipation[]> {
+    const user = await requireUser();
     const { data, error } = await supabase
       .from('societe_participations')
-      .select('*');
+      .select('*')
+      .eq('user_id', user.id);
     if (error) throw error;
     return (data || []) as SocieteParticipation[];
   },
@@ -67,10 +69,12 @@ export const societeParticipationService = {
     id: string,
     changes: Partial<Pick<SocieteParticipation, 'societe_mere_id' | 'societe_fille_id' | 'pourcentage' | 'nombre_titres' | 'date_debut' | 'commentaire'>>
   ): Promise<SocieteParticipation> {
+    const user = await requireUser();
     const { data, error } = await supabase
       .from('societe_participations')
       .update(changes)
       .eq('id', id)
+      .eq('user_id', user.id)
       .select()
       .single();
     if (error) throw new Error(toReadableParticipationError(error));
@@ -78,7 +82,12 @@ export const societeParticipationService = {
   },
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase.from('societe_participations').delete().eq('id', id);
+    const user = await requireUser();
+    const { error } = await supabase
+      .from('societe_participations')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
     if (error) throw new Error(toReadableParticipationError(error));
   },
 };

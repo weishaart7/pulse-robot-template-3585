@@ -29,10 +29,14 @@ export const assetValorisationService = {
   },
 
   async getByAssetId(assetId: string): Promise<AssetValorisation[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
     const { data, error } = await supabase
       .from('asset_valorisations')
       .select('*')
       .eq('asset_id', assetId)
+      .eq('user_id', user.id)
       .order('date_valorisation', { ascending: false });
 
     if (error) throw error;
@@ -54,10 +58,14 @@ export const assetValorisationService = {
   },
 
   async update(id: string, valorisation: Partial<Omit<AssetValorisation, 'id' | 'user_id' | 'created_at'>>): Promise<AssetValorisation> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
     const { data, error } = await supabase
       .from('asset_valorisations')
       .update(valorisation)
       .eq('id', id)
+      .eq('user_id', user.id)
       .select()
       .single();
 
@@ -66,10 +74,14 @@ export const assetValorisationService = {
   },
 
   async delete(id: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
     const { error } = await supabase
       .from('asset_valorisations')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', user.id);
 
     if (error) throw error;
   },

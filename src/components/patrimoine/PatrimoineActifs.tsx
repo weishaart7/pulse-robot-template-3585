@@ -44,7 +44,7 @@ export const PatrimoineActifs = () => {
         },
       });
     } catch (err) {
-      console.error('Auto-création société depuis actif échouée:', err);
+      if (import.meta.env.DEV) console.error('Auto-création société depuis actif échouée:', err);
     }
   };
 
@@ -56,7 +56,7 @@ export const PatrimoineActifs = () => {
       const today = format(new Date(), 'yyyy-MM-dd');
       await assetValorisationService.upsertForDate(savedAsset.id!, today, savedAsset.valeur_estimee);
     } catch (err) {
-      console.error('Alimentation historique de valorisation échouée:', err);
+      if (import.meta.env.DEV) console.error('Alimentation historique de valorisation échouée:', err);
     }
   };
 
@@ -127,7 +127,7 @@ export const PatrimoineActifs = () => {
       setShowAssetForm(false);
       setEditingAsset(null);
     } catch (error) {
-      console.error('Error saving asset:', error);
+      if (import.meta.env.DEV) console.error('Error saving asset:', error);
       if (error instanceof Error && error.message.includes('co-indivisaires')) {
         toast.error("Le total des parts des indivisaires dépasse 100%. Merci de corriger la répartition avant d'enregistrer.");
       }

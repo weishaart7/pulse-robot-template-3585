@@ -62,7 +62,7 @@ export const SocietesGouvernance: React.FC = () => {
       toast.success('Associé enregistré');
       setEditingAssoc(null);
       refetchAssocies();
-    } catch (e) { toast.error('Erreur'); console.error(e); }
+    } catch (e) { toast.error('Erreur'); if (import.meta.env.DEV) console.error(e); }
   };
 
   const saveCCA = async () => {
@@ -81,7 +81,7 @@ export const SocietesGouvernance: React.FC = () => {
       toast.success('CCA enregistré');
       setEditingCCA(null);
       refetchCCA();
-    } catch (e) { toast.error('Erreur'); console.error(e); }
+    } catch (e) { toast.error('Erreur'); if (import.meta.env.DEV) console.error(e); }
   };
 
   const savePacte = async () => {
@@ -91,7 +91,7 @@ export const SocietesGouvernance: React.FC = () => {
       toast.success('Pacte enregistré');
       setPacteDraft(null);
       refetchPacte();
-    } catch (e) { toast.error('Erreur'); console.error(e); }
+    } catch (e) { toast.error('Erreur'); if (import.meta.env.DEV) console.error(e); }
   };
 
   if (societes.length === 0) {

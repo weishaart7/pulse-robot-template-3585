@@ -17,7 +17,7 @@ export const useSocieteValorisations = (societeId: string | null) => {
       const data = await societeValorisationService.getBySociete(societeId);
       setValorisations(data);
     } catch (error) {
-      console.error('Erreur chargement valorisations:', error);
+      if (import.meta.env.DEV) console.error('Erreur chargement valorisations:', error);
       toast.error('Erreur lors du chargement des valorisations');
     } finally {
       setLoading(false);
@@ -34,7 +34,7 @@ export const useSocieteValorisations = (societeId: string | null) => {
       await fetchValorisations();
       toast.success('Valorisation ajoutée');
     } catch (error) {
-      console.error('Erreur ajout valorisation:', error);
+      if (import.meta.env.DEV) console.error('Erreur ajout valorisation:', error);
       toast.error('Erreur lors de l\'ajout de la valorisation');
     }
   };
@@ -45,7 +45,7 @@ export const useSocieteValorisations = (societeId: string | null) => {
       await fetchValorisations();
       toast.success('Valorisation mise à jour');
     } catch (error) {
-      console.error('Erreur mise à jour valorisation:', error);
+      if (import.meta.env.DEV) console.error('Erreur mise à jour valorisation:', error);
       toast.error('Erreur lors de la mise à jour');
     }
   };
@@ -56,7 +56,7 @@ export const useSocieteValorisations = (societeId: string | null) => {
       await fetchValorisations();
       toast.success('Valorisation supprimée');
     } catch (error) {
-      console.error('Erreur suppression valorisation:', error);
+      if (import.meta.env.DEV) console.error('Erreur suppression valorisation:', error);
       toast.error('Erreur lors de la suppression');
     }
   };

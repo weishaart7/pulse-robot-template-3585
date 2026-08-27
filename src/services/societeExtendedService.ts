@@ -35,7 +35,7 @@ export const societeBilanService = {
     const user = await requireUser();
     const payload = { ...bilan, user_id: user.id };
     if (bilan.id) {
-      const { data, error } = await supabase.from('societe_bilans').update(payload).eq('id', bilan.id).select().single();
+      const { data, error } = await supabase.from('societe_bilans').update(payload).eq('id', bilan.id).eq('user_id', user.id).select().single();
       if (error) throw error;
       return data;
     }
@@ -44,7 +44,8 @@ export const societeBilanService = {
     return data;
   },
   async delete(id: string) {
-    const { error } = await supabase.from('societe_bilans').delete().eq('id', id);
+    const user = await requireUser();
+    const { error } = await supabase.from('societe_bilans').delete().eq('id', id).eq('user_id', user.id);
     if (error) throw error;
   },
 };
@@ -77,7 +78,7 @@ export const societeAssocieService = {
     const user = await requireUser();
     const payload = { ...assoc, user_id: user.id };
     if (assoc.id) {
-      const { data, error } = await supabase.from('societe_associes').update(payload).eq('id', assoc.id).select().single();
+      const { data, error } = await supabase.from('societe_associes').update(payload).eq('id', assoc.id).eq('user_id', user.id).select().single();
       if (error) throw error;
       return data;
     }
@@ -86,7 +87,8 @@ export const societeAssocieService = {
     return data;
   },
   async delete(id: string) {
-    const { error } = await supabase.from('societe_associes').delete().eq('id', id);
+    const user = await requireUser();
+    const { error } = await supabase.from('societe_associes').delete().eq('id', id).eq('user_id', user.id);
     if (error) throw error;
   },
 };
@@ -155,7 +157,7 @@ export const societeCCAService = {
     const user = await requireUser();
     const payload = { ...cca, user_id: user.id };
     if (cca.id) {
-      const { data, error } = await supabase.from('societe_comptes_courants').update(payload).eq('id', cca.id).select().single();
+      const { data, error } = await supabase.from('societe_comptes_courants').update(payload).eq('id', cca.id).eq('user_id', user.id).select().single();
       if (error) throw error;
       return data;
     }
@@ -164,7 +166,8 @@ export const societeCCAService = {
     return data;
   },
   async delete(id: string) {
-    const { error } = await supabase.from('societe_comptes_courants').delete().eq('id', id);
+    const user = await requireUser();
+    const { error } = await supabase.from('societe_comptes_courants').delete().eq('id', id).eq('user_id', user.id);
     if (error) throw error;
   },
 };

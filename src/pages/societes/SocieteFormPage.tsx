@@ -31,7 +31,7 @@ export const SocieteFormPage = () => {
       const data = await societeService.getAll();
       setSocietes(data);
     } catch (error) {
-      console.error('Error loading societes:', error);
+      if (import.meta.env.DEV) console.error('Error loading societes:', error);
     }
   };
 
@@ -41,7 +41,7 @@ export const SocieteFormPage = () => {
       const societe = await societeService.getById(id);
       setInitialData(societeToFormData(societe));
     } catch (error) {
-      console.error('Error loading societe:', error);
+      if (import.meta.env.DEV) console.error('Error loading societe:', error);
       toast.error('Erreur lors du chargement de la société');
       navigate('/dashboard/societes');
     } finally {
@@ -73,7 +73,7 @@ export const SocieteFormPage = () => {
             });
             toast.success('Actif créé avec succès');
           } catch (assetError) {
-            console.error('Error creating asset:', assetError);
+            if (import.meta.env.DEV) console.error('Error creating asset:', assetError);
             toast.error('Société créée mais erreur lors de la création de l\'actif');
           }
         }
@@ -81,7 +81,7 @@ export const SocieteFormPage = () => {
       
       navigate('/dashboard/societes');
     } catch (error) {
-      console.error('Error saving societe:', error);
+      if (import.meta.env.DEV) console.error('Error saving societe:', error);
       toast.error('Erreur lors de la sauvegarde de la société');
     }
   };

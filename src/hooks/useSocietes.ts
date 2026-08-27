@@ -13,7 +13,7 @@ export const useSocietes = () => {
       const data = await societeService.getAll();
       setSocietes(data);
     } catch (error) {
-      console.error('Error fetching societes:', error);
+      if (import.meta.env.DEV) console.error('Error fetching societes:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les sociétés",

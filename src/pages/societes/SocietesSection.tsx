@@ -57,7 +57,7 @@ export const SocietesSection = () => {
         setFormData(societeToFormData(societe));
       }
     } catch (error) {
-      console.error('Error loading societe:', error);
+      if (import.meta.env.DEV) console.error('Error loading societe:', error);
       toast.error('Erreur lors du chargement de la société');
     } finally {
       setLoading(false);
@@ -107,7 +107,7 @@ export const SocietesSection = () => {
       
       handleCancel();
     } catch (error) {
-      console.error('Error saving societe:', error);
+      if (import.meta.env.DEV) console.error('Error saving societe:', error);
       toast.error('Erreur lors de l\'enregistrement de la société');
     } finally {
       setSaving(false);
@@ -126,7 +126,7 @@ export const SocietesSection = () => {
         toast.success('Données financières enregistrées');
       }
     } catch (error) {
-      console.error('Error saving finances:', error);
+      if (import.meta.env.DEV) console.error('Error saving finances:', error);
       toast.error('Erreur lors de l\'enregistrement');
     } finally {
       setSaving(false);

@@ -91,7 +91,7 @@ export const SocietesTransmission: React.FC = () => {
       toast.success('Pacte Dutreil enregistré');
       setDraft(null);
       refetch();
-    } catch (e) { toast.error('Erreur'); console.error(e); }
+    } catch (e) { toast.error('Erreur'); if (import.meta.env.DEV) console.error(e); }
   };
 
   if (societes.length === 0) {

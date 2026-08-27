@@ -19,10 +19,14 @@ export interface AssetIndivisaireWithAsset extends AssetIndivisaire {
 
 export const assetIndivisaireService = {
   async getByAsset(assetId: string): Promise<AssetIndivisaire[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
     const { data, error } = await supabase
       .from('asset_indivisaires')
       .select('*')
       .eq('asset_id', assetId)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: true });
     if (error) throw error;
     return (data || []) as AssetIndivisaire[];
@@ -57,7 +61,8 @@ export const assetIndivisaireService = {
     const { error: delError } = await supabase
       .from('asset_indivisaires')
       .delete()
-      .eq('asset_id', assetId);
+      .eq('asset_id', assetId)
+      .eq('user_id', user.id);
     if (delError) throw delError;
 
     if (indivisaires.length === 0) return [];

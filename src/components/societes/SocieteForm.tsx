@@ -327,7 +327,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
         }
       }
     } catch (error) {
-      console.error('Search error:', error);
+      if (import.meta.env.DEV) console.error('Search error:', error);
       toast.error('Erreur lors de la recherche');
     } finally {
       setIsSearching(false);

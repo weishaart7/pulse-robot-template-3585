@@ -56,7 +56,7 @@ export const SocieteFinancesEmprunts: React.FC<SocieteFinancesEmpruntsProps> = (
       setLinkedEmprunts(linked);
       setAvailableEmprunts(available);
     } catch (error) {
-      console.error('Erreur chargement emprunts:', error);
+      if (import.meta.env.DEV) console.error('Erreur chargement emprunts:', error);
     } finally {
       setLoading(false);
     }
@@ -82,7 +82,7 @@ export const SocieteFinancesEmprunts: React.FC<SocieteFinancesEmpruntsProps> = (
       setIsDialogOpen(false);
       fetchEmprunts();
     } catch (error) {
-      console.error('Erreur liaison emprunt:', error);
+      if (import.meta.env.DEV) console.error('Erreur liaison emprunt:', error);
       toast.error('Erreur lors de la liaison');
     }
   };
@@ -99,7 +99,7 @@ export const SocieteFinancesEmprunts: React.FC<SocieteFinancesEmpruntsProps> = (
       toast.success('Emprunt délié de la société');
       fetchEmprunts();
     } catch (error) {
-      console.error('Erreur déliaison emprunt:', error);
+      if (import.meta.env.DEV) console.error('Erreur déliaison emprunt:', error);
       toast.error('Erreur lors de la déliaison');
     }
   };

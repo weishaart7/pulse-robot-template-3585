@@ -32,7 +32,7 @@ export const useImmobilierAssets = () => {
 
       setAssets(data || []);
     } catch (error) {
-      console.error('Error fetching immobilier assets:', error);
+      if (import.meta.env.DEV) console.error('Error fetching immobilier assets:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les biens immobiliers",
