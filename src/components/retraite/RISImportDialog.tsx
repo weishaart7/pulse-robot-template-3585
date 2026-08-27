@@ -38,7 +38,11 @@ export function RISImportDialog({
 
   const resultatSAM = useMemo(() => {
     if (anneeNaissance === null || detailCarriere.length === 0) return null;
-    return calculerSAM(detailCarriere, anneeNaissance);
+    // Proxy de date d'effet « aujourd'hui », cohérent avec le reste de
+    // Carriere.tsx (cf. trimestresRequis, projectionRevenuFutur) — permet au
+    // filtrage par date d'effet de anneesExclues() de s'appliquer dès
+    // l'import RIS plutôt que jamais.
+    return calculerSAM(detailCarriere, anneeNaissance, new Date());
   }, [detailCarriere, anneeNaissance]);
 
   // Réinitialise l'état éditable à chaque nouvel import (nouvelle ouverture du dialogue).

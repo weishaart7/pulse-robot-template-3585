@@ -4,6 +4,13 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   tauxProratisation,
   decoteApplicable,
   decoteSurTrimestresPlafond25,
@@ -24,6 +31,7 @@ import {
   majorationEnfantsFonctionPublique,
   pensionFonctionPubliqueAvecMajorationEnfants,
   VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
+  supplementNBI,
 } from '@/lib/retraite/calculFonctionPublique';
 
 // Valeur de service du point RAFP 2026 (source : rafp.fr, communiqué ERAFP
@@ -80,6 +88,15 @@ interface CarriereFonctionPubliqueProps {
   onDepartPourInvaliditeChange: (value: boolean) => void;
   anneeOuvertureDroits: string;
   onAnneeOuvertureDroitsChange: (value: string) => void;
+  // Supplément NBI (écart #13-NBI) : formule sourcée uniquement pour
+  // SRE/CNRACL (docs/retraite-base-referentiel.md §7.7.1) — regimeAffiliation
+  // vide = supplément non calculé, jamais accordé par défaut.
+  regimeAffiliation: string;
+  onRegimeAffiliationChange: (value: string) => void;
+  moyenneAnnuelleNBI: string;
+  onMoyenneAnnuelleNBIChange: (value: string) => void;
+  trimestresLiquidablesNBI: string;
+  onTrimestresLiquidablesNBIChange: (value: string) => void;
   // Date de naissance du client (family_profiles, chargée une fois dans
   // Carriere.tsx) — nécessaire à ageLegalAtteint()/ageLegalParentaleEligible()
   // pour la surcote (écarts #5/#6). `null` tant que le profil famille n'est
@@ -122,6 +139,12 @@ export const CarriereFonctionPublique = ({
   onDepartPourInvaliditeChange,
   anneeOuvertureDroits,
   onAnneeOuvertureDroitsChange,
+  regimeAffiliation,
+  onRegimeAffiliationChange,
+  moyenneAnnuelleNBI,
+  onMoyenneAnnuelleNBIChange,
+  trimestresLiquidablesNBI,
+  onTrimestresLiquidablesNBIChange,
   dateNaissance,
   auMoinsUnTrimestreMajorationEnfant,
   nombreEnfantsEligibles,
@@ -222,11 +245,24 @@ export const CarriereFonctionPublique = ({
   // dernier traitement (référentiel §7.6), assise sur la pension APRÈS MIGA
   // et surcote (référentiel §12.3).
   const majorationEnfantsPct = majorationEnfantsFonctionPublique(nombreEnfantsEligibles);
-  const pensionFinale = pensionFonctionPubliqueAvecMajorationEnfants(
+  const pensionAvantNBI = pensionFonctionPubliqueAvecMajorationEnfants(
     pensionApresSurcote,
     majorationEnfantsPct,
     tib
   );
+
+  // Supplément NBI (référentiel §7.7.1) : « s'ajoute à la pension liquidée »,
+  // donc après décote/surcote/MIGA/majoration enfants. Formule sourcée
+  // uniquement pour SRE/CNRACL — non calculé si le régime d'affiliation
+  // n'est pas renseigné (sécurité par défaut, pas d'avantage accordé sans
+  // donnée vérifiable).
+  const moyenneAnnuelleNBINum = parseFloat(moyenneAnnuelleNBI) || 0;
+  const trimestresLiquidablesNBINum = parseFloat(trimestresLiquidablesNBI) || 0;
+  const montantSupplementNBI =
+    regimeAffiliation === 'SRE' || regimeAffiliation === 'CNRACL'
+      ? supplementNBI(moyenneAnnuelleNBINum, trimestresLiquidablesNBINum, trimestresRequis)
+      : 0;
+  const pensionFinale = pensionAvantNBI + montantSupplementNBI;
 
   // points et valeurPoint sont toujours définis ici (pointsRAFPNum est un
   // number, la valeur de service est une constante) : le résultat n'est
@@ -319,6 +355,68 @@ export const CarriereFonctionPublique = ({
                     rafp.fr
                   </a>
                   ).
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="regime-affiliation-fp" className="text-xs">
+                Versant fonction publique (pour le supplément NBI)
+              </Label>
+              <Select
+                value={regimeAffiliation || undefined}
+                onValueChange={(value) => onRegimeAffiliationChange(value)}
+              >
+                <SelectTrigger
+                  id="regime-affiliation-fp"
+                  className="bg-muted border-transparent shadow-none rounded-[5px] max-w-xs"
+                >
+                  <SelectValue placeholder="Non renseigné" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SRE">SRE (fonction publique d'État)</SelectItem>
+                  <SelectItem value="CNRACL">CNRACL (territoriale / hospitalière)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Nécessaire pour calculer le supplément de pension NBI ci-dessous — non renseigné,
+                aucun supplément n'est calculé (référentiel §7.7.1).
+              </p>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="moyenne-annuelle-nbi" className="text-xs">
+                  Moyenne annuelle NBI perçue (€)
+                </Label>
+                <Input
+                  id="moyenne-annuelle-nbi"
+                  type="number"
+                  placeholder="Ex: 1200"
+                  value={moyenneAnnuelleNBI}
+                  onChange={(e) => onMoyenneAnnuelleNBIChange(e.target.value)}
+                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Moyenne annuelle des sommes perçues au titre de la NBI, déjà revalorisée
+                  (relevé de carrière du client).
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="trimestres-liquidables-nbi" className="text-xs">
+                  Trimestres de perception de la NBI
+                </Label>
+                <Input
+                  id="trimestres-liquidables-nbi"
+                  type="number"
+                  placeholder="Ex: 20"
+                  value={trimestresLiquidablesNBI}
+                  onChange={(e) => onTrimestresLiquidablesNBIChange(e.target.value)}
+                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Trimestres liquidables pendant lesquels la NBI a été effectivement perçue (pas
+                  la durée totale de carrière).
                 </p>
               </div>
             </div>
@@ -430,6 +528,17 @@ export const CarriereFonctionPublique = ({
                   <p className="text-xs text-muted-foreground mt-1">
                     Majoration pour {nombreEnfantsEligibles} enfants : +{majorationEnfantsPct}%,
                     plafonnée au dernier traitement ({formatEuro2(tib)} / an).
+                  </p>
+                )}
+                {montantSupplementNBI > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Supplément NBI ({regimeAffiliation}) : +{formatEuro2(montantSupplementNBI)} / an.
+                  </p>
+                )}
+                {!regimeAffiliation && (moyenneAnnuelleNBINum > 0 || trimestresLiquidablesNBINum > 0) && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Versant fonction publique non renseigné ci-dessus : le supplément NBI n'est pas
+                    calculé malgré la saisie NBI.
                   </p>
                 )}
               </div>

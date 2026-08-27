@@ -50,6 +50,7 @@ import {
   majorationEnfantsFonctionPublique,
   pensionFonctionPubliqueAvecMajorationEnfants,
   VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
+  supplementNBI,
 } from './calculFonctionPublique';
 import { pensionBaseCNAVPL } from './calculCNAVPL';
 import { decoteSurTrimestresPlafond25 } from './calcul';
@@ -65,6 +66,13 @@ export interface DonneesFonctionPublique {
   ageAnnulationDecote?: number;
   departPourInvalidite: boolean;
   anneeOuvertureDroits?: number;
+  // Supplément NBI (écart #13-NBI, docs/retraite.md) : formule sourcée
+  // uniquement pour SRE/CNRACL (docs/retraite-base-referentiel.md §7.7.1) —
+  // regimeAffiliation non renseigné (undefined) => supplément non calculé,
+  // jamais accordé par défaut.
+  regimeAffiliation?: 'SRE' | 'CNRACL';
+  moyenneAnnuelleNBI: number;
+  trimestresLiquidablesNBI: number;
 }
 
 export interface DonneesCNAVPL {
@@ -191,11 +199,20 @@ function calculerResultatFonctionPublique(
   const pensionApresSurcote = pensionApresMiga + surcoteMontant;
 
   const majorationEnfantsPct = majorationEnfantsFonctionPublique(nombreEnfantsEligibles);
-  const pensionFinale = pensionFonctionPubliqueAvecMajorationEnfants(
+  const pensionAvantNBI = pensionFonctionPubliqueAvecMajorationEnfants(
     pensionApresSurcote,
     majorationEnfantsPct,
     donnees.traitementIndiciaireBrut
   );
+
+  // Supplément NBI (référentiel §7.7.1) : « s'ajoute à la pension liquidée »,
+  // donc après décote/surcote/MIGA/majoration enfants — jamais calculé si le
+  // régime d'affiliation n'est pas renseigné (cf. docstring DonneesFonctionPublique).
+  const montantSupplementNBI =
+    donnees.regimeAffiliation === 'SRE' || donnees.regimeAffiliation === 'CNRACL'
+      ? supplementNBI(donnees.moyenneAnnuelleNBI, donnees.trimestresLiquidablesNBI, trimestresRequis)
+      : 0;
+  const pensionFinale = pensionAvantNBI + montantSupplementNBI;
 
   const rafpAnnuelle =
     pensionComplementaireAnnuelle({

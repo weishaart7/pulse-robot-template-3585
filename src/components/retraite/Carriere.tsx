@@ -205,6 +205,11 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   const [ageAnnulationDecote, setAgeAnnulationDecote] = useState<string>('');
   const [departPourInvalidite, setDepartPourInvalidite] = useState(false);
   const [anneeOuvertureDroits, setAnneeOuvertureDroits] = useState<string>('');
+  // Supplément NBI (écart #13-NBI) — même pattern de lift que les champs
+  // ci-dessus.
+  const [regimeAffiliationFP, setRegimeAffiliationFP] = useState<string>('');
+  const [moyenneAnnuelleNBI, setMoyenneAnnuelleNBI] = useState<string>('');
+  const [trimestresLiquidablesNBI, setTrimestresLiquidablesNBI] = useState<string>('');
 
   // Carrière CNAVPL — même pattern que la fonction publique ci-dessus.
   const [hasCNAVPL, setHasCNAVPL] = useState(false);
@@ -317,6 +322,15 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       if (data.annee_ouverture_droits !== undefined && data.annee_ouverture_droits !== null) {
         setAnneeOuvertureDroits(data.annee_ouverture_droits.toString());
       }
+      if (data.regime_affiliation_fp !== undefined && data.regime_affiliation_fp !== null) {
+        setRegimeAffiliationFP(data.regime_affiliation_fp);
+      }
+      if (data.moyenne_annuelle_nbi !== undefined && data.moyenne_annuelle_nbi !== null) {
+        setMoyenneAnnuelleNBI(data.moyenne_annuelle_nbi.toString());
+      }
+      if (data.trimestres_liquidables_nbi !== undefined && data.trimestres_liquidables_nbi !== null) {
+        setTrimestresLiquidablesNBI(data.trimestres_liquidables_nbi.toString());
+      }
       if (data.points_cnavpl !== undefined && data.points_cnavpl !== null) {
         setPointsCNAVPL(data.points_cnavpl.toString());
       }
@@ -367,6 +381,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             age_annulation_decote: parseFloat(ageAnnulationDecote) || null,
             depart_pour_invalidite: departPourInvalidite,
             annee_ouverture_droits: anneeOuvertureDroits === '' ? null : parseInt(anneeOuvertureDroits, 10),
+            regime_affiliation_fp: regimeAffiliationFP === '' ? null : (regimeAffiliationFP as 'SRE' | 'CNRACL'),
+            moyenne_annuelle_nbi: parseFloat(moyenneAnnuelleNBI) || 0,
+            trimestres_liquidables_nbi: parseFloat(trimestresLiquidablesNBI) || 0,
             points_cnavpl: parseFloat(pointsCNAVPL) || 0,
             valeur_point_cnavpl: parseFloat(valeurPointCNAVPL) || 0,
             autres_pensions_mensuelles: parseFloat(autresPensionsMensuelles) || 0,
@@ -394,6 +411,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       ageAnnulationDecote,
       departPourInvalidite,
       anneeOuvertureDroits,
+      regimeAffiliationFP,
+      moyenneAnnuelleNBI,
+      trimestresLiquidablesNBI,
       pointsCNAVPL,
       valeurPointCNAVPL,
       autresPensionsMensuelles,
@@ -580,6 +600,10 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             ageAnnulationDecote: parseFloat(ageAnnulationDecote),
             departPourInvalidite,
             anneeOuvertureDroits: anneeOuvertureDroits === '' ? undefined : parseInt(anneeOuvertureDroits, 10),
+            regimeAffiliation:
+              regimeAffiliationFP === '' ? undefined : (regimeAffiliationFP as 'SRE' | 'CNRACL'),
+            moyenneAnnuelleNBI: parseFloat(moyenneAnnuelleNBI) || 0,
+            trimestresLiquidablesNBI: parseFloat(trimestresLiquidablesNBI) || 0,
           }
         : null,
       cnavpl: hasCNAVPL
@@ -610,6 +634,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       ageAnnulationDecote,
       departPourInvalidite,
       anneeOuvertureDroits,
+      regimeAffiliationFP,
+      moyenneAnnuelleNBI,
+      trimestresLiquidablesNBI,
       hasCNAVPL,
       trimestresCNAVPL,
       pointsCNAVPL,
@@ -1122,6 +1149,12 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         onDepartPourInvaliditeChange={setDepartPourInvalidite}
         anneeOuvertureDroits={anneeOuvertureDroits}
         onAnneeOuvertureDroitsChange={setAnneeOuvertureDroits}
+        regimeAffiliation={regimeAffiliationFP}
+        onRegimeAffiliationChange={setRegimeAffiliationFP}
+        moyenneAnnuelleNBI={moyenneAnnuelleNBI}
+        onMoyenneAnnuelleNBIChange={setMoyenneAnnuelleNBI}
+        trimestresLiquidablesNBI={trimestresLiquidablesNBI}
+        onTrimestresLiquidablesNBIChange={setTrimestresLiquidablesNBI}
         dateNaissance={dateNaissanceDetail}
         auMoinsUnTrimestreMajorationEnfant={auMoinsUnTrimestreMajorationEnfant}
         nombreEnfantsEligibles={nombreEnfantsEligibles}

@@ -39,6 +39,12 @@ export interface RetraiteData {
   annee_ouverture_droits?: number;
   points_cnavpl?: number;
   valeur_point_cnavpl?: number;
+  // Supplément NBI (écart #13-NBI) : formule sourcée uniquement pour
+  // SRE/CNRACL (docs/retraite-base-referentiel.md §7.7.1) — regime_affiliation_fp
+  // non renseigné = supplément non calculé, jamais accordé par défaut.
+  regime_affiliation_fp?: 'SRE' | 'CNRACL';
+  moyenne_annuelle_nbi?: number;
+  trimestres_liquidables_nbi?: number;
   // Hypothèse de revenu pour les années futures manquantes (entre l'année en
   // cours et l'âge légal réel) — cf. src/lib/retraite/hypotheseRevenuFutur.ts
   // et le toggle de Synthese.tsx. `revenu_hypothese_manuel` n'est lu qu'en

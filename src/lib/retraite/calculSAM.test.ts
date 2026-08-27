@@ -33,19 +33,25 @@ describe('calculerSAM — exclusions des meilleures années (référentiel §3.4
     expect(resultat.anneesDisponibles.some((a) => a.annee === 2021)).toBe(true);
   });
 
-  it('n\'exclut PAS une année uniquement assimilée (critère 3, non implémenté à dessein — dette documentée)', () => {
+  it('exclut une année uniquement assimilée chômage/maladie (critère 3)', () => {
     // Année 100% chômage, aucun revenu cotisé : 0 cotisé, 4 assimilé (365
     // jours / 50 plafonné à 4/an). Le référentiel prévoit d'exclure ce type
-    // d'année (hors IJ maternité), mais ce dépôt ne permet pas de distinguer
-    // une IJ de congé maternité d'une maladie/chômage ordinaire — l'exclusion
-    // a donc été volontairement laissée de côté (cf.
-    // docs/audit/implementation-sam-exclusions.md) pour ne pas risquer
-    // d'exclure à tort une maternité. Ce test documente ce choix et sert de
-    // garde-fou de non-régression : si l'exclusion #3 est implémentée plus
-    // tard, ce test devra être mis à jour en connaissance de cause, pas par
-    // accident.
+    // d'année (hors IJ maternité) — implémenté depuis l'ajout de la
+    // catégorie 'maternite' à TypeActivite (distincte de 'maladie'/'chomage',
+    // cf. docs/retraite.md), qui permet désormais de distinguer les deux cas.
     const periodes: PeriodeCarriere[] = [
       periode({ employeur: 'CHÔMAGE', typeActivite: 'chomage', dateDebut: '2022-01-01', dateFin: '2022-12-31' }),
+    ];
+
+    const resultat = calculerSAM(periodes, 1990);
+
+    expect(resultat.anneesExclues).toContain(2022);
+  });
+
+  it('n\'exclut PAS une année composée uniquement d\'IJ maternité (exception du critère 3)', () => {
+    const periodes: PeriodeCarriere[] = [
+      periode({ employeur: 'BON EMPLOYEUR', dateDebut: '2020-01-01', dateFin: '2020-12-31', revenu: 42000 }),
+      periode({ employeur: 'CONGÉ MATERNITÉ', typeActivite: 'maternite', dateDebut: '2022-01-01', dateFin: '2022-12-31' }),
     ];
 
     const resultat = calculerSAM(periodes, 1990);

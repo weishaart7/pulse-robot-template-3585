@@ -103,6 +103,9 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
           ageAnnulationDecote: data.age_annulation_decote,
           departPourInvalidite: data.depart_pour_invalidite ?? false,
           anneeOuvertureDroits: data.annee_ouverture_droits,
+          regimeAffiliation: data.regime_affiliation_fp,
+          moyenneAnnuelleNBI: data.moyenne_annuelle_nbi ?? 0,
+          trimestresLiquidablesNBI: data.trimestres_liquidables_nbi ?? 0,
         }
       : null,
     cnavpl: data.has_cnavpl

@@ -184,26 +184,29 @@ function repartirRevenuParAnnee(periode: PeriodeCarriere, revenuParAnnee: Map<nu
  * Années exclues du pool des N meilleures années (référentiel §3.4.4),
  * avant sélection — pas un filtrage a posteriori sur `anneesRetenues`.
  *
- * Deux des quatre catégories prévues par le référentiel sont implémentées
- * ici ; les deux autres restent une dette technique documentée, faute de
- * donnée fiable (cf. docs/audit/implementation-sam-exclusions.md) :
+ * Trois des quatre catégories prévues par le référentiel sont implémentées
+ * ici ; la quatrième reste une dette technique documentée, faute de donnée
+ * fiable (cf. docs/audit/implementation-sam-exclusions.md, écart #11 partiel,
+ * docs/retraite.md) :
  *
  * 1. **Année n'ayant validé aucun trimestre** : implémentée. Dérivée de
  *    `trimestresCotisesEtAssimilesDepuisCarriere()` (cotisés + assimilés
  *    === 0 pour l'année).
  * 2. **Année de la date d'effet de la pension** : implémentée, mais
- *    seulement si `dateEffet` est fourni par l'appelant. `calculerSAM()`
- *    n'a aujourd'hui aucun appelant qui dispose d'une date d'effet réelle
- *    (cf. docstring de `calculerSAM()`) — le paramètre reste donc inactif
- *    en pratique tant qu'aucun composant ne le branche.
- * 3. **Année ne comportant que des périodes assimilées** (hors IJ
- *    maternité) : **non implémentée**. Aucune donnée de ce dépôt ne permet
- *    de distinguer une IJ de congé maternité d'une maladie ordinaire
- *    (`TypeActivite` ne connaît que `'chomage'`/`'maladie'`, pas de
- *    catégorie maternité) — exclure les années "assimilé seul" sans cette
- *    distinction risquerait d'exclure à tort une maternité, ce que le
- *    référentiel interdit explicitement. Décision : ne pas exclure plutôt
- *    que sur-exclure, tant que la distinction n'existe pas.
+ *    seulement si `dateEffet` est fourni par l'appelant.
+ * 3. **Année ne comportant que des périodes assimilées** (chômage/maladie),
+ *    **hors IJ maternité** : implémentée depuis l'ajout de `'maternite'` à
+ *    `TypeActivite` (distincte de `'maladie'`, cf. parseRIS.ts) — une année
+ *    sans trimestre cotisé mais avec au moins un trimestre assimilé
+ *    chômage/maladie est exclue, SAUF si une période `'maternite'` couvre
+ *    cette même année (référentiel §3.4.4 : « Exception : les IJ de
+ *    maternité, qui sont intégrées »). Le RIS ne distingue jamais
+ *    automatiquement une IJ maternité d'une maladie ordinaire à l'import
+ *    (cf. `classifierTypeActivite()`) : cette exception ne s'applique donc
+ *    qu'aux périodes reclassifiées manuellement en `'maternite'` par le
+ *    conseiller via `PeriodeCarriereEditDialog.tsx`. Ne couvre PAS la
+ *    revalorisation à 125 % du montant de l'IJ maternité elle-même
+ *    (référentiel §3.4, non implémentée, hors périmètre de ce filtre).
  * 4. **Année comportant un rachat de trimestres** : **non implémentée**.
  *    Aucune donnée n'existe nulle part dans ce dépôt pour détecter un
  *    rachat sur une période de carrière donnée (le seul "rachat" du
@@ -211,12 +214,32 @@ function repartirRevenuParAnnee(periode: PeriodeCarriere, revenuParAnnee: Map<nu
  *    `retraite_carriere_detail`) — nécessite une décision produit et une
  *    migration de schéma, hors périmètre d'un filtre de calcul.
  */
+function anneesAvecPeriodeMaternite(periodes: PeriodeCarriere[]): Set<number> {
+  const annees = new Set<number>();
+  for (const periode of periodes) {
+    if (periode.typeActivite !== 'maternite') continue;
+    const anneeDebut = new Date(`${periode.dateDebut}T00:00:00Z`).getUTCFullYear();
+    const anneeFin = new Date(`${periode.dateFin}T00:00:00Z`).getUTCFullYear();
+    for (let annee = anneeDebut; annee <= anneeFin; annee++) {
+      annees.add(annee);
+    }
+  }
+  return annees;
+}
+
 function anneesExclues(periodes: PeriodeCarriere[], dateEffet?: Date): Set<number> {
   const exclues = new Set<number>();
 
   const { parAnnee } = trimestresCotisesEtAssimilesDepuisCarriere(periodes);
+  const anneesMaternite = anneesAvecPeriodeMaternite(periodes);
   for (const { annee, cotises, assimiles } of parAnnee) {
     if (cotises + assimiles === 0) {
+      exclues.add(annee);
+      continue;
+    }
+    // Critère 3 : année sans trimestre cotisé, uniquement assimilée
+    // chômage/maladie — exclue, sauf si une IJ maternité couvre cette année.
+    if (cotises === 0 && assimiles > 0 && !anneesMaternite.has(annee)) {
       exclues.add(annee);
     }
   }

@@ -595,7 +595,13 @@ export function trimestresCotisesEtAssimilesDepuisCarriere(
   const periodesEmployeur = periodes.filter((p) => p.typeActivite === 'employeur' && estPeriodeRegimeDeBase(p));
   const periodesMicroEntrepreneur = periodes.filter((p) => p.typeActivite === 'micro_entrepreneur');
   const periodesChomage = periodes.filter((p) => p.typeActivite === 'chomage');
-  const periodesMaladie = periodes.filter((p) => p.typeActivite === 'maladie');
+  // 'maternite' comptée avec 'maladie' pour la validation de trimestres : le
+  // référentiel ne documente aucun seuil de conversion jours→trimestre propre
+  // à la maternité (seule une règle SAM distincte existe, cf. anneesExclues()
+  // dans calculSAM.ts) — reprendre le seuil maladie (60 jours) préserve le
+  // comportement antérieur à l'ajout de cette catégorie, où ces périodes
+  // étaient nécessairement saisies en 'maladie' faute d'alternative.
+  const periodesMaladie = periodes.filter((p) => p.typeActivite === 'maladie' || p.typeActivite === 'maternite');
 
   const revenuParAnnee = new Map<number, number>();
   for (const periode of periodesEmployeur) {

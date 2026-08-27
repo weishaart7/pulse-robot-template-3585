@@ -28,7 +28,14 @@ export interface ParseRISResult {
   texteIllisible: boolean;
 }
 
-export type TypeActivite = 'employeur' | 'chomage' | 'maladie' | 'micro_entrepreneur';
+// 'maternite' (écart #11 partiel, docs/retraite.md) : distincte de 'maladie'
+// pour permettre à anneesExclues() (calculSAM.ts) de ne jamais exclure une
+// année composée uniquement de périodes assimilées maternité (référentiel
+// §3.4.4, exception explicite). Jamais auto-détectée à l'import RIS — le
+// texte source ne permet pas de distinguer une IJ maternité d'une maladie
+// ordinaire (cf. classifierTypeActivite() ci-dessous) — reclassification
+// manuelle par le conseiller via PeriodeCarriereEditDialog.tsx uniquement.
+export type TypeActivite = 'employeur' | 'chomage' | 'maladie' | 'maternite' | 'micro_entrepreneur';
 
 // Libellés d'affichage — exportés depuis ce fichier (plutôt que dupliqués ou
 // gardés locaux à Carriere.tsx) pour être partagés avec PeriodeCarriereEditDialog.tsx
@@ -37,6 +44,7 @@ export const LIBELLE_TYPE_ACTIVITE: Record<TypeActivite, string> = {
   employeur: 'Employeur',
   chomage: 'Chômage',
   maladie: 'Maladie',
+  maternite: 'Maternité (congé/IJ)',
   micro_entrepreneur: 'Micro-entrepreneur',
 };
 

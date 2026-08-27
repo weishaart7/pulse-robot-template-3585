@@ -78,7 +78,7 @@ uniquement applicatif via `familyService`.
   couverture nulle sur ce module ; au 2026-08-27, 13 fichiers `*.test.ts` co-localisés couvrent le
   moteur (`calcul.test.ts`, `calculSAM.test.ts`, `calculTrimestres.test.ts`, `calculFonctionPublique.test.ts`,
   `calculCNAVPL.test.ts`, `parseRIS.test.ts`, `pensionConsolidee.test.ts`, `hypotheseRevenuFutur.test.ts`,
-  `enfantsEligiblesMajoration.test.ts`, `regimesSaisieManuelle.test.ts`) — 680 tests passants au total
+  `enfantsEligiblesMajoration.test.ts`, `regimesSaisieManuelle.test.ts`) — 681 tests passants au total
   sur l'ensemble du dépôt (`npx vitest run`), aucune régression. Rien côté rendu de composant (pas de
   `@testing-library/react`, environnement vitest en `node`) : la vérification visuelle des écrans
   reste manuelle, limite documentée dans quasiment chaque rapport de session.
@@ -158,41 +158,48 @@ Classement par risque, revérifié contre le code au 2026-08-27 (`git log`, lect
 
 ### 🔴 Bloquant (peut fausser un calcul montré au client)
 
-- **Écart #6 — surcote parentale et majoration enfants : branche « enfant recueilli sans filiation »
-  non implémentée.** Un enfant du conjoint/partenaire élevé depuis plus de 9 ans, ou en adoption
-  simple, n'est aujourd'hui jamais compté comme éligible à la majoration pour 3 enfants — `family_links`
-  ne permet pas de déclarer cette relation indépendamment du volet succession (`adoption_simple_motif`
-  n'est renseigné que si une case DMTG est cochée), ni de dater une durée de charge. Pour un client
-  dans ce cas précis, la pension affichée omet une majoration de 10 % (régime général/CNAVPL) ou 10 à
-  25 % (fonction publique) à laquelle il a réellement droit — sous-estimation, jamais surestimation,
-  mais un écart concret sur un montant montré en conseil. Nécessite une décision produit sur le modèle
-  de données avant tout codage (`conception-majorations-enfants.md` §0.2, §5).
-- **Écart #13-NBI — supplément NBI fonction publique implémenté mais volontairement non branché à
-  l'écran.** `supplementNBI()` ([calculFonctionPublique.ts](src/lib/retraite/calculFonctionPublique.ts))
-  est une fonction pure testée, mais aucun composant ne l'appelle (confirmé par recherche exhaustive :
-  aucune occurrence dans `src/components/retraite/` ni dans `pensionConsolidee.ts`) — décision
-  explicite en attente d'un champ de modélisation SRE/CNRACL (le module ne distingue aujourd'hui pas
-  les deux versants). Un fonctionnaire avec droit à NBI voit donc sa pension fonction publique
-  sous-estimée du montant du supplément, sans aucun indicateur à l'écran signalant cette omission.
-- **SAM — deux des quatre critères d'exclusion du référentiel non implémentés (écart #11, partiel).**
-  `anneesExclues()` ([calculSAM.ts](src/lib/retraite/calculSAM.ts)) exclut les années sans trimestre
-  validé et (si fourni) l'année de la date d'effet, mais **jamais** une année composée uniquement de
-  trimestres assimilés hors IJ maternité, ni une année de rachat de trimestres — faute de données
-  capables de distinguer ces cas (`TypeActivite` ne connaît pas de catégorie maternité ; aucune donnée
-  de rachat n'existe dans `retraite_carriere_detail`). Une année de congé maladie/chômage pur peut donc
-  encore entrer dans le calcul des 25 meilleures années du SAM, le surestimant légèrement pour ce
-  profil précis. Documenté comme dette assumée (risque jugé moindre que le risque inverse d'exclure à
-  tort une maternité), mais reste un écart réel vis-à-vis du référentiel.
-- **Décote/surcote de l'écran « Carrière » toujours calculée sur un proxy « aujourd'hui », pas sur
-  une vraie date d'effet (écart #2, partiellement rouvert pour le flux RIS/SAM).** Le mécanisme de
-  bascule par date d'effet existe (§2) mais `RISImportDialog.tsx:41` appelle toujours
-  `calculerSAM(detailCarriere, anneeNaissance)` sans aucune date — le SAM calculé à l'import RIS ne
-  peut donc jamais bénéficier du filtrage par date d'effet, indépendamment de la résolution de ce
-  mécanisme sur `Trimestres.tsx`. Pour un client proche d'une bascule de barème (ex. génération
-  1964-1968 autour du 01/09/2026), le SAM importé et la pension simulée sur `Trimestres.tsx` peuvent
-  ainsi reposer sur des hypothèses de date différentes sans que l'écran le signale.
+Aucun bloquant ouvert au 2026-08-27 — les quatre écarts précédemment listés ici ont été traités (cf.
+§2 pour le détail des corrections) :
+
+- **Écart #2/RIS-SAM — proxy de date d'effet manquant à l'import RIS : soldé.** `RISImportDialog.tsx`
+  passe désormais `new Date()` à `calculerSAM()`, cohérent avec le proxy « aujourd'hui » déjà utilisé
+  partout ailleurs dans `Carriere.tsx` — le filtrage par date d'effet de `anneesExclues()` s'applique
+  désormais dès l'import.
+- **Écart #13-NBI — supplément NBI fonction publique : soldé.** Nouveau champ `regime_affiliation_fp`
+  (SRE/CNRACL, migration `20260827010000`) plus les deux champs déclaratifs NBI
+  (`moyenne_annuelle_nbi`, `trimestres_liquidables_nbi`) sur `retraite_data` ; `supplementNBI()` est
+  désormais appelé par `CarriereFonctionPublique.tsx` et `pensionConsolidee.ts` pour les deux versants
+  (formule confirmée identique pour SRE et CNRACL — article 27 loi n°91-73 du 18/01/1991, décret
+  n°92-586 du 30/06/1992 pour CNRACL, circulaire n° P-40 du 1er mars 1993 pour l'État). Régime non
+  renseigné = supplément non calculé (sécurité par défaut), avec avertissement à l'écran si une saisie
+  NBI existe sans régime associé.
+- **SAM — critère d'exclusion #3 (année uniquement assimilée) : soldé pour son volet distinguable.**
+  Nouvelle catégorie `'maternite'` sur `TypeActivite` (distincte de `'maladie'`, jamais auto-détectée à
+  l'import RIS — reclassification manuelle par le conseiller via `PeriodeCarriereEditDialog.tsx`).
+  `anneesExclues()` exclut désormais une année sans trimestre cotisé composée uniquement de périodes
+  assimilées chômage/maladie, sauf si une période `'maternite'` couvre cette année (référentiel
+  §3.4.4). `trimestresCotisesEtAssimilesDepuisCarriere()` compte les périodes `'maternite'` avec le
+  seuil `'maladie'` (60 jours/trimestre) — hypothèse assumée faute de seuil spécifique sourcé pour la
+  maternité, préserve le comportement antérieur à l'ajout de cette catégorie. Ne couvre pas la
+  revalorisation à 125 % du montant de l'IJ maternité elle-même (référentiel §3.4, non implémentée, non
+  demandée pour cette session).
 
 ### 🟠 À surveiller (cas limite, peu probable)
+
+- **Majoration enfants — cas « recueilli sans filiation » non calculé.** Un enfant du conjoint/
+  partenaire élevé depuis plus de 9 ans, ou en adoption simple (écart #6), n'est jamais compté comme
+  éligible à la majoration pour 3 enfants — `family_links` ne permet pas de déclarer cette relation
+  indépendamment du volet succession, ni de dater une durée de charge. Seuls les enfants avec filiation
+  directe reconnue sont pris en compte. Impact : majoration sous-estimée (jamais surestimée) pour les
+  dossiers concernés par ce cas spécifique. Nécessite une décision produit sur le modèle de données
+  (`conception-majorations-enfants.md` §0.2, §5) — non engagée à ce jour, faute de client réel dans ce
+  cas.
+- **SAM ne détecte pas les années de rachat de trimestres (écart #11, second volet).** Aucune donnée
+  n'existe dans `retraite_carriere_detail` pour identifier une année ayant fait l'objet d'un rachat —
+  si un client a racheté des trimestres, le SAM affiché peut être imprécis dans un sens non déterminé
+  (le référentiel §3.4.4 prévoit d'exclure ces années, effet contre-intuitif : un rachat améliore le
+  taux tout en dégradant potentiellement le SAM). Nécessite une décision produit et une migration de
+  schéma — vérification manuelle recommandée pour ces dossiers en attendant.
 
 - **Chronologie infra-annuelle de la surcote non modélisée.** `surcotePourTrimestresCotises()` reçoit
   un nombre de trimestres cotisés sur l'« année de référence », dérivé par année civile entière
