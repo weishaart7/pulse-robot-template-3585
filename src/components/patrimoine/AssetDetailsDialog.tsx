@@ -19,7 +19,7 @@ import { useAssetRevenus } from '@/hooks/useAssetRevenus';
 import { AssetRevenu } from '@/services/assetService';
 import { qualifierBien } from '@/lib/patrimoine/qualification';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
-import { computeAge, getTrancheBaremeForYoungest } from '@/lib/patrimoine/bareme669CGI';
+import { getTrancheDemembrement } from '@/lib/patrimoine/demembrementFraction';
 import { passifService, Emprunt } from '@/services/passifService';
 import { format } from 'date-fns';
 
@@ -64,32 +64,9 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
 
   const isDemembre = asset.mode_detention === 'Usufruit' || asset.mode_detention === 'Nue-propriété';
   const demembrementCounterpartRole = asset.mode_detention === 'Usufruit' ? 'Nu-propriétaire' : 'Usufruitier';
-  const clientIsUsufruitier = asset.mode_detention === 'Usufruit';
-  const clientAgesForDemembrement: number[] = [];
-  if (isDemembre) {
-    const detenteurLower = (asset.detenteur || '').toLowerCase();
-    if (detenteurLower === 'user' || detenteurLower === 'utilisateur' || !asset.detenteur) {
-      const age = computeAge(familyProfile?.date_naissance);
-      if (age !== null) clientAgesForDemembrement.push(age);
-    } else if (detenteurLower === 'spouse' || detenteurLower === 'conjoint') {
-      const age = computeAge(maritalStatus?.date_naissance_conjoint);
-      if (age !== null) clientAgesForDemembrement.push(age);
-    } else if (detenteurLower === 'common' || detenteurLower === 'commun' || detenteurLower === 'couple') {
-      const ageUser = computeAge(familyProfile?.date_naissance);
-      const ageSpouse = computeAge(maritalStatus?.date_naissance_conjoint);
-      if (ageUser !== null) clientAgesForDemembrement.push(ageUser);
-      if (ageSpouse !== null) clientAgesForDemembrement.push(ageSpouse);
-    }
-  }
-  const counterpartAgesForDemembrement: number[] = isDemembre
-    ? demembrements
-        .map((d) => d.type_partie === 'tiers'
-          ? computeAge(d.date_naissance_tiers)
-          : computeAge(familyLinks.find((m) => m.id === d.family_link_id)?.date_naissance))
-        .filter((a): a is number => a !== null)
-    : [];
-  const usufruitierAgesForDemembrement = clientIsUsufruitier ? clientAgesForDemembrement : counterpartAgesForDemembrement;
-  const trancheBareme669 = isDemembre ? getTrancheBaremeForYoungest(usufruitierAgesForDemembrement) : null;
+  // Factorisé dans lib/patrimoine/demembrementFraction.ts, réutilisé par les
+  // agrégats du Résumé Patrimoine (même calcul d'âge d'usufruitier).
+  const trancheBareme669 = getTrancheDemembrement(asset, demembrements, { familyProfile, maritalStatus, familyLinks });
 
   // Qualification bien propre/commun : recalculée à la volée (pas persistée)
   // pour rester cohérente si le régime matrimonial change après coup.

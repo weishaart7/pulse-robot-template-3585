@@ -2,12 +2,18 @@ import React, { useMemo } from 'react';
 import { SectorsDonut } from '@/components/ui/sectors-donut';
 import { Asset } from '@/services/assetService';
 import { Passif, Emprunt } from '@/services/passifService';
+import { AssetDemembrement } from '@/services/assetDemembrementService';
 import { getAssetCategory } from '@/constants/assetTypes';
+import { getFractionDemembrement, DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
 interface PatrimoineChartProps {
   assets: Asset[];
   passifs: Passif[];
   emprunts: Emprunt[];
   selectedCategory: string | null;
+  // Optionnels : sans eux, un actif démembré reste compté à sa valeur pleine
+  // propriété (comportement historique) — cf. usePatrimoineCalculations.ts.
+  assetDemembrements?: AssetDemembrement[];
+  demembrementCtx?: DemembrementFractionContext;
 }
 const CATEGORY_COLORS: Record<string, string> = {
   'actifs immobiliers': '#05E8A4',
@@ -24,13 +30,20 @@ export const PatrimoineChart = ({
   assets,
   passifs,
   emprunts,
-  selectedCategory
+  selectedCategory,
+  assetDemembrements = [],
+  demembrementCtx = {}
 }: PatrimoineChartProps) => {
   const chartData = useMemo(() => {
     // Vue par catégorie pour les actifs
     const categoryData = assets.reduce((acc, asset) => {
       const category = getAssetCategory(asset.nature);
-      const value = asset.valeur_estimee || 0;
+      const demembrementsForAsset = asset.id ? assetDemembrements.filter((d) => d.asset_id === asset.id) : [];
+      const fraction = getFractionDemembrement(asset, demembrementsForAsset, demembrementCtx);
+      // fraction === null : actif démembré dont l'âge de l'usufruitier n'est
+      // pas calculable — exclu du total plutôt que compté à sa valeur pleine
+      // propriété (même règle que usePatrimoineCalculations.ts).
+      const value = fraction === null ? 0 : (asset.valeur_estimee || 0) * fraction;
       if (!acc[category]) {
         acc[category] = {
           category,
@@ -54,8 +67,8 @@ export const PatrimoineChart = ({
       type: 'actif'
     }));
 
-    // Ajouter les passifs
-    const totalPassifs = passifs.reduce((sum, passif) => sum + (passif.montant_du || 0), 0) + emprunts.reduce((sum, emprunt) => sum + (emprunt.capital_restant_du || 0), 0);
+    // Ajouter les passifs (hors emprunts de société, déjà reflétés dans la valorisation des parts)
+    const totalPassifs = passifs.reduce((sum, passif) => sum + (passif.montant_du || 0), 0) + emprunts.filter(e => !e.societe_id).reduce((sum, emprunt) => sum + (emprunt.capital_restant_du || 0), 0);
     if (totalPassifs > 0) {
       actifData.push({
         name: 'Passifs',
@@ -66,7 +79,7 @@ export const PatrimoineChart = ({
       });
     }
     return actifData.sort((a, b) => b.value - a.value);
-  }, [assets, passifs, emprunts]);
+  }, [assets, passifs, emprunts, assetDemembrements, demembrementCtx]);
   const totalActifs = chartData.filter(item => item.type === 'actif').reduce((sum, item) => sum + item.value, 0);
   const totalPassifs = chartData.filter(item => item.type === 'passif').reduce((sum, item) => sum + item.value, 0);
   const patrimoineNet = totalActifs - totalPassifs;

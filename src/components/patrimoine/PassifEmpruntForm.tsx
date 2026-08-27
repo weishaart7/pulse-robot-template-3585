@@ -17,9 +17,21 @@ interface PassifEmpruntFormProps {
   item?: Emprunt | Passif;
   onCancel: () => void;
   onSubmit: () => void;
+  createEmprunt: (data: Omit<Emprunt, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<Emprunt>;
+  updateEmprunt: (id: string, data: Partial<Emprunt>) => Promise<Emprunt>;
+  createPassif: (data: Omit<Passif, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<Passif>;
+  updatePassif: (id: string, data: Partial<Passif>) => Promise<Passif>;
 }
 
-export const PassifEmpruntForm = ({ item, onCancel, onSubmit }: PassifEmpruntFormProps) => {
+export const PassifEmpruntForm = ({
+  item,
+  onCancel,
+  onSubmit,
+  createEmprunt,
+  updateEmprunt,
+  createPassif,
+  updatePassif,
+}: PassifEmpruntFormProps) => {
   const {
     form,
     isLoading,
@@ -28,7 +40,7 @@ export const PassifEmpruntForm = ({ item, onCancel, onSubmit }: PassifEmpruntFor
     assets,
     originalIsEmprunt,
     handleSubmit,
-  } = usePassifEmpruntForm({ item, onSuccess: onSubmit });
+  } = usePassifEmpruntForm({ item, onSuccess: onSubmit, createEmprunt, updateEmprunt, createPassif, updatePassif });
 
   const watchedNature = form.watch('nature');
   const watchedDetenteur = form.watch('detenteur');

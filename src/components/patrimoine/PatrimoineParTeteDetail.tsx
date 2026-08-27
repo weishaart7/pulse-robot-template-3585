@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, User, Users, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
-import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
+import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
 import { getCategoryColor } from '@/lib/patrimoine/utils';
 import { getAssetCategory } from '@/constants/assetTypes';
 import { getPartSuccessorale, BienNonQualifieError } from '@/lib/patrimoine/succession';
+import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 
 interface PatrimoineParTeteDetailProps {
   onBack?: () => void;
@@ -19,6 +21,17 @@ export const PatrimoineParTeteDetail = ({ onBack }: PatrimoineParTeteDetailProps
   const { emprunts } = useEmprunts();
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
+  const { data: familyLinks } = useFamilyLinks();
+  const [assetDemembrements, setAssetDemembrements] = useState<AssetDemembrement[]>([]);
+
+  useEffect(() => {
+    assetDemembrementService.getAllForUser()
+      .then(setAssetDemembrements)
+      .catch(() => {
+        setAssetDemembrements([]);
+        toast.error("Impossible de charger les démembrements");
+      });
+  }, []);
 
   const {
     patrimoineParPersonne,
@@ -29,7 +42,9 @@ export const PatrimoineParTeteDetail = ({ onBack }: PatrimoineParTeteDetailProps
     emprunts,
     userFirstName: familyProfile?.prenom || 'Vous',
     spouseFirstName: maritalStatus?.prenom_conjoint || 'Conjoint',
-    statutCouple: maritalStatus?.statut_couple
+    statutCouple: maritalStatus?.statut_couple,
+    assetDemembrements,
+    demembrementCtx: { familyProfile, maritalStatus, familyLinks }
   });
 
   const {

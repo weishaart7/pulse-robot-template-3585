@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Asset } from '@/services/assetService';
 import { Passif, Emprunt } from '@/services/passifService';
+import { AssetDemembrement } from '@/services/assetDemembrementService';
 import {
   checkIsInCouple,
   calculatePlusValue,
@@ -8,6 +9,7 @@ import {
 } from '@/lib/patrimoine/utils';
 import { getAssetCategory } from '@/constants/assetTypes';
 import { getPartSuccessorale, BienNonQualifieError } from '@/lib/patrimoine/succession';
+import { getFractionDemembrement, DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
 
 interface FinancialSummary {
   totalActifs: number;
@@ -36,6 +38,10 @@ export interface UnqualifiedItem {
   id: string;
   label: string;
   type: 'actif' | 'passif' | 'emprunt';
+  // Motif de l'exclusion des totaux : qualification civile absente (défaut,
+  // cf. BienNonQualifieError) ou, pour un actif démembré, âge de l'usufruitier
+  // non renseigné (barème 669 CGI non calculable).
+  reason?: 'qualification' | 'demembrement';
 }
 
 interface PlusValuesSummary {
@@ -61,6 +67,11 @@ interface UsePatrimoineCalculationsProps {
   userFirstName?: string;
   spouseFirstName?: string;
   statutCouple?: string;
+  // Optionnels : nécessaires pour pondérer un actif en usufruit/nue-propriété
+  // par le barème 669 CGI dans les totaux. Sans eux, tout actif démembré
+  // reste compté à sa valeur pleine propriété (comportement historique).
+  assetDemembrements?: AssetDemembrement[];
+  demembrementCtx?: DemembrementFractionContext;
 }
 
 export const usePatrimoineCalculations = ({
@@ -69,17 +80,46 @@ export const usePatrimoineCalculations = ({
   emprunts,
   userFirstName = 'Vous',
   spouseFirstName = 'Conjoint',
-  statutCouple
+  statutCouple,
+  assetDemembrements = [],
+  demembrementCtx = {}
 }: UsePatrimoineCalculationsProps) => {
   const isInCouple = useMemo(() => checkIsInCouple(statutCouple), [statutCouple]);
 
+  // Valeur estimée pondérée par la fraction de démembrement (1 pour un bien en
+  // pleine propriété). Un actif démembré dont l'âge de l'usufruitier n'est pas
+  // calculable est exclu des totaux (valueById = 0, id dans unqualifiedIds)
+  // plutôt que compté à sa valeur pleine propriété — même traitement que
+  // `BienNonQualifieError`, cf. `unqualifiedItems` plus bas.
+  const demembrement = useMemo(() => {
+    const valueById = new Map<string, number>();
+    const fractionById = new Map<string, number>();
+    const unqualifiedIds = new Set<string>();
+    assets.forEach((asset) => {
+      if (!asset.id) return;
+      const demembrementsForAsset = assetDemembrements.filter((d) => d.asset_id === asset.id);
+      const fraction = getFractionDemembrement(asset, demembrementsForAsset, demembrementCtx);
+      if (fraction === null) {
+        unqualifiedIds.add(asset.id);
+        valueById.set(asset.id, 0);
+        fractionById.set(asset.id, 0);
+      } else {
+        valueById.set(asset.id, (asset.valeur_estimee || 0) * fraction);
+        fractionById.set(asset.id, fraction);
+      }
+    });
+    return { valueById, fractionById, unqualifiedIds };
+  }, [assets, assetDemembrements, demembrementCtx]);
+
   const financialSummary = useMemo<FinancialSummary>(() => {
-    const totalActifs = assets.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
-    const totalPassifs = passifs.reduce((sum, passif) => sum + (passif.montant_du || 0), 0) 
-      + emprunts.reduce((sum, emprunt) => sum + (emprunt.capital_restant_du || 0), 0);
+    const totalActifs = assets.reduce((sum, asset) => sum + (asset.id ? demembrement.valueById.get(asset.id) ?? 0 : (asset.valeur_estimee || 0)), 0);
+    // Emprunts de société exclus : déjà reflétés dans la valorisation des parts,
+    // les compter ici les doublerait (cf. buildPassifLines côté Transmission).
+    const totalPassifs = passifs.reduce((sum, passif) => sum + (passif.montant_du || 0), 0)
+      + emprunts.filter(e => !e.societe_id).reduce((sum, emprunt) => sum + (emprunt.capital_restant_du || 0), 0);
     const patrimoineNet = totalActifs - totalPassifs;
     return { totalActifs, totalPassifs, patrimoineNet };
-  }, [assets, passifs, emprunts]);
+  }, [assets, passifs, emprunts, demembrement]);
 
   // Source unique de vérité pour "part revenant à l'utilisateur" : même
   // fonction que le module Transmission (lib/patrimoine/succession.ts),
@@ -109,7 +149,11 @@ export const usePatrimoineCalculations = ({
 
     // Process assets
     assets.forEach(asset => {
-      const estimatedValue = asset.valeur_estimee || 0;
+      if (asset.id && demembrement.unqualifiedIds.has(asset.id)) {
+        unqualified.push({ id: asset.id, label: asset.denomination || asset.nature, type: 'actif', reason: 'demembrement' });
+        return;
+      }
+      const estimatedValue = (asset.id ? demembrement.valueById.get(asset.id) : undefined) ?? (asset.valeur_estimee || 0);
       try {
         const userFraction = getPartSuccessorale(asset, asset.denomination || asset.nature);
         if (isShared(asset.qualification_bien)) {
@@ -121,7 +165,7 @@ export const usePatrimoineCalculations = ({
         }
       } catch (error) {
         if (error instanceof BienNonQualifieError) {
-          unqualified.push({ id: asset.id!, label: asset.denomination || asset.nature, type: 'actif' });
+          unqualified.push({ id: asset.id!, label: asset.denomination || asset.nature, type: 'actif', reason: 'qualification' });
         } else {
           throw error;
         }
@@ -142,15 +186,15 @@ export const usePatrimoineCalculations = ({
         }
       } catch (error) {
         if (error instanceof BienNonQualifieError) {
-          unqualified.push({ id: passif.id, label: passif.nature, type: 'passif' });
+          unqualified.push({ id: passif.id, label: passif.nature, type: 'passif', reason: 'qualification' });
         } else {
           throw error;
         }
       }
     });
 
-    // Process emprunts
-    emprunts.forEach(emprunt => {
+    // Process emprunts (hors emprunts de société, déjà reflétés dans la valorisation des parts)
+    emprunts.filter(e => !e.societe_id).forEach(emprunt => {
       const montant = emprunt.capital_restant_du || 0;
       try {
         const userFraction = getPartSuccessorale(emprunt, emprunt.libelle || emprunt.nature);
@@ -163,7 +207,7 @@ export const usePatrimoineCalculations = ({
         }
       } catch (error) {
         if (error instanceof BienNonQualifieError) {
-          unqualified.push({ id: emprunt.id, label: emprunt.libelle || emprunt.nature, type: 'emprunt' });
+          unqualified.push({ id: emprunt.id, label: emprunt.libelle || emprunt.nature, type: 'emprunt', reason: 'qualification' });
         } else {
           throw error;
         }
@@ -197,7 +241,7 @@ export const usePatrimoineCalculations = ({
       },
       unqualifiedItems: unqualified
     };
-  }, [assets, passifs, emprunts, userFirstName, spouseFirstName, isInCouple]);
+  }, [assets, passifs, emprunts, userFirstName, spouseFirstName, isInCouple, demembrement]);
 
   const plusValuesSummary = useMemo<PlusValuesSummary>(() => {
     let totalPlusValues = 0;
@@ -206,15 +250,30 @@ export const usePatrimoineCalculations = ({
     const assetsWithPlusValue: PlusValuesSummary['assetsWithPlusValue'] = [];
 
     assets.forEach(asset => {
+      // Actif démembré dont l'âge de l'usufruitier n'est pas calculable :
+      // exclu de la plus-value, même traitement que les autres agrégats
+      // (cf. `demembrement.unqualifiedIds` plus haut).
+      if (asset.id && demembrement.unqualifiedIds.has(asset.id)) return;
+
+      // Valeur estimée ET valeur d'acquisition pondérées par la même fraction
+      // de démembrement (barème 669 CGI), pour que la plus-value d'un actif
+      // démembré reste cohérente (une nue-propriété acquise 100k€ vaut
+      // aujourd'hui une fraction de sa valeur pleine propriété, tout comme son
+      // coût d'acquisition d'origine représentait déjà cette même fraction).
+      const fraction = asset.id ? demembrement.fractionById.get(asset.id) ?? 1 : 1;
+      const valeurEstimeePonderee = (asset.id ? demembrement.valueById.get(asset.id) : undefined) ?? (asset.valeur_estimee || 0);
+      const valeurAcquisitionPonderee = (asset.valeur_acquisition === undefined || asset.valeur_acquisition === null)
+        ? asset.valeur_acquisition
+        : asset.valeur_acquisition * fraction;
       const { plusValue, hasData } = calculatePlusValue(
-        asset.valeur_estimee,
-        asset.valeur_acquisition,
+        valeurEstimeePonderee,
+        valeurAcquisitionPonderee,
         asset.frais_acquisition
       );
 
       if (hasData) {
         const category = getAssetCategory(asset.nature);
-        
+
         if (!byCategory[category]) {
           byCategory[category] = { plusValue: 0, count: 0 };
         }
@@ -232,8 +291,8 @@ export const usePatrimoineCalculations = ({
           denomination: asset.denomination || asset.nature,
           nature: asset.nature,
           plusValue,
-          valeurEstimee: asset.valeur_estimee || 0,
-          valeurAcquisition: asset.valeur_acquisition || 0,
+          valeurEstimee: valeurEstimeePonderee,
+          valeurAcquisition: valeurAcquisitionPonderee || 0,
           dateAcquisition: asset.date_acquisition
         });
       }
@@ -246,7 +305,7 @@ export const usePatrimoineCalculations = ({
       byCategory,
       assetsWithPlusValue: assetsWithPlusValue.sort((a, b) => b.plusValue - a.plusValue)
     };
-  }, [assets]);
+  }, [assets, demembrement]);
 
   const formatCurrency = formatCurrencyUtil;
 

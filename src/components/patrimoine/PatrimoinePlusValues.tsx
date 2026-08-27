@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, ArrowLeft, Receipt, ShieldCheck, BadgePercent, AlertTriangle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,11 +7,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useAssets } from '@/hooks/useAssets';
 import { Asset } from '@/services/assetService';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
-import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
+import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
 import { getCategoryColor } from '@/lib/patrimoine/utils';
 import { getNatureDisplayLabel } from '@/constants/assetTypes';
 import { resolveAssetFiscalRegime } from '@/lib/patrimoine/assetFiscalRegime';
+import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 
 interface PatrimoinePlusValuesProps {
   onBack?: () => void;
@@ -22,6 +24,17 @@ export const PatrimoinePlusValues = ({ onBack }: PatrimoinePlusValuesProps) => {
   const { emprunts } = useEmprunts();
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
+  const { data: familyLinks } = useFamilyLinks();
+  const [assetDemembrements, setAssetDemembrements] = useState<AssetDemembrement[]>([]);
+
+  useEffect(() => {
+    assetDemembrementService.getAllForUser()
+      .then(setAssetDemembrements)
+      .catch(() => {
+        setAssetDemembrements([]);
+        toast.error("Impossible de charger les démembrements");
+      });
+  }, []);
 
   const {
     plusValuesSummary,
@@ -32,7 +45,9 @@ export const PatrimoinePlusValues = ({ onBack }: PatrimoinePlusValuesProps) => {
     emprunts,
     userFirstName: familyProfile?.prenom || 'Vous',
     spouseFirstName: maritalStatus?.prenom_conjoint || 'Conjoint',
-    statutCouple: maritalStatus?.statut_couple
+    statutCouple: maritalStatus?.statut_couple,
+    assetDemembrements,
+    demembrementCtx: { familyProfile, maritalStatus, familyLinks }
   });
 
   const { totalPlusValues, totalMoinsValues, netPlusValue, byCategory, assetsWithPlusValue } = plusValuesSummary;

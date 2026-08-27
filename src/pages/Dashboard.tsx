@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import BudgetStatisticsCard from '@/components/ui/budget-statistics-card';
 import { useRevenus, useCharges } from '@/hooks/useBudget';
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
+import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { PatrimoineChart } from '@/components/patrimoine/PatrimoineChart';
 import { AlertesConseil } from '@/components/alertes/AlertesConseil';
+import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 const Dashboard = () => {
   const {
     revenus
@@ -22,6 +25,19 @@ const Dashboard = () => {
   const {
     emprunts
   } = useEmprunts();
+  const { data: familyProfile } = useFamilyProfile();
+  const { data: maritalStatus } = useMaritalStatus();
+  const { data: familyLinks } = useFamilyLinks();
+  const [assetDemembrements, setAssetDemembrements] = useState<AssetDemembrement[]>([]);
+
+  useEffect(() => {
+    assetDemembrementService.getAllForUser()
+      .then(setAssetDemembrements)
+      .catch(() => {
+        setAssetDemembrements([]);
+        toast.error("Impossible de charger les démembrements");
+      });
+  }, []);
   // Convertir un montant en annuel selon sa périodicité (logique reprise de BudgetList.tsx)
   const toAnnual = (amount: number | undefined, periodicite: string | undefined): number => {
     if (!amount) return 0;
@@ -82,7 +98,14 @@ const Dashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <PatrimoineChart assets={assets} passifs={passifs} emprunts={emprunts} selectedCategory={null} />
+            <PatrimoineChart
+              assets={assets}
+              passifs={passifs}
+              emprunts={emprunts}
+              selectedCategory={null}
+              assetDemembrements={assetDemembrements}
+              demembrementCtx={{ familyProfile, maritalStatus, familyLinks }}
+            />
           </CardContent>
         </Card>
 

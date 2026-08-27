@@ -6,9 +6,10 @@ import { PatrimoineChart } from './PatrimoineChart';
 import { PlusValuesCard } from './PlusValuesCard';
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
-import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
+import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
 import { assetValorisationService, AssetValorisation } from '@/services/assetValorisationService';
+import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { computeEvolutionPatrimoine } from '@/lib/patrimoine/evolutionPatrimoine';
 import { TrendingUp, TrendingDown, Wallet, User, Users, Target, AlertTriangle } from 'lucide-react';
 
@@ -61,7 +62,9 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
   const { emprunts } = useEmprunts();
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
+  const { data: familyLinks } = useFamilyLinks();
   const [valorisations, setValorisations] = useState<AssetValorisation[]>([]);
+  const [assetDemembrements, setAssetDemembrements] = useState<AssetDemembrement[]>([]);
 
   useEffect(() => {
     assetValorisationService.getAllForUser()
@@ -69,6 +72,12 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
       .catch(() => {
         setValorisations([]);
         toast.error("Impossible de charger l'historique de valorisation");
+      });
+    assetDemembrementService.getAllForUser()
+      .then(setAssetDemembrements)
+      .catch(() => {
+        setAssetDemembrements([]);
+        toast.error("Impossible de charger les démembrements");
       });
   }, []);
 
@@ -84,7 +93,9 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
     emprunts,
     userFirstName: familyProfile?.prenom || 'Vous',
     spouseFirstName: maritalStatus?.prenom_conjoint || 'Conjoint',
-    statutCouple: maritalStatus?.statut_couple
+    statutCouple: maritalStatus?.statut_couple,
+    assetDemembrements,
+    demembrementCtx: { familyProfile, maritalStatus, familyLinks }
   });
 
   const evolutionPatrimoine = useMemo(
@@ -104,10 +115,10 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
           <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" strokeWidth={1.75} />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
-              {unqualifiedItems.length} élément{unqualifiedItems.length > 1 ? 's' : ''} non qualifié{unqualifiedItems.length > 1 ? 's' : ''} (propre/commun), exclu{unqualifiedItems.length > 1 ? 's' : ''} des totaux ci-dessous
+              {unqualifiedItems.length} élément{unqualifiedItems.length > 1 ? 's' : ''} exclu{unqualifiedItems.length > 1 ? 's' : ''} des totaux ci-dessous
             </p>
             <p className="text-xs text-amber-800/80 dark:text-amber-200/70">
-              {unqualifiedItems.map(i => i.label).join(', ')} — à qualifier dans Patrimoine pour être pris en compte.
+              {unqualifiedItems.map(i => `${i.label}${i.reason === 'demembrement' ? ' (âge de l\'usufruitier non renseigné)' : ' (propre/commun non qualifié)'}`).join(', ')} — à compléter dans Patrimoine pour être pris en compte.
             </p>
           </div>
         </div>
@@ -148,7 +159,14 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
             <CardTitle className="text-[15px] font-semibold tracking-tight">Répartition du patrimoine</CardTitle>
           </CardHeader>
           <CardContent>
-            <PatrimoineChart assets={assets} passifs={passifs} emprunts={emprunts} selectedCategory={null} />
+            <PatrimoineChart
+              assets={assets}
+              passifs={passifs}
+              emprunts={emprunts}
+              selectedCategory={null}
+              assetDemembrements={assetDemembrements}
+              demembrementCtx={{ familyProfile, maritalStatus, familyLinks }}
+            />
           </CardContent>
         </Card>
 

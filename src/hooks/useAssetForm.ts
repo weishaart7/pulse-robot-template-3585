@@ -276,9 +276,16 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         }
       }
 
-      // Auto-set origine to "Acquisition à titre gratuit" when NP is selected
+      // Pré-remplit l'origine à "Acquisition à titre gratuit" quand la NP est
+      // sélectionnée sur un actif dont l'origine n'est pas encore renseignée
+      // (cas le plus fréquent : démembrement issu d'une donation). Ne doit
+      // jamais écraser une origine déjà saisie : une nue-propriété peut aussi
+      // être acquise à titre onéreux (montage démembré, viager).
       if (name === 'mode_detention' && value.mode_detention === 'Nue-propriété') {
-        form.setValue('origine_actif', ['Acquisition à titre gratuit']);
+        const currentOrigine = form.getValues('origine_actif');
+        if (!currentOrigine || currentOrigine.length === 0) {
+          form.setValue('origine_actif', ['Acquisition à titre gratuit']);
+        }
       }
     });
 

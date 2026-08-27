@@ -309,7 +309,7 @@ export const qualifierBien = (ctx: QualificationContext): {
       };
     }
 
-    if (detenteur && detenteur.toLowerCase().includes('couple')) {
+    if (isDetenteurCommon(detenteur)) {
       return {
         qualification: 'Indivision',
         raison: 'Bien détenu par les deux sans désignation dans la société d\'acquêts : indivision ordinaire.',

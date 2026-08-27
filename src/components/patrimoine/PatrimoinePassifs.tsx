@@ -20,8 +20,8 @@ export const PatrimoinePassifs = () => {
   const [selectedPassif, setSelectedPassif] = useState<Emprunt | Passif | null>(null);
   const [passifType, setPassifType] = useState<'emprunt' | 'passif'>('emprunt');
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const { emprunts, loading: empruntsLoading, deleteEmprunt } = useEmprunts();
-  const { passifs, loading: passifsLoading, deletePassif } = usePassifs();
+  const { emprunts, loading: empruntsLoading, createEmprunt, updateEmprunt, deleteEmprunt } = useEmprunts();
+  const { passifs, loading: passifsLoading, createPassif, updatePassif, deletePassif } = usePassifs();
   const { assets } = useAssets();
 
   const closeForm = () => {
@@ -36,6 +36,10 @@ export const PatrimoinePassifs = () => {
           item={editingItem || undefined}
           onCancel={closeForm}
           onSubmit={closeForm}
+          createEmprunt={createEmprunt}
+          updateEmprunt={updateEmprunt}
+          createPassif={createPassif}
+          updatePassif={updatePassif}
         />
       </div>
     );

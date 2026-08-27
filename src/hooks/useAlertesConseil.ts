@@ -38,7 +38,7 @@ export function useAlertesConseil() {
     const patrimoineNet =
       assets.reduce((sum, a) => sum + (a.valeur_estimee || 0), 0) -
       passifs.reduce((sum, p) => sum + (p.montant_du || 0), 0) -
-      emprunts.reduce((sum, e) => sum + (e.capital_restant_du || 0), 0);
+      emprunts.filter(e => !e.societe_id).reduce((sum, e) => sum + (e.capital_restant_du || 0), 0);
 
     // regime_matrimonial / loi_applicable_regime / pays_premier_domicile_matrimonial
     // n'ont de sens que sous Marié(e) : ces champs ne sont jamais effacés en

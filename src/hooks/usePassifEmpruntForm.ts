@@ -7,7 +7,6 @@ import { Asset, assetService } from '@/services/assetService';
 import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, mapDetenteurToDb, FamilyInfo } from '@/lib/patrimoine/utils';
 import { EMPRUNT_NATURES } from '@/constants/assetTypes';
-import { useEmprunts, usePassifs } from '@/hooks/usePassifs';
 import { qualifierBien, QualificationContext } from '@/lib/patrimoine/qualification';
 
 export const isEmpruntRecord = (item: Emprunt | Passif): item is Emprunt => 'libelle' in item;
@@ -15,17 +14,30 @@ export const isEmpruntRecord = (item: Emprunt | Passif): item is Emprunt => 'lib
 interface UsePassifEmpruntFormProps {
   item?: Emprunt | Passif;
   onSuccess: () => void;
+  // Injectées par le parent (PatrimoinePassifs), qui détient l'unique instance
+  // de useEmprunts()/usePassifs() : évite qu'une instance privée au formulaire
+  // se démonte avec sa création jamais répercutée sur la liste affichée par le
+  // parent (cf. docs/patrimoine.md, même pattern que useAssetForm/onSubmit).
+  createEmprunt: (data: Omit<Emprunt, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<Emprunt>;
+  updateEmprunt: (id: string, data: Partial<Emprunt>) => Promise<Emprunt>;
+  createPassif: (data: Omit<Passif, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<Passif>;
+  updatePassif: (id: string, data: Partial<Passif>) => Promise<Passif>;
 }
 
-export const usePassifEmpruntForm = ({ item, onSuccess }: UsePassifEmpruntFormProps) => {
+export const usePassifEmpruntForm = ({
+  item,
+  onSuccess,
+  createEmprunt,
+  updateEmprunt,
+  createPassif,
+  updatePassif,
+}: UsePassifEmpruntFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
   const [familyData, setFamilyData] = useState<FamilyInfo>({ hasPartner: false });
   const [assets, setAssets] = useState<Asset[]>([]);
   const [maritalContext, setMaritalContext] = useState<Pick<QualificationContext, 'statutCouple' | 'regimeMatrimonial' | 'dateMariage' | 'conventionPacs'>>({});
   const [qualificationRaison, setQualificationRaison] = useState<string>('');
-  const { createEmprunt, updateEmprunt } = useEmprunts();
-  const { createPassif, updatePassif } = usePassifs();
 
   // Catégorie d'origine (pour restreindre le choix de nature en édition) ;
   // undefined en création, où la liste complète des natures est proposée.

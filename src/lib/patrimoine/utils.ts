@@ -179,11 +179,12 @@ export interface PlusValueResult {
 }
 
 export const calculatePlusValue = (
-  valeurEstimee: number | undefined,
-  valeurAcquisition: number | undefined,
-  fraisAcquisition: number | undefined
+  valeurEstimee: number | undefined | null,
+  valeurAcquisition: number | undefined | null,
+  fraisAcquisition: number | undefined | null
 ): PlusValueResult => {
-  if (valeurEstimee === undefined || valeurAcquisition === undefined) {
+  if (valeurEstimee === undefined || valeurEstimee === null
+    || valeurAcquisition === undefined || valeurAcquisition === null) {
     return { plusValue: 0, hasData: false };
   }
   const frais = fraisAcquisition || 0;

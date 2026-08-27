@@ -215,6 +215,23 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   compensation). *(Vérifié toujours absent : décision explicite de ne pas coder une version simplifiée,
   cf. `audit-transmission-attribution-preferentielle-2026-08.md`. Chantier à part entière, avec sa
   propre phase de conception, pas un correctif ponctuel.)*
+- **Passif « Bien propre »/« Bien personnel » toujours déduit à 100 % du patrimoine transmissible, quel
+  que soit son détenteur réel.** `buildPatrimonySnapshot`
+  ([transmissionHelpers.ts](src/utils/transmissionHelpers.ts)) appelle `getFractionPassifAjustee`
+  ([avantagesMatrimoniaux.ts](src/lib/patrimoine/avantagesMatrimoniaux.ts)) puis retombe sur `?? 1`
+  (100 %) dès que la fraction retournée est `null` — ce qui est systématiquement le cas hors
+  qualification `Bien commun`, puisque `getFractionPassifAjustee` ne calcule une fraction que pour cette
+  qualification précise. Le type `PassifLine` ne transporte même pas le champ `detenteur`, donc aucune
+  pondération par détenteur réel n'est possible pour un passif `Bien propre`/`Bien personnel`/
+  `Indivision` — alors que le module Patrimoine, sur la même donnée, pondère correctement par détenteur
+  via `getPartSuccessorale`. Un passif propre à un seul époux (ex. crédit personnel contracté avant
+  mariage) est donc déduit en totalité de la masse transmissible du couple au lieu de la seule part de
+  son débiteur réel. **Détecté pendant l'audit du module Patrimoine (2026-08-27, cf.
+  [docs/patrimoine.md §3](patrimoine.md)) mais relève du module Transmission** : la correction
+  nécessite d'ajouter `detenteur` à `PassifLine` et de faire calculer la fraction par
+  `getPartSuccessorale`/`getFractionPassifAjustee` selon le détenteur réel, au lieu du fallback `?? 1` —
+  non traité dans cette session, qui portait sur le module Patrimoine. *(Vérifié ouvert au 2026-08-27 :
+  `PassifLine` ne porte que `montant_du` et `qualification_bien`.)*
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
