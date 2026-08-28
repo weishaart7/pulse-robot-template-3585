@@ -42,9 +42,6 @@ Deux notions transverses pèsent sur ces trois agrégats :
 **B3 — Démembrement appliqué de façon incohérente entre l'onglet Actifs et le Résumé/Plus-values.**
 `usePatrimoineCalculations.ts` (agrégats du Résumé) et `PatrimoineChart.tsx` pondèrent `valeur_estimee` par la fraction issue du barème 669 CGI (`getFractionDemembrement`) pour tout actif en Usufruit/Nue-propriété. `PatrimoineTreeView.tsx`, lui, ne le fait à aucun endroit : `totalValue` (ligne 102), `calculateWeight` (poids % par catégorie/actif) et `getPlusValueDisplay`/`getCategoryPlusValue` (plus-value affichée par ligne et par catégorie) utilisent tous `asset.valeur_estimee` brut à 100 %, jamais la valeur pondérée. Pour tout actif démembré : le total de l'onglet "Actifs" et le total du Résumé divergent (l'un compte la pleine propriété, l'autre la fraction 669 CGI), et la plus-value affichée pour ce même actif diffère entre l'onglet "Actifs" (brute, non pondérée) et l'onglet "Plus-values" (pondérée par la fraction, cf. `usePatrimoineCalculations.ts:263-267`).
 
-**B4 — Taux de prélèvements sociaux incohérent entre les deux moteurs fiscaux du module (17,2 % vs 18,6 %).**
-`regimeFiscalPVI.ts:12` fixe `PVI_PS_RATE = 0.172` (17,2 %, appliqué à l'immobilier/LMNP). `regimeFiscalPlusValue.ts:15` fixe `PFU_PS = 0.186` (18,6 %, appliqué à Actions/Obligations/CTO/PEA/crypto/private equity, et à l'option "plus-value réelle" pour l'or/métaux précieux où le taux total implémenté est 37,6 % = 19 % + 18,6 %, au lieu de 36,2 % si le taux PS attendu était le même 17,2 % que celui utilisé pour l'immobilier ailleurs dans le même module). Le badge affiché à l'écran pour le PEA ≥ 5 ans mentionne lui-même explicitement "prélèvements sociaux (18,6 %) restant dus" (`regimeFiscalPlusValue.ts:212`). `PFU_RATE = 0.314` (12,8 % + 18,6 %) est donc utilisé pour toute plus-value financière générique, quand `PVI` totalise 36,2 % (19 % + 17,2 %) pour l'immobilier — deux taux de prélèvements sociaux différents cohabitent dans le même module pour ce qui devrait être un seul et même prélèvement social sur le capital. Impact chiffré : sur une plus-value PFU de 10 000 €, le module calcule 3 140 € d'impôt total (dont 1 860 € de PS) plutôt que 3 000 € (dont 1 720 € de PS) si le taux PS de 17,2 % utilisé côté immobilier était le taux correct.
-
 ### 🟠 Risques techniques
 
 **R1 — `qualification_bien` (utilisé dans tous les totaux) peut devenir périmé sans que rien ne le signale à l'utilisateur.**
@@ -69,6 +66,12 @@ Deux notions transverses pèsent sur ces trois agrégats :
 
 **D4 — `formatCurrency` local redéfini trois fois** (`AssetDetailsDialog.tsx:99`, `PassifDetailsDialog.tsx:20`, `PatrimoineChart.tsx:87-94`), identique à celui exporté par `lib/patrimoine/utils.ts`, plutôt qu'importé.
 
+### ✅ Conformité vérifiée
+
+**C1 — Les deux taux de prélèvements sociaux (17,2 % vs 18,6 %) sont corrects, pas une incohérence.**
+`regimeFiscalPVI.ts:12` fixe `PVI_PS_RATE = 0.172` (17,2 %, appliqué à l'immobilier/LMNP). `regimeFiscalPlusValue.ts:15` fixe `PFU_PS = 0.186` (18,6 %, appliqué à Actions/Obligations/CTO/PEA/crypto/private equity, et à l'option "plus-value réelle" pour l'or/métaux précieux, où le taux total implémenté est 37,6 % = 19 % + 18,6 %). Un précédent passage de cet audit avait signalé cette différence comme un bug technique (taux PS incohérent au sein du même module). Vérification juridique effectuée le 28/08/2026 : depuis la LFSS 2026 (loi n° 2025-1403 du 30/12/2025, effective au 1ᵉʳ janvier 2026), la CSG sur les revenus du capital mobilier est passée de 9,2 % à 10,6 %, portant les prélèvements sociaux à 18,6 % — mais uniquement pour les revenus de capitaux mobiliers (actions, obligations, PEA, crypto, or/métaux précieux en régime réel). L'immobilier (plus-values immobilières classiques et LMNP à la revente) n'est pas concerné par cette hausse et reste à 17,2 %. Les deux taux implémentés (`PVI_PS_RATE = 17,2 %` et `PFU_PS = 18,6 %`) reflètent donc correctement cette différence de réforme selon la nature du revenu, et non une incohérence du code.
+Recommandation : documenter en commentaire dans `regimeFiscalPVI.ts` (à côté de `PVI_PS_RATE`) et dans `regimeFiscalPlusValue.ts` (à côté de `PFU_PS`) la raison de cette différence de taux (référence à la LFSS 2026), pour qu'un futur développeur ne les "harmonise" pas par erreur en pensant corriger une incohérence.
+
 ### ⚖️ Règles métier à vérifier
 
 Pour chaque règle, la formule ci-dessous est celle **effectivement implémentée** dans le code (à date du 2026-08-28) — la conformité juridique/fiscale reste à vérifier séparément.
@@ -76,7 +79,7 @@ Pour chaque règle, la formule ci-dessous est celle **effectivement implémenté
 **M1 — Part successorale d'un bien (`lib/patrimoine/succession.ts::getPartSuccessorale`)**
 - `qualification_bien` NULL ou `'À qualifier'` → bloque (exception `BienNonQualifieError`), jamais de défaut deviné.
 - `'Indivision'` → part réelle détenue par le défunt, lue depuis `pourcentage_utilisateur`/`pourcentage_conjoint` (complément à 100 % automatique si une seule des deux valeurs est renseignée, sinon 50/50 par défaut si aucune ne l'est — `getPourcentagesRepartition`, `utils.ts:148-173`).
-- `'Bien commun'` → 50 % fixe, non paramétrable (demi-boni de communauté de droit).
+- `'Bien commun'` → 50 % fixe, non paramétrable (moitié de la communauté revenant à chaque époux).
 - `'Bien propre'`/`'Bien personnel'` → 100 % si `detenteur` = utilisateur, 0 % si `detenteur` = conjoint (binaire, ignore tout pourcentage saisi).
 
 **M2 — Qualification automatique bien propre/commun (`lib/patrimoine/qualification.ts::qualifierBien`)**
@@ -89,13 +92,13 @@ Cascade de règles dans cet ordre de priorité : (1) indivision explicite si `de
 `plusValue = valeur_estimee − valeur_acquisition − frais_acquisition`. Pas d'abattement pour durée de détention à ce stade (calcul brut) ; `hasData = false` (exclu des agrégats) si `valeur_estimee` ou `valeur_acquisition` est NULL/undefined.
 
 **M5 — Régime fiscal des plus-values génériques (PFU) — `regimeFiscalPlusValue.ts`**
-`PFU_IR = 12,8 %`, `PFU_PS = 18,6 %`, `PFU_RATE = 31,4 %` (cf. B4 ci-dessus pour l'incohérence avec le taux PS immobilier du même module). Appliqué à : Actions, Obligations, Bons du Trésor, dette subordonnée, dette privée, CTO générique, matières premières, crypto (sans franchise de 305 €, volontairement non appliquée). PEA/PEA-PME et Private equity (FCPR/FPCI) : PFU si détention < 5 ans, sinon IR = 0 et seuls les PS restent dus. Actions gratuites, Stock-options, BSPCE : régime affiché à titre informatif uniquement (`ir`/`ps`/`total` = null), sans calcul.
+`PFU_IR = 12,8 %`, `PFU_PS = 18,6 %`, `PFU_RATE = 31,4 %` (cf. C1 ci-dessus : taux PS spécifique aux revenus de capitaux mobiliers depuis la LFSS 2026, distinct du taux immobilier du même module). Appliqué à : Actions, Obligations, Bons du Trésor, dette subordonnée, dette privée, CTO générique, matières premières, crypto (sans franchise de 305 €, volontairement non appliquée). PEA/PEA-PME et Private equity (FCPR/FPCI) : PFU si détention < 5 ans, sinon IR = 0 et seuls les PS restent dus. Actions gratuites, Stock-options, BSPCE : régime affiché à titre informatif uniquement (`ir`/`ps`/`total` = null), sans calcul.
 
 **M6 — Régime fiscal des plus-values immobilières (PVI) — `regimeFiscalPVI.ts`**
 `PVI_IR_RATE = 19 %`, `PVI_PS_RATE = 17,2 %`. Résidence principale : exonération totale sans condition de durée. Abattement IR : 0 % avant 6 ans, puis 6 %/an de la 6ᵉ à la 21ᵉ année, +4 % la 22ᵉ année (exonération totale à 22 ans). Abattement PS : 0 % avant 6 ans, puis 1,65 %/an de la 6ᵉ à la 21ᵉ année, +1,60 % la 22ᵉ année, puis 9 %/an de la 23ᵉ à la 30ᵉ année (exonération totale à 30 ans). Surtaxe progressive de 2 % à 6 % avec lissage aux bornes, appliquée au-delà de 50 000 € de plus-value imposable à l'IR (barème par tranches, art. 1609 nonies G CGI) — appliquée telle quelle aux "Terrains" faute de pouvoir distinguer les terrains à bâtir (qui devraient légalement en être exclus), décision documentée comme volontaire dans le code. LMNP : même barème que le régime général, avec note explicite que la réintégration des amortissements (obligatoire depuis 2025) n'est pas calculée — la plus-value réelle imposable est donc probablement sous-estimée pour ces biens.
 
 **M7 — Or et métaux précieux — `regimeFiscalPlusValue.ts`**
-Choix laissé à l'utilisateur entre taxe forfaitaire 11,5 % du prix de vente (`valeur_estimee`, sans historique requis) et option plus-value réelle à 37,6 % (cf. B4) avec abattement de 5 %/an au-delà de la 2ᵉ année de détention (exonération totale à 22 ans).
+Choix laissé à l'utilisateur entre taxe forfaitaire 11,5 % du prix de vente (`valeur_estimee`, sans historique requis) et option plus-value réelle à 37,6 % (19 % IR + 18,6 % PS, cf. C1) avec abattement de 5 %/an au-delà de la 2ᵉ année de détention (exonération totale à 22 ans).
 
 **M8 — Financement mixte, art. 1436 (`qualification.ts`)** — voir M2, point 12 : seuil de 50 % de la contribution en fonds propres par rapport au prix d'acquisition total, applicable uniquement en régime communautaire et uniquement si aucune clause de remploi totale n'est actée.
 
@@ -108,3 +111,7 @@ Choix laissé à l'utilisateur entre taxe forfaitaire 11,5 % du prix de vente (`
 - **Décomposition gain d'acquisition/gain de cession** pour Actions gratuites, Stock-options, BSPCE : régime affiché à titre informatif, aucun calcul (champs de valeur à l'acquisition/à l'exercice absents du formulaire).
 - **Option barème progressif de l'IR** (alternative au PFU) : jamais calculée, uniquement mentionnée en note.
 - **Participation aux acquêts** (`usePatrimoineOriginaire`/`usePatrimoineFinal`, `participationAcquets.ts`) : hors périmètre de cet audit, rattachée au module Régime matrimonial.
+
+---
+
+**Note de validation juridique (28/08/2026).** Les règles M2 (qualification civile), M3 (barème 669) et M5-M7 (régimes fiscaux des plus-values) ont fait l'objet d'une vérification juridique en ligne le 28/08/2026, avec confirmation de conformité aux articles 1404, 1405 al. 2, 1436 et 1526 du Code civil, à l'article 669 du CGI, et à la LFSS 2026 pour les taux de prélèvements sociaux (cf. C1). Portée de cette vérification : cohérence des taux, seuils et règles principales citées dans ce document — elle ne constitue ni une relecture exhaustive de la jurisprudence applicable, ni un avis juridique.
