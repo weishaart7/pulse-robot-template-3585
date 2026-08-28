@@ -571,6 +571,9 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
               value={formData.valeurEstimee || ''}
               onChange={(e) => handleInputChange('valeurEstimee', Number(e.target.value))}
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Valeur nette des emprunts de la société : ceux-ci ne sont pas comptés séparément dans les passifs du foyer.
+            </p>
           </div>
         </div>
 

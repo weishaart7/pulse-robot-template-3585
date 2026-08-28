@@ -96,7 +96,19 @@ export function PatrimoineOriginaireSection() {
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Bien concerné (facultatif)</Label>
-              <Select value={bienConcerneId || '__none__'} onValueChange={(v) => setBienConcerneId(v === '__none__' ? '' : v)}>
+              <Select
+                value={bienConcerneId || '__none__'}
+                onValueChange={(v) => {
+                  const id = v === '__none__' ? '' : v;
+                  setBienConcerneId(id);
+                  if (id) {
+                    const asset = assets?.find(a => a.id === id);
+                    if (asset && asset.valeur_estimee != null) {
+                      setValeur(String(asset.valeur_estimee));
+                    }
+                  }
+                }}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">Aucun</SelectItem>

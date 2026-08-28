@@ -111,16 +111,6 @@ export const usePatrimoineCalculations = ({
     return { valueById, fractionById, unqualifiedIds };
   }, [assets, assetDemembrements, demembrementCtx]);
 
-  const financialSummary = useMemo<FinancialSummary>(() => {
-    const totalActifs = assets.reduce((sum, asset) => sum + (asset.id ? demembrement.valueById.get(asset.id) ?? 0 : (asset.valeur_estimee || 0)), 0);
-    // Emprunts de société exclus : déjà reflétés dans la valorisation des parts,
-    // les compter ici les doublerait (cf. buildPassifLines côté Transmission).
-    const totalPassifs = passifs.reduce((sum, passif) => sum + (passif.montant_du || 0), 0)
-      + emprunts.filter(e => !e.societe_id).reduce((sum, emprunt) => sum + (emprunt.capital_restant_du || 0), 0);
-    const patrimoineNet = totalActifs - totalPassifs;
-    return { totalActifs, totalPassifs, patrimoineNet };
-  }, [assets, passifs, emprunts, demembrement]);
-
   // Source unique de vérité pour "part revenant à l'utilisateur" : même
   // fonction que le module Transmission (lib/patrimoine/succession.ts),
   // fusionnée ici pour remplacer l'ancienne logique dupliquée basée
@@ -242,6 +232,18 @@ export const usePatrimoineCalculations = ({
       unqualifiedItems: unqualified
     };
   }, [assets, passifs, emprunts, userFirstName, spouseFirstName, isInCouple, demembrement]);
+
+  // Dérivé de patrimoineParPersonne (mêmes exclusions démembrement +
+  // qualification civile) pour garantir financialSummary.patrimoineNet ===
+  // patrimoineParPersonne.userValue + spouseValue dans tous les cas — cf. B1,
+  // le bandeau "éléments exclus des totaux" du Résumé doit rester exact pour
+  // les 3 cartes du haut, pas seulement pour "Patrimoine par tête".
+  const financialSummary = useMemo<FinancialSummary>(() => {
+    const totalActifs = patrimoineParPersonne.userActifs + patrimoineParPersonne.spouseActifs;
+    const totalPassifs = patrimoineParPersonne.userPassifs + patrimoineParPersonne.spousePassifs;
+    const patrimoineNet = patrimoineParPersonne.userValue + patrimoineParPersonne.spouseValue;
+    return { totalActifs, totalPassifs, patrimoineNet };
+  }, [patrimoineParPersonne]);
 
   const plusValuesSummary = useMemo<PlusValuesSummary>(() => {
     let totalPlusValues = 0;
