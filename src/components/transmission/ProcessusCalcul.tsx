@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calculator, Users, Scale, FileText, PiggyBank, Receipt, TrendingUp, Lightbulb, AlertCircle, ArrowRight } from 'lucide-react';
@@ -29,6 +30,8 @@ import {
 import { computeTransmission, TransmissionContext } from '@/lib/transmission';
 import { FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission/types';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
+import { DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
+import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import transmissionParamsData from '@/data/transmission-params.json';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import './kairos-transmission.css';
@@ -47,6 +50,23 @@ export const ProcessusCalcul = () => {
   const { data: creancesEntreEpoux, loading: creancesLoading } = useCreancesEntreEpoux();
   const { data: patrimoineOriginaire, loading: patrimoineOriginaireLoading } = usePatrimoineOriginaire();
   const { data: patrimoineFinal, loading: patrimoineFinalLoading } = usePatrimoineFinal();
+  const [assetDemembrements, setAssetDemembrements] = useState<AssetDemembrement[]>([]);
+
+  useEffect(() => {
+    assetDemembrementService.getAllForUser()
+      .then(setAssetDemembrements)
+      .catch(() => {
+        setAssetDemembrements([]);
+        toast.error("Impossible de charger les démembrements");
+      });
+  }, []);
+
+  // Démembrement (barème 669 CGI) des actifs déjà en Usufruit/Nue-propriété —
+  // même pondération que le Résumé Patrimoine (usePatrimoineCalculations.ts).
+  const demembrementCtx: DemembrementFractionContext = useMemo(
+    () => ({ familyProfile, maritalStatus, familyLinks: familyMembers }),
+    [familyProfile, maritalStatus, familyMembers]
+  );
 
   // Construire le graphe familial
   const familyGraph: FamilyGraph | null = useMemo(() => {
@@ -88,7 +108,7 @@ export const ProcessusCalcul = () => {
 
     try {
       // Assurance-vie non séparée ici : pas de régression, à traiter séparément si besoin
-      const patrimony = buildPatrimonySnapshot(assets, buildPassifLines(passifs, emprunts, 'user'), 0);
+      const patrimony = buildPatrimonySnapshot(assets, buildPassifLines(passifs, emprunts, 'user'), 0, null, assetDemembrements, demembrementCtx);
       // Répartition avant/après 70 ans à partir des vraies primes (av_operations) —
       // lève AVDonneesInsuffisantesError si un contrat n'a aucune opération
       // enregistrée ou si la date de naissance du défunt simulé est inconnue.
@@ -108,6 +128,8 @@ export const ProcessusCalcul = () => {
         params,
         conjointOption: 'quart_pp',
         rawAssets: assets || [],
+        assetDemembrements,
+        demembrementCtx,
         avContracts,
         // Contrat AV détenu par le conjoint survivant, non dénoué puisque
         // l'Utilisateur décède en premier ici : réintégré civilement (doctrine
@@ -136,7 +158,7 @@ export const ProcessusCalcul = () => {
     }
   }, [
     familyGraph, assets, passifs, emprunts, transmissionLiberalites, params, maritalStatus, avContractsRaw, familyProfile,
-    recompenses, creancesEntreEpoux, patrimoineOriginaire, patrimoineFinal
+    recompenses, creancesEntreEpoux, patrimoineOriginaire, patrimoineFinal, assetDemembrements, demembrementCtx
   ]);
 
   if (

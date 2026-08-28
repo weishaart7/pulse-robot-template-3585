@@ -37,6 +37,8 @@ import {
   TransmissionContext
 } from '@/lib/transmission';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
+import { DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
+import { assetDemembrementService } from '@/services/assetDemembrementService';
 import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcquets';
 import { Recompense } from '@/types/recompense';
 import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
@@ -131,6 +133,11 @@ export const Succession2ndDeces = () => {
         .from('assets')
         .select('*')
         .eq('user_id', user!.id);
+
+      // Démembrement (barème 669 CGI) des actifs déjà en Usufruit/Nue-propriété
+      // — même pondération que le Résumé Patrimoine (usePatrimoineCalculations.ts).
+      const assetDemembrements = await assetDemembrementService.getAllForUser();
+      const demembrementCtx: DemembrementFractionContext = { familyProfile, maritalStatus, familyLinks };
 
       const avAssets = (assets || []).filter(a => getAssetCategory(a.nature || '') === 'épargne et assurance-vie');
       const totalAV = avAssets.reduce((sum, a) => sum + (Number(a.valeur_estimee) || 0), 0);
@@ -242,7 +249,7 @@ export const Succession2ndDeces = () => {
       // pas déduite).
       const passifLinesUtilisateur = buildPassifLines(passifs, emprunts, 'user');
       const passifLinesBrut = buildPassifLines(passifs, emprunts);
-      const patrimonyUtilisateur = buildPatrimonySnapshot(assets || [], passifLinesUtilisateur, totalAV);
+      const patrimonyUtilisateur = buildPatrimonySnapshot(assets || [], passifLinesUtilisateur, totalAV, null, assetDemembrements, demembrementCtx);
       // clausesData est transmis à ctxUtilisateurDecede (1er décès
       // Utilisateur, rawAssets bruts avec leur vraie qualification_bien) —
       // ET, désormais, aux contextes "conjoint" ci-dessous (chained.
@@ -278,6 +285,8 @@ export const Succession2ndDeces = () => {
         conjointOption: (optionConjoint as any) || undefined,
         referenceDate,
         rawAssets: assets || [],
+        assetDemembrements,
+        demembrementCtx,
         avContracts: avContractsUtilisateur,
         // Contrat AV détenu par le conjoint survivant, non dénoué puisque
         // l'Utilisateur décède en premier ici : réintégré civilement (doctrine
@@ -308,7 +317,9 @@ export const Succession2ndDeces = () => {
           passifLinesBrut,
           firstDeathUtilisateur,
           familyUtilisateur.survivingSpouseId!,
-          []
+          [],
+          assetDemembrements,
+          demembrementCtx
         );
         const chained = computeChainedTransmission({
           firstDeath: ctxUtilisateurDecede,
@@ -318,7 +329,9 @@ export const Succession2ndDeces = () => {
             liberalites: [],
             params,
             referenceDate,
-            rawAssets: buildSpouseRawAssets(assets || [], clausesData, familyProfile?.date_naissance, referenceDate),
+            rawAssets: buildSpouseRawAssets(assets || [], clausesData, familyProfile?.date_naissance, referenceDate, assetDemembrements, demembrementCtx),
+            assetDemembrements,
+            demembrementCtx,
             avContracts: []
           }
         });
@@ -331,14 +344,16 @@ export const Succession2ndDeces = () => {
       let inverseResult: OrdreResult;
       try {
         const spouseFamilyFirst = buildSpouseAsDecedentFamilyGraph(familyProfile, maritalStatus, familyLinks || []);
-        const spouseBasePatrimony = buildSpouseOwnBasePatrimony(assets || [], passifLinesBrut);
+        const spouseBasePatrimony = buildSpouseOwnBasePatrimony(assets || [], passifLinesBrut, assetDemembrements, demembrementCtx);
         const ctxConjointDecede: TransmissionContext = {
           family: spouseFamilyFirst,
           patrimony: spouseBasePatrimony,
           liberalites: [],
           params,
           referenceDate,
-          rawAssets: buildSpouseRawAssets(assets || [], clausesData, familyProfile?.date_naissance, referenceDate),
+          rawAssets: buildSpouseRawAssets(assets || [], clausesData, familyProfile?.date_naissance, referenceDate, assetDemembrements, demembrementCtx),
+          assetDemembrements,
+          demembrementCtx,
           // avContracts volontairement vide : limitation connue (décision du
           // 2026-07-17, chantier séparé, pas rouverte ici) — les contrats
           // construits par buildAVContracts résolvent les bénéficiaires contre
@@ -371,7 +386,7 @@ export const Succession2ndDeces = () => {
         const firstDeathConjoint = computeTransmission(ctxConjointDecede);
 
         const utilisateurVeufFamily = widowFamilyGraph(familyUtilisateur, familyLinks || []);
-        const utilisateurBasePatrimony = buildPatrimonySnapshot(assets || [], passifLinesUtilisateur, 0);
+        const utilisateurBasePatrimony = buildPatrimonySnapshot(assets || [], passifLinesUtilisateur, 0, null, assetDemembrements, demembrementCtx);
         const utilisateurVeufPatrimony = addReunifiedFullOwnership(
           utilisateurBasePatrimony,
           firstDeathConjoint,
@@ -388,6 +403,8 @@ export const Succession2ndDeces = () => {
             params,
             referenceDate,
             rawAssets: assets || [],
+            assetDemembrements,
+            demembrementCtx,
             avContracts: []
           }
         });

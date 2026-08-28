@@ -26,6 +26,8 @@ import {
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission';
 import { resolveEffectiveAVBeneficiaires } from '@/lib/dmtg/assurance-vie';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
+import { DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
+import { assetDemembrementService } from '@/services/assetDemembrementService';
 import { Recompense } from '@/types/recompense';
 import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
 import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcquets';
@@ -227,10 +229,21 @@ export const AssuranceVie = () => {
             setAvContractsBuilt(builtAvContracts);
 
             const { data: allAssets } = await supabase.from('assets').select('*').eq('user_id', user.id);
+            // Démembrement (barème 669 CGI) des actifs déjà en Usufruit/Nue-propriété
+            // — même pondération que le Résumé Patrimoine (usePatrimoineCalculations.ts).
+            const assetDemembrements = await assetDemembrementService.getAllForUser();
+            const demembrementCtx: DemembrementFractionContext = {
+              familyProfile: profileRes.data,
+              maritalStatus: maritalRes.data,
+              familyLinks: familyLinksRows
+            };
             const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(
               allAssets || [],
               buildPassifLines(passifsRes.data || [], empruntsRes.data || [], 'user'),
-              0
+              0,
+              null,
+              assetDemembrements,
+              demembrementCtx
             );
             const rawParams = transmissionParamsData as any;
             const params: TransmissionParams = {
@@ -250,6 +263,8 @@ export const AssuranceVie = () => {
               liberalites: [],
               params,
               rawAssets: allAssets || [],
+              assetDemembrements,
+              demembrementCtx,
               avContracts: builtAvContracts,
               referenceDate: new Date().toISOString().split('T')[0],
               clausesData,

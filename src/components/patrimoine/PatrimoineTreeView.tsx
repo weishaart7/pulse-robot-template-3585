@@ -20,6 +20,7 @@ import { assetDemembrementService, AssetDemembrement } from '@/services/assetDem
 import { AssetDetailsDialog } from './AssetDetailsDialog';
 import { formatCurrency, getCategoryColor, calculatePlusValue, mapDetenteurToDisplay } from '@/lib/patrimoine/utils';
 import { resolveAssetFiscalRegime } from '@/lib/patrimoine/assetFiscalRegime';
+import { getFractionDemembrement, DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
 
 interface PatrimoineTreeViewProps {
   assets: Asset[];
@@ -54,6 +55,28 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
       return acc;
     }, {} as Record<string, AssetDemembrement[]>);
   }, [demembrements]);
+
+  const demembrementCtx: DemembrementFractionContext = useMemo(
+    () => ({ familyProfile, maritalStatus, familyLinks }),
+    [familyProfile, maritalStatus, familyLinks]
+  );
+
+  // Fraction (barème 669 CGI) à appliquer à un actif en Usufruit/Nue-propriété
+  // — même pondération que le Résumé Patrimoine (usePatrimoineCalculations.ts).
+  // null si l'âge de l'usufruitier n'est pas calculable.
+  const getDemembrementFraction = (asset: Asset): number | null => {
+    const demembrementsForAsset = asset.id ? (demembrementsByAsset[asset.id] || []) : [];
+    return getFractionDemembrement(asset, demembrementsForAsset, demembrementCtx);
+  };
+
+  // Valeur pondérée par le démembrement, 0 si la fraction n'est pas calculable
+  // (même traitement que demembrement.valueById dans usePatrimoineCalculations.ts) —
+  // vaut asset.valeur_estimee pour un actif en pleine propriété (fraction 1).
+  const getWeightedValue = (asset: Asset): number => {
+    if (asset.valeur_estimee === undefined || asset.valeur_estimee === null) return 0;
+    const fraction = getDemembrementFraction(asset);
+    return fraction === null ? 0 : asset.valeur_estimee * fraction;
+  };
 
   const empruntsByAsset = useMemo(() => {
     return emprunts.reduce((acc, e) => {
@@ -99,7 +122,7 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
     );
   }, [assets, searchQuery]);
 
-  const totalValue = filteredAssets.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
+  const totalValue = filteredAssets.reduce((sum, asset) => sum + getWeightedValue(asset), 0);
 
   // Group assets by category
   const assetsByCategory = useMemo(() => {
@@ -138,9 +161,26 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
       return { display: '—', className: 'text-muted-foreground', value: 0, regimeNonDetermine: false };
     }
 
+    // Actif démembré dont l'âge de l'usufruitier n'est pas calculable : exclu,
+    // même traitement que usePatrimoineCalculations.ts::plusValuesSummary.
+    const fraction = getDemembrementFraction(asset);
+    if (fraction === null) {
+      return { display: '—', className: 'text-muted-foreground', value: 0, regimeNonDetermine: false };
+    }
+
+    // Valeur estimée ET valeur d'acquisition pondérées par la même fraction de
+    // démembrement (barème 669 CGI), même logique que
+    // usePatrimoineCalculations.ts::plusValuesSummary.
+    const valeurEstimeePonderee = (asset.valeur_estimee === undefined || asset.valeur_estimee === null)
+      ? asset.valeur_estimee
+      : asset.valeur_estimee * fraction;
+    const valeurAcquisitionPonderee = (asset.valeur_acquisition === undefined || asset.valeur_acquisition === null)
+      ? asset.valeur_acquisition
+      : asset.valeur_acquisition * fraction;
+
     const { plusValue, hasData } = calculatePlusValue(
-      asset.valeur_estimee,
-      asset.valeur_acquisition,
+      valeurEstimeePonderee,
+      valeurAcquisitionPonderee,
       asset.frais_acquisition
     );
 
@@ -151,7 +191,7 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
       ctoMultiActifs: asset.cto_multi_actifs,
       ctoNatureSousJacent: asset.cto_nature_sous_jacent,
       plusValue,
-      valeurEstimee: asset.valeur_estimee || 0,
+      valeurEstimee: valeurEstimeePonderee || 0,
       dateAcquisition: asset.date_acquisition,
     });
     const regimeNonDetermine = regime.tone === 'non_determine';
@@ -178,11 +218,22 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
   const getCategoryPlusValue = (categoryAssets: Asset[]) => {
     let total = 0;
     let hasAnyData = false;
-    
+
     categoryAssets.forEach(asset => {
+      // Même exclusion et pondération que getPlusValueDisplay ci-dessus.
+      const fraction = getDemembrementFraction(asset);
+      if (fraction === null) return;
+
+      const valeurEstimeePonderee = (asset.valeur_estimee === undefined || asset.valeur_estimee === null)
+        ? asset.valeur_estimee
+        : asset.valeur_estimee * fraction;
+      const valeurAcquisitionPonderee = (asset.valeur_acquisition === undefined || asset.valeur_acquisition === null)
+        ? asset.valeur_acquisition
+        : asset.valeur_acquisition * fraction;
+
       const { plusValue, hasData } = calculatePlusValue(
-        asset.valeur_estimee,
-        asset.valeur_acquisition,
+        valeurEstimeePonderee,
+        valeurAcquisitionPonderee,
         asset.frais_acquisition
       );
       if (hasData) {
@@ -244,12 +295,12 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
         <FullTable.Body interactive>
           {Object.entries(assetsByCategory)
             .sort(([, assetsA], [, assetsB]) => {
-              const valueA = assetsA.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
-              const valueB = assetsB.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
+              const valueA = assetsA.reduce((sum, asset) => sum + getWeightedValue(asset), 0);
+              const valueB = assetsB.reduce((sum, asset) => sum + getWeightedValue(asset), 0);
               return valueB - valueA;
             })
             .map(([category, categoryAssets]) => {
-              const categoryValue = categoryAssets.reduce((sum, asset) => sum + (asset.valeur_estimee || 0), 0);
+              const categoryValue = categoryAssets.reduce((sum, asset) => sum + getWeightedValue(asset), 0);
               const categoryWeight = calculateWeight(categoryValue);
               const isExpanded = expandedCategories.has(category);
               const categoryPlusValue = getCategoryPlusValue(categoryAssets);
@@ -290,7 +341,8 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
 
                   {/* Asset rows */}
                   {isExpanded && categoryAssets.map((asset) => {
-                    const assetWeight = calculateWeight(asset.valeur_estimee || 0);
+                    const weightedValue = getWeightedValue(asset);
+                    const assetWeight = calculateWeight(weightedValue);
                     const plusValueInfo = getPlusValueDisplay(asset);
 
                     return (
@@ -349,7 +401,7 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
                           <span className="text-sm text-muted-foreground">{assetWeight} %</span>
                         </FullTable.Cell>
                         <FullTable.Cell className="py-2.5">
-                          <span className="text-sm text-foreground">{asset.valeur_estimee ? formatCurrency(asset.valeur_estimee) : 'Non évalué'}</span>
+                          <span className="text-sm text-foreground">{asset.valeur_estimee ? formatCurrency(weightedValue) : 'Non évalué'}</span>
                         </FullTable.Cell>
                         <FullTable.Cell className="py-2.5">
                           <div className="flex items-center gap-1.5">

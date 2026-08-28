@@ -155,6 +155,9 @@ export interface RawAssetInput {
   id: string;
   denomination?: string | null;
   valeur_estimee?: number | null;
+  // Repli utilisé si valeur_estimee est absente (cf. lib/transmission/index.ts::
+  // getValeurEstimeePonderee), même ordre que buildPatrimonySnapshot côté civil.
+  valeur_acquisition?: number | null;
   nature?: string | null;
   // Régime matrimonial / indivision (cf. lib/patrimoine/succession.ts::getPartSuccessorale) :
   // détermine la part de ce bien qui entre réellement dans la succession.
@@ -162,6 +165,9 @@ export interface RawAssetInput {
   detenteur?: string | null;
   pourcentage_utilisateur?: number | null;
   pourcentage_conjoint?: number | null;
+  // Usufruit/Nue-propriété (cf. lib/patrimoine/demembrementFraction.ts) : pondère
+  // valeur_estimee par le barème 669 CGI dans les mêmes calculs que ci-dessus.
+  mode_detention?: string | null;
 }
 
 export type TypeQuotePart = "pleine_propriete" | "usufruit" | "nue_propriete";

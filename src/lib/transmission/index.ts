@@ -19,6 +19,8 @@ import {
 import { computeNotaryFees, computeDebours } from './fiscal';
 import { computeNetPerHeir } from './netBreakdown';
 import { getPartSuccessorale } from '../patrimoine/succession';
+import { getFractionDemembrement, DemembrementFractionContext } from '../patrimoine/demembrementFraction';
+import { AssetDemembrement } from '../../services/assetDemembrementService';
 import {
   computeSoldeRecompenses,
   computeSoldeCreancesEntreEpoux,
@@ -59,6 +61,14 @@ export interface TransmissionContext {
   // consolidation du moteur — computeTransmission est le seul point d'entrée
   // appelé par l'UI, computeDMTG n'est plus jamais invoqué depuis un composant).
   rawAssets?: RawAssetInput[];
+  // Démembrement (barème 669 CGI) des rawAssets déjà en Usufruit/Nue-propriété
+  // au jour de cette simulation — pondère valeurVenale (dmtgAssets),
+  // deltaAvantageMatrimonial et la valeur DUH ci-dessous, même mécanisme que
+  // usePatrimoineCalculations.ts côté module Patrimoine (lib/patrimoine/
+  // demembrementFraction.ts). Sans ces deux champs, un rawAsset démembré reste
+  // compté à sa valeur pleine propriété (comportement historique).
+  assetDemembrements?: AssetDemembrement[];
+  demembrementCtx?: DemembrementFractionContext;
   // Contrats AV déjà construits par utils/transmissionHelpers.ts::buildAVContracts
   // (primes avant/après 70 ans déjà réparties, bénéficiaires résolus vers de
   // vrais familyLinkId/survivingSpouseId) — même logique que `liberalites`,
@@ -212,6 +222,20 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // (cf. commentaire de valeurVenale plus bas sur cet alignement).
   const decedentRole = getDecedentRole(family.decedentId);
 
+  // Valeur d'un rawAsset repliée sur valeur_acquisition si valeur_estimee est
+  // absente (même ordre de repli que buildPatrimonySnapshot côté civil,
+  // utils/transmissionHelpers.ts), puis pondérée par le barème 669 CGI pour un
+  // actif en Usufruit/Nue-propriété (même fonction que le Résumé Patrimoine,
+  // lib/patrimoine/demembrementFraction.ts::getFractionDemembrement). Fraction
+  // non calculable (âge de l'usufruitier manquant) : valeur 0, jamais compté à
+  // sa valeur pleine propriété.
+  const getValeurEstimeePonderee = (asset: RawAssetInput): number => {
+    const brute = Number(asset.valeur_estimee) || Number(asset.valeur_acquisition) || 0;
+    const demembrementsForAsset = (ctx.assetDemembrements || []).filter(d => d.asset_id === asset.id);
+    const fraction = getFractionDemembrement(asset, demembrementsForAsset, ctx.demembrementCtx || {});
+    return fraction === null ? 0 : brute * fraction;
+  };
+
   // Un contrat AV n'est dénoué — et donc fiscalement taxable (990I/757B) —
   // que par le décès de son détenteur réel (souscripteur/assuré). Un contrat
   // détenu par le conjoint survivant n'est jamais dénoué par le décès simulé
@@ -316,7 +340,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
           const ajustee = getFractionAjustee(asset, avantageMatrimonialCtx);
           if (ajustee === null) return sum;
           const defaut = getPartSuccessorale(asset, asset.denomination || asset.id);
-          return sum + (ajustee - defaut) * (Number(asset.valeur_estimee) || 0);
+          return sum + (ajustee - defaut) * getValeurEstimeePonderee(asset);
         }, 0)
     : 0;
 
@@ -496,7 +520,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   if (duhOpte && family.hasSurvivingSpouse && rawAssets) {
     const valeurLogementDUH = rawAssets
       .filter(asset => asset.nature === 'Résidence principale')
-      .reduce((sum, asset) => sum + (Number(asset.valeur_estimee) || 0) * getFractionSuccessorale(asset), 0);
+      .reduce((sum, asset) => sum + getValeurEstimeePonderee(asset) * getFractionSuccessorale(asset), 0);
 
     if (valeurLogementDUH > 0) {
       const referenceDateUnAnApres = new Date(referenceDate);
@@ -766,7 +790,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     .map(asset => ({
       id: asset.id,
       label: asset.denomination || '',
-      valeurVenale: (Number(asset.valeur_estimee) || 0) * getFractionSuccessorale(asset),
+      valeurVenale: getValeurEstimeePonderee(asset) * getFractionSuccessorale(asset),
       nature: getAssetCategory(asset.nature || '') === 'actifs immobiliers' ? 'immobilier' : 'autre',
       location: 'metropole',
       isResidencePrincipale: asset.nature === 'Résidence principale',

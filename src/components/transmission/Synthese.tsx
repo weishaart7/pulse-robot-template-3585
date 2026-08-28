@@ -27,6 +27,8 @@ import {
 } from '@/utils/transmissionHelpers';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
+import { DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
+import { assetDemembrementService } from '@/services/assetDemembrementService';
 import { getAssetCategory } from '@/constants/assetTypes';
 import { Recompense } from '@/types/recompense';
 import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
@@ -106,6 +108,11 @@ export const Synthese = () => {
         .eq('user_id', user!.id);
 
       setHasAssets((assets || []).length > 0);
+
+      // Démembrement (barème 669 CGI) des actifs déjà en Usufruit/Nue-propriété
+      // — même pondération que le Résumé Patrimoine (usePatrimoineCalculations.ts).
+      const assetDemembrements = await assetDemembrementService.getAllForUser();
+      const demembrementCtx: DemembrementFractionContext = { familyProfile, maritalStatus, familyLinks };
 
       // Calculer le total des assurances-vie (hors succession) : nature stocke
       // le libellé humain du formulaire ("Contrat d'assurance-vie", etc.),
@@ -205,7 +212,7 @@ export const Synthese = () => {
       const avContracts = buildAVContracts(avContractsRaw, familyProfile?.date_naissance, family);
 
       // Construire le patrimoine
-      const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], buildPassifLines(passifs, emprunts, 'user'), totalAV);
+      const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], buildPassifLines(passifs, emprunts, 'user'), totalAV, null, assetDemembrements, demembrementCtx);
 
       // Transformer les libéralités : jointure live vers assets pour la valeur
       // des legs (jamais figée en base), et exclusion des legs caducs (bien
@@ -256,6 +263,8 @@ export const Synthese = () => {
         conjointOption: (optionConjoint as any) || undefined,
         referenceDate,
         rawAssets: assets || [],
+        assetDemembrements,
+        demembrementCtx,
         avContracts,
         // Contrat AV détenu par le conjoint survivant, non dénoué puisque
         // l'Utilisateur décède en premier ici : réintégré civilement (doctrine

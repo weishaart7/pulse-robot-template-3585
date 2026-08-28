@@ -17,6 +17,28 @@ import { getAgeAtDate, getDemembrementPct } from '@/lib/transmission';
 import { resolveEffectiveAVBeneficiaires } from '@/lib/dmtg/assurance-vie';
 import { isDetenteurSpouse } from '@/lib/patrimoine/utils';
 import { isRegimeCommunautaire } from '@/lib/patrimoine/qualification';
+import { getFractionDemembrement, DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
+import { AssetDemembrement } from '@/services/assetDemembrementService';
+
+/**
+ * Valeur d'un actif repliée sur valeur_acquisition si valeur_estimee est
+ * absente, puis pondérée par le barème 669 CGI pour un actif en
+ * Usufruit/Nue-propriété — même ordre de repli et même pondération que le
+ * Résumé Patrimoine (usePatrimoineCalculations.ts /
+ * lib/patrimoine/demembrementFraction.ts::getFractionDemembrement). Fraction
+ * non calculable (âge de l'usufruitier manquant) : valeur 0, jamais compté à
+ * sa valeur pleine propriété.
+ */
+function getValeurEstimeePonderee(
+  asset: Pick<Asset, 'id' | 'valeur_estimee' | 'valeur_acquisition' | 'mode_detention' | 'detenteur'>,
+  assetDemembrements: AssetDemembrement[],
+  demembrementCtx: DemembrementFractionContext
+): number {
+  const brute = asset.valeur_estimee || asset.valeur_acquisition || 0;
+  const demembrementsForAsset = asset.id ? assetDemembrements.filter(d => d.asset_id === asset.id) : [];
+  const fraction = getFractionDemembrement(asset, demembrementsForAsset, demembrementCtx);
+  return fraction === null ? 0 : brute * fraction;
+}
 
 /**
  * Ligne liberalites brute (colonnes pertinentes uniquement), telle que
@@ -864,7 +886,14 @@ export function buildPatrimonySnapshot(
   // getFractionPassifAjustee) : ce paramètre n'a donc d'effet que si une
   // clause de partage inégal est active, `null` par défaut = comportement
   // historique inchangé (passif commun compté à 100%, pas 50%).
-  partConjointInegal: number | null = null
+  partConjointInegal: number | null = null,
+  // Démembrement (barème 669 CGI) des `assets` déjà en Usufruit/Nue-propriété —
+  // même pondération que le Résumé Patrimoine (usePatrimoineCalculations.ts).
+  // Par défaut (non fourni), aucun actif n'est traité comme démembré :
+  // comportement historique inchangé pour les appelants qui ne les fournissent
+  // pas encore.
+  assetDemembrements: AssetDemembrement[] = [],
+  demembrementCtx: DemembrementFractionContext = {}
 ): PatrimonySnapshot {
   // Pondération par bien (régime matrimonial / indivision) : seule la part du
   // bien qui revient au défunt entre dans l'assiette successorale, cf.
@@ -882,7 +911,7 @@ export function buildPatrimonySnapshot(
   const totalAssets = assets
     .filter(asset => getAssetCategory(asset.nature || '') !== 'épargne et assurance-vie')
     .reduce((sum, asset) => {
-      const valeur = asset.valeur_estimee || asset.valeur_acquisition || 0;
+      const valeur = getValeurEstimeePonderee(asset, assetDemembrements, demembrementCtx);
       const partSuccessorale = getPartSuccessorale(asset, asset.denomination || asset.id);
       return sum + valeur * partSuccessorale;
     }, 0);
@@ -960,12 +989,15 @@ export function buildSurvivingSpousePatrimony(
   spousePassifs: { montant_du: number }[],
   firstDeathResult: TransmissionResult,
   survivingSpouseId: PersonId,
-  avContracts: AVContract[] = []
+  avContracts: AVContract[] = [],
+  // Démembrement (barème 669 CGI) des `assets` — voir buildPatrimonySnapshot.
+  assetDemembrements: AssetDemembrement[] = [],
+  demembrementCtx: DemembrementFractionContext = {}
 ): PatrimonySnapshot {
   const totalAssetsConjoint = assets
     .filter(asset => getAssetCategory(asset.nature || '') !== 'épargne et assurance-vie')
     .reduce((sum, asset) => {
-      const valeur = asset.valeur_estimee || asset.valeur_acquisition || 0;
+      const valeur = getValeurEstimeePonderee(asset, assetDemembrements, demembrementCtx);
       const partConjoint = getPartConjointSuccession(asset, asset.denomination || asset.id);
       return sum + valeur * partConjoint;
     }, 0);
@@ -1021,7 +1053,14 @@ export function buildSpouseRawAssets(
   assets: Asset[],
   clausesData?: ClausesData,
   utilisateurDateNaissance?: string | null,
-  referenceDate: string = new Date().toISOString().split('T')[0]
+  referenceDate: string = new Date().toISOString().split('T')[0],
+  // Démembrement (barème 669 CGI) des `assets` — voir buildPatrimonySnapshot.
+  // Appliqué ICI (avant la pré-pondération par partConjoint) : mode_detention
+  // est neutralisé sur la ligne retournée pour que computeTransmission ne
+  // repondère pas une seconde fois côté fiscal (même principe que la
+  // neutralisation de qualification_bien/detenteur ci-dessous).
+  assetDemembrements: AssetDemembrement[] = [],
+  demembrementCtx: DemembrementFractionContext = {}
 ): RawAssetInput[] {
   // npSurvivant = nue-propriété (barème art. 669 CGI) du SURVIVANT réel de ce
   // sens de décès simulé, càd l'UTILISATEUR (c'est le conjoint qui décède
@@ -1047,13 +1086,16 @@ export function buildSpouseRawAssets(
           ) ?? getPartConjointSuccession(asset, asset.denomination || asset.id)
         : getPartConjointSuccession(asset, asset.denomination || asset.id);
 
+      const valeurPonderee = getValeurEstimeePonderee(asset, assetDemembrements, demembrementCtx);
+
       return {
         id: asset.id!,
         denomination: asset.denomination,
-        valeur_estimee: (asset.valeur_estimee || asset.valeur_acquisition || 0) * partConjoint,
+        valeur_estimee: valeurPonderee * partConjoint,
         nature: asset.nature,
         qualification_bien: 'Bien propre',
-        detenteur: undefined
+        detenteur: undefined,
+        mode_detention: undefined
       };
     });
 }
@@ -1070,12 +1112,15 @@ export function buildSpouseRawAssets(
  */
 export function buildSpouseOwnBasePatrimony(
   assets: Asset[],
-  spousePassifs: { montant_du: number }[]
+  spousePassifs: { montant_du: number }[],
+  // Démembrement (barème 669 CGI) des `assets` — voir buildPatrimonySnapshot.
+  assetDemembrements: AssetDemembrement[] = [],
+  demembrementCtx: DemembrementFractionContext = {}
 ): PatrimonySnapshot {
   const totalAssetsConjoint = assets
     .filter(asset => getAssetCategory(asset.nature || '') !== 'épargne et assurance-vie')
     .reduce((sum, asset) => {
-      const valeur = asset.valeur_estimee || asset.valeur_acquisition || 0;
+      const valeur = getValeurEstimeePonderee(asset, assetDemembrements, demembrementCtx);
       return sum + valeur * getPartConjointSuccession(asset, asset.denomination || asset.id);
     }, 0);
   const totalPassifs = spousePassifs.reduce((sum, p) => sum + (p.montant_du || 0), 0);

@@ -24,12 +24,24 @@ Deux notions transverses pèsent sur ces trois agrégats :
 
 - **Source unique pour la part successorale** : `getPartSuccessorale`/`getPartConjointSuccession` (`lib/patrimoine/succession.ts`) sont partagées entre le Résumé Patrimoine et le module Transmission, pour éviter la divergence déjà rencontrée une fois par le passé entre ces deux écrans (cf. commentaire en tête de `succession.ts`, incident du 2026-07-18).
 - **Qualification recalculée à l'affichage, persistée à la sauvegarde** : `qualifierBien()` est exécutée en direct dans `AssetDetailsDialog.tsx` pour l'affichage, et dans `useAssetForm.ts` (watcher sur nature/origine/détenteur/mode de détention/statut du couple) pour préremplir `qualification_bien` à chaque sauvegarde du formulaire d'actif. La valeur qui alimente réellement tous les totaux (Résumé, Transmission) est le champ persisté `qualification_bien`, pas un recalcul live à la demande — voir 3.2 pour le risque que cela pose.
-- **Démembrement appliqué de façon inégale selon l'écran** — voir 3.1 : `usePatrimoineCalculations` et `PatrimoineChart` pondèrent par le barème 669, `PatrimoineTreeView` ne le fait pas.
+- **Démembrement appliqué de façon cohérente sur tous les écrans du module** (corrigé le 28/08/2026, cf. section 3 « ✅ Corrigé ») : `usePatrimoineCalculations`, `PatrimoineChart` et `PatrimoineTreeView` pondèrent tous par le même `getFractionDemembrement` (`lib/patrimoine/demembrementFraction.ts`).
 - **Emprunts de société exclus des totaux Patrimoine** (`emprunts.filter(e => !e.societe_id)`) : un emprunt rattaché à une société est déjà reflété dans la valorisation des parts détenues, donc explicitement écarté ici pour ne pas le compter deux fois — cohérent avec `buildPassifLines` côté Transmission (non ré-audité ici, hors périmètre).
 - **Participation aux acquêts hors périmètre de ce module** : `usePatrimoineOriginaire`/`usePatrimoineFinal`/`patrimoineAcquetsService.ts` (CRUD simple, aucune logique métier propre) alimentent en réalité les écrans du régime matrimonial (`src/components/famille/matrimonial/PatrimoineOriginaireSection.tsx` / `PatrimoineFinalSection.tsx`) et le calcul de la créance de participation (`lib/patrimoine/participationAcquets.ts`), qui relèvent du module Régime matrimonial, pas de l'écran Patrimoine. Non audités en détail ici.
 - **Régime fiscal des plus-values** (`regimeFiscalPlusValue.ts` + `regimeFiscalPVI.ts` + `assetFiscalRegime.ts`) : moteur nature-par-nature avec repli explicite sur `'non_determine'` plutôt que de deviner un régime pour une nature non couverte — bonne pratique documentée en tête de fichier avec la liste exhaustive des natures couvertes et des changements par rapport à l'ancien système (`NATURES_PFU`/`NATURES_EXONEREES`).
 
 ## 3. Dette identifiée
+
+### ✅ Corrigé (commit à venir)
+
+Corrigés le 28/08/2026, priorité P0 (faussaient des montants civils et fiscaux affichés à l'utilisateur) :
+
+**IB1 — Démembrement (barème 669 CGI) ignoré côté Transmission.** `buildPatrimonySnapshot`, `buildSurvivingSpousePatrimony`, `buildSpouseRawAssets`, `buildSpouseOwnBasePatrimony` (`utils/transmissionHelpers.ts`) et `dmtgAssets`/`deltaAvantageMatrimonial`/la valeur DUH (`lib/transmission/index.ts`) pondèrent désormais la valeur de chaque actif par `getFractionDemembrement` (`lib/patrimoine/demembrementFraction.ts`, même fonction que le Résumé Patrimoine) avant toute autre pondération, via deux nouveaux champs optionnels `assetDemembrements`/`demembrementCtx` propagés depuis les 4 écrans appelants (`Synthese.tsx`, `ProcessusCalcul.tsx`, `AssuranceVie.tsx`, `Succession2ndDeces.tsx`).
+
+**IB2 — Fallback `valeur_estimee`/`valeur_acquisition` harmonisé entre l'assiette civile et l'assiette fiscale DMTG.** Les deux passent désormais par le même helper (`getValeurEstimeePonderee`, dupliqué à l'identique — même repli `valeur_estimee → valeur_acquisition → 0` — dans `transmissionHelpers.ts` et `lib/transmission/index.ts`, faute de pouvoir partager une fonction entre ces deux fichiers sans les fusionner), pondération démembrement (IB1) appliquée par-dessus.
+
+**B3 — Démembrement appliqué de façon cohérente dans l'onglet Actifs.** `PatrimoineTreeView.tsx` (`totalValue`, poids par catégorie/actif, `getPlusValueDisplay`/`getCategoryPlusValue`) utilise désormais `getFractionDemembrement` via un nouveau helper local `getWeightedValue`, identique à la pondération déjà appliquée par le Résumé Patrimoine et `PatrimoineChart.tsx` — y compris pour la colonne "Valeur" elle-même (nécessaire pour que le Total de la table reste cohérent avec la somme de ses lignes).
+
+Vérifié : les 681 tests existants passent inchangés (aucun actif non démembré affecté, fraction 1 = valeur inchangée) ; vérification ad-hoc supplémentaire (script temporaire, non committé) confirmant qu'un même actif en Nue-propriété produit la même valeur pondérée dans `getFractionDemembrement`, `buildPatrimonySnapshot` (assiette civile) et `dmtgAssets` (assiette fiscale).
 
 ### 🔴 Bugs techniques confirmés
 
@@ -38,9 +50,6 @@ Deux notions transverses pèsent sur ces trois agrégats :
 
 **B2 — Couleur de catégorie incohérente pour "actifs corporels" (clé de mapping erronée, dupliquée à deux endroits).**
 `ASSET_CATEGORIES` (`constants/assetTypes.ts:203`) définit la catégorie sous la clé `"actifs corporels"`, valeur que retourne `getAssetCategory()`. Mais la table de couleurs `CATEGORY_COLORS` (`lib/patrimoine/utils.ts:9`) et son doublon local dans `PatrimoineChart.tsx:20` utilisent la clé `"actifs mobiliers corporels"` — qui ne correspond à aucune catégorie réellement produite par `getAssetCategory()`. Résultat : `getCategoryColor('actifs corporels')` (utilisé par `PlusValuesCard`, `PatrimoinePlusValues`, `PatrimoineParTeteDetail`, `PatrimoineTreeView`) retombe sur son fallback `'#000000'` (noir), alors que `PatrimoineChart.tsx` (donut de répartition du Résumé) retombe sur son propre fallback `'#FF8B55'`, couleur déjà attribuée à `'épargne salariale'`/`'autres'`. Un même actif de catégorie "actifs corporels" (meubles, montres, bijoux, véhicules...) apparaît donc en noir sur certains écrans et confondu visuellement avec une autre catégorie sur le donut du Résumé.
-
-**B3 — Démembrement appliqué de façon incohérente entre l'onglet Actifs et le Résumé/Plus-values.**
-`usePatrimoineCalculations.ts` (agrégats du Résumé) et `PatrimoineChart.tsx` pondèrent `valeur_estimee` par la fraction issue du barème 669 CGI (`getFractionDemembrement`) pour tout actif en Usufruit/Nue-propriété. `PatrimoineTreeView.tsx`, lui, ne le fait à aucun endroit : `totalValue` (ligne 102), `calculateWeight` (poids % par catégorie/actif) et `getPlusValueDisplay`/`getCategoryPlusValue` (plus-value affichée par ligne et par catégorie) utilisent tous `asset.valeur_estimee` brut à 100 %, jamais la valeur pondérée. Pour tout actif démembré : le total de l'onglet "Actifs" et le total du Résumé divergent (l'un compte la pleine propriété, l'autre la fraction 669 CGI), et la plus-value affichée pour ce même actif diffère entre l'onglet "Actifs" (brute, non pondérée) et l'onglet "Plus-values" (pondérée par la fraction, cf. `usePatrimoineCalculations.ts:263-267`).
 
 ### 🟠 Risques techniques
 
@@ -116,22 +125,7 @@ Choix laissé à l'utilisateur entre taxe forfaitaire 11,5 % du prix de vente (`
 
 Audit des points où un autre module (Transmission, Retraite, Régime matrimonial, Sociétés) lit, duplique ou dépend de données/calculs du module Patrimoine. Contrairement aux sections 1-4 (module Patrimoine seul), cette section porte sur la cohérence *entre* modules.
 
-### 🔴 Bugs techniques confirmés
-
-**IB1 — Le module Transmission ignore totalement le démembrement (barème 669 CGI) pour les biens déjà démembrés détenus par l'utilisateur/le conjoint.**
-Le Résumé Patrimoine (`usePatrimoineCalculations.ts`) pondère systématiquement `valeur_estimee` par la fraction issue du barème 669 CGI pour tout actif en Usufruit/Nue-propriété (`demembrementFraction.ts`, cf. section 1). Aucune des fonctions de construction de l'assiette successorale côté Transmission ne fait cette pondération — recherche de `mode_detention`/`Usufruit`/`Nue-propriété` infructueuse dans `lib/transmission/index.ts`, `lib/dmtg/assets.ts` et `utils/transmissionHelpers.ts` — alors que toutes utilisent la valeur brute de l'actif :
-- `buildPatrimonySnapshot` (`transmissionHelpers.ts:882-888`, assiette civile) : `valeur = asset.valeur_estimee || asset.valeur_acquisition || 0`.
-- `buildSurvivingSpousePatrimony` (ligne 965-971), `buildSpouseRawAssets` (ligne 1040-1058), `buildSpouseOwnBasePatrimony` (ligne 1075-1080) : même schéma, valeur brute.
-- `dmtgAssets` (`lib/transmission/index.ts:764-772`, assiette fiscale DMTG) : `valeurVenale = (Number(asset.valeur_estimee) || 0) * getFractionSuccessorale(asset)` — `getFractionSuccessorale` applique l'avantage matrimonial et/ou `getPartSuccessorale` (part civile), jamais le barème 669.
-
-Pour tout actif démembré, l'assiette civile ET l'assiette fiscale de Transmission comptent donc la valeur pleine propriété (pondérée seulement par la part civile propre/commun/indivision), alors que le même actif apparaît pondéré par sa fraction 669 CGI dans le Résumé Patrimoine — deux valorisations différentes du même bien selon l'écran consulté. À noter : `getPartSuccessorale`/`getPartConjointSuccession` elles-mêmes sont appelées de façon cohérente entre les deux modules (cf. IC1) — la divergence porte sur la valeur en amont de cet appel, pas sur la fonction partagée.
-
-**IB2 — Incohérence de fallback `valeur_estimee`/`valeur_acquisition` entre l'assiette civile et l'assiette fiscale DMTG de Transmission, pour le même tableau `assets` dans le même appel.**
-`Synthese.tsx:208` appelle `buildPatrimonySnapshot(assets || [], ...)` et `Synthese.tsx:258` passe `rawAssets: assets || []` à `computeTransmission` — littéralement le même tableau `assets` (issu de `useAssets()`), dans le même calcul de simulation. Or :
-- `buildPatrimonySnapshot` (`transmissionHelpers.ts:885`) : `const valeur = asset.valeur_estimee || asset.valeur_acquisition || 0` — un actif sans `valeur_estimee` mais avec une `valeur_acquisition` renseignée est compté à son coût d'acquisition dans l'assiette civile (`patrimony.biensExistants`).
-- `dmtgAssets` (`lib/transmission/index.ts:769`) : `valeurVenale: (Number(asset.valeur_estimee) || 0) * ...` — le même actif est compté à **0 €** dans l'assiette fiscale DMTG, aucun repli sur `valeur_acquisition`.
-
-Pour tout actif dont seule `valeur_acquisition` est renseignée (cas courant en cours de saisie), la dévolution civile affichée sur l'écran Synthèse inclut ce bien à sa valeur d'acquisition, tandis que le calcul des droits de succession affiché sur le même écran, pour la même simulation, l'exclut entièrement de l'assiette taxable — deux résultats incohérents entre eux pour une même fiche.
+Aucun bug confirmé restant dans cette section : les deux bugs initialement identifiés ici (IB1 — démembrement ignoré côté Transmission, IB2 — fallback incohérent entre assiette civile et assiette fiscale DMTG) ont été corrigés le 28/08/2026, cf. section 3 « ✅ Corrigé (commit à venir) ».
 
 ### 🟠 Risques techniques
 
