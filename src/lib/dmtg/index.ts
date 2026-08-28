@@ -5,6 +5,7 @@ import { computeRecallAndAllowances, filterDonations15Years } from './recall';
 import { computeProgressiveTax } from './tax';
 import { computeAssuranceVie } from './assurance-vie';
 import dmtgParamsData from './params-dmtg.json';
+import { BAREME_669_CGI } from '@/lib/patrimoine/bareme669CGI';
 
 /**
  * Orchestrateur principal : calcule les droits de mutation à titre gratuit (DMTG)
@@ -138,4 +139,20 @@ export * from './tax';
 export * from './assurance-vie';
 
 // Paramètres par défaut
-export const DEFAULT_DMTG_PARAMS: DmtgParams = dmtgParamsData as DmtgParams;
+//
+// `demembrementViager` est dérivé de `BAREME_669_CGI` (source unique pour le
+// barème de l'usufruit, art. 669 CGI) plutôt que lu tel quel depuis
+// params-dmtg.json, pour ne plus maintenir deux copies indépendantes du même
+// barème légal (cf. audit patrimoine.md, ID1) — le champ `demembrementViager`
+// du JSON n'est donc plus consommé, conservé uniquement à titre de référence.
+const demembrementViagerFromBareme669 = BAREME_669_CGI.map((tranche, i, arr) => ({
+  minAge: i === 0 ? 0 : arr[i - 1].ageMax,
+  maxAge: tranche.ageMax === Infinity ? 999 : tranche.ageMax - 1,
+  usufruitPct: tranche.usufruit,
+  nuePropPct: tranche.nuePropriete,
+}));
+
+export const DEFAULT_DMTG_PARAMS: DmtgParams = {
+  ...(dmtgParamsData as DmtgParams),
+  demembrementViager: demembrementViagerFromBareme669,
+};

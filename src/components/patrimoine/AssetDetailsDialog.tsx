@@ -21,6 +21,7 @@ import { qualifierBien } from '@/lib/patrimoine/qualification';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { getTrancheDemembrement } from '@/lib/patrimoine/demembrementFraction';
 import { passifService, Emprunt } from '@/services/passifService';
+import { formatCurrency as formatCurrencyUtil } from '@/lib/patrimoine/utils';
 import { format } from 'date-fns';
 
 const NATURE_DROITS_A_ROYALTIES = 'Droits à royalties';
@@ -95,15 +96,17 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
   const displayedQualificationRaison = qualificationAuto
     ? qualificationResult.raison
     : 'Qualification définie manuellement.';
+  // La qualification affichée ici est recalculée à la volée (cf. commentaire
+  // ci-dessus) ; les totaux du Résumé/Transmission consomment eux le champ
+  // persisté `qualification_bien`, qui ne se met à jour qu'à la resauvegarde
+  // de la fiche — signal discret quand les deux divergent (cf. audit R1).
+  const qualificationPerimee = qualificationAuto
+    && !!asset.qualification_bien
+    && asset.qualification_bien !== qualificationResult.qualification;
 
   const formatCurrency = (value: number | undefined | null) => {
     if (!value) return 'Non renseigné';
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
+    return formatCurrencyUtil(value);
   };
 
   const formatDate = (date: string | undefined | null) => {
@@ -201,6 +204,11 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
               </p>
             )}
             <p className="text-xs text-muted-foreground italic mt-2">{displayedQualificationRaison}</p>
+            {qualificationPerimee && (
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-2">
+                Qualification à jour : {qualificationResult.qualification} — resauvegardez cette fiche pour actualiser les totaux, qui utilisent encore « {asset.qualification_bien} ».
+              </p>
+            )}
           </div>
 
           {empruntsLies.length > 0 && (

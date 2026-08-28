@@ -72,21 +72,22 @@ export const EpargneRetraite = ({ personne = 'utilisateur' }: EpargneRetraitePro
     }
   };
 
-  // Colonne utilisateur : total foyer inchangé (comportement historique,
-  // écran sans conjoint identique à avant). Colonne conjoint : uniquement sa
-  // part qualifiée de chaque actif — évite d'afficher deux fois le même
-  // total foyer sous deux noms différents.
+  // Corrigé le 28/08/2026 (cf. audit patrimoine.md, IR3) : colonne
+  // utilisateur = part complémentaire à `partConjoint`, même convention que
+  // "Patrimoine par tête" (userValue + spouseValue = totalValue). Avant ce
+  // correctif, la colonne utilisateur affichait le total du foyer entier
+  // (PER/AV de l'utilisateur ET du conjoint), rompant cette symétrie.
+  const partUtilisateur = (asset: (typeof assets)[number]): number => 1 - partConjoint(asset);
+
   const perAssets = personne === 'conjoint'
     ? perAssetsFoyer.filter(a => partConjoint(a) > 0)
-    : perAssetsFoyer;
+    : perAssetsFoyer.filter(a => partUtilisateur(a) > 0);
   const assuranceVieAssets = personne === 'conjoint'
     ? assuranceVieAssetsFoyer.filter(a => partConjoint(a) > 0)
-    : assuranceVieAssetsFoyer;
+    : assuranceVieAssetsFoyer.filter(a => partUtilisateur(a) > 0);
 
   const valeurAffichee = (asset: (typeof assets)[number]) =>
-    personne === 'conjoint'
-      ? (asset.valeur_estimee || 0) * partConjoint(asset)
-      : (asset.valeur_estimee || 0);
+    (asset.valeur_estimee || 0) * (personne === 'conjoint' ? partConjoint(asset) : partUtilisateur(asset));
 
   const totalPer = perAssets.reduce((sum, a) => sum + valeurAffichee(a), 0);
   const totalAssuranceVie = assuranceVieAssets.reduce((sum, a) => sum + valeurAffichee(a), 0);

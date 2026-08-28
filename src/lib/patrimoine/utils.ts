@@ -5,7 +5,7 @@
 // Category colors for consistent visualization
 export const CATEGORY_COLORS: Record<string, string> = {
   'actifs immobiliers': '#05E8A4',
-  'actifs mobiliers corporels': '#2609D6',
+  'actifs corporels': '#2609D6',
   'actifs professionnels': '#D5B7FF',
   'épargne retraite et prévoyance': '#7B0700',
   'épargne et assurance-vie': '#FF0095',
@@ -27,12 +27,6 @@ export const formatCurrency = (value: number): string => {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
-};
-
-// Percentage formatting
-export const formatPercentage = (value: number, total: number): string => {
-  if (total === 0) return '0.00';
-  return ((value / total) * 100).toFixed(2);
 };
 
 // Detenteur mapping functions

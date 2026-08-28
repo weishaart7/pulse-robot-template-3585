@@ -5,6 +5,7 @@ import { Asset } from '@/services/assetService';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { TrendingDown, Percent, Calendar, DollarSign, Link2, ShieldCheck } from 'lucide-react';
+import { formatCurrency as formatCurrencyUtil } from '@/lib/patrimoine/utils';
 
 interface PassifDetailsDialogProps {
   passif: Emprunt | Passif | null;
@@ -19,12 +20,7 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
 
   const formatCurrency = (value: number | undefined | null) => {
     if (!value) return 'Non renseigné';
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
+    return formatCurrencyUtil(value);
   };
 
   const isEmprunt = (p: Emprunt | Passif): p is Emprunt => {
@@ -173,6 +169,11 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
                             <p className="font-medium text-lg text-red-600">
                               {isCalculable ? formatCurrency(coutInterets) : 'Non calculable'}
                             </p>
+                            {isCalculable && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Estimation : suppose une mensualité constante sur la durée restante, hors variation de taux et remboursement anticipé.
+                              </p>
+                            )}
                           </div>
                         );
                       })()}

@@ -35,6 +35,15 @@ export function useAlertesConseil() {
 
     // Estimation simple (pas le calcul fiscal-grade de src/lib/transmission),
     // suffisante pour un rappel de vigilance plutôt qu'un calcul exact.
+    // Volontairement pas usePatrimoineCalculations.financialSummary : ce hook
+    // composerait ~10 hooks Supabase supplémentaires (démembrements, profil
+    // familial...) rien que pour pondérer par le barème 669 CGI et exclure
+    // les biens non qualifiés, alors que ce total n'est jamais affiché
+    // tel quel — seulement comparé à un seuil pour déclencher une alerte de
+    // vigilance (communauté universelle, cf. lib/alertes/regles.ts). Un actif
+    // démembré ou un bien jamais qualifié peut donc faire dévier ce seuil du
+    // patrimoineNet réellement affiché dans le Résumé Patrimoine — impact
+    // limité, cf. audit patrimoine.md ID2.
     const patrimoineNet =
       assets.reduce((sum, a) => sum + (a.valeur_estimee || 0), 0) -
       passifs.reduce((sum, p) => sum + (p.montant_du || 0), 0) -

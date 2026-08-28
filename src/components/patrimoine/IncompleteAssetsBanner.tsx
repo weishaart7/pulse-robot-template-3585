@@ -3,6 +3,7 @@ import { AlertTriangle, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { Asset } from '@/services/assetService';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { NATURES_WITHOUT_ACQUISITION } from '@/constants/assetTypes';
 
 interface Props {
   assets: Asset[];
@@ -18,10 +19,13 @@ const checkMissing = (a: Asset): string[] => {
   const m: string[] = [];
   if (!a.valeur_estimee || a.valeur_estimee <= 0) m.push('valeur actuelle');
   if (!a.detenteur) m.push('détenteur');
-  if (!a.mode_detention) m.push('mode de détention');
-  if (!a.date_estimation) m.push("date d'estimation");
-  // Acquisition manquante seulement si pas un type sans acquisition (livret, etc.)
-  // simplifié : si valeur_acquisition est null ET pas un livret évident
+  // Mode de détention et date d'estimation non exigés pour les natures sans
+  // acquisition (livrets, comptes courants...), pour lesquelles ces
+  // informations n'ont pas le même sens que pour un bien démembrable/estimé.
+  if (!NATURES_WITHOUT_ACQUISITION.includes(a.nature)) {
+    if (!a.mode_detention) m.push('mode de détention');
+    if (!a.date_estimation) m.push("date d'estimation");
+  }
   return m;
 };
 

@@ -5,6 +5,11 @@ import { differenceInYears } from 'date-fns';
  * de la nue-propriété en fonction de l'âge de l'usufruitier au jour du
  * démembrement. Isolé de qualification.ts, qui ne gère que la qualification
  * propre/commun/indivision, pas la valorisation du démembrement.
+ *
+ * Source unique de ce barème : `DEFAULT_DMTG_PARAMS.demembrementViager`
+ * (module Transmission, `lib/dmtg/index.ts`) en dérive à l'exécution plutôt
+ * que de dupliquer les mêmes tranches — le champ `demembrementViager` de
+ * `lib/dmtg/params-dmtg.json` n'est donc plus consommé tel quel.
  */
 
 export interface TrancheBareme669 {
