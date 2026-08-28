@@ -1,309 +1,110 @@
 # Module Patrimoine
 
-> Document consolidé le 2026-08-27, fusion de `docs/audit-patrimoine-2026-07-28.md` (audit de fond —
-> moteur, modèle de données, calculs, dépendances, commit `a257cdc`) et `docs/audit/audit-patrimoine.md`
-> (audit écran par écran avec navigation réelle, commit `2835f30`, 2026-07-29). Les bugs bloquants et
-> gênants ont été revérifiés contre le code au 2026-08-27 (voir commits `bc4e1ac`, `ea3a695`, `a41c7bf`,
-> `5e4ad88`) ; les sections architecture/modèle de données sont reprises telles quelles, la structure
-> n'ayant pas changé depuis. Les items « mineurs » n'ont pas tous été revérifiés individuellement.
-> **Mise à jour du 2026-08-27** : 6 des 8 bloquants 🔴 traités dans cette session (double comptage des
-> emprunts de société, fraction de démembrement absente des totaux, liste Passifs non rafraîchie,
-> écrasement silencieux d'`origine_actif`, incohérence de détenteur société d'acquêts, `null` traité
-> comme `0` dans `calculatePlusValue`) — voir §3. Les 2 restants (passif non-`Bien commun` à 100 %,
-> qualification stockée obsolète) nécessitent une intervention hors du seul module Patrimoine et sont
-> laissés en 🔴 avec leur périmètre de correction précisé (le premier a été ajouté en 🔴 dans
-> [docs/transmission.md](transmission.md), qui porte le bug réel). Les 3 limites résiduelles notées sur
-> le fix démembrement (âge usufruitier inconnu, `valeur_acquisition` non repondérée, Dashboard non
-> branché) ont été closes dans un second passage le même jour — voir §3.
-
 ## 1. Vue d'ensemble
 
-Le module Patrimoine saisit, qualifie civilement et valorise chaque actif et passif du foyer. C'est
-le socle de donnée de la Transmission (masse successorale civile et fiscale), de l'IFI et des
-alertes de conseil — la qualification juridique d'un bien (propre / commun / personnel / indivision)
-n'est calculée qu'à cet endroit et consommée partout ailleurs en aval.
+Le module Patrimoine centralise la saisie et la valorisation des actifs (`assets`) et des passifs (`passifs` / `emprunts`) du foyer, et en dérive trois lectures agrégées :
 
-**Écrans** (3 onglets de `PatrimoineSection.tsx` + 1 vue de substitution) :
+- **Résumé** (`PatrimoineResume.tsx`) : totaux actifs/passifs/patrimoine net, répartition par catégorie (donut), évolution dans le temps, patrimoine par tête, plus-values.
+- **Actifs** (`PatrimoineActifs.tsx` + `PatrimoineTreeView.tsx`) : CRUD des actifs, arborescence par catégorie avec poids relatif et plus-value par ligne.
+- **Passifs** (`PatrimoinePassifs.tsx`) : CRUD des emprunts et dettes simples.
+- **Plus-values** (`PatrimoinePlusValues.tsx`) : détail des plus/moins-values latentes et fiscalité associée (PFU, PVI, régimes spécifiques par nature d'actif).
 
-| Onglet | Composant | Rôle |
-|---|---|---|
-| Résumé (par défaut) | [PatrimoineResume.tsx](src/components/patrimoine/PatrimoineResume.tsx) | Totaux, donut de répartition, courbe d'évolution, patrimoine par tête, aperçu plus-values |
-| Actifs | [PatrimoineActifs.tsx](src/components/patrimoine/PatrimoineActifs.tsx) → [PatrimoineTreeView.tsx](src/components/patrimoine/PatrimoineTreeView.tsx), [AssetForm.tsx](src/components/assets/AssetForm.tsx) | Saisie/qualification/valorisation de chaque actif, bascule vers Immobilier et Sociétés |
-| Passifs | [PatrimoinePassifs.tsx](src/components/patrimoine/PatrimoinePassifs.tsx) → [PassifEmpruntForm.tsx](src/components/patrimoine/PassifEmpruntForm.tsx) | Formulaire fusionné emprunts (`emprunts`) / dettes simples (`passifs`) |
-| Plus-values (détail) | [PatrimoinePlusValues.tsx](src/components/patrimoine/PatrimoinePlusValues.tsx) | Détail de la plus/moins-value latente par actif et fiscalité applicable, accessible depuis la carte Plus-values du Résumé |
+Le calcul central, `usePatrimoineCalculations.ts`, dérive trois agrégats à partir des mêmes données brutes (`assets`, `passifs`, `emprunts`) :
 
-**Tables Supabase** : `assets`, `asset_charges`, `asset_revenus`, `asset_valorisations`,
-`asset_demembrements`, `asset_indivisaires`, `emprunts`, `passifs`, plus le volet régime matrimonial
-saisi côté Famille mais consommé ici : `recompenses`, `creances_entre_epoux`, `patrimoine_originaire`,
-`patrimoine_final`, `marital_status`.
+1. `financialSummary` — totaux bruts (Actifs / Passifs / Patrimoine net) affichés en haut du Résumé.
+2. `patrimoineParPersonne` — répartition utilisateur/conjoint, en réutilisant `getPartSuccessorale` (`lib/patrimoine/succession.ts`), la même fonction que le module Transmission.
+3. `plusValuesSummary` — plus-values latentes par actif et par catégorie.
 
-**Flux clés** :
-- Un actif est saisi via `AssetForm` (4 onglets : Général / Détention & Acquisition / Valorisation /
-  Charges) ; sa qualification civile (`qualification_bien`) est recalculée automatiquement à chaque
-  changement d'un des 10 champs surveillés, tant que `qualification_auto = true`.
-- Un emprunt ou un passif simple partage un formulaire fusionné, aiguillé par la nature
-  (`EMPRUNT_NATURES`) vers l'une ou l'autre table.
-- Le Résumé agrège trois fois les mêmes données (KPI globaux, donut, patrimoine par tête) via des
-  chemins de calcul **indépendants**, avec des règles de pondération différentes (voir §3, P1).
-- La plus-value d'un actif (`valeur_estimée − valeur_acquisition − frais`) est croisée avec un
-  régime fiscal (mobilier ou immobilier) déterminé par la nature de l'actif et sa durée de détention.
+Deux notions transverses pèsent sur ces trois agrégats :
+
+- **Démembrement** (`lib/patrimoine/demembrementFraction.ts` + `bareme669CGI.ts`) : un actif en Usufruit/Nue-propriété est pondéré par le barème fiscal de l'art. 669 CGI selon l'âge de l'usufruitier ; si cet âge n'est pas calculable, l'actif est exclu des totaux (jamais compté à sa valeur pleine propriété par défaut).
+- **Qualification civile** (`qualification_bien`, calculée par `lib/patrimoine/qualification.ts::qualifierBien`) : bien propre / commun / indivision / personnel, qui détermine la part revenant à chacun. Un bien jamais qualifié (`qualification_bien` NULL ou `'À qualifier'`) lève `BienNonQualifieError`.
 
 ## 2. Architecture & décisions
 
-- **Moteur métier centralisé dans `src/lib/patrimoine/`** — fonctions pures, conformément au pattern
-  `lib/ifi/` demandé par `CLAUDE.md`. Fichiers pivots :
-  - [qualification.ts](src/lib/patrimoine/qualification.ts) — `qualifierBien(ctx)`, point d'entrée
-    unique de la qualification civile, cascade de 12 branches ordonnées (la première qui matche
-    gagne). Détection des régimes par `String.includes()` sur le libellé humain, pas par énumération.
-  - [succession.ts](src/lib/patrimoine/succession.ts) — `getPartSuccessorale()` /
-    `getPartConjointSuccession()`, source unique de vérité de la fraction successorale d'un bien,
-    partagée entre Patrimoine (affichage) et Transmission (civil et fiscal). Refuse explicitement de
-    deviner : `BienNonQualifieError` si `qualification_bien` est absent ou `'À qualifier'`.
-  - [avantagesMatrimoniaux.ts](src/lib/patrimoine/avantagesMatrimoniaux.ts) — ajuste la fraction sous
-    l'effet des clauses (préciput, attribution intégrale, partage inégal). Seul 6 des 33 `ClauseType`
-    déclarés sont réellement lues par un moteur de calcul ; les 27 autres sont déclaratives.
-  - [recompensesCreances.ts](src/lib/patrimoine/recompensesCreances.ts) /
-    [participationAcquets.ts](src/lib/patrimoine/participationAcquets.ts) — récompenses/créances entre
-    époux et créance de participation aux acquêts (décès uniquement, le divorce est hors périmètre).
-  - [regimeFiscalPlusValue.ts](src/lib/patrimoine/regimeFiscalPlusValue.ts) /
-    [regimeFiscalPVI.ts](src/lib/patrimoine/regimeFiscalPVI.ts) — régimes fiscaux des plus-values
-    mobilières et immobilières ; renvoient `non_determine`/`null` plutôt que de deviner hors des
-    natures couvertes. Depuis le 2026-08-27, la séquence commune « nature effective → régime PVI →
-    sinon régime générique » est factorisée dans
-    [assetFiscalRegime.ts](src/lib/patrimoine/assetFiscalRegime.ts) (commit `5e4ad88`), qui était
-    dupliquée à l'identique dans `PatrimoineTreeView` et `PatrimoinePlusValues`.
-  - [demembrementFraction.ts](src/lib/patrimoine/demembrementFraction.ts) (2026-08-27) — pondère
-    `valeur_estimee` par le barème 669 CGI selon l'âge de l'usufruitier (client/conjoint/tiers via
-    `asset_demembrements`) ; factorisé depuis `AssetDetailsDialog.tsx` (seul consommateur historique)
-    et désormais partagé avec `usePatrimoineCalculations.ts`/`PatrimoineChart.tsx`.
-
-- **Cascade de qualification (`qualifierBien`)** — ordre exact : indivision explicite → hors couple →
-  propre par nature → clause de remploi → société d'acquêts → séparation/participation → origine
-  gratuite → communauté universelle → antériorité au mariage → PACS → financement mixte (art. 1436) →
-  défaut (bien commun). `mode_detention` (démembrement) fait partie du contexte transmis mais n'est
-  **jamais lu** dans le corps de la fonction : un usufruit ou une nue-propriété est qualifié comme la
-  pleine propriété (limite connue, non un bug — cf. §3).
-
-- **Convention de détenteur, source de divergences.** Quatre vocabulaires coexistent pour la même
-  notion selon la table : `assets.detenteur` (`user`/`spouse`/`common`/`Indivision`),
-  `asset_charges.debiteur` (`'Époux 1'`/`'Époux 2'`/`'Couple'`), `emprunts.contributeur_remboursement`
-  (`utilisateur`/`conjoint`/`les_deux`), `assets.licitation_acquereur` (`utilisateur`/`conjoint`). Le
-  point d'entrée `isDetenteurCommon()` ([utils.ts](src/lib/patrimoine/utils.ts)) a été introduit pour
-  unifier au moins la lecture du détenteur brut base de données ; utilisé depuis le 2026-08-27 par la
-  branche société d'acquêts de `qualification.ts` (cf. §3), mais `AssetDetailsDialog.tsx:391` conserve
-  encore sa propre comparaison inline pour l'affichage (pas de risque de qualification divergente,
-  juste une duplication mineure — cf. §3 🟡).
-
-- **Garde-fous détenteur ↔ qualification** — implémentés à l'identique dans `useAssetForm.ts` et
-  `usePassifEmpruntForm.ts` : si la qualification devient `Bien propre`/`Bien personnel` alors que le
-  détenteur est « Le couple », le détenteur et les pourcentages sont réinitialisés et l'option « Le
-  couple » retirée du menu. Motif documenté dans le code : incident du 2026-07-18 (pourcentages
-  saisis mais silencieusement ignorés par le calcul de succession).
-
-- **Sécurisation de la sauvegarde d'un actif (commit `a41c7bf`, 2026-08-27).** La séquence de
-  sauvegarde (actif + valorisation + charges + indivisaires + démembrement + société) enchaînait
-  plusieurs appels réseau indépendants sans remonter les échecs : `replaceForAsset` insère désormais
-  les nouvelles lignes **avant** de supprimer les anciennes (au lieu de l'inverse, qui perdait la
-  donnée si l'insert échouait), et les étapes annexes tournent en `Promise.allSettled` avec un message
-  d'erreur unique regroupant les échecs partiels — l'actif reste la seule étape bloquante.
-
-- **Défense en profondeur RLS + RGPD (commit `ea3a695`, 2026-08-27).** Filtre applicatif `user_id`
-  ajouté sur les `select`/`update`/`delete` qui reposaient uniquement sur les policies RLS
-  (`assetService`, `assetValorisationService`, `assetDemembrementService`,
-  `assetIndivisaireService`, et les services Sociétés) ; tous les `console.error`/`warn` du
-  périmètre sont désormais encadrés par `import.meta.env.DEV` ; les `.catch` silencieux ont été
-  remplacés par un toast d'erreur visible, sur le modèle déjà appliqué au module Famille.
-
-- **Emprunts intégrés au passif transmis (2026-07-28, avant ce document).** `buildPassifLines`
-  ([transmissionHelpers.ts](src/utils/transmissionHelpers.ts)) fusionne `passifs.montant_du` et
-  `emprunts.capital_restant_du`, en excluant les emprunts de société, puis déduit la part couverte
-  par l'assurance emprunteur (`capital_garanti_deces` prime sur les quotités en pourcentage). Ce
-  filtrage sur `societe_id` est répliqué depuis le 2026-08-27 côté KPI du Résumé Patrimoine
-  (`usePatrimoineCalculations.ts`, `useAlertesConseil.ts`, `PatrimoineChart.tsx` — cf. §3).
-
-- **Découplage Patrimoine → Sociétés/Immobilier.** `societeTransfer.ts` bascule un actif éligible
-  vers une ligne `societes` ; les champs « immobilier étendu » de la table `assets` (`typologie_bien`,
-  `surface_m2`, financement…) sont portés par les mêmes lignes mais consommés uniquement par le
-  module Immobilier. Le couplage Patrimoine → Transmission est en revanche fort et unidirectionnel :
-  aucun fichier de `lib/patrimoine/` n'importe `lib/transmission/`.
+- **Source unique pour la part successorale** : `getPartSuccessorale`/`getPartConjointSuccession` (`lib/patrimoine/succession.ts`) sont partagées entre le Résumé Patrimoine et le module Transmission, pour éviter la divergence déjà rencontrée une fois par le passé entre ces deux écrans (cf. commentaire en tête de `succession.ts`, incident du 2026-07-18).
+- **Qualification recalculée à l'affichage, persistée à la sauvegarde** : `qualifierBien()` est exécutée en direct dans `AssetDetailsDialog.tsx` pour l'affichage, et dans `useAssetForm.ts` (watcher sur nature/origine/détenteur/mode de détention/statut du couple) pour préremplir `qualification_bien` à chaque sauvegarde du formulaire d'actif. La valeur qui alimente réellement tous les totaux (Résumé, Transmission) est le champ persisté `qualification_bien`, pas un recalcul live à la demande — voir 3.2 pour le risque que cela pose.
+- **Démembrement appliqué de façon inégale selon l'écran** — voir 3.1 : `usePatrimoineCalculations` et `PatrimoineChart` pondèrent par le barème 669, `PatrimoineTreeView` ne le fait pas.
+- **Emprunts de société exclus des totaux Patrimoine** (`emprunts.filter(e => !e.societe_id)`) : un emprunt rattaché à une société est déjà reflété dans la valorisation des parts détenues, donc explicitement écarté ici pour ne pas le compter deux fois — cohérent avec `buildPassifLines` côté Transmission (non ré-audité ici, hors périmètre).
+- **Participation aux acquêts hors périmètre de ce module** : `usePatrimoineOriginaire`/`usePatrimoineFinal`/`patrimoineAcquetsService.ts` (CRUD simple, aucune logique métier propre) alimentent en réalité les écrans du régime matrimonial (`src/components/famille/matrimonial/PatrimoineOriginaireSection.tsx` / `PatrimoineFinalSection.tsx`) et le calcul de la créance de participation (`lib/patrimoine/participationAcquets.ts`), qui relèvent du module Régime matrimonial, pas de l'écran Patrimoine. Non audités en détail ici.
+- **Régime fiscal des plus-values** (`regimeFiscalPlusValue.ts` + `regimeFiscalPVI.ts` + `assetFiscalRegime.ts`) : moteur nature-par-nature avec repli explicite sur `'non_determine'` plutôt que de deviner un régime pour une nature non couverte — bonne pratique documentée en tête de fichier avec la liste exhaustive des natures couvertes et des changements par rapport à l'ancien système (`NATURES_PFU`/`NATURES_EXONEREES`).
 
 ## 3. Dette identifiée
 
-### 🔴 Bloquant (peut fausser un calcul montré au client)
+### 🔴 Bugs techniques confirmés
 
-- **Passif « Bien propre »/« Bien personnel » toujours déduit à 100 % du patrimoine transmissible,
-  quel que soit son détenteur réel.** `getFractionPassifAjustee`
-  ([avantagesMatrimoniaux.ts](src/lib/patrimoine/avantagesMatrimoniaux.ts)) ne retourne une valeur que
-  pour la qualification `Bien commun` ; pour toute autre qualification l'appelant applique 100 %
-  côté Transmission car `PassifLine` ne transporte même pas le champ `detenteur`. Le module Patrimoine
-  lui-même pondère correctement par détenteur — divergence de méthode entre les deux modules pour la
-  même donnée. **Hors périmètre de cette session** : le bug réel est côté Transmission
-  (`src/utils/transmissionHelpers.ts::buildPatrimonySnapshot`, type `PassifLine` sans champ
-  `detenteur`), pas dans `lib/patrimoine/` — ajouté en 🔴 dans
-  [docs/transmission.md §3](transmission.md) pour traitement dans une session dédiée au module
-  Transmission. *(Vérifié toujours ouvert : `PassifLine` ne porte que `montant_du` et
-  `qualification_bien`.)*
-- **`qualification_bien` stocké n'est réactualisé qu'à la réouverture-soumission de l'actif
-  concerné.** `succession.ts`/`avantagesMatrimoniaux.ts`/`usePatrimoineCalculations.ts` lisent la
-  valeur **stockée** ; `AssetDetailsDialog.tsx` en affiche une, lui, **recalculée à la volée**. Un
-  changement de régime matrimonial (module Famille) sans réouverture de chaque actif laisse les
-  moteurs de succession/DMTG travailler sur une qualification obsolète alors que la fiche détail
-  montre la valeur à jour — deux vues incohérentes sur une donnée fiscale sensible. **Hors périmètre
-  de cette session** : la correction implique soit un recalcul systématique (risque de régression
-  large sur tous les moteurs qui lisent `qualification_bien`), soit un déclenchement cross-module
-  (changement de régime côté Famille → recalcul Patrimoine) — nécessite sa propre conception validée.
-  *(Architectural, non retouché depuis l'audit.)*
+**B1 — Le bandeau "éléments exclus des totaux" est inexact : seule une partie des totaux exclut réellement les éléments non qualifiés.**
+`usePatrimoineCalculations.ts:114-122` (`financialSummary`) inclut la valeur pleine de **tout** actif/passif, y compris ceux dont `qualification_bien` est NULL ou `'À qualifier'` — seule l'exclusion liée au démembrement (âge usufruitier non calculable) y est appliquée. À l'inverse, `patrimoineParPersonne` (lignes 133-244) exclut totalement de ses sommes tout actif/passif/emprunt non qualifié (capturé dans `unqualifiedItems`, catch de `BienNonQualifieError`). Le bandeau affiché en tête du Résumé (`PatrimoineResume.tsx:113-124`) annonce pourtant que ces éléments sont « exclus des totaux ci-dessous » — ce qui est faux pour les 3 cartes du haut (Actifs / Passifs / Patrimoine net) : elles continuent d'inclure leur valeur pleine. Conséquence directe : dès qu'un actif ou un passif n'a jamais été qualifié, `financialSummary.patrimoineNet` ≠ `patrimoineParPersonne.userValue + patrimoineParPersonne.spouseValue`, deux nombres affichés côte à côte sur le même écran (cartes du haut vs carte « Patrimoine par tête ») qui ne concordent plus, sans qu'aucun message n'explique l'écart à cet endroit précis.
 
-### ✅ Corrigé cette session (2026-08-27)
+**B2 — Couleur de catégorie incohérente pour "actifs corporels" (clé de mapping erronée, dupliquée à deux endroits).**
+`ASSET_CATEGORIES` (`constants/assetTypes.ts:203`) définit la catégorie sous la clé `"actifs corporels"`, valeur que retourne `getAssetCategory()`. Mais la table de couleurs `CATEGORY_COLORS` (`lib/patrimoine/utils.ts:9`) et son doublon local dans `PatrimoineChart.tsx:20` utilisent la clé `"actifs mobiliers corporels"` — qui ne correspond à aucune catégorie réellement produite par `getAssetCategory()`. Résultat : `getCategoryColor('actifs corporels')` (utilisé par `PlusValuesCard`, `PatrimoinePlusValues`, `PatrimoineParTeteDetail`, `PatrimoineTreeView`) retombe sur son fallback `'#000000'` (noir), alors que `PatrimoineChart.tsx` (donut de répartition du Résumé) retombe sur son propre fallback `'#FF8B55'`, couleur déjà attribuée à `'épargne salariale'`/`'autres'`. Un même actif de catégorie "actifs corporels" (meubles, montres, bijoux, véhicules...) apparaît donc en noir sur certains écrans et confondu visuellement avec une autre catégorie sur le donut du Résumé.
 
-- **Emprunts/passifs de société comptés deux fois dans le patrimoine personnel.**
-  [usePatrimoineCalculations.ts](src/hooks/usePatrimoineCalculations.ts),
-  [useAlertesConseil.ts](src/hooks/useAlertesConseil.ts) et
-  [PatrimoineChart.tsx](src/components/patrimoine/PatrimoineChart.tsx) excluent désormais les emprunts
-  portant un `societe_id`, comme `buildPassifLines` côté Transmission. Vérifié sur cas simple :
-  un emprunt de 100 000 € sans `societe_id` reste compté, un emprunt identique avec `societe_id` est
-  exclu des trois totaux.
-- **La fraction de démembrement est désormais appliquée aux totaux affichés.** Nouvelle fonction pure
-  [demembrementFraction.ts](src/lib/patrimoine/demembrementFraction.ts) (factorisée depuis la logique
-  d'âge d'usufruitier déjà présente dans `AssetDetailsDialog.tsx`, qui l'utilise maintenant aussi,
-  supprimant la duplication) : `financialSummary`, `patrimoineParPersonne`, `PatrimoineChart` (Résumé
-  Patrimoine **et** [Dashboard](src/pages/Dashboard.tsx)) et `PatrimoinePlusValues` pondèrent désormais
-  un actif en usufruit/nue-propriété par le barème 669 CGI au lieu de compter 100 % de sa valeur pleine
-  propriété. Vérifié sur cas simple : nue-propriétaire de 55 ans, actif à 200 000 € → tranche 61 ans
-  (50/50), valeur comptée 100 000 € au lieu de 200 000 € avant correction.
-  - **Âge de l'usufruitier non renseigné → actif exclu des totaux**, plutôt que compté à sa valeur
-    pleine propriété : `getFractionDemembrement` retourne `null` dans ce cas, et
-    `usePatrimoineCalculations.ts` route ces actifs vers `unqualifiedItems` (nouveau champ `reason:
-    'demembrement'`, distingué de `reason: 'qualification'` pour les biens propre/commun non qualifiés)
-    — même bandeau d'alerte que pour un bien non qualifié, texte adapté au motif. `PatrimoineChart`
-    (Résumé et Dashboard, sans bandeau propre) exclut la valeur du total sans signalement dédié dans ce
-    composant. Vérifié : `getFractionDemembrement` sur un actif en Nue-propriété sans date de naissance
-    connue renvoie `null` (au lieu de `1`).
-  - **`valeur_acquisition` pondérée par la même fraction que `valeur_estimee`** dans
-    `usePatrimoineCalculations.ts` (source de `PatrimoinePlusValues`) : une nue-propriété acquise à
-    120 000 € et valant aujourd'hui 200 000 € en pleine propriété, avec une fraction de 50 %, affiche
-    désormais une plus-value de 40 000 € (100 000 − 60 000) au lieu de 80 000 € (200 000 − 120 000)
-    avant correction. Vérifié sur ce cas.
-- **Un emprunt/passif créé avec succès n'apparaît plus dans la liste qu'après rechargement.**
-  [usePassifEmpruntForm.ts](src/hooks/usePassifEmpruntForm.ts) ne possède plus sa propre instance de
-  `useEmprunts()`/`usePassifs()` : les fonctions `create`/`update` sont désormais injectées par
-  [PatrimoinePassifs.tsx](src/components/patrimoine/PatrimoinePassifs.tsx), qui détient l'unique
-  instance et voit donc la liste se mettre à jour immédiatement — même pattern que Actifs.
-- **`mode_detention = 'Nue-propriété'` n'écrase plus `origine_actif` déjà saisi.**
-  [useAssetForm.ts](src/hooks/useAssetForm.ts) ne pré-remplit `'Acquisition à titre gratuit'` que si
-  `origine_actif` est vide ; une origine déjà renseignée (ex. acquisition onéreuse démembrée) est
-  préservée.
-- **Incohérence de détenteur dans la branche « société d'acquêts ».**
-  [qualification.ts](src/lib/patrimoine/qualification.ts) utilise désormais `isDetenteurCommon()`
-  (comme la branche concubinage) au lieu de `detenteur.toLowerCase().includes('couple')` — un
-  détenteur brut `'common'`/`'commun'` (ex. transmis par `AssetDetailsDialog.tsx`) est maintenant
-  qualifié `Indivision` de façon cohérente avec le formulaire.
-- **`calculatePlusValue` ne traite plus une valeur d'acquisition `null` comme `0`.**
-  [utils.ts](src/lib/patrimoine/utils.ts) — la garde teste désormais `null` en plus de `undefined` ;
-  un actif sans valeur d'acquisition saisie renvoie `hasData: false` (exclu du calcul) au lieu d'une
-  fausse plus-value ≈ 100 % de la valeur estimée. Vérifié sur cas simple :
-  `calculatePlusValue(150000, null, 5000)` → `{ plusValue: 0, hasData: false }` (au lieu de
-  `{ plusValue: 145000, hasData: true }` avant correction).
+**B3 — Démembrement appliqué de façon incohérente entre l'onglet Actifs et le Résumé/Plus-values.**
+`usePatrimoineCalculations.ts` (agrégats du Résumé) et `PatrimoineChart.tsx` pondèrent `valeur_estimee` par la fraction issue du barème 669 CGI (`getFractionDemembrement`) pour tout actif en Usufruit/Nue-propriété. `PatrimoineTreeView.tsx`, lui, ne le fait à aucun endroit : `totalValue` (ligne 102), `calculateWeight` (poids % par catégorie/actif) et `getPlusValueDisplay`/`getCategoryPlusValue` (plus-value affichée par ligne et par catégorie) utilisent tous `asset.valeur_estimee` brut à 100 %, jamais la valeur pondérée. Pour tout actif démembré : le total de l'onglet "Actifs" et le total du Résumé divergent (l'un compte la pleine propriété, l'autre la fraction 669 CGI), et la plus-value affichée pour ce même actif diffère entre l'onglet "Actifs" (brute, non pondérée) et l'onglet "Plus-values" (pondérée par la fraction, cf. `usePatrimoineCalculations.ts:263-267`).
 
-### 🟠 À surveiller (cas limite, peu probable)
+**B4 — Taux de prélèvements sociaux incohérent entre les deux moteurs fiscaux du module (17,2 % vs 18,6 %).**
+`regimeFiscalPVI.ts:12` fixe `PVI_PS_RATE = 0.172` (17,2 %, appliqué à l'immobilier/LMNP). `regimeFiscalPlusValue.ts:15` fixe `PFU_PS = 0.186` (18,6 %, appliqué à Actions/Obligations/CTO/PEA/crypto/private equity, et à l'option "plus-value réelle" pour l'or/métaux précieux où le taux total implémenté est 37,6 % = 19 % + 18,6 %, au lieu de 36,2 % si le taux PS attendu était le même 17,2 % que celui utilisé pour l'immobilier ailleurs dans le même module). Le badge affiché à l'écran pour le PEA ≥ 5 ans mentionne lui-même explicitement "prélèvements sociaux (18,6 %) restant dus" (`regimeFiscalPlusValue.ts:212`). `PFU_RATE = 0.314` (12,8 % + 18,6 %) est donc utilisé pour toute plus-value financière générique, quand `PVI` totalise 36,2 % (19 % + 17,2 %) pour l'immobilier — deux taux de prélèvements sociaux différents cohabitent dans le même module pour ce qui devrait être un seul et même prélèvement social sur le capital. Impact chiffré : sur une plus-value PFU de 10 000 €, le module calcule 3 140 € d'impôt total (dont 1 860 € de PS) plutôt que 3 000 € (dont 1 720 € de PS) si le taux PS de 17,2 % utilisé côté immobilier était le taux correct.
 
-- **Le bandeau « éléments non qualifiés, exclus des totaux » ne correspond à aucun des totaux
-  réellement affichés en dessous.** `unqualifiedItems` (exclusion) n'est calculé que dans
-  `patrimoineParPersonne` ; les cartes KPI lisent `financialSummary` (aucune exclusion) et le donut
-  refait un **troisième** calcul indépendant, non filtré lui non plus.
-- **Charges en unité `%` traitées comme des montants en euros dans le Budget.** `budgetService.ts` ne
-  sélectionne pas la colonne `unite` : une charge « 8 % des loyers » remonte comme « 8 €/mois ».
-- **Impossible de saisir explicitement `0`** sur les principaux champs monétaires de `AssetForm`
-  (`parseFloat(e.target.value) || undefined` — `0` est falsy en JS). Un bien dévalorisé ou sans frais
-  ne peut pas être saisi tel quel ; distinct du durcissement `.nonnegative()` du commit `5e4ad88`, qui
-  bloque le négatif mais ne corrige pas ce cas précis. *(Vérifié toujours présent aux mêmes lignes.)*
-- **Carte « Dont IR exonéré » additionne l'assiette brute au lieu de l'impôt réel.**
-  `PatrimoinePlusValues.tsx` calcule `totalExonerePartiel` en sommant `plusValue` (l'assiette) alors
-  que la carte voisine « Fiscalité estimée » affiche un montant d'impôt ; pour ces actifs l'impôt
-  réel n'est qu'à 18,6 % (PS seuls) de ce montant — la carte « Dont » peut afficher plus que le total
-  dont elle est censée être un sous-ensemble. *(Vérifié toujours ouvert.)*
-- **Pas d'historisation du régime matrimonial.** Un changement de régime en cours d'union est
-  appliqué rétroactivement à tous les biens ; `scenarios_regime` enregistre l'intention mais n'est
-  utilisée que par le moteur d'alertes, jamais par la qualification.
-- **Aucune contrainte CHECK en base** sur `qualification_bien`, `detenteur`, `mode_detention`,
-  `nature`, `sens`, `epoux`, `nature_depense`, `mode_evaluation_conventionnel`, `regime_matrimonial` :
-  la fermeture des listes repose entièrement sur les constantes TypeScript de l'UI.
-- **`passifService` sans contrôle d'appartenance explicite**, contrairement à `assetService` — repose
-  uniquement sur les RLS pour `update`/`delete`. Le durcissement du commit `ea3a695` a couvert les
-  services actifs/sociétés, pas `passifService`.
+### 🟠 Risques techniques
 
-### 🟡 Mineur (cosmétique, ergonomie, refactor)
+**R1 — `qualification_bien` (utilisé dans tous les totaux) peut devenir périmé sans que rien ne le signale à l'utilisateur.**
+`AssetDetailsDialog.tsx:73-97` recalcule `qualifierBien()` à la volée pour l'affichage, avec ce commentaire explicite dans le code : « recalculée à la volée (pas persistée) pour rester cohérente si le régime matrimonial change après coup ». Le champ réellement consommé par `usePatrimoineCalculations` (`getPartSuccessorale`) et par le module Transmission est `asset.qualification_bien`, qui n'est réécrit que lorsque l'utilisateur rouvre et resauvegarde individuellement le formulaire de cet actif précis (`useAssetForm.ts`, watcher sur nature/origine/détenteur/mode de détention/`qualification_auto`, lignes ~208-234). Si le régime matrimonial ou le statut du couple change après la saisie d'un actif, l'écran de détail de cet actif affichera la qualification à jour, mais les totaux du Résumé et de la Transmission continueront d'utiliser l'ancienne valeur persistée jusqu'à ce que chaque actif concerné soit rouvert et resauvegardé manuellement — écart invisible entre ce que l'utilisateur voit à l'écran de détail et ce qui alimente réellement les totaux.
 
-- Code mort : `PatrimoineParTeteDetail.tsx` n'est jamais monté (`onNavigateToParTete` jamais fourni
-  par le parent) ; prop `selectedCategory` de `PatrimoineChart` déclarée mais jamais lue.
-- Affichage « -0 € » quand une moins-value totale vaut exactement `0` (concaténation du signe moins
-  plutôt que négation numérique), sur le Résumé et sur la vue Plus-values.
-- Duplications ponctuelles hors moteur : `checkIsInCouple` (`utils.ts`) et `isInCouple`
-  (`qualification.ts`) réimplémentent le même test ; agrégation par catégorie recalculée localement
-  dans `PatrimoineParTeteDetail.tsx` plutôt que dans `lib/patrimoine/` ; `AssetDetailsDialog.tsx:391`
-  compare `asset.detenteur` à `'common'`/`'commun'`/`'couple'` en inline plutôt que d'appeler
-  `isDetenteurCommon()` (sans conséquence sur la qualification, juste une 3ᵉ implémentation du même
-  test — cf. §2).
-- Repli incohérent sur `totalValue` nul/négatif : `0` dans `PatrimoineResume.tsx`, `100`/`0` dans
-  `PatrimoineParTeteDetail.tsx` pour le même cas limite.
-- `duree_type: 'Pendant années'` (charges d'actif) prévu dans le schéma mais jamais rendu dans l'UI —
-  fonctionnalité fantôme, sans risque de donnée fausse puisqu'inatteignable.
-- `IncompleteAssetsBanner` ne détecte que 4 champs manquants (valeur, détenteur, mode de détention,
-  date d'estimation) ; ne signale ni un démembrement sans contrepartie renseignée, ni une indivision
-  dont le total des quotes-parts ne fait pas 100 %.
-- Warning React répété en console (« Invalid prop supplied to React.Fragment ») sur
-  `PatrimoineTreeView.tsx` à chaque rendu de l'onglet Actifs dès qu'un groupe de catégorie existe —
-  sans conséquence fonctionnelle observée. *(Vérifié toujours présent.)*
-- Trois tables filles de `assets` (`asset_demembrements`, `asset_indivisaires`,
-  `asset_valorisations`) portent un `user_id NOT NULL` sans FK explicite vers `auth.users` — non-
-  conformité déclarative à la règle `CLAUDE.md`, mais cascade déjà assurée transitivement via
-  `asset_id → assets(id) ON DELETE CASCADE`.
-- Trois implémentations indépendantes du discriminant emprunt/passif (`isEmpruntRecord`,
-  `PassifDetailsDialog`, `EMPRUNT_NATURES.includes`), synchronisées aujourd'hui seulement parce que
-  l'UI restreint les natures proposées.
-- Fiche détail d'un passif/emprunt n'affiche ni détenteur, ni qualification, ni contributeur au
-  remboursement, ni statut d'assurance — aucun de ces champs n'est visible alors qu'ils sont
-  effectivement consommés par le moteur (alerte, Transmission).
-- Barème art. 669 CGI dupliqué (non documenté) entre `lib/patrimoine/bareme669CGI.ts` et
-  `lib/transmission/index.ts::getDemembrementPct`.
+**R2 — `IncompleteAssetsBanner.onAssetClick` n'est jamais câblé : les lignes cliquables du bandeau ne font rien.**
+`PatrimoineSection.tsx:75` monte `<IncompleteAssetsBanner assets={assets} />` sans passer `onAssetClick`. Les lignes de la liste détaillée du bandeau ont pourtant les classes `cursor-pointer hover:bg-background` (`IncompleteAssetsBanner.tsx:89`) et un `onClick={() => onAssetClick?.(asset)}` (ligne 90) qui, faute de handler fourni, ne produit aucun effet — l'utilisateur croit pouvoir cliquer sur un actif incomplet pour l'ouvrir, rien ne se passe.
 
-### Cases dormantes
+**R3 — `checkMissing()` du bandeau d'actifs incomplets peut générer de faux positifs sur les actifs liquides.**
+`IncompleteAssetsBanner.tsx:17-26` exige `date_estimation` et `mode_detention` pour tout actif sans exception, y compris les natures listées dans `NATURES_WITHOUT_ACQUISITION` (livrets, comptes courants...) pour lesquelles le formulaire de saisie ne présente pas nécessairement ces champs de la même façon. Le commentaire du code lui-même signale que le filtrage prévu ("Acquisition manquante seulement si pas un type sans acquisition") n'a pas été implémenté ("simplifié").
 
-Champs saisissables et sans lecteur métier connu : `assets.situation_particuliere`,
-`.attachement_emotionnel`, `.sous_type_per` (affichage seul), `.bien_etranger` (attendu — Phase
-« biens hors de France » non construite), `.part_licitation_personnelle`/`.licitation_acquereur`
-(déclaratifs, explicitement documentés comme non injectés dans `qualifierBien()`),
-`.financement_actif`/`.financement_duree_mois`/`.financement_apport`/`.financement_taux_credit`/
-`.financement_taux_assurance` (aucun échéancier de crédit ni impact budget trouvé) ; sur `emprunts` :
-`reporter_budget` (le libellé promet un report automatique en Budget qui n'existe pas),
-`taux_interet`, `type_garantie` ; `asset_indivisaires` : les champs de contexte du tiers
-(`type_indivisaire`, `nom_libre`) restent informatifs même après le branchement du calcul de
-`pourcentage` (§2) ; `patrimoine_originaire.date_signature` (seul `signe` est lu).
+**R4 — "Coût total des intérêts" de `PassifDetailsDialog` est une approximation présentée sans réserve.**
+`PassifDetailsDialog.tsx:165-169` : `coutInterets = mensualité × durée_restante − capital_restant_dû`. Ce calcul suppose une mensualité constante sur toute la durée restante et ne tient compte d'aucune variation de taux ni de remboursement anticipé ; contrairement aux moteurs de `regimeFiscalPlusValue.ts`/`regimeFiscalPVI.ts` qui accompagnent systématiquement leurs approximations d'une note explicite à l'utilisateur, cette valeur est affichée sans aucune mention d'estimation.
 
-## 4. Périmètre V1 / différé
+### 🟡 Dette mineure
 
-- **V1 — en place** : qualification civile automatique des actifs et passifs (12 branches, régime
-  légal/communautaire/séparatiste/participation/PACS/concubinage), part successorale et ajustements
-  par clause matrimoniale, récompenses/créances entre époux, participation aux acquêts (décès
-  uniquement), plus-values mobilières et immobilières avec régime fiscal par nature, bascule vers
-  Sociétés/Immobilier, sauvegarde résiliente d'un actif (commit `a41c7bf`), pondération des totaux
-  affichés par le barème 669 CGI pour un actif démembré (2026-08-27, cf. §3).
-- **Différé, décisions explicitement documentées dans le code** :
-  - **Démembrement — qualification civile uniquement** : `mode_detention` ne conditionne toujours pas
-    la qualification (`qualifierBien()` ne le lit jamais) — un usufruit/une nue-propriété reste qualifié
-    comme la pleine propriété. Écart volontaire assumé (cf. §2). Distinct de la valorisation des
-    totaux, désormais pondérée (§3) : seule la qualification civile reste hors périmètre.
-  - **Divorce** pour la participation aux acquêts : `participationAcquets.ts` ne couvre que le décès,
-    « chantier séparé » explicitement renvoyé à plus tard.
-  - **Licitation de plus de moitié (art. 515-5-2)** : champs saisis (`part_licitation_personnelle`,
-    `licitation_acquereur`) mais explicitement non injectés dans le calcul.
-  - **Historisation du régime matrimonial** : le régime courant s'applique rétroactivement à tous les
-    biens ; pas de datation du régime applicable à la date d'acquisition de chaque bien.
-  - **Terrains à bâtir** : faute de champ distinguant un terrain constructible, le régime fiscal
-    immobilier avec surtaxe est appliqué systématiquement — décision validée plutôt que d'inventer un
-    champ.
-  - Pas de méthode `update` sur 4 tables (`recompenses`, `creances_entre_epoux`,
-    `patrimoine_originaire`, `patrimoine_final`) : uniquement ajout et suppression.
-- **Hors périmètre de cet audit, signalé comme travail de suivi** : un audit dédié du module
-  **Immobilier** (champs « immobilier étendu » de `assets`) et un audit croisé Patrimoine ↔
-  Transmission ↔ Sociétés, pour vérifier si d'autres agrégats divergent de la même façon que P29/P30.
+**D1 — `CATEGORY_COLORS` dupliqué intégralement entre `lib/patrimoine/utils.ts` et `PatrimoineChart.tsx`** (mêmes 9 entrées, valeurs identiques). Deux sources de vérité pour la même table — la clé erronée du bug B2 devrait être corrigée aux deux endroits, symptôme direct de cette duplication.
+
+**D2 — `PatrimoineParTeteDetail.tsx` (340 lignes) est du code mort** : jamais importé/monté par aucune route ni aucun composant. `PatrimoineResume.tsx` accepte une prop `onNavigateToParTete` que `PatrimoineSection.tsx` ne fournit jamais, donc la carte "Patrimoine par tête" du Résumé n'est pas cliquable (pas de `cursor-pointer`, comportement cohérent) mais l'écran de détail correspondant n'est accessible par aucun chemin de navigation.
+
+**D3 — `formatPercentage` (`lib/patrimoine/utils.ts:33`) n'est utilisé nulle part dans le module Patrimoine** (aucune référence trouvée en dehors de sa définition et d'une fonction homonyme sans rapport dans le module Fiscalité/IFI).
+
+**D4 — `formatCurrency` local redéfini trois fois** (`AssetDetailsDialog.tsx:99`, `PassifDetailsDialog.tsx:20`, `PatrimoineChart.tsx:87-94`), identique à celui exporté par `lib/patrimoine/utils.ts`, plutôt qu'importé.
+
+### ⚖️ Règles métier à vérifier
+
+Pour chaque règle, la formule ci-dessous est celle **effectivement implémentée** dans le code (à date du 2026-08-28) — la conformité juridique/fiscale reste à vérifier séparément.
+
+**M1 — Part successorale d'un bien (`lib/patrimoine/succession.ts::getPartSuccessorale`)**
+- `qualification_bien` NULL ou `'À qualifier'` → bloque (exception `BienNonQualifieError`), jamais de défaut deviné.
+- `'Indivision'` → part réelle détenue par le défunt, lue depuis `pourcentage_utilisateur`/`pourcentage_conjoint` (complément à 100 % automatique si une seule des deux valeurs est renseignée, sinon 50/50 par défaut si aucune ne l'est — `getPourcentagesRepartition`, `utils.ts:148-173`).
+- `'Bien commun'` → 50 % fixe, non paramétrable (demi-boni de communauté de droit).
+- `'Bien propre'`/`'Bien personnel'` → 100 % si `detenteur` = utilisateur, 0 % si `detenteur` = conjoint (binaire, ignore tout pourcentage saisi).
+
+**M2 — Qualification automatique bien propre/commun (`lib/patrimoine/qualification.ts::qualifierBien`)**
+Cascade de règles dans cet ordre de priorité : (1) indivision explicite si `detenteur` contient "indivision" → `'Indivision'` ; (2) hors couple → `'Bien personnel'` ; (3) concubinage → `'Indivision'` si détenteur commun, sinon `'Bien personnel'` (jamais `'Bien propre'`, notion jugée sans objet hors communauté légale) ; (4) bien propre par nature (art. 1404) prioritaire en régime communautaire sauf clause d'extension (art. 1526) qui le fait tomber en commun ; (5) clause de remploi actée → propre, prioritaire sur tout le reste y compris communauté universelle ; (6) séparation de biens avec société d'acquêts → commun si désigné (par ID d'actif ou flag "résidence principale"), indivision si détenu par les deux sans désignation, propre sinon ; (7) séparation de biens ou participation aux acquêts → toujours propre ; (8) origine gratuite (donation/héritage/présent d'usage/création...) → propre, sauf clause d'entrée en communauté explicite sur donation/héritage (art. 1405 al. 2) → commun ; (9) communauté universelle → commun pour le reste ; (10) acquis avant le mariage → propre, sauf meuble sous communauté de meubles et acquêts → commun ; (11) PACS : convention d'indivision explicite → indivision ; à défaut de convention, indivision si PACS conclu avant le 01/01/2007, sinon propre (séparation par défaut, art. 515-5) ; (12) financement mixte en régime communautaire (art. 1436) : `apportFondsPropres / valeurAcquisition ≥ 0.5` → propre (récompense due à la communauté), sinon commun (récompense due à l'époux apporteur) ; (13) défaut régime légal : acquis pendant l'union à titre onéreux → commun.
+
+**M3 — Barème de l'usufruit (art. 669 CGI) — `bareme669CGI.ts`**
+9 tranches d'âge de l'usufruitier au jour du démembrement (< 21, 31, 41, 51, 61, 71, 81, 91, ≥ 91 ans), usufruit de 90 % à 10 %, nue-propriété de 10 % à 90 % en complément. Usufruit conjoint/successif : tranche déterminée sur l'âge du **plus jeune** usufruitier (`getTrancheBaremeForYoungest`).
+
+**M4 — Plus-value latente (`lib/patrimoine/utils.ts::calculatePlusValue`)**
+`plusValue = valeur_estimee − valeur_acquisition − frais_acquisition`. Pas d'abattement pour durée de détention à ce stade (calcul brut) ; `hasData = false` (exclu des agrégats) si `valeur_estimee` ou `valeur_acquisition` est NULL/undefined.
+
+**M5 — Régime fiscal des plus-values génériques (PFU) — `regimeFiscalPlusValue.ts`**
+`PFU_IR = 12,8 %`, `PFU_PS = 18,6 %`, `PFU_RATE = 31,4 %` (cf. B4 ci-dessus pour l'incohérence avec le taux PS immobilier du même module). Appliqué à : Actions, Obligations, Bons du Trésor, dette subordonnée, dette privée, CTO générique, matières premières, crypto (sans franchise de 305 €, volontairement non appliquée). PEA/PEA-PME et Private equity (FCPR/FPCI) : PFU si détention < 5 ans, sinon IR = 0 et seuls les PS restent dus. Actions gratuites, Stock-options, BSPCE : régime affiché à titre informatif uniquement (`ir`/`ps`/`total` = null), sans calcul.
+
+**M6 — Régime fiscal des plus-values immobilières (PVI) — `regimeFiscalPVI.ts`**
+`PVI_IR_RATE = 19 %`, `PVI_PS_RATE = 17,2 %`. Résidence principale : exonération totale sans condition de durée. Abattement IR : 0 % avant 6 ans, puis 6 %/an de la 6ᵉ à la 21ᵉ année, +4 % la 22ᵉ année (exonération totale à 22 ans). Abattement PS : 0 % avant 6 ans, puis 1,65 %/an de la 6ᵉ à la 21ᵉ année, +1,60 % la 22ᵉ année, puis 9 %/an de la 23ᵉ à la 30ᵉ année (exonération totale à 30 ans). Surtaxe progressive de 2 % à 6 % avec lissage aux bornes, appliquée au-delà de 50 000 € de plus-value imposable à l'IR (barème par tranches, art. 1609 nonies G CGI) — appliquée telle quelle aux "Terrains" faute de pouvoir distinguer les terrains à bâtir (qui devraient légalement en être exclus), décision documentée comme volontaire dans le code. LMNP : même barème que le régime général, avec note explicite que la réintégration des amortissements (obligatoire depuis 2025) n'est pas calculée — la plus-value réelle imposable est donc probablement sous-estimée pour ces biens.
+
+**M7 — Or et métaux précieux — `regimeFiscalPlusValue.ts`**
+Choix laissé à l'utilisateur entre taxe forfaitaire 11,5 % du prix de vente (`valeur_estimee`, sans historique requis) et option plus-value réelle à 37,6 % (cf. B4) avec abattement de 5 %/an au-delà de la 2ᵉ année de détention (exonération totale à 22 ans).
+
+**M8 — Financement mixte, art. 1436 (`qualification.ts`)** — voir M2, point 12 : seuil de 50 % de la contribution en fonds propres par rapport au prix d'acquisition total, applicable uniquement en régime communautaire et uniquement si aucune clause de remploi totale n'est actée.
+
+## 4. Périmètre V1/différé
+
+- **"Objectifs patrimoniaux"** (carte du Résumé) : stub explicite ("Fonctionnalité à venir"), aucune logique.
+- **Franchise crypto de 305 €** (seuil annuel cumulé toutes cessions) : volontairement non appliquée dans `regimeFiscalPlusValue.ts`, la vue étant par actif et non par année fiscale globale.
+- **Terrains à bâtir** : non distingués des autres terrains (pas de champ dédié), la surtaxe PVI leur est donc appliquée à tort selon le commentaire du code lui-même.
+- **Amortissements LMNP réintégrés** (obligatoire depuis 2025) : non calculés, absence de champ dédié dans le formulaire actif.
+- **Décomposition gain d'acquisition/gain de cession** pour Actions gratuites, Stock-options, BSPCE : régime affiché à titre informatif, aucun calcul (champs de valeur à l'acquisition/à l'exercice absents du formulaire).
+- **Option barème progressif de l'IR** (alternative au PFU) : jamais calculée, uniquement mentionnée en note.
+- **Participation aux acquêts** (`usePatrimoineOriginaire`/`usePatrimoineFinal`, `participationAcquets.ts`) : hors périmètre de cet audit, rattachée au module Régime matrimonial.
