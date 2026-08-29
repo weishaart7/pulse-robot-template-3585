@@ -207,7 +207,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
     const watchedFields = [
       'origine_actif', 'date_acquisition', 'detenteur', 'mode_detention', 'qualification_auto',
       'clause_entree_communaute', 'clause_remploi', 'est_propre_par_nature', 'nature',
-      'financement_mixte_apport_propre', 'valeur_acquisition',
+      'financement_mixte_apport_propre', 'valeur_acquisition', 'frais_acquisition',
     ];
     const recompute = (value: any) => {
       const { qualification, raison } = qualifierBien({
@@ -229,6 +229,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         estPropreParNature: value.est_propre_par_nature,
         extensionProprsParNature: maritalContext.extensionProprsParNature,
         valeurAcquisition: value.valeur_acquisition,
+        fraisAcquisition: value.frais_acquisition,
         apportFondsPropres: value.financement_mixte_apport_propre,
       });
       form.setValue('qualification_bien', qualification);

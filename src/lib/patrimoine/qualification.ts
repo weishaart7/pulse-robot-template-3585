@@ -71,6 +71,8 @@ export interface QualificationContext {
   extensionProprsParNature?: boolean;
   /** Prix total d'acquisition (financement mixte, art. 1436), pour le comparer à apportFondsPropres. */
   valeurAcquisition?: number;
+  /** Frais d'acquisition (financement mixte, art. 1436) : à inclure dans le coût total comparé à apportFondsPropres (Cass. 1re civ., 7 oct. 2018, n°17-25965). */
+  fraisAcquisition?: number;
   /** Financement mixte (art. 1436, régimes communautaires uniquement) : montant de la contribution en fonds propres apportée à l'acquisition, saisi manuellement sur l'actif. Sans effet si clauseRemploi est actée (remploi total, cas distinct traité en priorité). */
   apportFondsPropres?: number;
 }
@@ -205,6 +207,7 @@ export const qualifierBien = (ctx: QualificationContext): {
     estPropreParNature,
     extensionProprsParNature,
     valeurAcquisition,
+    fraisAcquisition,
     apportFondsPropres,
   } = ctx;
 
@@ -331,6 +334,14 @@ export const qualifierBien = (ctx: QualificationContext): {
     };
   }
 
+  // LIMITE CONNUE (décision arbitrage du 28/08/2026) : l'art. 1405 al. 2 fait
+  // aussi tomber en communauté, par défaut, une libéralité (donation/
+  // succession) faite conjointement aux DEUX époux (sauf stipulation
+  // contraire du donateur) — l'inverse de la règle générale "origine gratuite
+  // = propre" appliquée ci-dessous. Ce cas n'est pas capturé : aucun champ ne
+  // permet de dire qu'une libéralité a été faite conjointement aux deux
+  // époux. Limite acceptée en l'absence de dossier client concerné à ce jour.
+  //
   // Origine "gratuite" (donation, héritage, présent d'usage, création...) →
   // bien propre, sauf stipulation expresse du donateur/testateur faisant
   // entrer la libéralité dans la communauté (clauseEntreeCommunaute) — art.
@@ -373,6 +384,17 @@ export const qualifierBien = (ctx: QualificationContext): {
     };
   }
 
+  // LIMITE CONNUE (décision arbitrage du 28/08/2026) : sous le régime de la
+  // communauté de meubles et acquêts, la loi rend communs TOUS les meubles
+  // (hors propres par nature, art. 1404), y compris ceux reçus par donation/
+  // succession PENDANT le mariage (sauf clause de non-rapport à la
+  // communauté). Ce cas n'est pas géré : seule la branche ci-dessous ("acquis
+  // avant le mariage") traite spécifiquement ce régime ; un meuble reçu par
+  // donation/succession pendant le mariage sous ce régime retombe à tort dans
+  // la branche générale "origine gratuite = propre" plus haut. Régime rare en
+  // pratique (essentiellement mariages avant 1966 sans contrat) : limite
+  // acceptée en l'absence de dossier client concerné à ce jour.
+  //
   // Bien acquis avant le mariage → propre, sauf sous le régime de la
   // communauté de meubles et acquêts : les meubles (tout sauf un immeuble)
   // acquis avant le mariage y sont communs ; seuls les immeubles acquis
@@ -424,16 +446,17 @@ export const qualifierBien = (ctx: QualificationContext): {
   // cascade. clauseRemploi (remploi total) est prioritaire et retourne avant
   // d'atteindre ce point, donc aucun chevauchement possible entre les deux.
   if (isRegimeCommunautaire(regimeMatrimonial) && apportFondsPropres && valeurAcquisition) {
-    const ratio = apportFondsPropres / valeurAcquisition;
+    const coutTotalAcquisition = valeurAcquisition + (fraisAcquisition || 0);
+    const ratio = apportFondsPropres / coutTotalAcquisition;
     if (ratio >= 0.5) {
       return {
         qualification: 'Bien propre',
-        raison: `Financement mixte (art. 1436) : la contribution en fonds propres (${apportFondsPropres} €) couvre au moins la moitié du prix d'acquisition (${valeurAcquisition} €) : bien propre, récompense due à la communauté pour le solde financé par des fonds communs — à documenter dans le module Récompenses.`,
+        raison: `Financement mixte (art. 1436) : la contribution en fonds propres (${apportFondsPropres} €) couvre au moins la moitié du coût total d'acquisition, frais inclus (${coutTotalAcquisition} €, Cass. 1re civ., 7 oct. 2018, n°17-25965) : bien propre, récompense due à la communauté pour le solde financé par des fonds communs — à documenter dans le module Récompenses.`,
       };
     }
     return {
       qualification: 'Bien commun',
-      raison: `Financement mixte (art. 1436) : la contribution en fonds propres (${apportFondsPropres} €) est inférieure à la moitié du prix d'acquisition (${valeurAcquisition} €) : bien commun, récompense due à l'époux apporteur pour sa contribution en fonds propres — à documenter dans le module Récompenses.`,
+      raison: `Financement mixte (art. 1436) : la contribution en fonds propres (${apportFondsPropres} €) est inférieure à la moitié du coût total d'acquisition, frais inclus (${coutTotalAcquisition} €, Cass. 1re civ., 7 oct. 2018, n°17-25965) : bien commun, récompense due à l'époux apporteur pour sa contribution en fonds propres — à documenter dans le module Récompenses.`,
     };
   }
 

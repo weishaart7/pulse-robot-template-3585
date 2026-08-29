@@ -77,6 +77,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
     regimeMatrimonial: maritalStatus?.regime_matrimonial,
     dateMariage: maritalStatus?.date_mariage,
     conventionPacs: maritalStatus?.convention_pacs,
+    datePacs: maritalStatus?.date_pacs,
     dateAcquisition: asset.date_acquisition,
     origineActif: asset.origine_actif,
     modeDetention: asset.mode_detention,
@@ -88,6 +89,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
     societeAcquetsAssetIds: (maritalStatus as any)?.clauses_contrat?.societe_acquets?.selectedAssets,
     societeAcquetsResidencePrincipale: (maritalStatus as any)?.clauses_contrat?.societe_acquets?.options?.residencePrincipale,
     valeurAcquisition: asset.valeur_acquisition,
+    fraisAcquisition: asset.frais_acquisition,
     apportFondsPropres: asset.financement_mixte_apport_propre,
   });
   const displayedQualification = qualificationAuto

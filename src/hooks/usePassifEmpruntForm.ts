@@ -36,7 +36,7 @@ export const usePassifEmpruntForm = ({
   const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
   const [familyData, setFamilyData] = useState<FamilyInfo>({ hasPartner: false });
   const [assets, setAssets] = useState<Asset[]>([]);
-  const [maritalContext, setMaritalContext] = useState<Pick<QualificationContext, 'statutCouple' | 'regimeMatrimonial' | 'dateMariage' | 'conventionPacs'>>({});
+  const [maritalContext, setMaritalContext] = useState<Pick<QualificationContext, 'statutCouple' | 'regimeMatrimonial' | 'dateMariage' | 'conventionPacs' | 'datePacs'>>({});
   const [qualificationRaison, setQualificationRaison] = useState<string>('');
 
   // Catégorie d'origine (pour restreindre le choix de nature en édition) ;
@@ -88,6 +88,7 @@ export const usePassifEmpruntForm = ({
           regimeMatrimonial: maritalStatus?.regime_matrimonial,
           dateMariage: maritalStatus?.date_mariage,
           conventionPacs: maritalStatus?.convention_pacs,
+          datePacs: maritalStatus?.date_pacs,
         });
       } catch (error) {
         setDetenteurOptions(['Utilisateur']);
@@ -185,6 +186,7 @@ export const usePassifEmpruntForm = ({
         regimeMatrimonial: maritalContext.regimeMatrimonial,
         dateMariage: maritalContext.dateMariage,
         conventionPacs: maritalContext.conventionPacs,
+        datePacs: maritalContext.datePacs,
         detenteur: value.detenteur,
       });
       form.setValue('qualification_bien', qualification);

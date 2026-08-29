@@ -235,3 +235,87 @@ describe('qualifierBien — concubinage (art. 515-8, aucune masse commune)', () 
     expect(remploi.qualification).toBe('Bien personnel');
   });
 });
+
+describe('qualifierBien — parité entre appelants (AssetDetailsDialog vs useAssetForm)', () => {
+  it('PACS conclu avant 2007 sans convention renseignée : même qualification affichée que calculée au formulaire (Indivision)', () => {
+    const maritalStatus = {
+      statut_couple: 'Pacsé(e)',
+      regime_matrimonial: undefined,
+      date_mariage: undefined,
+      convention_pacs: undefined,
+      date_pacs: '2003-05-12',
+    };
+    const asset = {
+      date_acquisition: '2020-03-10',
+      origine_actif: ['Achat'],
+      mode_detention: 'Pleine propriété',
+      detenteur: 'user',
+      clause_entree_communaute: false,
+      clause_remploi: false,
+      nature: 'Compte titres',
+      id: 'asset-1',
+    };
+
+    // Reproduit le mapping de AssetDetailsDialog.tsx
+    const fromDialog = qualifierBien({
+      statutCouple: maritalStatus.statut_couple,
+      regimeMatrimonial: maritalStatus.regime_matrimonial,
+      dateMariage: maritalStatus.date_mariage,
+      conventionPacs: maritalStatus.convention_pacs,
+      datePacs: maritalStatus.date_pacs,
+      dateAcquisition: asset.date_acquisition,
+      origineActif: asset.origine_actif,
+      modeDetention: asset.mode_detention,
+      detenteur: asset.detenteur,
+      clauseEntreeCommunaute: asset.clause_entree_communaute,
+      clauseRemploi: asset.clause_remploi,
+      natureActif: asset.nature,
+      assetId: asset.id,
+    });
+
+    // Reproduit le mapping de useAssetForm.ts (recompute)
+    const fromForm = qualifierBien({
+      statutCouple: maritalStatus.statut_couple,
+      regimeMatrimonial: maritalStatus.regime_matrimonial,
+      dateMariage: maritalStatus.date_mariage,
+      conventionPacs: maritalStatus.convention_pacs,
+      datePacs: maritalStatus.date_pacs,
+      dateAcquisition: new Date(asset.date_acquisition).toISOString(),
+      origineActif: asset.origine_actif,
+      modeDetention: asset.mode_detention,
+      detenteur: asset.detenteur,
+      clauseEntreeCommunaute: asset.clause_entree_communaute,
+      clauseRemploi: asset.clause_remploi,
+      natureActif: asset.nature,
+      assetId: asset.id,
+    });
+
+    expect(fromDialog.qualification).toBe('Indivision');
+    expect(fromDialog.qualification).toBe(fromForm.qualification);
+  });
+});
+
+describe('qualifierBien — financement mixte (art. 1436) : frais d\'acquisition inclus (Cass. 1re civ., 7 oct. 2018, n°17-25965)', () => {
+  const base = {
+    statutCouple: 'Marié(e)',
+    regimeMatrimonial: 'Communauté réduite aux acquêts',
+    dateMariage: '2015-06-01',
+    dateAcquisition: '2020-03-10',
+    origineActif: ['Achat'],
+    detenteur: 'user',
+    valeurAcquisition: 200000,
+    apportFondsPropres: 100000,
+  };
+
+  it('apport = 50% du prix seul, mais < 50% une fois les frais d\'acquisition inclus : bien commun', () => {
+    const result = qualifierBien({ ...base, fraisAcquisition: 20000 });
+
+    expect(result.qualification).toBe('Bien commun');
+  });
+
+  it('sans frais d\'acquisition renseignés, apport = 50% du prix : bien propre (non-régression)', () => {
+    const result = qualifierBien(base);
+
+    expect(result.qualification).toBe('Bien propre');
+  });
+});
