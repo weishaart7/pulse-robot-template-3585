@@ -86,7 +86,7 @@ const ORIGINES_PROPRES = [
   'Création',
 ];
 
-const isInCouple = (statut?: string): boolean => {
+export const isInCouple = (statut?: string): boolean => {
   if (!statut) return false;
   const s = statut.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   return s.includes('mari') || s.includes('pacs') || s.includes('concubin');

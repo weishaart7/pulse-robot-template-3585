@@ -25,7 +25,7 @@ import {
   NATURES_LIQUIDITES_FR
 } from '@/schemas/assetSchema';
 import { isSocieteEligibleNature } from '@/lib/patrimoine/societeTransfer';
-import { QUALIFICATION_OPTIONS, isPacsIndivision, isRegimeCommunautaire } from '@/lib/patrimoine/qualification';
+import { QUALIFICATION_OPTIONS, isPacsIndivision, isRegimeCommunautaire, isInCouple } from '@/lib/patrimoine/qualification';
 import { calculatePlusValue } from '@/lib/patrimoine/utils';
 import { computeAge, getTrancheBaremeForYoungest } from '@/lib/patrimoine/bareme669CGI';
 
@@ -37,9 +37,10 @@ interface AssetFormProps {
 }
 
 const FORM_TABS = [
-  { id: 'general', label: 'Informations générales' },
-  { id: 'detention', label: 'Détention & Acquisition' },
-  { id: 'valorisation', label: 'Valorisation' },
+  { id: 'essentiel', label: 'Essentiel' },
+  { id: 'detention', label: 'Détention' },
+  { id: 'origine', label: 'Origine' },
+  { id: 'caracteristiques', label: 'Caractéristiques' },
   { id: 'charges', label: 'Charges' },
 ];
 
@@ -49,7 +50,9 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   onCancel,
   onDelete
 }) => {
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTab] = useState('essentiel');
+  const [showLockedTabHint, setShowLockedTabHint] = useState(false);
+  const [showQualificationOverride, setShowQualificationOverride] = useState(false);
   const {
     form,
     charges,
@@ -80,6 +83,10 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   };
 
   const watchedNature = form.watch('nature');
+  // À la création, tant que la nature n'est pas renseignée, les onglets
+  // autres que "essentiel" sont verrouillés (rien à qualifier avant ça).
+  // En édition, l'actif existe déjà avec une nature : pas de verrouillage.
+  const isTabLocked = (tabId: string) => !asset && tabId !== 'essentiel' && !watchedNature;
   const watchedDetenteur = form.watch('detenteur');
   const watchedValeurAcquisition = form.watch('valeur_acquisition');
   const watchedValeurEstimee = form.watch('valeur_estimee');
@@ -102,6 +109,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const watchedOrigineActif = form.watch('origine_actif');
   const showClauseEntreeCommunaute = (watchedOrigineActif || []).includes('Donation') || (watchedOrigineActif || []).includes('Héritage');
   const showClauseRemploi = (watchedOrigineActif || []).includes('Acquisition à titre onéreux');
+  const showEstPropreParNature = isInCouple(maritalContext.statutCouple);
   const showLicitationPacs = isPacsIndivision(maritalContext.statutCouple, maritalContext.conventionPacs, maritalContext.datePacs)
     && watchedDetenteur === 'Le couple';
   const watchedClauseRemploi = form.watch('clause_remploi');
@@ -154,7 +162,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const formatEur = (n: number) =>
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
 
-  const renderGeneralSection = () => (
+  const renderEssentielSection = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormField control={form.control} name="nature" render={({ field }) => (
@@ -176,7 +184,98 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             <FormMessage />
           </FormItem>
         )} />
+      </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <FormField control={form.control} name="valeur_estimee" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Valeur actuelle estimée (€)</FormLabel>
+            <FormDescription>Valeur du bien à ce jour. C'est elle qui est utilisée dans le calcul du patrimoine.</FormDescription>
+            <FormControl>
+              <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        <FormField control={form.control} name="date_estimation" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Date d'estimation</FormLabel>
+            <FormControl>
+              <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+      </div>
+
+      {showPlusValue && (
+        <div className="rounded-md border border-border/60 bg-card p-5 animate-fade-in">
+          <div className="flex items-center gap-2 mb-3">
+            <Info className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+            <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-widest">Plus / moins-value latente</p>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <p className="text-[11px] text-muted-foreground/60">Valeur d'achat</p>
+              <p className="text-[15px] font-semibold text-foreground tabular-nums mt-0.5">{formatEur(watchedValeurAcquisition || 0)}</p>
+            </div>
+            <div>
+              <p className="text-[11px] text-muted-foreground/60">Valeur actuelle</p>
+              <p className="text-[15px] font-semibold text-foreground tabular-nums mt-0.5">{formatEur(watchedValeurEstimee || 0)}</p>
+            </div>
+            <div>
+              <p className="text-[11px] text-muted-foreground/60">Différence</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                {plusValueLive >= 0 ? (
+                  <TrendingUp className="h-4 w-4 text-emerald-500" strokeWidth={2} />
+                ) : (
+                  <TrendingDown className="h-4 w-4 text-rose-500" strokeWidth={2} />
+                )}
+                <p className={`text-[15px] font-bold tabular-nums ${plusValueLive >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                  {plusValueLive >= 0 ? '+' : ''}{formatEur(plusValueLive)}
+                  <span className="text-[11px] font-medium ml-1.5 opacity-70">({plusValuePct >= 0 ? '+' : ''}{plusValuePct.toFixed(1)}%)</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isDemembre && watchedValeurEstimee && (
+        <div className="rounded-md border border-border/60 bg-card p-5 animate-fade-in">
+          <div className="flex items-center gap-2 mb-3">
+            <Info className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+            <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-widest">Valorisation démembrée (barème art. 669 CGI)</p>
+          </div>
+          {trancheBareme669 ? (
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-[11px] text-muted-foreground/60">Valeur pleine propriété</p>
+                <p className="text-[15px] font-semibold text-foreground tabular-nums mt-0.5">{formatEur(watchedValeurEstimee)}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-muted-foreground/60">Valeur usufruit ({(trancheBareme669.usufruit * 100).toFixed(0)}%)</p>
+                <p className="text-[15px] font-semibold text-foreground tabular-nums mt-0.5">{formatEur(watchedValeurEstimee * trancheBareme669.usufruit)}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-muted-foreground/60">Valeur nue-propriété ({(trancheBareme669.nuePropriete * 100).toFixed(0)}%)</p>
+                <p className="text-[15px] font-semibold text-foreground tabular-nums mt-0.5">{formatEur(watchedValeurEstimee * trancheBareme669.nuePropriete)}</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-[12px] text-muted-foreground/70">
+              Non calculable : renseignez la date de naissance de l'usufruitier (fiche client, conjoint, ou membre de la famille / tiers en contrepartie) pour obtenir la répartition.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderCaracteristiquesSection = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {showEtablissement && (
           <FormField control={form.control} name="etablissement" render={({ field }) => (
             <FormItem>
@@ -499,7 +598,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
     </div>
   );
 
-  const renderAcquisitionSection = () => {
+  const renderOrigineSection = () => {
     if (hideAcquisition) {
       return (
         <div className="text-center py-8 text-muted-foreground">
@@ -510,6 +609,73 @@ export const AssetForm: React.FC<AssetFormProps> = ({
 
     return (
       <div className="space-y-6">
+        <FormField control={form.control} name="qualification_bien" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Qualification du bien</FormLabel>
+            {watchedQualificationAuto !== false && !showQualificationOverride ? (
+              <div className="flex items-start gap-3 rounded-md border p-4 bg-muted/30">
+                <FileText className="h-4 w-4 text-muted-foreground mt-0.5" strokeWidth={1.5} />
+                <div className="space-y-1 flex-1">
+                  <p className="text-sm font-semibold text-foreground">{watchedQualificationBien || 'Non calculable'}</p>
+                  {qualificationRaison && (
+                    <p className="text-xs text-muted-foreground italic">{qualificationRaison}</p>
+                  )}
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0"
+                    onClick={() => setShowQualificationOverride(true)}
+                  >
+                    Modifier manuellement
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Select
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    form.setValue('qualification_auto', false);
+                  }}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                      <SelectValue placeholder="Choisir une qualification" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {QUALIFICATION_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>{option}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  {watchedQualificationAuto !== false
+                    ? "Calculée automatiquement à partir du régime matrimonial, de l'origine du bien, de la date d'acquisition et du détenteur."
+                    : "Qualification définie manuellement : le calcul automatique n'écrasera plus cette valeur."}
+                </FormDescription>
+                {watchedQualificationAuto === false && (
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0"
+                    onClick={() => {
+                      form.setValue('qualification_auto', true);
+                      setShowQualificationOverride(false);
+                    }}
+                  >
+                    Réactiver le calcul automatique
+                  </Button>
+                )}
+              </>
+            )}
+            <FormMessage />
+          </FormItem>
+        )} />
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField control={form.control} name="date_acquisition" render={({ field }) => (
             <FormItem>
@@ -627,26 +793,28 @@ export const AssetForm: React.FC<AssetFormProps> = ({
           )} />
         )}
 
-        <FormField
-          control={form.control}
-          name="est_propre_par_nature"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>Bien propre par nature (art. 1404)</FormLabel>
-                <FormDescription>
-                  Vêtements, actions en réparation d'un dommage corporel ou moral, créances et pensions incessibles, instruments de travail nécessaires à la profession : reste propre même en communauté (y compris universelle), sauf clause d'extension de la communauté aux biens propres par nature.
-                </FormDescription>
-              </div>
-            </FormItem>
-          )}
-        />
+        {showEstPropreParNature && (
+          <FormField
+            control={form.control}
+            name="est_propre_par_nature"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>Bien propre par nature (art. 1404)</FormLabel>
+                  <FormDescription>
+                    Vêtements, actions en réparation d'un dommage corporel ou moral, créances et pensions incessibles, instruments de travail nécessaires à la profession : reste propre même en communauté (y compris universelle), sauf clause d'extension de la communauté aux biens propres par nature.
+                  </FormDescription>
+                </div>
+              </FormItem>
+            )}
+          />
+        )}
 
         {showLicitationPacs && (
           <div className="space-y-4 rounded-md border p-4">
@@ -687,143 +855,9 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             )} />
           </div>
         )}
-
-        <FormField control={form.control} name="qualification_bien" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Qualification du bien</FormLabel>
-            <Select
-              onValueChange={(value) => {
-                field.onChange(value);
-                form.setValue('qualification_auto', false);
-              }}
-              value={field.value}
-            >
-              <FormControl>
-                <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
-                  <SelectValue placeholder="Choisir une qualification" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {QUALIFICATION_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={option}>{option}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormDescription>
-              {watchedQualificationAuto !== false
-                ? "Calculée automatiquement à partir du régime matrimonial, de l'origine du bien, de la date d'acquisition et du détenteur."
-                : "Qualification définie manuellement : le calcul automatique n'écrasera plus cette valeur."}
-            </FormDescription>
-            {watchedQualificationAuto !== false && qualificationRaison && (
-              <p className="text-xs text-muted-foreground italic">{qualificationRaison}</p>
-            )}
-            {watchedQualificationAuto === false && (
-              <Button
-                type="button"
-                variant="link"
-                size="sm"
-                className="h-auto p-0"
-                onClick={() => form.setValue('qualification_auto', true)}
-              >
-                Réactiver le calcul automatique
-              </Button>
-            )}
-            <FormMessage />
-          </FormItem>
-        )} />
       </div>
     );
   };
-
-  const renderValorisationSection = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <FormField control={form.control} name="valeur_estimee" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Valeur actuelle estimée (€)</FormLabel>
-            <FormDescription>Valeur du bien à ce jour. C'est elle qui est utilisée dans le calcul du patrimoine.</FormDescription>
-            <FormControl>
-              <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-
-        <FormField control={form.control} name="date_estimation" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Date d'estimation</FormLabel>
-            <FormControl>
-              <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-
-      </div>
-
-      {showPlusValue && (
-        <div className="rounded-md border border-border/60 bg-card p-5 animate-fade-in">
-          <div className="flex items-center gap-2 mb-3">
-            <Info className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-            <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-widest">Plus / moins-value latente</p>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <p className="text-[11px] text-muted-foreground/60">Valeur d'achat</p>
-              <p className="text-[15px] font-semibold text-foreground tabular-nums mt-0.5">{formatEur(watchedValeurAcquisition || 0)}</p>
-            </div>
-            <div>
-              <p className="text-[11px] text-muted-foreground/60">Valeur actuelle</p>
-              <p className="text-[15px] font-semibold text-foreground tabular-nums mt-0.5">{formatEur(watchedValeurEstimee || 0)}</p>
-            </div>
-            <div>
-              <p className="text-[11px] text-muted-foreground/60">Différence</p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                {plusValueLive >= 0 ? (
-                  <TrendingUp className="h-4 w-4 text-emerald-500" strokeWidth={2} />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-rose-500" strokeWidth={2} />
-                )}
-                <p className={`text-[15px] font-bold tabular-nums ${plusValueLive >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                  {plusValueLive >= 0 ? '+' : ''}{formatEur(plusValueLive)}
-                  <span className="text-[11px] font-medium ml-1.5 opacity-70">({plusValuePct >= 0 ? '+' : ''}{plusValuePct.toFixed(1)}%)</span>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isDemembre && watchedValeurEstimee && (
-        <div className="rounded-md border border-border/60 bg-card p-5 animate-fade-in">
-          <div className="flex items-center gap-2 mb-3">
-            <Info className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-            <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-widest">Valorisation démembrée (barème art. 669 CGI)</p>
-          </div>
-          {trancheBareme669 ? (
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <p className="text-[11px] text-muted-foreground/60">Valeur pleine propriété</p>
-                <p className="text-[15px] font-semibold text-foreground tabular-nums mt-0.5">{formatEur(watchedValeurEstimee)}</p>
-              </div>
-              <div>
-                <p className="text-[11px] text-muted-foreground/60">Valeur usufruit ({(trancheBareme669.usufruit * 100).toFixed(0)}%)</p>
-                <p className="text-[15px] font-semibold text-foreground tabular-nums mt-0.5">{formatEur(watchedValeurEstimee * trancheBareme669.usufruit)}</p>
-              </div>
-              <div>
-                <p className="text-[11px] text-muted-foreground/60">Valeur nue-propriété ({(trancheBareme669.nuePropriete * 100).toFixed(0)}%)</p>
-                <p className="text-[15px] font-semibold text-foreground tabular-nums mt-0.5">{formatEur(watchedValeurEstimee * trancheBareme669.nuePropriete)}</p>
-              </div>
-            </div>
-          ) : (
-            <p className="text-[12px] text-muted-foreground/70">
-              Non calculable : renseignez la date de naissance de l'usufruitier (fiche client, conjoint, ou membre de la famille / tiers en contrepartie) pour obtenir la répartition.
-            </p>
-          )}
-        </div>
-      )}
-    </div>
-  );
 
   const renderChargesSection = () => (
     <div className="space-y-6">
@@ -868,16 +902,12 @@ export const AssetForm: React.FC<AssetFormProps> = ({
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'general': return renderGeneralSection();
-      case 'detention': return (
-        <div className="space-y-8">
-          {renderDetentionSection()}
-          {renderAcquisitionSection()}
-        </div>
-      );
-      case 'valorisation': return renderValorisationSection();
+      case 'essentiel': return renderEssentielSection();
+      case 'detention': return renderDetentionSection();
+      case 'origine': return renderOrigineSection();
+      case 'caracteristiques': return renderCaracteristiquesSection();
       case 'charges': return renderChargesSection();
-      default: return renderGeneralSection();
+      default: return renderEssentielSection();
     }
   };
 
@@ -891,22 +921,42 @@ export const AssetForm: React.FC<AssetFormProps> = ({
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          <div className="flex gap-2 flex-wrap">
-            {FORM_TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200",
-                  activeTab === tab.id
-                    ? "bg-[#62706d] text-[#ebf1f1] shadow-sm"
-                    : "bg-[#ebf1f1] text-[#62706d] hover:opacity-90"
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex gap-2 flex-wrap">
+              {FORM_TABS.map((tab) => {
+                const locked = isTabLocked(tab.id);
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    aria-disabled={locked}
+                    onClick={() => {
+                      if (locked) {
+                        setShowLockedTabHint(true);
+                        return;
+                      }
+                      setShowLockedTabHint(false);
+                      setActiveTab(tab.id);
+                    }}
+                    className={cn(
+                      "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200",
+                      locked
+                        ? "bg-[#ebf1f1] text-[#62706d] opacity-50 cursor-not-allowed"
+                        : activeTab === tab.id
+                          ? "bg-[#62706d] text-[#ebf1f1] shadow-sm"
+                          : "bg-[#ebf1f1] text-[#62706d] hover:opacity-90"
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+            {showLockedTabHint && isTabLocked('detention') && (
+              <p className="text-xs text-muted-foreground px-1">
+                Renseignez d'abord la nature de l'actif
+              </p>
+            )}
           </div>
 
           <div className="mt-6">
