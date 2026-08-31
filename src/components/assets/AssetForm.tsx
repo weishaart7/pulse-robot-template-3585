@@ -38,8 +38,7 @@ interface AssetFormProps {
 
 const FORM_TABS = [
   { id: 'essentiel', label: 'Essentiel' },
-  { id: 'detention', label: 'Détention' },
-  { id: 'origine', label: 'Origine' },
+  { id: 'propriete', label: 'Propriété' },
   { id: 'caracteristiques', label: 'Caractéristiques' },
   { id: 'charges', label: 'Charges' },
 ];
@@ -96,9 +95,10 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   // qualification n'est pas "Bien propre"/"Bien personnel" (100/0 binaire,
   // aucun pourcentage possible) — cf. useAssetForm.ts pour la resélection
   // forcée si la qualification change après coup.
-  const filteredDetenteurOptions = watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel'
+  const filteredDetenteurOptions = (watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel'
     ? detenteurOptions.filter(option => option !== 'Le couple')
-    : detenteurOptions;
+    : detenteurOptions
+  ).filter(option => option !== 'Indivision');
   const isImmobilier = getAssetCategory(watchedNature) === 'actifs immobiliers';
   const isSocieteEligible = isSocieteEligibleNature(watchedNature);
   const hideAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature);
@@ -487,195 +487,33 @@ export const AssetForm: React.FC<AssetFormProps> = ({
     </div>
   );
 
-  const renderDetentionSection = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <FormField control={form.control} name="mode_detention" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Mode de détention</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
-              <FormControl>
-                <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
-                  <SelectValue placeholder="Choisir un mode de détention" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {MODE_DETENTION_OPTIONS.map(option => (
-                  <SelectItem key={option} value={option}>{option}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )} />
-
-        <FormField control={form.control} name="detenteur" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Détenteur</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value}>
-              <FormControl>
-                <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
-                  <SelectValue placeholder="Choisir un détenteur" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {filteredDetenteurOptions.map(option => (
-                  <SelectItem key={option} value={option}>{option}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {(watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel') && (
-              <FormDescription>
-                "Le couple" n'est pas proposé : ce bien est qualifié {watchedQualificationBien.toLowerCase()}, il appartient donc entièrement à une seule personne.
-              </FormDescription>
-            )}
-            <FormMessage />
-          </FormItem>
-        )} />
-
-        {/* Quote-part : librement saisissable en indivision (elle dépend de ce
-            que chacun a réellement financé), mais figée à 50/50 pour un bien
-            commun, où la moitié revient de droit à chaque époux — cf.
-            getPartSuccessorale, qui retourne 0,5 en dur dans ce cas. */}
-        {watchedDetenteur === 'Le couple' && familyData.hasPartner && (
-          watchedQualificationBien === 'Indivision' ? (
-            <FormField control={form.control} name="pourcentage_utilisateur" render={({ field }) => {
-              const partUtilisateur = field.value ?? 50;
-              const partConjoint = 100 - Math.min(100, Math.max(0, partUtilisateur));
-              return (
-                <FormItem className="col-span-full">
-                  <FormLabel>Quote-part de {familyData.userFirstName || 'vous'} dans l'indivision (%)</FormLabel>
-                  <FormDescription>
-                    La quote-part de {familyData.partnerFirstName || 'votre conjoint(e)'} est le complément à 100 % : {partConjoint} %.
-                  </FormDescription>
-                  <FormControl>
-                    <Input
-                      className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.1"
-                      value={field.value ?? ''}
-                      onChange={e => {
-                        const saisi = parseFloat(e.target.value);
-                        const valeur = isNaN(saisi) ? undefined : Math.min(100, Math.max(0, saisi));
-                        field.onChange(valeur);
-                        form.setValue('pourcentage_conjoint', valeur === undefined ? undefined : 100 - valeur);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              );
-            }} />
-          ) : (
-            <div className="col-span-full text-sm text-muted-foreground bg-muted rounded-[5px] px-3 py-2">
-              Réparti 50% / 50% entre {familyData.userFirstName || 'vous'} et {familyData.partnerFirstName || 'votre conjoint(e)'} — bien commun, fixé par la loi (non modifiable).
-            </div>
-          )
-        )}
+  const renderProprieteSection = () => {
+    const proprieteRappel = isInCouple(maritalContext.statutCouple) ? (
+      <div className="rounded-md border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
+        <p>
+          Régime matrimonial : <span className="font-medium text-foreground">{maritalContext.regimeMatrimonial || 'Non renseigné'}</span>
+        </p>
+        <p>
+          {maritalContext.statutCouple === 'Pacsé(e)' ? 'Date de PACS' : 'Date de mariage'} :{' '}
+          <span className="font-medium text-foreground">
+            {(maritalContext.statutCouple === 'Pacsé(e)' ? maritalContext.datePacs : maritalContext.dateMariage) || 'Non renseignée'}
+          </span>
+        </p>
       </div>
+    ) : null;
 
-      {/* Indivisaires (si Indivision sélectionnée) */}
-      {watchedDetenteur === 'Indivision' && (
-        <IndivisairesSection
-          familyMembers={familyMembers}
-          value={indivisaires}
-          onChange={setIndivisaires}
-        />
-      )}
+    const isIndivisionHorsCouple = watchedDetenteur === 'Indivision';
 
-      {/* Démembrement (si mode de détention Usufruit ou Nue-propriété) */}
-      {isDemembre && (
-        <DemembrementSection
-          role={demembrementCounterpartRole}
-          familyMembers={familyMembers}
-          value={demembrements}
-          onChange={setDemembrements}
-        />
-      )}
-
-    </div>
-  );
-
-  const renderOrigineSection = () => {
-    if (hideAcquisition) {
-      return (
-        <div className="text-center py-8 text-muted-foreground">
-          Les informations d'acquisition ne sont pas applicables pour ce type d'actif.
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-6">
-        <FormField control={form.control} name="qualification_bien" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Qualification du bien</FormLabel>
-            {watchedQualificationAuto !== false && !showQualificationOverride ? (
-              <div className="flex items-start gap-3 rounded-md border p-4 bg-muted/30">
-                <FileText className="h-4 w-4 text-muted-foreground mt-0.5" strokeWidth={1.5} />
-                <div className="space-y-1 flex-1">
-                  <p className="text-sm font-semibold text-foreground">{watchedQualificationBien || 'Non calculable'}</p>
-                  {qualificationRaison && (
-                    <p className="text-xs text-muted-foreground italic">{qualificationRaison}</p>
-                  )}
-                  <Button
-                    type="button"
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0"
-                    onClick={() => setShowQualificationOverride(true)}
-                  >
-                    Modifier manuellement
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <Select
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    form.setValue('qualification_auto', false);
-                  }}
-                  value={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
-                      <SelectValue placeholder="Choisir une qualification" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {QUALIFICATION_OPTIONS.map((option) => (
-                      <SelectItem key={option} value={option}>{option}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  {watchedQualificationAuto !== false
-                    ? "Calculée automatiquement à partir du régime matrimonial, de l'origine du bien, de la date d'acquisition et du détenteur."
-                    : "Qualification définie manuellement : le calcul automatique n'écrasera plus cette valeur."}
-                </FormDescription>
-                {watchedQualificationAuto === false && (
-                  <Button
-                    type="button"
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0"
-                    onClick={() => {
-                      form.setValue('qualification_auto', true);
-                      setShowQualificationOverride(false);
-                    }}
-                  >
-                    Réactiver le calcul automatique
-                  </Button>
-                )}
-              </>
-            )}
-            <FormMessage />
-          </FormItem>
-        )} />
-
+    const origineContent = isIndivisionHorsCouple ? (
+      <div className="rounded-md border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
+        Sans effet pour un bien en indivision hors couple : la qualification est directement "Indivision", quels que soient l'origine et les clauses éventuelles.
+      </div>
+    ) : hideAcquisition ? (
+      <div className="text-center py-8 text-muted-foreground">
+        Les informations d'acquisition ne sont pas applicables pour ce type d'actif.
+      </div>
+    ) : (
+      <>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField control={form.control} name="date_acquisition" render={({ field }) => (
             <FormItem>
@@ -815,8 +653,214 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             )}
           />
         )}
+      </>
+    );
 
-        {showLicitationPacs && (
+    return (
+    <div className="space-y-6">
+      {proprieteRappel}
+
+      {origineContent}
+
+      {!hideAcquisition && (
+        <FormField control={form.control} name="qualification_bien" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Qualification du bien</FormLabel>
+            {watchedQualificationAuto !== false && !showQualificationOverride ? (
+              <div className="flex items-start gap-3 rounded-md border p-4 bg-muted/30">
+                <FileText className="h-4 w-4 text-muted-foreground mt-0.5" strokeWidth={1.5} />
+                <div className="space-y-1 flex-1">
+                  <p className="text-sm font-semibold text-foreground">{watchedQualificationBien || 'Non calculable'}</p>
+                  {qualificationRaison && (
+                    <p className="text-xs text-muted-foreground italic">{qualificationRaison}</p>
+                  )}
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0"
+                    onClick={() => setShowQualificationOverride(true)}
+                  >
+                    Modifier manuellement
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Select
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    form.setValue('qualification_auto', false);
+                  }}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                      <SelectValue placeholder="Choisir une qualification" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {QUALIFICATION_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>{option}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  {watchedQualificationAuto !== false
+                    ? "Calculée automatiquement à partir du régime matrimonial, de l'origine du bien, de la date d'acquisition et du détenteur."
+                    : "Qualification définie manuellement : le calcul automatique n'écrasera plus cette valeur."}
+                </FormDescription>
+                {watchedQualificationAuto === false && (
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0"
+                    onClick={() => {
+                      form.setValue('qualification_auto', true);
+                      setShowQualificationOverride(false);
+                    }}
+                  >
+                    Réactiver le calcul automatique
+                  </Button>
+                )}
+              </>
+            )}
+            <FormMessage />
+          </FormItem>
+        )} />
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <FormField control={form.control} name="mode_detention" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Mode de détention</FormLabel>
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormControl>
+                <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                  <SelectValue placeholder="Choisir un mode de détention" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {MODE_DETENTION_OPTIONS.map(option => (
+                  <SelectItem key={option} value={option}>{option}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 col-span-full">
+          <FormControl>
+            <Checkbox
+              checked={watchedDetenteur === 'Indivision'}
+              onCheckedChange={(checked) => {
+                if (checked) {
+                  form.setValue('detenteur', 'Indivision');
+                } else if (watchedDetenteur === 'Indivision') {
+                  form.setValue('detenteur', '');
+                }
+              }}
+            />
+          </FormControl>
+          <div className="space-y-1 leading-none">
+            <FormLabel>Ce bien est détenu en indivision avec un tiers (hors couple)</FormLabel>
+            <FormDescription>
+              Dans ce cas, la qualification du bien est directement "Indivision", quel que soit le régime matrimonial ou l'origine du bien.
+            </FormDescription>
+          </div>
+        </FormItem>
+
+        {watchedDetenteur !== 'Indivision' && (
+          <FormField control={form.control} name="detenteur" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Détenteur</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                    <SelectValue placeholder="Choisir un détenteur" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {filteredDetenteurOptions.map(option => (
+                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {(watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel') && (
+                <FormDescription>
+                  "Le couple" n'est pas proposé : ce bien est qualifié {watchedQualificationBien.toLowerCase()}, il appartient donc entièrement à une seule personne.
+                </FormDescription>
+              )}
+              <FormMessage />
+            </FormItem>
+          )} />
+        )}
+
+        {/* Quote-part : librement saisissable en indivision (elle dépend de ce
+            que chacun a réellement financé), mais figée à 50/50 pour un bien
+            commun, où la moitié revient de droit à chaque époux — cf.
+            getPartSuccessorale, qui retourne 0,5 en dur dans ce cas. */}
+        {watchedDetenteur === 'Le couple' && familyData.hasPartner && (
+          watchedQualificationBien === 'Indivision' ? (
+            <FormField control={form.control} name="pourcentage_utilisateur" render={({ field }) => {
+              const partUtilisateur = field.value ?? 50;
+              const partConjoint = 100 - Math.min(100, Math.max(0, partUtilisateur));
+              return (
+                <FormItem className="col-span-full">
+                  <FormLabel>Quote-part de {familyData.userFirstName || 'vous'} dans l'indivision (%)</FormLabel>
+                  <FormDescription>
+                    La quote-part de {familyData.partnerFirstName || 'votre conjoint(e)'} est le complément à 100 % : {partConjoint} %.
+                  </FormDescription>
+                  <FormControl>
+                    <Input
+                      className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={field.value ?? ''}
+                      onChange={e => {
+                        const saisi = parseFloat(e.target.value);
+                        const valeur = isNaN(saisi) ? undefined : Math.min(100, Math.max(0, saisi));
+                        field.onChange(valeur);
+                        form.setValue('pourcentage_conjoint', valeur === undefined ? undefined : 100 - valeur);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              );
+            }} />
+          ) : (
+            <div className="col-span-full text-sm text-muted-foreground bg-muted rounded-[5px] px-3 py-2">
+              Réparti 50% / 50% entre {familyData.userFirstName || 'vous'} et {familyData.partnerFirstName || 'votre conjoint(e)'} — bien commun, fixé par la loi (non modifiable).
+            </div>
+          )
+        )}
+      </div>
+
+      {/* Indivisaires (si Indivision sélectionnée) */}
+      {watchedDetenteur === 'Indivision' && (
+        <IndivisairesSection
+          familyMembers={familyMembers}
+          value={indivisaires}
+          onChange={setIndivisaires}
+        />
+      )}
+
+      {/* Démembrement (si mode de détention Usufruit ou Nue-propriété) */}
+      {isDemembre && (
+        <DemembrementSection
+          role={demembrementCounterpartRole}
+          familyMembers={familyMembers}
+          value={demembrements}
+          onChange={setDemembrements}
+        />
+      )}
+
+      {showLicitationPacs && (
           <div className="space-y-4 rounded-md border p-4">
             <div className="space-y-1 leading-none">
               <FormLabel>Licitation de plus de moitié (art. 515-5-2)</FormLabel>
@@ -903,8 +947,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const renderContent = () => {
     switch (activeTab) {
       case 'essentiel': return renderEssentielSection();
-      case 'detention': return renderDetentionSection();
-      case 'origine': return renderOrigineSection();
+      case 'propriete': return renderProprieteSection();
       case 'caracteristiques': return renderCaracteristiquesSection();
       case 'charges': return renderChargesSection();
       default: return renderEssentielSection();
@@ -952,7 +995,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                 );
               })}
             </div>
-            {showLockedTabHint && isTabLocked('detention') && (
+            {showLockedTabHint && isTabLocked('propriete') && (
               <p className="text-xs text-muted-foreground px-1">
                 Renseignez d'abord la nature de l'actif
               </p>
