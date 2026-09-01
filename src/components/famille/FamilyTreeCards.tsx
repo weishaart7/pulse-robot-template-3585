@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Plus } from 'lucide-react';
 import { FamilyLink, FamilyProfile, MaritalStatus } from '@/services/familyService';
 import { buildFamilyGraph, FamilyGraphNode } from '@/lib/family/buildFamilyGraph';
 import { initialsFromFullName } from '@/lib/family/initials';
@@ -10,6 +11,7 @@ interface FamilyTreeCardsProps {
   onSelectMain: () => void;
   onSelectSpouse: () => void;
   onSelectMember: (member: FamilyLink) => void;
+  onAddMember: () => void;
 }
 
 const CARD_BG = '#F8F8F8';
@@ -93,7 +95,22 @@ function MemberCard({
   );
 }
 
-export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onSelectMain, onSelectSpouse, onSelectMember }: FamilyTreeCardsProps) {
+function AddMemberCard({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Ajouter un membre de la famille"
+      className={`flex items-center justify-center gap-2 rounded-[4px] px-3 h-[54px] w-[210px] shrink-0 border border-dashed transition-colors duration-200 hover:bg-black/[0.02] ${FOCUS_RING}`}
+      style={{ borderColor: '#D9D9D9', color: ROLE_COLOR }}
+    >
+      <Plus className="h-4 w-4" />
+      <span className="text-[13px] font-medium">Ajouter</span>
+    </button>
+  );
+}
+
+export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onSelectMain, onSelectSpouse, onSelectMember, onAddMember }: FamilyTreeCardsProps) {
   const graph = useMemo(
     () => buildFamilyGraph(familyProfile, maritalStatus, familyLinks),
     [familyProfile, maritalStatus, familyLinks]
@@ -210,6 +227,7 @@ export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onS
             {rowsByGeneration.get(generation)!.map(node => (
               <MemberCard key={node.id} node={node} onClick={() => handleSelect(node)} cardRef={getCardRef(node.id)} />
             ))}
+            {generation === 0 && <AddMemberCard onClick={onAddMember} />}
           </div>
         </div>
       ))}

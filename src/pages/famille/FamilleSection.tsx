@@ -298,6 +298,7 @@ const FamilleSection = () => {
                 onSelectMain={() => setEditView('client')}
                 onSelectSpouse={() => navigate('/dashboard/famille/conjoint')}
                 onSelectMember={(member) => memberDialogRef.current?.openForEdit(member)}
+                onAddMember={() => memberDialogRef.current?.openForAdd()}
               />
             </div>
 
