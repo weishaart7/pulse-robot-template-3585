@@ -24,15 +24,6 @@ const adoptionSimpleMotifs = [
   { value: 'soins_secours_5ans', label: 'Soins et secours ininterrompus (5 ans min. durant la minorité)' },
 ];
 const brancheFamiliale = ['Branche paternelle', 'Branche maternelle'];
-const mesuresProtectionJuridique = [
-  'Aucune',
-  'Tutelle',
-  'Curatelle',
-  'Sauvegarde de justice',
-  'Habilitation du conjoint',
-  'Habilitation familiale',
-  "Mesure d'accompagnement",
-];
 
 function ageEnAnnees(dateNaissance: Date): number {
   const today = new Date();
@@ -51,7 +42,6 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
   const watchAdoption = form.watch('enfant_adopte');
   const watchAdoptionAbattementPlein = form.watch('adoption_simple_abattement_plein');
   const watchDateNaissance = form.watch('date_naissance');
-  const watchMandatProtectionFuture = form.watch('mandat_protection_future');
   const isFirstRender = useRef(true);
   const enfantAChargeManuellementModifie = useRef(false);
   const fiscalementAChargeManuellementModifie = useRef(false);
@@ -232,32 +222,6 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
         />
       </div>
 
-      {/* Mesure de protection juridique */}
-      <FormField
-        control={form.control}
-        name="mesure_protection_juridique"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Mesure de protection juridique actuelle</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value || 'Aucune'}>
-              <FormControl>
-                <SelectTrigger size="lg">
-                  <SelectValue placeholder="Sélectionner" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {mesuresProtectionJuridique.map((mesure) => (
-                  <SelectItem key={mesure} value={mesure}>
-                    {mesure}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
       {/* Checkboxes */}
       <div className="space-y-4">
         {/* Décédé */}
@@ -301,30 +265,6 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
             <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Personne à charge" />
           )}
         />
-
-        {/* Mandat de protection future */}
-        <FormField
-          control={form.control}
-          name="mandat_protection_future"
-          render={({ field }) => (
-            <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Mandat de protection future signé" />
-          )}
-        />
-
-        {/* Date du mandat de protection future (si signé) */}
-        {watchMandatProtectionFuture && (
-          <FormField
-            control={form.control}
-            name="date_mandat_protection_future"
-            render={({ field }) => (
-              <FormItem className="ml-6">
-                <FormLabel>Date du mandat</FormLabel>
-                <SmartDateInput value={field.value} onChange={field.onChange} />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
 
         {/* Enfant à charge (civil / fiscal) */}
         {linkType === 'Enfant' && (
