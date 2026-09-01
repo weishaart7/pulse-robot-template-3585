@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { SegmentedTabs } from '@/components/ui/segmented-tabs';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
@@ -10,8 +10,7 @@ import { FamilyTreeCards } from '@/components/famille/FamilyTreeCards';
 import { FamilyMemberFormDialog, FamilyMemberFormDialogHandle } from '@/components/family/FamilyMemberFormDialog';
 import { IdentityCardBody, RevealCardContainer } from '@/components/ui/animated-profile-card';
 import { getInitials } from '@/lib/family/initials';
-import { isSingleStatus } from '@/lib/family/maritalStatus';
-import { User, Plus, ArrowLeft, ArrowRight, Scale } from 'lucide-react';
+import { User, ArrowLeft, ArrowRight, Scale } from 'lucide-react';
 
 type EditView = 'client';
 
@@ -50,14 +49,14 @@ const FamilleSection = () => {
   ];
 
   const relationStatus = (maritalData?.statut_couple as string) || '';
-  const isSingle = isSingleStatus(relationStatus);
   const hasPartner = ['Concubinage', 'Pacsé(e)', 'Marié(e)'].includes(relationStatus);
+  const isDivorcedOrWidowed = ['Divorcé(e)', 'Veuf/Veuve'].includes(relationStatus);
 
-  const handleToggleSingle = async (checked: boolean) => {
-    if (checked) {
+  const handleStatutChange = async (statut: string) => {
+    if (statut === 'Célibataire') {
       await setStatutCouple('Célibataire', { parent_isole: false });
     } else {
-      await setStatutCouple(null);
+      await setStatutCouple(statut);
     }
   };
 
@@ -221,21 +220,32 @@ const FamilleSection = () => {
                 />
               ) : (
                 <div className="w-full sm:w-[300px] rounded-[4px] border border-[#E5E5E5] bg-white shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)] p-6 flex flex-col gap-3 justify-center">
-                  <label className="flex items-center gap-2 text-[14px] cursor-pointer" style={{ color: FOYER_INK }}>
-                    <Checkbox
-                      checked={isSingle}
-                      onCheckedChange={(checked) => handleToggleSingle(checked === true)}
-                    />
-                    Célibataire (sans partenaire)
-                  </label>
-                  {!isSingle && (
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] uppercase tracking-[0.1em]" style={{ color: FOYER_LABEL, fontFamily: "'JetBrains Mono', monospace" }}>
+                      Statut
+                    </label>
+                    <Select value={relationStatus || 'Célibataire'} onValueChange={handleStatutChange}>
+                      <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Célibataire">Célibataire</SelectItem>
+                        <SelectItem value="Concubinage">Concubinage</SelectItem>
+                        <SelectItem value="Pacsé(e)">Pacsé(e)</SelectItem>
+                        <SelectItem value="Marié(e)">Marié(e)</SelectItem>
+                        <SelectItem value="Divorcé(e)">Divorcé(e)</SelectItem>
+                        <SelectItem value="Veuf/Veuve">Veuf/Veuve</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {isDivorcedOrWidowed && (
                     <button
-                      onClick={() => navigate('/dashboard/famille/conjoint')}
-                      className={`inline-flex items-center gap-2 text-[14px] rounded-[50px] px-3 py-2 w-fit border hover:bg-black/[0.02] transition-colors duration-200 ${FOCUS_RING}`}
-                      style={{ borderColor: '#e2e0da', color: FOYER_INK }}
+                      onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
+                      className={`inline-flex items-center gap-1.5 text-[13px] font-bold uppercase tracking-wide w-fit px-2.5 py-1 hover:opacity-85 transition-opacity duration-200 group ${FOCUS_RING}`}
+                      style={{ backgroundColor: '#9bf00d', color: '#054b16' }}
                     >
-                      <Plus className="w-4 h-4" />
-                      Ajouter un partenaire
+                      <span className="underline-offset-2 decoration-2 group-hover:underline">Voir le détail</span>
+                      <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={2.5} />
                     </button>
                   )}
                 </div>

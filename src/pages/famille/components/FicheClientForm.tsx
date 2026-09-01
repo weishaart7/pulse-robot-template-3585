@@ -15,7 +15,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import NationalitySelect from '@/components/ui/nationality-select';
 import { cn } from '@/lib/utils';
-import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
+import { useFamilyProfile } from '@/hooks/useFamilyData';
 import { useSecureForm } from '@/hooks/useSecureForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -24,7 +24,6 @@ import { CheckboxWithLabel } from '@/components/family/CheckboxWithLabel';
 
 
 const formSchema = z.object({
-  statutCouple: z.enum(['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)', 'Divorcé(e)', 'Veuf/Veuve']).optional(),
   civilite: z.enum(['M.', 'Mme', 'Mlle', 'Autre'], {
     required_error: 'Veuillez sélectionner une civilité',
   }),
@@ -73,7 +72,6 @@ const professions = [
 
 export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) {
   const { data, loading, saving, saveData } = useFamilyProfile();
-  const { data: maritalData, setStatutCouple } = useMaritalStatus();
   const { user } = useAuth();
   const { toast } = useToast();
   const { submitSecureForm } = useSecureForm({ 
@@ -86,7 +84,6 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      statutCouple: undefined,
       civilite: undefined,
       nom: '',
       nomJeuneFille: '',
@@ -120,7 +117,6 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
       const rawCivilite = data.civility === 'M' ? 'M.' : data.civility;
 
       const formattedData = {
-        statutCouple: (maritalData?.statut_couple as any) || undefined,
         civilite: (rawCivilite as 'M.' | 'Mme' | 'Mlle' | 'Autre') || undefined,
         nom: data.nom ? unescapeHtml(data.nom) : '',
         nomJeuneFille: (data as any).nom_jeune_fille ? unescapeHtml((data as any).nom_jeune_fille) : '',
@@ -137,7 +133,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
       };
       form.reset(formattedData);
     }
-  }, [data, maritalData, form]);
+  }, [data, form]);
 
   const onSubmit = async (formData: FormData) => {
     try {
@@ -189,7 +185,6 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
         },
         user?.id
       );
-      await setStatutCouple(formData.statutCouple ?? null);
       toast({ title: "Succès", description: "Les informations ont été sauvegardées avec succès." });
       onSuccess?.();
     } catch (error) {
@@ -222,34 +217,6 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
             {/* Civilité card */}
             <div className="rounded-[4px] bg-white p-6 shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)]">
               <h3 className="text-[11px] font-semibold uppercase tracking-[0.11em] mb-4" style={{ color: '#616161', fontFamily: "'JetBrains Mono', monospace" }}>Identité</h3>
-
-              <FormField
-                control={form.control}
-                name="statutCouple"
-                render={({ field }) => (
-                  <FormItem className="mb-5 max-w-md">
-                    <div className="relative w-full flex flex-col gap-1">
-                      <FormLabel className="text-xs">Statut matrimonial</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
-                        <FormControl>
-                          <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
-                            <SelectValue placeholder="Choisir un statut" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Célibataire">Célibataire</SelectItem>
-                          <SelectItem value="Concubinage">Concubinage</SelectItem>
-                          <SelectItem value="Pacsé(e)">Pacsé(e)</SelectItem>
-                          <SelectItem value="Marié(e)">Marié(e)</SelectItem>
-                          <SelectItem value="Divorcé(e)">Divorcé(e)</SelectItem>
-                          <SelectItem value="Veuf/Veuve">Veuf/Veuve</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <FormField
                 control={form.control}

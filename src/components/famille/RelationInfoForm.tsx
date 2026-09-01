@@ -755,6 +755,70 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
           </div>
         )}
 
+        {/* DIVORCÉ(E) / VEUF-VEUVE — lecture seule des données de l'union dissoute, encore en
+            base (cf. "Option A" dans relationInfoPayload.ts : rien n'est effacé au changement de
+            statut) mais jusqu'ici jamais affichées pour ces deux statuts. */}
+        {(relationStatus === "Divorcé(e)" || relationStatus === "Veuf/Veuve") && (
+          <div className="rounded-md border bg-card p-6 shadow-sm">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+              {relationStatus === "Divorcé(e)" ? "Régime applicable au mariage dissous" : "Régime applicable au mariage"}
+            </h3>
+            {maritalData?.regime_matrimonial || maritalData?.date_mariage ? (
+              <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                {maritalData.regime_matrimonial && (
+                  <div>
+                    <dt className="text-muted-foreground">Régime matrimonial</dt>
+                    <dd className="font-medium">{maritalData.regime_matrimonial}</dd>
+                  </div>
+                )}
+                {maritalData.date_mariage && (
+                  <div>
+                    <dt className="text-muted-foreground">Date du mariage</dt>
+                    <dd className="font-medium">{format(new Date(maritalData.date_mariage), "dd/MM/yyyy")}</dd>
+                  </div>
+                )}
+                {maritalData.lieu_mariage && (
+                  <div>
+                    <dt className="text-muted-foreground">Lieu du mariage</dt>
+                    <dd className="font-medium">{maritalData.lieu_mariage}</dd>
+                  </div>
+                )}
+                {maritalData.donation_dernier_vivant_personne && (
+                  <div>
+                    <dt className="text-muted-foreground">Donation au dernier vivant consentie</dt>
+                    <dd className="font-medium">
+                      Oui{maritalData.date_donation_personne ? ` (${format(new Date(maritalData.date_donation_personne), "dd/MM/yyyy")})` : ''}
+                    </dd>
+                  </div>
+                )}
+                {maritalData.donation_dernier_vivant_conjoint && (
+                  <div>
+                    <dt className="text-muted-foreground">Donation au dernier vivant reçue</dt>
+                    <dd className="font-medium">
+                      Oui{maritalData.date_donation_conjoint ? ` (${format(new Date(maritalData.date_donation_conjoint), "dd/MM/yyyy")})` : ''}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            ) : maritalData?.convention_pacs ? (
+              <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                <div>
+                  <dt className="text-muted-foreground">Convention de PACS</dt>
+                  <dd className="font-medium">{maritalData.convention_pacs}</dd>
+                </div>
+                {maritalData.date_pacs && (
+                  <div>
+                    <dt className="text-muted-foreground">Date du PACS</dt>
+                    <dd className="font-medium">{format(new Date(maritalData.date_pacs), "dd/MM/yyyy")}</dd>
+                  </div>
+                )}
+              </dl>
+            ) : (
+              <p className="text-sm text-muted-foreground">Aucune information de régime enregistrée pour cette union.</p>
+            )}
+          </div>
+        )}
+
         <div className="flex justify-end">
           <Button type="submit" disabled={saving} size="lg" className="min-w-[160px]">
             {saving ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enregistrement...</>) : 'Enregistrer'}

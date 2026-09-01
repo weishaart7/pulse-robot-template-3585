@@ -29,14 +29,19 @@ matrimonial mais consommées par Transmission). La table `scenarios_regime` a é
 
 **Flux clés** :
 - **Ma famille** est un tableau de bord en lecture seule (dérivé de `family_profiles` /
-  `marital_status` / `family_links`) avec une seule case active (« Célibataire ») ; il route vers
-  les 3 autres écrans.
+  `marital_status` / `family_links`) doté d'un menu déroulant Statut (6 valeurs) toujours
+  modifiable en un clic ; pour Divorcé(e)/Veuf-Veuve il affiche le statut réel et un lien vers le
+  détail du régime passé. Il route vers les 3 autres écrans.
 - **Fiche client** et **Conjoint** saisissent l'identité civile de chaque membre du couple, dont
   une bonne partie de champs déclaratifs (adresse, nationalité…) qui restent aujourd'hui dormants
   (§3).
 - **Régime matrimonial** structure 6 onglets visibles seulement si `statut_couple === 'Marié(e)'`
   (vues distinctes pour Pacsé(e)/Concubinage) : régime légal, clauses du contrat,
-  récompenses/créances, participation aux acquêts, donation au dernier vivant, historique.
+  récompenses/créances, participation aux acquêts, donation au dernier vivant, historique. Pour
+  Divorcé(e)/Veuf-Veuve, un bloc lecture seule affiche le régime de l'union dissoute (régime
+  matrimonial, date/lieu, donation au dernier vivant) directement depuis les colonnes conservées en
+  base — aucune édition possible, cohérent avec la politique « Option A » de
+  `relationInfoPayload.ts` (rien n'est écrit ni effacé pour ces deux statuts).
 - **Liens familiaux** saisit les membres de la famille (`family_links`), qui est le socle de tout
   calcul successoral (dévolution légale, représentation, abattements DMTG) et alimente aussi les
   majorations retraite pour enfants.

@@ -1,6 +1,8 @@
 // Logique pure de lecture/écriture de marital_status.statut_couple, partagée par
-// FamilleSection.tsx, FicheClientForm.tsx et PartnerForm.tsx (3 points d'écriture
-// concurrents avant centralisation) via useMaritalStatus().setStatutCouple().
+// FamilleSection.tsx et PartnerForm.tsx (points d'écriture concurrents avant
+// centralisation ; FicheClientForm.tsx en écrivait un 3e jusqu'au retrait de son
+// champ "Statut matrimonial", devenu redondant avec le menu de FamilleSection.tsx)
+// via useMaritalStatus().setStatutCouple().
 
 export const isSingleStatus = (statutCouple?: string | null): boolean =>
   statutCouple === 'Célibataire';
