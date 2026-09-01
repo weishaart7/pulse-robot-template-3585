@@ -3,8 +3,10 @@
 > Document consolidé le 2026-08-27, fusion et mise à jour de `docs/audit/audit-famille.md`
 > (audit statique du 2026-07-29). L'audit d'origine listait 26 constats (F1-F26) sur la branche
 > `main` au commit `2835f30` ; la quasi-totalité a été corrigée depuis (voir commits
-> `0c34614`…`b6827c2`). Ce document reflète l'état du code au 2026-08-27, pas l'état de juillet.
-> Volet navigation réelle en navigateur toujours non réalisé (authentification requise).
+> `0c34614`…`b6827c2`). Mis à jour le 2026-09-01 suite à un audit fonctionnel (simplification des
+> champs et navigation) : voir §3 et §4 pour le détail des retraits. Ce document reflète l'état
+> actuel du code, pas un historique daté. Volet navigation réelle en navigateur toujours non
+> réalisé (authentification requise).
 
 ## 1. Vue d'ensemble
 
@@ -29,17 +31,24 @@ matrimonial mais consommées par Transmission). La table `scenarios_regime` a é
 
 **Flux clés** :
 - **Ma famille** est un tableau de bord en lecture seule (dérivé de `family_profiles` /
-  `marital_status` / `family_links`) avec une seule case active (« Célibataire ») ; il route vers
-  les 3 autres écrans.
+  `marital_status` / `family_links`) doté d'un menu déroulant Statut (6 valeurs) toujours
+  modifiable en un clic ; pour Divorcé(e)/Veuf-Veuve il affiche le statut réel et un lien vers le
+  détail du régime passé. Il route vers les 3 autres écrans.
 - **Fiche client** et **Conjoint** saisissent l'identité civile de chaque membre du couple, dont
   une bonne partie de champs déclaratifs (adresse, nationalité…) qui restent aujourd'hui dormants
   (§3).
 - **Régime matrimonial** structure 6 onglets visibles seulement si `statut_couple === 'Marié(e)'`
   (vues distinctes pour Pacsé(e)/Concubinage) : régime légal, clauses du contrat,
-  récompenses/créances, participation aux acquêts, donation au dernier vivant, historique.
+  récompenses/créances, participation aux acquêts, donation au dernier vivant, historique. Pour
+  Divorcé(e)/Veuf-Veuve, un bloc lecture seule affiche le régime de l'union dissoute (régime
+  matrimonial, date/lieu, donation au dernier vivant) directement depuis les colonnes conservées en
+  base — aucune édition possible, cohérent avec la politique « Option A » de
+  `relationInfoPayload.ts` (rien n'est écrit ni effacé pour ces deux statuts).
 - **Liens familiaux** saisit les membres de la famille (`family_links`), qui est le socle de tout
   calcul successoral (dévolution légale, représentation, abattements DMTG) et alimente aussi les
-  majorations retraite pour enfants.
+  majorations retraite pour enfants. Un membre peut aussi être ajouté directement depuis l'arbre
+  familial de la carte « Ma famille » (bouton « + » en génération 0 de `FamilyTreeCards.tsx`), qui
+  ouvre le même `FamilyMemberFormDialog` que l'onglet Liens familiaux — aucune logique dupliquée.
 
 ## 2. Architecture & décisions
 
@@ -121,11 +130,13 @@ soldés :
   même s'il est dans le futur), alors que le sélecteur calendrier bloque correctement
   (`SmartDateInput.tsx:85`). Affecte maintenant tous les champs date du module puisqu'ils partagent
   ce composant.
-- **`imposition_distincte` (art. 6-4a CGI) toujours dormante côté calcul.** La visibilité du champ
-  a été affinée (masqué hors séparation de biens/participation aux acquêts + résidence séparée,
-  commit `5bd803b`), mais la valeur n'est toujours lue par aucun moteur fiscal — seulement écrite
-  via `relationInfoPayload.ts`. Aucun calcul actuel n'est faussé par cette absence (rien ne la lit),
-  mais l'option reste sans effet malgré sa saisie.
+- **`imposition_distincte` (art. 6-4a CGI) retirée de l'écran, colonne conservée.** Suite à l'audit
+  fonctionnel Famille, la case a été retirée de `RelationInfoForm.tsx` (régimes Marié comme PACS) :
+  le champ n'était lu par aucun moteur fiscal (seulement écrit via `relationInfoPayload.ts`) et
+  encombrait l'écran pour une donnée sans effet. La colonne `marital_status.imposition_distincte`
+  et le champ dans le schéma zod du formulaire sont conservés — la valeur existante en base
+  continue d'être chargée et réenregistrée telle quelle (upsert partiel) — en vue d'une
+  réintroduction lors du développement du module Fiscalité.
 - **`<Select defaultValue>` non contrôlés** dans `DynamicFamilyForm.tsx` (lignes 116, 144, 172,
   242, 372, 434, 474) et `FamilyMemberFormDialog.tsx:226`. Fonctionne aujourd'hui parce que le
   `Dialog` démonte son contenu à la fermeture ; un changement de ce comportement (ex. dialog
@@ -161,20 +172,32 @@ soldés :
 
 ### Cases dormantes restantes
 
-Champs saisissables dans l'interface et toujours sans lecteur métier au 2026-08-27 :
-`family_profiles.commune_naissance`, `.pays_naissance`, `.nationalite`, `.capacite_juridique`,
-`.mandat_protection_future` (+ date), `.telephone`, `.email`, `.adresse_postale`, `.code_postal`,
-`.ville`, `.pays`, `.nom_jeune_fille` (accès uniquement via `(data as any)`, absent de l'interface
-TS `FamilyProfile`) ; les colonnes homologues `_conjoint` sur `marital_status`, ainsi que
-`marital_status.imposition_distincte` (impact fiscal réel, voir 🟠 ci-dessus) ; sur `family_links` :
-`mesure_protection_juridique`, `personne_a_charge`, `est_dirigeant`, `mandat_protection_future`
-(+ date), `adoption_simple_motif`, `civilite` (seul lecteur potentiel = composant mort
-`FamilyTreeTimeline`), `nationalite` (jamais saisie ni lue).
+Champs saisissables dans l'interface et toujours sans lecteur métier au 2026-09-01 :
+`family_profiles.nationalite` (désormais facultatif), `.capacite_juridique`,
+`.mandat_protection_future` (+ date), `.nom_jeune_fille` (accès uniquement via `(data as any)`,
+absent de l'interface TS `FamilyProfile`) ; les colonnes homologues `_conjoint` sur
+`marital_status` ; sur `family_links` : `personne_a_charge`, `est_dirigeant`, `adoption_simple_motif`,
+`civilite` (seul lecteur potentiel = composant mort `FamilyTreeTimeline`), `nationalite` (jamais
+saisie ni lue).
 
 Champs déjà soldés depuis l'audit initial (retirés de l'UI ou branchés à un moteur) :
 `ancien_combattant` (+ `_conjoint`, case retirée, commit `5122e87`), `exoneration_succession`
 (branché au moteur DMTG, `lib/dmtg/recall.ts`), la table `scenarios_regime` (UI et service
 retirés, commits `6f07b2b`/`ebcba21`).
+
+Champs retirés de l'UI de saisie par l'audit fonctionnel Famille du 2026-09-01 (colonnes
+conservées, aucune migration, valeurs existantes non affectées grâce à l'upsert partiel de
+`familyService.ts`) :
+`family_profiles.commune_naissance`, `.pays_naissance`, `.telephone`, `.email`,
+`.adresse_postale`, `.code_postal`, `.ville`, `.pays` (onglet « Coordonnées » retiré de
+`FicheClientForm.tsx`) ; les colonnes homologues `_conjoint` sur `marital_status`
+(`lieu_naissance_conjoint`, `pays_naissance_conjoint`, `telephone_conjoint`, `email_conjoint`,
+`adresse_conjoint`, `code_postal_conjoint`, `ville_conjoint`, `pays_conjoint`, retirées de
+`PartnerForm.tsx`) ; `marital_status.imposition_distincte` (+ homologue implicite PACS, retirée de
+`RelationInfoForm.tsx`, voir 🟠 ci-dessus) ; sur `family_links` : `mesure_protection_juridique`,
+`mandat_protection_future` (+ date), retirées de `DynamicFamilyForm.tsx` (ces deux derniers champs
+restent saisissables côté client/conjoint sur `family_profiles`/`marital_status`, seule la
+duplication sur les autres membres de la famille a été retirée).
 
 ## 4. Périmètre V1 / différé
 
@@ -184,14 +207,16 @@ retirés, commits `6f07b2b`/`ebcba21`).
   succession légale (renonciation, représentation, branches familiales) et aux abattements DMTG
   (handicap, adoption, exonération frère/sœur).
 - **Différé / non implémenté, sans date documentée** :
-  - La quasi-totalité des champs listés en « cases dormantes » (§3) : coordonnées, nationalité,
-    capacité juridique, mesures de protection juridique, mandat de protection future. Ces champs
-    sont dans le schéma et l'UI de saisie mais aucun moteur (fiscalité, transmission, alertes) n'a
-    encore été câblé dessus — décision implicite de saisie anticipée sans consommation, pas un choix
-    documenté de report.
-  - `imposition_distincte` (art. 6-4a CGI) : saisi et affiné en visibilité, mais le moteur IR ne le
-    consomme pas encore — c'est l'écart le plus coûteux métier de cette liste puisqu'il a un impact
-    direct sur l'impôt sur le revenu simulé.
+  - Les champs restants listés en « cases dormantes » (§3) : nationalité, capacité juridique,
+    mandat de protection future (client/conjoint uniquement, cf. retraits ci-dessus pour les autres
+    membres). Ces champs sont dans le schéma et l'UI de saisie mais aucun moteur (fiscalité,
+    transmission, alertes) n'a encore été câblé dessus — décision implicite de saisie anticipée sans
+    consommation, pas un choix documenté de report.
+  - Coordonnées (téléphone, email, adresse) et commune/pays de naissance : retirées de l'UI de
+    saisie par l'audit fonctionnel du 2026-09-01 (champs jugés non pertinents pour l'outil, jamais
+    consommés par un moteur) — colonnes conservées en base, sans plan de réintroduction documenté.
+  - `imposition_distincte` (art. 6-4a CGI) : retirée de l'écran de saisie (voir §3), en attente
+    d'être réintroduite avec le moteur IR lors du développement du module Fiscalité.
   - Volet navigation réelle en navigateur (remplissage de données de test, vérification des liens/
     boutons, cohérence écran ↔ moteur) : jamais réalisé côté audit, bloqué sur l'authentification
     Supabase — aucune régression connue mais aucune preuve visuelle non plus.
