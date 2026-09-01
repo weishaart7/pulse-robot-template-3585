@@ -121,11 +121,13 @@ soldés :
   même s'il est dans le futur), alors que le sélecteur calendrier bloque correctement
   (`SmartDateInput.tsx:85`). Affecte maintenant tous les champs date du module puisqu'ils partagent
   ce composant.
-- **`imposition_distincte` (art. 6-4a CGI) toujours dormante côté calcul.** La visibilité du champ
-  a été affinée (masqué hors séparation de biens/participation aux acquêts + résidence séparée,
-  commit `5bd803b`), mais la valeur n'est toujours lue par aucun moteur fiscal — seulement écrite
-  via `relationInfoPayload.ts`. Aucun calcul actuel n'est faussé par cette absence (rien ne la lit),
-  mais l'option reste sans effet malgré sa saisie.
+- **`imposition_distincte` (art. 6-4a CGI) retirée de l'écran, colonne conservée.** Suite à l'audit
+  fonctionnel Famille, la case a été retirée de `RelationInfoForm.tsx` (régimes Marié comme PACS) :
+  le champ n'était lu par aucun moteur fiscal (seulement écrit via `relationInfoPayload.ts`) et
+  encombrait l'écran pour une donnée sans effet. La colonne `marital_status.imposition_distincte`
+  et le champ dans le schéma zod du formulaire sont conservés — la valeur existante en base
+  continue d'être chargée et réenregistrée telle quelle (upsert partiel) — en vue d'une
+  réintroduction lors du développement du module Fiscalité.
 - **`<Select defaultValue>` non contrôlés** dans `DynamicFamilyForm.tsx` (lignes 116, 144, 172,
   242, 372, 434, 474) et `FamilyMemberFormDialog.tsx:226`. Fonctionne aujourd'hui parce que le
   `Dialog` démonte son contenu à la fermeture ; un changement de ce comportement (ex. dialog
@@ -189,9 +191,8 @@ retirés, commits `6f07b2b`/`ebcba21`).
     sont dans le schéma et l'UI de saisie mais aucun moteur (fiscalité, transmission, alertes) n'a
     encore été câblé dessus — décision implicite de saisie anticipée sans consommation, pas un choix
     documenté de report.
-  - `imposition_distincte` (art. 6-4a CGI) : saisi et affiné en visibilité, mais le moteur IR ne le
-    consomme pas encore — c'est l'écart le plus coûteux métier de cette liste puisqu'il a un impact
-    direct sur l'impôt sur le revenu simulé.
+  - `imposition_distincte` (art. 6-4a CGI) : retirée de l'écran de saisie (voir §3), en attente
+    d'être réintroduite avec le moteur IR lors du développement du module Fiscalité.
   - Volet navigation réelle en navigateur (remplissage de données de test, vérification des liens/
     boutons, cohérence écran ↔ moteur) : jamais réalisé côté audit, bloqué sur l'authentification
     Supabase — aucune régression connue mais aucune preuve visuelle non plus.

@@ -305,8 +305,6 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
   };
 
   const regimeMatrimonial = form.watch("regimeMatrimonial");
-  const conventionPacs = form.watch("conventionPacs");
-  const residenceSeparee = form.watch("residenceSeparee");
   const separationDeCorps = form.watch("separationDeCorps");
   const pasDeContrat = form.watch("pasDeContrat");
   const dateMariage = form.watch("dateMariage");
@@ -343,27 +341,6 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
   // s'appliquent dans tous les régimes matrimoniaux (art. 1479, 1543 C. civ.).
   const simplifiedRegimeType: RegimeType = toRegimeType(regimeMatrimonial);
   const hasMasseCommune = getSimplifiedRegime(simplifiedRegimeType) === 'communauté' || simplifiedRegimeType === 'separation_societe_acquets';
-
-  // Imposition distincte (art. 6, 4-a CGI) : réservée aux régimes séparation de
-  // biens / participation aux acquêts, et seulement si la résidence séparée est
-  // renseignée. Un régime communautaire ou une résidence commune l'exclut.
-  // Ne force aucune correction si la case est déjà cochée en base pour un
-  // profil qui ne remplit plus ces conditions (ex. changement de régime après
-  // coup) : le champ reste simplement grisé, sans écraser la valeur existante.
-  const impositionDistincteEligible =
-    (regimeMatrimonial === 'Séparation de biens' || regimeMatrimonial === 'Participation aux acquêts') &&
-    residenceSeparee;
-
-  // Visibilité de la case (indépendante de l'éligibilité ci-dessus) : seuls
-  // les deux régimes visés par l'art. 6, 4-a CGI l'affichent, elle est
-  // masquée pour tous les régimes de communauté.
-  const impositionDistincteVisible =
-    regimeMatrimonial === 'Séparation de biens' || regimeMatrimonial === 'Participation aux acquêts';
-
-  // Idem pour le PACS : pas d'équivalent "participation aux acquêts", donc un
-  // seul critère de régime (convention de PACS en séparation de biens).
-  const impositionDistinctePacsEligible =
-    conventionPacs === 'Régime de la séparation des biens' && residenceSeparee;
 
   const sections = relationStatus === "Marié(e)" ? [
     { id: 'informations-generales' as Section, label: 'Informations générales', icon: Heart },
@@ -497,33 +474,6 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                         </FormItem>
                       )}
                     />
-                    {impositionDistincteVisible && (
-                      <>
-                        <FormField
-                          control={form.control}
-                          name="impositionDistincte"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                  disabled={!impositionDistincteEligible}
-                                />
-                              </FormControl>
-                              <FormLabel className={cn("text-sm", !impositionDistincteEligible && "text-muted-foreground")}>
-                                Imposition distincte
-                              </FormLabel>
-                            </FormItem>
-                          )}
-                        />
-                        {!impositionDistincteEligible && (
-                          <p className="text-xs text-muted-foreground">
-                            Réservée aux régimes séparation de biens ou participation aux acquêts, avec résidence séparée (art. 6, 4-a CGI).
-                          </p>
-                        )}
-                      </>
-                    )}
                     <FormField
                       control={form.control}
                       name="separationDeCorps"
@@ -790,29 +740,6 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="impositionDistincte"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          disabled={!impositionDistinctePacsEligible}
-                        />
-                      </FormControl>
-                      <FormLabel className={cn("text-sm", !impositionDistinctePacsEligible && "text-muted-foreground")}>
-                        Imposition distincte
-                      </FormLabel>
-                    </FormItem>
-                  )}
-                />
-                {!impositionDistinctePacsEligible && (
-                  <p className="text-xs text-muted-foreground">
-                    Réservée à la convention de PACS en séparation de biens, avec résidence séparée (art. 6, 4-a CGI).
-                  </p>
-                )}
               </div>
             </div>
           </div>
