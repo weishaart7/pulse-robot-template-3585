@@ -111,3 +111,20 @@ export function estNomDeRegimeConnu(ligne: string): boolean {
   const normalisee = normaliser(ligne);
   return REGEX_MOTS_CLES.some((regex) => regex.test(normalisee));
 }
+
+/**
+ * Le régime nommé est-il l'Agirc-Arrco ? Utilisé pour isoler, dans le panier
+ * `regimes_points`, la part à laquelle s'applique la majoration familiale
+ * propre à l'Agirc-Arrco (10 % plafonnés), qui n'est PAS celle du régime
+ * général.
+ *
+ * Correspondance par mot-clé sur un libellé normalisé (majuscules, sans
+ * diacritiques), pas par égalité stricte : les libellés extraits d'un RIS
+ * sont fréquemment pollués par des identifiants techniques accolés (cf.
+ * parseRIS.ts — « DAICRISE01V03 88077569 Agirc-Arrco » observé sur un RIS
+ * réel), et la graphie varie (« Agirc-Arrco », « AGIRC ARRCO »).
+ */
+export function estRegimeAgircArrco(nom: string): boolean {
+  const normalise = normaliser(nom);
+  return normalise.includes('AGIRC-ARRCO') || normalise.includes('AGIRC ARRCO');
+}

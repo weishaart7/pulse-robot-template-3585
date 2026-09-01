@@ -4,7 +4,6 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  decoteSurTrimestresPlafond25,
   ageLegalAtteint,
   ageLegalParentaleEligible,
   surcotePourTrimestresCotises,
@@ -13,7 +12,7 @@ import {
   majorationTroisEnfants,
   DateNaissance,
 } from '@/lib/retraite/calcul';
-import { pensionBaseCNAVPL } from '@/lib/retraite/calculCNAVPL';
+import { pensionBaseCNAVPL, decoteCNAVPL } from '@/lib/retraite/calculCNAVPL';
 
 // Valeur du point CNAVPL 2026 (source : CNAVPL, cnavpl.fr) — pré-remplie
 // mais modifiable par l'utilisateur, pas codée en dur dans le calcul.
@@ -44,8 +43,17 @@ interface CarriereCNAVPLProps {
   // ageLegalParentaleEligible() pour la surcote (écarts #5/#6), même
   // principe que CarriereFonctionPublique.
   dateNaissance: DateNaissance | null;
+  // Âge à la date d'effet — nécessaire au comptage en âge de la décote
+  // (taux plein CNAVPL à 67 ans, art. L. 643-4 CSS). Passé par le parent
+  // plutôt que recalculé ici, pour que l'écran et le moteur consolidé
+  // partagent exactement la même valeur.
+  ageActuel: number | null;
   // Condition n°1 (déclarative) de la surcote parentale (référentiel §2.3.2).
   auMoinsUnTrimestreMajorationEnfant: boolean;
+  // Déclaratif : alimente la surcote CLASSIQUE de ce régime (art. L. 351-1-2
+  // CSS), auparavant structurellement nulle faute de compteur.
+  trimestresCotisesApresAgeLegal: string;
+  onTrimestresCotisesApresAgeLegalChange: (value: string) => void;
   // Nombre d'enfants éligibles à la majoration pour 3 enfants ou plus
   // (écart #7, cas courant) — calculé une fois dans Carriere.tsx.
   nombreEnfantsEligibles: number;
@@ -70,7 +78,10 @@ export const CarriereCNAVPL = ({
   trimestresCNAVPL,
   onTrimestresCNAVPLChange,
   dateNaissance,
+  ageActuel,
   auMoinsUnTrimestreMajorationEnfant,
+  trimestresCotisesApresAgeLegal,
+  onTrimestresCotisesApresAgeLegalChange,
   nombreEnfantsEligibles,
   pointsCNAVPL,
   onPointsCNAVPLChange,
@@ -88,16 +99,22 @@ export const CarriereCNAVPL = ({
   // proratisation ici : les points CNAVPL accumulés reflètent déjà la
   // carrière réelle, contrairement au régime général (SAM × durée requise).
   //
-  // ⚠️ decoteSurTrimestresPlafond25() est symétrique : au-delà de
-  // trimestresRequis, elle renvoie une valeur positive qui n'est PAS une
-  // surcote légitime — écrêtée à 0 ci-dessous. La vraie surcote (classique +
+  // ⚠️ Le comptage en trimestres est symétrique : au-delà de
+  // trimestresRequis, il renvoie une valeur positive qui n'est PAS une
+  // surcote légitime — écrêtée à 0 par decoteCNAVPL(). La vraie surcote (classique +
   // parentale, additive pour ce régime) est calculée séparément plus bas via
   // surcoteTotale(), sans étage MICO à intercaler (référentiel §5.5). Cf.
   // docs/audit/branchement-majorations-pension-finale.md §1.b.
-  const decoteSeule = Math.min(
-    decoteSurTrimestresPlafond25(trimestresCNAVPLNum + trimestresAutresRegimes, trimestresRequis),
-    0
-  );
+  // Règle du plus petit des deux comptages, partagée avec le moteur
+  // consolidé via `decoteCNAVPL()` : le taux plein CNAVPL est acquis à 67 ans
+  // quel que soit le nombre de trimestres (art. L. 643-4 CSS). Aucun calcul
+  // local ici — ne pas réintroduire de variante.
+  const decoteSeule = decoteCNAVPL({
+    trimestresCNAVPL: trimestresCNAVPLNum,
+    trimestresAutresRegimes,
+    trimestresRequis,
+    age: ageActuel,
+  });
 
   // Surcote (classique écart #5 + parentale écart #6) : assise sur la
   // pension avant décote (points × valeur, decote=0), ajoutée après la
@@ -115,17 +132,21 @@ export const CarriereCNAVPL = ({
   // année pour ce régime (trimestresCNAVPL est un total saisi à la main) —
   // branché à 0, dette technique documentée,
   // cf. docs/audit/branchement-majorations-pension-finale.md §1.c.
-  const trimestresCotisesAnneeReference = 0;
+  // Surcote CLASSIQUE : alimentée par le champ déclaratif ci-dessous.
   const surcoteClassiquePct = surcotePourTrimestresCotises(
-    trimestresCotisesAnneeReference,
+    Math.max(0, parseInt(trimestresCotisesApresAgeLegal) || 0),
     ageLegalAtteintFlag,
     dureeRequiseAtteinte
   );
+  // ⚠️ Surcote PARENTALE : période de référence DIFFÉRENTE (année civile
+  // précédant l'âge légal) — le champ déclaratif ne la renseigne PAS et ne
+  // doit pas y être réutilisé. Reste à 0, dette documentée.
+  const trimestresCotisesAnneeReferenceParentale = 0;
   const surcoteParentalePct = surcoteParentale(
     auMoinsUnTrimestreMajorationEnfant,
     ageLegalParentaleEligibleFlag,
     dureeRequiseAtteinte,
-    trimestresCotisesAnneeReference
+    trimestresCotisesAnneeReferenceParentale
   );
   // Additif pour CNAVPL (référentiel §5.4 : « mêmes règles qu'au régime
   // général »), pas d'exclusion comme la fonction publique.
@@ -192,6 +213,27 @@ export const CarriereCNAVPL = ({
                 />
                 <p className="text-xs text-muted-foreground">
                   Pré-remplie avec la valeur 2026 (0,6599 €), modifiable.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="trimestres-cotises-apres-age-legal-cnavpl" className="text-xs">
+                  Trimestres cotisés au-delà de l'âge légal
+                </Label>
+                <Input
+                  id="trimestres-cotises-apres-age-legal-cnavpl"
+                  type="number"
+                  min={0}
+                  placeholder="Ex: 8"
+                  value={trimestresCotisesApresAgeLegal}
+                  onChange={(e) => onTrimestresCotisesApresAgeLegalChange(e.target.value)}
+                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring max-w-xs"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Trimestres cotisés au-delà de l'âge légal, période de référence de la surcote
+                  classique (art. L. 351-1-2 CSS). Saisie manuelle : ce régime n'a pas de détail de
+                  carrière année par année dans cet outil, la période ne peut donc pas être
+                  reconstituée automatiquement. Non renseigné = aucune surcote classique.
                 </p>
               </div>
 

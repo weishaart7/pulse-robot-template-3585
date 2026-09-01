@@ -19,6 +19,8 @@ import { PeriodeCarriereEditDialog } from '@/components/retraite/PeriodeCarriere
 import {
   pensionComplementaireAnnuelle,
   trimestresRequisPourGeneration,
+  baremeDependDUneLoiNonVotee,
+  AVERTISSEMENT_BAREME_NON_VOTE,
 } from '@/lib/retraite/calcul';
 import { calculerPensionConsolidee, EntreePensionConsolidee } from '@/lib/retraite/pensionConsolidee';
 import { calculerProjectionRevenuFutur } from '@/lib/retraite/hypotheseRevenuFutur';
@@ -175,6 +177,10 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   // affichée via surcoteParentale()/surcoteTotale(), cf.
   // docs/audit/branchement-majorations-pension-finale.md.
   const [auMoinsUnTrimestreMajorationEnfant, setAuMoinsUnTrimestreMajorationEnfant] = useState(false);
+  // Déclaratifs : trimestres cotisés au-delà de l'âge légal, période de
+  // référence de la surcote classique — un par régime saisi à la main.
+  const [trimestresCotisesApresAgeLegalFP, setTrimestresCotisesApresAgeLegalFP] = useState<string>('');
+  const [trimestresCotisesApresAgeLegalCNAVPL, setTrimestresCotisesApresAgeLegalCNAVPL] = useState<string>('');
   // Champ déclaratif pour l'écrêtement du MICO (référentiel §3.5.5, écart
   // #10) — pensions personnelles brutes d'autres régimes non modélisés par
   // cet outil (étranger, complémentaires non saisies...), mensuel, optionnel.
@@ -289,6 +295,12 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       if (data.au_moins_un_trimestre_majoration_enfant !== undefined) {
         setAuMoinsUnTrimestreMajorationEnfant(data.au_moins_un_trimestre_majoration_enfant);
       }
+      if (data.trimestres_cotises_apres_age_legal_fp !== undefined) {
+        setTrimestresCotisesApresAgeLegalFP(String(data.trimestres_cotises_apres_age_legal_fp));
+      }
+      if (data.trimestres_cotises_apres_age_legal_cnavpl !== undefined) {
+        setTrimestresCotisesApresAgeLegalCNAVPL(String(data.trimestres_cotises_apres_age_legal_cnavpl));
+      }
       if (data.has_fonction_publique !== undefined) {
         setHasFonctionPublique(data.has_fonction_publique);
       }
@@ -370,6 +382,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             trimestres_valides: parseInt(trimestresValides) || 0,
             regimes_points: regimesPoints,
             au_moins_un_trimestre_majoration_enfant: auMoinsUnTrimestreMajorationEnfant,
+            trimestres_cotises_apres_age_legal_fp: parseInt(trimestresCotisesApresAgeLegalFP) || 0,
+            trimestres_cotises_apres_age_legal_cnavpl: parseInt(trimestresCotisesApresAgeLegalCNAVPL) || 0,
             has_fonction_publique: hasFonctionPublique,
             trimestres_liquidables_fp: parseInt(trimestresLiquidablesFP) || 0,
             has_cnavpl: hasCNAVPL,
@@ -400,6 +414,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       JSON.stringify(regimesPoints),
       JSON.stringify(detailCarriere),
       auMoinsUnTrimestreMajorationEnfant,
+      trimestresCotisesApresAgeLegalFP,
+      trimestresCotisesApresAgeLegalCNAVPL,
       hasFonctionPublique,
       trimestresLiquidablesFP,
       hasCNAVPL,
@@ -604,6 +620,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
               regimeAffiliationFP === '' ? undefined : (regimeAffiliationFP as 'SRE' | 'CNRACL'),
             moyenneAnnuelleNBI: parseFloat(moyenneAnnuelleNBI) || 0,
             trimestresLiquidablesNBI: parseFloat(trimestresLiquidablesNBI) || 0,
+            trimestresCotisesApresAgeLegal: parseInt(trimestresCotisesApresAgeLegalFP) || 0,
           }
         : null,
       cnavpl: hasCNAVPL
@@ -611,6 +628,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             trimestresCNAVPL: parseInt(trimestresCNAVPL) || 0,
             pointsCNAVPL: parseFloat(pointsCNAVPL) || 0,
             valeurPointCNAVPL: parseFloat(valeurPointCNAVPL) || 0,
+            trimestresCotisesApresAgeLegal: parseInt(trimestresCotisesApresAgeLegalCNAVPL) || 0,
           }
         : null,
     }),
@@ -624,6 +642,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       detailCarriere,
       familyLinks,
       auMoinsUnTrimestreMajorationEnfant,
+      trimestresCotisesApresAgeLegalFP,
+      trimestresCotisesApresAgeLegalCNAVPL,
       autresPensionsMensuelles,
       hasFonctionPublique,
       traitementIndiciaireBrut,
@@ -850,6 +870,15 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
           </CardDescription>
         </CardHeader>
         <CardContent className="p-5 pt-0 space-y-3">
+          {/* La date d'effet de cet onglet est le proxy « aujourd'hui » :
+              l'avertissement ne s'affichera qu'à partir de 2028, dès lors que
+              le barème appliqué reposera sur une LFSS non encore votée. */}
+          {baremeDependDUneLoiNonVotee(new Date()) && (
+            <div className="flex items-start gap-2 text-xs text-orange-600 p-2.5 border border-orange-500/20 rounded-lg bg-orange-500/10">
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>{AVERTISSEMENT_BAREME_NON_VOTE}</span>
+            </div>
+          )}
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-1.5">
               <Label className="text-xs">Pension de base brute</Label>
@@ -1156,6 +1185,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         trimestresLiquidablesNBI={trimestresLiquidablesNBI}
         onTrimestresLiquidablesNBIChange={setTrimestresLiquidablesNBI}
         dateNaissance={dateNaissanceDetail}
+        trimestresCotisesApresAgeLegal={trimestresCotisesApresAgeLegalFP}
+        onTrimestresCotisesApresAgeLegalChange={setTrimestresCotisesApresAgeLegalFP}
         auMoinsUnTrimestreMajorationEnfant={auMoinsUnTrimestreMajorationEnfant}
         nombreEnfantsEligibles={nombreEnfantsEligibles}
       />
@@ -1172,6 +1203,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         valeurPointCNAVPL={valeurPointCNAVPL}
         onValeurPointCNAVPLChange={setValeurPointCNAVPL}
         dateNaissance={dateNaissanceDetail}
+        ageActuel={ageActuel}
+        trimestresCotisesApresAgeLegal={trimestresCotisesApresAgeLegalCNAVPL}
+        onTrimestresCotisesApresAgeLegalChange={setTrimestresCotisesApresAgeLegalCNAVPL}
         auMoinsUnTrimestreMajorationEnfant={auMoinsUnTrimestreMajorationEnfant}
         nombreEnfantsEligibles={nombreEnfantsEligibles}
       />

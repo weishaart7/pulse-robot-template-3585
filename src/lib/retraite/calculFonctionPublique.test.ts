@@ -2,14 +2,15 @@ import { describe, it, expect } from 'vitest';
 import {
   pensionBaseFonctionPublique,
   decoteSurAgeFonctionPublique,
+  decoteFonctionPublique,
   tauxDecoteParTrimestreFonctionPublique,
   minimumGaranti,
   pensionFonctionPubliqueFinale,
   majorationEnfantsFonctionPublique,
   supplementNBI,
   pensionFonctionPubliqueAvecMajorationEnfants,
-  VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
-  VALEUR_REFERENCE_MIGA_MENSUELLE_2025,
+  VALEUR_REFERENCE_MIGA_ANNUELLE_2026,
+  VALEUR_REFERENCE_MIGA_MENSUELLE_2026,
 } from './calculFonctionPublique';
 import {
   tauxProratisation,
@@ -75,8 +76,17 @@ describe('minimumGaranti — barème par palier (référentiel §7.5, art. L. 17
   // directement aux exemples chiffrés du référentiel (eux-mêmes exprimés en
   // €/mois) — le reste du module (pensionBaseFonctionPublique, etc.) reste
   // en annuel, cf. describes suivants qui utilisent
-  // VALEUR_REFERENCE_MIGA_ANNUELLE_2025.
-  const VALEUR_REF = VALEUR_REFERENCE_MIGA_MENSUELLE_2025; // 1 248,33 €
+  // VALEUR_REFERENCE_MIGA_ANNUELLE_2026.
+  //
+  // ⚠️ Figée à la valeur 2025 (1 248,33 €/mois) VOLONTAIREMENT, et non
+  // branchée sur la constante de production : les exemples chiffrés du
+  // référentiel vérifiés ci-dessous (386,39 € et 1 217,12 €) sont libellés
+  // en euros 2025. Ce describe teste la FORMULE par palier contre ces
+  // exemples, pas le millésime du barème — la brancher sur le barème en
+  // vigueur ferait perdre le recoupement avec la source à chaque
+  // revalorisation. La valeur du barème en vigueur est testée séparément
+  // (cf. describe « barème 2026 » en fin de fichier).
+  const VALEUR_REF = 1248.33;
 
   describe('Moins de 15 ans, hors invalidité', () => {
     it('13 ans de services (52 trimestres), 168 trimestres requis', () => {
@@ -177,7 +187,7 @@ describe('Comparaison pension de droit commun / MIGA — le plus élevé des deu
     const taux = Math.min(trimestresLiquidables / trimestresRequis, 1);
 
     const pensionCalculee = pensionBaseFonctionPublique(traitementAnnuel, taux, 0);
-    const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2025);
+    const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2026);
     const pensionFinale = pensionFonctionPubliqueFinale(pensionCalculee, mg);
 
     expect(pensionCalculee).toBeGreaterThan(mg);
@@ -272,7 +282,7 @@ describe('Ordre d’application fonction publique, majoration enfants incluse : 
   const decote = 0; // isolé pour ce scénario, non testé ici
 
   const pensionCalculee = pensionBaseFonctionPublique(traitementAnnuel, tauxProrata, decote);
-  const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2025);
+  const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2026);
   const pensionApresMinimumGaranti = pensionFonctionPubliqueFinale(pensionCalculee, mg);
   const majorationPct = majorationEnfantsFonctionPublique(3); // 10 %
 
@@ -349,7 +359,7 @@ describe('Profil complet — fonction publique (mission : branchement des majora
     expect(decote).toBe(-25); // plafond -25 %
 
     const pensionCalculee = pensionBaseFonctionPublique(tib, taux, decote);
-    const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2025);
+    const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2026);
     const pensionApresMiga = pensionFonctionPubliqueFinale(pensionCalculee, mg);
 
     expect(pensionApresMiga).toBe(mg);
@@ -369,7 +379,7 @@ describe('Profil complet — fonction publique (mission : branchement des majora
     expect(decote).toBe(0);
 
     const pensionCalculee = pensionBaseFonctionPublique(tib, taux, decote);
-    const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2025);
+    const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2026);
     const pensionApresMiga = pensionFonctionPubliqueFinale(pensionCalculee, mg);
 
     const trimestresCotisesAnneeReference = 4;
@@ -393,7 +403,7 @@ describe('Profil complet — fonction publique (mission : branchement des majora
     const trimestresLiquidables = 180;
     const taux = tauxProratisation(trimestresLiquidables, trimestresRequis);
     const pensionCalculee = pensionBaseFonctionPublique(tib, taux, 0);
-    const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2025);
+    const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2026);
     const pensionApresMiga = pensionFonctionPubliqueFinale(pensionCalculee, mg);
 
     const surcoteTotalePct = surcoteTotale(
@@ -421,5 +431,122 @@ describe('Profil complet — fonction publique (mission : branchement des majora
       tib
     );
     expect(pensionIncorrecte).not.toBeCloseTo(pensionFinale, 6);
+  });
+});
+
+
+describe('Valeur de référence du minimum garanti — barème 2026 (SRE)', () => {
+  it('VALEUR_REFERENCE_MIGA_ANNUELLE_2026 vaut 16 396,19 €', () => {
+    expect(VALEUR_REFERENCE_MIGA_ANNUELLE_2026).toBe(16396.19);
+    // Régression : ne pas revenir au barème 2025 (1 248,33 × 12 = 14 979,96).
+    expect(VALEUR_REFERENCE_MIGA_ANNUELLE_2026).not.toBe(14979.96);
+  });
+
+  it('VALEUR_REFERENCE_MIGA_MENSUELLE_2026 vaut 1 366,35 €', () => {
+    expect(VALEUR_REFERENCE_MIGA_MENSUELLE_2026).toBe(1366.35);
+  });
+
+  it("l'annuelle est la valeur de référence : la mensuelle en est l'arrondi au centime, pas l'inverse", () => {
+    // 16 396,19 / 12 = 1 366,3491… → 1 366,35 au centime. Le produit inverse
+    // donne 16 396,20, soit 1 centime de plus : les deux constantes sont donc
+    // déclarées séparément, et seule l'annuelle sert aux calculs de pension.
+    expect(VALEUR_REFERENCE_MIGA_ANNUELLE_2026 / 12).toBeCloseTo(VALEUR_REFERENCE_MIGA_MENSUELLE_2026, 2);
+    expect(VALEUR_REFERENCE_MIGA_MENSUELLE_2026 * 12).not.toBe(VALEUR_REFERENCE_MIGA_ANNUELLE_2026);
+  });
+
+  it('le barème 2026 relève effectivement le minimum garanti servi (carrière complète → 100 % de la référence)', () => {
+    const ANNUELLE_2025 = 1248.33 * 12;
+    const mg2026 = minimumGaranti(160, 172, VALEUR_REFERENCE_MIGA_ANNUELLE_2026); // 40 ans → 100 %
+    const mg2025 = minimumGaranti(160, 172, ANNUELLE_2025);
+
+    expect(mg2026).toBeCloseTo(VALEUR_REFERENCE_MIGA_ANNUELLE_2026, 6);
+    expect(mg2026).toBeGreaterThan(mg2025);
+  });
+});
+
+
+describe('decoteFonctionPublique — règle du plus petit des deux comptages (art. L. 14 I CPCMR)', () => {
+  const base = { trimestresLiquidables: 140, trimestresAutresRegimes: 0, trimestresRequis: 172 };
+
+  it('sans âge de départ : seul le comptage en trimestres s’applique', () => {
+    expect(decoteFonctionPublique(base)).toBe(-25); // 32 manquants, plafonné
+  });
+
+  it('avec âge de départ : retient le comptage le plus favorable', () => {
+    // Âge : (64-67) × 4 = 12 trimestres × 1,25 % = -15 %, plus favorable que -25 %.
+    expect(decoteFonctionPublique({ ...base, ageDepart: 64 })).toBe(-15);
+  });
+
+  it("s'applique hors catégorie active : aucun drapeau de motif n'entre dans la signature", () => {
+    // Garde-fou de conception : la fonction ne reçoit PAS
+    // departAnticipeCategorieActive — le motif du départ ne peut donc pas
+    // restreindre la règle, par construction.
+    expect(Object.keys(base)).not.toContain('departAnticipeCategorieActive');
+    expect(decoteFonctionPublique({ ...base, ageDepart: 64 })).toBeLessThan(0);
+  });
+
+  it("âge d'annulation non renseigné : 67 ans par défaut (catégorie sédentaire)", () => {
+    expect(decoteFonctionPublique({ ...base, ageDepart: 64 })).toBe(
+      decoteFonctionPublique({ ...base, ageDepart: 64, ageAnnulationDecote: 67 })
+    );
+  });
+
+  it("âge d'annulation renseigné (catégorie active) : le comptage en âge suit cette valeur", () => {
+    // Départ à 57 ans, annulation à 62 ans → (57-62) × 4 = 20 trimestres → -25 %.
+    expect(decoteFonctionPublique({ ...base, ageDepart: 57, ageAnnulationDecote: 62 })).toBe(-25);
+  });
+
+  it('départ à l’âge d’annulation : aucune décote, quelle que soit la durée manquante', () => {
+    expect(decoteFonctionPublique({ ...base, ageDepart: 67 })).toBe(0);
+  });
+
+  it('null traité comme non renseigné (champs nullables en base), pas comme 0', () => {
+    // Number.isNaN(null) vaut false : un test naïf laisserait passer null et
+    // calculerait une décote d'âge sur un départ à 0 an (-25 %).
+    expect(decoteFonctionPublique({ ...base, ageDepart: null })).toBe(-25);
+    expect(decoteFonctionPublique({ ...base, ageDepart: 64, ageAnnulationDecote: null })).toBe(-15);
+  });
+
+  it('NaN traité comme non renseigné (champ vide du formulaire)', () => {
+    expect(decoteFonctionPublique({ ...base, ageDepart: parseFloat('') })).toBe(-25);
+  });
+
+  it('compte les trimestres tous régimes confondus, pas la seule fonction publique', () => {
+    // 140 FP + 40 autres = 180 > 172 → aucune décote sur la durée.
+    expect(decoteFonctionPublique({ ...base, trimestresAutresRegimes: 40 })).toBe(0);
+  });
+
+  it('jamais positif : la branche « surcote » de decoteSurTrimestresPlafond25 est écrêtée à 0', () => {
+    expect(decoteFonctionPublique({ ...base, trimestresAutresRegimes: 100 })).toBe(0);
+  });
+
+  it('taux par trimestre millésimé (année d’ouverture des droits) respecté', () => {
+    // 2013 → 1 %/trimestre : (64-67) × 4 × 1 % = -12 %.
+    const taux2013 = tauxDecoteParTrimestreFonctionPublique(2013);
+    expect(decoteFonctionPublique({ ...base, ageDepart: 64, tauxDecoteParTrimestre: taux2013 })).toBe(-12);
+  });
+});
+
+
+describe('decoteSurAgeFonctionPublique — arrondi au trimestre supérieur (art. R. 351-27 CSS)', () => {
+  it('64 ans 7 mois, annulation à 67 ans : 10 trimestres, pas une fraction', () => {
+    expect(decoteSurAgeFonctionPublique(64 + 7 / 12, 67)).toBe(-12.5); // 10 × 1,25 %
+  });
+
+  it('tout trimestre entamé compte pour un trimestre plein', () => {
+    // 61 ans 11 mois → 13 mois avant 63 ans → ceil(13/3) = 5 trimestres.
+    expect(decoteSurAgeFonctionPublique(61 + 11 / 12, 63)).toBe(-6.25);
+  });
+
+  it('taux millésimé appliqué au nombre de trimestres arrondi', () => {
+    // 2013 → 1 %/trimestre. 64 ans 7 mois → 10 trimestres → -10 %.
+    const taux2013 = tauxDecoteParTrimestreFonctionPublique(2013);
+    expect(decoteSurAgeFonctionPublique(64 + 7 / 12, 67, taux2013)).toBe(-10);
+  });
+
+  it('âges en années entières : valeurs inchangées (non-régression)', () => {
+    expect(decoteSurAgeFonctionPublique(62, 64)).toBe(-10);
+    expect(decoteSurAgeFonctionPublique(57, 62, 1.25)).toBe(-25);
+    expect(decoteSurAgeFonctionPublique(67, 67)).toBe(0);
   });
 });

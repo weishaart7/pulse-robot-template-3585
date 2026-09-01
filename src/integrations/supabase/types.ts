@@ -2004,15 +2004,20 @@ export type Database = {
           has_fonction_publique: boolean
           id: string
           mode_hypothese_revenu_futur: string
+          moyenne_annuelle_nbi: number | null
           personne: string
           points_cnavpl: number | null
           points_rafp: number | null
+          regime_affiliation_fp: string | null
           regimes_points: Json
           revenu_hypothese_manuel: number | null
           salaire_annuel_moyen: number | null
           traitement_indiciaire_brut: number | null
           trimestres_cnavpl: number | null
+          trimestres_cotises_apres_age_legal_cnavpl: number
+          trimestres_cotises_apres_age_legal_fp: number
           trimestres_liquidables_fp: number | null
+          trimestres_liquidables_nbi: number | null
           trimestres_requis: number | null
           trimestres_valides: number | null
           updated_at: string
@@ -2035,15 +2040,20 @@ export type Database = {
           has_fonction_publique?: boolean
           id?: string
           mode_hypothese_revenu_futur?: string
+          moyenne_annuelle_nbi?: number | null
           personne?: string
           points_cnavpl?: number | null
           points_rafp?: number | null
+          regime_affiliation_fp?: string | null
           regimes_points?: Json
           revenu_hypothese_manuel?: number | null
           salaire_annuel_moyen?: number | null
           traitement_indiciaire_brut?: number | null
           trimestres_cnavpl?: number | null
+          trimestres_cotises_apres_age_legal_cnavpl?: number
+          trimestres_cotises_apres_age_legal_fp?: number
           trimestres_liquidables_fp?: number | null
+          trimestres_liquidables_nbi?: number | null
           trimestres_requis?: number | null
           trimestres_valides?: number | null
           updated_at?: string
@@ -2066,15 +2076,20 @@ export type Database = {
           has_fonction_publique?: boolean
           id?: string
           mode_hypothese_revenu_futur?: string
+          moyenne_annuelle_nbi?: number | null
           personne?: string
           points_cnavpl?: number | null
           points_rafp?: number | null
+          regime_affiliation_fp?: string | null
           regimes_points?: Json
           revenu_hypothese_manuel?: number | null
           salaire_annuel_moyen?: number | null
           traitement_indiciaire_brut?: number | null
           trimestres_cnavpl?: number | null
+          trimestres_cotises_apres_age_legal_cnavpl?: number
+          trimestres_cotises_apres_age_legal_fp?: number
           trimestres_liquidables_fp?: number | null
+          trimestres_liquidables_nbi?: number | null
           trimestres_requis?: number | null
           trimestres_valides?: number | null
           updated_at?: string

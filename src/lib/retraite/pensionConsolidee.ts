@@ -18,11 +18,12 @@ import {
   DateNaissance,
   AgeLegalResultat,
   tauxProratisation,
-  decoteSurTrimestres,
+  decoteSurTrimestresPlafond25,
   decoteSurAge,
   decoteApplicable,
   pensionBase,
   pensionComplementaireAnnuelle,
+  majorationEnfantsAgircArrco,
   minimumContributif,
   majorationPalier2MICO,
   ecretementMICO,
@@ -31,6 +32,7 @@ import {
   dateAnniversaireLegal,
   ageLegalPourGeneration,
   surcotePourTrimestresCotises,
+  trimestresCotisesPeriodeSurcoteClassique,
   surcoteParentale,
   surcoteTotale,
   majorationTroisEnfants,
@@ -40,20 +42,23 @@ import {
   trimestresCotisesEtAssimilesDepuisCarriere,
   ResultatTrimestresCotisesEtAssimiles,
 } from './calculTrimestres';
-import { nombreEnfantsEligiblesMajorationTroisEnfants } from './enfantsEligiblesMajoration';
+import {
+  nombreEnfantsEligiblesMajorationTroisEnfants,
+  nombreEnfantsEligiblesMajorationAgircArrco,
+} from './enfantsEligiblesMajoration';
+import { estRegimeAgircArrco } from './regimesConnus';
 import {
   pensionBaseFonctionPublique,
-  decoteSurAgeFonctionPublique,
+  decoteFonctionPublique,
   tauxDecoteParTrimestreFonctionPublique,
   minimumGaranti,
   pensionFonctionPubliqueFinale,
   majorationEnfantsFonctionPublique,
   pensionFonctionPubliqueAvecMajorationEnfants,
-  VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
+  VALEUR_REFERENCE_MIGA_ANNUELLE_2026,
   supplementNBI,
 } from './calculFonctionPublique';
-import { pensionBaseCNAVPL } from './calculCNAVPL';
-import { decoteSurTrimestresPlafond25 } from './calcul';
+import { pensionBaseCNAVPL, decoteCNAVPL } from './calculCNAVPL';
 
 const VALEUR_SERVICE_POINT_RAFP_2026 = 0.05671;
 
@@ -73,12 +78,21 @@ export interface DonneesFonctionPublique {
   regimeAffiliation?: 'SRE' | 'CNRACL';
   moyenneAnnuelleNBI: number;
   trimestresLiquidablesNBI: number;
+  /**
+   * Déclaratif : trimestres cotisés au-delà de l'âge légal — période de
+   * référence de la surcote CLASSIQUE (art. L. 351-1-2 CSS). Saisi à la main
+   * car ce régime n'a pas de détail de carrière par année dans cet outil.
+   * Non renseigné => 0 (comportement historique).
+   */
+  trimestresCotisesApresAgeLegal?: number;
 }
 
 export interface DonneesCNAVPL {
   trimestresCNAVPL: number;
   pointsCNAVPL: number;
   valeurPointCNAVPL: number;
+  /** Cf. `DonneesFonctionPublique.trimestresCotisesApresAgeLegal`. */
+  trimestresCotisesApresAgeLegal?: number;
 }
 
 export interface EntreePensionConsolidee {
@@ -148,29 +162,30 @@ function calculerResultatFonctionPublique(
 ): { pensionFinale: number; rafpAnnuelle: number } {
   const tauxDecoteParTrimestre = tauxDecoteParTrimestreFonctionPublique(donnees.anneeOuvertureDroits);
   const taux = tauxProratisation(donnees.trimestresLiquidables, trimestresRequis);
-  const decoteTrimestres = Math.min(
-    decoteSurTrimestresPlafond25(donnees.trimestresLiquidables + trimestresAutresRegimes, trimestresRequis),
-    0
-  );
-
-  const decoteAgeUtilisable =
-    donnees.departAnticipeCategorieActive &&
-    donnees.ageDepartAnticipe !== undefined &&
-    !Number.isNaN(donnees.ageDepartAnticipe) &&
-    donnees.ageAnnulationDecote !== undefined &&
-    !Number.isNaN(donnees.ageAnnulationDecote);
-  const decote = decoteAgeUtilisable
-    ? decoteApplicable(
-        decoteTrimestres,
-        decoteSurAgeFonctionPublique(donnees.ageDepartAnticipe!, donnees.ageAnnulationDecote!, tauxDecoteParTrimestre)
-      )
-    : decoteTrimestres;
+  // Règle du plus petit des deux comptages (art. L. 14 I CPCMR), partagée
+  // avec l'écran via `decoteFonctionPublique()` — voir son docstring pour la
+  // règle et pour la raison de l'implémentation unique. Aucun calcul local
+  // ici : c'est ce qui garantit que l'écran et ce moteur renvoient la même
+  // décote pour un même profil.
+  //
+  // `ageDepartAnticipe` porte l'âge de départ quel que soit le motif (nom
+  // hérité de la saisie « départ anticipé catégorie active »).
+  // `departAnticipeCategorieActive` ne conditionne plus rien : ce drapeau
+  // décrit le motif du départ, il ne restreint pas le champ de la règle.
+  const decote = decoteFonctionPublique({
+    trimestresLiquidables: donnees.trimestresLiquidables,
+    trimestresAutresRegimes,
+    trimestresRequis,
+    ageDepart: donnees.ageDepartAnticipe,
+    ageAnnulationDecote: donnees.ageAnnulationDecote,
+    tauxDecoteParTrimestre,
+  });
 
   const pensionCalculee = pensionBaseFonctionPublique(donnees.traitementIndiciaireBrut, taux, decote);
   const minimumGarantiValue = minimumGaranti(
     donnees.trimestresLiquidables,
     trimestresRequis,
-    VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
+    VALEUR_REFERENCE_MIGA_ANNUELLE_2026,
     donnees.departPourInvalidite
   );
   const pensionApresMiga = pensionFonctionPubliqueFinale(pensionCalculee, minimumGarantiValue);
@@ -182,17 +197,26 @@ function calculerResultatFonctionPublique(
     ? ageLegalParentaleEligible(dateNaissance, dateEffetProxy)
     : undefined;
   const dureeRequiseAtteinte = donnees.trimestresLiquidables + trimestresAutresRegimes >= trimestresRequis;
-  const trimestresCotisesAnneeReference = 0;
+  // Surcote CLASSIQUE : alimentée par le champ déclaratif « trimestres
+  // cotisés au-delà de l'âge légal » (période de référence art. L. 351-1-2
+  // CSS). Auparavant codé en dur à 0, ce qui rendait la surcote de ce régime
+  // structurellement nulle.
   const surcoteClassiquePct = surcotePourTrimestresCotises(
-    trimestresCotisesAnneeReference,
+    Math.max(0, donnees.trimestresCotisesApresAgeLegal ?? 0),
     ageLegalAtteintFlag,
     dureeRequiseAtteinte
   );
+  // ⚠️ Surcote PARENTALE : période de référence DIFFÉRENTE (année civile
+  // précédant l'âge légal) — le champ déclaratif ci-dessus ne la renseigne
+  // PAS et ne doit pas y être réutilisé, sous peine de rétablir exactement la
+  // confusion des deux périodes corrigée pour le régime général. Reste donc à
+  // 0 pour ce régime : dette documentée dans docs/retraite.md.
+  const trimestresCotisesAnneeReferenceParentale = 0;
   const surcoteParentalePct = surcoteParentale(
     auMoinsUnTrimestreMajorationEnfant,
     ageLegalParentaleEligibleFlag,
     dureeRequiseAtteinte,
-    trimestresCotisesAnneeReference
+    trimestresCotisesAnneeReferenceParentale
   );
   const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, false);
   const surcoteMontant = pensionCalculeeAvantDecote * (surcoteTotalePct / 100);
@@ -230,13 +254,19 @@ function calculerResultatCNAVPL(
   trimestresRequis: number,
   trimestresAutresRegimes: number,
   dateNaissance: DateNaissance | null,
+  ageActuel: number | null,
   auMoinsUnTrimestreMajorationEnfant: boolean,
   nombreEnfantsEligibles: number
 ): { pensionFinale: number } {
-  const decoteSeule = Math.min(
-    decoteSurTrimestresPlafond25(donnees.trimestresCNAVPL + trimestresAutresRegimes, trimestresRequis),
-    0
-  );
+  // Règle du plus petit des deux comptages, partagée avec l'écran via
+  // `decoteCNAVPL()` : le taux plein CNAVPL est acquis à 67 ans quel que soit
+  // le nombre de trimestres (art. L. 643-4 CSS). Aucun calcul local ici.
+  const decoteSeule = decoteCNAVPL({
+    trimestresCNAVPL: donnees.trimestresCNAVPL,
+    trimestresAutresRegimes,
+    trimestresRequis,
+    age: ageActuel,
+  });
 
   const pensionAvantDecoteSurcote = pensionBaseCNAVPL(donnees.pointsCNAVPL, donnees.valeurPointCNAVPL, 0);
   const pensionApresDecote = pensionBaseCNAVPL(donnees.pointsCNAVPL, donnees.valeurPointCNAVPL, decoteSeule);
@@ -246,17 +276,26 @@ function calculerResultatCNAVPL(
     ? ageLegalParentaleEligible(dateNaissance, dateEffetProxy)
     : undefined;
   const dureeRequiseAtteinte = donnees.trimestresCNAVPL + trimestresAutresRegimes >= trimestresRequis;
-  const trimestresCotisesAnneeReference = 0;
+  // Surcote CLASSIQUE : alimentée par le champ déclaratif « trimestres
+  // cotisés au-delà de l'âge légal » (période de référence art. L. 351-1-2
+  // CSS). Auparavant codé en dur à 0, ce qui rendait la surcote de ce régime
+  // structurellement nulle.
   const surcoteClassiquePct = surcotePourTrimestresCotises(
-    trimestresCotisesAnneeReference,
+    Math.max(0, donnees.trimestresCotisesApresAgeLegal ?? 0),
     ageLegalAtteintFlag,
     dureeRequiseAtteinte
   );
+  // ⚠️ Surcote PARENTALE : période de référence DIFFÉRENTE (année civile
+  // précédant l'âge légal) — le champ déclaratif ci-dessus ne la renseigne
+  // PAS et ne doit pas y être réutilisé, sous peine de rétablir exactement la
+  // confusion des deux périodes corrigée pour le régime général. Reste donc à
+  // 0 pour ce régime : dette documentée dans docs/retraite.md.
+  const trimestresCotisesAnneeReferenceParentale = 0;
   const surcoteParentalePct = surcoteParentale(
     auMoinsUnTrimestreMajorationEnfant,
     ageLegalParentaleEligibleFlag,
     dureeRequiseAtteinte,
-    trimestresCotisesAnneeReference
+    trimestresCotisesAnneeReferenceParentale
   );
   const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true);
   const surcoteMontant = pensionAvantDecoteSurcote * (surcoteTotalePct / 100);
@@ -310,7 +349,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
     (hasFonctionPublique ? fonctionPublique!.trimestresLiquidables : 0) +
     (hasCNAVPL ? cnavpl!.trimestresCNAVPL : 0);
   const decoteTrimestresSeule = Math.min(
-    decoteSurTrimestres(trimestresValides + trimAutresRegimes, trimestresRequis),
+    decoteSurTrimestresPlafond25(trimestresValides + trimAutresRegimes, trimestresRequis),
     0
   );
   const decoteSurcote =
@@ -324,17 +363,36 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
   const ageLegalParentaleEligibleFlag = dateNaissance
     ? ageLegalParentaleEligible(dateNaissance, dateEffetProxy)
     : undefined;
-  const dureeRequiseAtteinte = trimestresValides >= trimestresRequis;
-  const anneeReferenceSurcote =
+  // Condition de durée de la surcote : appréciée TOUS RÉGIMES confondus,
+  // comme la décote trois lignes plus haut (`decoteTrimestresSeule`) et comme
+  // les branches fonction publique et CNAVPL de ce même fichier. Ne compter
+  // que le régime général privait de surcote un polypensionné dont le total
+  // atteint pourtant la durée requise.
+  const dureeRequiseAtteinte = trimestresValides + trimAutresRegimes >= trimestresRequis;
+  // ⚠️ Les deux surcotes ont des périodes de référence DIFFÉRENTES, d'où deux
+  // compteurs distincts ci-dessous — ne pas en réutiliser un pour l'autre.
+  //
+  // Classique (art. L. 351-1-2 CSS) : trimestres cotisés APRÈS l'âge légal,
+  // jusqu'à la date d'effet, 4/an au maximum et sans plafond global.
+  const trimestresCotisesSurcoteClassique = trimestresCotisesPeriodeSurcoteClassique(
+    resultatTrimestresDetailCarriere.parAnnee,
+    dateNaissance,
+    ageLegalResultat,
+    dateEffetProxy
+  );
+  // Parentale (référentiel §2.3.2) : année civile PRÉCÉDANT l'âge légal,
+  // plafonnée à 4 trimestres par `surcoteParentale()` — inchangé.
+  const anneeReferenceSurcoteParentale =
     ageLegalResultat?.stable && dateNaissance
       ? dateAnniversaireLegal(dateNaissance, ageLegalResultat.age).getUTCFullYear() - 1
       : null;
-  const trimestresCotisesAnneeReference =
-    anneeReferenceSurcote !== null
-      ? resultatTrimestresDetailCarriere.parAnnee.find((a) => a.annee === anneeReferenceSurcote)?.cotises ?? 0
+  const trimestresCotisesAnneeReferenceParentale =
+    anneeReferenceSurcoteParentale !== null
+      ? resultatTrimestresDetailCarriere.parAnnee.find((a) => a.annee === anneeReferenceSurcoteParentale)
+          ?.cotises ?? 0
       : 0;
   const surcoteClassiquePct = surcotePourTrimestresCotises(
-    trimestresCotisesAnneeReference,
+    trimestresCotisesSurcoteClassique,
     ageLegalAtteintFlag,
     dureeRequiseAtteinte
   );
@@ -342,7 +400,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
     auMoinsUnTrimestreMajorationEnfant,
     ageLegalParentaleEligibleFlag,
     dureeRequiseAtteinte,
-    trimestresCotisesAnneeReference
+    trimestresCotisesAnneeReferenceParentale
   );
   const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true);
 
@@ -375,10 +433,35 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
   const majorationEnfantsPct = majorationTroisEnfants(nombreEnfantsEligibles);
   const pensionBaseAjustee = pensionApresSurcoteRegimeGeneral * (1 + majorationEnfantsPct / 100);
 
-  const totalPensionComplementaireAnnuelle = regimesPoints.reduce((total, regime) => {
+  // Majoration familiale sur la part Agirc-Arrco du panier `regimesPoints`
+  // (10 % à partir de 3 enfants, plafonnée en euros) : elle n'était jamais
+  // appliquée, seule la pension de base était majorée.
+  //
+  // ⚠️ Compteur d'enfants DIFFÉRENT de celui du régime général ci-dessus :
+  // critère Agirc-Arrco « nés ou élevés », plus large (cf.
+  // `nombreEnfantsEligiblesMajorationAgircArrco()`), et situation appréciée à
+  // la date de départ.
+  const pensionAgircArrcoAnnuelle = regimesPoints.reduce((total, regime) => {
+    if (!estRegimeAgircArrco(regime.nom)) {
+      return total;
+    }
     const pension = pensionComplementaireAnnuelle(regime);
     return pension !== undefined ? total + pension : total;
   }, 0);
+  const nombreEnfantsEligiblesAgircArrco = nombreEnfantsEligiblesMajorationAgircArrco(
+    familyLinks,
+    dateEffetProxy
+  );
+  const majorationEnfantsAgircArrcoMontant = majorationEnfantsAgircArrco(
+    pensionAgircArrcoAnnuelle,
+    nombreEnfantsEligiblesAgircArrco
+  );
+
+  const totalPensionComplementaireAnnuelle =
+    regimesPoints.reduce((total, regime) => {
+      const pension = pensionComplementaireAnnuelle(regime);
+      return pension !== undefined ? total + pension : total;
+    }, 0) + majorationEnfantsAgircArrcoMontant;
 
   const pensionTotaleRegimeGeneral = pensionBaseAjustee + totalPensionComplementaireAnnuelle;
 
@@ -399,6 +482,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
         trimestresRequis,
         trimestresValides + (hasFonctionPublique ? fonctionPublique!.trimestresLiquidables : 0),
         dateNaissance,
+        ageActuel,
         auMoinsUnTrimestreMajorationEnfant,
         nombreEnfantsEligibles
       )

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { PeriodeCarriere } from './parseRIS';
-import { calculerSAM } from './calculSAM';
+import { calculerSAM, PASS_PAR_ANNEE } from './calculSAM';
+import { COEFFICIENT_REVALORISATION_CNAV } from './coefficientsRevalorisationCNAV';
 
 const periode = (overrides: Partial<PeriodeCarriere>): PeriodeCarriere => ({
   employeur: 'Test',
@@ -106,5 +107,52 @@ describe('calculerSAM — exclusions des meilleures années (référentiel §3.4
     // restantes (pas en réintégrant les années exclues).
     expect(resultat.anneesRetenues).toHaveLength(resultat.nombreAnneesRequis);
     expect(resultat.sam).toBeGreaterThan(0);
+  });
+});
+
+
+describe('calculerSAM — ordre plafonnement PASS puis revalorisation', () => {
+  it('plafonne une année ancienne avec le PASS de CETTE année-là, pas le revenu déjà revalorisé', () => {
+    // 1990 : PASS = 19 976,92 €, coefficient de revalorisation = 1,704.
+    // Revenu à 90 % du PASS de 1990 → SOUS le plafond de son année, donc
+    // aucun écrêtement ne doit avoir lieu.
+    const pass1990 = PASS_PAR_ANNEE[1990];
+    const coefficient1990 = COEFFICIENT_REVALORISATION_CNAV[1990];
+    const revenu1990 = pass1990 * 0.9;
+
+    const periodes: PeriodeCarriere[] = [
+      periode({ employeur: 'ANCIEN EMPLOYEUR', dateDebut: '1990-01-01', dateFin: '1990-12-31', revenu: revenu1990 }),
+    ];
+
+    const resultat = calculerSAM(periodes, 1965);
+    const annee1990 = resultat.anneesDisponibles.find((a) => a.annee === 1990);
+
+    expect(annee1990).toBeDefined();
+    // Valeur légale : min(revenu, PASS de l'année) PUIS × coefficient.
+    expect(annee1990!.revenuPlafonne).toBeCloseTo(revenu1990 * coefficient1990, 6);
+    // Non plafonné : le revenu est sous le PASS de 1990, donc la valeur
+    // retenue est exactement la valeur revalorisée.
+    expect(annee1990!.revenuPlafonne).toBeCloseTo(annee1990!.revenuRevalorise, 6);
+    // Verrou anti-régression sur l'ancien ordre (revalorisation puis
+    // plafonnement), qui écrêtait ce revenu au PASS non revalorisé de 1990 —
+    // soit environ 1,7 fois moins.
+    expect(annee1990!.revenuPlafonne).toBeGreaterThan(pass1990);
+  });
+
+  it('plafonne bien un revenu 2026 supérieur au PASS 2026 (48 060 €)', () => {
+    expect(PASS_PAR_ANNEE[2026]).toBe(48060);
+
+    const periodes: PeriodeCarriere[] = [
+      periode({ employeur: 'HAUT REVENU', dateDebut: '2026-01-01', dateFin: '2026-12-31', revenu: 60000 }),
+    ];
+
+    const resultat = calculerSAM(periodes, 1990);
+    const annee2026 = resultat.anneesDisponibles.find((a) => a.annee === 2026);
+
+    expect(annee2026).toBeDefined();
+    // Aucun coefficient de revalorisation pour 2026 (année de liquidation de
+    // la table CNAV en place) → la valeur retenue est le PASS lui-même.
+    expect(annee2026!.revenuPlafonne).toBeCloseTo(48060, 6);
+    expect(annee2026!.revenuBrut).toBe(60000);
   });
 });

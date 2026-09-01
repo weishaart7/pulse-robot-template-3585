@@ -7,9 +7,12 @@ import {
   TRIMESTRES_COTISES_SEUIL_PALIER_2,
   majorationPalier2MICO,
   ecretementMICO,
-  decoteSurTrimestres,
+  decoteSurTrimestresPlafond25,
   decoteSurAge,
   decoteApplicable,
+  baremeDependDUneLoiNonVotee,
+  FIN_PERIODE_BAREME_LFSS_2026_VOTEE,
+  AVERTISSEMENT_BAREME_NON_VOTE,
   ageLegalPourGeneration,
   trimestresRequisPourGeneration,
   jeuBaremeApplicable,
@@ -20,6 +23,7 @@ import {
   ageLegalAtteint,
   ageLegalParentaleEligible,
   surcotePourTrimestresCotises,
+  trimestresCotisesPeriodeSurcoteClassique,
   surcoteParentale,
   surcoteTotale,
   pensionBase,
@@ -216,7 +220,7 @@ describe('minimumContributif', () => {
   it('cas référentiel PDF : taux plein (192/172 trimestres, decote positive) → MiCo plafonné à 100%', () => {
     const trimestresValides = 192;
     const trimestresRequis = 172;
-    const decote = decoteSurTrimestres(trimestresValides, trimestresRequis);
+    const decote = decoteSurTrimestresPlafond25(trimestresValides, trimestresRequis);
 
     expect(decote).toBeGreaterThanOrEqual(0);
     expect(minimumContributif(trimestresValides, trimestresRequis, decote)).toBe(
@@ -224,10 +228,10 @@ describe('minimumContributif', () => {
     );
   });
 
-  it('cas réel Titouan Weishaar : 28/172 trimestres, decote -20% → non éligible, MiCo nul', () => {
+  it('cas réel Titouan Weishaar : 28/172 trimestres, decote -25% → non éligible, MiCo nul', () => {
     const trimestresValides = 28;
     const trimestresRequis = 172;
-    const decote = decoteSurTrimestres(trimestresValides, trimestresRequis);
+    const decote = decoteSurTrimestresPlafond25(trimestresValides, trimestresRequis);
 
     expect(decote).toBeLessThan(0);
     expect(minimumContributif(trimestresValides, trimestresRequis, decote)).toBe(0);
@@ -330,9 +334,9 @@ describe('ageLegalPourGeneration', () => {
   });
 });
 
-describe('Carriere.tsx — combinaison decoteSurTrimestres + decoteSurAge (écart #4, audit-retraite.md §7)', () => {
+describe('Carriere.tsx — combinaison decoteSurTrimestresPlafond25 + decoteSurAge (écart #4, audit-retraite.md §7)', () => {
   // Reproduit exactement le calcul de decoteSurcote dans Carriere.tsx après
-  // correction : decoteApplicable(decoteSurTrimestres(...), decoteSurAge(...)),
+  // correction : decoteApplicable(decoteSurTrimestresPlafond25(...), decoteSurAge(...)),
   // même logique que l'onglet Optimisation (Trimestres.tsx) — pas une
   // nouvelle implémentation. Scénario explicite demandé par la mission :
   // assuré de 67 ans ou plus, trimestres incomplets.
@@ -340,9 +344,9 @@ describe('Carriere.tsx — combinaison decoteSurTrimestres + decoteSurAge (écar
   const trimestresRequis = 172; // génération 1969+, valeur stable
   const ageActuel = 67; // âge du taux plein automatique (référentiel §2.1.4)
 
-  it("« avant correction » (bug reproduit) : decoteSurTrimestres seule, décote à tort de -20 %", () => {
-    const decoteAvantCorrection = decoteSurTrimestres(trimestresValides, trimestresRequis);
-    expect(decoteAvantCorrection).toBe(-20); // (140-172)*1.25 = -40, plafonné à -20
+  it("« avant correction » (bug reproduit) : décote sur trimestres seule, décote à tort de -25 %", () => {
+    const decoteAvantCorrection = decoteSurTrimestresPlafond25(trimestresValides, trimestresRequis);
+    expect(decoteAvantCorrection).toBe(-25); // (140-172)*1.25 = -40, plafonné à -25 (20 trimestres)
 
     // Cascade vers le MICO : minimumContributif() exclut toute pension
     // décotée (decote < 0) — l'éligibilité est donc refusée à tort.
@@ -350,12 +354,12 @@ describe('Carriere.tsx — combinaison decoteSurTrimestres + decoteSurAge (écar
   });
 
   it('« après correction » : decoteApplicable retient l’âge (0 %, taux plein automatique), pas la décote sur trimestres', () => {
-    const decoteTrimestres = decoteSurTrimestres(trimestresValides, trimestresRequis);
+    const decoteTrimestres = decoteSurTrimestresPlafond25(trimestresValides, trimestresRequis);
     const decoteAge = decoteSurAge(ageActuel);
     const decoteApresCorrection = decoteApplicable(decoteTrimestres, decoteAge);
 
     expect(decoteAge).toBe(0); // 67 ans = âge du taux plein automatique, aucune décote
-    expect(decoteApresCorrection).toBe(0); // le plus favorable des deux (max(-20, 0))
+    expect(decoteApresCorrection).toBe(0); // le plus favorable des deux (max(-25, 0))
 
     // Cascade vers le MICO : decote >= 0 → éligible, proratisé sur les
     // trimestres régime général (référentiel §3.5.1, condition 1 : « atteinte
@@ -370,7 +374,7 @@ describe('Carriere.tsx — combinaison decoteSurTrimestres + decoteSurAge (écar
 
   it('68 ans, mêmes trimestres incomplets : même résultat (l’âge du taux plein est atteint, pas seulement égalé)', () => {
     const decoteApresCorrection = decoteApplicable(
-      decoteSurTrimestres(trimestresValides, trimestresRequis),
+      decoteSurTrimestresPlafond25(trimestresValides, trimestresRequis),
       decoteSurAge(68)
     );
     expect(decoteApresCorrection).toBe(0);
@@ -378,7 +382,7 @@ describe('Carriere.tsx — combinaison decoteSurTrimestres + decoteSurAge (écar
   });
 
   it('66 ans (avant l’âge du taux plein) : toujours décoté (le plus favorable des deux reste négatif), MICO non éligible', () => {
-    const decoteTrimestres = decoteSurTrimestres(trimestresValides, trimestresRequis); // -20
+    const decoteTrimestres = decoteSurTrimestresPlafond25(trimestresValides, trimestresRequis); // -25
     const decoteAge = decoteSurAge(66); // (66-67)*4 trimestres * 1,25 % = -5, moins sévère
     const decoteApresCorrection = decoteApplicable(decoteTrimestres, decoteAge);
     expect(decoteApresCorrection).toBe(-5); // le plus favorable des deux, mais reste négatif
@@ -589,7 +593,7 @@ describe('Ordre d’application : surcote assise sur P0, ajoutée après le MICO
   const salaireAnnuelMoyen = 15000;
 
   const taux = Math.min(trimestresValides / trimestresRequis, 1);
-  const decote = decoteSurTrimestres(trimestresValides, trimestresRequis); // inchangée (mission point 4)
+  const decote = decoteSurTrimestresPlafond25(trimestresValides, trimestresRequis); // inchangée (mission point 4)
   const p0 = pensionBase(salaireAnnuelMoyen, taux, 0); // P0 = SAM × taux × prorata, AVANT décote/surcote
   const surcotePct = surcotePourTrimestresCotises(4, true, true); // 5 %
   const surcoteMontant = p0 * (surcotePct / 100);
@@ -800,7 +804,7 @@ describe('ecretementMICO — réduction du MICO au-delà du plafond global (réf
 
   it('autres pensions à 0 (défaut, champ non renseigné) : comportement identique à l\'absence du paramètre', () => {
     const avecZero = ecretementMICO(800 * 12, 100 * 12, 0, PLAFOND_GLOBAL_PENSIONS_2026);
-    expect(avecZero).toBe(100 * 12); // 800+100=900 < plafond mensuel (1410,89), aucune réduction
+    expect(avecZero).toBe(100 * 12); // 800+100=900 < plafond mensuel (1444,89), aucune réduction
   });
 });
 
@@ -809,8 +813,26 @@ describe('PLAFOND_GLOBAL_PENSIONS_2026 et MINIMUM_CONTRIBUTIF_MAJORE_2026 — va
     expect(MINIMUM_CONTRIBUTIF_MAJORE_2026).toBe(10847.16);
   });
 
-  it('PLAFOND_GLOBAL_PENSIONS_2026 vaut 16 930,68 € (1 410,89 €/mois × 12)', () => {
-    expect(PLAFOND_GLOBAL_PENSIONS_2026).toBe(16930.68);
+  it('PLAFOND_GLOBAL_PENSIONS_2026 vaut 17 338,68 € (1 444,89 €/mois × 12, revalorisation du 1er juin 2026)', () => {
+    expect(PLAFOND_GLOBAL_PENSIONS_2026).toBe(17338.68);
+    // Cohérence mensuel/annuel : la constante est bien un montant ANNUEL.
+    expect(PLAFOND_GLOBAL_PENSIONS_2026 / 12).toBeCloseTo(1444.89, 2);
+    // Régression : ne pas revenir à la valeur du 1er janvier 2026.
+    expect(PLAFOND_GLOBAL_PENSIONS_2026).not.toBe(16930.68);
+  });
+
+  it('la revalorisation du 1er juin 2026 relève effectivement le plafond (écrêtement moins sévère)', () => {
+    // Un profil dont le total de pensions tombe entre les deux plafonds :
+    // écrêté sous l'ancien, intact sous le nouveau.
+    const PLAFOND_1ER_JANVIER_2026 = 16930.68;
+    const pensionBaseHorsMico = 1300 * 12;
+    const majoration = 120 * 12; // total 1 420 €/mois : entre 1 410,89 et 1 444,89
+
+    const avecAncienPlafond = ecretementMICO(pensionBaseHorsMico, majoration, 0, PLAFOND_1ER_JANVIER_2026);
+    const avecNouveauPlafond = ecretementMICO(pensionBaseHorsMico, majoration, 0, PLAFOND_GLOBAL_PENSIONS_2026);
+
+    expect(avecAncienPlafond).toBeLessThan(majoration); // écrêté
+    expect(avecNouveauPlafond).toBe(majoration); // plus écrêté
   });
 
   it('TRIMESTRES_COTISES_SEUIL_PALIER_2 vaut 120', () => {
@@ -848,7 +870,7 @@ describe('Ordre d’application, majoration enfants incluse : base → surcote �
   const salaireAnnuelMoyen = 15000;
 
   const taux = Math.min(trimestresValides / trimestresRequis, 1);
-  const decote = decoteSurTrimestres(trimestresValides, trimestresRequis);
+  const decote = decoteSurTrimestresPlafond25(trimestresValides, trimestresRequis);
   const p0 = pensionBase(salaireAnnuelMoyen, taux, 0);
   const surcotePct = surcotePourTrimestresCotises(4, true, true); // 5 %
   const surcoteMontant = p0 * (surcotePct / 100);
@@ -885,15 +907,15 @@ describe('Profil complet — régime général (mission : branchement des majora
   const p0 = pensionBase(salaireAnnuelMoyen, taux, 0);
   const trimestresCotisesAnneeReference = 4;
 
-  it('profil avec décote (durée requise non atteinte) : ni surcote ni MICO, pension réduite de 20 %', () => {
+  it('profil avec décote (durée requise non atteinte) : ni surcote ni MICO, pension réduite de 25 %', () => {
     const trimValidesIncomplet = 150; // 22 trimestres manquants
     const tauxIncomplet = Math.min(trimValidesIncomplet / trimestresRequis, 1);
     const p0Incomplet = pensionBase(salaireAnnuelMoyen, tauxIncomplet, 0);
-    const decote = decoteSurTrimestres(trimValidesIncomplet, trimestresRequis); // -20 % (plafonné)
+    const decote = decoteSurTrimestresPlafond25(trimValidesIncomplet, trimestresRequis); // -25 % (plafonné à 20 trimestres)
     const mico = minimumContributif(trimValidesIncomplet, trimestresRequis, decote); // 0 € (decote < 0 → inéligible)
     const dureeRequiseAtteinte = trimValidesIncomplet >= trimestresRequis; // false
 
-    expect(decote).toBe(-20);
+    expect(decote).toBe(-25);
     expect(mico).toBe(0);
 
     const surcoteClassiquePct = surcotePourTrimestresCotises(0, true, dureeRequiseAtteinte);
@@ -901,7 +923,7 @@ describe('Profil complet — régime général (mission : branchement des majora
     expect(surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true)).toBe(0);
 
     const pensionFinale = Math.max(p0Incomplet * (1 + decote / 100), mico);
-    expect(pensionFinale).toBeCloseTo(p0Incomplet * 0.8, 6);
+    expect(pensionFinale).toBeCloseTo(p0Incomplet * 0.75, 6);
   });
 
   it('profil avec surcote classique ET parentale cumulées (écarts #5+#6, additif régime général)', () => {
@@ -1122,5 +1144,197 @@ describe('pensionTotaleConsolideeTousRegimes — non-régression docs/audit/audi
 
     expect(totalApresRechargement).toBe(totalAvantRechargement);
     expect(totalApresRechargement).toBeGreaterThan(pensionTotaleRegimeGeneral);
+  });
+});
+
+
+describe('Plafond de décote du régime général : -25 % (art. R. 351-27 CSS, 20 trimestres × 1,25 %)', () => {
+  const trimestresRequis = 172;
+
+  it('exactement 20 trimestres manquants : -25 %, la borne est atteinte pile', () => {
+    // 20 × 1,25 % = 25 % — le plafond légal n'écrête pas encore, il coïncide.
+    expect(decoteSurTrimestresPlafond25(trimestresRequis - 20, trimestresRequis)).toBe(-25);
+  });
+
+  it('au-delà de 20 trimestres manquants : la décote reste bloquée à -25 %, jamais -20 %', () => {
+    // Régression verrouillée : l'ancien plafond -20 % confondait le plafond
+    // en NOMBRE de trimestres (20, art. R. 351-27 CSS) avec un plafond en
+    // POURCENTAGE, et minorait la décote de 5 points pour tous ces profils.
+    for (const manquants of [21, 32, 40, 144]) {
+      const decote = decoteSurTrimestresPlafond25(trimestresRequis - manquants, trimestresRequis);
+      expect(decote).toBe(-25);
+      expect(decote).not.toBe(-20);
+    }
+  });
+
+  it('19 trimestres manquants : -23,75 %, non plafonné (le plafond ne mord pas avant 20)', () => {
+    expect(decoteSurTrimestresPlafond25(trimestresRequis - 19, trimestresRequis)).toBe(-23.75);
+  });
+
+  it('decoteApplicable ne masque plus le -25 % : départ anticipé ET trimestres très incomplets', () => {
+    // Le point sensible de la bascule. decoteApplicable() retient le moins
+    // sévère des deux comptages ; tant que decoteSurAge() plafonnait à -20 %,
+    // il écrêtait le résultat commun à -20 % alors que les DEUX comptages
+    // dépassaient 20 trimestres manquants — la décote légale est bien -25 %.
+    const decoteTrimestres = decoteSurTrimestresPlafond25(140, trimestresRequis); // 32 manquants
+    const decoteAge = decoteSurAge(62); // (62-67) × 4 = 20 trimestres d'écart
+
+    expect(decoteTrimestres).toBe(-25);
+    expect(decoteAge).toBe(-25);
+    expect(decoteApplicable(decoteTrimestres, decoteAge)).toBe(-25);
+  });
+
+  it('decoteApplicable reste inchangé quand le comptage sur l’âge est le plus favorable', () => {
+    // Non-régression de la règle du plus favorable : elle doit continuer de
+    // faire gagner l'assuré, la bascule de plafond ne la durcit pas.
+    expect(decoteApplicable(decoteSurTrimestresPlafond25(140, trimestresRequis), decoteSurAge(67))).toBe(0);
+    expect(decoteApplicable(decoteSurTrimestresPlafond25(140, trimestresRequis), decoteSurAge(66))).toBe(-5);
+  });
+
+  it('cascade métier : 20 trimestres manquants → pension amputée de 25 %, MiCo refusé', () => {
+    const trimestresValides = trimestresRequis - 20;
+    const decote = decoteSurTrimestresPlafond25(trimestresValides, trimestresRequis);
+    const p0 = pensionBase(30000, tauxProratisation(trimestresValides, trimestresRequis), 0);
+
+    expect(p0 * (1 + decote / 100)).toBeCloseTo(p0 * 0.75, 6);
+    // Toute décote exclut le MiCo (condition de taux plein), inchangé.
+    expect(minimumContributif(trimestresValides, trimestresRequis, decote)).toBe(0);
+  });
+});
+
+
+describe('trimestresCotisesPeriodeSurcoteClassique — période propre à la surcote classique (art. L. 351-1-2 CSS)', () => {
+  // Génération 1961 (mois 3) : âge légal 62 ans, atteint le 1er mars 2023 →
+  // la période de référence s'ouvre en 2024.
+  const dateNaissance = { annee: 1961, mois: 3 };
+  const ageLegal = ageLegalPourGeneration(dateNaissance, new Date('2026-09-01T00:00:00Z'));
+  const dateEffet = new Date('2026-09-01T00:00:00Z');
+  const an = (annee: number, cotises: number) => ({ annee, cotises });
+
+  it('somme les trimestres cotisés des années suivant l’âge légal jusqu’à la date d’effet', () => {
+    const parAnnee = [an(2024, 4), an(2025, 4), an(2026, 4)];
+    expect(trimestresCotisesPeriodeSurcoteClassique(parAnnee, dateNaissance, ageLegal, dateEffet)).toBe(12);
+  });
+
+  it('exclut l’année de l’âge légal elle-même et toutes les années antérieures', () => {
+    const parAnnee = [an(2021, 4), an(2022, 4), an(2023, 4), an(2024, 4)];
+    // Seule 2024 compte : 2023 est l'année de l'âge légal, exclue en entier.
+    expect(trimestresCotisesPeriodeSurcoteClassique(parAnnee, dateNaissance, ageLegal, dateEffet)).toBe(4);
+  });
+
+  it('écrête chaque année à 4 trimestres', () => {
+    const parAnnee = [an(2024, 7), an(2025, 4)];
+    expect(trimestresCotisesPeriodeSurcoteClassique(parAnnee, dateNaissance, ageLegal, dateEffet)).toBe(8);
+  });
+
+  it('aucun plafond global : la surcote classique n’est pas bornée à 4 trimestres', () => {
+    const parAnnee = [an(2024, 4), an(2025, 4), an(2026, 4)];
+    const total = trimestresCotisesPeriodeSurcoteClassique(parAnnee, dateNaissance, ageLegal, dateEffet);
+    expect(total).toBeGreaterThan(4);
+    // C'est la différence de fond avec la surcote parentale, elle plafonnée à 4.
+    expect(surcoteParentale(true, true, true, total)).toBe(5); // 4 × 1,25 %
+    expect(surcotePourTrimestresCotises(total, true, true)).toBe(15); // 12 × 1,25 %
+  });
+
+  it('ignore les années postérieures à la date d’effet', () => {
+    const parAnnee = [an(2024, 4), an(2027, 4), an(2030, 4)];
+    expect(trimestresCotisesPeriodeSurcoteClassique(parAnnee, dateNaissance, ageLegal, dateEffet)).toBe(4);
+  });
+
+  it('date d’effet plus tardive : la période s’étend (scénario de l’onglet Optimisation)', () => {
+    const parAnnee = [an(2024, 4), an(2025, 4), an(2026, 4), an(2027, 4)];
+    const effet2027 = new Date('2027-06-01T00:00:00Z');
+    expect(trimestresCotisesPeriodeSurcoteClassique(parAnnee, dateNaissance, ageLegal, effet2027)).toBe(16);
+  });
+
+  it('date de naissance inconnue ou barème non déterminé : 0, jamais une surcote fabriquée', () => {
+    const parAnnee = [an(2024, 4), an(2025, 4)];
+    expect(trimestresCotisesPeriodeSurcoteClassique(parAnnee, null, ageLegal, dateEffet)).toBe(0);
+    expect(trimestresCotisesPeriodeSurcoteClassique(parAnnee, dateNaissance, null, dateEffet)).toBe(0);
+    expect(
+      trimestresCotisesPeriodeSurcoteClassique(
+        parAnnee,
+        dateNaissance,
+        { stable: false, raison: 'hors barème détaillé' },
+        dateEffet
+      )
+    ).toBe(0);
+  });
+
+  it('carrière vide : 0', () => {
+    expect(trimestresCotisesPeriodeSurcoteClassique([], dateNaissance, ageLegal, dateEffet)).toBe(0);
+  });
+});
+
+
+describe('Décote sur l’âge — arrondi au trimestre supérieur (art. R. 351-27 CSS)', () => {
+  it('64 ans 7 mois : 10 trimestres de décote, pas une fraction', () => {
+    // 29 mois jusqu'à 67 ans → ceil(29 / 3) = 10 trimestres entiers.
+    // L'ancien calcul (67 - 64,5833) × 4 donnait 9,667 trimestres, soit une
+    // décote au centime près sur une fraction de trimestre.
+    const ageDepart = 64 + 7 / 12;
+    expect(decoteSurAge(ageDepart)).toBe(-12.5); // 10 × 1,25 %
+    expect(decoteSurAge(ageDepart)).not.toBeCloseTo(-9.6667 * 1.25, 4);
+  });
+
+  it('tout trimestre entamé compte pour un trimestre plein', () => {
+    // 66 ans pile → 12 mois → 4 trimestres → -5 %.
+    expect(decoteSurAge(66)).toBe(-5);
+    // 65 ans 11 mois → 13 mois → ceil(13/3) = 5 trimestres → -6,25 %.
+    expect(decoteSurAge(65 + 11 / 12)).toBe(-6.25);
+    // 65 ans 9 mois → 15 mois → 5 trimestres pile, pas d'arrondi.
+    expect(decoteSurAge(65 + 9 / 12)).toBe(-6.25);
+    // 65 ans 8 mois → 16 mois → ceil(16/3) = 6 trimestres → -7,5 %.
+    expect(decoteSurAge(65 + 8 / 12)).toBe(-7.5);
+  });
+
+  it('âges en années entières : valeurs inchangées (non-régression)', () => {
+    expect(decoteSurAge(67)).toBe(0);
+    expect(decoteSurAge(66)).toBe(-5);
+    expect(decoteSurAge(65)).toBe(-10);
+    expect(decoteSurAge(64)).toBe(-15);
+    expect(decoteSurAge(63)).toBe(-20);
+    expect(decoteSurAge(62)).toBe(-25);
+    expect(decoteSurAge(60)).toBe(-25); // plafond
+  });
+
+  it('le résultat est toujours un multiple de 1,25 %', () => {
+    for (const mois of [1, 2, 5, 7, 11, 13, 19, 23]) {
+      const decote = decoteSurAge(67 - mois / 12);
+      expect(Number.isInteger(Math.round((decote / 1.25) * 1e6) / 1e6)).toBe(true);
+    }
+  });
+
+  it('le plafond de -25 % reste appliqué après arrondi', () => {
+    expect(decoteSurAge(61 + 1 / 12)).toBe(-25);
+  });
+});
+
+describe('Barème LFSS 2026 prolongé au-delà de 2027 — avertissement', () => {
+  it('borne fixée au 31 décembre 2027', () => {
+    expect(FIN_PERIODE_BAREME_LFSS_2026_VOTEE).toBe(Date.UTC(2027, 11, 31));
+  });
+
+  it('date d’effet dans la période votée : aucun avertissement', () => {
+    expect(baremeDependDUneLoiNonVotee(new Date('2026-09-01T00:00:00Z'))).toBe(false);
+    expect(baremeDependDUneLoiNonVotee(new Date('2027-06-15T00:00:00Z'))).toBe(false);
+    expect(baremeDependDUneLoiNonVotee(new Date('2027-12-31T00:00:00Z'))).toBe(false);
+  });
+
+  it('date d’effet au-delà : avertissement', () => {
+    expect(baremeDependDUneLoiNonVotee(new Date('2028-01-01T00:00:00Z'))).toBe(true);
+    expect(baremeDependDUneLoiNonVotee(new Date('2035-01-01T00:00:00Z'))).toBe(true);
+  });
+
+  it('n’altère pas le barème appliqué : seul l’affichage change', () => {
+    // Garde-fou : la borne ne doit jamais devenir une bascule de calcul.
+    expect(jeuBaremeApplicable(new Date('2027-12-31T00:00:00Z'))).toBe('lfss_2026');
+    expect(jeuBaremeApplicable(new Date('2028-01-01T00:00:00Z'))).toBe('lfss_2026');
+    expect(jeuBaremeApplicable(new Date('2040-01-01T00:00:00Z'))).toBe('lfss_2026');
+  });
+
+  it('message centralisé, non vide, mentionnant la date charnière', () => {
+    expect(AVERTISSEMENT_BAREME_NON_VOTE).toContain('31 décembre 2027');
+    expect(AVERTISSEMENT_BAREME_NON_VOTE.length).toBeGreaterThan(0);
   });
 });

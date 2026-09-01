@@ -101,6 +101,7 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
           departAnticipeCategorieActive: data.depart_anticipe_categorie_active ?? false,
           ageDepartAnticipe: data.age_depart_anticipe,
           ageAnnulationDecote: data.age_annulation_decote,
+          trimestresCotisesApresAgeLegal: data.trimestres_cotises_apres_age_legal_fp ?? 0,
           departPourInvalidite: data.depart_pour_invalidite ?? false,
           anneeOuvertureDroits: data.annee_ouverture_droits,
           regimeAffiliation: data.regime_affiliation_fp,
@@ -113,6 +114,7 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
           trimestresCNAVPL: data.trimestres_cnavpl ?? 0,
           pointsCNAVPL: data.points_cnavpl ?? 0,
           valeurPointCNAVPL: data.valeur_point_cnavpl ?? 0,
+          trimestresCotisesApresAgeLegal: data.trimestres_cotises_apres_age_legal_cnavpl ?? 0,
         }
       : null,
   });

@@ -12,8 +12,6 @@ import {
 } from '@/components/ui/select';
 import {
   tauxProratisation,
-  decoteApplicable,
-  decoteSurTrimestresPlafond25,
   pensionComplementaireAnnuelle,
   ageLegalAtteint,
   ageLegalParentaleEligible,
@@ -24,13 +22,14 @@ import {
 } from '@/lib/retraite/calcul';
 import {
   pensionBaseFonctionPublique,
-  decoteSurAgeFonctionPublique,
+  decoteFonctionPublique,
   tauxDecoteParTrimestreFonctionPublique,
   minimumGaranti,
   pensionFonctionPubliqueFinale,
   majorationEnfantsFonctionPublique,
   pensionFonctionPubliqueAvecMajorationEnfants,
-  VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
+  VALEUR_REFERENCE_MIGA_ANNUELLE_2026,
+  VALEUR_REFERENCE_MIGA_MENSUELLE_2026,
   supplementNBI,
 } from '@/lib/retraite/calculFonctionPublique';
 
@@ -106,6 +105,10 @@ interface CarriereFonctionPubliqueProps {
   // écart #6) — état du parent (case à cocher unique par client, pas propre
   // à un régime).
   auMoinsUnTrimestreMajorationEnfant: boolean;
+  // Déclaratif : alimente la surcote CLASSIQUE de ce régime (art. L. 351-1-2
+  // CSS), auparavant structurellement nulle faute de compteur.
+  trimestresCotisesApresAgeLegal: string;
+  onTrimestresCotisesApresAgeLegalChange: (value: string) => void;
   // Nombre d'enfants éligibles à la majoration pour 3 enfants ou plus
   // (écart #7, cas courant) — calculé une fois dans Carriere.tsx à partir de
   // family_links, partagé entre les régimes (même enfants, chaque régime
@@ -147,6 +150,8 @@ export const CarriereFonctionPublique = ({
   onTrimestresLiquidablesNBIChange,
   dateNaissance,
   auMoinsUnTrimestreMajorationEnfant,
+  trimestresCotisesApresAgeLegal,
+  onTrimestresCotisesApresAgeLegalChange,
   nombreEnfantsEligibles,
   onResultChange,
 }: CarriereFonctionPubliqueProps) => {
@@ -164,42 +169,30 @@ export const CarriereFonctionPublique = ({
   const tauxDecoteParTrimestre = tauxDecoteParTrimestreFonctionPublique(anneeOuvertureDroitsNum);
 
   const taux = tauxProratisation(trimestresLiquidablesNum, trimestresRequis);
-  // Décote basée sur le total de trimestres tous régimes confondus
-  // (fonction publique + autres régimes saisis), avec le plafond propre à la
-  // fonction publique (-25 %).
+  // Règle du plus petit des deux comptages (art. L. 14 I CPCMR), partagée
+  // avec le moteur consolidé via `decoteFonctionPublique()` — voir son
+  // docstring pour la règle et pour la raison de l'implémentation unique.
+  // Aucun calcul local ici : c'est ce qui garantit que cet écran et
+  // `calculerPensionConsolidee()` affichent la même décote pour un même
+  // profil. Ne pas réintroduire de variante locale.
   //
-  // ⚠️ decoteSurTrimestresPlafond25() est symétrique : au-delà de
-  // trimestresRequis, elle renvoie une valeur positive qui n'est PAS une
-  // surcote légitime (aucune porte d'éligibilité, aucun plafond à 5 % pour
-  // la parentale) — écrêtée à 0 ci-dessous. La vraie surcote (classique +
-  // parentale, exclusive pour ce régime) est calculée séparément plus bas
-  // via surcoteTotale(). Cf. docs/audit/branchement-majorations-pension-finale.md
-  // §1.b.
-  const decoteTrimestres = Math.min(
-    decoteSurTrimestresPlafond25(trimestresLiquidablesNum + trimestresAutresRegimes, trimestresRequis),
-    0
-  );
-
-  // La décote basée sur l'âge n'est prise en compte que si un départ
-  // anticipé catégorie active est explicitement saisi (âge de départ +
-  // âge d'annulation de la décote) : sans ces deux âges, il n'y a pas de
-  // notion de "départ" dans cette section (même principe que le régime
-  // général dans Carriere.tsx, qui n'applique decoteSurAge que dans la
-  // simulation d'âge de l'onglet Optimisation, pas ici).
-  const decoteAgeUtilisable =
-    departAnticipeCategorieActive && !Number.isNaN(ageDepartAnticipeNum) && !Number.isNaN(ageAnnulationDecoteNum);
-  const decote = decoteAgeUtilisable
-    ? decoteApplicable(
-        decoteTrimestres,
-        decoteSurAgeFonctionPublique(ageDepartAnticipeNum, ageAnnulationDecoteNum, tauxDecoteParTrimestre)
-      )
-    : decoteTrimestres;
+  // La case « Départ anticipé catégorie active » ne conditionne PLUS ce
+  // calcul : elle ne décrit que le motif du départ. Un agent sédentaire qui
+  // saisit un âge de départ bénéficie de la règle au même titre.
+  const decote = decoteFonctionPublique({
+    trimestresLiquidables: trimestresLiquidablesNum,
+    trimestresAutresRegimes,
+    trimestresRequis,
+    ageDepart: ageDepartAnticipeNum,
+    ageAnnulationDecote: ageAnnulationDecoteNum,
+    tauxDecoteParTrimestre,
+  });
 
   const pensionCalculee = pensionBaseFonctionPublique(tib, taux, decote);
   const minimumGarantiValue = minimumGaranti(
     trimestresLiquidablesNum,
     trimestresRequis,
-    VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
+    VALEUR_REFERENCE_MIGA_ANNUELLE_2026,
     departPourInvalidite
   );
   const pensionApresMiga = pensionFonctionPubliqueFinale(pensionCalculee, minimumGarantiValue);
@@ -222,17 +215,21 @@ export const CarriereFonctionPublique = ({
   // fabriquée — la porte d'éligibilité reste correctement évaluée, seul le
   // montant reste nul faute de donnée. Dette technique documentée,
   // cf. docs/audit/branchement-majorations-pension-finale.md §1.c.
-  const trimestresCotisesAnneeReference = 0;
+  // Surcote CLASSIQUE : alimentée par le champ déclaratif ci-dessous.
   const surcoteClassiquePct = surcotePourTrimestresCotises(
-    trimestresCotisesAnneeReference,
+    Math.max(0, parseInt(trimestresCotisesApresAgeLegal) || 0),
     ageLegalAtteintFlag,
     dureeRequiseAtteinte
   );
+  // ⚠️ Surcote PARENTALE : période de référence DIFFÉRENTE (année civile
+  // précédant l'âge légal) — le champ déclaratif ne la renseigne PAS et ne
+  // doit pas y être réutilisé. Reste à 0, dette documentée.
+  const trimestresCotisesAnneeReferenceParentale = 0;
   const surcoteParentalePct = surcoteParentale(
     auMoinsUnTrimestreMajorationEnfant,
     ageLegalParentaleEligibleFlag,
     dureeRequiseAtteinte,
-    trimestresCotisesAnneeReference
+    trimestresCotisesAnneeReferenceParentale
   );
   // Exclusif pour la fonction publique (référentiel §7.4, §12.3) : la plus
   // élevée des deux est retenue, pas leur somme — interprétation signalée
@@ -457,6 +454,24 @@ export const CarriereFonctionPublique = ({
                 </p>
               </div>
 
+              <div className="space-y-1.5">
+                <Label htmlFor="trimestres-cotises-apres-age-legal-fp" className="text-xs">
+                  Trimestres cotisés au-delà de l'âge légal
+                </Label>
+                <Input
+                  id="trimestres-cotises-apres-age-legal-fp"
+                  type="number"
+                  min={0}
+                  placeholder="Ex: 8"
+                  value={trimestresCotisesApresAgeLegal}
+                  onChange={(e) => onTrimestresCotisesApresAgeLegalChange(e.target.value)}
+                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring max-w-xs"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Trimestres cotisés au-delà de l'âge légal, période de référence de la surcote classique (art. L. 351-1-2 CSS). Saisie manuelle : ce régime n'a pas de détail de carrière année par année dans cet outil, la période ne peut donc pas être reconstituée automatiquement. Non renseigné = aucune surcote classique.
+                </p>
+              </div>
+
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="depart-anticipe-categorie-active"
@@ -467,38 +482,52 @@ export const CarriereFonctionPublique = ({
                   Départ anticipé catégorie active
                 </label>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Champ déclaratif : décrit le motif du départ et adapte les repères de saisie
+                ci-dessous. N'entre pas dans le calcul de la décote, qui s'appuie sur les deux
+                âges saisis.
+              </p>
 
-              {departAnticipeCategorieActive && (
-                <div className="grid gap-3 md:grid-cols-2 pl-6">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="age-depart-anticipe" className="text-xs">Âge de départ anticipé</Label>
-                    <Input
-                      id="age-depart-anticipe"
-                      type="number"
-                      placeholder="Ex: 57"
-                      value={ageDepartAnticipe}
-                      onChange={(e) => onAgeDepartAnticipeChange(e.target.value)}
-                      className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="age-annulation-decote" className="text-xs">Âge d'annulation de la décote</Label>
-                    <Input
-                      id="age-annulation-decote"
-                      type="number"
-                      placeholder="Ex: 62"
-                      value={ageAnnulationDecote}
-                      onChange={(e) => onAgeAnnulationDecoteChange(e.target.value)}
-                      className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground md:col-span-2">
-                    Saisie manuelle assumée : ces âges dépendent du corps précis de l'agent
-                    (catégorie active), à vérifier auprès de la CNRACL ou du SRE. Aucune table de
-                    corps n'est encodée dans cet outil.
-                  </p>
+              {/* Ces deux âges sont désormais saisissables pour TOUT agent, pas
+                  seulement en catégorie active : la règle du plus petit des deux
+                  comptages (art. L. 14 I CPCMR) s'applique à tout fonctionnaire.
+                  Les conditionner à la case ci-dessus empêchait un sédentaire de
+                  renseigner un âge de départ, donc d'en bénéficier. */}
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="age-depart-anticipe" className="text-xs">Âge de départ</Label>
+                  <Input
+                    id="age-depart-anticipe"
+                    type="number"
+                    placeholder={departAnticipeCategorieActive ? 'Ex: 57' : 'Ex: 64'}
+                    value={ageDepartAnticipe}
+                    onChange={(e) => onAgeDepartAnticipeChange(e.target.value)}
+                    className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                  />
                 </div>
-              )}
+                <div className="space-y-1.5">
+                  <Label htmlFor="age-annulation-decote" className="text-xs">Âge d'annulation de la décote</Label>
+                  <Input
+                    id="age-annulation-decote"
+                    type="number"
+                    placeholder={departAnticipeCategorieActive ? 'Ex: 62' : '67 par défaut'}
+                    value={ageAnnulationDecote}
+                    onChange={(e) => onAgeAnnulationDecoteChange(e.target.value)}
+                    className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground md:col-span-2">
+                  Renseigner l'âge de départ active la règle du plus petit des deux comptages
+                  (durée d'assurance / âge) : la décote retenue est la plus favorable des deux.
+                  Sans âge de départ, seule la durée d'assurance est prise en compte.
+                </p>
+                <p className="text-xs text-muted-foreground md:col-span-2">
+                  Âge d'annulation de la décote non renseigné = 67 ans (catégorie sédentaire).
+                  {departAnticipeCategorieActive
+                    ? " En catégorie active, cet âge dépend du corps précis de l'agent (62 ans, 57 ans en super-active) : saisie manuelle assumée, à vérifier auprès de la CNRACL ou du SRE. Aucune table de corps n'est encodée dans cet outil."
+                    : ''}
+                </p>
+              </div>
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
@@ -512,9 +541,8 @@ export const CarriereFonctionPublique = ({
                   {formatEuro2(minimumGarantiValue)} / an
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Minimum garanti calculé sur la valeur de référence 2025 (1 248,33 €/mois,
-                  indice majoré 227) — la valeur 2026 n'est pas encore confirmée par une source
-                  opposable.
+                  Minimum garanti calculé sur la valeur de référence 2026 (
+                  {formatEuro2(VALEUR_REFERENCE_MIGA_MENSUELLE_2026)}/mois, indice majoré 227).
                 </p>
                 {surcoteTotalePct > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">

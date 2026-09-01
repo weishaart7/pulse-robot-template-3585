@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -16,7 +17,7 @@ import {
   ageLegalParentaleEligible,
   dateAnniversaireLegal,
   tauxProratisation,
-  decoteSurTrimestres,
+  decoteSurTrimestresPlafond25,
   decoteSurAge,
   decoteApplicable,
   pensionBase,
@@ -25,8 +26,11 @@ import {
   pointMort,
   dateNaissanceDepuisISO,
   dateEffetSimuleeParAge,
+  baremeDependDUneLoiNonVotee,
+  AVERTISSEMENT_BAREME_NON_VOTE,
   dateDepuisISO,
   surcotePourTrimestresCotises,
+  trimestresCotisesPeriodeSurcoteClassique,
   surcoteParentale,
   surcoteTotale,
   OptionRachat,
@@ -213,7 +217,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   // l'ancien paramètre `age` ne pilote plus rien, il est dérivé de la date
   // via `computeAge()` uniquement pour l'affichage et pour les besoins
   // internes qui restent exprimés en âge (projection des trimestres,
-  // decoteSurAge — non concernée par la bascule de barème, cf.
+  // decoteSurAge — non concernée par la bascule de date d'effet, cf.
   // docs/audit/implementation-date-effet-moteur.md, point d'entrée #4).
   const simulerPourDateEffet = (dateEffet: Date) => {
     const ageAffiche = computeAge(dateNaissance, dateEffet) ?? ageActuelConfirme;
@@ -225,7 +229,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     // cf. docs/audit/audit-retraite.md §7, écart #2/#3.
     const ageLegal = ageLegalPourGeneration(dateNaissanceConfirmee, dateEffet);
     const taux = tauxProratisation(trimestresValidesProjetes, trimestresRequis);
-    // decoteSurTrimestres() est symétrique : au-delà de trimestresRequis, sa
+    // decoteSurTrimestresPlafond25() est symétrique : au-delà de trimestresRequis, sa
     // branche positive (sans plafond ni porte d'éligibilité) n'est pas une
     // surcote légitime (référentiel §2.3.1/§2.3.2) — écrêtée à 0 ci-dessous,
     // même correctif que Carriere.tsx (cf.
@@ -233,7 +237,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     // docs/audit/branchement-surcote-optimisation.md §2).
     const decote = Math.min(
       decoteApplicable(
-        decoteSurTrimestres(trimestresValidesProjetes, trimestresRequis),
+        decoteSurTrimestresPlafond25(trimestresValidesProjetes, trimestresRequis),
         decoteSurAge(ageAffiche)
       ),
       0
@@ -247,17 +251,32 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     const ageLegalAtteintFlag = ageLegalAtteint(dateNaissanceConfirmee, dateEffet);
     const ageLegalParentaleEligibleFlag = ageLegalParentaleEligible(dateNaissanceConfirmee, dateEffet);
     const dureeRequiseAtteinte = trimestresValidesProjetes >= trimestresRequis;
-    const anneeReferenceSurcote =
+    // ⚠️ Les deux surcotes ont des périodes de référence DIFFÉRENTES, d'où
+    // deux compteurs distincts — ne pas en réutiliser un pour l'autre.
+    //
+    // Classique (art. L. 351-1-2 CSS) : trimestres cotisés APRÈS l'âge légal
+    // jusqu'à la date d'effet — ici la date d'effet SIMULÉE du scénario, pas
+    // « aujourd'hui » : prolonger l'activité étend donc la période et
+    // augmente la surcote, ce que cet onglet a précisément vocation à montrer.
+    const trimestresCotisesSurcoteClassique = trimestresCotisesPeriodeSurcoteClassique(
+      resultatTrimestresDetailCarriere.parAnnee,
+      dateNaissanceConfirmee,
+      ageLegal,
+      dateEffet
+    );
+    // Parentale (référentiel §2.3.2) : année civile PRÉCÉDANT l'âge légal —
+    // inchangé.
+    const anneeReferenceSurcoteParentale =
       ageLegal.stable
         ? dateAnniversaireLegal(dateNaissanceConfirmee, ageLegal.age).getUTCFullYear() - 1
         : null;
-    const trimestresCotisesAnneeReference =
-      anneeReferenceSurcote !== null
-        ? resultatTrimestresDetailCarriere.parAnnee.find((a) => a.annee === anneeReferenceSurcote)
+    const trimestresCotisesAnneeReferenceParentale =
+      anneeReferenceSurcoteParentale !== null
+        ? resultatTrimestresDetailCarriere.parAnnee.find((a) => a.annee === anneeReferenceSurcoteParentale)
             ?.cotises ?? 0
         : 0;
     const surcoteClassiquePct = surcotePourTrimestresCotises(
-      trimestresCotisesAnneeReference,
+      trimestresCotisesSurcoteClassique,
       ageLegalAtteintFlag,
       dureeRequiseAtteinte
     );
@@ -265,7 +284,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
       auMoinsUnTrimestreMajorationEnfant,
       ageLegalParentaleEligibleFlag,
       dureeRequiseAtteinte,
-      trimestresCotisesAnneeReference
+      trimestresCotisesAnneeReferenceParentale
     );
     const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true);
 
@@ -337,7 +356,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   // rachat/surcote), cf. docs/audit/branchement-surcote-optimisation.md §2.
   const decoteAvecRachat = Math.min(
     decoteApplicable(
-      decoteSurTrimestres(trimestresValidesProjetesAvecRachat, resultatSelection.trimestresRequis),
+      decoteSurTrimestresPlafond25(trimestresValidesProjetesAvecRachat, resultatSelection.trimestresRequis),
       decoteSurAge(resultatSelection.ageAffiche)
     ),
     0
@@ -379,6 +398,12 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
               max={dateLiquidationMax}
               onChange={(e) => setDateLiquidation(e.target.value)}
             />
+            {baremeDependDUneLoiNonVotee(dateLiquidationEffet) && (
+              <div className="flex items-start gap-2 text-xs text-orange-600 p-2.5 border border-orange-500/20 rounded-lg bg-orange-500/10">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>{AVERTISSEMENT_BAREME_NON_VOTE}</span>
+              </div>
+            )}
             <p className="text-xs text-muted-foreground">
               Âge calculé automatiquement à partir de cette date et de votre date de naissance —
               simulation possible entre {AGE_MIN} et {AGE_MAX} ans.

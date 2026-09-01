@@ -12,9 +12,11 @@
  * La décote/surcote sur trimestres tous régimes confondus et la règle d'âge
  * générique restent gérées par calcul.ts (trimestresRequisPourGeneration,
  * decoteApplicable, decoteSurTrimestresPlafond25) — non dupliquées ici.
- * Seule la règle d'âge propre à la fonction publique (-25 % au lieu de
- * -20 %) justifie une variante locale de decoteSurAge, documentée ci-dessous.
+ * Seule la règle d'âge propre à la fonction publique justifie une variante
+ * locale de decoteSurAge, documentée ci-dessous.
  */
+
+import { decoteApplicable, decoteSurTrimestresPlafond25 } from './calcul';
 
 /**
  * Pension de base fonction publique = TIB annuel de référence (dernier
@@ -75,8 +77,8 @@ export function tauxDecoteParTrimestreFonctionPublique(anneeOuvertureDroits?: nu
 /**
  * Décote fonction publique basée sur l'écart d'âge par rapport à l'âge
  * d'annulation de la décote (67 ans par défaut en catégorie sédentaire —
- * même valeur que le régime général, mais plafond différent : -25 % ici
- * contre -20 % dans decoteSurAge() de calcul.ts).
+ * même valeur que le régime général ; le plafond -25 % est désormais commun
+ * aux deux, decoteSurAge() de calcul.ts ayant été aligné).
  *
  * Pour un départ anticipé catégorie active, ageAnnulationDecote doit être
  * saisi manuellement par l'utilisateur (pas de table de corps encodée ici —
@@ -90,11 +92,11 @@ export function tauxDecoteParTrimestreFonctionPublique(anneeOuvertureDroits?: nu
  * `tauxDecoteParTrimestreFonctionPublique()` pour le barème par année
  * d'ouverture des droits.
  *
- * ⚠️ Variante locale de decoteSurAge() de calcul.ts (le plafond -25 % côté
- * trimestres a été généralisé et déplacé dans calcul.ts en
- * decoteSurTrimestresPlafond25, réutilisable par d'autres régimes — mais la
- * règle d'âge fonction publique reste spécifique, aucune généralisation
- * demandée pour l'instant).
+ * ⚠️ Variante locale de decoteSurAge() de calcul.ts. Ce qui la justifie
+ * n'est plus le plafond (identique, -25 % des deux côtés depuis
+ * l'unification) mais le paramétrage propre à la fonction publique : âge
+ * d'annulation de la décote variable par catégorie et taux par trimestre
+ * millésimé par année d'ouverture des droits.
  */
 export function decoteSurAgeFonctionPublique(
   ageDepart: number,
@@ -104,29 +106,122 @@ export function decoteSurAgeFonctionPublique(
   if (ageDepart >= ageAnnulationDecote) {
     return 0;
   }
-  const ecartTrimestres = (ageDepart - ageAnnulationDecote) * 4;
+  // Arrondi au trimestre supérieur (art. R. 351-27 CSS) : tout trimestre
+  // entamé compte pour un trimestre plein. L'écart en mois est arrondi avant
+  // la division pour absorber le bruit flottant d'un âge décimal. Règle
+  // identique à `decoteSurAge()` de calcul.ts — dupliquée en 2 lignes plutôt
+  // qu'exportée, le taux par trimestre millésimé restant propre à ce régime.
+  const moisJusquAuTauxPlein = Math.round((ageAnnulationDecote - ageDepart) * 12);
+  const ecartTrimestres = -Math.ceil(moisJusquAuTauxPlein / 3);
   return Math.max(ecartTrimestres * tauxParTrimestre, -25);
+}
+
+export interface EntreeDecoteFonctionPublique {
+  trimestresLiquidables: number;
+  /** Trimestres validés dans les AUTRES régimes (régime général, CNAVPL...). */
+  trimestresAutresRegimes: number;
+  trimestresRequis: number;
+  /**
+   * Âge de départ, **quel que soit le motif** (sédentaire comme catégorie
+   * active). `undefined`, `null` ou `NaN` => le comptage en âge ne s'applique
+   * pas et seul le comptage en trimestres joue.
+   */
+  ageDepart?: number | null;
+  /**
+   * Âge d'annulation de la décote. Non renseigné => 67 ans, valeur de la
+   * catégorie sédentaire (défaut de `decoteSurAgeFonctionPublique()`).
+   */
+  ageAnnulationDecote?: number | null;
+  /** Non renseigné => 1,25 %, cf. `tauxDecoteParTrimestreFonctionPublique()`. */
+  tauxDecoteParTrimestre?: number;
+}
+
+/**
+ * Décote fonction publique complète : applique la **règle du plus petit des
+ * deux comptages** (art. L. 14 I CPCMR) entre le comptage en trimestres
+ * (tous régimes confondus, plafond -25 %) et le comptage en âge (écart à
+ * l'âge d'annulation de la décote).
+ *
+ * ⚠️ Cette règle vaut pour **tout** fonctionnaire, pas seulement pour un
+ * départ anticipé en catégorie active : le motif du départ ne restreint pas
+ * son champ d'application. Seule la disponibilité d'un âge de départ
+ * conditionne le second comptage.
+ *
+ * Fonction unique et partagée : appelée à la fois par le moteur consolidé
+ * (`pensionConsolidee.ts`) et par l'écran (`CarriereFonctionPublique.tsx`).
+ * Les deux portaient auparavant une copie manuelle de cette logique, qui a
+ * divergé — l'écran et le moteur doivent renvoyer la même décote pour un même
+ * profil, ce que seule une implémentation unique garantit. Ne pas réintroduire
+ * de calcul local chez un appelant.
+ *
+ * ⚠️ `decoteSurTrimestresPlafond25()` est symétrique : au-delà de
+ * `trimestresRequis` elle renvoie une valeur positive qui n'est PAS une
+ * surcote légitime (aucune porte d'éligibilité, aucun plafond) — écrêtée à 0
+ * ici. La vraie surcote est calculée séparément par les appelants via
+ * `surcoteTotale()`. Cf. docs/audit/branchement-majorations-pension-finale.md
+ * §1.b. Le résultat de cette fonction est donc toujours <= 0.
+ */
+export function decoteFonctionPublique({
+  trimestresLiquidables,
+  trimestresAutresRegimes,
+  trimestresRequis,
+  ageDepart,
+  ageAnnulationDecote,
+  tauxDecoteParTrimestre,
+}: EntreeDecoteFonctionPublique): number {
+  const decoteTrimestres = Math.min(
+    decoteSurTrimestresPlafond25(trimestresLiquidables + trimestresAutresRegimes, trimestresRequis),
+    0
+  );
+
+  // `null` écarté explicitement en plus de `undefined` : ces champs viennent
+  // de la base (nullable) côté moteur et d'un `parseFloat('')` (NaN) côté
+  // écran — `Number.isNaN(null)` vaut `false`, un test sur le seul
+  // `undefined` laisserait passer `null` jusqu'au calcul.
+  if (typeof ageDepart !== 'number' || !Number.isFinite(ageDepart)) {
+    return decoteTrimestres;
+  }
+
+  // Non renseigné => `undefined`, ce qui laisse `decoteSurAgeFonctionPublique()`
+  // appliquer son défaut de 67 ans — pas de 67 dupliqué ici.
+  const ageAnnulation =
+    typeof ageAnnulationDecote === 'number' && Number.isFinite(ageAnnulationDecote)
+      ? ageAnnulationDecote
+      : undefined;
+
+  return decoteApplicable(
+    decoteTrimestres,
+    decoteSurAgeFonctionPublique(ageDepart, ageAnnulation, tauxDecoteParTrimestre)
+  );
 }
 
 /**
  * Valeur de référence du minimum garanti (traitement indiciaire brut au 1er
- * janvier 2004 de l'indice majoré 227, revalorisé) — donnée **2025
- * confirmée** par le référentiel (§7.5), mensuelle. Exportée en constante
- * plutôt que codée en dur dans `minimumGaranti()` : cette dernière prend la
- * valeur de référence en paramètre, jamais une valeur par défaut interne.
+ * janvier 2004 de l'indice majoré 227, revalorisé) — valeur **2026 confirmée
+ * par le Service des Retraites de l'État**. Exportée en constante plutôt que
+ * codée en dur dans `minimumGaranti()` : cette dernière prend la valeur de
+ * référence en paramètre, jamais une valeur par défaut interne.
  *
- * ⚠️ La valeur 2026 (environ 1 366,35 €) n'est **volontairement pas**
- * retenue ici : le référentiel la qualifie lui-même de « à vérifier auprès
- * du SRE », donc non confirmée par une source opposable au moment de cette
- * implémentation. Ne pas ajouter cette valeur en dur tant qu'une source
- * datée et sourcée ne la confirme pas — passer la valeur 2025 ci-dessous à
- * `minimumGaranti()` en attendant, ou une valeur mise à jour et sourcée le
- * cas échéant.
+ * Remplace la valeur 2025 (1 248,33 €/mois, 14 979,96 €/an), qui était
+ * retenue faute de source opposable sur 2026 — la réserve « à vérifier
+ * auprès du SRE » du référentiel est levée, l'avertissement correspondant a
+ * été retiré de `CarriereFonctionPublique.tsx`.
+ *
+ * ⚠️ L'**annuelle est la valeur de référence**, pas un dérivé de la
+ * mensuelle : 1 366,35 × 12 = 16 396,20 €, soit 1 centime de plus que la
+ * valeur annuelle publiée (16 396,19 €) — la mensuelle est l'arrondi au
+ * centime de l'annuelle ÷ 12 (1 366,3491…). Les deux sont donc déclarées
+ * séparément, sans relation de calcul entre elles. Tous les calculs de
+ * pension passent par l'annuelle (le module travaille exclusivement en
+ * annuel) ; la mensuelle ne sert qu'à l'affichage.
+ *
+ * ⚠️ À réviser à chaque revalorisation, comme les barèmes annuels du régime
+ * général (cf. `MINIMUM_CONTRIBUTIF_NON_MAJORE_2026` dans calcul.ts).
  *
  * Source : Service des Retraites de l'État, "Le minimum garanti".
  */
-export const VALEUR_REFERENCE_MIGA_MENSUELLE_2025 = 1248.33;
-export const VALEUR_REFERENCE_MIGA_ANNUELLE_2025 = VALEUR_REFERENCE_MIGA_MENSUELLE_2025 * 12;
+export const VALEUR_REFERENCE_MIGA_ANNUELLE_2026 = 16396.19;
+export const VALEUR_REFERENCE_MIGA_MENSUELLE_2026 = 1366.35;
 
 /**
  * Minimum garanti fonction publique, barème par palier (référentiel §7.5,
@@ -138,7 +233,7 @@ export const VALEUR_REFERENCE_MIGA_ANNUELLE_2025 = VALEUR_REFERENCE_MIGA_MENSUEL
  * souhaité (mensuelle pour un résultat mensuel, annuelle pour un résultat
  * annuel) — cette fonction ne fait aucune hypothèse d'unité, contrairement
  * au reste du module qui travaille exclusivement en annuel : à la charge de
- * l'appelant de passer `VALEUR_REFERENCE_MIGA_ANNUELLE_2025` pour rester
+ * l'appelant de passer `VALEUR_REFERENCE_MIGA_ANNUELLE_2026` pour rester
  * cohérent avec `pensionBaseFonctionPublique()` et
  * `pensionFonctionPubliqueFinale()`.
  *

@@ -1,8 +1,8 @@
 /**
  * Calcul du salaire annuel moyen (SAM) réglementaire : moyenne des N
  * meilleures années de revenu du régime de base (N selon la génération),
- * chaque année revalorisée (coefficient CNAV) puis plafonnée au plafond
- * annuel de la Sécurité sociale (PASS) de l'année concernée. Complète les
+ * chaque année d'abord plafonnée au plafond annuel de la Sécurité sociale
+ * (PASS) de l'année concernée, puis revalorisée (coefficient CNAV). Complète les
  * années manquantes par une projection à revenu constant si la carrière
  * connue est plus courte que le nombre d'années requis.
  * Fonctions pures, sans JSX ni state React — sur le modèle de calcul.ts.
@@ -30,6 +30,7 @@ import { trimestresCotisesEtAssimilesDepuisCarriere } from './calculTrimestres';
  *   euros entiers, probablement la valeur réellement publiée par arrêté).
  * - **2018-2025** : déjà en place avant cette session, non revérifiées
  *   au-delà du recoupement ci-dessus.
+ * - **2026** : 48 060 € (arrêté annuel de revalorisation du plafond).
  *
  * ⚠️ Lacune assumée, non comblée par extrapolation : avant 1950, aucune
  * valeur numérique fiable trouvée (le plafond existe depuis la création du
@@ -37,8 +38,8 @@ import { trimestresCotisesEtAssimilesDepuisCarriere } from './calculTrimestres';
  * (carrière démarrée il y a plus de 75 ans). Contrairement au seuil de
  * validation de trimestre (calculTrimestres.ts), cette lacune n'est pas
  * signalée par un champ dédié dans `ResultatSAM` : une année sans PASS
- * connu reste plafonnée par défaut à sa valeur revalorisée non plafonnée
- * (`revenuPlafonne = revenuRevalorise`, cf. plus bas) — comportement déjà
+ * connu n'est pas plafonnée du tout : son revenu brut est simplement
+ * revalorisé (`revenuPlafonne = revenuRevalorise`, cf. plus bas) — comportement déjà
  * défini et sûr (pas de plafond erroné, juste absent), pas un calcul
  * silencieusement faux au même sens que le seuil de trimestre.
  */
@@ -119,6 +120,7 @@ export const PASS_PAR_ANNEE: Record<number, number> = {
   2023: 43992,
   2024: 46368,
   2025: 47100,
+  2026: 48060,
 };
 
 /**
@@ -253,8 +255,18 @@ function anneesExclues(periodes: PeriodeCarriere[], dateEffet?: Date): Set<numbe
 
 export interface AnneeSAM {
   annee: number;
+  /** Revenu de l'année, tel que reconstitué depuis la carrière. */
   revenuBrut: number;
+  /**
+   * `revenuBrut` revalorisé, SANS plafonnement — valeur indicative
+   * (affichage / comparaison), jamais celle retenue dans le SAM.
+   */
   revenuRevalorise: number;
+  /**
+   * Valeur légalement retenue dans le SAM : `min(revenuBrut, PASS[annee])`
+   * revalorisé. Égale `revenuRevalorise` quand le PASS de l'année est
+   * inconnu (avant 1950) ou quand le revenu est sous le plafond.
+   */
   revenuPlafonne: number;
   projete: boolean;
 }
@@ -324,15 +336,21 @@ export function calculerSAM(
     repartirRevenuParAnnee(periode, revenuParAnnee);
   }
 
-  // Revalorisation (coefficient CNAV) PUIS plafonnement (PASS) — l'ordre
-  // compte : plafonner avant revalorisation minorerait à tort des revenus
-  // qui, une fois revalorisés, auraient dépassé le plafond.
+  // Plafonnement (PASS) PUIS revalorisation (coefficient CNAV) — l'ordre
+  // légal (art. R. 351-29 CSS) : seul le salaire de l'année *dans la limite
+  // du PASS de cette même année-là* est porté au compte, et c'est ce salaire
+  // déjà plafonné qui est ensuite revalorisé. Revaloriser d'abord
+  // comparerait un revenu exprimé en euros d'aujourd'hui au PASS en euros de
+  // l'époque : sur les années anciennes, où le coefficient est très
+  // supérieur à 1, cela écrête à tort des revenus pourtant inférieurs au
+  // plafond de leur année.
   const anneesConnues: AnneeSAM[] = Array.from(revenuParAnnee.entries())
     .map(([annee, revenuBrut]) => {
       const coefficient = COEFFICIENT_REVALORISATION_CNAV[annee] ?? 1;
-      const revenuRevalorise = revenuBrut * coefficient;
       const plafond = PASS_PAR_ANNEE[annee];
-      const revenuPlafonne = plafond !== undefined ? Math.min(revenuRevalorise, plafond) : revenuRevalorise;
+      const revenuBrutPlafonne = plafond !== undefined ? Math.min(revenuBrut, plafond) : revenuBrut;
+      const revenuRevalorise = revenuBrut * coefficient;
+      const revenuPlafonne = revenuBrutPlafonne * coefficient;
       return { annee, revenuBrut, revenuRevalorise, revenuPlafonne, projete: false };
     })
     .sort((a, b) => a.annee - b.annee);

@@ -1,8 +1,8 @@
 /**
  * Coefficients annuels de revalorisation CNAV des salaires portés au compte,
- * appliqués à un revenu de l'année N pour l'exprimer en valeur actuelle avant
- * plafonnement au PASS de l'année (voir calculSAM.ts — l'ordre revalorisation
- * puis plafonnement compte).
+ * appliqués au revenu de l'année N — déjà retenu dans la limite du PASS de
+ * cette année-là — pour l'exprimer en valeur actuelle (voir calculSAM.ts :
+ * l'ordre légal est plafonnement PUIS revalorisation, pas l'inverse).
  *
  * Source : circulaire CNAV 2025-29 du 22/12/2025 (legislation.lassuranceretraite.fr,
  * applicable aux liquidations à compter du 01/01/2026), téléchargée et

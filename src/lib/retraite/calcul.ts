@@ -85,6 +85,43 @@ export type JeuBareme = 'anterieur_2023' | 'calendrier_2023' | 'lfss_2026';
 const BASCULE_CALENDRIER_2023 = Date.UTC(2023, 8, 1); // 1er septembre 2023
 const BASCULE_LFSS_2026 = Date.UTC(2026, 8, 1); // 1er septembre 2026
 
+/**
+ * Dernier jour au-delà duquel l'application du barème LFSS 2026 repose sur
+ * une hypothèse, et non plus sur un texte voté.
+ *
+ * `jeuBaremeApplicable()` renvoie `lfss_2026` pour TOUTE date d'effet à
+ * compter du 1er septembre 2026, sans borne haute — choix légalement
+ * défendable, le texte voté ne prévoyant aucune date de fin. Mais les lois de
+ * financement de la sécurité sociale sont annuelles : au-delà du
+ * 31 décembre 2027, prolonger ce barème revient à supposer qu'aucune LFSS
+ * ultérieure ne le modifiera. C'est une hypothèse forte, qu'il faut signaler
+ * à l'utilisateur plutôt que de la présenter comme un résultat acquis — d'où
+ * `baremeDependDUneLoiNonVotee()` ci-dessous, consommée par les écrans.
+ *
+ * ⚠️ Cette borne ne modifie PAS le calcul : le barème appliqué reste le même
+ * (aucune alternative sourcée n'existe pour l'après-2027). Elle ne pilote
+ * qu'un avertissement.
+ */
+export const FIN_PERIODE_BAREME_LFSS_2026_VOTEE = Date.UTC(2027, 11, 31);
+
+/**
+ * Message d'avertissement associé, centralisé ici plutôt que recopié dans
+ * chaque écran — il doit rester identique partout où il s'affiche.
+ */
+export const AVERTISSEMENT_BAREME_NON_VOTE =
+  "Au-delà du 31 décembre 2027, le barème appliqué (âge légal, durée d'assurance requise) " +
+  "prolonge celui de la LFSS 2026 : il dépend d'une loi de financement de la sécurité sociale " +
+  "qui n'a pas encore été votée. Cette simulation est donc indicative à cet horizon et pourra " +
+  'évoluer.';
+
+/**
+ * La date d'effet retenue dépasse-t-elle l'horizon couvert par un texte
+ * voté ? Cf. `FIN_PERIODE_BAREME_LFSS_2026_VOTEE` ci-dessus.
+ */
+export function baremeDependDUneLoiNonVotee(dateEffet: Date): boolean {
+  return dateEffet.getTime() > FIN_PERIODE_BAREME_LFSS_2026_VOTEE;
+}
+
 export function jeuBaremeApplicable(dateEffet: Date): JeuBareme {
   const instant = dateEffet.getTime();
   if (instant >= BASCULE_LFSS_2026) return 'lfss_2026';
@@ -358,8 +395,74 @@ export function ageLegalParentaleEligible(dateNaissance: DateNaissance, dateEffe
 }
 
 /**
+ * Nombre de trimestres COTISÉS situés dans la période de référence de la
+ * surcote CLASSIQUE (art. L. 351-1-2 CSS) — à passer ensuite à
+ * `surcotePourTrimestresCotises()`.
+ *
+ * ⚠️ Ne pas confondre avec la période de référence de la surcote PARENTALE
+ * (année civile précédant l'âge légal, cf. `surcoteParentale()`) : les deux
+ * surcotes ont des périodes DIFFÉRENTES. Le code a longtemps alimenté les
+ * deux avec le compteur de la parentale, ce qui accordait une surcote
+ * classique à un assuré liquidant dès l'âge légal et la bornait à 4
+ * trimestres pour ceux qui prolongeaient — les deux erreurs sont corrigées
+ * par cette fonction.
+ *
+ * Règle légale : la période court du 1er jour du trimestre civil SUIVANT
+ * l'âge légal (ou du mois suivant l'acquisition du dernier trimestre requis
+ * si plus tardif) jusqu'au dernier jour du trimestre civil précédant la date
+ * d'effet. Tous les trimestres cotisés y comptent, 4 par an au maximum, sans
+ * plafond global.
+ *
+ * ⚠️ Deux simplifications assumées, imposées par la granularité ANNUELLE de
+ * `parAnnee` (qui ne sait pas découper une année autour d'un pivot — dette
+ * documentée sur `ResultatTrimestresCotisesEtAssimiles.parAnnee`) :
+ * - **l'année de l'âge légal est exclue en entier**, alors que la règle
+ *   ouvre la période dès le trimestre suivant : sous-compte d'au plus 3
+ *   trimestres, ne sur-compte jamais (sens prudent, favorable à la fiabilité
+ *   du chiffre montré au client) ;
+ * - **l'année de la date d'effet est incluse en entier**, alors que la règle
+ *   s'arrête au trimestre civil précédent : peut sur-compter jusqu'à 4
+ *   trimestres si le détail de carrière déclare une année en cours complète.
+ * La seconde condition d'ouverture (acquisition du dernier trimestre requis
+ * plus tardive que l'âge légal) n'est pas modélisée : aucune date
+ * d'acquisition de trimestre n'existe dans les données.
+ *
+ * Génération hors barème détaillé (`ageLegalResultat.stable === false`) ou
+ * date de naissance inconnue : renvoie 0 — un barème non déterminé ne doit
+ * jamais produire une surcote fabriquée, même prudence que
+ * `surcotePourTrimestresCotises()` sur `ageLegalAtteintFlag`.
+ *
+ * `dateEffet` : date d'effet retenue par l'appelant — « aujourd'hui » comme
+ * proxy dans l'onglet Carrière, date simulée dans l'onglet Optimisation.
+ *
+ * Fonction unique et partagée (`pensionConsolidee.ts` et `Trimestres.tsx`) :
+ * les deux portaient auparavant une copie manuelle du compteur. Ne pas
+ * réintroduire de calcul local chez un appelant.
+ */
+export function trimestresCotisesPeriodeSurcoteClassique(
+  parAnnee: readonly { annee: number; cotises: number }[],
+  dateNaissance: DateNaissance | null,
+  ageLegalResultat: AgeLegalResultat | null,
+  dateEffet: Date
+): number {
+  if (!dateNaissance || !ageLegalResultat?.stable) {
+    return 0;
+  }
+  const premiereAnnee = dateAnniversaireLegal(dateNaissance, ageLegalResultat.age).getUTCFullYear() + 1;
+  const derniereAnnee = dateEffet.getUTCFullYear();
+
+  let total = 0;
+  for (const { annee, cotises } of parAnnee) {
+    if (annee >= premiereAnnee && annee <= derniereAnnee) {
+      total += Math.min(Math.max(0, cotises), 4);
+    }
+  }
+  return total;
+}
+
+/**
  * Surcote pour prolongation d'activité (référentiel §2.3.1) — fonction
- * dédiée et séparée de `decoteSurTrimestres()` (celle-ci reste inchangée,
+ * dédiée et séparée de `decoteSurTrimestresPlafond25()` (celle-ci reste inchangée,
  * cf. docs/audit/conception-surcote.md §2 : décote et surcote sont deux
  * mécanismes distincts du référentiel, pas deux lectures d'un même
  * excédent).
@@ -377,7 +480,9 @@ export function ageLegalParentaleEligible(dateNaissance: DateNaissance, dateEffe
  * `trimestresCotisesDansPeriodeDeReference` : nombre de trimestres COTISÉS
  * (pas assimilés, référentiel §2.3.1/§2.5) situés dans la période de
  * référence de la surcote — À LA CHARGE DE L'APPELANT de fournir ce nombre
- * déjà filtré et borné dans le temps. Cette fonction ne fait aucune
+ * déjà filtré et borné dans le temps, via
+ * `trimestresCotisesPeriodeSurcoteClassique()` ci-dessus (⚠️ PAS le compteur
+ * de la surcote parentale, dont la période de référence est différente). Cette fonction ne fait aucune
  * hypothèse sur la façon dont ce nombre a été obtenu : elle n'implémente pas
  * la chronologie infra-annuelle de la période de référence (dette technique
  * documentée, cf. docs/audit/implementation-surcote.md) — seule la formule
@@ -501,29 +606,22 @@ export function tauxProratisation(trimestresValides: number, trimestresRequis: n
 
 /**
  * Décote/surcote basée sur l'écart de trimestres validés par rapport aux
- * trimestres requis : -1,25 % par trimestre manquant (plafonné à -20 %),
- * +1,25 % par trimestre excédentaire.
- */
-export function decoteSurTrimestres(trimestresValides: number, trimestresRequis: number): number {
-  const difference = trimestresValides - trimestresRequis;
-  if (difference < 0) {
-    return Math.max(difference * 1.25, -20);
-  }
-  if (difference > 0) {
-    return difference * 1.25;
-  }
-  return 0;
-}
-
-/**
- * Décote/surcote basée sur l'écart de trimestres validés par rapport aux
- * trimestres requis, avec un plafond de -25 % (20 trimestres) au lieu de
- * -20 % — mécanique partagée par plusieurs régimes dont le barème de décote
- * diffère du régime général sur ce seul point (fonction publique, CNAVPL).
+ * trimestres requis : -1,25 % par trimestre manquant, +1,25 % par trimestre
+ * excédentaire.
  *
- * ⚠️ Ne pas confondre avec decoteSurTrimestres() ci-dessus (plafond -20 %,
- * régime général) : la mécanique (1,25 %/trimestre) est identique, seul le
- * plafond change selon le régime.
+ * Plafond de décote : **-25 %**, soit les 20 trimestres manquants au maximum
+ * retenus par l'art. R. 351-27 CSS × 1,25 % chacun. Ce plafond vaut pour le
+ * régime général comme pour les régimes qui reprennent son barème (fonction
+ * publique, CNAVPL) — le suffixe `Plafond25` du nom est historique : il
+ * distinguait cette fonction d'une variante plafonnée à -20 % (supprimée,
+ * cf. ci-dessous), il ne signale plus une spécificité de régime.
+ *
+ * ⚠️ Une seconde fonction `decoteSurTrimestres()` a longtemps coexisté ici,
+ * plafonnée à -20 % et utilisée par le seul régime général. Ce -20 %
+ * confondait le plafond *en nombre de trimestres* (20) avec un plafond *en
+ * pourcentage*, et minorait donc la décote de 5 points pour tout assuré à
+ * 20 trimestres manquants ou plus. Elle a été supprimée au profit de celle-ci
+ * — ne pas la réintroduire.
  */
 export function decoteSurTrimestresPlafond25(trimestresValides: number, trimestresRequis: number): number {
   const difference = trimestresValides - trimestresRequis;
@@ -537,27 +635,59 @@ export function decoteSurTrimestresPlafond25(trimestresValides: number, trimestr
 }
 
 /**
+ * Nombre de trimestres de décote correspondant à un écart d'âge, **arrondi
+ * au trimestre supérieur** (art. R. 351-27 CSS) : `ceil(mois / 3)`.
+ *
+ * ⚠️ L'ancien calcul `(ageDepart - ageAnnulation) * 4` renvoyait une valeur
+ * fractionnaire, donc une décote au centime près sur une fraction de
+ * trimestre — la règle ne connaît que des trimestres entiers, et tout
+ * trimestre entamé compte pour un trimestre plein. Le résultat est identique
+ * pour un écart en années entières (multiple exact de 4) : seuls les âges
+ * exprimés avec des mois changent de valeur.
+ *
+ * L'écart en mois est arrondi (`Math.round`) avant la division, pour absorber
+ * le bruit de la représentation flottante d'un âge décimal (64 ans 7 mois
+ * = 64,58333… → 29,0000000004 mois).
+ *
+ * Retourne un nombre positif de trimestres ; c'est à l'appelant d'en faire
+ * une décote négative.
+ */
+function trimestresDecoteDepuisEcartAge(ageDepart: number, ageAnnulationDecote: number): number {
+  const moisJusquAuTauxPlein = Math.round((ageAnnulationDecote - ageDepart) * 12);
+  return Math.ceil(moisJusquAuTauxPlein / 3);
+}
+
+/**
  * Décote basée sur l'écart d'âge par rapport à l'âge du taux plein
- * automatique (67 ans par défaut) : même barème que decoteSurTrimestres pour
- * un départ anticipé (1,25 % par trimestre d'écart, 4 trimestres par année
- * d'écart, plafonné à -20 %). À partir de l'âge du taux plein automatique,
- * celui-ci est acquis d'office : cette règle ne génère jamais de surcote (la
- * seule surcote possible vient de decoteSurTrimestres, via decoteApplicable).
+ * automatique (67 ans par défaut) : même barème que
+ * `decoteSurTrimestresPlafond25()` pour un départ anticipé (1,25 % par
+ * trimestre d'écart, plafonné à -25 % — 20 trimestres, art. R. 351-27 CSS).
+ * Le nombre de trimestres est **arrondi au trimestre supérieur** (tout
+ * trimestre entamé compte pour un trimestre plein), cf.
+ * `trimestresDecoteDepuisEcartAge()` ci-dessus. À partir de l'âge du taux plein
+ * automatique, celui-ci est acquis d'office : cette règle ne génère jamais de
+ * surcote (la seule surcote possible vient de
+ * `decoteSurTrimestresPlafond25()`, via `decoteApplicable()`).
+ *
+ * ⚠️ Le plafond DOIT rester aligné sur celui du comptage en trimestres.
+ * `decoteApplicable()` retient le moins sévère des deux comptages : un
+ * plafond plus bas ici (-20 % historiquement) écrêtait le résultat commun et
+ * masquait la décote de -25 % due par un assuré à la fois très incomplet en
+ * trimestres et parti nettement avant 67 ans.
  */
 export function decoteSurAge(ageDepart: number, ageTauxPleinAuto = 67): number {
   if (ageDepart >= ageTauxPleinAuto) {
     return 0;
   }
-  const ecartTrimestres = (ageDepart - ageTauxPleinAuto) * 4;
-  return Math.max(ecartTrimestres * 1.25, -20);
+  return Math.max(-trimestresDecoteDepuisEcartAge(ageDepart, ageTauxPleinAuto) * 1.25, -25);
 }
 
 /**
  * Retient la décote/surcote la plus favorable (la moins négative) entre les
  * deux règles : l'utilisateur bénéficie du calcul le plus avantageux.
  */
-export function decoteApplicable(decoteSurTrimestres: number, decoteSurAge: number): number {
-  return Math.max(decoteSurTrimestres, decoteSurAge);
+export function decoteApplicable(decoteTrimestres: number, decoteAge: number): number {
+  return Math.max(decoteTrimestres, decoteAge);
 }
 
 /**
@@ -624,15 +754,25 @@ export const MINIMUM_CONTRIBUTIF_MAJORE_2026 = 10847.16;
  * françaises et étrangères, hors réversion, au-delà duquel la majoration
  * MICO est réduite (écrêtée), jamais supprimée.
  *
- * Source : instruction interministérielle DSS/3A/DB/6BRS/2025/174 du
- * 15/12/2025, montant applicable au 1er janvier 2026 (1 410,89 €/mois × 12).
- * ⚠️ Le référentiel précise que le plafond retenu est celui en vigueur à la
- * date d'ouverture du droit au MICO, pas celui de l'année de calcul — cette
- * constante n'en tient pas compte (pas de notion de date d'effet du MICO
- * dans ce module, même simplification assumée qu'ailleurs pour la date
- * d'effet, cf. écart #2 documenté dans docs/audit/audit-retraite.md).
+ * Valeur retenue : celle issue de la **revalorisation du 1er juin 2026**,
+ * 1 444,89 €/mois × 12. Le montant applicable au 1er janvier 2026 était
+ * 1 410,89 €/mois (16 930,68 €/an, instruction interministérielle
+ * DSS/3A/DB/6BRS/2025/174 du 15/12/2025).
+ *
+ * ⚠️ Deux valeurs coexistent donc sur l'année 2026, et cette constante ne
+ * porte que la seconde. Le référentiel précise que le plafond retenu est
+ * celui en vigueur à la **date d'ouverture du droit au MICO**, pas celui de
+ * l'année de calcul : pour un droit ouvert entre le 1er janvier et le 31 mai
+ * 2026, le plafond légal reste 16 930,68 €/an, et ce module appliquera
+ * malgré tout 17 338,68 € (écrêtement légèrement sous-évalué, donc
+ * majoration MICO légèrement surévaluée, pour ces droits-là). Le module n'a
+ * pas de notion de date d'effet du MICO — même simplification assumée
+ * qu'ailleurs pour la date d'effet, cf. écart #2 documenté dans
+ * docs/audit/audit-retraite.md. `ecretementMICO()` accepte le plafond en
+ * paramètre : un appelant qui disposerait de la date d'ouverture du droit
+ * peut lui passer la valeur historique sans modifier cette constante.
  */
-export const PLAFOND_GLOBAL_PENSIONS_2026 = 16930.68;
+export const PLAFOND_GLOBAL_PENSIONS_2026 = 17338.68;
 
 /**
  * Seuil de trimestres cotisés (régime général et régimes alignés) ouvrant
@@ -783,8 +923,8 @@ export function pensionBase(
  * SSI (§4.3.1), agents contractuels (§8.1), artistes-auteurs (§9.5), CNAVPL
  * et CNBF (§5.4, §6.3) — réutiliser directement cette fonction pour ces six
  * régimes, pas de fonction dupliquée par régime (même principe que
- * `decoteSurTrimestresPlafond25()`, réutilisée telle quelle par CNAVPL et la
- * fonction publique). Seule la fonction publique a une formule dégressive
+ * `decoteSurTrimestresPlafond25()`, réutilisée telle quelle par le régime
+ * général, CNAVPL et la fonction publique). Seule la fonction publique a une formule dégressive
  * différente (+5 %/enfant au-delà de 3, plafonnée au dernier traitement) —
  * voir `majorationEnfantsFonctionPublique()` dans `calculFonctionPublique.ts`.
  *
@@ -835,6 +975,45 @@ export function pensionTotaleConsolideeTousRegimes(
     : 0;
   const pensionTotaleCNAVPL = hasCNAVPL ? resultatCNAVPL.pensionFinale : 0;
   return pensionTotaleRegimeGeneral + pensionTotaleFonctionPublique + pensionTotaleCNAVPL;
+}
+
+/**
+ * Plafond ANNUEL de la majoration familiale Agirc-Arrco, valeur 2026.
+ * ⚠️ À réviser chaque année, comme les barèmes annuels du régime général.
+ */
+export const PLAFOND_MAJORATION_ENFANTS_AGIRC_ARRCO_2026 = 2367.48;
+
+/** Taux de la majoration familiale Agirc-Arrco, à partir de 3 enfants. */
+export const TAUX_MAJORATION_ENFANTS_AGIRC_ARRCO = 10;
+
+/**
+ * Majoration familiale **Agirc-Arrco** : 10 % de la pension Agirc-Arrco à
+ * partir de 3 enfants, **plafonnée en montant** (plafond annuel, ici la
+ * valeur 2026). Retourne le montant de la majoration, pas la pension majorée.
+ *
+ * ⚠️ Trois différences avec `majorationTroisEnfants()` (régime général), qui
+ * interdisent de réutiliser celle-ci telle quelle :
+ * - elle s'applique à la pension COMPLÉMENTAIRE Agirc-Arrco, pas à la pension
+ *   de base — le code ne majorait jusqu'ici que la base, jamais l'Agirc-Arrco ;
+ * - elle est plafonnée en euros, alors que celle du régime général ne l'est
+ *   pas ;
+ * - son critère d'éligibilité est plus large (« nés ou élevés »), d'où un
+ *   compteur d'enfants dédié : `nombreEnfantsEligiblesMajorationAgircArrco()`.
+ *   Ne PAS lui passer `nombreEnfantsEligiblesMajorationTroisEnfants()`.
+ *
+ * Le plafond est passé en paramètre (défaut : valeur 2026) plutôt que lu en
+ * dur, sur le même principe que `ecretementMICO()` — un appelant disposant du
+ * plafond applicable à la date d'effet peut le fournir.
+ */
+export function majorationEnfantsAgircArrco(
+  pensionAgircArrcoAnnuelle: number,
+  nombreEnfantsEligibles: number,
+  plafondAnnuel: number = PLAFOND_MAJORATION_ENFANTS_AGIRC_ARRCO_2026
+): number {
+  if (nombreEnfantsEligibles < 3 || pensionAgircArrcoAnnuelle <= 0) {
+    return 0;
+  }
+  return Math.min(pensionAgircArrcoAnnuelle * (TAUX_MAJORATION_ENFANTS_AGIRC_ARRCO / 100), plafondAnnuel);
 }
 
 /**

@@ -23,7 +23,7 @@
  * `RISImportDialog.tsx` au moment de l'import d'un RIS. Elle est donc
  * active dès l'import — pas seulement dans un module futur non branché —
  * via l'exclusion des années sans trimestre validé du pool du SAM, pas via
- * `decoteSurTrimestres()` (qui, lui, reste effectivement non branché sur
+ * `decoteSurTrimestresPlafond25()` (qui, lui, reste effectivement non branché sur
  * cette fonction à ce stade).
  */
 

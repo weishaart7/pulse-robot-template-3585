@@ -30,3 +30,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Résidus de session R (jamais committés)
+.Rhistory
+**/.Rhistory
