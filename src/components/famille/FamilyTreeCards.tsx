@@ -13,16 +13,17 @@ interface FamilyTreeCardsProps {
 }
 
 const CARD_BG = '#F8F8F8';
-const CARD_BG_MAIN = '#F9FDEE';
+const CARD_BG_MAIN = 'rgba(155, 240, 11, 0.14)'; // teinte de surface.raised (#9bf00b)
 const AVATAR_BG = '#ece9df';
-const AVATAR_BG_MAIN = '#C2F84E';
-const TEXT_COLOR = '#1F3A4B';
-const ROLE_COLOR = '#a4a299';
-const ROLE_COLOR_MAIN = '#5b6320';
-const GENERATION_LABEL_COLOR = '#b3b1a7';
-const GENERATION_LABEL_COLOR_MAIN = '#5b6320';
-const CONNECTOR_COLOR = '#cbc8bc';
+const AVATAR_BG_MAIN = '#9bf00b'; // surface.raised
+const TEXT_COLOR = '#262626'; // text.inverse
+const ROLE_COLOR = '#616161'; // text.primary
+const ROLE_COLOR_MAIN = '#262626'; // text.inverse — lisible sur fond vert clair
+const GENERATION_LABEL_COLOR = '#616161';
+const GENERATION_LABEL_COLOR_MAIN = '#262626';
+const CONNECTOR_COLOR = '#D9D9D9';
 const MONO_FONT = "'JetBrains Mono', monospace";
+const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9bf00b] focus-visible:ring-offset-2 focus-visible:ring-offset-white';
 
 const GENERATION_NAMES: Record<number, string> = {
   '-3': 'Arrière grands-parents',
@@ -66,23 +67,23 @@ function MemberCard({
       ref={cardRef}
       type="button"
       onClick={onClick}
-      className="flex items-center gap-2.5 rounded-[4px] px-3 h-[54px] w-[210px] shrink-0 text-left transition-shadow shadow-[0_1px_2px_rgba(30,29,25,0.05)] hover:shadow-[0_3px_10px_rgba(30,29,25,0.1)]"
+      className={`flex items-center gap-2.5 rounded-[4px] px-3 h-[54px] w-[210px] shrink-0 text-left transition-shadow duration-200 shadow-[0_1px_2px_rgba(30,29,25,0.05)] hover:shadow-[0_3px_10px_rgba(30,29,25,0.1)] ${FOCUS_RING}`}
       style={{ backgroundColor: isMe ? CARD_BG_MAIN : CARD_BG }}
     >
       <div
-        className="h-7 w-7 rounded-[3px] flex items-center justify-center shrink-0"
+        className="h-7 w-7 rounded-[50px] flex items-center justify-center shrink-0"
         style={{ backgroundColor: isMe ? AVATAR_BG_MAIN : AVATAR_BG }}
       >
-        <span className="text-[10.5px] font-semibold" style={{ color: TEXT_COLOR }}>
+        <span className="text-[11px] font-semibold" style={{ color: TEXT_COLOR }}>
           {initialsFromFullName(node.name)}
         </span>
       </div>
       <div className="min-w-0">
-        <p className="text-sm font-semibold truncate" style={{ color: TEXT_COLOR }}>
+        <p className="text-[14px] font-semibold truncate" style={{ color: TEXT_COLOR }}>
           {node.name}
         </p>
         <p
-          className="text-[9.5px] uppercase tracking-[0.08em] truncate mt-0.5"
+          className="text-[11px] uppercase tracking-[0.08em] truncate mt-0.5"
           style={{ color: isMe ? ROLE_COLOR_MAIN : ROLE_COLOR, fontFamily: MONO_FONT }}
         >
           {secondaryLabel}
@@ -197,7 +198,7 @@ export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onS
       {generations.map((generation, rowIndex) => (
         <div key={generation} className="relative flex items-center gap-4">
           <div
-            className="w-24 shrink-0 text-right text-[9.5px] uppercase tracking-[0.1em] leading-tight"
+            className="w-24 shrink-0 text-right text-[11px] uppercase tracking-[0.1em] leading-tight"
             style={{
               color: generation === 0 ? GENERATION_LABEL_COLOR_MAIN : GENERATION_LABEL_COLOR,
               fontFamily: MONO_FONT,

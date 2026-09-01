@@ -281,10 +281,10 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
               type="button"
               onClick={() => setActiveSection(section.id)}
               className={cn(
-                "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200",
+                "inline-flex items-center gap-2 px-4 py-2 rounded-[50px] text-[14px] font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9bf00b] focus-visible:ring-offset-2 focus-visible:ring-offset-white",
                 activeSection === section.id
-                  ? "bg-[#62706d] text-[#ebf1f1] shadow-sm"
-                  : "bg-[#ebf1f1] text-[#62706d] hover:opacity-90"
+                  ? "bg-[#9bf00b] text-[#262626] shadow-sm"
+                  : "bg-[#F2F2F2] text-[#616161] hover:opacity-90"
               )}
             >
               <section.icon className="h-4 w-4" />
@@ -297,8 +297,8 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
         {activeSection === 'informations-generales' && (
           <div className="space-y-6">
             {/* Civilité card */}
-            <div className="rounded-md border bg-card p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Identité</h3>
+            <div className="rounded-[4px] bg-white p-6 shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)]">
+              <h3 className="text-[11px] font-semibold uppercase tracking-[0.11em] mb-4" style={{ color: '#616161', fontFamily: "'JetBrains Mono', monospace" }}>Identité</h3>
 
               <FormField
                 control={form.control}
@@ -453,8 +453,8 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
             </div>
 
             {/* Profession & Naissance card */}
-            <div className="rounded-md border bg-card p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Profession & Naissance</h3>
+            <div className="rounded-[4px] bg-white p-6 shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)]">
+              <h3 className="text-[11px] font-semibold uppercase tracking-[0.11em] mb-4" style={{ color: '#616161', fontFamily: "'JetBrains Mono', monospace" }}>Profession & Naissance</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                 <FormField
@@ -572,8 +572,8 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
             </div>
 
             {/* Situation juridique card */}
-            <div className="rounded-md border bg-card p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Situation juridique</h3>
+            <div className="rounded-[4px] bg-white p-6 shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)]">
+              <h3 className="text-[11px] font-semibold uppercase tracking-[0.11em] mb-4" style={{ color: '#616161', fontFamily: "'JetBrains Mono', monospace" }}>Situation juridique</h3>
               
               <div className="flex flex-wrap items-end gap-6">
                 <FormField
@@ -656,8 +656,8 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
         {/* Coordonnées */}
         {activeSection === 'coordonnees' && (
           <div className="space-y-6">
-            <div className="rounded-md border bg-card p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Contact</h3>
+            <div className="rounded-[4px] bg-white p-6 shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)]">
+              <h3 className="text-[11px] font-semibold uppercase tracking-[0.11em] mb-4" style={{ color: '#616161', fontFamily: "'JetBrains Mono', monospace" }}>Contact</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <FormField
@@ -701,8 +701,8 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
               </div>
             </div>
 
-            <div className="rounded-md border bg-card p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Adresse</h3>
+            <div className="rounded-[4px] bg-white p-6 shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)]">
+              <h3 className="text-[11px] font-semibold uppercase tracking-[0.11em] mb-4" style={{ color: '#616161', fontFamily: "'JetBrains Mono', monospace" }}>Adresse</h3>
               
               <div className="space-y-5">
                 <FormField
