@@ -24,7 +24,7 @@ interface SignInPageProps {
 // --- SUB-COMPONENTS ---
 
 const InputField = ({ children }: { children: React.ReactNode }) => (
-  <div className="rounded-lg border border-border bg-background transition-colors focus-within:border-[var(--lp-blue)] focus-within:ring-1 focus-within:ring-[var(--lp-blue)]/30">
+  <div className="rounded-md border border-border bg-background transition-colors focus-within:border-[var(--lp-blue)] focus-within:ring-1 focus-within:ring-[var(--lp-blue)]/30">
     {children}
   </div>
 );
@@ -88,7 +88,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                     placeholder="Email"
                     value={emailValue}
                     onChange={(e) => onEmailChange?.(e.target.value)}
-                    className="w-full bg-transparent text-sm px-4 py-3.5 rounded-lg focus:outline-none text-foreground placeholder:text-muted-foreground"
+                    className="w-full bg-transparent text-sm px-4 py-3.5 rounded-md focus:outline-none text-foreground placeholder:text-muted-foreground"
                   />
                 </InputField>
                 {emailError && <p className="text-sm text-destructive mt-1">{emailError}</p>}
@@ -103,7 +103,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                       placeholder="Mot de passe"
                       value={passwordValue}
                       onChange={(e) => onPasswordChange?.(e.target.value)}
-                      className="w-full bg-transparent text-sm px-4 py-3.5 pr-11 rounded-lg focus:outline-none text-foreground placeholder:text-muted-foreground"
+                      className="w-full bg-transparent text-sm px-4 py-3.5 pr-11 rounded-md focus:outline-none text-foreground placeholder:text-muted-foreground"
                     />
                     <button
                       type="button"
