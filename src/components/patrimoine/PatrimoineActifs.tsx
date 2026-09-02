@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -8,8 +7,6 @@ import { AssetForm } from '@/components/assets/AssetForm';
 import { Plus } from 'lucide-react';
 import { useAssets } from '@/hooks/useAssets';
 import { Asset, AssetCharge, assetService } from '@/services/assetService';
-import { societeService } from '@/services/societeService';
-import { isSocieteEligibleNature, natureToTypeSociete } from '@/lib/patrimoine/societeTransfer';
 import { assetIndivisaireService } from '@/services/assetIndivisaireService';
 import { assetValorisationService } from '@/services/assetValorisationService';
 import { assetDemembrementService } from '@/services/assetDemembrementService';
@@ -20,36 +17,6 @@ export const PatrimoineActifs = () => {
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const { assets, createAsset, updateAsset, deleteAsset } = useAssets();
-  const navigate = useNavigate();
-
-  // Retourne true en cas de succès (ou si l'étape ne s'applique pas), false en cas d'échec.
-  const syncSocieteFromAsset = async (savedAsset: Asset): Promise<boolean> => {
-    if (!savedAsset?.id) return true;
-    if (!isSocieteEligibleNature(savedAsset.nature)) return true;
-    if (!savedAsset.transfert_societe) return true;
-    if (savedAsset.societe_id) return true; // déjà lié
-
-    try {
-      const created = await societeService.create({
-        denomination: savedAsset.denomination || savedAsset.nature,
-        type_societe: natureToTypeSociete(savedAsset.nature),
-        valeur_estimee: savedAsset.valeur_estimee ?? undefined,
-        pourcentage_utilisateur: savedAsset.pourcentage_utilisateur ?? undefined,
-        pourcentage_conjoint: savedAsset.pourcentage_conjoint ?? undefined,
-      });
-      await assetService.updateAsset(savedAsset.id, { societe_id: created.id });
-      toast.success(`Une société ${created.denomination} a été créée automatiquement`, {
-        action: {
-          label: 'Voir la fiche société',
-          onClick: () => navigate(`/societes/form?id=${created.id}`),
-        },
-      });
-      return true;
-    } catch (err) {
-      if (import.meta.env.DEV) console.error('Auto-création société depuis actif échouée:', err);
-      return false;
-    }
-  };
 
   // Retourne true en cas de succès (ou si l'étape ne s'applique pas), false en cas d'échec.
   const syncValorisationFromAsset = async (savedAsset: Asset, previousValeurEstimee: number | undefined): Promise<boolean> => {
@@ -158,10 +125,6 @@ export const PatrimoineActifs = () => {
       if (import.meta.env.DEV) console.error('Sauvegarde du démembrement échouée:', error);
       stepErrors.push("la contrepartie de démembrement n'a pas pu être enregistrée");
     }
-
-    // Création/lien automatique d'une société si applicable
-    const societeOk = await syncSocieteFromAsset(savedAsset);
-    if (!societeOk) stepErrors.push("la société liée n'a pas pu être créée automatiquement");
 
     setShowAssetForm(false);
     setEditingAsset(null);
