@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import loginDoorImage from '@/assets/login-door.png';
 
 // --- TYPE DEFINITIONS ---
 
@@ -55,11 +56,11 @@ export const SignInPage: React.FC<SignInPageProps> = ({
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <div className="min-h-[100dvh] w-full bg-[var(--lp-mist,#f5f5f5)] flex items-center justify-center p-4 md:p-6">
-      <div className="w-full max-w-6xl grid md:grid-cols-2 gap-4 md:h-[88vh] md:min-h-[640px]">
-        {/* Left column: sign-in form */}
-        <div className="relative rounded-2xl bg-white border border-border shadow-sm flex items-center justify-center p-8 md:p-12">
-          <div className="w-full max-w-sm flex flex-col items-center text-center gap-6">
+    <div className="min-h-[100dvh] w-full bg-[var(--lp-mist,#f5f5f5)] flex items-center justify-center p-4 md:p-8">
+      <div className="w-full max-w-6xl grid md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] rounded-2xl overflow-hidden border border-border shadow-sm md:min-h-[640px]">
+      {/* Left column: sign-in form */}
+      <div className="relative bg-white flex items-center justify-center p-8 md:p-12">
+        <div className="w-full max-w-sm flex flex-col items-center text-center gap-6">
             <a href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
               <span
                 aria-hidden
@@ -138,7 +139,8 @@ export const SignInPage: React.FC<SignInPageProps> = ({
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full rounded-lg bg-black py-3.5 font-medium text-white hover:bg-black/85 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full text-sm font-bold uppercase tracking-wide py-3.5 hover:opacity-85 transition-opacity duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#04052e', color: '#ffffff' }}
               >
                 {isLoading
                   ? isSignUp
@@ -163,35 +165,36 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                 {isSignUp ? 'Se connecter' : 'Créer un compte'}
               </a>
             </p>
-          </div>
         </div>
+      </div>
 
-        {/* Right column: branded night panel */}
-        <div className="hidden md:block relative rounded-2xl overflow-hidden">
+      {/* Right column: branded night panel */}
+      <div className="hidden md:block relative overflow-hidden bg-[#05070f]">
+          <img
+            src={loginDoorImage}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 h-full w-full object-cover object-[38%_center]"
+          />
+          {/* readability gradient so the overlaid copy stays legible over the artwork */}
           <div
             className="absolute inset-0"
             style={{
               background:
-                'radial-gradient(ellipse at 50% 100%, #1c2b4a 0%, #0a0f1e 55%, #05070f 100%)',
+                'linear-gradient(180deg, rgba(5,7,15,0.55) 0%, rgba(5,7,15,0.05) 30%, rgba(5,7,15,0.1) 55%, rgba(5,7,15,0.75) 100%)',
             }}
           />
-          {/* starfield */}
-          <div
-            className="absolute inset-0 opacity-70"
-            style={{
-              backgroundImage:
-                'radial-gradient(1px 1px at 20% 30%, white 100%, transparent 0), radial-gradient(1px 1px at 70% 20%, white 100%, transparent 0), radial-gradient(1.5px 1.5px at 40% 60%, white 100%, transparent 0), radial-gradient(1px 1px at 85% 45%, white 100%, transparent 0), radial-gradient(1px 1px at 10% 70%, white 100%, transparent 0), radial-gradient(1.5px 1.5px at 60% 85%, white 100%, transparent 0), radial-gradient(1px 1px at 90% 80%, white 100%, transparent 0), radial-gradient(1px 1px at 30% 10%, white 100%, transparent 0)',
-              backgroundSize: '100% 100%',
-            }}
-          />
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 px-10 text-center">
-            <h2 className="font-playfair text-3xl lg:text-4xl leading-snug text-white/95">
+          <div className="absolute inset-0 flex flex-col items-center justify-between px-10 py-12">
+            <h2 className="font-playfair text-3xl lg:text-4xl leading-snug text-white/95 text-center drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]">
               {heroTitle}
             </h2>
 
-            <div className="w-full max-w-xs rounded-xl bg-white/10 backdrop-blur-md border border-white/10 p-5 text-left">
+            <div className="w-full max-w-xs rounded-xl bg-white/10 backdrop-blur-md border border-white/10 p-5 text-left shadow-[0_8px_32px_rgba(0,0,0,0.35)]">
               <p className="text-[11px] tracking-wide uppercase text-white/50">Patrimoine net</p>
-              <p className="mt-1 text-2xl font-semibold text-white">1 284 500 €</p>
+              <div className="mt-1 flex items-baseline gap-2">
+                <p className="text-2xl font-semibold text-white">1 284 500 €</p>
+                <span className="text-sm font-semibold" style={{ color: '#9bf00d' }}>+4,2 %</span>
+              </div>
               <svg viewBox="0 0 240 70" className="mt-4 w-full h-14">
                 <path
                   d="M0,55 C30,52 45,40 65,38 C90,35 100,20 130,15 C160,10 190,18 240,5"
@@ -213,7 +216,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
               </svg>
             </div>
           </div>
-        </div>
+      </div>
       </div>
     </div>
   );
