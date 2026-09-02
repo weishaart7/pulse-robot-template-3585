@@ -69,6 +69,24 @@ export interface Asset {
   // personnelle. Champ déclaratif, non injecté dans qualifierBien().
   part_licitation_personnelle?: number;
   licitation_acquereur?: 'utilisateur' | 'conjoint';
+  // Parts foncières/forestières non éligibles au module Sociétés (SCPI, groupements fonciers,
+  // GFA/GAF/GFV/GFR, sociétés d'épargne forestière) — cf. PARTS_FONCIERES_NATURES.
+  revenus_distribues_12m?: number;
+  regime_fiscal_parts?: string;
+  // Champs additionnels "actifs corporels" — cf. CORPS_NATURES_CHAMPS.
+  certificat_expertise?: boolean;
+  certificat_expertise_reference?: string;
+  numero_serie?: string;
+  quantite_millesime?: string;
+  // Champs additionnels "épargne retraite et prévoyance" — cf. RETRAITE_PREVOYANCE_NATURES_CHAMPS.
+  capital_garanti?: number;
+  beneficiaire_designe?: string;
+  mode_sortie?: string;
+  // Champs additionnels "épargne salariale" (PEE/PEI) — cf. NATURES_EPARGNE_SALARIALE.
+  abondement_employeur?: number;
+  date_disponibilite?: string;
+  motif_deblocage_anticipe?: string;
+  support_investissement?: string;
   created_at?: string;
   updated_at?: string;
 }

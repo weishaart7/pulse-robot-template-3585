@@ -233,3 +233,71 @@ describe('computeAssuranceVie — intégration cascade + démembrement dans le c
     expect(result.perBeneficiary['frere1'].prelev990I).toBeCloseTo(49500, 0);
   });
 });
+
+describe('computeAssuranceVie — abattement 990 I bis (20%) "Contrat vie-génération"', () => {
+  const beneficiaries: Beneficiary[] = [
+    { id: 'enfant1', lien: 'enfant' }
+  ];
+
+  it('Contrat vie-génération, primes avant 70 ans : 20% d\'abattement appliqué AVANT les 152 500€', () => {
+    const contracts: AVContract[] = [{
+      id: 'av-vie-gen',
+      nature: 'Contrat vie-génération',
+      capitalDeces: 400000,
+      primesAvant70: 400000,
+      primesApres70: 0,
+      niveaux: [{ beneficiaires: [{ beneficiaryId: 'enfant1', quotePart: 1 }] }]
+    }];
+
+    const result = computeAssuranceVie(contracts, beneficiaries, params, '2026-07-20');
+
+    // 400 000€ × (1 - 20%) = 320 000€, puis - 152 500€ = 167 500€ imposables × 20% = 33 500€.
+    // À comparer au même montant sans abattement 990 I bis (cf. test "frère/sœur... non-régression"
+    // ci-dessus, même capital 400 000€ sur un contrat standard → 49 500€) : l'abattement de 20%
+    // réduit bien le prélèvement (33 500€ < 49 500€).
+    expect(result.perBeneficiary['enfant1'].prelev990I).toBeCloseTo(33500, 0);
+  });
+
+  it('"Contrat d\'assurance-vie" standard, même capital : pas d\'abattement 990 I bis (non-régression)', () => {
+    const contracts: AVContract[] = [{
+      id: 'av-standard',
+      nature: "Contrat d'assurance-vie",
+      capitalDeces: 400000,
+      primesAvant70: 400000,
+      primesApres70: 0,
+      niveaux: [{ beneficiaires: [{ beneficiaryId: 'enfant1', quotePart: 1 }] }]
+    }];
+
+    const result = computeAssuranceVie(contracts, beneficiaries, params, '2026-07-20');
+
+    // 400 000€ - 152 500€ = 247 500€ imposables × 20% = 49 500€ (aucun abattement supplémentaire).
+    expect(result.perBeneficiary['enfant1'].prelev990I).toBeCloseTo(49500, 0);
+  });
+
+  it('Contrat vie-génération, primes après 70 ans : l\'abattement de 20% ne s\'applique pas au 757B', () => {
+    const contractVieGen: AVContract[] = [{
+      id: 'av-vie-gen-apres70',
+      nature: 'Contrat vie-génération',
+      capitalDeces: 100000,
+      primesAvant70: 0,
+      primesApres70: 100000,
+      niveaux: [{ beneficiaires: [{ beneficiaryId: 'enfant1', quotePart: 1 }] }]
+    }];
+    const contractStandard: AVContract[] = [{
+      ...contractVieGen[0],
+      id: 'av-standard-apres70',
+      nature: "Contrat d'assurance-vie"
+    }];
+
+    const resultVieGen = computeAssuranceVie(contractVieGen, beneficiaries, params, '2026-07-20');
+    const resultStandard = computeAssuranceVie(contractStandard, beneficiaries, params, '2026-07-20');
+
+    // Réintégration 757B identique quelle que soit la nature : l'abattement 990 I bis ne concerne
+    // que les primes avant 70 ans (990I), jamais les primes après 70 ans (757B).
+    expect(resultVieGen.perBeneficiary['enfant1'].reintegration757B).toBe(
+      resultStandard.perBeneficiary['enfant1'].reintegration757B
+    );
+    // 100 000€ - 30 500€ (abattement global 757B) = 69 500€ réintégrés.
+    expect(resultVieGen.perBeneficiary['enfant1'].reintegration757B).toBeCloseTo(69500, 0);
+  });
+});

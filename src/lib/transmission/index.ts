@@ -39,7 +39,7 @@ import {
   AvantageMatrimonialContext,
 } from '../patrimoine/avantagesMatrimoniaux';
 import { ClausesData } from '../../types/matrimonial';
-import { getAssetCategory } from '../../constants/assetTypes';
+import { getAssetCategory, isAssuranceVieHorsSuccession } from '../../constants/assetTypes';
 import {
   computeDMTG,
   DEFAULT_DMTG_PARAMS,
@@ -335,7 +335,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
 
   const deltaAvantageMatrimonial = avantageMatrimonialCtx
     ? (rawAssets || [])
-        .filter(asset => getAssetCategory(asset.nature || '') !== 'épargne et assurance-vie')
+        .filter(asset => !isAssuranceVieHorsSuccession(asset.nature))
         .reduce((sum, asset) => {
           const ajustee = getFractionAjustee(asset, avantageMatrimonialCtx);
           if (ajustee === null) return sum;
@@ -781,12 +781,14 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // que le chemin civil (deltaAvantageMatrimonial ci-dessus,
   // transmissionHelpers.ts::buildPatrimonySnapshot), pour que le fiscal et le
   // civil restent alignés sur la même assiette successorale.
-  // Les contrats d'assurance-vie sont hors succession (art. L132-12 code des
-  // assurances) : exclus de l'assiette DMTG, taxés séparément via avContracts
-  // (990 I / 757 B, cf. dmtg/assurance-vie.ts) — sans cette exclusion, un même
-  // contrat serait taxé deux fois dès qu'avContracts est réellement alimenté.
+  // Les contrats d'assurance-vie réellement hors succession (art. L132-12 code des assurances —
+  // "Contrat d'assurance-vie"/"Contrat vie-génération"/"PEP assurance vie", PAS "Bons & contrats
+  // de capitalisation" qui intègrent l'actif successoral classique) sont exclus de l'assiette
+  // DMTG, taxés séparément via avContracts (990 I / 757 B, cf. dmtg/assurance-vie.ts) — sans
+  // cette exclusion, un même contrat serait taxé deux fois dès qu'avContracts est réellement
+  // alimenté (cf. isAssuranceVieHorsSuccession, constants/assetTypes.ts).
   const dmtgAssets: DmtgAsset[] = (rawAssets || [])
-    .filter(asset => getAssetCategory(asset.nature || '') !== 'épargne et assurance-vie')
+    .filter(asset => !isAssuranceVieHorsSuccession(asset.nature))
     .map(asset => ({
       id: asset.id,
       label: asset.denomination || '',

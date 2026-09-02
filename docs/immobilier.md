@@ -15,10 +15,15 @@
 ## 1. Vue d'ensemble
 
 Le module Immobilier ne saisit pas d'actifs : il **republie** les actifs de nature immobilière déjà
-créés dans Patrimoine (`assets`, cf. `docs/patrimoine.md`) dès que l'utilisateur coche « Transfert dans
-Immobilier » (`transfert_immobilier = true`) dans `AssetForm`, et ajoute une couche de gestion
-spécifique : détail des coûts d'acquisition, financement déclaratif, type/régime de location, et pour
-les biens meublés, un calculateur d'amortissement LMNP/LMP avec revenus et charges dédiés.
+créés dans Patrimoine (`assets`, cf. `docs/patrimoine.md`) et ajoute une couche de gestion spécifique :
+détail des coûts d'acquisition, financement déclaratif, type/régime de location, et pour les biens
+meublés, un calculateur d'amortissement LMNP/LMP avec revenus et charges dédiés. Le transfert
+(`transfert_immobilier = true`) est **automatique** dès que la nature appartient à
+`ASSET_CATEGORIES['actifs immobiliers']` (calculé à la sauvegarde dans
+`useAssetForm.ts::handleSubmit`, plus de case à cocher manuelle dans `AssetForm`) — à une exception
+près : « Parts de SCI », seule nature à la fois immobilière et éligible au module Sociétés
+(`SOCIETE_ELIGIBLE_NATURES`), garde un choix manuel exclusif entre « Transfert dans Immobilier » et
+« Transfert dans Sociétés ».
 
 **Écrans** (`ImmobilierSection.tsx`, 3 onglets) :
 
@@ -37,11 +42,13 @@ Accessible aussi depuis « Mes biens » : [ImmobilierGestionDialog.tsx](src/comp
 **Flux clés** :
 - Un bien devient visible ici uniquement si `nature` fait partie de `ASSET_CATEGORIES['actifs
   immobiliers']` (18 natures, `src/constants/assetTypes.ts:183-201`) **et** `transfert_immobilier =
-  true` — [useImmobilierAssets.ts](src/hooks/useImmobilierAssets.ts:23-29).
+  true` — [useImmobilierAssets.ts](src/hooks/useImmobilierAssets.ts:23-29). Depuis l'automatisme du
+  transfert (cf. ci-dessus), cette seconde condition est de fait toujours vraie pour ces natures, sauf
+  pour « Parts de SCI » si l'utilisateur a explicitement choisi « Transfert dans Sociétés ».
 - Selon la nature, la fiche détail bascule vers l'un de trois comportements : formulaire générique
-  (résidences : `isResidenceType`), formulaire enrichi financement/location (biens locatifs non
-  meublés : `isRentalPropertyType`), ou vue LMNP dédiée avec amortissement (`MEUBLE_NATURES` = LMNP et
-  LMP) — routage fait indépendamment à trois endroits différents (§2).
+  (résidences : `isResidenceType`), formulaire enrichi financement/location (biens locatifs :
+  `isRentalPropertyType`, `RENTAL_PROPERTY_TYPES`, 6 natures), ou vue LMNP dédiée avec amortissement
+  (`MEUBLE_NATURES` = LMNP et LMP).
 - Le formulaire générique (`useImmobilierPropertyForm.ts`) écrit directement dans `assets` par
   `update`, sans passer par `assetService`.
 - La vue LMNP calcule un « résultat fiscal » (revenus − charges − amortissements) affiché en temps
@@ -74,23 +81,18 @@ Accessible aussi depuis « Mes biens » : [ImmobilierGestionDialog.tsx](src/comp
   d'écriture Immobilier n'ont donc pas ce garde-fou applicatif (RLS toujours en place en dernier
   recours, cf. §3).
 
-- **Routage par nature dupliqué trois fois, avec des listes divergentes.** La notion de « bien
-  locatif » (par opposition à résidence ou à un bien sans gestion possible) existe sous trois formes
-  indépendantes :
-  1. `RENTAL_PROPERTY_TYPES` (6 natures) — [immobilierPropertySchema.ts:32-39](src/schemas/immobilierPropertySchema.ts:32-39),
-     utilisée par `isRentalPropertyType()` pour activer les sections Financement/Location du formulaire.
-  2. Une liste littérale de 4 natures dupliquée **deux fois à l'identique** dans
-     [ImmobilierSection.tsx:216](src/components/immobilier/ImmobilierSection.tsx:216) et
-     [ImmobilierSection.tsx:261](src/components/immobilier/ImmobilierSection.tsx:261), qui conditionne
-     l'affichage du bouton « Gérer » (accès aux revenus/charges).
-  3. `RENTAL_PROPERTY_TYPES.slice(0, 4)` — [ImmobilierOverview.tsx:38](src/components/immobilier/ImmobilierOverview.tsx:38),
-     qui définit quels biens comptent comme « locatifs » pour le cashflow mensuel.
-  Les trois se recoupent aujourd'hui (les 4 premiers éléments de la liste à 6 sont les mêmes que la
-  liste dupliquée), mais rien ne les synchronise : ajouter une 7ᵉ nature locative, ou réordonner
-  `RENTAL_PROPERTY_TYPES`, casse silencieusement soit le bouton « Gérer », soit le calcul de
-  rentabilité, sans erreur visible. Deux natures déclarées locatives par (1) — « Autres immeubles de
-  rapport », « Parking / Garage / Box » — n'ont **jamais** de bouton « Gérer » : leurs revenus/charges
-  sont saisissables nulle part dans l'UI Immobilier.
+- **Routage par nature « bien locatif » unifié — corrigé.** Les trois définitions divergentes de
+  « bien locatif » ont été unifiées sur `RENTAL_PROPERTY_TYPES` (6 natures) —
+  [immobilierPropertySchema.ts:32-39](src/schemas/immobilierPropertySchema.ts:32-39), source unique
+  utilisée par `isRentalPropertyType()` (sections Financement/Location du formulaire),
+  [ImmobilierOverview.tsx:62](src/components/immobilier/ImmobilierOverview.tsx:62) (calcul de
+  rentabilité/cashflow) et les deux occurrences du bouton « Gérer » dans
+  [ImmobilierSection.tsx:216](src/components/immobilier/ImmobilierSection.tsx:216)/
+  [:261](src/components/immobilier/ImmobilierSection.tsx:261), qui référencent désormais directement
+  la constante au lieu de listes locales dupliquées ou tronquées (`.slice(0, 4)`). Conséquence :
+  « Autres immeubles de rapport » et « Parking / Garage / Box », qui activaient déjà les sections
+  Financement/Location de la fiche détail mais n'avaient jamais de bouton « Gérer », y ont désormais
+  accès comme les 4 autres natures locatives.
 
 - **Meublé (LMNP/LMP) routé indépendamment, via une troisième liste.** `MEUBLE_NATURES` dans
   `ImmobilierSection.tsx:16-19` (2 natures) décide si un clic sur une carte ouvre
@@ -116,17 +118,27 @@ Accessible aussi depuis « Mes biens » : [ImmobilierGestionDialog.tsx](src/comp
   sur la même instance de formulaire — deux abonnements indépendants déclenchant le même `setValue` à
   chaque frappe (sans effet visible autre que la redondance, `setValue` étant idempotent).
 
-- **Immobilier ↔ Sociétés : recouvrement possible, non arbitré.** `isImmobilier` (catégorie
-  `'actifs immobiliers'`) et `isSocieteEligibleNature` (dont « Parts de SCI ») ne sont pas exclusifs
-  dans `AssetForm.tsx:95-96` : pour un actif « Parts de SCI », les deux cases « Transfert dans
-  Immobilier » et « Transfert dans Sociétés » sont proposées simultanément et peuvent être cochées
-  ensemble, sans garde-fou ni message. **Vérifié en base** : sur 8 actifs avec `transfert_immobilier =
-  true`, **4 ont aussi `transfert_societe = true`**. Le même bien apparaît donc à la fois dans
-  Immobilier → Mes biens et dans Sociétés → Mes sociétés, avec potentiellement deux valorisations
-  gérées indépendamment (`valeur_estimee` ici, valorisation société ailleurs) sans lien affiché à
-  l'utilisateur entre les deux fiches. Le mécanisme analogue documenté dans
-  [societeTransfer.ts](src/lib/patrimoine/societeTransfer.ts) ne traite que le sens Patrimoine→Sociétés
-  et ne connaît pas Immobilier.
+- **Immobilier ↔ Sociétés : exclusivité restaurée pour les natures automatiques, gap résiduel à la
+  création d'une « Parts de SCI ».** `transfert_immobilier` est désormais forcé automatiquement à
+  `true` pour toute nature de `ASSET_CATEGORIES['actifs immobiliers']` (cf. §1) — sauf « Parts de
+  SCI », seule nature qui appartient aussi à `SOCIETE_ELIGIBLE_NATURES`
+  ([societeTransfer.ts](src/lib/patrimoine/societeTransfer.ts)), qui reste pilotée par les deux cases
+  exclusives « Transfert dans Immobilier »/« Transfert dans Sociétés » de `AssetForm.tsx` (cocher
+  l'une décoche l'autre via `onCheckedChange`). Une migration
+  (`force_transfert_immobilier_natures_immobilieres`) a mis à jour les actifs existants, en excluant
+  explicitement les « Parts de SCI » déjà rattachées à une société (`transfert_societe = true`) pour
+  ne pas casser ce rattachement. **Vérifié en base** : le seul actif resté en double transfert après
+  la migration (créé avant ce correctif) a été identifié et corrigé manuellement
+  (`transfert_immobilier = false`) ; plus aucune ligne en double transfert à ce jour.
+  **Gap résiduel non corrigé, différent du cas historique ci-dessus** : `getDefaultAssetValues()`
+  ([assetSchema.ts](src/schemas/assetSchema.ts)) initialise `transfert_immobilier` **et**
+  `transfert_societe` à `true` par défaut, et l'exclusivité n'est appliquée qu'au moment où
+  l'utilisateur interagit avec l'une des deux cases (`onCheckedChange`) — jamais sur l'état par
+  défaut. Côté sauvegarde, `useAssetForm.ts::handleSubmit` ne recalcule `transfert_immobilier` que
+  pour les natures immobilières *hors* exception SCI ; pour « Parts de SCI », il reprend
+  `values.transfert_immobilier` tel quel sans jamais vérifier `values.transfert_societe`. Un nouvel
+  actif « Parts de SCI » créé et sauvegardé sans que l'utilisateur touche à l'une des deux cases se
+  retrouverait donc, de nouveau, avec les deux flags à `true`.
 
 - **RLS en base, vérifiée directement.** `asset_charges`/`asset_revenus` ont des policies RLS
   (`SELECT`/`INSERT`/`UPDATE`/`DELETE`) qui vérifient toutes la propriété via une jointure sur
@@ -218,18 +230,15 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
-- **Un même actif « Parts de SCI » peut être transféré à la fois vers Immobilier et vers Sociétés**,
-  sans exclusion mutuelle dans `AssetForm.tsx` ni message d'avertissement — confirmé sur 4 lignes
-  réelles en base (cf. §2). Le bien peut alors afficher deux valorisations/gestions indépendantes sans
-  lien visible entre les deux modules.
+- **Un nouvel actif « Parts de SCI » peut encore être créé avec les deux transferts actifs** si
+  l'utilisateur ne touche à aucune des deux cases « Transfert dans Immobilier »/« Transfert dans
+  Sociétés » avant de sauvegarder (`getDefaultAssetValues()` initialise les deux à `true`, et
+  `useAssetForm.ts::handleSubmit` ne recalcule pas `transfert_immobilier` par rapport à
+  `transfert_societe` pour cette nature) — cf. §2 pour le détail. Distinct de l'incohérence
+  historique déjà corrigée en base pour les actifs existants.
 - **LMNP et LMP appliquent le même calcul d'amortissement et le même affichage de résultat**, alors
   que les régimes divergent en aval (cotisations sociales, imputation du déficit, plus-value
   professionnelle) — approximation plausible pour une V1, mais non signalée à l'utilisateur.
-- **Deux natures déclarées « locatives » par `RENTAL_PROPERTY_TYPES` (Autres immeubles de rapport,
-  Parking / Garage / Box) n'ont aucun accès UI aux revenus/charges** (bouton « Gérer » absent, liste
-  locale hardcodée limitée à 4 natures) alors que leur fiche détail active les sections
-  Financement/Location comme n'importe quel bien locatif — incohérence silencieuse entre ce que le
-  formulaire propose et ce que l'écran liste permet de gérer ensuite.
 - **`assetService.getAssetCharges`/`getAssetRevenus` sans filtre `user_id` applicatif**, à la
   différence du reste du durcissement « défense en profondeur » de Patrimoine (commit `ea3a695`) —
   couvert par les RLS, qui sont correctes, mais incohérent avec la méthode appliquée ailleurs.
@@ -258,9 +267,6 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
 - **Onglet « Gestion des biens » / « Revenus locatifs » non implémenté** (« Section à venir »,
   `ImmobilierSection.tsx:281-300`), alors que la fonctionnalité existe déjà par bien via « Gérer » —
   écran orphelin, à supprimer ou à raccorder.
-- **Trois listes indépendantes de « natures locatives »** (`RENTAL_PROPERTY_TYPES`, la liste dupliquée
-  deux fois dans `ImmobilierSection.tsx`, et `RENTAL_PROPERTY_TYPES.slice(0, 4)`), synchronisées
-  aujourd'hui seulement par coïncidence d'ordre — cf. §2.
 - **Auto-calcul des frais de notaire (7,5 %) dupliqué à l'identique** dans
   `useImmobilierPropertyForm.ts` et `PropertyCostSection.tsx`, sur la même instance de formulaire.
 - **`console.error` non gardé par `import.meta.env.DEV`** — deux occurrences :
@@ -284,7 +290,8 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
 
 ## 4. Périmètre V1 / différé
 
-- **V1 — en place** : bascule d'un actif Patrimoine vers Immobilier par simple case à cocher, fiche
+- **V1 — en place** : bascule automatique d'un actif Patrimoine vers Immobilier dès que sa nature est
+  immobilière (choix manuel exclusif avec Sociétés conservé uniquement pour « Parts de SCI »), fiche
   détail par bien (général/coûts/financement/type de location pour les biens locatifs), gestion des
   revenus/charges par bien avec bascule d'impact sur le Budget, vue dédiée LMNP/LMP avec calcul
   d'amortissement par composant et résultat fiscal simplifié, KPI de portefeuille (valeur totale,
@@ -295,10 +302,19 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
     d'assiette foncière ni d'IR/PS.
   - **Terrains, Bois & forêts, Parts de SCPI/GFA/GFV/GFR, Maison mobile, Autres biens d'usage** : ces
     natures apparaissent dans « Mes biens » si transférées (elles appartiennent à
-    `ASSET_CATEGORIES['actifs immobiliers']`), mais `isResidenceType`/`isRentalPropertyType` ne les
-    couvrent pas — la fiche affiche explicitement « La gestion des informations pour cette catégorie
-    sera disponible prochainement » (`ImmobilierPropertyDetailView.tsx:74-79`) : gap assumé et
-    documenté par le message lui-même, pas un bug silencieux.
+    `ASSET_CATEGORIES['actifs immobiliers']`, et le transfert est désormais automatique — cf. §1),
+    mais `isResidenceType`/`isRentalPropertyType` ne les couvrent pas — la fiche affiche explicitement
+    « La gestion des informations pour cette catégorie sera disponible prochainement »
+    (`ImmobilierPropertyDetailView.tsx:74-79`) : gap assumé et documenté par le message lui-même, pas
+    un bug silencieux. **Nuance récente** : pour 4 de ces natures — Parts de SCPI, Parts de
+    groupements fonciers, Parts de GFA/GAF/GFV/GFR, Parts de sociétés d'épargne forestière (pas
+    « Parts de SCI », qui reste sur le module Sociétés) — `AssetForm.tsx` (Patrimoine, pas Immobilier)
+    capture désormais un établissement dédié (libellé « Société de gestion »/« Gestionnaire » selon la
+    nature), les revenus distribués sur 12 mois et un régime fiscal
+    (`PARTS_FONCIERES_NATURES`/`REGIME_FISCAL_PARTS_OPTIONS`,
+    [assetTypes.ts](src/constants/assetTypes.ts)). Cette information existe donc en base
+    (`assets.revenus_distribues_12m`, `assets.regime_fiscal_parts`) mais reste invisible depuis
+    Immobilier, qui continue d'afficher le message « à venir » pour ces natures.
   - **Financement (`financement_*`) : saisi et persisté, mais consommé nulle part, y compris dans ce
     module.** Confirme l'hypothèse posée par `docs/patrimoine.md` (§2/§5, cases dormantes) : les 5
     champs `financement_actif`/`financement_duree_mois`/`financement_apport`/`financement_taux_credit`/

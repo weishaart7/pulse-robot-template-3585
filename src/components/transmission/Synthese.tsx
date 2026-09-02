@@ -160,7 +160,8 @@ export const Synthese = () => {
         detenteur: a.detenteur,
         origineFonds: avOrigineFondsByAsset.get(a.id) || null,
         operations: avOperationsByAsset.get(a.id) || [],
-        clauseBeneficiaireStructuree: avClauseByAsset.get(a.id) || null
+        clauseBeneficiaireStructuree: avClauseByAsset.get(a.id) || null,
+        nature: a.nature
       }));
 
       // Statut 'decede' de la clause bénéficiaire AV : aucune cascade automatique

@@ -334,6 +334,105 @@ export const CTO_SOUS_JACENT_OPTIONS = [
   "Private equity (FCPR/FPCI)",
 ] as const;
 
+// Natures de la famille "épargne et assurance-vie" réellement "hors succession" (art. L132-12
+// code des assurances — capital transmis via la clause bénéficiaire, taxé en 990I/757B) —
+// contrairement à "Bons & contrats de capitalisation", qui intègrent la succession classique au
+// décès (droits de succession de droit commun selon le lien de parenté, transmission par voie
+// testamentaire/légale, pas de clause bénéficiaire hors succession). Utilisée par
+// dmtg/assurance-vie.ts et transmissionHelpers.ts/transmission/index.ts pour ne plus traiter les
+// 4 natures de la famille de façon uniforme.
+export const NATURES_AV_HORS_SUCCESSION = [
+  "Contrat d'assurance-vie",
+  "Contrat vie-génération",
+  "PEP assurance vie",
+];
+
+export const isAssuranceVieHorsSuccession = (nature: string | null | undefined): boolean =>
+  !!nature && NATURES_AV_HORS_SUCCESSION.includes(nature);
+
+// Natures "parts foncières/forestières" de la famille "actifs immobiliers" non éligibles au
+// module Sociétés (cf. SOCIETE_ELIGIBLE_NATURES dans societeTransfer.ts, qui ne contient que
+// "Parts de SCI") : elles reçoivent à la place, dans AssetForm.tsx, un établissement
+// (société de gestion / gestionnaire), des revenus distribués et un régime fiscal dédiés.
+export const PARTS_FONCIERES_NATURES = [
+  "Parts de SCPI",
+  "Parts de groupements fonciers",
+  "Parts de GFA, GAF, GFV et GFR",
+  "Parts de sociétés d'épargne forestière",
+] as const;
+
+// Options de régime fiscal proposées pour chacune des natures ci-dessus (AssetForm.tsx,
+// champ regime_fiscal_parts) — la liste dépend de la nature sélectionnée.
+export const REGIME_FISCAL_PARTS_OPTIONS: Record<string, string[]> = {
+  "Parts de SCPI": ["Revenus fonciers", "SCPI fiscale (Pinel / Malraux / Déficit foncier)", "Autre"],
+  "Parts de groupements fonciers": ["Revenus fonciers", "Dividendes", "Autre"],
+  "Parts de GFA, GAF, GFV et GFR": ["Revenus fonciers agricoles", "Revenus fonciers viticoles", "Dividendes", "Autre"],
+  "Parts de sociétés d'épargne forestière": ["Revenus forestiers", "Dividendes", "Autre"],
+};
+
+// Champs additionnels proposés, dans AssetForm.tsx (pill "Caractéristiques"), pour certaines
+// natures de la famille "actifs corporels" — les natures absentes de ce mapping (Meubles
+// meublants, Véhicules motorisés, Matériel informatique/audiovisuel haut de gamme, Matériel
+// sportif de valeur, Autres placements divers) n'affichent aucun champ additionnel.
+export type CorpsChamp = 'certificat_expertise' | 'numero_serie' | 'quantite_millesime';
+
+export const CORPS_NATURES_CHAMPS: Record<string, CorpsChamp[]> = {
+  "Objets d'art et antiquités": ['certificat_expertise'],
+  "Montres": ['certificat_expertise', 'numero_serie'],
+  "Objets de collection": ['certificat_expertise'],
+  "Bijoux et pierres précieuses": ['certificat_expertise'],
+  "Sacs et accessoires de luxe": ['certificat_expertise'],
+  "Vins & spiritueux d'investissement": ['quantite_millesime'],
+};
+
+// Champs additionnels proposés, dans AssetForm.tsx (pill "Caractéristiques"), pour certaines
+// natures de la famille "épargne retraite et prévoyance". "beneficiaire_designe" est listé ici
+// pour les 3 natures PER, mais reste soumis en plus, côté AssetForm.tsx, à la condition
+// sous_type_per === 'Assurantiel' (masqué si Bancaire ou non renseigné) — cette nuance ne peut
+// pas être exprimée dans ce mapping statique nature → champs.
+export type RetraitePrevoyanceChamp = 'capital_garanti' | 'beneficiaire_designe' | 'mode_sortie';
+
+export const RETRAITE_PREVOYANCE_NATURES_CHAMPS: Record<string, RetraitePrevoyanceChamp[]> = {
+  'PER individuel': ['beneficiaire_designe', 'mode_sortie'],
+  'PER entreprise collectif': ['beneficiaire_designe', 'mode_sortie'],
+  'PER entreprise obligatoire': ['beneficiaire_designe', 'mode_sortie'],
+  'PERCO/PERCOI': ['mode_sortie'],
+  'PERP': ['mode_sortie'],
+  'Contrat loi Madelin': ['mode_sortie'],
+  'Contrat loi Madelin Agricole': ['mode_sortie'],
+  'Contrat article 83': ['mode_sortie'],
+  'Contrat article 82': ['mode_sortie'],
+  'Contrat Préfon-retraite': ['mode_sortie'],
+  'Contrat retraite mutualiste du combattant': ['mode_sortie'],
+  'Régimes de retraite étrangers': ['mode_sortie'],
+  'Temporaire décès': ['capital_garanti', 'beneficiaire_designe'],
+  'Vie entière': ['capital_garanti', 'beneficiaire_designe'],
+  'Contrat prévoyance individuelle': ['capital_garanti', 'beneficiaire_designe'],
+};
+
+export const MODE_SORTIE_OPTIONS = ['Rente', 'Capital', 'Mixte'] as const;
+
+// Natures de la famille "épargne salariale" recevant, dans AssetForm.tsx (pill
+// "Caractéristiques"), les champs abondement employeur / date de disponibilité / motif de
+// déblocage anticipé / support d'investissement — les 2 natures de la famille en bénéficient
+// toutes les deux de façon identique (pas de variance par nature, contrairement à
+// CORPS_NATURES_CHAMPS/RETRAITE_PREVOYANCE_NATURES_CHAMPS), d'où un simple tableau plutôt qu'un
+// mapping nature → champs.
+export const NATURES_EPARGNE_SALARIALE = ["PEE", "PEI"];
+
+export const MOTIF_DEBLOCAGE_ANTICIPE_OPTIONS = [
+  "Mariage/PACS",
+  "Naissance/adoption (3e enfant)",
+  "Divorce avec garde d'enfant",
+  "Invalidité",
+  "Décès",
+  "Cessation du contrat de travail",
+  "Création/reprise d'entreprise",
+  "Acquisition résidence principale",
+  "Surendettement",
+  "Aucun — épargne non débloquée",
+] as const;
+
 export const getAssetCategory = (nature: string): string => {
   for (const [category, natures] of Object.entries(ASSET_CATEGORIES)) {
     if ((natures as readonly string[]).includes(nature)) {
@@ -359,5 +458,6 @@ export const NATURES_WITHOUT_ACQUISITION: string[] = [
   "PEP Bancaire",
   "Dépôt de garantie",
   "Autres dépôts",
-  "Autres disponibilités"
+  "Autres disponibilités",
+  "Compte courant d'associé"
 ];

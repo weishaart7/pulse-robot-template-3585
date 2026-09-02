@@ -96,6 +96,7 @@ describe("Partenaire pacsé légataire — bénéficiaire d'assurance-vie, exon�
     const avContracts = buildAVContracts(
       [{
         assetId: 'av1',
+        nature: "Contrat d'assurance-vie",
         label: 'Contrat AV',
         valeurEstimee: 200000,
         operations: [{ type_operation: 'versement', montant: 200000, date_operation: '2015-01-01' }],

@@ -152,6 +152,32 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   indépendants, correctement séparés** — vérifié explicitement par le Bloc 6 : le rappel fiscal borne
   les donations à moins de 15 ans (CGI art. 784), le rapport civil n'a aucune limite de durée (art. 860)
   ; aucune confusion entre les deux constatée dans le code.
+- **Abattement 990 I bis (20 %) "Contrat vie-génération" implémenté ; "Bons & contrats de
+  capitalisation" retiré du régime hors succession 990I/757B (01-02/09/2026).** Les 4 natures de la
+  famille "épargne et assurance-vie" (`Contrat d'assurance-vie`, `Contrat vie-génération`, `PEP
+  assurance vie`, `Bons & contrats de capitalisation`) étaient traitées de façon strictement
+  identique par `computeAssuranceVie` (`dmtg/assurance-vie.ts`) et par les 6 occurrences dupliquées
+  du filtre `getAssetCategory(nature) !== 'épargne et assurance-vie'` (`transmissionHelpers.ts` ×4,
+  `lib/transmission/index.ts` ×2), faute de porter `nature` sur `AVContract`/`AVContractRawRow`.
+  Deux corrections ciblées : (1) `computeAssuranceVie` applique désormais un abattement
+  supplémentaire de 20 % (art. 990 I bis CGI) sur le capital soumis, **avant** l'abattement de
+  152 500 €, uniquement pour `nature === 'Contrat vie-génération'` et uniquement sur les primes
+  avant 70 ans (jamais sur le flux 757B/primes après 70 ans, régime distinct) ; (2) "Bons & contrats
+  de capitalisation" — qui n'est pas hors succession civile (art. L132-12) et intègre normalement
+  l'actif successoral classique au décès, droits de succession de droit commun selon le lien de
+  parenté — est désormais exclu du régime 990I/757B : nouvelle constante
+  `NATURES_AV_HORS_SUCCESSION`/`isAssuranceVieHorsSuccession` (`constants/assetTypes.ts`, 3 natures
+  sur 4) remplace les 6 filtres catégorie-large par un filtre nature par nature, et `buildAVContracts`
+  exclut ces bons en amont (défense en profondeur, quel que soit l'appelant). Décision produit :
+  `AssuranceVie.tsx` ne liste plus ces bons (`AV_NATURES` réduit aux 3 vraies natures AV) — ils
+  apparaissent désormais comme n'importe quel autre actif dans Synthèse/ProcessusCalcul/2nd décès,
+  taxés au barème de succession de droit commun. `AVContract`/`AVContractRawRow` portent désormais
+  `nature`, propagée par les 4 écrans/hooks qui construisent des contrats AV
+  (`AssuranceVie.tsx`, `Synthese.tsx`, `Succession2ndDeces.tsx`, `useAVContracts.ts` →
+  `ProcessusCalcul.tsx`). **Vérifié** : 8 nouveaux tests (`dmtg/assurance-vie.test.ts`,
+  `transmissionHelpers.avContracts.test.ts`) couvrant l'abattement 20 % (990I et non-régression sur
+  757B) et l'exclusion des bons de capitalisation (`buildAVContracts`, `buildPatrimonySnapshot`) ; 9
+  fixtures existantes adaptées pour renseigner `nature` ; suite complète (695 tests) au vert.
 - **F19 (renonciation, effet dévolutif), F20 (exonération DMTG frère/sœur), F13 (DDV double point
   d'entrée) et F7 (ancien combattant, code retiré des formulaires)** — quatre correctifs plus anciens
   (`32c79bd`, `0e50d06`/`d443db1`, `31d1fe7`, `5122e87`), identifiés par un audit antérieur du module

@@ -12,7 +12,7 @@ import { RecompenseCalcInput, CreanceCalcInput } from '@/lib/patrimoine/recompen
 import { Recompense } from '@/types/recompense';
 import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
 import { ClausesData } from '@/types/matrimonial';
-import { getAssetCategory } from '@/constants/assetTypes';
+import { isAssuranceVieHorsSuccession } from '@/constants/assetTypes';
 import { getAgeAtDate, getDemembrementPct } from '@/lib/transmission';
 import { resolveEffectiveAVBeneficiaires } from '@/lib/dmtg/assurance-vie';
 import { isDetenteurSpouse } from '@/lib/patrimoine/utils';
@@ -226,6 +226,11 @@ export interface AVContractRawRow {
   assetId: string;
   label?: string | null;
   valeurEstimee?: number | null;
+  // assets.nature — permet à buildAVContracts d'exclure les "Bons & contrats de
+  // capitalisation" (jamais hors succession, cf. isAssuranceVieHorsSuccession) et à
+  // dmtg/assurance-vie.ts d'appliquer l'abattement 990 I bis (20%) réservé au
+  // "Contrat vie-génération".
+  nature?: string | null;
   // assets.detenteur (texte libre, 'user'/'spouse' par convention, cf.
   // lib/patrimoine/utils.ts::isDetenteurSpouse) — détenteur réel du contrat,
   // pour distinguer un contrat de l'Utilisateur de celui du conjoint
@@ -290,63 +295,70 @@ export function buildAVContracts(
   const resolveBeneficiaryId = (familyLinkId: string) =>
     familyLinkId === 'conjoint' ? (family.survivingSpouseId || familyLinkId) : familyLinkId;
 
-  return rows.map(row => {
-    const { primesAvant70, primesApres70 } = splitPrimesAvantApres70(
-      row.operations,
-      dateNaissance,
-      row.label || undefined
-    );
+  // "Bons & contrats de capitalisation" ne sont jamais hors succession (art. L132-12) : ils
+  // intègrent l'actif successoral classique au décès (droits de succession de droit commun),
+  // pas le régime 990I/757B — filtrés ici pour ne jamais devenir un AVContract, quel que soit
+  // l'appelant (défense en profondeur, cf. isAssuranceVieHorsSuccession).
+  return rows
+    .filter(row => isAssuranceVieHorsSuccession(row.nature))
+    .map(row => {
+      const { primesAvant70, primesApres70 } = splitPrimesAvantApres70(
+        row.operations,
+        dateNaissance,
+        row.label || undefined
+      );
 
-    const niveaux = (row.clauseBeneficiaireStructuree?.niveaux || []).map(niveau => ({
-      beneficiaires: niveau.beneficiaires
-        .filter(b => !!b.familyLinkId)
-        .map(b => {
-          const beneficiaryId = resolveBeneficiaryId(b.familyLinkId);
-          const entry: AVContract['niveaux'][number]['beneficiaires'][number] = {
-            beneficiaryId,
-            quotePart: (b.pourcentage || 0) / 100,
-            statut: b.statut
-          };
+      const niveaux = (row.clauseBeneficiaireStructuree?.niveaux || []).map(niveau => ({
+        beneficiaires: niveau.beneficiaires
+          .filter(b => !!b.familyLinkId)
+          .map(b => {
+            const beneficiaryId = resolveBeneficiaryId(b.familyLinkId);
+            const entry: AVContract['niveaux'][number]['beneficiaires'][number] = {
+              beneficiaryId,
+              quotePart: (b.pourcentage || 0) / 100,
+              statut: b.statut
+            };
 
-          if (b.typeDetention === 'usufruit' && b.nuProprietaireId) {
-            const usufruitier = family.persons.find(p => p.id === beneficiaryId);
-            if (!usufruitier?.dateNaissance) {
-              throw new AVDonneesInsuffisantesError(
-                `Date de naissance de l'usufruitier désigné dans la clause bénéficiaire manquante${row.label ? ` (contrat ${row.label})` : ''} — impossible de valoriser l'usufruit (barème art. 669 CGI).`
-              );
+            if (b.typeDetention === 'usufruit' && b.nuProprietaireId) {
+              const usufruitier = family.persons.find(p => p.id === beneficiaryId);
+              if (!usufruitier?.dateNaissance) {
+                throw new AVDonneesInsuffisantesError(
+                  `Date de naissance de l'usufruitier désigné dans la clause bénéficiaire manquante${row.label ? ` (contrat ${row.label})` : ''} — impossible de valoriser l'usufruit (barème art. 669 CGI).`
+                );
+              }
+              entry.typeDetention = 'usufruit';
+              entry.nuProprietaireId = resolveBeneficiaryId(b.nuProprietaireId);
+              entry.usufruitPct = getDemembrementPct(getAgeAtDate(usufruitier.dateNaissance, referenceDate), 'usufruit');
             }
-            entry.typeDetention = 'usufruit';
-            entry.nuProprietaireId = resolveBeneficiaryId(b.nuProprietaireId);
-            entry.usufruitPct = getDemembrementPct(getAgeAtDate(usufruitier.dateNaissance, referenceDate), 'usufruit');
-          }
 
-          return entry;
+            return entry;
+          })
+      }));
+
+      const hasConjointBeneficiaire = niveaux.some(n =>
+        n.beneficiaires.some(b => b.beneficiaryId === family.survivingSpouseId || b.nuProprietaireId === family.survivingSpouseId)
+      );
+
+      const hasExoneratedSiblingBeneficiaire = niveaux.some(n =>
+        n.beneficiaires.some(b => {
+          const isExonere = (id: string) => family.persons.find(p => p.id === id)?.exonerationSuccession === true;
+          return isExonere(b.beneficiaryId) || (!!b.nuProprietaireId && isExonere(b.nuProprietaireId));
         })
-    }));
+      );
 
-    const hasConjointBeneficiaire = niveaux.some(n =>
-      n.beneficiaires.some(b => b.beneficiaryId === family.survivingSpouseId || b.nuProprietaireId === family.survivingSpouseId)
-    );
-
-    const hasExoneratedSiblingBeneficiaire = niveaux.some(n =>
-      n.beneficiaires.some(b => {
-        const isExonere = (id: string) => family.persons.find(p => p.id === id)?.exonerationSuccession === true;
-        return isExonere(b.beneficiaryId) || (!!b.nuProprietaireId && isExonere(b.nuProprietaireId));
-      })
-    );
-
-    return {
-      id: row.assetId,
-      niveaux,
-      capitalDeces: Number(row.valeurEstimee) || 0,
-      primesAvant70,
-      primesApres70,
-      isExonereBeneficiaireConjointPacs: hasConjointBeneficiaire,
-      isSiblingExonEligible: hasExoneratedSiblingBeneficiaire,
-      detenteur: isDetenteurSpouse(row.detenteur || undefined) ? 'spouse' : 'user',
-      origineFonds: row.origineFonds === 'deniers_propres' ? 'deniers_propres' : 'deniers_communs'
-    };
-  });
+      return {
+        id: row.assetId,
+        niveaux,
+        capitalDeces: Number(row.valeurEstimee) || 0,
+        primesAvant70,
+        primesApres70,
+        isExonereBeneficiaireConjointPacs: hasConjointBeneficiaire,
+        isSiblingExonEligible: hasExoneratedSiblingBeneficiaire,
+        detenteur: isDetenteurSpouse(row.detenteur || undefined) ? 'spouse' : 'user',
+        origineFonds: row.origineFonds === 'deniers_propres' ? 'deniers_propres' : 'deniers_communs',
+        nature: row.nature || undefined
+      };
+    });
 }
 
 /**
@@ -901,15 +913,16 @@ export function buildPatrimonySnapshot(
   // partagée avec transmission/index.ts pour que le civil et le fiscal restent
   // alignés sur la même assiette).
   //
-  // Les contrats d'assurance-vie sont hors succession civile (art. L132-13
-  // code des assurances, hors primes manifestement exagérées — non modélisé,
-  // hors périmètre) : exclus ici avec la même condition que dmtgAssets côté
-  // fiscal (transmission/index.ts), pour que les deux assiettes restent
-  // alignées. Sans cette exclusion, un contrat AV réel (une fois les
-  // opérations renseignées) aurait été compté à la fois dans la masse
-  // successorale civile ET dans `assuranceVieTotal` (double compte).
+  // Les contrats réellement hors succession civile (art. L132-13 code des assurances, hors
+  // primes manifestement exagérées — non modélisé, hors périmètre) sont exclus ici avec la même
+  // condition que dmtgAssets côté fiscal (transmission/index.ts), pour que les deux assiettes
+  // restent alignées — "Bons & contrats de capitalisation" en est exclu (cf.
+  // isAssuranceVieHorsSuccession) : il reste dans la masse successorale civile normale, comme
+  // n'importe quel autre actif. Sans cette exclusion nature par nature, un contrat AV réel (une
+  // fois les opérations renseignées) aurait été compté à la fois dans la masse successorale
+  // civile ET dans `assuranceVieTotal` (double compte).
   const totalAssets = assets
-    .filter(asset => getAssetCategory(asset.nature || '') !== 'épargne et assurance-vie')
+    .filter(asset => !isAssuranceVieHorsSuccession(asset.nature))
     .reduce((sum, asset) => {
       const valeur = getValeurEstimeePonderee(asset, assetDemembrements, demembrementCtx);
       const partSuccessorale = getPartSuccessorale(asset, asset.denomination || asset.id);
@@ -995,7 +1008,7 @@ export function buildSurvivingSpousePatrimony(
   demembrementCtx: DemembrementFractionContext = {}
 ): PatrimonySnapshot {
   const totalAssetsConjoint = assets
-    .filter(asset => getAssetCategory(asset.nature || '') !== 'épargne et assurance-vie')
+    .filter(asset => !isAssuranceVieHorsSuccession(asset.nature))
     .reduce((sum, asset) => {
       const valeur = getValeurEstimeePonderee(asset, assetDemembrements, demembrementCtx);
       const partConjoint = getPartConjointSuccession(asset, asset.denomination || asset.id);
@@ -1077,7 +1090,7 @@ export function buildSpouseRawAssets(
   });
 
   return assets
-    .filter(asset => getAssetCategory(asset.nature || '') !== 'épargne et assurance-vie')
+    .filter(asset => !isAssuranceVieHorsSuccession(asset.nature))
     .map(asset => {
       const partConjoint = avantageMatrimonialCtx
         ? getPartConjointAjustee(
@@ -1118,7 +1131,7 @@ export function buildSpouseOwnBasePatrimony(
   demembrementCtx: DemembrementFractionContext = {}
 ): PatrimonySnapshot {
   const totalAssetsConjoint = assets
-    .filter(asset => getAssetCategory(asset.nature || '') !== 'épargne et assurance-vie')
+    .filter(asset => !isAssuranceVieHorsSuccession(asset.nature))
     .reduce((sum, asset) => {
       const valeur = getValeurEstimeePonderee(asset, assetDemembrements, demembrementCtx);
       return sum + valeur * getPartConjointSuccession(asset, asset.denomination || asset.id);

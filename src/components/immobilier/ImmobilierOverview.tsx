@@ -59,7 +59,7 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
   const locativeAssetIds = useMemo(() => {
     return new Set(
       assets
-        .filter(a => RENTAL_PROPERTY_TYPES.slice(0, 4).includes(a.nature || ''))
+        .filter(a => RENTAL_PROPERTY_TYPES.includes(a.nature || ''))
         .map(a => a.id)
     );
   }, [assets]);

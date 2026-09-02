@@ -72,7 +72,8 @@ export function useAVContracts(assets: Asset[]) {
         detenteur: a.detenteur,
         origineFonds: origineFondsByAsset.get(a.id!) || null,
         operations: opsByAsset.get(a.id!) || [],
-        clauseBeneficiaireStructuree: clauseByAsset.get(a.id!) || null
+        clauseBeneficiaireStructuree: clauseByAsset.get(a.id!) || null,
+        nature: a.nature
       }));
 
       setAvContractsRaw(rows);

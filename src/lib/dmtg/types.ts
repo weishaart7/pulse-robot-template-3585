@@ -101,6 +101,13 @@ export interface AVContract {
   // origine_fonds) — ne sert qu'à la réintégration civile d'un contrat non
   // dénoué sous régime de communauté ; sans effet sur le calcul fiscal.
   origineFonds?: 'deniers_propres' | 'deniers_communs';
+  // assets.nature — utilisée uniquement pour l'abattement supplémentaire de 20 %
+  // (art. 990 I bis CGI) réservé aux "Contrat vie-génération" sur les primes
+  // avant 70 ans (cf. dmtg/assurance-vie.ts::computeAssuranceVie). Les contrats
+  // "Bons & contrats de capitalisation" ne deviennent jamais des AVContract
+  // (filtrés en amont dans buildAVContracts, cf. transmissionHelpers.ts) : ce
+  // champ ne voit donc jamais cette nature-là en pratique.
+  nature?: string;
 }
 
 export interface Donation {

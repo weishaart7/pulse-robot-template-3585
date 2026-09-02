@@ -87,6 +87,24 @@ export const assetSchema = z.object({
   financement_mixte_apport_propre: z.number().min(0).optional(),
   part_licitation_personnelle: z.number().min(0).max(100).optional(),
   licitation_acquereur: z.enum(['utilisateur', 'conjoint']).optional(),
+  // Parts foncières/forestières non éligibles au module Sociétés (SCPI, groupements fonciers,
+  // GFA/GAF/GFV/GFR, sociétés d'épargne forestière) — cf. PARTS_FONCIERES_NATURES.
+  revenus_distribues_12m: z.number().finite().nonnegative().optional(),
+  regime_fiscal_parts: z.string().optional(),
+  // Champs additionnels "actifs corporels" — cf. CORPS_NATURES_CHAMPS.
+  certificat_expertise: z.boolean().optional(),
+  certificat_expertise_reference: z.string().optional(),
+  numero_serie: z.string().optional(),
+  quantite_millesime: z.string().optional(),
+  // Champs additionnels "épargne retraite et prévoyance" — cf. RETRAITE_PREVOYANCE_NATURES_CHAMPS.
+  capital_garanti: z.number().finite().nonnegative().optional(),
+  beneficiaire_designe: z.string().optional(),
+  mode_sortie: z.string().optional(),
+  // Champs additionnels "épargne salariale" (PEE/PEI) — cf. NATURES_EPARGNE_SALARIALE.
+  abondement_employeur: z.number().finite().nonnegative().optional(),
+  date_disponibilite: z.date().optional(),
+  motif_deblocage_anticipe: z.string().optional(),
+  support_investissement: z.string().optional(),
 });
 
 export type AssetFormValues = z.infer<typeof assetSchema>;

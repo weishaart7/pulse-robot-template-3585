@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildAVContracts, splitPrimesAvantApres70, computeAVReintegrationCivile, AVDonneesInsuffisantesError } from './transmissionHelpers';
+import { buildAVContracts, buildPatrimonySnapshot, splitPrimesAvantApres70, computeAVReintegrationCivile, AVDonneesInsuffisantesError } from './transmissionHelpers';
 import { FamilyGraph, TransmissionParams, PatrimonySnapshot } from '@/lib/transmission/types';
 import { computeTransmission } from '@/lib/transmission';
 import { AVContract } from '@/lib/dmtg/types';
@@ -55,6 +55,7 @@ describe('buildAVContracts', () => {
     const [contract] = buildAVContracts(
       [{
         assetId: 'av1',
+        nature: "Contrat d'assurance-vie",
         valeurEstimee: 100000,
         operations: [{ type_operation: 'versement', montant: 100000, date_operation: '2010-01-01' }],
         clauseBeneficiaireStructuree: { niveaux: [{ beneficiaires: [{ familyLinkId: 'conjoint', pourcentage: 100 }] }] }
@@ -70,6 +71,7 @@ describe('buildAVContracts', () => {
     const [contract] = buildAVContracts(
       [{
         assetId: 'av1',
+        nature: "Contrat d'assurance-vie",
         valeurEstimee: 100000,
         operations: [{ type_operation: 'versement', montant: 100000, date_operation: '2010-01-01' }],
         clauseBeneficiaireStructuree: {
@@ -99,6 +101,7 @@ describe('buildAVContracts', () => {
     const [contract] = buildAVContracts(
       [{
         assetId: 'av1',
+        nature: "Contrat d'assurance-vie",
         valeurEstimee: 100000,
         operations: [{ type_operation: 'versement', montant: 100000, date_operation: '2010-01-01' }],
         clauseBeneficiaireStructuree: {
@@ -132,6 +135,7 @@ describe('buildAVContracts', () => {
     const [contract] = buildAVContracts(
       [{
         assetId: 'av1',
+        nature: "Contrat d'assurance-vie",
         valeurEstimee: 100000,
         operations: [{ type_operation: 'versement', montant: 100000, date_operation: '2010-01-01' }],
         clauseBeneficiaireStructuree: { niveaux: [{ beneficiaires: [{ familyLinkId: 'frere1', pourcentage: 100 }] }] }
@@ -152,6 +156,7 @@ describe('buildAVContracts', () => {
     const [contract] = buildAVContracts(
       [{
         assetId: 'av1',
+        nature: "Contrat d'assurance-vie",
         valeurEstimee: 100000,
         operations: [{ type_operation: 'versement', montant: 100000, date_operation: '2010-01-01' }],
         clauseBeneficiaireStructuree: { niveaux: [{ beneficiaires: [{ familyLinkId: 'frere1', pourcentage: 100 }] }] }
@@ -167,6 +172,7 @@ describe('buildAVContracts', () => {
     expect(() => buildAVContracts(
       [{
         assetId: 'av1',
+        nature: "Contrat d'assurance-vie",
         valeurEstimee: 100000,
         operations: [{ type_operation: 'versement', montant: 100000, date_operation: '2010-01-01' }],
         clauseBeneficiaireStructuree: {
@@ -184,6 +190,81 @@ describe('buildAVContracts', () => {
       family,
       '2026-07-17'
     )).toThrow(AVDonneesInsuffisantesError);
+  });
+});
+
+describe('buildAVContracts — "Bons & contrats de capitalisation" exclus (pas hors succession, art. L132-12)', () => {
+  it('un contrat "Bons & contrats de capitalisation" seul ne devient jamais un AVContract', () => {
+    const contracts = buildAVContracts(
+      [{
+        assetId: 'bon-cap-1',
+        nature: 'Bons & contrats de capitalisation',
+        valeurEstimee: 100000,
+        operations: [{ type_operation: 'versement', montant: 100000, date_operation: '2010-01-01' }],
+        clauseBeneficiaireStructuree: { niveaux: [{ beneficiaires: [{ familyLinkId: 'enfant1', pourcentage: 100 }] }] }
+      }],
+      '1970-01-01',
+      family
+    );
+    expect(contracts).toEqual([]);
+  });
+
+  it('lot mixte : les vrais contrats AV sont conservés, seuls les bons de capitalisation sont exclus', () => {
+    const contracts = buildAVContracts(
+      [
+        {
+          assetId: 'av1',
+          nature: "Contrat d'assurance-vie",
+          valeurEstimee: 50000,
+          operations: [{ type_operation: 'versement', montant: 50000, date_operation: '2010-01-01' }],
+          clauseBeneficiaireStructuree: null
+        },
+        {
+          assetId: 'bon-cap-1',
+          nature: 'Bons & contrats de capitalisation',
+          valeurEstimee: 100000,
+          operations: [{ type_operation: 'versement', montant: 100000, date_operation: '2010-01-01' }],
+          clauseBeneficiaireStructuree: null
+        }
+      ],
+      '1970-01-01',
+      family
+    );
+    expect(contracts).toHaveLength(1);
+    expect(contracts[0].id).toBe('av1');
+  });
+
+  it('reporte assets.nature sur l\'AVContract construit (consommé par computeAssuranceVie pour l\'abattement 990 I bis)', () => {
+    const [contract] = buildAVContracts(
+      [{
+        assetId: 'av-vie-gen',
+        nature: 'Contrat vie-génération',
+        valeurEstimee: 100000,
+        operations: [{ type_operation: 'versement', montant: 100000, date_operation: '2010-01-01' }],
+        clauseBeneficiaireStructuree: null
+      }],
+      '1970-01-01',
+      family
+    );
+    expect(contract.nature).toBe('Contrat vie-génération');
+  });
+});
+
+describe('buildPatrimonySnapshot — "Bons & contrats de capitalisation" réintègre la succession civile classique', () => {
+  it('"Contrat d\'assurance-vie" reste hors succession civile (biensExistants = 0)', () => {
+    const patrimony = buildPatrimonySnapshot(
+      [{ id: 'av1', nature: "Contrat d'assurance-vie", valeur_estimee: 100000, qualification_bien: 'Bien propre', detenteur: 'user' } as any],
+      []
+    );
+    expect(patrimony.biensExistants).toBe(0);
+  });
+
+  it('"Bons & contrats de capitalisation" intègre désormais la succession civile classique, comme n\'importe quel autre actif', () => {
+    const patrimony = buildPatrimonySnapshot(
+      [{ id: 'bon-cap-1', nature: 'Bons & contrats de capitalisation', valeur_estimee: 100000, qualification_bien: 'Bien propre', detenteur: 'user' } as any],
+      []
+    );
+    expect(patrimony.biensExistants).toBeGreaterThan(0);
   });
 });
 

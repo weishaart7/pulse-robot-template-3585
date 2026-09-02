@@ -247,6 +247,7 @@ describe('Golden Scenarios — Transmission (docs/Golden_Scenarios_Transmission.
       const avContracts = buildAVContracts(
         [{
           assetId: 'av1',
+          nature: "Contrat d'assurance-vie",
           label: 'Contrat AV',
           valeurEstimee: 250000,
           operations: [{ type_operation: 'versement', montant: 250000, date_operation: '2015-01-01' }],
@@ -290,6 +291,7 @@ describe('Golden Scenarios — Transmission (docs/Golden_Scenarios_Transmission.
       const avContracts = buildAVContracts(
         [{
           assetId: 'av1',
+          nature: "Contrat d'assurance-vie",
           label: 'Contrat AV',
           valeurEstimee: 250000,
           operations: [{ type_operation: 'versement', montant: 250000, date_operation: '2015-01-01' }],

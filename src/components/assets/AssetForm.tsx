@@ -11,7 +11,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Asset, AssetCharge } from '@/services/assetService';
 import { ChargeForm } from './ChargeForm';
-import { ASSET_NATURE_OPTIONS, getAssetCategory, NATURES_WITHOUT_ACQUISITION, NATURES_PER, CTO_SOUS_JACENT_OPTIONS } from '@/constants/assetTypes';
+import { ASSET_NATURE_OPTIONS, getAssetCategory, NATURES_WITHOUT_ACQUISITION, NATURES_PER, CTO_SOUS_JACENT_OPTIONS, PARTS_FONCIERES_NATURES, REGIME_FISCAL_PARTS_OPTIONS, CORPS_NATURES_CHAMPS, RETRAITE_PREVOYANCE_NATURES_CHAMPS, MODE_SORTIE_OPTIONS, NATURES_EPARGNE_SALARIALE, MOTIF_DEBLOCAGE_ANTICIPE_OPTIONS } from '@/constants/assetTypes';
 import { useAssetForm, NATURES_WITH_ETABLISSEMENT } from '@/hooks/useAssetForm';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Globe, Info, TrendingUp, TrendingDown, FileText, Users, ShoppingCart, Coins, Receipt } from 'lucide-react';
@@ -106,6 +106,29 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const showBienEtranger = watchedNature && !NATURES_LIQUIDITES_FR.includes(watchedNature);
   const isPER = NATURES_PER.includes(watchedNature);
   const isCTO = watchedNature === 'Compte-titres (CTO)';
+  const isPartsFoncieres = (PARTS_FONCIERES_NATURES as readonly string[]).includes(watchedNature);
+  const etablissementLabel = watchedNature === 'Parts de SCPI'
+    ? 'Société de gestion'
+    : isPartsFoncieres
+      ? 'Gestionnaire'
+      : 'Établissement';
+  const regimeFiscalPartsOptions = REGIME_FISCAL_PARTS_OPTIONS[watchedNature] || [];
+  const corpsChamps = CORPS_NATURES_CHAMPS[watchedNature] || [];
+  const showCertificatExpertise = corpsChamps.includes('certificat_expertise');
+  const showNumeroSerie = corpsChamps.includes('numero_serie');
+  const showQuantiteMillesime = corpsChamps.includes('quantite_millesime');
+  const watchedCertificatExpertise = form.watch('certificat_expertise');
+  const retraitePrevoyanceChamps = RETRAITE_PREVOYANCE_NATURES_CHAMPS[watchedNature] || [];
+  const showCapitalGaranti = retraitePrevoyanceChamps.includes('capital_garanti');
+  const showModeSortie = retraitePrevoyanceChamps.includes('mode_sortie');
+  const watchedSousTypePer = form.watch('sous_type_per');
+  // Pour les 3 natures PER, le bénéficiaire désigné n'a de sens que pour la variante
+  // assurantielle (support de placement en unités de compte avec clause bénéficiaire) —
+  // masqué si Bancaire ou non renseigné. Pour les 3 natures de prévoyance/décès, aucune
+  // condition supplémentaire : isPER est faux, la condition passe telle quelle.
+  const showBeneficiaireDesigne = retraitePrevoyanceChamps.includes('beneficiaire_designe')
+    && (!isPER || watchedSousTypePer === 'Assurantiel');
+  const isEpargneSalariale = (NATURES_EPARGNE_SALARIALE as readonly string[]).includes(watchedNature);
   const watchedOrigineActif = form.watch('origine_actif');
   const showClauseEntreeCommunaute = (watchedOrigineActif || []).includes('Donation') || (watchedOrigineActif || []).includes('Héritage');
   const showClauseRemploi = (watchedOrigineActif || []).includes('Acquisition à titre onéreux');
@@ -279,10 +302,50 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         {showEtablissement && (
           <FormField control={form.control} name="etablissement" render={({ field }) => (
             <FormItem>
-              <FormLabel>Établissement</FormLabel>
+              <FormLabel>{etablissementLabel}</FormLabel>
               <FormControl>
                 <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        )}
+
+        {isPartsFoncieres && (
+          <FormField control={form.control} name="revenus_distribues_12m" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Revenus distribués (12 derniers mois)</FormLabel>
+              <FormControl>
+                <Input
+                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                  type="number"
+                  step="0.01"
+                  {...field}
+                  value={field.value ?? ''}
+                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        )}
+
+        {isPartsFoncieres && (
+          <FormField control={form.control} name="regime_fiscal_parts" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Régime fiscal</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || ''}>
+                <FormControl>
+                  <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                    <SelectValue placeholder="Choisir le régime fiscal" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {regimeFiscalPartsOptions.map((option) => (
+                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )} />
@@ -309,7 +372,65 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             <FormMessage />
           </FormItem>
         )} />
+
+        {showNumeroSerie && (
+          <FormField control={form.control} name="numero_serie" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Numéro de série</FormLabel>
+              <FormControl>
+                <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} value={field.value || ''} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        )}
+
+        {showQuantiteMillesime && (
+          <FormField control={form.control} name="quantite_millesime" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Quantité / Millésime</FormLabel>
+              <FormControl>
+                <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} value={field.value || ''} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        )}
       </div>
+
+      {showCertificatExpertise && (
+        <FormField
+          control={form.control}
+          name="certificat_expertise"
+          render={({ field }) => (
+            <FormItem className="rounded-md border p-4 space-y-3">
+              <div className="flex flex-row items-start space-x-3 space-y-0">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>Certificat d'authenticité ou expertise</FormLabel>
+                </div>
+              </div>
+
+              {watchedCertificatExpertise && (
+                <FormField control={form.control} name="certificat_expertise_reference" render={({ field: refField }) => (
+                  <FormItem className="pl-7">
+                    <FormLabel>Référence</FormLabel>
+                    <FormControl>
+                      <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...refField} value={refField.value || ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              )}
+            </FormItem>
+          )}
+        />
+      )}
 
       {showBienEtranger && (
         <FormField
@@ -337,7 +458,13 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         />
       )}
 
-      {isImmobilier && (
+      {/*
+        Le transfert vers "Immobilier" est automatique pour toute nature de la famille "actifs
+        immobiliers" (cf. handleSubmit dans useAssetForm.ts) et ne se pilote donc plus par case à
+        cocher — sauf pour "Parts de SCI", seule nature à appartenir aussi à SOCIETE_ELIGIBLE_NATURES :
+        elle doit rester exclusive avec "Transfert dans Sociétés", d'où le choix manuel conservé ici.
+      */}
+      {isImmobilier && isSocieteEligible && (
         <FormField
           control={form.control}
           name="transfert_immobilier"
@@ -356,7 +483,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                 <FormLabel>Transfert dans Immobilier</FormLabel>
                 <FormDescription>
                   Ce bien apparaîtra dans la section "Immobilier" → "Mes biens"
-                  {isSocieteEligible && ' (exclusif avec "Transfert dans Sociétés")'}
+                  {' '}(exclusif avec "Transfert dans Sociétés")
                 </FormDescription>
               </div>
             </FormItem>
@@ -409,6 +536,127 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             <FormMessage />
           </FormItem>
         )} />
+      )}
+
+      {(showCapitalGaranti || showBeneficiaireDesigne || showModeSortie) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {showCapitalGaranti && (
+            <FormField control={form.control} name="capital_garanti" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Capital garanti (€)</FormLabel>
+                <FormControl>
+                  <Input
+                    className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                    type="number"
+                    step="0.01"
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+
+          {showBeneficiaireDesigne && (
+            <FormField control={form.control} name="beneficiaire_designe" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Bénéficiaire désigné</FormLabel>
+                <FormControl>
+                  <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} value={field.value || ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+
+          {showModeSortie && (
+            <FormField control={form.control} name="mode_sortie" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Mode de sortie</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value || ''}>
+                  <FormControl>
+                    <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                      <SelectValue placeholder="Choisir le mode de sortie" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {MODE_SORTIE_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>{option}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+        </div>
+      )}
+
+      {isEpargneSalariale && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField control={form.control} name="abondement_employeur" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Abondement employeur (€)</FormLabel>
+              <FormControl>
+                <Input
+                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                  type="number"
+                  step="0.01"
+                  {...field}
+                  value={field.value ?? ''}
+                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          <FormField control={form.control} name="date_disponibilite" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Date de disponibilité / déblocage</FormLabel>
+              <FormControl>
+                <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          <FormField control={form.control} name="motif_deblocage_anticipe" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Motif de déblocage anticipé</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || ''}>
+                <FormControl>
+                  <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                    <SelectValue placeholder="Choisir le motif" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {MOTIF_DEBLOCAGE_ANTICIPE_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          <FormField control={form.control} name="support_investissement" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Support d'investissement</FormLabel>
+              <FormControl>
+                <Input
+                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                  placeholder="Ex. FCPE monétaire, FCPE actions diversifiées"
+                  {...field}
+                  value={field.value || ''}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        </div>
       )}
 
       {isCTO && (

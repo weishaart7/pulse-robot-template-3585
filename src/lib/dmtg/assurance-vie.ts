@@ -108,8 +108,16 @@ export function computeAssuranceVie(
         // Capital soumis au prélèvement (primes avant 70 ans)
         const capitalSoumis = contract.primesAvant70 * share.quotePart;
 
+        // "Contrat vie-génération" (art. 990 I bis CGI) : abattement supplémentaire de 20% sur
+        // la part de capital transmise à chaque bénéficiaire, appliqué AVANT l'abattement de
+        // 152 500€ — uniquement sur les primes avant 70 ans (primesAvant70/990I) ; les primes
+        // après 70 ans (757B, ci-dessus) ne sont jamais concernées par cet abattement.
+        const capitalApresAbattement20 = contract.nature === 'Contrat vie-génération'
+          ? capitalSoumis * 0.8
+          : capitalSoumis;
+
         // Abattement 990I par bénéficiaire
-        const baseImposable990I = Math.max(0, capitalSoumis - params.abattements.av_990I_allowance);
+        const baseImposable990I = Math.max(0, capitalApresAbattement20 - params.abattements.av_990I_allowance);
 
         if (baseImposable990I > 0) {
           // Appliquer le barème 990I

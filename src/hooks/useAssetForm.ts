@@ -7,12 +7,13 @@ import { assetSchema, AssetFormValues, getDefaultAssetValues } from '@/schemas/a
 import { Asset, AssetCharge } from '@/services/assetService';
 import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, mapDetenteurToDb, getPartUtilisateurIndivisionTiers, FamilyInfo } from '@/lib/patrimoine/utils';
-import { ASSET_CATEGORIES } from '@/constants/assetTypes';
+import { ASSET_CATEGORIES, getAssetCategory, PARTS_FONCIERES_NATURES } from '@/constants/assetTypes';
 import { qualifierBien } from '@/lib/patrimoine/qualification';
 import { assetIndivisaireService, AssetIndivisaire } from '@/services/assetIndivisaireService';
 import { IndivisaireDraft, draftsFromIndivisaires } from '@/components/assets/IndivisairesSection';
 import { assetDemembrementService } from '@/services/assetDemembrementService';
 import { DemembrementDraft, draftsFromDemembrements } from '@/components/assets/DemembrementSection';
+import { isSocieteEligibleNature } from '@/lib/patrimoine/societeTransfer';
 
 // Types d'actifs qui nécessitent le champ "Établissement"
 export const NATURES_WITH_ETABLISSEMENT = [
@@ -21,7 +22,8 @@ export const NATURES_WITH_ETABLISSEMENT = [
   ...ASSET_CATEGORIES['épargne et assurance-vie'],
   ...ASSET_CATEGORIES['épargne salariale'],
   ...ASSET_CATEGORIES['épargne bancaire / liquidités'],
-  ...ASSET_CATEGORIES['valeurs mobilières et placements financiers']
+  ...ASSET_CATEGORIES['valeurs mobilières et placements financiers'],
+  ...PARTS_FONCIERES_NATURES,
 ];
 
 interface UseAssetFormProps {
@@ -194,6 +196,19 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         financement_mixte_apport_propre: asset.financement_mixte_apport_propre ?? undefined,
         part_licitation_personnelle: asset.part_licitation_personnelle ?? undefined,
         licitation_acquereur: asset.licitation_acquereur ?? undefined,
+        revenus_distribues_12m: asset.revenus_distribues_12m ?? undefined,
+        regime_fiscal_parts: asset.regime_fiscal_parts || undefined,
+        certificat_expertise: asset.certificat_expertise || false,
+        certificat_expertise_reference: asset.certificat_expertise_reference || undefined,
+        numero_serie: asset.numero_serie || undefined,
+        quantite_millesime: asset.quantite_millesime || undefined,
+        capital_garanti: asset.capital_garanti ?? undefined,
+        beneficiaire_designe: asset.beneficiaire_designe || undefined,
+        mode_sortie: asset.mode_sortie || undefined,
+        abondement_employeur: asset.abondement_employeur ?? undefined,
+        date_disponibilite: asset.date_disponibilite ? new Date(asset.date_disponibilite) : undefined,
+        motif_deblocage_anticipe: asset.motif_deblocage_anticipe || undefined,
+        support_investissement: asset.support_investissement || undefined,
       });
     }
     // `indivisaires` est chargé de façon asynchrone par l'effet précédent
@@ -345,6 +360,16 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         finalSpousePercentage = 0;
       }
 
+      // Transfert automatique dans "Immobilier" pour toute nature de la famille "actifs
+      // immobiliers" — plus de case à cocher manuelle (cf. AssetForm.tsx). Exception : "Parts de
+      // SCI", seule nature à la fois immobilière et éligible société, reste exclusive avec
+      // transfert_societe et garde donc le choix manuel porté par values.transfert_immobilier.
+      const isImmobilierNature = getAssetCategory(values.nature) === 'actifs immobiliers';
+      const isSciException = isImmobilierNature && isSocieteEligibleNature(values.nature);
+      const transfertImmobilier = isImmobilierNature
+        ? (isSciException ? !!values.transfert_immobilier : true)
+        : false;
+
       const dbValues = {
         ...values,
         detenteur: dbDetenteur,
@@ -352,10 +377,12 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         pourcentage_conjoint: finalSpousePercentage,
         date_estimation: values.date_estimation ? format(values.date_estimation, 'yyyy-MM-dd') : null,
         date_acquisition: values.date_acquisition ? format(values.date_acquisition, 'yyyy-MM-dd') : null,
+        date_disponibilite: values.date_disponibilite ? format(values.date_disponibilite, 'yyyy-MM-dd') : null,
         // Convert empty strings to null for optional fields
         denomination: values.denomination || null,
         etablissement: values.etablissement || null,
         mode_detention: values.mode_detention || null,
+        transfert_immobilier: transfertImmobilier,
       };
 
       const formattedValues = dbValues;

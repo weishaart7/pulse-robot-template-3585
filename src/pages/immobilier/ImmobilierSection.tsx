@@ -12,6 +12,7 @@ import { ImmobilierGestionDialog } from '@/components/immobilier/ImmobilierGesti
 import { ImmobilierOverview } from '@/components/immobilier/ImmobilierOverview';
 import { LMNPDetailView } from '@/components/immobilier/lmnp/LMNPDetailView';
 import { Asset } from '@/services/assetService';
+import { RENTAL_PROPERTY_TYPES } from '@/schemas/immobilierPropertySchema';
 
 const MEUBLE_NATURES = [
   'Immeubles locatifs (LMNP)',
@@ -213,7 +214,7 @@ export const ImmobilierSection = () => {
                         )}
                         
                         <div className="flex gap-2 mt-4">
-                          {['Immeubles locatifs (loués nus)', 'Immeubles locatifs (LMNP)', 'Immeubles locatifs (LMP)', 'Immeubles professionnels (hors LMP)'].includes(asset.nature || '') && (
+                          {RENTAL_PROPERTY_TYPES.includes(asset.nature || '') && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -258,7 +259,7 @@ export const ImmobilierSection = () => {
                               >
                                 Informations
                               </Button>
-                              {['Immeubles locatifs (loués nus)', 'Immeubles locatifs (LMNP)', 'Immeubles locatifs (LMP)', 'Immeubles professionnels (hors LMP)'].includes(asset.nature || '') && (
+                              {RENTAL_PROPERTY_TYPES.includes(asset.nature || '') && (
                                 <Button
                                   variant="outline"
                                   size="sm"

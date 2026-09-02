@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { AVContractDetail } from './av/AVContractDetail';
 import { ClauseStructuree, BeneficiaireEntry } from './av/ClauseBeneficiaireBuilder';
-import { getAssetCategory } from '@/constants/assetTypes';
+import { NATURES_AV_HORS_SUCCESSION } from '@/constants/assetTypes';
 import {
   buildFamilyGraph,
   buildPatrimonySnapshot,
@@ -33,12 +33,12 @@ import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
 import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcquets';
 import transmissionParamsData from '@/data/transmission-params.json';
 
-const AV_NATURES = [
-  "Contrat d'assurance-vie",
-  "Contrat vie-génération",
-  "PEP assurance vie",
-  "Bons & contrats de capitalisation",
-];
+// "Bons & contrats de capitalisation" est volontairement exclu de cet écran : contrairement aux
+// 3 natures ci-dessous, il n'est pas hors succession (art. L132-12) — au décès il intègre l'actif
+// successoral classique (droits de succession de droit commun selon le lien de parenté), pas le
+// régime 990I/757B ni une clause bénéficiaire hors succession. Il apparaît comme n'importe quel
+// autre actif financier dans Synthèse/ProcessusCalcul, pas ici (cf. NATURES_AV_HORS_SUCCESSION).
+const AV_NATURES = NATURES_AV_HORS_SUCCESSION;
 
 interface OperationsByContract {
   [assetId: string]: { type_operation: string; montant: number }[];
@@ -221,7 +221,8 @@ export const AssuranceVie = () => {
               label: a.denomination,
               valeurEstimee: a.valeur_estimee,
               operations: opsByAsset.get(a.id!) || [],
-              clauseBeneficiaireStructuree: clauseByAsset.get(a.id!) || null
+              clauseBeneficiaireStructuree: clauseByAsset.get(a.id!) || null,
+              nature: a.nature
             }));
 
             const family: FamilyGraph = buildFamilyGraph(profileRes.data, maritalRes.data, familyLinksRows);

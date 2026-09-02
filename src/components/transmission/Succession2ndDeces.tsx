@@ -177,7 +177,8 @@ export const Succession2ndDeces = () => {
         detenteur: a.detenteur,
         origineFonds: avOrigineFondsByAsset.get(a.id) || null,
         operations: avOperationsByAsset.get(a.id) || [],
-        clauseBeneficiaireStructuree: avClauseByAsset.get(a.id) || null
+        clauseBeneficiaireStructuree: avClauseByAsset.get(a.id) || null,
+        nature: a.nature
       }));
 
       const { data: liberalites } = await supabase
