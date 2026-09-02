@@ -11,7 +11,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Asset, AssetCharge } from '@/services/assetService';
 import { ChargeForm } from './ChargeForm';
-import { ASSET_NATURE_OPTIONS, getAssetCategory, NATURES_WITHOUT_ACQUISITION, NATURES_PER, CTO_SOUS_JACENT_OPTIONS, PARTS_FONCIERES_NATURES, REGIME_FISCAL_PARTS_OPTIONS, CORPS_NATURES_CHAMPS, RETRAITE_PREVOYANCE_NATURES_CHAMPS, MODE_SORTIE_OPTIONS, NATURES_EPARGNE_SALARIALE, MOTIF_DEBLOCAGE_ANTICIPE_OPTIONS } from '@/constants/assetTypes';
+import { ASSET_NATURE_OPTIONS, getAssetCategory, NATURES_WITHOUT_ACQUISITION, NATURES_PER, CTO_SOUS_JACENT_OPTIONS, PARTS_FONCIERES_NATURES, REGIME_FISCAL_PARTS_OPTIONS, CORPS_NATURES_CHAMPS, RETRAITE_PREVOYANCE_NATURES_CHAMPS, MODE_SORTIE_OPTIONS, NATURES_EPARGNE_SALARIALE, MOTIF_DEBLOCAGE_ANTICIPE_OPTIONS, NATURES_DATE_OUVERTURE, LIQUIDITES_NATURES_CHAMPS, VALEURS_MOBILIERES_NATURES_CHAMPS } from '@/constants/assetTypes';
 import { useAssetForm, NATURES_WITH_ETABLISSEMENT } from '@/hooks/useAssetForm';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Globe, Info, TrendingUp, TrendingDown, FileText, Users, ShoppingCart, Coins, Receipt } from 'lucide-react';
@@ -129,6 +129,21 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const showBeneficiaireDesigne = retraitePrevoyanceChamps.includes('beneficiaire_designe')
     && (!isPER || watchedSousTypePer === 'Assurantiel');
   const isEpargneSalariale = (NATURES_EPARGNE_SALARIALE as readonly string[]).includes(watchedNature);
+  const isDateOuverture = NATURES_DATE_OUVERTURE.includes(watchedNature);
+  const liquiditesChamps = LIQUIDITES_NATURES_CHAMPS[watchedNature] || [];
+  const showTauxRemuneration = liquiditesChamps.includes('taux_remuneration');
+  const showDateEcheanceLiquidites = liquiditesChamps.includes('date_echeance');
+  const valeursMobilieresChamps = VALEURS_MOBILIERES_NATURES_CHAMPS[watchedNature] || [];
+  const showPlafondVerse = valeursMobilieresChamps.includes('plafond_verse');
+  const showDureeBlocage = valeursMobilieresChamps.includes('duree_blocage');
+  const showReductionIrEntree = valeursMobilieresChamps.includes('reduction_ir_entree');
+  const showDateAttribution = valeursMobilieresChamps.includes('date_attribution');
+  const showPrixExercice = valeursMobilieresChamps.includes('prix_exercice');
+  const showMontantEngageAppele = valeursMobilieresChamps.includes('montant_engage');
+  const showSousJacent = valeursMobilieresChamps.includes('sous_jacent');
+  const showDateEcheanceVM = valeursMobilieresChamps.includes('date_echeance');
+  const showCapitalGarantiVM = valeursMobilieresChamps.includes('capital_garanti');
+  const showLieuStockageQuantite = valeursMobilieresChamps.includes('lieu_stockage');
   const watchedOrigineActif = form.watch('origine_actif');
   const showClauseEntreeCommunaute = (watchedOrigineActif || []).includes('Donation') || (watchedOrigineActif || []).includes('Héritage');
   const showClauseRemploi = (watchedOrigineActif || []).includes('Acquisition à titre onéreux');
@@ -538,9 +553,9 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         )} />
       )}
 
-      {(showCapitalGaranti || showBeneficiaireDesigne || showModeSortie) && (
+      {(showCapitalGaranti || showCapitalGarantiVM || showBeneficiaireDesigne || showModeSortie) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {showCapitalGaranti && (
+          {(showCapitalGaranti || showCapitalGarantiVM) && (
             <FormField control={form.control} name="capital_garanti" render={({ field }) => (
               <FormItem>
                 <FormLabel>Capital garanti (€)</FormLabel>
@@ -702,6 +717,220 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         </>
       )}
 
+      {(showTauxRemuneration || showDateEcheanceLiquidites) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {showDateEcheanceLiquidites && (
+            <FormField control={form.control} name="date_echeance" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Date d'échéance</FormLabel>
+                <FormControl>
+                  <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+
+          {showTauxRemuneration && (
+            <FormField control={form.control} name="taux_remuneration" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Taux de rémunération (%)</FormLabel>
+                <FormControl>
+                  <Input
+                    className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                    type="number"
+                    step="0.01"
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+        </div>
+      )}
+
+      {showPlafondVerse && (
+        <FormField control={form.control} name="plafond_verse" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Montant versé (€)</FormLabel>
+            <FormControl>
+              <Input
+                className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                type="number"
+                step="0.01"
+                {...field}
+                value={field.value ?? ''}
+                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+      )}
+
+      {(showDureeBlocage || showReductionIrEntree) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {showDureeBlocage && (
+            <FormField control={form.control} name="duree_blocage" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Durée de blocage</FormLabel>
+                <FormControl>
+                  <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" placeholder="Ex. 5 ans, jusqu'au 31/12/2030" {...field} value={field.value || ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+
+          {showReductionIrEntree && (
+            <FormField control={form.control} name="reduction_ir_entree" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Réduction d'IR à l'entrée (%)</FormLabel>
+                <FormControl>
+                  <Input
+                    className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                    type="number"
+                    step="0.01"
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+        </div>
+      )}
+
+      {showMontantEngageAppele && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField control={form.control} name="montant_engage" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Montant engagé (€)</FormLabel>
+              <FormControl>
+                <Input
+                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                  type="number"
+                  step="0.01"
+                  {...field}
+                  value={field.value ?? ''}
+                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          <FormField control={form.control} name="montant_appele" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Montant appelé (€)</FormLabel>
+              <FormControl>
+                <Input
+                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                  type="number"
+                  step="0.01"
+                  {...field}
+                  value={field.value ?? ''}
+                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        </div>
+      )}
+
+      {(showDateAttribution || showPrixExercice) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {showDateAttribution && (
+            <FormField control={form.control} name="date_attribution" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Date d'attribution</FormLabel>
+                <FormControl>
+                  <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+
+          {showPrixExercice && (
+            <FormField control={form.control} name="prix_exercice" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Prix d'exercice (€)</FormLabel>
+                <FormControl>
+                  <Input
+                    className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                    type="number"
+                    step="0.01"
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+        </div>
+      )}
+
+      {(showSousJacent || showDateEcheanceVM) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {showSousJacent && (
+            <FormField control={form.control} name="sous_jacent" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Sous-jacent</FormLabel>
+                <FormControl>
+                  <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} value={field.value || ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+
+          {showDateEcheanceVM && (
+            <FormField control={form.control} name="date_echeance" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Date d'échéance</FormLabel>
+                <FormControl>
+                  <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+        </div>
+      )}
+
+      {showLieuStockageQuantite && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField control={form.control} name="lieu_stockage" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Lieu de stockage</FormLabel>
+              <FormControl>
+                <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} value={field.value || ''} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          <FormField control={form.control} name="quantite" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Quantité</FormLabel>
+              <FormControl>
+                <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" placeholder="Ex. 500g, 10 onces" {...field} value={field.value || ''} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        </div>
+      )}
+
       <FormField
         control={form.control}
         name="attachement_emotionnel"
@@ -765,7 +994,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField control={form.control} name="date_acquisition" render={({ field }) => (
             <FormItem>
-              <FormLabel>Date d'acquisition</FormLabel>
+              <FormLabel>{isDateOuverture ? "Date d'ouverture" : "Date d'acquisition"}</FormLabel>
               <FormControl>
                 <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
               </FormControl>

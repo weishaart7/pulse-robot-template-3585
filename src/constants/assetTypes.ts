@@ -420,6 +420,62 @@ export const MODE_SORTIE_OPTIONS = ['Rente', 'Capital', 'Mixte'] as const;
 // mapping nature → champs.
 export const NATURES_EPARGNE_SALARIALE = ["PEE", "PEI"];
 
+// Natures pour lesquelles le libellé du champ "Date d'acquisition" est
+// relabellé "Date d'ouverture" dans AssetForm.tsx (même champ `date_acquisition`,
+// pas de nouvelle colonne) : CEL/PEL (compte bancaire réglementé) et PEA/PEA-PME
+// (point de départ du délai fiscal des 5 ans).
+export const NATURES_DATE_OUVERTURE = ["CEL", "PEL", "PEA", "PEA-PME"];
+
+// Champs additionnels proposés, dans AssetForm.tsx (pill "Caractéristiques"), pour certaines
+// natures de la famille "épargne bancaire / liquidités". Les livrets réglementés (Livret A,
+// Livret Bleu, LDDS, LEP, Livret Jeune) et les autres natures de la famille n'ont volontairement
+// aucun champ additionnel (taux légal non propre à l'actif pour les premiers).
+export type LiquiditesChamp = 'taux_remuneration' | 'date_echeance';
+
+export const LIQUIDITES_NATURES_CHAMPS: Record<string, LiquiditesChamp[]> = {
+  'CEL': ['taux_remuneration'],
+  'PEL': ['taux_remuneration'],
+  'Compte à terme': ['date_echeance', 'taux_remuneration'],
+  "Bons de caisse (ou bon d'épargne)": ['date_echeance', 'taux_remuneration'],
+};
+
+// Champs additionnels proposés, dans AssetForm.tsx (pill "Caractéristiques"), pour certaines
+// natures de la famille "valeurs mobilières et placements financiers". "Compte-titres (CTO)" a
+// son propre traitement dédié (cto_multi_actifs / cto_nature_sous_jacent), hors de ce mapping.
+// Les natures absentes de ce mapping n'affichent aucun champ additionnel.
+export type ValeursMobilieresChamp =
+  | 'plafond_verse'
+  | 'duree_blocage'
+  | 'reduction_ir_entree'
+  | 'date_attribution'
+  | 'prix_exercice'
+  | 'montant_engage'
+  | 'montant_appele'
+  | 'sous_jacent'
+  | 'capital_garanti'
+  | 'lieu_stockage'
+  | 'quantite';
+
+export const VALEURS_MOBILIERES_NATURES_CHAMPS: Record<string, ValeursMobilieresChamp[]> = {
+  'PEA': ['plafond_verse'],
+  'PEA-PME': ['plafond_verse'],
+  'Parts de FIP': ['duree_blocage', 'reduction_ir_entree'],
+  'Parts de FIP Corse': ['duree_blocage', 'reduction_ir_entree'],
+  'Parts de FCPI': ['duree_blocage', 'reduction_ir_entree'],
+  'Parts de SOFICA': ['duree_blocage', 'reduction_ir_entree'],
+  'Stock-options': ['date_attribution', 'prix_exercice'],
+  'Actions gratuites': ['date_attribution'],
+  'Fonds de private equity (LBO, growth, venture)': ['duree_blocage', 'montant_engage', 'montant_appele'],
+  'Club deals': ['duree_blocage', 'montant_engage', 'montant_appele'],
+  "SPV d'investissement (structures ad hoc)": ['duree_blocage', 'montant_engage', 'montant_appele'],
+  'Fonds de dette privée': ['duree_blocage', 'montant_engage', 'montant_appele'],
+  'Produits structurés': ['sous_jacent', 'date_echeance', 'capital_garanti'],
+  'Autres produits dérivés (Swap, Warrants, CFD...)': ['sous_jacent', 'date_echeance', 'capital_garanti'],
+  'Or (physique)': ['lieu_stockage', 'quantite'],
+  'Métaux précieux (argent, platine)': ['lieu_stockage', 'quantite'],
+  'Matières premières (pétrole, blé…)': ['lieu_stockage', 'quantite'],
+};
+
 export const MOTIF_DEBLOCAGE_ANTICIPE_OPTIONS = [
   "Mariage/PACS",
   "Naissance/adoption (3e enfant)",

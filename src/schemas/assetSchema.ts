@@ -105,6 +105,21 @@ export const assetSchema = z.object({
   date_disponibilite: z.date().optional(),
   motif_deblocage_anticipe: z.string().optional(),
   support_investissement: z.string().optional(),
+  // Champs additionnels "épargne bancaire / liquidités" — cf. LIQUIDITES_NATURES_CHAMPS.
+  taux_remuneration: z.number().finite().optional(),
+  date_echeance: z.date().optional(),
+  // Champs additionnels "valeurs mobilières et placements financiers" — cf.
+  // VALEURS_MOBILIERES_NATURES_CHAMPS.
+  plafond_verse: z.number().finite().nonnegative().optional(),
+  duree_blocage: z.string().optional(),
+  reduction_ir_entree: z.number().finite().optional(),
+  date_attribution: z.date().optional(),
+  prix_exercice: z.number().finite().nonnegative().optional(),
+  montant_engage: z.number().finite().nonnegative().optional(),
+  montant_appele: z.number().finite().nonnegative().optional(),
+  sous_jacent: z.string().optional(),
+  lieu_stockage: z.string().optional(),
+  quantite: z.string().optional(),
 });
 
 export type AssetFormValues = z.infer<typeof assetSchema>;

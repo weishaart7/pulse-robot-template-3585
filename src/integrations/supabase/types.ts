@@ -301,17 +301,26 @@ export type Database = {
       }
       assets: {
         Row: {
+          abondement_employeur: number | null
           attachement_emotionnel: number | null
+          beneficiaire_designe: string | null
           bien_etranger: boolean | null
+          capital_garanti: number | null
+          certificat_expertise: boolean | null
+          certificat_expertise_reference: string | null
           clause_entree_communaute: boolean | null
           clause_remploi: boolean | null
           created_at: string
           cto_multi_actifs: boolean | null
           cto_nature_sous_jacent: string | null
           date_acquisition: string | null
+          date_attribution: string | null
+          date_disponibilite: string | null
+          date_echeance: string | null
           date_estimation: string | null
           denomination: string | null
           detenteur: string | null
+          duree_blocage: string | null
           est_propre_par_nature: boolean | null
           etablissement: string | null
           financement_actif: boolean | null
@@ -327,23 +336,39 @@ export type Database = {
           frais_notaire: number | null
           id: string
           licitation_acquereur: string | null
+          lieu_stockage: string | null
           meubles: number | null
           mode_detention: string | null
+          mode_sortie: string | null
+          montant_appele: number | null
+          montant_engage: number | null
           montant_immeuble: number | null
+          motif_deblocage_anticipe: string | null
           nature: string
+          numero_serie: string | null
           origine_actif: string[] | null
           part_licitation_personnelle: number | null
+          plafond_verse: number | null
           pourcentage_conjoint: number | null
           pourcentage_terrain_force: number | null
           pourcentage_utilisateur: number | null
+          prix_exercice: number | null
           qualification_auto: boolean | null
           qualification_bien: string | null
+          quantite: string | null
+          quantite_millesime: string | null
+          reduction_ir_entree: number | null
+          regime_fiscal_parts: string | null
           regime_location: string | null
+          revenus_distribues_12m: number | null
           situation_particuliere: string[] | null
           societe_id: string | null
+          sous_jacent: string | null
           sous_type_per: string | null
           statut_bien: string | null
+          support_investissement: string | null
           surface_m2: number | null
+          taux_remuneration: number | null
           transfert_immobilier: boolean | null
           transfert_societe: boolean | null
           travaux_construction: number | null
@@ -358,17 +383,26 @@ export type Database = {
           zone_bien: string | null
         }
         Insert: {
+          abondement_employeur?: number | null
           attachement_emotionnel?: number | null
+          beneficiaire_designe?: string | null
           bien_etranger?: boolean | null
+          capital_garanti?: number | null
+          certificat_expertise?: boolean | null
+          certificat_expertise_reference?: string | null
           clause_entree_communaute?: boolean | null
           clause_remploi?: boolean | null
           created_at?: string
           cto_multi_actifs?: boolean | null
           cto_nature_sous_jacent?: string | null
           date_acquisition?: string | null
+          date_attribution?: string | null
+          date_disponibilite?: string | null
+          date_echeance?: string | null
           date_estimation?: string | null
           denomination?: string | null
           detenteur?: string | null
+          duree_blocage?: string | null
           est_propre_par_nature?: boolean | null
           etablissement?: string | null
           financement_actif?: boolean | null
@@ -384,23 +418,39 @@ export type Database = {
           frais_notaire?: number | null
           id?: string
           licitation_acquereur?: string | null
+          lieu_stockage?: string | null
           meubles?: number | null
           mode_detention?: string | null
+          mode_sortie?: string | null
+          montant_appele?: number | null
+          montant_engage?: number | null
           montant_immeuble?: number | null
+          motif_deblocage_anticipe?: string | null
           nature: string
+          numero_serie?: string | null
           origine_actif?: string[] | null
           part_licitation_personnelle?: number | null
+          plafond_verse?: number | null
           pourcentage_conjoint?: number | null
           pourcentage_terrain_force?: number | null
           pourcentage_utilisateur?: number | null
+          prix_exercice?: number | null
           qualification_auto?: boolean | null
           qualification_bien?: string | null
+          quantite?: string | null
+          quantite_millesime?: string | null
+          reduction_ir_entree?: number | null
+          regime_fiscal_parts?: string | null
           regime_location?: string | null
+          revenus_distribues_12m?: number | null
           situation_particuliere?: string[] | null
           societe_id?: string | null
+          sous_jacent?: string | null
           sous_type_per?: string | null
           statut_bien?: string | null
+          support_investissement?: string | null
           surface_m2?: number | null
+          taux_remuneration?: number | null
           transfert_immobilier?: boolean | null
           transfert_societe?: boolean | null
           travaux_construction?: number | null
@@ -415,17 +465,26 @@ export type Database = {
           zone_bien?: string | null
         }
         Update: {
+          abondement_employeur?: number | null
           attachement_emotionnel?: number | null
+          beneficiaire_designe?: string | null
           bien_etranger?: boolean | null
+          capital_garanti?: number | null
+          certificat_expertise?: boolean | null
+          certificat_expertise_reference?: string | null
           clause_entree_communaute?: boolean | null
           clause_remploi?: boolean | null
           created_at?: string
           cto_multi_actifs?: boolean | null
           cto_nature_sous_jacent?: string | null
           date_acquisition?: string | null
+          date_attribution?: string | null
+          date_disponibilite?: string | null
+          date_echeance?: string | null
           date_estimation?: string | null
           denomination?: string | null
           detenteur?: string | null
+          duree_blocage?: string | null
           est_propre_par_nature?: boolean | null
           etablissement?: string | null
           financement_actif?: boolean | null
@@ -441,23 +500,39 @@ export type Database = {
           frais_notaire?: number | null
           id?: string
           licitation_acquereur?: string | null
+          lieu_stockage?: string | null
           meubles?: number | null
           mode_detention?: string | null
+          mode_sortie?: string | null
+          montant_appele?: number | null
+          montant_engage?: number | null
           montant_immeuble?: number | null
+          motif_deblocage_anticipe?: string | null
           nature?: string
+          numero_serie?: string | null
           origine_actif?: string[] | null
           part_licitation_personnelle?: number | null
+          plafond_verse?: number | null
           pourcentage_conjoint?: number | null
           pourcentage_terrain_force?: number | null
           pourcentage_utilisateur?: number | null
+          prix_exercice?: number | null
           qualification_auto?: boolean | null
           qualification_bien?: string | null
+          quantite?: string | null
+          quantite_millesime?: string | null
+          reduction_ir_entree?: number | null
+          regime_fiscal_parts?: string | null
           regime_location?: string | null
+          revenus_distribues_12m?: number | null
           situation_particuliere?: string[] | null
           societe_id?: string | null
+          sous_jacent?: string | null
           sous_type_per?: string | null
           statut_bien?: string | null
+          support_investissement?: string | null
           surface_m2?: number | null
+          taux_remuneration?: number | null
           transfert_immobilier?: boolean | null
           transfert_societe?: boolean | null
           travaux_construction?: number | null
@@ -2004,15 +2079,20 @@ export type Database = {
           has_fonction_publique: boolean
           id: string
           mode_hypothese_revenu_futur: string
+          moyenne_annuelle_nbi: number | null
           personne: string
           points_cnavpl: number | null
           points_rafp: number | null
+          regime_affiliation_fp: string | null
           regimes_points: Json
           revenu_hypothese_manuel: number | null
           salaire_annuel_moyen: number | null
           traitement_indiciaire_brut: number | null
           trimestres_cnavpl: number | null
+          trimestres_cotises_apres_age_legal_cnavpl: number
+          trimestres_cotises_apres_age_legal_fp: number
           trimestres_liquidables_fp: number | null
+          trimestres_liquidables_nbi: number | null
           trimestres_requis: number | null
           trimestres_valides: number | null
           updated_at: string
@@ -2035,15 +2115,20 @@ export type Database = {
           has_fonction_publique?: boolean
           id?: string
           mode_hypothese_revenu_futur?: string
+          moyenne_annuelle_nbi?: number | null
           personne?: string
           points_cnavpl?: number | null
           points_rafp?: number | null
+          regime_affiliation_fp?: string | null
           regimes_points?: Json
           revenu_hypothese_manuel?: number | null
           salaire_annuel_moyen?: number | null
           traitement_indiciaire_brut?: number | null
           trimestres_cnavpl?: number | null
+          trimestres_cotises_apres_age_legal_cnavpl?: number
+          trimestres_cotises_apres_age_legal_fp?: number
           trimestres_liquidables_fp?: number | null
+          trimestres_liquidables_nbi?: number | null
           trimestres_requis?: number | null
           trimestres_valides?: number | null
           updated_at?: string
@@ -2066,15 +2151,20 @@ export type Database = {
           has_fonction_publique?: boolean
           id?: string
           mode_hypothese_revenu_futur?: string
+          moyenne_annuelle_nbi?: number | null
           personne?: string
           points_cnavpl?: number | null
           points_rafp?: number | null
+          regime_affiliation_fp?: string | null
           regimes_points?: Json
           revenu_hypothese_manuel?: number | null
           salaire_annuel_moyen?: number | null
           traitement_indiciaire_brut?: number | null
           trimestres_cnavpl?: number | null
+          trimestres_cotises_apres_age_legal_cnavpl?: number
+          trimestres_cotises_apres_age_legal_fp?: number
           trimestres_liquidables_fp?: number | null
+          trimestres_liquidables_nbi?: number | null
           trimestres_requis?: number | null
           trimestres_valides?: number | null
           updated_at?: string
@@ -2807,12 +2897,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2836,11 +2926,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2861,11 +2951,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2886,11 +2976,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2903,11 +2993,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

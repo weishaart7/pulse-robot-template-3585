@@ -18,6 +18,7 @@ import { isSocieteEligibleNature } from '@/lib/patrimoine/societeTransfer';
 // Types d'actifs qui nécessitent le champ "Établissement"
 export const NATURES_WITH_ETABLISSEMENT = [
   'Objets numériques (NFT, etc.)',
+  'Portefeuille de valeurs numériques (cryptomonnaies)',
   ...ASSET_CATEGORIES['épargne retraite et prévoyance'],
   ...ASSET_CATEGORIES['épargne et assurance-vie'],
   ...ASSET_CATEGORIES['épargne salariale'],
@@ -209,6 +210,18 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         date_disponibilite: asset.date_disponibilite ? new Date(asset.date_disponibilite) : undefined,
         motif_deblocage_anticipe: asset.motif_deblocage_anticipe || undefined,
         support_investissement: asset.support_investissement || undefined,
+        taux_remuneration: asset.taux_remuneration ?? undefined,
+        date_echeance: asset.date_echeance ? new Date(asset.date_echeance) : undefined,
+        plafond_verse: asset.plafond_verse ?? undefined,
+        duree_blocage: asset.duree_blocage || undefined,
+        reduction_ir_entree: asset.reduction_ir_entree ?? undefined,
+        date_attribution: asset.date_attribution ? new Date(asset.date_attribution) : undefined,
+        prix_exercice: asset.prix_exercice ?? undefined,
+        montant_engage: asset.montant_engage ?? undefined,
+        montant_appele: asset.montant_appele ?? undefined,
+        sous_jacent: asset.sous_jacent || undefined,
+        lieu_stockage: asset.lieu_stockage || undefined,
+        quantite: asset.quantite || undefined,
       });
     }
     // `indivisaires` est chargé de façon asynchrone par l'effet précédent
@@ -378,6 +391,8 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         date_estimation: values.date_estimation ? format(values.date_estimation, 'yyyy-MM-dd') : null,
         date_acquisition: values.date_acquisition ? format(values.date_acquisition, 'yyyy-MM-dd') : null,
         date_disponibilite: values.date_disponibilite ? format(values.date_disponibilite, 'yyyy-MM-dd') : null,
+        date_echeance: values.date_echeance ? format(values.date_echeance, 'yyyy-MM-dd') : null,
+        date_attribution: values.date_attribution ? format(values.date_attribution, 'yyyy-MM-dd') : null,
         // Convert empty strings to null for optional fields
         denomination: values.denomination || null,
         etablissement: values.etablissement || null,
