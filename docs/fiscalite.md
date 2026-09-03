@@ -16,19 +16,24 @@
 
 ## 1. Vue d'ensemble
 
-L'onglet « Fiscalité » héberge **trois blocs largement indépendants, qui ne communiquent pas entre
+L'onglet « Fiscalité » héberge **quatre blocs largement indépendants, qui ne communiquent pas entre
 eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 
 1. **Le foyer fiscal — état civil et nombre de parts (Phase 1, fonctionnel)** : en tête de la page,
    `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx` (montés dans `FiscaliteSection.tsx`), adossés à la
    table Supabase `foyer_fiscal` et au moteur pur `src/lib/fiscalite/calculerPartsFiscales.ts`. Seul
    morceau du module qui calcule et persiste une donnée réelle, propre à l'utilisateur — voir §2.
-2. **Un tableau de bord IR entièrement statique** (`FiscaliteSection.tsx` → `FiscalDeclarationsCard`,
+2. **Traitements et salaires — cadre 1 de la 2042, déclarants 1/2 (Phase 2.1, fonctionnel)** : à la
+   suite du foyer fiscal, `RevenusSalairesForm.tsx`, adossé à la table Supabase `revenus_salaires`.
+   Capture de données brute (pas de moteur de calcul dans cette sous-phase, voir §2) ; codes de case
+   vérifiés contre la brochure officielle DGFiP (2042-K/2042-C, revenus 2024).
+3. **Un tableau de bord IR entièrement statique** (`FiscaliteSection.tsx` → `FiscalDeclarationsCard`,
    `FiscalOverviewCard`, `TaxRateCard`) : liste de déclarations fiscales (2042, 2044, 2047, 2074,
    2086, 2042-IFI), graphique de répartition IR/PS/IFI, taux marginal d'imposition, tranches. **Aucune
-   donnée réelle n'y est affichée** — voir §2. Le nombre de parts calculé au point 1 n'alimente pas ce
-   tableau de bord (aucun barème IR n'existe encore dans le repo pour l'utiliser, voir §4).
-3. **Un simulateur IFI complet, avec sa propre saisie** (`IFIInterface.tsx`, ouvert depuis le bouton
+   donnée réelle n'y est affichée** — voir §2. Le nombre de parts calculé au point 1 et les salaires
+   saisis au point 2 n'alimentent pas ce tableau de bord (aucun barème IR n'existe encore dans le
+   repo pour les utiliser, voir §4).
+4. **Un simulateur IFI complet, avec sa propre saisie** (`IFIInterface.tsx`, ouvert depuis le bouton
    « 2042-IFI » de `FiscalDeclarationsCard`), organisé en 5 sections dans une sidebar
    (`IFISidebar.tsx`) : Hypothèses, Liste des biens à l'IFI, Barème de l'IFI, Réduction &
    Plafonnement, Montant redevable. Ce simulateur a ses propres tables Supabase, indépendantes de
@@ -38,9 +43,10 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 
 | Écran | Composant | Rôle |
 |---|---|---|
-| Fiscalité (page principale) | [FiscaliteSection.tsx](src/pages/fiscalite/FiscaliteSection.tsx) | Foyer fiscal + synthèse des parts (haut de page), puis grille 3 colonnes : déclarations (gauche), imposition totale + TMI (droite) |
+| Fiscalité (page principale) | [FiscaliteSection.tsx](src/pages/fiscalite/FiscaliteSection.tsx) | Foyer fiscal + synthèse des parts, puis traitements et salaires (haut de page), puis grille 3 colonnes : déclarations (gauche), imposition totale + TMI (droite) |
 | Foyer fiscal (saisie) | [MenageForm.tsx](src/components/fiscalite/MenageForm.tsx) | Situation familiale, enfants à charge (liste dynamique), personnes invalides à charge (liste dynamique), enfants majeurs rattachés, cases à cocher (parent isolé, invalidité, ancien combattant, veuve de guerre...) |
 | Synthèse du foyer fiscal | [SyntheseFoyerFiscal.tsx](src/components/fiscalite/SyntheseFoyerFiscal.tsx) | Nombre de parts + détail ligne par ligne de chaque majoration appliquée, recalculé en direct pendant la saisie (avant même l'enregistrement) |
+| Traitements et salaires (saisie) | [RevenusSalairesForm.tsx](src/components/fiscalite/RevenusSalairesForm.tsx) | 14 paires de champs déclarant 1/déclarant 2 (cadre 1 de la 2042, hors colonnes C/D, frais réels et gains d'actionnariat), code officiel + libellé français côte à côte |
 | Déclarations fiscales | [FiscalDeclarationsCard.tsx](src/pages/fiscalite/components/FiscalDeclarationsCard.tsx) | Liste de formulaires CERFA ; seul le lien « 2042-IFI » est cliquable, ouvre `IFIInterface` |
 | Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Donut IR/PS/IFI + détail revenus — **données 100 % codées en dur** |
 | Taux marginal | [TaxRateCard.tsx](src/pages/fiscalite/components/TaxRateCard.tsx) | Barème IR, tranche active, marge avant tranche suivante — **données 100 % codées en dur** |
@@ -113,6 +119,24 @@ fonction n'existe — voir §4.
   qui n'existe pas encore dans le repo (voir §4, Phase différée). 29 tests couvrent l'intégralité du
   tableau de règles, y compris les combinaisons (enfant en résidence alternée et invalide simultanément,
   etc.).
+- **`revenus_salaires` (Phase 2.1) — capture brute du cadre 1 de la 2042, sans moteur de calcul.**
+  Table `user_id → auth.users(id) ON DELETE CASCADE`, `UNIQUE(user_id)`, RLS 4 policies, même pattern
+  que `foyer_fiscal`. 28 colonnes `case_1xx`/`case_1yy` (convention `1AJ` → `case_1aj`, préfixe
+  imposé par SQL pour un identifiant commençant par un chiffre), dont 4 booléennes (cases à cocher
+  `1AV`/`1BV`, `1GK`/`1GL`). Périmètre validé en session : les codes ont été vérifiés contre la
+  brochure officielle DGFiP (« LA 2042 K/2042 C ET SES RÉFÉRENCES DANS LA BROCHURE », revenus 2024)
+  plutôt que supposés — cette vérification a corrigé deux points du brief initial avant migration :
+  1) `1GG`/`1HG` (agents généraux d'assurance, salaires imposables) a été ajoutée au périmètre 2.1 sur
+  demande explicite, alors qu'initialement classée en sous-phase 2.4 différée ; 2) le découpage
+  initial en quatre paires `1AF1`/`1AG1`/`1AF2`/`1BG2` pour les salaires de source étrangère ne
+  correspondait à aucune case réelle du CERFA — la brochure ne montre que deux cases (`1AF`/`1BF` et
+  `1AG`/`1BG`), utilisées à la place. `RevenusSalairesForm.tsx` affiche le libellé officiel comme
+  texte principal (décision explicite de Titouan de ne pas le remplacer), avec des compléments entre
+  parenthèses quand ils reprennent une mention déjà présente sur le CERFA (ex. « Autres revenus
+  imposables (chômage, préretraite) » pour `1AP`) ou quand ils lèvent une ambiguïté de portée (ex.
+  `1GK`/`1GL`, à cocher seulement si les quatre catégories référencées cessent simultanément), et un
+  tooltip « ? » pour les cas nécessitant une explication plus longue que ne le permet une parenthèse
+  (`1AA`, `1AV`).
 - **`src/lib/fiscal/calcul.ts` (dossier séparé, sans « ite ») a été nettoyé de son unique fonction
   orpheline.** L'ancienne `calculerPartsFiscales` de ce dossier n'avait aucun appelant dans le repo
   (`grep` confirmé avant suppression) et divergeait de plusieurs règles CGI (veuf avec enfant(s)
@@ -336,11 +360,26 @@ fonction n'existe — voir §4.
   charge en listes dynamiques, enfants majeurs rattachés, toutes les cases de majoration T/L/invalidité/
   ancien combattant/veuve de guerre), persistance Supabase (`foyer_fiscal`, une ligne par utilisateur),
   calcul du nombre de parts fidèle à l'art. 193-197 CGI avec détail ligne par ligne affiché en direct
-  pendant la saisie.
+  pendant la saisie ; **traitements et salaires — cadre 1 de la 2042, déclarants 1/2 (Phase 2.1)** :
+  saisie des 14 paires de champs du cadre 1 (salaires, particuliers employeurs, abattements et
+  exonérations spécifiques, associés/gérants art. 62 CGI, agents généraux d'assurance, droits d'auteur,
+  autres revenus imposables, salaires de source étrangère), persistance Supabase (`revenus_salaires`,
+  une ligne par utilisateur), codes de case vérifiés contre la brochure officielle DGFiP — capture
+  brute, sans moteur de calcul.
 - **Différé, déductible du code** :
-  - **Tout calcul réel de l'impôt sur le revenu** : le nombre de parts (Phase 1) n'est appliqué à
-    aucun barème ; aucune fonction de calcul IR (tranches, décote, quotient familial appliqué au
-    revenu) n'existe dans le repo.
+  - **Tout calcul réel de l'impôt sur le revenu** : ni le nombre de parts (Phase 1) ni les salaires
+    saisis (Phase 2.1) ne sont appliqués à un barème ; aucune fonction de calcul IR (tranches, décote,
+    quotient familial appliqué au revenu) n'existe dans le repo — dépendance de la Phase 10 prévue.
+  - **Traitements et salaires — colonnes C/D (Phase 2.1, dette assumée)** : les revenus propres des
+    personnes à charge (ex. enfants majeurs rattachés ayant leurs propres salaires) ne sont pas
+    saisis — cas rare, traité dans une session ultérieure.
+  - **Frais réels (`1AK`/`1BK`, sous-phase 2.2)** : non saisis, différés à une session séparée.
+  - **Gains d'actionnariat salarié (sous-phase 2.3)** : stock-options, actions gratuites,
+    carried-interest — non saisis, différés à une session séparée.
+  - **Cas spécifiques restants (sous-phase 2.4)** : salariés impatriés, indemnités pour préjudice
+    moral, sommes exonérées provenant du CET — non saisis, différés à une session séparée. (Les
+    agents généraux d'assurance, initialement prévus dans cette sous-phase, ont finalement été inclus
+    dès la Phase 2.1 — `1GG`/`1HG` — sur demande explicite en session.)
   - **Plafonnement effectif du quotient familial (art. 197 CGI, Phase 10 prévue)** : chaque majoration
     du foyer fiscal porte déjà ses plafonds en € en métadonnée
     (`plafondUnitaire`/`plafondComplementaire` dans `MajorationDetail`), mais aucun code n'applique
