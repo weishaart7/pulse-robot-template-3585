@@ -9,6 +9,7 @@ import { PropertyGeneralSection } from './property/PropertyGeneralSection';
 import { PropertyCostSection } from './property/PropertyCostSection';
 import { PropertyFinancingSection } from './property/PropertyFinancingSection';
 import { PropertyLocationSection } from './property/PropertyLocationSection';
+import { SimulateurRentabiliteSection } from './SimulateurRentabiliteSection';
 
 interface ImmobilierPropertyDetailViewProps {
   asset: Asset;
@@ -80,6 +81,10 @@ export const ImmobilierPropertyDetailView: React.FC<ImmobilierPropertyDetailView
           )}
         </CardContent>
       </Card>
+
+      {asset.nature === 'Immeubles locatifs (loués nus)' && (
+        <SimulateurRentabiliteSection asset={asset} />
+      )}
     </div>
   );
 };
