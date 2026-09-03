@@ -213,17 +213,17 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="space-y-6">
-            {/* Civilité card */}
-            <div className="rounded-[4px] bg-white p-6 shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)]">
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.11em] mb-4" style={{ color: '#616161', fontFamily: "'JetBrains Mono', monospace" }}>Identité</h3>
+        <div className="rounded-md border bg-card p-6 shadow-sm space-y-6">
+            {/* Identité */}
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Identité</h3>
 
               <FormField
                 control={form.control}
                 name="civilite"
                 render={({ field }) => (
                   <FormItem className="space-y-2 mb-5">
-                    <FormLabel className="text-xs">
+                    <FormLabel>
                       Civilité <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
@@ -326,13 +326,13 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                   render={({ field }) => (
                     <FormItem>
                       <div className="relative w-full flex flex-col gap-1">
-                        <FormLabel className="text-xs">
+                        <FormLabel>
                           Date de naissance <span className="text-destructive">*</span>
                         </FormLabel>
                         <SmartDateInput
                           value={field.value}
                           onChange={field.onChange}
-                          className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                          className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20"
                         />
                       </div>
                       <FormMessage />
@@ -342,10 +342,12 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
               </div>
             </div>
 
-            {/* Profession & Naissance card */}
-            <div className="rounded-[4px] bg-white p-6 shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)]">
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.11em] mb-4" style={{ color: '#616161', fontFamily: "'JetBrains Mono', monospace" }}>Profession & Naissance</h3>
-              
+            <Separator />
+
+            {/* Profession & Naissance */}
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Profession & Naissance</h3>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                 <FormField
                   control={form.control}
@@ -353,10 +355,10 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                   render={({ field }) => (
                     <FormItem>
                       <div className="relative w-full flex flex-col gap-1">
-                        <FormLabel className="text-xs">Profession</FormLabel>
+                        <FormLabel>Profession</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ""}>
                           <FormControl>
-                            <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
+                            <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                               <SelectValue placeholder="Sélectionner une profession" />
                             </SelectTrigger>
                           </FormControl>
@@ -401,7 +403,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                   render={({ field }) => (
                     <FormItem>
                       <div className="relative w-full flex flex-col gap-1">
-                        <FormLabel className="text-xs">Nationalité</FormLabel>
+                        <FormLabel>Nationalité</FormLabel>
                         <FormControl>
                           <NationalitySelect
                             value={field.value}
@@ -417,10 +419,12 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
               </div>
             </div>
 
-            {/* Situation juridique card */}
-            <div className="rounded-[4px] bg-white p-6 shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)]">
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.11em] mb-4" style={{ color: '#616161', fontFamily: "'JetBrains Mono', monospace" }}>Situation juridique</h3>
-              
+            <Separator />
+
+            {/* Situation juridique */}
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Situation juridique</h3>
+
               <div className="flex flex-wrap items-end gap-6">
                 <FormField
                   control={form.control}
@@ -428,10 +432,10 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                   render={({ field }) => (
                     <FormItem className="w-72">
                       <div className="relative w-full flex flex-col gap-1">
-                        <FormLabel className="text-xs">Capacité juridique</FormLabel>
+                        <FormLabel>Capacité juridique</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
+                            <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                               <SelectValue placeholder="Sélectionner la capacité juridique" />
                             </SelectTrigger>
                           </FormControl>
@@ -482,11 +486,11 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                     render={({ field }) => (
                       <FormItem className="w-72">
                         <div className="relative w-full flex flex-col gap-1">
-                          <FormLabel className="text-xs">Date du mandat</FormLabel>
+                          <FormLabel>Date du mandat</FormLabel>
                           <SmartDateInput
                             value={field.value}
                             onChange={field.onChange}
-                            className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                            className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20"
                           />
                         </div>
                         <FormMessage />

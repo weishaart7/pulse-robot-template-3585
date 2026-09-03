@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMaritalStatus } from "@/hooks/useFamilyData";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -167,9 +168,9 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="space-y-6">
-            {/* Statut & Identité card */}
-            <div className="rounded-md border bg-card p-6 shadow-sm">
+        <div className="rounded-md border bg-card p-6 shadow-sm space-y-6">
+            {/* Statut & Identité */}
+            <div>
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Identité</h3>
 
               {!showPartnerFields && (
@@ -195,7 +196,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                     name="civilitePartenaire"
                     render={({ field }) => (
                       <FormItem className="space-y-2 mb-5">
-                        <FormLabel className="text-xs">
+                        <FormLabel>
                           Civilité <span className="text-destructive">*</span>
                         </FormLabel>
                         <FormControl>
@@ -298,13 +299,13 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                       render={({ field }) => (
                         <FormItem>
                           <div className="relative w-full flex flex-col gap-1">
-                            <FormLabel className="text-xs">
+                            <FormLabel>
                               Date de naissance <span className="text-destructive">*</span>
                             </FormLabel>
                             <SmartDateInput
                               value={field.value}
                               onChange={field.onChange}
-                              className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                              className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20"
                             />
                           </div>
                           <FormMessage />
@@ -318,8 +319,10 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
 
             {showPartnerFields && (
               <>
-                {/* Profession & Naissance card */}
-                <div className="rounded-md border bg-card p-6 shadow-sm">
+                <Separator />
+
+                {/* Profession & Naissance */}
+                <div>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Profession & Naissance</h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
@@ -329,10 +332,10 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                       render={({ field }) => (
                         <FormItem>
                           <div className="relative w-full flex flex-col gap-1">
-                            <FormLabel className="text-xs">Profession</FormLabel>
+                            <FormLabel>Profession</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value || ""}>
                               <FormControl>
-                                <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
+                                <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                                   <SelectValue placeholder="Sélectionner une profession" />
                                 </SelectTrigger>
                               </FormControl>
@@ -377,7 +380,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                       render={({ field }) => (
                         <FormItem>
                           <div className="relative w-full flex flex-col gap-1">
-                            <FormLabel className="text-xs">Nationalité</FormLabel>
+                            <FormLabel>Nationalité</FormLabel>
                             <FormControl>
                               <NationalitySelect
                                 value={field.value}
@@ -393,8 +396,10 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                   </div>
                 </div>
 
-                {/* Situation juridique card */}
-                <div className="rounded-md border bg-card p-6 shadow-sm">
+                <Separator />
+
+                {/* Situation juridique */}
+                <div>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Situation juridique</h3>
 
                   <div className="flex flex-wrap items-end gap-6">
@@ -404,10 +409,10 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                       render={({ field }) => (
                         <FormItem className="w-72">
                           <div className="relative w-full flex flex-col gap-1">
-                            <FormLabel className="text-xs">Capacité juridique</FormLabel>
+                            <FormLabel>Capacité juridique</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
-                                <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
+                                <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                                   <SelectValue placeholder="Sélectionner la capacité juridique" />
                                 </SelectTrigger>
                               </FormControl>
@@ -458,11 +463,11 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                         render={({ field }) => (
                           <FormItem className="w-72">
                             <div className="relative w-full flex flex-col gap-1">
-                              <FormLabel className="text-xs">Date du mandat</FormLabel>
+                              <FormLabel>Date du mandat</FormLabel>
                               <SmartDateInput
                                 value={field.value}
                                 onChange={field.onChange}
-                                className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                                className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20"
                               />
                             </div>
                             <FormMessage />

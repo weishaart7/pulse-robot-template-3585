@@ -39,7 +39,7 @@ export default function NationalitySelect({ value, onValueChange, placeholder = 
       onOpenChange={handleOpenChange}
     >
       <div className={cn("w-full", className)}>
-        <Select.Trigger className="w-full inline-flex items-center justify-between h-9 px-3 py-2 text-sm bg-muted border border-transparent rounded-[5px] transition-shadow outline-none focus-visible:bg-background focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 text-foreground data-placeholder:text-muted-foreground">
+        <Select.Trigger className="w-full inline-flex items-center justify-between h-9 px-3 py-2 text-sm bg-background border border-border rounded-md transition-colors outline-none hover:border-foreground/25 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50 text-foreground data-placeholder:text-muted-foreground">
           <Select.Value placeholder={placeholder}>
             {value}
           </Select.Value>
@@ -51,7 +51,7 @@ export default function NationalitySelect({ value, onValueChange, placeholder = 
           <Select.Content
             position="popper"
             avoidCollisions={false}
-            className="w-[var(--radix-select-trigger-width)] overflow-hidden mt-1 bg-popover border border-border rounded-[5px] shadow-lg text-sm z-[100]"
+            className="w-[var(--radix-select-trigger-width)] overflow-hidden mt-1 bg-popover border border-border rounded-md shadow-lg text-sm z-[100]"
           >
             <div className="flex items-center border-b border-border bg-popover sticky top-0 z-10">
               <Search className="h-4 w-4 mx-3 text-muted-foreground shrink-0" />
@@ -90,7 +90,7 @@ const SelectItem = React.forwardRef<
 >(({ children, className, ...props }, forwardedRef) => {
   return (
     <Select.Item
-      className="group flex items-center justify-between px-3 cursor-pointer py-2 duration-150 text-popover-foreground bg-popover data-[state=checked]:text-primary data-[state=checked]:bg-primary/10 data-[highlighted]:text-white data-[highlighted]:bg-[#62706d] hover:bg-[#62706d] hover:text-white outline-none"
+      className="group flex items-center justify-between px-3 cursor-pointer py-2 duration-150 text-popover-foreground bg-popover data-[state=checked]:text-primary data-[state=checked]:bg-primary/10 data-[highlighted]:text-primary-foreground data-[highlighted]:bg-primary hover:bg-primary hover:text-primary-foreground outline-none"
       {...props}
       ref={forwardedRef}
     >
@@ -99,7 +99,7 @@ const SelectItem = React.forwardRef<
       </Select.ItemText>
       <div className="w-4">
         <Select.ItemIndicator>
-          <Check className="w-4 h-4 text-primary group-hover:text-white group-data-[highlighted]:text-white" />
+          <Check className="w-4 h-4 text-primary group-hover:text-primary-foreground group-data-[highlighted]:text-primary-foreground" />
         </Select.ItemIndicator>
       </div>
     </Select.Item>

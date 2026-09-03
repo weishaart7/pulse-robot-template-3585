@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { z } from "zod";
 import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -370,8 +370,8 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                 className={cn(
                   "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200",
                   activeSection === section.id
-                    ? "bg-[#62706d] text-[#ebf1f1] shadow-sm"
-                    : "bg-[#ebf1f1] text-[#62706d] hover:opacity-90"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted text-muted-foreground hover:opacity-90"
                 )}
               >
                 <section.icon className="h-4 w-4" />
@@ -385,8 +385,8 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
         {relationStatus === "Marié(e)" && (
           <>
             {activeSection === 'informations-generales' && (
-              <div className="space-y-6">
-                <div className="rounded-md border bg-card p-6 shadow-sm">
+              <div className="rounded-md border bg-card p-6 shadow-sm space-y-6">
+                <div>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Date & lieu</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <FormField
@@ -394,7 +394,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                       name="dateMariage"
                       render={({ field }) => (
                         <FormItem className="space-y-1">
-                          <FormLabel className="text-xs">Date du mariage</FormLabel>
+                          <FormLabel>Date du mariage</FormLabel>
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
@@ -417,7 +417,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                       name="lieuMariage"
                       render={({ field }) => (
                         <FormItem className="space-y-1">
-                          <FormLabel className="text-xs">Lieu du mariage</FormLabel>
+                          <FormLabel>Lieu du mariage</FormLabel>
                           <FormControl>
                             <Input placeholder="Lieu du mariage" {...field} />
                           </FormControl>
@@ -428,17 +428,19 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                   </div>
                 </div>
 
-                <div className="rounded-md border bg-card p-6 shadow-sm">
+                <Separator />
+
+                <div>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Régime matrimonial</h3>
                   <FormField
                     control={form.control}
                     name="regimeMatrimonial"
                     render={({ field }) => (
                       <FormItem className="space-y-1 mb-5">
-                        <FormLabel className="text-xs">Régime</FormLabel>
+                        <FormLabel>Régime</FormLabel>
                         <Select onValueChange={handleRegimeSelect} value={field.value} disabled={pasDeContrat}>
                           <FormControl>
-                            <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
+                            <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                               <SelectValue />
                             </SelectTrigger>
                           </FormControl>
@@ -542,8 +544,8 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
             )}
 
             {activeSection === 'donation' && (
-              <div className="space-y-6">
-                <div className="rounded-md border bg-card p-6 shadow-sm">
+              <div className="rounded-md border bg-card p-6 shadow-sm space-y-6">
+                <div>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Donation consentie au conjoint</h3>
                   <div className="flex flex-wrap items-center gap-4">
                     <FormField
@@ -582,7 +584,9 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                   </div>
                 </div>
 
-                <div className="rounded-md border bg-card p-6 shadow-sm">
+                <Separator />
+
+                <div>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Donation reçue du conjoint</h3>
                   <div className="flex flex-wrap items-center gap-4">
                     <FormField
@@ -624,12 +628,14 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
             )}
 
             {activeSection === 'historique' && (
-              <div className="space-y-6">
+              <div className="rounded-md border bg-card p-6 shadow-sm space-y-6">
                 {[
                   { title: "Votre mariage précédent", flag: "mariagePrecedentPersonne" as const, annees: "dureeMariagePrecedentPersonneAnnees" as const, mois: "dureeMariagePrecedentPersonneMois" as const, label: "J'ai été marié(e) précédemment" },
                   { title: "Mariage précédent du conjoint", flag: "mariagePrecedentConjoint" as const, annees: "dureeMariagePrecedentConjointAnnees" as const, mois: "dureeMariagePrecedentConjointMois" as const, label: "Mon conjoint a été marié(e) précédemment" },
-                ].map((cfg) => (
-                  <div key={cfg.flag} className="rounded-md border bg-card p-6 shadow-sm">
+                ].map((cfg, index) => (
+                  <Fragment key={cfg.flag}>
+                  {index > 0 && <Separator />}
+                  <div>
                     <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">{cfg.title}</h3>
                     <FormField
                       control={form.control}
@@ -648,7 +654,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                           name={cfg.annees}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs">Durée (années)</FormLabel>
+                              <FormLabel>Durée (années)</FormLabel>
                               <FormControl>
                                 <Input type="number" min="0" max="100" placeholder="Ex: 5" value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : (isNaN(parseInt(v)) ? null : parseInt(v))); }} />
                               </FormControl>
@@ -661,7 +667,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                           name={cfg.mois}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs">Durée (mois)</FormLabel>
+                              <FormLabel>Durée (mois)</FormLabel>
                               <FormControl>
                                 <Input type="number" min="0" max="11" placeholder="Ex: 3" value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : (isNaN(parseInt(v)) ? null : parseInt(v))); }} />
                               </FormControl>
@@ -672,6 +678,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                       </div>
                     )}
                   </div>
+                  </Fragment>
                 ))}
               </div>
             )}
@@ -689,10 +696,10 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                   name="conventionPacs"
                   render={({ field }) => (
                     <FormItem className="space-y-1">
-                      <FormLabel className="text-xs">Convention de PACS</FormLabel>
+                      <FormLabel>Convention de PACS</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
+                          <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                             <SelectValue />
                           </SelectTrigger>
                         </FormControl>
@@ -710,7 +717,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                   name="datePacs"
                   render={({ field }) => (
                     <FormItem className="space-y-1">
-                      <FormLabel className="text-xs">Date du PACS</FormLabel>
+                      <FormLabel>Date du PACS</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>

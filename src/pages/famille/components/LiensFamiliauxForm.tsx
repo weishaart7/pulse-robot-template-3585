@@ -25,23 +25,16 @@ import { useFamilyLinks, useFamilyProfile, useMaritalStatus } from '@/hooks/useF
 import { useToast } from '@/hooks/use-toast';
 import { FamilyLink } from '@/services/familyService';
 import { FamilyMemberFormDialog, FamilyMemberFormDialogHandle } from '@/components/family/FamilyMemberFormDialog';
-import { THEME_INK, THEME_MONO_FONT } from '@/lib/theme';
+import { cn } from '@/lib/utils';
 
-// Tag de la table Liens familiaux — même langage graphique que l'arbre familial
-// (radius 4px, fond neutre doux, petites majuscules mono ; vert = avantage fiscal).
-const TAG_NEUTRAL_BG = '#F8F8F8';
-const TAG_ACCENT_BG = '#F9FDEE';
-const TAG_ACCENT_INK = '#5b6320';
-
+// Tag de la table Liens familiaux — accent = avantage fiscal.
 function FamilyTag({ children, accent = false }: { children: React.ReactNode; accent?: boolean }) {
   return (
     <span
-      className="inline-flex items-center rounded-[4px] px-2 py-1 text-[9.5px] font-semibold uppercase tracking-[0.08em] whitespace-nowrap"
-      style={{
-        backgroundColor: accent ? TAG_ACCENT_BG : TAG_NEUTRAL_BG,
-        color: accent ? TAG_ACCENT_INK : THEME_INK,
-        fontFamily: THEME_MONO_FONT,
-      }}
+      className={cn(
+        "inline-flex items-center rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap",
+        accent ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+      )}
     >
       {children}
     </span>
@@ -113,9 +106,9 @@ export function LiensFamiliauxForm() {
           <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
             <CardTitle className="flex items-center gap-2 text-lg">
               <span>Membres de la famille</span>
-              {familyLinks.length > 0 && <Badge variant="secondary" className="bg-[#362015] text-white hover:bg-[#362015]/90">{familyLinks.length}</Badge>}
+              {familyLinks.length > 0 && <Badge variant="secondary">{familyLinks.length}</Badge>}
             </CardTitle>
-            <Button onClick={() => dialogRef.current?.openForAdd()} size="sm" className="hover:bg-[#362015] hover:text-white hover:border-[#362015]" variant="outline">
+            <Button onClick={() => dialogRef.current?.openForAdd()} size="sm" variant="outline">
               <Plus className="mr-2 h-4 w-4" />
               Ajouter un membre de la famille
             </Button>

@@ -105,7 +105,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
               <FormLabel>{getParentLabel()}</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
-                  <SelectTrigger size="lg">
+                  <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                     <SelectValue placeholder="Sélectionner" />
                   </SelectTrigger>
                 </FormControl>
@@ -133,7 +133,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
               <FormLabel>Branche familiale</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value || 'Branche paternelle'}>
                 <FormControl>
-                  <SelectTrigger size="lg">
+                  <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                     <SelectValue placeholder="Sélectionner une branche" />
                   </SelectTrigger>
                 </FormControl>
@@ -161,7 +161,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
               <FormLabel>Civilité</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
-                  <SelectTrigger size="lg">
+                  <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                     <SelectValue placeholder="Sélectionner" />
                   </SelectTrigger>
                 </FormControl>
@@ -186,7 +186,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
             <FormItem>
               <FormLabel>Nom *</FormLabel>
               <FormControl>
-                <Input placeholder="Nom de famille" {...field} />
+                <Input placeholder="Nom de famille" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -201,7 +201,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
             <FormItem>
               <FormLabel>Prénom</FormLabel>
               <FormControl>
-                <Input placeholder="Prénom" {...field} />
+                <Input placeholder="Prénom" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -215,7 +215,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
           render={({ field }) => (
             <FormItem>
               <FormLabel>Date de naissance</FormLabel>
-              <SmartDateInput value={field.value} onChange={field.onChange} />
+              <SmartDateInput value={field.value} onChange={field.onChange} className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20" />
               <FormMessage />
             </FormItem>
           )}
@@ -241,7 +241,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
             render={({ field }) => (
               <FormItem className="ml-6">
                 <FormLabel>Date de décès</FormLabel>
-                <SmartDateInput value={field.value} onChange={field.onChange} />
+                <SmartDateInput value={field.value} onChange={field.onChange} className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20" />
                 <FormMessage />
               </FormItem>
             )}
@@ -311,7 +311,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
                 <FormLabel>Enfant adopté</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value || 'Non'}>
                   <FormControl>
-                    <SelectTrigger size="lg">
+                    <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                       <SelectValue placeholder="Sélectionner" />
                     </SelectTrigger>
                   </FormControl>
@@ -373,7 +373,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
                     <FormLabel>Motif de l'exception</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger size="lg">
+                        <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                           <SelectValue placeholder="Sélectionner un motif" />
                         </SelectTrigger>
                       </FormControl>
@@ -413,7 +413,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
                     <FormLabel>Renonce à la succession de</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger size="lg">
+                        <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                           <SelectValue placeholder="Sélectionner un parent" />
                         </SelectTrigger>
                       </FormControl>

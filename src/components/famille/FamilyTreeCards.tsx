@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import { FamilyLink, FamilyProfile, MaritalStatus } from '@/services/familyService';
 import { buildFamilyGraph, FamilyGraphNode } from '@/lib/family/buildFamilyGraph';
 import { initialsFromFullName } from '@/lib/family/initials';
+import { cn } from '@/lib/utils';
 
 interface FamilyTreeCardsProps {
   familyProfile: FamilyProfile | null;
@@ -14,18 +15,8 @@ interface FamilyTreeCardsProps {
   onAddMember: () => void;
 }
 
-const CARD_BG = '#F8F8F8';
-const CARD_BG_MAIN = 'rgba(155, 240, 11, 0.14)'; // teinte de surface.raised (#9bf00b)
-const AVATAR_BG = '#ece9df';
-const AVATAR_BG_MAIN = '#9bf00b'; // surface.raised
-const TEXT_COLOR = '#262626'; // text.inverse
-const ROLE_COLOR = '#616161'; // text.primary
-const ROLE_COLOR_MAIN = '#262626'; // text.inverse — lisible sur fond vert clair
-const GENERATION_LABEL_COLOR = '#616161';
-const GENERATION_LABEL_COLOR_MAIN = '#262626';
-const CONNECTOR_COLOR = '#D9D9D9';
-const MONO_FONT = "'JetBrains Mono', monospace";
-const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9bf00b] focus-visible:ring-offset-2 focus-visible:ring-offset-white';
+const CONNECTOR_COLOR = '#E5E5E3';
+const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
 const GENERATION_NAMES: Record<number, string> = {
   '-3': 'Arrière grands-parents',
@@ -69,25 +60,27 @@ function MemberCard({
       ref={cardRef}
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-2.5 rounded-[4px] px-3 h-[54px] w-[210px] shrink-0 text-left transition-shadow duration-200 shadow-[0_1px_2px_rgba(30,29,25,0.05)] hover:shadow-[0_3px_10px_rgba(30,29,25,0.1)] ${FOCUS_RING}`}
-      style={{ backgroundColor: isMe ? CARD_BG_MAIN : CARD_BG }}
+      className={cn(
+        "flex items-center gap-2.5 rounded-md border px-3 h-[54px] w-[210px] shrink-0 text-left transition-shadow duration-200 shadow-sm hover:shadow-md",
+        isMe ? "bg-primary/5 border-primary/20" : "bg-card border-border",
+        FOCUS_RING
+      )}
     >
       <div
-        className="h-7 w-7 rounded-[50px] flex items-center justify-center shrink-0"
-        style={{ backgroundColor: isMe ? AVATAR_BG_MAIN : AVATAR_BG }}
+        className={cn(
+          "h-7 w-7 rounded-full flex items-center justify-center shrink-0",
+          isMe ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+        )}
       >
-        <span className="text-[11px] font-semibold" style={{ color: TEXT_COLOR }}>
+        <span className="text-[11px] font-semibold">
           {initialsFromFullName(node.name)}
         </span>
       </div>
       <div className="min-w-0">
-        <p className="text-[14px] font-semibold truncate" style={{ color: TEXT_COLOR }}>
+        <p className="text-[14px] font-semibold truncate text-foreground">
           {node.name}
         </p>
-        <p
-          className="text-[11px] uppercase tracking-[0.08em] truncate mt-0.5"
-          style={{ color: isMe ? ROLE_COLOR_MAIN : ROLE_COLOR, fontFamily: MONO_FONT }}
-        >
+        <p className="text-[11px] uppercase tracking-wide truncate mt-0.5 text-muted-foreground">
           {secondaryLabel}
         </p>
       </div>
@@ -101,8 +94,10 @@ function AddMemberCard({ onClick }: { onClick: () => void }) {
       type="button"
       onClick={onClick}
       aria-label="Ajouter un membre de la famille"
-      className={`flex items-center justify-center gap-2 rounded-[4px] px-3 h-[54px] w-[210px] shrink-0 border border-dashed transition-colors duration-200 hover:bg-black/[0.02] ${FOCUS_RING}`}
-      style={{ borderColor: '#D9D9D9', color: ROLE_COLOR }}
+      className={cn(
+        "flex items-center justify-center gap-2 rounded-md px-3 h-[54px] w-[210px] shrink-0 border border-dashed border-border text-muted-foreground transition-colors duration-200 hover:bg-muted/50",
+        FOCUS_RING
+      )}
     >
       <Plus className="h-4 w-4" />
       <span className="text-[13px] font-medium">Ajouter</span>
@@ -215,11 +210,10 @@ export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onS
       {generations.map((generation, rowIndex) => (
         <div key={generation} className="relative flex items-center gap-4">
           <div
-            className="w-24 shrink-0 text-right text-[11px] uppercase tracking-[0.1em] leading-tight"
-            style={{
-              color: generation === 0 ? GENERATION_LABEL_COLOR_MAIN : GENERATION_LABEL_COLOR,
-              fontFamily: MONO_FONT,
-            }}
+            className={cn(
+              "w-24 shrink-0 text-right text-[11px] uppercase tracking-wide leading-tight",
+              generation === 0 ? "text-foreground" : "text-muted-foreground"
+            )}
           >
             {generationLabel(generation, rowIndex)}
           </div>

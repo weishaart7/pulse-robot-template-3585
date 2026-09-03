@@ -14,25 +14,7 @@ import { User, ArrowLeft, ArrowRight, Scale } from 'lucide-react';
 
 type EditView = 'client';
 
-// Foyer panel — tokens design system (texte/accent), fond blanc
-const FONT_STACK = "'Segoe UI', SegoeUI, 'Helvetica Neue', Helvetica, Arial, sans-serif";
-const FOYER_INK = '#262626';       // text.inverse — titres, noms
-const FOYER_LABEL = '#616161';     // text.primary — labels secondaires
-const FOYER_BODY = '#262626';      // text.inverse — corps de texte
-const FOYER_SOFT_BG = 'rgba(155, 240, 11, 0.14)'; // teinte de surface.raised (#9bf00b)
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9bf00b] focus-visible:ring-offset-2 focus-visible:ring-offset-white';
-
-// Couleur de la carte (survol + bordure par défaut) selon le sexe renseigné (civilité)
-const genderAccent = (civility?: string) => {
-  const c = civility?.trim();
-  if (c === 'M' || c === 'M.') {
-    return { accent: '#b6dcfe', textOnAccent: FOYER_INK, mutedOnAccent: FOYER_LABEL };
-  }
-  if (c === 'Mme' || c === 'Mlle') {
-    return { accent: '#dec0f1', textOnAccent: FOYER_INK, mutedOnAccent: FOYER_LABEL };
-  }
-  return { accent: '#000000', textOnAccent: '#FFFFFF', mutedOnAccent: 'rgba(255,255,255,0.7)' };
-};
 
 const FamilleSection = () => {
   const navigate = useNavigate();
@@ -81,7 +63,7 @@ const FamilleSection = () => {
   // Full-screen edit view (fiche client uniquement — partenaire/relation vivent désormais sur leur propre page)
   if (editView === 'client') {
     return (
-      <div className="bg-white" style={{ fontFamily: FONT_STACK }}>
+      <div className="bg-white">
         <div className="w-full mx-auto px-4 sm:px-6 pt-8">
           <button
             onClick={() => setEditView(null)}
@@ -94,14 +76,14 @@ const FamilleSection = () => {
 
         <div className="w-full mx-auto px-4 sm:px-6 pt-6 pb-8">
           <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-[50px] flex items-center justify-center shrink-0" style={{ backgroundColor: FOYER_SOFT_BG }}>
-              <User className="h-6 w-6" style={{ color: FOYER_INK }} strokeWidth={1.5} />
+            <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <User className="h-6 w-6 text-primary" strokeWidth={1.5} />
             </div>
             <div>
-              <h1 className="text-[28px] font-semibold tracking-tight leading-tight" style={{ color: FOYER_INK }}>
+              <h1 className="font-playfair text-3xl font-light tracking-tight text-foreground">
                 {clientName}
               </h1>
-              <p className="text-[13px] mt-1" style={{ color: FOYER_LABEL }}>Fiche personnelle</p>
+              <p className="text-sm text-muted-foreground mt-1">Fiche personnelle</p>
             </div>
           </div>
         </div>
@@ -139,8 +121,7 @@ const FamilleSection = () => {
             {/* Foyer — identité */}
             <div className="flex flex-wrap gap-5">
               <RevealCardContainer
-                className="w-full sm:w-[300px] rounded-[4px] border cursor-pointer"
-                {...genderAccent(familyProfile?.civility)}
+                className="w-full sm:w-[300px] rounded-md border cursor-pointer"
                 role="button"
                 tabIndex={0}
                 onClick={() => setEditView('client')}
@@ -154,10 +135,10 @@ const FamilleSection = () => {
                     avatarText={getInitials(familyProfile?.prenom, familyProfile?.nom)}
                     scheme="plain"
                     displayAvatar={false}
-                    className="rounded-[4px] shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)] border-0 p-6"
-                    titleCss={{ color: FOYER_INK, fontSize: '22px', fontWeight: 600, letterSpacing: '-0.01em' }}
-                    descClass="pt-4 text-[13px] text-[#616161]"
-                    bioClass="text-[13px] leading-relaxed text-[#616161]"
+                    className="rounded-md shadow-sm border-0 p-6"
+                    titleCss={{ fontSize: '22px', fontWeight: 600, letterSpacing: '-0.01em' }}
+                    descClass="pt-4 text-[13px] text-muted-foreground"
+                    bioClass="text-[13px] leading-relaxed text-muted-foreground"
                   />
                 }
                 overlay={
@@ -170,7 +151,7 @@ const FamilleSection = () => {
                     scheme="accented"
                     displayAvatar
                     cardCss={{ backgroundColor: 'var(--accent-color)' }}
-                    className="rounded-[4px] p-6"
+                    className="rounded-md p-6"
                     titleCss={{ fontSize: '22px', fontWeight: 600, letterSpacing: '-0.01em' }}
                     descClass="pt-4 text-[13px]"
                     bioClass="text-[13px] leading-relaxed"
@@ -180,8 +161,7 @@ const FamilleSection = () => {
 
               {hasPartner ? (
                 <RevealCardContainer
-                  className="w-full sm:w-[300px] rounded-[4px] border cursor-pointer"
-                  {...genderAccent(maritalData?.civilite_conjoint)}
+                  className="w-full sm:w-[300px] rounded-md border cursor-pointer"
                   role="button"
                   tabIndex={0}
                   onClick={() => navigate('/dashboard/famille/conjoint')}
@@ -195,10 +175,10 @@ const FamilleSection = () => {
                       avatarText={getInitials(maritalData?.prenom_conjoint, maritalData?.nom_conjoint)}
                       scheme="plain"
                       displayAvatar={false}
-                      className="rounded-[4px] shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)] border-0 p-6"
-                      titleCss={{ color: FOYER_INK, fontSize: '22px', fontWeight: 600, letterSpacing: '-0.01em' }}
-                      descClass="pt-4 text-[13px] text-[#616161]"
-                      bioClass="text-[13px] leading-relaxed text-[#616161]"
+                      className="rounded-md shadow-sm border-0 p-6"
+                      titleCss={{ fontSize: '22px', fontWeight: 600, letterSpacing: '-0.01em' }}
+                      descClass="pt-4 text-[13px] text-muted-foreground"
+                      bioClass="text-[13px] leading-relaxed text-muted-foreground"
                     />
                   }
                   overlay={
@@ -211,7 +191,7 @@ const FamilleSection = () => {
                       scheme="accented"
                       displayAvatar
                       cardCss={{ backgroundColor: 'var(--accent-color)' }}
-                      className="rounded-[4px] p-6"
+                      className="rounded-md p-6"
                       titleCss={{ fontSize: '22px', fontWeight: 600, letterSpacing: '-0.01em' }}
                       descClass="pt-4 text-[13px]"
                       bioClass="text-[13px] leading-relaxed"
@@ -219,13 +199,13 @@ const FamilleSection = () => {
                   }
                 />
               ) : (
-                <div className="w-full sm:w-[300px] rounded-[4px] border border-[#E5E5E5] bg-white shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)] p-6 flex flex-col gap-3 justify-center">
+                <div className="w-full sm:w-[300px] rounded-md border bg-card shadow-sm p-6 flex flex-col gap-3 justify-center">
                   <div className="flex flex-col gap-1">
-                    <label className="text-[11px] uppercase tracking-[0.1em]" style={{ color: FOYER_LABEL, fontFamily: "'JetBrains Mono', monospace" }}>
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       Statut
                     </label>
                     <Select value={relationStatus || 'Célibataire'} onValueChange={handleStatutChange}>
-                      <SelectTrigger size="lg" className="bg-muted border-transparent shadow-none rounded-[5px]">
+                      <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -254,21 +234,18 @@ const FamilleSection = () => {
 
             {/* Régime matrimonial / PACS — carte distincte */}
             {hasPartner && (
-              <div
-                className="flex items-center justify-between gap-5 flex-wrap rounded-[4px] shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)]"
-                style={{ padding: '14px 18px', backgroundColor: FOYER_SOFT_BG }}
-              >
+              <div className="flex items-center justify-between gap-5 flex-wrap rounded-md border bg-card shadow-sm p-4">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-9 w-9 rounded-[50px] flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(155, 240, 11, 0.35)' }}>
-                    <Scale className="w-4 h-4" style={{ color: FOYER_INK }} strokeWidth={1.75} />
+                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Scale className="w-4 h-4 text-primary" strokeWidth={1.75} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10.5px] uppercase tracking-[0.11em]" style={{ color: FOYER_LABEL, fontFamily: "'JetBrains Mono', monospace" }}>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       Régime matrimonial
                     </p>
-                    <p className="text-[14px] font-semibold truncate" style={{ color: FOYER_INK }}>{regimeStatusLine}</p>
+                    <p className="text-sm font-semibold text-foreground truncate">{regimeStatusLine}</p>
                     {regimeDetailLabel && (
-                      <p className="text-[13px] mt-0.5 truncate" style={{ color: FOYER_BODY }}>{regimeDetailLabel}</p>
+                      <p className="text-sm mt-0.5 text-muted-foreground truncate">{regimeDetailLabel}</p>
                     )}
                   </div>
                 </div>
@@ -284,11 +261,8 @@ const FamilleSection = () => {
             )}
 
             {/* Bande 3 — Arbre familial */}
-            <div className="bg-white rounded-[4px] p-6 shadow-[0_1px_3px_rgba(30,29,25,0.06),0_14px_34px_-24px_rgba(30,29,25,0.4)]">
-              <p
-                className="text-[11px] uppercase tracking-[0.11em] mb-6"
-                style={{ color: FOYER_LABEL, fontFamily: "'JetBrains Mono', monospace" }}
-              >
+            <div className="rounded-md border bg-card shadow-sm p-6">
+              <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">
                 Arbre familial
               </p>
               <FamilyTreeCards
@@ -321,9 +295,9 @@ const FamilleSection = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white p-6" style={{ fontFamily: FONT_STACK }}>
+    <div className="min-h-screen bg-white p-6">
       <div className="mb-6">
-        <h1 className="text-[28px] font-bold" style={{ color: FOYER_INK, letterSpacing: '-0.02em' }}>Famille</h1>
+        <h1 className="font-playfair text-3xl font-light tracking-tight text-foreground">Famille</h1>
       </div>
 
       <div className="mb-6 flex justify-start">

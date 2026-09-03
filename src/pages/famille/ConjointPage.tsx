@@ -18,7 +18,7 @@ export default function ConjointPage() {
       </div>
 
       <div className="w-full mx-auto px-4 sm:px-6 pt-6 pb-4">
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground leading-tight">
+        <h1 className="font-playfair text-3xl font-light tracking-tight text-foreground leading-tight">
           Conjoint
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
