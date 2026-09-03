@@ -503,3 +503,159 @@ export function computeRentabiliteLMNP(
     regimeRecommande,
   };
 }
+
+// --- LMP (micro-BIC / réel) --------------------------------------------------
+// Réutilise computeAmortissementImmeubleLMNP (mécanique comptable identique
+// entre LMNP et LMP) et computeMicroBicLMNP (barème identique, un LMP peut
+// être en micro-BIC sous les mêmes seuils). Seul le traitement fiscal du
+// résultat réel diffère : en LMP, le déficit BIC (y compris celui créé par
+// l'amortissement) est imputable sur le revenu global sans plafond ni durée
+// limitée — contrairement au foncier nu (plafond 10 700 €/an) et à LMNP
+// (l'amortissement ne peut jamais créer de déficit). C'est l'avantage
+// principal du statut à faire ressortir dans le comparatif.
+
+export const TAUX_COTISATIONS_SOCIALES_LMP_DEFAUT = 0.40;
+
+export interface ResultatReelLMP {
+  /** Résultat fiscal réel LMP — peut être négatif sans plafond (déficit imputable sur le revenu global). */
+  resultatFiscal: number;
+  /** Part du déficit imputable sur le revenu global — sans plafond ni durée limitée en LMP. */
+  deficitImputableRevenuGlobal: number;
+}
+
+/**
+ * Résultat du régime réel LMP : loyers − charges déductibles − amortissement de
+ * l'année, sans aucun plafonnement (à la différence de LMNP). `totalCharges`
+ * doit inclure toutes les charges déductibles (charges réelles + intérêts
+ * d'emprunt + assurance emprunteur pour le simulateur de rentabilité).
+ */
+export function computeResultatReelLMP(
+  totalRevenus: number,
+  totalCharges: number,
+  totalAmortissement: number,
+): ResultatReelLMP {
+  const resultatFiscal = totalRevenus - totalCharges - totalAmortissement;
+  const deficitImputableRevenuGlobal = Math.max(0, -resultatFiscal);
+  return { resultatFiscal, deficitImputableRevenuGlobal };
+}
+
+export interface RentabiliteLMPMicroBic extends MicroBicLMNPResult {
+  impotRevenu: number;
+  cotisationsSociales: number;
+  rendementNetNet: number | null;
+}
+
+export interface RentabiliteLMPReel extends ResultatReelLMP {
+  chargesDeductibles: number;
+  /** Économie d'impôt potentielle liée à l'imputation du déficit sur le revenu global (sans plafond). */
+  economieImpotPotentielle: number;
+  impotRevenu: number;
+  cotisationsSociales: number;
+  rendementNetNet: number | null;
+}
+
+export interface RentabiliteLMPResult {
+  prixAcquisitionTotal: number;
+  loyersAnnuels: number;
+  chargesAnnuelles: number;
+  amortissementCredit: AmortissementResult;
+  amortissementImmeuble: AmortissementLigneLMNP[];
+  totalAmortissementImmeuble: number;
+  cashflowNetMensuel: number;
+  rendementBrut: number | null;
+  rendementNet: number | null;
+  microBic: RentabiliteLMPMicroBic;
+  reel: RentabiliteLMPReel;
+  regimeRecommande: 'micro-bic' | 'reel' | 'equivalent';
+}
+
+/**
+ * `tauxCotisationsSociales` : saisie libre côté simulateur (pas de calcul SSI
+ * réel, progressif et à assiette auto-référente — hors de portée ici),
+ * appliquée uniquement sur un résultat imposable positif (comme le TMI).
+ */
+export function computeRentabiliteLMP(
+  asset: Asset,
+  revenus: AssetRevenu[],
+  charges: AssetCharge[],
+  tmi: number,
+  tauxCotisationsSociales: number,
+): RentabiliteLMPResult {
+  const prixAcquisitionTotal = computePrixAcquisitionTotal(asset);
+  const loyersAnnuels = computeLoyersAnnuels(revenus);
+  const chargesAnnuelles = computeChargesAnnuelles(charges);
+  const amortissementCredit = computeAmortissement(asset);
+  const { mensualiteCredit, mensualiteAssurance, interetsAnnee, assuranceAnnee } = amortissementCredit;
+
+  const terrainPct = asset.pourcentage_terrain_force
+    ? asset.pourcentage_terrain_force
+    : (ZONE_TERRAIN_PERCENTAGES[asset.zone_bien || ''] || 0);
+  const travaux = (asset.travaux_renovation || 0) + (asset.travaux_construction || 0);
+  const amortissementImmeuble = computeAmortissementImmeubleLMNP(
+    asset.montant_immeuble || 0,
+    terrainPct,
+    asset.meubles || 0,
+    travaux,
+  );
+  const totalAmortissementImmeuble = amortissementImmeuble.reduce((s, l) => s + l.amortissementAnnuel, 0);
+
+  const cashflowNetMensuel =
+    (loyersAnnuels - chargesAnnuelles - mensualiteCredit * 12 - mensualiteAssurance * 12) / 12;
+
+  const rendementBrut = prixAcquisitionTotal > 0 ? loyersAnnuels / prixAcquisitionTotal : null;
+  const rendementNet = prixAcquisitionTotal > 0 ? (loyersAnnuels - chargesAnnuelles) / prixAcquisitionTotal : null;
+
+  // Micro-BIC — barème identique à LMNP (un LMP peut être micro-BIC sous les seuils).
+  const microBicBase = computeMicroBicLMNP(loyersAnnuels, asset.type_location_lmnp);
+  const impotMicroBic = microBicBase.revenuImposable * tmi;
+  const cotisationsMicroBic = microBicBase.revenuImposable * tauxCotisationsSociales;
+  const rendementNetNetMicroBic = prixAcquisitionTotal > 0
+    ? rendementNet! - (impotMicroBic + cotisationsMicroBic) / prixAcquisitionTotal
+    : null;
+
+  // Réel — pas de plafonnement de l'amortissement : le déficit (charges et/ou
+  // amortissement) est imputable sur le revenu global sans limite en LMP.
+  const chargesDeductiblesReel = chargesAnnuelles + interetsAnnee + assuranceAnnee;
+  const reelBase = computeResultatReelLMP(loyersAnnuels, chargesDeductiblesReel, totalAmortissementImmeuble);
+  const economieImpotPotentielle = reelBase.deficitImputableRevenuGlobal * tmi;
+  // L'assiette IR/cotisations ne peut pas être négative ; le résultat fiscal,
+  // lui, reste affiché tel quel (déficit imputable sans plafond ci-dessus).
+  const assietteReel = Math.max(0, reelBase.resultatFiscal);
+  const impotReel = assietteReel * tmi;
+  const cotisationsReel = assietteReel * tauxCotisationsSociales;
+  const rendementNetNetReel = prixAcquisitionTotal > 0
+    ? rendementNet! - (impotReel + cotisationsReel) / prixAcquisitionTotal
+    : null;
+
+  const netAnnuelMicroBic = (loyersAnnuels - chargesAnnuelles) - impotMicroBic - cotisationsMicroBic;
+  const netAnnuelReel = (loyersAnnuels - chargesAnnuelles) - impotReel - cotisationsReel + economieImpotPotentielle;
+  const regimeRecommande: RentabiliteLMPResult['regimeRecommande'] =
+    netAnnuelMicroBic === netAnnuelReel ? 'equivalent' : netAnnuelMicroBic > netAnnuelReel ? 'micro-bic' : 'reel';
+
+  return {
+    prixAcquisitionTotal,
+    loyersAnnuels,
+    chargesAnnuelles,
+    amortissementCredit,
+    amortissementImmeuble,
+    totalAmortissementImmeuble,
+    cashflowNetMensuel,
+    rendementBrut,
+    rendementNet,
+    microBic: {
+      ...microBicBase,
+      impotRevenu: impotMicroBic,
+      cotisationsSociales: cotisationsMicroBic,
+      rendementNetNet: rendementNetNetMicroBic,
+    },
+    reel: {
+      ...reelBase,
+      chargesDeductibles: chargesDeductiblesReel,
+      economieImpotPotentielle,
+      impotRevenu: impotReel,
+      cotisationsSociales: cotisationsReel,
+      rendementNetNet: rendementNetNetReel,
+    },
+    regimeRecommande,
+  };
+}

@@ -11,7 +11,9 @@ import {
   computePrixAcquisitionTotal,
   computeRentabilite,
   computeRentabiliteLMNP,
+  computeRentabiliteLMP,
   computeResultatReelLMNP,
+  computeResultatReelLMP,
   PLAFOND_DEFICIT_FONCIER,
   TAUX_PRELEVEMENTS_SOCIAUX_LMNP,
 } from './rentabilite';
@@ -288,5 +290,83 @@ describe('computeRentabiliteLMNP', () => {
     expect(result.reel.resultatFiscal).toBeLessThan(0);
     expect(result.reel.impotRevenu).toBe(0);
     expect(result.reel.prelevementsSociaux).toBe(0);
+  });
+});
+
+function makeAssetLMP(overrides: Partial<Asset> = {}): Asset {
+  return {
+    nature: 'Immeubles locatifs (LMP)',
+    montant_immeuble: 200_000,
+    zone_bien: 'Zones rurales et villes moyennes', // 15 % terrain
+    meubles: 10_000,
+    travaux_renovation: 0,
+    travaux_construction: 0,
+    type_location_lmnp: 'LMNP Classique',
+    financement_actif: false,
+    ...overrides,
+  };
+}
+
+describe('computeResultatReelLMP', () => {
+  it('ne plafonne pas l\'amortissement déductible (contrairement à LMNP)', () => {
+    const result = computeResultatReelLMP(10_000, 2_000, 12_000);
+    expect(result.resultatFiscal).toBe(-4_000);
+    expect(result.deficitImputableRevenuGlobal).toBe(4_000);
+  });
+
+  it('laisse un déficit de charges seules, sans plafond (contrairement au foncier nu)', () => {
+    const result = computeResultatReelLMP(5_000, 50_000, 0);
+    expect(result.resultatFiscal).toBe(-45_000);
+    expect(result.deficitImputableRevenuGlobal).toBe(45_000); // pas de min(10700, ...)
+  });
+
+  it('retourne un déficit imputable nul quand le résultat est positif', () => {
+    const result = computeResultatReelLMP(20_000, 2_000, 3_000);
+    expect(result.resultatFiscal).toBe(15_000);
+    expect(result.deficitImputableRevenuGlobal).toBe(0);
+  });
+});
+
+describe('computeRentabiliteLMP', () => {
+  it('calcule un cas nominal sans financement', () => {
+    const asset = makeAssetLMP();
+    const revenus = [makeRevenu({ montant: 1000, periodicite: 'Mensuelle' })]; // 12000/an
+    const charges = [makeCharge({ montant: 1000, periodicite: 'annuelle' })];
+    const result = computeRentabiliteLMP(asset, revenus, charges, 0.30, 0.40);
+
+    expect(result.loyersAnnuels).toBe(12_000);
+    expect(result.microBic.revenuImposable).toBe(6_000); // même barème que LMNP
+    expect(result.prixAcquisitionTotal).toBe(200_000);
+  });
+
+  it('impute le déficit sans plafond et calcule l\'économie d\'impôt potentielle associée', () => {
+    const asset = makeAssetLMP();
+    const revenus = [makeRevenu({ montant: 1000, periodicite: 'Annuelle' })];
+    const charges = [makeCharge({ montant: 50_000, periodicite: 'annuelle' })];
+    const result = computeRentabiliteLMP(asset, revenus, charges, 0.30, 0.40);
+    expect(result.reel.resultatFiscal).toBeLessThan(-10_700); // dépasse le plafond du foncier nu
+    expect(result.reel.deficitImputableRevenuGlobal).toBe(-result.reel.resultatFiscal); // non plafonné
+    expect(result.reel.economieImpotPotentielle).toBeCloseTo(result.reel.deficitImputableRevenuGlobal * 0.30);
+    expect(result.reel.impotRevenu).toBe(0);
+    expect(result.reel.cotisationsSociales).toBe(0);
+  });
+
+  it('applique le taux de cotisations sociales saisi uniquement sur un résultat positif', () => {
+    const asset = makeAssetLMP();
+    const revenus = [makeRevenu({ montant: 30_000, periodicite: 'Annuelle' })];
+    const charges = [makeCharge({ montant: 2_000, periodicite: 'annuelle' })];
+    const result = computeRentabiliteLMP(asset, revenus, charges, 0.30, 0.40);
+    expect(result.reel.resultatFiscal).toBeGreaterThan(0);
+    expect(result.reel.cotisationsSociales).toBeCloseTo(result.reel.resultatFiscal * 0.40);
+  });
+
+  it('réutilise le même amortissement immeuble que LMNP à configuration identique', () => {
+    const assetLMNP = makeAssetLMNP();
+    const assetLMP = makeAssetLMP();
+    const revenus = [makeRevenu({ montant: 1000, periodicite: 'Mensuelle' })];
+    const charges = [makeCharge({ montant: 1000, periodicite: 'annuelle' })];
+    const resultLMNP = computeRentabiliteLMNP(assetLMNP, revenus, charges, 0.30);
+    const resultLMP = computeRentabiliteLMP(assetLMP, revenus, charges, 0.30, 0.40);
+    expect(resultLMP.totalAmortissementImmeuble).toBeCloseTo(resultLMNP.totalAmortissementImmeuble);
   });
 });
