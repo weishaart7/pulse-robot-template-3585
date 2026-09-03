@@ -9,6 +9,7 @@ import FiscalOverviewCard from './components/FiscalOverviewCard';
 import TaxRateCard from './components/TaxRateCard';
 import { MenageForm } from '@/components/fiscalite/MenageForm';
 import { SyntheseFoyerFiscal } from '@/components/fiscalite/SyntheseFoyerFiscal';
+import { RevenusSalairesForm } from '@/components/fiscalite/RevenusSalairesForm';
 import { FoyerFiscalInput } from '@/lib/fiscalite';
 
 const FOYER_INITIAL: FoyerFiscalInput = {
@@ -47,6 +48,11 @@ const FiscaliteSection = () => {
         <div className="lg:col-span-1">
           <SyntheseFoyerFiscal foyer={foyerDraft} />
         </div>
+      </div>
+
+      {/* Traitements et salaires (déclaration 2042, cadre 1) */}
+      <div className="mb-6">
+        <RevenusSalairesForm />
       </div>
 
       {/* Main content grid */}
