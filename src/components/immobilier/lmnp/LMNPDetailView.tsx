@@ -16,82 +16,17 @@ import { ChargeForm } from '../ChargeForm';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatCurrency } from '@/lib/patrimoine/utils';
+import {
+  ZONE_TERRAIN_PERCENTAGES,
+  computeAmortissementImmeubleLMNP as computeAmortissement,
+  computeResultatReelLMNP,
+} from '@/lib/immobilier/rentabilite';
 
 interface LMNPDetailViewProps {
   asset: Asset;
   onBack: () => void;
   onUpdate: () => void;
 }
-
-const ZONE_TERRAIN_PERCENTAGES: Record<string, number> = {
-  'Zones rurales et villes moyennes': 15,
-  'Grandes villes': 20,
-  'Hyper-centre / zones tendues': 30,
-};
-
-interface AmortissementLine {
-  composant: string;
-  duree: number;
-  quotePart: number;
-  base: number;
-  amortissementAnnuel: number;
-}
-
-const computeAmortissement = (
-  prixAchat: number,
-  terrainPct: number,
-  meubles: number,
-  travaux: number
-): AmortissementLine[] => {
-  const valeurTerrain = prixAchat * (terrainPct / 100);
-  const valeurBatiment = prixAchat - valeurTerrain;
-
-  const lines: AmortissementLine[] = [];
-
-  if (meubles > 0) {
-    lines.push({
-      composant: 'Mobilier',
-      duree: 5,
-      quotePart: 100,
-      base: meubles,
-      amortissementAnnuel: meubles / 5,
-    });
-  }
-
-  if (travaux > 0) {
-    lines.push({
-      composant: 'Travaux',
-      duree: 10,
-      quotePart: 100,
-      base: travaux,
-      amortissementAnnuel: travaux / 10,
-    });
-  }
-
-  // Quotes-parts d'origine (18/7/8/6/41) ne totalisant que 80 % de valeurBatiment (bug documenté dans
-  // docs/immobilier.md §3) — on les remet à l'échelle proportionnellement (÷ 0,8) pour qu'elles
-  // totalisent 100 %, en conservant leur poids relatif et leur durée d'amortissement respective.
-  const composantsBatiment = [
-    { composant: 'Aménagements intérieurs', duree: 12, pct: 18 / 0.8 },
-    { composant: 'Étanchéité', duree: 25, pct: 7 / 0.8 },
-    { composant: 'Toiture', duree: 25, pct: 8 / 0.8 },
-    { composant: 'Installations électriques', duree: 30, pct: 6 / 0.8 },
-    { composant: 'Gros œuvre', duree: 75, pct: 41 / 0.8 },
-  ];
-
-  for (const c of composantsBatiment) {
-    const base = valeurBatiment * (c.pct / 100);
-    lines.push({
-      composant: c.composant,
-      duree: c.duree,
-      quotePart: c.pct,
-      base,
-      amortissementAnnuel: base / c.duree,
-    });
-  }
-
-  return lines;
-};
 
 export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, onUpdate }) => {
   const { toast } = useToast();
@@ -252,13 +187,12 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
   // année. L'excédent non déduit n'est pas automatiquement reporté sur l'année suivante (aucun
   // historique par exercice n'est persisté par l'application) — affiché à l'utilisateur pour un report
   // manuel, cf. docs/immobilier.md §3.
-  const resultatAvantAmortissement = totalRevenusAnnuel - totalChargesAnnuel;
-  const amortissementDeductible = Math.min(totalAmortissementAnnuel, Math.max(0, resultatAvantAmortissement));
-  const amortissementNonDeductible = totalAmortissementAnnuel - amortissementDeductible;
+  const { amortissementDeductible, amortissementNonDeductible, resultatFiscal: resultatFiscalReel } =
+    computeResultatReelLMNP(totalRevenusAnnuel, totalChargesAnnuel, totalAmortissementAnnuel);
 
   const resultatFiscal = isMicroBic
     ? totalRevenusAnnuel - abattementMicroBic
-    : resultatAvantAmortissement - amortissementDeductible;
+    : resultatFiscalReel;
 
   const handleToggleImpactBudget = async (checked: boolean) => {
     if (!asset.id) return;

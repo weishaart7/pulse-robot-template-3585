@@ -4,11 +4,16 @@ import {
   annualiserCharge,
   annualiserRevenu,
   computeAmortissement,
+  computeAmortissementImmeubleLMNP,
   computeChargesAnnuelles,
   computeLoyersAnnuels,
+  computeMicroBicLMNP,
   computePrixAcquisitionTotal,
   computeRentabilite,
+  computeRentabiliteLMNP,
+  computeResultatReelLMNP,
   PLAFOND_DEFICIT_FONCIER,
+  TAUX_PRELEVEMENTS_SOCIAUX_LMNP,
 } from './rentabilite';
 
 function makeRevenu(overrides: Partial<AssetRevenu> = {}): AssetRevenu {
@@ -189,5 +194,99 @@ describe('computeLoyersAnnuels / computeChargesAnnuelles', () => {
       makeCharge({ montant: 600, periodicite: 'annuelle' }),
     ];
     expect(computeChargesAnnuelles(charges)).toBe(1200 + 600);
+  });
+});
+
+function makeAssetLMNP(overrides: Partial<Asset> = {}): Asset {
+  return {
+    nature: 'Immeubles locatifs (LMNP)',
+    montant_immeuble: 200_000,
+    zone_bien: 'Zones rurales et villes moyennes', // 15 % terrain
+    meubles: 10_000,
+    travaux_renovation: 0,
+    travaux_construction: 0,
+    type_location_lmnp: 'LMNP Classique',
+    financement_actif: false,
+    ...overrides,
+  };
+}
+
+describe('computeAmortissementImmeubleLMNP', () => {
+  it('amortit 100 % de la valeur du bâtiment (quotes-parts remises à l\'échelle)', () => {
+    const lignes = computeAmortissementImmeubleLMNP(200_000, 15, 0, 0);
+    const valeurBatiment = 200_000 * 0.85;
+    const sommeBases = lignes.reduce((s, l) => s + l.base, 0);
+    expect(sommeBases).toBeCloseTo(valeurBatiment);
+  });
+
+  it('ajoute des lignes distinctes pour mobilier et travaux quand renseignés', () => {
+    const lignes = computeAmortissementImmeubleLMNP(200_000, 15, 10_000, 20_000);
+    expect(lignes.find((l) => l.composant === 'Mobilier')).toMatchObject({ base: 10_000, duree: 5 });
+    expect(lignes.find((l) => l.composant === 'Travaux')).toMatchObject({ base: 20_000, duree: 10 });
+  });
+});
+
+describe('computeResultatReelLMNP', () => {
+  it('plafonne l\'amortissement déductible sans créer de déficit', () => {
+    const result = computeResultatReelLMNP(10_000, 2_000, 12_000);
+    expect(result.amortissementDeductible).toBe(8_000);
+    expect(result.amortissementNonDeductible).toBe(4_000);
+    expect(result.resultatFiscal).toBe(0);
+  });
+
+  it('laisse un déficit réel de charges négatif, distinct de l\'amortissement', () => {
+    const result = computeResultatReelLMNP(5_000, 9_000, 3_000);
+    expect(result.amortissementDeductible).toBe(0);
+    expect(result.amortissementNonDeductible).toBe(3_000);
+    expect(result.resultatFiscal).toBe(-4_000);
+  });
+});
+
+describe('computeMicroBicLMNP', () => {
+  it('applique 50 % d\'abattement pour Classique et Tourisme classé (barème 2026)', () => {
+    expect(computeMicroBicLMNP(20_000, 'LMNP Classique').revenuImposable).toBe(10_000);
+    expect(computeMicroBicLMNP(20_000, 'Tourisme classé').revenuImposable).toBe(10_000);
+  });
+
+  it('applique 30 % d\'abattement et un plafond de 15 000 € pour Tourisme non classé', () => {
+    const result = computeMicroBicLMNP(20_000, 'Tourisme non classé');
+    expect(result.revenuImposable).toBe(14_000);
+    expect(result.depassementPlafond).toBe(true);
+  });
+
+  it('ne signale pas de dépassement sous le plafond', () => {
+    expect(computeMicroBicLMNP(10_000, 'Tourisme non classé').depassementPlafond).toBe(false);
+  });
+});
+
+describe('computeRentabiliteLMNP', () => {
+  it('calcule un cas nominal sans financement', () => {
+    const asset = makeAssetLMNP();
+    const revenus = [makeRevenu({ montant: 1000, periodicite: 'Mensuelle' })]; // 12000/an
+    const charges = [makeCharge({ montant: 1000, periodicite: 'annuelle' })];
+    const result = computeRentabiliteLMNP(asset, revenus, charges, 0.30);
+
+    expect(result.loyersAnnuels).toBe(12_000);
+    expect(result.chargesAnnuelles).toBe(1_000);
+    expect(result.microBic.revenuImposable).toBe(6_000); // 50% d'abattement
+    expect(result.reel.chargesDeductibles).toBe(1_000); // pas de financement
+    expect(result.prixAcquisitionTotal).toBe(200_000);
+  });
+
+  it('applique les prélèvements sociaux LMNP à 18,6 % (distinct du foncier nu)', () => {
+    const asset = makeAssetLMNP();
+    const revenus = [makeRevenu({ montant: 20_000, periodicite: 'Annuelle' })];
+    const result = computeRentabiliteLMNP(asset, revenus, [], 0);
+    expect(result.microBic.prelevementsSociaux).toBeCloseTo(result.microBic.revenuImposable * TAUX_PRELEVEMENTS_SOCIAUX_LMNP);
+  });
+
+  it('ne met pas les PS/IR négatifs quand le résultat réel est un déficit', () => {
+    const asset = makeAssetLMNP();
+    const revenus = [makeRevenu({ montant: 1000, periodicite: 'Annuelle' })];
+    const charges = [makeCharge({ montant: 5000, periodicite: 'annuelle' })];
+    const result = computeRentabiliteLMNP(asset, revenus, charges, 0.30);
+    expect(result.reel.resultatFiscal).toBeLessThan(0);
+    expect(result.reel.impotRevenu).toBe(0);
+    expect(result.reel.prelevementsSociaux).toBe(0);
   });
 });

@@ -1,8 +1,8 @@
 import { differenceInCalendarMonths } from 'date-fns';
 import type { Asset, AssetCharge, AssetRevenu } from '@/services/assetService';
 
-// Simulateur de rentabilité locative — location nue uniquement (régimes
-// micro-foncier / réel). LMNP/LMP et projection pluriannuelle hors périmètre.
+// Simulateur de rentabilité locative — location nue (micro-foncier / réel) et
+// LMNP (micro-BIC / réel). LMP et projection pluriannuelle hors périmètre.
 
 export const PLAFOND_DEFICIT_FONCIER = 10_700;
 export const TAUX_ABATTEMENT_MICRO_FONCIER = 0.30;
@@ -236,6 +236,266 @@ export function computeRentabilite(
       resultatFoncier,
       deficitImputableRevenuGlobal,
       economieImpotPotentielle,
+      impotRevenu: impotReel,
+      prelevementsSociaux: psReel,
+      rendementNetNet: rendementNetNetReel,
+    },
+    regimeRecommande,
+  };
+}
+
+// --- LMNP (micro-BIC / réel) -------------------------------------------------
+// Fonctions déplacées depuis LMNPDetailView.tsx (comportement/formules
+// inchangés) pour être partagées avec le simulateur de rentabilité LMNP,
+// au lieu d'être piégées dans le composant — cf. docs/immobilier.md §2.
+
+export const TAUX_PRELEVEMENTS_SOCIAUX_LMNP = 0.186;
+
+/** Part du prix d'achat non amortissable, par zone géographique (LMNP). */
+export const ZONE_TERRAIN_PERCENTAGES: Record<string, number> = {
+  'Zones rurales et villes moyennes': 15,
+  'Grandes villes': 20,
+  'Hyper-centre / zones tendues': 30,
+};
+
+export interface AmortissementLigneLMNP {
+  composant: string;
+  duree: number;
+  quotePart: number;
+  base: number;
+  amortissementAnnuel: number;
+}
+
+/**
+ * Tableau d'amortissement comptable de l'immeuble par composant (méthode par
+ * composants). Quotes-parts du bâtiment (Aménagements intérieurs 18 %,
+ * Étanchéité 7 %, Toiture 8 %, Installations électriques 6 %, Gros œuvre 41 %)
+ * remises à l'échelle ÷0,8 pour totaliser 100 % (bug documenté et corrigé,
+ * cf. docs/immobilier.md §3) — poids relatifs et durées inchangés.
+ */
+export function computeAmortissementImmeubleLMNP(
+  prixAchat: number,
+  terrainPct: number,
+  meubles: number,
+  travaux: number,
+): AmortissementLigneLMNP[] {
+  const valeurTerrain = prixAchat * (terrainPct / 100);
+  const valeurBatiment = prixAchat - valeurTerrain;
+
+  const lines: AmortissementLigneLMNP[] = [];
+
+  if (meubles > 0) {
+    lines.push({
+      composant: 'Mobilier',
+      duree: 5,
+      quotePart: 100,
+      base: meubles,
+      amortissementAnnuel: meubles / 5,
+    });
+  }
+
+  if (travaux > 0) {
+    lines.push({
+      composant: 'Travaux',
+      duree: 10,
+      quotePart: 100,
+      base: travaux,
+      amortissementAnnuel: travaux / 10,
+    });
+  }
+
+  const composantsBatiment = [
+    { composant: 'Aménagements intérieurs', duree: 12, pct: 18 / 0.8 },
+    { composant: 'Étanchéité', duree: 25, pct: 7 / 0.8 },
+    { composant: 'Toiture', duree: 25, pct: 8 / 0.8 },
+    { composant: 'Installations électriques', duree: 30, pct: 6 / 0.8 },
+    { composant: 'Gros œuvre', duree: 75, pct: 41 / 0.8 },
+  ];
+
+  for (const c of composantsBatiment) {
+    const base = valeurBatiment * (c.pct / 100);
+    lines.push({
+      composant: c.composant,
+      duree: c.duree,
+      quotePart: c.pct,
+      base,
+      amortissementAnnuel: base / c.duree,
+    });
+  }
+
+  return lines;
+}
+
+export interface ResultatReelLMNP {
+  resultatAvantAmortissement: number;
+  /** Amortissement effectivement déduit cette année (plafonné, ne peut pas créer/aggraver un déficit). */
+  amortissementDeductible: number;
+  /** Excédent d'amortissement non déduit — non reporté automatiquement (dette assumée). */
+  amortissementNonDeductible: number;
+  /**
+   * Résultat fiscal réel, potentiellement négatif si les charges seules (hors
+   * amortissement) dépassent les revenus — déficit réel, distinct de l'excédent
+   * d'amortissement, cf. docs/immobilier.md §3.
+   */
+  resultatFiscal: number;
+}
+
+/**
+ * Résultat du régime réel LMNP, avec plafonnement de l'amortissement déductible
+ * (l'amortissement ne peut pas créer ni aggraver un déficit). `totalCharges` doit
+ * inclure toutes les charges déductibles (charges réelles + intérêts d'emprunt +
+ * assurance emprunteur pour le simulateur de rentabilité).
+ */
+export function computeResultatReelLMNP(
+  totalRevenus: number,
+  totalCharges: number,
+  totalAmortissement: number,
+): ResultatReelLMNP {
+  const resultatAvantAmortissement = totalRevenus - totalCharges;
+  const amortissementDeductible = Math.min(totalAmortissement, Math.max(0, resultatAvantAmortissement));
+  const amortissementNonDeductible = totalAmortissement - amortissementDeductible;
+  const resultatFiscal = resultatAvantAmortissement - amortissementDeductible;
+
+  return { resultatAvantAmortissement, amortissementDeductible, amortissementNonDeductible, resultatFiscal };
+}
+
+interface BaremeMicroBicLMNP {
+  abattementTaux: number;
+  plafondRecettes: number;
+}
+
+// Barème 2026, post loi Le Meur (19/11/2024) : abattement renforcé à 71 % pour
+// les meublés de tourisme classés supprimé pour les revenus 2025 et suivants.
+// Distinct du taux encore utilisé dans le résumé fiscal existant de
+// LMNPDetailView.tsx pour "Tourisme classé" à la date d'écriture — cf. fix
+// dédié (commit isolé) qui aligne cet affichage sur ce même barème.
+export const MICRO_BIC_LMNP_BAREME: Record<string, BaremeMicroBicLMNP> = {
+  'LMNP Classique': { abattementTaux: 0.50, plafondRecettes: 83_600 },
+  'Tourisme classé': { abattementTaux: 0.50, plafondRecettes: 83_600 },
+  'Tourisme non classé': { abattementTaux: 0.30, plafondRecettes: 15_000 },
+};
+
+const BAREME_MICRO_BIC_PAR_DEFAUT: BaremeMicroBicLMNP = MICRO_BIC_LMNP_BAREME['LMNP Classique'];
+
+export interface MicroBicLMNPResult {
+  abattementTaux: number;
+  plafondRecettes: number;
+  revenuImposable: number;
+  depassementPlafond: boolean;
+}
+
+export function computeMicroBicLMNP(loyersAnnuels: number, typeLocationLmnp?: string): MicroBicLMNPResult {
+  const bareme = (typeLocationLmnp && MICRO_BIC_LMNP_BAREME[typeLocationLmnp]) || BAREME_MICRO_BIC_PAR_DEFAUT;
+  return {
+    abattementTaux: bareme.abattementTaux,
+    plafondRecettes: bareme.plafondRecettes,
+    revenuImposable: loyersAnnuels * (1 - bareme.abattementTaux),
+    depassementPlafond: loyersAnnuels > bareme.plafondRecettes,
+  };
+}
+
+export interface RentabiliteLMNPMicroBic extends MicroBicLMNPResult {
+  impotRevenu: number;
+  prelevementsSociaux: number;
+  rendementNetNet: number | null;
+}
+
+export interface RentabiliteLMNPReel extends ResultatReelLMNP {
+  chargesDeductibles: number;
+  impotRevenu: number;
+  prelevementsSociaux: number;
+  rendementNetNet: number | null;
+}
+
+export interface RentabiliteLMNPResult {
+  prixAcquisitionTotal: number;
+  loyersAnnuels: number;
+  chargesAnnuelles: number;
+  amortissementCredit: AmortissementResult;
+  amortissementImmeuble: AmortissementLigneLMNP[];
+  totalAmortissementImmeuble: number;
+  cashflowNetMensuel: number;
+  rendementBrut: number | null;
+  rendementNet: number | null;
+  microBic: RentabiliteLMNPMicroBic;
+  reel: RentabiliteLMNPReel;
+  regimeRecommande: 'micro-bic' | 'reel' | 'equivalent';
+}
+
+export function computeRentabiliteLMNP(
+  asset: Asset,
+  revenus: AssetRevenu[],
+  charges: AssetCharge[],
+  tmi: number,
+): RentabiliteLMNPResult {
+  const prixAcquisitionTotal = computePrixAcquisitionTotal(asset);
+  const loyersAnnuels = computeLoyersAnnuels(revenus);
+  const chargesAnnuelles = computeChargesAnnuelles(charges);
+  const amortissementCredit = computeAmortissement(asset);
+  const { mensualiteCredit, mensualiteAssurance, interetsAnnee, assuranceAnnee } = amortissementCredit;
+
+  const terrainPct = asset.pourcentage_terrain_force
+    ? asset.pourcentage_terrain_force
+    : (ZONE_TERRAIN_PERCENTAGES[asset.zone_bien || ''] || 0);
+  const travaux = (asset.travaux_renovation || 0) + (asset.travaux_construction || 0);
+  const amortissementImmeuble = computeAmortissementImmeubleLMNP(
+    asset.montant_immeuble || 0,
+    terrainPct,
+    asset.meubles || 0,
+    travaux,
+  );
+  const totalAmortissementImmeuble = amortissementImmeuble.reduce((s, l) => s + l.amortissementAnnuel, 0);
+
+  const cashflowNetMensuel =
+    (loyersAnnuels - chargesAnnuelles - mensualiteCredit * 12 - mensualiteAssurance * 12) / 12;
+
+  const rendementBrut = prixAcquisitionTotal > 0 ? loyersAnnuels / prixAcquisitionTotal : null;
+  const rendementNet = prixAcquisitionTotal > 0 ? (loyersAnnuels - chargesAnnuelles) / prixAcquisitionTotal : null;
+
+  // Micro-BIC
+  const microBicBase = computeMicroBicLMNP(loyersAnnuels, asset.type_location_lmnp);
+  const impotMicroBic = microBicBase.revenuImposable * tmi;
+  const psMicroBic = microBicBase.revenuImposable * TAUX_PRELEVEMENTS_SOCIAUX_LMNP;
+  const rendementNetNetMicroBic = prixAcquisitionTotal > 0
+    ? rendementNet! - (impotMicroBic + psMicroBic) / prixAcquisitionTotal
+    : null;
+
+  // Réel — intérêts et assurance emprunteur déductibles en plus des charges réelles.
+  const chargesDeductiblesReel = chargesAnnuelles + interetsAnnee + assuranceAnnee;
+  const reelBase = computeResultatReelLMNP(loyersAnnuels, chargesDeductiblesReel, totalAmortissementImmeuble);
+  // L'assiette IR/PS ne peut pas être négative ; le résultat fiscal, lui, reste
+  // affiché tel quel (déficit réel reportable, cf. ResultatReelLMNP).
+  const assietteReel = Math.max(0, reelBase.resultatFiscal);
+  const impotReel = assietteReel * tmi;
+  const psReel = assietteReel * TAUX_PRELEVEMENTS_SOCIAUX_LMNP;
+  const rendementNetNetReel = prixAcquisitionTotal > 0
+    ? rendementNet! - (impotReel + psReel) / prixAcquisitionTotal
+    : null;
+
+  const netAnnuelMicroBic = (loyersAnnuels - chargesAnnuelles) - impotMicroBic - psMicroBic;
+  const netAnnuelReel = (loyersAnnuels - chargesAnnuelles) - impotReel - psReel;
+  const regimeRecommande: RentabiliteLMNPResult['regimeRecommande'] =
+    netAnnuelMicroBic === netAnnuelReel ? 'equivalent' : netAnnuelMicroBic > netAnnuelReel ? 'micro-bic' : 'reel';
+
+  return {
+    prixAcquisitionTotal,
+    loyersAnnuels,
+    chargesAnnuelles,
+    amortissementCredit,
+    amortissementImmeuble,
+    totalAmortissementImmeuble,
+    cashflowNetMensuel,
+    rendementBrut,
+    rendementNet,
+    microBic: {
+      ...microBicBase,
+      impotRevenu: impotMicroBic,
+      prelevementsSociaux: psMicroBic,
+      rendementNetNet: rendementNetNetMicroBic,
+    },
+    reel: {
+      ...reelBase,
+      chargesDeductibles: chargesDeductiblesReel,
       impotRevenu: impotReel,
       prelevementsSociaux: psReel,
       rendementNetNet: rendementNetNetReel,
