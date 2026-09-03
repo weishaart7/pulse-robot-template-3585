@@ -41,12 +41,19 @@ Pour la nature « Immeubles locatifs (loués nus) » spécifiquement, la fiche d
 en plus une section **Simulateur de rentabilité**
 ([SimulateurRentabiliteSection.tsx](src/components/immobilier/SimulateurRentabiliteSection.tsx)) : cashflow
 net mensuel, rendements brut/net/net-net et comparaison micro-foncier vs réel (avec déficit foncier
-plafonné à 10 700 €/an) au TMI saisi localement (pas de persistance). De même pour la nature « Immeubles
-locatifs (LMNP) » (pas LMP), `LMNPDetailView.tsx` affiche une section équivalente
+plafonné à 10 700 €/an) au TMI saisi localement (pas de persistance). De même pour « Immeubles locatifs
+(LMNP) », `LMNPDetailView.tsx` affiche une section équivalente
 ([SimulateurRentabiliteLMNPSection.tsx](src/components/immobilier/lmnp/SimulateurRentabiliteLMNPSection.tsx))
 comparant micro-BIC (barème 2026, alerte de dépassement de plafond) et réel (charges + intérêts +
-assurance déductibles, amortissement plafonné, PS à 18,6 %). Moteur de calcul commun aux deux :
-[src/lib/immobilier/rentabilite.ts](src/lib/immobilier/rentabilite.ts).
+assurance déductibles, amortissement plafonné, PS à 18,6 %). Et pour « Immeubles locatifs (LMP) »,
+une troisième section équivalente
+([SimulateurRentabiliteLMPSection.tsx](src/components/immobilier/lmnp/SimulateurRentabiliteLMPSection.tsx),
+mutuellement exclusive avec celle de LMNP dans le même composant) : même barème micro-BIC, mais au réel
+l'amortissement n'est **jamais plafonné** (contrairement à LMNP) et le déficit est imputable sur le
+revenu global **sans plafond ni durée limitée** (contrairement au foncier nu, 10 700 €/an) — l'avantage
+distinctif du statut, mis en avant dans l'affichage. Les cotisations sociales SSI, dont le calcul réel
+est progressif et hors de portée ici, sont remplacées par un taux de saisie libre (défaut 40 %, comme
+le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts](src/lib/immobilier/rentabilite.ts).
 
 **Tables Supabase consommées** : `assets` (colonnes « immobilier étendu », partagées avec Patrimoine),
 `asset_charges`, `asset_revenus`.
@@ -73,20 +80,24 @@ assurance déductibles, amortissement plafonné, PS à 18,6 %). Moteur de calcul
 
 ## 2. Architecture & décisions
 
-- **`src/lib/immobilier/` centralise désormais la rentabilité location nue et LMNP — pas encore les KPI
-  de portefeuille ni LMP.** [rentabilite.ts](src/lib/immobilier/rentabilite.ts) réunit en fonctions pures
+- **`src/lib/immobilier/` centralise désormais la rentabilité location nue, LMNP et LMP — pas encore les
+  KPI de portefeuille.** [rentabilite.ts](src/lib/immobilier/rentabilite.ts) réunit en fonctions pures
   testées (`rentabilite.test.ts`) : le calcul micro-foncier/réel (location nue), l'amortissement du
-  crédit (commun aux deux), et pour LMNP `computeAmortissementImmeubleLMNP`/`computeResultatReelLMNP`
-  (déplacés depuis `LMNPDetailView.tsx` sans changer une formule, cf. commit d'extraction dédié) plus
-  `computeMicroBicLMNP`/`computeRentabiliteLMNP` (nouveaux, barème 2026). Il suit le pattern `lib/ifi/`/
+  crédit (commun aux trois régimes), `computeAmortissementImmeubleLMNP`/`computeResultatReelLMNP`
+  (déplacés depuis `LMNPDetailView.tsx` sans changer une formule, cf. commit d'extraction dédié) et
+  `computeMicroBicLMNP`/`computeRentabiliteLMNP` pour LMNP (barème 2026), puis pour LMP
+  `computeResultatReelLMP`/`computeRentabiliteLMP` qui réutilisent tels quels
+  `computeAmortissementImmeubleLMNP` (mécanique comptable identique) et `computeMicroBicLMNP` (même
+  barème) — seul le traitement fiscal du résultat réel diffère (pas de plafonnement de l'amortissement
+  en LMP, cotisations sociales en saisie libre au lieu de PS fixes). Suit le pattern `lib/ifi/`/
   `lib/patrimoine/` demandé par `CLAUDE.md`. **Dette restante** : `ImmobilierOverview.tsx` (rentabilité,
   cashflow, plus-value brute de portefeuille) implémente toujours sa propre annualisation inline, non
   partagée — une **troisième** convention de périodicité coexiste donc pour les KPI de portefeuille (à
   vérifier avant toute fusion : `rentabilite.ts` suit exactement les deux conventions réellement
   stockées en base, cf. `annualiserRevenu`/`annualiserCharge`). Le résumé fiscal existant de
-  `LMNPDetailView.tsx` (branche micro-BIC 50 %, sans plafond vérifié) reste lui aussi non partagé avec
-  `computeMicroBicLMNP` du nouveau simulateur (barème 2026 avec plafonds) — choix délibéré pour ne pas
-  toucher à son comportement existant, cf. §3.
+  `LMNPDetailView.tsx` (branche micro-BIC 50 %, sans plafond vérifié, appliquée indifféremment à
+  LMNP/LMP) reste lui aussi non partagé avec `computeMicroBicLMNP` des nouveaux simulateurs (barème
+  2026 avec plafonds) — choix délibéré pour ne pas toucher à son comportement existant, cf. §3.
 
 - **Aucun fichier de service dédié pour le formulaire propriété.** `useImmobilierPropertyForm.ts` et
   `LMNPDetailView.tsx` écrivent tous deux directement sur `supabase.from('assets').update(...)`,
@@ -270,9 +281,13 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
   `useAssetForm.ts::handleSubmit` ne recalcule pas `transfert_immobilier` par rapport à
   `transfert_societe` pour cette nature) — cf. §2 pour le détail. Distinct de l'incohérence
   historique déjà corrigée en base pour les actifs existants.
-- **LMNP et LMP appliquent le même calcul d'amortissement et le même affichage de résultat**, alors
-  que les régimes divergent en aval (cotisations sociales, imputation du déficit, plus-value
-  professionnelle) — approximation plausible pour une V1, mais non signalée à l'utilisateur.
+- **Le résumé fiscal existant (`LMNPDetailView.tsx`, hors nouveaux simulateurs) applique toujours le
+  même calcul d'amortissement et le même affichage de résultat à LMNP et LMP**, alors que les régimes
+  divergent en aval (cotisations sociales, imputation du déficit, plus-value professionnelle) —
+  approximation plausible pour une V1, mais non signalée à l'utilisateur. **Distinction désormais faite
+  dans les simulateurs de rentabilité** (§1) : `computeResultatReelLMNP` plafonne l'amortissement
+  déductible, `computeResultatReelLMP` ne le plafonne pas et impute le déficit sans limite sur le revenu
+  global — seul le résumé fiscal historique reste non distingué.
 - **`assetService.getAssetCharges`/`getAssetRevenus` sans filtre `user_id` applicatif**, à la
   différence du reste du durcissement « défense en profondeur » de Patrimoine (commit `ea3a695`) —
   couvert par les RLS, qui sont correctes, mais incohérent avec la méthode appliquée ailleurs.
@@ -330,11 +345,17 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
   dans la fiche détail (cashflow, rendements, déficit foncier plafonné à 10 700 €/an, régime le plus
   favorable au TMI saisi) — cf. §1/§2. Pas de projection pluriannuelle, pas de calcul de plus-value à
   la revente, pas de report du déficit foncier au-delà du plafond annuel.
-- **V1 — en place (ajout)** : pour LMNP (« Immeubles locatifs (LMNP) » uniquement, pas LMP), simulateur
-  de rentabilité micro-BIC/réel dans `LMNPDetailView.tsx` (barème 2026 avec plafonds de recettes,
-  amortissement immeuble plafonné, intérêts + assurance déductibles au réel, PS à 18,6 %, régime le
-  plus favorable) — cf. §1/§2. Pas de report de l'excédent d'amortissement d'une année sur l'autre
-  (dette déjà connue, non traitée ici), pas de LMP.
+- **V1 — en place (ajout)** : pour LMNP, simulateur de rentabilité micro-BIC/réel dans
+  `LMNPDetailView.tsx` (barème 2026 avec plafonds de recettes, amortissement immeuble plafonné,
+  intérêts + assurance déductibles au réel, PS à 18,6 %, régime le plus favorable) — cf. §1/§2. Pas de
+  report de l'excédent d'amortissement d'une année sur l'autre (dette déjà connue, non traitée ici).
+- **V1 — en place (ajout)** : pour LMP, simulateur de rentabilité micro-BIC/réel équivalent (même
+  barème micro-BIC que LMNP, même amortissement immeuble), mais au réel sans plafonnement de
+  l'amortissement et déficit imputable sur le revenu global sans plafond ni durée limitée (avantage
+  distinctif du statut). Cotisations sociales SSI remplacées par un taux de saisie libre (défaut 40 %,
+  pas de calcul progressif réel). Pas de vérification des critères d'éligibilité LMP (23 000 €/50 % des
+  revenus du foyer, non modélisée — la nature de l'actif déjà choisie par l'utilisateur fait foi), pas
+  de plus-value professionnelle (art. 151 septies), pas d'IFI.
 - **Différé, déductible du code** :
   - **Location nue pour les 5 autres natures de `RENTAL_PROPERTY_TYPES`** (Autres immeubles de rapport,
     Parking/Garage/Box, etc.) : toujours aucun moteur de calcul dédié, gate du simulateur strictement
@@ -354,24 +375,25 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
     [assetTypes.ts](src/constants/assetTypes.ts)). Cette information existe donc en base
     (`assets.revenus_distribues_12m`, `assets.regime_fiscal_parts`) mais reste invisible depuis
     Immobilier, qui continue d'afficher le message « à venir » pour ces natures.
-  - **Financement (`financement_*`) : désormais consommé par les deux simulateurs de rentabilité
-    (location nue et LMNP), toujours dormant ailleurs.** Les 5 champs `financement_actif`/
+  - **Financement (`financement_*`) : désormais consommé par les trois simulateurs de rentabilité
+    (location nue, LMNP, LMP), toujours dormant ailleurs.** Les 5 champs `financement_actif`/
     `financement_duree_mois`/`financement_apport`/`financement_taux_credit`/`financement_taux_assurance`,
     saisissables via
     [PropertyFinancingSection.tsx](src/components/immobilier/property/PropertyFinancingSection.tsx) et
     persistés par `useImmobilierPropertyForm.ts:69-73`, alimentent `computeAmortissement()` dans
     [rentabilite.ts](src/lib/immobilier/rentabilite.ts) (mensualité, intérêts de l'année en cours),
-    partagé par les simulateurs « Immeubles locatifs (loués nus) » et « Immeubles locatifs (LMNP) ».
-    **Toujours dormants ailleurs** : `ImmobilierOverview.tsx` (KPI de portefeuille) et le résumé fiscal
-    existant de `LMNPDetailView.tsx` (hors nouveau simulateur) ne lisent toujours pas ces champs — le
-    cashflow de portefeuille et l'ancien résultat fiscal LMNP restent calculés sans tenir compte du
-    crédit. Il n'existe pas de colonne « date de démarrage du crédit » en base : `computeAmortissement()`
-    utilise `date_acquisition` comme proxy, ce qui devient imprécis en cas de refinancement (cas non
-    traité, documenté en commentaire dans le code).
-  - **Distinction LMNP/LMP** dans le calcul lui-même : le résumé fiscal existant et le nouveau
-    simulateur de rentabilité traitent tous deux uniquement LMNP (`asset.nature === 'Immeubles locatifs
-    (LMNP)'` pour le simulateur ; le résumé fiscal, lui, s'applique aux deux natures sans distinction,
-    écart documenté en §3 comme approximation).
+    partagé par les trois simulateurs. **Toujours dormants ailleurs** : `ImmobilierOverview.tsx` (KPI de
+    portefeuille) et le résumé fiscal existant de `LMNPDetailView.tsx` (hors nouveaux simulateurs) ne
+    lisent toujours pas ces champs — le cashflow de portefeuille et l'ancien résultat fiscal LMNP/LMP
+    restent calculés sans tenir compte du crédit. Il n'existe pas de colonne « date de démarrage du
+    crédit » en base : `computeAmortissement()` utilise `date_acquisition` comme proxy, ce qui devient
+    imprécis en cas de refinancement (cas non traité, documenté en commentaire dans le code).
+  - **Distinction LMNP/LMP** dans le calcul lui-même : les nouveaux simulateurs de rentabilité
+    distinguent désormais les deux statuts (plafonnement de l'amortissement et PS à 18,6 % en LMNP ;
+    pas de plafonnement, déficit imputable sans limite et cotisations sociales en saisie libre en LMP,
+    gate `asset.nature === 'Immeubles locatifs (LMP)'`) — seul le résumé fiscal existant de
+    `LMNPDetailView.tsx` continue de s'appliquer aux deux natures sans distinction (écart documenté en
+    §3 comme approximation, non corrigé ici).
   - **`regime_location` (Micro-foncier/Réel)** pour la location nue : toujours sans branche de calcul
     qui le lit (`ImmobilierPropertyDetailView`/location nue n'a pas de moteur de calcul dédié, cf.
     plus haut). Le cas Micro-BIC/BIC (meublé, LMNP/LMP) est en revanche traité depuis le fix §3.
