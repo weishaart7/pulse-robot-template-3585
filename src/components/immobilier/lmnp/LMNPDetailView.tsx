@@ -236,13 +236,15 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
     return sum + (c.montant || 0) * periodiciteAnnualFactor(c.periodicite);
   }, 0);
 
-  // Régime Micro-BIC : base = recettes − abattement forfaitaire (71 % meublé de tourisme classé,
-  // 50 % sinon), sans déduction de charges ni d'amortissement — régime BIC réel sinon (comportement
-  // par défaut inchangé si regime_location est vide/'BIC'). Plafond de recettes non vérifié ici (dépend
-  // de la catégorie de location, seuils révisés chaque année) — avertissement affiché à l'utilisateur,
-  // cf. docs/immobilier.md §3.
+  // Régime Micro-BIC : base = recettes − abattement forfaitaire (50 % quel que soit le type de
+  // location, y compris meublé de tourisme classé depuis la loi Le Meur du 19/11/2024 qui a
+  // supprimé l'abattement renforcé à 71 % pour les revenus 2025 et suivants), sans déduction de
+  // charges ni d'amortissement — régime BIC réel sinon (comportement par défaut inchangé si
+  // regime_location est vide/'BIC'). Plafond de recettes non vérifié ici (dépend de la catégorie
+  // de location, seuils révisés chaque année) — avertissement affiché à l'utilisateur, cf.
+  // docs/immobilier.md §3.
   const isMicroBic = asset.regime_location === 'Micro-BIC';
-  const tauxAbattementMicroBic = typeLocationLmnp === 'Tourisme classé' ? 0.71 : 0.50;
+  const tauxAbattementMicroBic = 0.50;
   const abattementMicroBic = totalRevenusAnnuel * tauxAbattementMicroBic;
 
   // Plafonnement de l'amortissement déductible (régime réel) : l'amortissement ne peut pas créer ni
