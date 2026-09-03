@@ -9,7 +9,7 @@ interface CheckboxWithLabelProps {
 
 export function CheckboxWithLabel({ checked, onCheckedChange, label }: CheckboxWithLabelProps) {
   return (
-    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+    <FormItem className="flex flex-row items-center h-9 space-x-3 space-y-0">
       <FormControl>
         <Checkbox checked={checked} onCheckedChange={onCheckedChange} />
       </FormControl>
