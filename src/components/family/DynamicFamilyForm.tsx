@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils';
 import { SmartDateInput } from '@/components/family/SmartDateInput';
 import { CheckboxWithLabel } from '@/components/family/CheckboxWithLabel';
+import NationalitySelect from '@/components/ui/nationality-select';
 
 interface DynamicFamilyFormProps {
   linkType: string;
@@ -42,6 +43,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
   const watchAdoption = form.watch('enfant_adopte');
   const watchAdoptionAbattementPlein = form.watch('adoption_simple_abattement_plein');
   const watchDateNaissance = form.watch('date_naissance');
+  const watchDoubleNationalite = form.watch('double_nationalite');
   const isFirstRender = useRef(true);
   const enfantAChargeManuellementModifie = useRef(false);
   const fiscalementAChargeManuellementModifie = useRef(false);
@@ -220,6 +222,59 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
             </FormItem>
           )}
         />
+
+        {/* Nationalité */}
+        <FormField
+          control={form.control}
+          name="nationalite"
+          render={({ field }) => (
+            <FormItem>
+              <div className="relative w-full flex flex-col gap-1">
+                <FormLabel>Nationalité</FormLabel>
+                <FormControl>
+                  <NationalitySelect
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Sélectionner une nationalité"
+                  />
+                </FormControl>
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Double nationalité */}
+        <FormField
+          control={form.control}
+          name="double_nationalite"
+          render={({ field }) => (
+            <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Double nationalité" />
+          )}
+        />
+
+        {/* Deuxième nationalité */}
+        {watchDoubleNationalite && (
+          <FormField
+            control={form.control}
+            name="nationalite_2"
+            render={({ field }) => (
+              <FormItem>
+                <div className="relative w-full flex flex-col gap-1">
+                  <FormLabel>Deuxième nationalité</FormLabel>
+                  <FormControl>
+                    <NationalitySelect
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Sélectionner une nationalité"
+                    />
+                  </FormControl>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
       </div>
 
       {/* Checkboxes */}

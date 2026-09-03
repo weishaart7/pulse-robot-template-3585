@@ -37,8 +37,9 @@ const formSchema = z.object({
     required_error: 'La date de naissance est obligatoire',
   }),
   profession: z.string().optional(),
-  professionLibre: z.string().optional(),
   nationalite: z.string().optional(),
+  doubleNationalite: z.boolean().default(false),
+  nationalite2: z.string().optional(),
   capaciteJuridique: z.enum([
     'Aucune',
     'Tutelle',
@@ -57,18 +58,6 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
-
-const professions = [
-  'Agriculteur exploitant',
-  'Artisan, commerçant, chef d\'entreprise',
-  'Cadre, profession intellectuelle supérieure',
-  'Profession intermédiaire',
-  'Employé',
-  'Ouvrier',
-  'Retraité',
-  'Sans activité professionnelle',
-  'Autre',
-];
 
 export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) {
   const { data, loading, saving, saveData } = useFamilyProfile();
@@ -90,8 +79,9 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
       prenom: '',
       dateNaissance: undefined,
       profession: '',
-      professionLibre: '',
       nationalite: '',
+      doubleNationalite: false,
+      nationalite2: '',
       capaciteJuridique: 'Aucune',
       handicape: false,
       mandatProtectionFuture: false,
@@ -111,7 +101,6 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
           .replace(/&#x2F;/g, '/');
 
       const rawProfession = data.profession ? unescapeHtml(data.profession) : '';
-      const isPredefinedProfession = rawProfession && professions.includes(rawProfession);
 
       // Compat. fiches existantes enregistrées avant l'ajout du point ('M' -> 'M.')
       const rawCivilite = data.civility === 'M' ? 'M.' : data.civility;
@@ -122,9 +111,10 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
         nomJeuneFille: (data as any).nom_jeune_fille ? unescapeHtml((data as any).nom_jeune_fille) : '',
         prenom: data.prenom ? unescapeHtml(data.prenom) : '',
         dateNaissance: data.date_naissance ? new Date(data.date_naissance) : undefined,
-        profession: isPredefinedProfession ? rawProfession : '',
-        professionLibre: !isPredefinedProfession ? rawProfession : '',
+        profession: rawProfession,
         nationalite: data.nationalite || '',
+        doubleNationalite: !!data.nationalite_2,
+        nationalite2: data.nationalite_2 || '',
         capaciteJuridique: (data.capacite_juridique as FormData['capaciteJuridique']) || 'Aucune',
         handicape: data.personne_handicapee || false,
         residenceFiscaleEtranger: data.residence_fiscale_etranger || false,
@@ -144,18 +134,15 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
         dateNaissance = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
       }
 
-      const professionFinale = formData.profession === 'Autre'
-        ? (formData.professionLibre?.trim() || '')
-        : (formData.profession || '');
-      
       const sanitizedFormData = {
         civilite: formData.civilite,
         nom: formData.nom,
         nomJeuneFille: formData.nomJeuneFille,
         prenom: formData.prenom,
         dateNaissance,
-        profession: professionFinale,
+        profession: formData.profession?.trim() || '',
         nationalite: formData.nationalite,
+        nationalite2: formData.doubleNationalite ? (formData.nationalite2 || '') : '',
         capaciteJuridique: formData.capaciteJuridique,
         handicape: formData.handicape,
         residenceFiscaleEtranger: formData.residenceFiscaleEtranger,
@@ -171,6 +158,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
         date_naissance: sanitizedFormData.dateNaissance instanceof Date ? format(sanitizedFormData.dateNaissance, 'yyyy-MM-dd') : undefined,
         profession: sanitizedFormData.profession,
         nationalite: sanitizedFormData.nationalite,
+        nationalite_2: sanitizedFormData.nationalite2,
         capacite_juridique: sanitizedFormData.capaciteJuridique,
         personne_handicapee: sanitizedFormData.handicape,
         residence_fiscale_etranger: sanitizedFormData.residenceFiscaleEtranger,
@@ -353,47 +341,20 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                   control={form.control}
                   name="profession"
                   render={({ field }) => (
-                    <FormItem>
-                      <div className="relative w-full flex flex-col gap-1">
-                        <FormLabel>Profession</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ""}>
-                          <FormControl>
-                            <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
-                              <SelectValue placeholder="Sélectionner une profession" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {professions.map((option) => (
-                              <SelectItem key={option} value={option}>{option}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <FormItem className="space-y-1">
+                      <FormControl>
+                        <ActionHubInput
+                          label="Profession"
+                          placeholder="Profession"
+                          value={field.value}
+                          onChange={field.onChange}
+                          historyEnabled={false}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
-                {form.watch('profession') === 'Autre' && (
-                  <FormField
-                    control={form.control}
-                    name="professionLibre"
-                    render={({ field }) => (
-                      <FormItem className="space-y-1">
-                        <FormControl>
-                          <ActionHubInput
-                            label="Précisez la profession"
-                            placeholder="Profession"
-                            value={field.value}
-                            onChange={field.onChange}
-                            historyEnabled={false}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -416,6 +377,36 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="doubleNationalite"
+                  render={({ field }) => (
+                    <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Double nationalité" />
+                  )}
+                />
+
+                {form.watch('doubleNationalite') && (
+                  <FormField
+                    control={form.control}
+                    name="nationalite2"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="relative w-full flex flex-col gap-1">
+                          <FormLabel>Deuxième nationalité</FormLabel>
+                          <FormControl>
+                            <NationalitySelect
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              placeholder="Sélectionner une nationalité"
+                            />
+                          </FormControl>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
             </div>
 

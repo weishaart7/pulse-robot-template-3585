@@ -27,9 +27,10 @@ const formSchema = z.object({
   nomJeuneFillePartenaire: z.string().optional(),
   prenomPartenaire: z.string().optional(),
   dateNaissancePartenaire: z.date().optional(),
-  professionCSP: z.string().optional(),
-  professionLibelle: z.string().optional(),
+  profession: z.string().optional(),
   nationalitePartenaire: z.string().optional(),
+  doubleNationalitePartenaire: z.boolean().default(false),
+  nationalite2Partenaire: z.string().optional(),
   capaciteJuridique: z.enum([
     'Aucune',
     'Tutelle',
@@ -66,18 +67,6 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-const professions = [
-  'Agriculteur exploitant',
-  'Artisan, commerçant, chef d\'entreprise',
-  'Cadre, profession intellectuelle supérieure',
-  'Profession intermédiaire',
-  'Employé',
-  'Ouvrier',
-  'Retraité',
-  'Sans activité professionnelle',
-  'Autre',
-];
-
 export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -95,9 +84,10 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
       nomPartenaire: "",
       nomJeuneFillePartenaire: "",
       prenomPartenaire: "",
-      professionCSP: "",
-      professionLibelle: "",
+      profession: "",
       nationalitePartenaire: "",
+      doubleNationalitePartenaire: false,
+      nationalite2Partenaire: "",
     },
   });
 
@@ -112,9 +102,10 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
         nomJeuneFillePartenaire: maritalData.nom_jeune_fille_conjoint || "",
         prenomPartenaire: maritalData.prenom_conjoint || "",
         dateNaissancePartenaire: maritalData.date_naissance_conjoint ? new Date(maritalData.date_naissance_conjoint) : undefined,
-        professionCSP: maritalData.profession_csp_conjoint || "",
-        professionLibelle: maritalData.profession_conjoint || "",
+        profession: maritalData.profession_conjoint || maritalData.profession_csp_conjoint || "",
         nationalitePartenaire: maritalData.nationalite_conjoint || "",
+        doubleNationalitePartenaire: !!maritalData.nationalite_2_conjoint,
+        nationalite2Partenaire: maritalData.nationalite_2_conjoint || "",
         capaciteJuridique: (maritalData.capacite_juridique_conjoint as FormData['capaciteJuridique']) || 'Aucune',
         personneHandicapee: maritalData.personne_handicapee_conjoint || false,
         residenceFiscaleEtrangerPartenaire: maritalData.residence_fiscale_etranger_conjoint || false,
@@ -132,9 +123,10 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
         nom_jeune_fille_conjoint: formData.nomJeuneFillePartenaire,
         prenom_conjoint: formData.prenomPartenaire,
         date_naissance_conjoint: formData.dateNaissancePartenaire instanceof Date ? format(formData.dateNaissancePartenaire, 'yyyy-MM-dd') : undefined,
-        profession_csp_conjoint: formData.professionCSP || '',
-        profession_conjoint: formData.professionCSP === 'Autre' ? (formData.professionLibelle?.trim() || '') : '',
+        profession_conjoint: formData.profession?.trim() || '',
+        profession_csp_conjoint: '',
         nationalite_conjoint: formData.nationalitePartenaire,
+        nationalite_2_conjoint: formData.doubleNationalitePartenaire ? (formData.nationalite2Partenaire || '') : '',
         personne_handicapee_conjoint: formData.personneHandicapee,
         residence_fiscale_etranger_conjoint: formData.residenceFiscaleEtrangerPartenaire,
         capacite_juridique_conjoint: formData.capaciteJuridique,
@@ -328,49 +320,22 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                     <FormField
                       control={form.control}
-                      name="professionCSP"
+                      name="profession"
                       render={({ field }) => (
-                        <FormItem>
-                          <div className="relative w-full flex flex-col gap-1">
-                            <FormLabel>Profession</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value || ""}>
-                              <FormControl>
-                                <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
-                                  <SelectValue placeholder="Sélectionner une profession" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {professions.map((option) => (
-                                  <SelectItem key={option} value={option}>{option}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
+                        <FormItem className="space-y-1">
+                          <FormControl>
+                            <ActionHubInput
+                              label="Profession"
+                              placeholder="Profession"
+                              value={field.value}
+                              onChange={field.onChange}
+                              historyEnabled={false}
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-
-                    {form.watch('professionCSP') === 'Autre' && (
-                      <FormField
-                        control={form.control}
-                        name="professionLibelle"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormControl>
-                              <ActionHubInput
-                                label="Précisez la profession"
-                                placeholder="Profession"
-                                value={field.value}
-                                onChange={field.onChange}
-                                historyEnabled={false}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -393,6 +358,36 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                         </FormItem>
                       )}
                     />
+
+                    <FormField
+                      control={form.control}
+                      name="doubleNationalitePartenaire"
+                      render={({ field }) => (
+                        <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Double nationalité" />
+                      )}
+                    />
+
+                    {form.watch('doubleNationalitePartenaire') && (
+                      <FormField
+                        control={form.control}
+                        name="nationalite2Partenaire"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="relative w-full flex flex-col gap-1">
+                              <FormLabel>Deuxième nationalité</FormLabel>
+                              <FormControl>
+                                <NationalitySelect
+                                  value={field.value}
+                                  onValueChange={field.onChange}
+                                  placeholder="Sélectionner une nationalité"
+                                />
+                              </FormControl>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
                   </div>
                 </div>
 

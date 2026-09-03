@@ -950,6 +950,7 @@ export type Database = {
           mandat_protection_future: boolean
           mesure_protection_juridique: string
           nationalite: string | null
+          nationalite_2: string | null
           nom: string
           parent_de: string | null
           personne_a_charge: boolean
@@ -981,6 +982,7 @@ export type Database = {
           mandat_protection_future?: boolean
           mesure_protection_juridique?: string
           nationalite?: string | null
+          nationalite_2?: string | null
           nom: string
           parent_de?: string | null
           personne_a_charge?: boolean
@@ -1012,6 +1014,7 @@ export type Database = {
           mandat_protection_future?: boolean
           mesure_protection_juridique?: string
           nationalite?: string | null
+          nationalite_2?: string | null
           nom?: string
           parent_de?: string | null
           personne_a_charge?: boolean
@@ -1037,6 +1040,7 @@ export type Database = {
           id: string
           mandat_protection_future: boolean
           nationalite: string | null
+          nationalite_2: string | null
           nom: string | null
           nom_jeune_fille: string | null
           pays: string | null
@@ -1065,6 +1069,7 @@ export type Database = {
           id?: string
           mandat_protection_future?: boolean
           nationalite?: string | null
+          nationalite_2?: string | null
           nom?: string | null
           nom_jeune_fille?: string | null
           pays?: string | null
@@ -1093,6 +1098,7 @@ export type Database = {
           id?: string
           mandat_protection_future?: boolean
           nationalite?: string | null
+          nationalite_2?: string | null
           nom?: string | null
           nom_jeune_fille?: string | null
           pays?: string | null
@@ -1659,6 +1665,7 @@ export type Database = {
           mandat_protection_future_conjoint: boolean
           mariage_precedent_conjoint: boolean | null
           mariage_precedent_personne: boolean | null
+          nationalite_2_conjoint: string | null
           nationalite_conjoint: string | null
           nom_conjoint: string | null
           nom_jeune_fille_conjoint: string | null
@@ -1719,6 +1726,7 @@ export type Database = {
           mandat_protection_future_conjoint?: boolean
           mariage_precedent_conjoint?: boolean | null
           mariage_precedent_personne?: boolean | null
+          nationalite_2_conjoint?: string | null
           nationalite_conjoint?: string | null
           nom_conjoint?: string | null
           nom_jeune_fille_conjoint?: string | null
@@ -1779,6 +1787,7 @@ export type Database = {
           mandat_protection_future_conjoint?: boolean
           mariage_precedent_conjoint?: boolean | null
           mariage_precedent_personne?: boolean | null
+          nationalite_2_conjoint?: string | null
           nationalite_conjoint?: string | null
           nom_conjoint?: string | null
           nom_jeune_fille_conjoint?: string | null

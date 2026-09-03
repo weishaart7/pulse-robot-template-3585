@@ -9,6 +9,7 @@ export interface FamilyProfile {
   commune_naissance?: string;
   pays_naissance?: string;
   nationalite?: string;
+  nationalite_2?: string;
   date_naissance?: string;
   profession?: string;
   telephone?: string;
@@ -38,6 +39,7 @@ export interface MaritalStatus {
   date_naissance_conjoint?: string;
   lieu_naissance_conjoint?: string;
   nationalite_conjoint?: string;
+  nationalite_2_conjoint?: string;
   profession_conjoint?: string;
   profession_csp_conjoint?: string;
   personne_handicapee_conjoint?: boolean;
@@ -103,6 +105,8 @@ export interface FamilyLink {
   nom: string;
   prenom?: string;
   date_naissance?: string;
+  nationalite?: string;
+  nationalite_2?: string;
   est_decede?: boolean;
   date_deces?: string;
   handicap?: boolean;
