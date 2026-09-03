@@ -52,12 +52,18 @@ export const ChargeForm = ({ assetId, open, onOpenChange, onSuccess, impactBudge
         spouse: 'Époux 2',
         common: 'Couple'
       };
-      
+
+      // 'Semestrielle' est mappée vers 'annuelle' (non supportée par la contrainte CHECK
+      // en base) : on double le montant pour stocker l'équivalent annuel correct.
+      const montantAnnualise = formData.periodicite === 'Semestrielle'
+        ? parseFloat(formData.montant) * 2
+        : parseFloat(formData.montant);
+
       await assetService.createAssetCharge({
         asset_id: assetId,
         type_charge: 'Charges courantes',
         denomination: formData.nature,
-        montant: parseFloat(formData.montant),
+        montant: montantAnnualise,
         debiteur: debiteurMap[formData.debiteur] || 'Couple',
         unite: '€',
         periodicite: periodiciteMap[formData.periodicite] || 'annuelle',
