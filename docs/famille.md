@@ -4,9 +4,11 @@
 > (audit statique du 2026-07-29). L'audit d'origine listait 26 constats (F1-F26) sur la branche
 > `main` au commit `2835f30` ; la quasi-totalité a été corrigée depuis (voir commits
 > `0c34614`…`b6827c2`). Mis à jour le 2026-09-01 suite à un audit fonctionnel (simplification des
-> champs et navigation) : voir §3 et §4 pour le détail des retraits. Ce document reflète l'état
-> actuel du code, pas un historique daté. Volet navigation réelle en navigateur toujours non
-> réalisé (authentification requise).
+> champs et navigation) : voir §3 et §4 pour le détail des retraits. Mis à jour le 2026-09-03 :
+> profession en texte libre (§2), double nationalité sur les 3 fiches et champ Nationalité
+> désormais saisissable sur les membres de la famille (§2, §3). Ce document reflète l'état actuel
+> du code, pas un historique daté. Volet navigation réelle en navigateur toujours non réalisé
+> (authentification requise).
 
 ## 1. Vue d'ensemble
 
@@ -94,6 +96,26 @@ matrimonial mais consommées par Transmission). La table `scenarios_regime` a é
   (`FamilyMemberFormDialog.tsx:172` : `parent_de` vaut `null` sinon). Ne pas supposer que
   `parent_de` est toujours le miroir de `enfant_de`.
 
+- **Profession en texte libre.** `FicheClientForm.tsx` et `PartnerForm.tsx` saisissaient la
+  profession via un `<Select>` à catégories CSP fermées (+ option « Autre » ouvrant un champ
+  texte). Remplacé par un unique champ texte libre (`profession` / `profession_conjoint`), les
+  catégories prédéfinies n'étant lues par aucun moteur. Compat. ascendante : les anciennes valeurs
+  de catégorie CSP restent affichées telles quelles au chargement. Côté conjoint, la colonne
+  `profession_csp_conjoint` n'est plus alimentée (conservée en base, vidée à chaque sauvegarde) au
+  profit de `profession_conjoint`, lu en priorité au chargement avec repli sur l'ancienne colonne.
+
+- **Double nationalité.** `nationalite` (`family_profiles`, `family_links`) et
+  `nationalite_conjoint` (`marital_status`) sont désormais complétés d'une colonne sœur
+  `nationalite_2` / `nationalite_2_conjoint`, révélée par une case « Double nationalité » sur les
+  3 formulaires (fiche client, conjoint, membre de la famille via `DynamicFamilyForm.tsx`) — même
+  pattern que le mandat de protection future (case à cocher → champ conditionnel). Le champ
+  Nationalité n'existait auparavant sur aucun formulaire membre de la famille alors que la colonne
+  `family_links.nationalite` existait déjà en base (jamais câblée à l'UI) ; il est maintenant
+  saisissable comme sur les fiches client/conjoint. Migrations
+  `20260903000000_add_double_nationalite_family.sql` et
+  `20260903010000_add_nationalite_2_family_links.sql`. Aucun moteur ne consomme ces colonnes à ce
+  jour (voir « Cases dormantes » en §3).
+
 - **Cascade de suppression applicative.** `deleteLinkWithCascade()`
   ([hooks/useFamilyData.ts:291](src/hooks/useFamilyData.ts:291)) gère la suppression d'un membre en
   ré-initialisant les liens `enfant_de` pointant vers l'id supprimé, avec confirmation utilisateur
@@ -172,13 +194,15 @@ soldés :
 
 ### Cases dormantes restantes
 
-Champs saisissables dans l'interface et toujours sans lecteur métier au 2026-09-01 :
-`family_profiles.nationalite` (désormais facultatif), `.capacite_juridique`,
+Champs saisissables dans l'interface et toujours sans lecteur métier au 2026-09-03 :
+`family_profiles.nationalite` (+ `.nationalite_2` depuis le 2026-09-03), `.profession` (texte libre
+depuis le 2026-09-03, catégorie CSP jamais lue), `.capacite_juridique`,
 `.mandat_protection_future` (+ date), `.nom_jeune_fille` (accès uniquement via `(data as any)`,
 absent de l'interface TS `FamilyProfile`) ; les colonnes homologues `_conjoint` sur
-`marital_status` ; sur `family_links` : `personne_a_charge`, `est_dirigeant`, `adoption_simple_motif`,
-`civilite` (seul lecteur potentiel = composant mort `FamilyTreeTimeline`), `nationalite` (jamais
-saisie ni lue).
+`marital_status` (`.profession_csp_conjoint` n'est plus écrite, voir §2) ; sur `family_links` :
+`personne_a_charge`, `est_dirigeant`, `adoption_simple_motif`, `civilite` (seul lecteur potentiel =
+composant mort `FamilyTreeTimeline`), `nationalite` (+ `.nationalite_2` depuis le 2026-09-03 —
+saisissable via `DynamicFamilyForm.tsx` depuis cette date, mais toujours non lue par un moteur).
 
 Champs déjà soldés depuis l'audit initial (retirés de l'UI ou branchés à un moteur) :
 `ancien_combattant` (+ `_conjoint`, case retirée, commit `5122e87`), `exoneration_succession`
