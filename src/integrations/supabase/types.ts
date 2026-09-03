@@ -2293,6 +2293,111 @@ export type Database = {
         }
         Relationships: []
       }
+      revenus_salaires: {
+        Row: {
+          case_1aa: number | null
+          case_1ad: number | null
+          case_1af: number | null
+          case_1ag: number | null
+          case_1aj: number | null
+          case_1ap: number | null
+          case_1av: boolean
+          case_1ba: number | null
+          case_1bd: number | null
+          case_1bf: number | null
+          case_1bg: number | null
+          case_1bj: number | null
+          case_1bp: number | null
+          case_1bv: boolean
+          case_1ga: number | null
+          case_1gb: number | null
+          case_1gf: number | null
+          case_1gg: number | null
+          case_1gh: number | null
+          case_1gk: boolean
+          case_1gl: boolean
+          case_1ha: number | null
+          case_1hb: number | null
+          case_1hf: number | null
+          case_1hg: number | null
+          case_1hh: number | null
+          case_1pb: number | null
+          case_1pc: number | null
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          case_1aa?: number | null
+          case_1ad?: number | null
+          case_1af?: number | null
+          case_1ag?: number | null
+          case_1aj?: number | null
+          case_1ap?: number | null
+          case_1av?: boolean
+          case_1ba?: number | null
+          case_1bd?: number | null
+          case_1bf?: number | null
+          case_1bg?: number | null
+          case_1bj?: number | null
+          case_1bp?: number | null
+          case_1bv?: boolean
+          case_1ga?: number | null
+          case_1gb?: number | null
+          case_1gf?: number | null
+          case_1gg?: number | null
+          case_1gh?: number | null
+          case_1gk?: boolean
+          case_1gl?: boolean
+          case_1ha?: number | null
+          case_1hb?: number | null
+          case_1hf?: number | null
+          case_1hg?: number | null
+          case_1hh?: number | null
+          case_1pb?: number | null
+          case_1pc?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          case_1aa?: number | null
+          case_1ad?: number | null
+          case_1af?: number | null
+          case_1ag?: number | null
+          case_1aj?: number | null
+          case_1ap?: number | null
+          case_1av?: boolean
+          case_1ba?: number | null
+          case_1bd?: number | null
+          case_1bf?: number | null
+          case_1bg?: number | null
+          case_1bj?: number | null
+          case_1bp?: number | null
+          case_1bv?: boolean
+          case_1ga?: number | null
+          case_1gb?: number | null
+          case_1gf?: number | null
+          case_1gg?: number | null
+          case_1gh?: number | null
+          case_1gk?: boolean
+          case_1gl?: boolean
+          case_1ha?: number | null
+          case_1hb?: number | null
+          case_1hf?: number | null
+          case_1hg?: number | null
+          case_1hh?: number | null
+          case_1pb?: number | null
+          case_1pc?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       scenarios_regime: {
         Row: {
           created_at: string

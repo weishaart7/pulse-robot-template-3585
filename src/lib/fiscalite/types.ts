@@ -37,3 +37,34 @@ export interface PartsFiscalesResult {
   majorations: MajorationDetail[];
   nombreParts: number;
 }
+
+export interface RevenusSalairesInput {
+  case1aj: number | null;
+  case1bj: number | null;
+  case1aa: number | null;
+  case1ba: number | null;
+  case1ga: number | null;
+  case1ha: number | null;
+  case1gh: number | null;
+  case1hh: number | null;
+  case1pb: number | null;
+  case1pc: number | null;
+  case1ad: number | null;
+  case1bd: number | null;
+  case1av: boolean;
+  case1bv: boolean;
+  case1gb: number | null;
+  case1hb: number | null;
+  case1gk: boolean;
+  case1gl: boolean;
+  case1gf: number | null;
+  case1hf: number | null;
+  case1gg: number | null;
+  case1hg: number | null;
+  case1ap: number | null;
+  case1bp: number | null;
+  case1af: number | null;
+  case1bf: number | null;
+  case1ag: number | null;
+  case1bg: number | null;
+}
