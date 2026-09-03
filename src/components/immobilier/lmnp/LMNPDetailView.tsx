@@ -21,6 +21,7 @@ import {
   computeAmortissementImmeubleLMNP as computeAmortissement,
   computeResultatReelLMNP,
 } from '@/lib/immobilier/rentabilite';
+import { SimulateurRentabiliteLMNPSection } from './SimulateurRentabiliteLMNPSection';
 
 interface LMNPDetailViewProps {
   asset: Asset;
@@ -663,6 +664,10 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
           </Card>
         </div>
       </div>
+
+      {asset.nature === 'Immeubles locatifs (LMNP)' && (
+        <SimulateurRentabiliteLMNPSection asset={asset} />
+      )}
 
       {/* Dialogs */}
       <RevenuForm
