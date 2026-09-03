@@ -16,14 +16,19 @@
 
 ## 1. Vue d'ensemble
 
-L'onglet « Fiscalité » héberge en réalité **deux moteurs fiscaux indépendants qui ne communiquent pas
-entre eux**, malgré une UI qui les présente côte à côte :
+L'onglet « Fiscalité » héberge **trois blocs largement indépendants, qui ne communiquent pas entre
+eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 
-1. **Un tableau de bord IR entièrement statique** (`FiscaliteSection.tsx` → `FiscalDeclarationsCard`,
+1. **Le foyer fiscal — état civil et nombre de parts (Phase 1, fonctionnel)** : en tête de la page,
+   `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx` (montés dans `FiscaliteSection.tsx`), adossés à la
+   table Supabase `foyer_fiscal` et au moteur pur `src/lib/fiscalite/calculerPartsFiscales.ts`. Seul
+   morceau du module qui calcule et persiste une donnée réelle, propre à l'utilisateur — voir §2.
+2. **Un tableau de bord IR entièrement statique** (`FiscaliteSection.tsx` → `FiscalDeclarationsCard`,
    `FiscalOverviewCard`, `TaxRateCard`) : liste de déclarations fiscales (2042, 2044, 2047, 2074,
-   2086, 2042-IFI), graphique de répartition IR/PS/IFI, taux marginal d'imposition, tranches, quotient
-   familial. **Aucune donnée réelle n'y est affichée** — voir §2.
-2. **Un simulateur IFI complet, avec sa propre saisie** (`IFIInterface.tsx`, ouvert depuis le bouton
+   2086, 2042-IFI), graphique de répartition IR/PS/IFI, taux marginal d'imposition, tranches. **Aucune
+   donnée réelle n'y est affichée** — voir §2. Le nombre de parts calculé au point 1 n'alimente pas ce
+   tableau de bord (aucun barème IR n'existe encore dans le repo pour l'utiliser, voir §4).
+3. **Un simulateur IFI complet, avec sa propre saisie** (`IFIInterface.tsx`, ouvert depuis le bouton
    « 2042-IFI » de `FiscalDeclarationsCard`), organisé en 5 sections dans une sidebar
    (`IFISidebar.tsx`) : Hypothèses, Liste des biens à l'IFI, Barème de l'IFI, Réduction &
    Plafonnement, Montant redevable. Ce simulateur a ses propres tables Supabase, indépendantes de
@@ -33,7 +38,9 @@ entre eux**, malgré une UI qui les présente côte à côte :
 
 | Écran | Composant | Rôle |
 |---|---|---|
-| Fiscalité (page principale) | [FiscaliteSection.tsx](src/pages/fiscalite/FiscaliteSection.tsx) | Grille 3 colonnes : déclarations (gauche), imposition totale + TMI (droite) |
+| Fiscalité (page principale) | [FiscaliteSection.tsx](src/pages/fiscalite/FiscaliteSection.tsx) | Foyer fiscal + synthèse des parts (haut de page), puis grille 3 colonnes : déclarations (gauche), imposition totale + TMI (droite) |
+| Foyer fiscal (saisie) | [MenageForm.tsx](src/components/fiscalite/MenageForm.tsx) | Situation familiale, enfants à charge (liste dynamique), personnes invalides à charge (liste dynamique), enfants majeurs rattachés, cases à cocher (parent isolé, invalidité, ancien combattant, veuve de guerre...) |
+| Synthèse du foyer fiscal | [SyntheseFoyerFiscal.tsx](src/components/fiscalite/SyntheseFoyerFiscal.tsx) | Nombre de parts + détail ligne par ligne de chaque majoration appliquée, recalculé en direct pendant la saisie (avant même l'enregistrement) |
 | Déclarations fiscales | [FiscalDeclarationsCard.tsx](src/pages/fiscalite/components/FiscalDeclarationsCard.tsx) | Liste de formulaires CERFA ; seul le lien « 2042-IFI » est cliquable, ouvre `IFIInterface` |
 | Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Donut IR/PS/IFI + détail revenus — **données 100 % codées en dur** |
 | Taux marginal | [TaxRateCard.tsx](src/pages/fiscalite/components/TaxRateCard.tsx) | Barème IR, tranche active, marge avant tranche suivante — **données 100 % codées en dur** |
@@ -47,10 +54,19 @@ existant, **jamais consommé par aucun code** — ni service ni hook, cf. §3). 
 porte de FK vers `assets` ou `societes` : la saisie est **intégralement indépendante** de Patrimoine,
 Immobilier et Sociétés.
 
-**Tables/moteur pour l'IR** : aucune table Supabase dédiée. `src/lib/fiscal/` calcule uniquement le
-« nombre de parts fiscales » (`calculerPartsFiscales`), consommé exclusivement par le module **Famille**
-(`useFamilyData.ts`, pour synchroniser `marital_status.nombre_enfants_charges`) — jamais par ce module
-Fiscalité, ni par aucun calcul d'impôt réel (voir §2/§3).
+**Table/moteur du foyer fiscal (Phase 1, quotient familial)** : `foyer_fiscal` (`user_id →
+auth.users(id) ON DELETE CASCADE`, `UNIQUE(user_id)` — une ligne par utilisateur, comme
+`marital_status` ; RLS 4 policies), indépendante de `family_profiles`/`marital_status`/`family_links`
+(saisie manuelle, aucune FK vers Famille — décision explicite de cette phase, à rapprocher
+éventuellement d'une phase ultérieure). Le calcul du nombre de parts est fait par
+[src/lib/fiscalite/calculerPartsFiscales.ts](src/lib/fiscalite/calculerPartsFiscales.ts), fonction pure
+couvrant l'art. 193-197 CGI (revenus 2025/impôt 2026) — voir §2. `src/lib/fiscal/calcul.ts` (dossier
+**sans** « ite ») ne contient plus que `compterEnfantsFiscalementACharge`, toujours utilisée par le
+module **Famille** (`useFamilyData.ts`, pour synchroniser `marital_status.nombre_enfants_charges`) —
+les deux dossiers `lib/fiscal/` et `lib/fiscalite/` sont volontairement distincts (cf. §2).
+
+**Tables/moteur pour l'IR** (calcul de l'impôt lui-même, distinct du nombre de parts) : aucune table ni
+fonction n'existe — voir §4.
 
 **Flux clés** :
 - L'utilisateur clique « 2042-IFI » → `IFIInterface` s'ouvre en plein écran, saisit ses biens/passifs
@@ -79,20 +95,36 @@ Fiscalité, ni par aucun calcul d'impôt réel (voir §2/§3).
 - **Mais ce moteur bien conçu encadre une saisie qui, elle, ignore une partie de ses propres champs**
   (cf. §3, 🔴 indivision et biens indirects) — la qualité du calcul central ne suffit pas à garantir un
   résultat juste si les données qui l'alimentent sont mal transformées en amont.
-- **`src/lib/fiscal/` est un moteur avorté : une seule fonction utile écrite, jamais branchée à son
-  objet.** `calculerPartsFiscales` ([calcul.ts:22-58](src/lib/fiscal/calcul.ts:22-58)) calcule le
-  quotient familial complet (parts de base, demi-parts enfants avec le mécanisme 0,5/1 après le 2ᵉ
-  enfant, majoration parent isolé, invalidité, ancien combattant) — mais **n'est appelée nulle part
-  dans le code** (`grep` confirmé : aucun import en dehors de `lib/fiscal/index.ts`). La seule
-  fonction du fichier réellement consommée est `compterEnfantsFiscalementACharge`
-  ([calcul.ts:10-12](src/lib/fiscal/calcul.ts:10-12)), utilisée uniquement par
-  [useFamilyData.ts:5-12](src/hooks/useFamilyData.ts:5-12) pour synchroniser un compteur côté module
-  Famille — sans rapport avec un calcul d'impôt affiché dans Fiscalité. `git log` confirme un seul
-  commit sur ce dossier (`35162be`, « feat(famille) : calcul du nombre de parts fiscales du foyer
-  (Phase 2) ») : la fonction a été écrite dans l'intention d'alimenter un calcul IR, mais la Phase 2
-  n'a jamais dépassé ce stade. Aucune fonction de calcul de l'impôt lui-même (application du barème
-  IR par tranches, décote, quotient familial appliqué au revenu) n'existe dans ce fichier ni ailleurs
-  dans le repo — le module ne dispose d'aucun moteur IR, seulement d'un compteur de parts non utilisé.
+- **`src/lib/fiscalite/calculerPartsFiscales.ts` — moteur du quotient familial (Phase 1), désormais
+  réellement branché à `MenageForm.tsx`/`SyntheseFoyerFiscal.tsx`.** Fonction pure couvrant l'art.
+  193-197 CGI (revenus 2025/impôt 2026) : parts de base (dont veuf avec enfant(s) à charge = 2 parts,
+  identique à un couple — corrigé par rapport à l'ancienne implémentation, voir ci-dessous), enfants à
+  charge et enfants majeurs rattachés dans une seule séquence de rang (progression 0,5 pour les 1er/2e,
+  1 part entière à partir du 3e), résidence alternée (moitié des droits, y compris pour la majoration
+  invalidité elle-même — confirmé BOFiP BOI-IR-LIQ-10-20-20-20), personne invalide à charge hors enfant
+  (+1 part entière, distincte de la majoration invalidité du foyer), parent isolé (case T, +1 part),
+  ancien parent isolé (case L, +0,5), invalidité et ancien combattant déclarant 1/2 (deux lignes
+  toujours distinctes, jamais fusionnées même si identiques), veuf d'ancien combattant (art. 195-1-f,
+  plafond **sans** complément) et veuve de guerre (art. 195-1-c, disposition **distincte** du veuf
+  d'ancien combattant, plafond **avec** complément — à ne pas confondre). Chaque majoration est une
+  ligne séparée de `PartsFiscalesResult.majorations[]`, dans l'ordre du formulaire, portant ses
+  plafonds en € en simple métadonnée (`plafondUnitaire`/`plafondComplementaire`) — **jamais appliquée**
+  par cette fonction : le plafonnement réel de l'avantage fiscal (art. 197 CGI) suppose un barème IR
+  qui n'existe pas encore dans le repo (voir §4, Phase différée). 29 tests couvrent l'intégralité du
+  tableau de règles, y compris les combinaisons (enfant en résidence alternée et invalide simultanément,
+  etc.).
+- **`src/lib/fiscal/calcul.ts` (dossier séparé, sans « ite ») a été nettoyé de son unique fonction
+  orpheline.** L'ancienne `calculerPartsFiscales` de ce dossier n'avait aucun appelant dans le repo
+  (`grep` confirmé avant suppression) et divergeait de plusieurs règles CGI (veuf avec enfant(s)
+  compté à 1 part au lieu de 2, parent isolé à +0,5 au lieu de +1, résidence alternée absente,
+  invalidité déclarant/conjoint/enfants conflée dans une seule majoration uniforme). Elle a été
+  supprimée avec ses types (`FoyerFiscalInput`/`PartsFiscalesResult`/`EnfantPartsInput`) dans un commit
+  séparé, avant l'écriture du nouveau moteur — pour ne pas mélanger nettoyage et nouvelle logique dans
+  le même diff. Seule `compterEnfantsFiscalementACharge` (toujours utilisée par
+  [useFamilyData.ts](src/hooks/useFamilyData.ts) pour `marital_status.nombre_enfants_charges`) reste
+  dans ce dossier. Les deux dossiers `lib/fiscal/` et `lib/fiscalite/` coexistent volontairement : le
+  premier reste un point de calcul ponctuel consommé par Famille, le second est le futur moteur complet
+  du module Fiscalité — pas de fusion prévue.
 - **`FiscalOverviewCard.tsx` et `TaxRateCard.tsx` sont des maquettes statiques, pas des écrans
   fonctionnels.** Aucun des deux ne lit Supabase ni aucun hook (`grep` confirmé : zéro import
   `supabase`/`useIFI`/`useAssets`/`useSocietes`) :
@@ -274,11 +306,15 @@ Fiscalité, ni par aucun calcul d'impôt réel (voir §2/§3).
   sur un champ dédié — fonctionne, mais la sémantique du champ base (« commentaire libre ») ne reflète
   pas son usage réel dans ce formulaire (nom du créancier), au risque d'un affichage confus si
   `commentaire` est un jour réutilisé ailleurs pour autre chose.
-- **`lib/fiscal/calcul.ts` documente lui-même une simplification non vérifiée** : le commentaire de
-  `calculerPartsFiscales` ([calcul.ts:14-20](src/lib/fiscal/calcul.ts:14-20)) précise que la
-  majoration « ancien combattant » ignore la condition d'âge réelle (> 74 ans en général) — gap
-  explicitement documenté dans le code, sans conséquence pratique actuelle puisque la fonction n'est
-  appelée nulle part (§2).
+- **La session applicative ne survit pas à un rechargement complet de la page (`navigate`/F5),
+  observé pendant la vérification manuelle du formulaire `MenageForm` (2026-09-03).** Après connexion,
+  un rechargement complet de `http://localhost:8080` ramène systématiquement à la page d'accueil non
+  connectée, alors qu'un Supabase Auth correctement configuré (`persistSession: true` dans
+  [client.ts](src/integrations/supabase/client.ts)) devrait restaurer la session depuis
+  `localStorage`. Non spécifique au module Fiscalité ni à cette phase — observé seulement à l'occasion
+  de la vérification navigateur de cette session, jamais creusé (hors périmètre de ce chantier). À
+  investiguer séparément : config `storage`/`persistSession` du client, ou éventuel comportement propre
+  à l'environnement de prévisualisation utilisé.
 - **`FiscalOverviewCard.tsx`/`TaxRateCard.tsx` : incohérence interne des seuils de tranches affichés.**
   Les seuils textuels sous la barre de progression
   ([TaxRateCard.tsx:80-87](src/pages/fiscalite/components/TaxRateCard.tsx:80-87) : 11 498 €, 29 316 €,
@@ -295,11 +331,25 @@ Fiscalité, ni par aucun calcul d'impôt réel (voir §2/§3).
   abattement résidence principale, abattement bois/forêts, plafonnement art. 979), saisie manuelle de
   biens directs/indirects/exonérés et passifs déductibles avec persistance Supabase par utilisateur
   (RLS + CASCADE conformes), hypothèses réutilisables d'une session à l'autre, compteur d'enfants
-  fiscalement à charge partagé avec Famille.
+  fiscalement à charge partagé avec Famille ; **foyer fiscal — état civil et nombre de parts (Phase 1)**
+  : saisie complète (situation familiale, lieu de résidence, enfants à charge et personnes invalides à
+  charge en listes dynamiques, enfants majeurs rattachés, toutes les cases de majoration T/L/invalidité/
+  ancien combattant/veuve de guerre), persistance Supabase (`foyer_fiscal`, une ligne par utilisateur),
+  calcul du nombre de parts fidèle à l'art. 193-197 CGI avec détail ligne par ligne affiché en direct
+  pendant la saisie.
 - **Différé, déductible du code** :
-  - **Tout calcul réel de l'impôt sur le revenu** : `lib/fiscal/calcul.ts` ne fournit qu'un nombre de
-    parts fiscales, jamais appliqué à un barème ni affiché comme impôt dû ; aucune fonction de calcul
-    IR n'existe ailleurs dans le repo.
+  - **Tout calcul réel de l'impôt sur le revenu** : le nombre de parts (Phase 1) n'est appliqué à
+    aucun barème ; aucune fonction de calcul IR (tranches, décote, quotient familial appliqué au
+    revenu) n'existe dans le repo.
+  - **Plafonnement effectif du quotient familial (art. 197 CGI, Phase 10 prévue)** : chaque majoration
+    du foyer fiscal porte déjà ses plafonds en € en métadonnée
+    (`plafondUnitaire`/`plafondComplementaire` dans `MajorationDetail`), mais aucun code n'applique
+    encore la comparaison « impôt sur le nombre de parts réel » vs « impôt sur les parts de base plus
+    les plafonds » — ce calcul suppose un barème IR qui n'existe pas encore (dépendance directe du
+    point précédent).
+  - **Pont entre `foyer_fiscal` et le module Famille** (`family_profiles`/`marital_status`/
+    `family_links`) : saisie intégralement manuelle et indépendante par décision explicite de cette
+    phase — aucune lecture croisée, aucun pré-remplissage depuis les enfants déjà saisis dans Famille.
   - **Réduction IFI pour dons** (art. 978 CGI) : absente du modèle de données et du moteur de calcul.
   - **Sections « Réduction & Plafonnement de l'IFI » et « Montant redevable à l'IFI »** : stubs vides
     dans la sidebar du simulateur, le contenu correspondant existant déjà (de façon mal nommée) dans
