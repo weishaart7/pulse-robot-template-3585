@@ -31,7 +31,7 @@ près : « Parts de SCI », seule nature à la fois immobilière et éligible au
 |---|---|---|
 | Vue d'ensemble (par défaut) | [ImmobilierOverview.tsx](src/components/immobilier/ImmobilierOverview.tsx) | KPI de portefeuille : nombre de biens, valeur totale, rentabilité brute/nette, cashflow mensuel, plus-value brute |
 | Mes biens | `ImmobilierSection.tsx` (cartes ou tableau) → [ImmobilierPropertyDetailView.tsx](src/components/immobilier/ImmobilierPropertyDetailView.tsx) ou [LMNPDetailView.tsx](src/components/immobilier/lmnp/LMNPDetailView.tsx) | Liste des biens transférés ; clic → fiche détail (infos générales/coûts/financement/location) ou vue LMNP dédiée si le bien est meublé |
-| Revenus (gestion des biens) | — | **Écran non implémenté** (« Section à venir »), alors que la gestion des revenus/charges existe déjà par bien via « Gérer » (§4) |
+| Gestion des biens | [GestionBiensSection.tsx](src/components/immobilier/GestionBiensSection.tsx) | Vue consolidée en lecture seule : tous les revenus/charges de tous les biens transférés (pas seulement locatifs), groupés par bien, avec montant annualisé et sous-totaux + total portefeuille. Pas d'ajout/modification/suppression ici — reste le rôle du bouton « Gérer » |
 
 Accessible aussi depuis « Mes biens » : [ImmobilierGestionDialog.tsx](src/components/immobilier/ImmobilierGestionDialog.tsx)
 (bouton « Gérer », non-LMNP) — CRUD des revenus/charges du bien et bascule « Transfert dans budget ».
@@ -313,9 +313,6 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
 
 - **Code mort : `ImmobilierPropertyDialog.tsx`** — composant complet, jamais importé, strictement
   redondant avec `ImmobilierPropertyDetailView.tsx`.
-- **Onglet « Gestion des biens » / « Revenus locatifs » non implémenté** (« Section à venir »,
-  `ImmobilierSection.tsx:281-300`), alors que la fonctionnalité existe déjà par bien via « Gérer » —
-  écran orphelin, à supprimer ou à raccorder.
 - **Auto-calcul des frais de notaire (7,5 %) dupliqué à l'identique** dans
   `useImmobilierPropertyForm.ts` et `PropertyCostSection.tsx`, sur la même instance de formulaire.
 - **`console.error` non gardé par `import.meta.env.DEV`** — deux occurrences :
@@ -356,6 +353,12 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
   pas de calcul progressif réel). Pas de vérification des critères d'éligibilité LMP (23 000 €/50 % des
   revenus du foyer, non modélisée — la nature de l'actif déjà choisie par l'utilisateur fait foi), pas
   de plus-value professionnelle (art. 151 septies), pas d'IFI.
+- **V1 — en place (ajout)** : onglet « Gestion des biens » implémenté (vue consolidée en lecture seule
+  de tous les revenus/charges du portefeuille, groupés par bien, avec montant annualisé et sous-totaux)
+  — cf. §1. Fetch en 3 requêtes au total pour tout le portefeuille (`getAssetRevenusByAssetIds`/
+  `getAssetChargesByAssetIds`, nouvelles méthodes `.in('asset_id', ...)` dans `assetService.ts`), pas
+  une par bien. Aucun ajout/modification/suppression depuis cet écran, le bouton « Gérer » reste
+  l'unique point d'édition.
 - **Différé, déductible du code** :
   - **Location nue pour les 5 autres natures de `RENTAL_PROPERTY_TYPES`** (Autres immeubles de rapport,
     Parking/Garage/Box, etc.) : toujours aucun moteur de calcul dédié, gate du simulateur strictement
@@ -399,5 +402,4 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
     plus haut). Le cas Micro-BIC/BIC (meublé, LMNP/LMP) est en revanche traité depuis le fix §3.
 - **Manque sans explication dans le code** : aucun commentaire ni TODO n'explique pourquoi
   `ImmobilierPropertyDialog.tsx` a été laissé en place après son remplacement apparent par
-  `ImmobilierPropertyDetailView.tsx`, ni pourquoi l'onglet « Revenus locatifs »/« Gestion des biens »
-  affiche un écran « à venir » alors que la fonctionnalité équivalente existe déjà par bien.
+  `ImmobilierPropertyDetailView.tsx`.
