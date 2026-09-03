@@ -1114,6 +1114,66 @@ export type Database = {
         }
         Relationships: []
       }
+      foyer_fiscal: {
+        Row: {
+          ancien_combattant_declarant1: boolean
+          ancien_combattant_declarant2: boolean
+          ancien_parent_isole: boolean
+          created_at: string
+          enfants_charge: Json
+          enfants_majeurs_rattaches: number
+          id: string
+          invalidite_declarant1: boolean
+          invalidite_declarant2: boolean
+          lieu_residence: string
+          parent_isole: boolean
+          personnes_invalides_charge: Json
+          situation_famille: string
+          updated_at: string
+          user_id: string
+          veuf_ancien_combattant: boolean
+          veuve_de_guerre: boolean
+        }
+        Insert: {
+          ancien_combattant_declarant1?: boolean
+          ancien_combattant_declarant2?: boolean
+          ancien_parent_isole?: boolean
+          created_at?: string
+          enfants_charge?: Json
+          enfants_majeurs_rattaches?: number
+          id?: string
+          invalidite_declarant1?: boolean
+          invalidite_declarant2?: boolean
+          lieu_residence: string
+          parent_isole?: boolean
+          personnes_invalides_charge?: Json
+          situation_famille: string
+          updated_at?: string
+          user_id: string
+          veuf_ancien_combattant?: boolean
+          veuve_de_guerre?: boolean
+        }
+        Update: {
+          ancien_combattant_declarant1?: boolean
+          ancien_combattant_declarant2?: boolean
+          ancien_parent_isole?: boolean
+          created_at?: string
+          enfants_charge?: Json
+          enfants_majeurs_rattaches?: number
+          id?: string
+          invalidite_declarant1?: boolean
+          invalidite_declarant2?: boolean
+          lieu_residence?: string
+          parent_isole?: boolean
+          personnes_invalides_charge?: Json
+          situation_famille?: string
+          updated_at?: string
+          user_id?: string
+          veuf_ancien_combattant?: boolean
+          veuve_de_guerre?: boolean
+        }
+        Relationships: []
+      }
       ifi_biens_detenus_indirectement: {
         Row: {
           adresse_code_postal: string | null
