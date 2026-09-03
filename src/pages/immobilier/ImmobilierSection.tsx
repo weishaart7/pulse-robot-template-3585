@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ImmobilierPropertyDetailView } from '@/components/immobilier/ImmobilierPropertyDetailView';
 import { ImmobilierGestionDialog } from '@/components/immobilier/ImmobilierGestionDialog';
 import { ImmobilierOverview } from '@/components/immobilier/ImmobilierOverview';
+import { GestionBiensSection } from '@/components/immobilier/GestionBiensSection';
 import { LMNPDetailView } from '@/components/immobilier/lmnp/LMNPDetailView';
 import { Asset } from '@/services/assetService';
 import { RENTAL_PROPERTY_TYPES } from '@/schemas/immobilierPropertySchema';
@@ -283,19 +284,20 @@ export const ImmobilierSection = () => {
         return (
           <Card>
             <CardHeader>
-              <CardTitle>Revenus locatifs</CardTitle>
+              <CardTitle>Gestion des biens</CardTitle>
               <CardDescription>
-                Gestion des revenus de votre patrimoine immobilier
+                Tous les revenus et charges de votre portefeuille immobilier, consolidés en un seul écran.
+                Utilisez le bouton « Gérer » depuis « Mes biens » pour ajouter, modifier ou supprimer une ligne.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12">
-                <div className="text-4xl mb-4">💰</div>
-                <h3 className="text-lg font-semibold mb-2">Section à venir</h3>
-                <p className="text-muted-foreground">
-                  Suivi et optimisation de vos revenus locatifs.
-                </p>
-              </div>
+              {isLoading ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">Chargement...</p>
+                </div>
+              ) : (
+                <GestionBiensSection assets={assets} />
+              )}
             </CardContent>
           </Card>
         );

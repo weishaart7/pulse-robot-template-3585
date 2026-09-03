@@ -244,6 +244,19 @@ export const assetService = {
     return data as AssetCharge[];
   },
 
+  /** Une seule requête pour plusieurs biens (`IN`), au lieu d'une requête par bien. */
+  async getAssetChargesByAssetIds(assetIds: string[]): Promise<AssetCharge[]> {
+    if (assetIds.length === 0) return [];
+    const { data, error } = await supabase
+      .from('asset_charges')
+      .select('*')
+      .in('asset_id', assetIds)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data as AssetCharge[];
+  },
+
   async createAssetCharge(charge: Omit<AssetCharge, 'id' | 'created_at' | 'updated_at'>): Promise<AssetCharge> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
@@ -331,6 +344,19 @@ export const assetService = {
       .from('asset_revenus')
       .select('*')
       .eq('asset_id', assetId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data as AssetRevenu[];
+  },
+
+  /** Une seule requête pour plusieurs biens (`IN`), au lieu d'une requête par bien. */
+  async getAssetRevenusByAssetIds(assetIds: string[]): Promise<AssetRevenu[]> {
+    if (assetIds.length === 0) return [];
+    const { data, error } = await supabase
+      .from('asset_revenus')
+      .select('*')
+      .in('asset_id', assetIds)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
