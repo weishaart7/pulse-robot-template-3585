@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { TextItem } from 'pdfjs-dist/types/src/display/api';
+import type { TextItem, PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
 
 // pdfjs-dist (import top-level de parseRIS.ts) référence `DOMMatrix`, absent
 // de l'environnement `node` de vitest.config.ts (pas de DOM) — cf.
@@ -12,7 +12,8 @@ import type { TextItem } from 'pdfjs-dist/types/src/display/api';
 vi.mock('pdfjs-dist', () => ({ GlobalWorkerOptions: {}, getDocument: vi.fn() }));
 vi.mock('pdfjs-dist/build/pdf.worker.min.mjs?url', () => ({ default: '' }));
 
-const { parseRegimesDepuisTexte, parseDetailCarriereDepuisTexte, reconstruireLignes } = await import('./parseRIS');
+const { parseRegimesDepuisTexte, parseDetailCarriereDepuisTexte, reconstruireLignes, extraireRegimes } =
+  await import('./parseRIS');
 
 /**
  * Cas de test synthétiques (texte brut / items pdf.js fabriqués), sans PDF
@@ -127,6 +128,89 @@ describe('parseRegimesDepuisTexte — liste blanche des régimes (mise en page �
     const pointsRegime = regimes.find((r) => r.type === 'points');
     expect(pointsRegime?.nom).toBe('Régime non identifié');
     expect(pointsRegime?.nom).not.toBe('artistes-auteurs');
+  });
+});
+
+describe('parseRegimesDepuisTexte — nom de régime sur la ligne suivant sa valeur isolée (non-régression relevé dense réel)', () => {
+  it('reconnaît "RCI" entre parenthèses sur la ligne qui suit la valeur "0" (collision de coordonnée Y à 1pt, valeur avant étiquette)', () => {
+    // Reproduit la structure réelle observée sur un relevé dense : la
+    // valeur "0" et son étiquette "Complémentaire indépendant (RCI) :"
+    // atterrissent sur deux lignes Y distinctes après arrondi (1pt d'écart),
+    // dans cet ordre (valeur d'abord). Avant le correctif, chercherValeurEtNom
+    // retournait dès la ligne "0" sans jamais regarder l'étiquette suivante.
+    const regimes = parseRegimesDepuisTexte([
+      'L’Assurance retraite',
+      'Total des trimestres',
+      'Salariés, travailleurs indépendants,',
+      '117',
+      'Salarié, Indépendant :',
+      'contractuels de droit public et',
+      'artistes-auteurs',
+      'Total des points',
+      '0',
+      'Complémentaire indépendant (RCI) :',
+    ]);
+    const trimestresRegime = regimes.find((r) => r.type === 'trimestres');
+    const pointsRegime = regimes.find((r) => r.type === 'points');
+    expect(trimestresRegime).toMatchObject({ nom: 'L’Assurance retraite', trimestres: 117 });
+    expect(pointsRegime).toMatchObject({ nom: 'RCI', points: 0 });
+  });
+
+  it('ne casse pas le repli "Régime non identifié" quand aucune ligne ne suit la valeur isolée (non-régression §4)', () => {
+    const regimes = parseRegimesDepuisTexte([
+      'L’Assurance retraite',
+      'Total des trimestres',
+      'Salariés, travailleurs indépendants,',
+      '117',
+      'contractuels de droit public et',
+      'artistes-auteurs',
+      'Total des points',
+      '0',
+    ]);
+    const pointsRegime = regimes.find((r) => r.type === 'points');
+    expect(pointsRegime?.nom).toBe('Régime non identifié');
+  });
+});
+
+describe('extraireRegimes — section "Mes régimes" étalée sur plusieurs pages (non-régression relevé dense réel)', () => {
+  it('concatène les lignes "Mes régimes" de la page de titre et des pages suivantes tant qu\'elles contiennent une ligne "Total des ..."', async () => {
+    // Reproduit la structure réelle observée : la page 2 contient le titre
+    // "Mes régimes" et les régimes du privé, la page 3 continue avec le
+    // régime "SRE" (fonction publique d'État) sans répéter le titre, la
+    // page 4 ("Détail par année") ne contient plus de ligne métrique et
+    // doit arrêter la collecte. Avant le correctif, seule la page 2 était
+    // lue (`pdf.getPage(2)` fixe) : le régime SRE était perdu silencieusement.
+    const page1Items = [item('Relevé de carrière', 700)];
+    const page2Items = [
+      item('Mes régimes', 651),
+      item('L’Assurance retraite', 625),
+      item('Total des trimestres', 624),
+      item('117', 609),
+    ];
+    const page3Items = [
+      item('SRE', 754),
+      item('Total des trimestres', 753),
+      item('Fonctionnaire de l’État, magistrat, militaire', 742),
+      item('80', 730),
+    ];
+    const page4Items = [item('Détail par année', 753), item('Année Durée Durée par régime Points par régime', 740)];
+
+    const fakePdf = {
+      numPages: 4,
+      getPage: (n: number) =>
+        Promise.resolve({
+          getTextContent: () =>
+            Promise.resolve({
+              items: [page1Items, page2Items, page3Items, page4Items][n - 1],
+            }),
+        }),
+    } as unknown as PDFDocumentProxy;
+
+    const regimes = await extraireRegimes(fakePdf);
+    expect(regimes).toEqual([
+      { nom: 'L’Assurance retraite', type: 'trimestres', trimestres: 117 },
+      { nom: 'SRE', type: 'trimestres', trimestres: 80 },
+    ]);
   });
 });
 

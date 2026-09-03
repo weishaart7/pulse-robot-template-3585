@@ -75,10 +75,10 @@ uniquement applicatif via `familyService`.
   dur dans le TS, contrairement à `params-dmtg.json`). Écart d'architecture assumé, non corrigé à ce
   jour (§3).
 - **Couverture de test — rattrapée depuis l'audit initial.** L'audit du 2026-08-11 constatait une
-  couverture nulle sur ce module ; au 2026-08-27, 13 fichiers `*.test.ts` co-localisés couvrent le
+  couverture nulle sur ce module ; au 2026-09-03, 13 fichiers `*.test.ts` co-localisés couvrent le
   moteur (`calcul.test.ts`, `calculSAM.test.ts`, `calculTrimestres.test.ts`, `calculFonctionPublique.test.ts`,
   `calculCNAVPL.test.ts`, `parseRIS.test.ts`, `pensionConsolidee.test.ts`, `hypotheseRevenuFutur.test.ts`,
-  `enfantsEligiblesMajoration.test.ts`, `regimesSaisieManuelle.test.ts`) — 681 tests passants au total
+  `enfantsEligiblesMajoration.test.ts`, `regimesSaisieManuelle.test.ts`) — 698 tests passants au total
   sur l'ensemble du dépôt (`npx vitest run`), aucune régression. Rien côté rendu de composant (pas de
   `@testing-library/react`, environnement vitest en `node`) : la vérification visuelle des écrans
   reste manuelle, limite documentée dans quasiment chaque rapport de session.
@@ -129,6 +129,19 @@ uniquement applicatif via `familyService`.
   courte qui ressemble à un nom », qui confondait des fragments de texte de la page « Mes régimes »
   en mise en page à 2 colonnes ; filtrage des artefacts de pagination avant reconstruction des lignes
   par coordonnée Y. `PASS_PAR_ANNEE`/`COEFFICIENT_REVALORISATION_CNAV` étendus à 1950-2025.
+- **Import RIS — deux défauts supplémentaires corrigés sur un second relevé réel dense (2026-09-03).**
+  La section « Mes régimes » n'est pas toujours contenue sur la page 2 : sur un relevé où le
+  fonctionnaire a aussi une carrière fonction publique d'État, elle continue sur la page 3 (régime
+  SRE) — l'ancien `pdf.getPage(2)` fixe perdait ce régime silencieusement. `extraireRegimes()`
+  ([parseRIS.ts](src/lib/retraite/parseRIS.ts)) recherche désormais le titre « Mes régimes » par
+  balayage de page (même stratégie de tolérance multi-page que `extraireDetailCarriere()`, dont la
+  couverture réelle sur 2 pages est maintenant confirmée) et continue à concaténer les pages
+  suivantes tant qu'elles contiennent encore une ligne « Total des trimestres »/« Total des points ».
+  Par ailleurs, `chercherValeurEtNom()` retournait dès qu'elle trouvait une valeur isolée sur sa
+  propre ligne Y (ex. régime RCI en points) sans jamais regarder la ligne suivante pour un nom entre
+  parenthèses — un régime valide retombait alors à tort sur le repli « Régime non identifié » quand
+  son étiquette suivait la valeur au lieu de la précéder (collision d'arrondi de coordonnée Y à
+  moins d'1pt, mise en page à 2 colonnes).
 - **Double comptage fonction publique/CNAVPL — deux mécanismes distincts, tous deux soldés :**
   1) *[soldé, commit `d8c8e31`]* trimestres SRE/CNRACL comptés à tort dans le panier « régime général »
      à l'import RIS (`estRegimeSaisieManuelle()`, [regimesSaisieManuelle.ts](src/lib/retraite/regimesSaisieManuelle.ts)),

@@ -198,7 +198,21 @@ function chercherValeurEtNom(
     if (j > depart && (RE_LIGNE_TRIMESTRES.test(ligne) || RE_LIGNE_POINTS.test(ligne))) break;
 
     const matchSeule = ligne.match(RE_VALEUR_SEULE);
-    if (matchSeule) return { valeur: parseNombreFr(matchSeule[1]) };
+    if (matchSeule) {
+      // La valeur peut atterrir sur sa propre ligne Y, juste AVANT sa
+      // propre étiquette "Libellé (SIGLE) :" plutôt que sur la même ligne
+      // qu'elle (mise en page à 2 colonnes, collision d'arrondi de
+      // coordonnée Y à moins d'1pt d'écart — observé sur un relevé dense
+      // réel pour "0 / Complémentaire indépendant (RCI) :"). Sans ce
+      // repli, le nom entre parenthèses de la ligne suivante n'était
+      // jamais lu et le régime retombait à tort sur 'Régime non identifié'.
+      const ligneSuivante = lignes[j + 1];
+      const nomDepuisParenthese =
+        ligneSuivante && !RE_LIGNE_TRIMESTRES.test(ligneSuivante) && !RE_LIGNE_POINTS.test(ligneSuivante)
+          ? (ligneSuivante.match(RE_NOM_ENTRE_PARENTHESES)?.[1] ?? undefined)
+          : undefined;
+      return { valeur: parseNombreFr(matchSeule[1]), nomDepuisParenthese };
+    }
 
     const matchFinDeLigne = ligne.match(RE_VALEUR_FIN_DE_LIGNE);
     if (matchFinDeLigne) {
@@ -276,6 +290,47 @@ export function parseRegimesDepuisTexte(lignes: string[]): RegimeDetecte[] {
   }
 
   return regimes;
+}
+
+const RE_TITRE_MES_REGIMES = /^mes régimes$/i;
+
+/**
+ * Localise la (ou les) page(s) "Mes régimes" par recherche de titre — pas
+ * par index fixe (page 2), qui s'est avéré faux sur un relevé dense réel où
+ * cette section continue sur la page suivante (régime "SRE" fonction
+ * publique d'État, rejeté silencieusement par l'ancien `pdf.getPage(2)`
+ * fixe). Même stratégie de tolérance multi-page que
+ * `extraireDetailCarriere()` : une fois la page de titre trouvée, on
+ * continue à inclure les pages suivantes tant qu'elles contiennent encore
+ * une ligne "Total des trimestres"/"Total des points", et on s'arrête dès
+ * qu'une page n'en contient plus (ex: la page "Détail par année" qui suit).
+ */
+export async function extraireRegimes(pdf: PDFDocumentProxy): Promise<RegimeDetecte[]> {
+  let lignesSection: string[] = [];
+  let sectionEnCours = false;
+
+  for (let numeroPage = 1; numeroPage <= pdf.numPages; numeroPage++) {
+    const page = await pdf.getPage(numeroPage);
+    const textContent = await page.getTextContent();
+    const items = textContent.items.filter((item): item is TextItem => 'str' in item);
+    if (items.length === 0) continue;
+
+    const lignes = reconstruireLignes(items);
+
+    if (!sectionEnCours) {
+      const indexTitre = lignes.findIndex((ligne) => RE_TITRE_MES_REGIMES.test(ligne));
+      if (indexTitre === -1) continue;
+      sectionEnCours = true;
+      lignesSection = lignesSection.concat(lignes.slice(indexTitre + 1));
+      continue;
+    }
+
+    const contientMetrique = lignes.some((ligne) => RE_LIGNE_TRIMESTRES.test(ligne) || RE_LIGNE_POINTS.test(ligne));
+    if (!contientMetrique) break;
+    lignesSection = lignesSection.concat(lignes);
+  }
+
+  return parseRegimesDepuisTexte(lignesSection);
 }
 
 // --- Détail de carrière ("Détail de votre carrière") ------------------------
@@ -460,13 +515,11 @@ export function parseDetailCarriereDepuisTexte(lignes: string[]): PeriodeCarrier
  * Localise la (ou les) page(s) "Détail de votre carrière" par recherche de
  * titre — pas par index fixe — puis reconstruit et concatène leurs lignes.
  *
- * Tolérance multi-page NON VÉRIFIÉE sur un relevé réel (l'exemple disponible
- * ne s'étalait que sur une page) : une fois la page de titre trouvée, on
- * continue à inclure les pages suivantes tant qu'elles contiennent au moins
- * une ligne avec un motif de date (hors bandeau bas de page), et on s'arrête
- * dès qu'une page n'en contient plus (ex: la page "En savoir plus" qui suit
- * le tableau dans l'exemple analysé). À vérifier dès qu'un relevé avec un
- * tableau réellement étalé sur plusieurs pages sera disponible.
+ * Tolérance multi-page vérifiée sur un relevé dense réel (tableau étalé sur
+ * 2 pages) : une fois la page de titre trouvée, on continue à inclure les
+ * pages suivantes tant qu'elles contiennent au moins une ligne avec un motif
+ * de date (hors bandeau bas de page), et on s'arrête dès qu'une page n'en
+ * contient plus (ex: la page "En savoir plus" qui suit le tableau).
  */
 export async function extraireDetailCarriere(pdf: PDFDocumentProxy): Promise<PeriodeCarriere[]> {
   let lignesTable: string[] = [];
@@ -515,10 +568,11 @@ async function etape<T>(nom: string, fn: () => Promise<T> | T): Promise<T> {
 }
 
 /**
- * Extrait et parse la page 2 (page "Mes régimes") d'un RIS. Le fichier n'est
- * jamais stocké : il est lu en mémoire (ArrayBuffer) le temps de l'extraction
- * puis abandonné avec le reste de la fonction — aucun envoi réseau, aucune
- * écriture Supabase Storage.
+ * Extrait et parse la section "Mes régimes" (potentiellement étalée sur
+ * plusieurs pages, cf. extraireRegimes) et le "Détail de votre carrière"
+ * d'un RIS. Le fichier n'est jamais stocké : il est lu en mémoire
+ * (ArrayBuffer) le temps de l'extraction puis abandonné avec le reste de la
+ * fonction — aucun envoi réseau, aucune écriture Supabase Storage.
  */
 export async function parseRIS(file: File): Promise<ParseRISResult> {
   const arrayBuffer = await etape('lecture du fichier', () => file.arrayBuffer());
@@ -528,17 +582,7 @@ export async function parseRIS(file: File): Promise<ParseRISResult> {
     return { regimes: [], detailCarriere: [], texteIllisible: true };
   }
 
-  const page = await etape('accès à la page 2', () => pdf.getPage(2));
-  const textContent = await etape('extraction du texte (getTextContent)', () => page.getTextContent());
-  const items = textContent.items.filter((item): item is TextItem => 'str' in item);
-
-  if (items.length === 0) {
-    // Page sans texte extractible (scan image) : rien à parser.
-    return { regimes: [], detailCarriere: [], texteIllisible: true };
-  }
-
-  const lignes = await etape('reconstruction des lignes', () => reconstruireLignes(items));
-  const regimes = await etape('parsing des régimes', () => parseRegimesDepuisTexte(lignes));
+  const regimes = await etape('extraction des régimes', () => extraireRegimes(pdf));
   const detailCarriere = await etape('extraction du détail de carrière', () => extraireDetailCarriere(pdf));
 
   return { regimes, detailCarriere, texteIllisible: regimes.length === 0 };
