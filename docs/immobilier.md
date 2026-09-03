@@ -41,7 +41,11 @@ Pour la nature « Immeubles locatifs (loués nus) » spécifiquement, la fiche d
 en plus une section **Simulateur de rentabilité**
 ([SimulateurRentabiliteSection.tsx](src/components/immobilier/SimulateurRentabiliteSection.tsx)) : cashflow
 net mensuel, rendements brut/net/net-net et comparaison micro-foncier vs réel (avec déficit foncier
-plafonné à 10 700 €/an) au TMI saisi localement (pas de persistance). Moteur de calcul dans
+plafonné à 10 700 €/an) au TMI saisi localement (pas de persistance). De même pour la nature « Immeubles
+locatifs (LMNP) » (pas LMP), `LMNPDetailView.tsx` affiche une section équivalente
+([SimulateurRentabiliteLMNPSection.tsx](src/components/immobilier/lmnp/SimulateurRentabiliteLMNPSection.tsx))
+comparant micro-BIC (barème 2026, alerte de dépassement de plafond) et réel (charges + intérêts +
+assurance déductibles, amortissement plafonné, PS à 18,6 %). Moteur de calcul commun aux deux :
 [src/lib/immobilier/rentabilite.ts](src/lib/immobilier/rentabilite.ts).
 
 **Tables Supabase consommées** : `assets` (colonnes « immobilier étendu », partagées avec Patrimoine),
@@ -69,17 +73,20 @@ plafonné à 10 700 €/an) au TMI saisi localement (pas de persistance). Moteur
 
 ## 2. Architecture & décisions
 
-- **`src/lib/immobilier/` existe désormais, mais seulement pour la location nue.**
-  [rentabilite.ts](src/lib/immobilier/rentabilite.ts) centralise en fonctions pures testées
-  (`rentabilite.test.ts`) le calcul de rentabilité micro-foncier/réel : annualisation revenus/charges,
-  amortissement du crédit, cashflow, rendements, déficit foncier. Il suit le pattern `lib/ifi/`/
-  `lib/patrimoine/` demandé par `CLAUDE.md`. **La dette reste entière pour LMNP/LMP et pour les KPI de
-  portefeuille** : `ImmobilierOverview.tsx` (rentabilité, cashflow, plus-value brute de portefeuille) et
-  `LMNPDetailView.tsx` (amortissement par composant, résultat fiscal Micro-BIC/réel) continuent
-  d'implémenter leur propre logique inline, non partagée avec `rentabilite.ts` — l'annualisation
-  revenus/charges y est donc dupliquée en esprit une troisième fois avec une convention différente à
-  chaque endroit (à vérifier avant toute fusion : `rentabilite.ts` suit exactement les deux conventions
-  de périodicité réellement stockées en base, cf. `annualiserRevenu`/`annualiserCharge`).
+- **`src/lib/immobilier/` centralise désormais la rentabilité location nue et LMNP — pas encore les KPI
+  de portefeuille ni LMP.** [rentabilite.ts](src/lib/immobilier/rentabilite.ts) réunit en fonctions pures
+  testées (`rentabilite.test.ts`) : le calcul micro-foncier/réel (location nue), l'amortissement du
+  crédit (commun aux deux), et pour LMNP `computeAmortissementImmeubleLMNP`/`computeResultatReelLMNP`
+  (déplacés depuis `LMNPDetailView.tsx` sans changer une formule, cf. commit d'extraction dédié) plus
+  `computeMicroBicLMNP`/`computeRentabiliteLMNP` (nouveaux, barème 2026). Il suit le pattern `lib/ifi/`/
+  `lib/patrimoine/` demandé par `CLAUDE.md`. **Dette restante** : `ImmobilierOverview.tsx` (rentabilité,
+  cashflow, plus-value brute de portefeuille) implémente toujours sa propre annualisation inline, non
+  partagée — une **troisième** convention de périodicité coexiste donc pour les KPI de portefeuille (à
+  vérifier avant toute fusion : `rentabilite.ts` suit exactement les deux conventions réellement
+  stockées en base, cf. `annualiserRevenu`/`annualiserCharge`). Le résumé fiscal existant de
+  `LMNPDetailView.tsx` (branche micro-BIC 50 %, sans plafond vérifié) reste lui aussi non partagé avec
+  `computeMicroBicLMNP` du nouveau simulateur (barème 2026 avec plafonds) — choix délibéré pour ne pas
+  toucher à son comportement existant, cf. §3.
 
 - **Aucun fichier de service dédié pour le formulaire propriété.** `useImmobilierPropertyForm.ts` et
   `LMNPDetailView.tsx` écrivent tous deux directement sur `supabase.from('assets').update(...)`,
@@ -170,43 +177,53 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
   pas 100 % — corrigé.** Les quotes-parts (Aménagements intérieurs 18 %, Étanchéité 7 %, Toiture 8 %,
   Installations électriques 6 %, Gros œuvre 41 %) totalisaient 80 %, laissant 20 % de `valeurBatiment`
   jamais amorti. Fix : chaque quote-part est remise à l'échelle proportionnellement (÷ 0,8) dans
-  `computeAmortissement` ([LMNPDetailView.tsx:71-89](src/components/immobilier/lmnp/LMNPDetailView.tsx:71-89)),
-  poids relatifs et durées d'amortissement inchangés (18/7/8/6/41 → 22,5/8,75/10/7,5/51,25 %, somme
-  100 %). **Vérifié sur cas concret** : bien à 200 000€, zone rurale (terrain 15 %) → `valeurBatiment`
-  = 170 000€, somme des bases par composant = 170 000€ (au lieu de 136 000€ avant correctif).
+  `computeAmortissementImmeubleLMNP`
+  ([rentabilite.ts](src/lib/immobilier/rentabilite.ts), déplacé depuis `LMNPDetailView.tsx` sans
+  changer la formule), poids relatifs et durées d'amortissement inchangés (18/7/8/6/41 →
+  22,5/8,75/10/7,5/51,25 %, somme 100 %). **Vérifié sur cas concret** : bien à 200 000€, zone rurale
+  (terrain 15 %) → `valeurBatiment` = 170 000€, somme des bases par composant = 170 000€ (au lieu de
+  136 000€ avant correctif).
 
 - **Aucun plafonnement de l'amortissement déductible au niveau du résultat — corrigé (version limitée,
   sans report pluriannuel persisté).** Le résultat fiscal réel (`totalRevenusAnnuel - totalChargesAnnuel
   - totalAmortissementAnnuel`) pouvait apparaître négatif à cause du seul amortissement, alors que la
   règle CGI l'interdit (l'amortissement ne peut pas créer ni aggraver un déficit). Fix :
-  `amortissementDeductible = min(amortissement calculé, max(0, revenus − charges))`
-  ([LMNPDetailView.tsx:239-252](src/components/immobilier/lmnp/LMNPDetailView.tsx:239-252)) — le
-  résultat ne peut plus descendre sous 0 à cause du seul amortissement ; un déficit provenant des
-  charges seules (revenus − charges déjà négatif) reste un déficit réel, distinct. **Limite assumée** :
-  l'excédent d'amortissement non déduit une année n'est **pas reporté automatiquement** l'année
-  suivante (l'application ne persiste aucun historique par exercice fiscal — un vrai report
-  pluriannuel demanderait une nouvelle table, hors périmètre d'une correction ciblée) ; un avertissement
-  visible affiche le montant non déduit et invite au report manuel. **Vérifié sur cas concret** :
-  revenus 10 000€, charges 2 000€, amortissement 12 000€ → amortissement déduit plafonné à 8 000€
-  (au lieu de 12 000€), 4 000€ affichés comme non déductibles, résultat fiscal = 0 (au lieu de -4 000€
-  avant correctif) ; cas distinct vérifié (revenus 5 000€, charges 9 000€, amortissement 3 000€) :
-  résultat = -4 000€ (déficit réel de charges, 0€ d'amortissement déduit, 3 000€ intégralement
-  reportables) — la distinction déficit de charges / excédent d'amortissement fonctionne.
-  *(Règle CGI utilisée telle que documentée par l'audit initial ; non revérifiée contre une source
-  officielle dans le cadre de cette correction.)*
+  `amortissementDeductible = min(amortissement calculé, max(0, revenus − charges))`, dans
+  `computeResultatReelLMNP` ([rentabilite.ts](src/lib/immobilier/rentabilite.ts), déplacé depuis
+  `LMNPDetailView.tsx` sans changer la formule) — le résultat ne peut plus descendre sous 0 à cause du
+  seul amortissement ; un déficit provenant des charges seules (revenus − charges déjà négatif) reste un
+  déficit réel, distinct. **Limite assumée** : l'excédent d'amortissement non déduit une année n'est
+  **pas reporté automatiquement** l'année suivante (l'application ne persiste aucun historique par
+  exercice fiscal — un vrai report pluriannuel demanderait une nouvelle table, hors périmètre d'une
+  correction ciblée) ; un avertissement visible affiche le montant non déduit et invite au report
+  manuel. **Vérifié sur cas concret** : revenus 10 000€, charges 2 000€, amortissement 12 000€ →
+  amortissement déduit plafonné à 8 000€ (au lieu de 12 000€), 4 000€ affichés comme non déductibles,
+  résultat fiscal = 0 (au lieu de -4 000€ avant correctif) ; cas distinct vérifié (revenus 5 000€,
+  charges 9 000€, amortissement 3 000€) : résultat = -4 000€ (déficit réel de charges, 0€
+  d'amortissement déduit, 3 000€ intégralement reportables) — la distinction déficit de charges /
+  excédent d'amortissement fonctionne. *(Règle CGI utilisée telle que documentée par l'audit initial ;
+  non revérifiée contre une source officielle dans le cadre de cette correction.)*
 
 - **`regime_location` (Micro-BIC) était saisi mais sans effet sur le calcul — corrigé pour LMNP/LMP.**
   `LMNPDetailView` appliquait systématiquement la logique du régime réel, quel que soit
   `regime_location`. Fix : si `regime_location === 'Micro-BIC'`, le résultat affiché devient
-  `recettes − abattement forfaitaire` (71 % si `type_location_lmnp === 'Tourisme classé'`, 50 % sinon),
-  sans déduction de charges ni d'amortissement
-  ([LMNPDetailView.tsx:239-260](src/components/immobilier/lmnp/LMNPDetailView.tsx:239-260)) ; le
-  comportement réel (BIC/non renseigné) est inchangé. **Limite assumée** : le plafond de recettes
-  légal pour rester éligible au Micro-BIC (variable selon la catégorie de location, seuils révisés en
-  loi de finances jusqu'en 2028) n'est **pas vérifié automatiquement** — un texte d'avertissement
-  invite l'utilisateur à contrôler l'éligibilité manuellement. **Vérifié sur cas concret** : recettes
-  20 000€, LMNP Classique → résultat = 10 000€ (abattement 50 %) ; recettes 20 000€, Tourisme classé →
-  résultat = 5 800€ (abattement 71 %).
+  `recettes − abattement forfaitaire` (50 %, quel que soit le type de location), sans déduction de
+  charges ni d'amortissement ([LMNPDetailView.tsx:174-183](src/components/immobilier/lmnp/LMNPDetailView.tsx:174-183)) ;
+  le comportement réel (BIC/non renseigné) est inchangé. **Limite assumée** : le plafond de recettes
+  légal pour rester éligible au Micro-BIC n'est **pas vérifié automatiquement** dans ce résumé fiscal
+  (contrairement au simulateur de rentabilité LMNP, cf. §1, qui affiche une alerte de dépassement) — un
+  texte d'avertissement invite l'utilisateur à contrôler l'éligibilité manuellement. **Vérifié sur cas
+  concret** : recettes 20 000€, LMNP Classique → résultat = 10 000€ ; recettes 20 000€, Tourisme classé
+  → résultat = 10 000€ (même abattement 50 %, plus de traitement distinct).
+
+- **Abattement micro-BIC « Tourisme classé » obsolète à 71 % — corrigé à 50 %.** Le taux renforcé de
+  71 % a été supprimé par la loi Le Meur du 19/11/2024 pour les revenus 2025 et suivants ; l'abattement
+  micro-BIC est désormais de 50 % quel que soit le type de location meublée. Fix isolé (commit dédié,
+  avant l'extraction vers `rentabilite.ts`) dans `LMNPDetailView.tsx`. Le nouveau simulateur de
+  rentabilité LMNP (§1) utilise directement le barème 2026 correct (`MICRO_BIC_LMNP_BAREME` dans
+  `rentabilite.ts`), qui distingue en plus Tourisme non classé (30 % / plafond 15 000 €) de
+  Classique/Tourisme classé (50 % / plafond 83 600 €) — distinction que le résumé fiscal existant de
+  `LMNPDetailView.tsx` ne fait toujours pas (un seul taux de 50 %, pas de plafond différencié).
 
 - **Une charge en périodicité « Trimestrielle » était comptée pour zéro dans les KPI de portefeuille —
   corrigé.** [ImmobilierOverview.tsx](src/components/immobilier/ImmobilierOverview.tsx) ne connaissait
@@ -313,6 +330,11 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
   dans la fiche détail (cashflow, rendements, déficit foncier plafonné à 10 700 €/an, régime le plus
   favorable au TMI saisi) — cf. §1/§2. Pas de projection pluriannuelle, pas de calcul de plus-value à
   la revente, pas de report du déficit foncier au-delà du plafond annuel.
+- **V1 — en place (ajout)** : pour LMNP (« Immeubles locatifs (LMNP) » uniquement, pas LMP), simulateur
+  de rentabilité micro-BIC/réel dans `LMNPDetailView.tsx` (barème 2026 avec plafonds de recettes,
+  amortissement immeuble plafonné, intérêts + assurance déductibles au réel, PS à 18,6 %, régime le
+  plus favorable) — cf. §1/§2. Pas de report de l'excédent d'amortissement d'une année sur l'autre
+  (dette déjà connue, non traitée ici), pas de LMP.
 - **Différé, déductible du code** :
   - **Location nue pour les 5 autres natures de `RENTAL_PROPERTY_TYPES`** (Autres immeubles de rapport,
     Parking/Garage/Box, etc.) : toujours aucun moteur de calcul dédié, gate du simulateur strictement
@@ -332,22 +354,24 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
     [assetTypes.ts](src/constants/assetTypes.ts)). Cette information existe donc en base
     (`assets.revenus_distribues_12m`, `assets.regime_fiscal_parts`) mais reste invisible depuis
     Immobilier, qui continue d'afficher le message « à venir » pour ces natures.
-  - **Financement (`financement_*`) : désormais consommé, mais uniquement par le simulateur de
-    location nue.** Les 5 champs `financement_actif`/`financement_duree_mois`/`financement_apport`/
-    `financement_taux_credit`/`financement_taux_assurance`, saisissables via
+  - **Financement (`financement_*`) : désormais consommé par les deux simulateurs de rentabilité
+    (location nue et LMNP), toujours dormant ailleurs.** Les 5 champs `financement_actif`/
+    `financement_duree_mois`/`financement_apport`/`financement_taux_credit`/`financement_taux_assurance`,
+    saisissables via
     [PropertyFinancingSection.tsx](src/components/immobilier/property/PropertyFinancingSection.tsx) et
-    persistés par `useImmobilierPropertyForm.ts:69-73`, alimentent désormais
-    `computeAmortissement()` dans [rentabilite.ts](src/lib/immobilier/rentabilite.ts) (mensualité,
-    intérêts de l'année en cours) pour la nature « Immeubles locatifs (loués nus) ». **Toujours
-    dormants ailleurs** : `ImmobilierOverview.tsx` (KPI de portefeuille) et `LMNPDetailView.tsx`
-    (résultat fiscal LMNP/LMP) ne lisent toujours pas ces champs — le cashflow de portefeuille et le
-    résultat LMNP restent calculés sans tenir compte du crédit. Il n'existe pas de colonne « date de
-    démarrage du crédit » en base : `computeAmortissement()` utilise `date_acquisition` comme proxy, ce
-    qui devient imprécis en cas de refinancement (cas non traité, documenté en commentaire dans le
-    code).
-  - **Distinction LMNP/LMP** dans le calcul lui-même : traités par le même moteur, écart documenté en
-    §3 comme approximation plutôt que comme lacune assumée explicitement dans le code (aucun
-    commentaire ne signale ce choix).
+    persistés par `useImmobilierPropertyForm.ts:69-73`, alimentent `computeAmortissement()` dans
+    [rentabilite.ts](src/lib/immobilier/rentabilite.ts) (mensualité, intérêts de l'année en cours),
+    partagé par les simulateurs « Immeubles locatifs (loués nus) » et « Immeubles locatifs (LMNP) ».
+    **Toujours dormants ailleurs** : `ImmobilierOverview.tsx` (KPI de portefeuille) et le résumé fiscal
+    existant de `LMNPDetailView.tsx` (hors nouveau simulateur) ne lisent toujours pas ces champs — le
+    cashflow de portefeuille et l'ancien résultat fiscal LMNP restent calculés sans tenir compte du
+    crédit. Il n'existe pas de colonne « date de démarrage du crédit » en base : `computeAmortissement()`
+    utilise `date_acquisition` comme proxy, ce qui devient imprécis en cas de refinancement (cas non
+    traité, documenté en commentaire dans le code).
+  - **Distinction LMNP/LMP** dans le calcul lui-même : le résumé fiscal existant et le nouveau
+    simulateur de rentabilité traitent tous deux uniquement LMNP (`asset.nature === 'Immeubles locatifs
+    (LMNP)'` pour le simulateur ; le résumé fiscal, lui, s'applique aux deux natures sans distinction,
+    écart documenté en §3 comme approximation).
   - **`regime_location` (Micro-foncier/Réel)** pour la location nue : toujours sans branche de calcul
     qui le lit (`ImmobilierPropertyDetailView`/location nue n'a pas de moteur de calcul dédié, cf.
     plus haut). Le cas Micro-BIC/BIC (meublé, LMNP/LMP) est en revanche traité depuis le fix §3.
