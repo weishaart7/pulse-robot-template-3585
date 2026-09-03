@@ -36,6 +36,14 @@ près : « Parts de SCI », seule nature à la fois immobilière et éligible au
 Accessible aussi depuis « Mes biens » : [ImmobilierGestionDialog.tsx](src/components/immobilier/ImmobilierGestionDialog.tsx)
 (bouton « Gérer », non-LMNP) — CRUD des revenus/charges du bien et bascule « Transfert dans budget ».
 
+Pour la nature « Immeubles locatifs (loués nus) » spécifiquement, la fiche détail
+([ImmobilierPropertyDetailView.tsx](src/components/immobilier/ImmobilierPropertyDetailView.tsx)) affiche
+en plus une section **Simulateur de rentabilité**
+([SimulateurRentabiliteSection.tsx](src/components/immobilier/SimulateurRentabiliteSection.tsx)) : cashflow
+net mensuel, rendements brut/net/net-net et comparaison micro-foncier vs réel (avec déficit foncier
+plafonné à 10 700 €/an) au TMI saisi localement (pas de persistance). Moteur de calcul dans
+[src/lib/immobilier/rentabilite.ts](src/lib/immobilier/rentabilite.ts).
+
 **Tables Supabase consommées** : `assets` (colonnes « immobilier étendu », partagées avec Patrimoine),
 `asset_charges`, `asset_revenus`.
 
@@ -61,18 +69,17 @@ Accessible aussi depuis « Mes biens » : [ImmobilierGestionDialog.tsx](src/comp
 
 ## 2. Architecture & décisions
 
-- **Pas de `src/lib/immobilier/` — confirmé.** Toute la logique de calcul (annualisation
-  revenus/charges, rentabilité, cashflow, plus-value brute, amortissement LMNP par composant) vit
-  directement dans les composants React : [ImmobilierOverview.tsx](src/components/immobilier/ImmobilierOverview.tsx:43-155)
-  et [LMNPDetailView.tsx](src/components/immobilier/lmnp/LMNPDetailView.tsx:40-91,213-229). C'est un
-  écart net par rapport au pattern `lib/ifi/`/`lib/patrimoine/` demandé par `CLAUDE.md` pour toute
-  logique métier non triviale — contrairement à Patrimoine où `qualifierBien`, `getPartSuccessorale`,
-  `regimeFiscalPlusValue` sont des fonctions pures testables en dehors du JSX, le calcul
-  d'amortissement LMNP (`computeAmortissement`, 40 lignes de règles fiscales avec durées et
-  quotes-parts réglementaires) est une fonction imbriquée dans le fichier du composant, non testée,
-  non réutilisable, et dupliquée en esprit (même logique d'annualisation réimplémentée différemment
-  dans `ImmobilierOverview.tsx`, cf. §3). C'est le point de dette architecturale le plus structurant du
-  module.
+- **`src/lib/immobilier/` existe désormais, mais seulement pour la location nue.**
+  [rentabilite.ts](src/lib/immobilier/rentabilite.ts) centralise en fonctions pures testées
+  (`rentabilite.test.ts`) le calcul de rentabilité micro-foncier/réel : annualisation revenus/charges,
+  amortissement du crédit, cashflow, rendements, déficit foncier. Il suit le pattern `lib/ifi/`/
+  `lib/patrimoine/` demandé par `CLAUDE.md`. **La dette reste entière pour LMNP/LMP et pour les KPI de
+  portefeuille** : `ImmobilierOverview.tsx` (rentabilité, cashflow, plus-value brute de portefeuille) et
+  `LMNPDetailView.tsx` (amortissement par composant, résultat fiscal Micro-BIC/réel) continuent
+  d'implémenter leur propre logique inline, non partagée avec `rentabilite.ts` — l'annualisation
+  revenus/charges y est donc dupliquée en esprit une troisième fois avec une convention différente à
+  chaque endroit (à vérifier avant toute fusion : `rentabilite.ts` suit exactement les deux conventions
+  de périodicité réellement stockées en base, cf. `annualiserRevenu`/`annualiserCharge`).
 
 - **Aucun fichier de service dédié pour le formulaire propriété.** `useImmobilierPropertyForm.ts` et
   `LMNPDetailView.tsx` écrivent tous deux directement sur `supabase.from('assets').update(...)`,
@@ -218,6 +225,16 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
   ÷3 (mensuel), au lieu d'être ajoutée telle quelle. **Vérifié sur cas concret** : revenu semestriel de
   3 000€ → total annuel 6 000€ (au lieu de 3 000€ avant correctif), soit 500€/mois (au lieu de 250€/mois).
 
+- **Une charge en périodicité « Semestrielle » était enregistrée sans doubler le montant — corrigé.**
+  `ChargeForm.tsx` mappe « Semestrielle » sur `'annuelle'` (seule valeur acceptée par la contrainte
+  CHECK de `asset_charges.periodicite`), mais ne compensait pas le changement de fréquence : une charge
+  de 300€ semestrielle était stockée comme 300€/an au lieu de 600€/an. Fix : le montant est doublé avant
+  écriture quand la périodicité choisie est « Semestrielle »
+  ([ChargeForm.tsx:43-49](src/components/immobilier/ChargeForm.tsx:43-49)). **Limite assumée** : la
+  colonne `periodicite` ne conserve aucune trace du choix « Semestrielle » une fois mappée sur
+  `'annuelle'` — un audit futur ne pourra pas distinguer ces lignes d'un `'annuelle'` saisi directement
+  sans examen manuel. **Vérifié en base** : `asset_charges` était vide au moment du correctif, aucun
+  rattrapage de données nécessaire.
 - **`useImmobilierPropertyForm.ts` transformait silencieusement un `0` saisi en `null` — corrigé.**
   `handleSubmit` utilisait `data.champ || null` pour tous les champs numériques, écrasant un `0`
   correctement saisi (bien dévalorisé, frais nul). Fix : nouvel helper `numOrNull()`
@@ -274,11 +291,6 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
   [RevenuForm.tsx:87](src/components/immobilier/RevenuForm.tsx:87). Non-conformité à la règle
   `CLAUDE.md` (« pas de `console.log` actif en production »), déjà corrigée ailleurs dans le
   périmètre Patrimoine par le commit `ea3a695`, mais pas étendue à ces deux fichiers Immobilier.
-- **`ChargeForm.tsx` fait taire silencieusement l'option « Semestrielle » côté charges** en la
-  mappant sur `'annuelle'` sans redoublement du montant (`periodiciteMap`,
-  [ChargeForm.tsx:43-48](src/components/immobilier/ChargeForm.tsx:43-48), commentaire `// fallback`
-  dans le code lui-même) — le code reconnaît l'approximation mais elle produit le même sous-comptage
-  que documenté en 🔴 ci-dessus pour les revenus.
 - **`useImmobilierPropertyForm.ts`/`LMNPDetailView.tsx` écrivent directement sur `supabase.from
   ('assets')`** au lieu de passer par `assetService.updateAsset`, perdant le contrôle de propriété
   applicatif que ce dernier effectue avant écriture (RLS reste le filet de sécurité).
@@ -296,10 +308,15 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
   revenus/charges par bien avec bascule d'impact sur le Budget, vue dédiée LMNP/LMP avec calcul
   d'amortissement par composant et résultat fiscal simplifié, KPI de portefeuille (valeur totale,
   rentabilité brute/nette, cashflow, plus-value brute).
+- **V1 — en place (ajout)** : pour la location nue (« Immeubles locatifs (loués nus) » uniquement,
+  pas les 5 autres natures de `RENTAL_PROPERTY_TYPES`), simulateur de rentabilité micro-foncier/réel
+  dans la fiche détail (cashflow, rendements, déficit foncier plafonné à 10 700 €/an, régime le plus
+  favorable au TMI saisi) — cf. §1/§2. Pas de projection pluriannuelle, pas de calcul de plus-value à
+  la revente, pas de report du déficit foncier au-delà du plafond annuel.
 - **Différé, déductible du code** :
-  - **Location nue (foncier réel/micro-foncier)** : aucun moteur de calcul dédié comparable à
-    `LMNPDetailView` — seuls le suivi des coûts et des revenus/charges bruts existent ; pas de calcul
-    d'assiette foncière ni d'IR/PS.
+  - **Location nue pour les 5 autres natures de `RENTAL_PROPERTY_TYPES`** (Autres immeubles de rapport,
+    Parking/Garage/Box, etc.) : toujours aucun moteur de calcul dédié, gate du simulateur strictement
+    limité à « Immeubles locatifs (loués nus) ».
   - **Terrains, Bois & forêts, Parts de SCPI/GFA/GFV/GFR, Maison mobile, Autres biens d'usage** : ces
     natures apparaissent dans « Mes biens » si transférées (elles appartiennent à
     `ASSET_CATEGORIES['actifs immobiliers']`, et le transfert est désormais automatique — cf. §1),
@@ -315,17 +332,19 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
     [assetTypes.ts](src/constants/assetTypes.ts)). Cette information existe donc en base
     (`assets.revenus_distribues_12m`, `assets.regime_fiscal_parts`) mais reste invisible depuis
     Immobilier, qui continue d'afficher le message « à venir » pour ces natures.
-  - **Financement (`financement_*`) : saisi et persisté, mais consommé nulle part, y compris dans ce
-    module.** Confirme l'hypothèse posée par `docs/patrimoine.md` (§2/§5, cases dormantes) : les 5
-    champs `financement_actif`/`financement_duree_mois`/`financement_apport`/`financement_taux_credit`/
-    `financement_taux_assurance` sont saisissables via
-    [PropertyFinancingSection.tsx](src/components/immobilier/property/PropertyFinancingSection.tsx),
-    persistés par `useImmobilierPropertyForm.ts:69-73`, mais **aucun échéancier de prêt, aucune
-    mensualité, aucun impact sur le cashflow, la rentabilité ou le résultat fiscal LMNP ne les lit**
-    nulle part dans `ImmobilierOverview.tsx` ni `LMNPDetailView.tsx`. Ce ne sont donc pas des champs
-    dormants « côté Patrimoine seulement » : ils sont **dormants partout**, y compris dans le module
-    dont ils dépendent fonctionnellement. Vérifié en base : `0` ligne avec `financement_actif = true`
-    sur les données actuelles — cohérent avec un champ jamais réellement exploité en pratique.
+  - **Financement (`financement_*`) : désormais consommé, mais uniquement par le simulateur de
+    location nue.** Les 5 champs `financement_actif`/`financement_duree_mois`/`financement_apport`/
+    `financement_taux_credit`/`financement_taux_assurance`, saisissables via
+    [PropertyFinancingSection.tsx](src/components/immobilier/property/PropertyFinancingSection.tsx) et
+    persistés par `useImmobilierPropertyForm.ts:69-73`, alimentent désormais
+    `computeAmortissement()` dans [rentabilite.ts](src/lib/immobilier/rentabilite.ts) (mensualité,
+    intérêts de l'année en cours) pour la nature « Immeubles locatifs (loués nus) ». **Toujours
+    dormants ailleurs** : `ImmobilierOverview.tsx` (KPI de portefeuille) et `LMNPDetailView.tsx`
+    (résultat fiscal LMNP/LMP) ne lisent toujours pas ces champs — le cashflow de portefeuille et le
+    résultat LMNP restent calculés sans tenir compte du crédit. Il n'existe pas de colonne « date de
+    démarrage du crédit » en base : `computeAmortissement()` utilise `date_acquisition` comme proxy, ce
+    qui devient imprécis en cas de refinancement (cas non traité, documenté en commentaire dans le
+    code).
   - **Distinction LMNP/LMP** dans le calcul lui-même : traités par le même moteur, écart documenté en
     §3 comme approximation plutôt que comme lacune assumée explicitement dans le code (aucun
     commentaire ne signale ce choix).
