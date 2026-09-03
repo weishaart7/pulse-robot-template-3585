@@ -217,7 +217,7 @@ export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onS
           >
             {generationLabel(generation, rowIndex)}
           </div>
-          <div className="flex-1 flex flex-wrap justify-center gap-4">
+          <div className="flex-1 flex flex-nowrap items-center gap-4 overflow-x-auto pb-1">
             {rowsByGeneration.get(generation)!.map(node => (
               <MemberCard key={node.id} node={node} onClick={() => handleSelect(node)} cardRef={getCardRef(node.id)} />
             ))}
