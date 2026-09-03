@@ -51,9 +51,10 @@ function personneInvalideVide(): PersonneInvalideCharge {
 
 interface MenageFormProps {
   onSaved?: (foyer: FoyerFiscal) => void;
+  onChange?: (foyer: FoyerFiscalInput) => void;
 }
 
-export const MenageForm = ({ onSaved }: MenageFormProps) => {
+export const MenageForm = ({ onSaved, onChange }: MenageFormProps) => {
   const { data, loading, saving, saveData } = useFoyerFiscal();
   const [foyer, setFoyer] = useState<FoyerFiscalInput>(FOYER_VIDE);
   const [foyerId, setFoyerId] = useState<string | undefined>(undefined);
@@ -65,6 +66,11 @@ export const MenageForm = ({ onSaved }: MenageFormProps) => {
       setFoyerId(id);
     }
   }, [data]);
+
+  useEffect(() => {
+    onChange?.(foyer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [foyer]);
 
   const estCouple = foyer.situationFamille === 'marie' || foyer.situationFamille === 'pacse';
 
