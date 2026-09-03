@@ -16,24 +16,32 @@
 
 ## 1. Vue d'ensemble
 
-L'onglet « Fiscalité » héberge **quatre blocs largement indépendants, qui ne communiquent pas entre
+L'onglet « Fiscalité » héberge **trois blocs largement indépendants, qui ne communiquent pas entre
 eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 
-1. **Le foyer fiscal — état civil et nombre de parts (Phase 1, fonctionnel)** : en tête de la page,
-   `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx` (montés dans `FiscaliteSection.tsx`), adossés à la
-   table Supabase `foyer_fiscal` et au moteur pur `src/lib/fiscalite/calculerPartsFiscales.ts`. Seul
-   morceau du module qui calcule et persiste une donnée réelle, propre à l'utilisateur — voir §2.
-2. **Traitements et salaires — cadre 1 de la 2042, déclarants 1/2 (Phase 2.1, fonctionnel)** : à la
-   suite du foyer fiscal, `RevenusSalairesForm.tsx`, adossé à la table Supabase `revenus_salaires`.
-   Capture de données brute (pas de moteur de calcul dans cette sous-phase, voir §2) ; codes de case
-   vérifiés contre la brochure officielle DGFiP (2042-K/2042-C, revenus 2024).
-3. **Un tableau de bord IR entièrement statique** (`FiscaliteSection.tsx` → `FiscalDeclarationsCard`,
+1. **La déclaration 2042, regroupée derrière le bouton « 2042 - Déclaration générale »** : ouvre
+   `Declaration2042Interface.tsx` (overlay plein écran + sidebar de sections, calqué sur le pattern
+   `IFIInterface`/`IFISidebar` déjà en place pour l'IFI — voir §2). Contient aujourd'hui deux sections :
+   - **Ménage — état civil et nombre de parts (Phase 1, fonctionnel)** : `MenageSection.tsx`
+     (wrapper de `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx`), adossé à la table Supabase
+     `foyer_fiscal` et au moteur pur `src/lib/fiscalite/calculerPartsFiscales.ts`. Seul morceau du
+     module qui calcule et persiste une donnée réelle, propre à l'utilisateur.
+   - **Traitements et salaires — cadre 1 de la 2042, déclarants 1/2 (Phase 2.1, fonctionnel)** :
+     `RevenusSalairesForm.tsx`, adossé à la table Supabase `revenus_salaires`. Capture de données
+     brute (pas de moteur de calcul dans cette sous-phase) ; codes de case vérifiés contre la
+     brochure officielle DGFiP (2042-K/2042-C, revenus 2024).
+
+   Avant cette réorganisation, `MenageForm`/`SyntheseFoyerFiscal`/`RevenusSalairesForm` étaient montés
+   à plat dans `FiscaliteSection.tsx`, en dehors de tout bouton « 2042 » (qui n'avait alors aucun
+   `onClick`) — la section Fiscalité ne compte plus désormais qu'un seul point d'entrée vers ces
+   formulaires.
+2. **Un tableau de bord IR entièrement statique** (`FiscaliteSection.tsx` → `FiscalDeclarationsCard`,
    `FiscalOverviewCard`, `TaxRateCard`) : liste de déclarations fiscales (2042, 2044, 2047, 2074,
    2086, 2042-IFI), graphique de répartition IR/PS/IFI, taux marginal d'imposition, tranches. **Aucune
    donnée réelle n'y est affichée** — voir §2. Le nombre de parts calculé au point 1 et les salaires
    saisis au point 2 n'alimentent pas ce tableau de bord (aucun barème IR n'existe encore dans le
    repo pour les utiliser, voir §4).
-4. **Un simulateur IFI complet, avec sa propre saisie** (`IFIInterface.tsx`, ouvert depuis le bouton
+3. **Un simulateur IFI complet, avec sa propre saisie** (`IFIInterface.tsx`, ouvert depuis le bouton
    « 2042-IFI » de `FiscalDeclarationsCard`), organisé en 5 sections dans une sidebar
    (`IFISidebar.tsx`) : Hypothèses, Liste des biens à l'IFI, Barème de l'IFI, Réduction &
    Plafonnement, Montant redevable. Ce simulateur a ses propres tables Supabase, indépendantes de
@@ -43,11 +51,11 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 
 | Écran | Composant | Rôle |
 |---|---|---|
-| Fiscalité (page principale) | [FiscaliteSection.tsx](src/pages/fiscalite/FiscaliteSection.tsx) | Foyer fiscal + synthèse des parts, puis traitements et salaires (haut de page), puis grille 3 colonnes : déclarations (gauche), imposition totale + TMI (droite) |
-| Foyer fiscal (saisie) | [MenageForm.tsx](src/components/fiscalite/MenageForm.tsx) | Situation familiale, enfants à charge (liste dynamique), personnes invalides à charge (liste dynamique), enfants majeurs rattachés, cases à cocher (parent isolé, invalidité, ancien combattant, veuve de guerre...) |
-| Synthèse du foyer fiscal | [SyntheseFoyerFiscal.tsx](src/components/fiscalite/SyntheseFoyerFiscal.tsx) | Nombre de parts + détail ligne par ligne de chaque majoration appliquée, recalculé en direct pendant la saisie (avant même l'enregistrement) |
-| Traitements et salaires (saisie) | [RevenusSalairesForm.tsx](src/components/fiscalite/RevenusSalairesForm.tsx) | 14 paires de champs déclarant 1/déclarant 2 (cadre 1 de la 2042, hors colonnes C/D, frais réels et gains d'actionnariat), code officiel + libellé français côte à côte |
-| Déclarations fiscales | [FiscalDeclarationsCard.tsx](src/pages/fiscalite/components/FiscalDeclarationsCard.tsx) | Liste de formulaires CERFA ; seul le lien « 2042-IFI » est cliquable, ouvre `IFIInterface` |
+| Fiscalité (page principale) | [FiscaliteSection.tsx](src/pages/fiscalite/FiscaliteSection.tsx) | Grille 3 colonnes : déclarations (gauche), imposition totale + TMI (droite) — plus aucun formulaire monté à plat |
+| Déclarations fiscales | [FiscalDeclarationsCard.tsx](src/pages/fiscalite/components/FiscalDeclarationsCard.tsx) | Liste de formulaires CERFA ; « 2042 » ouvre `Declaration2042Interface`, « 2042-IFI » ouvre `IFIInterface` — les deux seuls liens cliquables |
+| Déclaration 2042 (overlay) | [Declaration2042Interface.tsx](src/pages/fiscalite/components/Declaration2042Interface.tsx) → [Declaration2042Sidebar.tsx](src/pages/fiscalite/components/2042/Declaration2042Sidebar.tsx) | Overlay plein écran + sidebar de sections pilotée par [declaration2042Sections.ts](src/pages/fiscalite/components/2042/declaration2042Sections.ts) (config `{id, label, icon, component}` — ajouter une sous-phase future = une entrée) ; pas de bouton « Enregistrer » global, chaque section garde sa propre sauvegarde |
+| Ménage (section 2042) | [MenageSection.tsx](src/pages/fiscalite/components/2042/MenageSection.tsx) → `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx` | Situation familiale, enfants à charge (liste dynamique), personnes invalides à charge (liste dynamique), enfants majeurs rattachés, cases à cocher (parent isolé, invalidité, ancien combattant, veuve de guerre...), synthèse du nombre de parts recalculée en direct pendant la saisie (avant même l'enregistrement) |
+| Traitements et salaires (section 2042) | [RevenusSalairesForm.tsx](src/components/fiscalite/RevenusSalairesForm.tsx) | 14 paires de champs déclarant 1/déclarant 2 (cadre 1 de la 2042, hors colonnes C/D, frais réels et gains d'actionnariat), code officiel + libellé français côte à côte |
 | Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Donut IR/PS/IFI + détail revenus — **données 100 % codées en dur** |
 | Taux marginal | [TaxRateCard.tsx](src/pages/fiscalite/components/TaxRateCard.tsx) | Barème IR, tranche active, marge avant tranche suivante — **données 100 % codées en dur** |
 | Simulateur IFI | [IFIInterface.tsx](src/pages/fiscalite/components/IFIInterface.tsx) → 5 sous-écrans `ifi/*.tsx` | Wizard de déclaration IFI : hypothèses, biens/passifs, barème, montant dû |
@@ -85,6 +93,26 @@ fonction n'existe — voir §4.
 
 ## 2. Architecture & décisions
 
+- **Navigation de la déclaration 2042 : pattern overlay + sidebar réutilisé de l'IFI, pas réinventé.**
+  `Declaration2042Interface.tsx` reprend à l'identique la mécanique de `IFIInterface.tsx` (overlay
+  `fixed inset-0` plein écran, sidebar de navigation par section) plutôt que d'introduire un nouveau
+  mécanisme d'affichage (accordéon, route dédiée, modal) à côté de celui déjà en place. Seule
+  divergence assumée : pas de bouton « Enregistrer » global avec `flush()` séquentiel comme sur l'IFI
+  — chaque section (`MenageSection`, `RevenusSalairesForm`) garde son propre bouton et son propre hook
+  de sauvegarde, pour ne pas toucher à leur logique interne dans une session de pure navigation, et
+  parce que chaque formulaire a un rythme de saisie/sauvegarde indépendant de l'autre. La liste des
+  sections vit dans un fichier de config unique,
+  [declaration2042Sections.ts](src/pages/fiscalite/components/2042/declaration2042Sections.ts)
+  (tableau `{id, label, icon, component}`), lu à la fois par `Declaration2042Interface` (rendu de la
+  section active, une seule montée à la fois — pas d'appel réseau simultané des deux formulaires) et
+  par `Declaration2042Sidebar` (liste des boutons de navigation) : ajouter une future sous-phase (2.2
+  frais réels, 2.3 gains d'actionnariat, 2.4 cas spécifiques, ou un futur cadre 2042 hors « Salaires »)
+  se limite à une entrée supplémentaire dans ce tableau, sans toucher aux deux composants qui le
+  consomment. `MenageForm`/`SyntheseFoyerFiscal` sont regroupés dans un wrapper `MenageSection.tsx`
+  (état `foyerDraft` local) pour préserver à l'identique leur couplage préexistant (recalcul du nombre
+  de parts en direct pendant la saisie, avant l'enregistrement) — ce composant n'était pas nommé
+  explicitement dans le brief de session, qui ne mentionnait que les deux « formulaires », mais son
+  déplacement solidaire du `MenageForm` était nécessaire pour ne pas casser ce comportement existant.
 - **`src/lib/ifi/calcul.ts` mérite sa réputation de code de référence — c'est le seul point du
   périmètre audité qui la mérite pleinement.** Fonctions pures, sans effet de bord, chacune
   documentée par un commentaire citant l'article du CGI visé
