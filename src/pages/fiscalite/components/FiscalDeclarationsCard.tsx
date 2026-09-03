@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Home, Globe, TrendingUp, Coins } from 'lucide-react';
 import IFIInterface from './IFIInterface';
+import Declaration2042Interface from './Declaration2042Interface';
 
 const FiscalDeclarationsCard = () => {
   const [showIFI, setShowIFI] = useState(false);
+  const [show2042, setShow2042] = useState(false);
   const declarations = [
     {
       category: "Impôt sur le revenu",
@@ -50,6 +52,8 @@ const FiscalDeclarationsCard = () => {
                     onClick={() => {
                       if (item.code === "2042-IFI") {
                         setShowIFI(true);
+                      } else if (item.code === "2042") {
+                        setShow2042(true);
                       }
                     }}
                   >
@@ -72,6 +76,7 @@ const FiscalDeclarationsCard = () => {
       </Card>
 
       {showIFI && <IFIInterface onClose={() => setShowIFI(false)} />}
+      {show2042 && <Declaration2042Interface onClose={() => setShow2042(false)} />}
     </>
   );
 };
