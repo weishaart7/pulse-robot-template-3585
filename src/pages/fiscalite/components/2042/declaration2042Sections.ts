@@ -18,6 +18,6 @@ export interface Declaration2042Section {
 export const DECLARATION_2042_SECTIONS: Declaration2042Section[] = [
   { id: 'menage', label: 'Ménage — état civil et parts', icon: Users, component: MenageSection },
   { id: 'salaires', label: 'Traitements et salaires', icon: Wallet, component: RevenusSalairesForm },
-  { id: 'actionnariat', label: "Gains d'actionnariat salarié", icon: LineChart, component: GainsActionnariatSalarieForm },
   { id: 'taux-effectif', label: 'Salaires & pensions exonérés (taux effectif)', icon: Globe, component: RevenusExoneresTauxEffectifForm },
+  { id: 'actionnariat', label: "Gains d'actionnariat salarié", icon: LineChart, component: GainsActionnariatSalarieForm },
 ];
