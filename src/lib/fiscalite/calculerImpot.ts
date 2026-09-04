@@ -23,6 +23,8 @@ const COUPLE_IMPOSITION_COMMUNE: FoyerFiscalInput['situationFamille'][] = ['mari
 
 export interface ImpotResult {
   revenuImposable: number;
+  revenuExonereTauxEffectif: number;
+  revenuMondialFictif: number;
   nombreParts: number;
   quotientFamilial: number;
   impotSansMajorations: number;
@@ -31,6 +33,8 @@ export interface ImpotResult {
   plafondQuotientFamilial: number;
   plafonnementApplique: boolean;
   impotApresPlafonnement: number;
+  tauxEffectif: number;
+  impotProportionnel: number;
   decote: number;
   impotNet: number;
   tmi: number;
@@ -64,12 +68,16 @@ function impotBrut(revenuImposable: number, nombreParts: number): number {
 
 /**
  * Impôt sur le revenu (art. 197 CGI, revenus 2025 / impôt 2026), limité au
- * périmètre actuellement calculable (revenu imposable des salaires, quotient
- * familial).
+ * périmètre actuellement calculable (salaires, gains d'actionnariat au
+ * barème, quotient familial), avec application de la méthode du taux
+ * effectif pour les revenus exonérés de source étrangère.
  *
- * Étapes : barème progressif appliqué au quotient (revenu/parts), puis
- * plafonnement de l'avantage procuré par les majorations de parts (comparé à
- * l'impôt sur les seules parts de base), puis décote, puis arrondi à l'euro.
+ * Étapes : barème progressif appliqué au quotient du revenu mondial fictif
+ * (revenu imposable en France + revenu exonéré retenu pour le taux effectif),
+ * puis plafonnement de l'avantage du quotient familial, puis proratisation
+ * (méthode du taux effectif : seule la part du revenu imposable en France
+ * paie, mais au taux moyen calculé sur le revenu mondial), puis décote sur ce
+ * montant proratisé, puis arrondi à l'euro.
  *
  * Plafonnement : la somme des `plafondUnitaire` de chaque majoration
  * (`calculerPartsFiscales`) borne l'avantage. Une majoration sans
@@ -79,16 +87,22 @@ function impotBrut(revenuImposable: number, nombreParts: number): number {
  * sur-estimation : simplification à lever quand ce cas sera modélisé. Le
  * `plafondComplementaire` (cumul de majorations sur une même personne) n'est
  * pas non plus appliqué pour l'instant.
+ *
+ * `revenuExonereTauxEffectif` (optionnel, 0 par défaut) : revenu exonéré net
+ * retenu pour le taux effectif (`calculerRevenuExonereTauxEffectif.ts`).
  */
 export function calculerImpot(
   revenuImposable: number,
   parts: PartsFiscalesResult,
   situationFamille: FoyerFiscalInput['situationFamille'],
+  revenuExonereTauxEffectif = 0,
 ): ImpotResult {
   const revenu = Math.max(0, revenuImposable);
+  const revenuExonere = Math.max(0, revenuExonereTauxEffectif);
+  const revenuMondialFictif = revenu + revenuExonere;
 
-  const impotAvecMajorations = impotBrut(revenu, parts.nombreParts);
-  const impotSansMajorations = impotBrut(revenu, parts.partsBase);
+  const impotAvecMajorations = impotBrut(revenuMondialFictif, parts.nombreParts);
+  const impotSansMajorations = impotBrut(revenuMondialFictif, parts.partsBase);
   const avantageQuotientFamilial = Math.max(0, impotSansMajorations - impotAvecMajorations);
 
   const majorationSansPlafond = parts.majorations.some(m => m.plafondUnitaire === undefined);
@@ -100,27 +114,34 @@ export function calculerImpot(
   const avantageRetenu = Math.min(avantageQuotientFamilial, plafondQuotientFamilial);
   const impotApresPlafonnement = impotSansMajorations - avantageRetenu;
 
+  const tauxEffectif = revenuMondialFictif > 0 ? impotApresPlafonnement / revenuMondialFictif : 0;
+  const impotProportionnel = revenuExonere > 0 ? tauxEffectif * revenu : impotApresPlafonnement;
+
   const estCoupleImpositionCommune = COUPLE_IMPOSITION_COMMUNE.includes(situationFamille);
   const seuilDecote = estCoupleImpositionCommune ? DECOTE_SEUIL_COUPLE : DECOTE_SEUIL_CELIBATAIRE;
   const montantDecoteBase = estCoupleImpositionCommune ? DECOTE_MONTANT_COUPLE : DECOTE_MONTANT_CELIBATAIRE;
-  const decote = impotApresPlafonnement < seuilDecote
-    ? Math.max(0, montantDecoteBase - impotApresPlafonnement * DECOTE_TAUX)
+  const decote = impotProportionnel < seuilDecote
+    ? Math.max(0, montantDecoteBase - impotProportionnel * DECOTE_TAUX)
     : 0;
 
-  const impotNet = Math.max(0, Math.round(impotApresPlafonnement - decote));
+  const impotNet = Math.max(0, Math.round(impotProportionnel - decote));
 
   return {
     revenuImposable: revenu,
+    revenuExonereTauxEffectif: revenuExonere,
+    revenuMondialFictif,
     nombreParts: parts.nombreParts,
-    quotientFamilial: parts.nombreParts > 0 ? revenu / parts.nombreParts : 0,
+    quotientFamilial: parts.nombreParts > 0 ? revenuMondialFictif / parts.nombreParts : 0,
     impotSansMajorations,
     impotAvecMajorations,
     avantageQuotientFamilial,
     plafondQuotientFamilial,
     plafonnementApplique,
     impotApresPlafonnement,
+    tauxEffectif,
+    impotProportionnel,
     decote,
     impotNet,
-    tmi: tmiPourQuotient(parts.nombreParts > 0 ? revenu / parts.nombreParts : 0),
+    tmi: tmiPourQuotient(parts.nombreParts > 0 ? revenuMondialFictif / parts.nombreParts : 0),
   };
 }

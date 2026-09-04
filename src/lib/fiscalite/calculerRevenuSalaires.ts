@@ -38,7 +38,13 @@ export interface RevenuSalairesResult {
   casesExclues: readonly string[];
 }
 
-function calculerDeclarant(
+/**
+ * Abattement forfaitaire de 10 % (ou frais réels si plus favorables) d'un
+ * déclarant, réutilisé par calculerRevenuExonereTauxEffectif.ts pour les
+ * salaires exonérés retenus pour le calcul du taux effectif (même art. 83
+ * CGI, même mécanique d'abattement).
+ */
+export function calculerDeclarant(
   remunerationsBrutes: number,
   abattementSpecifique: number,
   fraisReels: number | null,

@@ -2,17 +2,21 @@ import { useMemo } from 'react';
 import { useFoyerFiscal } from './useFoyerFiscal';
 import { useRevenusSalaires } from './useRevenusSalaires';
 import { useGainsActionnariatSalarie } from './useGainsActionnariatSalarie';
+import { useRevenusExoneresTauxEffectif } from './useRevenusExoneresTauxEffectif';
 import {
   calculerGainsActionnariatSalarie,
   calculerImpot,
   calculerPartsFiscales,
+  calculerRevenuExonereTauxEffectif,
   calculerRevenuSalaires,
   FoyerFiscalInput,
   GainsActionnariatSalarieInput,
   GainsActionnariatSalarieResult,
   ImpotResult,
   PartsFiscalesResult,
+  RevenuExonereTauxEffectifResult,
   RevenuSalairesResult,
+  RevenusExoneresTauxEffectifInput,
   RevenusSalairesInput,
 } from '@/lib/fiscalite';
 
@@ -43,6 +47,14 @@ const GAINS_ACTIONNARIAT_PAR_DEFAUT: GainsActionnariatSalarieInput = {
   case3vn: null,
 };
 
+const REVENUS_EXONERES_PAR_DEFAUT: RevenusExoneresTauxEffectifInput = {
+  case1ac: null, case1bc: null,
+  case1ge: false, case1he: false,
+  case1ae: null, case1be: null,
+  case1ah: null, case1bh: null,
+  caseRse: null, caseRsf: null,
+};
+
 const REVENUS_SALAIRES_PAR_DEFAUT: RevenusSalairesInput = {
   case1aj: null, case1bj: null,
   case1aa: null, case1ba: null,
@@ -70,41 +82,52 @@ export interface FiscalOverview {
   revenusRenseignes: boolean;
   revenuSalaires: RevenuSalairesResult;
   gainsActionnariat: GainsActionnariatSalarieResult;
+  revenuExonereTauxEffectif: RevenuExonereTauxEffectifResult;
   parts: PartsFiscalesResult;
   impot: ImpotResult;
 }
 
 /**
- * Agrège foyer fiscal + revenus salaires + gains d'actionnariat salarié et
- * calcule le résultat IR (V1 : cases imposables au barème uniquement — voir
- * docs/fiscalite.md). Un seul point de calcul partagé entre FiscalOverviewCard
- * et TaxRateCard pour éviter des appels Supabase dupliqués et deux
- * implémentations divergentes du même résultat.
+ * Agrège foyer fiscal + revenus salaires + gains d'actionnariat salarié +
+ * revenus exonérés retenus pour le taux effectif, et calcule le résultat IR
+ * (V1 : cases imposables au barème uniquement — voir docs/fiscalite.md). Un
+ * seul point de calcul partagé entre FiscalOverviewCard et TaxRateCard pour
+ * éviter des appels Supabase dupliqués et deux implémentations divergentes du
+ * même résultat.
  */
 export function useFiscalOverview(): FiscalOverview {
   const { data: foyer, loading: loadingFoyer } = useFoyerFiscal();
   const { data: revenus, loading: loadingRevenus } = useRevenusSalaires();
   const { data: gains, loading: loadingGains } = useGainsActionnariatSalarie();
+  const { data: exoneres, loading: loadingExoneres } = useRevenusExoneresTauxEffectif();
 
   return useMemo(() => {
     const foyerInput = foyer ?? FOYER_PAR_DEFAUT;
     const revenusInput = revenus ?? REVENUS_SALAIRES_PAR_DEFAUT;
     const gainsInput = gains ?? GAINS_ACTIONNARIAT_PAR_DEFAUT;
+    const exoneresInput = exoneres ?? REVENUS_EXONERES_PAR_DEFAUT;
 
     const revenuSalaires = calculerRevenuSalaires(revenusInput);
     const gainsActionnariat = calculerGainsActionnariatSalarie(gainsInput);
+    const revenuExonereTauxEffectif = calculerRevenuExonereTauxEffectif(exoneresInput);
     const parts = calculerPartsFiscales(foyerInput);
     const revenuImposableTotal = revenuSalaires.totalNetImposable + gainsActionnariat.totalNetImposable;
-    const impot = calculerImpot(revenuImposableTotal, parts, foyerInput.situationFamille);
+    const impot = calculerImpot(
+      revenuImposableTotal,
+      parts,
+      foyerInput.situationFamille,
+      revenuExonereTauxEffectif.totalRetenu,
+    );
 
     return {
-      loading: loadingFoyer || loadingRevenus || loadingGains,
+      loading: loadingFoyer || loadingRevenus || loadingGains || loadingExoneres,
       foyerRenseigne: foyer !== null,
-      revenusRenseignes: revenus !== null || gains !== null,
+      revenusRenseignes: revenus !== null || gains !== null || exoneres !== null,
       revenuSalaires,
       gainsActionnariat,
+      revenuExonereTauxEffectif,
       parts,
       impot,
     };
-  }, [foyer, revenus, gains, loadingFoyer, loadingRevenus, loadingGains]);
+  }, [foyer, revenus, gains, exoneres, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres]);
 }

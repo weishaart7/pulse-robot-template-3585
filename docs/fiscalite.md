@@ -82,7 +82,7 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 | Déclaration 2042 (overlay) | [Declaration2042Interface.tsx](src/pages/fiscalite/components/Declaration2042Interface.tsx) → [Declaration2042Sidebar.tsx](src/pages/fiscalite/components/2042/Declaration2042Sidebar.tsx) | Overlay plein écran + sidebar de sections pilotée par [declaration2042Sections.ts](src/pages/fiscalite/components/2042/declaration2042Sections.ts) (config `{id, label, icon, component}` — ajouter une sous-phase future = une entrée) ; pas de bouton « Enregistrer » global, chaque section garde sa propre sauvegarde |
 | Ménage (section 2042) | [MenageSection.tsx](src/pages/fiscalite/components/2042/MenageSection.tsx) → `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx` | Situation familiale, enfants à charge (liste dynamique), personnes invalides à charge (liste dynamique), enfants majeurs rattachés, cases à cocher (parent isolé, invalidité, ancien combattant, veuve de guerre...), synthèse du nombre de parts recalculée en direct pendant la saisie (avant même l'enregistrement) |
 | Traitements et salaires (section 2042) | [RevenusSalairesForm.tsx](src/components/fiscalite/RevenusSalairesForm.tsx) | 18 paires de champs déclarant 1/déclarant 2 (cadre 1 de la 2042, hors colonnes C/D et gains d'actionnariat), code officiel + libellé français côte à côte |
-| Salaires & pensions exonérés — taux effectif (section 2042) | [RevenusExoneresTauxEffectifForm.tsx](src/components/fiscalite/RevenusExoneresTauxEffectifForm.tsx) | 5 lignes (`1AC`/`1BC`, `1GE`/`1HE` case à cocher, `1AE`/`1BE`, `1AH`/`1BH`, `RSE`/`RSF` texte libre), encart CERFA distinct (2042-C pages 99/116) |
+| Salaires & pensions exonérés — taux effectif (section 2042) | [RevenusExoneresTauxEffectifForm.tsx](src/components/fiscalite/RevenusExoneresTauxEffectifForm.tsx) | 5 lignes (`1AC`/`1BC`, `1GE`/`1HE` case à cocher, `1AE`/`1BE`, `1AH`/`1BH`, `RSE`/`RSF` texte libre), encart CERFA distinct (2042-C pages 99/116) — alimente désormais le taux effectif dans le tableau de bord IR (Vision générale) |
 | Gains d'actionnariat salarié (section 2042) | [GainsActionnariatSalarieForm.tsx](src/components/fiscalite/GainsActionnariatSalarieForm.tsx) | 13 lignes du CERFA (stock-options, actions gratuites, carried-interest, options pré-28.9.2012), regroupées par sous-bloc visuel ; champs à case unique sans colonne déclarant 2 pour `1TZ`/`1UZ`/`1WZ`/`1VZ` et `3VD`/`3VI`/`3VF`/`3VN`, conformément au CERFA |
 | Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Donut IR (salaires, calculé) — PS et IFI affichés « non calculé » |
 | Taux marginal | [TaxRateCard.tsx](src/pages/fiscalite/components/TaxRateCard.tsx) | Barème IR réel, tranche active (TMI), quotient familial, marge avant tranche suivante, impôt net |
@@ -192,22 +192,41 @@ gains d'actionnariat, revenus fonciers, capitaux mobiliers, etc. (§4).
   (plancher 509 €, plafond 14 555 €, jamais supérieur à la base) et les frais réels (1AK/1BK). 1PM/1QM
   (indemnités pour préjudice moral, déjà limitées par le formulaire à la fraction taxable au-delà d'1
   M€) s'ajoutent sans abattement. **Exclues volontairement du calcul** (`CASES_SALAIRES_EXCLUES_DU_CALCUL`) :
-  1GH/1HH, 1PB/1PC, 1AD/1BD, 1DY/1EY, 1SM/1DN (exonérées d'IR par nature) ainsi que 1AF/1BF (méthode du
-  taux effectif non implémentée) et 1GB/1HB (régime de frais professionnels des gérants art. 62 CGI non
-  arbitré) — voir §3, 🟠. 13 tests couvrent l'abattement standard, les bornes plancher/plafond, le choix
-  frais réels vs abattement, et les cases exclues.
-- **`src/lib/fiscalite/calculerImpot.ts` — barème progressif, plafonnement du quotient familial,
-  décote, TMI.** Barème 2026 (revenus 2025, art. 4 LF 2026, tranches 0 %/11 %/30 %/41 %/45 %, seuils
-  11 600 €/29 579 €/84 577 €/181 917 €) appliqué au quotient (revenu ÷ nombre de parts), puis
+  1GH/1HH, 1PB/1PC, 1AD/1BD, 1DY/1EY, 1SM/1DN (exonérées d'IR par nature), 1AF/1BF (revenus étrangers à
+  crédit d'impôt égal à l'impôt français — mécanisme différent du taux effectif de
+  `revenus_exoneres_taux_effectif`, ces cases restent hors périmètre, cf. §3 🟠) et 1GB/1HB (régime de
+  frais professionnels des gérants art. 62 CGI non arbitré) — voir §3, 🟠. 13 tests couvrent
+  l'abattement standard, les bornes plancher/plafond, le choix frais réels vs abattement, et les cases
+  exclues. La fonction `calculerDeclarant` (abattement 10 %/frais réels d'un déclarant) est exportée et
+  réutilisée telle quelle par `calculerRevenuExonereTauxEffectif.ts` (ci-dessous).
+- **`src/lib/fiscalite/calculerRevenuExonereTauxEffectif.ts` — revenus exonérés retenus pour le calcul
+  du taux effectif.** Fonction pure : 1AC/1BC (salaires de source étrangère exonérés) reçoivent le même
+  abattement 10 %/frais réels (1AE/1BE) que les salaires français, via `calculerDeclarant` réutilisée de
+  `calculerRevenuSalaires.ts`. 1AH/1BH (pensions de source étrangère) sont ajoutées **brutes, sans
+  abattement** — aucun moteur de pensions françaises n'existe dans le repo pour calibrer un abattement
+  cohérent (plancher/plafond distincts du régime salarial) ; simplification documentée qui surestime
+  légèrement le taux effectif, à corriger quand un module Pensions sera construit. 1GE/1HE (case à
+  cocher marins-pêcheurs) et RSE/RSF (pays, texte libre) sont purement informatifs. 7 tests couvrent
+  l'abattement des salaires exonérés, les pensions brutes et le total.
+- **`src/lib/fiscalite/calculerImpot.ts` — barème progressif, plafonnement du quotient familial, méthode
+  du taux effectif, décote, TMI.** Barème 2026 (revenus 2025, art. 4 LF 2026, tranches 0 %/11 %/30 %/
+  41 %/45 %, seuils 11 600 €/29 579 €/84 577 €/181 917 €) appliqué au quotient du **revenu mondial
+  fictif** (revenu imposable en France + revenu exonéré retenu pour le taux effectif, paramètre optionnel
+  `revenuExonereTauxEffectif`, 0 par défaut — comportement inchangé quand il est nul ou omis), puis
   plafonnement art. 197 CGI (compare l'avantage procuré par les majorations à la somme de leurs
   `plafondUnitaire` ; **si une majoration ne porte aucun `plafondUnitaire` — actuellement le cas de
   « personne invalide à charge » dans `calculerPartsFiscales.ts` — le plafonnement est désactivé pour
-  tout le foyer plutôt que d'inventer un montant**, cf. §3 🟠), puis décote (897 € − 45,25 % × impôt
-  pour un célibataire sous 1 982 €, 1 483 € − 45,25 % × impôt pour un couple marié/pacsé sous 3 277 €),
-  puis arrondi à l'euro. Le `plafondComplementaire` (cumul de plusieurs majorations sur une même
-  personne) n'est pas non plus appliqué. 16 tests couvrent le barème tranche par tranche, le quotient à
-  plusieurs parts, le plafonnement (actif/inactif/désactivé), la décote (seuils céliba/couple) et
-  l'arrondi.
+  tout le foyer plutôt que d'inventer un montant**, cf. §3 🟠), puis **proratisation** (méthode du taux
+  effectif : `impôt sur le revenu mondial fictif × (revenu imposable en France / revenu mondial fictif)`
+  — seule la part française paie, mais au taux moyen du revenu mondial ; sans revenu exonéré, ce ratio
+  vaut 1 et n'a aucun effet), puis décote sur l'impôt proratisé (897 € − 45,25 % × impôt pour un
+  célibataire sous 1 982 €, 1 483 € − 45,25 % × impôt pour un couple marié/pacsé sous 3 277 €), puis
+  arrondi à l'euro. Le TMI reflète la tranche du revenu mondial fictif (pas seulement la part française),
+  cohérent avec le taux marginal réel du foyer. Le `plafondComplementaire` (cumul de plusieurs
+  majorations sur une même personne) n'est pas appliqué. 22 tests couvrent le barème tranche par
+  tranche, le quotient à plusieurs parts, le plafonnement (actif/inactif/désactivé), le taux effectif
+  (progressivité, non-imposition de la part exonérée, TMI sur le revenu mondial, cas limites à zéro), la
+  décote (seuils céliba/couple) et l'arrondi.
 - **Bug corrigé — `revenusSalairesService.ts` renvoyait les cases numériques en chaînes de caractères,
   faussant tout calcul arithmétique.** Les colonnes `revenus_salaires.case_1xx` sont de type Postgres
   `numeric` ; PostgREST (donc `supabase-js`) les sérialise en **chaîne** (`"50000"`, pas `50000`) pour
@@ -233,14 +252,16 @@ gains d'actionnariat, revenus fonciers, capitaux mobiliers, etc. (§4).
   mutuellement exclusifs avec 3VJ/3VK, aucun moteur de taux proportionnel dans le repo) — voir §3, 🟠.
   10 tests couvrent l'agrégation des cases barème et la non-inclusion des cases exclues.
 - **`src/hooks/useFiscalOverview.ts` — point de calcul unique consommé par `FiscalOverviewCard` et
-  `TaxRateCard`.** Compose `useFoyerFiscal` + `useRevenusSalaires` + `useGainsActionnariatSalarie` (un
-  seul fetch Supabase de chacun), applique les quatre fonctions ci-dessus (revenu imposable = salaires +
-  part barème des gains d'actionnariat), et renvoie un objet unique (`revenuSalaires`,
-  `gainsActionnariat`, `parts`, `impot`, plus `foyerRenseigne`/`revenusRenseignes` pour distinguer un
-  foyer non encore rempli d'un foyer réellement à 0 €). En l'absence de données, utilise des valeurs par
-  défaut (célibataire, 1 part, aucun revenu) plutôt que de ne rien afficher — les deux cartes signalent
-  alors explicitement que le résultat n'est pas personnalisé, pour ne jamais laisser croire qu'un
-  célibataire sans revenu est la situation réelle de l'utilisateur.
+  `TaxRateCard`.** Compose `useFoyerFiscal` + `useRevenusSalaires` + `useGainsActionnariatSalarie` +
+  `useRevenusExoneresTauxEffectif` (un seul fetch Supabase de chacun), applique les cinq fonctions
+  ci-dessus (revenu imposable France = salaires + part barème des gains d'actionnariat ; revenu exonéré
+  passé séparément à `calculerImpot` pour la méthode du taux effectif), et renvoie un objet unique
+  (`revenuSalaires`, `gainsActionnariat`, `revenuExonereTauxEffectif`, `parts`, `impot`, plus
+  `foyerRenseigne`/`revenusRenseignes` pour distinguer un foyer non encore rempli d'un foyer réellement à
+  0 €). En l'absence de données, utilise des valeurs par défaut (célibataire, 1 part, aucun revenu)
+  plutôt que de ne rien afficher — les deux cartes signalent alors explicitement que le résultat n'est
+  pas personnalisé, pour ne jamais laisser croire qu'un célibataire sans revenu est la situation réelle
+  de l'utilisateur.
 - **`revenus_salaires` (Phases 2.1, 2.2 et 2.4) — capture brute du cadre 1 de la 2042, sans moteur de
   calcul.** Table `user_id → auth.users(id) ON DELETE CASCADE`, `UNIQUE(user_id)`, RLS 4 policies,
   même pattern que `foyer_fiscal`. 36 colonnes `case_1xx`/`case_1yy` (convention `1AJ` → `case_1aj`,
@@ -554,19 +575,21 @@ gains d'actionnariat, revenus fonciers, capitaux mobiliers, etc. (§4).
   dédiée), codes vérifiés visuellement sur le CERFA — capture brute, sans moteur de calcul ; **salaires
   et pensions exonérés retenus pour le calcul du taux effectif** : saisie des 5 lignes de l'encart
   CERFA dédié (2042-C, pages 99/116), persistance Supabase (`revenus_exoneres_taux_effectif`, table
-  dédiée), codes vérifiés visuellement — capture brute, sans moteur de calcul (la méthode du taux
-  effectif elle-même n'est pas implémentée dans `calculerImpot.ts`, voir ci-dessous).
+  dédiée), codes vérifiés visuellement. **Méthode du taux effectif implémentée** dans `calculerImpot.ts`
+  via `calculerRevenuExonereTauxEffectif.ts` (voir §2) — ce n'est plus une capture brute.
 
   **Sous-phases 2.1 à 2.4 du bloc « Salaires » toutes terminées, ainsi que l'encart taux effectif
   associé** : le cadre 1 de la 2042 est intégralement couvert par
   `RevenusSalairesForm.tsx`/`GainsActionnariatSalarieForm.tsx`/`RevenusExoneresTauxEffectifForm.tsx`, à
-  l'exception des colonnes C/D (dette assumée ci-dessous). **Calcul de l'IR (Phase 10) — démarré, salaires et part
-  barème des gains d'actionnariat couverts** : `calculerRevenuSalaires.ts` +
-  `calculerGainsActionnariatSalarie.ts` + `calculerPartsFiscales.ts` + `calculerImpot.ts` (barème 2026,
-  quotient familial, plafonnement art. 197 CGI, décote, TMI), branchés en temps réel sur
-  `FiscalOverviewCard`/`TaxRateCard` via `useFiscalOverview.ts` (voir §2). Prochaine étape de la feuille
-  de route : intégrer le carried-interest et les gains à taux forfaitaire (point ci-dessous), puis un
-  futur cadre 2042 hors « Salaires » (revenus fonciers, capitaux mobiliers, plus-values, etc.).
+  l'exception des colonnes C/D (dette assumée ci-dessous). **Calcul de l'IR (Phase 10) — salaires, part
+  barème des gains d'actionnariat et méthode du taux effectif couverts** :
+  `calculerRevenuSalaires.ts` + `calculerGainsActionnariatSalarie.ts` +
+  `calculerRevenuExonereTauxEffectif.ts` + `calculerPartsFiscales.ts` + `calculerImpot.ts` (barème 2026,
+  quotient familial, plafonnement art. 197 CGI, proratisation taux effectif, décote, TMI), branchés en
+  temps réel sur `FiscalOverviewCard`/`TaxRateCard` via `useFiscalOverview.ts` (voir §2). Prochaine étape
+  de la feuille de route : intégrer le carried-interest et les gains à taux forfaitaire (point
+  ci-dessous), puis un futur cadre 2042 hors « Salaires » (revenus fonciers, capitaux mobiliers,
+  plus-values, etc.).
 - **Différé, déductible du code** :
   - **Carried-interest (1NX/1OX/1NY/1OY) et gains d'actionnariat à taux forfaitaire (3VD/3VI/3VF/3VN)
     absents du calcul d'IR** — régime plus-value/PFU (12,8 %+PS ou option barème séparée pour le
@@ -576,14 +599,13 @@ gains d'actionnariat, revenus fonciers, capitaux mobiliers, etc. (§4).
     utilisateur avec des gains significatifs dans ces catégories verra son IR sous-estimé sans
     avertissement à l'écran.
   - **1AF/1BF (salaires de source étrangère, crédit d'impôt égal à l'impôt français) et 1GB/1HB
-    (gérants et associés art. 62 CGI) exclus de `calculerRevenuSalaires.ts`** — méthode du taux
-    effectif et régime de frais professionnels particulier non implémentés (voir §3, 🟠).
-  - **`revenus_exoneres_taux_effectif` capturée mais non consommée par `calculerImpot.ts`** : les
-    montants saisis (`1AC`/`1BC`, `1AE`/`1BE`, `1AH`/`1BH`) n'influencent pas encore le taux
-    d'imposition calculé — la méthode du taux effectif (majoration du taux appliqué au revenu
-    français par un revenu étranger exonéré, sans imposer ce dernier) reste à implémenter dans le
-    moteur de calcul, comme pour `1AF`/`1BF` ci-dessus (même mécanisme sous-jacent, deux origines
-    CERFA différentes).
+    (gérants et associés art. 62 CGI) exclus de `calculerRevenuSalaires.ts`** — 1AF/1BF suit un
+    mécanisme de crédit d'impôt distinct de la méthode du taux effectif désormais implémentée pour
+    `revenus_exoneres_taux_effectif` (pas juste « pas encore fait » : une base de calcul différente),
+    et le régime de frais professionnels des gérants art. 62 CGI reste non arbitré (voir §3, 🟠).
+  - **Pensions étrangères (1AH/1BH) ajoutées brutes dans le calcul du taux effectif, sans abattement** :
+    aucun module Pensions/abattement pension française n'existe dans le repo pour calibrer un montant
+    cohérent — surestime légèrement le taux effectif appliqué (voir §2/§3).
   - Le choix entre abattement forfaitaire de 10 % (`1AJ`/`1BJ`) et frais réels (`1AK`/`1BK`) est
     désormais arbitré par `calculerRevenuSalaires.ts` (le plus favorable des deux est retenu
     automatiquement).

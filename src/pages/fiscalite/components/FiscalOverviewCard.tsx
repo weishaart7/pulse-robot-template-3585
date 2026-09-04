@@ -14,7 +14,7 @@ function formatEuros(valeur: number): string {
 
 const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
   const [activeTab, setActiveTab] = useState("income");
-  const { loading, foyerRenseigne, revenusRenseignes, impot, revenuSalaires, gainsActionnariat } = overview;
+  const { loading, foyerRenseigne, revenusRenseignes, impot, revenuSalaires, gainsActionnariat, revenuExonereTauxEffectif } = overview;
 
   const chartData = impot.impotNet > 0
     ? [{ name: 'IR (salaires + actionnariat)', value: impot.impotNet, color: '#05aaa4' }]
@@ -113,6 +113,14 @@ const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
                       <span>Gains d'actionnariat salarié imposables :</span>
                       <span className="font-medium">{formatEuros(gainsActionnariat.totalNetImposable)}</span>
                     </div>
+                    {revenuExonereTauxEffectif.totalRetenu > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span>Revenus exonérés retenus (taux effectif) :</span>
+                        <span className="font-medium">
+                          {formatEuros(revenuExonereTauxEffectif.totalRetenu)} — taux {(impot.tauxEffectif * 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm">
                       <span>Revenus de placements :</span>
                       <span className="font-medium">Non calculé</span>

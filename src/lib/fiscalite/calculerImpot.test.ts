@@ -130,6 +130,53 @@ describe('calculerImpot — décote', () => {
   });
 });
 
+describe('calculerImpot — méthode du taux effectif', () => {
+  it('sans revenu exonéré : comportement identique au calcul sans taux effectif', () => {
+    const parts = makeParts();
+    const avecZero = calculerImpot(30000, parts, 'celibataire', 0);
+    const sansParam = calculerImpot(30000, parts, 'celibataire');
+    expect(avecZero.impotNet).toBe(sansParam.impotNet);
+    expect(avecZero.impotProportionnel).toBe(avecZero.impotApresPlafonnement);
+  });
+
+  it('un revenu exonéré fait monter le taux appliqué au revenu français (progressivité)', () => {
+    const parts = makeParts();
+    const sansExonere = calculerImpot(30000, parts, 'celibataire');
+    const avecExonere = calculerImpot(30000, parts, 'celibataire', 50000);
+    // même revenu français, mais un revenu mondial fictif plus élevé -> taux plus élevé -> impôt dû plus élevé
+    expect(avecExonere.impotNet).toBeGreaterThan(sansExonere.impotNet);
+  });
+
+  it("l'impôt dû ne porte que sur le revenu français, pas sur le revenu exonéré", () => {
+    const parts = makeParts();
+    const result = calculerImpot(30000, parts, 'celibataire', 50000);
+    // impôt sur 80 000€ (mondial fictif) très supérieur à l'impôt réellement dû (proraté sur 30 000€ seulement)
+    const impotSiToutImposable = calculerImpot(80000, parts, 'celibataire').impotNet;
+    expect(result.impotNet).toBeLessThan(impotSiToutImposable);
+  });
+
+  it('le TMI reflète le revenu mondial fictif, pas seulement le revenu français', () => {
+    const parts = makeParts();
+    // 10 000€ de revenu français seul -> tranche à 0%, mais + 50 000€ exonérés -> tranche à 30%
+    const result = calculerImpot(10000, parts, 'celibataire', 50000);
+    expect(result.tmi).toBe(0.30);
+  });
+
+  it('revenu français nul avec revenu exonéré : impôt net nul (rien à prélever en France)', () => {
+    const parts = makeParts();
+    const result = calculerImpot(0, parts, 'celibataire', 100000);
+    expect(result.impotNet).toBe(0);
+    expect(result.tauxEffectif).toBeGreaterThan(0);
+  });
+
+  it('revenu mondial fictif nul : pas de division par zéro', () => {
+    const parts = makeParts();
+    const result = calculerImpot(0, parts, 'celibataire', 0);
+    expect(result.impotNet).toBe(0);
+    expect(result.tauxEffectif).toBe(0);
+  });
+});
+
 describe('calculerImpot — impôt net', () => {
   it("n'est jamais négatif", () => {
     const result = calculerImpot(5000, makeParts(), 'celibataire');

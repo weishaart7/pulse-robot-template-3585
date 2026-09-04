@@ -38,7 +38,10 @@ const TaxRateCard = ({ overview }: TaxRateCardProps) => {
   };
 
   const statsCards = [
-    { title: 'Revenu net imposable (salaires + actionnariat)', value: formatEuros(impot.revenuImposable) },
+    { title: 'Revenu net imposable en France (salaires + actionnariat)', value: formatEuros(impot.revenuImposable) },
+    ...(impot.revenuExonereTauxEffectif > 0
+      ? [{ title: 'Revenu exonéré retenu (taux effectif)', value: formatEuros(impot.revenuExonereTauxEffectif) }]
+      : []),
     { title: 'Nombre de parts', value: parts.nombreParts.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) },
     { title: 'Plafonnement du quotient familial', value: impot.plafonnementApplique ? 'Oui' : 'Non' },
     { title: 'Impôt net (IR)', value: formatEuros(impot.impotNet) },
@@ -117,7 +120,7 @@ const TaxRateCard = ({ overview }: TaxRateCardProps) => {
               <Card>
                 <CardContent className="pt-4">
                   <div className="text-sm text-muted-foreground mb-1">
-                    Quotient familial (revenu / part)
+                    Quotient familial ({impot.revenuExonereTauxEffectif > 0 ? 'revenu mondial' : 'revenu'} / part)
                   </div>
                   <div className="text-xl font-bold">{formatEuros(impot.quotientFamilial)}</div>
                 </CardContent>
