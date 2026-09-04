@@ -107,4 +107,12 @@ export const DECLARATION_2042_CASES: Declaration2042Case[] = [
   { code: '1BL', label: 'Pensions non-résidents / source étrangère avec crédit d\'impôt — Déclarant 2', sectionId: 'pensions', elementId: 'case-1BL' },
   { code: '1AM', label: 'Autres pensions imposables de source étrangère — Déclarant 1', sectionId: 'pensions', elementId: 'case-1AM' },
   { code: '1BM', label: 'Autres pensions imposables de source étrangère — Déclarant 2', sectionId: 'pensions', elementId: 'case-1BM' },
+  { code: '1AW', label: 'Rentes viagères à titre onéreux perçues — Moins de 50 ans', sectionId: 'pensions', elementId: 'case-1AW' },
+  { code: '1BW', label: 'Rentes viagères à titre onéreux perçues — De 50 à 59 ans', sectionId: 'pensions', elementId: 'case-1BW' },
+  { code: '1CW', label: 'Rentes viagères à titre onéreux perçues — De 60 à 69 ans', sectionId: 'pensions', elementId: 'case-1CW' },
+  { code: '1DW', label: 'Rentes viagères à titre onéreux perçues — À partir de 70 ans', sectionId: 'pensions', elementId: 'case-1DW' },
+  { code: '1AR', label: 'Rentes viagères non-résidents/source étrangère avec crédit d\'impôt — Moins de 50 ans', sectionId: 'pensions', elementId: 'case-1AR' },
+  { code: '1BR', label: 'Rentes viagères non-résidents/source étrangère avec crédit d\'impôt — De 50 à 59 ans', sectionId: 'pensions', elementId: 'case-1BR' },
+  { code: '1CR', label: 'Rentes viagères non-résidents/source étrangère avec crédit d\'impôt — De 60 à 69 ans', sectionId: 'pensions', elementId: 'case-1CR' },
+  { code: '1DR', label: 'Rentes viagères non-résidents/source étrangère avec crédit d\'impôt — À partir de 70 ans', sectionId: 'pensions', elementId: 'case-1DR' },
 ];
