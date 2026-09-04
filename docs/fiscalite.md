@@ -407,7 +407,9 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   « SPECIMEN » masquait partiellement le premier caractère du code `1AR` sur l'image zoomée. Affiché par
   `DeclarationLigne::MontantParTrancheAgeLigne`, composant dédié (4 colonnes tranche d'âge plutôt que 2
   colonnes déclarant, libellé principal sur sa propre ligne au-dessus faute de place). Capture brute,
-  fraction imposable dégressive selon l'âge (art. 158 6 CGI) non calculée (voir §4). Section positionnée
+  fraction imposable dégressive selon l'âge (art. 158 6 CGI) non calculée (voir §4). **2 colonnes
+  supplémentaires** : `1HK`/`1HL` (case à cocher « Ne perçoit plus de pensions 1AO, 1AM »), équivalent
+  pensions de `1GK`/`1GL` (`revenus_salaires`), purement informatif. Section positionnée
   entre « Salaires & pensions exonérés (taux effectif) » et « Gains d'actionnariat salarié »
   dans la sidebar, sur demande explicite.
 - **`src/lib/fiscal/calcul.ts` (dossier séparé, sans « ite ») a été nettoyé de son unique fonction
