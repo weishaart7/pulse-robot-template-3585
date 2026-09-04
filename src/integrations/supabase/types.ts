@@ -2368,6 +2368,57 @@ export type Database = {
         }
         Relationships: []
       }
+      revenus_exoneres_taux_effectif: {
+        Row: {
+          case_1ac: number | null
+          case_1ae: number | null
+          case_1ah: number | null
+          case_1bc: number | null
+          case_1be: number | null
+          case_1bh: number | null
+          case_1ge: boolean
+          case_1he: boolean
+          case_rse: string | null
+          case_rsf: string | null
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          case_1ac?: number | null
+          case_1ae?: number | null
+          case_1ah?: number | null
+          case_1bc?: number | null
+          case_1be?: number | null
+          case_1bh?: number | null
+          case_1ge?: boolean
+          case_1he?: boolean
+          case_rse?: string | null
+          case_rsf?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          case_1ac?: number | null
+          case_1ae?: number | null
+          case_1ah?: number | null
+          case_1bc?: number | null
+          case_1be?: number | null
+          case_1bh?: number | null
+          case_1ge?: boolean
+          case_1he?: boolean
+          case_rse?: string | null
+          case_rsf?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       revenus_salaires: {
         Row: {
           case_1aa: number | null

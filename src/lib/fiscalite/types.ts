@@ -97,3 +97,16 @@ export interface GainsActionnariatSalarieInput {
   case3vk: number | null;
   case3vn: number | null;
 }
+
+export interface RevenusExoneresTauxEffectifInput {
+  case1ac: number | null;
+  case1bc: number | null;
+  case1ge: boolean;
+  case1he: boolean;
+  case1ae: number | null;
+  case1be: number | null;
+  case1ah: number | null;
+  case1bh: number | null;
+  caseRse: string | null;
+  caseRsf: string | null;
+}
