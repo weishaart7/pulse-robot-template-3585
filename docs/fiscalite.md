@@ -47,12 +47,17 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
    à plat dans `FiscaliteSection.tsx`, en dehors de tout bouton « 2042 » (qui n'avait alors aucun
    `onClick`) — la section Fiscalité ne compte plus désormais qu'un seul point d'entrée vers ces
    formulaires.
-2. **Un tableau de bord IR entièrement statique** (`FiscaliteSection.tsx` → `FiscalDeclarationsCard`,
-   `FiscalOverviewCard`, `TaxRateCard`) : liste de déclarations fiscales (2042, 2044, 2047, 2074,
-   2086, 2042-IFI), graphique de répartition IR/PS/IFI, taux marginal d'imposition, tranches. **Aucune
-   donnée réelle n'y est affichée** — voir §2. Le nombre de parts calculé au point 1 et les salaires
-   saisis au point 2 n'alimentent pas ce tableau de bord (aucun barème IR n'existe encore dans le
-   repo pour les utiliser, voir §4).
+2. **Un tableau de bord IR désormais branché sur les données réelles, mais limité au périmètre
+   « salaires ».** (`FiscaliteSection.tsx` → `FiscalDeclarationsCard`, `FiscalOverviewCard`,
+   `TaxRateCard`) : liste de déclarations fiscales (2042, 2044, 2047, 2074, 2086, 2042-IFI), graphique
+   de répartition, taux marginal d'imposition, tranches. Le hook
+   [useFiscalOverview.ts](src/hooks/useFiscalOverview.ts) agrège `foyer_fiscal` + `revenus_salaires`,
+   calcule le revenu net imposable des salaires, le nombre de parts et l'impôt sur le revenu réel (voir
+   §2), et alimente les deux cartes. **Prélèvements sociaux et IFI restent affichés comme « non
+   calculé »** (pas de moteur pour ces deux impôts dans ce tableau de bord — l'IFI dispose de son
+   propre simulateur, point 3 ci-dessous), et l'IR affiché ne couvre que le cadre 1 « Salaires » : les
+   gains d'actionnariat salarié (point 1, Phase 2.3) et toute autre catégorie de revenu future n'entrent
+   pas encore dans ce calcul (voir §4).
 3. **Un simulateur IFI complet, avec sa propre saisie** (`IFIInterface.tsx`, ouvert depuis le bouton
    « 2042-IFI » de `FiscalDeclarationsCard`), organisé en 5 sections dans une sidebar
    (`IFISidebar.tsx`) : Hypothèses, Liste des biens à l'IFI, Barème de l'IFI, Réduction &
@@ -69,8 +74,8 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 | Ménage (section 2042) | [MenageSection.tsx](src/pages/fiscalite/components/2042/MenageSection.tsx) → `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx` | Situation familiale, enfants à charge (liste dynamique), personnes invalides à charge (liste dynamique), enfants majeurs rattachés, cases à cocher (parent isolé, invalidité, ancien combattant, veuve de guerre...), synthèse du nombre de parts recalculée en direct pendant la saisie (avant même l'enregistrement) |
 | Traitements et salaires (section 2042) | [RevenusSalairesForm.tsx](src/components/fiscalite/RevenusSalairesForm.tsx) | 18 paires de champs déclarant 1/déclarant 2 (cadre 1 de la 2042, hors colonnes C/D et gains d'actionnariat), code officiel + libellé français côte à côte |
 | Gains d'actionnariat salarié (section 2042) | [GainsActionnariatSalarieForm.tsx](src/components/fiscalite/GainsActionnariatSalarieForm.tsx) | 13 lignes du CERFA (stock-options, actions gratuites, carried-interest, options pré-28.9.2012), regroupées par sous-bloc visuel ; champs à case unique sans colonne déclarant 2 pour `1TZ`/`1UZ`/`1WZ`/`1VZ` et `3VD`/`3VI`/`3VF`/`3VN`, conformément au CERFA |
-| Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Donut IR/PS/IFI + détail revenus — **données 100 % codées en dur** |
-| Taux marginal | [TaxRateCard.tsx](src/pages/fiscalite/components/TaxRateCard.tsx) | Barème IR, tranche active, marge avant tranche suivante — **données 100 % codées en dur** |
+| Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Donut IR (salaires, calculé) — PS et IFI affichés « non calculé » |
+| Taux marginal | [TaxRateCard.tsx](src/pages/fiscalite/components/TaxRateCard.tsx) | Barème IR réel, tranche active (TMI), quotient familial, marge avant tranche suivante, impôt net |
 | Simulateur IFI | [IFIInterface.tsx](src/pages/fiscalite/components/IFIInterface.tsx) → 5 sous-écrans `ifi/*.tsx` | Wizard de déclaration IFI : hypothèses, biens/passifs, barème, montant dû |
 
 **Tables Supabase du simulateur IFI** (toutes `user_id → auth.users(id) ON DELETE CASCADE`, RLS
@@ -92,17 +97,26 @@ couvrant l'art. 193-197 CGI (revenus 2025/impôt 2026) — voir §2. `src/lib/fi
 module **Famille** (`useFamilyData.ts`, pour synchroniser `marital_status.nombre_enfants_charges`) —
 les deux dossiers `lib/fiscal/` et `lib/fiscalite/` sont volontairement distincts (cf. §2).
 
-**Tables/moteur pour l'IR** (calcul de l'impôt lui-même, distinct du nombre de parts) : aucune table ni
-fonction n'existe — voir §4.
+**Moteur de calcul de l'IR** (impôt lui-même, distinct du nombre de parts) : pas de table dédiée — trois
+fonctions pures composées par [useFiscalOverview.ts](src/hooks/useFiscalOverview.ts) :
+[calculerRevenuSalaires.ts](src/lib/fiscalite/calculerRevenuSalaires.ts) (revenu net imposable du cadre
+1 Salaires), [calculerPartsFiscales.ts](src/lib/fiscalite/calculerPartsFiscales.ts) (quotient familial)
+et [calculerImpot.ts](src/lib/fiscalite/calculerImpot.ts) (barème, plafonnement, décote, TMI) — voir §2.
+Périmètre limité aux salaires : gains d'actionnariat, revenus fonciers, capitaux mobiliers, etc. ne sont
+pas encore couverts (§4).
 
 **Flux clés** :
 - L'utilisateur clique « 2042-IFI » → `IFIInterface` s'ouvre en plein écran, saisit ses biens/passifs
   un par un via `AjouterBienForm`/`AjouterPassifForm`, coche des hypothèses (abattement RP, plafonnement
   actif, revenus N-1), puis navigue vers « Barème de l'IFI » où `computeIFI()` (`lib/ifi/calcul.ts`)
-  calcule en temps réel l'assiette, les tranches, la décote, le plafonnement et le montant final.
-- Rien de tout cela n'alimente le reste de l'écran Fiscalité : `FiscalOverviewCard`/`TaxRateCard`
-  affichent des valeurs fixes (« IFI : 0 € », revenu imposable 54 000 €, etc.) qui ne bougent jamais,
-  quel que soit ce que l'utilisateur a saisi dans le simulateur IFI juste à côté.
+  calcule en temps réel l'assiette, les tranches, la décote, le plafonnement et le montant final. Ce
+  résultat n'alimente toujours pas `FiscalOverviewCard`, qui affiche l'IFI comme « non calculé » plutôt
+  que de dupliquer ou d'approximer le résultat du simulateur.
+- La saisie du foyer fiscal (Ménage) et des salaires (Traitements et salaires) alimente désormais en
+  temps réel `FiscalOverviewCard`/`TaxRateCard` via `useFiscalOverview` — un changement dans l'un des
+  deux formulaires, une fois enregistré, se répercute sur le tableau de bord au prochain chargement de
+  l'écran Fiscalité (pas de recalcul en direct pendant la saisie elle-même, contrairement à
+  `SyntheseFoyerFiscal`).
 
 ## 2. Architecture & décisions
 
@@ -155,11 +169,54 @@ fonction n'existe — voir §4.
   plafond **sans** complément) et veuve de guerre (art. 195-1-c, disposition **distincte** du veuf
   d'ancien combattant, plafond **avec** complément — à ne pas confondre). Chaque majoration est une
   ligne séparée de `PartsFiscalesResult.majorations[]`, dans l'ordre du formulaire, portant ses
-  plafonds en € en simple métadonnée (`plafondUnitaire`/`plafondComplementaire`) — **jamais appliquée**
-  par cette fonction : le plafonnement réel de l'avantage fiscal (art. 197 CGI) suppose un barème IR
-  qui n'existe pas encore dans le repo (voir §4, Phase différée). 29 tests couvrent l'intégralité du
-  tableau de règles, y compris les combinaisons (enfant en résidence alternée et invalide simultanément,
-  etc.).
+  plafonds en € en simple métadonnée (`plafondUnitaire`/`plafondComplementaire`) — **non appliquée par
+  cette fonction elle-même** : le plafonnement réel de l'avantage fiscal (art. 197 CGI) est calculé en
+  aval par [calculerImpot.ts](src/lib/fiscalite/calculerImpot.ts) (voir plus bas), qui consomme ces
+  métadonnées. 29 tests couvrent l'intégralité du tableau de règles de `calculerPartsFiscales`, y
+  compris les combinaisons (enfant en résidence alternée et invalide simultanément, etc.).
+- **`src/lib/fiscalite/calculerRevenuSalaires.ts` — revenu net imposable du cadre 1 « Salaires ».**
+  Fonction pure : pour chaque déclarant, agrège les cases imposables soumises à abattement (1AJ, 1AA,
+  1GF, 1GG, 1AP, 1AG et symétriques déclarant 2), déduit l'abattement spécifique 1GA/1HA (journalistes,
+  assistants maternels) avant d'appliquer le plus favorable entre l'abattement forfaitaire de 10 %
+  (plancher 509 €, plafond 14 555 €, jamais supérieur à la base) et les frais réels (1AK/1BK). 1PM/1QM
+  (indemnités pour préjudice moral, déjà limitées par le formulaire à la fraction taxable au-delà d'1
+  M€) s'ajoutent sans abattement. **Exclues volontairement du calcul** (`CASES_SALAIRES_EXCLUES_DU_CALCUL`) :
+  1GH/1HH, 1PB/1PC, 1AD/1BD, 1DY/1EY, 1SM/1DN (exonérées d'IR par nature) ainsi que 1AF/1BF (méthode du
+  taux effectif non implémentée) et 1GB/1HB (régime de frais professionnels des gérants art. 62 CGI non
+  arbitré) — voir §3, 🟠. 13 tests couvrent l'abattement standard, les bornes plancher/plafond, le choix
+  frais réels vs abattement, et les cases exclues.
+- **`src/lib/fiscalite/calculerImpot.ts` — barème progressif, plafonnement du quotient familial,
+  décote, TMI.** Barème 2026 (revenus 2025, art. 4 LF 2026, tranches 0 %/11 %/30 %/41 %/45 %, seuils
+  11 600 €/29 579 €/84 577 €/181 917 €) appliqué au quotient (revenu ÷ nombre de parts), puis
+  plafonnement art. 197 CGI (compare l'avantage procuré par les majorations à la somme de leurs
+  `plafondUnitaire` ; **si une majoration ne porte aucun `plafondUnitaire` — actuellement le cas de
+  « personne invalide à charge » dans `calculerPartsFiscales.ts` — le plafonnement est désactivé pour
+  tout le foyer plutôt que d'inventer un montant**, cf. §3 🟠), puis décote (897 € − 45,25 % × impôt
+  pour un célibataire sous 1 982 €, 1 483 € − 45,25 % × impôt pour un couple marié/pacsé sous 3 277 €),
+  puis arrondi à l'euro. Le `plafondComplementaire` (cumul de plusieurs majorations sur une même
+  personne) n'est pas non plus appliqué. 16 tests couvrent le barème tranche par tranche, le quotient à
+  plusieurs parts, le plafonnement (actif/inactif/désactivé), la décote (seuils céliba/couple) et
+  l'arrondi.
+- **Bug corrigé — `revenusSalairesService.ts` renvoyait les cases numériques en chaînes de caractères,
+  faussant tout calcul arithmétique.** Les colonnes `revenus_salaires.case_1xx` sont de type Postgres
+  `numeric` ; PostgREST (donc `supabase-js`) les sérialise en **chaîne** (`"50000"`, pas `50000`) pour
+  préserver la précision, alors que `RevenusSalairesRow` déclarait `number | null`. Sans conversion, `+`
+  entre une chaîne et un nombre fait une concaténation JS (`"50000" + 0 → "500000"`) au lieu d'une
+  addition — corrompait silencieusement tout le revenu imposable calculé par
+  `calculerRevenuSalaires.ts` (constaté en base : `case_1aj` vaut la chaîne `"50000"`, confirmé par
+  `pg_typeof` = `numeric`). Corrigé par `toNumberOrNull()` dans `rowToRevenusSalaires`
+  ([revenusSalairesService.ts](src/services/revenusSalairesService.ts)). **`gainsActionnariatSalarieService.ts`
+  a le même défaut de typage** (colonnes `numeric` déclarées `number | null` sans coercition) mais ne
+  cause aucun bug visible tant que les gains d'actionnariat n'entrent pas dans un calcul arithmétique
+  (Phase 2.3 = capture brute, voir §4) — à corriger avant de les intégrer à `calculerImpot`.
+- **`src/hooks/useFiscalOverview.ts` — point de calcul unique consommé par `FiscalOverviewCard` et
+  `TaxRateCard`.** Compose `useFoyerFiscal` + `useRevenusSalaires` (un seul fetch Supabase de chaque),
+  applique les trois fonctions ci-dessus, et renvoie un objet unique (`revenuSalaires`, `parts`,
+  `impot`, plus `foyerRenseigne`/`revenusRenseignes` pour distinguer un foyer non encore rempli d'un
+  foyer réellement à 0 €). En l'absence de données, utilise des valeurs par défaut (célibataire, 1
+  part, aucun revenu) plutôt que de ne rien afficher — les deux cartes signalent alors explicitement
+  que le résultat n'est pas personnalisé, pour ne jamais laisser croire qu'un célibataire sans revenu
+  est la situation réelle de l'utilisateur.
 - **`revenus_salaires` (Phases 2.1, 2.2 et 2.4) — capture brute du cadre 1 de la 2042, sans moteur de
   calcul.** Table `user_id → auth.users(id) ON DELETE CASCADE`, `UNIQUE(user_id)`, RLS 4 policies,
   même pattern que `foyer_fiscal`. 36 colonnes `case_1xx`/`case_1yy` (convention `1AJ` → `case_1aj`,
@@ -215,16 +272,14 @@ fonction n'existe — voir §4.
   dans ce dossier. Les deux dossiers `lib/fiscal/` et `lib/fiscalite/` coexistent volontairement : le
   premier reste un point de calcul ponctuel consommé par Famille, le second est le futur moteur complet
   du module Fiscalité — pas de fusion prévue.
-- **`FiscalOverviewCard.tsx` et `TaxRateCard.tsx` sont des maquettes statiques, pas des écrans
-  fonctionnels.** Aucun des deux ne lit Supabase ni aucun hook (`grep` confirmé : zéro import
-  `supabase`/`useIFI`/`useAssets`/`useSocietes`) :
-  [FiscalOverviewCard.tsx:9-23](src/pages/fiscalite/components/FiscalOverviewCard.tsx:9-23) déclare en
-  dur `chartData` (IR 9 365 €, PS 2 500 €, IFI 0 €) et un commentaire explicite « Données aléatoires
-  pour le graphique » ; [TaxRateCard.tsx:6-36](src/pages/fiscalite/components/TaxRateCard.tsx:6-36)
-  fixe `currentIncome = 54000` et des tranches figées. Ce ne sont pas des valeurs par défaut en
-  attente de données (comme un formulaire vide) : ce sont des chiffres fixes qui s'affichent à
-  l'identique pour tout utilisateur, y compris un utilisateur ayant rempli un IFI de plusieurs
-  centaines de milliers d'euros dans le simulateur juste à côté (§3).
+- **`FiscalOverviewCard.tsx` et `TaxRateCard.tsx` sont désormais des écrans fonctionnels pour l'IR
+  salaires, statiques pour le reste.** Les deux reçoivent `overview: FiscalOverview` en prop depuis
+  `FiscaliteSection.tsx` (calculé une seule fois par `useFiscalOverview`) plutôt que d'appeler
+  Supabase chacun de leur côté — évite un double fetch et une double implémentation du même résultat.
+  Ce qui reste affiché sans calcul réel, explicitement labellisé comme tel plutôt que remplacé par un
+  chiffre inventé : prélèvements sociaux, IFI (renvoie vers le simulateur dédié), revenus de
+  placements/fonciers/exceptionnels, contributions sur les hauts revenus, retenues et soldes
+  (`FiscalOverviewCard.tsx`, onglet « Impôts sur le revenu »).
 - **Le simulateur IFI a son propre modèle de données, entièrement indépendant de Patrimoine et
   Sociétés — pas une friction ponctuelle mais une duplication de saisie totale et assumée par
   construction.** `docs/patrimoine.md` §6.4 affirmait que l'IFI « lit `societes.pourcentage_ifi`/
@@ -324,26 +379,28 @@ fonction n'existe — voir §4.
   conseiller) remplit la valeur vénale des parts et le pourcentage détenu en pensant que l'outil fait
   le produit, mais laisse « Valeur du bien » vide, le bien contribue pour **0 €** à l'assiette IFI —
   omission silencieuse d'un bien potentiellement significatif, sans avertissement.
-- **Aucune fonction de calcul de l'impôt sur le revenu n'existe dans le code : le module Fiscalité
-  n'affiche jamais un IR réel, seulement des valeurs fixes.** `FiscalOverviewCard.tsx` et
-  `TaxRateCard.tsx` affichent des montants strictement codés en dur (« Imposition totale : 9 365 € »,
-  « Revenu imposable : 54 000 € », tranche à 30 % marquée `active: true` en dur) quelle que soit la
-  situation réelle de l'utilisateur — y compris `« Plafonnement du quotient familial : Non »`
-  ([TaxRateCard.tsx:34](src/pages/fiscalite/components/TaxRateCard.tsx:34)), affirmation qui ne peut
-  être vraie ou fausse puisqu'aucun calcul ne la détermine. Il n'y a pas de bug de calcul à proprement
-  parler ici (rien n'est calculé), mais un écran qui se présente comme un tableau de bord fiscal
-  personnalisé alors qu'il montre un mockup figé à tout utilisateur — risque concret qu'un
-  conseiller ou un client lise ces chiffres comme sa situation réelle.
-- **Le simulateur IFI et le reste de l'écran Fiscalité affichent des montants d'IFI contradictoires
-  côte à côte, sans lien entre eux.** `FiscalOverviewCard.tsx` affiche en dur « IFI : 0 € » (ligne 13,
-  32) alors que le simulateur IFI ouvert depuis le même écran peut calculer un IFI de plusieurs
-  milliers d'euros à partir des biens réellement saisis (`ifi_immeubles_batis`/`ifi_immeubles_non_batis`
-  contiennent chacun 1 ligne en base au moment de l'audit). Un utilisateur qui ouvre l'un puis l'autre
-  voit deux montants incompatibles pour le même impôt sans qu'aucune synchronisation ni note
-  n'explique l'écart.
+- **Résolu (voir §2) — un moteur de calcul de l'impôt sur le revenu existe désormais**
+  (`calculerRevenuSalaires.ts` + `calculerPartsFiscales.ts` + `calculerImpot.ts`, consommés par
+  `useFiscalOverview.ts`), mais **limité au cadre 1 « Salaires »** : les gains d'actionnariat salarié
+  déjà saisis (Phase 2.3) n'entrent pas dans le calcul d'IR affiché — un utilisateur avec des revenus
+  significatifs en stock-options/actions gratuites verra un IR sous-estimé sans qu'aucun message ne
+  l'indique à l'écran (à corriger avant Phase 10 complète, voir §4).
+- **Résolu — le simulateur IFI et le reste de l'écran Fiscalité n'affichent plus de montants d'IFI
+  contradictoires.** `FiscalOverviewCard.tsx` affiche désormais « IFI : non calculé — voir le
+  simulateur IFI » plutôt qu'un « 0 € » fixe qui contredisait le résultat du simulateur ouvert depuis
+  le même écran. Les deux moteurs restent non rapprochés (aucun pont, cf. §4) mais l'écran ne prétend
+  plus donner un second chiffre.
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
+- **`calculerRevenuSalaires.ts` exclut volontairement 1AF/1BF et 1GB/1HB du revenu net imposable**
+  ([calculerRevenuSalaires.ts](src/lib/fiscalite/calculerRevenuSalaires.ts)) : 1AF/1BF (salaires de
+  source étrangère avec crédit d'impôt égal à l'impôt français) nécessitent la méthode du taux
+  effectif, non implémentée ; 1GB/1HB (gérants et associés art. 62 CGI) ont un régime de frais
+  professionnels particulier distinct de l'abattement de 10 % standard, non arbitré. Un utilisateur
+  saisissant des montants dans ces cases les verra ignorés du calcul d'IR sans qu'aucun message ne le
+  signale à l'écran — à corriger avant d'afficher le calcul comme fiable pour ces profils
+  (non-résidents, gérants majoritaires).
 - **Réduction IFI pour dons (art. 978 CGI, 75 % du don plafonné à 50 000 €) absente du moteur de
   calcul**, alors que la catégorie de dépense « Dons aux organismes d'intérêt général (réduction IFI) »
   existe déjà comme libellé dans le module Budget
@@ -419,15 +476,10 @@ fonction n'existe — voir §4.
   de la vérification navigateur de cette session, jamais creusé (hors périmètre de ce chantier). À
   investiguer séparément : config `storage`/`persistSession` du client, ou éventuel comportement propre
   à l'environnement de prévisualisation utilisé.
-- **`FiscalOverviewCard.tsx`/`TaxRateCard.tsx` : incohérence interne des seuils de tranches affichés.**
-  Les seuils textuels sous la barre de progression
-  ([TaxRateCard.tsx:80-87](src/pages/fiscalite/components/TaxRateCard.tsx:80-87) : 11 498 €, 29 316 €,
-  83 824 €, 180 295 €) ne correspondent pas aux seuils numériques utilisés pour calculer
-  `currentBracket`/`marginBeforeNext` dans le même fichier
-  ([TaxRateCard.tsx:6-19](src/pages/fiscalite/components/TaxRateCard.tsx:6-19) : 11 294, 28 797,
-  82 341, 177 106) — deux jeux de seuils différents cohabitent dans le même composant, sans impact
-  réel puisque tout l'écran est un mockup statique (§3, 🔴), mais qui deviendrait une source d'erreur
-  si l'écran était un jour rebranché sur des données réelles sans remarquer cette divergence.
+- **Résolu — `TaxRateCard.tsx` n'a plus qu'un seul jeu de seuils.** Les seuils textuels sous la barre
+  de progression sont désormais générés depuis `BAREME_2026` (`calculerImpot.ts`), la même source que
+  le calcul du TMI — l'ancienne divergence entre seuils affichés et seuils calculés (deux jeux de
+  chiffres différents dans le même fichier) ne peut plus se reproduire.
 
 ## 4. Périmètre V1 / différé
 
@@ -454,26 +506,34 @@ fonction n'existe — voir §4.
 
   **Sous-phases 2.1 à 2.4 du bloc « Salaires » toutes terminées** : le cadre 1 de la 2042 est
   intégralement couvert par `RevenusSalairesForm.tsx`/`GainsActionnariatSalarieForm.tsx`, à l'exception
-  des colonnes C/D (dette assumée ci-dessous). Prochaine étape de la feuille de route : un futur cadre
-  2042 hors « Salaires » (revenus fonciers, plus-values, etc.), ou la Phase 10 (calcul de l'IR).
+  des colonnes C/D (dette assumée ci-dessous). **Calcul de l'IR (Phase 10) — démarré, limité au cadre 1
+  Salaires** : `calculerRevenuSalaires.ts` + `calculerPartsFiscales.ts` + `calculerImpot.ts`
+  (barème 2026, quotient familial, plafonnement art. 197 CGI, décote, TMI), branchés en temps réel sur
+  `FiscalOverviewCard`/`TaxRateCard` via `useFiscalOverview.ts` (voir §2). Prochaine étape de la feuille
+  de route : intégrer les gains d'actionnariat salarié (Phase 2.3, déjà saisis mais pas encore dans le
+  calcul), puis un futur cadre 2042 hors « Salaires » (revenus fonciers, capitaux mobiliers, plus-values,
+  etc.).
 - **Différé, déductible du code** :
-  - **Tout calcul réel de l'impôt sur le revenu** : ni le nombre de parts (Phase 1) ni les salaires ou
-    gains d'actionnariat saisis (Phases 2.1 à 2.4) ne sont appliqués à un barème ; aucune fonction de
-    calcul IR (tranches, décote, quotient familial appliqué au revenu) n'existe dans le repo —
-    dépendance de la Phase 10 prévue. En particulier, le choix entre abattement forfaitaire de 10 %
-    (`1AJ`/`1BJ`) et frais réels (`1AK`/`1BK`) n'est ni calculé ni arbitré : les deux montants peuvent
-    être saisis simultanément sans qu'aucune logique n'indique lequel est retenu par l'administration.
-    De même pour les 3 taux de `3VD`/`3VI`/`3VF` (18 %/30 %/41 %) : rien n'empêche de saisir les trois
-    simultanément alors qu'un seul est normalement applicable par situation.
+  - **Gains d'actionnariat salarié (Phase 2.3) absents du calcul d'IR** : régimes fiscaux hétérogènes
+    selon la case (barème avec abattements spécifiques pour certaines, PFU 12,8 %+PS pour d'autres) —
+    nécessite une phase dédiée pour trancher case par case plutôt qu'une approximation risquée.
+  - **1AF/1BF (salaires de source étrangère, crédit d'impôt égal à l'impôt français) et 1GB/1HB
+    (gérants et associés art. 62 CGI) exclus de `calculerRevenuSalaires.ts`** — méthode du taux
+    effectif et régime de frais professionnels particulier non implémentés (voir §3, 🟠).
+  - Le choix entre abattement forfaitaire de 10 % (`1AJ`/`1BJ`) et frais réels (`1AK`/`1BK`) est
+    désormais arbitré par `calculerRevenuSalaires.ts` (le plus favorable des deux est retenu
+    automatiquement). Reste non arbitré : les 3 taux de `3VD`/`3VI`/`3VF` (18 %/30 %/41 %, gains
+    d'actionnariat) — rien n'empêche de saisir les trois simultanément alors qu'un seul est
+    normalement applicable par situation, mais ces cases n'entrent de toute façon pas encore dans le
+    calcul d'IR (point ci-dessus).
   - **Traitements et salaires — colonnes C/D (Phase 2.1, dette assumée)** : les revenus propres des
     personnes à charge (ex. enfants majeurs rattachés ayant leurs propres salaires) ne sont pas
     saisis — cas rare, traité dans une session ultérieure.
-  - **Plafonnement effectif du quotient familial (art. 197 CGI, Phase 10 prévue)** : chaque majoration
-    du foyer fiscal porte déjà ses plafonds en € en métadonnée
-    (`plafondUnitaire`/`plafondComplementaire` dans `MajorationDetail`), mais aucun code n'applique
-    encore la comparaison « impôt sur le nombre de parts réel » vs « impôt sur les parts de base plus
-    les plafonds » — ce calcul suppose un barème IR qui n'existe pas encore (dépendance directe du
-    point précédent).
+  - **Plafonnement du quotient familial — cas de la personne invalide à charge non chiffré** : cette
+    majoration (`calculerPartsFiscales.ts`) ne porte pas de `plafondUnitaire`, ce qui désactive tout
+    plafonnement pour le foyer entier tant qu'un montant officiel n'a pas été recherché et intégré (voir
+    §2/§3). Le `plafondComplementaire` (cumul de plusieurs majorations sur une même personne) n'est pas
+    non plus appliqué par `calculerImpot.ts`.
   - **Pont entre `foyer_fiscal` et le module Famille** (`family_profiles`/`marital_status`/
     `family_links`) : saisie intégralement manuelle et indépendante par décision explicite de cette
     phase — aucune lecture croisée, aucun pré-remplissage depuis les enfants déjà saisis dans Famille.

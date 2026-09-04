@@ -1,45 +1,72 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { BAREME_2026 } from '@/lib/fiscalite';
+import { FiscalOverview } from '@/hooks/useFiscalOverview';
 
-const TaxRateCard = () => {
-  const taxBrackets = [
-    { rate: "0%", min: 0, max: 11294, color: "#cbf3f0" },
-    { rate: "11%", min: 11295, max: 28797, color: "#cbf3f0" },
-    { rate: "30%", min: 28798, max: 82341, color: "#2ec4b6", active: true },
-    { rate: "41%", min: 82342, max: 177106, color: "#cbf3f0" },
-    { rate: "45%", min: 177107, max: null, color: "#cbf3f0" }
-  ];
+interface TaxRateCardProps {
+  overview: FiscalOverview;
+}
 
-  const currentIncome = 54000;
-  const currentBracket = taxBrackets.find(bracket => 
-    currentIncome >= bracket.min && (bracket.max === null || currentIncome <= bracket.max)
-  );
+function formatEuros(valeur: number): string {
+  return `${Math.round(valeur).toLocaleString('fr-FR')} €`;
+}
 
-  const marginBeforeNext = currentBracket?.max ? currentBracket.max - currentIncome : 0;
+function formatTaux(taux: number): string {
+  return `${Math.round(taux * 100)} %`;
+}
 
-  // Calculer la position proportionnelle de l'utilisateur dans son secteur
+const TaxRateCard = ({ overview }: TaxRateCardProps) => {
+  const { loading, foyerRenseigne, revenusRenseignes, parts, impot } = overview;
+
+  const brackets = BAREME_2026.map((tranche, index) => ({
+    ...tranche,
+    seuilBas: index === 0 ? 0 : BAREME_2026[index - 1].seuil,
+    active: tranche.taux === impot.tmi,
+  }));
+
+  const activeBracket = brackets.find(b => b.active);
+  const margeAvantTranche = activeBracket && activeBracket.seuil !== Infinity
+    ? Math.max(0, activeBracket.seuil - impot.quotientFamilial)
+    : null;
+
   const getUserPositionInBracket = () => {
-    if (!currentBracket || currentBracket.max === null) return 0;
-    const bracketRange = currentBracket.max - currentBracket.min;
-    const userPositionInRange = currentIncome - currentBracket.min;
-    return (userPositionInRange / bracketRange) * 100;
+    if (!activeBracket || activeBracket.seuil === Infinity) return 0;
+    const bracketRange = activeBracket.seuil - activeBracket.seuilBas;
+    const userPositionInRange = impot.quotientFamilial - activeBracket.seuilBas;
+    if (bracketRange <= 0) return 0;
+    return Math.min(100, Math.max(0, (userPositionInRange / bracketRange) * 100));
   };
 
-  const userPositionPercentage = getUserPositionInBracket();
-
   const statsCards = [
-    { title: "Revenu imposable", value: "54 000 €" },
-    { title: "Nombre de parts", value: "1" },
-    { title: "Plafonnement du quotient familial", value: "Non" },
-    { title: "Revenu fiscal de référence", value: "54 000 €" }
+    { title: 'Revenu net imposable (salaires)', value: formatEuros(overview.revenuSalaires.totalNetImposable) },
+    { title: 'Nombre de parts', value: parts.nombreParts.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) },
+    { title: 'Plafonnement du quotient familial', value: impot.plafonnementApplique ? 'Oui' : 'Non' },
+    { title: 'Impôt net (IR)', value: formatEuros(impot.impotNet) },
   ];
+
+  if (loading) {
+    return (
+      <Card className="border border-border">
+        <CardHeader>
+          <CardTitle>Taux marginal d'imposition</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground">Chargement…</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border border-border">
       <CardHeader>
         <CardTitle>Taux marginal d'imposition</CardTitle>
-        <div className="text-2xl font-bold">30 %</div>
+        <div className="text-2xl font-bold">{formatTaux(impot.tmi)}</div>
+        {(!foyerRenseigne || !revenusRenseignes) && (
+          <p className="text-sm text-muted-foreground">
+            Calcul basé sur des valeurs par défaut — complétez votre foyer fiscal et vos revenus pour un résultat personnalisé.
+          </p>
+        )}
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -48,42 +75,40 @@ const TaxRateCard = () => {
             {/* Barre de progression des tranches */}
             <div className="space-y-3">
               <div className="relative flex h-6 overflow-hidden">
-                {taxBrackets.map((bracket, index) => (
+                {brackets.map((bracket, index) => (
                   <div
                     key={index}
                     className="flex-1 relative"
-                    style={{ backgroundColor: bracket.color }}
+                    style={{ backgroundColor: bracket.active ? '#2ec4b6' : '#cbf3f0' }}
                   >
-                    {/* Trait proportionnel pour l'utilisateur */}
                     {bracket.active && (
                       <div
                         className="absolute top-0 bottom-0 w-0.5 bg-red-600"
-                        style={{ left: `${userPositionPercentage}%` }}
+                        style={{ left: `${getUserPositionInBracket()}%` }}
                       />
                     )}
                   </div>
                 ))}
               </div>
-              
+
               {/* Labels des taux */}
               <div className="flex justify-between text-sm">
-                {taxBrackets.map((bracket, index) => (
+                {brackets.map((bracket, index) => (
                   <div key={index} className="text-center flex-1">
                     <div className={`font-medium ${bracket.active ? 'font-bold text-primary' : ''}`}>
-                      {bracket.rate}
+                      {formatTaux(bracket.taux)}
                     </div>
                   </div>
                 ))}
               </div>
-              
+
               {/* Seuils en euros */}
               <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                <span></span> {/* Pas de seuil pour 0% */}
-                <span>11 498 €</span>
-                <span>29 316 €</span>
-                <span>83 824 €</span>
-                <span>180 295 €</span>
-                <span></span> {/* Pas de seuil supérieur pour 45% */}
+                <span></span>
+                {BAREME_2026.slice(0, -1).map(tranche => (
+                  <span key={tranche.seuil}>{formatEuros(tranche.seuil)}</span>
+                ))}
+                <span></span>
               </div>
             </div>
 
@@ -92,18 +117,18 @@ const TaxRateCard = () => {
               <Card>
                 <CardContent className="pt-4">
                   <div className="text-sm text-muted-foreground mb-1">
-                    Seuil de la tranche d'imposition
+                    Quotient familial (revenu / part)
                   </div>
-                  <div className="text-xl font-bold">29 316 €</div>
+                  <div className="text-xl font-bold">{formatEuros(impot.quotientFamilial)}</div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardContent className="pt-4">
                   <div className="text-sm text-muted-foreground mb-1">
                     Marge avant tranche supérieure
                   </div>
-                  <div className="text-xl font-bold">29 824 €</div>
+                  <div className="text-xl font-bold">{margeAvantTranche !== null ? formatEuros(margeAvantTranche) : '—'}</div>
                 </CardContent>
               </Card>
             </div>

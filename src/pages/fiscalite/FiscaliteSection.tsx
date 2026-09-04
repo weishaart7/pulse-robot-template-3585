@@ -7,8 +7,11 @@ import { THEME_INK } from '@/lib/theme';
 import FiscalDeclarationsCard from './components/FiscalDeclarationsCard';
 import FiscalOverviewCard from './components/FiscalOverviewCard';
 import TaxRateCard from './components/TaxRateCard';
+import { useFiscalOverview } from '@/hooks/useFiscalOverview';
 
 const FiscaliteSection = () => {
+  const fiscalOverview = useFiscalOverview();
+
   return (
     <div className="p-6">
       {/* Header */}
@@ -27,8 +30,8 @@ const FiscaliteSection = () => {
 
         {/* Right columns - Overview and details */}
         <div className="lg:col-span-2 space-y-6">
-          <FiscalOverviewCard />
-          <TaxRateCard />
+          <FiscalOverviewCard overview={fiscalOverview} />
+          <TaxRateCard overview={fiscalOverview} />
         </div>
       </div>
     </div>
