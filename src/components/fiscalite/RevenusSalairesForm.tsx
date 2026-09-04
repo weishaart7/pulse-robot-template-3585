@@ -143,6 +143,35 @@ export const RevenusSalairesForm = ({ onSaved }: RevenusSalairesFormProps) => {
         <Separator />
 
         <MontantLigne
+          label="Autres revenus imposables"
+          extra="chômage, préretraite"
+          code1="1AP" code2="1BP"
+          value1={revenus.case1ap} value2={revenus.case1bp}
+          onChange1={v => update('case1ap', v)} onChange2={v => update('case1bp', v)}
+        />
+        <MontantLigne
+          label="Salaires perçus par les non-résidents et salaires de source étrangère avec crédit d'impôt égal à l'impôt français"
+          code1="1AF" code2="1BF"
+          value1={revenus.case1af} value2={revenus.case1bf}
+          onChange1={v => update('case1af', v)} onChange2={v => update('case1bf', v)}
+        />
+        <MontantLigne
+          label="Autres salaires imposables de source étrangère"
+          code1="1AG" code2="1BG"
+          value1={revenus.case1ag} value2={revenus.case1bg}
+          onChange1={v => update('case1ag', v)} onChange2={v => update('case1bg', v)}
+        />
+        <MontantLigne
+          label="Frais réels"
+          aide="Remplace l'abattement forfaitaire de 10 % sur les traitements et salaires (1AJ/1BJ). Joindre la liste détaillée des frais sur papier libre à la déclaration papier."
+          code1="1AK" code2="1BK"
+          value1={revenus.case1ak} value2={revenus.case1bk}
+          onChange1={v => update('case1ak', v)} onChange2={v => update('case1bk', v)}
+        />
+
+        <Separator />
+
+        <MontantLigne
           label="Revenus des associés et gérants"
           extra="article 62 du CGI"
           code1="1GB" code2="1HB"
@@ -192,35 +221,6 @@ export const RevenusSalairesForm = ({ onSaved }: RevenusSalairesFormProps) => {
           code1="1GK" code2="1GL"
           checked1={revenus.case1gk} checked2={revenus.case1gl}
           onChange1={v => update('case1gk', v)} onChange2={v => update('case1gl', v)}
-        />
-
-        <Separator />
-
-        <MontantLigne
-          label="Autres revenus imposables"
-          extra="chômage, préretraite"
-          code1="1AP" code2="1BP"
-          value1={revenus.case1ap} value2={revenus.case1bp}
-          onChange1={v => update('case1ap', v)} onChange2={v => update('case1bp', v)}
-        />
-        <MontantLigne
-          label="Salaires perçus par les non-résidents et salaires de source étrangère avec crédit d'impôt égal à l'impôt français"
-          code1="1AF" code2="1BF"
-          value1={revenus.case1af} value2={revenus.case1bf}
-          onChange1={v => update('case1af', v)} onChange2={v => update('case1bf', v)}
-        />
-        <MontantLigne
-          label="Autres salaires imposables de source étrangère"
-          code1="1AG" code2="1BG"
-          value1={revenus.case1ag} value2={revenus.case1bg}
-          onChange1={v => update('case1ag', v)} onChange2={v => update('case1bg', v)}
-        />
-        <MontantLigne
-          label="Frais réels"
-          aide="Remplace l'abattement forfaitaire de 10 % sur les traitements et salaires (1AJ/1BJ). Joindre la liste détaillée des frais sur papier libre à la déclaration papier."
-          code1="1AK" code2="1BK"
-          value1={revenus.case1ak} value2={revenus.case1bk}
-          onChange1={v => update('case1ak', v)} onChange2={v => update('case1bk', v)}
         />
 
         <Button type="button" onClick={handleSubmit} disabled={saving}>
