@@ -79,4 +79,16 @@ export const DECLARATION_2042_CASES: Declaration2042Case[] = [
   { code: '3VJ', label: 'Gains imposables sur option, catégorie des salaires — Déclarant 1', sectionId: 'actionnariat', elementId: 'case-3VJ' },
   { code: '3VK', label: 'Gains imposables sur option, catégorie des salaires — Déclarant 2', sectionId: 'actionnariat', elementId: 'case-3VK' },
   { code: '3VN', label: 'Gains soumis à la contribution salariale de 10 %', sectionId: 'actionnariat', elementId: 'case-3VN' },
+
+  // Salaires et pensions exonérés retenus pour le calcul du taux effectif
+  { code: '1AC', label: 'Salaires exonérés (taux effectif) — Déclarant 1', sectionId: 'taux-effectif', elementId: 'case-1AC' },
+  { code: '1BC', label: 'Salaires exonérés (taux effectif) — Déclarant 2', sectionId: 'taux-effectif', elementId: 'case-1BC' },
+  { code: '1GE', label: 'Marins-pêcheurs exerçant hors des eaux territoriales françaises — Déclarant 1', sectionId: 'taux-effectif', elementId: 'case-1GE' },
+  { code: '1HE', label: 'Marins-pêcheurs exerçant hors des eaux territoriales françaises — Déclarant 2', sectionId: 'taux-effectif', elementId: 'case-1HE' },
+  { code: '1AE', label: 'Frais réels (taux effectif) — Déclarant 1', sectionId: 'taux-effectif', elementId: 'case-1AE' },
+  { code: '1BE', label: 'Frais réels (taux effectif) — Déclarant 2', sectionId: 'taux-effectif', elementId: 'case-1BE' },
+  { code: '1AH', label: 'Pensions de source étrangère (taux effectif) — Déclarant 1', sectionId: 'taux-effectif', elementId: 'case-1AH' },
+  { code: '1BH', label: 'Pensions de source étrangère (taux effectif) — Déclarant 2', sectionId: 'taux-effectif', elementId: 'case-1BH' },
+  { code: 'RSE', label: 'Pays de provenance des revenus de source étrangère — Déclarant 1', sectionId: 'taux-effectif', elementId: 'case-RSE' },
+  { code: 'RSF', label: 'Pays de provenance des revenus de source étrangère — Déclarant 2', sectionId: 'taux-effectif', elementId: 'case-RSF' },
 ];
