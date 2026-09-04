@@ -40,6 +40,8 @@ const REVENUS_VIDE: RevenusSalairesInput = {
   case1bf: null,
   case1ag: null,
   case1bg: null,
+  case1ak: null,
+  case1bk: null,
 };
 
 interface RevenusSalairesFormProps {
@@ -184,6 +186,13 @@ export const RevenusSalairesForm = ({ onSaved }: RevenusSalairesFormProps) => {
           code1="1AG" code2="1BG"
           value1={revenus.case1ag} value2={revenus.case1bg}
           onChange1={v => update('case1ag', v)} onChange2={v => update('case1bg', v)}
+        />
+        <MontantLigne
+          label="Frais réels"
+          aide="Remplace l'abattement forfaitaire de 10 % sur les traitements et salaires (1AJ/1BJ). Joindre la liste détaillée des frais sur papier libre à la déclaration papier."
+          code1="1AK" code2="1BK"
+          value1={revenus.case1ak} value2={revenus.case1bk}
+          onChange1={v => update('case1ak', v)} onChange2={v => update('case1bk', v)}
         />
 
         <Button type="button" onClick={handleSubmit} disabled={saving}>
