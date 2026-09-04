@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { HelpCircle, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useRevenusSalaires } from '@/hooks/useRevenusSalaires';
 import { RevenusSalaires } from '@/services/revenusSalairesService';
 import { RevenusSalairesInput } from '@/lib/fiscalite';
+import { CaseLigne, DeclarantsHeader, MontantLigne } from './DeclarationLigne';
 
 const REVENUS_VIDE: RevenusSalairesInput = {
   case1aj: null,
@@ -94,6 +91,7 @@ export const RevenusSalairesForm = ({ onSaved }: RevenusSalairesFormProps) => {
         <CardTitle>Traitements et salaires</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <DeclarantsHeader />
         <MontantLigne
           label="Traitements et salaires"
           extra="salaire net imposable"
@@ -233,96 +231,5 @@ export const RevenusSalairesForm = ({ onSaved }: RevenusSalairesFormProps) => {
     </Card>
   );
 };
-
-interface MontantLigneProps {
-  label: string;
-  extra?: string;
-  aide?: string;
-  code1: string;
-  code2: string;
-  value1: number | null;
-  value2: number | null;
-  onChange1: (value: number | null) => void;
-  onChange2: (value: number | null) => void;
-}
-
-const MontantLigne = ({ label, extra, aide, code1, code2, value1, value2, onChange1, onChange2 }: MontantLigneProps) => {
-  const parse = (raw: string): number | null => (raw === '' ? null : Number(raw));
-
-  return (
-    <div className="flex flex-wrap items-end gap-4 p-3 rounded-lg bg-muted/50">
-      <div className="flex-1 min-w-[220px] space-y-1">
-        <div className="flex items-center gap-1.5">
-          <Label className="text-sm">
-            {label}
-            {extra && <span className="text-muted-foreground font-normal"> ({extra})</span>}
-          </Label>
-          {aide && <AideTooltip texte={aide} />}
-        </div>
-      </div>
-      <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">Déclarant 1 · {code1}</Label>
-        <Input
-          id={`case-${code1}`}
-          type="number"
-          className="w-36"
-          value={value1 ?? ''}
-          onChange={ev => onChange1(parse(ev.target.value))}
-        />
-      </div>
-      <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">Déclarant 2 · {code2}</Label>
-        <Input
-          id={`case-${code2}`}
-          type="number"
-          className="w-36"
-          value={value2 ?? ''}
-          onChange={ev => onChange2(parse(ev.target.value))}
-        />
-      </div>
-    </div>
-  );
-};
-
-interface CaseLigneProps {
-  label: string;
-  extra?: string;
-  aide?: string;
-  code1: string;
-  code2: string;
-  checked1: boolean;
-  checked2: boolean;
-  onChange1: (value: boolean) => void;
-  onChange2: (value: boolean) => void;
-}
-
-const CaseLigne = ({ label, extra, aide, code1, code2, checked1, checked2, onChange1, onChange2 }: CaseLigneProps) => (
-  <div className="flex flex-wrap items-center gap-4 p-3 rounded-lg bg-muted/50">
-    <div className="flex-1 min-w-[220px] flex items-center gap-1.5">
-      <Label className="text-sm font-normal">
-        {label}
-        {extra && <span className="text-muted-foreground"> ({extra})</span>}
-      </Label>
-      {aide && <AideTooltip texte={aide} />}
-    </div>
-    <div className="flex items-center gap-2">
-      <Checkbox id={`case-${code1}`} checked={checked1} onCheckedChange={c => onChange1(!!c)} />
-      <Label htmlFor={`case-${code1}`} className="text-xs text-muted-foreground">Déclarant 1 · {code1}</Label>
-    </div>
-    <div className="flex items-center gap-2">
-      <Checkbox id={`case-${code2}`} checked={checked2} onCheckedChange={c => onChange2(!!c)} />
-      <Label htmlFor={`case-${code2}`} className="text-xs text-muted-foreground">Déclarant 2 · {code2}</Label>
-    </div>
-  </div>
-);
-
-const AideTooltip = ({ texte }: { texte: string }) => (
-  <Tooltip>
-    <TooltipTrigger type="button" className="text-muted-foreground hover:text-foreground">
-      <HelpCircle className="h-3.5 w-3.5" />
-    </TooltipTrigger>
-    <TooltipContent className="max-w-xs">{texte}</TooltipContent>
-  </Tooltip>
-);
 
 export default RevenusSalairesForm;
