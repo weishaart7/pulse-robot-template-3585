@@ -132,6 +132,7 @@ export function useFiscalOverview(): FiscalOverview {
       foyerInput.situationFamille,
       revenuExonereTauxEffectif.totalRetenu,
       foyerInput.lieuResidence,
+      gainsActionnariat.impotForfaitaire,
     );
 
     return {
