@@ -2386,6 +2386,9 @@ export type Database = {
           case_1bk: number | null
           case_1bp: number | null
           case_1bv: boolean
+          case_1dn: number | null
+          case_1dy: number | null
+          case_1ey: number | null
           case_1ga: number | null
           case_1gb: number | null
           case_1gf: number | null
@@ -2400,6 +2403,9 @@ export type Database = {
           case_1hh: number | null
           case_1pb: number | null
           case_1pc: number | null
+          case_1pm: number | null
+          case_1qm: number | null
+          case_1sm: number | null
           created_at: string
           id: string
           updated_at: string
@@ -2422,6 +2428,9 @@ export type Database = {
           case_1bk?: number | null
           case_1bp?: number | null
           case_1bv?: boolean
+          case_1dn?: number | null
+          case_1dy?: number | null
+          case_1ey?: number | null
           case_1ga?: number | null
           case_1gb?: number | null
           case_1gf?: number | null
@@ -2436,6 +2445,9 @@ export type Database = {
           case_1hh?: number | null
           case_1pb?: number | null
           case_1pc?: number | null
+          case_1pm?: number | null
+          case_1qm?: number | null
+          case_1sm?: number | null
           created_at?: string
           id?: string
           updated_at?: string
@@ -2458,6 +2470,9 @@ export type Database = {
           case_1bk?: number | null
           case_1bp?: number | null
           case_1bv?: boolean
+          case_1dn?: number | null
+          case_1dy?: number | null
+          case_1ey?: number | null
           case_1ga?: number | null
           case_1gb?: number | null
           case_1gf?: number | null
@@ -2472,6 +2487,9 @@ export type Database = {
           case_1hh?: number | null
           case_1pb?: number | null
           case_1pc?: number | null
+          case_1pm?: number | null
+          case_1qm?: number | null
+          case_1sm?: number | null
           created_at?: string
           id?: string
           updated_at?: string
