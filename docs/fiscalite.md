@@ -21,7 +21,7 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 
 1. **La déclaration 2042, regroupée derrière le bouton « 2042 - Déclaration générale »** : ouvre
    `Declaration2042Interface.tsx` (overlay plein écran + sidebar de sections, calqué sur le pattern
-   `IFIInterface`/`IFISidebar` déjà en place pour l'IFI — voir §2). Contient aujourd'hui trois sections :
+   `IFIInterface`/`IFISidebar` déjà en place pour l'IFI — voir §2). Contient aujourd'hui quatre sections :
    - **Ménage — état civil et nombre de parts (Phase 1, fonctionnel)** : `MenageSection.tsx`
      (wrapper de `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx`), adossé à la table Supabase
      `foyer_fiscal` et au moteur pur `src/lib/fiscalite/calculerPartsFiscales.ts`. Seul morceau du
@@ -42,6 +42,14 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
      de codes du cadre 1 « Salaires, gains d'actionnariat salarié » et du cadre 3 « Plus-values et
      gains divers » du CERFA 2042-C (options attribuées avant le 28.9.2012) — même objet réel, scindé
      administrativement par date d'attribution sur le formulaire papier.
+   - **Salaires & pensions exonérés retenus pour le calcul du taux effectif (fonctionnel)** :
+     `RevenusExoneresTauxEffectifForm.tsx`, adossé à la table Supabase dédiée
+     `revenus_exoneres_taux_effectif`, **distincte** de `revenus_salaires` (voir §2) — encart séparé
+     du CERFA (2042-C, pages 99/116), mélangeant salaires et pensions, servant un mécanisme distinct
+     (taux effectif appliqué au reste du revenu par convention fiscale internationale ou art. 81 A
+     CGI, pas une base imposable en France). `1AF`/`1BF` (déjà dans `revenus_salaires`, Phase 2.1)
+     désigne un mécanisme apparenté mais différent — crédit d'impôt égal à l'impôt français, pas taux
+     effectif — les deux méthodes restent non implémentées dans le moteur de calcul (voir §4).
 
    Avant cette réorganisation, `MenageForm`/`SyntheseFoyerFiscal`/`RevenusSalairesForm` étaient montés
    à plat dans `FiscaliteSection.tsx`, en dehors de tout bouton « 2042 » (qui n'avait alors aucun
@@ -75,6 +83,7 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 | Ménage (section 2042) | [MenageSection.tsx](src/pages/fiscalite/components/2042/MenageSection.tsx) → `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx` | Situation familiale, enfants à charge (liste dynamique), personnes invalides à charge (liste dynamique), enfants majeurs rattachés, cases à cocher (parent isolé, invalidité, ancien combattant, veuve de guerre...), synthèse du nombre de parts recalculée en direct pendant la saisie (avant même l'enregistrement) |
 | Traitements et salaires (section 2042) | [RevenusSalairesForm.tsx](src/components/fiscalite/RevenusSalairesForm.tsx) | 18 paires de champs déclarant 1/déclarant 2 (cadre 1 de la 2042, hors colonnes C/D et gains d'actionnariat), code officiel + libellé français côte à côte |
 | Gains d'actionnariat salarié (section 2042) | [GainsActionnariatSalarieForm.tsx](src/components/fiscalite/GainsActionnariatSalarieForm.tsx) | 13 lignes du CERFA (stock-options, actions gratuites, carried-interest, options pré-28.9.2012), regroupées par sous-bloc visuel ; champs à case unique sans colonne déclarant 2 pour `1TZ`/`1UZ`/`1WZ`/`1VZ` et `3VD`/`3VI`/`3VF`/`3VN`, conformément au CERFA |
+| Salaires & pensions exonérés — taux effectif (section 2042) | [RevenusExoneresTauxEffectifForm.tsx](src/components/fiscalite/RevenusExoneresTauxEffectifForm.tsx) | 5 lignes (`1AC`/`1BC`, `1GE`/`1HE` case à cocher, `1AE`/`1BE`, `1AH`/`1BH`, `RSE`/`RSF` texte libre), encart CERFA distinct (2042-C pages 99/116) |
 | Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Donut IR (salaires, calculé) — PS et IFI affichés « non calculé » |
 | Taux marginal | [TaxRateCard.tsx](src/pages/fiscalite/components/TaxRateCard.tsx) | Barème IR réel, tranche active (TMI), quotient familial, marge avant tranche suivante, impôt net |
 | Simulateur IFI | [IFIInterface.tsx](src/pages/fiscalite/components/IFIInterface.tsx) → 5 sous-écrans `ifi/*.tsx` | Wizard de déclaration IFI : hypothèses, biens/passifs, barème, montant dû |
@@ -275,6 +284,25 @@ gains d'actionnariat, revenus fonciers, capitaux mobiliers, etc. (§4).
   ailleurs dans `revenus_salaires`/`foyer_fiscal`. `GainsActionnariatSalarieForm.tsx` reflète cette
   asymétrie (composant `SingleMontantLigne` dédié, distinct de `MontantLigne`) plutôt que de forcer
   une colonne déclarant 2 fictive.
+- **`revenus_exoneres_taux_effectif` — table dédiée, distincte de `revenus_salaires`, même logique de
+  séparation que `gains_actionnariat_salarie`.** Même pattern que les autres tables du module. 10
+  colonnes couvrant l'encart CERFA « Salaires et pensions exonérés retenus pour le calcul du taux
+  effectif » (2042-C, pages 99/116) : `1AC`/`1BC` (salaires), `1GE`/`1HE` (case à cocher,
+  marins-pêcheurs), `1AE`/`1BE` (frais réels), `1AH`/`1BH` (pensions de source étrangère), `RSE`/`RSF`
+  (pays de provenance, `TEXT` — seules colonnes texte du module, le reste étant `NUMERIC`/`BOOLEAN`).
+  Décision de conception validée en session : cet encart mélange salaires et pensions et sert un
+  mécanisme distinct (taux effectif appliqué au reste du revenu par convention fiscale internationale
+  ou art. 81 A CGI — **pas** une base imposable en France), justifiant une table à part plutôt qu'une
+  extension de `revenus_salaires`. `RevenusExoneresTauxEffectifForm.tsx` reprend le pattern grid le
+  plus récent (en-têtes « Déclarant 1/2 » regroupés en haut du formulaire, introduit par le commit
+  `b94b9c1` sur `GainsActionnariatSalarieForm.tsx`) plutôt que l'ancien pattern par ligne de
+  `RevenusSalairesForm.tsx` — écart de cohérence mineur entre les deux formulaires les plus anciens du
+  module et les deux plus récents, non retouché rétroactivement (changement chirurgical, hors
+  périmètre de cette session). Section enregistrée dans
+  [declaration2042CasesIndex.ts](src/pages/fiscalite/components/2042/declaration2042CasesIndex.ts)
+  pour la barre de recherche des cases (`b94b9c1`) — fichier à tenir à jour manuellement à chaque
+  nouvelle case, aucune vérification automatique n'existe entre le formulaire et cet index (dette, cf.
+  §3).
 - **`src/lib/fiscal/calcul.ts` (dossier séparé, sans « ite ») a été nettoyé de son unique fonction
   orpheline.** L'ancienne `calculerPartsFiscales` de ce dossier n'avait aucun appelant dans le repo
   (`grep` confirmé avant suppression) et divergeait de plusieurs règles CGI (veuf avec enfant(s)
@@ -451,6 +479,11 @@ gains d'actionnariat, revenus fonciers, capitaux mobiliers, etc. (§4).
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
+- **`declaration2042CasesIndex.ts` (barre de recherche des cases) tenu à jour manuellement, sans
+  vérification automatique.** Chaque nouvelle case ajoutée dans un formulaire de la 2042 doit être
+  répliquée à la main dans cet index (`code`, `label`, `sectionId`, `elementId`) pour rester
+  cherchable — aucun test ni script ne garantit que les deux restent synchronisés. Un oubli futur
+  rendrait une case invisible à la recherche sans erreur ni avertissement.
 - **`foyerFiscalService.ts` ne type-check pas avec `tsc --noEmit --project tsconfig.app.json`**
   (repéré en Phase 2.2, préexistant — confirmé par `git stash` avant les commits de cette session,
   aucun lien avec `revenus_salaires`). Erreur TS2769 sur `upsertFoyerFiscal`
@@ -518,11 +551,16 @@ gains d'actionnariat, revenus fonciers, capitaux mobiliers, etc. (§4).
   2.3)** : saisie des 13 lignes couvrant stock-options, actions gratuites et carried-interest (cadre 1
   de la 2042-C) ainsi que les options attribuées avant le 28.9.2012 (cadre 3, incluses sur demande
   explicite malgré le changement de cadre), persistance Supabase (`gains_actionnariat_salarie`, table
-  dédiée), codes vérifiés visuellement sur le CERFA — capture brute, sans moteur de calcul.
+  dédiée), codes vérifiés visuellement sur le CERFA — capture brute, sans moteur de calcul ; **salaires
+  et pensions exonérés retenus pour le calcul du taux effectif** : saisie des 5 lignes de l'encart
+  CERFA dédié (2042-C, pages 99/116), persistance Supabase (`revenus_exoneres_taux_effectif`, table
+  dédiée), codes vérifiés visuellement — capture brute, sans moteur de calcul (la méthode du taux
+  effectif elle-même n'est pas implémentée dans `calculerImpot.ts`, voir ci-dessous).
 
-  **Sous-phases 2.1 à 2.4 du bloc « Salaires » toutes terminées** : le cadre 1 de la 2042 est
-  intégralement couvert par `RevenusSalairesForm.tsx`/`GainsActionnariatSalarieForm.tsx`, à l'exception
-  des colonnes C/D (dette assumée ci-dessous). **Calcul de l'IR (Phase 10) — démarré, salaires et part
+  **Sous-phases 2.1 à 2.4 du bloc « Salaires » toutes terminées, ainsi que l'encart taux effectif
+  associé** : le cadre 1 de la 2042 est intégralement couvert par
+  `RevenusSalairesForm.tsx`/`GainsActionnariatSalarieForm.tsx`/`RevenusExoneresTauxEffectifForm.tsx`, à
+  l'exception des colonnes C/D (dette assumée ci-dessous). **Calcul de l'IR (Phase 10) — démarré, salaires et part
   barème des gains d'actionnariat couverts** : `calculerRevenuSalaires.ts` +
   `calculerGainsActionnariatSalarie.ts` + `calculerPartsFiscales.ts` + `calculerImpot.ts` (barème 2026,
   quotient familial, plafonnement art. 197 CGI, décote, TMI), branchés en temps réel sur
@@ -540,6 +578,12 @@ gains d'actionnariat, revenus fonciers, capitaux mobiliers, etc. (§4).
   - **1AF/1BF (salaires de source étrangère, crédit d'impôt égal à l'impôt français) et 1GB/1HB
     (gérants et associés art. 62 CGI) exclus de `calculerRevenuSalaires.ts`** — méthode du taux
     effectif et régime de frais professionnels particulier non implémentés (voir §3, 🟠).
+  - **`revenus_exoneres_taux_effectif` capturée mais non consommée par `calculerImpot.ts`** : les
+    montants saisis (`1AC`/`1BC`, `1AE`/`1BE`, `1AH`/`1BH`) n'influencent pas encore le taux
+    d'imposition calculé — la méthode du taux effectif (majoration du taux appliqué au revenu
+    français par un revenu étranger exonéré, sans imposer ce dernier) reste à implémenter dans le
+    moteur de calcul, comme pour `1AF`/`1BF` ci-dessus (même mécanisme sous-jacent, deux origines
+    CERFA différentes).
   - Le choix entre abattement forfaitaire de 10 % (`1AJ`/`1BJ`) et frais réels (`1AK`/`1BK`) est
     désormais arbitré par `calculerRevenuSalaires.ts` (le plus favorable des deux est retenu
     automatiquement).
