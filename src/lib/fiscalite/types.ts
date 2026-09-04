@@ -98,6 +98,23 @@ export interface GainsActionnariatSalarieInput {
   case3vn: number | null;
 }
 
+export interface PensionsRetraitesRentesInput {
+  case1as: number | null;
+  case1bs: number | null;
+  case1at: number | null;
+  case1bt: number | null;
+  case1ai: number | null;
+  case1bi: number | null;
+  case1az: number | null;
+  case1bz: number | null;
+  case1ao: number | null;
+  case1bo: number | null;
+  case1al: number | null;
+  case1bl: number | null;
+  case1am: number | null;
+  case1bm: number | null;
+}
+
 export interface RevenusExoneresTauxEffectifInput {
   case1ac: number | null;
   case1bc: number | null;
