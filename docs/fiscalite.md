@@ -359,12 +359,16 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   Décision de conception validée en session : cet encart mélange salaires et pensions et sert un
   mécanisme distinct (taux effectif appliqué au reste du revenu par convention fiscale internationale
   ou art. 81 A CGI — **pas** une base imposable en France), justifiant une table à part plutôt qu'une
-  extension de `revenus_salaires`. `RevenusExoneresTauxEffectifForm.tsx` reprend le pattern grid le
-  plus récent (en-têtes « Déclarant 1/2 » regroupés en haut du formulaire, introduit par le commit
-  `b94b9c1` sur `GainsActionnariatSalarieForm.tsx`) plutôt que l'ancien pattern par ligne de
-  `RevenusSalairesForm.tsx` — écart de cohérence mineur entre les deux formulaires les plus anciens du
-  module et les deux plus récents, non retouché rétroactivement (changement chirurgical, hors
-  périmètre de cette session). Section enregistrée dans
+  extension de `revenus_salaires`. **Résolu** — les 3 formulaires (`RevenusSalairesForm.tsx`,
+  `GainsActionnariatSalarieForm.tsx`, `RevenusExoneresTauxEffectifForm.tsx`) partagent désormais un seul
+  jeu de composants de ligne, [DeclarationLigne.tsx](src/components/fiscalite/DeclarationLigne.tsx)
+  (`MontantLigne`/`SingleMontantLigne`/`CaseLigne`/`TexteLigne`/`DeclarantsHeader`/`AideTooltip`), qui
+  remplace les définitions locales dupliquées à l'identique dans chaque fichier (l'ancien écart de
+  cohérence entre `RevenusSalairesForm.tsx` et les deux formulaires plus récents n'existe plus). Au
+  passage, corrige un bug d'alignement présent dans les trois : `items-end` sur une rangée où la colonne
+  libellé n'a qu'une ligne de contenu alors que les colonnes de saisie en ont deux (code + champ)
+  plaçait le libellé principal en bas, collé aux champs, avec les mini-labels « Déclarant 1/2 » flottant
+  seuls en haut — remplacé par `items-start`. Section enregistrée dans
   [declaration2042CasesIndex.ts](src/pages/fiscalite/components/2042/declaration2042CasesIndex.ts)
   pour la barre de recherche des cases (`b94b9c1`) — fichier à tenir à jour manuellement à chaque
   nouvelle case, aucune vérification automatique n'existe entre le formulaire et cet index (dette, cf.
