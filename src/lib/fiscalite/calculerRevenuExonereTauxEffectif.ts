@@ -3,7 +3,8 @@ import { RevenusExoneresTauxEffectifInput } from './types';
 
 const PENSION_ABATTEMENT_TAUX = 0.10;
 const PENSION_ABATTEMENT_PLANCHER = 454;
-const PENSION_ABATTEMENT_PLAFOND_FOYER = 4439;
+/** Plafond global par foyer de l'abattement de 10 % sur les pensions (art. 158-5-a CGI), réutilisé par calculerPensionsRetraitesRentes.ts. */
+export const PENSION_ABATTEMENT_PLAFOND_FOYER = 4439;
 
 /**
  * Cases purement informatives de cet encart, sans effet sur le calcul (voir
@@ -28,9 +29,10 @@ export interface RevenuExonereTauxEffectifResult {
  * Abattement de 10 % sur une pension (plancher 454 €, jamais supérieur à la
  * pension elle-même). Le plafond de 4 439 € s'applique globalement à la somme
  * des abattements du foyer, pas par pensionné — appliqué séparément sur le
- * total dans calculerRevenuExonereTauxEffectif.
+ * total par l'appelant (voir calculerRevenuExonereTauxEffectif ci-dessous et
+ * calculerPensionsRetraitesRentes.ts, même calcul réutilisé).
  */
-function abattementPensionDeclarant(pension: number): number {
+export function abattementPensionDeclarant(pension: number): number {
   if (pension <= 0) return 0;
   return Math.min(pension, Math.max(PENSION_ABATTEMENT_PLANCHER, pension * PENSION_ABATTEMENT_TAUX));
 }
