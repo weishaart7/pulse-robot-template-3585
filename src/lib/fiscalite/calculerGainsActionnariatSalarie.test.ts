@@ -56,21 +56,66 @@ describe('calculerGainsActionnariatSalarie — cases exclues du calcul', () => {
     expect(result.totalNetImposable).toBe(4000);
   });
 
-  it('ignore le carried-interest (1NX/1OX/1NY/1OY)', () => {
+  it('ignore le carried-interest (1NX/1OX) et sa contribution salariale (1NY/1OY) dans le net imposable au barème', () => {
     const result = calculerGainsActionnariatSalarie(makeInput({ case1nx: 50000, case1ox: 50000, case1ny: 20000, case1oy: 20000 }));
     expect(result.totalNetImposable).toBe(0);
   });
 
-  it('ignore les gains à taux forfaitaire (3VD/3VI/3VF/3VN)', () => {
+  it('ignore les gains à taux forfaitaire (3VD/3VI/3VF) et leur contribution salariale (3VN) dans le net imposable au barème', () => {
     const result = calculerGainsActionnariatSalarie(makeInput({ case3vd: 10000, case3vi: 10000, case3vf: 10000, case3vn: 10000 }));
     expect(result.totalNetImposable).toBe(0);
   });
 
   it('expose la liste des cases exclues', () => {
     const result = calculerGainsActionnariatSalarie(makeInput());
-    expect(result.casesExclues).toContain('case1nx');
-    expect(result.casesExclues).toContain('case3vd');
+    expect(result.casesExclues).toContain('case1ny');
     expect(result.casesExclues).toContain('case3vn');
     expect(result.casesExclues).not.toContain('case1tz');
+    expect(result.casesExclues).not.toContain('case1nx');
+    expect(result.casesExclues).not.toContain('case3vd');
+  });
+});
+
+describe('calculerGainsActionnariatSalarie — impôt à taux forfaitaire', () => {
+  it('foyer sans gains forfaitaires : impôt forfaitaire nul', () => {
+    expect(calculerGainsActionnariatSalarie(makeInput()).impotForfaitaire).toBe(0);
+  });
+
+  it('carried-interest (1NX/1OX) taxé à 12,8 % PFU', () => {
+    const result = calculerGainsActionnariatSalarie(makeInput({ case1nx: 10000, case1ox: 5000 }));
+    expect(result.impotForfaitaire).toBeCloseTo(15000 * 0.128, 6);
+  });
+
+  it('3VD taxé à 18 %', () => {
+    const result = calculerGainsActionnariatSalarie(makeInput({ case3vd: 10000 }));
+    expect(result.impotForfaitaire).toBeCloseTo(1800, 6);
+  });
+
+  it('3VI taxé à 30 %', () => {
+    const result = calculerGainsActionnariatSalarie(makeInput({ case3vi: 10000 }));
+    expect(result.impotForfaitaire).toBeCloseTo(3000, 6);
+  });
+
+  it('3VF taxé à 41 %', () => {
+    const result = calculerGainsActionnariatSalarie(makeInput({ case3vf: 10000 }));
+    expect(result.impotForfaitaire).toBeCloseTo(4100, 6);
+  });
+
+  it('cumule carried-interest et les trois taux historiques', () => {
+    const result = calculerGainsActionnariatSalarie(makeInput({
+      case1nx: 10000, case1ox: 0,
+      case3vd: 10000, case3vi: 10000, case3vf: 10000,
+    }));
+    expect(result.impotForfaitaire).toBeCloseTo(10000 * 0.128 + 1800 + 3000 + 4100, 6);
+  });
+
+  it('1NY/1OY (contribution salariale carried-interest) et 3VN (contribution salariale 10 %) n\'affectent pas l\'impôt forfaitaire', () => {
+    const result = calculerGainsActionnariatSalarie(makeInput({ case1ny: 50000, case1oy: 50000, case3vn: 50000 }));
+    expect(result.impotForfaitaire).toBe(0);
+  });
+
+  it('n\'affecte pas le net imposable au barème', () => {
+    const result = calculerGainsActionnariatSalarie(makeInput({ case1nx: 10000, case3vd: 10000, case1tz: 500 }));
+    expect(result.totalNetImposable).toBe(500);
   });
 });
