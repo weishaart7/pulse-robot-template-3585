@@ -2093,16 +2093,24 @@ export type Database = {
           case_1al: number | null
           case_1am: number | null
           case_1ao: number | null
+          case_1ar: number | null
           case_1as: number | null
           case_1at: number | null
+          case_1aw: number | null
           case_1az: number | null
           case_1bi: number | null
           case_1bl: number | null
           case_1bm: number | null
           case_1bo: number | null
+          case_1br: number | null
           case_1bs: number | null
           case_1bt: number | null
+          case_1bw: number | null
           case_1bz: number | null
+          case_1cr: number | null
+          case_1cw: number | null
+          case_1dr: number | null
+          case_1dw: number | null
           created_at: string
           id: string
           updated_at: string
@@ -2113,16 +2121,24 @@ export type Database = {
           case_1al?: number | null
           case_1am?: number | null
           case_1ao?: number | null
+          case_1ar?: number | null
           case_1as?: number | null
           case_1at?: number | null
+          case_1aw?: number | null
           case_1az?: number | null
           case_1bi?: number | null
           case_1bl?: number | null
           case_1bm?: number | null
           case_1bo?: number | null
+          case_1br?: number | null
           case_1bs?: number | null
           case_1bt?: number | null
+          case_1bw?: number | null
           case_1bz?: number | null
+          case_1cr?: number | null
+          case_1cw?: number | null
+          case_1dr?: number | null
+          case_1dw?: number | null
           created_at?: string
           id?: string
           updated_at?: string
@@ -2133,16 +2149,24 @@ export type Database = {
           case_1al?: number | null
           case_1am?: number | null
           case_1ao?: number | null
+          case_1ar?: number | null
           case_1as?: number | null
           case_1at?: number | null
+          case_1aw?: number | null
           case_1az?: number | null
           case_1bi?: number | null
           case_1bl?: number | null
           case_1bm?: number | null
           case_1bo?: number | null
+          case_1br?: number | null
           case_1bs?: number | null
           case_1bt?: number | null
+          case_1bw?: number | null
           case_1bz?: number | null
+          case_1cr?: number | null
+          case_1cw?: number | null
+          case_1dr?: number | null
+          case_1dw?: number | null
           created_at?: string
           id?: string
           updated_at?: string
