@@ -26,10 +26,12 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
      (wrapper de `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx`), adossé à la table Supabase
      `foyer_fiscal` et au moteur pur `src/lib/fiscalite/calculerPartsFiscales.ts`. Seul morceau du
      module qui calcule et persiste une donnée réelle, propre à l'utilisateur.
-   - **Traitements et salaires — cadre 1 de la 2042, déclarants 1/2 (Phase 2.1, fonctionnel)** :
+   - **Traitements et salaires — cadre 1 de la 2042, déclarants 1/2 (Phases 2.1 et 2.2, fonctionnel)** :
      `RevenusSalairesForm.tsx`, adossé à la table Supabase `revenus_salaires`. Capture de données
      brute (pas de moteur de calcul dans cette sous-phase) ; codes de case vérifiés contre la
-     brochure officielle DGFiP (2042-K/2042-C, revenus 2024).
+     brochure officielle DGFiP (2042-K/2042-C, revenus 2024). Inclut les frais réels (`1AK`/`1BK`,
+     Phase 2.2), qui remplacent l'abattement forfaitaire de 10 % sur `1AJ`/`1BJ` — remplacement non
+     appliqué automatiquement, saisie manuelle indépendante des deux champs (aucun calcul en Phase 2).
 
    Avant cette réorganisation, `MenageForm`/`SyntheseFoyerFiscal`/`RevenusSalairesForm` étaient montés
    à plat dans `FiscaliteSection.tsx`, en dehors de tout bouton « 2042 » (qui n'avait alors aucun
@@ -55,7 +57,7 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 | Déclarations fiscales | [FiscalDeclarationsCard.tsx](src/pages/fiscalite/components/FiscalDeclarationsCard.tsx) | Liste de formulaires CERFA ; « 2042 » ouvre `Declaration2042Interface`, « 2042-IFI » ouvre `IFIInterface` — les deux seuls liens cliquables |
 | Déclaration 2042 (overlay) | [Declaration2042Interface.tsx](src/pages/fiscalite/components/Declaration2042Interface.tsx) → [Declaration2042Sidebar.tsx](src/pages/fiscalite/components/2042/Declaration2042Sidebar.tsx) | Overlay plein écran + sidebar de sections pilotée par [declaration2042Sections.ts](src/pages/fiscalite/components/2042/declaration2042Sections.ts) (config `{id, label, icon, component}` — ajouter une sous-phase future = une entrée) ; pas de bouton « Enregistrer » global, chaque section garde sa propre sauvegarde |
 | Ménage (section 2042) | [MenageSection.tsx](src/pages/fiscalite/components/2042/MenageSection.tsx) → `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx` | Situation familiale, enfants à charge (liste dynamique), personnes invalides à charge (liste dynamique), enfants majeurs rattachés, cases à cocher (parent isolé, invalidité, ancien combattant, veuve de guerre...), synthèse du nombre de parts recalculée en direct pendant la saisie (avant même l'enregistrement) |
-| Traitements et salaires (section 2042) | [RevenusSalairesForm.tsx](src/components/fiscalite/RevenusSalairesForm.tsx) | 14 paires de champs déclarant 1/déclarant 2 (cadre 1 de la 2042, hors colonnes C/D, frais réels et gains d'actionnariat), code officiel + libellé français côte à côte |
+| Traitements et salaires (section 2042) | [RevenusSalairesForm.tsx](src/components/fiscalite/RevenusSalairesForm.tsx) | 15 paires de champs déclarant 1/déclarant 2 (cadre 1 de la 2042, hors colonnes C/D et gains d'actionnariat), code officiel + libellé français côte à côte |
 | Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Donut IR/PS/IFI + détail revenus — **données 100 % codées en dur** |
 | Taux marginal | [TaxRateCard.tsx](src/pages/fiscalite/components/TaxRateCard.tsx) | Barème IR, tranche active, marge avant tranche suivante — **données 100 % codées en dur** |
 | Simulateur IFI | [IFIInterface.tsx](src/pages/fiscalite/components/IFIInterface.tsx) → 5 sous-écrans `ifi/*.tsx` | Wizard de déclaration IFI : hypothèses, biens/passifs, barème, montant dû |
@@ -147,11 +149,14 @@ fonction n'existe — voir §4.
   qui n'existe pas encore dans le repo (voir §4, Phase différée). 29 tests couvrent l'intégralité du
   tableau de règles, y compris les combinaisons (enfant en résidence alternée et invalide simultanément,
   etc.).
-- **`revenus_salaires` (Phase 2.1) — capture brute du cadre 1 de la 2042, sans moteur de calcul.**
-  Table `user_id → auth.users(id) ON DELETE CASCADE`, `UNIQUE(user_id)`, RLS 4 policies, même pattern
-  que `foyer_fiscal`. 28 colonnes `case_1xx`/`case_1yy` (convention `1AJ` → `case_1aj`, préfixe
-  imposé par SQL pour un identifiant commençant par un chiffre), dont 4 booléennes (cases à cocher
-  `1AV`/`1BV`, `1GK`/`1GL`). Périmètre validé en session : les codes ont été vérifiés contre la
+- **`revenus_salaires` (Phases 2.1 et 2.2) — capture brute du cadre 1 de la 2042, sans moteur de
+  calcul.** Table `user_id → auth.users(id) ON DELETE CASCADE`, `UNIQUE(user_id)`, RLS 4 policies,
+  même pattern que `foyer_fiscal`. 30 colonnes `case_1xx`/`case_1yy` (convention `1AJ` → `case_1aj`,
+  préfixe imposé par SQL pour un identifiant commençant par un chiffre), dont 4 booléennes (cases à
+  cocher `1AV`/`1BV`, `1GK`/`1GL`). `case_1ak`/`case_1bk` (frais réels) ajoutées par migration
+  séparée en Phase 2.2, à la suite de `1AG`/`1BG` dans le formulaire — ordre du CERFA (dernière ligne
+  du bloc « Traitements, salaires » avant « Pensions, retraites, rentes »). Périmètre validé en
+  session : les codes ont été vérifiés contre la
   brochure officielle DGFiP (« LA 2042 K/2042 C ET SES RÉFÉRENCES DANS LA BROCHURE », revenus 2024)
   plutôt que supposés — cette vérification a corrigé deux points du brief initial avant migration :
   1) `1GG`/`1HG` (agents généraux d'assurance, salaires imposables) a été ajoutée au périmètre 2.1 sur
@@ -388,20 +393,22 @@ fonction n'existe — voir §4.
   charge en listes dynamiques, enfants majeurs rattachés, toutes les cases de majoration T/L/invalidité/
   ancien combattant/veuve de guerre), persistance Supabase (`foyer_fiscal`, une ligne par utilisateur),
   calcul du nombre de parts fidèle à l'art. 193-197 CGI avec détail ligne par ligne affiché en direct
-  pendant la saisie ; **traitements et salaires — cadre 1 de la 2042, déclarants 1/2 (Phase 2.1)** :
-  saisie des 14 paires de champs du cadre 1 (salaires, particuliers employeurs, abattements et
-  exonérations spécifiques, associés/gérants art. 62 CGI, agents généraux d'assurance, droits d'auteur,
-  autres revenus imposables, salaires de source étrangère), persistance Supabase (`revenus_salaires`,
-  une ligne par utilisateur), codes de case vérifiés contre la brochure officielle DGFiP — capture
-  brute, sans moteur de calcul.
+  pendant la saisie ; **traitements et salaires — cadre 1 de la 2042, déclarants 1/2 (Phases 2.1 et
+  2.2)** : saisie des 15 paires de champs du cadre 1 (salaires, particuliers employeurs, abattements
+  et exonérations spécifiques, associés/gérants art. 62 CGI, agents généraux d'assurance, droits
+  d'auteur, autres revenus imposables, salaires de source étrangère, frais réels), persistance
+  Supabase (`revenus_salaires`, une ligne par utilisateur), codes de case vérifiés contre la brochure
+  officielle DGFiP — capture brute, sans moteur de calcul.
 - **Différé, déductible du code** :
   - **Tout calcul réel de l'impôt sur le revenu** : ni le nombre de parts (Phase 1) ni les salaires
-    saisis (Phase 2.1) ne sont appliqués à un barème ; aucune fonction de calcul IR (tranches, décote,
-    quotient familial appliqué au revenu) n'existe dans le repo — dépendance de la Phase 10 prévue.
+    saisis (Phases 2.1/2.2) ne sont appliqués à un barème ; aucune fonction de calcul IR (tranches,
+    décote, quotient familial appliqué au revenu) n'existe dans le repo — dépendance de la Phase 10
+    prévue. En particulier, le choix entre abattement forfaitaire de 10 % (`1AJ`/`1BJ`) et frais réels
+    (`1AK`/`1BK`) n'est ni calculé ni arbitré : les deux montants peuvent être saisis simultanément
+    sans qu'aucune logique n'indique lequel est retenu par l'administration.
   - **Traitements et salaires — colonnes C/D (Phase 2.1, dette assumée)** : les revenus propres des
     personnes à charge (ex. enfants majeurs rattachés ayant leurs propres salaires) ne sont pas
     saisis — cas rare, traité dans une session ultérieure.
-  - **Frais réels (`1AK`/`1BK`, sous-phase 2.2)** : non saisis, différés à une session séparée.
   - **Gains d'actionnariat salarié (sous-phase 2.3)** : stock-options, actions gratuites,
     carried-interest — non saisis, différés à une session séparée.
   - **Cas spécifiques restants (sous-phase 2.4)** : salariés impatriés, indemnités pour préjudice
