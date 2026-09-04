@@ -263,6 +263,7 @@ const MontantLigne = ({ label, extra, aide, code1, code2, value1, value2, onChan
       <div className="space-y-1">
         <Label className="text-xs text-muted-foreground">Déclarant 1 · {code1}</Label>
         <Input
+          id={`case-${code1}`}
           type="number"
           className="w-36"
           value={value1 ?? ''}
@@ -272,6 +273,7 @@ const MontantLigne = ({ label, extra, aide, code1, code2, value1, value2, onChan
       <div className="space-y-1">
         <Label className="text-xs text-muted-foreground">Déclarant 2 · {code2}</Label>
         <Input
+          id={`case-${code2}`}
           type="number"
           className="w-36"
           value={value2 ?? ''}

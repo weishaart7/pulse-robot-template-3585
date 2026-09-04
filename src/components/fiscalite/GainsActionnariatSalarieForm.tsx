@@ -75,6 +75,11 @@ export const GainsActionnariatSalarieForm = ({ onSaved }: GainsActionnariatSalar
         <CardTitle>Gains d'actionnariat salarié</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="hidden lg:grid grid-cols-[1fr_8rem_8rem] gap-4 px-3 text-xs font-medium text-muted-foreground">
+          <span />
+          <span className="text-center">Déclarant 1</span>
+          <span className="text-center">Déclarant 2</span>
+        </div>
         <MontantLigne
           label="Rabais excédentaire sur options sur titres"
           aide="Part de la décote sur le prix d'achat d'une option qui dépasse le seuil autorisé (5 %), imposée comme un salaire."
@@ -198,8 +203,8 @@ const MontantLigne = ({ label, extra, aide, code1, code2, value1, value2, onChan
   const parse = (raw: string): number | null => (raw === '' ? null : Number(raw));
 
   return (
-    <div className="flex flex-wrap items-end gap-4 p-3 rounded-lg bg-muted/50">
-      <div className="flex-1 min-w-[220px] space-y-1">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_8rem_8rem] items-end gap-4 p-3 rounded-lg bg-muted/50">
+      <div className="space-y-1">
         <div className="flex items-center gap-1.5">
           <Label className="text-sm">
             {label}
@@ -209,19 +214,23 @@ const MontantLigne = ({ label, extra, aide, code1, code2, value1, value2, onChan
         </div>
       </div>
       <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">Déclarant 1 · {code1}</Label>
+        <Label className="text-xs text-muted-foreground lg:hidden">Déclarant 1 · {code1}</Label>
+        <Label className="text-xs text-muted-foreground hidden lg:block">{code1}</Label>
         <Input
+          id={`case-${code1}`}
           type="number"
-          className="w-36"
+          className="w-full lg:w-28"
           value={value1 ?? ''}
           onChange={ev => onChange1(parse(ev.target.value))}
         />
       </div>
       <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">Déclarant 2 · {code2}</Label>
+        <Label className="text-xs text-muted-foreground lg:hidden">Déclarant 2 · {code2}</Label>
+        <Label className="text-xs text-muted-foreground hidden lg:block">{code2}</Label>
         <Input
+          id={`case-${code2}`}
           type="number"
-          className="w-36"
+          className="w-full lg:w-28"
           value={value2 ?? ''}
           onChange={ev => onChange2(parse(ev.target.value))}
         />
@@ -256,6 +265,7 @@ const SingleMontantLigne = ({ label, extra, aide, code, value, onChange }: Singl
       <div className="space-y-1">
         <Label className="text-xs text-muted-foreground">{code}</Label>
         <Input
+          id={`case-${code}`}
           type="number"
           className="w-36"
           value={value ?? ''}

@@ -268,53 +268,53 @@ export const MenageForm = ({ onSaved, onChange }: MenageFormProps) => {
             id="parent-isole"
             checked={foyer.parentIsole}
             onCheckedChange={v => update('parentIsole', v)}
-            label="Je vis seul(e) avec au moins un enfant à ma charge"
+            label="Je vis seul(e) avec au moins un enfant à ma charge (T)"
           />
           <CaseACocher
             id="ancien-parent-isole"
             checked={foyer.ancienParentIsole}
             onCheckedChange={v => update('ancienParentIsole', v)}
-            label="J'ai élevé seul(e) un enfant pendant au moins 5 ans, mais ce n'est plus le cas aujourd'hui"
+            label="J'ai élevé seul(e) un enfant pendant au moins 5 ans, mais ce n'est plus le cas aujourd'hui (L)"
           />
           <CaseACocher
             id="invalidite-declarant1"
             checked={foyer.invaliditeDeclarant1}
             onCheckedChange={v => update('invaliditeDeclarant1', v)}
-            label="Vous êtes en situation d'invalidité"
+            label="Vous êtes en situation d'invalidité (P)"
           />
           {estCouple && (
             <CaseACocher
               id="invalidite-declarant2"
               checked={foyer.invaliditeDeclarant2}
               onCheckedChange={v => update('invaliditeDeclarant2', v)}
-              label="Votre conjoint(e) est en situation d'invalidité"
+              label="Votre conjoint(e) est en situation d'invalidité (F)"
             />
           )}
           <CaseACocher
             id="ancien-combattant-declarant1"
             checked={foyer.ancienCombattantDeclarant1}
             onCheckedChange={v => update('ancienCombattantDeclarant1', v)}
-            label="Vous êtes ancien(ne) combattant(e) ou titulaire d'une pension militaire d'invalidité, et âgé(e) de plus de 74 ans"
+            label="Vous êtes ancien(ne) combattant(e) ou titulaire d'une pension militaire d'invalidité, et âgé(e) de plus de 74 ans (W)"
           />
           {estCouple && (
             <CaseACocher
               id="ancien-combattant-declarant2"
               checked={foyer.ancienCombattantDeclarant2}
               onCheckedChange={v => update('ancienCombattantDeclarant2', v)}
-              label="Votre conjoint(e) est dans cette situation"
+              label="Votre conjoint(e) est dans cette situation (S)"
             />
           )}
           <CaseACocher
             id="veuf-ancien-combattant"
             checked={foyer.veufAncienCombattant}
             onCheckedChange={v => update('veufAncienCombattant', v)}
-            label="Vous êtes veuf/veuve d'un(e) ancien(ne) combattant(e) décédé(e) après 74 ans"
+            label="Vous êtes veuf/veuve d'un(e) ancien(ne) combattant(e) décédé(e) après 74 ans (W)"
           />
           <CaseACocher
             id="veuve-de-guerre"
             checked={foyer.veuveDeGuerre}
             onCheckedChange={v => update('veuveDeGuerre', v)}
-            label="Vous êtes titulaire d'une pension de veuve de guerre"
+            label="Vous êtes titulaire d'une pension de veuve de guerre (G)"
           />
         </div>
 

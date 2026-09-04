@@ -1,0 +1,82 @@
+export interface Declaration2042Case {
+  code: string;
+  label: string;
+  sectionId: string;
+  /** id de l'élément (input/checkbox) DOM correspondant, pour y placer le focus depuis la recherche */
+  elementId: string;
+}
+
+// Index de recherche des cases de la 2042. Doit être tenu à jour manuellement
+// à chaque ajout de case dans un des formulaires (Menage, RevenusSalaires,
+// GainsActionnariatSalarie, ...). `elementId` doit correspondre à l'id réel
+// du champ dans le formulaire (id={`case-${code}`} pour les cases chiffrées,
+// id dédié pour les cases à cocher du Ménage).
+export const DECLARATION_2042_CASES: Declaration2042Case[] = [
+  // Ménage — situations particulières
+  { code: 'T', label: 'Je vis seul(e) avec au moins un enfant à ma charge', sectionId: 'menage', elementId: 'parent-isole' },
+  { code: 'L', label: "J'ai élevé seul(e) un enfant pendant au moins 5 ans", sectionId: 'menage', elementId: 'ancien-parent-isole' },
+  { code: 'P', label: "Vous êtes en situation d'invalidité", sectionId: 'menage', elementId: 'invalidite-declarant1' },
+  { code: 'F', label: "Votre conjoint(e) est en situation d'invalidité", sectionId: 'menage', elementId: 'invalidite-declarant2' },
+  { code: 'W', label: "Vous êtes ancien(ne) combattant(e) ou titulaire d'une pension militaire d'invalidité", sectionId: 'menage', elementId: 'ancien-combattant-declarant1' },
+  { code: 'S', label: "Votre conjoint(e) est ancien(ne) combattant(e) ou titulaire d'une pension militaire d'invalidité", sectionId: 'menage', elementId: 'ancien-combattant-declarant2' },
+  { code: 'W', label: "Vous êtes veuf/veuve d'un(e) ancien(ne) combattant(e) décédé(e) après 74 ans", sectionId: 'menage', elementId: 'veuf-ancien-combattant' },
+  { code: 'G', label: 'Vous êtes titulaire d\'une pension de veuve de guerre', sectionId: 'menage', elementId: 'veuve-de-guerre' },
+
+  // Traitements et salaires
+  { code: '1AJ', label: 'Traitements et salaires — Déclarant 1', sectionId: 'salaires', elementId: 'case-1AJ' },
+  { code: '1BJ', label: 'Traitements et salaires — Déclarant 2', sectionId: 'salaires', elementId: 'case-1BJ' },
+  { code: '1AA', label: 'Revenus des salariés des particuliers employeurs — Déclarant 1', sectionId: 'salaires', elementId: 'case-1AA' },
+  { code: '1BA', label: 'Revenus des salariés des particuliers employeurs — Déclarant 2', sectionId: 'salaires', elementId: 'case-1BA' },
+  { code: '1GA', label: 'Abattement forfaitaire (assistants maternels/familiaux, journalistes) — Déclarant 1', sectionId: 'salaires', elementId: 'case-1GA' },
+  { code: '1HA', label: 'Abattement forfaitaire (assistants maternels/familiaux, journalistes) — Déclarant 2', sectionId: 'salaires', elementId: 'case-1HA' },
+  { code: '1GH', label: 'Heures supplémentaires et jours RTT exonérés — Déclarant 1', sectionId: 'salaires', elementId: 'case-1GH' },
+  { code: '1HH', label: 'Heures supplémentaires et jours RTT exonérés — Déclarant 2', sectionId: 'salaires', elementId: 'case-1HH' },
+  { code: '1PB', label: 'Pourboires exonérés — Déclarant 1', sectionId: 'salaires', elementId: 'case-1PB' },
+  { code: '1PC', label: 'Pourboires exonérés — Déclarant 2', sectionId: 'salaires', elementId: 'case-1PC' },
+  { code: '1AD', label: 'Primes de partage de la valeur exonérées (ex-prime Macron) — Déclarant 1', sectionId: 'salaires', elementId: 'case-1AD' },
+  { code: '1BD', label: 'Primes de partage de la valeur exonérées (ex-prime Macron) — Déclarant 2', sectionId: 'salaires', elementId: 'case-1BD' },
+  { code: '1AV', label: "Majoration du seuil d'exonération — Déclarant 1", sectionId: 'salaires', elementId: 'case-1AV' },
+  { code: '1BV', label: "Majoration du seuil d'exonération — Déclarant 2", sectionId: 'salaires', elementId: 'case-1BV' },
+  { code: '1GB', label: 'Revenus des associés et gérants (article 62 du CGI) — Déclarant 1', sectionId: 'salaires', elementId: 'case-1GB' },
+  { code: '1HB', label: 'Revenus des associés et gérants (article 62 du CGI) — Déclarant 2', sectionId: 'salaires', elementId: 'case-1HB' },
+  { code: '1GF', label: 'Droits d\'auteur, fonctionnaires chercheurs — Déclarant 1', sectionId: 'salaires', elementId: 'case-1GF' },
+  { code: '1HF', label: 'Droits d\'auteur, fonctionnaires chercheurs — Déclarant 2', sectionId: 'salaires', elementId: 'case-1HF' },
+  { code: '1GG', label: 'Agents généraux d\'assurance (salaires imposables) — Déclarant 1', sectionId: 'salaires', elementId: 'case-1GG' },
+  { code: '1HG', label: 'Agents généraux d\'assurance (salaires imposables) — Déclarant 2', sectionId: 'salaires', elementId: 'case-1HG' },
+  { code: '1PM', label: 'Indemnités pour préjudice moral (fraction > 1 M€) — Déclarant 1', sectionId: 'salaires', elementId: 'case-1PM' },
+  { code: '1QM', label: 'Indemnités pour préjudice moral (fraction > 1 M€) — Déclarant 2', sectionId: 'salaires', elementId: 'case-1QM' },
+  { code: '1DY', label: 'Salariés impatriés (salaires et primes exonérés) — Déclarant 1', sectionId: 'salaires', elementId: 'case-1DY' },
+  { code: '1EY', label: 'Salariés impatriés (salaires et primes exonérés) — Déclarant 2', sectionId: 'salaires', elementId: 'case-1EY' },
+  { code: '1SM', label: "Sommes exonérées provenant du CET — Déclarant 1", sectionId: 'salaires', elementId: 'case-1SM' },
+  { code: '1DN', label: "Sommes exonérées provenant du CET — Déclarant 2", sectionId: 'salaires', elementId: 'case-1DN' },
+  { code: '1GK', label: 'Ne perçoit plus de salaires 1GB, 1GF, 1GG, 1AG — Déclarant 1', sectionId: 'salaires', elementId: 'case-1GK' },
+  { code: '1GL', label: 'Ne perçoit plus de salaires 1GB, 1GF, 1GG, 1AG — Déclarant 2', sectionId: 'salaires', elementId: 'case-1GL' },
+  { code: '1AP', label: 'Autres revenus imposables (chômage, préretraite) — Déclarant 1', sectionId: 'salaires', elementId: 'case-1AP' },
+  { code: '1BP', label: 'Autres revenus imposables (chômage, préretraite) — Déclarant 2', sectionId: 'salaires', elementId: 'case-1BP' },
+  { code: '1AF', label: 'Salaires perçus par les non-résidents et salaires de source étrangère avec crédit d\'impôt — Déclarant 1', sectionId: 'salaires', elementId: 'case-1AF' },
+  { code: '1BF', label: 'Salaires perçus par les non-résidents et salaires de source étrangère avec crédit d\'impôt — Déclarant 2', sectionId: 'salaires', elementId: 'case-1BF' },
+  { code: '1AG', label: 'Autres salaires imposables de source étrangère — Déclarant 1', sectionId: 'salaires', elementId: 'case-1AG' },
+  { code: '1BG', label: 'Autres salaires imposables de source étrangère — Déclarant 2', sectionId: 'salaires', elementId: 'case-1BG' },
+  { code: '1AK', label: 'Frais réels — Déclarant 1', sectionId: 'salaires', elementId: 'case-1AK' },
+  { code: '1BK', label: 'Frais réels — Déclarant 2', sectionId: 'salaires', elementId: 'case-1BK' },
+
+  // Gains d'actionnariat salarié
+  { code: '1TP', label: 'Rabais excédentaire sur options sur titres — Déclarant 1', sectionId: 'actionnariat', elementId: 'case-1TP' },
+  { code: '1UP', label: 'Rabais excédentaire sur options sur titres — Déclarant 2', sectionId: 'actionnariat', elementId: 'case-1UP' },
+  { code: '1TT', label: "Gains de levée d'options / actions gratuites attribuées à compter du 28.9.2012 — Déclarant 1", sectionId: 'actionnariat', elementId: 'case-1TT' },
+  { code: '1UT', label: "Gains de levée d'options / actions gratuites attribuées à compter du 28.9.2012 — Déclarant 2", sectionId: 'actionnariat', elementId: 'case-1UT' },
+  { code: '1TZ', label: 'Gain imposable après abattement (actions gratuites 8.8.2015-30.12.2016)', sectionId: 'actionnariat', elementId: 'case-1TZ' },
+  { code: '1UZ', label: 'Abattement pour durée de détention (actions gratuites)', sectionId: 'actionnariat', elementId: 'case-1UZ' },
+  { code: '1WZ', label: 'Abattement de 50 % (actions gratuites)', sectionId: 'actionnariat', elementId: 'case-1WZ' },
+  { code: '1VZ', label: "Abattement fixe (départ à la retraite d'un dirigeant de PME)", sectionId: 'actionnariat', elementId: 'case-1VZ' },
+  { code: '1NX', label: 'Gains et distributions de parts ou actions de carried-interest — Déclarant 1', sectionId: 'actionnariat', elementId: 'case-1NX' },
+  { code: '1OX', label: 'Gains et distributions de parts ou actions de carried-interest — Déclarant 2', sectionId: 'actionnariat', elementId: 'case-1OX' },
+  { code: '1NY', label: 'Carried-interest soumis à la contribution salariale de 30 % — Déclarant 1', sectionId: 'actionnariat', elementId: 'case-1NY' },
+  { code: '1OY', label: 'Carried-interest soumis à la contribution salariale de 30 % — Déclarant 2', sectionId: 'actionnariat', elementId: 'case-1OY' },
+  { code: '3VD', label: "Gains de levée d'options taxables à 18 % (attribuées avant le 28.9.2012)", sectionId: 'actionnariat', elementId: 'case-3VD' },
+  { code: '3VI', label: "Gains de levée d'options taxables à 30 % (attribuées avant le 28.9.2012)", sectionId: 'actionnariat', elementId: 'case-3VI' },
+  { code: '3VF', label: "Gains de levée d'options taxables à 41 % (attribuées avant le 28.9.2012)", sectionId: 'actionnariat', elementId: 'case-3VF' },
+  { code: '3VJ', label: 'Gains imposables sur option, catégorie des salaires — Déclarant 1', sectionId: 'actionnariat', elementId: 'case-3VJ' },
+  { code: '3VK', label: 'Gains imposables sur option, catégorie des salaires — Déclarant 2', sectionId: 'actionnariat', elementId: 'case-3VK' },
+  { code: '3VN', label: 'Gains soumis à la contribution salariale de 10 %', sectionId: 'actionnariat', elementId: 'case-3VN' },
+];
