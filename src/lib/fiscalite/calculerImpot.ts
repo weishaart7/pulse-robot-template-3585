@@ -21,6 +21,16 @@ const DECOTE_MONTANT_COUPLE = 1483;
 
 const COUPLE_IMPOSITION_COMMUNE: FoyerFiscalInput['situationFamille'][] = ['marie', 'pacse'];
 
+/**
+ * Réduction d'impôt outre-mer (art. 197 I 3° CGI, revenus 2025 / impôt 2026) :
+ * taux et plafond par territoire. Absente pour la métropole.
+ */
+const REDUCTION_OUTRE_MER: Record<FoyerFiscalInput['lieuResidence'], { taux: number; plafond: number }> = {
+  metropole: { taux: 0, plafond: 0 },
+  guadeloupe_martinique_reunion: { taux: 0.30, plafond: 2450 },
+  guyane_mayotte: { taux: 0.40, plafond: 4050 },
+};
+
 export interface ImpotResult {
   revenuImposable: number;
   revenuExonereTauxEffectif: number;
@@ -35,6 +45,8 @@ export interface ImpotResult {
   impotApresPlafonnement: number;
   tauxEffectif: number;
   impotProportionnel: number;
+  reductionOutreMer: number;
+  impotApresReductionOutreMer: number;
   decote: number;
   impotNet: number;
   tmi: number;
@@ -70,14 +82,18 @@ function impotBrut(revenuImposable: number, nombreParts: number): number {
  * Impôt sur le revenu (art. 197 CGI, revenus 2025 / impôt 2026), limité au
  * périmètre actuellement calculable (salaires, gains d'actionnariat au
  * barème, quotient familial), avec application de la méthode du taux
- * effectif pour les revenus exonérés de source étrangère.
+ * effectif pour les revenus exonérés de source étrangère et de la réduction
+ * d'impôt outre-mer.
  *
  * Étapes : barème progressif appliqué au quotient du revenu mondial fictif
  * (revenu imposable en France + revenu exonéré retenu pour le taux effectif),
  * puis plafonnement de l'avantage du quotient familial, puis proratisation
  * (méthode du taux effectif : seule la part du revenu imposable en France
- * paie, mais au taux moyen calculé sur le revenu mondial), puis décote sur ce
- * montant proratisé, puis arrondi à l'euro.
+ * paie, mais au taux moyen calculé sur le revenu mondial), puis réduction
+ * outre-mer (30 % dans la limite de 2 450 € en Guadeloupe/Martinique/Réunion,
+ * 40 % dans la limite de 4 050 € en Guyane/Mayotte — BOI-IR-LIQ-20-30-10 :
+ * appliquée après plafonnement du quotient familial, avant la décote), puis
+ * décote sur ce montant, puis arrondi à l'euro.
  *
  * Plafonnement : la somme des `plafondUnitaire` de chaque majoration
  * (`calculerPartsFiscales`) borne l'avantage. Une majoration sans
@@ -90,12 +106,15 @@ function impotBrut(revenuImposable: number, nombreParts: number): number {
  *
  * `revenuExonereTauxEffectif` (optionnel, 0 par défaut) : revenu exonéré net
  * retenu pour le taux effectif (`calculerRevenuExonereTauxEffectif.ts`).
+ * `lieuResidence` (optionnel, 'metropole' par défaut) : détermine la
+ * réduction outre-mer.
  */
 export function calculerImpot(
   revenuImposable: number,
   parts: PartsFiscalesResult,
   situationFamille: FoyerFiscalInput['situationFamille'],
   revenuExonereTauxEffectif = 0,
+  lieuResidence: FoyerFiscalInput['lieuResidence'] = 'metropole',
 ): ImpotResult {
   const revenu = Math.max(0, revenuImposable);
   const revenuExonere = Math.max(0, revenuExonereTauxEffectif);
@@ -117,14 +136,18 @@ export function calculerImpot(
   const tauxEffectif = revenuMondialFictif > 0 ? impotApresPlafonnement / revenuMondialFictif : 0;
   const impotProportionnel = revenuExonere > 0 ? tauxEffectif * revenu : impotApresPlafonnement;
 
+  const { taux: tauxReductionOutreMer, plafond: plafondReductionOutreMer } = REDUCTION_OUTRE_MER[lieuResidence];
+  const reductionOutreMer = Math.min(plafondReductionOutreMer, impotProportionnel * tauxReductionOutreMer);
+  const impotApresReductionOutreMer = impotProportionnel - reductionOutreMer;
+
   const estCoupleImpositionCommune = COUPLE_IMPOSITION_COMMUNE.includes(situationFamille);
   const seuilDecote = estCoupleImpositionCommune ? DECOTE_SEUIL_COUPLE : DECOTE_SEUIL_CELIBATAIRE;
   const montantDecoteBase = estCoupleImpositionCommune ? DECOTE_MONTANT_COUPLE : DECOTE_MONTANT_CELIBATAIRE;
-  const decote = impotProportionnel < seuilDecote
-    ? Math.max(0, montantDecoteBase - impotProportionnel * DECOTE_TAUX)
+  const decote = impotApresReductionOutreMer < seuilDecote
+    ? Math.max(0, montantDecoteBase - impotApresReductionOutreMer * DECOTE_TAUX)
     : 0;
 
-  const impotNet = Math.max(0, Math.round(impotProportionnel - decote));
+  const impotNet = Math.max(0, Math.round(impotApresReductionOutreMer - decote));
 
   return {
     revenuImposable: revenu,
@@ -140,6 +163,8 @@ export function calculerImpot(
     impotApresPlafonnement,
     tauxEffectif,
     impotProportionnel,
+    reductionOutreMer,
+    impotApresReductionOutreMer,
     decote,
     impotNet,
     tmi: tmiPourQuotient(parts.nombreParts > 0 ? revenuMondialFictif / parts.nombreParts : 0),

@@ -5,12 +5,23 @@ const PENSION_ABATTEMENT_TAUX = 0.10;
 const PENSION_ABATTEMENT_PLANCHER = 454;
 const PENSION_ABATTEMENT_PLAFOND_FOYER = 4439;
 
+/**
+ * Cases purement informatives de cet encart, sans effet sur le calcul (voir
+ * JSDoc de calculerRevenuExonereTauxEffectif) — pattern identique à
+ * CASES_SALAIRES_EXCLUES_DU_CALCUL / CASES_GAINS_ACTIONNARIAT_EXCLUES_DU_CALCUL.
+ */
+export const CASES_EXONERES_TAUX_EFFECTIF_EXCLUES_DU_CALCUL = [
+  'case1ge', 'case1he', // case à cocher marins-pêcheurs hors eaux territoriales
+  'caseRse', 'caseRsf', // pays de provenance des revenus de source étrangère (texte libre)
+] as const;
+
 export interface RevenuExonereTauxEffectifResult {
   salairesNetImposables: number;
   pensionsBrutes: number;
   abattementPension: number;
   pensionsNettes: number;
   totalRetenu: number;
+  casesExclues: readonly string[];
 }
 
 /**
@@ -62,5 +73,6 @@ export function calculerRevenuExonereTauxEffectif(
     abattementPension,
     pensionsNettes,
     totalRetenu: salairesNetImposables + pensionsNettes,
+    casesExclues: CASES_EXONERES_TAUX_EFFECTIF_EXCLUES_DU_CALCUL,
   };
 }

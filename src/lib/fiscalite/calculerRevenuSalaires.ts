@@ -6,18 +6,21 @@ const ABATTEMENT_PLAFOND = 14555;
 
 /**
  * Cases du cadre 1 "Traitements et salaires" volontairement exclues du calcul
- * v1 : montants exonérés d'IR (n'entrent jamais dans le revenu imposable), ou
+ * v1 : montants exonérés d'IR (n'entrent jamais dans le revenu imposable),
  * régime dont l'articulation est trop complexe pour être fiabilisée sans
- * validation métier dédiée (1AF/1BF : méthode du taux effectif).
+ * validation métier dédiée (1AF/1BF : méthode du taux effectif), ou cases à
+ * cocher purement informatives sans montant propre (1AV/1BV, 1GK/1GL).
  */
 export const CASES_SALAIRES_EXCLUES_DU_CALCUL = [
   'case1gh', 'case1hh', // heures supplémentaires et jours RTT exonérés
   'case1pb', 'case1pc', // pourboires exonérés
   'case1ad', 'case1bd', // primes de partage de la valeur exonérées
+  'case1av', 'case1bv', // majoration du seuil d'exonération de 1AD/1BD (sans effet ici : 1AD/1BD déjà traité comme intégralement exonéré)
   'case1dy', 'case1ey', // salariés impatriés, fraction exonérée
   'case1sm', 'case1dn', // sommes exonérées issues du CET
   'case1af', 'case1bf', // source étrangère, crédit d'impôt égal à l'impôt français (taux effectif non implémenté)
   'case1gb', 'case1hb', // gérants et associés art. 62 CGI (régime de frais professionnels particulier, non arbitré)
+  'case1gk', 'case1gl', // "ne perçoit plus de salaires 1GB/1GF/1GG/1AG" — informatif (année suivante), aucun montant propre
 ] as const;
 
 export interface RevenuSalairesDeclarantDetail {

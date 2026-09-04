@@ -177,6 +177,51 @@ describe('calculerImpot — méthode du taux effectif', () => {
   });
 });
 
+describe('calculerImpot — réduction outre-mer (art. 197 I 3° CGI)', () => {
+  it('métropole (par défaut) : aucune réduction', () => {
+    const result = calculerImpot(50000, makeParts(), 'celibataire');
+    expect(result.reductionOutreMer).toBe(0);
+  });
+
+  it('métropole (explicite) : aucune réduction', () => {
+    const result = calculerImpot(50000, makeParts(), 'celibataire', 0, 'metropole');
+    expect(result.reductionOutreMer).toBe(0);
+  });
+
+  it('Guadeloupe/Martinique/Réunion : réduction de 30 % sous le plafond', () => {
+    const result = calculerImpot(20000, makeParts(), 'celibataire', 0, 'guadeloupe_martinique_reunion');
+    // impôt avant réduction = (20000-11600)*11% = 924 -> 30% = 277,2 (sous le plafond 2450)
+    expect(result.reductionOutreMer).toBeCloseTo(924 * 0.30, 6);
+  });
+
+  it('Guadeloupe/Martinique/Réunion : réduction plafonnée à 2 450 € sur un revenu élevé', () => {
+    const result = calculerImpot(200000, makeParts(), 'celibataire', 0, 'guadeloupe_martinique_reunion');
+    expect(result.reductionOutreMer).toBe(2450);
+  });
+
+  it('Guyane/Mayotte : réduction de 40 % sous le plafond', () => {
+    const result = calculerImpot(20000, makeParts(), 'celibataire', 0, 'guyane_mayotte');
+    expect(result.reductionOutreMer).toBeCloseTo(924 * 0.40, 6);
+  });
+
+  it('Guyane/Mayotte : réduction plafonnée à 4 050 € sur un revenu élevé', () => {
+    const result = calculerImpot(200000, makeParts(), 'celibataire', 0, 'guyane_mayotte');
+    expect(result.reductionOutreMer).toBe(4050);
+  });
+
+  it('la réduction fait baisser l\'impôt net par rapport à la métropole, toutes choses égales par ailleurs', () => {
+    const metropole = calculerImpot(50000, makeParts(), 'celibataire', 0, 'metropole');
+    const dom = calculerImpot(50000, makeParts(), 'celibataire', 0, 'guadeloupe_martinique_reunion');
+    expect(dom.impotNet).toBeLessThan(metropole.impotNet);
+  });
+
+  it('la réduction est appliquée avant la décote (pas cumulée en double)', () => {
+    const result = calculerImpot(20000, makeParts(), 'celibataire', 0, 'guadeloupe_martinique_reunion');
+    expect(result.impotApresReductionOutreMer).toBeCloseTo(result.impotProportionnel - result.reductionOutreMer, 6);
+    expect(result.impotNet).toBeLessThanOrEqual(Math.round(result.impotApresReductionOutreMer));
+  });
+});
+
 describe('calculerImpot — impôt net', () => {
   it("n'est jamais négatif", () => {
     const result = calculerImpot(5000, makeParts(), 'celibataire');
