@@ -6,7 +6,12 @@ import { FileText, Home, Globe, TrendingUp, Coins } from 'lucide-react';
 import IFIInterface from './IFIInterface';
 import Declaration2042Interface from './Declaration2042Interface';
 
-const FiscalDeclarationsCard = () => {
+interface FiscalDeclarationsCardProps {
+  /** Appelé à la fermeture de la 2042 pour rafraîchir la Vision générale (voir useFiscalOverview.ts). */
+  onDeclarationClosed?: () => void;
+}
+
+const FiscalDeclarationsCard = ({ onDeclarationClosed }: FiscalDeclarationsCardProps) => {
   const [showIFI, setShowIFI] = useState(false);
   const [show2042, setShow2042] = useState(false);
   const declarations = [
@@ -76,7 +81,7 @@ const FiscalDeclarationsCard = () => {
       </Card>
 
       {showIFI && <IFIInterface onClose={() => setShowIFI(false)} />}
-      {show2042 && <Declaration2042Interface onClose={() => setShow2042(false)} />}
+      {show2042 && <Declaration2042Interface onClose={() => { setShow2042(false); onDeclarationClosed?.(); }} />}
     </>
   );
 };

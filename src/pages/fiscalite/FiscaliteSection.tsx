@@ -25,7 +25,7 @@ const FiscaliteSection = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column - Fiscal declarations */}
         <div className="lg:col-span-1">
-          <FiscalDeclarationsCard />
+          <FiscalDeclarationsCard onDeclarationClosed={fiscalOverview.refetch} />
         </div>
 
         {/* Right columns - Overview and details */}

@@ -85,6 +85,8 @@ export interface FiscalOverview {
   revenuExonereTauxEffectif: RevenuExonereTauxEffectifResult;
   parts: PartsFiscalesResult;
   impot: ImpotResult;
+  /** Recharge les 4 sources Supabase — à appeler après une saisie dans la 2042 (voir FiscaliteSection.tsx). */
+  refetch: () => void;
 }
 
 /**
@@ -94,14 +96,26 @@ export interface FiscalOverview {
  * seul point de calcul partagé entre FiscalOverviewCard et TaxRateCard pour
  * éviter des appels Supabase dupliqués et deux implémentations divergentes du
  * même résultat.
+ *
+ * `FiscaliteSection` ne démonte jamais ce hook quand la 2042 s'ouvre en
+ * overlay par-dessus : sans `refetch()` explicite au moment où l'overlay se
+ * ferme, la Vision générale resterait figée sur les données du premier
+ * chargement de la page.
  */
 export function useFiscalOverview(): FiscalOverview {
-  const { data: foyer, loading: loadingFoyer } = useFoyerFiscal();
-  const { data: revenus, loading: loadingRevenus } = useRevenusSalaires();
-  const { data: gains, loading: loadingGains } = useGainsActionnariatSalarie();
-  const { data: exoneres, loading: loadingExoneres } = useRevenusExoneresTauxEffectif();
+  const { data: foyer, loading: loadingFoyer, refetch: refetchFoyer } = useFoyerFiscal();
+  const { data: revenus, loading: loadingRevenus, refetch: refetchRevenus } = useRevenusSalaires();
+  const { data: gains, loading: loadingGains, refetch: refetchGains } = useGainsActionnariatSalarie();
+  const { data: exoneres, loading: loadingExoneres, refetch: refetchExoneres } = useRevenusExoneresTauxEffectif();
 
-  return useMemo(() => {
+  const refetch = () => {
+    refetchFoyer();
+    refetchRevenus();
+    refetchGains();
+    refetchExoneres();
+  };
+
+  const overview = useMemo(() => {
     const foyerInput = foyer ?? FOYER_PAR_DEFAUT;
     const revenusInput = revenus ?? REVENUS_SALAIRES_PAR_DEFAUT;
     const gainsInput = gains ?? GAINS_ACTIONNARIAT_PAR_DEFAUT;
@@ -130,4 +144,6 @@ export function useFiscalOverview(): FiscalOverview {
       impot,
     };
   }, [foyer, revenus, gains, exoneres, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres]);
+
+  return { ...overview, refetch };
 }
