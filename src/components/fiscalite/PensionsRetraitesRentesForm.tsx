@@ -22,6 +22,14 @@ const PENSIONS_VIDE: PensionsRetraitesRentesInput = {
   case1bl: null,
   case1am: null,
   case1bm: null,
+  case1aw: null,
+  case1bw: null,
+  case1cw: null,
+  case1dw: null,
+  case1ar: null,
+  case1br: null,
+  case1cr: null,
+  case1dr: null,
 };
 
 interface PensionsRetraitesRentesFormProps {

@@ -28,6 +28,14 @@ interface PensionsRetraitesRentesRow {
   case_1bl: number | string | null;
   case_1am: number | string | null;
   case_1bm: number | string | null;
+  case_1aw: number | string | null;
+  case_1bw: number | string | null;
+  case_1cw: number | string | null;
+  case_1dw: number | string | null;
+  case_1ar: number | string | null;
+  case_1br: number | string | null;
+  case_1cr: number | string | null;
+  case_1dr: number | string | null;
 }
 
 function toNumberOrNull(value: number | string | null): number | null {
@@ -52,6 +60,14 @@ function rowToPensionsRetraitesRentes(row: PensionsRetraitesRentesRow): Pensions
     case1bl: toNumberOrNull(row.case_1bl),
     case1am: toNumberOrNull(row.case_1am),
     case1bm: toNumberOrNull(row.case_1bm),
+    case1aw: toNumberOrNull(row.case_1aw),
+    case1bw: toNumberOrNull(row.case_1bw),
+    case1cw: toNumberOrNull(row.case_1cw),
+    case1dw: toNumberOrNull(row.case_1dw),
+    case1ar: toNumberOrNull(row.case_1ar),
+    case1br: toNumberOrNull(row.case_1br),
+    case1cr: toNumberOrNull(row.case_1cr),
+    case1dr: toNumberOrNull(row.case_1dr),
   };
 }
 
@@ -72,6 +88,14 @@ function pensionsRetraitesRentesToRow(pensions: PensionsRetraitesRentes, userId:
     case_1bl: pensions.case1bl,
     case_1am: pensions.case1am,
     case_1bm: pensions.case1bm,
+    case_1aw: pensions.case1aw,
+    case_1bw: pensions.case1bw,
+    case_1cw: pensions.case1cw,
+    case_1dw: pensions.case1dw,
+    case_1ar: pensions.case1ar,
+    case_1br: pensions.case1br,
+    case_1cr: pensions.case1cr,
+    case_1dr: pensions.case1dr,
   };
 }
 

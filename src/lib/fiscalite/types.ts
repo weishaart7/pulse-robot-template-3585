@@ -113,6 +113,15 @@ export interface PensionsRetraitesRentesInput {
   case1bl: number | null;
   case1am: number | null;
   case1bm: number | null;
+  /** Rentes viagères à titre onéreux — montant perçu par le foyer par tranche d'âge d'entrée en jouissance (pas par déclarant). */
+  case1aw: number | null;
+  case1bw: number | null;
+  case1cw: number | null;
+  case1dw: number | null;
+  case1ar: number | null;
+  case1br: number | null;
+  case1cr: number | null;
+  case1dr: number | null;
 }
 
 export interface RevenusExoneresTauxEffectifInput {
