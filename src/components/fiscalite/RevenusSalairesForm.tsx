@@ -42,6 +42,12 @@ const REVENUS_VIDE: RevenusSalairesInput = {
   case1bg: null,
   case1ak: null,
   case1bk: null,
+  case1pm: null,
+  case1qm: null,
+  case1dy: null,
+  case1ey: null,
+  case1sm: null,
+  case1dn: null,
 };
 
 interface RevenusSalairesFormProps {
@@ -157,6 +163,30 @@ export const RevenusSalairesForm = ({ onSaved }: RevenusSalairesFormProps) => {
           code1="1GG" code2="1HG"
           value1={revenus.case1gg} value2={revenus.case1hg}
           onChange1={v => update('case1gg', v)} onChange2={v => update('case1hg', v)}
+        />
+        <MontantLigne
+          label="Indemnités pour préjudice moral"
+          extra="fraction supérieure à 1 million d'euros"
+          aide="Indemnité versée en réparation d'un préjudice moral (ex. licenciement abusif), imposable seulement au-delà d'1 million d'euros."
+          code1="1PM" code2="1QM"
+          value1={revenus.case1pm} value2={revenus.case1qm}
+          onChange1={v => update('case1pm', v)} onChange2={v => update('case1qm', v)}
+        />
+        <MontantLigne
+          label="Salariés impatriés"
+          extra="salaires et primes exonérés"
+          aide="Régime des salariés impatriés (art. 155 B CGI) : exonération partielle des primes liées à une prise de fonction en France depuis l'étranger."
+          code1="1DY" code2="1EY"
+          value1={revenus.case1dy} value2={revenus.case1ey}
+          onChange1={v => update('case1dy', v)} onChange2={v => update('case1ey', v)}
+        />
+        <MontantLigne
+          label="Sommes exonérées provenant du CET"
+          extra="ou de jours de congé non pris, affectées à l'épargne retraite d'entreprise"
+          aide="CET = Compte Épargne-Temps. Concerne les sommes issues du CET ou de jours de congé non pris, versées sur un plan d'épargne retraite d'entreprise."
+          code1="1SM" code2="1DN"
+          value1={revenus.case1sm} value2={revenus.case1dn}
+          onChange1={v => update('case1sm', v)} onChange2={v => update('case1dn', v)}
         />
         <CaseLigne
           label="Ne perçoit plus de salaires 1GB, 1GF, 1GG, 1AG"
