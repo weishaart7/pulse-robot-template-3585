@@ -1174,6 +1174,81 @@ export type Database = {
         }
         Relationships: []
       }
+      gains_actionnariat_salarie: {
+        Row: {
+          case_1nx: number | null
+          case_1ny: number | null
+          case_1ox: number | null
+          case_1oy: number | null
+          case_1tp: number | null
+          case_1tt: number | null
+          case_1tz: number | null
+          case_1up: number | null
+          case_1ut: number | null
+          case_1uz: number | null
+          case_1vz: number | null
+          case_1wz: number | null
+          case_3vd: number | null
+          case_3vf: number | null
+          case_3vi: number | null
+          case_3vj: number | null
+          case_3vk: number | null
+          case_3vn: number | null
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          case_1nx?: number | null
+          case_1ny?: number | null
+          case_1ox?: number | null
+          case_1oy?: number | null
+          case_1tp?: number | null
+          case_1tt?: number | null
+          case_1tz?: number | null
+          case_1up?: number | null
+          case_1ut?: number | null
+          case_1uz?: number | null
+          case_1vz?: number | null
+          case_1wz?: number | null
+          case_3vd?: number | null
+          case_3vf?: number | null
+          case_3vi?: number | null
+          case_3vj?: number | null
+          case_3vk?: number | null
+          case_3vn?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          case_1nx?: number | null
+          case_1ny?: number | null
+          case_1ox?: number | null
+          case_1oy?: number | null
+          case_1tp?: number | null
+          case_1tt?: number | null
+          case_1tz?: number | null
+          case_1up?: number | null
+          case_1ut?: number | null
+          case_1uz?: number | null
+          case_1vz?: number | null
+          case_1wz?: number | null
+          case_3vd?: number | null
+          case_3vf?: number | null
+          case_3vi?: number | null
+          case_3vj?: number | null
+          case_3vk?: number | null
+          case_3vn?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ifi_biens_detenus_indirectement: {
         Row: {
           adresse_code_postal: string | null

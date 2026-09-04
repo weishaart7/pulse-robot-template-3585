@@ -70,3 +70,24 @@ export interface RevenusSalairesInput {
   case1ak: number | null;
   case1bk: number | null;
 }
+
+export interface GainsActionnariatSalarieInput {
+  case1tp: number | null;
+  case1up: number | null;
+  case1tt: number | null;
+  case1ut: number | null;
+  case1tz: number | null;
+  case1uz: number | null;
+  case1wz: number | null;
+  case1vz: number | null;
+  case1nx: number | null;
+  case1ox: number | null;
+  case1ny: number | null;
+  case1oy: number | null;
+  case3vd: number | null;
+  case3vi: number | null;
+  case3vf: number | null;
+  case3vj: number | null;
+  case3vk: number | null;
+  case3vn: number | null;
+}
