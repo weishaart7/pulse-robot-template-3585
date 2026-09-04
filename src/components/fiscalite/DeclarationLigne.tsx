@@ -153,6 +153,54 @@ export const CaseLigne = ({ label, extra, aide, code1, code2, checked1, checked2
   </div>
 );
 
+export interface TrancheAge {
+  ageLabel: string;
+  code: string;
+  value: number | null;
+  onChange: (value: number | null) => void;
+}
+
+interface MontantParTrancheAgeLigneProps {
+  label: string;
+  aide?: string;
+  /** Une entrée par tranche d'âge (ordre d'affichage), pas par déclarant — ex. rentes viagères à titre onéreux. */
+  tranches: TrancheAge[];
+}
+
+/**
+ * Ligne montant ventilée par tranche d'âge du foyer (ex. rentes viagères à
+ * titre onéreux, art. 158 6 CGI), pas par déclarant 1/2 — structure propre à
+ * ce mécanisme, distincte de MontantLigne. Le libellé principal est sur sa
+ * propre ligne au-dessus des tranches plutôt qu'à côté (4 colonnes ne
+ * laisseraient pas assez de place pour un libellé souvent long).
+ */
+export const MontantParTrancheAgeLigne = ({ label, aide, tranches }: MontantParTrancheAgeLigneProps) => {
+  const parse = (raw: string): number | null => (raw === '' ? null : Number(raw));
+
+  return (
+    <div className="space-y-2 rounded-md border border-border/50 bg-muted/40 px-2.5 py-1.5">
+      <div className="flex items-center gap-1.5">
+        <Label className="text-sm">{label}</Label>
+        {aide && <AideTooltip texte={aide} />}
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {tranches.map(tranche => (
+          <div key={tranche.code} className="space-y-0.5">
+            <Label className="text-xs text-muted-foreground">{tranche.ageLabel} · {tranche.code}</Label>
+            <Input
+              id={`case-${tranche.code}`}
+              type="number"
+              className="w-full"
+              value={tranche.value ?? ''}
+              onChange={ev => tranche.onChange(parse(ev.target.value))}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 interface TexteLigneProps {
   label: string;
   code1: string;

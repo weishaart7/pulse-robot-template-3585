@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { Loader2 } from 'lucide-react';
 import { usePensionsRetraitesRentes } from '@/hooks/usePensionsRetraitesRentes';
 import { PensionsRetraitesRentes } from '@/services/pensionsRetraitesRentesService';
 import { PensionsRetraitesRentesInput } from '@/lib/fiscalite';
-import { DeclarantsHeader, MontantLigne } from './DeclarationLigne';
+import { DeclarantsHeader, MontantLigne, MontantParTrancheAgeLigne } from './DeclarationLigne';
 
 const PENSIONS_VIDE: PensionsRetraitesRentesInput = {
   case1as: null,
@@ -119,6 +120,33 @@ export const PensionsRetraitesRentesForm = ({ onSaved }: PensionsRetraitesRentes
           code1="1AM" code2="1BM"
           value1={pensions.case1am} value2={pensions.case1bm}
           onChange1={v => update('case1am', v)} onChange2={v => update('case1bm', v)}
+        />
+
+        <Separator />
+
+        <p className="text-sm font-medium">Rentes viagères à titre onéreux</p>
+        <p className="text-sm text-muted-foreground">
+          Montant perçu par le foyer, ventilé par âge d'entrée en jouissance de la rente — pas par
+          déclarant.
+        </p>
+        <MontantParTrancheAgeLigne
+          label="Rentes perçues"
+          tranches={[
+            { ageLabel: 'Moins de 50 ans', code: '1AW', value: pensions.case1aw, onChange: v => update('case1aw', v) },
+            { ageLabel: 'De 50 à 59 ans', code: '1BW', value: pensions.case1bw, onChange: v => update('case1bw', v) },
+            { ageLabel: 'De 60 à 69 ans', code: '1CW', value: pensions.case1cw, onChange: v => update('case1cw', v) },
+            { ageLabel: 'À partir de 70 ans', code: '1DW', value: pensions.case1dw, onChange: v => update('case1dw', v) },
+          ]}
+        />
+        <MontantParTrancheAgeLigne
+          label="Rentes perçues par les non-résidents et rentes de source étrangère"
+          aide="Rentes de source étrangère avec crédit d'impôt égal à l'impôt français."
+          tranches={[
+            { ageLabel: 'Moins de 50 ans', code: '1AR', value: pensions.case1ar, onChange: v => update('case1ar', v) },
+            { ageLabel: 'De 50 à 59 ans', code: '1BR', value: pensions.case1br, onChange: v => update('case1br', v) },
+            { ageLabel: 'De 60 à 69 ans', code: '1CR', value: pensions.case1cr, onChange: v => update('case1cr', v) },
+            { ageLabel: 'À partir de 70 ans', code: '1DR', value: pensions.case1dr, onChange: v => update('case1dr', v) },
+          ]}
         />
 
         <Button type="button" onClick={handleSubmit} disabled={saving}>
