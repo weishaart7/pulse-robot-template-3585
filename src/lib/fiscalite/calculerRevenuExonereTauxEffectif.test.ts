@@ -35,16 +35,43 @@ describe('calculerRevenuExonereTauxEffectif — salaires (1AC/1BC)', () => {
 });
 
 describe('calculerRevenuExonereTauxEffectif — pensions étrangères (1AH/1BH)', () => {
-  it('ajoutées brutes, sans abattement', () => {
-    const result = calculerRevenuExonereTauxEffectif(makeInput({ case1ah: 12000, case1bh: 8000 }));
-    expect(result.pensionsBrutes).toBe(20000);
+  it('applique l\'abattement de 10 % standard', () => {
+    const result = calculerRevenuExonereTauxEffectif(makeInput({ case1ah: 40000 }));
+    expect(result.abattementPension).toBe(4000);
+    expect(result.pensionsNettes).toBe(36000);
+  });
+
+  it('applique le plancher de 454 €/pensionné sur une petite pension', () => {
+    const result = calculerRevenuExonereTauxEffectif(makeInput({ case1ah: 3000 }));
+    expect(result.abattementPension).toBe(454);
+    expect(result.pensionsNettes).toBe(3000 - 454);
+  });
+
+  it('le plancher ne dépasse jamais la pension elle-même', () => {
+    const result = calculerRevenuExonereTauxEffectif(makeInput({ case1ah: 200 }));
+    expect(result.abattementPension).toBe(200);
+    expect(result.pensionsNettes).toBe(0);
+  });
+
+  it('applique le plafond global de 4 439 € pour tout le foyer (deux pensionnés)', () => {
+    const result = calculerRevenuExonereTauxEffectif(makeInput({ case1ah: 40000, case1bh: 40000 }));
+    // 4000 + 4000 = 8000 > plafond foyer 4439
+    expect(result.abattementPension).toBe(4439);
+    expect(result.pensionsNettes).toBe(80000 - 4439);
+  });
+
+  it('le plancher s\'applique par pensionné avant le plafond global', () => {
+    const result = calculerRevenuExonereTauxEffectif(makeInput({ case1ah: 1000, case1bh: 1000 }));
+    // chacun : max(454, 100) = 454, total = 908 < plafond foyer
+    expect(result.abattementPension).toBe(908);
+    expect(result.pensionsNettes).toBe(2000 - 908);
   });
 });
 
 describe('calculerRevenuExonereTauxEffectif — total', () => {
-  it('additionne salaires nets et pensions brutes', () => {
-    const result = calculerRevenuExonereTauxEffectif(makeInput({ case1ac: 30000, case1ah: 12000 }));
-    expect(result.totalRetenu).toBe(27000 + 12000);
+  it('additionne salaires nets et pensions nettes', () => {
+    const result = calculerRevenuExonereTauxEffectif(makeInput({ case1ac: 30000, case1ah: 40000 }));
+    expect(result.totalRetenu).toBe(27000 + 36000);
   });
 
   it('ignore 1GE/1HE et RSE/RSF (purement informatifs)', () => {

@@ -202,12 +202,17 @@ gains d'actionnariat, revenus fonciers, capitaux mobiliers, etc. (§4).
 - **`src/lib/fiscalite/calculerRevenuExonereTauxEffectif.ts` — revenus exonérés retenus pour le calcul
   du taux effectif.** Fonction pure : 1AC/1BC (salaires de source étrangère exonérés) reçoivent le même
   abattement 10 %/frais réels (1AE/1BE) que les salaires français, via `calculerDeclarant` réutilisée de
-  `calculerRevenuSalaires.ts`. 1AH/1BH (pensions de source étrangère) sont ajoutées **brutes, sans
-  abattement** — aucun moteur de pensions françaises n'existe dans le repo pour calibrer un abattement
-  cohérent (plancher/plafond distincts du régime salarial) ; simplification documentée qui surestime
-  légèrement le taux effectif, à corriger quand un module Pensions sera construit. 1GE/1HE (case à
-  cocher marins-pêcheurs) et RSE/RSF (pays, texte libre) sont purement informatifs. 7 tests couvrent
-  l'abattement des salaires exonérés, les pensions brutes et le total.
+  `calculerRevenuSalaires.ts`. 1AH/1BH (pensions de source étrangère) reçoivent l'abattement de 10 %
+  standard applicable aux pensions (revenus 2025/impôt 2026) : plancher 454 €/pensionné (jamais
+  supérieur à la pension elle-même), plafond **global** de 4 439 € pour l'ensemble du foyer (pas par
+  pensionné — la somme des abattements individuels est plafonnée une fois calculée). **Bug corrigé** :
+  la première version ajoutait ces pensions brutes, sans abattement, faute de module Pensions dans le
+  repo pour calibrer un montant — l'abattement pension est en réalité un barème CGI autonome
+  (indépendant de tout moteur de pensions françaises), pas une extension d'un module qui n'existe pas ;
+  écart constaté par comparaison avec un autre logiciel (40 000 € de pension → 303 € d'écart d'impôt
+  avant correction). 1GE/1HE (case à cocher marins-pêcheurs) et RSE/RSF (pays, texte libre) sont
+  purement informatifs. 11 tests couvrent l'abattement des salaires exonérés, le plancher/plafond de
+  l'abattement pension (y compris le plafond global à deux pensionnés) et le total.
 - **`src/lib/fiscalite/calculerImpot.ts` — barème progressif, plafonnement du quotient familial, méthode
   du taux effectif, décote, TMI.** Barème 2026 (revenus 2025, art. 4 LF 2026, tranches 0 %/11 %/30 %/
   41 %/45 %, seuils 11 600 €/29 579 €/84 577 €/181 917 €) appliqué au quotient du **revenu mondial
@@ -603,9 +608,6 @@ gains d'actionnariat, revenus fonciers, capitaux mobiliers, etc. (§4).
     mécanisme de crédit d'impôt distinct de la méthode du taux effectif désormais implémentée pour
     `revenus_exoneres_taux_effectif` (pas juste « pas encore fait » : une base de calcul différente),
     et le régime de frais professionnels des gérants art. 62 CGI reste non arbitré (voir §3, 🟠).
-  - **Pensions étrangères (1AH/1BH) ajoutées brutes dans le calcul du taux effectif, sans abattement** :
-    aucun module Pensions/abattement pension française n'existe dans le repo pour calibrer un montant
-    cohérent — surestime légèrement le taux effectif appliqué (voir §2/§3).
   - Le choix entre abattement forfaitaire de 10 % (`1AJ`/`1BJ`) et frais réels (`1AK`/`1BK`) est
     désormais arbitré par `calculerRevenuSalaires.ts` (le plus favorable des deux est retenu
     automatiquement).

@@ -1,10 +1,27 @@
 import { calculerDeclarant } from './calculerRevenuSalaires';
 import { RevenusExoneresTauxEffectifInput } from './types';
 
+const PENSION_ABATTEMENT_TAUX = 0.10;
+const PENSION_ABATTEMENT_PLANCHER = 454;
+const PENSION_ABATTEMENT_PLAFOND_FOYER = 4439;
+
 export interface RevenuExonereTauxEffectifResult {
   salairesNetImposables: number;
   pensionsBrutes: number;
+  abattementPension: number;
+  pensionsNettes: number;
   totalRetenu: number;
+}
+
+/**
+ * Abattement de 10 % sur une pension (plancher 454 €, jamais supérieur à la
+ * pension elle-même). Le plafond de 4 439 € s'applique globalement à la somme
+ * des abattements du foyer, pas par pensionné — appliqué séparément sur le
+ * total dans calculerRevenuExonereTauxEffectif.
+ */
+function abattementPensionDeclarant(pension: number): number {
+  if (pension <= 0) return 0;
+  return Math.min(pension, Math.max(PENSION_ABATTEMENT_PLANCHER, pension * PENSION_ABATTEMENT_TAUX));
 }
 
 /**
@@ -17,10 +34,10 @@ export interface RevenuExonereTauxEffectifResult {
  * Salaires (1AC/1BC) : même abattement 10 %/frais réels (1AE/1BE) que
  * calculerRevenuSalaires.ts (même art. 83 CGI).
  *
- * Pensions étrangères (1AH/1BH) : ajoutées **brutes, sans abattement** — le
- * repo ne modélise aucune pension française et donc aucun abattement pension
- * calibré (plancher/plafond distincts du régime salaires) ; simplification
- * documentée qui surestime légèrement le taux effectif (voir docs/fiscalite.md).
+ * Pensions étrangères (1AH/1BH) : abattement de 10 % (plancher 454 €/pensionné,
+ * plafond global 4 439 € pour l'ensemble du foyer, revenus 2025/impôt 2026 —
+ * même barème que les pensions françaises, la nature étrangère de la pension
+ * n'y change rien pour le calcul du taux effectif).
  *
  * 1GE/1HE (case à cocher marins-pêcheurs) et RSE/RSF (pays de provenance,
  * texte libre) sont purement informatifs, sans effet sur ce calcul.
@@ -33,10 +50,17 @@ export function calculerRevenuExonereTauxEffectif(
   const salairesNetImposables = declarant1.netImposable + declarant2.netImposable;
 
   const pensionsBrutes = (input.case1ah ?? 0) + (input.case1bh ?? 0);
+  const abattementPension = Math.min(
+    PENSION_ABATTEMENT_PLAFOND_FOYER,
+    abattementPensionDeclarant(input.case1ah ?? 0) + abattementPensionDeclarant(input.case1bh ?? 0),
+  );
+  const pensionsNettes = Math.max(0, pensionsBrutes - abattementPension);
 
   return {
     salairesNetImposables,
     pensionsBrutes,
-    totalRetenu: salairesNetImposables + pensionsBrutes,
+    abattementPension,
+    pensionsNettes,
+    totalRetenu: salairesNetImposables + pensionsNettes,
   };
 }
