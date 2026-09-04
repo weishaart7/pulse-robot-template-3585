@@ -47,17 +47,18 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
    à plat dans `FiscaliteSection.tsx`, en dehors de tout bouton « 2042 » (qui n'avait alors aucun
    `onClick`) — la section Fiscalité ne compte plus désormais qu'un seul point d'entrée vers ces
    formulaires.
-2. **Un tableau de bord IR désormais branché sur les données réelles, mais limité au périmètre
-   « salaires ».** (`FiscaliteSection.tsx` → `FiscalDeclarationsCard`, `FiscalOverviewCard`,
-   `TaxRateCard`) : liste de déclarations fiscales (2042, 2044, 2047, 2074, 2086, 2042-IFI), graphique
-   de répartition, taux marginal d'imposition, tranches. Le hook
-   [useFiscalOverview.ts](src/hooks/useFiscalOverview.ts) agrège `foyer_fiscal` + `revenus_salaires`,
-   calcule le revenu net imposable des salaires, le nombre de parts et l'impôt sur le revenu réel (voir
-   §2), et alimente les deux cartes. **Prélèvements sociaux et IFI restent affichés comme « non
-   calculé »** (pas de moteur pour ces deux impôts dans ce tableau de bord — l'IFI dispose de son
-   propre simulateur, point 3 ci-dessous), et l'IR affiché ne couvre que le cadre 1 « Salaires » : les
-   gains d'actionnariat salarié (point 1, Phase 2.3) et toute autre catégorie de revenu future n'entrent
-   pas encore dans ce calcul (voir §4).
+2. **Un tableau de bord IR désormais branché sur les données réelles, mais limité aux salaires et à la
+   part barème des gains d'actionnariat salarié.** (`FiscaliteSection.tsx` → `FiscalDeclarationsCard`,
+   `FiscalOverviewCard`, `TaxRateCard`) : liste de déclarations fiscales (2042, 2044, 2047, 2074, 2086,
+   2042-IFI), graphique de répartition, taux marginal d'imposition, tranches. Le hook
+   [useFiscalOverview.ts](src/hooks/useFiscalOverview.ts) agrège `foyer_fiscal` + `revenus_salaires` +
+   `gains_actionnariat_salarie`, calcule le revenu net imposable, le nombre de parts et l'impôt sur le
+   revenu réel (voir §2), et alimente les deux cartes. **Prélèvements sociaux et IFI restent affichés
+   comme « non calculé »** (pas de moteur pour ces deux impôts dans ce tableau de bord — l'IFI dispose
+   de son propre simulateur, point 3 ci-dessous), et l'IR affiché ne couvre que les cases dont le régime
+   est sans ambiguïté le barème progressif : le carried-interest et les gains à taux forfaitaire
+   (18 %/30 %/41 %) des gains d'actionnariat, ainsi que toute autre catégorie de revenu future
+   (fonciers, capitaux mobiliers…), n'entrent pas encore dans ce calcul (voir §4).
 3. **Un simulateur IFI complet, avec sa propre saisie** (`IFIInterface.tsx`, ouvert depuis le bouton
    « 2042-IFI » de `FiscalDeclarationsCard`), organisé en 5 sections dans une sidebar
    (`IFISidebar.tsx`) : Hypothèses, Liste des biens à l'IFI, Barème de l'IFI, Réduction &
@@ -97,13 +98,14 @@ couvrant l'art. 193-197 CGI (revenus 2025/impôt 2026) — voir §2. `src/lib/fi
 module **Famille** (`useFamilyData.ts`, pour synchroniser `marital_status.nombre_enfants_charges`) —
 les deux dossiers `lib/fiscal/` et `lib/fiscalite/` sont volontairement distincts (cf. §2).
 
-**Moteur de calcul de l'IR** (impôt lui-même, distinct du nombre de parts) : pas de table dédiée — trois
-fonctions pures composées par [useFiscalOverview.ts](src/hooks/useFiscalOverview.ts) :
+**Moteur de calcul de l'IR** (impôt lui-même, distinct du nombre de parts) : pas de table dédiée —
+quatre fonctions pures composées par [useFiscalOverview.ts](src/hooks/useFiscalOverview.ts) :
 [calculerRevenuSalaires.ts](src/lib/fiscalite/calculerRevenuSalaires.ts) (revenu net imposable du cadre
-1 Salaires), [calculerPartsFiscales.ts](src/lib/fiscalite/calculerPartsFiscales.ts) (quotient familial)
-et [calculerImpot.ts](src/lib/fiscalite/calculerImpot.ts) (barème, plafonnement, décote, TMI) — voir §2.
-Périmètre limité aux salaires : gains d'actionnariat, revenus fonciers, capitaux mobiliers, etc. ne sont
-pas encore couverts (§4).
+1 Salaires), [calculerGainsActionnariatSalarie.ts](src/lib/fiscalite/calculerGainsActionnariatSalarie.ts)
+(part barème des gains d'actionnariat salarié), [calculerPartsFiscales.ts](src/lib/fiscalite/calculerPartsFiscales.ts)
+(quotient familial) et [calculerImpot.ts](src/lib/fiscalite/calculerImpot.ts) (barème, plafonnement,
+décote, TMI) — voir §2. Périmètre encore hors calcul : carried-interest, gains à taux forfaitaire des
+gains d'actionnariat, revenus fonciers, capitaux mobiliers, etc. (§4).
 
 **Flux clés** :
 - L'utilisateur clique « 2042-IFI » → `IFIInterface` s'ouvre en plein écran, saisit ses biens/passifs
@@ -205,18 +207,31 @@ pas encore couverts (§4).
   addition — corrompait silencieusement tout le revenu imposable calculé par
   `calculerRevenuSalaires.ts` (constaté en base : `case_1aj` vaut la chaîne `"50000"`, confirmé par
   `pg_typeof` = `numeric`). Corrigé par `toNumberOrNull()` dans `rowToRevenusSalaires`
-  ([revenusSalairesService.ts](src/services/revenusSalairesService.ts)). **`gainsActionnariatSalarieService.ts`
-  a le même défaut de typage** (colonnes `numeric` déclarées `number | null` sans coercition) mais ne
-  cause aucun bug visible tant que les gains d'actionnariat n'entrent pas dans un calcul arithmétique
-  (Phase 2.3 = capture brute, voir §4) — à corriger avant de les intégrer à `calculerImpot`.
+  ([revenusSalairesService.ts](src/services/revenusSalairesService.ts)). **Même correctif appliqué à
+  `gainsActionnariatSalarieService.ts`** (colonnes `numeric` déclarées `number | null` sans coercition,
+  même `toNumberOrNull()` ajouté dans `rowToGainsActionnariatSalarie`) au moment de brancher les gains
+  d'actionnariat sur `calculerImpot` — corrigé avant, pas après, l'intégration arithmétique.
+- **`src/lib/fiscalite/calculerGainsActionnariatSalarie.ts` — part barème des gains d'actionnariat
+  salarié.** Fonction pure, plus simple que `calculerRevenuSalaires.ts` (pas d'abattement à arbitrer,
+  les montants du CERFA sont déjà nets) : additionne 1TP/1UP (rabais excédentaire sur options, imposé
+  comme un salaire), 1TT/1UT (gains de levée d'options / actions gratuites post-28.9.2012, sans
+  abattement), 1TZ (gain après abattement — case unique, pas de déclarant 2, déjà net des abattements
+  1UZ/1WZ/1VZ) et 3VJ/3VK (option barème pour les gains pré-28.9.2012, en lieu et place des taux
+  forfaitaires 3VD/3VI/3VF). **Exclues du calcul** (`CASES_GAINS_ACTIONNARIAT_EXCLUES_DU_CALCUL`) :
+  1UZ/1WZ/1VZ (montants d'abattement déjà déduits de 1TZ — les ajouter serait un double-comptage),
+  1NX/1OX (carried-interest, régime plus-value PFU/option barème séparée, pas un salaire), 1NY/1OY et
+  3VN (contributions salariales de 30 %/10 %, pas de l'IR), 3VD/3VI/3VF (taux forfaitaires 18 %/30 %/41 %,
+  mutuellement exclusifs avec 3VJ/3VK, aucun moteur de taux proportionnel dans le repo) — voir §3, 🟠.
+  10 tests couvrent l'agrégation des cases barème et la non-inclusion des cases exclues.
 - **`src/hooks/useFiscalOverview.ts` — point de calcul unique consommé par `FiscalOverviewCard` et
-  `TaxRateCard`.** Compose `useFoyerFiscal` + `useRevenusSalaires` (un seul fetch Supabase de chaque),
-  applique les trois fonctions ci-dessus, et renvoie un objet unique (`revenuSalaires`, `parts`,
-  `impot`, plus `foyerRenseigne`/`revenusRenseignes` pour distinguer un foyer non encore rempli d'un
-  foyer réellement à 0 €). En l'absence de données, utilise des valeurs par défaut (célibataire, 1
-  part, aucun revenu) plutôt que de ne rien afficher — les deux cartes signalent alors explicitement
-  que le résultat n'est pas personnalisé, pour ne jamais laisser croire qu'un célibataire sans revenu
-  est la situation réelle de l'utilisateur.
+  `TaxRateCard`.** Compose `useFoyerFiscal` + `useRevenusSalaires` + `useGainsActionnariatSalarie` (un
+  seul fetch Supabase de chacun), applique les quatre fonctions ci-dessus (revenu imposable = salaires +
+  part barème des gains d'actionnariat), et renvoie un objet unique (`revenuSalaires`,
+  `gainsActionnariat`, `parts`, `impot`, plus `foyerRenseigne`/`revenusRenseignes` pour distinguer un
+  foyer non encore rempli d'un foyer réellement à 0 €). En l'absence de données, utilise des valeurs par
+  défaut (célibataire, 1 part, aucun revenu) plutôt que de ne rien afficher — les deux cartes signalent
+  alors explicitement que le résultat n'est pas personnalisé, pour ne jamais laisser croire qu'un
+  célibataire sans revenu est la situation réelle de l'utilisateur.
 - **`revenus_salaires` (Phases 2.1, 2.2 et 2.4) — capture brute du cadre 1 de la 2042, sans moteur de
   calcul.** Table `user_id → auth.users(id) ON DELETE CASCADE`, `UNIQUE(user_id)`, RLS 4 policies,
   même pattern que `foyer_fiscal`. 36 colonnes `case_1xx`/`case_1yy` (convention `1AJ` → `case_1aj`,
@@ -380,11 +395,12 @@ pas encore couverts (§4).
   le produit, mais laisse « Valeur du bien » vide, le bien contribue pour **0 €** à l'assiette IFI —
   omission silencieuse d'un bien potentiellement significatif, sans avertissement.
 - **Résolu (voir §2) — un moteur de calcul de l'impôt sur le revenu existe désormais**
-  (`calculerRevenuSalaires.ts` + `calculerPartsFiscales.ts` + `calculerImpot.ts`, consommés par
-  `useFiscalOverview.ts`), mais **limité au cadre 1 « Salaires »** : les gains d'actionnariat salarié
-  déjà saisis (Phase 2.3) n'entrent pas dans le calcul d'IR affiché — un utilisateur avec des revenus
-  significatifs en stock-options/actions gratuites verra un IR sous-estimé sans qu'aucun message ne
-  l'indique à l'écran (à corriger avant Phase 10 complète, voir §4).
+  (`calculerRevenuSalaires.ts` + `calculerGainsActionnariatSalarie.ts` + `calculerPartsFiscales.ts` +
+  `calculerImpot.ts`, consommés par `useFiscalOverview.ts`), couvrant les salaires et la part barème
+  des gains d'actionnariat salarié. **Reste hors calcul** : le carried-interest (1NX/1OX) et les gains
+  d'actionnariat à taux forfaitaire (3VD/3VI/3VF) — un utilisateur avec des gains significatifs dans ces
+  catégories verra un IR sous-estimé sans qu'aucun message ne l'indique à l'écran (à corriger avant
+  Phase 10 complète, voir §4).
 - **Résolu — le simulateur IFI et le reste de l'écran Fiscalité n'affichent plus de montants d'IFI
   contradictoires.** `FiscalOverviewCard.tsx` affiche désormais « IFI : non calculé — voir le
   simulateur IFI » plutôt qu'un « 0 € » fixe qui contredisait le résultat du simulateur ouvert depuis
@@ -506,26 +522,27 @@ pas encore couverts (§4).
 
   **Sous-phases 2.1 à 2.4 du bloc « Salaires » toutes terminées** : le cadre 1 de la 2042 est
   intégralement couvert par `RevenusSalairesForm.tsx`/`GainsActionnariatSalarieForm.tsx`, à l'exception
-  des colonnes C/D (dette assumée ci-dessous). **Calcul de l'IR (Phase 10) — démarré, limité au cadre 1
-  Salaires** : `calculerRevenuSalaires.ts` + `calculerPartsFiscales.ts` + `calculerImpot.ts`
-  (barème 2026, quotient familial, plafonnement art. 197 CGI, décote, TMI), branchés en temps réel sur
+  des colonnes C/D (dette assumée ci-dessous). **Calcul de l'IR (Phase 10) — démarré, salaires et part
+  barème des gains d'actionnariat couverts** : `calculerRevenuSalaires.ts` +
+  `calculerGainsActionnariatSalarie.ts` + `calculerPartsFiscales.ts` + `calculerImpot.ts` (barème 2026,
+  quotient familial, plafonnement art. 197 CGI, décote, TMI), branchés en temps réel sur
   `FiscalOverviewCard`/`TaxRateCard` via `useFiscalOverview.ts` (voir §2). Prochaine étape de la feuille
-  de route : intégrer les gains d'actionnariat salarié (Phase 2.3, déjà saisis mais pas encore dans le
-  calcul), puis un futur cadre 2042 hors « Salaires » (revenus fonciers, capitaux mobiliers, plus-values,
-  etc.).
+  de route : intégrer le carried-interest et les gains à taux forfaitaire (point ci-dessous), puis un
+  futur cadre 2042 hors « Salaires » (revenus fonciers, capitaux mobiliers, plus-values, etc.).
 - **Différé, déductible du code** :
-  - **Gains d'actionnariat salarié (Phase 2.3) absents du calcul d'IR** : régimes fiscaux hétérogènes
-    selon la case (barème avec abattements spécifiques pour certaines, PFU 12,8 %+PS pour d'autres) —
-    nécessite une phase dédiée pour trancher case par case plutôt qu'une approximation risquée.
+  - **Carried-interest (1NX/1OX/1NY/1OY) et gains d'actionnariat à taux forfaitaire (3VD/3VI/3VF/3VN)
+    absents du calcul d'IR** — régime plus-value/PFU (12,8 %+PS ou option barème séparée pour le
+    carried-interest) et taux proportionnels historiques (18 %/30 %/41 %, mutuellement exclusifs avec
+    l'option barème 3VJ/3VK déjà intégrée) : nécessitent un moteur de taux forfaitaire/PFU qui n'existe
+    pas encore dans le repo, distinct du barème progressif de `calculerImpot.ts` (voir §3, 🟠). Un
+    utilisateur avec des gains significatifs dans ces catégories verra son IR sous-estimé sans
+    avertissement à l'écran.
   - **1AF/1BF (salaires de source étrangère, crédit d'impôt égal à l'impôt français) et 1GB/1HB
     (gérants et associés art. 62 CGI) exclus de `calculerRevenuSalaires.ts`** — méthode du taux
     effectif et régime de frais professionnels particulier non implémentés (voir §3, 🟠).
   - Le choix entre abattement forfaitaire de 10 % (`1AJ`/`1BJ`) et frais réels (`1AK`/`1BK`) est
     désormais arbitré par `calculerRevenuSalaires.ts` (le plus favorable des deux est retenu
-    automatiquement). Reste non arbitré : les 3 taux de `3VD`/`3VI`/`3VF` (18 %/30 %/41 %, gains
-    d'actionnariat) — rien n'empêche de saisir les trois simultanément alors qu'un seul est
-    normalement applicable par situation, mais ces cases n'entrent de toute façon pas encore dans le
-    calcul d'IR (point ci-dessus).
+    automatiquement).
   - **Traitements et salaires — colonnes C/D (Phase 2.1, dette assumée)** : les revenus propres des
     personnes à charge (ex. enfants majeurs rattachés ayant leurs propres salaires) ne sont pas
     saisis — cas rare, traité dans une session ultérieure.

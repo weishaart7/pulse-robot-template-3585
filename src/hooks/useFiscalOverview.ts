@@ -1,11 +1,15 @@
 import { useMemo } from 'react';
 import { useFoyerFiscal } from './useFoyerFiscal';
 import { useRevenusSalaires } from './useRevenusSalaires';
+import { useGainsActionnariatSalarie } from './useGainsActionnariatSalarie';
 import {
+  calculerGainsActionnariatSalarie,
   calculerImpot,
   calculerPartsFiscales,
   calculerRevenuSalaires,
   FoyerFiscalInput,
+  GainsActionnariatSalarieInput,
+  GainsActionnariatSalarieResult,
   ImpotResult,
   PartsFiscalesResult,
   RevenuSalairesResult,
@@ -26,6 +30,17 @@ const FOYER_PAR_DEFAUT: FoyerFiscalInput = {
   ancienCombattantDeclarant2: false,
   veufAncienCombattant: false,
   veuveDeGuerre: false,
+};
+
+const GAINS_ACTIONNARIAT_PAR_DEFAUT: GainsActionnariatSalarieInput = {
+  case1tp: null, case1up: null,
+  case1tt: null, case1ut: null,
+  case1tz: null, case1uz: null, case1wz: null, case1vz: null,
+  case1nx: null, case1ox: null,
+  case1ny: null, case1oy: null,
+  case3vd: null, case3vi: null, case3vf: null,
+  case3vj: null, case3vk: null,
+  case3vn: null,
 };
 
 const REVENUS_SALAIRES_PAR_DEFAUT: RevenusSalairesInput = {
@@ -54,35 +69,42 @@ export interface FiscalOverview {
   foyerRenseigne: boolean;
   revenusRenseignes: boolean;
   revenuSalaires: RevenuSalairesResult;
+  gainsActionnariat: GainsActionnariatSalarieResult;
   parts: PartsFiscalesResult;
   impot: ImpotResult;
 }
 
 /**
- * Agrège foyer fiscal + revenus salaires et calcule le résultat IR (V1 :
- * salaires uniquement — voir docs/fiscalite.md). Un seul point de calcul
- * partagé entre FiscalOverviewCard et TaxRateCard pour éviter deux appels
- * Supabase et deux implémentations divergentes du même résultat.
+ * Agrège foyer fiscal + revenus salaires + gains d'actionnariat salarié et
+ * calcule le résultat IR (V1 : cases imposables au barème uniquement — voir
+ * docs/fiscalite.md). Un seul point de calcul partagé entre FiscalOverviewCard
+ * et TaxRateCard pour éviter des appels Supabase dupliqués et deux
+ * implémentations divergentes du même résultat.
  */
 export function useFiscalOverview(): FiscalOverview {
   const { data: foyer, loading: loadingFoyer } = useFoyerFiscal();
   const { data: revenus, loading: loadingRevenus } = useRevenusSalaires();
+  const { data: gains, loading: loadingGains } = useGainsActionnariatSalarie();
 
   return useMemo(() => {
     const foyerInput = foyer ?? FOYER_PAR_DEFAUT;
     const revenusInput = revenus ?? REVENUS_SALAIRES_PAR_DEFAUT;
+    const gainsInput = gains ?? GAINS_ACTIONNARIAT_PAR_DEFAUT;
 
     const revenuSalaires = calculerRevenuSalaires(revenusInput);
+    const gainsActionnariat = calculerGainsActionnariatSalarie(gainsInput);
     const parts = calculerPartsFiscales(foyerInput);
-    const impot = calculerImpot(revenuSalaires.totalNetImposable, parts, foyerInput.situationFamille);
+    const revenuImposableTotal = revenuSalaires.totalNetImposable + gainsActionnariat.totalNetImposable;
+    const impot = calculerImpot(revenuImposableTotal, parts, foyerInput.situationFamille);
 
     return {
-      loading: loadingFoyer || loadingRevenus,
+      loading: loadingFoyer || loadingRevenus || loadingGains,
       foyerRenseigne: foyer !== null,
-      revenusRenseignes: revenus !== null,
+      revenusRenseignes: revenus !== null || gains !== null,
       revenuSalaires,
+      gainsActionnariat,
       parts,
       impot,
     };
-  }, [foyer, revenus, loadingFoyer, loadingRevenus]);
+  }, [foyer, revenus, gains, loadingFoyer, loadingRevenus, loadingGains]);
 }

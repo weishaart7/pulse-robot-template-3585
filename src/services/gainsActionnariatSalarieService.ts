@@ -5,50 +5,61 @@ export interface GainsActionnariatSalarie extends GainsActionnariatSalarieInput 
   id?: string;
 }
 
+/**
+ * Les colonnes `numeric` de Postgres sont sérialisées en chaîne par PostgREST
+ * (préservation de la précision) : le type ci-dessous reflète la forme réelle
+ * reçue sur le fil, coercée en `number` par `toNumberOrNull` dans
+ * `rowToGainsActionnariatSalarie` (même défaut que `revenusSalairesService.ts`).
+ */
 interface GainsActionnariatSalarieRow {
   id: string;
   user_id: string;
-  case_1tp: number | null;
-  case_1up: number | null;
-  case_1tt: number | null;
-  case_1ut: number | null;
-  case_1tz: number | null;
-  case_1uz: number | null;
-  case_1wz: number | null;
-  case_1vz: number | null;
-  case_1nx: number | null;
-  case_1ox: number | null;
-  case_1ny: number | null;
-  case_1oy: number | null;
-  case_3vd: number | null;
-  case_3vi: number | null;
-  case_3vf: number | null;
-  case_3vj: number | null;
-  case_3vk: number | null;
-  case_3vn: number | null;
+  case_1tp: number | string | null;
+  case_1up: number | string | null;
+  case_1tt: number | string | null;
+  case_1ut: number | string | null;
+  case_1tz: number | string | null;
+  case_1uz: number | string | null;
+  case_1wz: number | string | null;
+  case_1vz: number | string | null;
+  case_1nx: number | string | null;
+  case_1ox: number | string | null;
+  case_1ny: number | string | null;
+  case_1oy: number | string | null;
+  case_3vd: number | string | null;
+  case_3vi: number | string | null;
+  case_3vf: number | string | null;
+  case_3vj: number | string | null;
+  case_3vk: number | string | null;
+  case_3vn: number | string | null;
+}
+
+function toNumberOrNull(value: number | string | null): number | null {
+  if (value === null) return null;
+  return typeof value === 'number' ? value : Number(value);
 }
 
 function rowToGainsActionnariatSalarie(row: GainsActionnariatSalarieRow): GainsActionnariatSalarie {
   return {
     id: row.id,
-    case1tp: row.case_1tp,
-    case1up: row.case_1up,
-    case1tt: row.case_1tt,
-    case1ut: row.case_1ut,
-    case1tz: row.case_1tz,
-    case1uz: row.case_1uz,
-    case1wz: row.case_1wz,
-    case1vz: row.case_1vz,
-    case1nx: row.case_1nx,
-    case1ox: row.case_1ox,
-    case1ny: row.case_1ny,
-    case1oy: row.case_1oy,
-    case3vd: row.case_3vd,
-    case3vi: row.case_3vi,
-    case3vf: row.case_3vf,
-    case3vj: row.case_3vj,
-    case3vk: row.case_3vk,
-    case3vn: row.case_3vn,
+    case1tp: toNumberOrNull(row.case_1tp),
+    case1up: toNumberOrNull(row.case_1up),
+    case1tt: toNumberOrNull(row.case_1tt),
+    case1ut: toNumberOrNull(row.case_1ut),
+    case1tz: toNumberOrNull(row.case_1tz),
+    case1uz: toNumberOrNull(row.case_1uz),
+    case1wz: toNumberOrNull(row.case_1wz),
+    case1vz: toNumberOrNull(row.case_1vz),
+    case1nx: toNumberOrNull(row.case_1nx),
+    case1ox: toNumberOrNull(row.case_1ox),
+    case1ny: toNumberOrNull(row.case_1ny),
+    case1oy: toNumberOrNull(row.case_1oy),
+    case3vd: toNumberOrNull(row.case_3vd),
+    case3vi: toNumberOrNull(row.case_3vi),
+    case3vf: toNumberOrNull(row.case_3vf),
+    case3vj: toNumberOrNull(row.case_3vj),
+    case3vk: toNumberOrNull(row.case_3vk),
+    case3vn: toNumberOrNull(row.case_3vn),
   };
 }
 

@@ -38,7 +38,7 @@ const TaxRateCard = ({ overview }: TaxRateCardProps) => {
   };
 
   const statsCards = [
-    { title: 'Revenu net imposable (salaires)', value: formatEuros(overview.revenuSalaires.totalNetImposable) },
+    { title: 'Revenu net imposable (salaires + actionnariat)', value: formatEuros(impot.revenuImposable) },
     { title: 'Nombre de parts', value: parts.nombreParts.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) },
     { title: 'Plafonnement du quotient familial', value: impot.plafonnementApplique ? 'Oui' : 'Non' },
     { title: 'Impôt net (IR)', value: formatEuros(impot.impotNet) },

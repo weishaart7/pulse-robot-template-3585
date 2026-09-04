@@ -14,14 +14,14 @@ function formatEuros(valeur: number): string {
 
 const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
   const [activeTab, setActiveTab] = useState("income");
-  const { loading, foyerRenseigne, revenusRenseignes, impot, revenuSalaires } = overview;
+  const { loading, foyerRenseigne, revenusRenseignes, impot, revenuSalaires, gainsActionnariat } = overview;
 
   const chartData = impot.impotNet > 0
-    ? [{ name: 'IR (salaires)', value: impot.impotNet, color: '#05aaa4' }]
+    ? [{ name: 'IR (salaires + actionnariat)', value: impot.impotNet, color: '#05aaa4' }]
     : [];
 
-  const ratioImpotsRevenus = revenuSalaires.totalNetImposable > 0
-    ? `${((impot.impotNet / revenuSalaires.totalNetImposable) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %`
+  const ratioImpotsRevenus = impot.revenuImposable > 0
+    ? `${((impot.impotNet / impot.revenuImposable) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %`
     : '—';
 
   if (loading) {
@@ -43,7 +43,7 @@ const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
         <CardTitle>Imposition totale</CardTitle>
         <div className="text-2xl font-bold">{formatEuros(impot.impotNet)}</div>
         <div className="flex gap-4 text-sm text-muted-foreground flex-wrap">
-          <span>IR (salaires) : {formatEuros(impot.impotNet)}</span>
+          <span>IR (salaires + actionnariat) : {formatEuros(impot.impotNet)}</span>
           <span>Prélèvements sociaux : non calculé</span>
           <span>IFI : non calculé — voir le simulateur IFI</span>
         </div>
@@ -108,6 +108,10 @@ const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
                     <div className="flex justify-between text-sm">
                       <span>Revenu net imposable (salaires) :</span>
                       <span className="font-medium">{formatEuros(revenuSalaires.totalNetImposable)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Gains d'actionnariat salarié imposables :</span>
+                      <span className="font-medium">{formatEuros(gainsActionnariat.totalNetImposable)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span>Revenus de placements :</span>
