@@ -48,6 +48,8 @@ export interface ImpotResult {
   reductionOutreMer: number;
   impotApresReductionOutreMer: number;
   decote: number;
+  impotApresDecote: number;
+  impotForfaitaire: number;
   impotNet: number;
   tmi: number;
 }
@@ -93,7 +95,8 @@ function impotBrut(revenuImposable: number, nombreParts: number): number {
  * outre-mer (30 % dans la limite de 2 450 € en Guadeloupe/Martinique/Réunion,
  * 40 % dans la limite de 4 050 € en Guyane/Mayotte — BOI-IR-LIQ-20-30-10 :
  * appliquée après plafonnement du quotient familial, avant la décote), puis
- * décote sur ce montant, puis arrondi à l'euro.
+ * décote sur ce montant, puis arrondi à l'euro, puis ajout de l'impôt à taux
+ * forfaitaire (`impotForfaitaire`, hors barème — voir plus bas).
  *
  * Plafonnement : la somme des `plafondUnitaire` de chaque majoration
  * (`calculerPartsFiscales`) borne l'avantage. Une majoration sans
@@ -108,6 +111,13 @@ function impotBrut(revenuImposable: number, nombreParts: number): number {
  * retenu pour le taux effectif (`calculerRevenuExonereTauxEffectif.ts`).
  * `lieuResidence` (optionnel, 'metropole' par défaut) : détermine la
  * réduction outre-mer.
+ * `impotForfaitaire` (optionnel, 0 par défaut) : impôt à taux forfaitaire
+ * (carried-interest 12,8 % PFU, gains d'actionnariat à taux historique
+ * 18 %/30 %/41 %, `calculerGainsActionnariatSalarie.ts`), ajouté tel quel
+ * après la décote — ce sont des impositions proportionnelles, étrangères au
+ * barème progressif : ni le quotient familial, ni son plafonnement, ni la
+ * réduction outre-mer, ni la décote (art. 197 I 4° CGI, limitée à la
+ * « cotisation résultant du barème ») ne s'y appliquent.
  */
 export function calculerImpot(
   revenuImposable: number,
@@ -115,6 +125,7 @@ export function calculerImpot(
   situationFamille: FoyerFiscalInput['situationFamille'],
   revenuExonereTauxEffectif = 0,
   lieuResidence: FoyerFiscalInput['lieuResidence'] = 'metropole',
+  impotForfaitaire = 0,
 ): ImpotResult {
   const revenu = Math.max(0, revenuImposable);
   const revenuExonere = Math.max(0, revenuExonereTauxEffectif);
@@ -147,7 +158,8 @@ export function calculerImpot(
     ? Math.max(0, montantDecoteBase - impotApresReductionOutreMer * DECOTE_TAUX)
     : 0;
 
-  const impotNet = Math.max(0, Math.round(impotApresReductionOutreMer - decote));
+  const impotApresDecote = Math.max(0, Math.round(impotApresReductionOutreMer - decote));
+  const impotNet = impotApresDecote + Math.max(0, impotForfaitaire);
 
   return {
     revenuImposable: revenu,
@@ -166,6 +178,8 @@ export function calculerImpot(
     reductionOutreMer,
     impotApresReductionOutreMer,
     decote,
+    impotApresDecote,
+    impotForfaitaire: Math.max(0, impotForfaitaire),
     impotNet,
     tmi: tmiPourQuotient(parts.nombreParts > 0 ? revenuMondialFictif / parts.nombreParts : 0),
   };

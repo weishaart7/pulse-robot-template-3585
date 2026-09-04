@@ -222,6 +222,58 @@ describe('calculerImpot — réduction outre-mer (art. 197 I 3° CGI)', () => {
   });
 });
 
+describe('calculerImpot — impôt forfaitaire (carried-interest, gains à taux historique)', () => {
+  it('sans impôt forfaitaire (paramètre omis) : comportement inchangé', () => {
+    const parts = makeParts();
+    const sansParam = calculerImpot(30000, parts, 'celibataire');
+    const avecZero = calculerImpot(30000, parts, 'celibataire', 0, 'metropole', 0);
+    expect(avecZero.impotNet).toBe(sansParam.impotNet);
+    expect(avecZero.impotForfaitaire).toBe(0);
+  });
+
+  it("s'ajoute intégralement à l'impôt net après décote", () => {
+    const parts = makeParts();
+    const sansForfaitaire = calculerImpot(30000, parts, 'celibataire', 0, 'metropole', 0);
+    const avecForfaitaire = calculerImpot(30000, parts, 'celibataire', 0, 'metropole', 1280);
+    expect(avecForfaitaire.impotForfaitaire).toBe(1280);
+    expect(avecForfaitaire.impotNet).toBe(sansForfaitaire.impotNet + 1280);
+  });
+
+  it("n'entre pas dans le revenu mondial fictif ni dans le quotient (base barème inchangée)", () => {
+    const parts = makeParts();
+    const sansForfaitaire = calculerImpot(30000, parts, 'celibataire', 0, 'metropole', 0);
+    const avecForfaitaire = calculerImpot(30000, parts, 'celibataire', 0, 'metropole', 5000);
+    expect(avecForfaitaire.revenuMondialFictif).toBe(sansForfaitaire.revenuMondialFictif);
+    expect(avecForfaitaire.quotientFamilial).toBe(sansForfaitaire.quotientFamilial);
+    expect(avecForfaitaire.tmi).toBe(sansForfaitaire.tmi);
+  });
+
+  it("n'est pas affecté par la décote (s'ajoute même quand le barème est totalement absorbé par la décote)", () => {
+    const result = calculerImpot(0, makeParts(), 'celibataire', 0, 'metropole', 640);
+    expect(result.impotApresDecote).toBe(0);
+    expect(result.impotNet).toBe(640);
+  });
+
+  it("n'est pas affecté par la réduction outre-mer", () => {
+    const dom = calculerImpot(20000, makeParts(), 'celibataire', 0, 'guadeloupe_martinique_reunion', 1000);
+    const metropole = calculerImpot(20000, makeParts(), 'celibataire', 0, 'metropole', 1000);
+    expect(dom.impotForfaitaire).toBe(1000);
+    expect(dom.reductionOutreMer).toBeGreaterThan(0);
+    expect(dom.impotApresDecote).toBeLessThan(metropole.impotApresDecote);
+  });
+
+  it('cumulé avec le taux effectif (revenu exonéré) : les deux mécanismes restent indépendants', () => {
+    const sansForfaitaire = calculerImpot(30000, makeParts(), 'celibataire', 50000, 'metropole', 0);
+    const avecForfaitaire = calculerImpot(30000, makeParts(), 'celibataire', 50000, 'metropole', 2000);
+    expect(avecForfaitaire.impotNet).toBe(sansForfaitaire.impotNet + 2000);
+  });
+
+  it("reste positif ou nul même si un impotForfaitaire négatif était transmis par erreur", () => {
+    const result = calculerImpot(30000, makeParts(), 'celibataire', 0, 'metropole', -500);
+    expect(result.impotForfaitaire).toBe(0);
+  });
+});
+
 describe('calculerImpot — impôt net', () => {
   it("n'est jamais négatif", () => {
     const result = calculerImpot(5000, makeParts(), 'celibataire');
