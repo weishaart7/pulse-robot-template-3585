@@ -72,13 +72,15 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
    déclarations fiscales (2042, 2044, 2047, 2074, 2086, 2042-IFI), graphique de répartition, taux
    marginal d'imposition, tranches. Le hook [useFiscalOverview.ts](src/hooks/useFiscalOverview.ts)
    agrège `foyer_fiscal` + `revenus_salaires` + `gains_actionnariat_salarie` +
-   `revenus_exoneres_taux_effectif`, calcule le revenu net imposable, le nombre de parts et l'impôt sur
-   le revenu réel (voir §2), et alimente les deux cartes. **Prélèvements sociaux et IFI restent affichés
-   comme « non calculé »** (pas de moteur pour ces deux impôts dans ce tableau de bord — l'IFI dispose
-   de son propre simulateur, point 3 ci-dessous). Le carried-interest (1NX/1OX) et les gains
-   d'actionnariat à taux forfaitaire (3VD/3VI/3VF) sont désormais couverts, à taux proportionnel
-   (12,8 %/18 %/30 %/41 %, hors barème — voir §2) ; toute autre catégorie de revenu future (fonciers,
-   capitaux mobiliers…) n'entre pas encore dans ce calcul (voir §4).
+   `revenus_exoneres_taux_effectif` + `pensions_retraites_rentes`, calcule le revenu net imposable, le
+   nombre de parts et l'impôt sur le revenu réel (voir §2), et alimente les deux cartes. **Prélèvements
+   sociaux et IFI restent affichés comme « non calculé »** (pas de moteur pour ces deux impôts dans ce
+   tableau de bord — l'IFI dispose de son propre simulateur, point 3 ci-dessous). Le carried-interest
+   (1NX/1OX) et les gains d'actionnariat à taux forfaitaire (3VD/3VI/3VF) sont couverts, à taux
+   proportionnel (12,8 %/18 %/30 %/41 %, hors barème) ; les pensions/retraites/rentes le sont désormais
+   aussi (abattement de 10 % classique, capital PER sans abattement, capital retraite à 7,5 %, rentes
+   viagères par tranche d'âge — voir §2) ; toute autre catégorie de revenu future (fonciers, capitaux
+   mobiliers…) n'entre pas encore dans ce calcul (voir §4).
 3. **Un simulateur IFI complet, avec sa propre saisie** (`IFIInterface.tsx`, ouvert depuis le bouton
    « 2042-IFI » de `FiscalDeclarationsCard`), organisé en 5 sections dans une sidebar
    (`IFISidebar.tsx`) : Hypothèses, Liste des biens à l'IFI, Barème de l'IFI, Réduction &
@@ -121,12 +123,14 @@ module **Famille** (`useFamilyData.ts`, pour synchroniser `marital_status.nombre
 les deux dossiers `lib/fiscal/` et `lib/fiscalite/` sont volontairement distincts (cf. §2).
 
 **Moteur de calcul de l'IR** (impôt lui-même, distinct du nombre de parts) : pas de table dédiée —
-cinq fonctions pures composées par [useFiscalOverview.ts](src/hooks/useFiscalOverview.ts) :
+six fonctions pures composées par [useFiscalOverview.ts](src/hooks/useFiscalOverview.ts) :
 [calculerRevenuSalaires.ts](src/lib/fiscalite/calculerRevenuSalaires.ts) (revenu net imposable du cadre
 1 Salaires), [calculerGainsActionnariatSalarie.ts](src/lib/fiscalite/calculerGainsActionnariatSalarie.ts)
 (part barème et part à taux forfaitaire — carried-interest, gains pré-28.9.2012 — des gains
 d'actionnariat salarié), [calculerRevenuExonereTauxEffectif.ts](src/lib/fiscalite/calculerRevenuExonereTauxEffectif.ts)
-(revenus exonérés retenus pour le taux effectif), [calculerPartsFiscales.ts](src/lib/fiscalite/calculerPartsFiscales.ts)
+(revenus exonérés retenus pour le taux effectif), [calculerPensionsRetraitesRentes.ts](src/lib/fiscalite/calculerPensionsRetraitesRentes.ts)
+(pensions au barème avec/sans abattement selon la ligne, capital retraite à taux forfaitaire, rentes
+viagères par tranche d'âge), [calculerPartsFiscales.ts](src/lib/fiscalite/calculerPartsFiscales.ts)
 (quotient familial) et [calculerImpot.ts](src/lib/fiscalite/calculerImpot.ts) (barème, plafonnement,
 méthode du taux effectif, réduction outre-mer, décote, impôt forfaitaire, TMI) — voir §2. Périmètre
 encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
@@ -306,14 +310,36 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   30 %/10 % sur le carried-interest/les options, pas de l'IR) — voir §3, 🟠. 26 tests couvrent
   l'agrégation des cases barème, l'impôt forfaitaire (chaque taux isolément, cumul, indépendance vis-à-vis
   du barème) et la non-inclusion des cases exclues.
+- **`src/lib/fiscalite/calculerPensionsRetraitesRentes.ts` — revenu net imposable et impôt forfaitaire
+  du cadre 1 « Pensions, retraites, rentes ».** Fonction pure couvrant trois mécanismes distincts,
+  vérifiés sur la brochure DGFiP (2042-K, pages 115-120) et le BOFiP (BOI-RSA-PENS) : (1) **abattement
+  de 10 % classique** (art. 158-5-a CGI) sur le total 1AS+1AZ+1AO+1AM, par déclarant puis somme —
+  réutilise `abattementPensionDeclarant`/`PENSION_ABATTEMENT_PLAFOND_FOYER`, exportés de
+  `calculerRevenuExonereTauxEffectif.ts` (même calcul que pour 1AH, plancher 454 €/pensionné, plafond
+  global 4 439 €/foyer) ; (2) **1AI** (capital des plans d'épargne retraite) imposable au barème **sans**
+  abattement (texte explicite de la brochure) ; (3) **1AT** (capital retraite, option art. 163 bis CGI)
+  hors barème : abattement spécifique de 10 % **non plafonné** puis taux forfaitaire **7,5 %**, dans
+  `impotForfaitaire` — même famille que le carried-interest/3VD de
+  `calculerGainsActionnariatSalarie.ts`. Rentes viagères à titre onéreux (1AW) : fraction imposable par
+  tranche d'âge (art. 158-6 CGI, 70 %/50 %/40 %/30 %), incluse dans `totalNetImposable` **sans**
+  l'abattement de 10 % classique (mécanismes exclusifs). **Exclues du calcul**
+  (`CASES_PENSIONS_EXCLUES_DU_CALCUL`) : 1AL/1BL et 1AR/1BR/1CR/1DR (pensions/rentes étrangères
+  « ouvrant droit à un crédit d'impôt égal à l'impôt français » — la brochure les inclut littéralement
+  dans la liste de l'abattement 10 %, mais sans moteur de crédit d'impôt, les inclure surestimerait
+  l'IR ; même famille que 1AF/1GB déjà exclus dans `calculerRevenuSalaires.ts` — voir §3, 🟠), 1HK/1HL
+  (case informative). 24 tests couvrent l'abattement (plancher, plafond par déclarant et par foyer),
+  1AI sans abattement, les 4 tranches d'âge des rentes viagères, l'impôt forfaitaire de 1AT et la
+  non-inclusion des cases exclues.
 - **`src/hooks/useFiscalOverview.ts` — point de calcul unique consommé par `FiscalOverviewCard` et
   `TaxRateCard`.** Compose `useFoyerFiscal` + `useRevenusSalaires` + `useGainsActionnariatSalarie` +
-  `useRevenusExoneresTauxEffectif` (un seul fetch Supabase de chacun), applique les cinq fonctions
-  ci-dessus (revenu imposable France = salaires + part barème des gains d'actionnariat ; revenu exonéré,
-  `foyerInput.lieuResidence` et `gainsActionnariat.impotForfaitaire` passés séparément à `calculerImpot`
-  pour la méthode du taux effectif, la réduction outre-mer et l'impôt forfaitaire), et renvoie un objet
-  unique
-  (`revenuSalaires`, `gainsActionnariat`, `revenuExonereTauxEffectif`, `parts`, `impot`, plus
+  `useRevenusExoneresTauxEffectif` + `usePensionsRetraitesRentes` (un seul fetch Supabase de chacun),
+  applique les six fonctions ci-dessus (revenu imposable France = salaires + part barème des gains
+  d'actionnariat + revenu net imposable des pensions ; revenu exonéré, `foyerInput.lieuResidence` et la
+  somme des `impotForfaitaire` de gains d'actionnariat et de pensions passés séparément à
+  `calculerImpot` pour la méthode du taux effectif, la réduction outre-mer et l'impôt forfaitaire), et
+  renvoie un objet unique
+  (`revenuSalaires`, `gainsActionnariat`, `revenuExonereTauxEffectif`, `pensionsRetraitesRentes`,
+  `parts`, `impot`, plus
   `foyerRenseigne`/`revenusRenseignes` pour distinguer un foyer non encore rempli d'un foyer réellement à
   0 €). En l'absence de données, utilise des valeurs par défaut (célibataire, 1 part, aucun revenu)
   plutôt que de ne rien afficher — les deux cartes signalent alors explicitement que le résultat n'est
@@ -533,12 +559,14 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   omission silencieuse d'un bien potentiellement significatif, sans avertissement.
 - **Résolu (voir §2) — un moteur de calcul de l'impôt sur le revenu existe désormais**
   (`calculerRevenuSalaires.ts` + `calculerGainsActionnariatSalarie.ts` +
-  `calculerRevenuExonereTauxEffectif.ts` + `calculerPartsFiscales.ts` + `calculerImpot.ts`, consommés
-  par `useFiscalOverview.ts`), couvrant les salaires, la part barème et la part à taux forfaitaire des
-  gains d'actionnariat salarié (carried-interest 1NX/1OX à 12,8 % PFU, 3VD/3VI/3VF à 18 %/30 %/41 %,
-  taux vérifiés visuellement sur la brochure DGFiP), et la méthode du taux effectif. **Reste hors
-  calcul** : les pensions/retraites/rentes (`pensions_retraites_rentes`, capture brute seulement), les
-  revenus fonciers, les capitaux mobiliers, et les cases 1AF/1BF/1GB/1HB (voir §3 🟠) — voir §4.
+  `calculerRevenuExonereTauxEffectif.ts` + `calculerPensionsRetraitesRentes.ts` +
+  `calculerPartsFiscales.ts` + `calculerImpot.ts`, consommés par `useFiscalOverview.ts`), couvrant les
+  salaires, la part barème et la part à taux forfaitaire des gains d'actionnariat salarié
+  (carried-interest 1NX/1OX à 12,8 % PFU, 3VD/3VI/3VF à 18 %/30 %/41 %), les pensions/retraites/rentes
+  (abattement 10 % classique, capital PER sans abattement, capital retraite à 7,5 %, rentes viagères
+  par tranche d'âge — taux vérifiés visuellement sur la brochure DGFiP et le BOFiP), et la méthode du
+  taux effectif. **Reste hors calcul** : les revenus fonciers, les capitaux mobiliers, et les cases
+  1AF/1BF/1GB/1HB/1AL/1AR (crédit d'impôt égal à l'impôt français, voir §3 🟠) — voir §4.
 - **Résolu — le simulateur IFI et le reste de l'écran Fiscalité n'affichent plus de montants d'IFI
   contradictoires.** `FiscalOverviewCard.tsx` affiche désormais « IFI : non calculé — voir le
   simulateur IFI » plutôt qu'un « 0 € » fixe qui contredisait le résultat du simulateur ouvert depuis
@@ -554,7 +582,12 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   professionnels particulier distinct de l'abattement de 10 % standard, non arbitré. Un utilisateur
   saisissant des montants dans ces cases les verra ignorés du calcul d'IR sans qu'aucun message ne le
   signale à l'écran — à corriger avant d'afficher le calcul comme fiable pour ces profils
-  (non-résidents, gérants majoritaires).
+  (non-résidents, gérants majoritaires). **Même exclusion, même mécanisme, pour
+  `calculerPensionsRetraitesRentes.ts`** : 1AL/1BL (pensions étrangères) et 1AR/1BR/1CR/1DR (rentes
+  étrangères) ouvrent droit à un crédit d'impôt égal à l'impôt français — la brochure DGFiP les inclut
+  pourtant littéralement dans la liste de l'abattement de 10 % classique (avec 1AS/1AZ/1AO/1AM), mais
+  sans le crédit d'impôt compensateur, les additionner surestimerait l'IR ; exclues par cohérence avec
+  1AF/1GB plutôt que d'implémenter un calcul partiel et trompeur.
 - **Réduction IFI pour dons (art. 978 CGI, 75 % du don plafonné à 50 000 €) absente du moteur de
   calcul**, alors que la catégorie de dépense « Dons aux organismes d'intérêt général (réduction IFI) »
   existe déjà comme libellé dans le module Budget
@@ -671,37 +704,33 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   après décote dans `calculerImpot.ts` — voir §2) ; **pensions, retraites et rentes** : saisie des 7
   lignes du vrai cadre 1 CERFA « Pensions, retraites, rentes » plus les rentes viagères à titre onéreux
   ventilées par tranche d'âge (2042-K, pages 115-119), persistance Supabase (`pensions_retraites_rentes`,
-  table dédiée), codes vérifiés visuellement — capture brute,
-  sans moteur de calcul, hors calcul de l'IR pour l'instant (voir différé ci-dessous).
+  table dédiée), codes vérifiés visuellement, **et désormais intégrées au calcul de l'IR**
+  (`calculerPensionsRetraitesRentes.ts` — abattement 10 % classique, capital PER sans abattement,
+  capital retraite à 7,5 %, rentes viagères par tranche d'âge — voir §2).
 
   **Sous-phases 2.1 à 2.4 du bloc « Salaires » toutes terminées, ainsi que l'encart taux effectif et le
   cadre Pensions associés** : le cadre 1 de la 2042 est intégralement couvert par
   `RevenusSalairesForm.tsx`/`GainsActionnariatSalarieForm.tsx`/`RevenusExoneresTauxEffectifForm.tsx`/
-  `PensionsRetraitesRentesForm.tsx`, à l'exception des colonnes C/D (dette assumée ci-dessous) et des
-  rentes viagères à titre onéreux (différées, voir ci-dessous). **Calcul de l'IR (Phase 10) — salaires, gains
-  d'actionnariat (part barème et part à taux forfaitaire), méthode du taux effectif et réduction
+  `PensionsRetraitesRentesForm.tsx`, à l'exception des colonnes C/D (dette assumée ci-dessous).
+  **Calcul de l'IR (Phase 10) — salaires, gains d'actionnariat (part barème et part à taux
+  forfaitaire), pensions/retraites/rentes (barème avec/sans abattement selon la ligne, capital retraite
+  à taux forfaitaire, rentes viagères par tranche d'âge), méthode du taux effectif et réduction
   outre-mer couverts** : `calculerRevenuSalaires.ts` + `calculerGainsActionnariatSalarie.ts` +
-  `calculerRevenuExonereTauxEffectif.ts` + `calculerPartsFiscales.ts` + `calculerImpot.ts` (barème 2026,
-  quotient familial, plafonnement art. 197 CGI, proratisation taux effectif, réduction d'impôt outre-mer
-  art. 197 I 3° CGI, décote, impôt à taux forfaitaire carried-interest/gains historiques, TMI), branchés
-  en temps réel sur `FiscalOverviewCard`/`TaxRateCard` via `useFiscalOverview.ts` (voir §2). **Les
-  pensions (`pensions_retraites_rentes`) ne sont pas encore incluses dans ce calcul** — capture brute
-  seulement pour l'instant (voir différé ci-dessous). Prochaine étape de la feuille de route : intégrer
-  les pensions au calcul de l'IR, un futur cadre 2042 hors « Salaires » (revenus fonciers, capitaux
-  mobiliers, plus-values, etc.), ou les cases 1AF/1BF/1GB/1HB (point ci-dessous).
+  `calculerRevenuExonereTauxEffectif.ts` + `calculerPensionsRetraitesRentes.ts` +
+  `calculerPartsFiscales.ts` + `calculerImpot.ts` (barème 2026, quotient familial, plafonnement
+  art. 197 CGI, proratisation taux effectif, réduction d'impôt outre-mer art. 197 I 3° CGI, décote,
+  impôt à taux forfaitaire carried-interest/gains historiques/capital retraite, TMI), branchés en temps
+  réel sur `FiscalOverviewCard`/`TaxRateCard` via `useFiscalOverview.ts` (voir §2). Prochaine étape de
+  la feuille de route : un futur cadre 2042 hors « Salaires » (revenus fonciers, capitaux mobiliers,
+  plus-values, etc.), ou les cases 1AF/1BF/1GB/1HB/1AL/1AR (point ci-dessous).
 - **Différé, déductible du code** :
-  - **Pensions, retraites et rentes (`pensions_retraites_rentes`, y compris les rentes viagères à titre
-    onéreux `1AW`/`1AR`) absentes du calcul de l'IR** — capture brute seulement ; un utilisateur ayant
-    renseigné des pensions ou des rentes ne les verra pas dans le revenu net imposable ni dans l'impôt
-    affiché tant que `calculerImpot.ts` ne les consomme pas. Pour les rentes viagères en particulier, la
-    fraction imposable dégressive selon l'âge d'entrée en jouissance (art. 158 6 CGI : 70 % avant 50 ans,
-    50 % de 50 à 59 ans, 40 % de 60 à 69 ans, 30 % à partir de 70 ans) reste à implémenter — les montants
-    saisis sont pour l'instant des montants bruts non transformés.
-  - **1AF/1BF (salaires de source étrangère, crédit d'impôt égal à l'impôt français) et 1GB/1HB
-    (gérants et associés art. 62 CGI) exclus de `calculerRevenuSalaires.ts`** — 1AF/1BF suit un
-    mécanisme de crédit d'impôt distinct de la méthode du taux effectif désormais implémentée pour
-    `revenus_exoneres_taux_effectif` (pas juste « pas encore fait » : une base de calcul différente),
-    et le régime de frais professionnels des gérants art. 62 CGI reste non arbitré (voir §3, 🟠).
+  - **1AF/1BF (salaires de source étrangère, crédit d'impôt égal à l'impôt français), 1GB/1HB
+    (gérants et associés art. 62 CGI), 1AL/1BL et 1AR/1BR/1CR/1DR (pensions/rentes étrangères, même
+    mécanisme de crédit d'impôt que 1AF) exclus des moteurs de calcul** — le crédit d'impôt égal à
+    l'impôt français est un mécanisme distinct de la méthode du taux effectif désormais implémentée pour
+    `revenus_exoneres_taux_effectif` (pas juste « pas encore fait » : une base de calcul différente,
+    non implémentée dans le repo) ; le régime de frais professionnels des gérants art. 62 CGI reste non
+    arbitré (voir §3, 🟠).
   - Le choix entre abattement forfaitaire de 10 % (`1AJ`/`1BJ`) et frais réels (`1AK`/`1BK`) est
     désormais arbitré par `calculerRevenuSalaires.ts` (le plus favorable des deux est retenu
     automatiquement).
