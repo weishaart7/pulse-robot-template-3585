@@ -95,7 +95,7 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 | Ménage (section 2042) | [MenageSection.tsx](src/pages/fiscalite/components/2042/MenageSection.tsx) → `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx` | Situation familiale, enfants à charge (liste dynamique), personnes invalides à charge (liste dynamique), enfants majeurs rattachés, cases à cocher (parent isolé, invalidité, ancien combattant, veuve de guerre...), synthèse du nombre de parts recalculée en direct pendant la saisie (avant même l'enregistrement) |
 | Traitements et salaires (section 2042) | [RevenusSalairesForm.tsx](src/components/fiscalite/RevenusSalairesForm.tsx) | 18 paires de champs déclarant 1/déclarant 2 (cadre 1 de la 2042, hors colonnes C/D et gains d'actionnariat), code officiel + libellé français côte à côte |
 | Salaires & pensions exonérés — taux effectif (section 2042) | [RevenusExoneresTauxEffectifForm.tsx](src/components/fiscalite/RevenusExoneresTauxEffectifForm.tsx) | 5 lignes (`1AC`/`1BC`, `1GE`/`1HE` case à cocher, `1AE`/`1BE`, `1AH`/`1BH`, `RSE`/`RSF` texte libre), encart CERFA distinct (2042-C pages 99/116) — alimente désormais le taux effectif dans le tableau de bord IR (Vision générale) |
-| Pensions, retraites et rentes (section 2042) | [PensionsRetraitesRentesForm.tsx](src/components/fiscalite/PensionsRetraitesRentesForm.tsx) | 7 lignes déclarant 1/déclarant 2 (`1AS`, `1AT`, `1AI`, `1AZ`, `1AO`, `1AL`, `1AM`), vrai cadre 1 « Pensions, retraites, rentes » du CERFA (2042-K pages 115-119), hors colonnes C/D — capture brute, sans moteur de calcul |
+| Pensions, retraites et rentes (section 2042) | [PensionsRetraitesRentesForm.tsx](src/components/fiscalite/PensionsRetraitesRentesForm.tsx) | 7 lignes déclarant 1/déclarant 2 (`1AS`, `1AT`, `1AI`, `1AZ`, `1AO`, `1AL`, `1AM`) + rentes viagères à titre onéreux ventilées par tranche d'âge, pas déclarant (`1AW`/`1BW`/`1CW`/`1DW` rentes perçues, `1AR`/`1BR`/`1CR`/`1DR` non-résidents), vrai cadre 1 « Pensions, retraites, rentes » du CERFA (2042-K pages 115-119), hors colonnes C/D — capture brute, sans moteur de calcul |
 | Gains d'actionnariat salarié (section 2042) | [GainsActionnariatSalarieForm.tsx](src/components/fiscalite/GainsActionnariatSalarieForm.tsx) | 13 lignes du CERFA (stock-options, actions gratuites, carried-interest, options pré-28.9.2012), regroupées par sous-bloc visuel ; champs à case unique sans colonne déclarant 2 pour `1TZ`/`1UZ`/`1WZ`/`1VZ` et `3VD`/`3VI`/`3VF`/`3VN`, conformément au CERFA |
 | Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Donut IR (salaires, calculé) — PS et IFI affichés « non calculé » |
 | Taux marginal | [TaxRateCard.tsx](src/pages/fiscalite/components/TaxRateCard.tsx) | Barème IR réel, tranche active (TMI), quotient familial, marge avant tranche suivante, impôt net |
@@ -388,19 +388,27 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
 - **`pensions_retraites_rentes` — table dédiée, vrai cadre 1 « Pensions, retraites, rentes » du CERFA,
   distincte de `revenus_exoneres_taux_effectif`.** Même pattern que les autres tables du module
   (`user_id → auth.users(id) ON DELETE CASCADE`, `UNIQUE(user_id)`, RLS 4 policies). 14 colonnes
-  `NUMERIC` couvrant les 7 lignes du cadre : `1AS`/`1BS` (pensions, retraites et rentes), `1AT`/`1BT`
-  (pensions de retraite en capital taxables à 7,5 %), `1AI`/`1BI` (pensions en capital des plans
-  d'épargne retraite), `1AZ`/`1BZ` (pensions d'invalidité), `1AO`/`1BO` (pensions alimentaires perçues),
-  `1AL`/`1BL` (pensions non-résidents/source étrangère avec crédit d'impôt égal à l'impôt français),
-  `1AM`/`1BM` (autres pensions imposables de source étrangère). Codes vérifiés visuellement sur la
-  brochure officielle DGFiP (2042-K, revenus 2025, pages 115-119, zoom haute résolution) — la case
-  `1AH`, initialement envisagée pour cette section, n'appartient en réalité à aucune ligne de ce cadre
-  (aucun code en commun avec le CERFA "Pensions, retraites, rentes") : c'est une case propre à l'encart
-  taux effectif (2042-C), qui reste dans `RevenusExoneresTauxEffectifForm.tsx` plutôt que d'être
-  déplacée dans un cadre de revenus imposables auquel elle n'appartient pas. Rentes viagères à titre
-  onéreux (`1AW`/`1AR`) volontairement hors périmètre de cette phase : structure différente des 7
-  autres lignes (colonnes par tranche d'âge d'entrée en jouissance, pas déclarant 1/2), voir §4. Section
-  positionnée entre « Salaires & pensions exonérés (taux effectif) » et « Gains d'actionnariat salarié »
+  `NUMERIC` couvrant les 7 lignes déclarant 1/2 du cadre : `1AS`/`1BS` (pensions, retraites et rentes),
+  `1AT`/`1BT` (pensions de retraite en capital taxables à 7,5 %), `1AI`/`1BI` (pensions en capital des
+  plans d'épargne retraite), `1AZ`/`1BZ` (pensions d'invalidité), `1AO`/`1BO` (pensions alimentaires
+  perçues), `1AL`/`1BL` (pensions non-résidents/source étrangère avec crédit d'impôt égal à l'impôt
+  français), `1AM`/`1BM` (autres pensions imposables de source étrangère). Codes vérifiés visuellement
+  sur la brochure officielle DGFiP (2042-K, revenus 2025, pages 115-119, zoom haute résolution) — la
+  case `1AH`, initialement envisagée pour cette section, n'appartient en réalité à aucune ligne de ce
+  cadre (aucun code en commun avec le CERFA "Pensions, retraites, rentes") : c'est une case propre à
+  l'encart taux effectif (2042-C), qui reste dans `RevenusExoneresTauxEffectifForm.tsx` plutôt que
+  d'être déplacée dans un cadre de revenus imposables auquel elle n'appartient pas. **8 colonnes
+  supplémentaires ajoutées ensuite pour les rentes viagères à titre onéreux** (même cadre CERFA, page
+  119) : `1AW`/`1BW`/`1CW`/`1DW` (rentes perçues) et `1AR`/`1BR`/`1CR`/`1DR` (rentes perçues par les
+  non-résidents/source étrangère avec crédit d'impôt), ventilées par **tranche d'âge d'entrée en
+  jouissance de la rente** (moins de 50 ans/50-59/60-69/70+) et non par déclarant — seul point du module
+  où une case n'est pas répartie déclarant 1/déclarant 2, un montant par foyer. Code vérifié via le
+  texte natif du PDF (`pdftotext -layout`) plutôt que la capture visuelle seule : un filigrane
+  « SPECIMEN » masquait partiellement le premier caractère du code `1AR` sur l'image zoomée. Affiché par
+  `DeclarationLigne::MontantParTrancheAgeLigne`, composant dédié (4 colonnes tranche d'âge plutôt que 2
+  colonnes déclarant, libellé principal sur sa propre ligne au-dessus faute de place). Capture brute,
+  fraction imposable dégressive selon l'âge (art. 158 6 CGI) non calculée (voir §4). Section positionnée
+  entre « Salaires & pensions exonérés (taux effectif) » et « Gains d'actionnariat salarié »
   dans la sidebar, sur demande explicite.
 - **`src/lib/fiscal/calcul.ts` (dossier séparé, sans « ite ») a été nettoyé de son unique fonction
   orpheline.** L'ancienne `calculerPartsFiscales` de ce dossier n'avait aucun appelant dans le repo
@@ -659,8 +667,9 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   **Carried-interest et gains d'actionnariat à taux forfaitaire désormais couverts** (1NX/1OX à 12,8 %
   PFU, 3VD/3VI/3VF à 18 %/30 %/41 %, via `calculerGainsActionnariatSalarie.ts::impotForfaitaire`, ajouté
   après décote dans `calculerImpot.ts` — voir §2) ; **pensions, retraites et rentes** : saisie des 7
-  lignes du vrai cadre 1 CERFA « Pensions, retraites, rentes » (2042-K, pages 115-119), persistance
-  Supabase (`pensions_retraites_rentes`, table dédiée), codes vérifiés visuellement — capture brute,
+  lignes du vrai cadre 1 CERFA « Pensions, retraites, rentes » plus les rentes viagères à titre onéreux
+  ventilées par tranche d'âge (2042-K, pages 115-119), persistance Supabase (`pensions_retraites_rentes`,
+  table dédiée), codes vérifiés visuellement — capture brute,
   sans moteur de calcul, hors calcul de l'IR pour l'instant (voir différé ci-dessous).
 
   **Sous-phases 2.1 à 2.4 du bloc « Salaires » toutes terminées, ainsi que l'encart taux effectif et le
@@ -679,15 +688,13 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   les pensions au calcul de l'IR, un futur cadre 2042 hors « Salaires » (revenus fonciers, capitaux
   mobiliers, plus-values, etc.), ou les cases 1AF/1BF/1GB/1HB (point ci-dessous).
 - **Différé, déductible du code** :
-  - **Pensions, retraites et rentes (`pensions_retraites_rentes`) absentes du calcul de l'IR** —
-    capture brute seulement ; un utilisateur ayant renseigné des pensions ne les verra pas dans le
-    revenu net imposable ni dans l'impôt affiché tant que `calculerImpot.ts` ne les consomme pas.
-  - **Rentes viagères à titre onéreux (1AW/1AR) hors périmètre** — structure différente des 7 lignes
-    de `pensions_retraites_rentes` (colonnes par tranche d'âge d'entrée en jouissance — moins de 50
-    ans/50-59/60-69/70+ — au lieu de déclarant 1/2), art. 158 6 CGI (fraction imposable dégressive selon
-    l'âge). Vérifié visuellement sur la brochure DGFiP (2042-K, page 119) mais non implémenté, décision
-    explicite prise en session pour ne pas mélanger deux structures de données différentes dans la même
-    phase.
+  - **Pensions, retraites et rentes (`pensions_retraites_rentes`, y compris les rentes viagères à titre
+    onéreux `1AW`/`1AR`) absentes du calcul de l'IR** — capture brute seulement ; un utilisateur ayant
+    renseigné des pensions ou des rentes ne les verra pas dans le revenu net imposable ni dans l'impôt
+    affiché tant que `calculerImpot.ts` ne les consomme pas. Pour les rentes viagères en particulier, la
+    fraction imposable dégressive selon l'âge d'entrée en jouissance (art. 158 6 CGI : 70 % avant 50 ans,
+    50 % de 50 à 59 ans, 40 % de 60 à 69 ans, 30 % à partir de 70 ans) reste à implémenter — les montants
+    saisis sont pour l'instant des montants bruts non transformés.
   - **1AF/1BF (salaires de source étrangère, crédit d'impôt égal à l'impôt français) et 1GB/1HB
     (gérants et associés art. 62 CGI) exclus de `calculerRevenuSalaires.ts`** — 1AF/1BF suit un
     mécanisme de crédit d'impôt distinct de la méthode du taux effectif désormais implémentée pour
