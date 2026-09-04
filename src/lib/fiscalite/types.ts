@@ -67,4 +67,6 @@ export interface RevenusSalairesInput {
   case1bf: number | null;
   case1ag: number | null;
   case1bg: number | null;
+  case1ak: number | null;
+  case1bk: number | null;
 }

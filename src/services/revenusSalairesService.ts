@@ -36,6 +36,8 @@ interface RevenusSalairesRow {
   case_1bf: number | null;
   case_1ag: number | null;
   case_1bg: number | null;
+  case_1ak: number | null;
+  case_1bk: number | null;
 }
 
 function rowToRevenusSalaires(row: RevenusSalairesRow): RevenusSalaires {
@@ -69,6 +71,8 @@ function rowToRevenusSalaires(row: RevenusSalairesRow): RevenusSalaires {
     case1bf: row.case_1bf,
     case1ag: row.case_1ag,
     case1bg: row.case_1bg,
+    case1ak: row.case_1ak,
+    case1bk: row.case_1bk,
   };
 }
 
@@ -103,6 +107,8 @@ function revenusSalairesToRow(revenus: RevenusSalaires, userId: string) {
     case_1bf: revenus.case1bf,
     case_1ag: revenus.case1ag,
     case_1bg: revenus.case1bg,
+    case_1ak: revenus.case1ak,
+    case_1bk: revenus.case1bk,
   };
 }
 

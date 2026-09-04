@@ -2300,6 +2300,7 @@ export type Database = {
           case_1af: number | null
           case_1ag: number | null
           case_1aj: number | null
+          case_1ak: number | null
           case_1ap: number | null
           case_1av: boolean
           case_1ba: number | null
@@ -2307,6 +2308,7 @@ export type Database = {
           case_1bf: number | null
           case_1bg: number | null
           case_1bj: number | null
+          case_1bk: number | null
           case_1bp: number | null
           case_1bv: boolean
           case_1ga: number | null
@@ -2334,6 +2336,7 @@ export type Database = {
           case_1af?: number | null
           case_1ag?: number | null
           case_1aj?: number | null
+          case_1ak?: number | null
           case_1ap?: number | null
           case_1av?: boolean
           case_1ba?: number | null
@@ -2341,6 +2344,7 @@ export type Database = {
           case_1bf?: number | null
           case_1bg?: number | null
           case_1bj?: number | null
+          case_1bk?: number | null
           case_1bp?: number | null
           case_1bv?: boolean
           case_1ga?: number | null
@@ -2368,6 +2372,7 @@ export type Database = {
           case_1af?: number | null
           case_1ag?: number | null
           case_1aj?: number | null
+          case_1ak?: number | null
           case_1ap?: number | null
           case_1av?: boolean
           case_1ba?: number | null
@@ -2375,6 +2380,7 @@ export type Database = {
           case_1bf?: number | null
           case_1bg?: number | null
           case_1bj?: number | null
+          case_1bk?: number | null
           case_1bp?: number | null
           case_1bv?: boolean
           case_1ga?: number | null
