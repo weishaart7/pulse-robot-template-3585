@@ -21,7 +21,7 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 
 1. **La déclaration 2042, regroupée derrière le bouton « 2042 - Déclaration générale »** : ouvre
    `Declaration2042Interface.tsx` (overlay plein écran + sidebar de sections, calqué sur le pattern
-   `IFIInterface`/`IFISidebar` déjà en place pour l'IFI — voir §2). Contient aujourd'hui deux sections :
+   `IFIInterface`/`IFISidebar` déjà en place pour l'IFI — voir §2). Contient aujourd'hui trois sections :
    - **Ménage — état civil et nombre de parts (Phase 1, fonctionnel)** : `MenageSection.tsx`
      (wrapper de `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx`), adossé à la table Supabase
      `foyer_fiscal` et au moteur pur `src/lib/fiscalite/calculerPartsFiscales.ts`. Seul morceau du
@@ -32,6 +32,12 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
      brochure officielle DGFiP (2042-K/2042-C, revenus 2024). Inclut les frais réels (`1AK`/`1BK`,
      Phase 2.2), qui remplacent l'abattement forfaitaire de 10 % sur `1AJ`/`1BJ` — remplacement non
      appliqué automatiquement, saisie manuelle indépendante des deux champs (aucun calcul en Phase 2).
+   - **Gains d'actionnariat salarié — stock-options, actions gratuites, carried-interest (Phase 2.3,
+     fonctionnel)** : `GainsActionnariatSalarieForm.tsx`, adossé à la table Supabase
+     `gains_actionnariat_salarie`, **distincte** de `revenus_salaires` (voir §2). Mélange volontaire
+     de codes du cadre 1 « Salaires, gains d'actionnariat salarié » et du cadre 3 « Plus-values et
+     gains divers » du CERFA 2042-C (options attribuées avant le 28.9.2012) — même objet réel, scindé
+     administrativement par date d'attribution sur le formulaire papier.
 
    Avant cette réorganisation, `MenageForm`/`SyntheseFoyerFiscal`/`RevenusSalairesForm` étaient montés
    à plat dans `FiscaliteSection.tsx`, en dehors de tout bouton « 2042 » (qui n'avait alors aucun
@@ -58,6 +64,7 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 | Déclaration 2042 (overlay) | [Declaration2042Interface.tsx](src/pages/fiscalite/components/Declaration2042Interface.tsx) → [Declaration2042Sidebar.tsx](src/pages/fiscalite/components/2042/Declaration2042Sidebar.tsx) | Overlay plein écran + sidebar de sections pilotée par [declaration2042Sections.ts](src/pages/fiscalite/components/2042/declaration2042Sections.ts) (config `{id, label, icon, component}` — ajouter une sous-phase future = une entrée) ; pas de bouton « Enregistrer » global, chaque section garde sa propre sauvegarde |
 | Ménage (section 2042) | [MenageSection.tsx](src/pages/fiscalite/components/2042/MenageSection.tsx) → `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx` | Situation familiale, enfants à charge (liste dynamique), personnes invalides à charge (liste dynamique), enfants majeurs rattachés, cases à cocher (parent isolé, invalidité, ancien combattant, veuve de guerre...), synthèse du nombre de parts recalculée en direct pendant la saisie (avant même l'enregistrement) |
 | Traitements et salaires (section 2042) | [RevenusSalairesForm.tsx](src/components/fiscalite/RevenusSalairesForm.tsx) | 15 paires de champs déclarant 1/déclarant 2 (cadre 1 de la 2042, hors colonnes C/D et gains d'actionnariat), code officiel + libellé français côte à côte |
+| Gains d'actionnariat salarié (section 2042) | [GainsActionnariatSalarieForm.tsx](src/components/fiscalite/GainsActionnariatSalarieForm.tsx) | 13 lignes du CERFA (stock-options, actions gratuites, carried-interest, options pré-28.9.2012), regroupées par sous-bloc visuel ; champs à case unique sans colonne déclarant 2 pour `1TZ`/`1UZ`/`1WZ`/`1VZ` et `3VD`/`3VI`/`3VF`/`3VN`, conformément au CERFA |
 | Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Donut IR/PS/IFI + détail revenus — **données 100 % codées en dur** |
 | Taux marginal | [TaxRateCard.tsx](src/pages/fiscalite/components/TaxRateCard.tsx) | Barème IR, tranche active, marge avant tranche suivante — **données 100 % codées en dur** |
 | Simulateur IFI | [IFIInterface.tsx](src/pages/fiscalite/components/IFIInterface.tsx) → 5 sous-écrans `ifi/*.tsx` | Wizard de déclaration IFI : hypothèses, biens/passifs, barème, montant dû |
@@ -170,6 +177,23 @@ fonction n'existe — voir §4.
   `1GK`/`1GL`, à cocher seulement si les quatre catégories référencées cessent simultanément), et un
   tooltip « ? » pour les cas nécessitant une explication plus longue que ne le permet une parenthèse
   (`1AA`, `1AV`).
+- **`gains_actionnariat_salarie` (Phase 2.3) — table dédiée, distincte de `revenus_salaires` par
+  choix délibéré.** Même pattern que les autres tables du module (`user_id → auth.users(id) ON
+  DELETE CASCADE`, `UNIQUE(user_id)`, RLS 4 policies). 18 colonnes `NUMERIC` couvrant 13 lignes du
+  CERFA, mélangeant volontairement deux cadres du formulaire 2042-C : le cadre 1 « Salaires, gains
+  d'actionnariat salarié » (`1TP`/`1UP`, `1TT`/`1UT`, `1TZ`, `1UZ`, `1WZ`, `1VZ`, `1NX`/`1OX`,
+  `1NY`/`1OY`) et le cadre 3 « Plus-values et gains divers » pour les options attribuées avant le
+  28.9.2012 (`3VD`, `3VI`, `3VF`, `3VJ`/`3VK`, `3VN`) — décision de conception : ces deux cadres
+  décrivent le même objet réel (stock-options/actions gratuites), scindé administrativement par date
+  d'attribution sur le papier ; les regrouper sous `revenus_salaires` aurait dénaturé le nom de cette
+  dernière avec des codes qui ne sont pas, sur le CERFA, des « salaires ». **Découverte non triviale,
+  vérifiée visuellement (capture haute résolution du CERFA, pas seulement l'extraction texte de la
+  brochure) avant migration** : contrairement à tous les autres champs du module, 8 des 13 lignes
+  (`1TZ`, `1UZ`, `1WZ`, `1VZ`, `3VD`, `3VI`, `3VF`, `3VN`) n'ont qu'**une seule case** sur le
+  formulaire papier, sans colonne déclarant 2 — rompant le schéma déclarant 1/déclarant 2 systématique
+  ailleurs dans `revenus_salaires`/`foyer_fiscal`. `GainsActionnariatSalarieForm.tsx` reflète cette
+  asymétrie (composant `SingleMontantLigne` dédié, distinct de `MontantLigne`) plutôt que de forcer
+  une colonne déclarant 2 fictive.
 - **`src/lib/fiscal/calcul.ts` (dossier séparé, sans « ite ») a été nettoyé de son unique fonction
   orpheline.** L'ancienne `calculerPartsFiscales` de ce dossier n'avait aucun appelant dans le repo
   (`grep` confirmé avant suppression) et divergeait de plusieurs règles CGI (veuf avec enfant(s)
@@ -412,19 +436,23 @@ fonction n'existe — voir §4.
   et exonérations spécifiques, associés/gérants art. 62 CGI, agents généraux d'assurance, droits
   d'auteur, autres revenus imposables, salaires de source étrangère, frais réels), persistance
   Supabase (`revenus_salaires`, une ligne par utilisateur), codes de case vérifiés contre la brochure
-  officielle DGFiP — capture brute, sans moteur de calcul.
+  officielle DGFiP — capture brute, sans moteur de calcul ; **gains d'actionnariat salarié (Phase
+  2.3)** : saisie des 13 lignes couvrant stock-options, actions gratuites et carried-interest (cadre 1
+  de la 2042-C) ainsi que les options attribuées avant le 28.9.2012 (cadre 3, incluses sur demande
+  explicite malgré le changement de cadre), persistance Supabase (`gains_actionnariat_salarie`, table
+  dédiée), codes vérifiés visuellement sur le CERFA — capture brute, sans moteur de calcul.
 - **Différé, déductible du code** :
-  - **Tout calcul réel de l'impôt sur le revenu** : ni le nombre de parts (Phase 1) ni les salaires
-    saisis (Phases 2.1/2.2) ne sont appliqués à un barème ; aucune fonction de calcul IR (tranches,
-    décote, quotient familial appliqué au revenu) n'existe dans le repo — dépendance de la Phase 10
-    prévue. En particulier, le choix entre abattement forfaitaire de 10 % (`1AJ`/`1BJ`) et frais réels
-    (`1AK`/`1BK`) n'est ni calculé ni arbitré : les deux montants peuvent être saisis simultanément
-    sans qu'aucune logique n'indique lequel est retenu par l'administration.
+  - **Tout calcul réel de l'impôt sur le revenu** : ni le nombre de parts (Phase 1) ni les salaires ou
+    gains d'actionnariat saisis (Phases 2.1/2.2/2.3) ne sont appliqués à un barème ; aucune fonction de
+    calcul IR (tranches, décote, quotient familial appliqué au revenu) n'existe dans le repo —
+    dépendance de la Phase 10 prévue. En particulier, le choix entre abattement forfaitaire de 10 %
+    (`1AJ`/`1BJ`) et frais réels (`1AK`/`1BK`) n'est ni calculé ni arbitré : les deux montants peuvent
+    être saisis simultanément sans qu'aucune logique n'indique lequel est retenu par l'administration.
+    De même pour les 3 taux de `3VD`/`3VI`/`3VF` (18 %/30 %/41 %) : rien n'empêche de saisir les trois
+    simultanément alors qu'un seul est normalement applicable par situation.
   - **Traitements et salaires — colonnes C/D (Phase 2.1, dette assumée)** : les revenus propres des
     personnes à charge (ex. enfants majeurs rattachés ayant leurs propres salaires) ne sont pas
     saisis — cas rare, traité dans une session ultérieure.
-  - **Gains d'actionnariat salarié (sous-phase 2.3)** : stock-options, actions gratuites,
-    carried-interest — non saisis, différés à une session séparée.
   - **Cas spécifiques restants (sous-phase 2.4)** : salariés impatriés, indemnités pour préjudice
     moral, sommes exonérées provenant du CET — non saisis, différés à une session séparée. (Les
     agents généraux d'assurance, initialement prévus dans cette sous-phase, ont finalement été inclus
