@@ -3,10 +3,12 @@ import { useFoyerFiscal } from './useFoyerFiscal';
 import { useRevenusSalaires } from './useRevenusSalaires';
 import { useGainsActionnariatSalarie } from './useGainsActionnariatSalarie';
 import { useRevenusExoneresTauxEffectif } from './useRevenusExoneresTauxEffectif';
+import { usePensionsRetraitesRentes } from './usePensionsRetraitesRentes';
 import {
   calculerGainsActionnariatSalarie,
   calculerImpot,
   calculerPartsFiscales,
+  calculerPensionsRetraitesRentes,
   calculerRevenuExonereTauxEffectif,
   calculerRevenuSalaires,
   FoyerFiscalInput,
@@ -14,6 +16,8 @@ import {
   GainsActionnariatSalarieResult,
   ImpotResult,
   PartsFiscalesResult,
+  PensionsRetraitesRentesInput,
+  PensionsRetraitesRentesResult,
   RevenuExonereTauxEffectifResult,
   RevenuSalairesResult,
   RevenusExoneresTauxEffectifInput,
@@ -55,6 +59,19 @@ const REVENUS_EXONERES_PAR_DEFAUT: RevenusExoneresTauxEffectifInput = {
   caseRse: null, caseRsf: null,
 };
 
+const PENSIONS_RETRAITES_RENTES_PAR_DEFAUT: PensionsRetraitesRentesInput = {
+  case1as: null, case1bs: null,
+  case1at: null, case1bt: null,
+  case1ai: null, case1bi: null,
+  case1az: null, case1bz: null,
+  case1ao: null, case1bo: null,
+  case1al: null, case1bl: null,
+  case1am: null, case1bm: null,
+  case1aw: null, case1bw: null, case1cw: null, case1dw: null,
+  case1ar: null, case1br: null, case1cr: null, case1dr: null,
+  case1hk: false, case1hl: false,
+};
+
 const REVENUS_SALAIRES_PAR_DEFAUT: RevenusSalairesInput = {
   case1aj: null, case1bj: null,
   case1aa: null, case1ba: null,
@@ -83,15 +100,17 @@ export interface FiscalOverview {
   revenuSalaires: RevenuSalairesResult;
   gainsActionnariat: GainsActionnariatSalarieResult;
   revenuExonereTauxEffectif: RevenuExonereTauxEffectifResult;
+  pensionsRetraitesRentes: PensionsRetraitesRentesResult;
   parts: PartsFiscalesResult;
   impot: ImpotResult;
-  /** Recharge les 4 sources Supabase — à appeler après une saisie dans la 2042 (voir FiscaliteSection.tsx). */
+  /** Recharge les 5 sources Supabase — à appeler après une saisie dans la 2042 (voir FiscaliteSection.tsx). */
   refetch: () => void;
 }
 
 /**
  * Agrège foyer fiscal + revenus salaires + gains d'actionnariat salarié +
- * revenus exonérés retenus pour le taux effectif, et calcule le résultat IR
+ * revenus exonérés retenus pour le taux effectif + pensions/retraites/rentes,
+ * et calcule le résultat IR
  * (V1 : cases imposables au barème uniquement — voir docs/fiscalite.md). Un
  * seul point de calcul partagé entre FiscalOverviewCard et TaxRateCard pour
  * éviter des appels Supabase dupliqués et deux implémentations divergentes du
@@ -107,12 +126,14 @@ export function useFiscalOverview(): FiscalOverview {
   const { data: revenus, loading: loadingRevenus, refetch: refetchRevenus } = useRevenusSalaires();
   const { data: gains, loading: loadingGains, refetch: refetchGains } = useGainsActionnariatSalarie();
   const { data: exoneres, loading: loadingExoneres, refetch: refetchExoneres } = useRevenusExoneresTauxEffectif();
+  const { data: pensions, loading: loadingPensions, refetch: refetchPensions } = usePensionsRetraitesRentes();
 
   const refetch = () => {
     refetchFoyer();
     refetchRevenus();
     refetchGains();
     refetchExoneres();
+    refetchPensions();
   };
 
   const overview = useMemo(() => {
@@ -120,32 +141,37 @@ export function useFiscalOverview(): FiscalOverview {
     const revenusInput = revenus ?? REVENUS_SALAIRES_PAR_DEFAUT;
     const gainsInput = gains ?? GAINS_ACTIONNARIAT_PAR_DEFAUT;
     const exoneresInput = exoneres ?? REVENUS_EXONERES_PAR_DEFAUT;
+    const pensionsInput = pensions ?? PENSIONS_RETRAITES_RENTES_PAR_DEFAUT;
 
     const revenuSalaires = calculerRevenuSalaires(revenusInput);
     const gainsActionnariat = calculerGainsActionnariatSalarie(gainsInput);
     const revenuExonereTauxEffectif = calculerRevenuExonereTauxEffectif(exoneresInput);
+    const pensionsRetraitesRentes = calculerPensionsRetraitesRentes(pensionsInput);
     const parts = calculerPartsFiscales(foyerInput);
-    const revenuImposableTotal = revenuSalaires.totalNetImposable + gainsActionnariat.totalNetImposable;
+    const revenuImposableTotal = revenuSalaires.totalNetImposable + gainsActionnariat.totalNetImposable
+      + pensionsRetraitesRentes.totalNetImposable;
+    const impotForfaitaireTotal = gainsActionnariat.impotForfaitaire + pensionsRetraitesRentes.impotForfaitaire;
     const impot = calculerImpot(
       revenuImposableTotal,
       parts,
       foyerInput.situationFamille,
       revenuExonereTauxEffectif.totalRetenu,
       foyerInput.lieuResidence,
-      gainsActionnariat.impotForfaitaire,
+      impotForfaitaireTotal,
     );
 
     return {
-      loading: loadingFoyer || loadingRevenus || loadingGains || loadingExoneres,
+      loading: loadingFoyer || loadingRevenus || loadingGains || loadingExoneres || loadingPensions,
       foyerRenseigne: foyer !== null,
-      revenusRenseignes: revenus !== null || gains !== null || exoneres !== null,
+      revenusRenseignes: revenus !== null || gains !== null || exoneres !== null || pensions !== null,
       revenuSalaires,
       gainsActionnariat,
       revenuExonereTauxEffectif,
+      pensionsRetraitesRentes,
       parts,
       impot,
     };
-  }, [foyer, revenus, gains, exoneres, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres]);
+  }, [foyer, revenus, gains, exoneres, pensions, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions]);
 
   return { ...overview, refetch };
 }
