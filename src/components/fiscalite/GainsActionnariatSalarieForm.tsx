@@ -72,7 +72,7 @@ export const GainsActionnariatSalarieForm = ({ onSaved }: GainsActionnariatSalar
       <CardHeader>
         <CardTitle>Gains d'actionnariat salarié</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-2">
         <DeclarantsHeader />
         <MontantLigne
           label="Rabais excédentaire sur options sur titres"
@@ -136,7 +136,7 @@ export const GainsActionnariatSalarieForm = ({ onSaved }: GainsActionnariatSalar
           titre="Gains de levée d'options / actions gratuites attribuées avant le 28.9.2012"
           aide="Le taux applicable dépend de la date d'attribution et de la durée de conservation des titres — un seul des trois montants est normalement renseigné."
         >
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-2">
             <SingleMontantLigne label="Gains taxables à 18 %" code="3VD" value={gains.case3vd} onChange={v => update('case3vd', v)} />
             <SingleMontantLigne label="Gains taxables à 30 %" code="3VI" value={gains.case3vi} onChange={v => update('case3vi', v)} />
             <SingleMontantLigne label="Gains taxables à 41 %" code="3VF" value={gains.case3vf} onChange={v => update('case3vf', v)} />
@@ -172,12 +172,12 @@ interface SousGroupeProps {
 }
 
 const SousGroupe = ({ titre, aide, children }: SousGroupeProps) => (
-  <div className="space-y-3 p-3 rounded-lg border border-border">
+  <div className="space-y-2 p-2.5 rounded-md border border-border">
     <div className="flex items-center gap-1.5">
       <p className="text-sm font-medium">{titre}</p>
       {aide && <AideTooltip texte={aide} />}
     </div>
-    <div className="space-y-3">{children}</div>
+    <div className="space-y-2">{children}</div>
   </div>
 );
 

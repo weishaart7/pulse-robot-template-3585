@@ -90,7 +90,7 @@ export const RevenusSalairesForm = ({ onSaved }: RevenusSalairesFormProps) => {
       <CardHeader>
         <CardTitle>Traitements et salaires</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-2">
         <DeclarantsHeader />
         <MontantLigne
           label="Traitements et salaires"

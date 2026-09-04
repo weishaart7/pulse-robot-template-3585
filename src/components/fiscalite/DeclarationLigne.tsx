@@ -14,8 +14,8 @@ import { HelpCircle } from 'lucide-react';
  * visuellement collé aux champs plutôt qu'au-dessus, avec les libellés de
  * code livrés seuls en haut.
  */
-const LIGNE_CLASSNAME = 'grid grid-cols-1 sm:grid-cols-[1fr_8rem_8rem] items-start gap-3 sm:gap-4 rounded-lg border border-border/50 bg-muted/40 px-3 py-2.5';
-const LIGNE_UNIQUE_CLASSNAME = 'flex flex-wrap items-start gap-3 sm:gap-4 rounded-lg border border-border/50 bg-muted/40 px-3 py-2.5';
+const LIGNE_CLASSNAME = 'grid grid-cols-1 sm:grid-cols-[1fr_8rem_8rem] items-start gap-2 sm:gap-3 rounded-md border border-border/50 bg-muted/40 px-2.5 py-1.5';
+const LIGNE_UNIQUE_CLASSNAME = 'flex flex-wrap items-start gap-2 sm:gap-3 rounded-md border border-border/50 bg-muted/40 px-2.5 py-1.5';
 
 export const AideTooltip = ({ texte }: { texte: string }) => (
   <Tooltip>
@@ -36,7 +36,7 @@ export const DeclarantsHeader = () => (
 );
 
 const LigneLabel = ({ label, extra, aide }: { label: string; extra?: string; aide?: string }) => (
-  <div className="flex items-center gap-1.5 pt-2 sm:pt-1.5">
+  <div className="flex items-center gap-1.5 pt-1.5 sm:pt-1">
     <Label className="text-sm">
       {label}
       {extra && <span className="text-muted-foreground font-normal"> ({extra})</span>}
@@ -64,7 +64,7 @@ export const MontantLigne = ({ label, extra, aide, code1, code2, value1, value2,
   return (
     <div className={LIGNE_CLASSNAME}>
       <LigneLabel label={label} extra={extra} aide={aide} />
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         <Label className="text-xs text-muted-foreground">Déclarant 1 · {code1}</Label>
         <Input
           id={`case-${code1}`}
@@ -74,7 +74,7 @@ export const MontantLigne = ({ label, extra, aide, code1, code2, value1, value2,
           onChange={ev => onChange1(parse(ev.target.value))}
         />
       </div>
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         <Label className="text-xs text-muted-foreground">Déclarant 2 · {code2}</Label>
         <Input
           id={`case-${code2}`}
@@ -106,7 +106,7 @@ export const SingleMontantLigne = ({ label, extra, aide, code, value, onChange }
       <div className="flex-1 min-w-[180px]">
         <LigneLabel label={label} extra={extra} aide={aide} />
       </div>
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         <Label className="text-xs text-muted-foreground">{code}</Label>
         <Input
           id={`case-${code}`}
@@ -134,7 +134,7 @@ interface CaseLigneProps {
 
 /** Ligne case à cocher déclarant 1/déclarant 2 (ex. 1AV/1BV). */
 export const CaseLigne = ({ label, extra, aide, code1, code2, checked1, checked2, onChange1, onChange2 }: CaseLigneProps) => (
-  <div className="grid grid-cols-1 sm:grid-cols-[1fr_8rem_8rem] items-center gap-3 sm:gap-4 rounded-lg border border-border/50 bg-muted/40 px-3 py-2.5">
+  <div className="grid grid-cols-1 sm:grid-cols-[1fr_8rem_8rem] items-center gap-2 sm:gap-3 rounded-md border border-border/50 bg-muted/40 px-2.5 py-1.5">
     <div className="flex items-center gap-1.5">
       <Label className="text-sm font-normal">
         {label}
@@ -170,7 +170,7 @@ export const TexteLigne = ({ label, code1, code2, value1, value2, onChange1, onC
   return (
     <div className={LIGNE_CLASSNAME}>
       <LigneLabel label={label} />
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         <Label className="text-xs text-muted-foreground">Déclarant 1 · {code1}</Label>
         <Input
           id={`case-${code1}`}
@@ -180,7 +180,7 @@ export const TexteLigne = ({ label, code1, code2, value1, value2, onChange1, onC
           onChange={ev => onChange1(parse(ev.target.value))}
         />
       </div>
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         <Label className="text-xs text-muted-foreground">Déclarant 2 · {code2}</Label>
         <Input
           id={`case-${code2}`}

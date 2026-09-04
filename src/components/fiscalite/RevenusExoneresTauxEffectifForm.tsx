@@ -63,7 +63,7 @@ export const RevenusExoneresTauxEffectifForm = ({ onSaved }: RevenusExoneresTaux
       <CardHeader>
         <CardTitle>Salaires et pensions exonérés retenus pour le calcul du taux effectif</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-2">
         <p className="text-sm text-muted-foreground">
           Salaires et pensions de source étrangère exonérés selon la convention fiscale applicable
           (après déduction de l'impôt étranger), et salaires des détachés à l'étranger exonérés en
