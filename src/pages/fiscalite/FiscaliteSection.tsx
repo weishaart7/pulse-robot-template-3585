@@ -1,8 +1,4 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { FileText, Calculator, PieChart, TrendingUp } from 'lucide-react';
 import { THEME_INK } from '@/lib/theme';
 import FiscalDeclarationsCard from './components/FiscalDeclarationsCard';
 import FiscalOverviewCard from './components/FiscalOverviewCard';

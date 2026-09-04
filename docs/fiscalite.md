@@ -99,7 +99,7 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 | Salaires & pensions exonérés — taux effectif (section 2042) | [RevenusExoneresTauxEffectifForm.tsx](src/components/fiscalite/RevenusExoneresTauxEffectifForm.tsx) | 5 lignes (`1AC`/`1BC`, `1GE`/`1HE` case à cocher, `1AE`/`1BE`, `1AH`/`1BH`, `RSE`/`RSF` texte libre), encart CERFA distinct (2042-C pages 99/116) — alimente désormais le taux effectif dans le tableau de bord IR (Vision générale) |
 | Pensions, retraites et rentes (section 2042) | [PensionsRetraitesRentesForm.tsx](src/components/fiscalite/PensionsRetraitesRentesForm.tsx) | 7 lignes déclarant 1/déclarant 2 (`1AS`, `1AT`, `1AI`, `1AZ`, `1AO`, `1AL`, `1AM`) + rentes viagères à titre onéreux ventilées par tranche d'âge, pas déclarant (`1AW`/`1BW`/`1CW`/`1DW` rentes perçues, `1AR`/`1BR`/`1CR`/`1DR` non-résidents), vrai cadre 1 « Pensions, retraites, rentes » du CERFA (2042-K pages 115-119), hors colonnes C/D — capture brute, sans moteur de calcul |
 | Gains d'actionnariat salarié (section 2042) | [GainsActionnariatSalarieForm.tsx](src/components/fiscalite/GainsActionnariatSalarieForm.tsx) | 13 lignes du CERFA (stock-options, actions gratuites, carried-interest, options pré-28.9.2012), regroupées par sous-bloc visuel ; champs à case unique sans colonne déclarant 2 pour `1TZ`/`1UZ`/`1WZ`/`1VZ` et `3VD`/`3VI`/`3VF`/`3VN`, conformément au CERFA |
-| Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Donut IR (salaires, calculé) — PS et IFI affichés « non calculé » |
+| Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Donut `SectorsDonut` (même composant que la répartition Patrimoine) montrant la vraie composition du revenu imposable (salaires/gains d'actionnariat/pensions, légende colorée) — PS et IFI affichés « non calculé » |
 | Taux marginal | [TaxRateCard.tsx](src/pages/fiscalite/components/TaxRateCard.tsx) | Barème IR réel, tranche active (TMI), quotient familial, marge avant tranche suivante, impôt net |
 | Simulateur IFI | [IFIInterface.tsx](src/pages/fiscalite/components/IFIInterface.tsx) → 5 sous-écrans `ifi/*.tsx` | Wizard de déclaration IFI : hypothèses, biens/passifs, barème, montant dû |
 
@@ -458,6 +458,23 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   chiffre inventé : prélèvements sociaux, IFI (renvoie vers le simulateur dédié), revenus de
   placements/fonciers/exceptionnels, contributions sur les hauts revenus, retenues et soldes
   (`FiscalOverviewCard.tsx`, onglet « Impôts sur le revenu »).
+- **Vision générale Fiscalité (`FiscaliteSection.tsx`/`FiscalDeclarationsCard.tsx`/
+  `FiscalOverviewCard.tsx`/`TaxRateCard.tsx`) réalignée sur le langage visuel déjà utilisé ailleurs dans
+  l'app plutôt que de rester un style « dashboard admin générique ».** Avant retravail : `Card` avec
+  `border border-border` explicite (alors que le composant `Card` de base — `rounded-3xl bg-card`, sans
+  bordure ni ombre — sert de socle à toutes les autres sections), lignes de détail en
+  `flex justify-between text-sm` qui cassaient en wrapping illisible à largeur normale (ex.
+  « Contributions sur les hauts revenus » coupé au milieu de « Non calculé »), icônes des déclarations
+  fiscales importées mais jamais rendues dans le JSX (code mort), et surtout un donut à une seule
+  tranche (« IR », valeur unique) — un `Pie` Recharts à une seule entrée se normalise toujours à 100 %
+  de lui-même, donc l'anneau était plein en permanence quel que soit le montant, sans aucune information
+  réelle. Corrigé en reprenant le pattern déjà en place dans le widget Fiscalité de la Vue d'ensemble
+  (`Dashboard.tsx` : encart en dégradé `from-primary/10` pour le montant principal, lignes
+  `bg-muted/30` avec puce ronde colorée) et le composant partagé
+  [SectorsDonut](src/components/ui/sectors-donut.tsx) déjà utilisé par
+  [PatrimoineChart.tsx](src/components/patrimoine/PatrimoineChart.tsx) : le donut affiche désormais la
+  vraie composition du revenu net imposable (salaires/gains d'actionnariat/pensions, légende colorée,
+  interaction hover/clic identique au reste de l'app) au lieu d'un anneau décoratif sans signification.
 - **Le simulateur IFI a son propre modèle de données, entièrement indépendant de Patrimoine et
   Sociétés — pas une friction ponctuelle mais une duplication de saisie totale et assumée par
   construction.** `docs/patrimoine.md` §6.4 affirmait que l'IFI « lit `societes.pourcentage_ifi`/

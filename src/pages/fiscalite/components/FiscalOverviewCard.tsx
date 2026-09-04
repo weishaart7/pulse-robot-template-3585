@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { SectorsDonut, DonutSector } from '@/components/ui/sectors-donut';
 import { FiscalOverview } from '@/hooks/useFiscalOverview';
+import { cn } from '@/lib/utils';
 
 interface FiscalOverviewCardProps {
   overview: FiscalOverview;
@@ -12,21 +13,47 @@ function formatEuros(valeur: number): string {
   return `${Math.round(valeur).toLocaleString('fr-FR')} €`;
 }
 
+/** Une ligne de détail avec puce colorée, cohérente avec le pattern déjà utilisé dans le résumé Fiscalité de la Vue d'ensemble (Dashboard.tsx). */
+const DetailRow = ({ label, value, color, muted = false }: { label: string; value: string; color?: string; muted?: boolean }) => {
+  const colored = !muted && !!color;
+  return (
+    <div className="flex items-center justify-between gap-3 p-2.5 rounded-md bg-muted/30">
+      <div className="flex items-center gap-2 min-w-0">
+        <div
+          className={cn('h-6 w-6 shrink-0 rounded-full flex items-center justify-center', !colored && 'bg-muted')}
+          style={colored ? { backgroundColor: `${color}1a` } : undefined}
+        >
+          <div
+            className={cn('h-1.5 w-1.5 rounded-full', !colored && 'bg-muted-foreground/50')}
+            style={colored ? { backgroundColor: color } : undefined}
+          />
+        </div>
+        <span className="text-sm min-w-0 truncate">{label}</span>
+      </div>
+      <span className={`text-sm font-semibold shrink-0 ${muted ? 'text-muted-foreground' : ''}`}>{value}</span>
+    </div>
+  );
+};
+
 const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
   const [activeTab, setActiveTab] = useState("income");
-  const { loading, foyerRenseigne, revenusRenseignes, impot, revenuSalaires, gainsActionnariat, revenuExonereTauxEffectif } = overview;
-
-  const chartData = impot.impotNet > 0
-    ? [{ name: 'IR (salaires + actionnariat)', value: impot.impotNet, color: '#05aaa4' }]
-    : [];
+  const { loading, foyerRenseigne, revenusRenseignes, impot, revenuSalaires, gainsActionnariat, revenuExonereTauxEffectif, pensionsRetraitesRentes } = overview;
 
   const ratioImpotsRevenus = impot.revenuImposable > 0
     ? `${((impot.impotNet / impot.revenuImposable) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %`
     : '—';
 
+  const composition: DonutSector[] = [
+    { label: 'Salaires', value: revenuSalaires.totalNetImposable, color: '#05aaa4' },
+    { label: "Gains d'actionnariat", value: gainsActionnariat.totalNetImposable, color: '#2AA173' },
+    { label: 'Pensions, retraites, rentes', value: pensionsRetraitesRentes.totalNetImposable, color: '#0b5563' },
+  ]
+    .filter(s => (s.value ?? 0) > 0)
+    .map(s => ({ ...s, pct: impot.revenuImposable > 0 ? ((s.value ?? 0) / impot.revenuImposable) * 100 : 0 }));
+
   if (loading) {
     return (
-      <Card className="border border-border">
+      <Card>
         <CardHeader>
           <CardTitle>Imposition totale</CardTitle>
         </CardHeader>
@@ -38,62 +65,47 @@ const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
   }
 
   return (
-    <Card className="border border-border">
-      <CardHeader>
+    <Card>
+      <CardHeader className="pb-4">
         <CardTitle>Imposition totale</CardTitle>
-        <div className="text-2xl font-bold">{formatEuros(impot.impotNet)}</div>
-        <div className="flex gap-4 text-sm text-muted-foreground flex-wrap">
-          <span>IR (salaires + actionnariat) : {formatEuros(impot.impotNet)}</span>
-          <span>Prélèvements sociaux : non calculé</span>
-          <span>IFI : non calculé — voir le simulateur IFI</span>
-        </div>
         {(!foyerRenseigne || !revenusRenseignes) && (
           <p className="text-sm text-muted-foreground">
             Calcul basé sur des valeurs par défaut — complétez votre foyer fiscal et vos revenus pour un résultat personnalisé.
           </p>
         )}
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Graphique */}
-          <div className="flex items-center justify-center">
-            <div className="relative w-80 h-80">
-              {chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      dataKey="value"
-                      data={chartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={120}
-                      outerRadius={140}
-                      paddingAngle={2}
-                      stroke="hsl(var(--background))"
-                      strokeWidth={2}
-                    >
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center rounded-full border-8 border-muted" />
-              )}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-2xl font-bold">{ratioImpotsRevenus}</div>
-                  <div className="text-sm text-muted-foreground">IR / Revenu imposable</div>
-                </div>
+      <CardContent className="space-y-4">
+        <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-md p-3 border border-primary/20">
+          <div className="text-xs font-medium text-muted-foreground mb-1">Impôt sur le revenu (salaires, actionnariat, pensions)</div>
+          <div className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            {formatEuros(impot.impotNet)}
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <DetailRow label="Prélèvements sociaux" value="Non calculé" muted />
+          <DetailRow label="IFI — voir le simulateur dédié" value="Non calculé" muted />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+          <div className="flex items-center justify-center py-2">
+            {composition.length > 0 ? (
+              <SectorsDonut
+                sectors={composition}
+                formatValue={formatEuros}
+                centerLabel={ratioImpotsRevenus}
+                centerCaption="IR / revenu imposable"
+              />
+            ) : (
+              <div className="text-sm text-muted-foreground text-center py-8">
+                Aucun revenu imposable saisi pour l'instant.
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Onglets et détails */}
           <div>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2 overflow-hidden">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="income" className="text-xs px-2 text-wrap break-words hyphens-auto">
                   Impôts sur le revenu
                 </TabsTrigger>
@@ -103,71 +115,38 @@ const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
               </TabsList>
 
               <TabsContent value="income" className="space-y-4 mt-4">
-                <Card>
-                  <CardContent className="pt-4 space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span>Revenu net imposable (salaires) :</span>
-                      <span className="font-medium">{formatEuros(revenuSalaires.totalNetImposable)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Gains d'actionnariat salarié imposables :</span>
-                      <span className="font-medium">{formatEuros(gainsActionnariat.totalNetImposable)}</span>
-                    </div>
-                    {revenuExonereTauxEffectif.totalRetenu > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span>Revenus exonérés retenus (taux effectif) :</span>
-                        <span className="font-medium">
-                          {formatEuros(revenuExonereTauxEffectif.totalRetenu)} — taux {(impot.tauxEffectif * 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-sm">
-                      <span>Revenus de placements :</span>
-                      <span className="font-medium">Non calculé</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Revenus fonciers :</span>
-                      <span className="font-medium">Non calculé</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Revenus exceptionnels (quotient) :</span>
-                      <span className="font-medium">Non calculé</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Contributions sur les hauts revenus :</span>
-                      <span className="font-medium">Non calculé</span>
-                    </div>
-                  </CardContent>
-                </Card>
+                <div className="space-y-1.5">
+                  <DetailRow label="Revenu net imposable (salaires)" value={formatEuros(revenuSalaires.totalNetImposable)} color="#05aaa4" />
+                  <DetailRow label="Gains d'actionnariat salarié imposables" value={formatEuros(gainsActionnariat.totalNetImposable)} color="#2AA173" />
+                  <DetailRow label="Pensions, retraites et rentes imposables" value={formatEuros(pensionsRetraitesRentes.totalNetImposable)} color="#0b5563" />
+                  {revenuExonereTauxEffectif.totalRetenu > 0 && (
+                    <DetailRow
+                      label="Revenus exonérés retenus (taux effectif)"
+                      value={`${formatEuros(revenuExonereTauxEffectif.totalRetenu)} · ${(impot.tauxEffectif * 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %`}
+                    />
+                  )}
+                  <DetailRow label="Revenus de placements" value="Non calculé" muted />
+                  <DetailRow label="Revenus fonciers" value="Non calculé" muted />
+                  <DetailRow label="Revenus exceptionnels (quotient)" value="Non calculé" muted />
+                  <DetailRow label="Contributions sur les hauts revenus" value="Non calculé" muted />
+                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <Card>
-                    <CardContent className="pt-4 text-center">
-                      <div className="text-xs text-muted-foreground mb-1">
-                        Décote appliquée
-                      </div>
-                      <div className="text-lg font-bold">{formatEuros(impot.decote)}</div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-4 text-center">
-                      <div className="text-xs text-muted-foreground mb-1">
-                        Impôt net à payer (IR)
-                      </div>
-                      <div className="text-lg font-bold">{formatEuros(impot.impotNet)}</div>
-                    </CardContent>
-                  </Card>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-md bg-muted/30 p-3 text-center">
+                    <div className="text-xs text-muted-foreground mb-1">Décote appliquée</div>
+                    <div className="text-lg font-bold">{formatEuros(impot.decote)}</div>
+                  </div>
+                  <div className="rounded-md bg-muted/30 p-3 text-center">
+                    <div className="text-xs text-muted-foreground mb-1">Impôt net à payer (IR)</div>
+                    <div className="text-lg font-bold">{formatEuros(impot.impotNet)}</div>
+                  </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="wealth" className="space-y-4 mt-4">
-                <Card>
-                  <CardContent className="pt-4">
-                    <div className="text-center text-muted-foreground">
-                      Non calculé ici — voir le simulateur IFI dédié
-                    </div>
-                  </CardContent>
-                </Card>
+              <TabsContent value="wealth" className="mt-4">
+                <div className="rounded-md bg-muted/30 p-4 text-center text-sm text-muted-foreground">
+                  Non calculé ici — voir le simulateur IFI dédié
+                </div>
               </TabsContent>
             </Tabs>
           </div>

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Home, Globe, TrendingUp, Coins } from 'lucide-react';
+import { FileText, Home, Globe, TrendingUp, Coins, LucideIcon } from 'lucide-react';
 import IFIInterface from './IFIInterface';
 import Declaration2042Interface from './Declaration2042Interface';
 
@@ -11,10 +10,16 @@ interface FiscalDeclarationsCardProps {
   onDeclarationClosed?: () => void;
 }
 
+interface DeclarationItem {
+  code: string;
+  title: string;
+  icon: LucideIcon;
+}
+
 const FiscalDeclarationsCard = ({ onDeclarationClosed }: FiscalDeclarationsCardProps) => {
   const [showIFI, setShowIFI] = useState(false);
   const [show2042, setShow2042] = useState(false);
-  const declarations = [
+  const declarations: { category: string; items: DeclarationItem[] }[] = [
     {
       category: "Impôt sur le revenu",
       items: [
@@ -33,9 +38,14 @@ const FiscalDeclarationsCard = ({ onDeclarationClosed }: FiscalDeclarationsCardP
     }
   ];
 
+  const openDeclaration = (code: string) => {
+    if (code === "2042-IFI") setShowIFI(true);
+    else if (code === "2042") setShow2042(true);
+  };
+
   return (
     <>
-      <Card className="h-fit border border-border">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -44,36 +54,35 @@ const FiscalDeclarationsCard = ({ onDeclarationClosed }: FiscalDeclarationsCardP
         </CardHeader>
         <CardContent className="space-y-6">
           {declarations.map((section, sectionIndex) => (
-            <div key={sectionIndex} className="space-y-3">
-              <h3 className="font-semibold text-sm text-muted-foreground">
+            <div key={sectionIndex} className="space-y-2">
+              <h3 className="font-semibold text-sm text-muted-foreground px-1">
                 {section.category}
               </h3>
-              <div className="space-y-2">
-                {section.items.map((item, itemIndex) => (
-                  <Button
-                    key={itemIndex}
-                    variant="ghost"
-                    className="w-full justify-start h-auto p-3 text-left hover:bg-accent/50"
-                    onClick={() => {
-                      if (item.code === "2042-IFI") {
-                        setShowIFI(true);
-                      } else if (item.code === "2042") {
-                        setShow2042(true);
-                      }
-                    }}
-                  >
-                    <div className="flex items-start gap-3 w-full overflow-hidden">
-                      <Badge variant="secondary" className="shrink-0 text-xs">
-                        {item.code}
-                      </Badge>
-                      <div className="flex-1 min-w-0 overflow-hidden">
-                        <div className="font-medium text-sm leading-tight text-wrap break-words hyphens-auto">
+              <div className="space-y-1.5">
+                {section.items.map((item, itemIndex) => {
+                  const clickable = item.code === "2042" || item.code === "2042-IFI";
+                  return (
+                    <button
+                      key={itemIndex}
+                      type="button"
+                      disabled={!clickable}
+                      onClick={() => openDeclaration(item.code)}
+                      className="flex w-full items-center gap-3 rounded-md p-2.5 text-left transition-colors enabled:hover:bg-muted/50 disabled:cursor-default"
+                    >
+                      <div className="h-8 w-8 shrink-0 rounded-full bg-[#05aaa4]/10 flex items-center justify-center">
+                        <item.icon className="h-4 w-4 text-[#05aaa4]" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium leading-snug text-wrap break-words">
                           {item.title}
                         </div>
                       </div>
-                    </div>
-                  </Button>
-                ))}
+                      <Badge variant="secondary" className="shrink-0 text-xs">
+                        {item.code}
+                      </Badge>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ))}

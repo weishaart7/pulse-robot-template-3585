@@ -15,6 +15,13 @@ function formatTaux(taux: number): string {
   return `${Math.round(taux * 100)} %`;
 }
 
+const StatTile = ({ title, value }: { title: string; value: string }) => (
+  <div className="rounded-md bg-muted/30 p-3.5">
+    <div className="text-xs text-muted-foreground mb-1">{title}</div>
+    <div className="text-lg font-bold">{value}</div>
+  </div>
+);
+
 const TaxRateCard = ({ overview }: TaxRateCardProps) => {
   const { loading, foyerRenseigne, revenusRenseignes, parts, impot } = overview;
 
@@ -38,7 +45,7 @@ const TaxRateCard = ({ overview }: TaxRateCardProps) => {
   };
 
   const statsCards = [
-    { title: 'Revenu net imposable en France (salaires + actionnariat)', value: formatEuros(impot.revenuImposable) },
+    { title: 'Revenu net imposable en France (salaires, actionnariat, pensions)', value: formatEuros(impot.revenuImposable) },
     ...(impot.revenuExonereTauxEffectif > 0
       ? [{ title: 'Revenu exonéré retenu (taux effectif)', value: formatEuros(impot.revenuExonereTauxEffectif) }]
       : []),
@@ -49,7 +56,7 @@ const TaxRateCard = ({ overview }: TaxRateCardProps) => {
 
   if (loading) {
     return (
-      <Card className="border border-border">
+      <Card>
         <CardHeader>
           <CardTitle>Taux marginal d'imposition</CardTitle>
         </CardHeader>
@@ -61,10 +68,12 @@ const TaxRateCard = ({ overview }: TaxRateCardProps) => {
   }
 
   return (
-    <Card className="border border-border">
-      <CardHeader>
+    <Card>
+      <CardHeader className="pb-4">
         <CardTitle>Taux marginal d'imposition</CardTitle>
-        <div className="text-2xl font-bold">{formatTaux(impot.tmi)}</div>
+        <div className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+          {formatTaux(impot.tmi)}
+        </div>
         {(!foyerRenseigne || !revenusRenseignes) && (
           <p className="text-sm text-muted-foreground">
             Calcul basé sur des valeurs par défaut — complétez votre foyer fiscal et vos revenus pour un résultat personnalisé.
@@ -73,16 +82,15 @@ const TaxRateCard = ({ overview }: TaxRateCardProps) => {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Graphique des tranches et détails */}
+          {/* Barème et détails */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Barre de progression des tranches */}
             <div className="space-y-3">
-              <div className="relative flex h-6 overflow-hidden">
+              <div className="relative flex h-6 overflow-hidden rounded-full">
                 {brackets.map((bracket, index) => (
                   <div
                     key={index}
                     className="flex-1 relative"
-                    style={{ backgroundColor: bracket.active ? '#2ec4b6' : '#cbf3f0' }}
+                    style={{ backgroundColor: bracket.active ? '#05aaa4' : '#05aaa41a' }}
                   >
                     {bracket.active && (
                       <div
@@ -94,18 +102,16 @@ const TaxRateCard = ({ overview }: TaxRateCardProps) => {
                 ))}
               </div>
 
-              {/* Labels des taux */}
               <div className="flex justify-between text-sm">
                 {brackets.map((bracket, index) => (
                   <div key={index} className="text-center flex-1">
-                    <div className={`font-medium ${bracket.active ? 'font-bold text-primary' : ''}`}>
+                    <div className={bracket.active ? 'font-bold text-primary' : 'font-medium text-muted-foreground'}>
                       {formatTaux(bracket.taux)}
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Seuils en euros */}
               <div className="flex justify-between text-xs text-muted-foreground mt-2">
                 <span></span>
                 {BAREME_2026.slice(0, -1).map(tranche => (
@@ -115,39 +121,22 @@ const TaxRateCard = ({ overview }: TaxRateCardProps) => {
               </div>
             </div>
 
-            {/* Détails des seuils */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="text-sm text-muted-foreground mb-1">
-                    Quotient familial ({impot.revenuExonereTauxEffectif > 0 ? 'revenu mondial' : 'revenu'} / part)
-                  </div>
-                  <div className="text-xl font-bold">{formatEuros(impot.quotientFamilial)}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="text-sm text-muted-foreground mb-1">
-                    Marge avant tranche supérieure
-                  </div>
-                  <div className="text-xl font-bold">{margeAvantTranche !== null ? formatEuros(margeAvantTranche) : '—'}</div>
-                </CardContent>
-              </Card>
+              <StatTile
+                title={`Quotient familial (${impot.revenuExonereTauxEffectif > 0 ? 'revenu mondial' : 'revenu'} / part)`}
+                value={formatEuros(impot.quotientFamilial)}
+              />
+              <StatTile
+                title="Marge avant tranche supérieure"
+                value={margeAvantTranche !== null ? formatEuros(margeAvantTranche) : '—'}
+              />
             </div>
           </div>
 
-          {/* Cartes de statistiques */}
-          <div className="space-y-4">
+          {/* Statistiques */}
+          <div className="space-y-3">
             {statsCards.map((stat, index) => (
-              <Card key={index}>
-                <CardContent className="pt-4">
-                  <div className="text-xs text-muted-foreground mb-1">
-                    {stat.title}
-                  </div>
-                  <div className="text-lg font-bold">{stat.value}</div>
-                </CardContent>
-              </Card>
+              <StatTile key={index} title={stat.title} value={stat.value} />
             ))}
           </div>
         </div>
