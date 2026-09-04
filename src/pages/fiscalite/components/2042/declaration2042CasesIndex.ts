@@ -91,4 +91,20 @@ export const DECLARATION_2042_CASES: Declaration2042Case[] = [
   { code: '1BH', label: 'Pensions de source étrangère (taux effectif) — Déclarant 2', sectionId: 'taux-effectif', elementId: 'case-1BH' },
   { code: 'RSE', label: 'Pays de provenance des revenus de source étrangère — Déclarant 1', sectionId: 'taux-effectif', elementId: 'case-RSE' },
   { code: 'RSF', label: 'Pays de provenance des revenus de source étrangère — Déclarant 2', sectionId: 'taux-effectif', elementId: 'case-RSF' },
+
+  // Pensions, retraites et rentes
+  { code: '1AS', label: 'Pensions, retraites et rentes — Déclarant 1', sectionId: 'pensions', elementId: 'case-1AS' },
+  { code: '1BS', label: 'Pensions, retraites et rentes — Déclarant 2', sectionId: 'pensions', elementId: 'case-1BS' },
+  { code: '1AT', label: 'Pensions de retraite en capital taxables à 7,5 % — Déclarant 1', sectionId: 'pensions', elementId: 'case-1AT' },
+  { code: '1BT', label: 'Pensions de retraite en capital taxables à 7,5 % — Déclarant 2', sectionId: 'pensions', elementId: 'case-1BT' },
+  { code: '1AI', label: "Pensions en capital des plans d'épargne retraite — Déclarant 1", sectionId: 'pensions', elementId: 'case-1AI' },
+  { code: '1BI', label: "Pensions en capital des plans d'épargne retraite — Déclarant 2", sectionId: 'pensions', elementId: 'case-1BI' },
+  { code: '1AZ', label: "Pensions d'invalidité — Déclarant 1", sectionId: 'pensions', elementId: 'case-1AZ' },
+  { code: '1BZ', label: "Pensions d'invalidité — Déclarant 2", sectionId: 'pensions', elementId: 'case-1BZ' },
+  { code: '1AO', label: 'Pensions alimentaires perçues — Déclarant 1', sectionId: 'pensions', elementId: 'case-1AO' },
+  { code: '1BO', label: 'Pensions alimentaires perçues — Déclarant 2', sectionId: 'pensions', elementId: 'case-1BO' },
+  { code: '1AL', label: 'Pensions non-résidents / source étrangère avec crédit d\'impôt — Déclarant 1', sectionId: 'pensions', elementId: 'case-1AL' },
+  { code: '1BL', label: 'Pensions non-résidents / source étrangère avec crédit d\'impôt — Déclarant 2', sectionId: 'pensions', elementId: 'case-1BL' },
+  { code: '1AM', label: 'Autres pensions imposables de source étrangère — Déclarant 1', sectionId: 'pensions', elementId: 'case-1AM' },
+  { code: '1BM', label: 'Autres pensions imposables de source étrangère — Déclarant 2', sectionId: 'pensions', elementId: 'case-1BM' },
 ];

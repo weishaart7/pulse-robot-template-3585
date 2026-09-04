@@ -1,9 +1,10 @@
 import { ComponentType } from 'react';
-import { Users, Wallet, LineChart, Globe, LucideIcon } from 'lucide-react';
+import { Users, Wallet, LineChart, Globe, PiggyBank, LucideIcon } from 'lucide-react';
 import MenageSection from './MenageSection';
 import { RevenusSalairesForm } from '@/components/fiscalite/RevenusSalairesForm';
 import { GainsActionnariatSalarieForm } from '@/components/fiscalite/GainsActionnariatSalarieForm';
 import { RevenusExoneresTauxEffectifForm } from '@/components/fiscalite/RevenusExoneresTauxEffectifForm';
+import { PensionsRetraitesRentesForm } from '@/components/fiscalite/PensionsRetraitesRentesForm';
 
 export interface Declaration2042Section {
   id: string;
@@ -19,5 +20,6 @@ export const DECLARATION_2042_SECTIONS: Declaration2042Section[] = [
   { id: 'menage', label: 'Ménage — état civil et parts', icon: Users, component: MenageSection },
   { id: 'salaires', label: 'Traitements et salaires', icon: Wallet, component: RevenusSalairesForm },
   { id: 'taux-effectif', label: 'Salaires & pensions exonérés (taux effectif)', icon: Globe, component: RevenusExoneresTauxEffectifForm },
+  { id: 'pensions', label: 'Pensions, retraites et rentes', icon: PiggyBank, component: PensionsRetraitesRentesForm },
   { id: 'actionnariat', label: "Gains d'actionnariat salarié", icon: LineChart, component: GainsActionnariatSalarieForm },
 ];
