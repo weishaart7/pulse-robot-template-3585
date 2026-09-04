@@ -2087,6 +2087,69 @@ export type Database = {
           },
         ]
       }
+      pensions_retraites_rentes: {
+        Row: {
+          case_1ai: number | null
+          case_1al: number | null
+          case_1am: number | null
+          case_1ao: number | null
+          case_1as: number | null
+          case_1at: number | null
+          case_1az: number | null
+          case_1bi: number | null
+          case_1bl: number | null
+          case_1bm: number | null
+          case_1bo: number | null
+          case_1bs: number | null
+          case_1bt: number | null
+          case_1bz: number | null
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          case_1ai?: number | null
+          case_1al?: number | null
+          case_1am?: number | null
+          case_1ao?: number | null
+          case_1as?: number | null
+          case_1at?: number | null
+          case_1az?: number | null
+          case_1bi?: number | null
+          case_1bl?: number | null
+          case_1bm?: number | null
+          case_1bo?: number | null
+          case_1bs?: number | null
+          case_1bt?: number | null
+          case_1bz?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          case_1ai?: number | null
+          case_1al?: number | null
+          case_1am?: number | null
+          case_1ao?: number | null
+          case_1as?: number | null
+          case_1at?: number | null
+          case_1az?: number | null
+          case_1bi?: number | null
+          case_1bl?: number | null
+          case_1bm?: number | null
+          case_1bo?: number | null
+          case_1bs?: number | null
+          case_1bt?: number | null
+          case_1bz?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       Profils: {
         Row: {
           created_at: string
