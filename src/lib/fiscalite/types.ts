@@ -122,6 +122,9 @@ export interface PensionsRetraitesRentesInput {
   case1br: number | null;
   case1cr: number | null;
   case1dr: number | null;
+  /** "Ne perçoit plus de pensions 1AO, 1AM" (case à cocher, purement informative). */
+  case1hk: boolean;
+  case1hl: boolean;
 }
 
 export interface RevenusExoneresTauxEffectifInput {

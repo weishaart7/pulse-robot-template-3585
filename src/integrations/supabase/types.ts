@@ -2111,6 +2111,8 @@ export type Database = {
           case_1cw: number | null
           case_1dr: number | null
           case_1dw: number | null
+          case_1hk: boolean
+          case_1hl: boolean
           created_at: string
           id: string
           updated_at: string
@@ -2139,6 +2141,8 @@ export type Database = {
           case_1cw?: number | null
           case_1dr?: number | null
           case_1dw?: number | null
+          case_1hk?: boolean
+          case_1hl?: boolean
           created_at?: string
           id?: string
           updated_at?: string
@@ -2167,6 +2171,8 @@ export type Database = {
           case_1cw?: number | null
           case_1dr?: number | null
           case_1dw?: number | null
+          case_1hk?: boolean
+          case_1hl?: boolean
           created_at?: string
           id?: string
           updated_at?: string

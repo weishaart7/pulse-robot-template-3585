@@ -115,4 +115,6 @@ export const DECLARATION_2042_CASES: Declaration2042Case[] = [
   { code: '1BR', label: 'Rentes viagères non-résidents/source étrangère avec crédit d\'impôt — De 50 à 59 ans', sectionId: 'pensions', elementId: 'case-1BR' },
   { code: '1CR', label: 'Rentes viagères non-résidents/source étrangère avec crédit d\'impôt — De 60 à 69 ans', sectionId: 'pensions', elementId: 'case-1CR' },
   { code: '1DR', label: 'Rentes viagères non-résidents/source étrangère avec crédit d\'impôt — À partir de 70 ans', sectionId: 'pensions', elementId: 'case-1DR' },
+  { code: '1HK', label: 'Ne perçoit plus de pensions 1AO, 1AM — Déclarant 1', sectionId: 'pensions', elementId: 'case-1HK' },
+  { code: '1HL', label: 'Ne perçoit plus de pensions 1AO, 1AM — Déclarant 2', sectionId: 'pensions', elementId: 'case-1HL' },
 ];

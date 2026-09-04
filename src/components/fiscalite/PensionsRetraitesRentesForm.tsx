@@ -6,7 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { usePensionsRetraitesRentes } from '@/hooks/usePensionsRetraitesRentes';
 import { PensionsRetraitesRentes } from '@/services/pensionsRetraitesRentesService';
 import { PensionsRetraitesRentesInput } from '@/lib/fiscalite';
-import { DeclarantsHeader, MontantLigne, MontantParTrancheAgeLigne } from './DeclarationLigne';
+import { CaseLigne, DeclarantsHeader, MontantLigne, MontantParTrancheAgeLigne } from './DeclarationLigne';
 
 const PENSIONS_VIDE: PensionsRetraitesRentesInput = {
   case1as: null,
@@ -31,6 +31,8 @@ const PENSIONS_VIDE: PensionsRetraitesRentesInput = {
   case1br: null,
   case1cr: null,
   case1dr: null,
+  case1hk: false,
+  case1hl: false,
 };
 
 interface PensionsRetraitesRentesFormProps {
@@ -120,6 +122,13 @@ export const PensionsRetraitesRentesForm = ({ onSaved }: PensionsRetraitesRentes
           code1="1AM" code2="1BM"
           value1={pensions.case1am} value2={pensions.case1bm}
           onChange1={v => update('case1am', v)} onChange2={v => update('case1bm', v)}
+        />
+        <CaseLigne
+          label="Ne perçoit plus de pensions 1AO, 1AM"
+          extra="uniquement si aucune de ces deux catégories n'est plus perçue"
+          code1="1HK" code2="1HL"
+          checked1={pensions.case1hk} checked2={pensions.case1hl}
+          onChange1={v => update('case1hk', v)} onChange2={v => update('case1hl', v)}
         />
 
         <Separator />

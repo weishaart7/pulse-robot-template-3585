@@ -36,6 +36,8 @@ interface PensionsRetraitesRentesRow {
   case_1br: number | string | null;
   case_1cr: number | string | null;
   case_1dr: number | string | null;
+  case_1hk: boolean;
+  case_1hl: boolean;
 }
 
 function toNumberOrNull(value: number | string | null): number | null {
@@ -68,6 +70,8 @@ function rowToPensionsRetraitesRentes(row: PensionsRetraitesRentesRow): Pensions
     case1br: toNumberOrNull(row.case_1br),
     case1cr: toNumberOrNull(row.case_1cr),
     case1dr: toNumberOrNull(row.case_1dr),
+    case1hk: row.case_1hk,
+    case1hl: row.case_1hl,
   };
 }
 
@@ -96,6 +100,8 @@ function pensionsRetraitesRentesToRow(pensions: PensionsRetraitesRentes, userId:
     case_1br: pensions.case1br,
     case_1cr: pensions.case1cr,
     case_1dr: pensions.case1dr,
+    case_1hk: pensions.case1hk,
+    case_1hl: pensions.case1hl,
   };
 }
 
