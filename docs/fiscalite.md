@@ -345,6 +345,20 @@ fonction n'existe — voir §4.
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
+- **`foyerFiscalService.ts` ne type-check pas avec `tsc --noEmit --project tsconfig.app.json`**
+  (repéré en Phase 2.2, préexistant — confirmé par `git stash` avant les commits de cette session,
+  aucun lien avec `revenus_salaires`). Erreur TS2769 sur `upsertFoyerFiscal`
+  ([foyerFiscalService.ts:91](src/services/foyerFiscalService.ts:91)) : `foyerFiscalToRow` construit
+  `enfants_charge`/`personnes_invalides_charge` typés `EnfantCharge[]`/`PersonneInvalideCharge[]`
+  ([types.ts](src/lib/fiscalite/types.ts)), mais les colonnes Supabase générées attendent `Json`
+  (colonnes `jsonb`) — `EnfantCharge` n'a pas de signature d'index `[key: string]: Json`, donc TS
+  refuse l'affectation par typage structurel strict, malgré `strict: false` dans `tsconfig.app.json`.
+  **Aucun impact runtime** (le client Supabase sérialise la valeur en JSON à l'exécution, l'erreur
+  n'existe qu'à la compilation) et **le module racine `npx tsc --noEmit -p .` ne la détecte pas** (ce
+  tsconfig n'a que des `references`, sans véritable vérification sans `--build` — seul
+  `--project tsconfig.app.json` la révèle). À corriger la prochaine fois qu'on touche
+  `foyerFiscalService.ts`/`foyerFiscalToRow`, par exemple en castant `as unknown as Json` au point de
+  sérialisation ou en élargissant `EnfantCharge`/`PersonneInvalideCharge` avec un index signature.
 - **22 occurrences de `console.error` non encadrées par `import.meta.env.DEV`** dans
   [useIFI.ts](src/hooks/useIFI.ts) — non-conformité systématique à la règle `CLAUDE.md`, jamais
   corrigée dans ce fichier contrairement au reste de Patrimoine/Sociétés (commit `ea3a695`).
