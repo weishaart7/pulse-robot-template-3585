@@ -1,20 +1,32 @@
-import { RevenusCapitauxMobiliersInput } from './types';
+import { FoyerFiscalInput, RevenusCapitauxMobiliersInput } from './types';
 
 /** Abattement de 40 % sur les revenus distribués (2DC/2FU), applicable uniquement en cas d'option barème (2OP). */
 const ABATTEMENT_DIVIDENDES_TAUX = 0.40;
 /** PFU applicable en l'absence d'option barème (art. 200 A CGI, IR seul, PS hors périmètre). */
 const TAUX_PFU = 0.128;
+/** Taux réduit applicable à 2VV (primes ≤ 150 000 €) en l'absence d'option barème. */
+const TAUX_PFU_REDUIT_2VV = 0.075;
 /** Coefficient multiplicateur de 2GO (revenus réputés distribués / structures ETNC), quelle que soit la modalité d'imposition — vérifié brochure DGFiP p.126. */
 const COEFFICIENT_2GO = 1.25;
+
+/**
+ * Abattement annuel sur les produits des contrats d'assurance-vie/capitalisation
+ * ≥ 8 ans (art. 125-0 A CGI), quelle que soit leur modalité d'imposition —
+ * vérifié brochure DGFiP p.129.
+ */
+const ABATTEMENT_CONTRATS_8_ANS_CELIBATAIRE = 4600;
+const ABATTEMENT_CONTRATS_8_ANS_COUPLE = 9200;
+/** Taux du prélèvement libératoire historique dont 2DH a déjà fait l'objet, base du crédit d'impôt sur abattement inutilisé. */
+const TAUX_PFL_2DH = 0.075;
+
+const COUPLE_IMPOSITION_COMMUNE: FoyerFiscalInput['situationFamille'][] = ['marie', 'pacse'];
 
 /**
  * Cases du cadre 2 "Revenus de capitaux mobiliers" volontairement exclues du
  * calcul : mécanismes trop hétérogènes pour être fiabilisés sans validation
  * métier dédiée, ou cases sans effet sur l'IR par nature.
- * - 2DH/2CH/2UU/2VV/2WW (contrats d'assurance-vie ≥ 8 ans) : abattement
- *   annuel de 4 600 €/9 200 € + crédit d'impôt sur la fraction de cet
- *   abattement imputée sur 2DH (déjà taxé à la source), non modélisés
- *   (Phase 2b, différée — voir docs/fiscalite.md).
+ * - 2UU : total informatif à répartir entre 2VV et 2WW (déjà comptés), pas un
+ *   montant additionnel.
  * - 2XX (contrats < 8 ans, prélevé à titre définitif à la source lors du
  *   versement, taux 15/25/35/45 % selon durée) : déjà taxé, aucun effet
  *   supplémentaire sur l'IR — informatif/RFR seulement, comme 2CG/2BH/2DF.
@@ -31,7 +43,7 @@ const COEFFICIENT_2GO = 1.25;
  *   face à la décote non confirmé.
  */
 export const CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL = [
-  'case2dh', 'case2ch', 'case2uu', 'case2vv', 'case2ww',
+  'case2uu',
   'case2xx',
   'case2vm', 'case2vn', 'case2vo', 'case2vp',
   'case2vq', 'case2vr', 'case2vs', 'case2vt', 'case2vu',
@@ -44,13 +56,24 @@ export interface RevenuCapitauxMobiliersResult {
   /** Revenu net imposable au barème (uniquement si 2OP coché) — 0 sinon. */
   totalNetImposable: number;
   /**
-   * Impôt à taux forfaitaire (PFU 12,8 %, uniquement si 2OP non coché) :
-   * montant d'impôt déjà calculé, distinct du revenu net imposable au
-   * barème — ne s'additionne pas à `totalNetImposable`, s'ajoute à l'impôt
-   * net après décote dans `calculerImpot.ts` (même famille que
+   * Impôt à taux forfaitaire (PFU 12,8 % ou 7,5 % selon la case, uniquement
+   * si 2OP non coché) : montant d'impôt déjà calculé, distinct du revenu net
+   * imposable au barème — ne s'additionne pas à `totalNetImposable`, s'ajoute
+   * à l'impôt net après décote dans `calculerImpot.ts` (même famille que
    * `calculerGainsActionnariatSalarie.ts::impotForfaitaire`).
    */
   impotForfaitaire: number;
+  /**
+   * Crédit d'impôt restituable (art. 125-0 A CGI, BOI-RPPM-RCM-20-10-20-50
+   * §330-365) : la fraction de l'abattement de 4 600 €/9 200 € imputée sur
+   * 2DH (déjà prélevé à 7,5 % à la source, non réintégré au revenu) donne
+   * droit à un crédit égal à 7,5 % de cette fraction. Indépendant de 2OP
+   * (mécanisme du régime antérieur à 2018, sans lien avec l'option barème
+   * globale). S'impute sur l'impôt net en tout dernier, après la décote
+   * (calculerImpot.ts) — restituable si l'impôt dû est insuffisant pour
+   * l'absorber.
+   */
+  creditImpotAssuranceVie: number;
   casesExclues: readonly string[];
 }
 
@@ -59,38 +82,76 @@ export interface RevenuCapitauxMobiliersResult {
  * mobiliers" (revenus 2025/impôt 2026), limité aux cases dont le régime est
  * sans ambiguïté : dividendes/revenus assimilés (2DC/2FU, abattement 40 % si
  * option barème), intérêts et produits sans abattement
- * (2TS/2TR/2TT/2TQ/2TZ), revenus réputés distribués (2GO, × 1,25), et
- * produits des contrats d'assurance-vie de moins de 8 ans non déjà taxés à
- * la source (2YY/2ZZ — Phase 2a).
+ * (2TS/2TR/2TT/2TQ/2TZ), revenus réputés distribués (2GO, × 1,25), produits
+ * des contrats d'assurance-vie de moins de 8 ans (2YY/2ZZ — Phase 2a) et de
+ * 8 ans et plus (2CH/2DH/2VV/2WW — Phase 2b).
  *
  * `2OP` (option pour l'imposition au barème, globale à l'ensemble du cadre) :
  * - coché : l'abattement de 40 % sur 2DC/2FU s'applique, les frais et charges
  *   (2CA) et les déficits antérieurs (2AA-2AR, plancher à 0, pas de report
  *   au-delà) sont déduits de la base globale, qui rejoint `totalNetImposable`
- *   avec 2ZZ (et 2YY, voir ci-dessous).
- * - non coché (PFU par défaut depuis 2018) : aucun abattement, aucun frais,
- *   aucun déficit (la brochure DGFiP réserve ces trois mécanismes à l'option
- *   barème) — la même base, plus 2ZZ, est taxée à 12,8 % dans
- *   `impotForfaitaire`.
+ *   avec 2ZZ, le net de 2VV et le net de 2WW (après abattement contrats
+ *   ≥ 8 ans, voir ci-dessous) — en plus de 2YY et 2CH, toujours au barème.
+ * - non coché (PFU par défaut depuis 2018) : aucun abattement 40 %, aucun
+ *   frais, aucun déficit (la brochure DGFiP réserve ces trois mécanismes à
+ *   l'option barème) — la même base, plus 2ZZ et le net de 2WW, est taxée à
+ *   12,8 % ; le net de 2VV est taxé à 7,5 % (primes ≤ 150 000 €).
  *
- * **2YY échappe à ce switch** : la brochure DGFiP (p.130) est explicite —
- * ces produits (contrats < 8 ans, versements avant le 27.9.2017, non soumis
- * au prélèvement libératoire optionnel lors du versement) sont "imposés au
- * barème de l'impôt sur le revenu, y compris sans option globale pour
- * l'imposition des RCM et gains mobiliers au barème" : 2YY rejoint donc
- * toujours `totalNetImposable`, que `2OP` soit coché ou non.
+ * **2YY et 2CH échappent à ce switch** : la brochure DGFiP est explicite pour
+ * 2YY (p.130, « y compris sans option globale ») ; le BOFiP
+ * (BOI-RPPM-RCM-20-10-20-50 §75) confirme le même principe pour 2CH — les
+ * produits de versements antérieurs au 27.9.2017 non soumis au prélèvement
+ * libératoire à l'époque du versement restent "par principe" au barème,
+ * régime antérieur à la réforme PFU de 2018 et donc indépendant de 2OP. Ces
+ * deux cases rejoignent toujours `totalNetImposable`.
+ *
+ * **Contrats ≥ 8 ans (2CH/2DH/2VV/2WW) — abattement annuel de 4 600 €
+ * (personne seule) / 9 200 € (couple marié/pacsé), quelle que soit la
+ * modalité d'imposition (brochure p.129), imputé dans l'ordre impératif
+ * 2CH → 2DH → 2VV → 2WW.** 2DH a déjà fait l'objet d'un prélèvement
+ * libératoire de 7,5 % à la source lors du versement (régime antérieur à
+ * 2018, choix fait à l'époque) : il n'est jamais réintégré au revenu
+ * imposable, mais la fraction de l'abattement qui lui est imputée (faute
+ * d'avoir été absorbée par 2CH) donne droit à `creditImpotAssuranceVie`
+ * (7,5 % de cette fraction), restituable — voir `RevenuCapitauxMobiliersResult`.
  *
  * Cases hors calcul : voir CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL.
  */
 export function calculerRevenuCapitauxMobiliers(
   input: RevenusCapitauxMobiliersInput,
+  situationFamille: FoyerFiscalInput['situationFamille'],
 ): RevenuCapitauxMobiliersResult {
   const dividendes = (input.case2dc ?? 0) + (input.case2fu ?? 0);
   const sansAbattement = (input.case2ts ?? 0) + (input.case2tr ?? 0) + (input.case2tt ?? 0)
     + (input.case2tq ?? 0) + (input.case2tz ?? 0);
   const revenusReputesDistribues = (input.case2go ?? 0) * COEFFICIENT_2GO;
-  const toujoursBareme = input.case2yy ?? 0; // 2YY : barème même sans option
   const contratMoinsDe8AnsPost2017 = input.case2zz ?? 0; // 2ZZ : suit le switch 2OP comme le reste
+
+  // Contrats ≥ 8 ans : abattement 4 600 €/9 200 €, imputé dans l'ordre 2CH → 2DH → 2VV → 2WW.
+  const estCoupleImpositionCommune = COUPLE_IMPOSITION_COMMUNE.includes(situationFamille);
+  const abattementDisponible = estCoupleImpositionCommune
+    ? ABATTEMENT_CONTRATS_8_ANS_COUPLE
+    : ABATTEMENT_CONTRATS_8_ANS_CELIBATAIRE;
+
+  const case2ch = input.case2ch ?? 0;
+  const case2dh = input.case2dh ?? 0;
+  const case2vv = input.case2vv ?? 0;
+  const case2ww = input.case2ww ?? 0;
+
+  const abattementSur2ch = Math.min(abattementDisponible, case2ch);
+  const abattementSur2dh = Math.min(abattementDisponible - abattementSur2ch, case2dh);
+  const abattementSur2vv = Math.min(abattementDisponible - abattementSur2ch - abattementSur2dh, case2vv);
+  const abattementSur2ww = Math.min(
+    abattementDisponible - abattementSur2ch - abattementSur2dh - abattementSur2vv,
+    case2ww,
+  );
+
+  const net2ch = case2ch - abattementSur2ch; // toujours barème, comme 2YY
+  const net2vv = case2vv - abattementSur2vv; // 7,5 % PFU, ou barème sur option
+  const net2ww = case2ww - abattementSur2ww; // 12,8 % PFU, ou barème sur option
+  const creditImpotAssuranceVie = abattementSur2dh * TAUX_PFL_2DH;
+
+  const toujoursBareme = (input.case2yy ?? 0) + net2ch;
 
   if (input.case2op) {
     const abattementDividendes = dividendes * ABATTEMENT_DIVIDENDES_TAUX;
@@ -100,20 +161,24 @@ export function calculerRevenuCapitauxMobiliers(
 
     const baseAvantDeficits = (dividendes - abattementDividendes)
       + sansAbattement + revenusReputesDistribues + toujoursBareme + contratMoinsDe8AnsPost2017
+      + net2vv + net2ww
       - fraisCharges;
 
     return {
       totalNetImposable: Math.max(0, baseAvantDeficits - deficitsAnterieurs),
       impotForfaitaire: 0,
+      creditImpotAssuranceVie,
       casesExclues: CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL,
     };
   }
 
-  const baseImposablePFU = dividendes + sansAbattement + revenusReputesDistribues + contratMoinsDe8AnsPost2017;
+  const baseTaux128 = dividendes + sansAbattement + revenusReputesDistribues
+    + contratMoinsDe8AnsPost2017 + net2ww;
 
   return {
     totalNetImposable: toujoursBareme,
-    impotForfaitaire: baseImposablePFU * TAUX_PFU,
+    impotForfaitaire: baseTaux128 * TAUX_PFU + net2vv * TAUX_PFU_REDUIT_2VV,
+    creditImpotAssuranceVie,
     casesExclues: CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL,
   };
 }

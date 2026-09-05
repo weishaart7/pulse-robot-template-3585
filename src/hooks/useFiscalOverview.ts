@@ -174,7 +174,7 @@ export function useFiscalOverview(): FiscalOverview {
     const gainsActionnariat = calculerGainsActionnariatSalarie(gainsInput);
     const revenuExonereTauxEffectif = calculerRevenuExonereTauxEffectif(exoneresInput);
     const pensionsRetraitesRentes = calculerPensionsRetraitesRentes(pensionsInput);
-    const revenuCapitauxMobiliers = calculerRevenuCapitauxMobiliers(capitauxMobiliersInput);
+    const revenuCapitauxMobiliers = calculerRevenuCapitauxMobiliers(capitauxMobiliersInput, foyerInput.situationFamille);
     const parts = calculerPartsFiscales(foyerInput);
     const revenuImposableTotal = revenuSalaires.totalNetImposable + gainsActionnariat.totalNetImposable
       + pensionsRetraitesRentes.totalNetImposable + revenuCapitauxMobiliers.totalNetImposable;
@@ -194,6 +194,7 @@ export function useFiscalOverview(): FiscalOverview {
       foyerInput.lieuResidence,
       impotForfaitaireTotal,
       gainsActionnariat.revenuExceptionnelQuotient,
+      revenuCapitauxMobiliers.creditImpotAssuranceVie,
     );
 
     return {

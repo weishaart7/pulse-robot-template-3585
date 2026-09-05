@@ -274,6 +274,33 @@ describe('calculerImpot — impôt forfaitaire (carried-interest, gains à taux 
   });
 });
 
+describe('calculerImpot — crédit d\'impôt assurance-vie (2DH, restituable)', () => {
+  it('nul par défaut (paramètre omis) : comportement inchangé', () => {
+    const sansParam = calculerImpot(30000, makeParts(), 'celibataire');
+    const avecZero = calculerImpot(30000, makeParts(), 'celibataire', 0, 'metropole', 0, 0, 0);
+    expect(avecZero.impotNet).toBe(sansParam.impotNet);
+    expect(avecZero.creditImpotAssuranceVie).toBe(0);
+  });
+
+  it("se déduit intégralement de l'impôt net, après décote et impôt forfaitaire", () => {
+    const sansCredit = calculerImpot(30000, makeParts(), 'celibataire', 0, 'metropole', 1280, 0, 0);
+    const avecCredit = calculerImpot(30000, makeParts(), 'celibataire', 0, 'metropole', 1280, 0, 300);
+    expect(avecCredit.creditImpotAssuranceVie).toBe(300);
+    expect(avecCredit.impotNet).toBe(sansCredit.impotNet - 300);
+  });
+
+  it('est restituable : peut rendre impotNet négatif si le crédit dépasse l\'impôt dû', () => {
+    const result = calculerImpot(0, makeParts(), 'celibataire', 0, 'metropole', 0, 0, 300);
+    expect(result.impotApresDecote).toBe(0);
+    expect(result.impotNet).toBe(-300);
+  });
+
+  it("reste positif ou nul si un crédit négatif était transmis par erreur", () => {
+    const result = calculerImpot(30000, makeParts(), 'celibataire', 0, 'metropole', 0, 0, -300);
+    expect(result.creditImpotAssuranceVie).toBe(0);
+  });
+});
+
 describe('calculerImpot — impôt net', () => {
   it("n'est jamais négatif", () => {
     const result = calculerImpot(5000, makeParts(), 'celibataire');

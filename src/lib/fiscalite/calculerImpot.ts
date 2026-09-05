@@ -58,6 +58,7 @@ export interface ImpotResult {
   decote: number;
   impotApresDecote: number;
   impotForfaitaire: number;
+  creditImpotAssuranceVie: number;
   impotNet: number;
   tmi: number;
   revenuExceptionnelQuotient: number;
@@ -189,6 +190,14 @@ function calculerImpotApresQuotientFamilial(
  * Périmètre limité aux revenus exceptionnels (coefficient fixe) : les revenus
  * différés à coefficient variable (nombre d'années + 1, sans case CERFA dédiée
  * pour ce nombre) ne sont pas couverts.
+ * `creditImpotAssuranceVie` (optionnel, 0 par défaut) : crédit d'impôt sur
+ * l'abattement de 4 600 €/9 200 € imputé sur 2DH (art. 125-0 A CGI,
+ * BOI-RPPM-RCM-20-10-20-50 §330-365 — voir calculerRevenuCapitauxMobiliers.ts),
+ * imputé en tout dernier, après la décote et l'impôt forfaitaire, **sans
+ * plancher à 0** : le BOFiP le qualifie explicitement de restituable
+ * (« s'il excède l'impôt dû, l'excédent est restitué ») — `impotNet` peut
+ * donc devenir négatif, ce qui représente une restitution au foyer plutôt
+ * qu'un impôt à payer.
  */
 export function calculerImpot(
   revenuImposable: number,
@@ -198,6 +207,7 @@ export function calculerImpot(
   lieuResidence: FoyerFiscalInput['lieuResidence'] = 'metropole',
   impotForfaitaire = 0,
   revenuExceptionnelQuotient = 0,
+  creditImpotAssuranceVie = 0,
 ): ImpotResult {
   const revenu = Math.max(0, revenuImposable);
   const revenuExonere = Math.max(0, revenuExonereTauxEffectif);
@@ -239,7 +249,8 @@ export function calculerImpot(
     : 0;
 
   const impotApresDecote = Math.max(0, Math.round(impotApresReductionOutreMer - decote));
-  const impotNet = impotApresDecote + Math.max(0, impotForfaitaire);
+  const creditImpotAssuranceVieApplique = Math.max(0, creditImpotAssuranceVie);
+  const impotNet = impotApresDecote + Math.max(0, impotForfaitaire) - creditImpotAssuranceVieApplique;
 
   return {
     revenuImposable: revenu,
@@ -260,6 +271,7 @@ export function calculerImpot(
     decote,
     impotApresDecote,
     impotForfaitaire: Math.max(0, impotForfaitaire),
+    creditImpotAssuranceVie: creditImpotAssuranceVieApplique,
     impotNet,
     tmi: tmiPourQuotient(parts.nombreParts > 0 ? revenuMondialFictif / parts.nombreParts : 0),
     revenuExceptionnelQuotient: revenuExceptionnel,
