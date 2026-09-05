@@ -137,7 +137,7 @@ d'actionnariat salarié), [calculerRevenuExonereTauxEffectif.ts](src/lib/fiscali
 (revenus exonérés retenus pour le taux effectif), [calculerPensionsRetraitesRentes.ts](src/lib/fiscalite/calculerPensionsRetraitesRentes.ts)
 (pensions au barème avec/sans abattement selon la ligne, capital retraite à taux forfaitaire, rentes
 viagères par tranche d'âge), [calculerRevenuCapitauxMobiliers.ts](src/lib/fiscalite/calculerRevenuCapitauxMobiliers.ts)
-(cadre 2, Phase 1 — dividendes, intérêts, 2GO, frais/déficits si option barème, PFU sinon),
+(cadre 2 — dividendes, intérêts, 2GO, frais/déficits si option barème, contrats < 8 ans, PFU sinon),
 [calculerPartsFiscales.ts](src/lib/fiscalite/calculerPartsFiscales.ts) (quotient familial) et
 [calculerImpot.ts](src/lib/fiscalite/calculerImpot.ts) (barème, plafonnement, méthode du taux effectif,
 réduction outre-mer, décote, impôt forfaitaire, TMI) — voir §2. Périmètre encore hors calcul : revenus
@@ -555,22 +555,29 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   calcul (Phase 1) couvre désormais une partie de ce cadre**, voir `calculerRevenuCapitauxMobiliers.ts`
   ci-dessous.
 - **`src/lib/fiscalite/calculerRevenuCapitauxMobiliers.ts` — revenu net imposable et impôt forfaitaire
-  du cadre 2, Phase 1.** Recherche brochure DGFiP (IR 2026, pages 123-134) avant codage, catégorie par
-  catégorie. Périmètre couvert : `2DC`/`2FU` (dividendes, abattement de 40 % **uniquement si option
-  barème** `2OP` — sans option, PFU 12,8 % sans abattement, conforme au texte brochure « l'abattement de
-  40 % est applicable uniquement en cas d'option globale ») ; `2TS`/`2TR`/`2TT`/`2TQ`/`2TZ` (sans
-  abattement, dans les deux régimes) ; `2GO`, multiplié par un **coefficient de 1,25** avant taxation,
-  quelle que soit la modalité d'imposition (règle explicite de la brochure, découverte en session,
-  absente de la documentation initiale du cadre) ; `2CA` (frais et charges) et `2AA`-`2AR` (déficits
-  antérieurs, plancher à 0, pas de report au-delà) déduits de la base globale, **mais seulement en cas
-  d'option barème** (la brochure réserve ces deux mécanismes à cette option). `2OP` fait donc basculer
-  l'intégralité du cadre entre deux régimes : coché → tout rejoint `totalNetImposable` (barème, après
-  abattement/frais/déficits) ; non coché → tout est taxé au **PFU 12,8 %** dans `impotForfaitaire`, sans
-  aucun des trois mécanismes ci-dessus. **Exclues du calcul**
+  du cadre 2.** Recherche brochure DGFiP (IR 2026, pages 123-134) avant codage, catégorie par
+  catégorie. **Phase 1** — périmètre couvert : `2DC`/`2FU` (dividendes, abattement de 40 % **uniquement
+  si option barème** `2OP` — sans option, PFU 12,8 % sans abattement, conforme au texte brochure
+  « l'abattement de 40 % est applicable uniquement en cas d'option globale ») ; `2TS`/`2TR`/`2TT`/`2TQ`/
+  `2TZ` (sans abattement, dans les deux régimes) ; `2GO`, multiplié par un **coefficient de 1,25** avant
+  taxation, quelle que soit la modalité d'imposition (règle explicite de la brochure, découverte en
+  session, absente de la documentation initiale du cadre) ; `2CA` (frais et charges) et `2AA`-`2AR`
+  (déficits antérieurs, plancher à 0, pas de report au-delà) déduits de la base globale, **mais
+  seulement en cas d'option barème** (la brochure réserve ces deux mécanismes à cette option). `2OP`
+  fait donc basculer la majorité du cadre entre deux régimes : coché → tout rejoint
+  `totalNetImposable` (barème, après abattement/frais/déficits) ; non coché → tout est taxé au **PFU
+  12,8 %** dans `impotForfaitaire`, sans aucun des trois mécanismes ci-dessus. **Phase 2a — contrats
+  d'assurance-vie de moins de 8 ans** (`2XX`/`2YY`/`2ZZ`), ajoutée dans une session ultérieure : `2XX`
+  (prélevé à titre définitif à la source lors du versement, taux 15/25/35/45 % selon durée) reste sans
+  aucun effet sur l'IR (déjà taxé, comme les lignes PS) ; `2ZZ` (versements post-27.9.2017) suit le même
+  switch `2OP` que le reste du cadre (PFU 12,8 % ou barème) ; **`2YY` échappe au switch** — la brochure
+  est explicite (p.130) : ces produits sont « imposés au barème de l'impôt sur le revenu, **y compris
+  sans option globale** » — `2YY` rejoint donc toujours `totalNetImposable`, que `2OP` soit coché ou
+  non, seule case du cadre dans ce cas. **Exclues du calcul**
   (`CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL`), différées en dette faute de mécanisme fiabilisable
-  sans session dédiée : `2DH`/`2CH`/`2UU`/`2VV`/`2WW`/`2XX`/`2YY`/`2ZZ` (contrats d'assurance-vie —
-  prélèvement déjà opéré à la source + crédit d'impôt sur l'abattement annuel de 4 600 €/9 200 €
-  inutilisé, imputé dans un ordre précis `2CH`→`2DH`→`2VV`→`2WW`) ; `2VM`/`2VN`/`2VO`/`2VP` et
+  sans session dédiée : `2DH`/`2CH`/`2UU`/`2VV`/`2WW` (contrats ≥ 8 ans — abattement annuel de 4 600 €/
+  9 200 € + crédit d'impôt sur la fraction imputée sur `2DH` déjà taxé à la source, imputé dans un ordre
+  précis `2CH`→`2DH`→`2VV`→`2WW`, Phase 2b) ; `2XX` (voir ci-dessus) ; `2VM`/`2VN`/`2VO`/`2VP` et
   `2VQ`-`2VU` (gains de cession — règle d'imputation « par taux », une moins-value à 12,8 % ne s'impute
   que sur des gains à 12,8 %) ; `2TU`-`2TY` (pertes non imputées, pur report sans effet sur l'année en
   cours) ; `2CG`/`2BH`/`2DF`/`2DG`/`2DI`/`2EE` (lignes exclusivement PS/revenu fiscal de référence, les
@@ -580,12 +587,14 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   `calculerImpot.ts`, même réserve que le crédit d'impôt égal à l'impôt français, §3 🟠). Branché dans
   `useFiscalOverview.ts` : `totalNetImposable` s'ajoute au revenu imposable France,
   `impotForfaitaire` au pool déjà sommé pour `calculerImpot.ts` (carried-interest, 3VD/3VI/3VF, capital
-  retraite 7,5 %). 15 tests couvrent le PFU sans option, l'abattement de 40 % avec option, le
+  retraite 7,5 %). 21 tests couvrent le PFU sans option, l'abattement de 40 % avec option, le
   coefficient de 2GO dans les deux régimes, les frais et déficits conditionnés à l'option (avec
-  plancher à 0), la combinaison des mécanismes, et la non-inclusion des cases exclues. Vérifié en base
-  et à l'écran sur le compte réel : +10 000 € sur `2DC` sans option barème → +1 280 € d'IR (10 000 ×
-  12,8 %) ; avec option barème cochée → +1 800 € d'IR (6 000 € net après abattement 40 %, TMI 30 % du
-  foyer de test).
+  plancher à 0), la combinaison des mécanismes, `2YY` toujours au barème, `2ZZ` selon le switch, `2XX`
+  sans effet, et la non-inclusion des cases exclues. Vérifié en base et à l'écran sur le compte réel :
+  +10 000 € sur `2DC` sans option barème → +1 280 € d'IR (10 000 × 12,8 %) ; avec option barème cochée →
+  +1 800 € d'IR (6 000 € net après abattement 40 %, TMI 30 % du foyer de test) ; +4 000 € sur `2YY`
+  (sans `2OP`) → +1 200 € d'IR (TMI 30 %) ; +4 000 € sur `2ZZ` (sans `2OP`) → +512 € d'IR (4 000 ×
+  12,8 %).
 - **`src/lib/fiscal/calcul.ts` (dossier séparé, sans « ite ») a été nettoyé de son unique fonction
   orpheline.** L'ancienne `calculerPartsFiscales` de ce dossier n'avait aucun appelant dans le repo
   (`grep` confirmé avant suppression) et divergeait de plusieurs règles CGI (veuf avec enfant(s)
@@ -914,20 +923,24 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   réel sur `FiscalOverviewCard`/`TaxRateCard` via `useFiscalOverview.ts` (voir §2). **Revenus des
   valeurs et capitaux mobiliers (cadre 2 de la 2042)** : saisie des 45 cases numériques + `2OP`,
   regroupées en 6 catégories conformes à la déclaration en ligne impots.gouv.fr, persistance Supabase
-  (`revenus_capitaux_mobiliers`, table dédiée). **Moteur de calcul Phase 1 désormais branché** sur
+  (`revenus_capitaux_mobiliers`, table dédiée). **Moteur de calcul branché** sur
   `useFiscalOverview.ts` : dividendes (`2DC`/`2FU`, abattement 40 % si option barème), revenus sans
   abattement (`2TS`/`2TR`/`2TT`/`2TQ`/`2TZ`), revenus réputés distribués (`2GO`, coefficient 1,25),
   frais/déficits (`2CA`/`2AA`-`2AR`, si option barème) — au barème si `2OP` coché, au PFU 12,8 % sinon
-  (`calculerRevenuCapitauxMobiliers.ts`, voir §2). Reste hors calcul (dette, voir ci-dessous) : contrats
-  d'assurance-vie, gains de cession, pertes/moins-values non imputées, lignes PS/RFR, crédits d'impôt
-  imputables sur l'impôt dû. Prochaine étape de la feuille de route : un futur cadre 2042 (revenus
-  fonciers, plus-values, etc.), la Phase 2 du calcul des capitaux mobiliers, ou 1GB/1HB (point
+  (Phase 1) ; contrats d'assurance-vie de moins de 8 ans (`2XX` sans effet, `2ZZ` selon le switch `2OP`,
+  `2YY` toujours au barème même sans option — Phase 2a) (`calculerRevenuCapitauxMobiliers.ts`, voir §2).
+  Reste hors calcul (dette, voir ci-dessous) : contrats d'assurance-vie ≥ 8 ans, gains de cession,
+  pertes/moins-values non imputées, lignes PS/RFR, crédits d'impôt imputables sur l'impôt dû. Prochaine
+  étape de la feuille de route : un futur cadre 2042 (revenus fonciers, plus-values, etc.), la Phase 2b
+  du calcul des capitaux mobiliers (contrats ≥ 8 ans, abattement + crédit d'impôt — nécessite de
+  vérifier au BOFiP l'ordre face à la décote avant de toucher `calculerImpot.ts`), ou 1GB/1HB (point
   ci-dessous — **désormais distinct** du crédit d'impôt égal à l'impôt français, couvert depuis une
   session précédente, voir §2).
 - **Différé, déductible du code** :
-  - **Revenus des valeurs et capitaux mobiliers — hors Phase 1 du calcul (voir §2/§3)** :
-    `2DH`/`2CH`/`2UU`/`2VV`/`2WW`/`2XX`/`2YY`/`2ZZ` (contrats d'assurance-vie, prélèvement à la source +
-    crédit d'impôt sur abattement inutilisé), `2VM`/`2VN`/`2VO`/`2VP`/`2VQ`-`2VU` (gains de cession,
+  - **Revenus des valeurs et capitaux mobiliers — hors calcul (voir §2/§3)** :
+    `2DH`/`2CH`/`2UU`/`2VV`/`2WW` (contrats d'assurance-vie ≥ 8 ans, abattement annuel de 4 600 €/
+    9 200 € + crédit d'impôt sur abattement inutilisé — Phase 2b), `2XX` (déjà taxé à la source, sans
+    effet par nature), `2VM`/`2VN`/`2VO`/`2VP`/`2VQ`-`2VU` (gains de cession,
     imputation des moins-values par taux), `2TU`-`2TY` (pertes non imputées, sans effet sur l'année en
     cours), `2CG`/`2BH`/`2DF`/`2DG`/`2DI`/`2EE` (lignes PS/RFR, hors périmètre du module),
     `2AB`/`2CK` (crédits d'impôt imputables sur l'impôt dû, mécanisme général absent de

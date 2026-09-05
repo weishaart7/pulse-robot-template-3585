@@ -109,11 +109,49 @@ describe('calculerRevenuCapitauxMobiliers — avec option barème (2OP)', () => 
   });
 });
 
+describe('calculerRevenuCapitauxMobiliers — contrats de moins de 8 ans (Phase 2a)', () => {
+  it('2YY est toujours imposé au barème, sans option 2OP', () => {
+    const result = calculerRevenuCapitauxMobiliers(makeInput({ case2yy: 4000 }));
+    expect(result.totalNetImposable).toBe(4000);
+    expect(result.impotForfaitaire).toBe(0);
+  });
+
+  it('2YY est imposé au barème et cumulé avec le reste, option 2OP cochée', () => {
+    const result = calculerRevenuCapitauxMobiliers(makeInput({ case2op: true, case2yy: 4000, case2tr: 1000 }));
+    expect(result.totalNetImposable).toBe(5000);
+  });
+
+  it('2ZZ suit le switch 2OP : PFU 12,8 % sans option', () => {
+    const result = calculerRevenuCapitauxMobiliers(makeInput({ case2zz: 4000 }));
+    expect(result.totalNetImposable).toBe(0);
+    expect(result.impotForfaitaire).toBeCloseTo(4000 * 0.128);
+  });
+
+  it('2ZZ rejoint le barème avec option 2OP (sans abattement 40 %, ce n\'est pas un dividende)', () => {
+    const result = calculerRevenuCapitauxMobiliers(makeInput({ case2op: true, case2zz: 4000 }));
+    expect(result.totalNetImposable).toBe(4000);
+    expect(result.impotForfaitaire).toBe(0);
+  });
+
+  it('2XX (déjà taxé à la source) reste sans aucun effet, avec ou sans option', () => {
+    const sansOption = calculerRevenuCapitauxMobiliers(makeInput({ case2xx: 5000 }));
+    expect(sansOption.impotForfaitaire).toBe(0);
+    const avecOption = calculerRevenuCapitauxMobiliers(makeInput({ case2op: true, case2xx: 5000 }));
+    expect(avecOption.totalNetImposable).toBe(0);
+  });
+
+  it('combine 2YY (toujours barème) et 2ZZ (PFU) sans option 2OP', () => {
+    const result = calculerRevenuCapitauxMobiliers(makeInput({ case2yy: 2000, case2zz: 3000 }));
+    expect(result.totalNetImposable).toBe(2000);
+    expect(result.impotForfaitaire).toBeCloseTo(3000 * 0.128);
+  });
+});
+
 describe('calculerRevenuCapitauxMobiliers — cases exclues du calcul', () => {
-  it("les cases hors périmètre Phase 1 n'ont aucun effet, avec ou sans option barème", () => {
+  it("les cases hors périmètre n'ont aucun effet, avec ou sans option barème", () => {
     const input = makeInput({
       case2dh: 1000, case2ch: 1000, case2uu: 1000, case2vv: 1000, case2ww: 1000,
-      case2xx: 1000, case2yy: 1000, case2zz: 1000,
+      case2xx: 1000,
       case2vm: 1000, case2vn: 1000, case2vo: 1000, case2vp: 1000,
       case2vq: 1000, case2vr: 1000, case2vs: 1000, case2vt: 1000, case2vu: 1000,
       case2tu: 1000, case2tv: 1000, case2tw: 1000, case2tx: 1000, case2ty: 1000,
@@ -133,8 +171,11 @@ describe('calculerRevenuCapitauxMobiliers — cases exclues du calcul', () => {
     expect(result.casesExclues).toContain('case2dh');
     expect(result.casesExclues).toContain('case2vq');
     expect(result.casesExclues).toContain('case2ab');
+    expect(result.casesExclues).toContain('case2xx');
     expect(result.casesExclues).not.toContain('case2dc');
     expect(result.casesExclues).not.toContain('case2go');
     expect(result.casesExclues).not.toContain('case2aa');
+    expect(result.casesExclues).not.toContain('case2yy');
+    expect(result.casesExclues).not.toContain('case2zz');
   });
 });
