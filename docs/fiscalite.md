@@ -214,10 +214,9 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   1GH/1HH, 1PB/1PC, 1AD/1BD, 1DY/1EY, 1SM/1DN (exonérées d'IR par nature), 1AV/1BV (majoration du seuil
   d'exonération de 1AD/1BD — sans effet possible ici puisque 1AD/1BD est déjà traité comme intégralement
   exonéré, quel que soit le seuil), 1GK/1GL (case informative « ne perçoit plus de salaires… », sans
-  montant propre), 1AF/1BF (revenus étrangers à crédit d'impôt égal à l'impôt français — mécanisme
-  différent du taux effectif de `revenus_exoneres_taux_effectif`, ces cases restent hors périmètre, cf.
-  §3 🟠) et 1GB/1HB (régime de frais professionnels des gérants art. 62 CGI non arbitré) — voir §3, 🟠.
-  13 tests couvrent
+  montant propre) et 1GB/1HB (régime de frais professionnels des gérants art. 62 CGI non arbitré) — voir
+  §3, 🟠. 1AF/1BF (crédit d'impôt égal à l'impôt français) ne sont plus exclues : voir
+  `revenuCreditImpotEgalImpotFrancais` plus bas et §2. 16 tests couvrent
   l'abattement standard, les bornes plancher/plafond, le choix frais réels vs abattement, et les cases
   exclues. La fonction `calculerDeclarant` (abattement 10 %/frais réels d'un déclarant) est exportée et
   réutilisée telle quelle par `calculerRevenuExonereTauxEffectif.ts` (ci-dessous).
@@ -305,6 +304,36 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   ordinaire + 200 000 € de 0XX : impôt brut attendu 89 690,11 €, contre 98 023,84 € sans quotient) puis en
   base et à l'écran sur le compte réel (40 000 € sur `0XX` → +12 000 € d'IR, cohérent avec le TMI 30 % du
   foyer de test : 40 000/4 × 30 % × 4).
+- **Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR/1BR/1CR/1DR) — désormais couvert, via
+  le même mécanisme que la méthode du taux effectif.** Recherche BOFiP avant codage : la formule
+  officielle du crédit est `crédit = impôt total × (revenu étranger concerné / revenu net global
+  imposable)` — mathématiquement identique à la formule déjà implémentée pour le taux effectif
+  (`tauxEffectif × revenu`), dès lors que le crédit est imputé **avant** réduction outre-mer et décote
+  (ordre non confirmé explicitement par le BOFiP consulté pour ce cas précis face à la décote — **hypothèse
+  retenue en session**, documentée en dette, §3 🟠). Implémentation : `1AF`/`1BF` obtiennent un abattement
+  forfaitaire de 10 % standard (plancher/plafond), **sans option frais réels** (aucune case dédiée
+  identifiée dans la brochure pour 1AF/1BF, contrairement à 1AC/1BC qui ont 1AE/1BE — hypothèse également
+  documentée en dette) — nouveau champ `revenuCreditImpotEgalImpotFrancais` dans
+  `calculerRevenuSalaires.ts`, n'entrant pas dans `totalNetImposable`. `1AL`/`1BL` réutilisent le même
+  abattement pension 10 % que le pool `1AS`/`1AZ`/`1AO`/`1AM` (plancher 454 €, plafond global 4 439 €)
+  mais dans un pool indépendant (comme `1AH` dans `calculerRevenuExonereTauxEffectif.ts`), pour éviter une
+  clé de répartition non documentée par la brochure entre les deux pools s'ils étaient fusionnés. `1AR`
+  reçoit la même fraction imposable par tranche d'âge que `1AW` (art. 158-6 CGI), sans abattement — même
+  nouveau champ `revenuCreditImpotEgalImpotFrancais` dans `calculerPensionsRetraitesRentes.ts`.
+  `useFiscalOverview.ts` additionne ces deux nouveaux champs à `revenuExonereTauxEffectif.totalRetenu`
+  avant l'appel à `calculerImpot.ts` — **aucun changement dans `calculerImpot.ts` lui-même**, le paramètre
+  existant porte désormais les deux mécanismes (docstring élargie). **1GB/1HB ne fait pas partie de ce
+  mécanisme** (contrairement à ce qui avait été supposé en fin de session précédente) : régime de frais
+  professionnels des gérants art. 62 CGI, sans rapport avec le crédit d'impôt, reste exclu (§3 🟠). Découverte
+  notable en cours de recherche : la brochure officielle référence une case **8TK** (cadre 8, « Revenus de
+  source étrangère ouvrant droit à un crédit d'impôt égal à l'impôt français ») qui agrège en théorie
+  toutes les catégories concernées (salaires, pensions, revenus fonciers 4BK/4BL...) pour piloter le
+  crédit réel — non implémentée ici : le calcul retenu applique directement la formule par case sans
+  passer par cette case agrégée, ce qui donne le même résultat final mais ne reproduit pas exactement le
+  cheminement du CERFA papier. Vérifié en base et à l'écran sur le compte réel : +30 000 € sur `1AF` (net
+  27 000 € après abattement) → +3 183 € d'IR ; +20 000 € sur `1AL` → +2 299 € d'IR — ordres de grandeur
+  cohérents avec le mécanisme du taux effectif déjà testé (aucune régression sur les 149 tests du
+  module).
 - **Bug corrigé — `lieuResidence` était saisi, persisté et affiché sans jamais influencer le calcul
   d'IR.** Trouvé par un audit champ par champ des 4 types de cases (`FoyerFiscalInput`,
   `RevenusSalairesInput`, `GainsActionnariatSalarieInput`, `RevenusExoneresTauxEffectifInput`) contre
@@ -359,14 +388,13 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   `impotForfaitaire` — même famille que le carried-interest/3VD de
   `calculerGainsActionnariatSalarie.ts`. Rentes viagères à titre onéreux (1AW) : fraction imposable par
   tranche d'âge (art. 158-6 CGI, 70 %/50 %/40 %/30 %), incluse dans `totalNetImposable` **sans**
-  l'abattement de 10 % classique (mécanismes exclusifs). **Exclues du calcul**
-  (`CASES_PENSIONS_EXCLUES_DU_CALCUL`) : 1AL/1BL et 1AR/1BR/1CR/1DR (pensions/rentes étrangères
-  « ouvrant droit à un crédit d'impôt égal à l'impôt français » — la brochure les inclut littéralement
-  dans la liste de l'abattement 10 %, mais sans moteur de crédit d'impôt, les inclure surestimerait
-  l'IR ; même famille que 1AF/1GB déjà exclus dans `calculerRevenuSalaires.ts` — voir §3, 🟠), 1HK/1HL
-  (case informative). 24 tests couvrent l'abattement (plancher, plafond par déclarant et par foyer),
-  1AI sans abattement, les 4 tranches d'âge des rentes viagères, l'impôt forfaitaire de 1AT et la
-  non-inclusion des cases exclues.
+  l'abattement de 10 % classique (mécanismes exclusifs). **Exclue du calcul**
+  (`CASES_PENSIONS_EXCLUES_DU_CALCUL`) : 1HK/1HL (case informative) seulement — 1AL/1BL et
+  1AR/1BR/1CR/1DR (pensions/rentes étrangères, crédit d'impôt égal à l'impôt français) ne sont plus
+  exclues : calculées séparément (`revenuCreditImpotEgalImpotFrancais`, pool indépendant du reste, voir
+  §2), n'entrent pas dans `totalNetImposable`. 28 tests couvrent l'abattement (plancher, plafond par
+  déclarant et par foyer), 1AI sans abattement, les 4 tranches d'âge des rentes viagères, l'impôt
+  forfaitaire de 1AT, le crédit d'impôt égal à l'impôt français et la non-inclusion des cases exclues.
 - **`src/hooks/useFiscalOverview.ts` — point de calcul unique consommé par `FiscalOverviewCard` et
   `TaxRateCard`.** Compose `useFoyerFiscal` + `useRevenusSalaires` + `useGainsActionnariatSalarie` +
   `useRevenusExoneresTauxEffectif` + `usePensionsRetraitesRentes` (un seul fetch Supabase de chacun),
@@ -620,8 +648,9 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   (carried-interest 1NX/1OX à 12,8 % PFU, 3VD/3VI/3VF à 18 %/30 %/41 %), les pensions/retraites/rentes
   (abattement 10 % classique, capital PER sans abattement, capital retraite à 7,5 %, rentes viagères
   par tranche d'âge — taux vérifiés visuellement sur la brochure DGFiP et le BOFiP), et la méthode du
-  taux effectif. **Reste hors calcul** : les revenus fonciers, les capitaux mobiliers, et les cases
-  1AF/1BF/1GB/1HB/1AL/1AR (crédit d'impôt égal à l'impôt français, voir §3 🟠) — voir §4.
+  taux effectif, et désormais le crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL,
+  1AR/1BR/1CR/1DR — voir §2). **Reste hors calcul** : les revenus fonciers, les capitaux mobiliers, et
+  1GB/1HB (régime de frais professionnels des gérants, sans rapport avec le crédit d'impôt) — voir §4.
 - **Résolu — le simulateur IFI et le reste de l'écran Fiscalité n'affichent plus de montants d'IFI
   contradictoires.** `FiscalOverviewCard.tsx` affiche désormais « IFI : non calculé — voir le
   simulateur IFI » plutôt qu'un « 0 € » fixe qui contredisait le résultat du simulateur ouvert depuis
@@ -630,6 +659,22 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
+- **Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR/1BR/1CR/1DR) : ordre exact face à la
+  décote et à la réduction outre-mer non confirmé par le BOFiP consulté.** Le crédit est implémenté en
+  réutilisant le mécanisme du taux effectif (imputé avant réduction outre-mer/décote), mathématiquement
+  équivalent à la formule officielle du crédit **dans ce cas précis** — mais aucune source ne confirme
+  explicitement que le crédit réel s'impute au même point du calcul pour tous les cas (foyers proches du
+  seuil de décote, DOM-TOM). Un écart resterait possible pour ces profils limites. **1AF/1BF n'a pas
+  d'option frais réels modélisée** (pas de case CERFA dédiée identifiée, contrairement à 1AC/1BC qui ont
+  1AE/1BE) : seul l'abattement forfaitaire de 10 % standard est appliqué — hypothèse, pas une lecture
+  certaine de la brochure. **1AF/1BF mélange sur le CERFA les non-résidents fiscaux et les résidents
+  avec revenu étranger** : l'app ne modélise aucun statut non-résident (`foyer_fiscal` n'a que
+  `lieuResidence` métropole/DOM-TOM, pas résident/non-résident) — seule la composante résident est
+  pertinente ici, un non-résident fiscal utilisant l'outil obtiendrait un résultat non fiable (régime
+  fiscal des non-résidents entièrement différent, hors périmètre du module). **Case 8TK (cadre 8,
+  agrégation officielle du crédit toutes catégories confondues) non utilisée** : le calcul retenu
+  applique la formule directement par catégorie sans passer par cette case pivot du CERFA — même
+  résultat final, cheminement différent du papier.
 - **Système du quotient (`0XX`, art. 163-0 A CGI) : seuls les revenus exceptionnels (coefficient fixe 4)
   sont couverts, pas les revenus différés (coefficient variable = nombre d'années + 1).** La 2042/2042-C
   n'a aucune case pour saisir ce nombre d'années — l'ajouter nécessiterait un champ hors CERFA, écarté
@@ -640,19 +685,13 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   exemple BOFiP chiffré** (cas rare, les deux mécanismes coexistant simultanément) : le montant `0XX` est
   traité comme un revenu français à part entière pour la proratisation, choix cohérent mais non
   confirmé par une source officielle chiffrée — voir `calculerImpot.ts`.
-- **`calculerRevenuSalaires.ts` exclut volontairement 1AF/1BF et 1GB/1HB du revenu net imposable**
-  ([calculerRevenuSalaires.ts](src/lib/fiscalite/calculerRevenuSalaires.ts)) : 1AF/1BF (salaires de
-  source étrangère avec crédit d'impôt égal à l'impôt français) nécessitent la méthode du taux
-  effectif, non implémentée ; 1GB/1HB (gérants et associés art. 62 CGI) ont un régime de frais
-  professionnels particulier distinct de l'abattement de 10 % standard, non arbitré. Un utilisateur
-  saisissant des montants dans ces cases les verra ignorés du calcul d'IR sans qu'aucun message ne le
-  signale à l'écran — à corriger avant d'afficher le calcul comme fiable pour ces profils
-  (non-résidents, gérants majoritaires). **Même exclusion, même mécanisme, pour
-  `calculerPensionsRetraitesRentes.ts`** : 1AL/1BL (pensions étrangères) et 1AR/1BR/1CR/1DR (rentes
-  étrangères) ouvrent droit à un crédit d'impôt égal à l'impôt français — la brochure DGFiP les inclut
-  pourtant littéralement dans la liste de l'abattement de 10 % classique (avec 1AS/1AZ/1AO/1AM), mais
-  sans le crédit d'impôt compensateur, les additionner surestimerait l'IR ; exclues par cohérence avec
-  1AF/1GB plutôt que d'implémenter un calcul partiel et trompeur.
+- **`calculerRevenuSalaires.ts` exclut volontairement 1GB/1HB du revenu net imposable**
+  ([calculerRevenuSalaires.ts](src/lib/fiscalite/calculerRevenuSalaires.ts)) : 1GB/1HB (gérants et
+  associés art. 62 CGI) ont un régime de frais professionnels particulier distinct de l'abattement de
+  10 % standard, non arbitré. Un utilisateur saisissant des montants dans cette case le verra ignoré du
+  calcul d'IR sans qu'aucun message ne le signale à l'écran — à corriger avant d'afficher le calcul
+  comme fiable pour ce profil (gérants majoritaires). **1AF/1BF, 1AL/1BL et 1AR/1BR/1CR/1DR (crédit
+  d'impôt égal à l'impôt français) sont désormais couverts** (voir §2) — ce n'est plus une exclusion.
 - **Réduction IFI pour dons (art. 978 CGI, 75 % du don plafonné à 50 000 €) absente du moteur de
   calcul**, alors que la catégorie de dépense « Dons aux organismes d'intérêt général (réduction IFI) »
   existe déjà comme libellé dans le module Budget
@@ -792,18 +831,15 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   impôt à taux forfaitaire carried-interest/gains historiques/capital retraite, TMI), branchés en temps
   réel sur `FiscalOverviewCard`/`TaxRateCard` via `useFiscalOverview.ts` (voir §2). Prochaine étape de
   la feuille de route : un futur cadre 2042 hors « Salaires » (revenus fonciers, capitaux mobiliers,
-  plus-values, etc.), ou les cases 1AF/1BF/1GB/1HB/1AL/1AR (point ci-dessous).
+  plus-values, etc.), ou 1GB/1HB (point ci-dessous — **désormais distinct** du crédit d'impôt égal à
+  l'impôt français, couvert depuis cette session, voir §2).
 - **Différé, déductible du code** :
   - **Système du quotient — revenus différés à coefficient variable** : seuls les revenus exceptionnels
     (coefficient fixe 4) sont couverts par `0XX`/`calculerImpot.ts` ; les revenus différés (coefficient =
     nombre d'années + 1) restent hors périmètre, faute de case CERFA pour saisir ce nombre — voir §2/§3.
-  - **1AF/1BF (salaires de source étrangère, crédit d'impôt égal à l'impôt français), 1GB/1HB
-    (gérants et associés art. 62 CGI), 1AL/1BL et 1AR/1BR/1CR/1DR (pensions/rentes étrangères, même
-    mécanisme de crédit d'impôt que 1AF) exclus des moteurs de calcul** — le crédit d'impôt égal à
-    l'impôt français est un mécanisme distinct de la méthode du taux effectif désormais implémentée pour
-    `revenus_exoneres_taux_effectif` (pas juste « pas encore fait » : une base de calcul différente,
-    non implémentée dans le repo) ; le régime de frais professionnels des gérants art. 62 CGI reste non
-    arbitré (voir §3, 🟠).
+  - **1GB/1HB (gérants et associés art. 62 CGI) exclus du moteur de calcul** — régime de frais
+    professionnels particulier, non arbitré, sans rapport avec le crédit d'impôt égal à l'impôt français
+    (voir §3, 🟠).
   - Le choix entre abattement forfaitaire de 10 % (`1AJ`/`1BJ`) et frais réels (`1AK`/`1BK`) est
     désormais arbitré par `calculerRevenuSalaires.ts` (le plus favorable des deux est retenu
     automatiquement).
