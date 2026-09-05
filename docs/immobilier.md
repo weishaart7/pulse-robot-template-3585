@@ -109,12 +109,14 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
 - **Routage par nature « bien locatif » unifié — corrigé.** Les trois définitions divergentes de
   « bien locatif » ont été unifiées sur `RENTAL_PROPERTY_TYPES` (6 natures) —
   [immobilierPropertySchema.ts:32-39](src/schemas/immobilierPropertySchema.ts:32-39), source unique
-  utilisée par `isRentalPropertyType()` (sections Financement/Location du formulaire),
-  [ImmobilierOverview.tsx:62](src/components/immobilier/ImmobilierOverview.tsx:62) (calcul de
-  rentabilité/cashflow) et les deux occurrences du bouton « Gérer » dans
+  utilisée par `isRentalPropertyType()` (sections Financement/Location du formulaire) et les deux
+  occurrences du bouton « Gérer » dans
   [ImmobilierSection.tsx:216](src/components/immobilier/ImmobilierSection.tsx:216)/
   [:261](src/components/immobilier/ImmobilierSection.tsx:261), qui référencent désormais directement
-  la constante au lieu de listes locales dupliquées ou tronquées (`.slice(0, 4)`). Conséquence :
+  la constante au lieu de listes locales dupliquées ou tronquées (`.slice(0, 4)`). **`ImmobilierOverview.tsx`
+  ne s'appuie plus sur cette liste du tout** depuis le fix du cashflow mensuel ci-dessous (§3) — le
+  KPI de portefeuille traite désormais tous les biens transférés indifféremment de leur nature.
+  Conséquence :
   « Autres immeubles de rapport » et « Parking / Garage / Box », qui activaient déjà les sections
   Financement/Location de la fiche détail mais n'avaient jamais de bouton « Gérer », y ont désormais
   accès comme les 4 autres natures locatives.
@@ -272,6 +274,22 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
   `type_location`, `regime_location`) gardent leur comportement d'origine, non concernés par ce bug.
   **Vérifié sur cas concret** : `valeur_estimee = 0` → sauvegardé comme `0` (au lieu de `null`) ;
   `surface_m2 = ''` (non saisi) → toujours `null` ; valeurs positives inchangées.
+
+- **Le cashflow mensuel de portefeuille excluait silencieusement les biens non locatifs — corrigé.**
+  `ImmobilierOverview.tsx` limitait l'accumulation de `totalRevenusMensuels`/`totalChargesMensuelles`
+  (utilisées pour la card « Cashflow mensuel ») aux biens dont la nature appartient à
+  `RENTAL_PROPERTY_TYPES` (6 natures sur 18), via un filtre `isLocative` — alors que
+  `totalLoyerAnnuel`/`totalChargesAnnuelles` (utilisées pour « Rentabilité nette ») sommaient déjà
+  **tous** les biens sans ce filtre. Or des charges/revenus peuvent exister sur un bien de nature non
+  locative (ex. taxe foncière sur une résidence secondaire) : le formulaire générique d'actif
+  (`AssetForm.tsx`, onglet « Charges », via `src/components/assets/ChargeForm.tsx`) n'est pas restreint
+  par nature et permet d'en ajouter sur n'importe quel actif, contrairement au bouton « Gérer »
+  d'Immobilier qui, lui, n'apparaît que pour les natures locatives. Résultat : une telle charge réduisait
+  la rentabilité nette affichée mais jamais le cashflow mensuel — les deux cards du même écran
+  n'agrégeaient pas le même périmètre de biens. Fix : suppression du filtre `isLocative`
+  ([ImmobilierOverview.tsx](src/components/immobilier/ImmobilierOverview.tsx)) — le cashflow mensuel
+  traite désormais tous les biens transférés, comme la rentabilité et comme l'onglet « Gestion des
+  biens » (§1).
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
