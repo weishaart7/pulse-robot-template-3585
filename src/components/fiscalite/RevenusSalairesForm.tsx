@@ -31,6 +31,8 @@ const REVENUS_VIDE: RevenusSalairesInput = {
   case1hf: null,
   case1gg: null,
   case1hg: null,
+  case1aq: null,
+  case1bq: null,
   case1ap: null,
   case1bp: null,
   case1af: null,
@@ -190,6 +192,13 @@ export const RevenusSalairesForm = ({ onSaved }: RevenusSalairesFormProps) => {
           code1="1GG" code2="1HG"
           value1={revenus.case1gg} value2={revenus.case1hg}
           onChange1={v => update('case1gg', v)} onChange2={v => update('case1hg', v)}
+        />
+        <MontantLigne
+          label="Agents généraux d'assurance"
+          extra="salaires exonérés"
+          code1="1AQ" code2="1BQ"
+          value1={revenus.case1aq} value2={revenus.case1bq}
+          onChange1={v => update('case1aq', v)} onChange2={v => update('case1bq', v)}
         />
         <MontantLigne
           label="Indemnités pour préjudice moral"

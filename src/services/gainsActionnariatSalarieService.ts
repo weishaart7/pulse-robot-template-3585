@@ -26,6 +26,10 @@ interface GainsActionnariatSalarieRow {
   case_1ox: number | string | null;
   case_1ny: number | string | null;
   case_1oy: number | string | null;
+  case_1ay: number | string | null;
+  case_1by: number | string | null;
+  case_1mp: number | string | null;
+  case_1mq: number | string | null;
   case_3vd: number | string | null;
   case_3vi: number | string | null;
   case_3vf: number | string | null;
@@ -54,6 +58,10 @@ function rowToGainsActionnariatSalarie(row: GainsActionnariatSalarieRow): GainsA
     case1ox: toNumberOrNull(row.case_1ox),
     case1ny: toNumberOrNull(row.case_1ny),
     case1oy: toNumberOrNull(row.case_1oy),
+    case1ay: toNumberOrNull(row.case_1ay),
+    case1by: toNumberOrNull(row.case_1by),
+    case1mp: toNumberOrNull(row.case_1mp),
+    case1mq: toNumberOrNull(row.case_1mq),
     case3vd: toNumberOrNull(row.case_3vd),
     case3vi: toNumberOrNull(row.case_3vi),
     case3vf: toNumberOrNull(row.case_3vf),
@@ -78,6 +86,10 @@ function gainsActionnariatSalarieToRow(gains: GainsActionnariatSalarie, userId: 
     case_1ox: gains.case1ox,
     case_1ny: gains.case1ny,
     case_1oy: gains.case1oy,
+    case_1ay: gains.case1ay,
+    case_1by: gains.case1by,
+    case_1mp: gains.case1mp,
+    case_1mq: gains.case1mq,
     case_3vd: gains.case3vd,
     case_3vi: gains.case3vi,
     case_3vf: gains.case3vf,

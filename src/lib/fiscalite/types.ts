@@ -61,6 +61,8 @@ export interface RevenusSalairesInput {
   case1hf: number | null;
   case1gg: number | null;
   case1hg: number | null;
+  case1aq: number | null;
+  case1bq: number | null;
   case1ap: number | null;
   case1bp: number | null;
   case1af: number | null;
@@ -90,6 +92,10 @@ export interface GainsActionnariatSalarieInput {
   case1ox: number | null;
   case1ny: number | null;
   case1oy: number | null;
+  case1ay: number | null;
+  case1by: number | null;
+  case1mp: number | null;
+  case1mq: number | null;
   case3vd: number | null;
   case3vi: number | null;
   case3vf: number | null;

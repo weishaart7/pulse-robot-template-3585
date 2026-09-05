@@ -21,6 +21,10 @@ const GAINS_VIDE: GainsActionnariatSalarieInput = {
   case1ox: null,
   case1ny: null,
   case1oy: null,
+  case1ay: null,
+  case1by: null,
+  case1mp: null,
+  case1mq: null,
   case3vd: null,
   case3vi: null,
   case3vf: null,
@@ -128,6 +132,22 @@ export const GainsActionnariatSalarieForm = ({ onSaved }: GainsActionnariatSalar
           code1="1NY" code2="1OY"
           value1={gains.case1ny} value2={gains.case1oy}
           onChange1={v => update('case1ny', v)} onChange2={v => update('case1oy', v)}
+        />
+        <MontantLigne
+          label="Bons de souscription de parts de créateur d'entreprise (BSPCE)"
+          extra="gain d'exercice taxable en salaires, à compter du 1.1.2025"
+          aide="Avantage salarial issu de l'exercice de BSPCE à compter du 1.1.2025, pour une activité exercée depuis au moins trois ans : gain taxable sur option, dans la catégorie des salaires."
+          code1="1AY" code2="1BY"
+          value1={gains.case1ay} value2={gains.case1by}
+          onChange1={v => update('case1ay', v)} onChange2={v => update('case1by', v)}
+        />
+        <MontantLigne
+          label="Management packages"
+          extra="gains de cession sur titres souscrits par salariés/dirigeants, à compter du 15.2.2025"
+          aide="Gains de cession réalisés à compter du 15.2.2025 sur des titres souscrits ou acquis par des salariés ou des dirigeants (management packages) : imposition en salaires pour la part supérieure à la limite d'imposition."
+          code1="1MP" code2="1MQ"
+          value1={gains.case1mp} value2={gains.case1mq}
+          onChange1={v => update('case1mp', v)} onChange2={v => update('case1mq', v)}
         />
 
         <Separator />

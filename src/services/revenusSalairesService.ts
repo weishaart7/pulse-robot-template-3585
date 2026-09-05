@@ -36,6 +36,8 @@ interface RevenusSalairesRow {
   case_1hf: number | string | null;
   case_1gg: number | string | null;
   case_1hg: number | string | null;
+  case_1aq: number | string | null;
+  case_1bq: number | string | null;
   case_1ap: number | string | null;
   case_1bp: number | string | null;
   case_1af: number | string | null;
@@ -82,6 +84,8 @@ function rowToRevenusSalaires(row: RevenusSalairesRow): RevenusSalaires {
     case1hf: toNumberOrNull(row.case_1hf),
     case1gg: toNumberOrNull(row.case_1gg),
     case1hg: toNumberOrNull(row.case_1hg),
+    case1aq: toNumberOrNull(row.case_1aq),
+    case1bq: toNumberOrNull(row.case_1bq),
     case1ap: toNumberOrNull(row.case_1ap),
     case1bp: toNumberOrNull(row.case_1bp),
     case1af: toNumberOrNull(row.case_1af),
@@ -124,6 +128,8 @@ function revenusSalairesToRow(revenus: RevenusSalaires, userId: string) {
     case_1hf: revenus.case1hf,
     case_1gg: revenus.case1gg,
     case_1hg: revenus.case1hg,
+    case_1aq: revenus.case1aq,
+    case_1bq: revenus.case1bq,
     case_1ap: revenus.case1ap,
     case_1bp: revenus.case1bp,
     case_1af: revenus.case1af,
