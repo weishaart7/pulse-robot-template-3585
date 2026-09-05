@@ -153,6 +153,49 @@ export const CaseLigne = ({ label, extra, aide, code1, code2, checked1, checked2
   </div>
 );
 
+interface SingleCaseLigneProps {
+  label: string;
+  extra?: string;
+  aide?: string;
+  code: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}
+
+/** Ligne case à cocher unique, sans colonne déclarant 2 (ex. 2OP). */
+export const SingleCaseLigne = ({ label, extra, aide, code, checked, onChange }: SingleCaseLigneProps) => (
+  <div className={LIGNE_UNIQUE_CLASSNAME}>
+    <div className="flex items-center gap-1.5">
+      <Label className="text-sm font-normal">
+        {label}
+        {extra && <span className="text-muted-foreground"> ({extra})</span>}
+      </Label>
+      {aide && <AideTooltip texte={aide} />}
+    </div>
+    <div className="flex items-center gap-2">
+      <Checkbox id={`case-${code}`} checked={checked} onCheckedChange={c => onChange(!!c)} />
+      <Label htmlFor={`case-${code}`} className="text-xs text-muted-foreground">{code}</Label>
+    </div>
+  </div>
+);
+
+interface SousGroupeProps {
+  titre: string;
+  aide?: string;
+  children: React.ReactNode;
+}
+
+/** Regroupement visuel de plusieurs lignes sous un même sous-titre encadré (ex. catégories du cadre 2). */
+export const SousGroupe = ({ titre, aide, children }: SousGroupeProps) => (
+  <div className="space-y-2 p-2.5 rounded-md border border-border">
+    <div className="flex items-center gap-1.5">
+      <p className="text-sm font-medium">{titre}</p>
+      {aide && <AideTooltip texte={aide} />}
+    </div>
+    <div className="space-y-2">{children}</div>
+  </div>
+);
+
 export interface TrancheAge {
   ageLabel: string;
   code: string;
@@ -193,6 +236,53 @@ export const MontantParTrancheAgeLigne = ({ label, aide, tranches }: MontantParT
               className="w-full"
               value={tranche.value ?? ''}
               onChange={ev => tranche.onChange(parse(ev.target.value))}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export interface MontantEclateItem {
+  label: string;
+  code: string;
+  value: number | null;
+  onChange: (value: number | null) => void;
+}
+
+interface MontantEclateLigneProps {
+  label: string;
+  aide?: string;
+  /** Une entrée par sous-case affichée côte à côte (ex. par année), pas par déclarant. */
+  items: MontantEclateItem[];
+}
+
+/**
+ * Ligne montant éclatée en plusieurs sous-cases affichées côte à côte (ex.
+ * déficits/pertes/moins-values non imputés, ventilés par année d'origine),
+ * même structure visuelle que MontantParTrancheAgeLigne (libellé principal
+ * au-dessus, pas à côté, faute de place pour un libellé souvent long).
+ */
+export const MontantEclateLigne = ({ label, aide, items }: MontantEclateLigneProps) => {
+  const parse = (raw: string): number | null => (raw === '' ? null : Number(raw));
+
+  return (
+    <div className="space-y-2 rounded-md border border-border/50 bg-muted/40 px-2.5 py-1.5">
+      <div className="flex items-center gap-1.5">
+        <Label className="text-sm">{label}</Label>
+        {aide && <AideTooltip texte={aide} />}
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {items.map(item => (
+          <div key={item.code} className="space-y-0.5">
+            <Label className="text-xs text-muted-foreground">{item.label} · {item.code}</Label>
+            <Input
+              id={`case-${item.code}`}
+              type="number"
+              className="w-full"
+              value={item.value ?? ''}
+              onChange={ev => item.onChange(parse(ev.target.value))}
             />
           </div>
         ))}

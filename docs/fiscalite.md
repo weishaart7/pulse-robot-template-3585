@@ -61,6 +61,11 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
      de codes du cadre 1 « Salaires, gains d'actionnariat salarié » et du cadre 3 « Plus-values et
      gains divers » du CERFA 2042-C (options attribuées avant le 28.9.2012) — même objet réel, scindé
      administrativement par date d'attribution sur le formulaire papier.
+   - **Revenus des valeurs et capitaux mobiliers — cadre 2 de la 2042 (saisie brute, fonctionnel)** :
+     `RevenusCapitauxMobiliersForm.tsx`, adossé à la table Supabase dédiée `revenus_capitaux_mobiliers`.
+     45 cases numériques + `2OP` (case à cocher), regroupées en 6 catégories conformes à la déclaration
+     en ligne impots.gouv.fr (pas au regroupement thématique du CERFA papier) — voir §2. Capture de
+     données brute, sans moteur de calcul.
 
    Avant cette réorganisation, `MenageForm`/`SyntheseFoyerFiscal`/`RevenusSalairesForm` étaient montés
    à plat dans `FiscaliteSection.tsx`, en dehors de tout bouton « 2042 » (qui n'avait alors aucun
@@ -99,6 +104,7 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 | Salaires & pensions exonérés — taux effectif (section 2042) | [RevenusExoneresTauxEffectifForm.tsx](src/components/fiscalite/RevenusExoneresTauxEffectifForm.tsx) | 5 lignes (`1AC`/`1BC`, `1GE`/`1HE` case à cocher, `1AE`/`1BE`, `1AH`/`1BH`, `RSE`/`RSF` texte libre), encart CERFA distinct (2042-C pages 99/116) — alimente désormais le taux effectif dans le tableau de bord IR (Vision générale) |
 | Pensions, retraites et rentes (section 2042) | [PensionsRetraitesRentesForm.tsx](src/components/fiscalite/PensionsRetraitesRentesForm.tsx) | 7 lignes déclarant 1/déclarant 2 (`1AS`, `1AT`, `1AI`, `1AZ`, `1AO`, `1AL`, `1AM`) + rentes viagères à titre onéreux ventilées par tranche d'âge, pas déclarant (`1AW`/`1BW`/`1CW`/`1DW` rentes perçues, `1AR`/`1BR`/`1CR`/`1DR` non-résidents), vrai cadre 1 « Pensions, retraites, rentes » du CERFA (2042-K pages 115-119), hors colonnes C/D — capture brute, sans moteur de calcul |
 | Gains d'actionnariat salarié (section 2042) | [GainsActionnariatSalarieForm.tsx](src/components/fiscalite/GainsActionnariatSalarieForm.tsx) | 16 lignes du CERFA (stock-options, actions gratuites, carried-interest, BSPCE, management packages, options pré-28.9.2012, système du quotient), regroupées par sous-bloc visuel ; champs à case unique sans colonne déclarant 2 pour `1TZ`/`1UZ`/`1WZ`/`1VZ`, `3VD`/`3VI`/`3VF`/`3VN` et `0XX`, conformément au CERFA |
+| Revenus des valeurs et capitaux mobiliers (section 2042) | [RevenusCapitauxMobiliersForm.tsx](src/components/fiscalite/RevenusCapitauxMobiliersForm.tsx) | Cadre 2 de la 2042 (2042-K + 2042-C), 45 cases numériques + `2OP` (case à cocher, hors catégorie en pied de cadre) ; aucune colonne déclarant 1/déclarant 2 sur le CERFA — chaque case est un montant unique par foyer, contrairement au cadre 1 ; regroupées en 6 catégories conformes à la déclaration en ligne impots.gouv.fr : contrats d'assurance-vie ≥ 8 ans, < 8 ans, revenus ouvrant/n'ouvrant pas droit à abattement, autres revenus, gains de cession de bons et contrats — capture brute, sans moteur de calcul |
 | Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Donut `SectorsDonut` (même composant que la répartition Patrimoine) montrant la vraie composition du revenu imposable (salaires/gains d'actionnariat/pensions, légende colorée) — PS et IFI affichés « non calculé » |
 | Taux marginal | [TaxRateCard.tsx](src/pages/fiscalite/components/TaxRateCard.tsx) | Barème IR réel, tranche active (TMI), quotient familial, marge avant tranche suivante, impôt net |
 | Simulateur IFI | [IFIInterface.tsx](src/pages/fiscalite/components/IFIInterface.tsx) → 5 sous-écrans `ifi/*.tsx` | Wizard de déclaration IFI : hypothèses, biens/passifs, barème, montant dû |
@@ -123,17 +129,19 @@ module **Famille** (`useFamilyData.ts`, pour synchroniser `marital_status.nombre
 les deux dossiers `lib/fiscal/` et `lib/fiscalite/` sont volontairement distincts (cf. §2).
 
 **Moteur de calcul de l'IR** (impôt lui-même, distinct du nombre de parts) : pas de table dédiée —
-six fonctions pures composées par [useFiscalOverview.ts](src/hooks/useFiscalOverview.ts) :
+sept fonctions pures composées par [useFiscalOverview.ts](src/hooks/useFiscalOverview.ts) :
 [calculerRevenuSalaires.ts](src/lib/fiscalite/calculerRevenuSalaires.ts) (revenu net imposable du cadre
 1 Salaires), [calculerGainsActionnariatSalarie.ts](src/lib/fiscalite/calculerGainsActionnariatSalarie.ts)
 (part barème et part à taux forfaitaire — carried-interest, gains pré-28.9.2012 — des gains
 d'actionnariat salarié), [calculerRevenuExonereTauxEffectif.ts](src/lib/fiscalite/calculerRevenuExonereTauxEffectif.ts)
 (revenus exonérés retenus pour le taux effectif), [calculerPensionsRetraitesRentes.ts](src/lib/fiscalite/calculerPensionsRetraitesRentes.ts)
 (pensions au barème avec/sans abattement selon la ligne, capital retraite à taux forfaitaire, rentes
-viagères par tranche d'âge), [calculerPartsFiscales.ts](src/lib/fiscalite/calculerPartsFiscales.ts)
-(quotient familial) et [calculerImpot.ts](src/lib/fiscalite/calculerImpot.ts) (barème, plafonnement,
-méthode du taux effectif, réduction outre-mer, décote, impôt forfaitaire, TMI) — voir §2. Périmètre
-encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
+viagères par tranche d'âge), [calculerRevenuCapitauxMobiliers.ts](src/lib/fiscalite/calculerRevenuCapitauxMobiliers.ts)
+(cadre 2, Phase 1 — dividendes, intérêts, 2GO, frais/déficits si option barème, PFU sinon),
+[calculerPartsFiscales.ts](src/lib/fiscalite/calculerPartsFiscales.ts) (quotient familial) et
+[calculerImpot.ts](src/lib/fiscalite/calculerImpot.ts) (barème, plafonnement, méthode du taux effectif,
+réduction outre-mer, décote, impôt forfaitaire, TMI) — voir §2. Périmètre encore hors calcul : revenus
+fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
 
 **Flux clés** :
 - L'utilisateur clique « 2042-IFI » → `IFIInterface` s'ouvre en plein écran, saisit ses biens/passifs
@@ -516,6 +524,68 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   pensions de `1GK`/`1GL` (`revenus_salaires`), purement informatif. Section positionnée
   entre « Salaires & pensions exonérés (taux effectif) » et « Gains d'actionnariat salarié »
   dans la sidebar, sur demande explicite.
+- **`revenus_capitaux_mobiliers` — table dédiée, cadre 2 « Revenus de capitaux mobiliers » (2042-K +
+  2042-C).** Même pattern que les autres tables du module (`user_id → auth.users(id) ON DELETE
+  CASCADE`, `UNIQUE(user_id)`, RLS 4 policies). 45 colonnes `NUMERIC` + 1 `BOOLEAN` (`2OP`). **Découverte
+  structurante, vérifiée visuellement sur les deux CERFA officiels avant migration** : contrairement au
+  cadre 1 (Salaires), aucune case de ce cadre ne porte de colonne déclarant 1/déclarant 2 sur le
+  formulaire papier — chaque case est un montant unique par foyer, d'où l'absence totale de suffixe
+  déclarant dans cette table (seule table du module dans ce cas pour l'intégralité de ses colonnes).
+  **Regroupement en 6 catégories validé en session, conforme à la déclaration en ligne
+  impots.gouv.fr plutôt qu'au regroupement thématique du CERFA papier** (les deux ne coïncident pas :
+  ex. les gains de cession de bons/contrats de capitalisation, catégorie 6, sont physiquement sur le
+  2042-C alors que la plupart des autres catégories sont sur le 2042-K de base) : contrats
+  d'assurance-vie/capitalisation ≥ 8 ans (`2DH`/`2CH`/`2UU`/`2VV`/`2WW`), idem < 8 ans
+  (`2XX`/`2YY`/`2ZZ`), revenus ouvrant droit à abattement (`2DC`/`2FU`), revenus n'ouvrant pas droit à
+  abattement (`2TR`/`2TT`/`2TQ`/`2TS`/`2TZ`/`2GO`/`2TU`-`2TY`), autres revenus
+  (`2CG`/`2BH`/`2DF`/`2DG`/`2DI`/`2CA`/`2AB`/`2CK`/`2EE`/`2AA`/`2AL`/`2AM`/`2AN`/`2AQ`/`2AR`), gains de
+  cession de bons et contrats de capitalisation/assurance-vie (`2VM`/`2VN`/`2VO`/`2VP`/`2VQ`-`2VU`).
+  `2OP` (option pour l'imposition au barème) est hors catégorie, affichée seule en pied de cadre — pas
+  un revenu mais un choix global qui s'applique à l'ensemble des cases ci-dessus. Les cases « par
+  année » (pertes prêts participatifs non imputées, déficits antérieurs, moins-values non imputées)
+  sont affichées via un nouveau composant partagé `DeclarationLigne::MontantEclateLigne` (généralisation
+  de `MontantParTrancheAgeLigne` — même structure visuelle libellé au-dessus/sous-cases en grille, mais
+  paramétrée par un tableau `{label, code, value, onChange}[]` générique plutôt que par tranche d'âge) :
+  la première version utilisait `SingleMontantLigne` répétée dans une grille compacte, mais les
+  libellés longs (« Moins-values non imputées à reporter sur 2026, provenant de 2021 ») se chevauchaient
+  visuellement entre colonnes — corrigé avant tout commit. **Périmètre volontairement exclu** (dette,
+  cf. §3/§4) : `2DM` (impatriés, revenus perçus à l'étranger exonérés à 50 %) et le bloc « précisions
+  CDHR » du 2042-C (`2DK`/`2DL`/`2XY`/`2XZ`/`2XW`/`2VJ`/`2VK`/`2VL`/`2EF`/`2EG`/`2EH`/`8KD`-`8KG`/`8CD`),
+  cas limite propre à la contribution différentielle sur les hauts revenus. **Résolu — un moteur de
+  calcul (Phase 1) couvre désormais une partie de ce cadre**, voir `calculerRevenuCapitauxMobiliers.ts`
+  ci-dessous.
+- **`src/lib/fiscalite/calculerRevenuCapitauxMobiliers.ts` — revenu net imposable et impôt forfaitaire
+  du cadre 2, Phase 1.** Recherche brochure DGFiP (IR 2026, pages 123-134) avant codage, catégorie par
+  catégorie. Périmètre couvert : `2DC`/`2FU` (dividendes, abattement de 40 % **uniquement si option
+  barème** `2OP` — sans option, PFU 12,8 % sans abattement, conforme au texte brochure « l'abattement de
+  40 % est applicable uniquement en cas d'option globale ») ; `2TS`/`2TR`/`2TT`/`2TQ`/`2TZ` (sans
+  abattement, dans les deux régimes) ; `2GO`, multiplié par un **coefficient de 1,25** avant taxation,
+  quelle que soit la modalité d'imposition (règle explicite de la brochure, découverte en session,
+  absente de la documentation initiale du cadre) ; `2CA` (frais et charges) et `2AA`-`2AR` (déficits
+  antérieurs, plancher à 0, pas de report au-delà) déduits de la base globale, **mais seulement en cas
+  d'option barème** (la brochure réserve ces deux mécanismes à cette option). `2OP` fait donc basculer
+  l'intégralité du cadre entre deux régimes : coché → tout rejoint `totalNetImposable` (barème, après
+  abattement/frais/déficits) ; non coché → tout est taxé au **PFU 12,8 %** dans `impotForfaitaire`, sans
+  aucun des trois mécanismes ci-dessus. **Exclues du calcul**
+  (`CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL`), différées en dette faute de mécanisme fiabilisable
+  sans session dédiée : `2DH`/`2CH`/`2UU`/`2VV`/`2WW`/`2XX`/`2YY`/`2ZZ` (contrats d'assurance-vie —
+  prélèvement déjà opéré à la source + crédit d'impôt sur l'abattement annuel de 4 600 €/9 200 €
+  inutilisé, imputé dans un ordre précis `2CH`→`2DH`→`2VV`→`2WW`) ; `2VM`/`2VN`/`2VO`/`2VP` et
+  `2VQ`-`2VU` (gains de cession — règle d'imputation « par taux », une moins-value à 12,8 % ne s'impute
+  que sur des gains à 12,8 %) ; `2TU`-`2TY` (pertes non imputées, pur report sans effet sur l'année en
+  cours) ; `2CG`/`2BH`/`2DF`/`2DG`/`2DI`/`2EE` (lignes exclusivement PS/revenu fiscal de référence, les
+  deux hors périmètre du module — **découverte notable** : `2DI` doit en outre être inclus dans `2DG`
+  d'après la brochure, ce n'est pas un montant additif indépendant) ; `2AB`/`2CK` (crédits d'impôt
+  imputables sur l'impôt dû, pas sur le revenu — mécanisme de crédit d'impôt général absent de
+  `calculerImpot.ts`, même réserve que le crédit d'impôt égal à l'impôt français, §3 🟠). Branché dans
+  `useFiscalOverview.ts` : `totalNetImposable` s'ajoute au revenu imposable France,
+  `impotForfaitaire` au pool déjà sommé pour `calculerImpot.ts` (carried-interest, 3VD/3VI/3VF, capital
+  retraite 7,5 %). 15 tests couvrent le PFU sans option, l'abattement de 40 % avec option, le
+  coefficient de 2GO dans les deux régimes, les frais et déficits conditionnés à l'option (avec
+  plancher à 0), la combinaison des mécanismes, et la non-inclusion des cases exclues. Vérifié en base
+  et à l'écran sur le compte réel : +10 000 € sur `2DC` sans option barème → +1 280 € d'IR (10 000 ×
+  12,8 %) ; avec option barème cochée → +1 800 € d'IR (6 000 € net après abattement 40 %, TMI 30 % du
+  foyer de test).
 - **`src/lib/fiscal/calcul.ts` (dossier séparé, sans « ite ») a été nettoyé de son unique fonction
   orpheline.** L'ancienne `calculerPartsFiscales` de ce dossier n'avait aucun appelant dans le repo
   (`grep` confirmé avant suppression) et divergeait de plusieurs règles CGI (veuf avec enfant(s)
@@ -841,11 +911,30 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   `calculerPartsFiscales.ts` + `calculerImpot.ts` (barème 2026, quotient familial, plafonnement
   art. 197 CGI, proratisation taux effectif, réduction d'impôt outre-mer art. 197 I 3° CGI, décote,
   impôt à taux forfaitaire carried-interest/gains historiques/capital retraite, TMI), branchés en temps
-  réel sur `FiscalOverviewCard`/`TaxRateCard` via `useFiscalOverview.ts` (voir §2). Prochaine étape de
-  la feuille de route : un futur cadre 2042 hors « Salaires » (revenus fonciers, capitaux mobiliers,
-  plus-values, etc.), ou 1GB/1HB (point ci-dessous — **désormais distinct** du crédit d'impôt égal à
-  l'impôt français, couvert depuis cette session, voir §2).
+  réel sur `FiscalOverviewCard`/`TaxRateCard` via `useFiscalOverview.ts` (voir §2). **Revenus des
+  valeurs et capitaux mobiliers (cadre 2 de la 2042)** : saisie des 45 cases numériques + `2OP`,
+  regroupées en 6 catégories conformes à la déclaration en ligne impots.gouv.fr, persistance Supabase
+  (`revenus_capitaux_mobiliers`, table dédiée). **Moteur de calcul Phase 1 désormais branché** sur
+  `useFiscalOverview.ts` : dividendes (`2DC`/`2FU`, abattement 40 % si option barème), revenus sans
+  abattement (`2TS`/`2TR`/`2TT`/`2TQ`/`2TZ`), revenus réputés distribués (`2GO`, coefficient 1,25),
+  frais/déficits (`2CA`/`2AA`-`2AR`, si option barème) — au barème si `2OP` coché, au PFU 12,8 % sinon
+  (`calculerRevenuCapitauxMobiliers.ts`, voir §2). Reste hors calcul (dette, voir ci-dessous) : contrats
+  d'assurance-vie, gains de cession, pertes/moins-values non imputées, lignes PS/RFR, crédits d'impôt
+  imputables sur l'impôt dû. Prochaine étape de la feuille de route : un futur cadre 2042 (revenus
+  fonciers, plus-values, etc.), la Phase 2 du calcul des capitaux mobiliers, ou 1GB/1HB (point
+  ci-dessous — **désormais distinct** du crédit d'impôt égal à l'impôt français, couvert depuis une
+  session précédente, voir §2).
 - **Différé, déductible du code** :
+  - **Revenus des valeurs et capitaux mobiliers — hors Phase 1 du calcul (voir §2/§3)** :
+    `2DH`/`2CH`/`2UU`/`2VV`/`2WW`/`2XX`/`2YY`/`2ZZ` (contrats d'assurance-vie, prélèvement à la source +
+    crédit d'impôt sur abattement inutilisé), `2VM`/`2VN`/`2VO`/`2VP`/`2VQ`-`2VU` (gains de cession,
+    imputation des moins-values par taux), `2TU`-`2TY` (pertes non imputées, sans effet sur l'année en
+    cours), `2CG`/`2BH`/`2DF`/`2DG`/`2DI`/`2EE` (lignes PS/RFR, hors périmètre du module),
+    `2AB`/`2CK` (crédits d'impôt imputables sur l'impôt dû, mécanisme général absent de
+    `calculerImpot.ts`). `2DM` (impatriés) et le bloc « précisions CDHR »
+    (`2DK`/`2DL`/`2XY`/`2XZ`/`2XW`/`2VJ`/`2VK`/`2VL`/`2EF`/`2EG`/`2EH`/`8KD`-`8KG`/`8CD`) exclus même de
+    la table `revenus_capitaux_mobiliers` — cas limite propre à la contribution différentielle sur les
+    hauts revenus, non demandé.
   - **Système du quotient — revenus différés à coefficient variable** : seuls les revenus exceptionnels
     (coefficient fixe 4) sont couverts par `0XX`/`calculerImpot.ts` ; les revenus différés (coefficient =
     nombre d'années + 1) restent hors périmètre, faute de case CERFA pour saisir ce nombre — voir §2/§3.

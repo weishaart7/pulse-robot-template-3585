@@ -147,3 +147,66 @@ export interface RevenusExoneresTauxEffectifInput {
   caseRse: string | null;
   caseRsf: string | null;
 }
+
+/**
+ * Revenus de capitaux mobiliers (cadre 2 de la 2042, revenus 2025). Aucune de
+ * ces cases ne porte de colonne déclarant 1/déclarant 2 sur le CERFA : chaque
+ * case est un montant unique par foyer, contrairement au cadre 1 (Salaires).
+ * Regroupement en 6 catégories conforme à la déclaration en ligne
+ * impots.gouv.fr (distinct du regroupement thématique du CERFA papier).
+ */
+export interface RevenusCapitauxMobiliersInput {
+  // 1. Produits des contrats d'assurance-vie et de capitalisation de 8 ans et plus
+  case2dh: number | null;
+  case2ch: number | null;
+  case2uu: number | null;
+  case2vv: number | null;
+  case2ww: number | null;
+  // 2. Produits des contrats d'assurance-vie et de capitalisation de moins de 8 ans
+  case2xx: number | null;
+  case2yy: number | null;
+  case2zz: number | null;
+  // 3. Revenus ouvrant droit à abattement
+  case2dc: number | null;
+  case2fu: number | null;
+  // 4. Revenus n'ouvrant pas droit à abattement
+  case2tr: number | null;
+  case2tt: number | null;
+  case2tq: number | null;
+  case2ts: number | null;
+  case2tz: number | null;
+  case2go: number | null;
+  case2tu: number | null;
+  case2tv: number | null;
+  case2tw: number | null;
+  case2tx: number | null;
+  case2ty: number | null;
+  // 5. Autres revenus des valeurs et capitaux mobiliers
+  case2cg: number | null;
+  case2bh: number | null;
+  case2df: number | null;
+  case2dg: number | null;
+  case2di: number | null;
+  case2ca: number | null;
+  case2ab: number | null;
+  case2ck: number | null;
+  case2ee: number | null;
+  case2aa: number | null;
+  case2al: number | null;
+  case2am: number | null;
+  case2an: number | null;
+  case2aq: number | null;
+  case2ar: number | null;
+  // 6. Gains de cession des bons et contrats de capitalisation et d'assurance-vie
+  case2vm: number | null;
+  case2vn: number | null;
+  case2vo: number | null;
+  case2vp: number | null;
+  case2vq: number | null;
+  case2vr: number | null;
+  case2vs: number | null;
+  case2vt: number | null;
+  case2vu: number | null;
+  /** Hors catégorie : option pour l'imposition au barème (case à cocher, en pied de cadre). */
+  case2op: boolean;
+}

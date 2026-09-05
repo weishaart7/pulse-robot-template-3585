@@ -1176,6 +1176,11 @@ export type Database = {
       }
       gains_actionnariat_salarie: {
         Row: {
+          case_0xx: number | null
+          case_1ay: number | null
+          case_1by: number | null
+          case_1mp: number | null
+          case_1mq: number | null
           case_1nx: number | null
           case_1ny: number | null
           case_1ox: number | null
@@ -1200,6 +1205,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          case_0xx?: number | null
+          case_1ay?: number | null
+          case_1by?: number | null
+          case_1mp?: number | null
+          case_1mq?: number | null
           case_1nx?: number | null
           case_1ny?: number | null
           case_1ox?: number | null
@@ -1224,6 +1234,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          case_0xx?: number | null
+          case_1ay?: number | null
+          case_1by?: number | null
+          case_1mp?: number | null
+          case_1mq?: number | null
           case_1nx?: number | null
           case_1ny?: number | null
           case_1ox?: number | null
@@ -2461,6 +2476,165 @@ export type Database = {
         }
         Relationships: []
       }
+      revenus_capitaux_mobiliers: {
+        Row: {
+          case_2aa: number | null
+          case_2ab: number | null
+          case_2al: number | null
+          case_2am: number | null
+          case_2an: number | null
+          case_2aq: number | null
+          case_2ar: number | null
+          case_2bh: number | null
+          case_2ca: number | null
+          case_2cg: number | null
+          case_2ch: number | null
+          case_2ck: number | null
+          case_2dc: number | null
+          case_2df: number | null
+          case_2dg: number | null
+          case_2dh: number | null
+          case_2di: number | null
+          case_2ee: number | null
+          case_2fu: number | null
+          case_2go: number | null
+          case_2op: boolean | null
+          case_2tq: number | null
+          case_2tr: number | null
+          case_2ts: number | null
+          case_2tt: number | null
+          case_2tu: number | null
+          case_2tv: number | null
+          case_2tw: number | null
+          case_2tx: number | null
+          case_2ty: number | null
+          case_2tz: number | null
+          case_2uu: number | null
+          case_2vm: number | null
+          case_2vn: number | null
+          case_2vo: number | null
+          case_2vp: number | null
+          case_2vq: number | null
+          case_2vr: number | null
+          case_2vs: number | null
+          case_2vt: number | null
+          case_2vu: number | null
+          case_2vv: number | null
+          case_2ww: number | null
+          case_2xx: number | null
+          case_2yy: number | null
+          case_2zz: number | null
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          case_2aa?: number | null
+          case_2ab?: number | null
+          case_2al?: number | null
+          case_2am?: number | null
+          case_2an?: number | null
+          case_2aq?: number | null
+          case_2ar?: number | null
+          case_2bh?: number | null
+          case_2ca?: number | null
+          case_2cg?: number | null
+          case_2ch?: number | null
+          case_2ck?: number | null
+          case_2dc?: number | null
+          case_2df?: number | null
+          case_2dg?: number | null
+          case_2dh?: number | null
+          case_2di?: number | null
+          case_2ee?: number | null
+          case_2fu?: number | null
+          case_2go?: number | null
+          case_2op?: boolean | null
+          case_2tq?: number | null
+          case_2tr?: number | null
+          case_2ts?: number | null
+          case_2tt?: number | null
+          case_2tu?: number | null
+          case_2tv?: number | null
+          case_2tw?: number | null
+          case_2tx?: number | null
+          case_2ty?: number | null
+          case_2tz?: number | null
+          case_2uu?: number | null
+          case_2vm?: number | null
+          case_2vn?: number | null
+          case_2vo?: number | null
+          case_2vp?: number | null
+          case_2vq?: number | null
+          case_2vr?: number | null
+          case_2vs?: number | null
+          case_2vt?: number | null
+          case_2vu?: number | null
+          case_2vv?: number | null
+          case_2ww?: number | null
+          case_2xx?: number | null
+          case_2yy?: number | null
+          case_2zz?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          case_2aa?: number | null
+          case_2ab?: number | null
+          case_2al?: number | null
+          case_2am?: number | null
+          case_2an?: number | null
+          case_2aq?: number | null
+          case_2ar?: number | null
+          case_2bh?: number | null
+          case_2ca?: number | null
+          case_2cg?: number | null
+          case_2ch?: number | null
+          case_2ck?: number | null
+          case_2dc?: number | null
+          case_2df?: number | null
+          case_2dg?: number | null
+          case_2dh?: number | null
+          case_2di?: number | null
+          case_2ee?: number | null
+          case_2fu?: number | null
+          case_2go?: number | null
+          case_2op?: boolean | null
+          case_2tq?: number | null
+          case_2tr?: number | null
+          case_2ts?: number | null
+          case_2tt?: number | null
+          case_2tu?: number | null
+          case_2tv?: number | null
+          case_2tw?: number | null
+          case_2tx?: number | null
+          case_2ty?: number | null
+          case_2tz?: number | null
+          case_2uu?: number | null
+          case_2vm?: number | null
+          case_2vn?: number | null
+          case_2vo?: number | null
+          case_2vp?: number | null
+          case_2vq?: number | null
+          case_2vr?: number | null
+          case_2vs?: number | null
+          case_2vt?: number | null
+          case_2vu?: number | null
+          case_2vv?: number | null
+          case_2ww?: number | null
+          case_2xx?: number | null
+          case_2yy?: number | null
+          case_2zz?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       revenus_exoneres_taux_effectif: {
         Row: {
           case_1ac: number | null
@@ -2521,6 +2695,7 @@ export type Database = {
           case_1aj: number | null
           case_1ak: number | null
           case_1ap: number | null
+          case_1aq: number | null
           case_1av: boolean
           case_1ba: number | null
           case_1bd: number | null
@@ -2529,6 +2704,7 @@ export type Database = {
           case_1bj: number | null
           case_1bk: number | null
           case_1bp: number | null
+          case_1bq: number | null
           case_1bv: boolean
           case_1dn: number | null
           case_1dy: number | null
@@ -2563,6 +2739,7 @@ export type Database = {
           case_1aj?: number | null
           case_1ak?: number | null
           case_1ap?: number | null
+          case_1aq?: number | null
           case_1av?: boolean
           case_1ba?: number | null
           case_1bd?: number | null
@@ -2571,6 +2748,7 @@ export type Database = {
           case_1bj?: number | null
           case_1bk?: number | null
           case_1bp?: number | null
+          case_1bq?: number | null
           case_1bv?: boolean
           case_1dn?: number | null
           case_1dy?: number | null
@@ -2605,6 +2783,7 @@ export type Database = {
           case_1aj?: number | null
           case_1ak?: number | null
           case_1ap?: number | null
+          case_1aq?: number | null
           case_1av?: boolean
           case_1ba?: number | null
           case_1bd?: number | null
@@ -2613,6 +2792,7 @@ export type Database = {
           case_1bj?: number | null
           case_1bk?: number | null
           case_1bp?: number | null
+          case_1bq?: number | null
           case_1bv?: boolean
           case_1dn?: number | null
           case_1dy?: number | null

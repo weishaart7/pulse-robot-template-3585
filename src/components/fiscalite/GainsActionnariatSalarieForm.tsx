@@ -6,7 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { useGainsActionnariatSalarie } from '@/hooks/useGainsActionnariatSalarie';
 import { GainsActionnariatSalarie } from '@/services/gainsActionnariatSalarieService';
 import { GainsActionnariatSalarieInput } from '@/lib/fiscalite';
-import { AideTooltip, DeclarantsHeader, MontantLigne, SingleMontantLigne } from './DeclarationLigne';
+import { DeclarantsHeader, MontantLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
 
 const GAINS_VIDE: GainsActionnariatSalarieInput = {
   case1tp: null,
@@ -199,21 +199,5 @@ export const GainsActionnariatSalarieForm = ({ onSaved }: GainsActionnariatSalar
     </Card>
   );
 };
-
-interface SousGroupeProps {
-  titre: string;
-  aide?: string;
-  children: React.ReactNode;
-}
-
-const SousGroupe = ({ titre, aide, children }: SousGroupeProps) => (
-  <div className="space-y-2 p-2.5 rounded-md border border-border">
-    <div className="flex items-center gap-1.5">
-      <p className="text-sm font-medium">{titre}</p>
-      {aide && <AideTooltip texte={aide} />}
-    </div>
-    <div className="space-y-2">{children}</div>
-  </div>
-);
 
 export default GainsActionnariatSalarieForm;
