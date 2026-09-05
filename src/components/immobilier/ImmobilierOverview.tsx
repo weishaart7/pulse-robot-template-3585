@@ -1,10 +1,9 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, TrendingUp, TrendingDown, DollarSign, Percent } from 'lucide-react';
 import { Asset } from '@/services/assetService';
 import { assetService } from '@/services/assetService';
 import { formatCurrency } from '@/lib/patrimoine/utils';
-import { RENTAL_PROPERTY_TYPES } from '@/schemas/immobilierPropertySchema';
 
 interface ImmobilierOverviewProps {
   assets: Asset[];
@@ -56,14 +55,6 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
   });
   const [loading, setLoading] = useState(true);
 
-  const locativeAssetIds = useMemo(() => {
-    return new Set(
-      assets
-        .filter(a => RENTAL_PROPERTY_TYPES.includes(a.nature || ''))
-        .map(a => a.id)
-    );
-  }, [assets]);
-
   useEffect(() => {
     const calculateMetrics = async () => {
       if (assets.length === 0) {
@@ -103,17 +94,15 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
             + (asset.travaux_construction || 0)
             + (asset.meubles || 0);
 
-          const isLocative = locativeAssetIds.has(asset.id);
-
-          // Revenus
+          // Revenus — tous les biens transférés, pas seulement les biens locatifs : un bien
+          // (résidence secondaire, terrain...) peut avoir des revenus/charges sans être de
+          // nature locative (cf. RENTAL_PROPERTY_TYPES), notamment via le formulaire générique
+          // d'actif (AssetForm.tsx, onglet "Charges") qui n'est pas restreint par nature.
           const revenus = await assetService.getAssetRevenus(asset.id);
           for (const revenu of revenus) {
             const montant = revenu.montant || 0;
             totalLoyerAnnuel += montant * annualFactor(revenu.periodicite, 1);
-
-            if (isLocative) {
-              totalRevenusMensuels += montant / (monthlyDivisor(revenu.periodicite, 12) as number);
-            }
+            totalRevenusMensuels += montant / (monthlyDivisor(revenu.periodicite, 12) as number);
           }
 
           // Charges
@@ -122,10 +111,8 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
             const montant = charge.montant || 0;
             totalChargesAnnuelles += montant * annualFactor(charge.periodicite, 0);
 
-            if (isLocative) {
-              const divisor = monthlyDivisor(charge.periodicite, null);
-              totalChargesMensuelles += divisor ? montant / divisor : 0;
-            }
+            const divisor = monthlyDivisor(charge.periodicite, null);
+            totalChargesMensuelles += divisor ? montant / divisor : 0;
           }
         }
 
@@ -162,7 +149,7 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
     };
 
     calculateMetrics();
-  }, [assets, locativeAssetIds]);
+  }, [assets]);
 
   const formatPercent = (value: number) => `${value.toFixed(2)}%`;
 
