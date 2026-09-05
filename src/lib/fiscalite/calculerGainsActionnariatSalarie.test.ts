@@ -14,6 +14,7 @@ function makeInput(overrides: Partial<GainsActionnariatSalarieInput> = {}): Gain
     case3vd: null, case3vi: null, case3vf: null,
     case3vj: null, case3vk: null,
     case3vn: null,
+    case0xx: null,
     ...overrides,
   };
 }
@@ -78,10 +79,25 @@ describe('calculerGainsActionnariatSalarie — cases exclues du calcul', () => {
     expect(result.totalNetImposable).toBe(0);
   });
 
+  it('ignore 0XX (système du quotient) dans le net imposable au barème', () => {
+    const result = calculerGainsActionnariatSalarie(makeInput({ case0xx: 40000 }));
+    expect(result.totalNetImposable).toBe(0);
+  });
+
+  it('expose 0XX comme revenuExceptionnelQuotient', () => {
+    const result = calculerGainsActionnariatSalarie(makeInput({ case0xx: 40000 }));
+    expect(result.revenuExceptionnelQuotient).toBe(40000);
+  });
+
+  it('revenuExceptionnelQuotient nul par défaut', () => {
+    expect(calculerGainsActionnariatSalarie(makeInput()).revenuExceptionnelQuotient).toBe(0);
+  });
+
   it('expose la liste des cases exclues', () => {
     const result = calculerGainsActionnariatSalarie(makeInput());
     expect(result.casesExclues).toContain('case1ny');
     expect(result.casesExclues).toContain('case3vn');
+    expect(result.casesExclues).toContain('case0xx');
     expect(result.casesExclues).not.toContain('case1tz');
     expect(result.casesExclues).not.toContain('case1nx');
     expect(result.casesExclues).not.toContain('case3vd');

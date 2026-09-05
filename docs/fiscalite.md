@@ -98,7 +98,7 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 | Traitements et salaires (section 2042) | [RevenusSalairesForm.tsx](src/components/fiscalite/RevenusSalairesForm.tsx) | 19 paires de champs déclarant 1/déclarant 2 (cadre 1 de la 2042, hors colonnes C/D et gains d'actionnariat), code officiel + libellé français côte à côte |
 | Salaires & pensions exonérés — taux effectif (section 2042) | [RevenusExoneresTauxEffectifForm.tsx](src/components/fiscalite/RevenusExoneresTauxEffectifForm.tsx) | 5 lignes (`1AC`/`1BC`, `1GE`/`1HE` case à cocher, `1AE`/`1BE`, `1AH`/`1BH`, `RSE`/`RSF` texte libre), encart CERFA distinct (2042-C pages 99/116) — alimente désormais le taux effectif dans le tableau de bord IR (Vision générale) |
 | Pensions, retraites et rentes (section 2042) | [PensionsRetraitesRentesForm.tsx](src/components/fiscalite/PensionsRetraitesRentesForm.tsx) | 7 lignes déclarant 1/déclarant 2 (`1AS`, `1AT`, `1AI`, `1AZ`, `1AO`, `1AL`, `1AM`) + rentes viagères à titre onéreux ventilées par tranche d'âge, pas déclarant (`1AW`/`1BW`/`1CW`/`1DW` rentes perçues, `1AR`/`1BR`/`1CR`/`1DR` non-résidents), vrai cadre 1 « Pensions, retraites, rentes » du CERFA (2042-K pages 115-119), hors colonnes C/D — capture brute, sans moteur de calcul |
-| Gains d'actionnariat salarié (section 2042) | [GainsActionnariatSalarieForm.tsx](src/components/fiscalite/GainsActionnariatSalarieForm.tsx) | 15 lignes du CERFA (stock-options, actions gratuites, carried-interest, BSPCE, management packages, options pré-28.9.2012), regroupées par sous-bloc visuel ; champs à case unique sans colonne déclarant 2 pour `1TZ`/`1UZ`/`1WZ`/`1VZ` et `3VD`/`3VI`/`3VF`/`3VN`, conformément au CERFA |
+| Gains d'actionnariat salarié (section 2042) | [GainsActionnariatSalarieForm.tsx](src/components/fiscalite/GainsActionnariatSalarieForm.tsx) | 16 lignes du CERFA (stock-options, actions gratuites, carried-interest, BSPCE, management packages, options pré-28.9.2012, système du quotient), regroupées par sous-bloc visuel ; champs à case unique sans colonne déclarant 2 pour `1TZ`/`1UZ`/`1WZ`/`1VZ`, `3VD`/`3VI`/`3VF`/`3VN` et `0XX`, conformément au CERFA |
 | Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Donut `SectorsDonut` (même composant que la répartition Patrimoine) montrant la vraie composition du revenu imposable (salaires/gains d'actionnariat/pensions, légende colorée) — PS et IFI affichés « non calculé » |
 | Taux marginal | [TaxRateCard.tsx](src/pages/fiscalite/components/TaxRateCard.tsx) | Barème IR réel, tranche active (TMI), quotient familial, marge avant tranche suivante, impôt net |
 | Simulateur IFI | [IFIInterface.tsx](src/pages/fiscalite/components/IFIInterface.tsx) → 5 sous-écrans `ifi/*.tsx` | Wizard de déclaration IFI : hypothèses, biens/passifs, barème, montant dû |
@@ -280,6 +280,31 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   quels à `totalNetImposable` dans `calculerGainsActionnariatSalarie.ts`, même famille que `1TT`/`1UT`.
   Vérifié en base et à l'écran : +10 000 € sur `1AY` augmente l'IR de +3 000 € (TMI 30 % du foyer de
   test), +1 234 € sur `1AQ` laisse l'IR inchangé (case bien exclue).
+- **Système du quotient pour revenus exceptionnels (case `0XX`, art. 163-0 A CGI) — coefficient fixe 4,
+  revenus différés à coefficient variable hors périmètre.** Recherche BOFiP (BOI-IR-LIQ-20-30-20) et
+  notice DGFiP avant codage : un revenu exceptionnel (par nature non susceptible d'être perçu
+  annuellement, dépasse la moyenne des 3 années précédentes, sauf exceptions type indemnités de
+  licenciement) ouvre droit à un coefficient fixe de 4 ; un revenu différé (perçu une année mais se
+  rapportant à des années antérieures, indépendant de la volonté du contribuable) a un coefficient
+  variable (nombre d'années + 1) — **sans case CERFA dédiée pour ce nombre**, donc non modélisable sans
+  deviner une règle : périmètre v1 limité aux revenus exceptionnels. Case `0XX` (montant unique, pas de
+  colonne déclarant 2, conforme au CERFA) ajoutée à `gains_actionnariat_salarie` (même encart CERFA que
+  ce formulaire) — **exclue** de `totalNetImposable`/`impotForfaitaire` (`CASES_GAINS_ACTIONNARIAT_EXCLUES_DU_CALCUL`),
+  transmise telle quelle à `calculerImpot.ts` via le nouveau champ `revenuExceptionnelQuotient` de
+  `GainsActionnariatSalarieResult`. Calcul (formule BOFiP) : `calculerImpotApresQuotientFamilial` (barème +
+  quotient familial + plafonnement, factorisée depuis le code existant) est appelée une fois sur le
+  revenu ordinaire (`ID1`), une fois sur le revenu ordinaire + `0XX / 4` (`ID2`) ; supplément
+  = `(ID2 - ID1) × 4` ; impôt brut = `ID1 + supplément`. La décote (art. 197 I 4° CGI, dont le texte
+  vise explicitement la « cotisation résultant du barème, y compris [...] revenus soumis à un système de
+  quotient ») s'applique donc après, sur ce total — comportement inchangé (`revenuExceptionnelQuotient`
+  optionnel, 0 par défaut) pour tous les appels existants. Le montant est traité comme un revenu français
+  à part entière pour la proratisation du taux effectif (`revenuMondialFictif`/TMI incluent `0XX` en
+  valeur pleine, pas divisée par 4) — combinaison système du quotient × taux effectif non vérifiée contre
+  un exemple BOFiP chiffré (cas rare), à surveiller si les deux mécanismes coexistent en pratique (voir
+  §3). Vérifié à la main (exemple chiffré dans `calculerImpot.test.ts`, célibataire 1 part, 70 000 €
+  ordinaire + 200 000 € de 0XX : impôt brut attendu 89 690,11 €, contre 98 023,84 € sans quotient) puis en
+  base et à l'écran sur le compte réel (40 000 € sur `0XX` → +12 000 € d'IR, cohérent avec le TMI 30 % du
+  foyer de test : 40 000/4 × 30 % × 4).
 - **Bug corrigé — `lieuResidence` était saisi, persisté et affiché sans jamais influencer le calcul
   d'IR.** Trouvé par un audit champ par champ des 4 types de cases (`FoyerFiscalInput`,
   `RevenusSalairesInput`, `GainsActionnariatSalarieInput`, `RevenusExoneresTauxEffectifInput`) contre
@@ -386,7 +411,7 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   (`1AA`, `1AV`).
 - **`gains_actionnariat_salarie` (Phase 2.3) — table dédiée, distincte de `revenus_salaires` par
   choix délibéré.** Même pattern que les autres tables du module (`user_id → auth.users(id) ON
-  DELETE CASCADE`, `UNIQUE(user_id)`, RLS 4 policies). 22 colonnes `NUMERIC` couvrant 15 lignes du
+  DELETE CASCADE`, `UNIQUE(user_id)`, RLS 4 policies). 23 colonnes `NUMERIC` couvrant 16 lignes du
   CERFA, mélangeant volontairement deux cadres du formulaire 2042-C : le cadre 1 « Salaires, gains
   d'actionnariat salarié » (`1TP`/`1UP`, `1TT`/`1UT`, `1TZ`, `1UZ`, `1WZ`, `1VZ`, `1NX`/`1OX`,
   `1NY`/`1OY`, `1AY`/`1BY`, `1MP`/`1MQ`) et le cadre 3 « Plus-values et gains divers » pour les options attribuées avant le
@@ -605,6 +630,16 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
+- **Système du quotient (`0XX`, art. 163-0 A CGI) : seuls les revenus exceptionnels (coefficient fixe 4)
+  sont couverts, pas les revenus différés (coefficient variable = nombre d'années + 1).** La 2042/2042-C
+  n'a aucune case pour saisir ce nombre d'années — l'ajouter nécessiterait un champ hors CERFA, écarté
+  pour ne pas deviner une règle métier sans validation. Un utilisateur déclarant un revenu différé
+  (rappel de salaire, arriéré de loyer sur plusieurs années) dans `0XX` sera donc calculé avec le
+  coefficient 4 au lieu du coefficient réel — écart d'autant plus important que le nombre d'années réel
+  s'éloigne de 3. **Combinaison système du quotient × méthode du taux effectif non vérifiée contre un
+  exemple BOFiP chiffré** (cas rare, les deux mécanismes coexistant simultanément) : le montant `0XX` est
+  traité comme un revenu français à part entière pour la proratisation, choix cohérent mais non
+  confirmé par une source officielle chiffrée — voir `calculerImpot.ts`.
 - **`calculerRevenuSalaires.ts` exclut volontairement 1AF/1BF et 1GB/1HB du revenu net imposable**
   ([calculerRevenuSalaires.ts](src/lib/fiscalite/calculerRevenuSalaires.ts)) : 1AF/1BF (salaires de
   source étrangère avec crédit d'impôt égal à l'impôt français) nécessitent la méthode du taux
@@ -722,11 +757,14 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   pour préjudice moral, salariés impatriés, sommes exonérées du CET), persistance Supabase
   (`revenus_salaires`, une ligne par utilisateur), codes de case vérifiés contre la brochure
   officielle DGFiP — capture brute, sans moteur de calcul ; **gains d'actionnariat salarié (Phase
-  2.3)** : saisie des 15 lignes couvrant stock-options, actions gratuites, carried-interest, BSPCE et
-  management packages (cadre 1 de la 2042-C) ainsi que les options attribuées avant le 28.9.2012 (cadre
+  2.3)** : saisie des 16 lignes couvrant stock-options, actions gratuites, carried-interest, BSPCE,
+  management packages et le système du quotient (`0XX`) (cadre 1 de la 2042-C) ainsi que les options
+  attribuées avant le 28.9.2012 (cadre
   3, incluses sur demande
   explicite malgré le changement de cadre), persistance Supabase (`gains_actionnariat_salarie`, table
-  dédiée), codes vérifiés visuellement sur le CERFA — capture brute, sans moteur de calcul ; **salaires
+  dédiée), codes vérifiés visuellement sur le CERFA — capture brute pour les gains eux-mêmes,
+  **désormais calculée pour le système du quotient** (`0XX`, coefficient fixe 4, `calculerImpot.ts`,
+  voir §2) ; **salaires
   et pensions exonérés retenus pour le calcul du taux effectif** : saisie des 5 lignes de l'encart
   CERFA dédié (2042-C, pages 99/116), persistance Supabase (`revenus_exoneres_taux_effectif`, table
   dédiée), codes vérifiés visuellement. **Méthode du taux effectif implémentée** dans `calculerImpot.ts`
@@ -756,6 +794,9 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   la feuille de route : un futur cadre 2042 hors « Salaires » (revenus fonciers, capitaux mobiliers,
   plus-values, etc.), ou les cases 1AF/1BF/1GB/1HB/1AL/1AR (point ci-dessous).
 - **Différé, déductible du code** :
+  - **Système du quotient — revenus différés à coefficient variable** : seuls les revenus exceptionnels
+    (coefficient fixe 4) sont couverts par `0XX`/`calculerImpot.ts` ; les revenus différés (coefficient =
+    nombre d'années + 1) restent hors périmètre, faute de case CERFA pour saisir ce nombre — voir §2/§3.
   - **1AF/1BF (salaires de source étrangère, crédit d'impôt égal à l'impôt français), 1GB/1HB
     (gérants et associés art. 62 CGI), 1AL/1BL et 1AR/1BR/1CR/1DR (pensions/rentes étrangères, même
     mécanisme de crédit d'impôt que 1AF) exclus des moteurs de calcul** — le crédit d'impôt égal à

@@ -11,6 +11,7 @@ export const CASES_GAINS_ACTIONNARIAT_EXCLUES_DU_CALCUL = [
   'case1uz', 'case1wz', 'case1vz', // montants d'abattement déjà déduits de 1TZ (métadonnées, pas un revenu)
   'case1ny', 'case1oy', // contribution salariale de 30 % sur le carried-interest : pas de l'IR
   'case3vn', // contribution salariale de 10 % sur options/AGA : pas de l'IR
+  'case0xx', // système du quotient (art. 163-0 A CGI) : traité séparément par calculerImpot.ts, pas additionné à totalNetImposable
 ] as const;
 
 /** Taux forfaitaires (art. 150-0 A II 8° et gains pré-28.9.2012). */
@@ -30,6 +31,13 @@ export interface GainsActionnariatSalarieResult {
    * la réduction outre-mer ni à la décote, propres au barème progressif).
    */
   impotForfaitaire: number;
+  /**
+   * Revenus exceptionnels ou différés à imposer selon le système du quotient
+   * (0XX, art. 163-0 A CGI) : montant brut transmis tel quel à calculerImpot.ts,
+   * qui applique lui-même la formule du quotient (coefficient fixe 4, voir
+   * calculerImpot.ts) — n'entre ni dans totalNetImposable ni dans impotForfaitaire.
+   */
+  revenuExceptionnelQuotient: number;
   casesExclues: readonly string[];
 }
 
@@ -79,6 +87,7 @@ export function calculerGainsActionnariatSalarie(
   return {
     totalNetImposable,
     impotForfaitaire,
+    revenuExceptionnelQuotient: Math.max(0, input.case0xx ?? 0),
     casesExclues: CASES_GAINS_ACTIONNARIAT_EXCLUES_DU_CALCUL,
   };
 }

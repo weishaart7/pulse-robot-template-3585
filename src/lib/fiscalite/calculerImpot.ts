@@ -13,6 +13,14 @@ export const BAREME_2026 = [
   { seuil: Infinity, taux: 0.45 },
 ] as const;
 
+/**
+ * Système du quotient pour revenus exceptionnels (art. 163-0 A CGI) :
+ * coefficient fixe 4. Les revenus différés (coefficient = nombre d'années +1,
+ * variable, sans case CERFA dédiée pour le nombre d'années) restent hors
+ * périmètre — voir docs/fiscalite.md.
+ */
+const COEFFICIENT_QUOTIENT_EXCEPTIONNEL = 4;
+
 const DECOTE_TAUX = 0.4525;
 const DECOTE_SEUIL_CELIBATAIRE = 1982;
 const DECOTE_MONTANT_CELIBATAIRE = 897;
@@ -52,6 +60,8 @@ export interface ImpotResult {
   impotForfaitaire: number;
   impotNet: number;
   tmi: number;
+  revenuExceptionnelQuotient: number;
+  impotSupplementaireQuotientExceptionnel: number;
 }
 
 /** Impôt dû sur un quotient (revenu par part), tranche par tranche. */
@@ -78,6 +88,49 @@ function tmiPourQuotient(quotient: number): number {
 function impotBrut(revenuImposable: number, nombreParts: number): number {
   if (nombreParts <= 0) return 0;
   return impotPourQuotient(revenuImposable / nombreParts) * nombreParts;
+}
+
+interface QuotientFamilialResult {
+  impotSansMajorations: number;
+  impotAvecMajorations: number;
+  avantageQuotientFamilial: number;
+  plafondQuotientFamilial: number;
+  plafonnementApplique: boolean;
+  impotApresPlafonnement: number;
+}
+
+/**
+ * Barème + quotient familial + plafonnement (art. 197 CGI), en fonction du
+ * revenu mondial fictif — factorisé pour être appelé deux fois par le système
+ * du quotient (revenus exceptionnels, voir calculerImpot ci-dessous) : une
+ * fois sur le revenu ordinaire, une fois sur le revenu ordinaire augmenté du
+ * quotient (0XX / 4).
+ */
+function calculerImpotApresQuotientFamilial(
+  revenuMondial: number,
+  parts: PartsFiscalesResult,
+): QuotientFamilialResult {
+  const impotAvecMajorations = impotBrut(revenuMondial, parts.nombreParts);
+  const impotSansMajorations = impotBrut(revenuMondial, parts.partsBase);
+  const avantageQuotientFamilial = Math.max(0, impotSansMajorations - impotAvecMajorations);
+
+  const majorationSansPlafond = parts.majorations.some(m => m.plafondUnitaire === undefined);
+  const plafondQuotientFamilial = majorationSansPlafond
+    ? Infinity
+    : parts.majorations.reduce((total, m) => total + (m.plafondUnitaire ?? 0), 0);
+
+  const plafonnementApplique = avantageQuotientFamilial > plafondQuotientFamilial;
+  const avantageRetenu = Math.min(avantageQuotientFamilial, plafondQuotientFamilial);
+  const impotApresPlafonnement = impotSansMajorations - avantageRetenu;
+
+  return {
+    impotSansMajorations,
+    impotAvecMajorations,
+    avantageQuotientFamilial,
+    plafondQuotientFamilial,
+    plafonnementApplique,
+    impotApresPlafonnement,
+  };
 }
 
 /**
@@ -118,6 +171,18 @@ function impotBrut(revenuImposable: number, nombreParts: number): number {
  * barème progressif : ni le quotient familial, ni son plafonnement, ni la
  * réduction outre-mer, ni la décote (art. 197 I 4° CGI, limitée à la
  * « cotisation résultant du barème ») ne s'y appliquent.
+ * `revenuExceptionnelQuotient` (optionnel, 0 par défaut) : revenus
+ * exceptionnels soumis au système du quotient (case 0XX, art. 163-0 A CGI,
+ * coefficient fixe 4 — voir calculerGainsActionnariatSalarie.ts). Formule
+ * BOFiP BOI-IR-LIQ-20-30-20 : ID1 = barème+quotient familial+plafonnement sur
+ * le revenu ordinaire seul ; ID2 = même calcul sur revenu ordinaire + 0XX/4 ;
+ * supplément = (ID2 - ID1) × 4 ; impôt brut = ID1 + supplément. La décote
+ * porte sur ce total (art. 197 I 4° CGI : « cotisation résultant du barème, y
+ * compris [...] revenus soumis à un système de quotient »). Traité comme un
+ * revenu français à part entière pour la proratisation du taux effectif.
+ * Périmètre limité aux revenus exceptionnels (coefficient fixe) : les revenus
+ * différés à coefficient variable (nombre d'années + 1, sans case CERFA dédiée
+ * pour ce nombre) ne sont pas couverts.
  */
 export function calculerImpot(
   revenuImposable: number,
@@ -126,26 +191,35 @@ export function calculerImpot(
   revenuExonereTauxEffectif = 0,
   lieuResidence: FoyerFiscalInput['lieuResidence'] = 'metropole',
   impotForfaitaire = 0,
+  revenuExceptionnelQuotient = 0,
 ): ImpotResult {
   const revenu = Math.max(0, revenuImposable);
   const revenuExonere = Math.max(0, revenuExonereTauxEffectif);
-  const revenuMondialFictif = revenu + revenuExonere;
+  const revenuExceptionnel = Math.max(0, revenuExceptionnelQuotient);
+  const revenuMondialFictifOrdinaire = revenu + revenuExonere;
 
-  const impotAvecMajorations = impotBrut(revenuMondialFictif, parts.nombreParts);
-  const impotSansMajorations = impotBrut(revenuMondialFictif, parts.partsBase);
-  const avantageQuotientFamilial = Math.max(0, impotSansMajorations - impotAvecMajorations);
+  const qfOrdinaire = calculerImpotApresQuotientFamilial(revenuMondialFictifOrdinaire, parts);
 
-  const majorationSansPlafond = parts.majorations.some(m => m.plafondUnitaire === undefined);
-  const plafondQuotientFamilial = majorationSansPlafond
-    ? Infinity
-    : parts.majorations.reduce((total, m) => total + (m.plafondUnitaire ?? 0), 0);
+  let impotApresPlafonnement = qfOrdinaire.impotApresPlafonnement;
+  let impotSupplementaireQuotientExceptionnel = 0;
+  let revenuMondialFictif = revenuMondialFictifOrdinaire;
 
-  const plafonnementApplique = avantageQuotientFamilial > plafondQuotientFamilial;
-  const avantageRetenu = Math.min(avantageQuotientFamilial, plafondQuotientFamilial);
-  const impotApresPlafonnement = impotSansMajorations - avantageRetenu;
+  if (revenuExceptionnel > 0) {
+    const qfAvecQuotient = calculerImpotApresQuotientFamilial(
+      revenuMondialFictifOrdinaire + revenuExceptionnel / COEFFICIENT_QUOTIENT_EXCEPTIONNEL,
+      parts,
+    );
+    impotSupplementaireQuotientExceptionnel =
+      (qfAvecQuotient.impotApresPlafonnement - qfOrdinaire.impotApresPlafonnement) * COEFFICIENT_QUOTIENT_EXCEPTIONNEL;
+    impotApresPlafonnement = qfOrdinaire.impotApresPlafonnement + impotSupplementaireQuotientExceptionnel;
+    revenuMondialFictif = revenuMondialFictifOrdinaire + revenuExceptionnel;
+  }
 
+  const { impotSansMajorations, impotAvecMajorations, avantageQuotientFamilial, plafondQuotientFamilial, plafonnementApplique } = qfOrdinaire;
+
+  const baseFrance = revenu + revenuExceptionnel;
   const tauxEffectif = revenuMondialFictif > 0 ? impotApresPlafonnement / revenuMondialFictif : 0;
-  const impotProportionnel = revenuExonere > 0 ? tauxEffectif * revenu : impotApresPlafonnement;
+  const impotProportionnel = revenuExonere > 0 ? tauxEffectif * baseFrance : impotApresPlafonnement;
 
   const { taux: tauxReductionOutreMer, plafond: plafondReductionOutreMer } = REDUCTION_OUTRE_MER[lieuResidence];
   const reductionOutreMer = Math.min(plafondReductionOutreMer, impotProportionnel * tauxReductionOutreMer);
@@ -182,5 +256,7 @@ export function calculerImpot(
     impotForfaitaire: Math.max(0, impotForfaitaire),
     impotNet,
     tmi: tmiPourQuotient(parts.nombreParts > 0 ? revenuMondialFictif / parts.nombreParts : 0),
+    revenuExceptionnelQuotient: revenuExceptionnel,
+    impotSupplementaireQuotientExceptionnel,
   };
 }
