@@ -113,12 +113,46 @@ describe('calculerRevenuSalaires — abattement spécifique 1GA/1HA', () => {
 describe('calculerRevenuSalaires — cases exclues du calcul', () => {
   it('les cases exonérées ou hors périmètre n\'entrent pas dans le revenu imposable', () => {
     const result = calculerRevenuSalaires(makeInput({
-      case1gh: 5000, case1pb: 500, case1ad: 3000, case1dy: 20000, case1sm: 1000, case1gb: 10000, case1aq: 8000,
+      case1pb: 500, case1ad: 3000, case1dy: 20000, case1sm: 1000, case1gb: 10000, case1aq: 8000,
     }));
     expect(result.totalNetImposable).toBe(0);
     expect(result.casesExclues).toContain('case1gb');
     expect(result.casesExclues).toContain('case1aq');
     expect(result.casesExclues).not.toContain('case1af');
+    expect(result.casesExclues).not.toContain('case1gh');
+    expect(result.casesExclues).not.toContain('case1hh');
+  });
+});
+
+describe('calculerRevenuSalaires — plafond d\'exonération 1GH/1HH (heures supplémentaires/RTT)', () => {
+  it('sous le plafond de 7 500 € : aucun effet sur le revenu imposable', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1gh: 5000 }));
+    expect(result.totalNetImposable).toBe(0);
+  });
+
+  it('au plafond exact de 7 500 € : aucun effet sur le revenu imposable', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1gh: 7500 }));
+    expect(result.totalNetImposable).toBe(0);
+  });
+
+  it('au-dessus du plafond : le surplus rejoint l\'assiette imposable et subit l\'abattement de 10 %', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1gh: 10000 }));
+    expect(result.declarant1.remunerationsBrutes).toBe(2500);
+    expect(result.declarant1.netImposable).toBe(2500 - 509);
+    expect(result.totalNetImposable).toBe(2500 - 509);
+  });
+
+  it('le plafond est indépendant entre déclarant 1 et déclarant 2', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1gh: 10000, case1hh: 8000 }));
+    expect(result.declarant1.remunerationsBrutes).toBe(2500);
+    expect(result.declarant2.remunerationsBrutes).toBe(500);
+  });
+
+  it('se cumule avec les autres cases du même pool avant abattement', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1aj: 30000, case1gh: 10000 }));
+    expect(result.declarant1.remunerationsBrutes).toBe(32500);
+    expect(result.declarant1.abattementForfaitaire).toBe(3250);
+    expect(result.declarant1.netImposable).toBe(32500 - 3250);
   });
 });
 

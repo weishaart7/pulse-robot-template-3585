@@ -5,16 +5,29 @@ const ABATTEMENT_PLANCHER = 509;
 const ABATTEMENT_PLAFOND = 14555;
 
 /**
+ * Plafond annuel d'exonération des heures supplémentaires/complémentaires et
+ * de la monétisation des jours de repos/RTT (1GH/1HH, art. 81 quater CGI et
+ * art. 5 LFR 2022), par personne (déclarant), tous employeurs confondus.
+ * Vérifié visuellement sur la brochure DGFiP (IR 2026, revenus 2025, p.106) :
+ * la fraction qui excède ce plafond est automatiquement réintégrée au salaire
+ * imposable.
+ */
+const PLAFOND_EXONERATION_1GH = 7500;
+
+/**
  * Cases du cadre 1 "Traitements et salaires" volontairement exclues du calcul
  * v1 : montants exonérés d'IR (n'entrent jamais dans le revenu imposable),
  * régime dont l'articulation est trop complexe pour être fiabilisée sans
  * validation métier dédiée (1GB/1HB), ou cases à cocher purement informatives
  * sans montant propre (1AV/1BV, 1GK/1GL). 1AF/1BF (source étrangère, crédit
  * d'impôt égal à l'impôt français) ne sont PAS exclues : traitées séparément,
- * voir `revenuCreditImpotEgalImpotFrancais` ci-dessous.
+ * voir `revenuCreditImpotEgalImpotFrancais` ci-dessous. 1GH/1HH (heures
+ * supplémentaires/RTT exonérées) ne sont PAS exclues non plus : seule la
+ * fraction sous le plafond de 7 500 €/personne est exonérée, le surplus
+ * rejoint l'assiette imposable — voir son traitement dans
+ * `calculerRevenuSalaires` ci-dessous.
  */
 export const CASES_SALAIRES_EXCLUES_DU_CALCUL = [
-  'case1gh', 'case1hh', // heures supplémentaires et jours RTT exonérés
   'case1pb', 'case1pc', // pourboires exonérés
   'case1ad', 'case1bd', // primes de partage de la valeur exonérées
   'case1av', 'case1bv', // majoration du seuil d'exonération de 1AD/1BD (sans effet ici : 1AD/1BD déjà traité comme intégralement exonéré)
@@ -98,10 +111,14 @@ export function calculerDeclarant(
  * revenus 2025 / impôt 2026), limité aux cases actuellement saisissables.
  *
  * Pour chaque déclarant : rémunérations imposables soumises à abattement
- * (1AJ/1AA/1GF/1GG/1AP/1AG, et symétriques déclarant 2) moins l'abattement
- * spécifique 1GA/1HA (journalistes, assistants maternels...), puis déduction
- * du plus favorable entre l'abattement forfaitaire de 10 % (plancher 509 €,
- * plafond 14 555 €, jamais supérieur à la base) et les frais réels (1AK/1BK).
+ * (1AJ/1AA/1GF/1GG/1AP/1AG, et symétriques déclarant 2), auxquelles s'ajoute
+ * la fraction de 1GH/1HH qui excède le plafond d'exonération de 7 500 €/
+ * personne (heures supplémentaires/complémentaires et RTT monétisés,
+ * art. 81 quater CGI — vérifié brochure DGFiP, voir PLAFOND_EXONERATION_1GH),
+ * moins l'abattement spécifique 1GA/1HA (journalistes, assistants
+ * maternels...), puis déduction du plus favorable entre l'abattement
+ * forfaitaire de 10 % (plancher 509 €, plafond 14 555 €, jamais supérieur à
+ * la base) et les frais réels (1AK/1BK).
  *
  * 1PM/1QM (indemnités pour préjudice moral) sont ajoutées telles quelles : le
  * champ ne capture déjà que la fraction taxable au-delà d'1 M€, non soumise à
@@ -115,10 +132,15 @@ export function calculerDeclarant(
  * Cases hors calcul : voir CASES_SALAIRES_EXCLUES_DU_CALCUL.
  */
 export function calculerRevenuSalaires(input: RevenusSalairesInput): RevenuSalairesResult {
+  const surplus1gh = Math.max(0, (input.case1gh ?? 0) - PLAFOND_EXONERATION_1GH);
+  const surplus1hh = Math.max(0, (input.case1hh ?? 0) - PLAFOND_EXONERATION_1GH);
+
   const remunerations1 = (input.case1aj ?? 0) + (input.case1aa ?? 0)
-    + (input.case1gf ?? 0) + (input.case1gg ?? 0) + (input.case1ap ?? 0) + (input.case1ag ?? 0);
+    + (input.case1gf ?? 0) + (input.case1gg ?? 0) + (input.case1ap ?? 0) + (input.case1ag ?? 0)
+    + surplus1gh;
   const remunerations2 = (input.case1bj ?? 0) + (input.case1ba ?? 0)
-    + (input.case1hf ?? 0) + (input.case1hg ?? 0) + (input.case1bp ?? 0) + (input.case1bg ?? 0);
+    + (input.case1hf ?? 0) + (input.case1hg ?? 0) + (input.case1bp ?? 0) + (input.case1bg ?? 0)
+    + surplus1hh;
 
   const declarant1 = calculerDeclarant(remunerations1, input.case1ga ?? 0, input.case1ak);
   const declarant2 = calculerDeclarant(remunerations2, input.case1ha ?? 0, input.case1bk);

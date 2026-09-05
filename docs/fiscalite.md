@@ -210,16 +210,28 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   assistants maternels) avant d'appliquer le plus favorable entre l'abattement forfaitaire de 10 %
   (plancher 509 €, plafond 14 555 €, jamais supérieur à la base) et les frais réels (1AK/1BK). 1PM/1QM
   (indemnités pour préjudice moral, déjà limitées par le formulaire à la fraction taxable au-delà d'1
-  M€) s'ajoutent sans abattement. **Exclues volontairement du calcul** (`CASES_SALAIRES_EXCLUES_DU_CALCUL`) :
-  1GH/1HH, 1PB/1PC, 1AD/1BD, 1DY/1EY, 1SM/1DN (exonérées d'IR par nature), 1AV/1BV (majoration du seuil
-  d'exonération de 1AD/1BD — sans effet possible ici puisque 1AD/1BD est déjà traité comme intégralement
-  exonéré, quel que soit le seuil), 1GK/1GL (case informative « ne perçoit plus de salaires… », sans
-  montant propre) et 1GB/1HB (régime de frais professionnels des gérants art. 62 CGI non arbitré) — voir
-  §3, 🟠. 1AF/1BF (crédit d'impôt égal à l'impôt français) ne sont plus exclues : voir
-  `revenuCreditImpotEgalImpotFrancais` plus bas et §2. 16 tests couvrent
-  l'abattement standard, les bornes plancher/plafond, le choix frais réels vs abattement, et les cases
-  exclues. La fonction `calculerDeclarant` (abattement 10 %/frais réels d'un déclarant) est exportée et
-  réutilisée telle quelle par `calculerRevenuExonereTauxEffectif.ts` (ci-dessous).
+  M€) s'ajoutent sans abattement. **1GH/1HH (heures supplémentaires/complémentaires et jours de repos/
+  RTT monétisés, art. 81 quater CGI) sont désormais plafonnées, plus intégralement exclues** : vérifié
+  visuellement sur la brochure officielle DGFiP (IR 2026, revenus 2025, p.105-106) — l'exonération est
+  limitée à 7 500 € nets par an **par personne** (déclarant 1 et déclarant 2 plafonnés indépendamment,
+  conforme aux colonnes distinctes 1GH/1HH/1IH/1JH du CERFA, une par personne — pas un plafond de
+  foyer), tous employeurs confondus pour une même personne. La fraction qui excède ce plafond
+  (`PLAFOND_EXONERATION_1GH`) est « automatiquement ajoutée au montant du salaire imposable » (texte de
+  la brochure) : elle rejoint le pool 1AJ/1AA/1GF/1GG/1AP/1AG du même déclarant, donc subit le même
+  abattement 10 %/frais réels — pas ajoutée après coup sans abattement. Le même plafond de 7 500 € est
+  partagé avec la monétisation des jours de repos/RTT (art. 5 LFR 2022), sans distinction possible côté
+  app puisque les deux dispositifs partagent la même case CERFA (`case1gh`/`case1hh`). **Exclues
+  volontairement du calcul** (`CASES_SALAIRES_EXCLUES_DU_CALCUL`) : 1PB/1PC, 1AD/1BD, 1DY/1EY, 1SM/1DN
+  (exonérées d'IR par nature), 1AV/1BV (majoration du seuil d'exonération de 1AD/1BD — sans effet
+  possible ici puisque 1AD/1BD est déjà traité comme intégralement exonéré, quel que soit le seuil),
+  1GK/1GL (case informative « ne perçoit plus de salaires… », sans montant propre) et 1GB/1HB (régime de
+  frais professionnels des gérants art. 62 CGI non arbitré) — voir §3, 🟠. 1AF/1BF (crédit d'impôt égal
+  à l'impôt français) ne sont plus exclues : voir `revenuCreditImpotEgalImpotFrancais` plus bas et §2.
+  21 tests couvrent l'abattement standard, les bornes plancher/plafond, le choix frais réels vs
+  abattement, le plafond de 7 500 € sur 1GH/1HH (sous le plafond, au plafond exact, au-dessus,
+  indépendance entre déclarants, cumul avec le pool avant abattement), et les cases exclues. La
+  fonction `calculerDeclarant` (abattement 10 %/frais réels d'un déclarant) est exportée et réutilisée
+  telle quelle par `calculerRevenuExonereTauxEffectif.ts` (ci-dessous).
 - **`src/lib/fiscalite/calculerRevenuExonereTauxEffectif.ts` — revenus exonérés retenus pour le calcul
   du taux effectif.** Fonction pure : 1AC/1BC (salaires de source étrangère exonérés) reçoivent le même
   abattement 10 %/frais réels (1AE/1BE) que les salaires français, via `calculerDeclarant` réutilisée de
