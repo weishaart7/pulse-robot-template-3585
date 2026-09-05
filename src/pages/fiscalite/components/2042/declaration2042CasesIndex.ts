@@ -85,6 +85,7 @@ export const DECLARATION_2042_CASES: Declaration2042Case[] = [
   { code: '3VJ', label: 'Gains imposables sur option, catégorie des salaires — Déclarant 1', sectionId: 'actionnariat', elementId: 'case-3VJ' },
   { code: '3VK', label: 'Gains imposables sur option, catégorie des salaires — Déclarant 2', sectionId: 'actionnariat', elementId: 'case-3VK' },
   { code: '3VN', label: 'Gains soumis à la contribution salariale de 10 %', sectionId: 'actionnariat', elementId: 'case-3VN' },
+  { code: '0XX', label: 'Revenus exceptionnels ou différés à imposer selon le système du quotient', sectionId: 'actionnariat', elementId: 'case-0XX' },
 
   // Salaires et pensions exonérés retenus pour le calcul du taux effectif
   { code: '1AC', label: 'Salaires exonérés (taux effectif) — Déclarant 1', sectionId: 'taux-effectif', elementId: 'case-1AC' },

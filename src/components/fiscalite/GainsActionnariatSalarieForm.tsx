@@ -31,6 +31,7 @@ const GAINS_VIDE: GainsActionnariatSalarieInput = {
   case3vj: null,
   case3vk: null,
   case3vn: null,
+  case0xx: null,
 };
 
 interface GainsActionnariatSalarieFormProps {
@@ -175,6 +176,20 @@ export const GainsActionnariatSalarieForm = ({ onSaved }: GainsActionnariatSalar
           value={gains.case3vn}
           onChange={v => update('case3vn', v)}
         />
+
+        <Separator />
+
+        <SousGroupe
+          titre="Revenus exceptionnels ou différés à imposer selon le système du quotient"
+          aide="Système du quotient (art. 163-0 A CGI) : atténue la progressivité de l'impôt sur un revenu exceptionnel ou différé. Coefficient fixe de 4 appliqué (revenus exceptionnels). Ne pas ré-additionner ce montant dans les autres cases du formulaire."
+        >
+          <SingleMontantLigne
+            label="Montant total des revenus à imposer selon le système du quotient"
+            code="0XX"
+            value={gains.case0xx}
+            onChange={v => update('case0xx', v)}
+          />
+        </SousGroupe>
 
         <Button type="button" onClick={handleSubmit} disabled={saving}>
           {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}

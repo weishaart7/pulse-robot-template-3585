@@ -51,6 +51,7 @@ const GAINS_ACTIONNARIAT_PAR_DEFAUT: GainsActionnariatSalarieInput = {
   case3vd: null, case3vi: null, case3vf: null,
   case3vj: null, case3vk: null,
   case3vn: null,
+  case0xx: null,
 };
 
 const REVENUS_EXONERES_PAR_DEFAUT: RevenusExoneresTauxEffectifInput = {

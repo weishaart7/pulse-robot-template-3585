@@ -36,6 +36,7 @@ interface GainsActionnariatSalarieRow {
   case_3vj: number | string | null;
   case_3vk: number | string | null;
   case_3vn: number | string | null;
+  case_0xx: number | string | null;
 }
 
 function toNumberOrNull(value: number | string | null): number | null {
@@ -68,6 +69,7 @@ function rowToGainsActionnariatSalarie(row: GainsActionnariatSalarieRow): GainsA
     case3vj: toNumberOrNull(row.case_3vj),
     case3vk: toNumberOrNull(row.case_3vk),
     case3vn: toNumberOrNull(row.case_3vn),
+    case0xx: toNumberOrNull(row.case_0xx),
   };
 }
 
@@ -96,6 +98,7 @@ function gainsActionnariatSalarieToRow(gains: GainsActionnariatSalarie, userId: 
     case_3vj: gains.case3vj,
     case_3vk: gains.case3vk,
     case_3vn: gains.case3vn,
+    case_0xx: gains.case0xx,
   };
 }
 

@@ -102,6 +102,8 @@ export interface GainsActionnariatSalarieInput {
   case3vj: number | null;
   case3vk: number | null;
   case3vn: number | null;
+  /** Revenus exceptionnels ou différés à imposer selon le système du quotient (art. 163-0 A CGI, montant unique, pas de colonne déclarant 2). */
+  case0xx: number | null;
 }
 
 export interface PensionsRetraitesRentesInput {
