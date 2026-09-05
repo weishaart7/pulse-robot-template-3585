@@ -95,10 +95,10 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 | Déclarations fiscales | [FiscalDeclarationsCard.tsx](src/pages/fiscalite/components/FiscalDeclarationsCard.tsx) | Liste de formulaires CERFA ; « 2042 » ouvre `Declaration2042Interface`, « 2042-IFI » ouvre `IFIInterface` — les deux seuls liens cliquables |
 | Déclaration 2042 (overlay) | [Declaration2042Interface.tsx](src/pages/fiscalite/components/Declaration2042Interface.tsx) → [Declaration2042Sidebar.tsx](src/pages/fiscalite/components/2042/Declaration2042Sidebar.tsx) | Overlay plein écran + sidebar de sections pilotée par [declaration2042Sections.ts](src/pages/fiscalite/components/2042/declaration2042Sections.ts) (config `{id, label, icon, component}` — ajouter une sous-phase future = une entrée) ; pas de bouton « Enregistrer » global, chaque section garde sa propre sauvegarde |
 | Ménage (section 2042) | [MenageSection.tsx](src/pages/fiscalite/components/2042/MenageSection.tsx) → `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx` | Situation familiale, enfants à charge (liste dynamique), personnes invalides à charge (liste dynamique), enfants majeurs rattachés, cases à cocher (parent isolé, invalidité, ancien combattant, veuve de guerre...), synthèse du nombre de parts recalculée en direct pendant la saisie (avant même l'enregistrement) |
-| Traitements et salaires (section 2042) | [RevenusSalairesForm.tsx](src/components/fiscalite/RevenusSalairesForm.tsx) | 18 paires de champs déclarant 1/déclarant 2 (cadre 1 de la 2042, hors colonnes C/D et gains d'actionnariat), code officiel + libellé français côte à côte |
+| Traitements et salaires (section 2042) | [RevenusSalairesForm.tsx](src/components/fiscalite/RevenusSalairesForm.tsx) | 19 paires de champs déclarant 1/déclarant 2 (cadre 1 de la 2042, hors colonnes C/D et gains d'actionnariat), code officiel + libellé français côte à côte |
 | Salaires & pensions exonérés — taux effectif (section 2042) | [RevenusExoneresTauxEffectifForm.tsx](src/components/fiscalite/RevenusExoneresTauxEffectifForm.tsx) | 5 lignes (`1AC`/`1BC`, `1GE`/`1HE` case à cocher, `1AE`/`1BE`, `1AH`/`1BH`, `RSE`/`RSF` texte libre), encart CERFA distinct (2042-C pages 99/116) — alimente désormais le taux effectif dans le tableau de bord IR (Vision générale) |
 | Pensions, retraites et rentes (section 2042) | [PensionsRetraitesRentesForm.tsx](src/components/fiscalite/PensionsRetraitesRentesForm.tsx) | 7 lignes déclarant 1/déclarant 2 (`1AS`, `1AT`, `1AI`, `1AZ`, `1AO`, `1AL`, `1AM`) + rentes viagères à titre onéreux ventilées par tranche d'âge, pas déclarant (`1AW`/`1BW`/`1CW`/`1DW` rentes perçues, `1AR`/`1BR`/`1CR`/`1DR` non-résidents), vrai cadre 1 « Pensions, retraites, rentes » du CERFA (2042-K pages 115-119), hors colonnes C/D — capture brute, sans moteur de calcul |
-| Gains d'actionnariat salarié (section 2042) | [GainsActionnariatSalarieForm.tsx](src/components/fiscalite/GainsActionnariatSalarieForm.tsx) | 13 lignes du CERFA (stock-options, actions gratuites, carried-interest, options pré-28.9.2012), regroupées par sous-bloc visuel ; champs à case unique sans colonne déclarant 2 pour `1TZ`/`1UZ`/`1WZ`/`1VZ` et `3VD`/`3VI`/`3VF`/`3VN`, conformément au CERFA |
+| Gains d'actionnariat salarié (section 2042) | [GainsActionnariatSalarieForm.tsx](src/components/fiscalite/GainsActionnariatSalarieForm.tsx) | 15 lignes du CERFA (stock-options, actions gratuites, carried-interest, BSPCE, management packages, options pré-28.9.2012), regroupées par sous-bloc visuel ; champs à case unique sans colonne déclarant 2 pour `1TZ`/`1UZ`/`1WZ`/`1VZ` et `3VD`/`3VI`/`3VF`/`3VN`, conformément au CERFA |
 | Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Donut `SectorsDonut` (même composant que la répartition Patrimoine) montrant la vraie composition du revenu imposable (salaires/gains d'actionnariat/pensions, légende colorée) — PS et IFI affichés « non calculé » |
 | Taux marginal | [TaxRateCard.tsx](src/pages/fiscalite/components/TaxRateCard.tsx) | Barème IR réel, tranche active (TMI), quotient familial, marge avant tranche suivante, impôt net |
 | Simulateur IFI | [IFIInterface.tsx](src/pages/fiscalite/components/IFIInterface.tsx) → 5 sous-écrans `ifi/*.tsx` | Wizard de déclaration IFI : hypothèses, biens/passifs, barème, montant dû |
@@ -268,6 +268,18 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   l'impôt forfaitaire (ajout après décote, indépendance vis-à-vis du quotient/plafonnement/réduction
   outre-mer/décote, cumul avec le taux effectif, garde-fou si négatif), la décote (seuils céliba/couple)
   et l'arrondi.
+- **3 cases 2042 découvertes après vérification visuelle du formulaire officiel (revenus 2025),
+  absentes du périmètre initial, ajoutées à la table et au calcul concernés.** `1AQ`/`1BQ` (agents
+  généraux d'assurance, salaires **exonérés**) rejoignent `revenus_salaires`, à côté de `1GG`/`1HG`
+  (salaires imposables, même bloc CERFA) — exonérées d'IR par nature, ajoutées à
+  `CASES_SALAIRES_EXCLUES_DU_CALCUL` (même famille que `1AD`/`1BD`). `1AY`/`1BY` (BSPCE, gain d'exercice
+  taxable en salaires sur option, à compter du 1.1.2025) et `1MP`/`1MQ` (management packages, gains de
+  cession sur titres souscrits par salariés/dirigeants, part taxable en salaires, à compter du
+  15.2.2025) rejoignent `gains_actionnariat_salarie` : les montants saisis sont déjà nets/taxables
+  (même logique que le reste de ce cadre, qui ne recalcule jamais les montants CERFA), donc ajoutés tels
+  quels à `totalNetImposable` dans `calculerGainsActionnariatSalarie.ts`, même famille que `1TT`/`1UT`.
+  Vérifié en base et à l'écran : +10 000 € sur `1AY` augmente l'IR de +3 000 € (TMI 30 % du foyer de
+  test), +1 234 € sur `1AQ` laisse l'IR inchangé (case bien exclue).
 - **Bug corrigé — `lieuResidence` était saisi, persisté et affiché sans jamais influencer le calcul
   d'IR.** Trouvé par un audit champ par champ des 4 types de cases (`FoyerFiscalInput`,
   `RevenusSalairesInput`, `GainsActionnariatSalarieInput`, `RevenusExoneresTauxEffectifInput`) contre
@@ -347,7 +359,7 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   de l'utilisateur.
 - **`revenus_salaires` (Phases 2.1, 2.2 et 2.4) — capture brute du cadre 1 de la 2042, sans moteur de
   calcul.** Table `user_id → auth.users(id) ON DELETE CASCADE`, `UNIQUE(user_id)`, RLS 4 policies,
-  même pattern que `foyer_fiscal`. 36 colonnes `case_1xx`/`case_1yy` (convention `1AJ` → `case_1aj`,
+  même pattern que `foyer_fiscal`. 38 colonnes `case_1xx`/`case_1yy` (convention `1AJ` → `case_1aj`,
   préfixe imposé par SQL pour un identifiant commençant par un chiffre), dont 4 booléennes (cases à
   cocher `1AV`/`1BV`, `1GK`/`1GL`). `case_1ak`/`case_1bk` (frais réels) ajoutées par migration
   séparée en Phase 2.2, à la suite de `1AG`/`1BG` dans le formulaire — ordre du CERFA (dernière ligne
@@ -356,7 +368,8 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   (CET) ajoutées par migration séparée en Phase 2.4, à la suite de `1GG`/`1HG` dans le formulaire —
   même symétrie de raisonnement que pour `1GG` (Phase 2.1) : ce sont des cas particuliers du cadre 1
   « Salaires », sans rapport avec les stock-options de `gains_actionnariat_salarie` (Phase 2.3), donc
-  logés ici plutôt que dans une quatrième table. Périmètre validé en
+  logés ici plutôt que dans une quatrième table. `case_1aq`/`case_1bq` (agents généraux d'assurance,
+  salaires exonérés) ajoutées ensuite, symétrique de `1GG`/`1HG` — voir §2. Périmètre validé en
   session : les codes ont été vérifiés contre la
   brochure officielle DGFiP (« LA 2042 K/2042 C ET SES RÉFÉRENCES DANS LA BROCHURE », revenus 2024)
   plutôt que supposés — cette vérification a corrigé deux points du brief initial avant migration :
@@ -373,16 +386,16 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   (`1AA`, `1AV`).
 - **`gains_actionnariat_salarie` (Phase 2.3) — table dédiée, distincte de `revenus_salaires` par
   choix délibéré.** Même pattern que les autres tables du module (`user_id → auth.users(id) ON
-  DELETE CASCADE`, `UNIQUE(user_id)`, RLS 4 policies). 18 colonnes `NUMERIC` couvrant 13 lignes du
+  DELETE CASCADE`, `UNIQUE(user_id)`, RLS 4 policies). 22 colonnes `NUMERIC` couvrant 15 lignes du
   CERFA, mélangeant volontairement deux cadres du formulaire 2042-C : le cadre 1 « Salaires, gains
   d'actionnariat salarié » (`1TP`/`1UP`, `1TT`/`1UT`, `1TZ`, `1UZ`, `1WZ`, `1VZ`, `1NX`/`1OX`,
-  `1NY`/`1OY`) et le cadre 3 « Plus-values et gains divers » pour les options attribuées avant le
+  `1NY`/`1OY`, `1AY`/`1BY`, `1MP`/`1MQ`) et le cadre 3 « Plus-values et gains divers » pour les options attribuées avant le
   28.9.2012 (`3VD`, `3VI`, `3VF`, `3VJ`/`3VK`, `3VN`) — décision de conception : ces deux cadres
   décrivent le même objet réel (stock-options/actions gratuites), scindé administrativement par date
   d'attribution sur le papier ; les regrouper sous `revenus_salaires` aurait dénaturé le nom de cette
   dernière avec des codes qui ne sont pas, sur le CERFA, des « salaires ». **Découverte non triviale,
   vérifiée visuellement (capture haute résolution du CERFA, pas seulement l'extraction texte de la
-  brochure) avant migration** : contrairement à tous les autres champs du module, 8 des 13 lignes
+  brochure) avant migration** : contrairement à tous les autres champs du module, 8 des 15 lignes
   (`1TZ`, `1UZ`, `1WZ`, `1VZ`, `3VD`, `3VI`, `3VF`, `3VN`) n'ont qu'**une seule case** sur le
   formulaire papier, sans colonne déclarant 2 — rompant le schéma déclarant 1/déclarant 2 systématique
   ailleurs dans `revenus_salaires`/`foyer_fiscal`. `GainsActionnariatSalarieForm.tsx` reflète cette
@@ -702,14 +715,16 @@ encore hors calcul : revenus fonciers, capitaux mobiliers, etc. (§4).
   ancien combattant/veuve de guerre), persistance Supabase (`foyer_fiscal`, une ligne par utilisateur),
   calcul du nombre de parts fidèle à l'art. 193-197 CGI avec détail ligne par ligne affiché en direct
   pendant la saisie ; **traitements et salaires — cadre 1 de la 2042, déclarants 1/2 (Phases 2.1, 2.2
-  et 2.4)** : saisie des 18 paires de champs du cadre 1 (salaires, particuliers employeurs,
-  abattements et exonérations spécifiques, associés/gérants art. 62 CGI, agents généraux d'assurance,
+  et 2.4)** : saisie des 19 paires de champs du cadre 1 (salaires, particuliers employeurs,
+  abattements et exonérations spécifiques, associés/gérants art. 62 CGI, agents généraux d'assurance
+  (salaires imposables et exonérés),
   droits d'auteur, autres revenus imposables, salaires de source étrangère, frais réels, indemnités
   pour préjudice moral, salariés impatriés, sommes exonérées du CET), persistance Supabase
   (`revenus_salaires`, une ligne par utilisateur), codes de case vérifiés contre la brochure
   officielle DGFiP — capture brute, sans moteur de calcul ; **gains d'actionnariat salarié (Phase
-  2.3)** : saisie des 13 lignes couvrant stock-options, actions gratuites et carried-interest (cadre 1
-  de la 2042-C) ainsi que les options attribuées avant le 28.9.2012 (cadre 3, incluses sur demande
+  2.3)** : saisie des 15 lignes couvrant stock-options, actions gratuites, carried-interest, BSPCE et
+  management packages (cadre 1 de la 2042-C) ainsi que les options attribuées avant le 28.9.2012 (cadre
+  3, incluses sur demande
   explicite malgré le changement de cadre), persistance Supabase (`gains_actionnariat_salarie`, table
   dédiée), codes vérifiés visuellement sur le CERFA — capture brute, sans moteur de calcul ; **salaires
   et pensions exonérés retenus pour le calcul du taux effectif** : saisie des 5 lignes de l'encart

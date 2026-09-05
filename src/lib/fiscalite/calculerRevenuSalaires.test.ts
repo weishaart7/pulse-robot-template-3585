@@ -15,6 +15,7 @@ function makeInput(overrides: Partial<RevenusSalairesInput> = {}): RevenusSalair
     case1gk: false, case1gl: false,
     case1gf: null, case1hf: null,
     case1gg: null, case1hg: null,
+    case1aq: null, case1bq: null,
     case1ap: null, case1bp: null,
     case1af: null, case1bf: null,
     case1ag: null, case1bg: null,
@@ -112,10 +113,11 @@ describe('calculerRevenuSalaires — abattement spécifique 1GA/1HA', () => {
 describe('calculerRevenuSalaires — cases exclues du calcul', () => {
   it('les cases exonérées ou hors périmètre n\'entrent pas dans le revenu imposable', () => {
     const result = calculerRevenuSalaires(makeInput({
-      case1gh: 5000, case1pb: 500, case1ad: 3000, case1dy: 20000, case1sm: 1000, case1af: 15000, case1gb: 10000,
+      case1gh: 5000, case1pb: 500, case1ad: 3000, case1dy: 20000, case1sm: 1000, case1af: 15000, case1gb: 10000, case1aq: 8000,
     }));
     expect(result.totalNetImposable).toBe(0);
     expect(result.casesExclues).toContain('case1af');
     expect(result.casesExclues).toContain('case1gb');
+    expect(result.casesExclues).toContain('case1aq');
   });
 });

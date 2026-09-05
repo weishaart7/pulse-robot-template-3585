@@ -21,6 +21,7 @@ export const CASES_SALAIRES_EXCLUES_DU_CALCUL = [
   'case1af', 'case1bf', // source étrangère, crédit d'impôt égal à l'impôt français (taux effectif non implémenté)
   'case1gb', 'case1hb', // gérants et associés art. 62 CGI (régime de frais professionnels particulier, non arbitré)
   'case1gk', 'case1gl', // "ne perçoit plus de salaires 1GB/1GF/1GG/1AG" — informatif (année suivante), aucun montant propre
+  'case1aq', 'case1bq', // agents généraux d'assurance, salaires EXONÉRÉS (symétrique de 1GG/1HG, imposables)
 ] as const;
 
 export interface RevenuSalairesDeclarantDetail {

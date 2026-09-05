@@ -9,6 +9,8 @@ function makeInput(overrides: Partial<GainsActionnariatSalarieInput> = {}): Gain
     case1tz: null, case1uz: null, case1wz: null, case1vz: null,
     case1nx: null, case1ox: null,
     case1ny: null, case1oy: null,
+    case1ay: null, case1by: null,
+    case1mp: null, case1mq: null,
     case3vd: null, case3vi: null, case3vf: null,
     case3vj: null, case3vk: null,
     case3vn: null,
@@ -34,6 +36,16 @@ describe('calculerGainsActionnariatSalarie — cases imposables au barème', () 
   it('ajoute 1TZ tel quel (déjà net des abattements)', () => {
     const result = calculerGainsActionnariatSalarie(makeInput({ case1tz: 4000 }));
     expect(result.totalNetImposable).toBe(4000);
+  });
+
+  it('ajoute 1AY/1BY tel quel (BSPCE, gain déjà taxable)', () => {
+    const result = calculerGainsActionnariatSalarie(makeInput({ case1ay: 3000, case1by: 1000 }));
+    expect(result.totalNetImposable).toBe(4000);
+  });
+
+  it('ajoute 1MP/1MQ tel quel (management packages, part déjà taxable)', () => {
+    const result = calculerGainsActionnariatSalarie(makeInput({ case1mp: 7000, case1mq: 2000 }));
+    expect(result.totalNetImposable).toBe(9000);
   });
 
   it('agrège 3VJ/3VK (option barème pré-28.9.2012)', () => {

@@ -42,6 +42,13 @@ export interface GainsActionnariatSalarieResult {
  *   fraction > 300 000 €) : barème, sans abattement.
  * - 1TZ (gain imposable "après abattement", case unique) : déjà net des
  *   abattements 1UZ/1WZ/1VZ, s'ajoute tel quel.
+ * - 1AY/1BY (BSPCE, gain d'exercice taxable en salaires sur option, à compter
+ *   du 1.1.2025) : montant déjà net/taxable saisi par le déclarant, même
+ *   famille que 1TT/1UT.
+ * - 1MP/1MQ (management packages, gains de cession sur titres souscrits par
+ *   salariés/dirigeants à compter du 15.2.2025, part imposée en salaires) :
+ *   le CERFA ne capture que la fraction déjà taxable au-delà de la limite
+ *   d'imposition — s'ajoute tel quel, comme 1TT/1UT.
  * - 3VJ/3VK (option barème pour les gains pré-28.9.2012, en lieu et place des
  *   taux forfaitaires 3VD/3VI/3VF) : le CERFA les qualifie explicitement de
  *   "catégorie des salaires".
@@ -59,6 +66,8 @@ export function calculerGainsActionnariatSalarie(
   const totalNetImposable = (input.case1tp ?? 0) + (input.case1up ?? 0)
     + (input.case1tt ?? 0) + (input.case1ut ?? 0)
     + (input.case1tz ?? 0)
+    + (input.case1ay ?? 0) + (input.case1by ?? 0)
+    + (input.case1mp ?? 0) + (input.case1mq ?? 0)
     + (input.case3vj ?? 0) + (input.case3vk ?? 0);
 
   const carriedInterest = (input.case1nx ?? 0) + (input.case1ox ?? 0);
