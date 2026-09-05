@@ -137,12 +137,12 @@ describe('calculerPensionsRetraitesRentes — impôt forfaitaire (1AT, option 7,
 });
 
 describe('calculerPensionsRetraitesRentes — cases exclues du calcul', () => {
-  it('ignore 1AL/1BL (crédit d\'impôt égal à l\'impôt français)', () => {
+  it('1AL/1BL n\'entrent pas dans totalNetImposable (traitées séparément)', () => {
     const result = calculerPensionsRetraitesRentes(makeInput({ case1al: 50000, case1bl: 50000 }));
     expect(result.totalNetImposable).toBe(0);
   });
 
-  it('ignore 1AR/1BR/1CR/1DR (rentes non-résidents, même mécanisme)', () => {
+  it('1AR/1BR/1CR/1DR n\'entrent pas dans totalNetImposable (traitées séparément)', () => {
     const result = calculerPensionsRetraitesRentes(makeInput({ case1ar: 5000, case1br: 5000, case1cr: 5000, case1dr: 5000 }));
     expect(result.rentesViageresImposables).toBe(0);
     expect(result.totalNetImposable).toBe(0);
@@ -156,11 +156,32 @@ describe('calculerPensionsRetraitesRentes — cases exclues du calcul', () => {
 
   it('expose la liste des cases exclues', () => {
     const result = calculerPensionsRetraitesRentes(makeInput());
-    expect(result.casesExclues).toContain('case1al');
-    expect(result.casesExclues).toContain('case1ar');
     expect(result.casesExclues).toContain('case1hk');
+    expect(result.casesExclues).not.toContain('case1al');
+    expect(result.casesExclues).not.toContain('case1ar');
     expect(result.casesExclues).not.toContain('case1as');
     expect(result.casesExclues).not.toContain('case1aw');
+  });
+});
+
+describe('calculerPensionsRetraitesRentes — crédit d\'impôt égal à l\'impôt français', () => {
+  it('1AL/1BL : abattement 10 % (plancher 454 €, plafond global 4 439 €), pool indépendant de 1AS/1AZ/1AO/1AM', () => {
+    const result = calculerPensionsRetraitesRentes(makeInput({ case1al: 30000, case1bl: 3000 }));
+    expect(result.revenuCreditImpotEgalImpotFrancais).toBe((30000 - 3000) + (3000 - 454));
+  });
+
+  it('1AL/1BL : plafond global à 4 439 €/foyer', () => {
+    const result = calculerPensionsRetraitesRentes(makeInput({ case1al: 100000, case1bl: 100000 }));
+    expect(result.revenuCreditImpotEgalImpotFrancais).toBe(200000 - 4439);
+  });
+
+  it('1AR/1BR/1CR/1DR : fraction par tranche d\'âge, sans abattement (comme 1AW)', () => {
+    const result = calculerPensionsRetraitesRentes(makeInput({ case1ar: 1000, case1br: 1000, case1cr: 1000, case1dr: 1000 }));
+    expect(result.revenuCreditImpotEgalImpotFrancais).toBeCloseTo(700 + 500 + 400 + 300, 6);
+  });
+
+  it('nul par défaut', () => {
+    expect(calculerPensionsRetraitesRentes(makeInput()).revenuCreditImpotEgalImpotFrancais).toBe(0);
   });
 });
 

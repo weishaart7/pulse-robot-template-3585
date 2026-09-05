@@ -18,15 +18,13 @@ const FRACTION_IMPOSABLE_RENTE = {
 } as const;
 
 /**
- * Cases exclues du calcul : 1AL (pensions étrangères) et 1AR (rentes
- * étrangères) ouvrent droit à un crédit d'impôt égal à l'impôt français —
- * mécanisme non implémenté dans le repo (même famille que 1AF/1GB dans
- * calculerRevenuSalaires.ts) ; les inclure sans le crédit compensateur
- * surestimerait l'IR. 1HK/1HL sont purement informatives.
+ * Cases exclues du calcul : 1HK/1HL sont purement informatives. 1AL (pensions
+ * étrangères) et 1AR (rentes étrangères) ouvrent droit à un crédit d'impôt
+ * égal à l'impôt français — elles ne sont PAS exclues du calcul mais traitées
+ * séparément (voir `revenuCreditImpotEgalImpotFrancais` ci-dessous), sur le
+ * même principe que le taux effectif.
  */
 export const CASES_PENSIONS_EXCLUES_DU_CALCUL = [
-  'case1al', 'case1bl',
-  'case1ar', 'case1br', 'case1cr', 'case1dr',
   'case1hk', 'case1hl',
 ] as const;
 
@@ -38,6 +36,17 @@ export interface PensionsRetraitesRentesResult {
   rentesViageresImposables: number;
   totalNetImposable: number;
   impotForfaitaire: number;
+  /**
+   * Pensions (1AL/1BL) et rentes viagères (1AR/1BR/1CR/1DR) perçues par des
+   * non-résidents ou de source étrangère, ouvrant droit à un crédit d'impôt
+   * égal à l'impôt français — net d'imposition calculé séparément (abattement
+   * 10 % dédié pour 1AL/1BL, fraction par tranche d'âge sans abattement pour
+   * 1AR, comme 1AW), n'entre PAS dans `totalNetImposable`. Traité par
+   * `useFiscalOverview.ts` sur le même principe que le taux effectif
+   * (mathématiquement équivalent lorsque imputé avant réduction outre-mer et
+   * décote — hypothèse retenue, voir docs/fiscalite.md).
+   */
+  revenuCreditImpotEgalImpotFrancais: number;
   casesExclues: readonly string[];
 }
 
@@ -68,6 +77,16 @@ export interface PensionsRetraitesRentesResult {
  * revenu net imposable au barème — **sans** l'abattement de 10 % classique
  * (mécanismes distincts et exclusifs l'un de l'autre).
  *
+ * 1AL/1BL (pensions non-résidents/source étrangère) et 1AR/1BR/1CR/1DR
+ * (rentes non-résidents/source étrangère), qui ouvrent droit à un crédit
+ * d'impôt égal à l'impôt français, sont calculées séparément
+ * (`revenuCreditImpotEgalImpotFrancais`) : 1AL/1BL avec le même abattement de
+ * 10 % que le pool 1AS/1AZ/1AO/1AM mais son propre plafond foyer (pool
+ * indépendant, comme 1AH dans `calculerRevenuExonereTauxEffectif.ts` — pas de
+ * répartition d'un abattement combiné, pour éviter une clé de répartition non
+ * documentée par la brochure) ; 1AR comme 1AW (fraction par tranche d'âge,
+ * sans abattement). N'entrent PAS dans `totalNetImposable`.
+ *
  * Cases hors calcul : voir CASES_PENSIONS_EXCLUES_DU_CALCUL.
  */
 export function calculerPensionsRetraitesRentes(
@@ -95,6 +114,20 @@ export function calculerPensionsRetraitesRentes(
   const capitalRetraite = (input.case1at ?? 0) + (input.case1bt ?? 0);
   const impotForfaitaire = capitalRetraite * (1 - CAPITAL_RETRAITE_ABATTEMENT_TAUX) * CAPITAL_RETRAITE_TAUX_FORFAITAIRE;
 
+  const pensionEtrangereBrute = (input.case1al ?? 0) + (input.case1bl ?? 0);
+  const abattementPensionEtrangere = Math.min(
+    PENSION_ABATTEMENT_PLAFOND_FOYER,
+    abattementPensionDeclarant(input.case1al ?? 0) + abattementPensionDeclarant(input.case1bl ?? 0),
+  );
+  const pensionEtrangereNette = Math.max(0, pensionEtrangereBrute - abattementPensionEtrangere);
+
+  const rentesEtrangeresImposables = (input.case1ar ?? 0) * FRACTION_IMPOSABLE_RENTE.moins50
+    + (input.case1br ?? 0) * FRACTION_IMPOSABLE_RENTE.de50a59
+    + (input.case1cr ?? 0) * FRACTION_IMPOSABLE_RENTE.de60a69
+    + (input.case1dr ?? 0) * FRACTION_IMPOSABLE_RENTE.aPartirDe70;
+
+  const revenuCreditImpotEgalImpotFrancais = pensionEtrangereNette + rentesEtrangeresImposables;
+
   return {
     pensionsBrutes,
     abattementPension,
@@ -103,6 +136,7 @@ export function calculerPensionsRetraitesRentes(
     rentesViageresImposables,
     totalNetImposable,
     impotForfaitaire,
+    revenuCreditImpotEgalImpotFrancais,
     casesExclues: CASES_PENSIONS_EXCLUES_DU_CALCUL,
   };
 }

@@ -155,11 +155,17 @@ export function useFiscalOverview(): FiscalOverview {
     const revenuImposableTotal = revenuSalaires.totalNetImposable + gainsActionnariat.totalNetImposable
       + pensionsRetraitesRentes.totalNetImposable;
     const impotForfaitaireTotal = gainsActionnariat.impotForfaitaire + pensionsRetraitesRentes.impotForfaitaire;
+    // Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR/1BR/1CR/1DR) : additionné au
+    // revenu retenu pour le taux effectif, mathématiquement équivalent dans les deux cas (imputé
+    // avant réduction outre-mer/décote) — hypothèse retenue, voir docs/fiscalite.md.
+    const revenuExonereEtCreditImpot = revenuExonereTauxEffectif.totalRetenu
+      + revenuSalaires.revenuCreditImpotEgalImpotFrancais
+      + pensionsRetraitesRentes.revenuCreditImpotEgalImpotFrancais;
     const impot = calculerImpot(
       revenuImposableTotal,
       parts,
       foyerInput.situationFamille,
-      revenuExonereTauxEffectif.totalRetenu,
+      revenuExonereEtCreditImpot,
       foyerInput.lieuResidence,
       impotForfaitaireTotal,
       gainsActionnariat.revenuExceptionnelQuotient,

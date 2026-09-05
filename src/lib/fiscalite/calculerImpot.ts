@@ -161,7 +161,13 @@ function calculerImpotApresQuotientFamilial(
  * pas non plus appliqué pour l'instant.
  *
  * `revenuExonereTauxEffectif` (optionnel, 0 par défaut) : revenu exonéré net
- * retenu pour le taux effectif (`calculerRevenuExonereTauxEffectif.ts`).
+ * retenu pour le taux effectif (`calculerRevenuExonereTauxEffectif.ts`),
+ * additionné par `useFiscalOverview.ts` au revenu ouvrant droit à un crédit
+ * d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR/1BR/1CR/1DR) — les
+ * deux mécanismes sont mathématiquement équivalents (même formule de prorata)
+ * lorsque le crédit est imputé avant réduction outre-mer et décote, hypothèse
+ * retenue faute de confirmation BOFiP explicite de l'ordre exact (voir
+ * docs/fiscalite.md).
  * `lieuResidence` (optionnel, 'metropole' par défaut) : détermine la
  * réduction outre-mer.
  * `impotForfaitaire` (optionnel, 0 par défaut) : impôt à taux forfaitaire
