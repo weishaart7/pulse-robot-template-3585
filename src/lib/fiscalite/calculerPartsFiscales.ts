@@ -78,8 +78,22 @@ function majorationsEnfants(enfants: EnfantRang[]): MajorationDetail[] {
  * majorations appliquées. Les plafonds en euros portés par chaque majoration
  * (`plafondUnitaire`/`plafondComplementaire`) sont de simples métadonnées,
  * jamais appliquées ici — le plafonnement réel de l'avantage fiscal (art. 197
- * CGI) nécessite un barème IR qui n'existe pas encore dans le repo (Phase
- * différée).
+ * CGI) est calculé en aval par `calculerImpot.ts`, qui consomme ces
+ * métadonnées.
+ *
+ * **Personne invalide à charge (art. 196 A bis CGI)** : bien que la brochure
+ * DGFiP décrive « une part » par personne invalide recueillie, le plafonnement
+ * la traite comme 2 demi-parts distinctes (p.85 : « la réduction d'impôt en
+ * résultant est limitée à 1 807 € par demi-part [...] une réduction d'impôt
+ * complémentaire d'un montant maximal de 1 801 € est appliquée » pour la
+ * demi-part liée à l'invalidité elle-même) — modélisé en 2 lignes de
+ * `majorations[]` (0,5 part chacune), même mécanique que la majoration
+ * invalidité d'un enfant à charge ci-dessus. **Cas non modélisé** : lorsque le
+ * foyer ne compte à charge qu'une seule personne invalide ET coche la case T
+ * (parent isolé), le plafond spécifique de 4 262 € normalement associé à la
+ * case T ne s'applique pas à ces 2 demi-parts (interaction entre deux
+ * majorations que la somme indépendante des plafonds par ligne ne peut pas
+ * représenter) — laissé en dette plutôt que deviné (voir docs/fiscalite.md).
  */
 export function calculerPartsFiscales(input: FoyerFiscalInput): PartsFiscalesResult {
   const enfantsRang = construireEnfantsRang(input);
@@ -94,10 +108,21 @@ export function calculerPartsFiscales(input: FoyerFiscalInput): PartsFiscalesRes
 
   input.personnesInvalidesCharge.forEach((_, index) => {
     const rang = index + 1;
+    // CGI art. 196 A bis : la part entière se décompose en 2 demi-parts pour le plafonnement (brochure
+    // DGFiP p.85) — une demi-part "à charge" (plafond 1807€) et une demi-part "invalidité" (1807€ + 1801€
+    // de complément), même mécanique que la majoration invalidité d'un enfant à charge (voir ci-dessus).
     majorations.push({
       type: `personne_invalide_charge_${rang}`,
       libelle: `Personne invalide à charge (${rangLabel(rang)})`,
-      parts: 1,
+      parts: 0.5,
+      plafondUnitaire: PLAFOND_DEMI_PART_STANDARD,
+    });
+    majorations.push({
+      type: `personne_invalide_charge_${rang}_invalidite`,
+      libelle: `Majoration invalidité — personne invalide à charge (${rangLabel(rang)})`,
+      parts: 0.5,
+      plafondUnitaire: PLAFOND_DEMI_PART_STANDARD,
+      plafondComplementaire: PLAFOND_COMPLEMENTAIRE_STANDARD,
     });
   });
 

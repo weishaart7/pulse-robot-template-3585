@@ -167,19 +167,36 @@ describe('calculerPartsFiscales — enfant invalide', () => {
 });
 
 describe('calculerPartsFiscales — personne invalide à charge (hors enfant)', () => {
-  it('1 personne invalide à charge : +1 part entière', () => {
+  it('1 personne invalide à charge : +1 part au total, scindée en 2 demi-parts plafonnées (art. 196 A bis)', () => {
     const result = calculerPartsFiscales(makeInput({ personnesInvalidesCharge: [{ anneeNaissance: 1950 }] }));
     expect(result.majorations).toEqual([
-      { type: 'personne_invalide_charge_1', libelle: 'Personne invalide à charge (1er)', parts: 1 },
+      {
+        type: 'personne_invalide_charge_1',
+        libelle: 'Personne invalide à charge (1er)',
+        parts: 0.5,
+        plafondUnitaire: 1807,
+      },
+      {
+        type: 'personne_invalide_charge_1_invalidite',
+        libelle: 'Majoration invalidité — personne invalide à charge (1er)',
+        parts: 0.5,
+        plafondUnitaire: 1807,
+        plafondComplementaire: 1801,
+      },
     ]);
     expect(result.nombreParts).toBe(2);
   });
 
-  it('2 personnes invalides à charge : +1 chacune, lignes distinctes', () => {
+  it('2 personnes invalides à charge : +1 chacune, 4 lignes distinctes (2 demi-parts par personne)', () => {
     const result = calculerPartsFiscales(makeInput({
       personnesInvalidesCharge: [{ anneeNaissance: 1950 }, { anneeNaissance: 1948 }],
     }));
-    expect(result.majorations.map(m => m.type)).toEqual(['personne_invalide_charge_1', 'personne_invalide_charge_2']);
+    expect(result.majorations.map(m => m.type)).toEqual([
+      'personne_invalide_charge_1',
+      'personne_invalide_charge_1_invalidite',
+      'personne_invalide_charge_2',
+      'personne_invalide_charge_2_invalidite',
+    ]);
     expect(result.nombreParts).toBe(3);
   });
 });
@@ -297,6 +314,7 @@ describe('calculerPartsFiscales — ordre du détail des majorations', () => {
     expect(result.majorations.map(m => m.type)).toEqual([
       'enfant_rang_1',
       'personne_invalide_charge_1',
+      'personne_invalide_charge_1_invalidite',
       'parent_isole',
       'ancien_parent_isole',
       'invalidite_declarant1',

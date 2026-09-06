@@ -211,8 +211,28 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   plafonds en € en simple métadonnée (`plafondUnitaire`/`plafondComplementaire`) — **non appliquée par
   cette fonction elle-même** : le plafonnement réel de l'avantage fiscal (art. 197 CGI) est calculé en
   aval par [calculerImpot.ts](src/lib/fiscalite/calculerImpot.ts) (voir plus bas), qui consomme ces
-  métadonnées. 29 tests couvrent l'intégralité du tableau de règles de `calculerPartsFiscales`, y
-  compris les combinaisons (enfant en résidence alternée et invalide simultanément, etc.).
+  métadonnées.
+  **Résolu — personne invalide à charge (art. 196 A bis CGI) : la part entière est désormais scindée
+  en 2 demi-parts plafonnées, levant la réserve documentée en dette qui désactivait le plafonnement
+  pour tout le foyer dès qu'une telle personne était saisie.** Recherche demandée explicitement en
+  session : brochure DGFiP IR 2026 p.84-85, texte explicite — « chaque personne invalide [...] vous
+  donne droit à une augmentation du nombre de parts (une part par personne invalide recueillie). La
+  réduction d'impôt en résultant est **limitée à 1 807 € par demi-part**. Toutefois, lorsque cette
+  limite est atteinte pour la demi-part attribuée au titre de l'invalidité de la personne à charge, une
+  réduction d'impôt complémentaire d'un montant maximal de **1 801 €** est appliquée. » Modélisé en 2
+  lignes de `majorations[]` (0,5 part chacune, total inchangé = 1 part) : une demi-part « à charge »
+  (plafond 1 807 €) et une demi-part « invalidité » (plafond 1 807 € + complément 1 801 €) — même
+  mécanique que la majoration invalidité d'un enfant à charge, déjà en place. **Cas non modélisé,
+  documenté plutôt que deviné** : lorsque le foyer ne compte à charge qu'une seule personne invalide ET
+  coche la case T (parent isolé), le plafond spécifique de 4 262 € normalement associé à la case T ne
+  s'applique pas à ces 2 demi-parts (brochure, même page) — interaction entre deux majorations que la
+  somme indépendante des plafonds par ligne (architecture actuelle de `calculerImpot.ts`) ne peut pas
+  représenter sans un changement plus large. 2 tests modifiés (29 au total, inchangé) démontrent la
+  scission en 2 lignes avec leurs plafonds respectifs. Vérifié en base et à l'écran sur le compte réel
+  (couple marié, TMI 30 %) : ajout d'une personne invalide à charge → synthèse affichant bien les 2
+  lignes de +0,5 part (3 parts au total, inchangé par rapport à l'ancien comportement à 1 part) → IR
+  passé de 13 478 € à 9 864 € (−3 614 €, avantage de quotient sur les 2 demi-parts), valeur nettoyée
+  après vérification.
 - **`src/lib/fiscalite/calculerRevenuSalaires.ts` — revenu net imposable du cadre 1 « Salaires ».**
   Fonction pure : pour chaque déclarant, agrège les cases imposables soumises à abattement (1AJ, 1AA,
   1GF, 1GG, 1AP, 1AG, **1GB** et symétriques déclarant 2), déduit l'abattement spécifique 1GA/1HA
@@ -301,9 +321,8 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   quotient du **revenu mondial fictif** (revenu imposable en France + revenu exonéré retenu pour le taux
   effectif, paramètre optionnel `revenuExonereTauxEffectif`, 0 par défaut — comportement inchangé quand
   il est nul ou omis), puis plafonnement art. 197 CGI (compare l'avantage procuré par les majorations à
-  la somme de leurs `plafondUnitaire` ; **si une majoration ne porte aucun `plafondUnitaire` —
-  actuellement le cas de « personne invalide à charge » dans `calculerPartsFiscales.ts` — le
-  plafonnement est désactivé pour tout le foyer plutôt que d'inventer un montant**, cf. §3 🟠), puis
+  la somme de leurs `plafondUnitaire` — désormais chiffré pour toutes les majorations, y compris
+  « personne invalide à charge » depuis sa scission en 2 demi-parts, voir plus haut), puis
   **proratisation** (méthode du taux effectif : `impôt sur le revenu mondial fictif × (revenu imposable
   en France / revenu mondial fictif)` — seule la part française paie, mais au taux moyen du revenu
   mondial ; sans revenu exonéré, ce ratio vaut 1 et n'a aucun effet), puis **réduction d'impôt outre-mer**
@@ -932,6 +951,16 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
+- **Plafonnement du quotient familial — interaction non modélisée entre la case T (parent isolé) et une
+  personne invalide à charge unique.** La brochure DGFiP (IR 2026, p.85) précise que lorsque le foyer
+  ne compte à charge qu'une seule personne invalide et coche la case T, le plafond spécifique de
+  4 262 € normalement associé à la case T ne s'applique pas aux 2 demi-parts de la personne invalide
+  (qui restent plafonnées à 1 807 €/1 807 €+1 801 € chacune, comme dans le cas général). L'architecture
+  actuelle de `calculerImpot.ts` (somme indépendante des `plafondUnitaire` de chaque majoration, sans
+  connaissance des interactions entre majorations) ne peut pas représenter cette exception sans un
+  changement plus large — non modélisé plutôt que deviné. Cas rare (célibataire/divorcé/séparé, case T,
+  et aucun autre enfant/personne à charge que la personne invalide) : un écart resterait possible pour
+  ce profil précis.
 - **Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR/1BR/1CR/1DR) : ordre exact face à la
   décote et à la réduction outre-mer non confirmé par le BOFiP consulté.** Le crédit est implémenté en
   réutilisant le mécanisme du taux effectif (imputé avant réduction outre-mer/décote), mathématiquement
@@ -1148,11 +1177,12 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   - **Traitements et salaires — colonnes C/D (Phase 2.1, dette assumée)** : les revenus propres des
     personnes à charge (ex. enfants majeurs rattachés ayant leurs propres salaires) ne sont pas
     saisis — cas rare, traité dans une session ultérieure.
-  - **Plafonnement du quotient familial — cas de la personne invalide à charge non chiffré** : cette
-    majoration (`calculerPartsFiscales.ts`) ne porte pas de `plafondUnitaire`, ce qui désactive tout
-    plafonnement pour le foyer entier tant qu'un montant officiel n'a pas été recherché et intégré (voir
-    §2/§3). Le `plafondComplementaire` (cumul de plusieurs majorations sur une même personne) n'est pas
-    non plus appliqué par `calculerImpot.ts`.
+  - **Résolu — plafonnement du quotient familial pour la personne invalide à charge** : cette
+    majoration (`calculerPartsFiscales.ts`) porte désormais un `plafondUnitaire` chiffré (scission en 2
+    demi-parts, voir §2/§3). Reste non appliqué par `calculerImpot.ts` : le cumul de plusieurs
+    majorations `plafondComplementaire` sur une même personne (architecture actuelle : somme
+    indépendante des plafonds par ligne, pas d'agrégation par personne), et l'interaction entre le
+    plafond spécifique de la case T (4 262 €) et une personne invalide à charge unique (voir §3).
   - **Pont entre `foyer_fiscal` et le module Famille** (`family_profiles`/`marital_status`/
     `family_links`) : saisie intégralement manuelle et indépendante par décision explicite de cette
     phase — aucune lecture croisée, aucun pré-remplissage depuis les enfants déjà saisis dans Famille.
