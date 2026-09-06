@@ -440,6 +440,16 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   30 %/10 % sur le carried-interest/les options, pas de l'IR) — voir §3, 🟠. 26 tests couvrent
   l'agrégation des cases barème, l'impôt forfaitaire (chaque taux isolément, cumul, indépendance vis-à-vis
   du barème) et la non-inclusion des cases exclues.
+  **Audit case par case confirmé (aucun écart) — un point reste non tranché, documenté en dette (§3
+  🟡) : 1TP/1TT/1AY/1MP/3VJ sont-elles éligibles à l'abattement de 10 % comme 1AJ ?** Ni la brochure ni
+  le BOFiP consultés ne tranchent explicitement cette question pour ces cases précises, contrairement à
+  1GB/1AF/1AL (Phases 1 et 3) où le texte était sans ambiguïté. Deux indices penchent pour l'absence
+  d'abattement (comportement actuel conservé) : ces gains vivent dans une section CERFA séparée
+  (« Salaires, gains d'actionnariat salarié »), jamais mentionnée dans la section « Total des
+  salaires »/« Déduction des frais professionnels » qui liste explicitement les cases concernées par
+  l'abattement de 10 % (1AJ/1AA/1GF/1GG/1AP/1AG/1GB/1AF) ; et 1AY/1MP sont soumises aux prélèvements
+  sociaux **du patrimoine** (pas d'activité, 9,7 %), signe qu'elles sont traitées par nature comme des
+  gains plutôt que des salaires au sens de l'art. 83 CGI.
 - **`src/lib/fiscalite/calculerPensionsRetraitesRentes.ts` — revenu net imposable et impôt forfaitaire
   du cadre 1 « Pensions, retraites, rentes ».** Fonction pure couvrant trois mécanismes distincts,
   vérifiés sur la brochure DGFiP (2042-K, pages 115-120, texte intégral) et le BOFiP (BOI-RSA-PENS) :
@@ -904,6 +914,25 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   aucun hook/composant n'y fait référence — chantier « biens hors de France » commencé au niveau du
   schéma seulement, cohérent avec le gap `assets.bien_etranger` déjà documenté comme non construit
   dans `docs/patrimoine.md`.
+- **`calculerGainsActionnariatSalarie.ts` : éligibilité de 1TP/1TT/1AY/1MP/3VJ à l'abattement de 10 %
+  non tranchée avec certitude.** Audit case par case du cadre (Phase 4) : ces cases sont toutes
+  qualifiées par la brochure/le BOFiP d'« imposées selon les règles/la catégorie des traitements et
+  salaires », ce qui pourrait suggérer qu'elles devraient rejoindre le pool 1AJ/1AA/1GB/1AF de
+  `calculerRevenuSalaires.ts` et bénéficier du même abattement de 10 %/frais réels — mais ni la brochure
+  ni le BOFiP consultés ne le confirment explicitement pour ces cases précises (contrairement à
+  1GB/1AF/1AL, où le texte était sans ambiguïté). Comportement actuel conservé (aucun abattement) sur la
+  base de deux indices indirects : section CERFA séparée, jamais mentionnée dans la liste des cases
+  concernées par l'abattement ; 1AY/1MP soumises aux prélèvements sociaux du patrimoine plutôt que
+  d'activité. Un écart resterait possible si un utilisateur ayant des gains d'actionnariat significatifs
+  compare son résultat à un autre logiciel/à sa déclaration réelle. **Recherche complémentaire menée**
+  (BOI-RSA-ES-20-10-20-20, BOI-RSA-BASE-30-50-10, FAQ officielle impots.gouv.fr, plusieurs cabinets
+  fiscaux) : toujours aucune confirmation ni infirmation explicite. Une piste prometteuse (« la fraction
+  excédant 300 000 € [d'actions gratuites] est imposée sans abattement ») s'est révélée non concluante en
+  creusant : ce « sans abattement » désigne l'abattement **pour durée de détention** propre aux actions
+  gratuites (mécanisme de plus-value d'un régime antérieur), pas l'abattement général de 10 % pour frais
+  professionnels de l'art. 83 CGI — les deux mécanismes ont le même nom générique « abattement » dans les
+  sources secondaires consultées, d'où la confusion initiale. Le sujet reste donc non tranché avec
+  certitude malgré une recherche approfondie ; comportement actuel conservé sans le trancher par supposition.
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
