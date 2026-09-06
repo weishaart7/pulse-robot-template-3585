@@ -165,14 +165,24 @@ describe('calculerPensionsRetraitesRentes — cases exclues du calcul', () => {
 });
 
 describe('calculerPensionsRetraitesRentes — crédit d\'impôt égal à l\'impôt français', () => {
-  it('1AL/1BL : abattement 10 % (plancher 454 €, plafond global 4 439 €), pool indépendant de 1AS/1AZ/1AO/1AM', () => {
+  it('1AL/1BL seul dans le pool : abattement 10 % (plancher 454 €, plafond global 4 439 €)', () => {
     const result = calculerPensionsRetraitesRentes(makeInput({ case1al: 30000, case1bl: 3000 }));
     expect(result.revenuCreditImpotEgalImpotFrancais).toBe((30000 - 3000) + (3000 - 454));
   });
 
-  it('1AL/1BL : plafond global à 4 439 €/foyer', () => {
+  it('1AL/1BL seul dans le pool : plafond global à 4 439 €/foyer', () => {
     const result = calculerPensionsRetraitesRentes(makeInput({ case1al: 100000, case1bl: 100000 }));
     expect(result.revenuCreditImpotEgalImpotFrancais).toBe(200000 - 4439);
+  });
+
+  it('1AL rejoint le même pool que 1AS : le plafond de 4 439 € est unique pour le foyer, pas doublé', () => {
+    // Base combinée déclarant 1 = 100000 (1AS) + 100000 (1AL) = 200000 ; abattement brut 10 % = 20000,
+    // plafonné à 4 439 € pour le foyer (pas 4 439 € par pool) => net total = 195561, réparti 50/50
+    // entre la part ordinaire (1AS) et la part crédit d'impôt (1AL), au prorata de leur poids dans la base.
+    const result = calculerPensionsRetraitesRentes(makeInput({ case1as: 100000, case1al: 100000 }));
+    expect(result.pensionsNettes).toBeCloseTo(97780.5, 6);
+    expect(result.revenuCreditImpotEgalImpotFrancais).toBeCloseTo(97780.5, 6);
+    expect(result.pensionsNettes + result.revenuCreditImpotEgalImpotFrancais).toBeCloseTo(195561, 6);
   });
 
   it('1AR/1BR/1CR/1DR : fraction par tranche d\'âge, sans abattement (comme 1AW)', () => {

@@ -374,10 +374,10 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   1GB (plancher/plafond et choix 10 %/frais réels uniques par déclarant, corrigé après vérification de la
   brochure — voir ci-dessus, l'hypothèse « pas d'option frais réels » était erronée) — nouveau champ
   `revenuCreditImpotEgalImpotFrancais` dans `calculerRevenuSalaires.ts`, isolé proportionnellement,
-  n'entrant pas dans `totalNetImposable`. `1AL`/`1BL` réutilisent le même
-  abattement pension 10 % que le pool `1AS`/`1AZ`/`1AO`/`1AM` (plancher 454 €, plafond global 4 439 €)
-  mais dans un pool indépendant (comme `1AH` dans `calculerRevenuExonereTauxEffectif.ts`), pour éviter une
-  clé de répartition non documentée par la brochure entre les deux pools s'ils étaient fusionnés. `1AR`
+  n'entrant pas dans `totalNetImposable`. `1AL`/`1BL` rejoignent désormais le **même** pool que
+  `1AS`/`1AZ`/`1AO`/`1AM` (plancher 454 €, plafond global **unique** de 4 439 € pour tout le foyer,
+  conforme au texte explicite de la brochure — voir §2, section `calculerPensionsRetraitesRentes.ts` :
+  l'ancien pool indépendant était une hypothèse jamais vérifiée, corrigée depuis). `1AR`
   reçoit la même fraction imposable par tranche d'âge que `1AW` (art. 158-6 CGI), sans abattement — même
   nouveau champ `revenuCreditImpotEgalImpotFrancais` dans `calculerPensionsRetraitesRentes.ts`.
   `useFiscalOverview.ts` additionne ces deux nouveaux champs à `revenuExonereTauxEffectif.totalRetenu`
@@ -442,23 +442,41 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   du barème) et la non-inclusion des cases exclues.
 - **`src/lib/fiscalite/calculerPensionsRetraitesRentes.ts` — revenu net imposable et impôt forfaitaire
   du cadre 1 « Pensions, retraites, rentes ».** Fonction pure couvrant trois mécanismes distincts,
-  vérifiés sur la brochure DGFiP (2042-K, pages 115-120) et le BOFiP (BOI-RSA-PENS) : (1) **abattement
-  de 10 % classique** (art. 158-5-a CGI) sur le total 1AS+1AZ+1AO+1AM, par déclarant puis somme —
-  réutilise `abattementPensionDeclarant`/`PENSION_ABATTEMENT_PLAFOND_FOYER`, exportés de
-  `calculerRevenuExonereTauxEffectif.ts` (même calcul que pour 1AH, plancher 454 €/pensionné, plafond
-  global 4 439 €/foyer) ; (2) **1AI** (capital des plans d'épargne retraite) imposable au barème **sans**
-  abattement (texte explicite de la brochure) ; (3) **1AT** (capital retraite, option art. 163 bis CGI)
-  hors barème : abattement spécifique de 10 % **non plafonné** puis taux forfaitaire **7,5 %**, dans
-  `impotForfaitaire` — même famille que le carried-interest/3VD de
-  `calculerGainsActionnariatSalarie.ts`. Rentes viagères à titre onéreux (1AW) : fraction imposable par
-  tranche d'âge (art. 158-6 CGI, 70 %/50 %/40 %/30 %), incluse dans `totalNetImposable` **sans**
-  l'abattement de 10 % classique (mécanismes exclusifs). **Exclue du calcul**
-  (`CASES_PENSIONS_EXCLUES_DU_CALCUL`) : 1HK/1HL (case informative) seulement — 1AL/1BL et
-  1AR/1BR/1CR/1DR (pensions/rentes étrangères, crédit d'impôt égal à l'impôt français) ne sont plus
-  exclues : calculées séparément (`revenuCreditImpotEgalImpotFrancais`, pool indépendant du reste, voir
-  §2), n'entrent pas dans `totalNetImposable`. 28 tests couvrent l'abattement (plancher, plafond par
-  déclarant et par foyer), 1AI sans abattement, les 4 tranches d'âge des rentes viagères, l'impôt
-  forfaitaire de 1AT, le crédit d'impôt égal à l'impôt français et la non-inclusion des cases exclues.
+  vérifiés sur la brochure DGFiP (2042-K, pages 115-120, texte intégral) et le BOFiP (BOI-RSA-PENS) :
+  (1) **abattement de 10 % classique** (art. 158-5-a CGI) sur le total 1AS+1AZ+1AO+1AM **et 1AL**, par
+  déclarant puis somme — réutilise `abattementPensionDeclarant`/`PENSION_ABATTEMENT_PLAFOND_FOYER`,
+  exportés de `calculerRevenuExonereTauxEffectif.ts` (même calcul que pour 1AH, plancher 454 €/pensionné,
+  plafond global **4 439 € pour tout le foyer** — un seul plafond, pas un par pool) ; (2) **1AI** (capital
+  des plans d'épargne retraite) imposable au barème **sans** abattement (texte explicite de la
+  brochure) ; (3) **1AT** (capital retraite, option art. 163 bis CGI) hors barème : abattement spécifique
+  de 10 % **non plafonné** puis taux forfaitaire **7,5 %**, dans `impotForfaitaire` — même famille que le
+  carried-interest/3VD de `calculerGainsActionnariatSalarie.ts`. Rentes viagères à titre onéreux (1AW) :
+  fraction imposable par tranche d'âge (art. 158-6 CGI, 70 %/50 %/40 %/30 %, vérifiée contre l'exemple
+  chiffré de la brochure p.120), incluse dans `totalNetImposable` **sans** l'abattement de 10 % classique
+  (mécanismes exclusifs). **Exclue du calcul** (`CASES_PENSIONS_EXCLUES_DU_CALCUL`) : 1HK/1HL (case
+  informative) seulement — 1AL/1BL et 1AR/1BR/1CR/1DR (pensions/rentes étrangères, crédit d'impôt égal à
+  l'impôt français) ne sont pas exclues : `revenuCreditImpotEgalImpotFrancais` isole leur part du calcul
+  (1AR/1BR/1CR/1DR : fraction par tranche d'âge, sans abattement, comme 1AW), n'entrant pas dans
+  `totalNetImposable`.
+  **Bug corrigé — 1AL/1BL était isolée dans un pool d'abattement indépendant, avec son propre plafond de
+  4 439 €, au lieu de partager le plafond unique du foyer avec 1AS/1AZ/1AO/1AM.** Audit case par case
+  contre le texte intégral de la brochure (p.117) : « L'abattement de 10 % est appliqué automatiquement
+  au total des sommes portées lignes 1AS à 1DS, 1AZ à 1DZ, 1AO à 1DO, **1AL à 1DL et 1AM à 1DM**. » — un
+  seul pool, documenté sans ambiguïté, contrairement à l'hypothèse retenue jusqu'ici (« pool indépendant,
+  pour éviter une clé de répartition non documentée par la brochure »). 1AM était déjà correctement inclus
+  dans le pool ordinaire ; seule 1AL en était exclue à tort. Corrigé en fusionnant 1AL/1BL dans la même
+  base que 1AS/1AZ/1AO/1AM avant application du plancher (454 €/pensionné) et du plafond (4 439 €/foyer,
+  désormais unique), puis en isolant proportionnellement la part de 1AL dans le résultat net — même
+  technique que pour 1AF dans `calculerRevenuSalaires.ts` (Phase 1). Sans le fix, un foyer combinant
+  pension française et pension étrangère pouvait bénéficier jusqu'à 8 878 € d'abattement cumulé au lieu
+  de 4 439 €. Vérifié à la main (100 000 € sur 1AS + 100 000 € sur 1AL : base combinée 200 000 €,
+  abattement brut 20 000 € plafonné à 4 439 €, net total 195 561 € réparti 50/50 puisque les deux
+  montants sont égaux → 97 780,50 € de chaque côté) puis en base et à l'écran sur le compte réel :
+  résultat affiché 97 781 € (arrondi), valeurs nettoyées après vérification. 29 tests (1 nouveau,
+  démontrant le cas combiné 1AS+1AL) couvrent l'abattement (plancher, plafond par déclarant et par
+  foyer), 1AI sans abattement, les 4 tranches d'âge des rentes viagères, l'impôt forfaitaire de 1AT, le
+  crédit d'impôt égal à l'impôt français (seul dans le pool, plafonné, et désormais partagé avec 1AS) et
+  la non-inclusion des cases exclues.
 - **`src/hooks/useFiscalOverview.ts` — point de calcul unique consommé par `FiscalOverviewCard` et
   `TaxRateCard`.** Compose `useFoyerFiscal` + `useRevenusSalaires` + `useGainsActionnariatSalarie` +
   `useRevenusExoneresTauxEffectif` + `usePensionsRetraitesRentes` (un seul fetch Supabase de chacun),
