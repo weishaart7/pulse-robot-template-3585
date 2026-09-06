@@ -77,6 +77,13 @@ export interface RevenuSalairesDeclarantDetail {
 export interface RevenuSalairesResult {
   declarant1: RevenuSalairesDeclarantDetail;
   declarant2: RevenuSalairesDeclarantDetail;
+  /**
+   * 1PM/1QM bruts (avant abattement), à titre informatif : le montant est
+   * déjà intégré au pool abattement 10 %/frais réels de son déclarant (voir
+   * `remunerations1`/`remunerations2` ci-dessous) et donc déjà reflété dans
+   * `declarant1.netImposable`/`declarant2.netImposable` — ne pas le rajouter
+   * à `totalNetImposable` sous peine de double comptage.
+   */
   indemnitesPrejudiceMoral: number;
   totalNetImposable: number;
   /**
@@ -165,9 +172,12 @@ export function calculerDeclarant(
  * forfaitaire de 10 % (plancher 509 €, plafond 14 555 €, jamais supérieur à
  * la base) et les frais réels (1AK/1BK).
  *
- * 1PM/1QM (indemnités pour préjudice moral) sont ajoutées telles quelles : le
- * champ ne capture déjà que la fraction taxable au-delà d'1 M€, non soumise à
- * l'abattement forfaitaire.
+ * 1PM/1QM (indemnités pour préjudice moral, fraction taxable au-delà d'1 M€)
+ * rejoignent le même pool que les rémunérations ci-dessus : le BOFiP
+ * (BOI-RSA-CHAMP-20-40-10-30, art. 80 4e alinéa CGI) les qualifie imposables
+ * « dans la catégorie des traitements et salaires », donc soumises au même
+ * choix abattement forfaitaire de 10 %/frais réels que le reste — pas ajoutées
+ * à part hors abattement.
  *
  * 1AF/1BF (crédit d'impôt égal à l'impôt français) rejoignent le même pool
  * que les rémunérations ci-dessus (plancher/plafond et choix 10 %/frais
@@ -189,11 +199,11 @@ export function calculerRevenuSalaires(input: RevenusSalairesInput): RevenuSalai
 
   const remunerations1 = (input.case1aj ?? 0) + (input.case1aa ?? 0)
     + (input.case1gf ?? 0) + (input.case1gg ?? 0) + (input.case1ap ?? 0) + (input.case1ag ?? 0)
-    + (input.case1gb ?? 0)
+    + (input.case1gb ?? 0) + (input.case1pm ?? 0)
     + surplus1gh + surplus1ad;
   const remunerations2 = (input.case1bj ?? 0) + (input.case1ba ?? 0)
     + (input.case1hf ?? 0) + (input.case1hg ?? 0) + (input.case1bp ?? 0) + (input.case1bg ?? 0)
-    + (input.case1hb ?? 0)
+    + (input.case1hb ?? 0) + (input.case1qm ?? 0)
     + surplus1hh + surplus1bd;
 
   const declarant1 = calculerDeclarant(remunerations1, input.case1ga ?? 0, input.case1ak, input.case1af ?? 0);
@@ -207,7 +217,7 @@ export function calculerRevenuSalaires(input: RevenusSalairesInput): RevenuSalai
     declarant1,
     declarant2,
     indemnitesPrejudiceMoral,
-    totalNetImposable: declarant1.netImposable + declarant2.netImposable + indemnitesPrejudiceMoral,
+    totalNetImposable: declarant1.netImposable + declarant2.netImposable,
     revenuCreditImpotEgalImpotFrancais,
     casesExclues: CASES_SALAIRES_EXCLUES_DU_CALCUL,
   };

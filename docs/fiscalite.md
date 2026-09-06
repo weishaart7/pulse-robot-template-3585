@@ -239,7 +239,8 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   (journalistes, assistants maternels) avant d'appliquer le plus favorable entre l'abattement forfaitaire
   de 10 % (plancher 509 €, plafond 14 555 €, jamais supérieur à la base) et les frais réels (1AK/1BK).
   1PM/1QM (indemnités pour préjudice moral, déjà limitées par le formulaire à la fraction taxable
-  au-delà d'1 M€) s'ajoutent sans abattement. **1GH/1HH (heures supplémentaires/complémentaires et jours
+  au-delà d'1 M€) rejoignent le pool 1AJ/1AA/1GF/1GG/1AP/1AG/1GB du même déclarant, donc subissent le
+  même abattement 10 %/frais réels — voir « Bug corrigé » ci-dessous. **1GH/1HH (heures supplémentaires/complémentaires et jours
   de repos/RTT monétisés, art. 81 quater CGI) et 1AD/1BD (prime de partage de la valeur) sont
   plafonnées, plus intégralement exclues** : vérifié visuellement sur la brochure officielle DGFiP (IR
   2026, revenus 2025, p.105-106) — l'exonération de 1GH/1HH est limitée à 7 500 € nets par an **par
@@ -299,6 +300,25 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   cases exclues. La fonction `calculerDeclarant` (abattement 10 %/frais réels d'un déclarant) est
   exportée et réutilisée telle quelle par `calculerRevenuExonereTauxEffectif.ts` (ci-dessous), qui
   n'utilise pas le 4ᵉ paramètre (comportement inchangé).
+  **Bug corrigé — 1PM/1QM (indemnités pour préjudice moral, fraction taxable au-delà d'1 M€) étaient
+  ajoutées après le calcul de l'abattement du déclarant, hors du choix abattement forfaitaire de
+  10 %/frais réels, sur la base d'une hypothèse jamais vérifiée (« le champ ne capture déjà que la
+  fraction taxable, non soumise à l'abattement forfaitaire »).** Le BOFiP
+  (BOI-RSA-CHAMP-20-40-10-30, art. 80 4e alinéa CGI) qualifie cette fraction imposable « dans la
+  catégorie des traitements et salaires » — donc soumise au même régime que le reste du pool, sans
+  exception. Écart détecté par comparaison avec le simulateur officiel de l'impôt sur le revenu sur le
+  compte réel (couple marié, dont 1PM = 50 000 €, 1AK = 5 500 € de frais réels par ailleurs plus
+  favorables que l'abattement forfaitaire du seul pool hors 1PM) : Pulse annonçait 22 868 € d'impôt
+  (revenu imposable 122 200 €) contre 21 443 € au simulateur officiel (revenu brut global 117 450 €).
+  Cause exacte : en isolant 1PM hors du pool, l'abattement forfaitaire du déclarant restait sous-évalué
+  (calculé sur la base hors 1PM), ce qui faisait paraître les frais réels plus favorables alors qu'une
+  fois 1PM intégré à la base, l'abattement forfaitaire (10 % d'une base beaucoup plus grande) redevient
+  le choix le plus favorable — un cas où l'erreur de périmètre du pool change le résultat de
+  l'arbitrage forfaitaire/frais réels lui-même, pas seulement son montant. Corrigé en intégrant 1PM/1QM
+  à `remunerations1`/`remunerations2` comme n'importe quelle autre case du pool ; `totalNetImposable`
+  ne les rajoute plus séparément (double comptage). Rejoué sur le compte réel après correction : 117 450 €
+  / 21 443 €, identiques au centime près au simulateur officiel. Test dédié mis à jour dans
+  `calculerRevenuSalaires.test.ts`.
 - **`src/lib/fiscalite/calculerRevenuExonereTauxEffectif.ts` — revenus exonérés retenus pour le calcul
   du taux effectif.** Fonction pure : 1AC/1BC (salaires de source étrangère exonérés) reçoivent le même
   abattement 10 %/frais réels (1AE/1BE) que les salaires français, via `calculerDeclarant` réutilisée de

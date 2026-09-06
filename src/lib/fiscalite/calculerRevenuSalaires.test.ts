@@ -94,10 +94,12 @@ describe('calculerRevenuSalaires — cases annexes imposables', () => {
     expect(result.declarant1.remunerationsBrutes).toBe(15000);
   });
 
-  it('1PM/1QM (préjudice moral) s\'ajoutent sans abattement', () => {
+  it('1PM/1QM (préjudice moral) rejoignent le pool abattement 10 %/frais réels du déclarant', () => {
     const result = calculerRevenuSalaires(makeInput({ case1aj: 30000, case1pm: 50000 }));
     expect(result.indemnitesPrejudiceMoral).toBe(50000);
-    expect(result.totalNetImposable).toBe(27000 + 50000);
+    // base = 30000 + 50000 = 80000, abattement forfaitaire = 8000 (10 %, sous le plafond de 14555)
+    expect(result.declarant1.netImposable).toBe(80000 - 8000);
+    expect(result.totalNetImposable).toBe(80000 - 8000);
   });
 });
 
