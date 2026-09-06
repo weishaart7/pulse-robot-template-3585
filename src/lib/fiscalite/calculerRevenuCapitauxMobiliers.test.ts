@@ -223,12 +223,61 @@ describe('calculerRevenuCapitauxMobiliers — contrats de 8 ans et plus (Phase 2
   });
 });
 
+describe('calculerRevenuCapitauxMobiliers — gains de cession de bons/contrats (Phase 2c)', () => {
+  it('2VN est toujours imposé au barème, sans option 2OP', () => {
+    const result = calculer(makeInput({ case2vn: 4000 }));
+    expect(result.totalNetImposable).toBe(4000);
+    expect(result.impotForfaitaire).toBe(0);
+  });
+
+  it('2VN est imposé au barème et cumulé avec le reste, option 2OP cochée', () => {
+    const result = calculer(makeInput({ case2op: true, case2vn: 4000, case2tr: 1000 }));
+    expect(result.totalNetImposable).toBe(5000);
+  });
+
+  it('2VO est taxé à 7,5 % (PFU) sans option 2OP, brut, sans aucun abattement', () => {
+    const result = calculer(makeInput({ case2vo: 10000 }));
+    expect(result.impotForfaitaire).toBeCloseTo(10000 * 0.075);
+  });
+
+  it('2VP est taxé à 12,8 % (PFU) sans option 2OP, brut, sans aucun abattement', () => {
+    const result = calculer(makeInput({ case2vp: 10000 }));
+    expect(result.impotForfaitaire).toBeCloseTo(10000 * 0.128);
+  });
+
+  it('2VO et 2VP rejoignent le barème avec option 2OP, brut, sans abattement', () => {
+    const result = calculer(makeInput({ case2op: true, case2vo: 10000, case2vp: 5000 }));
+    expect(result.totalNetImposable).toBe(15000);
+    expect(result.impotForfaitaire).toBe(0);
+  });
+
+  it("2VO/2VP ne consomment pas l'abattement 4 600 €/9 200 € des contrats ≥ 8 ans (2CH/2DH/2VV/2WW)", () => {
+    // 2CH absorbe tout l'abattement (4600 €) ; 2VO doit rester taxé sur son montant brut, pas de reliquat partagé.
+    const result = calculer(makeInput({ case2ch: 10000, case2vo: 1000 }));
+    expect(result.totalNetImposable).toBe(5400); // 10000 - 4600 (2CH)
+    expect(result.impotForfaitaire).toBeCloseTo(1000 * 0.075); // 2VO intégralement taxé, aucun abattement partagé
+  });
+
+  it('2VM (gains déjà soumis au prélèvement libératoire) reste sans aucun effet, avec ou sans option', () => {
+    const sansOption = calculer(makeInput({ case2vm: 5000 }));
+    expect(sansOption.impotForfaitaire).toBe(0);
+    const avecOption = calculer(makeInput({ case2op: true, case2vm: 5000 }));
+    expect(avecOption.totalNetImposable).toBe(0);
+  });
+
+  it('combine 2VN (toujours barème) et 2VO/2VP (PFU) sans option 2OP', () => {
+    const result = calculer(makeInput({ case2vn: 2000, case2vo: 1000, case2vp: 3000 }));
+    expect(result.totalNetImposable).toBe(2000);
+    expect(result.impotForfaitaire).toBeCloseTo(1000 * 0.075 + 3000 * 0.128);
+  });
+});
+
 describe('calculerRevenuCapitauxMobiliers — cases exclues du calcul', () => {
   it("les cases hors périmètre n'ont aucun effet, avec ou sans option barème", () => {
     const input = makeInput({
       case2uu: 1000,
       case2xx: 1000,
-      case2vm: 1000, case2vn: 1000, case2vo: 1000, case2vp: 1000,
+      case2vm: 1000,
       case2vq: 1000, case2vr: 1000, case2vs: 1000, case2vt: 1000, case2vu: 1000,
       case2tu: 1000, case2tv: 1000, case2tw: 1000, case2tx: 1000, case2ty: 1000,
       case2cg: 1000, case2bh: 1000, case2df: 1000, case2dg: 1000, case2di: 1000, case2ee: 1000,
@@ -245,6 +294,7 @@ describe('calculerRevenuCapitauxMobiliers — cases exclues du calcul', () => {
   it('expose la liste des cases exclues', () => {
     const result = calculer(makeInput());
     expect(result.casesExclues).toContain('case2uu');
+    expect(result.casesExclues).toContain('case2vm');
     expect(result.casesExclues).toContain('case2vq');
     expect(result.casesExclues).toContain('case2ab');
     expect(result.casesExclues).toContain('case2xx');
@@ -257,5 +307,8 @@ describe('calculerRevenuCapitauxMobiliers — cases exclues du calcul', () => {
     expect(result.casesExclues).not.toContain('case2dh');
     expect(result.casesExclues).not.toContain('case2vv');
     expect(result.casesExclues).not.toContain('case2ww');
+    expect(result.casesExclues).not.toContain('case2vn');
+    expect(result.casesExclues).not.toContain('case2vo');
+    expect(result.casesExclues).not.toContain('case2vp');
   });
 });

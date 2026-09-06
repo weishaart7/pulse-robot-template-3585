@@ -657,11 +657,41 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   d'avoir été absorbée par `2CH` (BOI-RPPM-RCM-20-10-20-50 §330-365, confirmé restituable : « s'il
   excède l'impôt dû, l'excédent est restitué ») — voir l'extension de `calculerImpot.ts` ci-dessous.
   `2VV`/`2WW` (reliquat d'abattement) suivent le switch `2OP` standard (7,5 %/12,8 % PFU, ou barème).
-  `2YY`/`2CH`, toujours au barème, rejoignent `totalNetImposable`. **Exclues du calcul**
+  `2YY`/`2CH`, toujours au barème, rejoignent `totalNetImposable`.
+  **Phase 2c — gains de cession de bons/contrats de capitalisation et d'assurance-vie
+  (`2VM`-`2VU`).** Recherche brochure DGFiP IR 2026 (p.131-132) et BOFiP
+  BOI-RPPM-RCM-20-10-20-50 (§450/460, recherche complémentaire) avant codage, soumise
+  en tableau de conformité et validée avant implémentation. Texte explicite : « le
+  régime d'imposition de ce gain est le même que celui applicable aux produits du bon
+  ou contrat concerné », mais **contrairement aux produits (2CH/2DH/2VV/2WW), les
+  gains de cession n'ouvrent jamais droit à l'abattement de 4 600 €/9 200 €** — « ce
+  gain est retenu dans l'assiette de l'impôt pour son montant brut ». `2VN` (gains
+  attachés à des primes versées avant le 27.9.2017, sans option pour le prélèvement
+  libératoire) rejoint donc `toujoursBareme` comme `2CH`/`2YY` ; `2VO`/`2VP` (gains
+  attachés à des primes versées à compter du 27.9.2017, imposables à 7,5 %/12,8 %)
+  suivent le switch `2OP` comme `2VV`/`2WW`, mais sans jamais passer par l'abattement.
+  **La règle d'imputation « par taux » des moins-values de cession (une moins-value à
+  12,8 % ne s'impute que sur des gains à 12,8 %), envisagée en dette comme un
+  mécanisme à modéliser, n'a en réalité rien à modéliser côté moteur** : la brochure
+  (p.132) est explicite, cette imputation est faite par le déclarant lui-même avant
+  de remplir sa déclaration — les montants inscrits en `2VM`-`2VP` sont déjà nets de
+  cette imputation, comme le reste du module qui ne recalcule jamais les montants
+  CERFA. `2VM` (gains attachés à des primes versées avant le 27.9.2017, déjà soumis
+  au prélèvement libératoire lors du versement) reste donc sans effet sur l'IR, même
+  famille que `2XX` ; `2VQ`-`2VU` (reliquat de moins-value non imputée, par année
+  d'origine) restent purement informatifs pour l'année suivante, même famille que
+  `2TU`-`2TY`. 8 nouveaux tests (40 au total pour le fichier) couvrent `2VN` toujours
+  barème, `2VO`/`2VP` selon le switch `2OP` sans aucun abattement partagé avec
+  `2CH`/`2DH`/`2VV`/`2WW`, `2VM` sans effet, et la combinaison des trois régimes.
+  Vérifié en base et à l'écran sur le compte réel : +10 000 € sur `2VN` → +3 000 €
+  d'IR (TMI 30 %) ; +10 000 € sur `2VO` → +750 € d'IR (10 000 × 7,5 %, brut, sans
+  abattement bien que `2CH`/`2DH`/`2VV`/`2WW` soient vides et l'abattement disponible)
+  ; +10 000 € sur `2VP` → +1 280 € d'IR (10 000 × 12,8 %) ; valeurs nettoyées après
+  vérification. **Exclues du calcul**
   (`CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL`), différées en dette faute de mécanisme fiabilisable
   sans session dédiée : `2UU` (total informatif à répartir entre `2VV`/`2WW`, déjà comptés — pas un
-  montant additionnel) ; `2VM`/`2VN`/`2VO`/`2VP` et `2VQ`-`2VU` (gains de cession — règle d'imputation
-  « par taux », une moins-value à 12,8 % ne s'impute que sur des gains à 12,8 %) ; `2TU`-`2TY` (pertes
+  montant additionnel) ; `2VM` et `2VQ`-`2VU` (voir ci-dessus, gains déjà taxés à la
+  source ou reliquat purement informatif) ; `2TU`-`2TY` (pertes
   non imputées, pur report sans effet sur l'année en cours) ; `2CG`/`2BH`/`2DF`/`2DG`/`2DI`/`2EE`
   (lignes exclusivement PS/revenu fiscal de référence, les deux hors périmètre du module —
   **découverte notable** : `2DI` doit en outre être inclus dans `2DG` d'après la brochure, ce n'est pas
@@ -1048,17 +1078,19 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   frais/déficits (`2CA`/`2AA`-`2AR`, si option barème) — au barème si `2OP` coché, au PFU 12,8 % sinon
   (Phase 1) ; contrats d'assurance-vie de moins de 8 ans (`2XX` sans effet, `2ZZ` selon le switch `2OP`,
   `2YY` toujours au barème même sans option — Phase 2a) et de 8 ans et plus (`2CH`/`2DH`/`2VV`/`2WW`,
-  abattement 4 600 €/9 200 € + crédit d'impôt restituable sur `2DH` — Phase 2b, voir §2)
+  abattement 4 600 €/9 200 € + crédit d'impôt restituable sur `2DH` — Phase 2b, voir §2) et gains de
+  cession de bons/contrats (`2VN` toujours barème, `2VO`/`2VP` selon le switch `2OP`, jamais
+  d'abattement — Phase 2c, voir §2)
   (`calculerRevenuCapitauxMobiliers.ts` + extension de `calculerImpot.ts`, voir §2). Reste hors calcul
-  (dette, voir ci-dessous) : gains de cession, pertes/moins-values non imputées, lignes PS/RFR, crédits
-  d'impôt imputables sur l'impôt dû. Prochaine étape de la feuille de route : un futur cadre 2042
-  (revenus fonciers, plus-values, etc.), ou la Phase 2c du calcul des capitaux mobiliers (gains de
-  cession, imputation des moins-values par taux).
+  (dette, voir ci-dessous) : pertes/moins-values non imputées (purement informatives, reste du
+  déclarant), lignes PS/RFR, crédits d'impôt imputables sur l'impôt dû. Prochaine étape de la feuille de
+  route : un futur cadre 2042 (revenus fonciers, plus-values, etc.).
 - **Différé, déductible du code** :
   - **Revenus des valeurs et capitaux mobiliers — hors calcul (voir §2/§3)** :
     `2UU` (total informatif à répartir entre `2VV`/`2WW`, déjà comptés),
-    `2VM`/`2VN`/`2VO`/`2VP`/`2VQ`-`2VU` (gains de cession,
-    imputation des moins-values par taux), `2TU`-`2TY` (pertes non imputées, sans effet sur l'année en
+    `2VM`/`2VQ`-`2VU` (gains de cession déjà taxés à la source ou reliquat de
+    moins-value purement informatif — voir §2, `2VN`/`2VO`/`2VP` désormais
+    couverts, Phase 2c), `2TU`-`2TY` (pertes non imputées, sans effet sur l'année en
     cours), `2CG`/`2BH`/`2DF`/`2DG`/`2DI`/`2EE` (lignes PS/RFR, hors périmètre du module),
     `2AB`/`2CK` (crédits d'impôt imputables sur l'impôt dû, mécanisme général absent de
     `calculerImpot.ts`). `2DM` (impatriés) et le bloc « précisions CDHR »

@@ -30,10 +30,18 @@ const COUPLE_IMPOSITION_COMMUNE: FoyerFiscalInput['situationFamille'][] = ['mari
  * - 2XX (contrats < 8 ans, prélevé à titre définitif à la source lors du
  *   versement, taux 15/25/35/45 % selon durée) : déjà taxé, aucun effet
  *   supplémentaire sur l'IR — informatif/RFR seulement, comme 2CG/2BH/2DF.
- * - 2VM/2VN/2VO/2VP (gains de cession de bons/contrats) et 2VQ-2VU
- *   (moins-values reportables) : règle d'imputation "par taux" (une
- *   moins-value à 12,8 % ne s'impute que sur des gains à 12,8 %), non
- *   modélisée.
+ * - 2VM (gains de cession de bons/contrats attachés à des primes versées
+ *   avant le 27.9.2017, déjà soumis au prélèvement libératoire lors du
+ *   versement) : même mécanisme que 2XX, déjà taxé à titre définitif, sans
+ *   effet supplémentaire sur l'IR (brochure DGFiP IR 2026 p.131-132 ;
+ *   BOI-RPPM-RCM-20-10-20-50 § 450 et suiv.).
+ * - 2VQ-2VU (reliquat de moins-value de cession non imputée, par année
+ *   d'origine 2021-2025) : la brochure est explicite (p.132) — le montant
+ *   inscrit ici est celui qui *reste* après imputation par le déclarant
+ *   lui-même sur ses gains de même régime de l'année (l'app ne recalcule
+ *   jamais les montants CERFA, cf. 2VM/2VN/2VO/2VP ci-dessous, déjà nets de
+ *   cette imputation) — purement informatif pour l'année suivante, même
+ *   famille que 2TU-2TY, aucun effet sur l'année en cours.
  * - 2TU/2TV/2TW/2TX/2TY (pertes prêts participatifs non imputées) : pur
  *   report sur les années suivantes, aucun effet sur l'année en cours.
  * - 2CG/2BH/2DF/2DG/2DI/2EE : lignes exclusivement PS/revenu fiscal de
@@ -45,7 +53,7 @@ const COUPLE_IMPOSITION_COMMUNE: FoyerFiscalInput['situationFamille'][] = ['mari
 export const CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL = [
   'case2uu',
   'case2xx',
-  'case2vm', 'case2vn', 'case2vo', 'case2vp',
+  'case2vm',
   'case2vq', 'case2vr', 'case2vs', 'case2vt', 'case2vu',
   'case2tu', 'case2tv', 'case2tw', 'case2tx', 'case2ty',
   'case2cg', 'case2bh', 'case2df', 'case2dg', 'case2di', 'case2ee',
@@ -115,6 +123,28 @@ export interface RevenuCapitauxMobiliersResult {
  * d'avoir été absorbée par 2CH) donne droit à `creditImpotAssuranceVie`
  * (7,5 % de cette fraction), restituable — voir `RevenuCapitauxMobiliersResult`.
  *
+ * **Gains de cession de bons/contrats de capitalisation et d'assurance-vie
+ * (2VM-2VP, Phase 2c) — même régime que les produits du contrat, mais
+ * jamais d'abattement.** Vérifié brochure DGFiP IR 2026 p.131-132 et BOFiP
+ * BOI-RPPM-RCM-20-10-20-50 § 450/460 : « le régime d'imposition de ce gain
+ * est le même que celui applicable aux produits du bon ou contrat
+ * concerné », mais « ce gain est retenu dans l'assiette de l'impôt pour son
+ * montant brut, sans qu'il soit fait application de l'abattement fixe
+ * annuel de 4 600 € ou 9 200 € » (contrairement à 2CH/2DH/2VV/2WW). 2VN
+ * (gains attachés à des primes versées avant le 27.9.2017, sans option pour
+ * le prélèvement libératoire) rejoint donc `toujoursBareme` comme 2CH/2YY ;
+ * 2VO/2VP (gains attachés à des primes versées à compter du 27.9.2017,
+ * imposables à 7,5 %/12,8 %) suivent le switch 2OP comme 2VV/2WW mais sans
+ * jamais passer par l'abattement. La règle d'imputation "par taux" des
+ * moins-values de cession (une moins-value à 12,8 % ne s'impute que sur des
+ * gains à 12,8 %) n'a rien à modéliser ici : la brochure (p.132) est
+ * explicite, cette imputation est faite par le déclarant lui-même avant de
+ * remplir sa déclaration — les montants inscrits en 2VM-2VP sont déjà nets
+ * de cette imputation, comme le reste du module qui ne recalcule jamais les
+ * montants CERFA. Voir CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL pour 2VM
+ * (déjà prélevé à la source, comme 2XX) et 2VQ-2VU (reliquat non imputé,
+ * purement informatif pour l'année suivante).
+ *
  * Cases hors calcul : voir CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL.
  */
 export function calculerRevenuCapitauxMobiliers(
@@ -151,7 +181,12 @@ export function calculerRevenuCapitauxMobiliers(
   const net2ww = case2ww - abattementSur2ww; // 12,8 % PFU, ou barème sur option
   const creditImpotAssuranceVie = abattementSur2dh * TAUX_PFL_2DH;
 
-  const toujoursBareme = (input.case2yy ?? 0) + net2ch;
+  // Gains de cession de bons/contrats (2VN toujours barème, 2VO/2VP selon le switch 2OP) — jamais d'abattement.
+  const case2vn = input.case2vn ?? 0;
+  const case2vo = input.case2vo ?? 0;
+  const case2vp = input.case2vp ?? 0;
+
+  const toujoursBareme = (input.case2yy ?? 0) + net2ch + case2vn;
 
   if (input.case2op) {
     const abattementDividendes = dividendes * ABATTEMENT_DIVIDENDES_TAUX;
@@ -161,7 +196,7 @@ export function calculerRevenuCapitauxMobiliers(
 
     const baseAvantDeficits = (dividendes - abattementDividendes)
       + sansAbattement + revenusReputesDistribues + toujoursBareme + contratMoinsDe8AnsPost2017
-      + net2vv + net2ww
+      + net2vv + net2ww + case2vo + case2vp
       - fraisCharges;
 
     return {
@@ -173,11 +208,11 @@ export function calculerRevenuCapitauxMobiliers(
   }
 
   const baseTaux128 = dividendes + sansAbattement + revenusReputesDistribues
-    + contratMoinsDe8AnsPost2017 + net2ww;
+    + contratMoinsDe8AnsPost2017 + net2ww + case2vp;
 
   return {
     totalNetImposable: toujoursBareme,
-    impotForfaitaire: baseTaux128 * TAUX_PFU + net2vv * TAUX_PFU_REDUIT_2VV,
+    impotForfaitaire: baseTaux128 * TAUX_PFU + (net2vv + case2vo) * TAUX_PFU_REDUIT_2VV,
     creditImpotAssuranceVie,
     casesExclues: CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL,
   };
