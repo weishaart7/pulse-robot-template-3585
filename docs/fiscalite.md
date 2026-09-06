@@ -80,9 +80,11 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
    `revenus_exoneres_taux_effectif` + `pensions_retraites_rentes`, calcule le revenu net imposable, le
    nombre de parts et l'impôt sur le revenu réel (voir §2), et alimente les deux cartes. **Prélèvements
    sociaux et IFI restent affichés comme « non calculé »** (pas de moteur pour ces deux impôts dans ce
-   tableau de bord — l'IFI dispose de son propre simulateur, point 3 ci-dessous). Le carried-interest
-   (1NX/1OX) et les gains d'actionnariat à taux forfaitaire (3VD/3VI/3VF) sont couverts, à taux
-   proportionnel (12,8 %/18 %/30 %/41 %, hors barème) ; les pensions/retraites/rentes le sont désormais
+   tableau de bord — l'IFI dispose de son propre simulateur, point 3 ci-dessous). Les gains
+   d'actionnariat à taux forfaitaire (3VD/3VI/3VF) sont couverts, à taux proportionnel (18 %/30 %/41 %,
+   hors barème) ; le carried-interest (1NX/1OX) rejoint désormais le barème comme un salaire ordinaire
+   (voir « Bug corrigé » en §2 — 1NX/1OX n'est pas le carried-interest qualifiant du régime de faveur) ;
+   les pensions/retraites/rentes le sont désormais
    aussi (abattement de 10 % classique, capital PER sans abattement, capital retraite à 7,5 %, rentes
    viagères par tranche d'âge — voir §2) ; toute autre catégorie de revenu future (fonciers, capitaux
    mobiliers…) n'entre pas encore dans ce calcul (voir §4).
@@ -132,8 +134,8 @@ les deux dossiers `lib/fiscal/` et `lib/fiscalite/` sont volontairement distinct
 sept fonctions pures composées par [useFiscalOverview.ts](src/hooks/useFiscalOverview.ts) :
 [calculerRevenuSalaires.ts](src/lib/fiscalite/calculerRevenuSalaires.ts) (revenu net imposable du cadre
 1 Salaires), [calculerGainsActionnariatSalarie.ts](src/lib/fiscalite/calculerGainsActionnariatSalarie.ts)
-(part barème et part à taux forfaitaire — carried-interest, gains pré-28.9.2012 — des gains
-d'actionnariat salarié), [calculerRevenuExonereTauxEffectif.ts](src/lib/fiscalite/calculerRevenuExonereTauxEffectif.ts)
+(part barème — dont le carried-interest non qualifiant, 1NX/1OX — et part à taux forfaitaire —
+gains pré-28.9.2012 — des gains d'actionnariat salarié), [calculerRevenuExonereTauxEffectif.ts](src/lib/fiscalite/calculerRevenuExonereTauxEffectif.ts)
 (revenus exonérés retenus pour le taux effectif), [calculerPensionsRetraitesRentes.ts](src/lib/fiscalite/calculerPensionsRetraitesRentes.ts)
 (pensions au barème avec/sans abattement selon la ligne, capital retraite à taux forfaitaire, rentes
 viagères par tranche d'âge), [calculerRevenuCapitauxMobiliers.ts](src/lib/fiscalite/calculerRevenuCapitauxMobiliers.ts)
@@ -351,7 +353,7 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   décote — paramètre optionnel `lieuResidence`, `'metropole'` par défaut, aucun effet dans ce cas), puis
   décote (897 € − 45,25 % × impôt pour un célibataire sous 1 982 €, 1 483 € − 45,25 % × impôt pour un
   couple marié/pacsé sous 3 277 €), puis arrondi à l'euro, puis **ajout de l'impôt à taux forfaitaire**
-  (nouveau paramètre optionnel `impotForfaitaire`, 0 par défaut — carried-interest et gains
+  (nouveau paramètre optionnel `impotForfaitaire`, 0 par défaut — gains
   d'actionnariat à taux historique, `calculerGainsActionnariatSalarie.ts`) : ajouté tel quel après
   l'arrondi, **hors quotient familial, plafonnement, réduction outre-mer et décote**, mécanismes propres
   au barème progressif (la décote est explicitement limitée par l'art. 197 I 4° CGI à la « cotisation
@@ -464,23 +466,38 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
 - **`src/lib/fiscalite/calculerGainsActionnariatSalarie.ts` — part barème et part à taux forfaitaire
   des gains d'actionnariat salarié.** Fonction pure, deux résultats distincts. `totalNetImposable`
   (barème) : additionne 1TP/1UP (rabais excédentaire sur options, imposé comme un salaire),
-  1TT/1UT (gains de levée d'options / actions gratuites post-28.9.2012), 1TZ (gain
+  1TT/1UT (gains de levée d'options / actions gratuites post-28.9.2012), 1NX/1OX (carried-interest ne
+  remplissant pas les conditions du régime de faveur — voir « Bug corrigé » ci-dessous), 1TZ (gain
   après abattement — case unique, pas de déclarant 2, déjà net des abattements 1UZ/1WZ/1VZ) et 3VJ/3VK
   (option barème pour les gains pré-28.9.2012, en lieu et place des taux forfaitaires 3VD/3VI/3VF).
-  **Abattement forfaitaire de 10 % désormais appliqué à 1TP/1TT/1AY/1MP/3VJ** (pas 1TZ, déjà net d'un
+  **Abattement forfaitaire de 10 % désormais appliqué à 1TP/1TT/1NX/1AY/1MP/3VJ** (pas 1TZ, déjà net d'un
   autre mécanisme, voir ci-dessous) — résolution de la réserve documentée en dette depuis la Phase 4
   (§3 🟡), voir paragraphe dédié ci-dessous.
   `impotForfaitaire` (impôt déjà calculé, pas un revenu — distinct de `totalNetImposable`, ne s'y ajoute
-  jamais) : 1NX/1OX (carried-interest, art. 150-0 A II 8° CGI, PFU **12,8 %** — IR seul, PS hors
-  périmètre du module) + 3VD/3VI/3VF (gains pré-28.9.2012 à taux historique, respectivement **18 %/30 %/
+  jamais) : 3VD/3VI/3VF (gains pré-28.9.2012 à taux historique, respectivement **18 %/30 %/
   41 %** — le CERFA impose déjà au déclarant de ventiler son gain par tranche de taux dans la case
   correspondante, aucun seuil de 152 500 € à recalculer côté outil). Cases et taux vérifiés visuellement
   sur la brochure officielle DGFiP (2042-C, revenus 2025, page 3, cases 111/150) avant codage. **Exclues
   du calcul** (`CASES_GAINS_ACTIONNARIAT_EXCLUES_DU_CALCUL`) : 1UZ/1WZ/1VZ (montants d'abattement déjà
   déduits de 1TZ — les ajouter serait un double-comptage), 1NY/1OY et 3VN (contributions salariales de
-  30 %/10 % sur le carried-interest/les options, pas de l'IR). 26 tests couvrent
+  30 %/10 % sur le carried-interest/les options, pas de l'IR). 24 tests couvrent
   l'agrégation des cases barème, l'impôt forfaitaire (chaque taux isolément, cumul, indépendance vis-à-vis
   du barème) et la non-inclusion des cases exclues.
+  **Bug corrigé — 1NX/1OX (carried-interest) étaient traitées comme le carried-interest *qualifiant*
+  du régime de faveur (art. 150-0 A II 8° CGI), taxées à 12,8 % PFU hors barème, sur la base d'une
+  lecture visuelle du CERFA (page/case) sans vérification du texte de loi.** Le CERFA place pourtant
+  1NX/1OX dans le cadre 1 « SALAIRES, GAINS D'ACTIONNARIAT SALARIÉ », pas dans le cadre 3 « PLUS-VALUES
+  ET GAINS DIVERS » où figure le carried-interest qualifiant (case 3VG, imposé comme une plus-value
+  mobilière, PFU 12,8 %/30 % ou option barème via 2OP — hors périmètre du module, non modélisé). Le
+  carried-interest qui ne remplit pas les conditions de l'art. 150-0 A II 8° CGI (durée de détention,
+  investissement personnel minimal...) est requalifié en salaire ordinaire et imposé au barème dans la
+  catégorie des traitements et salaires — c'est précisément ce que couvre 1NX/1OX sur le CERFA. Écart
+  détecté par comparaison avec le simulateur officiel de l'impôt sur le revenu sur un compte réel
+  (célibataire, 1NX = 20 000 €, plus 1TP/1TT/1AY/1MP/1TZ) : 18 854 € (Pulse, 1NX au PFU) contre
+  22 874 € au simulateur officiel. En intégrant 1NX/1OX au pool barème/abattement 10 % comme 1TT, le
+  calcul retombe exactement sur 22 874 €. Corrigé en déplaçant 1NX/1OX du calcul `impotForfaitaire` vers
+  `baseAbattementDeclarant1`/`baseAbattementDeclarant2`. Tests mis à jour dans
+  `calculerGainsActionnariatSalarie.test.ts`.
   **Résolu — abattement forfaitaire de 10 % appliqué à 1TP/1TT/1AY/1MP/3VJ, levant la réserve
   documentée en dette depuis l'audit initial de la Phase 4 (§3 🟡).** Reprise de la recherche demandée
   explicitement en session : la brochure DGFiP et le BOFiP consultés lors de l'audit initial
@@ -525,8 +542,8 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   plafond global **4 439 € pour tout le foyer** — un seul plafond, pas un par pool) ; (2) **1AI** (capital
   des plans d'épargne retraite) imposable au barème **sans** abattement (texte explicite de la
   brochure) ; (3) **1AT** (capital retraite, option art. 163 bis CGI) hors barème : abattement spécifique
-  de 10 % **non plafonné** puis taux forfaitaire **7,5 %**, dans `impotForfaitaire` — même famille que le
-  carried-interest/3VD de `calculerGainsActionnariatSalarie.ts`. Rentes viagères à titre onéreux (1AW) :
+  de 10 % **non plafonné** puis taux forfaitaire **7,5 %**, dans `impotForfaitaire` — même famille que
+  3VD/3VI/3VF de `calculerGainsActionnariatSalarie.ts`. Rentes viagères à titre onéreux (1AW) :
   fraction imposable par tranche d'âge (art. 158-6 CGI, 70 %/50 %/40 %/30 %, vérifiée contre l'exemple
   chiffré de la brochure p.120), incluse dans `totalNetImposable` **sans** l'abattement de 10 % classique
   (mécanismes exclusifs). **Exclue du calcul** (`CASES_PENSIONS_EXCLUES_DU_CALCUL`) : 1HK/1HL (case
@@ -763,7 +780,7 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   **découverte notable** : `2DI` doit en outre être inclus dans `2DG` d'après la brochure, ce n'est pas
   un montant additif indépendant). Branché dans `useFiscalOverview.ts` (qui passe désormais
   `foyerInput.situationFamille` à la fonction) : `totalNetImposable` s'ajoute au revenu imposable
-  France, `impotForfaitaire` au pool déjà sommé pour `calculerImpot.ts` (carried-interest, 3VD/3VI/3VF,
+  France, `impotForfaitaire` au pool déjà sommé pour `calculerImpot.ts` (3VD/3VI/3VF,
   capital
   retraite 7,5 %). 32 tests couvrent le PFU sans option, l'abattement de 40 % avec option, le
   coefficient de 2GO dans les deux régimes, les frais et déficits conditionnés à l'option (avec
@@ -955,8 +972,8 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   (`calculerRevenuSalaires.ts` + `calculerGainsActionnariatSalarie.ts` +
   `calculerRevenuExonereTauxEffectif.ts` + `calculerPensionsRetraitesRentes.ts` +
   `calculerPartsFiscales.ts` + `calculerImpot.ts`, consommés par `useFiscalOverview.ts`), couvrant les
-  salaires, la part barème et la part à taux forfaitaire des gains d'actionnariat salarié
-  (carried-interest 1NX/1OX à 12,8 % PFU, 3VD/3VI/3VF à 18 %/30 %/41 %), les pensions/retraites/rentes
+  salaires, la part barème (dont le carried-interest non qualifiant, 1NX/1OX) et la part à taux
+  forfaitaire des gains d'actionnariat salarié (3VD/3VI/3VF à 18 %/30 %/41 %), les pensions/retraites/rentes
   (abattement 10 % classique, capital PER sans abattement, capital retraite à 7,5 %, rentes viagères
   par tranche d'âge — taux vérifiés visuellement sur la brochure DGFiP et le BOFiP), et la méthode du
   taux effectif, et désormais le crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL,
@@ -1139,8 +1156,8 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   CERFA dédié (2042-C, pages 99/116), persistance Supabase (`revenus_exoneres_taux_effectif`, table
   dédiée), codes vérifiés visuellement. **Méthode du taux effectif implémentée** dans `calculerImpot.ts`
   via `calculerRevenuExonereTauxEffectif.ts` (voir §2) — ce n'est plus une capture brute.
-  **Carried-interest et gains d'actionnariat à taux forfaitaire désormais couverts** (1NX/1OX à 12,8 %
-  PFU, 3VD/3VI/3VF à 18 %/30 %/41 %, via `calculerGainsActionnariatSalarie.ts::impotForfaitaire`, ajouté
+  **Carried-interest (barème, 1NX/1OX) et gains d'actionnariat à taux forfaitaire désormais couverts**
+  (3VD/3VI/3VF à 18 %/30 %/41 %, via `calculerGainsActionnariatSalarie.ts::impotForfaitaire`, ajouté
   après décote dans `calculerImpot.ts` — voir §2) ; **pensions, retraites et rentes** : saisie des 7
   lignes du vrai cadre 1 CERFA « Pensions, retraites, rentes » plus les rentes viagères à titre onéreux
   ventilées par tranche d'âge (2042-K, pages 115-119), persistance Supabase (`pensions_retraites_rentes`,

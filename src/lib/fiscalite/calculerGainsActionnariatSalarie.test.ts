@@ -54,13 +54,18 @@ describe('calculerGainsActionnariatSalarie — cases imposables au barème', () 
     expect(result.totalNetImposable).toBe(1350 + 2250);
   });
 
-  it('l\'abattement de 10 % porte sur la somme des 5 cases du même déclarant, pas case par case', () => {
+  it('applique l\'abattement de 10 % à 1NX/1OX (carried-interest non qualifiant, barème)', () => {
+    const result = calculerGainsActionnariatSalarie(makeInput({ case1nx: 20000, case1ox: 5000 }));
+    expect(result.totalNetImposable).toBe(18000 + 4500);
+  });
+
+  it('l\'abattement de 10 % porte sur la somme des 6 cases du même déclarant, pas case par case', () => {
     // Déclarant 1 : 1TP (400) + 1TT (600) = 1000 -> abattement 100, net 900 (pas 40+60=100 arrondis séparément, ici identique mais démontre le pool commun)
     const result = calculerGainsActionnariatSalarie(makeInput({
-      case1tp: 400, case1tt: 600, case1ay: 500, case1mp: 500, case3vj: 500,
+      case1tp: 400, case1tt: 600, case1nx: 500, case1ay: 500, case1mp: 500, case3vj: 500,
     }));
-    // base déclarant 1 = 400+600+500+500+500 = 2500, net = 2250
-    expect(result.totalNetImposable).toBe(2250);
+    // base déclarant 1 = 400+600+500+500+500+500 = 3000, net = 2700
+    expect(result.totalNetImposable).toBe(2700);
   });
 
   it('additionne toutes les cases barème simultanément (déclarant 1 et 2, plus 1TZ sans abattement)', () => {
@@ -79,8 +84,8 @@ describe('calculerGainsActionnariatSalarie — cases exclues du calcul', () => {
     expect(result.totalNetImposable).toBe(4000);
   });
 
-  it('ignore le carried-interest (1NX/1OX) et sa contribution salariale (1NY/1OY) dans le net imposable au barème', () => {
-    const result = calculerGainsActionnariatSalarie(makeInput({ case1nx: 50000, case1ox: 50000, case1ny: 20000, case1oy: 20000 }));
+  it('ignore la contribution salariale du carried-interest (1NY/1OY) dans le net imposable au barème', () => {
+    const result = calculerGainsActionnariatSalarie(makeInput({ case1ny: 20000, case1oy: 20000 }));
     expect(result.totalNetImposable).toBe(0);
   });
 
@@ -119,11 +124,6 @@ describe('calculerGainsActionnariatSalarie — impôt à taux forfaitaire', () =
     expect(calculerGainsActionnariatSalarie(makeInput()).impotForfaitaire).toBe(0);
   });
 
-  it('carried-interest (1NX/1OX) taxé à 12,8 % PFU', () => {
-    const result = calculerGainsActionnariatSalarie(makeInput({ case1nx: 10000, case1ox: 5000 }));
-    expect(result.impotForfaitaire).toBeCloseTo(15000 * 0.128, 6);
-  });
-
   it('3VD taxé à 18 %', () => {
     const result = calculerGainsActionnariatSalarie(makeInput({ case3vd: 10000 }));
     expect(result.impotForfaitaire).toBeCloseTo(1800, 6);
@@ -139,12 +139,11 @@ describe('calculerGainsActionnariatSalarie — impôt à taux forfaitaire', () =
     expect(result.impotForfaitaire).toBeCloseTo(4100, 6);
   });
 
-  it('cumule carried-interest et les trois taux historiques', () => {
+  it('cumule les trois taux historiques', () => {
     const result = calculerGainsActionnariatSalarie(makeInput({
-      case1nx: 10000, case1ox: 0,
       case3vd: 10000, case3vi: 10000, case3vf: 10000,
     }));
-    expect(result.impotForfaitaire).toBeCloseTo(10000 * 0.128 + 1800 + 3000 + 4100, 6);
+    expect(result.impotForfaitaire).toBeCloseTo(1800 + 3000 + 4100, 6);
   });
 
   it('1NY/1OY (contribution salariale carried-interest) et 3VN (contribution salariale 10 %) n\'affectent pas l\'impôt forfaitaire', () => {
@@ -152,8 +151,8 @@ describe('calculerGainsActionnariatSalarie — impôt à taux forfaitaire', () =
     expect(result.impotForfaitaire).toBe(0);
   });
 
-  it('n\'affecte pas le net imposable au barème', () => {
-    const result = calculerGainsActionnariatSalarie(makeInput({ case1nx: 10000, case3vd: 10000, case1tz: 500 }));
+  it('3VD/3VI/3VF (taux forfaitaire) n\'affectent pas le net imposable au barème', () => {
+    const result = calculerGainsActionnariatSalarie(makeInput({ case3vd: 10000, case1tz: 500 }));
     expect(result.totalNetImposable).toBe(500);
   });
 });

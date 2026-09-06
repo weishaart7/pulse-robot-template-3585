@@ -3,9 +3,8 @@ import { GainsActionnariatSalarieInput } from './types';
 /**
  * Cases exclues du calcul d'IR : montants d'abattement déjà déduits de 1TZ
  * (les ajouter serait un double-comptage), ou contributions salariales qui ne
- * sont pas de l'IR. Le carried-interest (1NX/1OX) et les gains à taux
- * historique (3VD/3VI/3VF) sont désormais couverts par `impotForfaitaire`
- * ci-dessous (voir docs/fiscalite.md).
+ * sont pas de l'IR. Les gains à taux historique (3VD/3VI/3VF) sont couverts
+ * par `impotForfaitaire` ci-dessous (voir docs/fiscalite.md).
  */
 export const CASES_GAINS_ACTIONNARIAT_EXCLUES_DU_CALCUL = [
   'case1uz', 'case1wz', 'case1vz', // montants d'abattement déjà déduits de 1TZ (métadonnées, pas un revenu)
@@ -14,18 +13,18 @@ export const CASES_GAINS_ACTIONNARIAT_EXCLUES_DU_CALCUL = [
   'case0xx', // système du quotient (art. 163-0 A CGI) : traité séparément par calculerImpot.ts, pas additionné à totalNetImposable
 ] as const;
 
-/** Taux forfaitaires (art. 150-0 A II 8° et gains pré-28.9.2012). */
-const TAUX_CARRIED_INTEREST = 0.128; // PFU, IR seul (PS hors périmètre)
+/** Taux forfaitaires (gains pré-28.9.2012). */
 const TAUX_3VD = 0.18;
 const TAUX_3VI = 0.30;
 const TAUX_3VF = 0.41;
 
 /**
- * Abattement forfaitaire de 10 % sur 1TP/1TT/1AY/1MP/3VJ (options sur titres,
- * BSPCE sur option barème, "dispositifs innommés"/management packages) —
- * recherche BOFiP complémentaire (BOI-IR-DOMIC-10-20-20-30, retenue à la
- * source des non-résidents, art. 182 A ter CGI, assiette légalement définie
- * comme identique à l'avantage imposable ordinaire de l'art. 80 bis/80
+ * Abattement forfaitaire de 10 % sur 1TP/1TT/1NX/1AY/1MP/3VJ (options sur
+ * titres, carried-interest non qualifiant, BSPCE sur option barème,
+ * "dispositifs innommés"/management packages) — recherche BOFiP
+ * complémentaire (BOI-IR-DOMIC-10-20-20-30, retenue à la source des
+ * non-résidents, art. 182 A ter CGI, assiette légalement définie comme
+ * identique à l'avantage imposable ordinaire de l'art. 80 bis/80
  * quaterdecies CGI) : « l'assiette [...] est diminuée de la déduction
  * forfaitaire pour frais professionnels de 10 %. Aucune déduction au titre
  * des frais réels et justifiés ne peut être pratiquée. » — confirmé pour les
@@ -46,12 +45,13 @@ const TAUX_ABATTEMENT_ACTIONNARIAT = 0.10;
 export interface GainsActionnariatSalarieResult {
   totalNetImposable: number;
   /**
-   * Impôt à taux forfaitaire (carried-interest 1NX/1OX à 12,8 % PFU, gains
-   * pré-28.9.2012 3VD/3VI/3VF à 18 %/30 %/41 %) : montant d'impôt déjà
-   * calculé, distinct du revenu net imposable au barème — ne s'additionne
-   * pas à `totalNetImposable`, s'ajoute à l'impôt net après décote dans
-   * `calculerImpot.ts` (pas soumis au quotient familial, au plafonnement, à
-   * la réduction outre-mer ni à la décote, propres au barème progressif).
+   * Impôt à taux forfaitaire (gains pré-28.9.2012 3VD/3VI/3VF à
+   * 18 %/30 %/41 %) : montant d'impôt déjà calculé, distinct du revenu net
+   * imposable au barème — ne s'additionne pas à `totalNetImposable`, s'ajoute
+   * à l'impôt net après décote dans `calculerImpot.ts` (pas soumis au
+   * quotient familial, au plafonnement, à la réduction outre-mer ni à la
+   * décote, propres au barème progressif). Le carried-interest (1NX/1OX)
+   * n'y figure plus — voir `calculerGainsActionnariatSalarie` ci-dessous.
    */
   impotForfaitaire: number;
   /**
@@ -85,6 +85,9 @@ export interface GainsActionnariatSalarieResult {
  * - 3VJ/3VK (option barème pour les gains pré-28.9.2012, en lieu et place des
  *   taux forfaitaires 3VD/3VI/3VF) : le CERFA les qualifie explicitement de
  *   "catégorie des salaires", **abattement forfaitaire de 10 %**.
+ * - 1NX/1OX (carried-interest **ne remplissant pas** les conditions du régime
+ *   de faveur de l'art. 150-0 A II 8° CGI) : barème, **abattement forfaitaire
+ *   de 10 %**, même famille que 1TT/1UT — voir « Bug corrigé » ci-dessous.
  *
  * **Bug corrigé — 1TP/1TT/1AY/1MP/3VJ étaient ajoutées brutes, sans
  * l'abattement forfaitaire de 10 % que la brochure et le BOFiP consultés lors
@@ -94,29 +97,46 @@ export interface GainsActionnariatSalarieResult {
  * cases précisément — voir TAUX_ABATTEMENT_ACTIONNARIAT ci-dessus pour le
  * détail et les sources.
  *
+ * **Bug corrigé — 1NX/1OX (carried-interest) étaient traitées comme le
+ * carried-interest *qualifiant* le régime de faveur, taxées à 12,8 % PFU hors
+ * barème, sur la base d'une lecture visuelle du CERFA (page/case) sans
+ * vérification du texte de loi.** Le CERFA place pourtant 1NX/1OX dans le
+ * cadre 1 « SALAIRES, GAINS D'ACTIONNARIAT SALARIÉ », pas dans le cadre 3
+ * « PLUS-VALUES ET GAINS DIVERS » où figure le carried-interest qualifiant
+ * (case 3VG, imposé comme une plus-value mobilière, PFU 12,8 %/30 % ou
+ * option barème via 2OP — hors périmètre du module, non modélisé). Le
+ * carried-interest qui ne remplit pas les conditions de l'art. 150-0 A II 8°
+ * CGI (durée de détention, investissement personnel...) est requalifié en
+ * salaire ordinaire et imposé au barème dans la catégorie des traitements et
+ * salaires — c'est précisément ce que couvre 1NX/1OX. Écart détecté par
+ * comparaison avec le simulateur officiel de l'impôt sur le revenu sur un
+ * compte réel (célibataire, 1NX = 20 000 €, plus 1TP/1TT/1AY/1MP/1TZ) :
+ * 18 854 € (Pulse, 1NX au PFU) contre 22 874 € au simulateur officiel. En
+ * intégrant 1NX au pool barème/abattement 10 % comme 1TT, le calcul retombe
+ * exactement sur 22 874 €. Corrigé en déplaçant 1NX/1OX du calcul
+ * `impotForfaitaire` vers `baseAbattementDeclarant1`/`baseAbattementDeclarant2`.
+ *
  * Cases hors calcul : voir CASES_GAINS_ACTIONNARIAT_EXCLUES_DU_CALCUL.
  *
  * S'y ajoute l'impôt à taux forfaitaire (hors barème, voir `impotForfaitaire`
- * ci-dessus) : 1NX/1OX (carried-interest, PFU 12,8 %) et 3VD/3VI/3VF (gains
- * pré-28.9.2012, 18 %/30 %/41 % — la ventilation par taux est déjà faite par
- * le déclarant sur le CERFA, aucun seuil à recalculer ici).
+ * ci-dessus) : 3VD/3VI/3VF (gains pré-28.9.2012, 18 %/30 %/41 % — la
+ * ventilation par taux est déjà faite par le déclarant sur le CERFA, aucun
+ * seuil à recalculer ici).
  */
 export function calculerGainsActionnariatSalarie(
   input: GainsActionnariatSalarieInput,
 ): GainsActionnariatSalarieResult {
-  // Abattement forfaitaire de 10 % (autonome, sans plancher/plafond) sur 1TP/1TT/1AY/1MP/3VJ, par déclarant.
+  // Abattement forfaitaire de 10 % (autonome, sans plancher/plafond) sur 1TP/1TT/1NX/1AY/1MP/3VJ, par déclarant.
   const baseAbattementDeclarant1 = (input.case1tp ?? 0) + (input.case1tt ?? 0)
-    + (input.case1ay ?? 0) + (input.case1mp ?? 0) + (input.case3vj ?? 0);
+    + (input.case1nx ?? 0) + (input.case1ay ?? 0) + (input.case1mp ?? 0) + (input.case3vj ?? 0);
   const baseAbattementDeclarant2 = (input.case1up ?? 0) + (input.case1ut ?? 0)
-    + (input.case1by ?? 0) + (input.case1mq ?? 0) + (input.case3vk ?? 0);
+    + (input.case1ox ?? 0) + (input.case1by ?? 0) + (input.case1mq ?? 0) + (input.case3vk ?? 0);
 
   const totalNetImposable = baseAbattementDeclarant1 * (1 - TAUX_ABATTEMENT_ACTIONNARIAT)
     + baseAbattementDeclarant2 * (1 - TAUX_ABATTEMENT_ACTIONNARIAT)
     + (input.case1tz ?? 0);
 
-  const carriedInterest = (input.case1nx ?? 0) + (input.case1ox ?? 0);
-  const impotForfaitaire = carriedInterest * TAUX_CARRIED_INTEREST
-    + (input.case3vd ?? 0) * TAUX_3VD
+  const impotForfaitaire = (input.case3vd ?? 0) * TAUX_3VD
     + (input.case3vi ?? 0) * TAUX_3VI
     + (input.case3vf ?? 0) * TAUX_3VF;
 
