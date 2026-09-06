@@ -11,6 +11,7 @@ import {
   calculerPartsFiscales,
   calculerPensionsRetraitesRentes,
   calculerPrelevementsSociauxCapitauxMobiliers,
+  calculerPrelevementsSociauxGainsActionnariatSalarie,
   calculerPrelevementsSociauxPensionsRetraitesRentes,
   calculerRevenuCapitauxMobiliers,
   calculerRevenuExonereTauxEffectif,
@@ -23,6 +24,7 @@ import {
   PensionsRetraitesRentesInput,
   PensionsRetraitesRentesResult,
   PrelevementsSociauxCapitauxMobiliersResult,
+  PrelevementsSociauxGainsActionnariatResult,
   PrelevementsSociauxPensionsResult,
   RevenuCapitauxMobiliersResult,
   RevenuExonereTauxEffectifResult,
@@ -144,6 +146,16 @@ export interface FiscalOverview {
    * périmètre.
    */
   prelevementsSociauxPensionsRetraitesRentes: PrelevementsSociauxPensionsResult;
+  /**
+   * Prélèvements sociaux sur les gains d'actionnariat salarié (Phase 3 — voir
+   * docs/fiscalite.md). Périmètre établi par vérification empirique contre
+   * le simulateur officiel plutôt que par recherche documentaire seule (les
+   * sources généralistes se contredisaient) : 1TP/1TT au régime salarial
+   * (9,7 %), 1NX au régime carried-interest non qualifiant (28,6 % combiné),
+   * 1NY/3VN aux contributions salariales spécifiques (30 %/10 %). 1TZ/1AY/
+   * 1MP et les gains historiques 3VD/3VI/3VF/3VJ hors périmètre.
+   */
+  prelevementsSociauxGainsActionnariat: PrelevementsSociauxGainsActionnariatResult;
   parts: PartsFiscalesResult;
   impot: ImpotResult;
   /** Recharge les 6 sources Supabase — à appeler après une saisie dans la 2042 (voir FiscaliteSection.tsx). */
@@ -196,6 +208,7 @@ export function useFiscalOverview(): FiscalOverview {
     const pensionsRetraitesRentes = calculerPensionsRetraitesRentes(pensionsInput);
     const revenuCapitauxMobiliers = calculerRevenuCapitauxMobiliers(capitauxMobiliersInput, foyerInput.situationFamille);
     const prelevementsSociauxCapitauxMobiliers = calculerPrelevementsSociauxCapitauxMobiliers(capitauxMobiliersInput);
+    const prelevementsSociauxGainsActionnariat = calculerPrelevementsSociauxGainsActionnariatSalarie(gainsInput);
     const parts = calculerPartsFiscales(foyerInput);
     const revenuImposableTotal = revenuSalaires.totalNetImposable + gainsActionnariat.totalNetImposable
       + pensionsRetraitesRentes.totalNetImposable + revenuCapitauxMobiliers.totalNetImposable;
@@ -238,6 +251,7 @@ export function useFiscalOverview(): FiscalOverview {
       revenuCapitauxMobiliers,
       prelevementsSociauxCapitauxMobiliers,
       prelevementsSociauxPensionsRetraitesRentes,
+      prelevementsSociauxGainsActionnariat,
       parts,
       impot,
     };

@@ -2,6 +2,7 @@ export * from './types';
 export * from './calculerPartsFiscales';
 export * from './calculerRevenuSalaires';
 export * from './calculerGainsActionnariatSalarie';
+export * from './calculerPrelevementsSociauxGainsActionnariatSalarie';
 export * from './calculerRevenuExonereTauxEffectif';
 export * from './calculerPensionsRetraitesRentes';
 export * from './calculerPrelevementsSociauxPensionsRetraitesRentes';

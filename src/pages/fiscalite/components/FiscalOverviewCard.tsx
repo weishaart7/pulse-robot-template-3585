@@ -37,7 +37,7 @@ const DetailRow = ({ label, value, color, muted = false }: { label: string; valu
 
 const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
   const [activeTab, setActiveTab] = useState("income");
-  const { loading, foyerRenseigne, revenusRenseignes, impot, revenuSalaires, gainsActionnariat, revenuExonereTauxEffectif, pensionsRetraitesRentes, prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes } = overview;
+  const { loading, foyerRenseigne, revenusRenseignes, impot, revenuSalaires, gainsActionnariat, revenuExonereTauxEffectif, pensionsRetraitesRentes, prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat } = overview;
 
   const ratioImpotsRevenus = impot.revenuImposable > 0
     ? `${((impot.impotNet / impot.revenuImposable) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %`
@@ -91,7 +91,11 @@ const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
             label="Prélèvements sociaux (pensions, retraites, rentes)"
             value={formatEuros(prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux)}
           />
-          <DetailRow label="Prélèvements sociaux (salaires, gains d'actionnariat)" value="Non calculé" muted />
+          <DetailRow
+            label="Prélèvements sociaux (gains d'actionnariat salarié)"
+            value={formatEuros(prelevementsSociauxGainsActionnariat.prelevementsSociaux)}
+          />
+          <DetailRow label="Prélèvements sociaux (salaires)" value="Non calculé" muted />
           <DetailRow label="IFI — voir le simulateur dédié" value="Non calculé" muted />
         </div>
 

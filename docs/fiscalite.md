@@ -1008,6 +1008,47 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   en une ligne dédiée. 16 tests couvrent les 4 paliers de taux, le relèvement des seuils par le nombre de
   parts, l'agrégation des pensions françaises/étrangères, l'assiette brute, la fraction par tranche
   d'âge des rentes, l'indépendance des rentes vis-à-vis du RFR, et l'exclusion de 1AI/1AT.
+- **`src/lib/fiscalite/calculerPrelevementsSociauxGainsActionnariatSalarie.ts` — prélèvements sociaux
+  sur le cadre 1 « Gains d'actionnariat salarié » (Phase 3 du chantier PS, périmètre le plus fragmenté).**
+  Les recherches documentaires généralistes se sont révélées contradictoires entre sources sur les taux
+  applicables (17,2 % contre 18,6 %, 8 % contre 9,7 % selon les articles pour les mêmes cases) — plutôt
+  que d'arbitrer entre des sources en désaccord, le périmètre retenu s'appuie sur une **vérification
+  empirique** : rapprochement ligne à ligne du détail du calcul PS (« Base CSG-CRDS », « Base
+  prélèvement de solidarité », etc.) du simulateur officiel de l'impôt sur le revenu, fourni par
+  l'utilisateur pour un compte réel (1TP=2 000 €, 1TT=15 000 €, 1TZ=8 000 €, 1NX=20 000 €, 1AY=10 000 €,
+  1MP=5 000 €), avec les montants déclarés. Chaque base du détail officiel correspond exactement (à
+  l'euro près) à l'une des cases déclarées, ce qui a permis de déduire le taux réel appliqué à chacune :
+  1. **1TP/1UP + 1TT/1UT** : régime salarial — CSG 9,2 % + CRDS 0,5 % = 9,7 %. Confirmé pour 1TP par
+     impots.gouv.fr (« l'excédent est soumis aux prélèvements sociaux au taux applicable aux salaires »)
+     et vérifié empiriquement pour 1TT (base officielle « CRDS sur les revenus d'activité et de
+     remplacement » = 15 000 € = montant exact de 1TT ; montants CSG/CRDS reconstitués à l'euro près :
+     1 380 € et 75 €).
+  2. **1NX/1OX (carried-interest non qualifiant)** : régime spécifique en 3 prélèvements distincts sur
+     la même base — CSG (10,6 %) + CRDS (0,5 %) = 11,10 % (taux LFSS 2026, déjà applicable aux revenus
+     2025 pour cette case car recouvrée par voie de rôle et non prélevée à la source pendant l'année,
+     contrairement aux dividendes/intérêts qui restent à 17,2 % pour 2025 — voir Phase 1), prélèvement de
+     solidarité 7,5 %, et contribution salariale spécifique 10 % — total combiné 28,6 %. Base officielle
+     (« Base CSG-CRDS 11,10 % », « Base prélèvement de solidarité à 7,5 % », « Base contribution
+     salariale de 10 % ») = 20 000 € = montant exact de 1NX sur les 3 lignes ; montants reconstitués à
+     l'euro près (2 220 €, 1 500 €, 2 000 €). Cette découverte confirme rétroactivement le raisonnement
+     de la Phase 1 sur la distinction « recouvré par voie de rôle » (18,6 % dès 2025) vs « prélevé à la
+     source pendant l'année » (17,2 % jusqu'en 2025) — les deux catégories du module obéissent bien à des
+     calendriers différents, cohérents entre eux.
+  3. **1NY/1OY** : contribution salariale spécifique de 30 % (carried-interest soumis à ce régime,
+     distinct de 1NX — non présent dans le compte réel testé, taux retenu par recherche indépendante,
+     non vérifié empiriquement).
+  4. **3VN** : contribution salariale de 10 % sur options/AGA (non présent dans le compte réel testé,
+     même statut que 1NY).
+  **Hors périmètre** (`CASES_PS_GAINS_ACTIONNARIAT_HORS_PERIMETRE`) : **1TZ/1AY/1MP** — aucune des trois
+  bases déclarées (8 000 €/10 000 €/5 000 €), ni aucune combinaison entre elles, ne réapparaît dans une
+  quelconque base de prélèvement du détail officiel malgré des montants non nuls déclarés : ces gains
+  sont vraisemblablement déjà prélevés à la source par l'établissement teneur de compte ou l'employeur
+  au moment de l'opération, indépendamment de la liquidation de l'IR — non modélisé plutôt que deviné,
+  cohérent avec l'absence totale de preuve contraire. **3VD/3VI/3VF/3VJ/3VK** (gains pré-28.9.2012) :
+  aucune source trouvée avec certitude sur leur régime PS, non testés empiriquement. Branché dans
+  `useFiscalOverview.ts` (`prelevementsSociauxGainsActionnariat`) et affiché dans `FiscalOverviewCard.tsx`.
+  11 tests couvrent le rapprochement empirique exact avec le compte réel, chacun des 4 mécanismes
+  isolément et cumulés, et l'exclusion des cases hors périmètre.
 
 ## 3. Dette identifiée
 
@@ -1259,18 +1300,20 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   (dette, voir ci-dessous) : pertes/moins-values non imputées (purement informatives, reste du
   déclarant), lignes PS/RFR, crédits d'impôt imputables sur l'impôt dû. Prochaine étape de la feuille de
   route : un futur cadre 2042 (revenus fonciers, plus-values, etc.). **Prélèvements sociaux — chantier
-  démarré, Phases 1 (capitaux mobiliers) et 2 (pensions/retraites/rentes) terminées** :
-  `calculerPrelevementsSociauxCapitauxMobiliers.ts` couvre dividendes/intérêts/2GO à 17,2 % ;
-  `calculerPrelevementsSociauxPensionsRetraitesRentes.ts` couvre les pensions classiques (taux CSG/CRDS/
-  CASA selon le RFR du foyer — approximé par le revenu imposable de l'année courante plutôt qu'un
-  historique N-2, décision validée en session) et les rentes viagères à titre onéreux (17,2 % fixe) —
-  voir §2 pour le détail des deux phases, y compris les cases hors périmètre de chacune (assurance-vie/
-  capitalisation pour la Phase 1 ; capital PER 1AI et capital retraite 1AT pour la Phase 2). **Reste à
-  traiter** : gains d'actionnariat salarié (régime PS fragmenté par case — patrimonial 17,2 %/18,6 %
-  pour certaines, salarial 9,7 % ou hors périmètre comme les salaires pour d'autres, contribution
-  spécifique de 30 % sur le carried-interest 1NY/1OY — recherche BOFiP case par case nécessaire avant
-  tout calcul). Salaires (cadre 1, 1AJ etc.) volontairement exclus du périmètre PS : déjà nets des
-  cotisations salariales prélevées en paie, rien à recalculer côté IR.
+  terminé pour les 3 phases identifiées** : `calculerPrelevementsSociauxCapitauxMobiliers.ts` couvre
+  dividendes/intérêts/2GO à 17,2 % (Phase 1) ; `calculerPrelevementsSociauxPensionsRetraitesRentes.ts`
+  couvre les pensions classiques (taux CSG/CRDS/CASA selon le RFR du foyer — approximé par le revenu
+  imposable de l'année courante plutôt qu'un historique N-2, décision validée en session) et les rentes
+  viagères à titre onéreux (17,2 % fixe, Phase 2) ; `calculerPrelevementsSociauxGainsActionnariatSalarie.ts`
+  couvre 1TP/1TT (9,7 % salarial), 1NX (28,6 % combiné, carried-interest non qualifiant), 1NY et 3VN
+  (contributions salariales 30 %/10 %, Phase 3 — périmètre établi par vérification empirique contre le
+  simulateur officiel plutôt que recherche documentaire seule, les sources généralistes se contredisant
+  sur cette catégorie). Voir §2 pour le détail des trois phases, y compris les cases hors périmètre de
+  chacune (assurance-vie/capitalisation pour la Phase 1 ; capital PER 1AI et capital retraite 1AT pour la
+  Phase 2 ; 1TZ/1AY/1MP et les gains historiques 3VD/3VI/3VF/3VJ/3VK pour la Phase 3, confirmé par
+  l'absence de toute ligne PS correspondante dans la vérification empirique malgré des montants non nuls
+  déclarés). Salaires (cadre 1, 1AJ etc.) volontairement exclus du périmètre PS pour les trois phases :
+  déjà nets des cotisations salariales prélevées en paie, rien à recalculer côté IR.
 - **Différé, déductible du code** :
   - **Revenus des valeurs et capitaux mobiliers — hors calcul (voir §2/§3)** :
     `2UU` (total informatif à répartir entre `2VV`/`2WW`, déjà comptés),
