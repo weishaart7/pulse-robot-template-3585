@@ -974,6 +974,40 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   « Non calculé » explicite pour salaires/pensions/gains d'actionnariat, qui restent des chantiers
   futurs). 8 tests couvrent l'assiette brute des dividendes, le pool intérêts/produits, la non-majoration
   de 2GO, l'indépendance vis-à-vis de 2OP, et l'exclusion des contrats d'assurance-vie/capitalisation.
+- **`src/lib/fiscalite/calculerPrelevementsSociauxPensionsRetraitesRentes.ts` — prélèvements sociaux sur
+  le cadre 1 « Pensions, retraites, rentes » (Phase 2 du chantier PS).** Deux mécanismes distincts :
+  1. **Pensions classiques (1AS/1AZ/1AO/1AM + 1AL/1BL)** : CSG/CRDS/CASA à un taux qui dépend du RFR du
+     foyer et de son nombre de parts — 0 % (exonération), 4,3 % (CSG 3,8 % + CRDS 0,5 %), 7,4 % (CSG
+     6,6 % + CRDS 0,5 % + CASA 0,3 %) ou 9,1 % (CSG 8,3 % + CRDS 0,5 % + CASA 0,3 %, taux plein), sur le
+     montant **brut** (l'abattement de 10 % de `calculerPensionsRetraitesRentes.ts` est réservé à l'IR).
+     Seuils 2026 vérifiés (1 part : 13 047 €/17 056 €/26 471 € ; seuils croissant linéairement avec le
+     nombre de parts — incréments constants vérifiés sur les paliers officiels 1/1,5/2/2,5/3 parts :
+     +6 968 €/+9 110 €/+14 132 € par part entière — la formule reste donc exacte aux quarts de part que
+     produit `calculerPartsFiscales.ts`, ex. résidence alternée).
+     **Approximation assumée (validée en session)** : la loi utilise le RFR de l'année **N-2**, déjà
+     connu de la caisse de retraite qui prélève un taux estimé à la source puis régularisé ; le module ne
+     modélise aucun historique de RFR, et utilise le revenu imposable total de l'année **courante**
+     calculée par l'app comme proxy du RFR — un second niveau d'approximation, également validé en
+     session (le module ne calcule d'ailleurs pas de RFR au sens strict, qui réintègre certains
+     abattements/exonérations, art. 1417 IV CGI ; le revenu imposable total sert de proxy à ce proxy).
+  2. **Rentes viagères à titre onéreux (1AW/1BW/1CW/1DW + 1AR/1BR/1CR/1DR)** : régime du patrimoine, taux
+     fixe de 17,2 % sur la même fraction imposable par tranche d'âge que l'IR (`FRACTION_IMPOSABLE_RENTE`,
+     exportée de `calculerPensionsRetraitesRentes.ts` et réutilisée telle quelle) — **indépendant du RFR
+     du foyer**, contrairement aux pensions classiques.
+  **Exclus du calcul** (`CASES_PS_PENSIONS_HORS_PERIMETRE`) : **1AI/1BI (capital PER, versements
+  volontaires déductibles)** — recherche complémentaire confirmant que la CSG/CRDS a déjà été prélevée à
+  l'entrée sur le salaire brut ayant financé le versement (la déductibilité fiscale à l'IR ne s'étend
+  jamais à l'assiette CSG/CRDS) : taxer à nouveau ce capital à la sortie serait une double imposition,
+  point explicitement clarifié après la généralisation de la déductibilité par la loi Pacte. **1AT/1BT
+  (capital retraite, option art. 163 bis CGI)** : le BOFiP confirme qu'une CSG est due sur ce capital
+  (« CSG... entièrement non déductible pour le calcul de ce prélèvement »), mais sans préciser avec
+  certitude si le taux suit le barème RFR des pensions classiques ou un mécanisme propre à l'option
+  163 bis — non modélisé plutôt que deviné, à la différence de 1AI qui repose sur une réponse ferme.
+  Branché dans `useFiscalOverview.ts` (`prelevementsSociauxPensionsRetraitesRentes`, `rfrApproxime` =
+  `revenuImposableTotal`, `nombreParts` = `parts.nombreParts`) et affiché dans `FiscalOverviewCard.tsx`
+  en une ligne dédiée. 16 tests couvrent les 4 paliers de taux, le relèvement des seuils par le nombre de
+  parts, l'agrégation des pensions françaises/étrangères, l'assiette brute, la fraction par tranche
+  d'âge des rentes, l'indépendance des rentes vis-à-vis du RFR, et l'exclusion de 1AI/1AT.
 
 ## 3. Dette identifiée
 
@@ -1225,14 +1259,18 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   (dette, voir ci-dessous) : pertes/moins-values non imputées (purement informatives, reste du
   déclarant), lignes PS/RFR, crédits d'impôt imputables sur l'impôt dû. Prochaine étape de la feuille de
   route : un futur cadre 2042 (revenus fonciers, plus-values, etc.). **Prélèvements sociaux — chantier
-  démarré, Phase 1 (capitaux mobiliers) terminée** : `calculerPrelevementsSociauxCapitauxMobiliers.ts`
-  couvre dividendes/intérêts/2GO à 17,2 % (voir §2). **Restent à traiter** : pensions/retraites/rentes
-  (taux CSG/CRDS/CASA 0 %/3,8 %/6,6 %/8,3 % selon le RFR du foyer, approximé sur le RFR courant plutôt
-  que N-2, décision validée en session) et gains d'actionnariat salarié (régime PS fragmenté par case —
-  patrimonial 17,2 %/18,6 % pour certaines, salarial 9,7 % ou hors périmètre comme les salaires pour
-  d'autres, contribution spécifique de 30 % sur le carried-interest 1NY/1OY — recherche BOFiP case par
-  case nécessaire avant tout calcul). Salaires (cadre 1, 1AJ etc.) volontairement exclus du périmètre
-  PS : déjà nets des cotisations salariales prélevées en paie, rien à recalculer côté IR.
+  démarré, Phases 1 (capitaux mobiliers) et 2 (pensions/retraites/rentes) terminées** :
+  `calculerPrelevementsSociauxCapitauxMobiliers.ts` couvre dividendes/intérêts/2GO à 17,2 % ;
+  `calculerPrelevementsSociauxPensionsRetraitesRentes.ts` couvre les pensions classiques (taux CSG/CRDS/
+  CASA selon le RFR du foyer — approximé par le revenu imposable de l'année courante plutôt qu'un
+  historique N-2, décision validée en session) et les rentes viagères à titre onéreux (17,2 % fixe) —
+  voir §2 pour le détail des deux phases, y compris les cases hors périmètre de chacune (assurance-vie/
+  capitalisation pour la Phase 1 ; capital PER 1AI et capital retraite 1AT pour la Phase 2). **Reste à
+  traiter** : gains d'actionnariat salarié (régime PS fragmenté par case — patrimonial 17,2 %/18,6 %
+  pour certaines, salarial 9,7 % ou hors périmètre comme les salaires pour d'autres, contribution
+  spécifique de 30 % sur le carried-interest 1NY/1OY — recherche BOFiP case par case nécessaire avant
+  tout calcul). Salaires (cadre 1, 1AJ etc.) volontairement exclus du périmètre PS : déjà nets des
+  cotisations salariales prélevées en paie, rien à recalculer côté IR.
 - **Différé, déductible du code** :
   - **Revenus des valeurs et capitaux mobiliers — hors calcul (voir §2/§3)** :
     `2UU` (total informatif à répartir entre `2VV`/`2WW`, déjà comptés),

@@ -8,9 +8,11 @@ const CAPITAL_RETRAITE_TAUX_FORFAITAIRE = 0.075;
 /**
  * Fraction imposable d'une rente viagère à titre onéreux selon l'âge d'entrée
  * en jouissance (art. 158-6 CGI), vérifiée sur la brochure DGFiP (2042-K,
- * revenus 2025, page 120, exemples chiffrés).
+ * revenus 2025, page 120, exemples chiffrés). Exportée : réutilisée telle
+ * quelle par calculerPrelevementsSociauxPensionsRetraitesRentes.ts (même
+ * fraction imposable, seul le taux appliqué diffère entre IR et PS).
  */
-const FRACTION_IMPOSABLE_RENTE = {
+export const FRACTION_IMPOSABLE_RENTE = {
   moins50: 0.70,
   de50a59: 0.50,
   de60a69: 0.40,

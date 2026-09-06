@@ -4,6 +4,7 @@ export * from './calculerRevenuSalaires';
 export * from './calculerGainsActionnariatSalarie';
 export * from './calculerRevenuExonereTauxEffectif';
 export * from './calculerPensionsRetraitesRentes';
+export * from './calculerPrelevementsSociauxPensionsRetraitesRentes';
 export * from './calculerRevenuCapitauxMobiliers';
 export * from './calculerPrelevementsSociauxCapitauxMobiliers';
 export * from './calculerImpot';

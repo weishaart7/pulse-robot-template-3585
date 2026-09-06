@@ -11,6 +11,7 @@ import {
   calculerPartsFiscales,
   calculerPensionsRetraitesRentes,
   calculerPrelevementsSociauxCapitauxMobiliers,
+  calculerPrelevementsSociauxPensionsRetraitesRentes,
   calculerRevenuCapitauxMobiliers,
   calculerRevenuExonereTauxEffectif,
   calculerRevenuSalaires,
@@ -22,6 +23,7 @@ import {
   PensionsRetraitesRentesInput,
   PensionsRetraitesRentesResult,
   PrelevementsSociauxCapitauxMobiliersResult,
+  PrelevementsSociauxPensionsResult,
   RevenuCapitauxMobiliersResult,
   RevenuExonereTauxEffectifResult,
   RevenuSalairesResult,
@@ -133,6 +135,15 @@ export interface FiscalOverview {
    * gains d'actionnariat restent hors périmètre (voir docs/fiscalite.md).
    */
   prelevementsSociauxCapitauxMobiliers: PrelevementsSociauxCapitauxMobiliersResult;
+  /**
+   * Prélèvements sociaux sur les pensions/retraites/rentes (Phase 2 — voir
+   * docs/fiscalite.md) : taux CSG/CRDS/CASA déterminé par le RFR du foyer
+   * (approximé par `revenuImposableTotal`, voir docs/fiscalite.md) sur les
+   * pensions classiques, taux fixe de 17,2 % sur les rentes viagères à titre
+   * onéreux. 1AI (capital PER) et 1AT (capital retraite 163 bis) hors
+   * périmètre.
+   */
+  prelevementsSociauxPensionsRetraitesRentes: PrelevementsSociauxPensionsResult;
   parts: PartsFiscalesResult;
   impot: ImpotResult;
   /** Recharge les 6 sources Supabase — à appeler après une saisie dans la 2042 (voir FiscaliteSection.tsx). */
@@ -190,6 +201,13 @@ export function useFiscalOverview(): FiscalOverview {
       + pensionsRetraitesRentes.totalNetImposable + revenuCapitauxMobiliers.totalNetImposable;
     const impotForfaitaireTotal = gainsActionnariat.impotForfaitaire + pensionsRetraitesRentes.impotForfaitaire
       + revenuCapitauxMobiliers.impotForfaitaire;
+    // RFR non modélisé (voir docs/fiscalite.md) : approximé par le revenu imposable total, pour
+    // déterminer le taux de CSG/CRDS/CASA applicable aux pensions (calculerPrelevementsSociauxPensionsRetraitesRentes.ts).
+    const prelevementsSociauxPensionsRetraitesRentes = calculerPrelevementsSociauxPensionsRetraitesRentes(
+      pensionsInput,
+      revenuImposableTotal,
+      parts.nombreParts,
+    );
     // Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR/1BR/1CR/1DR) : additionné au
     // revenu retenu pour le taux effectif, mathématiquement équivalent dans les deux cas (imputé
     // avant réduction outre-mer/décote) — hypothèse retenue, voir docs/fiscalite.md.
@@ -219,6 +237,7 @@ export function useFiscalOverview(): FiscalOverview {
       pensionsRetraitesRentes,
       revenuCapitauxMobiliers,
       prelevementsSociauxCapitauxMobiliers,
+      prelevementsSociauxPensionsRetraitesRentes,
       parts,
       impot,
     };
