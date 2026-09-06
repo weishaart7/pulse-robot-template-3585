@@ -424,11 +424,13 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   d'actionnariat sur `calculerImpot` — corrigé avant, pas après, l'intégration arithmétique.
 - **`src/lib/fiscalite/calculerGainsActionnariatSalarie.ts` — part barème et part à taux forfaitaire
   des gains d'actionnariat salarié.** Fonction pure, deux résultats distincts. `totalNetImposable`
-  (barème, plus simple que `calculerRevenuSalaires.ts` : pas d'abattement à arbitrer, les montants du
-  CERFA sont déjà nets) : additionne 1TP/1UP (rabais excédentaire sur options, imposé comme un salaire),
-  1TT/1UT (gains de levée d'options / actions gratuites post-28.9.2012, sans abattement), 1TZ (gain
+  (barème) : additionne 1TP/1UP (rabais excédentaire sur options, imposé comme un salaire),
+  1TT/1UT (gains de levée d'options / actions gratuites post-28.9.2012), 1TZ (gain
   après abattement — case unique, pas de déclarant 2, déjà net des abattements 1UZ/1WZ/1VZ) et 3VJ/3VK
   (option barème pour les gains pré-28.9.2012, en lieu et place des taux forfaitaires 3VD/3VI/3VF).
+  **Abattement forfaitaire de 10 % désormais appliqué à 1TP/1TT/1AY/1MP/3VJ** (pas 1TZ, déjà net d'un
+  autre mécanisme, voir ci-dessous) — résolution de la réserve documentée en dette depuis la Phase 4
+  (§3 🟡), voir paragraphe dédié ci-dessous.
   `impotForfaitaire` (impôt déjà calculé, pas un revenu — distinct de `totalNetImposable`, ne s'y ajoute
   jamais) : 1NX/1OX (carried-interest, art. 150-0 A II 8° CGI, PFU **12,8 %** — IR seul, PS hors
   périmètre du module) + 3VD/3VI/3VF (gains pré-28.9.2012 à taux historique, respectivement **18 %/30 %/
@@ -437,19 +439,44 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   sur la brochure officielle DGFiP (2042-C, revenus 2025, page 3, cases 111/150) avant codage. **Exclues
   du calcul** (`CASES_GAINS_ACTIONNARIAT_EXCLUES_DU_CALCUL`) : 1UZ/1WZ/1VZ (montants d'abattement déjà
   déduits de 1TZ — les ajouter serait un double-comptage), 1NY/1OY et 3VN (contributions salariales de
-  30 %/10 % sur le carried-interest/les options, pas de l'IR) — voir §3, 🟠. 26 tests couvrent
+  30 %/10 % sur le carried-interest/les options, pas de l'IR). 26 tests couvrent
   l'agrégation des cases barème, l'impôt forfaitaire (chaque taux isolément, cumul, indépendance vis-à-vis
   du barème) et la non-inclusion des cases exclues.
-  **Audit case par case confirmé (aucun écart) — un point reste non tranché, documenté en dette (§3
-  🟡) : 1TP/1TT/1AY/1MP/3VJ sont-elles éligibles à l'abattement de 10 % comme 1AJ ?** Ni la brochure ni
-  le BOFiP consultés ne tranchent explicitement cette question pour ces cases précises, contrairement à
-  1GB/1AF/1AL (Phases 1 et 3) où le texte était sans ambiguïté. Deux indices penchent pour l'absence
-  d'abattement (comportement actuel conservé) : ces gains vivent dans une section CERFA séparée
-  (« Salaires, gains d'actionnariat salarié »), jamais mentionnée dans la section « Total des
-  salaires »/« Déduction des frais professionnels » qui liste explicitement les cases concernées par
-  l'abattement de 10 % (1AJ/1AA/1GF/1GG/1AP/1AG/1GB/1AF) ; et 1AY/1MP sont soumises aux prélèvements
-  sociaux **du patrimoine** (pas d'activité, 9,7 %), signe qu'elles sont traitées par nature comme des
-  gains plutôt que des salaires au sens de l'art. 83 CGI.
+  **Résolu — abattement forfaitaire de 10 % appliqué à 1TP/1TT/1AY/1MP/3VJ, levant la réserve
+  documentée en dette depuis l'audit initial de la Phase 4 (§3 🟡).** Reprise de la recherche demandée
+  explicitement en session : la brochure DGFiP et le BOFiP consultés lors de l'audit initial
+  (BOI-RSA-ES-20-10-20-20, BOI-RSA-BASE-30-50-10, FAQ officielle) ne tranchaient ni dans un sens ni
+  dans l'autre pour ces cases précises. Nouvelle source trouvée et vérifiée verbatim (HTML brut de
+  bofip.impots.gouv.fr, pas un résumé) : **BOI-IR-DOMIC-10-20-20-30** (« Retenue applicable sur les
+  gains de source française provenant de dispositifs d'actionnariat salarié », retenue à la source des
+  non-résidents, art. 182 A ter CGI, mise à jour du 12.08.2025). Cette page définit l'assiette de la
+  retenue comme *identique* à l'avantage imposable ordinaire (art. 80 bis/80 quaterdecies CGI) et
+  précise, textuellement et à plusieurs reprises : « l'assiette [...] est diminuée de la déduction
+  forfaitaire pour frais professionnels de 10 %. Aucune déduction au titre des frais réels et justifiés
+  ne peut être pratiquée » — confirmé pour les options sur titres (§350, avant **et** après le
+  28.9.2012, y compris pour un bénéficiaire qui opte pour l'imposition selon les traitements et
+  salaires — cas de 3VJ), pour les BSPCE sur option barème depuis le 1.1.2025 (1AY, ajouté à cette
+  page BOFiP le 12.08.2025) et pour les « dispositifs innommés et plans non qualifiés » (§540 — la
+  catégorie doctrinale des management packages, 1MP). Raisonnement retenu : il serait incohérent
+  qu'un non-résident bénéficie d'un abattement refusé à un résident sur exactement le même avantage,
+  légalement défini comme la même assiette — la retenue à la source d'un non-résident est conçue pour
+  approximer l'impôt qu'un résident aurait payé sur le même gain, pas pour créer un régime plus
+  favorable. **1TZ n'est volontairement pas concerné** : le gain d'acquisition d'actions gratuites
+  bénéficie d'un mécanisme différent et exclusif (abattement pour durée de détention, 1UZ/1WZ/1VZ,
+  déjà déduit du montant net saisi en 1TZ) — confirmé par ailleurs par BOI-RSA-ES-20-20-20 §43, qui
+  précise explicitement pour un sous-régime d'actions gratuites que « la déduction forfaitaire de 10 %
+  pour frais professionnels ne s'applique pas au gain d'acquisition ». **Implémentation validée en
+  session : abattement autonome, sans plancher (509 €)/plafond (14 555 €) ni fusion avec le pool
+  1AJ/1AA/1GF/1GG/1AP/1AG/1GB/1AF de `calculerRevenuSalaires.ts`** — le texte BOFiP exclut
+  explicitement l'option frais réels pour ce gain, ce qui exclut le mécanisme de « choix unique par
+  déclarant entre forfaitaire et frais réels » qui aurait justifié une fusion de pool (technique déjà
+  utilisée pour 1GB/1AF/1AL). L'abattement de 10 % est calculé sur la somme de 1TP+1TT+1AY+1MP+3VJ par
+  déclarant (`baseAbattementDeclarant1`/`baseAbattementDeclarant2`), puis multiplié par 0,9. 3 tests
+  modifiés et 1 nouveau (24 au total pour le fichier) démontrent l'abattement par case, le pool commun
+  par déclarant (plusieurs cases du même déclarant partagent un seul calcul de 10 %, pas case par
+  case), et l'absence d'effet sur 1TZ. Vérifié en base et à l'écran sur le compte réel (couple marié,
+  TMI 30 %) : +10 000 € sur `1TT` → **+2 700 € d'IR** (9 000 € net après abattement 10 %, 30 % de
+  9 000 €), valeur nettoyée après vérification.
 - **`src/lib/fiscalite/calculerPensionsRetraitesRentes.ts` — revenu net imposable et impôt forfaitaire
   du cadre 1 « Pensions, retraites, rentes ».** Fonction pure couvrant trois mécanismes distincts,
   vérifiés sur la brochure DGFiP (2042-K, pages 115-120, texte intégral) et le BOFiP (BOI-RSA-PENS) :
@@ -969,25 +996,15 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   aucun hook/composant n'y fait référence — chantier « biens hors de France » commencé au niveau du
   schéma seulement, cohérent avec le gap `assets.bien_etranger` déjà documenté comme non construit
   dans `docs/patrimoine.md`.
-- **`calculerGainsActionnariatSalarie.ts` : éligibilité de 1TP/1TT/1AY/1MP/3VJ à l'abattement de 10 %
-  non tranchée avec certitude.** Audit case par case du cadre (Phase 4) : ces cases sont toutes
-  qualifiées par la brochure/le BOFiP d'« imposées selon les règles/la catégorie des traitements et
-  salaires », ce qui pourrait suggérer qu'elles devraient rejoindre le pool 1AJ/1AA/1GB/1AF de
-  `calculerRevenuSalaires.ts` et bénéficier du même abattement de 10 %/frais réels — mais ni la brochure
-  ni le BOFiP consultés ne le confirment explicitement pour ces cases précises (contrairement à
-  1GB/1AF/1AL, où le texte était sans ambiguïté). Comportement actuel conservé (aucun abattement) sur la
-  base de deux indices indirects : section CERFA séparée, jamais mentionnée dans la liste des cases
-  concernées par l'abattement ; 1AY/1MP soumises aux prélèvements sociaux du patrimoine plutôt que
-  d'activité. Un écart resterait possible si un utilisateur ayant des gains d'actionnariat significatifs
-  compare son résultat à un autre logiciel/à sa déclaration réelle. **Recherche complémentaire menée**
-  (BOI-RSA-ES-20-10-20-20, BOI-RSA-BASE-30-50-10, FAQ officielle impots.gouv.fr, plusieurs cabinets
-  fiscaux) : toujours aucune confirmation ni infirmation explicite. Une piste prometteuse (« la fraction
-  excédant 300 000 € [d'actions gratuites] est imposée sans abattement ») s'est révélée non concluante en
-  creusant : ce « sans abattement » désigne l'abattement **pour durée de détention** propre aux actions
-  gratuites (mécanisme de plus-value d'un régime antérieur), pas l'abattement général de 10 % pour frais
-  professionnels de l'art. 83 CGI — les deux mécanismes ont le même nom générique « abattement » dans les
-  sources secondaires consultées, d'où la confusion initiale. Le sujet reste donc non tranché avec
-  certitude malgré une recherche approfondie ; comportement actuel conservé sans le trancher par supposition.
+- **Résolu — `calculerGainsActionnariatSalarie.ts` applique désormais l'abattement forfaitaire de
+  10 % à 1TP/1TT/1AY/1MP/3VJ.** Ancienne réserve (Phase 4, comportement conservé sans abattement faute
+  de confirmation explicite dans la brochure/BOI-RSA-ES-20-10-20-20/BOI-RSA-BASE-30-50-10/FAQ
+  officielle) levée par une recherche complémentaire ciblée : BOI-IR-DOMIC-10-20-20-30 (retenue à la
+  source des non-résidents, art. 182 A ter CGI, mise à jour du 12.08.2025) confirme explicitement et
+  textuellement le mécanisme pour ces 5 cases précisément, sur une assiette légalement définie comme
+  identique à l'avantage imposable ordinaire — voir §2 pour le détail des sources et la citation
+  exacte. 1TZ reste volontairement à l'écart (mécanisme différent et exclusif, abattement pour durée
+  de détention déjà déduit du montant saisi).
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 

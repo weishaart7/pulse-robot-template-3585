@@ -24,42 +24,52 @@ describe('calculerGainsActionnariatSalarie — cases imposables au barème', () 
     expect(calculerGainsActionnariatSalarie(makeInput()).totalNetImposable).toBe(0);
   });
 
-  it('agrège 1TP/1UP (rabais excédentaire)', () => {
+  it('agrège 1TP/1UP (rabais excédentaire), abattement de 10 % par déclarant', () => {
     const result = calculerGainsActionnariatSalarie(makeInput({ case1tp: 1000, case1up: 2000 }));
-    expect(result.totalNetImposable).toBe(3000);
+    expect(result.totalNetImposable).toBe(900 + 1800); // 1000*0,9 + 2000*0,9
   });
 
-  it('agrège 1TT/1UT (gains post-28.9.2012)', () => {
+  it('agrège 1TT/1UT (gains post-28.9.2012), abattement de 10 % par déclarant', () => {
     const result = calculerGainsActionnariatSalarie(makeInput({ case1tt: 5000, case1ut: 6000 }));
-    expect(result.totalNetImposable).toBe(11000);
+    expect(result.totalNetImposable).toBe(4500 + 5400);
   });
 
-  it('ajoute 1TZ tel quel (déjà net des abattements)', () => {
+  it('ajoute 1TZ tel quel (déjà net des abattements, pas le forfaitaire de 10 %)', () => {
     const result = calculerGainsActionnariatSalarie(makeInput({ case1tz: 4000 }));
     expect(result.totalNetImposable).toBe(4000);
   });
 
-  it('ajoute 1AY/1BY tel quel (BSPCE, gain déjà taxable)', () => {
+  it('applique l\'abattement de 10 % à 1AY/1BY (BSPCE, gain taxable)', () => {
     const result = calculerGainsActionnariatSalarie(makeInput({ case1ay: 3000, case1by: 1000 }));
-    expect(result.totalNetImposable).toBe(4000);
+    expect(result.totalNetImposable).toBe(2700 + 900);
   });
 
-  it('ajoute 1MP/1MQ tel quel (management packages, part déjà taxable)', () => {
+  it('applique l\'abattement de 10 % à 1MP/1MQ (management packages, part taxable)', () => {
     const result = calculerGainsActionnariatSalarie(makeInput({ case1mp: 7000, case1mq: 2000 }));
-    expect(result.totalNetImposable).toBe(9000);
+    expect(result.totalNetImposable).toBe(6300 + 1800);
   });
 
-  it('agrège 3VJ/3VK (option barème pré-28.9.2012)', () => {
+  it('agrège 3VJ/3VK (option barème pré-28.9.2012), abattement de 10 % par déclarant', () => {
     const result = calculerGainsActionnariatSalarie(makeInput({ case3vj: 1500, case3vk: 2500 }));
-    expect(result.totalNetImposable).toBe(4000);
+    expect(result.totalNetImposable).toBe(1350 + 2250);
   });
 
-  it('additionne toutes les cases barème simultanément', () => {
+  it('l\'abattement de 10 % porte sur la somme des 5 cases du même déclarant, pas case par case', () => {
+    // Déclarant 1 : 1TP (400) + 1TT (600) = 1000 -> abattement 100, net 900 (pas 40+60=100 arrondis séparément, ici identique mais démontre le pool commun)
+    const result = calculerGainsActionnariatSalarie(makeInput({
+      case1tp: 400, case1tt: 600, case1ay: 500, case1mp: 500, case3vj: 500,
+    }));
+    // base déclarant 1 = 400+600+500+500+500 = 2500, net = 2250
+    expect(result.totalNetImposable).toBe(2250);
+  });
+
+  it('additionne toutes les cases barème simultanément (déclarant 1 et 2, plus 1TZ sans abattement)', () => {
     const result = calculerGainsActionnariatSalarie(makeInput({
       case1tp: 100, case1up: 100, case1tt: 100, case1ut: 100,
       case1tz: 100, case3vj: 100, case3vk: 100,
     }));
-    expect(result.totalNetImposable).toBe(700);
+    // déclarant 1 : 1TP+1TT+3VJ = 300 -> net 270 ; déclarant 2 : 1UP+1UT+3VK = 300 -> net 270 ; + 1TZ 100
+    expect(result.totalNetImposable).toBe(270 + 270 + 100);
   });
 });
 
