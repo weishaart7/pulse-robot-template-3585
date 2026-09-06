@@ -301,6 +301,69 @@ describe('calculerImpot — crédit d\'impôt assurance-vie (2DH, restituable)',
   });
 });
 
+describe('calculerImpot — crédits d\'impôt sur valeurs étrangères (2AB non restituable, 2CK restituable)', () => {
+  it('nuls par défaut (paramètres omis) : comportement inchangé', () => {
+    const sansParam = calculerImpot(30000, makeParts(), 'celibataire');
+    const avecZero = calculerImpot(30000, makeParts(), 'celibataire', 0, 'metropole', 0, 0, 0, 0, 0);
+    expect(avecZero.impotNet).toBe(sansParam.impotNet);
+    expect(avecZero.creditImpotEtranger2AB).toBe(0);
+    expect(avecZero.creditImpotValeursEtrangeres2CK).toBe(0);
+  });
+
+  it('2CK se déduit intégralement de l\'impôt net, sans plafond', () => {
+    const sansCredit = calculerImpot(30000, makeParts(), 'celibataire', 0, 'metropole', 0, 0, 0, 0, 0);
+    const avecCredit = calculerImpot(30000, makeParts(), 'celibataire', 0, 'metropole', 0, 0, 0, 0, 300);
+    expect(avecCredit.creditImpotValeursEtrangeres2CK).toBe(300);
+    expect(avecCredit.impotNet).toBe(sansCredit.impotNet - 300);
+  });
+
+  it('2CK est restituable : peut rendre impotNet négatif si le crédit dépasse l\'impôt dû', () => {
+    const result = calculerImpot(0, makeParts(), 'celibataire', 0, 'metropole', 0, 0, 0, 0, 300);
+    expect(result.impotApresDecote).toBe(0);
+    expect(result.impotNet).toBe(-300);
+  });
+
+  it('2AB se déduit intégralement de l\'impôt net quand il ne dépasse pas l\'impôt dû', () => {
+    const sansCredit = calculerImpot(30000, makeParts(), 'celibataire', 0, 'metropole', 0, 0, 0, 0);
+    const avecCredit = calculerImpot(30000, makeParts(), 'celibataire', 0, 'metropole', 0, 0, 0, 300);
+    expect(avecCredit.creditImpotEtranger2AB).toBe(300);
+    expect(avecCredit.impotNet).toBe(sansCredit.impotNet - 300);
+  });
+
+  it("2AB n'est PAS restituable : plafonné à l'impôt restant dû, jamais de restitution à lui seul", () => {
+    const result = calculerImpot(0, makeParts(), 'celibataire', 0, 'metropole', 0, 0, 0, 500);
+    expect(result.impotApresDecote).toBe(0);
+    expect(result.creditImpotEtranger2AB).toBe(0); // rien à imputer, aucun impôt dû : crédit perdu, pas restitué
+    expect(result.impotNet).toBe(0);
+  });
+
+  it('2AB (non restituable) est plafonné avant que 2CK (restituable) ne réduise encore le solde', () => {
+    // Impôt dû avant crédits finaux : 1000 €. 2AB = 1500 € (excède l'impôt dû, non restituable) ;
+    // 2CK = 200 € (restituable). 2AB doit être plafonné sur les 1000 € AVANT que 2CK ne s'applique,
+    // pour ne pas priver 2CK de sa restitution.
+    const parts = makeParts();
+    // On force un impôt forfaitaire de 1000 € pour avoir un impôt dû connu et non nul.
+    const result = calculerImpot(0, parts, 'celibataire', 0, 'metropole', 1000, 0, 0, 1500, 200);
+    expect(result.creditImpotEtranger2AB).toBe(1000); // plafonné sur l'impôt dû (1000 €), pas 1500 €
+    expect(result.creditImpotValeursEtrangeres2CK).toBe(200); // intégralement appliqué, restituable
+    expect(result.impotNet).toBe(1000 - 1000 - 200); // -200 : la restitution vient de 2CK, pas de 2AB
+  });
+
+  it('les trois crédits finaux (2AB, 2CK, assurance-vie) se cumulent', () => {
+    const result = calculerImpot(0, makeParts(), 'celibataire', 0, 'metropole', 1000, 0, 100, 300, 200);
+    expect(result.creditImpotEtranger2AB).toBe(300);
+    expect(result.creditImpotValeursEtrangeres2CK).toBe(200);
+    expect(result.creditImpotAssuranceVie).toBe(100);
+    expect(result.impotNet).toBe(1000 - 300 - 100 - 200);
+  });
+
+  it('reste positifs si des montants négatifs étaient transmis par erreur', () => {
+    const result = calculerImpot(30000, makeParts(), 'celibataire', 0, 'metropole', 0, 0, 0, -300, -300);
+    expect(result.creditImpotEtranger2AB).toBe(0);
+    expect(result.creditImpotValeursEtrangeres2CK).toBe(0);
+  });
+});
+
 describe('calculerImpot — impôt net', () => {
   it("n'est jamais négatif", () => {
     const result = calculerImpot(5000, makeParts(), 'celibataire');

@@ -695,9 +695,7 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   non imputées, pur report sans effet sur l'année en cours) ; `2CG`/`2BH`/`2DF`/`2DG`/`2DI`/`2EE`
   (lignes exclusivement PS/revenu fiscal de référence, les deux hors périmètre du module —
   **découverte notable** : `2DI` doit en outre être inclus dans `2DG` d'après la brochure, ce n'est pas
-  un montant additif indépendant) ; `2AB`/`2CK` (crédits d'impôt imputables sur l'impôt dû, pas sur le
-  revenu — mécanisme de crédit d'impôt général absent de `calculerImpot.ts`, même réserve que le crédit
-  d'impôt égal à l'impôt français, §3 🟠). Branché dans `useFiscalOverview.ts` (qui passe désormais
+  un montant additif indépendant). Branché dans `useFiscalOverview.ts` (qui passe désormais
   `foyerInput.situationFamille` à la fonction) : `totalNetImposable` s'ajoute au revenu imposable
   France, `impotForfaitaire` au pool déjà sommé pour `calculerImpot.ts` (carried-interest, 3VD/3VI/3VF,
   capital
@@ -724,6 +722,33 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   4 tests dédiés (nul par défaut, déduction intégrale de l'impôt net, restitution en négatif,
   garde-fou si transmis négatif par erreur) ; les 46 tests existants du fichier restent inchangés
   (paramètre optionnel, comportement par défaut préservé).
+- **Crédits d'impôt sur valeurs étrangères (2AB/2CK) — mécanisme de crédit d'impôt général sur
+  l'impôt dû, désormais couvert, levant la réserve documentée en dette sur l'ordre face à la
+  décote.** Vérifié brochure DGFiP IR 2026 p.134 (même rubrique « Crédits d'impôt sur valeurs
+  étrangères », CGI art. 199 ter I a et b) : `2AB` (contrepartie de la retenue à la source étrangère
+  sur valeurs mobilières, imputable sur convention fiscale, établissement payeur en France) — « s'il
+  excède le montant de l'impôt dû, ce crédit d'impôt n'est pas restituable » ; `2CK` (prélèvement
+  forfaitaire non libératoire déjà versé) — « il est déduit du montant de l'impôt dû par votre foyer.
+  S'il excède ce montant, l'excédent vous sera restitué. » Recherche BOFiP complémentaire sur l'ordre
+  de liquidation : quotient familial + plafonnement → décote → réductions d'impôt (dont réduction
+  outre-mer, déjà en place) → crédits d'impôt et retenues non libératoires, **en tout dernier** — même
+  niveau que `creditImpotAssuranceVie`, déjà positionné en dernier. Implémentation :
+  `calculerRevenuCapitauxMobiliers.ts` expose désormais `creditImpotEtranger2AB`
+  (non plafonné, ce module ne connaît pas l'impôt dû) et `creditImpotValeursEtrangeres2CK`, retirées de
+  `CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL` ; `calculerImpot.ts` reçoit deux nouveaux paramètres
+  optionnels (0 par défaut) imputés en tout dernier sur `impotNet`, avec un ordre précis entre eux :
+  `2AB` (non restituable) est plafonné sur l'impôt restant dû (`impotApresDecote + impotForfaitaire`)
+  **avant** que les crédits restituables (`2CK`, `creditImpotAssuranceVie`) ne le réduisent encore —
+  sinon une partie de la restitution due à `2CK` aurait été perdue à tort en laissant `2AB` la
+  consommer en premier. `2CK` et `creditImpotAssuranceVie` sont ensuite soustraits librement, sans
+  plancher. 8 tests dédiés dans `calculerImpot.test.ts` (nuls par défaut, `2CK` restituable sans
+  plafond, `2AB` plafonné sans jamais restituer à lui seul, priorité `2AB` avant `2CK` sur un impôt dû
+  connu, cumul des trois crédits finaux, garde-fous si négatifs transmis par erreur) et 2 tests dans
+  `calculerRevenuCapitauxMobiliers.test.ts` (exposition brute, indépendance du switch `2OP`, valeurs
+  nulles par défaut). Vérifié en base et à l'écran sur le compte réel : +500 € sur `2CK` → **−500 €
+  d'IR** (13 478 € → 12 978 €, restitution confirmée) ; +20 000 € sur `2AB` (excède largement l'impôt
+  dû du foyer) → **0 €** d'IR exactement, jamais négatif (plafonné, non restitué) ; valeurs nettoyées
+  après vérification.
 - **`src/lib/fiscal/calcul.ts` (dossier séparé, sans « ite ») a été nettoyé de son unique fonction
   orpheline.** L'ancienne `calculerPartsFiscales` de ce dossier n'avait aucun appelant dans le repo
   (`grep` confirmé avant suppression) et divergeait de plusieurs règles CGI (veuf avec enfant(s)
@@ -871,7 +896,7 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   taux effectif, et désormais le crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL,
   1AR/1BR/1CR/1DR — voir §2). 1GB/1HB (associés et gérants art. 62 CGI) est désormais couverte,
   intégrée au pool standard de `calculerRevenuSalaires.ts` (audit case par case du cadre 1, voir §2).
-  **Reste hors calcul** : les revenus fonciers et les capitaux mobiliers (gains de cession) — voir §4.
+  **Reste hors calcul** : les revenus fonciers — voir §4.
 - **Résolu — le simulateur IFI et le reste de l'écran Fiscalité n'affichent plus de montants d'IFI
   contradictoires.** `FiscalOverviewCard.tsx` affiche désormais « IFI : non calculé — voir le
   simulateur IFI » plutôt qu'un « 0 € » fixe qui contredisait le résultat du simulateur ouvert depuis
@@ -1091,9 +1116,9 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
     `2VM`/`2VQ`-`2VU` (gains de cession déjà taxés à la source ou reliquat de
     moins-value purement informatif — voir §2, `2VN`/`2VO`/`2VP` désormais
     couverts, Phase 2c), `2TU`-`2TY` (pertes non imputées, sans effet sur l'année en
-    cours), `2CG`/`2BH`/`2DF`/`2DG`/`2DI`/`2EE` (lignes PS/RFR, hors périmètre du module),
-    `2AB`/`2CK` (crédits d'impôt imputables sur l'impôt dû, mécanisme général absent de
-    `calculerImpot.ts`). `2DM` (impatriés) et le bloc « précisions CDHR »
+    cours), `2CG`/`2BH`/`2DF`/`2DG`/`2DI`/`2EE` (lignes PS/RFR, hors périmètre du module).
+    `2AB`/`2CK` (crédits d'impôt sur valeurs étrangères) désormais couverts — voir §2. `2DM`
+    (impatriés) et le bloc « précisions CDHR »
     (`2DK`/`2DL`/`2XY`/`2XZ`/`2XW`/`2VJ`/`2VK`/`2VL`/`2EF`/`2EG`/`2EH`/`8KD`-`8KG`/`8CD`) exclus même de
     la table `revenus_capitaux_mobiliers` — cas limite propre à la contribution différentielle sur les
     hauts revenus, non demandé.

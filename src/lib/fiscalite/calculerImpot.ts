@@ -59,6 +59,8 @@ export interface ImpotResult {
   impotApresDecote: number;
   impotForfaitaire: number;
   creditImpotAssuranceVie: number;
+  creditImpotEtranger2AB: number;
+  creditImpotValeursEtrangeres2CK: number;
   impotNet: number;
   tmi: number;
   revenuExceptionnelQuotient: number;
@@ -198,6 +200,19 @@ function calculerImpotApresQuotientFamilial(
  * (« s'il excède l'impôt dû, l'excédent est restitué ») — `impotNet` peut
  * donc devenir négatif, ce qui représente une restitution au foyer plutôt
  * qu'un impôt à payer.
+ * `creditImpotEtranger2AB` / `creditImpotValeursEtrangeres2CK` (optionnels,
+ * 0 par défaut) : crédits d'impôt sur valeurs étrangères (2AB/2CK, CGI art.
+ * 199 ter I a et b — voir calculerRevenuCapitauxMobiliers.ts), imputés eux
+ * aussi en tout dernier (recherche BOFiP complémentaire : réductions puis
+ * crédits d'impôt/retenues non libératoires s'imputent après la décote, ces
+ * derniers en tout dernier — confirme et lève la réserve documentée en
+ * dette sur l'ordre face à la décote). **2AB n'est pas restituable** (« s'il
+ * excède le montant de l'impôt dû, ce crédit d'impôt n'est pas restituable »,
+ * brochure p.134) : plafonné sur l'impôt restant dû *avant* imputation des
+ * crédits restituables (2CK, `creditImpotAssuranceVie`), pour ne pas priver
+ * ces derniers d'une restitution à laquelle ils ont droit. **2CK est
+ * restituable** (« l'excédent vous sera restitué ») : soustrait sans
+ * plancher, comme `creditImpotAssuranceVie`.
  */
 export function calculerImpot(
   revenuImposable: number,
@@ -208,6 +223,8 @@ export function calculerImpot(
   impotForfaitaire = 0,
   revenuExceptionnelQuotient = 0,
   creditImpotAssuranceVie = 0,
+  creditImpotEtranger2AB = 0,
+  creditImpotValeursEtrangeres2CK = 0,
 ): ImpotResult {
   const revenu = Math.max(0, revenuImposable);
   const revenuExonere = Math.max(0, revenuExonereTauxEffectif);
@@ -249,8 +266,17 @@ export function calculerImpot(
     : 0;
 
   const impotApresDecote = Math.max(0, Math.round(impotApresReductionOutreMer - decote));
+  const impotAvantCreditsFinaux = impotApresDecote + Math.max(0, impotForfaitaire);
+
+  // 2AB (non restituable) plafonné sur l'impôt restant dû, avant les crédits restituables (2CK, assurance-vie).
+  const creditImpotEtranger2ABApplique = Math.max(0, Math.min(creditImpotEtranger2AB, impotAvantCreditsFinaux));
   const creditImpotAssuranceVieApplique = Math.max(0, creditImpotAssuranceVie);
-  const impotNet = impotApresDecote + Math.max(0, impotForfaitaire) - creditImpotAssuranceVieApplique;
+  const creditImpotValeursEtrangeres2CKApplique = Math.max(0, creditImpotValeursEtrangeres2CK);
+
+  const impotNet = impotAvantCreditsFinaux
+    - creditImpotEtranger2ABApplique
+    - creditImpotAssuranceVieApplique
+    - creditImpotValeursEtrangeres2CKApplique;
 
   return {
     revenuImposable: revenu,
@@ -272,6 +298,8 @@ export function calculerImpot(
     impotApresDecote,
     impotForfaitaire: Math.max(0, impotForfaitaire),
     creditImpotAssuranceVie: creditImpotAssuranceVieApplique,
+    creditImpotEtranger2AB: creditImpotEtranger2ABApplique,
+    creditImpotValeursEtrangeres2CK: creditImpotValeursEtrangeres2CKApplique,
     impotNet,
     tmi: tmiPourQuotient(parts.nombreParts > 0 ? revenuMondialFictif / parts.nombreParts : 0),
     revenuExceptionnelQuotient: revenuExceptionnel,

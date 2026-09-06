@@ -195,6 +195,8 @@ export function useFiscalOverview(): FiscalOverview {
       impotForfaitaireTotal,
       gainsActionnariat.revenuExceptionnelQuotient,
       revenuCapitauxMobiliers.creditImpotAssuranceVie,
+      revenuCapitauxMobiliers.creditImpotEtranger2AB,
+      revenuCapitauxMobiliers.creditImpotValeursEtrangeres2CK,
     );
 
     return {

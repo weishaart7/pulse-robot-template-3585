@@ -272,6 +272,24 @@ describe('calculerRevenuCapitauxMobiliers — gains de cession de bons/contrats 
   });
 });
 
+describe('calculerRevenuCapitauxMobiliers — crédits d\'impôt sur valeurs étrangères (2AB/2CK)', () => {
+  it('expose 2AB et 2CK tels quels, indépendamment du switch 2OP', () => {
+    const sansOption = calculer(makeInput({ case2ab: 300, case2ck: 200 }));
+    expect(sansOption.creditImpotEtranger2AB).toBe(300);
+    expect(sansOption.creditImpotValeursEtrangeres2CK).toBe(200);
+
+    const avecOption = calculer(makeInput({ case2op: true, case2ab: 300, case2ck: 200 }));
+    expect(avecOption.creditImpotEtranger2AB).toBe(300);
+    expect(avecOption.creditImpotValeursEtrangeres2CK).toBe(200);
+  });
+
+  it('sont nuls par défaut', () => {
+    const result = calculer(makeInput());
+    expect(result.creditImpotEtranger2AB).toBe(0);
+    expect(result.creditImpotValeursEtrangeres2CK).toBe(0);
+  });
+});
+
 describe('calculerRevenuCapitauxMobiliers — cases exclues du calcul', () => {
   it("les cases hors périmètre n'ont aucun effet, avec ou sans option barème", () => {
     const input = makeInput({
@@ -281,7 +299,6 @@ describe('calculerRevenuCapitauxMobiliers — cases exclues du calcul', () => {
       case2vq: 1000, case2vr: 1000, case2vs: 1000, case2vt: 1000, case2vu: 1000,
       case2tu: 1000, case2tv: 1000, case2tw: 1000, case2tx: 1000, case2ty: 1000,
       case2cg: 1000, case2bh: 1000, case2df: 1000, case2dg: 1000, case2di: 1000, case2ee: 1000,
-      case2ab: 1000, case2ck: 1000,
     });
 
     const sansOption = calculer(input);
@@ -296,7 +313,6 @@ describe('calculerRevenuCapitauxMobiliers — cases exclues du calcul', () => {
     expect(result.casesExclues).toContain('case2uu');
     expect(result.casesExclues).toContain('case2vm');
     expect(result.casesExclues).toContain('case2vq');
-    expect(result.casesExclues).toContain('case2ab');
     expect(result.casesExclues).toContain('case2xx');
     expect(result.casesExclues).not.toContain('case2dc');
     expect(result.casesExclues).not.toContain('case2go');
@@ -310,5 +326,7 @@ describe('calculerRevenuCapitauxMobiliers — cases exclues du calcul', () => {
     expect(result.casesExclues).not.toContain('case2vn');
     expect(result.casesExclues).not.toContain('case2vo');
     expect(result.casesExclues).not.toContain('case2vp');
+    expect(result.casesExclues).not.toContain('case2ab');
+    expect(result.casesExclues).not.toContain('case2ck');
   });
 });

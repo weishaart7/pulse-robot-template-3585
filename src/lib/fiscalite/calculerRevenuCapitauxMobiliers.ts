@@ -46,9 +46,6 @@ const COUPLE_IMPOSITION_COMMUNE: FoyerFiscalInput['situationFamille'][] = ['mari
  *   report sur les années suivantes, aucun effet sur l'année en cours.
  * - 2CG/2BH/2DF/2DG/2DI/2EE : lignes exclusivement PS/revenu fiscal de
  *   référence (les deux hors périmètre du module) — sans effet sur l'IR.
- * - 2AB/2CK : crédits d'impôt imputables sur l'impôt dû (pas sur le revenu),
- *   mécanisme de crédit d'impôt général absent de calculerImpot.ts, ordre
- *   face à la décote non confirmé.
  */
 export const CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL = [
   'case2uu',
@@ -57,7 +54,6 @@ export const CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL = [
   'case2vq', 'case2vr', 'case2vs', 'case2vt', 'case2vu',
   'case2tu', 'case2tv', 'case2tw', 'case2tx', 'case2ty',
   'case2cg', 'case2bh', 'case2df', 'case2dg', 'case2di', 'case2ee',
-  'case2ab', 'case2ck',
 ] as const;
 
 export interface RevenuCapitauxMobiliersResult {
@@ -82,6 +78,25 @@ export interface RevenuCapitauxMobiliersResult {
    * l'absorber.
    */
   creditImpotAssuranceVie: number;
+  /**
+   * Crédit d'impôt sur valeurs étrangères NON restituable (2AB, CGI art. 199
+   * ter I a) : contrepartie de la retenue à la source étrangère sur valeurs
+   * mobilières lorsqu'une convention fiscale prévoit l'imputation sur
+   * l'impôt français et que l'établissement payeur est établi en France.
+   * Brochure DGFiP IR 2026 p.134 : « s'il excède le montant de l'impôt dû,
+   * ce crédit d'impôt n'est pas restituable » — à plafonner par
+   * `calculerImpot.ts` sur l'impôt restant dû, avant les crédits
+   * restituables (2CK, `creditImpotAssuranceVie`).
+   */
+  creditImpotEtranger2AB: number;
+  /**
+   * Crédit d'impôt sur valeurs étrangères restituable (2CK, CGI art. 199 ter
+   * I b) : prélèvement forfaitaire non libératoire déjà versé en 2025.
+   * Brochure DGFiP IR 2026 p.134 : « il est déduit du montant de l'impôt dû
+   * par votre foyer. S'il excède ce montant, l'excédent vous sera restitué. »
+   * Même famille que `creditImpotAssuranceVie` (restituable, sans plancher).
+   */
+  creditImpotValeursEtrangeres2CK: number;
   casesExclues: readonly string[];
 }
 
@@ -145,6 +160,17 @@ export interface RevenuCapitauxMobiliersResult {
  * (déjà prélevé à la source, comme 2XX) et 2VQ-2VU (reliquat non imputé,
  * purement informatif pour l'année suivante).
  *
+ * **Crédits d'impôt sur valeurs étrangères (2AB/2CK) — même rubrique de la
+ * brochure (CGI art. 199 ter I a et b), traitement différent.** 2AB (retenue
+ * à la source étrangère imputable sur convention fiscale) n'est PAS
+ * restituable ; 2CK (prélèvement forfaitaire non libératoire déjà versé)
+ * l'est. Les deux sont retournés tels quels ici (pas de plafonnement — ce
+ * module ne connaît pas l'impôt dû) ; `calculerImpot.ts` les impute en tout
+ * dernier, après la décote, dans le même ordre que `creditImpotAssuranceVie`
+ * (recherche BOFiP complémentaire confirmant que réductions et crédits
+ * d'impôt/retenues non libératoires s'imputent après la décote, ces derniers
+ * en tout dernier).
+ *
  * Cases hors calcul : voir CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL.
  */
 export function calculerRevenuCapitauxMobiliers(
@@ -188,6 +214,9 @@ export function calculerRevenuCapitauxMobiliers(
 
   const toujoursBareme = (input.case2yy ?? 0) + net2ch + case2vn;
 
+  const creditImpotEtranger2AB = input.case2ab ?? 0;
+  const creditImpotValeursEtrangeres2CK = input.case2ck ?? 0;
+
   if (input.case2op) {
     const abattementDividendes = dividendes * ABATTEMENT_DIVIDENDES_TAUX;
     const fraisCharges = input.case2ca ?? 0;
@@ -203,6 +232,8 @@ export function calculerRevenuCapitauxMobiliers(
       totalNetImposable: Math.max(0, baseAvantDeficits - deficitsAnterieurs),
       impotForfaitaire: 0,
       creditImpotAssuranceVie,
+      creditImpotEtranger2AB,
+      creditImpotValeursEtrangeres2CK,
       casesExclues: CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL,
     };
   }
@@ -214,6 +245,8 @@ export function calculerRevenuCapitauxMobiliers(
     totalNetImposable: toujoursBareme,
     impotForfaitaire: baseTaux128 * TAUX_PFU + (net2vv + case2vo) * TAUX_PFU_REDUIT_2VV,
     creditImpotAssuranceVie,
+    creditImpotEtranger2AB,
+    creditImpotValeursEtrangeres2CK,
     casesExclues: CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL,
   };
 }
