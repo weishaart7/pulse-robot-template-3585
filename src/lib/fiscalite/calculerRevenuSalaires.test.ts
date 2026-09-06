@@ -113,15 +113,44 @@ describe('calculerRevenuSalaires — abattement spécifique 1GA/1HA', () => {
 describe('calculerRevenuSalaires — cases exclues du calcul', () => {
   it('les cases exonérées ou hors périmètre n\'entrent pas dans le revenu imposable', () => {
     const result = calculerRevenuSalaires(makeInput({
-      case1pb: 500, case1ad: 3000, case1dy: 20000, case1sm: 1000, case1aq: 8000,
+      case1pb: 500, case1dy: 20000, case1sm: 1000, case1aq: 8000,
     }));
     expect(result.totalNetImposable).toBe(0);
-    expect(result.casesExclues).toContain('case1ad');
     expect(result.casesExclues).toContain('case1aq');
     expect(result.casesExclues).not.toContain('case1af');
     expect(result.casesExclues).not.toContain('case1gb');
+    expect(result.casesExclues).not.toContain('case1ad');
     expect(result.casesExclues).not.toContain('case1gh');
     expect(result.casesExclues).not.toContain('case1hh');
+  });
+});
+
+describe('calculerRevenuSalaires — plafond d\'exonération 1AD/1BD (prime de partage de la valeur)', () => {
+  it('sous le seuil de 3 000 € : aucun effet sur le revenu imposable', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1ad: 2000 }));
+    expect(result.totalNetImposable).toBe(0);
+  });
+
+  it('au-dessus du seuil de 3 000 € : le surplus rejoint l\'assiette imposable', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1ad: 5000 }));
+    expect(result.declarant1.remunerationsBrutes).toBe(2000);
+    expect(result.declarant1.netImposable).toBe(2000 - 509);
+  });
+
+  it('1AV coché : seuil porté à 6 000 €', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1ad: 5000, case1av: true }));
+    expect(result.totalNetImposable).toBe(0);
+  });
+
+  it('1AV coché mais dépassement au-delà de 6 000 € : le surplus reste taxable', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1ad: 8000, case1av: true }));
+    expect(result.declarant1.remunerationsBrutes).toBe(2000);
+  });
+
+  it('le seuil est indépendant entre déclarant 1 (1AV) et déclarant 2 (1BV)', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1ad: 5000, case1bd: 5000, case1bv: true }));
+    expect(result.declarant1.remunerationsBrutes).toBe(2000);
+    expect(result.declarant2.remunerationsBrutes).toBe(0);
   });
 });
 

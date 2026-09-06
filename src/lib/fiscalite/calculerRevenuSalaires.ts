@@ -15,31 +15,42 @@ const ABATTEMENT_PLAFOND = 14555;
 const PLAFOND_EXONERATION_1GH = 7500;
 
 /**
+ * Plafond annuel d'exonération de la prime de partage de la valeur (1AD/1BD,
+ * loi n° 2022-1158), par personne, tous employeurs confondus. Porté à
+ * PLAFOND_EXONERATION_1AD_MAJORE si la case 1AV/1BV est cochée (accord
+ * d'intéressement, versement par un organisme d'intérêt général, versement à
+ * un travailleur handicapé relevant d'un ESAT). Vérifié visuellement sur la
+ * brochure DGFiP (IR 2026, p.106) : « la fraction de la PPV qui excède
+ * 3 000 € (ou 6 000 € le cas échéant) sera automatiquement ajoutée au
+ * montant du salaire imposable » — même mécanisme que 1GH/1HH.
+ */
+const PLAFOND_EXONERATION_1AD = 3000;
+const PLAFOND_EXONERATION_1AD_MAJORE = 6000;
+
+/**
  * Cases du cadre 1 "Traitements et salaires" volontairement exclues du calcul
  * v1 : montants exonérés d'IR (n'entrent jamais dans le revenu imposable),
- * cases à cocher purement informatives sans montant propre (1AV/1BV, 1GK/1GL),
- * ou primes de partage de la valeur (1AD/1BD, traitées comme intégralement
- * exonérées faute d'avoir vérifié le mécanisme de surplus taxable au-delà du
- * seuil d'exonération). 1GB/1HB (associés et gérants art. 62 CGI) ne sont PAS
- * exclues : vérifié sur la brochure DGFiP (IR 2026, p.107) — « cette
- * déduction [de 10 %] est applicable à tous les revenus imposés selon les
- * règles des traitements et salaires » et le choix forfaitaire/frais réels
- * est « le même pour l'ensemble de ses activités » — 1GB/1HB ne relève
- * d'aucun régime distinct, elles rejoignent le pool standard ci-dessous.
- * 1AF/1BF (source étrangère, crédit d'impôt égal à l'impôt français) ne sont
- * PAS exclues non plus : même texte de la brochure — elles rejoignent le même
- * pool (plancher/plafond et choix 10 %/frais réels uniques par déclarant),
- * voir `revenuCreditImpotEgalImpotFrancais` ci-dessous pour l'isolement
+ * ou cases à cocher purement informatives sans montant propre (1GK/1GL).
+ * 1GB/1HB (associés et gérants art. 62 CGI) ne sont PAS exclues : vérifié sur
+ * la brochure DGFiP (IR 2026, p.107) — « cette déduction [de 10 %] est
+ * applicable à tous les revenus imposés selon les règles des traitements et
+ * salaires » et le choix forfaitaire/frais réels est « le même pour
+ * l'ensemble de ses activités » — 1GB/1HB ne relève d'aucun régime distinct,
+ * elles rejoignent le pool standard ci-dessous. 1AF/1BF (source étrangère,
+ * crédit d'impôt égal à l'impôt français) ne sont PAS exclues non plus :
+ * même texte de la brochure — elles rejoignent le même pool (plancher/
+ * plafond et choix 10 %/frais réels uniques par déclarant), voir
+ * `revenuCreditImpotEgalImpotFrancais` ci-dessous pour l'isolement
  * proportionnel de leur part dans le revenu net imposable. 1GH/1HH (heures
- * supplémentaires/RTT exonérées) ne sont PAS exclues non plus : seule la
- * fraction sous le plafond de 7 500 €/personne est exonérée, le surplus
- * rejoint l'assiette imposable — voir son traitement dans
- * `calculerRevenuSalaires` ci-dessous.
+ * supplémentaires/RTT exonérées) ne sont PAS exclues : seule la fraction
+ * sous le plafond de 7 500 €/personne est exonérée, le surplus rejoint
+ * l'assiette imposable — voir son traitement dans `calculerRevenuSalaires`
+ * ci-dessous. 1AD/1BD (prime de partage de la valeur) : même logique de
+ * surplus taxable au-delà du seuil d'exonération (3 000 €/6 000 € selon
+ * 1AV/1BV), voir `PLAFOND_EXONERATION_1AD`.
  */
 export const CASES_SALAIRES_EXCLUES_DU_CALCUL = [
   'case1pb', 'case1pc', // pourboires exonérés
-  'case1ad', 'case1bd', // primes de partage de la valeur exonérées
-  'case1av', 'case1bv', // majoration du seuil d'exonération de 1AD/1BD (sans effet ici : 1AD/1BD déjà traité comme intégralement exonéré)
   'case1dy', 'case1ey', // salariés impatriés, fraction exonérée
   'case1sm', 'case1dn', // sommes exonérées issues du CET
   'case1gk', 'case1gl', // "ne perçoit plus de salaires 1GB/1GF/1GG/1AG" — informatif (année suivante), aucun montant propre
@@ -144,13 +155,15 @@ export function calculerDeclarant(
  * Pour chaque déclarant : rémunérations imposables soumises à abattement
  * (1AJ/1AA/1GF/1GG/1AP/1AG/1GB, et symétriques déclarant 2 — 1GB/1HB, associés
  * et gérants art. 62 CGI, ne relèvent d'aucun régime distinct, brochure DGFiP
- * IR 2026 p.107), auxquelles s'ajoute la fraction de 1GH/1HH qui excède le
+ * IR 2026 p.107), auxquelles s'ajoutent la fraction de 1GH/1HH qui excède le
  * plafond d'exonération de 7 500 €/personne (heures supplémentaires/
- * complémentaires et RTT monétisés, art. 81 quater CGI — vérifié brochure
- * DGFiP, voir PLAFOND_EXONERATION_1GH), moins l'abattement spécifique 1GA/1HA
- * (journalistes, assistants maternels...), puis déduction du plus favorable
- * entre l'abattement forfaitaire de 10 % (plancher 509 €, plafond 14 555 €,
- * jamais supérieur à la base) et les frais réels (1AK/1BK).
+ * complémentaires et RTT monétisés, art. 81 quater CGI) et la fraction de
+ * 1AD/1BD qui excède le seuil d'exonération de la prime de partage de la
+ * valeur (3 000 €, porté à 6 000 € par 1AV/1BV — voir PLAFOND_EXONERATION_1AD),
+ * moins l'abattement spécifique 1GA/1HA (journalistes, assistants
+ * maternels...), puis déduction du plus favorable entre l'abattement
+ * forfaitaire de 10 % (plancher 509 €, plafond 14 555 €, jamais supérieur à
+ * la base) et les frais réels (1AK/1BK).
  *
  * 1PM/1QM (indemnités pour préjudice moral) sont ajoutées telles quelles : le
  * champ ne capture déjà que la fraction taxable au-delà d'1 M€, non soumise à
@@ -169,14 +182,19 @@ export function calculerRevenuSalaires(input: RevenusSalairesInput): RevenuSalai
   const surplus1gh = Math.max(0, (input.case1gh ?? 0) - PLAFOND_EXONERATION_1GH);
   const surplus1hh = Math.max(0, (input.case1hh ?? 0) - PLAFOND_EXONERATION_1GH);
 
+  const seuil1ad = input.case1av ? PLAFOND_EXONERATION_1AD_MAJORE : PLAFOND_EXONERATION_1AD;
+  const seuil1bd = input.case1bv ? PLAFOND_EXONERATION_1AD_MAJORE : PLAFOND_EXONERATION_1AD;
+  const surplus1ad = Math.max(0, (input.case1ad ?? 0) - seuil1ad);
+  const surplus1bd = Math.max(0, (input.case1bd ?? 0) - seuil1bd);
+
   const remunerations1 = (input.case1aj ?? 0) + (input.case1aa ?? 0)
     + (input.case1gf ?? 0) + (input.case1gg ?? 0) + (input.case1ap ?? 0) + (input.case1ag ?? 0)
     + (input.case1gb ?? 0)
-    + surplus1gh;
+    + surplus1gh + surplus1ad;
   const remunerations2 = (input.case1bj ?? 0) + (input.case1ba ?? 0)
     + (input.case1hf ?? 0) + (input.case1hg ?? 0) + (input.case1bp ?? 0) + (input.case1bg ?? 0)
     + (input.case1hb ?? 0)
-    + surplus1hh;
+    + surplus1hh + surplus1bd;
 
   const declarant1 = calculerDeclarant(remunerations1, input.case1ga ?? 0, input.case1ak, input.case1af ?? 0);
   const declarant2 = calculerDeclarant(remunerations2, input.case1ha ?? 0, input.case1bk, input.case1bf ?? 0);

@@ -220,20 +220,23 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   de 10 % (plancher 509 €, plafond 14 555 €, jamais supérieur à la base) et les frais réels (1AK/1BK).
   1PM/1QM (indemnités pour préjudice moral, déjà limitées par le formulaire à la fraction taxable
   au-delà d'1 M€) s'ajoutent sans abattement. **1GH/1HH (heures supplémentaires/complémentaires et jours
-  de repos/RTT monétisés, art. 81 quater CGI) sont plafonnées, plus intégralement exclues** : vérifié
-  visuellement sur la brochure officielle DGFiP (IR 2026, revenus 2025, p.105-106) — l'exonération est
-  limitée à 7 500 € nets par an **par personne** (déclarant 1 et déclarant 2 plafonnés indépendamment,
-  conforme aux colonnes distinctes 1GH/1HH/1IH/1JH du CERFA, une par personne — pas un plafond de
-  foyer), tous employeurs confondus pour une même personne. La fraction qui excède ce plafond rejoint le
-  pool 1AJ/1AA/1GF/1GG/1AP/1AG/1GB du même déclarant, donc subit le même abattement 10 %/frais réels —
-  pas ajoutée après coup sans abattement. Le plafond de 7 500 € est partagé avec la monétisation des
-  jours de repos/RTT (art. 5 LFR 2022), sans distinction possible côté app puisque les deux dispositifs
-  partagent la même case CERFA (`case1gh`/`case1hh`). **Exclues volontairement du calcul**
-  (`CASES_SALAIRES_EXCLUES_DU_CALCUL`) : 1PB/1PC, 1AD/1BD, 1DY/1EY, 1SM/1DN (exonérées d'IR par nature),
-  1AV/1BV (majoration du seuil d'exonération de 1AD/1BD — sans effet possible ici puisque 1AD/1BD est
-  encore traité comme intégralement exonéré, cette dette étant traitée séparément) et 1GK/1GL (case
-  informative « ne perçoit plus de salaires… », sans montant propre). 1GB/1HB et 1AF/1BF (crédit d'impôt
-  égal à l'impôt français) ne sont plus exclues, voir ci-dessous.
+  de repos/RTT monétisés, art. 81 quater CGI) et 1AD/1BD (prime de partage de la valeur) sont
+  plafonnées, plus intégralement exclues** : vérifié visuellement sur la brochure officielle DGFiP (IR
+  2026, revenus 2025, p.105-106) — l'exonération de 1GH/1HH est limitée à 7 500 € nets par an **par
+  personne** (déclarant 1 et déclarant 2 plafonnés indépendamment, conforme aux colonnes distinctes
+  1GH/1HH/1IH/1JH du CERFA, une par personne — pas un plafond de foyer), tous employeurs confondus pour
+  une même personne ; celle de 1AD/1BD est limitée à 3 000 €/personne, porté à 6 000 € si 1AV/1BV est
+  coché (`PLAFOND_EXONERATION_1AD`/`PLAFOND_EXONERATION_1AD_MAJORE`) — même texte de brochure pour les
+  deux dispositifs (« la fraction qui excède [le plafond] sera automatiquement ajoutée au montant du
+  salaire imposable »). Les fractions qui excèdent ces plafonds rejoignent le pool
+  1AJ/1AA/1GF/1GG/1AP/1AG/1GB du même déclarant, donc subissent le même abattement 10 %/frais réels —
+  pas ajoutées après coup sans abattement. Le plafond de 7 500 € de 1GH/1HH est partagé avec la
+  monétisation des jours de repos/RTT (art. 5 LFR 2022), sans distinction possible côté app puisque les
+  deux dispositifs partagent la même case CERFA (`case1gh`/`case1hh`). **Exclues volontairement du
+  calcul** (`CASES_SALAIRES_EXCLUES_DU_CALCUL`) : 1PB/1PC, 1DY/1EY, 1SM/1DN (exonérées d'IR par nature,
+  retenues seulement pour le RFR/plafond d'épargne retraite — hors périmètre du module) et 1GK/1GL (case
+  informative « ne perçoit plus de salaires… », sans montant propre). 1GB/1HB, 1AF/1BF (crédit d'impôt
+  égal à l'impôt français) et 1AD/1BD ne sont plus exclues, voir ci-dessous.
   **Bug corrigé — 1GB/1HB et 1AF/1BF avaient été exclues/isolées à tort, sur la base d'une hypothèse
   jamais vérifiée (« régime de frais professionnels particulier non arbitré » pour 1GB, « pas d'option
   frais réels identifiée » pour 1AF).** Vérification de la brochure DGFiP (IR 2026, p.107, section
@@ -260,12 +263,22 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   de 20 000 € (plus favorables que l'abattement de 4 000 €), net total 20 000 € réparti 15 000 €/5 000 €
   dans les mêmes proportions. Vérifié également en base et à l'écran sur le compte réel (couple marié,
   TMI 30 %) : +10 000 € sur 1GB → +2 700 € d'IR (9 000 € net après abattement 10 %, 30 % de 9 000 €),
-  valeur nettoyée après vérification. 25 tests (dont 4 nouveaux : 1GB seul, 1GB cumulé avec 1AJ, 1AF
-  partageant le pool avec et sans frais réels) couvrent l'abattement standard, les bornes plancher/
-  plafond, le choix frais réels vs abattement, le plafond de 7 500 € sur 1GH/1HH, et les cases exclues.
-  La fonction `calculerDeclarant` (abattement 10 %/frais réels d'un déclarant) est exportée et réutilisée
-  telle quelle par `calculerRevenuExonereTauxEffectif.ts` (ci-dessous), qui n'utilise pas le 4ᵉ paramètre
-  (comportement inchangé).
+  valeur nettoyée après vérification. **Bug corrigé — 1AD/1BD (prime de partage de la valeur) était
+  traitée comme intégralement exonérée, sans le mécanisme de surplus taxable que la brochure décrit
+  pourtant explicitement.** Même texte de brochure que pour 1GH/1HH (p.106) : « si vous avez plusieurs
+  employeurs qui vous ont versé une [PPV], le plafond de 3 000 € (ou de 6 000 € le cas échéant) peut être
+  dépassé au total sans qu'il le soit pour chaque employeur. Dans cette situation, la fraction de la PPV
+  qui excède 3 000 € (ou 6 000 € le cas échéant) sera automatiquement ajoutée au montant du salaire
+  imposable. » `PLAFOND_EXONERATION_1AD` (3 000 €) et `PLAFOND_EXONERATION_1AD_MAJORE` (6 000 €, si
+  1AV/1BV coché) implémentent ce plafond exactement comme `PLAFOND_EXONERATION_1GH` : le surplus rejoint
+  le pool commun du déclarant, donc subit le même abattement 10 %/frais réels. 1AV/1BV n'est donc plus
+  une case sans effet. 30 tests (dont 4 sur 1GB, 4 sur 1AF partageant le pool, et 5 nouveaux sur le
+  plafond 1AD/1AV : sous le seuil, au-dessus, 1AV portant le seuil à 6 000 €, dépassement au-delà de
+  6 000 €, indépendance entre déclarants) couvrent l'abattement standard, les bornes plancher/plafond, le
+  choix frais réels vs abattement, les plafonds de 7 500 €/3 000 €-6 000 € sur 1GH/1HH et 1AD/1BD, et les
+  cases exclues. La fonction `calculerDeclarant` (abattement 10 %/frais réels d'un déclarant) est
+  exportée et réutilisée telle quelle par `calculerRevenuExonereTauxEffectif.ts` (ci-dessous), qui
+  n'utilise pas le 4ᵉ paramètre (comportement inchangé).
 - **`src/lib/fiscalite/calculerRevenuExonereTauxEffectif.ts` — revenus exonérés retenus pour le calcul
   du taux effectif.** Fonction pure : 1AC/1BC (salaires de source étrangère exonérés) reçoivent le même
   abattement 10 %/frais réels (1AE/1BE) que les salaires français, via `calculerDeclarant` réutilisée de
@@ -391,9 +404,10 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   saisissant sa vraie situation voyait un IR surestimé de plusieurs milliers d'euros (la réduction
   outre-mer, ci-dessus, atteint jusqu'à 2 450 €/4 050 €), sans aucun signalement à l'écran. Le même audit
   a aussi trouvé 1AV/1BV et 1GK/1GL (`revenus_salaires`) sans effet et absentes de
-  `CASES_SALAIRES_EXCLUES_DU_CALCUL` — gravité mineure (1AV/1BV n'a de toute façon aucun effet possible
-  tant que 1AD/1BD reste traité comme intégralement exonéré ; 1GK/1GL est purement informatif), corrigé
-  en les ajoutant à la liste d'exclusion documentée plutôt qu'en les laissant orphelines. Même correctif
+  `CASES_SALAIRES_EXCLUES_DU_CALCUL` — corrigé à l'époque en les ajoutant à la liste d'exclusion
+  documentée plutôt qu'en les laissant orphelines. **1AV/1BV a depuis un effet réel** (voir plus haut,
+  section `calculerRevenuSalaires.ts` : porte le seuil d'exonération de 1AD/1BD de 3 000 € à 6 000 €) ;
+  1GK/1GL reste purement informatif. Même correctif
   de cohérence appliqué à `revenus_exoneres_taux_effectif` (nouvelle constante
   `CASES_EXONERES_TAUX_EFFECTIF_EXCLUES_DU_CALCUL` pour 1GE/1HE/RSE/RSF, qui n'en avaient pas).
 - **Bug corrigé — `revenusSalairesService.ts` renvoyait les cases numériques en chaînes de caractères,
