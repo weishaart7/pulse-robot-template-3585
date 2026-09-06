@@ -215,32 +215,57 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   compris les combinaisons (enfant en résidence alternée et invalide simultanément, etc.).
 - **`src/lib/fiscalite/calculerRevenuSalaires.ts` — revenu net imposable du cadre 1 « Salaires ».**
   Fonction pure : pour chaque déclarant, agrège les cases imposables soumises à abattement (1AJ, 1AA,
-  1GF, 1GG, 1AP, 1AG et symétriques déclarant 2), déduit l'abattement spécifique 1GA/1HA (journalistes,
-  assistants maternels) avant d'appliquer le plus favorable entre l'abattement forfaitaire de 10 %
-  (plancher 509 €, plafond 14 555 €, jamais supérieur à la base) et les frais réels (1AK/1BK). 1PM/1QM
-  (indemnités pour préjudice moral, déjà limitées par le formulaire à la fraction taxable au-delà d'1
-  M€) s'ajoutent sans abattement. **1GH/1HH (heures supplémentaires/complémentaires et jours de repos/
-  RTT monétisés, art. 81 quater CGI) sont désormais plafonnées, plus intégralement exclues** : vérifié
+  1GF, 1GG, 1AP, 1AG, **1GB** et symétriques déclarant 2), déduit l'abattement spécifique 1GA/1HA
+  (journalistes, assistants maternels) avant d'appliquer le plus favorable entre l'abattement forfaitaire
+  de 10 % (plancher 509 €, plafond 14 555 €, jamais supérieur à la base) et les frais réels (1AK/1BK).
+  1PM/1QM (indemnités pour préjudice moral, déjà limitées par le formulaire à la fraction taxable
+  au-delà d'1 M€) s'ajoutent sans abattement. **1GH/1HH (heures supplémentaires/complémentaires et jours
+  de repos/RTT monétisés, art. 81 quater CGI) sont plafonnées, plus intégralement exclues** : vérifié
   visuellement sur la brochure officielle DGFiP (IR 2026, revenus 2025, p.105-106) — l'exonération est
   limitée à 7 500 € nets par an **par personne** (déclarant 1 et déclarant 2 plafonnés indépendamment,
   conforme aux colonnes distinctes 1GH/1HH/1IH/1JH du CERFA, une par personne — pas un plafond de
-  foyer), tous employeurs confondus pour une même personne. La fraction qui excède ce plafond
-  (`PLAFOND_EXONERATION_1GH`) est « automatiquement ajoutée au montant du salaire imposable » (texte de
-  la brochure) : elle rejoint le pool 1AJ/1AA/1GF/1GG/1AP/1AG du même déclarant, donc subit le même
-  abattement 10 %/frais réels — pas ajoutée après coup sans abattement. Le même plafond de 7 500 € est
-  partagé avec la monétisation des jours de repos/RTT (art. 5 LFR 2022), sans distinction possible côté
-  app puisque les deux dispositifs partagent la même case CERFA (`case1gh`/`case1hh`). **Exclues
-  volontairement du calcul** (`CASES_SALAIRES_EXCLUES_DU_CALCUL`) : 1PB/1PC, 1AD/1BD, 1DY/1EY, 1SM/1DN
-  (exonérées d'IR par nature), 1AV/1BV (majoration du seuil d'exonération de 1AD/1BD — sans effet
-  possible ici puisque 1AD/1BD est déjà traité comme intégralement exonéré, quel que soit le seuil),
-  1GK/1GL (case informative « ne perçoit plus de salaires… », sans montant propre) et 1GB/1HB (régime de
-  frais professionnels des gérants art. 62 CGI non arbitré) — voir §3, 🟠. 1AF/1BF (crédit d'impôt égal
-  à l'impôt français) ne sont plus exclues : voir `revenuCreditImpotEgalImpotFrancais` plus bas et §2.
-  21 tests couvrent l'abattement standard, les bornes plancher/plafond, le choix frais réels vs
-  abattement, le plafond de 7 500 € sur 1GH/1HH (sous le plafond, au plafond exact, au-dessus,
-  indépendance entre déclarants, cumul avec le pool avant abattement), et les cases exclues. La
-  fonction `calculerDeclarant` (abattement 10 %/frais réels d'un déclarant) est exportée et réutilisée
-  telle quelle par `calculerRevenuExonereTauxEffectif.ts` (ci-dessous).
+  foyer), tous employeurs confondus pour une même personne. La fraction qui excède ce plafond rejoint le
+  pool 1AJ/1AA/1GF/1GG/1AP/1AG/1GB du même déclarant, donc subit le même abattement 10 %/frais réels —
+  pas ajoutée après coup sans abattement. Le plafond de 7 500 € est partagé avec la monétisation des
+  jours de repos/RTT (art. 5 LFR 2022), sans distinction possible côté app puisque les deux dispositifs
+  partagent la même case CERFA (`case1gh`/`case1hh`). **Exclues volontairement du calcul**
+  (`CASES_SALAIRES_EXCLUES_DU_CALCUL`) : 1PB/1PC, 1AD/1BD, 1DY/1EY, 1SM/1DN (exonérées d'IR par nature),
+  1AV/1BV (majoration du seuil d'exonération de 1AD/1BD — sans effet possible ici puisque 1AD/1BD est
+  encore traité comme intégralement exonéré, cette dette étant traitée séparément) et 1GK/1GL (case
+  informative « ne perçoit plus de salaires… », sans montant propre). 1GB/1HB et 1AF/1BF (crédit d'impôt
+  égal à l'impôt français) ne sont plus exclues, voir ci-dessous.
+  **Bug corrigé — 1GB/1HB et 1AF/1BF avaient été exclues/isolées à tort, sur la base d'une hypothèse
+  jamais vérifiée (« régime de frais professionnels particulier non arbitré » pour 1GB, « pas d'option
+  frais réels identifiée » pour 1AF).** Vérification de la brochure DGFiP (IR 2026, p.107, section
+  « Déduction forfaitaire de 10 % ») : texte explicite — « cette déduction est applicable à **tous les
+  revenus imposés selon les règles des traitements et salaires** » et « le choix entre la déduction
+  forfaitaire et la déduction des frais réels doit être **le même pour l'ensemble de ses activités**
+  imposées selon les règles des traitements et salaires » — plancher (509 €) et plafond (14 555 €)
+  s'appliquant eux aussi « pour chaque membre du foyer », donc une seule fois par déclarant, pas par
+  case. 1GB/1HB (associés et gérants art. 62 CGI) ne relève d'aucun régime distinct : elle rejoint
+  simplement le pool 1AJ/1AA/1GF/1GG/1AP/1AG comme n'importe quelle autre case du cadre. 1AF/1BF
+  (salaires de source étrangère avec crédit d'impôt égal à l'impôt français) rejoint la **même base**
+  que ce pool pour le calcul du plancher/plafond et le choix 10 %/frais réels — elle n'est **plus**
+  calculée comme un pool isolé avec son propre plancher. `calculerDeclarant` a été étendu d'un 4ᵉ
+  paramètre optionnel `remunerationsCreditImpot` (0 par défaut, comportement inchangé pour
+  `calculerRevenuExonereTauxEffectif.ts` qui ne l'utilise pas) : la base totale (pool + crédit d'impôt)
+  sert au calcul de l'abattement/frais réels, puis le résultat net est réparti **proportionnellement**
+  entre `netImposable` (pool ordinaire, alimente `totalNetImposable`) et le nouveau champ
+  `netImposableCreditImpot` (isolé pour `revenuCreditImpotEgalImpotFrancais`, toujours exclu de
+  `totalNetImposable`) — répartition nécessaire car la formule officielle du crédit d'impôt a besoin du
+  montant net attribuable spécifiquement à 1AF, que la base commune ne permet plus d'isoler
+  directement. Vérifié à la main : 30 000 € sur 1AJ + 10 000 € sur 1AF (pas de frais réels) → base
+  totale 40 000 €, abattement 10 % = 4 000 €, net total 36 000 €, réparti 27 000 €
+  (1AJ, 90 %) / 9 000 € (1AF, 25 % — proportion tenant compte du prorata, voir tests) ; avec frais réels
+  de 20 000 € (plus favorables que l'abattement de 4 000 €), net total 20 000 € réparti 15 000 €/5 000 €
+  dans les mêmes proportions. Vérifié également en base et à l'écran sur le compte réel (couple marié,
+  TMI 30 %) : +10 000 € sur 1GB → +2 700 € d'IR (9 000 € net après abattement 10 %, 30 % de 9 000 €),
+  valeur nettoyée après vérification. 25 tests (dont 4 nouveaux : 1GB seul, 1GB cumulé avec 1AJ, 1AF
+  partageant le pool avec et sans frais réels) couvrent l'abattement standard, les bornes plancher/
+  plafond, le choix frais réels vs abattement, le plafond de 7 500 € sur 1GH/1HH, et les cases exclues.
+  La fonction `calculerDeclarant` (abattement 10 %/frais réels d'un déclarant) est exportée et réutilisée
+  telle quelle par `calculerRevenuExonereTauxEffectif.ts` (ci-dessous), qui n'utilise pas le 4ᵉ paramètre
+  (comportement inchangé).
 - **`src/lib/fiscalite/calculerRevenuExonereTauxEffectif.ts` — revenus exonérés retenus pour le calcul
   du taux effectif.** Fonction pure : 1AC/1BC (salaires de source étrangère exonérés) reçoivent le même
   abattement 10 %/frais réels (1AE/1BE) que les salaires français, via `calculerDeclarant` réutilisée de
@@ -331,11 +356,12 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   imposable)` — mathématiquement identique à la formule déjà implémentée pour le taux effectif
   (`tauxEffectif × revenu`), dès lors que le crédit est imputé **avant** réduction outre-mer et décote
   (ordre non confirmé explicitement par le BOFiP consulté pour ce cas précis face à la décote — **hypothèse
-  retenue en session**, documentée en dette, §3 🟠). Implémentation : `1AF`/`1BF` obtiennent un abattement
-  forfaitaire de 10 % standard (plancher/plafond), **sans option frais réels** (aucune case dédiée
-  identifiée dans la brochure pour 1AF/1BF, contrairement à 1AC/1BC qui ont 1AE/1BE — hypothèse également
-  documentée en dette) — nouveau champ `revenuCreditImpotEgalImpotFrancais` dans
-  `calculerRevenuSalaires.ts`, n'entrant pas dans `totalNetImposable`. `1AL`/`1BL` réutilisent le même
+  retenue en session**, documentée en dette, §3 🟠). Implémentation (§2 ci-dessus, section
+  `calculerRevenuSalaires.ts`) : `1AF`/`1BF` partagent désormais le même pool que 1AJ/1AA/1GF/1GG/1AP/1AG/
+  1GB (plancher/plafond et choix 10 %/frais réels uniques par déclarant, corrigé après vérification de la
+  brochure — voir ci-dessus, l'hypothèse « pas d'option frais réels » était erronée) — nouveau champ
+  `revenuCreditImpotEgalImpotFrancais` dans `calculerRevenuSalaires.ts`, isolé proportionnellement,
+  n'entrant pas dans `totalNetImposable`. `1AL`/`1BL` réutilisent le même
   abattement pension 10 % que le pool `1AS`/`1AZ`/`1AO`/`1AM` (plancher 454 €, plafond global 4 439 €)
   mais dans un pool indépendant (comme `1AH` dans `calculerRevenuExonereTauxEffectif.ts`), pour éviter une
   clé de répartition non documentée par la brochure entre les deux pools s'ils étaient fusionnés. `1AR`
@@ -344,9 +370,12 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   `useFiscalOverview.ts` additionne ces deux nouveaux champs à `revenuExonereTauxEffectif.totalRetenu`
   avant l'appel à `calculerImpot.ts` — **aucun changement dans `calculerImpot.ts` lui-même**, le paramètre
   existant porte désormais les deux mécanismes (docstring élargie). **1GB/1HB ne fait pas partie de ce
-  mécanisme** (contrairement à ce qui avait été supposé en fin de session précédente) : régime de frais
-  professionnels des gérants art. 62 CGI, sans rapport avec le crédit d'impôt, reste exclu (§3 🟠). Découverte
-  notable en cours de recherche : la brochure officielle référence une case **8TK** (cadre 8, « Revenus de
+  mécanisme de crédit d'impôt** (sans rapport avec le crédit d'impôt égal à l'impôt français) mais
+  **n'est plus exclue du calcul** depuis l'audit case par case de ce cadre : elle rejoint simplement le
+  pool standard 1AJ/1AA/1GF/1GG/1AP/1AG comme n'importe quelle autre case (voir §2, section
+  `calculerRevenuSalaires.ts`) — l'ancienne exclusion reposait sur une hypothèse de « régime particulier
+  non arbitré » infirmée par la brochure DGFiP. Découverte notable en cours de recherche : la brochure
+  officielle référence une case **8TK** (cadre 8, « Revenus de
   source étrangère ouvrant droit à un crédit d'impôt égal à l'impôt français ») qui agrège en théorie
   toutes les catégories concernées (salaires, pensions, revenus fonciers 4BK/4BL...) pour piloter le
   crédit réel — non implémentée ici : le calcul retenu applique directement la formule par case sans
@@ -768,8 +797,9 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   (abattement 10 % classique, capital PER sans abattement, capital retraite à 7,5 %, rentes viagères
   par tranche d'âge — taux vérifiés visuellement sur la brochure DGFiP et le BOFiP), et la méthode du
   taux effectif, et désormais le crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL,
-  1AR/1BR/1CR/1DR — voir §2). **Reste hors calcul** : les revenus fonciers, les capitaux mobiliers, et
-  1GB/1HB (régime de frais professionnels des gérants, sans rapport avec le crédit d'impôt) — voir §4.
+  1AR/1BR/1CR/1DR — voir §2). 1GB/1HB (associés et gérants art. 62 CGI) est désormais couverte,
+  intégrée au pool standard de `calculerRevenuSalaires.ts` (audit case par case du cadre 1, voir §2).
+  **Reste hors calcul** : les revenus fonciers et les capitaux mobiliers (gains de cession) — voir §4.
 - **Résolu — le simulateur IFI et le reste de l'écran Fiscalité n'affichent plus de montants d'IFI
   contradictoires.** `FiscalOverviewCard.tsx` affiche désormais « IFI : non calculé — voir le
   simulateur IFI » plutôt qu'un « 0 € » fixe qui contredisait le résultat du simulateur ouvert depuis
@@ -804,13 +834,13 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   exemple BOFiP chiffré** (cas rare, les deux mécanismes coexistant simultanément) : le montant `0XX` est
   traité comme un revenu français à part entière pour la proratisation, choix cohérent mais non
   confirmé par une source officielle chiffrée — voir `calculerImpot.ts`.
-- **`calculerRevenuSalaires.ts` exclut volontairement 1GB/1HB du revenu net imposable**
-  ([calculerRevenuSalaires.ts](src/lib/fiscalite/calculerRevenuSalaires.ts)) : 1GB/1HB (gérants et
-  associés art. 62 CGI) ont un régime de frais professionnels particulier distinct de l'abattement de
-  10 % standard, non arbitré. Un utilisateur saisissant des montants dans cette case le verra ignoré du
-  calcul d'IR sans qu'aucun message ne le signale à l'écran — à corriger avant d'afficher le calcul
-  comme fiable pour ce profil (gérants majoritaires). **1AF/1BF, 1AL/1BL et 1AR/1BR/1CR/1DR (crédit
-  d'impôt égal à l'impôt français) sont désormais couverts** (voir §2) — ce n'est plus une exclusion.
+- **Résolu — `calculerRevenuSalaires.ts` n'exclut plus 1GB/1HB du revenu net imposable.** L'exclusion
+  reposait sur une hypothèse jamais vérifiée (« régime de frais professionnels particulier distinct,
+  non arbitré ») : la brochure DGFiP (IR 2026, p.107) confirme que 1GB/1HB (associés et gérants art. 62
+  CGI) suit exactement le même mécanisme d'abattement 10 %/frais réels que le reste du cadre 1, sans
+  régime distinct — corrigé par l'audit case par case de ce cadre (voir §2). **1AF/1BF, 1AL/1BL et
+  1AR/1BR/1CR/1DR (crédit d'impôt égal à l'impôt français) sont également couverts** (voir §2) — ce
+  n'est plus une exclusion.
 - **Réduction IFI pour dons (art. 978 CGI, 75 % du don plafonné à 50 000 €) absente du moteur de
   calcul**, alors que la catégorie de dépense « Dons aux organismes d'intérêt général (réduction IFI) »
   existe déjà comme libellé dans le module Budget
@@ -961,9 +991,8 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   (`calculerRevenuCapitauxMobiliers.ts` + extension de `calculerImpot.ts`, voir §2). Reste hors calcul
   (dette, voir ci-dessous) : gains de cession, pertes/moins-values non imputées, lignes PS/RFR, crédits
   d'impôt imputables sur l'impôt dû. Prochaine étape de la feuille de route : un futur cadre 2042
-  (revenus fonciers, plus-values, etc.), la Phase 2c du calcul des capitaux mobiliers (gains de
-  cession, imputation des moins-values par taux), ou 1GB/1HB (point ci-dessous — **désormais distinct**
-  du crédit d'impôt égal à l'impôt français, couvert depuis une session précédente, voir §2).
+  (revenus fonciers, plus-values, etc.), ou la Phase 2c du calcul des capitaux mobiliers (gains de
+  cession, imputation des moins-values par taux).
 - **Différé, déductible du code** :
   - **Revenus des valeurs et capitaux mobiliers — hors calcul (voir §2/§3)** :
     `2UU` (total informatif à répartir entre `2VV`/`2WW`, déjà comptés),
@@ -978,9 +1007,6 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   - **Système du quotient — revenus différés à coefficient variable** : seuls les revenus exceptionnels
     (coefficient fixe 4) sont couverts par `0XX`/`calculerImpot.ts` ; les revenus différés (coefficient =
     nombre d'années + 1) restent hors périmètre, faute de case CERFA pour saisir ce nombre — voir §2/§3.
-  - **1GB/1HB (gérants et associés art. 62 CGI) exclus du moteur de calcul** — régime de frais
-    professionnels particulier, non arbitré, sans rapport avec le crédit d'impôt égal à l'impôt français
-    (voir §3, 🟠).
   - Le choix entre abattement forfaitaire de 10 % (`1AJ`/`1BJ`) et frais réels (`1AK`/`1BK`) est
     désormais arbitré par `calculerRevenuSalaires.ts` (le plus favorable des deux est retenu
     automatiquement).

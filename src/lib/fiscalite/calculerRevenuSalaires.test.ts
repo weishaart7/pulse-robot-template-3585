@@ -113,14 +113,30 @@ describe('calculerRevenuSalaires — abattement spécifique 1GA/1HA', () => {
 describe('calculerRevenuSalaires — cases exclues du calcul', () => {
   it('les cases exonérées ou hors périmètre n\'entrent pas dans le revenu imposable', () => {
     const result = calculerRevenuSalaires(makeInput({
-      case1pb: 500, case1ad: 3000, case1dy: 20000, case1sm: 1000, case1gb: 10000, case1aq: 8000,
+      case1pb: 500, case1ad: 3000, case1dy: 20000, case1sm: 1000, case1aq: 8000,
     }));
     expect(result.totalNetImposable).toBe(0);
-    expect(result.casesExclues).toContain('case1gb');
+    expect(result.casesExclues).toContain('case1ad');
     expect(result.casesExclues).toContain('case1aq');
     expect(result.casesExclues).not.toContain('case1af');
+    expect(result.casesExclues).not.toContain('case1gb');
     expect(result.casesExclues).not.toContain('case1gh');
     expect(result.casesExclues).not.toContain('case1hh');
+  });
+});
+
+describe('calculerRevenuSalaires — 1GB/1HB (associés et gérants art. 62 CGI)', () => {
+  it('rejoint le pool standard : même abattement 10 %/frais réels que 1AJ', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1gb: 30000 }));
+    expect(result.declarant1.remunerationsBrutes).toBe(30000);
+    expect(result.declarant1.netImposable).toBe(27000);
+    expect(result.totalNetImposable).toBe(27000);
+  });
+
+  it('se cumule avec 1AJ dans le même pool avant abattement', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1aj: 20000, case1gb: 10000 }));
+    expect(result.declarant1.remunerationsBrutes).toBe(30000);
+    expect(result.declarant1.netImposable).toBe(27000);
   });
 });
 
@@ -157,14 +173,33 @@ describe('calculerRevenuSalaires — plafond d\'exonération 1GH/1HH (heures sup
 });
 
 describe('calculerRevenuSalaires — crédit d\'impôt égal à l\'impôt français (1AF/1BF)', () => {
-  it("n'entre pas dans totalNetImposable", () => {
+  it("seul dans le pool : n'entre pas dans totalNetImposable, isolé dans revenuCreditImpotEgalImpotFrancais", () => {
     const result = calculerRevenuSalaires(makeInput({ case1af: 15000 }));
     expect(result.totalNetImposable).toBe(0);
+    expect(result.revenuCreditImpotEgalImpotFrancais).toBe(15000 - 1500);
   });
 
-  it('applique l\'abattement forfaitaire de 10 % (plancher/plafond standard)', () => {
-    const result = calculerRevenuSalaires(makeInput({ case1af: 30000, case1bf: 3000 }));
-    expect(result.revenuCreditImpotEgalImpotFrancais).toBe((30000 - 3000) + (3000 - 509));
+  it('applique le plancher de 509 € sur un petit montant isolé', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1bf: 3000 }));
+    expect(result.revenuCreditImpotEgalImpotFrancais).toBe(3000 - 509);
+  });
+
+  it('rejoint le même pool que 1AJ : plancher/plafond et choix 10 %/frais réels partagés, part isolée proportionnellement', () => {
+    // Base totale déclarant 1 = 30000 (1AJ) + 10000 (1AF) = 40000 ; abattement 10 % = 4000 ; net total = 36000.
+    // Part 1AF = 10000/40000 = 25 % du net total => 9000 ; part 1AJ = 27000.
+    const result = calculerRevenuSalaires(makeInput({ case1aj: 30000, case1af: 10000 }));
+    expect(result.revenuCreditImpotEgalImpotFrancais).toBe(9000);
+    expect(result.declarant1.netImposable).toBe(27000);
+    expect(result.totalNetImposable).toBe(27000);
+  });
+
+  it('partage le choix frais réels avec le pool 1AJ quand il est plus favorable', () => {
+    // Base totale = 30000 (1AJ) + 10000 (1AF) = 40000 ; frais réels 20000 > abattement 10 % (4000) => frais réels retenus.
+    // Net total = 20000 ; part 1AF = 25 % => 5000 ; part 1AJ = 15000.
+    const result = calculerRevenuSalaires(makeInput({ case1aj: 30000, case1af: 10000, case1ak: 20000 }));
+    expect(result.declarant1.deductionRetenue).toBe('frais_reels');
+    expect(result.revenuCreditImpotEgalImpotFrancais).toBe(5000);
+    expect(result.declarant1.netImposable).toBe(15000);
   });
 
   it('nul par défaut', () => {
