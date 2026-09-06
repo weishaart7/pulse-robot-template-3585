@@ -10,6 +10,7 @@ import {
   calculerImpot,
   calculerPartsFiscales,
   calculerPensionsRetraitesRentes,
+  calculerPrelevementsSociauxCapitauxMobiliers,
   calculerRevenuCapitauxMobiliers,
   calculerRevenuExonereTauxEffectif,
   calculerRevenuSalaires,
@@ -20,6 +21,7 @@ import {
   PartsFiscalesResult,
   PensionsRetraitesRentesInput,
   PensionsRetraitesRentesResult,
+  PrelevementsSociauxCapitauxMobiliersResult,
   RevenuCapitauxMobiliersResult,
   RevenuExonereTauxEffectifResult,
   RevenuSalairesResult,
@@ -124,6 +126,13 @@ export interface FiscalOverview {
   revenuExonereTauxEffectif: RevenuExonereTauxEffectifResult;
   pensionsRetraitesRentes: PensionsRetraitesRentesResult;
   revenuCapitauxMobiliers: RevenuCapitauxMobiliersResult;
+  /**
+   * Prélèvements sociaux (17,2 %) — périmètre partiel : seuls les capitaux
+   * mobiliers « prélevés à la source » sont couverts pour l'instant (voir
+   * calculerPrelevementsSociauxCapitauxMobiliers.ts). Salaires, pensions et
+   * gains d'actionnariat restent hors périmètre (voir docs/fiscalite.md).
+   */
+  prelevementsSociauxCapitauxMobiliers: PrelevementsSociauxCapitauxMobiliersResult;
   parts: PartsFiscalesResult;
   impot: ImpotResult;
   /** Recharge les 6 sources Supabase — à appeler après une saisie dans la 2042 (voir FiscaliteSection.tsx). */
@@ -175,6 +184,7 @@ export function useFiscalOverview(): FiscalOverview {
     const revenuExonereTauxEffectif = calculerRevenuExonereTauxEffectif(exoneresInput);
     const pensionsRetraitesRentes = calculerPensionsRetraitesRentes(pensionsInput);
     const revenuCapitauxMobiliers = calculerRevenuCapitauxMobiliers(capitauxMobiliersInput, foyerInput.situationFamille);
+    const prelevementsSociauxCapitauxMobiliers = calculerPrelevementsSociauxCapitauxMobiliers(capitauxMobiliersInput);
     const parts = calculerPartsFiscales(foyerInput);
     const revenuImposableTotal = revenuSalaires.totalNetImposable + gainsActionnariat.totalNetImposable
       + pensionsRetraitesRentes.totalNetImposable + revenuCapitauxMobiliers.totalNetImposable;
@@ -208,6 +218,7 @@ export function useFiscalOverview(): FiscalOverview {
       revenuExonereTauxEffectif,
       pensionsRetraitesRentes,
       revenuCapitauxMobiliers,
+      prelevementsSociauxCapitauxMobiliers,
       parts,
       impot,
     };

@@ -5,4 +5,5 @@ export * from './calculerGainsActionnariatSalarie';
 export * from './calculerRevenuExonereTauxEffectif';
 export * from './calculerPensionsRetraitesRentes';
 export * from './calculerRevenuCapitauxMobiliers';
+export * from './calculerPrelevementsSociauxCapitauxMobiliers';
 export * from './calculerImpot';

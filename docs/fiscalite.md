@@ -942,6 +942,38 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   des fragments de la requête) — non conforme à la lettre de la règle même si le risque de fuite de
   donnée patrimoniale sensible reste faible en pratique. `ifiService.ts`, lui, ne logge rien (se
   contente de `throw`) — la non-conformité est localisée au hook, pas au service.
+- **`src/lib/fiscalite/calculerPrelevementsSociauxCapitauxMobiliers.ts` — prélèvements sociaux (PS) sur
+  le cadre 2 « Capitaux mobiliers » (Phase 1 du chantier PS, périmètre volontairement partiel).**
+  Premier module d'un chantier plus large : calculer les PS (CSG/CRDS/prélèvement de solidarité) pour
+  l'ensemble des cases existantes, catégorie par catégorie, plutôt qu'en un seul module monolithique —
+  chaque catégorie de revenu a une assiette et un taux PS propres, souvent différents de l'assiette IR
+  de la même case. **Salaires (cadre 1) hors périmètre par construction** : les cotisations salariales
+  sont déjà prélevées en paie (URSSAF), 1AJ/1BJ etc. sont déjà nets — rien à recalculer côté IR.
+  Pour les capitaux mobiliers : 17,2 % sur dividendes/revenus assimilés (2DC/2FU, sur leur montant
+  **brut**, l'abattement de 40 % étant réservé à l'IR, art. 158-3 CGI), intérêts/produits sans
+  abattement (2TS/2TR/2TT/2TQ/2TZ) et revenus réputés distribués (2GO). **2GO retenu sans la majoration
+  de 25 %** qui s'applique pourtant côté IR (art. 158-7-2° CGI) : le Conseil constitutionnel (décision
+  n° 2016-610 QPC) a jugé ce coefficient inapplicable à l'assiette PS — seule fonction du module à
+  diverger explicitement de l'assiette IR de la même case. Indépendant de 2OP : les PS sont dus que le
+  revenu soit finalement imposé au barème ou au PFU, contrairement à l'IR. 17,2 % et non 18,6 % malgré
+  la hausse LFSS 2026 (CSG +1,4 point sur les revenus du capital financier) : cette hausse ne s'applique
+  qu'aux « produits de placement perçus à compter du 1.1.2026 » (prélevés à la source pendant l'année,
+  cas de 2DC/2TS...) — seuls les revenus « recouvrés par voie de rôle » (plus-values de cession de
+  valeurs mobilières, non modélisées ici) basculent dès les revenus 2025 ; sans effet sur le périmètre
+  actuel du module. **Exclus du calcul** (`CASES_PS_CAPITAUX_MOBILIERS_HORS_PERIMETRE`) : tous les
+  contrats d'assurance-vie/de capitalisation (2CH/2DH/2VV/2WW, 2XX/2YY/2ZZ, 2VM/2VN/2VO/2VP) — leur
+  mécanisme de « taux historiques » (art. L136-7 CSS) prélève les PS au fil de l'eau (fonds euros) ou au
+  dénouement (UC) selon le taux en vigueur à la date d'acquisition de CHAQUE fraction du gain, une
+  donnée que seul l'assureur reconstitue à partir de l'historique du contrat — non reconstituable depuis
+  le seul montant net déclaré sur le 2042, donc non modélisé plutôt que deviné (appliquer 17,2 % sur ces
+  montants produirait un résultat régulièrement faux pour tout contrat antérieur à une hausse de taux).
+  Branché dans `useFiscalOverview.ts` (`prelevementsSociauxCapitauxMobiliers`, champ séparé de `impot`,
+  pas encore agrégé dans un total PS unique tant que les autres catégories ne sont pas couvertes) et
+  affiché dans `FiscalOverviewCard.tsx` à la place du précédent « Prélèvements sociaux — Non calculé »
+  (désormais scindé en deux lignes : le montant calculé pour les capitaux mobiliers, et une ligne
+  « Non calculé » explicite pour salaires/pensions/gains d'actionnariat, qui restent des chantiers
+  futurs). 8 tests couvrent l'assiette brute des dividendes, le pool intérêts/produits, la non-majoration
+  de 2GO, l'indépendance vis-à-vis de 2OP, et l'exclusion des contrats d'assurance-vie/capitalisation.
 
 ## 3. Dette identifiée
 
@@ -1192,7 +1224,15 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   (`calculerRevenuCapitauxMobiliers.ts` + extension de `calculerImpot.ts`, voir §2). Reste hors calcul
   (dette, voir ci-dessous) : pertes/moins-values non imputées (purement informatives, reste du
   déclarant), lignes PS/RFR, crédits d'impôt imputables sur l'impôt dû. Prochaine étape de la feuille de
-  route : un futur cadre 2042 (revenus fonciers, plus-values, etc.).
+  route : un futur cadre 2042 (revenus fonciers, plus-values, etc.). **Prélèvements sociaux — chantier
+  démarré, Phase 1 (capitaux mobiliers) terminée** : `calculerPrelevementsSociauxCapitauxMobiliers.ts`
+  couvre dividendes/intérêts/2GO à 17,2 % (voir §2). **Restent à traiter** : pensions/retraites/rentes
+  (taux CSG/CRDS/CASA 0 %/3,8 %/6,6 %/8,3 % selon le RFR du foyer, approximé sur le RFR courant plutôt
+  que N-2, décision validée en session) et gains d'actionnariat salarié (régime PS fragmenté par case —
+  patrimonial 17,2 %/18,6 % pour certaines, salarial 9,7 % ou hors périmètre comme les salaires pour
+  d'autres, contribution spécifique de 30 % sur le carried-interest 1NY/1OY — recherche BOFiP case par
+  case nécessaire avant tout calcul). Salaires (cadre 1, 1AJ etc.) volontairement exclus du périmètre
+  PS : déjà nets des cotisations salariales prélevées en paie, rien à recalculer côté IR.
 - **Différé, déductible du code** :
   - **Revenus des valeurs et capitaux mobiliers — hors calcul (voir §2/§3)** :
     `2UU` (total informatif à répartir entre `2VV`/`2WW`, déjà comptés),
