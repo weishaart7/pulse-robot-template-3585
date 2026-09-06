@@ -145,4 +145,21 @@ export const pensionsRetraitesRentesService = {
 
     return rowToPensionsRetraitesRentes(data as PensionsRetraitesRentesRow);
   },
+
+  async deletePensionsRetraitesRentes(): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Utilisateur non connecté');
+
+    const { error } = await supabase
+      .from('pensions_retraites_rentes')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (error) {
+      if (import.meta.env.DEV) {
+        console.error('Error deleting pensions retraites rentes:', error);
+      }
+      throw error;
+    }
+  },
 };

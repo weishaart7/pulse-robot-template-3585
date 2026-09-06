@@ -103,4 +103,21 @@ export const revenusExoneresTauxEffectifService = {
 
     return rowToRevenusExoneresTauxEffectif(data as RevenusExoneresTauxEffectifRow);
   },
+
+  async deleteRevenusExoneresTauxEffectif(): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Utilisateur non connecté');
+
+    const { error } = await supabase
+      .from('revenus_exoneres_taux_effectif')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (error) {
+      if (import.meta.env.DEV) {
+        console.error('Error deleting revenus exoneres taux effectif:', error);
+      }
+      throw error;
+    }
+  },
 };

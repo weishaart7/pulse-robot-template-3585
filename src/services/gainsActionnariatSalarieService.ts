@@ -142,4 +142,21 @@ export const gainsActionnariatSalarieService = {
 
     return rowToGainsActionnariatSalarie(data as GainsActionnariatSalarieRow);
   },
+
+  async deleteGainsActionnariatSalarie(): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Utilisateur non connecté');
+
+    const { error } = await supabase
+      .from('gains_actionnariat_salarie')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (error) {
+      if (import.meta.env.DEV) {
+        console.error('Error deleting gains actionnariat salarie:', error);
+      }
+      throw error;
+    }
+  },
 };

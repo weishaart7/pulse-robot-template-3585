@@ -212,4 +212,21 @@ export const revenusCapitauxMobiliersService = {
 
     return rowToRevenusCapitauxMobiliers(data as RevenusCapitauxMobiliersRow);
   },
+
+  async deleteRevenusCapitauxMobiliers(): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Utilisateur non connecté');
+
+    const { error } = await supabase
+      .from('revenus_capitaux_mobiliers')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (error) {
+      if (import.meta.env.DEV) {
+        console.error('Error deleting revenus capitaux mobiliers:', error);
+      }
+      throw error;
+    }
+  },
 };

@@ -101,4 +101,21 @@ export const foyerFiscalService = {
 
     return rowToFoyerFiscal(data as FoyerFiscalRow);
   },
+
+  async deleteFoyerFiscal(): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Utilisateur non connecté');
+
+    const { error } = await supabase
+      .from('foyer_fiscal')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (error) {
+      if (import.meta.env.DEV) {
+        console.error('Error deleting foyer fiscal:', error);
+      }
+      throw error;
+    }
+  },
 };
