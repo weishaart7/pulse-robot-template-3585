@@ -104,11 +104,11 @@ describe('calculerRevenuSalaires — cases annexes imposables', () => {
 });
 
 describe('calculerRevenuSalaires — abattement spécifique 1GA/1HA', () => {
-  it("réduit la base avant application de l'abattement de 10 %", () => {
+  it("est purement informatif et n'a aucun effet sur le revenu net imposable (déjà déduit par le contribuable en amont, dans le montant saisi en 1AJ)", () => {
     const result = calculerRevenuSalaires(makeInput({ case1aj: 30000, case1ga: 7650 }));
-    expect(result.declarant1.baseApresAbattementSpecifique).toBe(22350);
-    expect(result.declarant1.abattementForfaitaire).toBe(2235);
-    expect(result.declarant1.netImposable).toBe(22350 - 2235);
+    expect(result.declarant1.baseApresAbattementSpecifique).toBe(30000);
+    expect(result.declarant1.abattementForfaitaire).toBe(3000);
+    expect(result.declarant1.netImposable).toBe(30000 - 3000);
   });
 });
 

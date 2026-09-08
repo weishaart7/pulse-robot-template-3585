@@ -154,6 +154,15 @@ export interface RevenuSalairesResult {
  * `netImposableExonereTauxEffectif`, pour permettre à `calculerRevenuSalaires`
  * de les exclure du revenu imposable France tout en les transmettant
  * séparément aux mécanismes du crédit d'impôt et du taux effectif.
+ *
+ * `abattementSpecifique` (1GA/1HA, assistants maternels/familiaux,
+ * journalistes) est purement informatif côté DGFiP : le contribuable est
+ * censé l'avoir déjà déduit de son salaire brut avant de le reporter en
+ * 1AJ/1AA, la case 1GA ne servant qu'à documenter ce montant sans être
+ * réimputée par l'administration (vérifié empiriquement contre le simulateur
+ * officiel, qui ne la retranche pas — voir docs/fiscalite.md). Elle n'entre
+ * donc plus dans le calcul de `netImposable` ci-dessous ; elle reste
+ * seulement exposée dans le détail pour affichage.
  */
 export function calculerDeclarant(
   remunerationsBrutes: number,
@@ -162,7 +171,7 @@ export function calculerDeclarant(
   remunerationsCreditImpot = 0,
   remunerationsExonereesTauxEffectif = 0,
 ): RevenuSalairesDeclarantDetail {
-  const baseApresAbattementSpecifique = Math.max(0, remunerationsBrutes - abattementSpecifique);
+  const baseApresAbattementSpecifique = remunerationsBrutes;
   const baseTotale = baseApresAbattementSpecifique + remunerationsCreditImpot + remunerationsExonereesTauxEffectif;
 
   const abattementForfaitaire = baseTotale <= 0
@@ -210,10 +219,12 @@ export function calculerDeclarant(
  * complémentaires et RTT monétisés, art. 81 quater CGI) et la fraction de
  * 1AD/1BD qui excède le seuil d'exonération de la prime de partage de la
  * valeur (3 000 €, porté à 6 000 € par 1AV/1BV — voir PLAFOND_EXONERATION_1AD),
- * moins l'abattement spécifique 1GA/1HA (journalistes, assistants
- * maternels...), puis déduction du plus favorable entre l'abattement
- * forfaitaire de 10 % (plancher 509 €, plafond 14 555 €, jamais supérieur à
- * la base) et les frais réels (1AK/1BK).
+ * puis déduction du plus favorable entre l'abattement forfaitaire de 10 %
+ * (plancher 509 €, plafond 14 555 €, jamais supérieur à la base) et les frais
+ * réels (1AK/1BK). L'abattement spécifique 1GA/1HA (journalistes, assistants
+ * maternels...) n'est PAS déduit ici : voir JSDoc de `calculerDeclarant`
+ * ci-dessus — le contribuable est censé l'avoir déjà retranché du montant
+ * saisi en 1AJ/1AA, la case étant purement informative côté DGFiP.
  *
  * 1PM/1QM (indemnités pour préjudice moral, fraction taxable au-delà d'1 M€)
  * rejoignent le même pool que les rémunérations ci-dessus : le BOFiP

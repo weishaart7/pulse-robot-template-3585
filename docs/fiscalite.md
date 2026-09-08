@@ -252,9 +252,20 @@ fonciers (§4).
   après vérification.
 - **`src/lib/fiscalite/calculerRevenuSalaires.ts` — revenu net imposable du cadre 1 « Salaires ».**
   Fonction pure : pour chaque déclarant, agrège les cases imposables soumises à abattement (1AJ, 1AA,
-  1GF, 1GG, 1AP, 1AG, **1GB** et symétriques déclarant 2), déduit l'abattement spécifique 1GA/1HA
-  (journalistes, assistants maternels) avant d'appliquer le plus favorable entre l'abattement forfaitaire
-  de 10 % (plancher 509 €, plafond 14 555 €, jamais supérieur à la base) et les frais réels (1AK/1BK).
+  1GF, 1GG, 1AP, 1AG, **1GB** et symétriques déclarant 2), puis applique le plus favorable entre
+  l'abattement forfaitaire de 10 % (plancher 509 €, plafond 14 555 €, jamais supérieur à la base) et les
+  frais réels (1AK/1BK). **1GA/1HA (abattement spécifique, journalistes/assistants maternels et
+  familiaux) est purement informatif et n'est plus déduit de la base ici.** **Bug corrigé — 1GA/1HA
+  était initialement soustrait de la base avant l'abattement de 10 %, ce qui double-comptait la
+  déduction.** Trois sources concordantes (corrigetonimpot.fr, meilleurtaux.com) confirment que la case
+  1GA « ne sert à rien dans les calculs » côté DGFiP : le contribuable est censé avoir déjà retranché ce
+  montant de son salaire brut avant de le déclarer en 1AJ/1AA ; la case n'est là que pour documenter le
+  montant, elle n'est pas réimputée par l'administration. Détecté par comparaison avec le simulateur
+  officiel sur un compte réel (célibataire, 1 part) : base 1AJ/1AA/1GF/1AP/1AG/1GB = 62 500 €, 1GA =
+  1 500 € → Kairos calculait à tort un revenu net imposable de 54 900 € (62 500 − 1 500, ×90 %) contre
+  56 250 € (62 500 × 90 %) côté officiel, soit 405 € d'IR sous-évalués (écart × TMI 30 %). Le champ
+  `abattementSpecifique`/`baseApresAbattementSpecifique` reste exposé dans `RevenuSalairesDeclarantDetail`
+  pour affichage, mais n'entre plus dans le calcul de `netImposable`.
   1PM/1QM (indemnités pour préjudice moral, déjà limitées par le formulaire à la fraction taxable
   au-delà d'1 M€) rejoignent le pool 1AJ/1AA/1GF/1GG/1AP/1AG/1GB du même déclarant, donc subissent le
   même abattement 10 %/frais réels — voir « Bug corrigé » ci-dessous. **1GH/1HH (heures supplémentaires/complémentaires et jours
