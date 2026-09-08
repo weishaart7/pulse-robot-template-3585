@@ -203,9 +203,12 @@ export function useFiscalOverview(): FiscalOverview {
     const pensionsInput = pensions ?? PENSIONS_RETRAITES_RENTES_PAR_DEFAUT;
     const capitauxMobiliersInput = capitauxMobiliers ?? REVENUS_CAPITAUX_MOBILIERS_PAR_DEFAUT;
 
-    const revenuSalaires = calculerRevenuSalaires(revenusInput);
+    const revenuSalaires = calculerRevenuSalaires(revenusInput, exoneresInput);
     const gainsActionnariat = calculerGainsActionnariatSalarie(gainsInput);
-    const revenuExonereTauxEffectif = calculerRevenuExonereTauxEffectif(exoneresInput);
+    const revenuExonereTauxEffectif = calculerRevenuExonereTauxEffectif(
+      exoneresInput,
+      revenuSalaires.salairesNetImposablesExoneresTauxEffectif,
+    );
     const pensionsRetraitesRentes = calculerPensionsRetraitesRentes(pensionsInput);
     const revenuCapitauxMobiliers = calculerRevenuCapitauxMobiliers(capitauxMobiliersInput, foyerInput.situationFamille);
     const prelevementsSociauxCapitauxMobiliers = calculerPrelevementsSociauxCapitauxMobiliers(capitauxMobiliersInput);

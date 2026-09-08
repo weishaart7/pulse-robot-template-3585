@@ -237,3 +237,52 @@ describe('calculerRevenuSalaires — crédit d\'impôt égal à l\'impôt franç
     expect(calculerRevenuSalaires(makeInput()).revenuCreditImpotEgalImpotFrancais).toBe(0);
   });
 });
+
+describe('calculerRevenuSalaires — salaires exonérés retenus pour le taux effectif (1AC/1BC, 1AE/1BE)', () => {
+  it("seul dans le pool : n'entre pas dans totalNetImposable, isolé dans salairesNetImposablesExoneresTauxEffectif", () => {
+    const result = calculerRevenuSalaires(makeInput(), { case1ac: 30000, case1bc: null, case1ae: null, case1be: null });
+    expect(result.totalNetImposable).toBe(0);
+    expect(result.salairesNetImposablesExoneresTauxEffectif).toBe(30000 - 3000);
+  });
+
+  it('nul par défaut (aucune donnée exonérée transmise)', () => {
+    expect(calculerRevenuSalaires(makeInput()).salairesNetImposablesExoneresTauxEffectif).toBe(0);
+  });
+
+  it("cas régression : le choix 10 %/frais réels est unique par déclarant, partagé entre 1AJ et 1AC", () => {
+    // Déclarant 1 : 1AJ = 50 000 (France) + 1AC = 35 000 (exonéré) => base commune 85 000.
+    // Frais réels déclarés uniquement sur la part exonérée (1AE = 4 000), mais le choix porte
+    // sur l'ensemble : abattement 10 % de 85 000 = 8 500 > 4 000 => le forfaitaire l'emporte
+    // pour TOUTE la base, y compris la part exonérée (qui ne doit donc PAS utiliser les 4 000
+    // de frais réels alors qu'ils sont > 10 % de son seul montant à elle, 3 500).
+    const result = calculerRevenuSalaires(
+      makeInput({ case1aj: 50000 }),
+      { case1ac: 35000, case1bc: null, case1ae: 4000, case1be: null },
+    );
+    expect(result.declarant1.deductionRetenue).toBe('abattement_forfaitaire');
+    expect(result.declarant1.netImposable).toBe(45000); // 50000 - 10 % de 50000
+    expect(result.salairesNetImposablesExoneresTauxEffectif).toBe(31500); // 35000 - 10 % de 35000
+  });
+
+  it('les frais réels combinés (1AK + 1AE) l\'emportent quand ils dépassent l\'abattement 10 % sur la base totale', () => {
+    // Base totale = 50000 (1AJ) + 35000 (1AC) = 85000 ; frais réels combinés = 6000 (1AK) + 4000 (1AE) = 10000
+    // > abattement forfaitaire (8500) => frais réels retenus pour l'ensemble du pool.
+    const result = calculerRevenuSalaires(
+      makeInput({ case1aj: 50000, case1ak: 6000 }),
+      { case1ac: 35000, case1bc: null, case1ae: 4000, case1be: null },
+    );
+    expect(result.declarant1.deductionRetenue).toBe('frais_reels');
+    // net total = 85000 - 10000 = 75000, réparti au prorata : 1AJ 50000/85000, 1AC 35000/85000
+    expect(result.declarant1.netImposable).toBeCloseTo(75000 * (50000 / 85000));
+    expect(result.salairesNetImposablesExoneresTauxEffectif).toBeCloseTo(75000 * (35000 / 85000));
+  });
+
+  it('deux déclarants : pool et choix frais réels/forfaitaire indépendants pour chacun', () => {
+    const result = calculerRevenuSalaires(
+      makeInput({ case1aj: 50000 }),
+      { case1ac: null, case1bc: 20000, case1ae: null, case1be: null },
+    );
+    expect(result.declarant1.netImposable).toBe(45000);
+    expect(result.salairesNetImposablesExoneresTauxEffectif).toBe(18000); // 20000 - 10 %
+  });
+});

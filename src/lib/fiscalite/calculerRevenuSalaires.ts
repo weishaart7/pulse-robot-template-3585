@@ -1,4 +1,21 @@
-import { RevenusSalairesInput } from './types';
+import { RevenusExoneresTauxEffectifInput, RevenusSalairesInput } from './types';
+
+/** Sous-ensemble de `RevenusExoneresTauxEffectifInput` utile au pool 1AJ/1AC par déclarant. */
+export type RevenusExoneresPourPoolSalaires = Pick<
+  RevenusExoneresTauxEffectifInput,
+  'case1ac' | 'case1bc' | 'case1ae' | 'case1be'
+>;
+
+/**
+ * Combine les frais réels du salaire France (1AK/1BK) et ceux du salaire
+ * exonéré retenu pour le taux effectif (1AE/1BE) : même choix, même
+ * déclarant (voir JSDoc de `calculerDeclarant`). `null` uniquement si aucun
+ * des deux n'est renseigné (le contribuable n'opte pas pour les frais réels).
+ */
+function combinerFraisReels(fraisReelsSalaire: number | null, fraisReelsExonere: number | null): number | null {
+  if (fraisReelsSalaire === null && fraisReelsExonere === null) return null;
+  return (fraisReelsSalaire ?? 0) + (fraisReelsExonere ?? 0);
+}
 
 const ABATTEMENT_TAUX = 0.10;
 const ABATTEMENT_PLANCHER = 509;
@@ -72,6 +89,14 @@ export interface RevenuSalairesDeclarantDetail {
    * `calculerRevenuSalaires`.
    */
   netImposableCreditImpot: number;
+  /**
+   * Part de `netImposable` attribuable à 1AC/1BC (salaires exonérés retenus
+   * pour le calcul du taux effectif), isolée proportionnellement au sein du
+   * même pool 10 %/frais réels que 1AJ (même déclarant, même art. 83 CGI —
+   * voir JSDoc de `calculerRevenuSalaires`). Toujours 0 en dehors de
+   * `calculerRevenuSalaires`.
+   */
+  netImposableExonereTauxEffectif: number;
 }
 
 export interface RevenuSalairesResult {
@@ -98,32 +123,47 @@ export interface RevenuSalairesResult {
    * outre-mer et décote — hypothèse retenue, voir docs/fiscalite.md).
    */
   revenuCreditImpotEgalImpotFrancais: number;
+  /**
+   * Part de 1AC/1BC (salaires exonérés retenus pour le calcul du taux
+   * effectif) déjà nette d'abattement 10 %/frais réels, isolée
+   * proportionnellement au sein du même pool que 1AJ pour chaque déclarant
+   * (voir JSDoc de `calculerDeclarant`). Transmise telle quelle à
+   * `calculerRevenuExonereTauxEffectif`, qui n'a alors plus qu'à y ajouter les
+   * pensions étrangères (1AH/1BH).
+   */
+  salairesNetImposablesExoneresTauxEffectif: number;
   casesExclues: readonly string[];
 }
 
 /**
  * Abattement forfaitaire de 10 % (ou frais réels si plus favorables) d'un
- * déclarant, réutilisé par calculerRevenuExonereTauxEffectif.ts pour les
- * salaires exonérés retenus pour le calcul du taux effectif (même art. 83
- * CGI, même mécanique d'abattement).
+ * déclarant. Le choix 10 %/frais réels et le plancher/plafond sont uniques
+ * « pour l'ensemble de ses activités » imposées selon les règles des
+ * traitements et salaires (brochure DGFiP IR 2026 p.107) : cela couvre aussi
+ * bien les salaires imposables en France (1AJ/1AK) que les salaires de source
+ * étrangère exonérés mais retenus pour le calcul du taux effectif (1AC/1AE,
+ * même art. 83 CGI) — d'où la mise en commun de `remunerationsBrutes` et
+ * `remunerationsExonereesTauxEffectif` dans un seul et même pool ci-dessous,
+ * plutôt qu'un choix frais réels/forfaitaire arbitré séparément pour chacun.
  *
- * `remunerationsCreditImpot` (1AF/1BF, par défaut 0) rejoint la même base
- * que `remunerationsBrutes` pour le calcul du plancher/plafond et du choix
- * 10 %/frais réels (brochure DGFiP IR 2026 p.107 : mécanisme unique « pour
- * l'ensemble de ses activités » imposées selon les règles des traitements et
- * salaires) ; sa part dans `netImposable` est ensuite isolée
- * proportionnellement dans `netImposableCreditImpot`, pour permettre à
- * `calculerRevenuSalaires` de l'exclure du revenu imposable France tout en
- * la transmettant séparément au mécanisme du crédit d'impôt.
+ * `remunerationsCreditImpot` (1AF/1BF, par défaut 0) et
+ * `remunerationsExonereesTauxEffectif` (1AC/1BC, par défaut 0) rejoignent
+ * cette même base pour le calcul du plancher/plafond et du choix 10 %/frais
+ * réels ; leur part respective dans `netImposable` est ensuite isolée
+ * proportionnellement dans `netImposableCreditImpot` et
+ * `netImposableExonereTauxEffectif`, pour permettre à `calculerRevenuSalaires`
+ * de les exclure du revenu imposable France tout en les transmettant
+ * séparément aux mécanismes du crédit d'impôt et du taux effectif.
  */
 export function calculerDeclarant(
   remunerationsBrutes: number,
   abattementSpecifique: number,
   fraisReels: number | null,
   remunerationsCreditImpot = 0,
+  remunerationsExonereesTauxEffectif = 0,
 ): RevenuSalairesDeclarantDetail {
   const baseApresAbattementSpecifique = Math.max(0, remunerationsBrutes - abattementSpecifique);
-  const baseTotale = baseApresAbattementSpecifique + remunerationsCreditImpot;
+  const baseTotale = baseApresAbattementSpecifique + remunerationsCreditImpot + remunerationsExonereesTauxEffectif;
 
   const abattementForfaitaire = baseTotale <= 0
     ? 0
@@ -142,6 +182,8 @@ export function calculerDeclarant(
   const netTotal = Math.max(0, baseTotale - deduction);
   const ratioCreditImpot = baseTotale > 0 ? remunerationsCreditImpot / baseTotale : 0;
   const netImposableCreditImpot = netTotal * ratioCreditImpot;
+  const ratioExonereTauxEffectif = baseTotale > 0 ? remunerationsExonereesTauxEffectif / baseTotale : 0;
+  const netImposableExonereTauxEffectif = netTotal * ratioExonereTauxEffectif;
 
   return {
     remunerationsBrutes,
@@ -150,8 +192,9 @@ export function calculerDeclarant(
     fraisReels,
     abattementForfaitaire,
     deductionRetenue,
-    netImposable: netTotal - netImposableCreditImpot,
+    netImposable: netTotal - netImposableCreditImpot - netImposableExonereTauxEffectif,
     netImposableCreditImpot,
+    netImposableExonereTauxEffectif,
   };
 }
 
@@ -187,8 +230,17 @@ export function calculerDeclarant(
  * qui n'entre pas dans `totalNetImposable`.
  *
  * Cases hors calcul : voir CASES_SALAIRES_EXCLUES_DU_CALCUL.
+ *
+ * `exoneres` (1AC/1BC, 1AE/1BE) : salaires de source étrangère exonérés mais
+ * retenus pour le calcul du taux effectif — rejoignent le pool 1AJ de leur
+ * déclarant plutôt que de faire l'objet d'un choix 10 %/frais réels séparé
+ * (voir JSDoc de `calculerDeclarant`). Optionnel pour ne pas casser les
+ * appels existants qui n'ont pas encore ces données.
  */
-export function calculerRevenuSalaires(input: RevenusSalairesInput): RevenuSalairesResult {
+export function calculerRevenuSalaires(
+  input: RevenusSalairesInput,
+  exoneres?: RevenusExoneresPourPoolSalaires,
+): RevenuSalairesResult {
   const surplus1gh = Math.max(0, (input.case1gh ?? 0) - PLAFOND_EXONERATION_1GH);
   const surplus1hh = Math.max(0, (input.case1hh ?? 0) - PLAFOND_EXONERATION_1GH);
 
@@ -206,12 +258,21 @@ export function calculerRevenuSalaires(input: RevenusSalairesInput): RevenuSalai
     + (input.case1hb ?? 0) + (input.case1qm ?? 0)
     + surplus1hh + surplus1bd;
 
-  const declarant1 = calculerDeclarant(remunerations1, input.case1ga ?? 0, input.case1ak, input.case1af ?? 0);
-  const declarant2 = calculerDeclarant(remunerations2, input.case1ha ?? 0, input.case1bk, input.case1bf ?? 0);
+  const fraisReels1 = combinerFraisReels(input.case1ak, exoneres?.case1ae ?? null);
+  const fraisReels2 = combinerFraisReels(input.case1bk, exoneres?.case1be ?? null);
+
+  const declarant1 = calculerDeclarant(
+    remunerations1, input.case1ga ?? 0, fraisReels1, input.case1af ?? 0, exoneres?.case1ac ?? 0,
+  );
+  const declarant2 = calculerDeclarant(
+    remunerations2, input.case1ha ?? 0, fraisReels2, input.case1bf ?? 0, exoneres?.case1bc ?? 0,
+  );
 
   const indemnitesPrejudiceMoral = (input.case1pm ?? 0) + (input.case1qm ?? 0);
 
   const revenuCreditImpotEgalImpotFrancais = declarant1.netImposableCreditImpot + declarant2.netImposableCreditImpot;
+  const salairesNetImposablesExoneresTauxEffectif = declarant1.netImposableExonereTauxEffectif
+    + declarant2.netImposableExonereTauxEffectif;
 
   return {
     declarant1,
@@ -219,6 +280,7 @@ export function calculerRevenuSalaires(input: RevenusSalairesInput): RevenuSalai
     indemnitesPrejudiceMoral,
     totalNetImposable: declarant1.netImposable + declarant2.netImposable,
     revenuCreditImpotEgalImpotFrancais,
+    salairesNetImposablesExoneresTauxEffectif,
     casesExclues: CASES_SALAIRES_EXCLUES_DU_CALCUL,
   };
 }

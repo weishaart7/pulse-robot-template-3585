@@ -1,4 +1,3 @@
-import { calculerDeclarant } from './calculerRevenuSalaires';
 import { RevenusExoneresTauxEffectifInput } from './types';
 
 const PENSION_ABATTEMENT_TAUX = 0.10;
@@ -44,8 +43,12 @@ export function abattementPensionDeclarant(pension: number): number {
  * par calculerImpot.ts pour majorer le taux appliqué au revenu français
  * (progressivité préservée).
  *
- * Salaires (1AC/1BC) : même abattement 10 %/frais réels (1AE/1BE) que
- * calculerRevenuSalaires.ts (même art. 83 CGI).
+ * Salaires (1AC/1BC, avec frais réels 1AE/1BE) : `salairesNetImposablesExoneresTauxEffectif`
+ * doit provenir de `calculerRevenuSalaires`, qui met 1AC/1AE en commun avec le
+ * pool 1AJ/1AK du même déclarant — le choix 10 %/frais réels (art. 83 CGI) est
+ * unique par déclarant pour l'ensemble de ses traitements et salaires, qu'ils
+ * soient imposables en France ou seulement retenus pour le taux effectif.
+ * Cette fonction ne fait que reprendre ce montant déjà arbitré.
  *
  * Pensions étrangères (1AH/1BH) : abattement de 10 % (plancher 454 €/pensionné,
  * plafond global 4 439 € pour l'ensemble du foyer, revenus 2025/impôt 2026 —
@@ -57,10 +60,9 @@ export function abattementPensionDeclarant(pension: number): number {
  */
 export function calculerRevenuExonereTauxEffectif(
   input: RevenusExoneresTauxEffectifInput,
+  salairesNetImposablesExoneresTauxEffectif: number,
 ): RevenuExonereTauxEffectifResult {
-  const declarant1 = calculerDeclarant(input.case1ac ?? 0, 0, input.case1ae);
-  const declarant2 = calculerDeclarant(input.case1bc ?? 0, 0, input.case1be);
-  const salairesNetImposables = declarant1.netImposable + declarant2.netImposable;
+  const salairesNetImposables = salairesNetImposablesExoneresTauxEffectif;
 
   const pensionsBrutes = (input.case1ah ?? 0) + (input.case1bh ?? 0);
   const abattementPension = Math.min(
