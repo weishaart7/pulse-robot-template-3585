@@ -18,110 +18,76 @@ function makeInput(overrides: Partial<PensionsRetraitesRentesInput> = {}): Pensi
   };
 }
 
-describe('calculerPrelevementsSociauxPensionsRetraitesRentes — pensions classiques', () => {
-  it('foyer sans pension : PS nuls', () => {
-    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput(), 0, 1);
-    expect(result.baseImposablePensions).toBe(0);
-    expect(result.prelevementsSociauxPensions).toBe(0);
-  });
-
-  it('RFR sous le seuil d\'exonération (1 part) : taux nul', () => {
-    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1as: 10000 }), 13000, 1);
-    expect(result.tauxCsgPension).toBe(0);
-    expect(result.prelevementsSociauxPensions).toBe(0);
-  });
-
-  it('RFR dans la tranche taux réduit (1 part) : 4,3 %', () => {
-    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1as: 10000 }), 15000, 1);
-    expect(result.tauxCsgPension).toBeCloseTo(0.043, 6);
-    expect(result.prelevementsSociauxPensions).toBeCloseTo(10000 * 0.043, 6);
-  });
-
-  it('RFR dans la tranche taux médian (1 part) : 7,4 %', () => {
-    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1as: 10000 }), 20000, 1);
-    expect(result.tauxCsgPension).toBeCloseTo(0.074, 6);
-  });
-
-  it('RFR au-delà du seuil taux médian (1 part) : taux plein 9,1 %', () => {
-    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1as: 10000 }), 40000, 1);
-    expect(result.tauxCsgPension).toBeCloseTo(0.091, 6);
-  });
-
-  it('les seuils se relèvent avec le nombre de parts (couple, 2 parts)', () => {
-    // 20000 € de RFR : taux plein pour 1 part, mais sous le seuil d'exonération à 2 parts (20015)
-    const uneParte = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1as: 10000 }), 20000, 1);
-    const deuxParts = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1as: 10000 }), 20000, 2);
-    expect(uneParte.tauxCsgPension).toBeGreaterThan(0);
-    expect(deuxParts.tauxCsgPension).toBe(0);
-  });
-
-  it('agrège 1AS/1AZ/1AO/1AM des deux déclarants et 1AL/1BL (pensions étrangères)', () => {
-    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({
-      case1as: 1000, case1az: 1000, case1ao: 1000, case1am: 1000,
-      case1bs: 1000, case1bz: 1000, case1bo: 1000, case1bm: 1000,
-      case1al: 1000, case1bl: 1000,
-    }), 100000, 1);
-    expect(result.baseImposablePensions).toBe(10000);
-  });
-
-  it('assiette PS sur le montant brut, sans l\'abattement de 10 % (spécifique à l\'IR)', () => {
-    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1as: 10000 }), 100000, 1);
-    expect(result.baseImposablePensions).toBe(10000); // pas 9000
-  });
-});
-
 describe('calculerPrelevementsSociauxPensionsRetraitesRentes — rentes viagères à titre onéreux', () => {
-  it('applique 17,2 % sur la fraction imposable selon la tranche d\'âge, indépendamment du RFR', () => {
-    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1aw: 10000 }), 0, 1);
+  it('foyer sans rente : PS nuls', () => {
+    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput());
+    expect(result.prelevementsSociaux).toBe(0);
+  });
+
+  it('applique 18,6 % sur la fraction imposable selon la tranche d\'âge', () => {
+    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1aw: 10000 }));
     expect(result.baseImposableRentesViageres).toBe(7000); // 70 % avant 50 ans
-    expect(result.prelevementsSociauxRentesViageres).toBeCloseTo(7000 * 0.172, 6);
+    expect(result.prelevementsSociauxRentesViageres).toBeCloseTo(7000 * 0.186, 6);
+  });
+
+  it('reproduit à l\'euro près le total officiel sur le compte réel (1CW=12000, tranche 60-69 ans -> 4800 imposable)', () => {
+    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1cw: 12000 }));
+    expect(result.baseImposableRentesViageres).toBe(4800);
+    expect(result.prelevementsSociaux).toBeCloseTo(893, 0); // 4800 * 0.186 = 892.8 ≈ 893
   });
 
   it('applique la bonne fraction pour chaque tranche d\'âge (1BW/1CW/1DW)', () => {
     const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({
       case1bw: 1000, case1cw: 1000, case1dw: 1000,
-    }), 0, 1);
+    }));
     expect(result.baseImposableRentesViageres).toBe(500 + 400 + 300);
   });
 
-  it('agrège aussi 1AR/1BR/1CR/1DR (rentes étrangères, même fraction)', () => {
-    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1ar: 10000 }), 0, 1);
+  it('agrège aussi 1AR/1BR/1CR/1DR (rentes étrangères, même fraction et même taux)', () => {
+    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1ar: 10000 }));
     expect(result.baseImposableRentesViageres).toBe(7000);
-  });
-
-  it('n\'est pas affecté par le RFR (contrairement aux pensions classiques)', () => {
-    const bas = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1aw: 10000 }), 0, 1);
-    const haut = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1aw: 10000 }), 200000, 1);
-    expect(bas.prelevementsSociauxRentesViageres).toBe(haut.prelevementsSociauxRentesViageres);
+    expect(result.prelevementsSociauxRentesViageres).toBeCloseTo(7000 * 0.186, 6);
   });
 });
 
 describe('calculerPrelevementsSociauxPensionsRetraitesRentes — cases hors périmètre', () => {
-  it('ignore 1AI/1BI (capital PER, déjà prélevé à l\'entrée)', () => {
-    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1ai: 50000, case1bi: 50000 }), 200000, 1);
+  it('ignore les pensions classiques (1AS/1AZ/1AO/1AM, RFR N-2 non modélisé)', () => {
+    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({
+      case1as: 18000, case1bs: 10000, case1az: 6000, case1ao: 4800, case1am: 3000,
+    }));
     expect(result.prelevementsSociaux).toBe(0);
   });
 
-  it('ignore 1AT/1BT (capital retraite 163 bis, taux PS non confirmé)', () => {
-    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1at: 50000, case1bt: 50000 }), 200000, 1);
+  it('ignore 1AL/1BL (pensions étrangères, même régime RFR-dépendant)', () => {
+    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1al: 10000, case1bl: 10000 }));
     expect(result.prelevementsSociaux).toBe(0);
+  });
+
+  it('ignore 1AI/1BI (capital PER, déjà prélevé à l\'entrée)', () => {
+    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1ai: 50000, case1bi: 50000 }));
+    expect(result.prelevementsSociaux).toBe(0);
+  });
+
+  it('ignore 1AT/1BT (capital retraite 163 bis, confirmé par le compte réel : 40000€ sans effet sur le total officiel)', () => {
+    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1at: 40000, case1bt: 50000 }));
+    expect(result.prelevementsSociaux).toBe(0);
+  });
+
+  it('reproduit exactement le cas du compte réel : pensions classiques + 1AT + 1AI + rente -> seule la rente contribue', () => {
+    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({
+      case1as: 18000, case1bs: 10000, case1at: 40000, case1ai: 15000,
+      case1az: 6000, case1ao: 4800, case1am: 3000, case1cw: 12000,
+    }));
+    expect(result.prelevementsSociaux).toBeCloseTo(893, 0);
   });
 
   it('expose la liste des cases hors périmètre', () => {
-    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput(), 0, 1);
+    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput());
+    expect(result.casesHorsPerimetre).toContain('case1as');
+    expect(result.casesHorsPerimetre).toContain('case1al');
     expect(result.casesHorsPerimetre).toContain('case1ai');
     expect(result.casesHorsPerimetre).toContain('case1at');
-    expect(result.casesHorsPerimetre).not.toContain('case1as');
-  });
-});
-
-describe('calculerPrelevementsSociauxPensionsRetraitesRentes — total', () => {
-  it('cumule PS pensions classiques et PS rentes viagères', () => {
-    const result = calculerPrelevementsSociauxPensionsRetraitesRentes(makeInput({ case1as: 10000, case1aw: 10000 }), 40000, 1);
-    expect(result.prelevementsSociaux).toBeCloseTo(
-      result.prelevementsSociauxPensions + result.prelevementsSociauxRentesViageres,
-      6,
-    );
-    expect(result.prelevementsSociaux).toBeGreaterThan(0);
+    expect(result.casesHorsPerimetre).not.toContain('case1aw');
+    expect(result.casesHorsPerimetre).not.toContain('case1ar');
   });
 });

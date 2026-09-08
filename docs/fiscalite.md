@@ -975,39 +975,40 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   futurs). 8 tests couvrent l'assiette brute des dividendes, le pool intérêts/produits, la non-majoration
   de 2GO, l'indépendance vis-à-vis de 2OP, et l'exclusion des contrats d'assurance-vie/capitalisation.
 - **`src/lib/fiscalite/calculerPrelevementsSociauxPensionsRetraitesRentes.ts` — prélèvements sociaux sur
-  le cadre 1 « Pensions, retraites, rentes » (Phase 2 du chantier PS).** Deux mécanismes distincts :
-  1. **Pensions classiques (1AS/1AZ/1AO/1AM + 1AL/1BL)** : CSG/CRDS/CASA à un taux qui dépend du RFR du
-     foyer et de son nombre de parts — 0 % (exonération), 4,3 % (CSG 3,8 % + CRDS 0,5 %), 7,4 % (CSG
-     6,6 % + CRDS 0,5 % + CASA 0,3 %) ou 9,1 % (CSG 8,3 % + CRDS 0,5 % + CASA 0,3 %, taux plein), sur le
-     montant **brut** (l'abattement de 10 % de `calculerPensionsRetraitesRentes.ts` est réservé à l'IR).
-     Seuils 2026 vérifiés (1 part : 13 047 €/17 056 €/26 471 € ; seuils croissant linéairement avec le
-     nombre de parts — incréments constants vérifiés sur les paliers officiels 1/1,5/2/2,5/3 parts :
-     +6 968 €/+9 110 €/+14 132 € par part entière — la formule reste donc exacte aux quarts de part que
-     produit `calculerPartsFiscales.ts`, ex. résidence alternée).
-     **Approximation assumée (validée en session)** : la loi utilise le RFR de l'année **N-2**, déjà
-     connu de la caisse de retraite qui prélève un taux estimé à la source puis régularisé ; le module ne
-     modélise aucun historique de RFR, et utilise le revenu imposable total de l'année **courante**
-     calculée par l'app comme proxy du RFR — un second niveau d'approximation, également validé en
-     session (le module ne calcule d'ailleurs pas de RFR au sens strict, qui réintègre certains
-     abattements/exonérations, art. 1417 IV CGI ; le revenu imposable total sert de proxy à ce proxy).
-  2. **Rentes viagères à titre onéreux (1AW/1BW/1CW/1DW + 1AR/1BR/1CR/1DR)** : régime du patrimoine, taux
-     fixe de 17,2 % sur la même fraction imposable par tranche d'âge que l'IR (`FRACTION_IMPOSABLE_RENTE`,
-     exportée de `calculerPensionsRetraitesRentes.ts` et réutilisée telle quelle) — **indépendant du RFR
-     du foyer**, contrairement aux pensions classiques.
-  **Exclus du calcul** (`CASES_PS_PENSIONS_HORS_PERIMETRE`) : **1AI/1BI (capital PER, versements
-  volontaires déductibles)** — recherche complémentaire confirmant que la CSG/CRDS a déjà été prélevée à
-  l'entrée sur le salaire brut ayant financé le versement (la déductibilité fiscale à l'IR ne s'étend
-  jamais à l'assiette CSG/CRDS) : taxer à nouveau ce capital à la sortie serait une double imposition,
-  point explicitement clarifié après la généralisation de la déductibilité par la loi Pacte. **1AT/1BT
-  (capital retraite, option art. 163 bis CGI)** : le BOFiP confirme qu'une CSG est due sur ce capital
-  (« CSG... entièrement non déductible pour le calcul de ce prélèvement »), mais sans préciser avec
-  certitude si le taux suit le barème RFR des pensions classiques ou un mécanisme propre à l'option
-  163 bis — non modélisé plutôt que deviné, à la différence de 1AI qui repose sur une réponse ferme.
-  Branché dans `useFiscalOverview.ts` (`prelevementsSociauxPensionsRetraitesRentes`, `rfrApproxime` =
-  `revenuImposableTotal`, `nombreParts` = `parts.nombreParts`) et affiché dans `FiscalOverviewCard.tsx`
-  en une ligne dédiée. 16 tests couvrent les 4 paliers de taux, le relèvement des seuils par le nombre de
-  parts, l'agrégation des pensions françaises/étrangères, l'assiette brute, la fraction par tranche
-  d'âge des rentes, l'indépendance des rentes vis-à-vis du RFR, et l'exclusion de 1AI/1AT.
+  le cadre 1 « Pensions, retraites, rentes » (Phase 2 du chantier PS).** Un seul mécanisme calculé :
+  **rentes viagères à titre onéreux (1AW/1BW/1CW/1DW + 1AR/1BR/1CR/1DR)**, régime du patrimoine, taux
+  fixe de **18,6 %** sur la même fraction imposable par tranche d'âge que l'IR
+  (`FRACTION_IMPOSABLE_RENTE`, exportée de `calculerPensionsRetraitesRentes.ts` et réutilisée telle
+  quelle) — indépendant du RFR du foyer.
+  **Bug corrigé — deux erreurs distinctes détectées par comparaison avec le simulateur officiel sur un
+  compte réel (couple marié, 1AS=18 000 €/1BS=10 000 €/1AZ=6 000 €/1AO=4 800 €/1AM=3 000 € de pensions
+  classiques, 1AT=40 000 €, 1AI=15 000 €, 1CW=12 000 € de rente viagère 60-69 ans).** Kairos annonçait
+  4 629 € de PS contre 893 € au simulateur officiel (IR identique par ailleurs, 6 464 €). Décomposition
+  du total officiel : 893 € = exactement 4 800 € (fraction imposable de 1CW, 40 %) × **18,6 %** (892,8 €
+  arrondis) — les 41 800 € de pensions classiques ne contribuent **rien** au total officiel.
+  1. **Taux des rentes viagères corrigé de 17,2 % à 18,6 %** : cohérent avec la règle établie en Phase 3
+     (`calculerPrelevementsSociauxGainsActionnariatSalarie.ts`, carried-interest 1NX) — un revenu
+     recouvré par voie de rôle (déclaré dans la 2042 elle-même, jamais prélevé à la source pendant
+     l'année) est déjà au taux LFSS 2026 dès les revenus 2025. La première version de ce module (Phase 2)
+     n'avait pas reporté cette règle, découverte seulement après coup en Phase 3.
+  2. **Pensions classiques (1AS/1AZ/1AO/1AM + 1AL/1BL) et 1AT (capital retraite 163 bis) retirés du
+     calcul, rejoignant 1AI en hors périmètre.** La Phase 2 initiale approximait le RFR (dont dépend le
+     taux de CSG/CRDS/CASA sur les pensions, art. L136-8 CSS) par le revenu imposable de l'année
+     **courante** calculé par l'app, faute d'historique N-2 modélisé — décision validée en session à
+     l'époque. Cette approximation placait à tort le foyer test en tranche pleine (9,1 % sur un RFR
+     proxy de 57 420 €), alors que le simulateur officiel — qui n'a lui-même **aucun accès à un vrai RFR
+     N-2** dans une simulation ponctuelle — n'applique manifestement pas ce mécanisme du tout (0 % sur
+     les pensions classiques). Le retour à « hors périmètre plutôt que deviné » (l'option initialement
+     écartée au profit de l'approximation RFR) s'avère donc la seule cohérente avec le comportement
+     observé de l'outil de référence — écart mesuré de 3 736 € sur ce compte, pas un simple bruit
+     d'arrondi. Les seuils RFR par nombre de parts (formule linéaire vérifiée sur les paliers officiels
+     1/1,5/2/2,5/3 parts) restent documentés dans l'historique git si ce mécanisme est un jour repris
+     avec un vrai historique RFR.
+  Branché dans `useFiscalOverview.ts` (`prelevementsSociauxPensionsRetraitesRentes`, signature simplifiée
+  — ne prend plus que `pensionsInput`, `revenuImposableTotal`/`parts.nombreParts` ne lui sont plus
+  transmis) et affiché dans `FiscalOverviewCard.tsx` en une ligne dédiée. 11 tests couvrent le taux de
+  18,6 % sur chaque tranche d'âge (1AW-1DW et 1AR-1DR), le rapprochement empirique exact avec le compte
+  réel (893 €), et l'exclusion des pensions classiques/1AI/1AT.
 - **`src/lib/fiscalite/calculerPrelevementsSociauxGainsActionnariatSalarie.ts` — prélèvements sociaux
   sur le cadre 1 « Gains d'actionnariat salarié » (Phase 3 du chantier PS, périmètre le plus fragmenté).**
   Les recherches documentaires généralistes se sont révélées contradictoires entre sources sur les taux
@@ -1318,15 +1319,16 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   route : un futur cadre 2042 (revenus fonciers, plus-values, etc.). **Prélèvements sociaux — chantier
   terminé pour les 3 phases identifiées** : `calculerPrelevementsSociauxCapitauxMobiliers.ts` couvre
   dividendes/intérêts/2GO à 17,2 % (Phase 1) ; `calculerPrelevementsSociauxPensionsRetraitesRentes.ts`
-  couvre les pensions classiques (taux CSG/CRDS/CASA selon le RFR du foyer — approximé par le revenu
-  imposable de l'année courante plutôt qu'un historique N-2, décision validée en session) et les rentes
-  viagères à titre onéreux (17,2 % fixe, Phase 2) ; `calculerPrelevementsSociauxGainsActionnariatSalarie.ts`
-  couvre 1TP/1TT (9,7 % salarial), 1NX (28,6 % combiné, carried-interest non qualifiant), 1NY et 3VN
-  (contributions salariales 30 %/10 %, Phase 3 — périmètre établi par vérification empirique contre le
-  simulateur officiel plutôt que recherche documentaire seule, les sources généralistes se contredisant
-  sur cette catégorie). Voir §2 pour le détail des trois phases, y compris les cases hors périmètre de
-  chacune (assurance-vie/capitalisation pour la Phase 1 ; capital PER 1AI et capital retraite 1AT pour la
-  Phase 2 ; 1TZ/1AY/1MP et les gains historiques 3VD/3VI/3VF/3VJ/3VK pour la Phase 3, confirmé par
+  couvre les rentes viagères à titre onéreux (18,6 % fixe, taux corrigé depuis 17,2 % — voir §2, Phase 2) ;
+  `calculerPrelevementsSociauxGainsActionnariatSalarie.ts` couvre 1TT (9,7 % salarial), 1NX (28,6 %
+  combiné, carried-interest non qualifiant), 1NY et 3VN (contributions salariales 30 %/10 %, Phase 3 —
+  périmètre établi par vérification empirique contre le simulateur officiel plutôt que recherche
+  documentaire seule, les sources généralistes se contredisant sur cette catégorie). Voir §2 pour le
+  détail des trois phases, y compris les cases hors périmètre de chacune (assurance-vie/capitalisation
+  pour la Phase 1 ; **pensions classiques, 1AL, capital PER 1AI et capital retraite 1AT pour la Phase 2**
+  — le taux de CSG/CRDS/CASA sur les pensions dépend d'un RFR N-2 non modélisé, une approximation par le
+  revenu imposable courant s'étant révélée empiriquement fausse de plusieurs milliers d'euros sur un
+  compte réel ; 1TP/1TZ/1AY/1MP et les gains historiques 3VD/3VI/3VF/3VJ/3VK pour la Phase 3, confirmé par
   l'absence de toute ligne PS correspondante dans la vérification empirique malgré des montants non nuls
   déclarés). Salaires (cadre 1, 1AJ etc.) volontairement exclus du périmètre PS pour les trois phases :
   déjà nets des cotisations salariales prélevées en paie, rien à recalculer côté IR.
