@@ -272,9 +272,10 @@ describe('calculerRevenuSalaires — salaires exonérés retenus pour le taux ef
       { case1ac: 35000, case1bc: null, case1ae: 4000, case1be: null },
     );
     expect(result.declarant1.deductionRetenue).toBe('frais_reels');
-    // net total = 85000 - 10000 = 75000, réparti au prorata : 1AJ 50000/85000, 1AC 35000/85000
-    expect(result.declarant1.netImposable).toBeCloseTo(75000 * (50000 / 85000));
-    expect(result.salairesNetImposablesExoneresTauxEffectif).toBeCloseTo(75000 * (35000 / 85000));
+    // chaque source déduit son propre frais réel (pas de répartition proportionnelle) :
+    // 1AJ 50000 - 6000 (1AK) = 44000 ; 1AC 35000 - 4000 (1AE) = 31000
+    expect(result.declarant1.netImposable).toBe(44000);
+    expect(result.salairesNetImposablesExoneresTauxEffectif).toBe(31000);
   });
 
   it('deux déclarants : pool et choix frais réels/forfaitaire indépendants pour chacun', () => {

@@ -369,6 +369,23 @@ fonciers (§4).
   nouveau champ `salairesNetImposablesExoneresTauxEffectif`. Test de non-régression dédié :
   `regressionExempleUtilisateur.test.ts`, rejoue exactement ce cas de bout en bout
   (`calculerRevenuSalaires` → `calculerRevenuExonereTauxEffectif` → `calculerImpot`) et vérifie 10 356 €.
+  **Bug corrigé — une fois les frais réels combinés (1AK+1AE) retenus comme plus favorables, la
+  déduction résultante était répartie proportionnellement entre le pool France et le pool 1AC, au lieu
+  de déduire le montant réel de chaque source sur sa propre base.** Le cas ci-dessus n'exerçait pas ce
+  chemin (le forfaitaire y restait plus favorable), donc n'a rien détecté. Écart signalé par un
+  utilisateur sur un foyer célibataire : 1AJ/1AA/1GF/1AP/1AG/1GB = 119 500 € (1AK = 12 000 €) et
+  1AC = 10 000 €/1AE = 3 000 € → total frais réels 15 000 € > abattement forfaitaire 12 950 € (10 % de
+  129 500 €) → frais réels retenus. Kairos annonçait 28 371 € (répartition proportionnelle : 15 000 €
+  réparti au prorata 92,3 %/7,7 % entre les deux pools) contre 28 866 € au simulateur officiel (revenu
+  net imposable 107 500 €, revenu mondial 114 500 € — soit 119 500 − 12 000 côté France et
+  10 000 − 3 000 côté 1AC, chacun déduisant son propre montant). `calculerDeclarant` prend désormais
+  `fraisReelsDomestique` (1AK/1BK) et `fraisReelsExonere` (1AE/1BE) séparément (au lieu d'un montant déjà
+  combiné) : ils restent comparés **ensemble** à l'abattement forfaitaire pour l'arbitrage (choix unique
+  par déclarant, inchangé), mais une fois les frais réels retenus, chacun est déduit de sa propre base —
+  1AK du pool France + 1AF (qui n'a pas de case frais réels dédiée, hypothèse non vérifiée séparément
+  faute de cas réel), 1AE du pool 1AC. Le cas forfaitaire n'est pas concerné (10 % restant linéaire,
+  répartition proportionnelle et par source donnent le même résultat). Nouveau test de non-régression
+  dans `regressionExempleUtilisateur.test.ts` rejouant ce cas de bout en bout, vérifie 28 866 €.
 - **`src/lib/fiscalite/calculerRevenuExonereTauxEffectif.ts` — revenus exonérés retenus pour le calcul
   du taux effectif.** Fonction pure : ne calcule plus elle-même la part salaires (1AC/1BC) — elle reçoit
   ce montant déjà net d'abattement 10 %/frais réels en paramètre

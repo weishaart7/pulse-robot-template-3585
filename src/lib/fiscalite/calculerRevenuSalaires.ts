@@ -6,17 +6,6 @@ export type RevenusExoneresPourPoolSalaires = Pick<
   'case1ac' | 'case1bc' | 'case1ae' | 'case1be'
 >;
 
-/**
- * Combine les frais réels du salaire France (1AK/1BK) et ceux du salaire
- * exonéré retenu pour le taux effectif (1AE/1BE) : même choix, même
- * déclarant (voir JSDoc de `calculerDeclarant`). `null` uniquement si aucun
- * des deux n'est renseigné (le contribuable n'opte pas pour les frais réels).
- */
-function combinerFraisReels(fraisReelsSalaire: number | null, fraisReelsExonere: number | null): number | null {
-  if (fraisReelsSalaire === null && fraisReelsExonere === null) return null;
-  return (fraisReelsSalaire ?? 0) + (fraisReelsExonere ?? 0);
-}
-
 const ABATTEMENT_TAUX = 0.10;
 const ABATTEMENT_PLANCHER = 509;
 const ABATTEMENT_PLAFOND = 14555;
@@ -84,16 +73,18 @@ export interface RevenuSalairesDeclarantDetail {
   netImposable: number;
   /**
    * Part de `netImposable` attribuable à 1AF/1BF (crédit d'impôt égal à
-   * l'impôt français), isolée proportionnellement au sein du pool commun
-   * (voir `calculerDeclarant`). Toujours 0 en dehors de
-   * `calculerRevenuSalaires`.
+   * l'impôt français) — isolée proportionnellement quand le forfaitaire de
+   * 10 % l'emporte (linéaire, aucune case frais réels dédiée à 1AF), déduite
+   * de sa propre base (avec 1AK) quand les frais réels l'emportent — voir
+   * `calculerDeclarant`. Toujours 0 en dehors de `calculerRevenuSalaires`.
    */
   netImposableCreditImpot: number;
   /**
    * Part de `netImposable` attribuable à 1AC/1BC (salaires exonérés retenus
-   * pour le calcul du taux effectif), isolée proportionnellement au sein du
-   * même pool 10 %/frais réels que 1AJ (même déclarant, même art. 83 CGI —
-   * voir JSDoc de `calculerRevenuSalaires`). Toujours 0 en dehors de
+   * pour le calcul du taux effectif) — isolée proportionnellement quand le
+   * forfaitaire de 10 % l'emporte, déduite de son propre montant (1AE) quand
+   * les frais réels l'emportent (même déclarant, même art. 83 CGI — voir
+   * JSDoc de `calculerDeclarant`). Toujours 0 en dehors de
    * `calculerRevenuSalaires`.
    */
   netImposableExonereTauxEffectif: number;
@@ -163,13 +154,27 @@ export interface RevenuSalairesResult {
  * officiel, qui ne la retranche pas — voir docs/fiscalite.md). Elle n'entre
  * donc plus dans le calcul de `netImposable` ci-dessous ; elle reste
  * seulement exposée dans le détail pour affichage.
+ *
+ * `fraisReelsDomestique` (1AK/1BK) et `fraisReelsExonere` (1AE/1BE) sont
+ * comparés **ensemble** à l'abattement forfaitaire (choix unique par
+ * déclarant, voir ci-dessus), mais **une fois les frais réels retenus comme
+ * plus favorables, chacun est déduit de sa propre base** (1AK du pool
+ * France + 1AF, 1AE du pool 1AC) plutôt que réparti proportionnellement —
+ * vérifié empiriquement contre le simulateur officiel (écart de 495 € d'IR
+ * constaté avec une répartition proportionnelle, corrigé et vérifié au
+ * centime près avec une répartition par source, voir docs/fiscalite.md).
+ * 1AF (crédit d'impôt égal à l'impôt français) n'a pas de case frais réels
+ * dédiée : à défaut, il rejoint le pool France pour 1AK, comme pour
+ * l'abattement forfaitaire (hypothèse non vérifiée séparément, faute de cas
+ * réel combinant 1AF et frais réels).
  */
 export function calculerDeclarant(
   remunerationsBrutes: number,
   abattementSpecifique: number,
-  fraisReels: number | null,
+  fraisReelsDomestique: number | null,
   remunerationsCreditImpot = 0,
   remunerationsExonereesTauxEffectif = 0,
+  fraisReelsExonere: number | null = null,
 ): RevenuSalairesDeclarantDetail {
   const baseApresAbattementSpecifique = remunerationsBrutes;
   const baseTotale = baseApresAbattementSpecifique + remunerationsCreditImpot + remunerationsExonereesTauxEffectif;
@@ -182,17 +187,33 @@ export function calculerDeclarant(
         baseTotale,
       );
 
+  const fraisReels = (fraisReelsDomestique === null && fraisReelsExonere === null)
+    ? null
+    : (fraisReelsDomestique ?? 0) + (fraisReelsExonere ?? 0);
+
   const utiliseFraisReels = fraisReels !== null && fraisReels > abattementForfaitaire;
   const deductionRetenue = utiliseFraisReels ? 'frais_reels' : 'abattement_forfaitaire';
-  const deduction = utiliseFraisReels
-    ? Math.min(fraisReels as number, baseTotale)
-    : abattementForfaitaire;
 
-  const netTotal = Math.max(0, baseTotale - deduction);
-  const ratioCreditImpot = baseTotale > 0 ? remunerationsCreditImpot / baseTotale : 0;
-  const netImposableCreditImpot = netTotal * ratioCreditImpot;
-  const ratioExonereTauxEffectif = baseTotale > 0 ? remunerationsExonereesTauxEffectif / baseTotale : 0;
-  const netImposableExonereTauxEffectif = netTotal * ratioExonereTauxEffectif;
+  let netTotal: number;
+  let netImposableCreditImpot: number;
+  let netImposableExonereTauxEffectif: number;
+
+  if (utiliseFraisReels) {
+    const poolFranceEtCreditImpot = baseApresAbattementSpecifique + remunerationsCreditImpot;
+    const netFranceEtCreditImpot = Math.max(0, poolFranceEtCreditImpot - Math.min(fraisReelsDomestique ?? 0, poolFranceEtCreditImpot));
+    const netExonere = Math.max(0, remunerationsExonereesTauxEffectif - Math.min(fraisReelsExonere ?? 0, remunerationsExonereesTauxEffectif));
+
+    const ratioCreditImpot = poolFranceEtCreditImpot > 0 ? remunerationsCreditImpot / poolFranceEtCreditImpot : 0;
+    netImposableCreditImpot = netFranceEtCreditImpot * ratioCreditImpot;
+    netImposableExonereTauxEffectif = netExonere;
+    netTotal = netFranceEtCreditImpot + netExonere;
+  } else {
+    netTotal = Math.max(0, baseTotale - abattementForfaitaire);
+    const ratioCreditImpot = baseTotale > 0 ? remunerationsCreditImpot / baseTotale : 0;
+    netImposableCreditImpot = netTotal * ratioCreditImpot;
+    const ratioExonereTauxEffectif = baseTotale > 0 ? remunerationsExonereesTauxEffectif / baseTotale : 0;
+    netImposableExonereTauxEffectif = netTotal * ratioExonereTauxEffectif;
+  }
 
   return {
     remunerationsBrutes,
@@ -269,14 +290,13 @@ export function calculerRevenuSalaires(
     + (input.case1hb ?? 0) + (input.case1qm ?? 0)
     + surplus1hh + surplus1bd;
 
-  const fraisReels1 = combinerFraisReels(input.case1ak, exoneres?.case1ae ?? null);
-  const fraisReels2 = combinerFraisReels(input.case1bk, exoneres?.case1be ?? null);
-
   const declarant1 = calculerDeclarant(
-    remunerations1, input.case1ga ?? 0, fraisReels1, input.case1af ?? 0, exoneres?.case1ac ?? 0,
+    remunerations1, input.case1ga ?? 0, input.case1ak ?? null, input.case1af ?? 0, exoneres?.case1ac ?? 0,
+    exoneres?.case1ae ?? null,
   );
   const declarant2 = calculerDeclarant(
-    remunerations2, input.case1ha ?? 0, fraisReels2, input.case1bf ?? 0, exoneres?.case1bc ?? 0,
+    remunerations2, input.case1ha ?? 0, input.case1bk ?? null, input.case1bf ?? 0, exoneres?.case1bc ?? 0,
+    exoneres?.case1be ?? null,
   );
 
   const indemnitesPrejudiceMoral = (input.case1pm ?? 0) + (input.case1qm ?? 0);
