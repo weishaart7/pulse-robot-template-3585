@@ -43,6 +43,13 @@ const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
     ? `${((impot.impotNet / impot.revenuImposable) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %`
     : '—';
 
+  // IFI (« non calculé ici ») et PS sur les salaires (« non calculé », déjà prélevés en paie)
+  // restent hors de ce total : seules les impositions effectivement calculées sont sommées.
+  const impositionTotale = impot.impotNet
+    + prelevementsSociauxCapitauxMobiliers.prelevementsSociaux
+    + prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux
+    + prelevementsSociauxGainsActionnariat.prelevementsSociaux;
+
   const composition: DonutSector[] = [
     { label: 'Salaires', value: revenuSalaires.totalNetImposable, color: '#05aaa4' },
     { label: "Gains d'actionnariat", value: gainsActionnariat.totalNetImposable, color: '#2AA173' },
@@ -76,13 +83,19 @@ const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-md p-3 border border-primary/20">
-          <div className="text-xs font-medium text-muted-foreground mb-1">Impôt sur le revenu (salaires, actionnariat, pensions)</div>
+          <div className="text-xs font-medium text-muted-foreground mb-1">
+            Imposition totale (IR + prélèvements sociaux calculés)
+          </div>
           <div className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            {formatEuros(impot.impotNet)}
+            {formatEuros(impositionTotale)}
+          </div>
+          <div className="text-xs text-muted-foreground mt-1">
+            IFI et prélèvements sociaux sur les salaires non inclus — voir le détail ci-dessous.
           </div>
         </div>
 
         <div className="space-y-1.5">
+          <DetailRow label="Impôt sur le revenu (IR)" value={formatEuros(impot.impotNet)} />
           <DetailRow
             label="Prélèvements sociaux (capitaux mobiliers)"
             value={formatEuros(prelevementsSociauxCapitauxMobiliers.prelevementsSociaux)}

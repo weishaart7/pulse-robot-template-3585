@@ -25,20 +25,23 @@ describe('calculerPrelevementsSociauxGainsActionnariatSalarie', () => {
     expect(result.prelevementsSociaux).toBe(0);
   });
 
-  it('reproduit à l\'euro près le détail du calcul du simulateur officiel sur le compte réel (1NX=20000, 1TT=15000)', () => {
-    const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({ case1nx: 20000, case1tt: 15000 }));
+  it('reproduit à l\'euro près le total PS officiel du foyer sur le compte réel (1TP=2000, 1TT=15000, 1TZ=8000, 1NX=20000, 1AY=10000, 1MP=5000 -> total PS officiel 7175)', () => {
+    const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({
+      case1tp: 2000, case1tt: 15000, case1tz: 8000, case1nx: 20000, case1ay: 10000, case1mp: 5000,
+    }));
     // CSG-CRDS 11,10 % + solidarité 7,5 % + contribution salariale 10 % sur 1NX = 2220 + 1500 + 2000
     expect(result.prelevementsSociauxCarriedInterestNonQualifiant).toBeCloseTo(2220 + 1500 + 2000, 6);
-    // CSG 9,2 % + CRDS 0,5 % sur 1TT = 1380 + 75
+    // CSG 9,2 % + CRDS 0,5 % sur 1TT (1TP exclu) = 1380 + 75
     expect(result.prelevementsSociauxLeveeOptions).toBeCloseTo(1380 + 75, 6);
+    expect(result.prelevementsSociaux).toBeCloseTo(7175, 6);
   });
 
-  it('applique 9,7 % (CSG 9,2 % + CRDS 0,5 %) sur 1TP/1UP + 1TT/1UT', () => {
+  it('applique 9,7 % (CSG 9,2 % + CRDS 0,5 %) sur 1TT/1UT uniquement (1TP/1UP exclu)', () => {
     const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({
       case1tp: 2000, case1up: 1000, case1tt: 15000, case1ut: 1000,
     }));
-    expect(result.baseLeveeOptions).toBe(19000);
-    expect(result.prelevementsSociauxLeveeOptions).toBeCloseTo(19000 * 0.097, 6);
+    expect(result.baseLeveeOptions).toBe(16000);
+    expect(result.prelevementsSociauxLeveeOptions).toBeCloseTo(16000 * 0.097, 6);
   });
 
   it('applique 28,6 % (11,10 % + 7,5 % + 10 %) sur 1NX/1OX', () => {
@@ -59,9 +62,9 @@ describe('calculerPrelevementsSociauxGainsActionnariatSalarie', () => {
     expect(result.contributionSalariale3VN).toBeCloseTo(1000, 6);
   });
 
-  it('ignore 1TZ/1AY/1MP (déjà prélevés hors du calcul de l\'IR, confirmé empiriquement)', () => {
+  it('ignore 1TP/1TZ/1AY/1MP (déjà prélevés hors du calcul de l\'IR, confirmé empiriquement)', () => {
     const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({
-      case1tz: 8000, case1ay: 10000, case1mp: 5000,
+      case1tp: 2000, case1tz: 8000, case1ay: 10000, case1mp: 5000,
     }));
     expect(result.prelevementsSociaux).toBe(0);
   });
@@ -80,6 +83,7 @@ describe('calculerPrelevementsSociauxGainsActionnariatSalarie', () => {
 
   it('expose la liste des cases hors périmètre', () => {
     const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput());
+    expect(result.casesHorsPerimetre).toContain('case1tp');
     expect(result.casesHorsPerimetre).toContain('case1tz');
     expect(result.casesHorsPerimetre).toContain('case1ay');
     expect(result.casesHorsPerimetre).toContain('case1mp');

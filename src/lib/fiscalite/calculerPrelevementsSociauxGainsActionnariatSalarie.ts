@@ -1,15 +1,25 @@
 import { GainsActionnariatSalarieInput } from './types';
 
 /**
- * CSG (9,2 %) + CRDS (0,5 %) au régime salarial, applicable à 1TP/1UP
- * (rabais excédentaire) et 1TT/1UT (gains de levée d'options / AGA
- * post-28.9.2012) : confirmé pour 1TP par impots.gouv.fr (« l'excédent est
- * soumis aux prélèvements sociaux au taux applicable aux salaires : 9,2 % de
- * CSG et 0,5 % de CRDS ») et vérifié empiriquement pour 1TT par comparaison
- * avec le détail du calcul du simulateur officiel sur le compte réel
- * (« Base CRDS sur les revenus d'activité et de remplacement » = montant de
- * 1TT exactement, montants CSG/CRDS reconstitués à l'euro près avec ces deux
- * taux — voir docs/fiscalite.md).
+ * CSG (9,2 %) + CRDS (0,5 %) au régime salarial, applicable à 1TT/1UT (gains
+ * de levée d'options / AGA post-28.9.2012) : vérifié empiriquement par
+ * comparaison avec le détail du calcul du simulateur officiel sur le compte
+ * réel (« Base CRDS sur les revenus d'activité et de remplacement » =
+ * montant de 1TT exactement, montants CSG/CRDS reconstitués à l'euro près
+ * avec ces deux taux, total PS du foyer reconstitué à l'euro près — voir
+ * docs/fiscalite.md).
+ *
+ * **1TP/1UP (rabais excédentaire) volontairement exclu de ce pool, malgré
+ * une source impots.gouv.fr indiquant le même régime salarial 9,7 %** :
+ * le rapprochement empirique avec le compte réel (1TP=2 000 € déclaré) ne
+ * montre AUCUNE ligne de prélèvement social correspondante, et l'inclure au
+ * même taux que 1TT aurait fait dévier le total du foyer de 194 € par
+ * rapport au total officiel (7 175 €) — écart qui disparaît exactement en
+ * excluant 1TP. La source documentaire décrit apparemment le régime légal du
+ * rabais excédentaire sans que ce prélèvement transite par la liquidation de
+ * l'IR dans ce cas précis (vraisemblablement déjà prélevé par ailleurs,
+ * comme 1TZ/1AY/1MP) — la vérification empirique prévaut sur la lecture
+ * documentaire isolée.
  */
 const TAUX_CSG_CRDS_LEVEE_OPTIONS = 0.092 + 0.005;
 
@@ -46,16 +56,20 @@ const TAUX_CONTRIBUTION_SALARIALE_3VN = 0.10;
  * correspondante trouvée dans le détail du calcul du simulateur officiel sur
  * le compte réel testé (1TP=2 000 €, 1TZ=8 000 €, 1AY=10 000 €, 1MP=5 000 €
  * déclarés, aucun des quatre montants — ni leur somme — ne réapparaît dans
- * aucune base de prélèvement social du détail) : ces gains sont
- * vraisemblablement déjà prélevés à la source par l'établissement teneur de
- * compte ou l'employeur au moment de l'opération (cession, exercice),
- * indépendamment de la liquidation de l'IR — non modélisé plutôt que deviné.
+ * aucune base de prélèvement social du détail, et le total du foyer
+ * reconstitué à l'euro près sans eux — voir docs/fiscalite.md) : ces gains
+ * sont vraisemblablement déjà prélevés à la source par l'établissement
+ * teneur de compte ou l'employeur au moment de l'opération (cession,
+ * exercice), indépendamment de la liquidation de l'IR — non modélisé plutôt
+ * que deviné, y compris pour 1TP malgré une source documentaire isolée
+ * suggérant un régime salarial (voir TAUX_CSG_CRDS_LEVEE_OPTIONS ci-dessus).
  * 3VD/3VI/3VF/3VJ/3VK (gains pré-28.9.2012) : aucune source trouvée avec
  * certitude sur leur régime PS exact — non modélisé. 1UZ/1WZ/1VZ : montants
  * d'abattement, pas un revenu. 0XX : système du quotient, hors périmètre PS
  * comme il l'est du reste de `calculerImpot.ts` pour ce module.
  */
 export const CASES_PS_GAINS_ACTIONNARIAT_HORS_PERIMETRE = [
+  'case1tp', 'case1up',
   'case1tz', 'case1uz', 'case1wz', 'case1vz',
   'case1ay', 'case1by',
   'case1mp', 'case1mq',
@@ -64,7 +78,7 @@ export const CASES_PS_GAINS_ACTIONNARIAT_HORS_PERIMETRE = [
 ] as const;
 
 export interface PrelevementsSociauxGainsActionnariatResult {
-  /** Base 1TP/1UP + 1TT/1UT, soumise à 9,7 % (CSG 9,2 % + CRDS 0,5 %, régime salarial). */
+  /** Base 1TT/1UT, soumise à 9,7 % (CSG 9,2 % + CRDS 0,5 %, régime salarial). 1TP/1UP volontairement exclu — voir TAUX_CSG_CRDS_LEVEE_OPTIONS. */
   baseLeveeOptions: number;
   prelevementsSociauxLeveeOptions: number;
   /** Base 1NX/1OX (carried-interest non qualifiant), soumise aux 3 prélèvements distincts détaillés ci-dessus. */
@@ -89,29 +103,31 @@ export interface PrelevementsSociauxGainsActionnariatResult {
  * que d'arbitrer entre des sources en désaccord, le périmètre retenu ici
  * s'appuie sur une vérification empirique : comparaison ligne à ligne du
  * détail du calcul PS du simulateur officiel de l'impôt sur le revenu avec
- * les montants effectivement déclarés sur un compte réel (voir
- * docs/fiscalite.md pour le détail du rapprochement, à l'euro près).
+ * les montants effectivement déclarés sur un compte réel, **jusqu'au total
+ * du foyer reconstitué à l'euro près** (7 175 € — voir docs/fiscalite.md
+ * pour le détail du rapprochement).
  *
- * 1. **1TP/1UP + 1TT/1UT** : régime salarial, CSG 9,2 % + CRDS 0,5 %.
+ * 1. **1TT/1UT** : régime salarial, CSG 9,2 % + CRDS 0,5 %. 1TP/1UP
+ *    volontairement exclu malgré une source documentaire isolée suggérant le
+ *    même régime — voir TAUX_CSG_CRDS_LEVEE_OPTIONS.
  * 2. **1NX/1OX** (carried-interest non qualifiant) : CSG+CRDS 11,10 %
  *    (taux 2026, déjà applicable aux revenus 2025 pour ce type de revenu
  *    recouvré par voie de rôle) + prélèvement de solidarité 7,5 % +
  *    contribution salariale spécifique 10 % — trois prélèvements distincts
- *    sur la même base, non cumulables avec le régime salarial de 1TP/1TT.
+ *    sur la même base, non cumulables avec le régime salarial de 1TT.
  * 3. **1NY/1OY** : contribution salariale de 30 % (carried-interest soumis à
  *    ce régime spécifique, distinct de 1NX).
  * 4. **3VN** : contribution salariale de 10 % (options/AGA).
  *
  * Cases hors calcul : voir CASES_PS_GAINS_ACTIONNARIAT_HORS_PERIMETRE
- * (1TZ/1AY/1MP — déjà prélevés hors du calcul de l'IR, confirmé par
+ * (1TP/1TZ/1AY/1MP — déjà prélevés hors du calcul de l'IR, confirmé par
  * l'absence de toute ligne PS correspondante dans la vérification empirique
  * — et 3VD/3VI/3VF/3VJ/3VK, régime PS non confirmé avec certitude).
  */
 export function calculerPrelevementsSociauxGainsActionnariatSalarie(
   input: GainsActionnariatSalarieInput,
 ): PrelevementsSociauxGainsActionnariatResult {
-  const baseLeveeOptions = (input.case1tp ?? 0) + (input.case1up ?? 0)
-    + (input.case1tt ?? 0) + (input.case1ut ?? 0);
+  const baseLeveeOptions = (input.case1tt ?? 0) + (input.case1ut ?? 0);
   const prelevementsSociauxLeveeOptions = baseLeveeOptions * TAUX_CSG_CRDS_LEVEE_OPTIONS;
 
   const baseCarriedInterestNonQualifiant = (input.case1nx ?? 0) + (input.case1ox ?? 0);

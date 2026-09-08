@@ -1013,16 +1013,13 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   Les recherches documentaires généralistes se sont révélées contradictoires entre sources sur les taux
   applicables (17,2 % contre 18,6 %, 8 % contre 9,7 % selon les articles pour les mêmes cases) — plutôt
   que d'arbitrer entre des sources en désaccord, le périmètre retenu s'appuie sur une **vérification
-  empirique** : rapprochement ligne à ligne du détail du calcul PS (« Base CSG-CRDS », « Base
-  prélèvement de solidarité », etc.) du simulateur officiel de l'impôt sur le revenu, fourni par
-  l'utilisateur pour un compte réel (1TP=2 000 €, 1TT=15 000 €, 1TZ=8 000 €, 1NX=20 000 €, 1AY=10 000 €,
-  1MP=5 000 €), avec les montants déclarés. Chaque base du détail officiel correspond exactement (à
-  l'euro près) à l'une des cases déclarées, ce qui a permis de déduire le taux réel appliqué à chacune :
-  1. **1TP/1UP + 1TT/1UT** : régime salarial — CSG 9,2 % + CRDS 0,5 % = 9,7 %. Confirmé pour 1TP par
-     impots.gouv.fr (« l'excédent est soumis aux prélèvements sociaux au taux applicable aux salaires »)
-     et vérifié empiriquement pour 1TT (base officielle « CRDS sur les revenus d'activité et de
-     remplacement » = 15 000 € = montant exact de 1TT ; montants CSG/CRDS reconstitués à l'euro près :
-     1 380 € et 75 €).
+  empirique en deux temps** : rapprochement ligne à ligne du détail du calcul PS (« Base CSG-CRDS », etc.)
+  du simulateur officiel de l'impôt sur le revenu, fourni par l'utilisateur pour un compte réel
+  (1TP=2 000 €, 1TT=15 000 €, 1TZ=8 000 €, 1NX=20 000 €, 1AY=10 000 €, 1MP=5 000 €), **puis rapprochement
+  du total PS du foyer affiché sur ce même compte (7 175 €) avec le total recalculé par le module**.
+  1. **1TT/1UT** : régime salarial — CSG 9,2 % + CRDS 0,5 % = 9,7 %. Base officielle « CRDS sur les
+     revenus d'activité et de remplacement » = 15 000 € = montant exact de 1TT ; montants CSG/CRDS
+     reconstitués à l'euro près (1 380 € et 75 €).
   2. **1NX/1OX (carried-interest non qualifiant)** : régime spécifique en 3 prélèvements distincts sur
      la même base — CSG (10,6 %) + CRDS (0,5 %) = 11,10 % (taux LFSS 2026, déjà applicable aux revenus
      2025 pour cette case car recouvrée par voie de rôle et non prélevée à la source pendant l'année,
@@ -1039,16 +1036,35 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
      non vérifié empiriquement).
   4. **3VN** : contribution salariale de 10 % sur options/AGA (non présent dans le compte réel testé,
      même statut que 1NY).
-  **Hors périmètre** (`CASES_PS_GAINS_ACTIONNARIAT_HORS_PERIMETRE`) : **1TZ/1AY/1MP** — aucune des trois
-  bases déclarées (8 000 €/10 000 €/5 000 €), ni aucune combinaison entre elles, ne réapparaît dans une
-  quelconque base de prélèvement du détail officiel malgré des montants non nuls déclarés : ces gains
-  sont vraisemblablement déjà prélevés à la source par l'établissement teneur de compte ou l'employeur
-  au moment de l'opération, indépendamment de la liquidation de l'IR — non modélisé plutôt que deviné,
-  cohérent avec l'absence totale de preuve contraire. **3VD/3VI/3VF/3VJ/3VK** (gains pré-28.9.2012) :
+  **Bug corrigé — 1TP/1UP (rabais excédentaire) avait initialement été inclus dans le même pool salarial
+  9,7 % que 1TT, sur la foi d'une source impots.gouv.fr affirmant le même régime (« l'excédent est
+  soumis aux prélèvements sociaux au taux applicable aux salaires »).** Le rapprochement du total PS du
+  foyer a révélé un écart de 194 € par rapport au total officiel (30 243 € calculés contre 30 049 €
+  affichés, IR inclus) — écart qui correspond exactement à 2 000 € (1TP) × 9,7 %. En excluant 1TP du
+  pool, le total recalculé (7 175 € de PS + 22 874 € d'IR = 30 049 €) correspond à l'euro près. La source
+  documentaire décrit apparemment le régime légal du rabais excédentaire sans que ce prélèvement transite
+  par la liquidation de l'IR dans ce cas précis — la vérification empirique du total prévaut sur la
+  lecture documentaire isolée d'une case unique, qui n'avait pas révélé l'incohérence. **Hors périmètre**
+  (`CASES_PS_GAINS_ACTIONNARIAT_HORS_PERIMETRE`) : **1TP/1TZ/1AY/1MP** — aucune des quatre bases
+  déclarées (2 000 €/8 000 €/10 000 €/5 000 €), ni aucune combinaison entre elles, ne réapparaît dans une
+  quelconque base de prélèvement du détail officiel malgré des montants non nuls déclarés, et le total du
+  foyer se reconstitue exactement sans elles : ces gains sont vraisemblablement déjà prélevés à la source
+  par l'établissement teneur de compte ou l'employeur au moment de l'opération, indépendamment de la
+  liquidation de l'IR — non modélisé plutôt que deviné. **3VD/3VI/3VF/3VJ/3VK** (gains pré-28.9.2012) :
   aucune source trouvée avec certitude sur leur régime PS, non testés empiriquement. Branché dans
   `useFiscalOverview.ts` (`prelevementsSociauxGainsActionnariat`) et affiché dans `FiscalOverviewCard.tsx`.
-  11 tests couvrent le rapprochement empirique exact avec le compte réel, chacun des 4 mécanismes
-  isolément et cumulés, et l'exclusion des cases hors périmètre.
+  11 tests couvrent le rapprochement empirique exact du total du foyer (7 175 €), chacun des 4 mécanismes
+  isolément et cumulés, et l'exclusion des cases hors périmètre (dont 1TP).
+- **`FiscalOverviewCard.tsx` — le gros chiffre « Imposition totale » sommait uniquement l'IR, sans les
+  PS désormais calculés (retour utilisateur après vérification sur le compte réel : PS invisibles du
+  chiffre principal, seulement dans le détail).** Renommé « Imposition totale (IR + prélèvements
+  sociaux calculés) », il additionne désormais `impot.impotNet` et les 3 totaux PS déjà branchés
+  (capitaux mobiliers, pensions/retraites/rentes, gains d'actionnariat) — IFI et PS sur les salaires
+  restent explicitement exclus (non calculés), précisé par une note sous le chiffre. Le détail par ligne
+  (IR seul, puis chaque catégorie de PS) reste affiché en dessous, désormais avec l'IR comme première
+  ligne du détail (auparavant seulement implicite dans le gros chiffre). Vérifié sur le compte réel :
+  22 874 € (IR) + 7 175 € (PS gains d'actionnariat, seule catégorie non nulle pour ce compte) =
+  **30 049 €**, identique au total du simulateur officiel.
 
 ## 3. Dette identifiée
 
