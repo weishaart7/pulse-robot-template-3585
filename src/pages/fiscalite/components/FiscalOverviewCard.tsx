@@ -156,7 +156,11 @@ const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
                   <DetailRow label="Contributions sur les hauts revenus" value="Non calculé" muted />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="rounded-md bg-muted/30 p-3 text-center">
+                    <div className="text-xs text-muted-foreground mb-1">Revenu fiscal de référence</div>
+                    <div className="text-lg font-bold">{formatEuros(impot.revenuFiscalReference)}</div>
+                  </div>
                   <div className="rounded-md bg-muted/30 p-3 text-center">
                     <div className="text-xs text-muted-foreground mb-1">Décote appliquée</div>
                     <div className="text-lg font-bold">{formatEuros(impot.decote)}</div>

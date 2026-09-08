@@ -406,6 +406,17 @@ describe('calculerImpot — système du quotient (revenus exceptionnels, 0XX)', 
     expect(result.revenuExceptionnelQuotient).toBe(200000);
   });
 
+  it('revenuFiscalReference = revenu imposable + revenu exonéré (taux effectif) + revenu exceptionnel, périmètre partiel (hors bases forfaitaires)', () => {
+    const sansExonereNiExceptionnel = calculerImpot(50000, makeParts(), 'celibataire');
+    expect(sansExonereNiExceptionnel.revenuFiscalReference).toBe(50000);
+
+    const avecExonere = calculerImpot(50000, makeParts(), 'celibataire', 20000);
+    expect(avecExonere.revenuFiscalReference).toBe(70000);
+
+    const avecExceptionnel = calculerImpot(70000, makeParts(), 'celibataire', 0, 'metropole', 0, 200000);
+    expect(avecExceptionnel.revenuFiscalReference).toBe(270000);
+  });
+
   it('la décote reste appliquée sur le total (montant élevé ici : décote nulle)', () => {
     const result = calculerImpot(70000, makeParts(), 'celibataire', 0, 'metropole', 0, 200000);
     expect(result.decote).toBe(0);

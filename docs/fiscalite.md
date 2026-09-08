@@ -436,6 +436,19 @@ fonciers (§4).
   l'impôt forfaitaire (ajout après décote, indépendance vis-à-vis du quotient/plafonnement/réduction
   outre-mer/décote, cumul avec le taux effectif, garde-fou si négatif), la décote (seuils céliba/couple)
   et l'arrondi.
+  **`revenuFiscalReference` (RFR, art. 1417 IV CGI), périmètre partiel.** Exposé dans `ImpotResult` et
+  affiché en permanence (`FiscalOverviewCard.tsx`, `TaxRateCard.tsx`) — jusqu'ici le RFR n'était calculé
+  nulle part dans le module. Valeur identique à `revenuMondialFictif` (revenu net imposable + revenu
+  exonéré retenu pour le taux effectif + revenus exceptionnels soumis au système du quotient), réutilisée
+  sous ce nom plutôt que recalculée séparément. **Hors périmètre pour l'instant : les revenus imposés à
+  taux forfaitaire hors barème** (gains d'actionnariat à taux historique, carried-interest,
+  PFU/prélèvement forfaitaire libératoire sur capitaux mobiliers). Ces mécanismes n'exposent aujourd'hui
+  que le montant d'impôt forfaitaire déjà agrégé (`impotForfaitaire`, plusieurs taux mélangés dans un même
+  total), pas la base de revenu sous-jacente — l'inverser en divisant par un taux ne serait pas fiable.
+  Les intégrer proprement nécessiterait d'exposer un nouveau champ « base forfaitaire » dans
+  `calculerGainsActionnariatSalarie.ts`, `calculerPensionsRetraitesRentes.ts` et
+  `calculerRevenuCapitauxMobiliers.ts` — repoussé à une itération ultérieure, signalé explicitement plutôt
+  qu'absorbé silencieusement dans ce RFR partiel.
 - **3 cases 2042 découvertes après vérification visuelle du formulaire officiel (revenus 2025),
   absentes du périmètre initial, ajoutées à la table et au calcul concernés.** `1AQ`/`1BQ` (agents
   généraux d'assurance, salaires **exonérés**) rejoignent `revenus_salaires`, à côté de `1GG`/`1HG`

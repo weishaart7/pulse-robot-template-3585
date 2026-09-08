@@ -43,6 +43,18 @@ export interface ImpotResult {
   revenuImposable: number;
   revenuExonereTauxEffectif: number;
   revenuMondialFictif: number;
+  /**
+   * Revenu fiscal de référence (art. 1417 IV CGI), périmètre partiel : revenu
+   * net imposable + revenu exonéré retenu pour le taux effectif + revenus
+   * exceptionnels soumis au système du quotient — identique à
+   * `revenuMondialFictif`, exposé sous ce nom pour affichage. Les revenus
+   * imposés à taux forfaitaire hors barème (gains d'actionnariat à taux
+   * historique, carried-interest, PFU sur capitaux mobiliers — voir
+   * `impotForfaitaire`) n'y sont **pas** réintégrés : seul le montant
+   * d'impôt forfaitaire est disponible dans le périmètre actuel du module, pas
+   * la base de revenu sous-jacente (voir docs/fiscalite.md).
+   */
+  revenuFiscalReference: number;
   nombreParts: number;
   quotientFamilial: number;
   impotSansMajorations: number;
@@ -282,6 +294,7 @@ export function calculerImpot(
     revenuImposable: revenu,
     revenuExonereTauxEffectif: revenuExonere,
     revenuMondialFictif,
+    revenuFiscalReference: revenuMondialFictif,
     nombreParts: parts.nombreParts,
     quotientFamilial: parts.nombreParts > 0 ? revenuMondialFictif / parts.nombreParts : 0,
     impotSansMajorations,

@@ -46,6 +46,7 @@ const TaxRateCard = ({ overview }: TaxRateCardProps) => {
 
   const statsCards = [
     { title: 'Revenu net imposable en France (salaires, actionnariat, pensions)', value: formatEuros(impot.revenuImposable) },
+    { title: 'Revenu fiscal de référence (RFR)', value: formatEuros(impot.revenuFiscalReference) },
     ...(impot.revenuExonereTauxEffectif > 0
       ? [{ title: 'Revenu exonéré retenu (taux effectif)', value: formatEuros(impot.revenuExonereTauxEffectif) }]
       : []),
