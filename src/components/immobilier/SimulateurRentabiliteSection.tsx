@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { assetService, type Asset, type AssetCharge, type AssetRevenu } from '@/services/assetService';
-import { computeRentabilite, type RentabiliteResult } from '@/lib/immobilier/rentabilite';
+import { computeLoyersAnnuels, computeQuotePart, computeRentabilite, type RentabiliteResult } from '@/lib/immobilier/rentabilite';
+import { SEUIL_MICRO_FONCIER } from '@/lib/immobilier/foncierFoyer';
 import { formatCurrency } from '@/lib/patrimoine/utils';
 
 interface SimulateurRentabiliteSectionProps {
@@ -18,6 +22,7 @@ const formatPercent = (value: number | null): string => {
 export const SimulateurRentabiliteSection = ({ asset }: SimulateurRentabiliteSectionProps) => {
   const [revenus, setRevenus] = useState<AssetRevenu[]>([]);
   const [charges, setCharges] = useState<AssetCharge[]>([]);
+  const [loyersBrutsFoyer, setLoyersBrutsFoyer] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [tmiInput, setTmiInput] = useState('30');
 
@@ -25,25 +30,37 @@ export const SimulateurRentabiliteSection = ({ asset }: SimulateurRentabiliteSec
     if (!asset.id) return;
     let cancelled = false;
     setIsLoading(true);
-    Promise.all([
-      assetService.getAssetRevenus(asset.id),
-      assetService.getAssetCharges(asset.id),
-    ])
-      .then(([revenusData, chargesData]) => {
-        if (cancelled) return;
-        setRevenus(revenusData);
-        setCharges(chargesData);
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
+
+    (async () => {
+      const [revenusData, chargesData, biensNus] = await Promise.all([
+        assetService.getAssetRevenus(asset.id!),
+        assetService.getAssetCharges(asset.id!),
+        assetService.getBiensLocationNue(),
+      ]);
+      if (cancelled) return;
+
+      setRevenus(revenusData);
+      setCharges(chargesData);
+
+      // Loyers bruts de l'ensemble des biens loués nus du foyer (y compris celui-ci) :
+      // le seuil micro-foncier s'apprécie tous biens confondus, pas par bien.
+      const biensNusIds = biensNus.map((b) => b.id).filter((id): id is string => !!id);
+      const revenusFoyer = await assetService.getAssetRevenusByAssetIds(biensNusIds);
+      if (cancelled) return;
+      setLoyersBrutsFoyer(computeLoyersAnnuels(revenusFoyer));
+    })().finally(() => {
+      if (!cancelled) setIsLoading(false);
+    });
+
     return () => {
       cancelled = true;
     };
   }, [asset.id]);
 
   const tmi = (parseFloat(tmiInput) || 0) / 100;
-  const result: RentabiliteResult = computeRentabilite(asset, revenus, charges, tmi);
+  const quotePart = computeQuotePart(asset);
+  const result: RentabiliteResult = computeRentabilite(asset, revenus, charges, tmi, quotePart);
+  const regimeReelObligatoireFoyer = loyersBrutsFoyer > SEUIL_MICRO_FONCIER;
 
   return (
     <Card>
@@ -55,6 +72,24 @@ export const SimulateurRentabiliteSection = ({ asset }: SimulateurRentabiliteSec
           <p className="text-sm text-muted-foreground">Chargement des revenus et charges...</p>
         ) : (
           <>
+            {regimeReelObligatoireFoyer && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Régime réel obligatoire</AlertTitle>
+                <AlertDescription>
+                  Vos revenus fonciers bruts, tous biens loués nus confondus, s'élèvent à{' '}
+                  {formatCurrency(loyersBrutsFoyer)} et dépassent le seuil du micro-foncier ({formatCurrency(SEUIL_MICRO_FONCIER)}).
+                  Le régime réel s'applique de plein droit sur l'ensemble de vos biens loués nus.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {quotePart < 100 && (
+              <p className="text-sm text-muted-foreground">
+                Bien détenu en indivision : montants ci-dessous ramenés à votre quote-part de {quotePart} %.
+              </p>
+            )}
+
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">Loyers annuels</p>
@@ -89,7 +124,11 @@ export const SimulateurRentabiliteSection = ({ asset }: SimulateurRentabiliteSec
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="rounded-lg border p-4 space-y-2">
-                <h4 className="font-semibold">Micro-foncier</h4>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold">Micro-foncier</h4>
+                  {result.regimeActif === 'micro-foncier' && <Badge variant="secondary">Régime actif</Badge>}
+                  {regimeReelObligatoireFoyer && <Badge variant="outline">Non applicable</Badge>}
+                </div>
                 <p className="text-sm text-muted-foreground">
                   Revenu imposable (abattement 30 %) : {formatCurrency(result.microFoncier.revenuImposable)}
                 </p>
@@ -99,7 +138,10 @@ export const SimulateurRentabiliteSection = ({ asset }: SimulateurRentabiliteSec
               </div>
 
               <div className="rounded-lg border p-4 space-y-2">
-                <h4 className="font-semibold">Régime réel</h4>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold">Régime réel</h4>
+                  {(result.regimeActif === 'reel' || regimeReelObligatoireFoyer) && <Badge variant="secondary">Régime actif</Badge>}
+                </div>
                 <p className="text-sm text-muted-foreground">
                   Charges déductibles (charges + intérêts + assurance) : {formatCurrency(result.reel.chargesDeductibles)}
                 </p>
@@ -125,6 +167,8 @@ export const SimulateurRentabiliteSection = ({ asset }: SimulateurRentabiliteSec
                     ? 'micro-foncier'
                     : 'réel'}
               </span>
+              {' '}— vue indicative pour ce bien isolé. Pour l'imputation réelle du déficit et le report
+              pluriannuel, voir la synthèse foncière du foyer dans l'onglet Vue d'ensemble.
             </p>
           </>
         )}

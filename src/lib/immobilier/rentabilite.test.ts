@@ -9,6 +9,7 @@ import {
   computeLoyersAnnuels,
   computeMicroBicLMNP,
   computePrixAcquisitionTotal,
+  computeQuotePart,
   computeRentabilite,
   computeRentabiliteLMNP,
   computeRentabiliteLMP,
@@ -89,6 +90,42 @@ describe('computePrixAcquisitionTotal', () => {
       valeur_acquisition: 999_999, // ne doit pas être utilisé
     });
     expect(computePrixAcquisitionTotal(asset)).toBe(231_500);
+  });
+});
+
+describe('computeQuotePart', () => {
+  it('retourne 100 % si aucune quote-part renseignée (pleine propriété du foyer)', () => {
+    expect(computeQuotePart({})).toBe(100);
+  });
+
+  it('additionne les parts utilisateur et conjoint, plafonnées à 100 %', () => {
+    expect(computeQuotePart({ pourcentage_utilisateur: 50 })).toBe(50);
+    expect(computeQuotePart({ pourcentage_utilisateur: 40, pourcentage_conjoint: 40 })).toBe(80);
+    expect(computeQuotePart({ pourcentage_utilisateur: 60, pourcentage_conjoint: 60 })).toBe(100);
+  });
+});
+
+describe('computeRentabilite — quote-part d’indivision', () => {
+  it('pondère loyers, charges et intérêts par la quote-part sans changer le rendement en %', () => {
+    const asset = makeAsset({ financement_actif: false });
+    const revenus = [makeRevenu({ montant: 1_000, periodicite: 'Mensuelle' })];
+    const charges = [makeCharge({ montant: 100, periodicite: 'mensuelle' })];
+
+    const pleinePropriete = computeRentabilite(asset, revenus, charges, 0.3);
+    const moitie = computeRentabilite(asset, revenus, charges, 0.3, 50);
+
+    expect(moitie.loyersAnnuels).toBe(pleinePropriete.loyersAnnuels / 2);
+    expect(moitie.chargesAnnuelles).toBe(pleinePropriete.chargesAnnuelles / 2);
+    expect(moitie.rendementBrut).toBeCloseTo(pleinePropriete.rendementBrut!);
+  });
+});
+
+describe('computeRentabilite — regimeActif', () => {
+  it('reflète asset.regime_location quand renseigné, null sinon', () => {
+    const asset = makeAsset();
+    expect(computeRentabilite(asset, [], [], 0.3).regimeActif).toBeNull();
+    expect(computeRentabilite({ ...asset, regime_location: 'Micro-foncier' }, [], [], 0.3).regimeActif).toBe('micro-foncier');
+    expect(computeRentabilite({ ...asset, regime_location: 'Réel' }, [], [], 0.3).regimeActif).toBe('reel');
   });
 });
 

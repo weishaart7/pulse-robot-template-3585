@@ -209,6 +209,24 @@ export const assetService = {
     return data;
   },
 
+  /** Tous les biens en location nue du foyer (type_location = 'Location nue'), tous natures
+   * confondues — utilisé pour apprécier le seuil micro-foncier (15 000 €) au niveau du foyer,
+   * cf. src/lib/immobilier/foncierFoyer.ts. */
+  async getBiensLocationNue(): Promise<Asset[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase
+      .from('assets')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('type_location', 'Location nue')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return (data || []) as Asset[];
+  },
+
   async deleteAsset(id: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');

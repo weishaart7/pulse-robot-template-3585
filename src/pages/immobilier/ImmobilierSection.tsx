@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ImmobilierPropertyDetailView } from '@/components/immobilier/ImmobilierPropertyDetailView';
 import { ImmobilierGestionDialog } from '@/components/immobilier/ImmobilierGestionDialog';
 import { ImmobilierOverview } from '@/components/immobilier/ImmobilierOverview';
+import { FoncierFoyerSection } from '@/components/immobilier/FoncierFoyerSection';
 import { GestionBiensSection } from '@/components/immobilier/GestionBiensSection';
 import { LMNPDetailView } from '@/components/immobilier/lmnp/LMNPDetailView';
 import { Asset } from '@/services/assetService';
@@ -113,17 +114,20 @@ export const ImmobilierSection = () => {
     switch (activeTab) {
       case 'biens':
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Vue d'ensemble</CardTitle>
-              <CardDescription>
-                Statistiques de votre portefeuille immobilier
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ImmobilierOverview assets={assets} />
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Vue d'ensemble</CardTitle>
+                <CardDescription>
+                  Statistiques de votre portefeuille immobilier
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ImmobilierOverview assets={assets} />
+              </CardContent>
+            </Card>
+            <FoncierFoyerSection />
+          </div>
         );
       case 'valorisation':
         return (

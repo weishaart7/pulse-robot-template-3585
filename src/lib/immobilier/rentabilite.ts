@@ -48,6 +48,20 @@ export interface RentabiliteResult {
   microFoncier: RentabiliteMicroFoncier;
   reel: RentabiliteReel;
   regimeRecommande: 'micro-foncier' | 'reel' | 'equivalent';
+  /** Régime effectivement choisi sur la fiche du bien (`asset.regime_location`), s'il est renseigné —
+   * distinct de `regimeRecommande`, qui reste le régime le plus favorable au TMI saisi. */
+  regimeActif: 'micro-foncier' | 'reel' | null;
+}
+
+/** Quote-part du foyer fiscal dans un bien détenu en indivision : somme des
+ * parts utilisateur/conjoint (couple = même foyer fiscal), plafonnée à 100 %.
+ * Non renseignée = pleine propriété par le foyer (100 %). */
+export function computeQuotePart(asset: Pick<Asset, 'pourcentage_utilisateur' | 'pourcentage_conjoint'>): number {
+  const { pourcentage_utilisateur: pu, pourcentage_conjoint: pc } = asset;
+  if (pu == null && pc == null) {
+    return 100;
+  }
+  return Math.min(100, (pu ?? 0) + (pc ?? 0));
 }
 
 export function computePrixAcquisitionTotal(asset: Asset): number {
@@ -173,11 +187,21 @@ export function computeRentabilite(
   revenus: AssetRevenu[],
   charges: AssetCharge[],
   tmi: number,
+  /** Quote-part du foyer dans le bien (indivision) ; défaut 100 % (pleine propriété). */
+  quotePart: number = 100,
 ): RentabiliteResult {
-  const prixAcquisitionTotal = computePrixAcquisitionTotal(asset);
-  const loyersAnnuels = computeLoyersAnnuels(revenus);
-  const chargesAnnuelles = computeChargesAnnuelles(charges);
-  const amortissement = computeAmortissement(asset);
+  const facteur = quotePart / 100;
+  const prixAcquisitionTotal = computePrixAcquisitionTotal(asset) * facteur;
+  const loyersAnnuels = computeLoyersAnnuels(revenus) * facteur;
+  const chargesAnnuelles = computeChargesAnnuelles(charges) * facteur;
+  const amortissementBrut = computeAmortissement(asset);
+  const amortissement: AmortissementResult = {
+    mensualiteCredit: amortissementBrut.mensualiteCredit * facteur,
+    mensualiteAssurance: amortissementBrut.mensualiteAssurance * facteur,
+    interetsAnnee: amortissementBrut.interetsAnnee * facteur,
+    assuranceAnnee: amortissementBrut.assuranceAnnee * facteur,
+    capitalEmprunte: amortissementBrut.capitalEmprunte * facteur,
+  };
   const { mensualiteCredit, mensualiteAssurance, interetsAnnee, assuranceAnnee } = amortissement;
 
   const cashflowNetMensuel =
@@ -217,6 +241,9 @@ export function computeRentabilite(
   const regimeRecommande: RentabiliteResult['regimeRecommande'] =
     netAnnuelMicro === netAnnuelReel ? 'equivalent' : netAnnuelMicro > netAnnuelReel ? 'micro-foncier' : 'reel';
 
+  const regimeActif: RentabiliteResult['regimeActif'] =
+    asset.regime_location === 'Micro-foncier' ? 'micro-foncier' : asset.regime_location === 'Réel' ? 'reel' : null;
+
   return {
     prixAcquisitionTotal,
     loyersAnnuels,
@@ -241,6 +268,7 @@ export function computeRentabilite(
       rendementNetNet: rendementNetNetReel,
     },
     regimeRecommande,
+    regimeActif,
   };
 }
 

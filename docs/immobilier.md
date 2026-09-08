@@ -29,7 +29,7 @@ près : « Parts de SCI », seule nature à la fois immobilière et éligible au
 
 | Onglet | Composant | Rôle |
 |---|---|---|
-| Vue d'ensemble (par défaut) | [ImmobilierOverview.tsx](src/components/immobilier/ImmobilierOverview.tsx) | KPI de portefeuille : nombre de biens, valeur totale, rentabilité brute/nette, cashflow mensuel, plus-value brute |
+| Vue d'ensemble (par défaut) | [ImmobilierOverview.tsx](src/components/immobilier/ImmobilierOverview.tsx) + [FoncierFoyerSection.tsx](src/components/immobilier/FoncierFoyerSection.tsx) | KPI de portefeuille (nombre de biens, valeur totale, rentabilité brute/nette, cashflow mensuel, plus-value brute), puis, si le foyer détient au moins un bien en location nue (`type_location === 'Location nue'`), la synthèse foncière du foyer (voir ci-dessous) |
 | Mes biens | `ImmobilierSection.tsx` (cartes ou tableau) → [ImmobilierPropertyDetailView.tsx](src/components/immobilier/ImmobilierPropertyDetailView.tsx) ou [LMNPDetailView.tsx](src/components/immobilier/lmnp/LMNPDetailView.tsx) | Liste des biens transférés ; clic → fiche détail (infos générales/coûts/financement/location) ou vue LMNP dédiée si le bien est meublé |
 | Gestion des biens | [GestionBiensSection.tsx](src/components/immobilier/GestionBiensSection.tsx) | Vue consolidée en lecture seule : tous les revenus/charges de tous les biens transférés (pas seulement locatifs), groupés par bien, avec montant annualisé et sous-totaux + total portefeuille. Pas d'ajout/modification/suppression ici — reste le rôle du bouton « Gérer » |
 
@@ -41,8 +41,40 @@ Pour la nature « Immeubles locatifs (loués nus) » spécifiquement, la fiche d
 en plus une section **Simulateur de rentabilité**
 ([SimulateurRentabiliteSection.tsx](src/components/immobilier/SimulateurRentabiliteSection.tsx)) : cashflow
 net mensuel, rendements brut/net/net-net et comparaison micro-foncier vs réel (avec déficit foncier
-plafonné à 10 700 €/an) au TMI saisi localement (pas de persistance). De même pour « Immeubles locatifs
-(LMNP) », `LMNPDetailView.tsx` affiche une section équivalente
+plafonné à 10 700 €/an) au TMI saisi localement (pas de persistance). Ce simulateur reste une **vue
+indicative par bien isolé** (« et si ce bien était mon seul bien ? ») ; il pondère désormais les montants
+par la quote-part d'indivision du foyer (`computeQuotePart`, somme `pourcentage_utilisateur` +
+`pourcentage_conjoint`, plafonnée à 100 %), affiche un badge « Régime actif » sur le bloc correspondant à
+`asset.regime_location` quand il est renseigné, et un bandeau d'alerte si les revenus fonciers bruts du
+foyer (tous biens loués nus confondus, cf. ci-dessous) dépassent 15 000 € (régime réel obligatoire). Pour
+l'imputation réelle du déficit et son report, c'est la **synthèse foncière du foyer** ci-dessous qui fait
+foi, pas ce simulateur par bien.
+
+**Synthèse foncière du foyer** ([FoncierFoyerSection.tsx](src/components/immobilier/FoncierFoyerSection.tsx),
+onglet Vue d'ensemble, affichée dès qu'il existe au moins un bien en location nue) : contrairement au
+simulateur par bien ci-dessus, applique les règles du CGI **au niveau du foyer fiscal, tous biens loués nus
+confondus** — seules règles pertinentes pour une déclaration réelle. Moteur :
+[src/lib/immobilier/foncierFoyer.ts](src/lib/immobilier/foncierFoyer.ts) (`computeFoyerFoncier`, testé dans
+`foncierFoyer.test.ts`) :
+- Seuil micro-foncier à 15 000 € de loyers bruts foyer (`SEUIL_MICRO_FONCIER`) : au-delà, régime réel
+  obligatoire, affiché en bandeau.
+- Sépare les charges hors intérêts (imputables sur le revenu global) des intérêts d'emprunt + assurance
+  emprunteur (jamais imputables sur le revenu global, cf. CGI art. 156-I-3°).
+- Plafonne le déficit imputable sur le revenu global à 10 700 €/an, ou 21 400 € si au moins un bien est
+  coché « travaux de rénovation énergétique » (sortie des classes E/F/G, dispositif prorogé jusqu'au
+  31/12/2027) — case à cocher par bien dans le tableau, non persistée en base (saisie de simulation).
+- Consomme le stock de déficits reportés des années précédentes (FIFO par année d'origine, fenêtre de 10
+  ans), et calcule le nouveau déficit reportable généré par l'année en cours (hors intérêts au-delà du
+  plafond, et intérêts en totalité).
+- Le stock de déficits reportés est **saisi manuellement par l'utilisateur** (ce qu'il a sur sa vraie
+  déclaration 2044), table `deficits_fonciers_reportes` (service
+  [deficitFoncierService.ts](src/services/deficitFoncierService.ts)) — CRUD direct dans la section, plus un
+  bouton explicite « Reporter le solde à l'année suivante » qui applique le résultat de la simulation
+  courante au stock persisté (`reporterAlAnneeSuivante`) ; rien n'est décrémenté automatiquement en arrière-plan.
+- TMI du foyer saisi localement dans la section (pas de persistance, pas de lien avec le module Fiscalité —
+  décision explicite, pas un gap non traité : le module Fiscalité n'a aucune section revenus fonciers/2044).
+
+De même pour « Immeubles locatifs (LMNP) », `LMNPDetailView.tsx` affiche une section équivalente
 ([SimulateurRentabiliteLMNPSection.tsx](src/components/immobilier/lmnp/SimulateurRentabiliteLMNPSection.tsx))
 comparant micro-BIC (barème 2026, alerte de dépassement de plafond) et réel (charges + intérêts +
 assurance déductibles, amortissement plafonné, PS à 18,6 %). Et pour « Immeubles locatifs (LMP) »,
@@ -80,9 +112,11 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
 
 ## 2. Architecture & décisions
 
-- **`src/lib/immobilier/` centralise désormais la rentabilité location nue, LMNP et LMP — pas encore les
-  KPI de portefeuille.** [rentabilite.ts](src/lib/immobilier/rentabilite.ts) réunit en fonctions pures
-  testées (`rentabilite.test.ts`) : le calcul micro-foncier/réel (location nue), l'amortissement du
+- **`src/lib/immobilier/` centralise désormais la rentabilité location nue, LMNP et LMP, ainsi que
+  l'agrégation foncière au niveau du foyer — pas encore les KPI de portefeuille.**
+  [rentabilite.ts](src/lib/immobilier/rentabilite.ts) réunit en fonctions pures
+  testées (`rentabilite.test.ts`) : le calcul micro-foncier/réel **par bien** (location nue),
+  `computeQuotePart` (quote-part d'indivision, partagée avec `foncierFoyer.ts`), l'amortissement du
   crédit (commun aux trois régimes), `computeAmortissementImmeubleLMNP`/`computeResultatReelLMNP`
   (déplacés depuis `LMNPDetailView.tsx` sans changer une formule, cf. commit d'extraction dédié) et
   `computeMicroBicLMNP`/`computeRentabiliteLMNP` pour LMNP (barème 2026), puis pour LMP
@@ -90,7 +124,15 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
   `computeAmortissementImmeubleLMNP` (mécanique comptable identique) et `computeMicroBicLMNP` (même
   barème) — seul le traitement fiscal du résultat réel diffère (pas de plafonnement de l'amortissement
   en LMP, cotisations sociales en saisie libre au lieu de PS fixes). Suit le pattern `lib/ifi/`/
-  `lib/patrimoine/` demandé par `CLAUDE.md`. **Dette restante** : `ImmobilierOverview.tsx` (rentabilité,
+  `lib/patrimoine/` demandé par `CLAUDE.md`.
+  [foncierFoyer.ts](src/lib/immobilier/foncierFoyer.ts) (`foncierFoyer.test.ts`) réutilise `rentabilite.ts`
+  (`computeAmortissement`, `computeQuotePart`, `computeLoyersAnnuels`/`computeChargesAnnuelles` via
+  `buildBienFoncierInput`) mais applique les règles du CGI **au niveau du foyer** : seuil micro-foncier
+  (15 000 €), plafond de déficit imputable (10 700 / 21 400 €), consommation FIFO du stock de déficits
+  reportés (fourni en entrée par le service `deficitFoncierService.ts` / table `deficits_fonciers_reportes`
+  — ce module ne persiste rien lui-même, fonction pure comme le reste de `lib/immobilier/`). Import à sens
+  unique `foncierFoyer.ts` → `rentabilite.ts` (jamais l'inverse), pour éviter toute dépendance circulaire.
+  **Dette restante** : `ImmobilierOverview.tsx` (rentabilité,
   cashflow, plus-value brute de portefeuille) implémente toujours sa propre annualisation inline, non
   partagée — une **troisième** convention de périodicité coexiste donc pour les KPI de portefeuille (à
   vérifier avant toute fusion : `rentabilite.ts` suit exactement les deux conventions réellement
@@ -357,9 +399,12 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
   rentabilité brute/nette, cashflow, plus-value brute).
 - **V1 — en place (ajout)** : pour la location nue (« Immeubles locatifs (loués nus) » uniquement,
   pas les 5 autres natures de `RENTAL_PROPERTY_TYPES`), simulateur de rentabilité micro-foncier/réel
-  dans la fiche détail (cashflow, rendements, déficit foncier plafonné à 10 700 €/an, régime le plus
-  favorable au TMI saisi) — cf. §1/§2. Pas de projection pluriannuelle, pas de calcul de plus-value à
-  la revente, pas de report du déficit foncier au-delà du plafond annuel.
+  par bien dans la fiche détail (cashflow, rendements, déficit foncier plafonné à 10 700 €/an, quote-part
+  d'indivision, régime le plus favorable au TMI saisi, badge régime actif si `regime_location` renseigné)
+  — cf. §1/§2. **Complété par la synthèse foncière du foyer** (§1) qui, elle, applique les règles au
+  niveau du foyer (seuil micro-foncier à 15 000 €, plafond de déficit à 10 700/21 400 €, report du
+  déficit sur 10 ans via un stock saisi manuellement). Pas de projection pluriannuelle, pas de calcul de
+  plus-value à la revente, pas de lien avec le module Fiscalité (2042/2044 — décision explicite).
 - **V1 — en place (ajout)** : pour LMNP, simulateur de rentabilité micro-BIC/réel dans
   `LMNPDetailView.tsx` (barème 2026 avec plafonds de recettes, amortissement immeuble plafonné,
   intérêts + assurance déductibles au réel, PS à 18,6 %, régime le plus favorable) — cf. §1/§2. Pas de
@@ -415,9 +460,12 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
     gate `asset.nature === 'Immeubles locatifs (LMP)'`) — seul le résumé fiscal existant de
     `LMNPDetailView.tsx` continue de s'appliquer aux deux natures sans distinction (écart documenté en
     §3 comme approximation, non corrigé ici).
-  - **`regime_location` (Micro-foncier/Réel)** pour la location nue : toujours sans branche de calcul
-    qui le lit (`ImmobilierPropertyDetailView`/location nue n'a pas de moteur de calcul dédié, cf.
-    plus haut). Le cas Micro-BIC/BIC (meublé, LMNP/LMP) est en revanche traité depuis le fix §3.
+  - **Autres natures de `RENTAL_PROPERTY_TYPES` que « Immeubles locatifs (loués nus) »** (Parking/Garage/Box,
+    Autres immeubles de rapport...) : même en location nue, elles n'ont toujours pas de fiche
+    Financement/Location dédiée avec simulateur — seule la nature « Immeubles locatifs (loués nus) »
+    déclenche `SimulateurRentabiliteSection`. Elles sont en revanche bien prises en compte par la
+    **synthèse foncière du foyer** (§1), qui filtre sur `type_location === 'Location nue'` toutes natures
+    confondues, pas sur la nature de l'actif.
 - **Manque sans explication dans le code** : aucun commentaire ni TODO n'explique pourquoi
   `ImmobilierPropertyDialog.tsx` a été laissé en place après son remplacement apparent par
   `ImmobilierPropertyDetailView.tsx`.

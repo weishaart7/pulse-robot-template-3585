@@ -57,6 +57,7 @@ export const CHARGE_NATURES = [
   'CFE (Cotisation Foncière des Entreprises)',
   'Travaux d\'entretien',
   'Travaux de réparation',
+  'Travaux d\'amélioration',
   'Honoraires syndic',
   'Frais de procédure',
   'Autres charges'
