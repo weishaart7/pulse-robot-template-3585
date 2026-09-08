@@ -27,15 +27,18 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
      `foyer_fiscal` et au moteur pur `src/lib/fiscalite/calculerPartsFiscales.ts`. Seul morceau du
      module qui calcule et persiste une donnée réelle, propre à l'utilisateur.
    - **Traitements et salaires — cadre 1 de la 2042, déclarants 1/2 (Phases 2.1, 2.2 et 2.4,
-     fonctionnel)** : `RevenusSalairesForm.tsx`, adossé à la table Supabase `revenus_salaires`.
-     Capture de données brute (pas de moteur de calcul dans cette sous-phase) ; codes de case
-     vérifiés contre la brochure officielle DGFiP (2042-K/2042-C, revenus 2024). Inclut les frais
-     réels (`1AK`/`1BK`, Phase 2.2), qui remplacent l'abattement forfaitaire de 10 % sur `1AJ`/`1BJ`
-     — remplacement non appliqué automatiquement, saisie manuelle indépendante des deux champs (aucun
-     calcul en Phase 2), ainsi que les cas spécifiques restants (Phase 2.4) : indemnités pour
-     préjudice moral (`1PM`/`1QM`), salariés impatriés (`1DY`/`1EY`), sommes exonérées du CET
-     (`1SM`/`1DN`) — ajoutées ici plutôt qu'à `gains_actionnariat_salarie` car elles appartiennent au
-     même cadre 1 « Salaires » du CERFA, sans rapport avec les stock-options.
+     fonctionnel)** : `RevenusSalairesForm.tsx`, adossé à la table Supabase `revenus_salaires` — le
+     formulaire lui-même reste une simple capture de données (aucun calcul pendant la saisie), mais le
+     revenu net imposable est désormais calculé en aval par le moteur pur
+     `calculerRevenuSalaires.ts` (voir §2) ; codes de case vérifiés contre la brochure officielle
+     DGFiP (2042-K/2042-C, revenus 2024). Inclut les frais réels (`1AK`/`1BK`, Phase 2.2) : le choix
+     entre l'abattement forfaitaire de 10 % et les frais réels sur `1AJ`/`1BJ` est désormais arbitré
+     automatiquement par `calculerRevenuSalaires.ts` (le plus favorable des deux, unique par
+     déclarant pour l'ensemble de ses traitements et salaires — voir §2), ainsi que les cas
+     spécifiques restants (Phase 2.4) : indemnités pour préjudice moral (`1PM`/`1QM`), salariés
+     impatriés (`1DY`/`1EY`), sommes exonérées du CET (`1SM`/`1DN`) — ajoutées ici plutôt qu'à
+     `gains_actionnariat_salarie` car elles appartiennent au même cadre 1 « Salaires » du CERFA, sans
+     rapport avec les stock-options.
    - **Salaires & pensions exonérés retenus pour le calcul du taux effectif (fonctionnel)** :
      `RevenusExoneresTauxEffectifForm.tsx`, adossé à la table Supabase dédiée
      `revenus_exoneres_taux_effectif`, **distincte** de `revenus_salaires` (voir §2) — encart séparé
@@ -43,7 +46,10 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
      (taux effectif appliqué au reste du revenu par convention fiscale internationale ou art. 81 A
      CGI, pas une base imposable en France). `1AF`/`1BF` (déjà dans `revenus_salaires`, Phase 2.1)
      désigne un mécanisme apparenté mais différent — crédit d'impôt égal à l'impôt français, pas taux
-     effectif — les deux méthodes restent non implémentées dans le moteur de calcul (voir §4).
+     effectif. **Les deux méthodes sont désormais implémentées** dans `calculerImpot.ts` (le crédit
+     d'impôt réutilise le mécanisme du taux effectif — hypothèse mathématiquement équivalente dans ce
+     cas, voir §3) ; le salaire exonéré (1AC/1AE) est calculé en pool commun avec 1AJ/1AK du même
+     déclarant par `calculerRevenuSalaires.ts`, pas indépendamment (voir §2).
    - **Pensions, retraites et rentes — cadre 1 de la 2042, déclarants 1/2 (fonctionnel)** :
      `PensionsRetraitesRentesForm.tsx`, adossé à la table Supabase dédiée `pensions_retraites_rentes`,
      **distincte** de `revenus_exoneres_taux_effectif` (voir §2) — 7 lignes du vrai cadre CERFA
@@ -51,10 +57,13 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
      taxables à 7,5 %, pensions en capital des plans d'épargne retraite, pensions d'invalidité,
      pensions alimentaires perçues, pensions non-résidents/source étrangère avec crédit d'impôt,
      autres pensions étrangères), codes vérifiés visuellement sur la brochure DGFiP (2042-K, pages
-     115-119). Capture de données brute (pas de moteur de calcul). `1AH` (pensions étrangères
-     exonérées, taux effectif) **reste** dans `RevenusExoneresTauxEffectifForm.tsx` — il n'appartient
-     pas à ce cadre (aucun code en commun, mécanisme différent), décision explicite prise en session
-     après vérification pour ne pas mélanger une case exonérée dans un cadre de revenus imposables.
+     115-119). Le formulaire capture les données brutes ; le revenu net imposable (abattement 10 %
+     classique, capital PER sans abattement, capital retraite à 7,5 %, rentes viagères par tranche
+     d'âge) est calculé en aval par `calculerPensionsRetraitesRentes.ts` (voir §2). `1AH` (pensions
+     étrangères exonérées, taux effectif) **reste** dans `RevenusExoneresTauxEffectifForm.tsx` — il
+     n'appartient pas à ce cadre (aucun code en commun, mécanisme différent), décision explicite prise
+     en session après vérification pour ne pas mélanger une case exonérée dans un cadre de revenus
+     imposables.
    - **Gains d'actionnariat salarié — stock-options, actions gratuites, carried-interest (Phase 2.3,
      fonctionnel)** : `GainsActionnariatSalarieForm.tsx`, adossé à la table Supabase
      `gains_actionnariat_salarie`, **distincte** de `revenus_salaires` (voir §2). Mélange volontaire
@@ -64,30 +73,36 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
    - **Revenus des valeurs et capitaux mobiliers — cadre 2 de la 2042 (saisie brute, fonctionnel)** :
      `RevenusCapitauxMobiliersForm.tsx`, adossé à la table Supabase dédiée `revenus_capitaux_mobiliers`.
      45 cases numériques + `2OP` (case à cocher), regroupées en 6 catégories conformes à la déclaration
-     en ligne impots.gouv.fr (pas au regroupement thématique du CERFA papier) — voir §2. Capture de
-     données brute, sans moteur de calcul.
+     en ligne impots.gouv.fr (pas au regroupement thématique du CERFA papier) — voir §2. Le formulaire
+     capture les données brutes ; le revenu net imposable (dividendes, revenus sans abattement, revenus
+     réputés distribués, assurance-vie < 8 ans et ≥ 8 ans, gains de cession de bons/contrats, PFU ou
+     option barème selon `2OP`) est calculé en aval par `calculerRevenuCapitauxMobiliers.ts` (voir §2).
 
    Avant cette réorganisation, `MenageForm`/`SyntheseFoyerFiscal`/`RevenusSalairesForm` étaient montés
    à plat dans `FiscaliteSection.tsx`, en dehors de tout bouton « 2042 » (qui n'avait alors aucun
    `onClick`) — la section Fiscalité ne compte plus désormais qu'un seul point d'entrée vers ces
    formulaires.
-2. **Un tableau de bord IR désormais branché sur les données réelles, couvrant les salaires, la part
-   barème et la part à taux forfaitaire des gains d'actionnariat salarié.**
+2. **Un tableau de bord IR désormais branché sur les données réelles, couvrant les salaires (dont les
+   salaires exonérés retenus pour le taux effectif), les pensions/retraites/rentes, les revenus des
+   valeurs et capitaux mobiliers, et les gains d'actionnariat salarié (part barème et part à taux
+   forfaitaire).**
    (`FiscaliteSection.tsx` → `FiscalDeclarationsCard`, `FiscalOverviewCard`, `TaxRateCard`) : liste de
    déclarations fiscales (2042, 2044, 2047, 2074, 2086, 2042-IFI), graphique de répartition, taux
    marginal d'imposition, tranches. Le hook [useFiscalOverview.ts](src/hooks/useFiscalOverview.ts)
    agrège `foyer_fiscal` + `revenus_salaires` + `gains_actionnariat_salarie` +
-   `revenus_exoneres_taux_effectif` + `pensions_retraites_rentes`, calcule le revenu net imposable, le
-   nombre de parts et l'impôt sur le revenu réel (voir §2), et alimente les deux cartes. **Prélèvements
-   sociaux et IFI restent affichés comme « non calculé »** (pas de moteur pour ces deux impôts dans ce
-   tableau de bord — l'IFI dispose de son propre simulateur, point 3 ci-dessous). Les gains
-   d'actionnariat à taux forfaitaire (3VD/3VI/3VF) sont couverts, à taux proportionnel (18 %/30 %/41 %,
-   hors barème) ; le carried-interest (1NX/1OX) rejoint désormais le barème comme un salaire ordinaire
-   (voir « Bug corrigé » en §2 — 1NX/1OX n'est pas le carried-interest qualifiant du régime de faveur) ;
-   les pensions/retraites/rentes le sont désormais
+   `revenus_exoneres_taux_effectif` + `pensions_retraites_rentes` + `revenus_capitaux_mobiliers`,
+   calcule le revenu net imposable, le nombre de parts et l'impôt sur le revenu réel (voir §2), et
+   alimente les deux cartes. **Prélèvements sociaux et IFI restent affichés comme « non calculé »**
+   (pas de moteur pour ces deux impôts dans ce tableau de bord — l'IFI dispose de son propre
+   simulateur, point 3 ci-dessous). Les gains d'actionnariat à taux forfaitaire (3VD/3VI/3VF) sont
+   couverts, à taux proportionnel (18 %/30 %/41 %, hors barème) ; le carried-interest (1NX/1OX) rejoint
+   désormais le barème comme un salaire ordinaire (voir « Bug corrigé » en §2 — 1NX/1OX n'est pas le
+   carried-interest qualifiant du régime de faveur) ; les pensions/retraites/rentes le sont désormais
    aussi (abattement de 10 % classique, capital PER sans abattement, capital retraite à 7,5 %, rentes
-   viagères par tranche d'âge — voir §2) ; toute autre catégorie de revenu future (fonciers, capitaux
-   mobiliers…) n'entre pas encore dans ce calcul (voir §4).
+   viagères par tranche d'âge — voir §2) ; les revenus des valeurs et capitaux mobiliers (cadre 2)
+   également (dividendes, revenus sans abattement, revenus réputés distribués, assurance-vie < 8 ans et
+   ≥ 8 ans, gains de cession de bons/contrats, PFU ou option barème — voir §2) ; seuls les revenus
+   fonciers n'entrent pas encore dans ce calcul (voir §4).
 3. **Un simulateur IFI complet, avec sa propre saisie** (`IFIInterface.tsx`, ouvert depuis le bouton
    « 2042-IFI » de `FiscalDeclarationsCard`), organisé en 5 sections dans une sidebar
    (`IFISidebar.tsx`) : Hypothèses, Liste des biens à l'IFI, Barème de l'IFI, Réduction &
@@ -104,9 +119,9 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 | Ménage (section 2042) | [MenageSection.tsx](src/pages/fiscalite/components/2042/MenageSection.tsx) → `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx` | Situation familiale, enfants à charge (liste dynamique), personnes invalides à charge (liste dynamique), enfants majeurs rattachés, cases à cocher (parent isolé, invalidité, ancien combattant, veuve de guerre...), synthèse du nombre de parts recalculée en direct pendant la saisie (avant même l'enregistrement) |
 | Traitements et salaires (section 2042) | [RevenusSalairesForm.tsx](src/components/fiscalite/RevenusSalairesForm.tsx) | 19 paires de champs déclarant 1/déclarant 2 (cadre 1 de la 2042, hors colonnes C/D et gains d'actionnariat), code officiel + libellé français côte à côte |
 | Salaires & pensions exonérés — taux effectif (section 2042) | [RevenusExoneresTauxEffectifForm.tsx](src/components/fiscalite/RevenusExoneresTauxEffectifForm.tsx) | 5 lignes (`1AC`/`1BC`, `1GE`/`1HE` case à cocher, `1AE`/`1BE`, `1AH`/`1BH`, `RSE`/`RSF` texte libre), encart CERFA distinct (2042-C pages 99/116) — alimente désormais le taux effectif dans le tableau de bord IR (Vision générale) |
-| Pensions, retraites et rentes (section 2042) | [PensionsRetraitesRentesForm.tsx](src/components/fiscalite/PensionsRetraitesRentesForm.tsx) | 7 lignes déclarant 1/déclarant 2 (`1AS`, `1AT`, `1AI`, `1AZ`, `1AO`, `1AL`, `1AM`) + rentes viagères à titre onéreux ventilées par tranche d'âge, pas déclarant (`1AW`/`1BW`/`1CW`/`1DW` rentes perçues, `1AR`/`1BR`/`1CR`/`1DR` non-résidents), vrai cadre 1 « Pensions, retraites, rentes » du CERFA (2042-K pages 115-119), hors colonnes C/D — capture brute, sans moteur de calcul |
+| Pensions, retraites et rentes (section 2042) | [PensionsRetraitesRentesForm.tsx](src/components/fiscalite/PensionsRetraitesRentesForm.tsx) | 7 lignes déclarant 1/déclarant 2 (`1AS`, `1AT`, `1AI`, `1AZ`, `1AO`, `1AL`, `1AM`) + rentes viagères à titre onéreux ventilées par tranche d'âge, pas déclarant (`1AW`/`1BW`/`1CW`/`1DW` rentes perçues, `1AR`/`1BR`/`1CR`/`1DR` non-résidents), vrai cadre 1 « Pensions, retraites, rentes » du CERFA (2042-K pages 115-119), hors colonnes C/D — saisie brute, revenu net imposable calculé en aval par `calculerPensionsRetraitesRentes.ts` |
 | Gains d'actionnariat salarié (section 2042) | [GainsActionnariatSalarieForm.tsx](src/components/fiscalite/GainsActionnariatSalarieForm.tsx) | 16 lignes du CERFA (stock-options, actions gratuites, carried-interest, BSPCE, management packages, options pré-28.9.2012, système du quotient), regroupées par sous-bloc visuel ; champs à case unique sans colonne déclarant 2 pour `1TZ`/`1UZ`/`1WZ`/`1VZ`, `3VD`/`3VI`/`3VF`/`3VN` et `0XX`, conformément au CERFA |
-| Revenus des valeurs et capitaux mobiliers (section 2042) | [RevenusCapitauxMobiliersForm.tsx](src/components/fiscalite/RevenusCapitauxMobiliersForm.tsx) | Cadre 2 de la 2042 (2042-K + 2042-C), 45 cases numériques + `2OP` (case à cocher, hors catégorie en pied de cadre) ; aucune colonne déclarant 1/déclarant 2 sur le CERFA — chaque case est un montant unique par foyer, contrairement au cadre 1 ; regroupées en 6 catégories conformes à la déclaration en ligne impots.gouv.fr : contrats d'assurance-vie ≥ 8 ans, < 8 ans, revenus ouvrant/n'ouvrant pas droit à abattement, autres revenus, gains de cession de bons et contrats — capture brute, sans moteur de calcul |
+| Revenus des valeurs et capitaux mobiliers (section 2042) | [RevenusCapitauxMobiliersForm.tsx](src/components/fiscalite/RevenusCapitauxMobiliersForm.tsx) | Cadre 2 de la 2042 (2042-K + 2042-C), 45 cases numériques + `2OP` (case à cocher, hors catégorie en pied de cadre) ; aucune colonne déclarant 1/déclarant 2 sur le CERFA — chaque case est un montant unique par foyer, contrairement au cadre 1 ; regroupées en 6 catégories conformes à la déclaration en ligne impots.gouv.fr : contrats d'assurance-vie ≥ 8 ans, < 8 ans, revenus ouvrant/n'ouvrant pas droit à abattement, autres revenus, gains de cession de bons et contrats — saisie brute, revenu net imposable calculé en aval par `calculerRevenuCapitauxMobiliers.ts` |
 | Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Donut `SectorsDonut` (même composant que la répartition Patrimoine) montrant la vraie composition du revenu imposable (salaires/gains d'actionnariat/pensions, légende colorée) — PS et IFI affichés « non calculé » |
 | Taux marginal | [TaxRateCard.tsx](src/pages/fiscalite/components/TaxRateCard.tsx) | Barème IR réel, tranche active (TMI), quotient familial, marge avant tranche suivante, impôt net |
 | Simulateur IFI | [IFIInterface.tsx](src/pages/fiscalite/components/IFIInterface.tsx) → 5 sous-écrans `ifi/*.tsx` | Wizard de déclaration IFI : hypothèses, biens/passifs, barème, montant dû |
@@ -144,7 +159,7 @@ viagères par tranche d'âge), [calculerRevenuCapitauxMobiliers.ts](src/lib/fisc
 [calculerPartsFiscales.ts](src/lib/fiscalite/calculerPartsFiscales.ts) (quotient familial) et
 [calculerImpot.ts](src/lib/fiscalite/calculerImpot.ts) (barème, plafonnement, méthode du taux effectif,
 réduction outre-mer, décote, impôt forfaitaire, TMI) — voir §2. Périmètre encore hors calcul : revenus
-fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
+fonciers (§4).
 
 **Flux clés** :
 - L'utilisateur clique « 2042-IFI » → `IFIInterface` s'ouvre en plein écran, saisit ses biens/passifs
@@ -321,22 +336,48 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   ne les rajoute plus séparément (double comptage). Rejoué sur le compte réel après correction : 117 450 €
   / 21 443 €, identiques au centime près au simulateur officiel. Test dédié mis à jour dans
   `calculerRevenuSalaires.test.ts`.
+  **Bug corrigé — 1AC/1AE (salaires de source étrangère exonérés retenus pour le calcul du taux
+  effectif, 2042-C) faisaient l'objet d'un choix 10 %/frais réels arbitré indépendamment de celui du
+  salaire imposable en France (1AJ/1AK) du même déclarant**, alors que le même texte de brochure DGFiP
+  déjà cité ci-dessus pour 1GB/1AF (IR 2026, p.107) s'applique : le choix forfaitaire/frais réels est
+  unique « pour l'ensemble de ses activités » imposées selon les règles des traitements et salaires —
+  sans distinction entre la part imposable en France et la part seulement retenue pour le taux effectif,
+  puisque les deux relèvent de la même catégorie de revenu pour un même déclarant. Écart signalé par un
+  utilisateur en comparant Kairos au simulateur officiel de la DGFiP sur un foyer marié : 1AJ = 50 000 €/
+  1BJ = 20 000 € (aucun frais réels déclaré) et 1AC = 35 000 €/1AE = 4 000 € (frais réels sur le seul
+  salaire exonéré) → Kairos annonçait 10 314 € contre 10 356 € au simulateur officiel. Cause exacte : en
+  arbitrant 1AC/1AE isolément, les frais réels (4 000 €) l'emportaient sur l'abattement de 10 % pris sur
+  35 000 € seuls (3 500 €) ; rapportés à la base commune du déclarant (1AJ + 1AC = 85 000 €),
+  l'abattement forfaitaire de 10 % (8 500 €) est en réalité plus favorable que les 4 000 € de frais
+  réels déclarés — le forfaitaire s'applique donc à l'ensemble du pool, y compris à la part exonérée
+  (35 000 − 10 % = 31 500 € au lieu de 35 000 − 4 000 = 31 000 €). `calculerDeclarant` est étendu d'un
+  5ᵉ paramètre optionnel `remunerationsExonereesTauxEffectif` (même mécanique de répartition
+  proportionnelle que `remunerationsCreditImpot`/1AF ci-dessus, nouveau champ
+  `netImposableExonereTauxEffectif`) ; `calculerRevenuSalaires` accepte désormais un second paramètre
+  optionnel (1AC/1BC, 1AE/1BE) et combine les frais réels 1AK+1AE avant l'arbitrage, exposé dans le
+  nouveau champ `salairesNetImposablesExoneresTauxEffectif`. Test de non-régression dédié :
+  `regressionExempleUtilisateur.test.ts`, rejoue exactement ce cas de bout en bout
+  (`calculerRevenuSalaires` → `calculerRevenuExonereTauxEffectif` → `calculerImpot`) et vérifie 10 356 €.
 - **`src/lib/fiscalite/calculerRevenuExonereTauxEffectif.ts` — revenus exonérés retenus pour le calcul
-  du taux effectif.** Fonction pure : 1AC/1BC (salaires de source étrangère exonérés) reçoivent le même
-  abattement 10 %/frais réels (1AE/1BE) que les salaires français, via `calculerDeclarant` réutilisée de
-  `calculerRevenuSalaires.ts`. 1AH/1BH (pensions de source étrangère) reçoivent l'abattement de 10 %
-  standard applicable aux pensions (revenus 2025/impôt 2026) : plancher 454 €/pensionné (jamais
-  supérieur à la pension elle-même), plafond **global** de 4 439 € pour l'ensemble du foyer (pas par
-  pensionné — la somme des abattements individuels est plafonnée une fois calculée). **Bug corrigé** :
-  la première version ajoutait ces pensions brutes, sans abattement, faute de module Pensions dans le
-  repo pour calibrer un montant — l'abattement pension est en réalité un barème CGI autonome
-  (indépendant de tout moteur de pensions françaises), pas une extension d'un module qui n'existe pas ;
-  écart constaté par comparaison avec un autre logiciel (40 000 € de pension → 303 € d'écart d'impôt
-  avant correction). 1GE/1HE (case à cocher marins-pêcheurs) et RSE/RSF (pays, texte libre) sont
-  purement informatifs — listées dans `CASES_EXONERES_TAUX_EFFECTIF_EXCLUES_DU_CALCUL`, même pattern que
+  du taux effectif.** Fonction pure : ne calcule plus elle-même la part salaires (1AC/1BC) — elle reçoit
+  ce montant déjà net d'abattement 10 %/frais réels en paramètre
+  (`salairesNetImposablesExoneresTauxEffectif`), calculé par `calculerRevenuSalaires.ts` en pool commun
+  avec 1AJ/1AK du même déclarant (voir « Bug corrigé » ci-dessus — `useFiscalOverview.ts` appelle donc
+  `calculerRevenuSalaires` avant `calculerRevenuExonereTauxEffectif` et chaîne le résultat). 1AH/1BH
+  (pensions de source étrangère) reçoivent l'abattement de 10 % standard applicable aux pensions
+  (revenus 2025/impôt 2026) : plancher 454 €/pensionné (jamais supérieur à la pension elle-même),
+  plafond **global** de 4 439 € pour l'ensemble du foyer (pas par pensionné — la somme des abattements
+  individuels est plafonnée une fois calculée). **Bug corrigé** : la première version ajoutait ces
+  pensions brutes, sans abattement, faute de module Pensions dans le repo pour calibrer un montant —
+  l'abattement pension est en réalité un barème CGI autonome (indépendant de tout moteur de pensions
+  françaises), pas une extension d'un module qui n'existe pas ; écart constaté par comparaison avec un
+  autre logiciel (40 000 € de pension → 303 € d'écart d'impôt avant correction). 1GE/1HE (case à cocher
+  marins-pêcheurs) et RSE/RSF (pays, texte libre) sont purement informatifs — listées dans
+  `CASES_EXONERES_TAUX_EFFECTIF_EXCLUES_DU_CALCUL`, même pattern que
   `CASES_SALAIRES_EXCLUES_DU_CALCUL`/`CASES_GAINS_ACTIONNARIAT_EXCLUES_DU_CALCUL` (ajouté après un audit
-  champ par champ, cf. §3). 11 tests couvrent l'abattement des salaires exonérés, le plancher/plafond de
-  l'abattement pension (y compris le plafond global à deux pensionnés) et le total.
+  champ par champ, cf. §3). 9 tests couvrent le plancher/plafond de l'abattement pension (y compris le
+  plafond global à deux pensionnés) et le total ; les tests d'abattement des salaires exonérés ont été
+  déplacés dans `calculerRevenuSalaires.test.ts` (pool commun avec 1AJ, voir ci-dessus).
 - **`src/lib/fiscalite/calculerImpot.ts` — barème progressif, plafonnement du quotient familial, méthode
   du taux effectif, réduction d'impôt outre-mer, décote, TMI.** Barème 2026 (revenus 2025, art. 4 LF
   2026, tranches 0 %/11 %/30 %/41 %/45 %, seuils 11 600 €/29 579 €/84 577 €/181 917 €) appliqué au
@@ -949,31 +990,56 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   chaque catégorie de revenu a une assiette et un taux PS propres, souvent différents de l'assiette IR
   de la même case. **Salaires (cadre 1) hors périmètre par construction** : les cotisations salariales
   sont déjà prélevées en paie (URSSAF), 1AJ/1BJ etc. sont déjà nets — rien à recalculer côté IR.
-  Pour les capitaux mobiliers : 17,2 % sur dividendes/revenus assimilés (2DC/2FU, sur leur montant
+  Pour les capitaux mobiliers : **18,6 %** sur dividendes/revenus assimilés (2DC/2FU, sur leur montant
   **brut**, l'abattement de 40 % étant réservé à l'IR, art. 158-3 CGI), intérêts/produits sans
-  abattement (2TS/2TR/2TT/2TQ/2TZ) et revenus réputés distribués (2GO). **2GO retenu sans la majoration
-  de 25 %** qui s'applique pourtant côté IR (art. 158-7-2° CGI) : le Conseil constitutionnel (décision
+  abattement (2TS/2TR/2TT/2TQ/2TZ), revenus réputés distribués (2GO), et tous les produits/gains de
+  contrats d'assurance-vie/capitalisation non « soumis au prélèvement libératoire » (2CH, 2VV, 2WW,
+  2YY, 2ZZ, 2VN, 2VO, 2VP — voir « Bug corrigé » ci-dessous). **2GO retenu sans la majoration de 25 %**
+  qui s'applique pourtant côté IR (art. 158-7-2° CGI) : le Conseil constitutionnel (décision
   n° 2016-610 QPC) a jugé ce coefficient inapplicable à l'assiette PS — seule fonction du module à
   diverger explicitement de l'assiette IR de la même case. Indépendant de 2OP : les PS sont dus que le
-  revenu soit finalement imposé au barème ou au PFU, contrairement à l'IR. 17,2 % et non 18,6 % malgré
-  la hausse LFSS 2026 (CSG +1,4 point sur les revenus du capital financier) : cette hausse ne s'applique
-  qu'aux « produits de placement perçus à compter du 1.1.2026 » (prélevés à la source pendant l'année,
-  cas de 2DC/2TS...) — seuls les revenus « recouvrés par voie de rôle » (plus-values de cession de
-  valeurs mobilières, non modélisées ici) basculent dès les revenus 2025 ; sans effet sur le périmètre
-  actuel du module. **Exclus du calcul** (`CASES_PS_CAPITAUX_MOBILIERS_HORS_PERIMETRE`) : tous les
-  contrats d'assurance-vie/de capitalisation (2CH/2DH/2VV/2WW, 2XX/2YY/2ZZ, 2VM/2VN/2VO/2VP) — leur
-  mécanisme de « taux historiques » (art. L136-7 CSS) prélève les PS au fil de l'eau (fonds euros) ou au
-  dénouement (UC) selon le taux en vigueur à la date d'acquisition de CHAQUE fraction du gain, une
-  donnée que seul l'assureur reconstitue à partir de l'historique du contrat — non reconstituable depuis
-  le seul montant net déclaré sur le 2042, donc non modélisé plutôt que deviné (appliquer 17,2 % sur ces
-  montants produirait un résultat régulièrement faux pour tout contrat antérieur à une hausse de taux).
+  revenu soit finalement imposé au barème ou au PFU, contrairement à l'IR (vérifié empiriquement sur
+  2GO/2CH et 2VV, 2OP décoché à chaque fois — non re-testé avec 2OP coché).
+  **Exclues du calcul** (`CASES_PS_CAPITAUX_MOBILIERS_HORS_PERIMETRE`) : uniquement les cases
+  explicitement libellées « soumis au prélèvement libératoire » sur le CERFA — 2DH, 2XX, 2VM — un
+  mécanisme historique où le prélèvement, lors du versement, réglait définitivement IR *et* PS
+  ensemble ; rien à recalculer.
+  **Bugs corrigés — deux erreurs distinctes détectées par comparaison avec le simulateur officiel sur
+  deux comptes réels d'un même utilisateur (foyer célibataire).**
+  1. **Taux resté à 17,2 % (CSG 9,2 %) au lieu de 18,6 % (CSG 10,6 % + CRDS 0,5 % + solidarité 7,5 %,
+     LFSS 2026).** La première version pensait cette hausse réservée aux « produits de placement perçus
+     à compter du 1.1.2026 », les dividendes/intérêts 2025 restant au taux historique — mais le
+     simulateur officiel affiche explicitement « CSG-CRDS 11,10 % » (10,6+0,5) sur ce type de revenu dès
+     les revenus 2025. Cohérent avec la même règle déjà établie en Phase 3
+     (`calculerPrelevementsSociauxGainsActionnariatSalarie.ts`) et en Phase 2
+     (`calculerPrelevementsSociauxPensionsRetraitesRentes.ts`, voir plus bas) : un revenu recouvré par
+     voie de rôle (déclaré dans la 2042 elle-même, jamais prélevé à la source pendant l'année) est déjà
+     au taux 2026 dès les revenus 2025 — ce module ne l'avait pas reporté depuis sa découverte ailleurs.
+  2. **2CH/2DH/2VV/2WW/2XX/2YY/2ZZ/2VM/2VN/2VO/2VP intégralement exclus des PS, sur l'hypothèse d'un
+     « taux historique » non reconstituable (art. L136-7 CSS) pour l'ensemble de la famille
+     assurance-vie/capitalisation — hypothèse invalidée par deux tests isolés.** Foyer célibataire,
+     2OP décoché : 2GO=4 000 €/2CH=6 000 € → Kairos annonçait 744 € de PS (2GO seul, 18,6 %) contre
+     1 860 € au simulateur officiel, soit exactement (2GO+2CH) × 18,6 % = 10 000 × 18,6 % — 2CH compté
+     en totalité, montant BRUT, sans l'abattement de 4 600 €/9 200 € réservé à l'IR. Deuxième test,
+     2VV=5 000 € seul (versements **postérieurs** au 27.9.2017, contrairement à 2CH) : le simulateur
+     officiel affiche une base CSG-CRDS/solidarité de 5 000 € (le brut, pas les 400 € nets après
+     abattement) → 930 € de PS, soit exactement 5 000 × 18,6 % — même comportement que 2CH malgré un
+     régime IR différent (2CH toujours barème, 2VV suit le switch 2OP). Ces deux cases partagent un seul
+     point commun sur le CERFA : ni l'une ni l'autre n'est libellée « soumis au prélèvement
+     libératoire », contrairement à 2DH/2XX/2VM — c'est ce critère, pas la date du 27.9.2017, qui
+     explique le résultat. **2WW/2YY/2ZZ/2VN/2VO/2VP suivent cette même règle par cohérence de libellé
+     (aucune n'est « soumis au prélèvement libératoire ») mais n'ont pas été testées individuellement** —
+     seuls 2CH et 2VV sont vérifiés empiriquement.
   Branché dans `useFiscalOverview.ts` (`prelevementsSociauxCapitauxMobiliers`, champ séparé de `impot`,
   pas encore agrégé dans un total PS unique tant que les autres catégories ne sont pas couvertes) et
   affiché dans `FiscalOverviewCard.tsx` à la place du précédent « Prélèvements sociaux — Non calculé »
   (désormais scindé en deux lignes : le montant calculé pour les capitaux mobiliers, et une ligne
   « Non calculé » explicite pour salaires/pensions/gains d'actionnariat, qui restent des chantiers
-  futurs). 8 tests couvrent l'assiette brute des dividendes, le pool intérêts/produits, la non-majoration
-  de 2GO, l'indépendance vis-à-vis de 2OP, et l'exclusion des contrats d'assurance-vie/capitalisation.
+  futurs). 12 tests couvrent l'assiette brute des dividendes, le pool intérêts/produits, la
+  non-majoration de 2GO, l'indépendance vis-à-vis de 2OP, l'inclusion au brut de 2CH/2VV et du reste de
+  la famille non libératoire, et l'exclusion de 2DH/2XX/2VM ; 2 tests de régression
+  (`regressionCapitauxMobiliers2GO2CH.test.ts`) rejouent les deux comptes réels de bout en bout
+  (IR + PS) et vérifient les montants exacts du simulateur officiel.
 - **`src/lib/fiscalite/calculerPrelevementsSociauxPensionsRetraitesRentes.ts` — prélèvements sociaux sur
   le cadre 1 « Pensions, retraites, rentes » (Phase 2 du chantier PS).** Un seul mécanisme calculé :
   **rentes viagères à titre onéreux (1AW/1BW/1CW/1DW + 1AR/1BR/1CR/1DR)**, régime du patrimoine, taux
@@ -1023,15 +1089,19 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
      reconstitués à l'euro près (1 380 € et 75 €).
   2. **1NX/1OX (carried-interest non qualifiant)** : régime spécifique en 3 prélèvements distincts sur
      la même base — CSG (10,6 %) + CRDS (0,5 %) = 11,10 % (taux LFSS 2026, déjà applicable aux revenus
-     2025 pour cette case car recouvrée par voie de rôle et non prélevée à la source pendant l'année,
-     contrairement aux dividendes/intérêts qui restent à 17,2 % pour 2025 — voir Phase 1), prélèvement de
-     solidarité 7,5 %, et contribution salariale spécifique 10 % — total combiné 28,6 %. Base officielle
-     (« Base CSG-CRDS 11,10 % », « Base prélèvement de solidarité à 7,5 % », « Base contribution
-     salariale de 10 % ») = 20 000 € = montant exact de 1NX sur les 3 lignes ; montants reconstitués à
-     l'euro près (2 220 €, 1 500 €, 2 000 €). Cette découverte confirme rétroactivement le raisonnement
-     de la Phase 1 sur la distinction « recouvré par voie de rôle » (18,6 % dès 2025) vs « prélevé à la
-     source pendant l'année » (17,2 % jusqu'en 2025) — les deux catégories du module obéissent bien à des
-     calendriers différents, cohérents entre eux.
+     2025 pour cette case car recouvrée par voie de rôle et non prélevée à la source pendant l'année),
+     prélèvement de solidarité 7,5 %, et contribution salariale spécifique 10 % — total combiné 28,6 %.
+     Base officielle (« Base CSG-CRDS 11,10 % », « Base prélèvement de solidarité à 7,5 % », « Base
+     contribution salariale de 10 % ») = 20 000 € = montant exact de 1NX sur les 3 lignes ; montants
+     reconstitués à l'euro près (2 220 €, 1 500 €, 2 000 €).
+     **La distinction envisagée ici en Phase 3** (« recouvré par voie de rôle » à 18,6 % dès 2025 vs
+     « prélevé à la source pendant l'année » resté à 17,2 %, cette dernière catégorie censée couvrir les
+     dividendes/intérêts de la Phase 1) **s'est révélée fausse a posteriori** : la Phase 1 a depuis été
+     corrigée — dividendes/intérêts/2GO du cadre 2 sont eux aussi à 18,6 % dès 2025, vérifié
+     empiriquement (voir plus haut). Le vrai critère qui sépare les deux taux n'est donc pas le
+     calendrier de recouvrement mais un critère propre à chaque dispositif (pour le cadre 2 : « soumis
+     au prélèvement libératoire » ou non, voir Phase 1 ci-dessus) — pas une règle générale transposable
+     d'une catégorie de revenu à l'autre.
   3. **1NY/1OY** : contribution salariale spécifique de 30 % (carried-interest soumis à ce régime,
      distinct de 1NX — non présent dans le compte réel testé, taux retenu par recherche indépendante,
      non vérifié empiriquement).
@@ -1267,7 +1337,10 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   droits d'auteur, autres revenus imposables, salaires de source étrangère, frais réels, indemnités
   pour préjudice moral, salariés impatriés, sommes exonérées du CET), persistance Supabase
   (`revenus_salaires`, une ligne par utilisateur), codes de case vérifiés contre la brochure
-  officielle DGFiP — capture brute, sans moteur de calcul ; **gains d'actionnariat salarié (Phase
+  officielle DGFiP — saisie brute, **revenu net imposable désormais calculé** par
+  `calculerRevenuSalaires.ts` (abattement forfaitaire de 10 % ou frais réels, le plus favorable des
+  deux, arbitré une seule fois par déclarant pour l'ensemble de ses traitements et salaires — y compris
+  les salaires exonérés retenus pour le taux effectif, voir §2) ; **gains d'actionnariat salarié (Phase
   2.3)** : saisie des 16 lignes couvrant stock-options, actions gratuites, carried-interest, BSPCE,
   management packages et le système du quotient (`0XX`) (cadre 1 de la 2042-C) ainsi que les options
   attribuées avant le 28.9.2012 (cadre
@@ -1318,14 +1391,16 @@ fonciers, contrats d'assurance-vie et gains de cession du cadre 2, etc. (§4).
   déclarant), lignes PS/RFR, crédits d'impôt imputables sur l'impôt dû. Prochaine étape de la feuille de
   route : un futur cadre 2042 (revenus fonciers, plus-values, etc.). **Prélèvements sociaux — chantier
   terminé pour les 3 phases identifiées** : `calculerPrelevementsSociauxCapitauxMobiliers.ts` couvre
-  dividendes/intérêts/2GO à 17,2 % (Phase 1) ; `calculerPrelevementsSociauxPensionsRetraitesRentes.ts`
+  dividendes/intérêts/2GO et la famille assurance-vie non libératoire (2CH/2VV/2WW/2YY/2ZZ/2VN/2VO/2VP)
+  à 18,6 % (Phase 1, taux et périmètre corrigés — voir §2) ; `calculerPrelevementsSociauxPensionsRetraitesRentes.ts`
   couvre les rentes viagères à titre onéreux (18,6 % fixe, taux corrigé depuis 17,2 % — voir §2, Phase 2) ;
   `calculerPrelevementsSociauxGainsActionnariatSalarie.ts` couvre 1TT (9,7 % salarial), 1NX (28,6 %
   combiné, carried-interest non qualifiant), 1NY et 3VN (contributions salariales 30 %/10 %, Phase 3 —
   périmètre établi par vérification empirique contre le simulateur officiel plutôt que recherche
   documentaire seule, les sources généralistes se contredisant sur cette catégorie). Voir §2 pour le
-  détail des trois phases, y compris les cases hors périmètre de chacune (assurance-vie/capitalisation
-  pour la Phase 1 ; **pensions classiques, 1AL, capital PER 1AI et capital retraite 1AT pour la Phase 2**
+  détail des trois phases, y compris les cases hors périmètre de chacune (2DH/2XX/2VM, seules cases
+  « soumises au prélèvement libératoire » du cadre 2, pour la Phase 1 ; **pensions classiques, 1AL,
+  capital PER 1AI et capital retraite 1AT pour la Phase 2**
   — le taux de CSG/CRDS/CASA sur les pensions dépend d'un RFR N-2 non modélisé, une approximation par le
   revenu imposable courant s'étant révélée empiriquement fausse de plusieurs milliers d'euros sur un
   compte réel ; 1TP/1TZ/1AY/1MP et les gains historiques 3VD/3VI/3VF/3VJ/3VK pour la Phase 3, confirmé par
