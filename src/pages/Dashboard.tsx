@@ -9,6 +9,12 @@ import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useF
 import { PatrimoineChart } from '@/components/patrimoine/PatrimoineChart';
 import { AlertesConseil } from '@/components/alertes/AlertesConseil';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
+import { useFiscalOverview } from '@/hooks/useFiscalOverview';
+
+function formatEuros(valeur: number): string {
+  return `${Math.round(valeur).toLocaleString('fr-FR')} €`;
+}
+
 const Dashboard = () => {
   const {
     revenus
@@ -29,6 +35,14 @@ const Dashboard = () => {
   const { data: maritalStatus } = useMaritalStatus();
   const { data: familyLinks } = useFamilyLinks();
   const [assetDemembrements, setAssetDemembrements] = useState<AssetDemembrement[]>([]);
+  const { impot, prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat } = useFiscalOverview();
+
+  // Même calcul que FiscalOverviewCard.tsx (module Fiscalité) : IFI et prélèvements
+  // sociaux sur les salaires non inclus, seules les impositions effectivement calculées sont sommées.
+  const impositionTotale = impot.impotNet
+    + prelevementsSociauxCapitauxMobiliers.prelevementsSociaux
+    + prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux
+    + prelevementsSociauxGainsActionnariat.prelevementsSociaux;
 
   useEffect(() => {
     assetDemembrementService.getAllForUser()
@@ -133,7 +147,7 @@ const Dashboard = () => {
             <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-md p-3 border border-primary/20">
               <div className="text-xs font-medium text-muted-foreground mb-1">Imposition totale</div>
               <div className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                9 365 €
+                {formatEuros(impositionTotale)}
               </div>
             </div>
 
@@ -149,7 +163,7 @@ const Dashboard = () => {
                     <div className="text-[10px] text-muted-foreground">Impôt sur le revenu</div>
                   </div>
                 </div>
-                <div className="text-sm font-bold">9 365 €</div>
+                <div className="text-sm font-bold">{formatEuros(impositionTotale)}</div>
               </div>
 
               <div className="flex items-center justify-between p-2.5 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
