@@ -203,20 +203,39 @@ describe('calculerRevenuSalaires — plafond d\'exonération 1GH/1HH (heures sup
   });
 });
 
-describe('calculerRevenuSalaires — revenuExonereRetenuPourRFR (1GH/1HH réintégrés dans le RFR)', () => {
-  it("sous le plafond : la totalité de 1GH/1HH est retenue pour le RFR, bien qu'exonérée d'IR", () => {
+describe('calculerRevenuSalaires — revenuExonereRetenuPourRFR (1GH/1HH et 1AD/1BD réintégrés dans le RFR)', () => {
+  it("1GH/1HH sous le plafond : la totalité est retenue pour le RFR, bien qu'exonérée d'IR", () => {
     const result = calculerRevenuSalaires(makeInput({ case1gh: 3000, case1hh: 2000 }));
     expect(result.totalNetImposable).toBe(0);
     expect(result.revenuExonereRetenuPourRFR).toBe(5000);
   });
 
-  it('au-dessus du plafond : seule la fraction exonérée (7 500 €) est retenue, le surplus est déjà dans totalNetImposable', () => {
+  it('1GH au-dessus du plafond : seule la fraction exonérée (7 500 €) est retenue, le surplus est déjà dans totalNetImposable', () => {
     const result = calculerRevenuSalaires(makeInput({ case1gh: 10000 }));
     expect(result.totalNetImposable).toBe(2500 - 509);
     expect(result.revenuExonereRetenuPourRFR).toBe(7500);
   });
 
-  it('nul par défaut (aucun 1GH/1HH renseigné)', () => {
+  it('1AD/1BD sous le seuil : la totalité est retenue pour le RFR, bien qu\'exonérée d\'IR', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1ad: 2000, case1bd: 1000 }));
+    expect(result.totalNetImposable).toBe(0);
+    expect(result.revenuExonereRetenuPourRFR).toBe(3000);
+  });
+
+  it('1AD au-dessus du seuil (3 000 €, ou 6 000 € si 1AV coché) : seule la fraction exonérée est retenue', () => {
+    const sansMajoration = calculerRevenuSalaires(makeInput({ case1ad: 5000 }));
+    expect(sansMajoration.revenuExonereRetenuPourRFR).toBe(3000);
+
+    const avecMajoration = calculerRevenuSalaires(makeInput({ case1ad: 5000, case1av: true }));
+    expect(avecMajoration.revenuExonereRetenuPourRFR).toBe(5000);
+  });
+
+  it('1GH et 1AD se cumulent', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1gh: 3000, case1ad: 2000 }));
+    expect(result.revenuExonereRetenuPourRFR).toBe(5000);
+  });
+
+  it('nul par défaut (aucune case renseignée)', () => {
     const result = calculerRevenuSalaires(makeInput({ case1aj: 30000 }));
     expect(result.revenuExonereRetenuPourRFR).toBe(0);
   });

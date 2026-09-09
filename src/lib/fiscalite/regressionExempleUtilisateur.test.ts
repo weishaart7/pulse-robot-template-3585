@@ -123,8 +123,8 @@ describe('régression : célibataire, 1AJ+1GB (frais réels 1AK) + 1AC/1AE (frai
     );
 
     expect(impot.impotNet).toBe(28866);
-    // RFR périmètre partiel : 1GH (3 600 €) réintégré, 1AD (4 200 €) pas encore — simulateur
-    // officiel donne 122 402 €, écart de 4 302 € documenté (voir docs/fiscalite.md).
-    expect(impot.revenuFiscalReference).toBe(118100);
+    // RFR : 1GH (3 600 €) et 1AD (4 200 €) réintégrés — simulateur officiel donne 122 402 €,
+    // écart résiduel de 102 € non expliqué, documenté (voir docs/fiscalite.md).
+    expect(impot.revenuFiscalReference).toBe(122300);
   });
 });

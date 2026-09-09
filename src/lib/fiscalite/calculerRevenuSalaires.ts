@@ -124,19 +124,24 @@ export interface RevenuSalairesResult {
    */
   salairesNetImposablesExoneresTauxEffectif: number;
   /**
-   * 1GH/1HH (heures supplémentaires/complémentaires et RTT monétisés
-   * exonérés d'IR, dans la limite du plafond de 7 500 €/personne) : n'entrent
-   * jamais dans le revenu imposable, mais sont réintégrés dans le revenu
-   * fiscal de référence (RFR) — art. 1417 IV-1°-c CGI, confirmé par le BOFiP
-   * cité dans la brochure DGFiP : « Les rémunérations exonérées d'IR sont
-   * toutefois prises en compte pour la détermination du revenu fiscal de
-   * référence du foyer [...] Ce montant est retenu uniquement pour le calcul
-   * du revenu fiscal de référence. » Seule la fraction sous le plafond est
-   * retenue ici : la fraction qui l'excède (`surplus1gh`/`surplus1hh`) est
-   * déjà taxable et donc déjà comptée via `totalNetImposable`, l'ajouter de
-   * nouveau ici ferait double emploi. Transmis tel quel à `calculerImpot.ts`
-   * pour construire `revenuFiscalReference` sans polluer `revenuMondialFictif`
-   * (qui reste réservé au calcul de l'impôt lui-même).
+   * 1GH/1HH (heures supplémentaires/complémentaires et RTT monétisés,
+   * plafond 7 500 €/personne) et 1AD/1BD (prime de partage de la valeur,
+   * plafond 3 000 €/6 000 € — voir `PLAFOND_EXONERATION_1AD`) exonérés d'IR :
+   * n'entrent jamais dans le revenu imposable, mais sont réintégrés dans le
+   * revenu fiscal de référence (RFR). Pour 1GH/1HH : art. 1417 IV-1°-c CGI,
+   * confirmé par le BOFiP cité dans la brochure DGFiP : « Les rémunérations
+   * exonérées d'IR sont toutefois prises en compte pour la détermination du
+   * revenu fiscal de référence du foyer [...] Ce montant est retenu
+   * uniquement pour le calcul du revenu fiscal de référence. » Pour 1AD/1BD :
+   * même principe, confirmé par la presse spécialisée (meilleurtaux.com,
+   * impôt 2026) : « Même lorsqu'elle est exonérée, la PPV entre dans le
+   * calcul de votre revenu fiscal de référence (RFR). » Seule la fraction
+   * sous le plafond est retenue ici : la fraction qui l'excède (`surplus1gh`/
+   * `surplus1hh`/`surplus1ad`/`surplus1bd`) est déjà taxable et donc déjà
+   * comptée via `totalNetImposable`, l'ajouter de nouveau ici ferait double
+   * emploi. Transmis tel quel à `calculerImpot.ts` pour construire
+   * `revenuFiscalReference` sans polluer `revenuMondialFictif` (qui reste
+   * réservé au calcul de l'impôt lui-même).
    */
   revenuExonereRetenuPourRFR: number;
   casesExclues: readonly string[];
@@ -321,7 +326,9 @@ export function calculerRevenuSalaires(
   const salairesNetImposablesExoneresTauxEffectif = declarant1.netImposableExonereTauxEffectif
     + declarant2.netImposableExonereTauxEffectif;
   const revenuExonereRetenuPourRFR = Math.min(input.case1gh ?? 0, PLAFOND_EXONERATION_1GH)
-    + Math.min(input.case1hh ?? 0, PLAFOND_EXONERATION_1GH);
+    + Math.min(input.case1hh ?? 0, PLAFOND_EXONERATION_1GH)
+    + Math.min(input.case1ad ?? 0, seuil1ad)
+    + Math.min(input.case1bd ?? 0, seuil1bd);
 
   return {
     declarant1,
