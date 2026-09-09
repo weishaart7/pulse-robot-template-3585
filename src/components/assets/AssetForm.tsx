@@ -9,6 +9,7 @@ import { Slider } from '@/components/ui/slider';
 import { DateInput } from '@/components/ui/date-input';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Asset, AssetCharge } from '@/services/assetService';
 import { ChargeForm } from './ChargeForm';
 import { ASSET_NATURE_OPTIONS, getAssetCategory, NATURES_WITHOUT_ACQUISITION, NATURES_PER, CTO_SOUS_JACENT_OPTIONS, PARTS_FONCIERES_NATURES, REGIME_FISCAL_PARTS_OPTIONS, CORPS_NATURES_CHAMPS, RETRAITE_PREVOYANCE_NATURES_CHAMPS, MODE_SORTIE_OPTIONS, NATURES_EPARGNE_SALARIALE, MOTIF_DEBLOCAGE_ANTICIPE_OPTIONS, NATURES_DATE_OUVERTURE, LIQUIDITES_NATURES_CHAMPS, VALEURS_MOBILIERES_NATURES_CHAMPS } from '@/constants/assetTypes';
@@ -69,6 +70,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
     demembrements,
     setDemembrements,
     qualificationRaison,
+    detenteurAResoudre,
     handleSubmit,
     handleChargeSubmit,
     handleChargeDelete,
@@ -1269,6 +1271,31 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                 <FormDescription>
                   "Le couple" n'est pas proposé : ce bien est qualifié {watchedQualificationBien.toLowerCase()}, il appartient donc entièrement à une seule personne.
                 </FormDescription>
+              )}
+              {detenteurAResoudre && (
+                <Alert>
+                  <AlertTitle>À qui appartient ce bien ?</AlertTitle>
+                  <AlertDescription>
+                    <p>
+                      Ce bien vient d'être qualifié "{watchedQualificationBien?.toLowerCase()}" : il appartient à une seule personne. Confirmez ou corrigez le détenteur.
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {[familyData.userFirstName, ...(familyData.hasPartner ? [familyData.partnerFirstName] : [])]
+                        .filter((prenom): prenom is string => !!prenom)
+                        .map((prenom) => (
+                          <Button
+                            key={prenom}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => form.setValue('detenteur', prenom)}
+                          >
+                            {prenom}
+                          </Button>
+                        ))}
+                    </div>
+                  </AlertDescription>
+                </Alert>
               )}
               <FormMessage />
             </FormItem>
