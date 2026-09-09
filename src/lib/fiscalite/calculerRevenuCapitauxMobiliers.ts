@@ -98,16 +98,39 @@ export interface RevenuCapitauxMobiliersResult {
    */
   creditImpotValeursEtrangeres2CK: number;
   /**
-   * Abattement de 40 % sur les dividendes (2DC/2FU), applicable uniquement
-   * sur option barème (2OP) : réduit `totalNetImposable`, mais est réintégré
-   * dans le revenu fiscal de référence (RFR) — art. 1417 IV 1° a CGI,
-   * confirmé (l-expert-comptable.com) : « L'abattement de 40 % sur les
-   * dividendes [...] est expressément réintégré dans le RFR. » Nul en
-   * l'absence d'option barème : le PFU taxe alors les dividendes bruts sans
-   * abattement, déjà reflétés en totalité dans `impotForfaitaire`, donc déjà
-   * dans le RFR sans réintégration supplémentaire. Transmis tel quel à
-   * `calculerImpot.ts` pour construire `revenuFiscalReference` sans polluer
-   * `totalNetImposable`/`revenuMondialFictif`.
+   * Revenus/abattements exonérés d'IR (ou hors assiette) mais retenus pour le
+   * revenu fiscal de référence (RFR, art. 1417 IV CGI). Couvre :
+   *
+   * **Abattement de 40 % sur les dividendes** (2DC/2FU, applicable uniquement
+   * sur option barème 2OP) : réduit `totalNetImposable`, mais est réintégré
+   * au RFR — art. 1417 IV 1° a CGI, confirmé (l-expert-comptable.com) :
+   * « L'abattement de 40 % sur les dividendes [...] est expressément
+   * réintégré dans le RFR. » Nul en l'absence d'option barème : le PFU taxe
+   * alors les dividendes bruts sans abattement, déjà reflétés en totalité
+   * dans `impotForfaitaire`, donc déjà dans le RFR sans réintégration
+   * supplémentaire.
+   *
+   * **2DH, montant brut intégral** (produits ayant fait l'objet du
+   * prélèvement libératoire de 7,5 % à la source sur primes antérieures au
+   * 27.9.2017) : confirmé par le BOFiP (BOI-RPPM-RCM-20-10-20-50, §330) —
+   * « Ces produits ne sont pas retenus pour l'établissement de l'impôt sur le
+   * revenu au titre du revenu net global (en revanche, ils sont retenus pour
+   * le calcul du revenu fiscal de référence). » 2DH n'entrant nulle part
+   * ailleurs dans ce résultat (ni `totalNetImposable`, ni `impotForfaitaire`
+   * — seul `creditImpotAssuranceVie` en dérive), c'est le montant brut
+   * complet qui est retenu ici, indépendamment de 2OP.
+   *
+   * **Abattement de 4 600 €/9 200 € sur 2CH/2VV/2WW** (contrats ≥ 8 ans, hors
+   * 2DH ci-dessus déjà compté en brut) : réintégré au RFR quelle que soit la
+   * modalité d'imposition (PFU ou barème) — confirmé par un exemple chiffré
+   * (avenuedesinvestisseurs.fr, source secondaire sans texte de loi cité,
+   * confiance moindre que les deux points ci-dessus) : gain de 9 200 €
+   * intégralement couvert par l'abattement, PFU par défaut → « votre RFR
+   * passera à 69 200 € (60 000 + 9 200 € de PV) » — réintégré même sous PFU.
+   *
+   * Transmis tel quel à `calculerImpot.ts` pour construire
+   * `revenuFiscalReference` sans polluer `totalNetImposable`/
+   * `revenuMondialFictif`.
    */
   revenuExonereRetenuPourRFR: number;
   casesExclues: readonly string[];
@@ -230,6 +253,9 @@ export function calculerRevenuCapitauxMobiliers(
   const creditImpotEtranger2AB = input.case2ab ?? 0;
   const creditImpotValeursEtrangeres2CK = input.case2ck ?? 0;
 
+  const revenuExonereRetenuPourRFRContratsAssuranceVie = case2dh
+    + abattementSur2ch + abattementSur2vv + abattementSur2ww;
+
   if (input.case2op) {
     const abattementDividendes = dividendes * ABATTEMENT_DIVIDENDES_TAUX;
     const fraisCharges = input.case2ca ?? 0;
@@ -247,7 +273,7 @@ export function calculerRevenuCapitauxMobiliers(
       creditImpotAssuranceVie,
       creditImpotEtranger2AB,
       creditImpotValeursEtrangeres2CK,
-      revenuExonereRetenuPourRFR: abattementDividendes,
+      revenuExonereRetenuPourRFR: abattementDividendes + revenuExonereRetenuPourRFRContratsAssuranceVie,
       casesExclues: CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL,
     };
   }
@@ -261,7 +287,7 @@ export function calculerRevenuCapitauxMobiliers(
     creditImpotAssuranceVie,
     creditImpotEtranger2AB,
     creditImpotValeursEtrangeres2CK,
-    revenuExonereRetenuPourRFR: 0,
+    revenuExonereRetenuPourRFR: revenuExonereRetenuPourRFRContratsAssuranceVie,
     casesExclues: CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL,
   };
 }

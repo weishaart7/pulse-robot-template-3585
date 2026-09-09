@@ -51,12 +51,12 @@ export interface ImpotResult {
    * somme de `calculerRevenuSalaires.ts::revenuExonereRetenuPourRFR` — 1GH/
    * 1HH, 1AD/1BD, 1AQ/1BQ, 1DY/1EY, 1SM/1DN, 1PB/1PC, voir sa JSDoc — et de
    * `calculerRevenuCapitauxMobiliers.ts::revenuExonereRetenuPourRFR` —
-   * abattement de 40 % sur les dividendes en cas d'option barème). Encore
-   * hors périmètre : l'abattement de 4 600 €/9 200 € sur les contrats
-   * d'assurance-vie ≥ 8 ans (2CH/2DH/2VV/2WW) — investigation en cours, voir
-   * docs/fiscalite.md — et les revenus imposés à taux forfaitaire hors barème
-   * (gains d'actionnariat à taux historique, carried-interest, PFU sur
-   * capitaux mobiliers hors dividendes — voir `impotForfaitaire`) : seul le
+   * abattement de 40 % sur les dividendes en cas d'option barème, montant
+   * brut de 2DH, abattement de 4 600 €/9 200 € sur 2CH/2VV/2WW, voir sa
+   * JSDoc). Encore hors périmètre : les revenus imposés à taux forfaitaire
+   * hors barème (gains d'actionnariat à taux historique, carried-interest,
+   * PFU sur capitaux mobiliers hors dividendes/assurance-vie — voir
+   * `impotForfaitaire`) : seul le
    * montant d'impôt forfaitaire est disponible dans le périmètre actuel du
    * module, pas la base de revenu sous-jacente (voir docs/fiscalite.md).
    */

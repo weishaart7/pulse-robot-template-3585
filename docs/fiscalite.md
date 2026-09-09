@@ -518,18 +518,21 @@ fonciers (§4).
   (BOI-RSA-CHAMP-20-30-40, §110/§130/§170), qui renvoie explicitement à l'art. 1417 IV 1° e CGI — «
   droits mentionnés aux articles L. 3152-4 et L. 3334-8 du code du travail » — correspondance exacte
   vérifiée avec le texte de loi.
-  **Investigation en cours, pas encore codée : l'abattement de 4 600 €/9 200 € sur les contrats
-  d'assurance-vie ≥ 8 ans (2CH/2DH/2VV/2WW).** Le BOFiP (BOI-RPPM-RCM-20-10-20-50, §330) confirme une
-  réintégration RFR, mais **plus large que prévu et pas encore modélisable simplement** : elle concerne
-  spécifiquement 2DH (produits ayant opté pour le prélèvement libératoire de 7,5 % sur primes antérieures
-  au 27/09/2017) — citation exacte : *« Ces produits ne sont pas retenus pour l'établissement de l'impôt
-  sur le revenu au titre du revenu net global (en revanche, ils sont retenus pour le calcul du revenu
-  fiscal de référence). »* Ce n'est donc pas seulement la fraction couverte par l'abattement de
-  4 600 €/9 200 € qui devrait être réintégrée, mais la **totalité du montant brut de 2DH** — qui n'entre
-  aujourd'hui nulle part dans `RevenuCapitauxMobiliersResult` (ni `totalNetImposable`, ni
-  `impotForfaitaire` ; seul `creditImpotAssuranceVie` en dérive, via `abattementSur2dh`). Aucune source
-  trouvée confirmant une règle équivalente pour 2CH/2VV/2WW. Repoussé à une itération dédiée, le temps de
-  clarifier précisément le traitement de la part de 2DH hors abattement.
+  **`calculerRevenuCapitauxMobiliers.ts` étendu une seconde fois pour l'abattement assurance-vie sur les
+  contrats ≥ 8 ans (2CH/2DH/2VV/2WW), avec deux niveaux de confiance différents.** **2DH, montant brut
+  intégral** (confiance forte, BOFiP) : BOI-RPPM-RCM-20-10-20-50 §330, sur les produits ayant opté pour le
+  prélèvement libératoire de 7,5 % sur primes antérieures au 27/09/2017 — *« Ces produits ne sont pas
+  retenus pour l'établissement de l'impôt sur le revenu au titre du revenu net global (en revanche, ils
+  sont retenus pour le calcul du revenu fiscal de référence). »* 2DH n'entrant nulle part ailleurs dans
+  `RevenuCapitauxMobiliersResult` (ni `totalNetImposable`, ni `impotForfaitaire` — seul
+  `creditImpotAssuranceVie` en dérive, via `abattementSur2dh`), c'est le **montant brut complet** qui est
+  retenu, indépendamment de 2OP — pas seulement sa fraction d'abattement. **Abattement de
+  4 600 €/9 200 € sur 2CH/2VV/2WW** (confiance moindre, source secondaire) : un exemple chiffré
+  (avenuedesinvestisseurs.fr, sans texte de loi cité) montre un gain de 9 200 € intégralement couvert par
+  l'abattement, PFU par défaut → *« votre RFR passera à 69 200 € (60 000 + 9 200 € de PV) »* — réintégré
+  même sous PFU, cohérent avec le mécanisme déjà confirmé pour l'abattement de 40 % sur les dividendes.
+  Réintégré quelle que soit la valeur de 2OP (`abattementSur2ch + abattementSur2vv + abattementSur2ww`,
+  sans double compte avec 2DH compté en brut séparément).
   **Hors périmètre pour l'instant : les revenus imposés à taux forfaitaire hors barème** (gains
   d'actionnariat à taux historique, carried-interest, PFU/prélèvement forfaitaire libératoire sur
   capitaux mobiliers). Ces mécanismes n'exposent aujourd'hui que le montant d'impôt forfaitaire déjà

@@ -41,7 +41,7 @@ describe('calculerRevenuCapitauxMobiliers — sans option barème (PFU 12,8 %)',
     expect(result.impotForfaitaire).toBeCloseTo(10000 * 0.128);
   });
 
-  it("revenuExonereRetenuPourRFR est nul sans option barème (PFU sur le montant brut, déjà dans le RFR)", () => {
+  it("revenuExonereRetenuPourRFR est nul sans option barème et sans contrat ≥ 8 ans (dividendes PFU sur le montant brut, déjà dans le RFR)", () => {
     const result = calculer(makeInput({ case2dc: 10000 }));
     expect(result.revenuExonereRetenuPourRFR).toBe(0);
   });
@@ -231,6 +231,27 @@ describe('calculerRevenuCapitauxMobiliers — contrats de 8 ans et plus (Phase 2
     const sansOption = calculer(makeInput({ case2dh: 10000 }));
     const avecOption = calculer(makeInput({ case2op: true, case2dh: 10000 }));
     expect(sansOption.creditImpotAssuranceVie).toBe(avecOption.creditImpotAssuranceVie);
+  });
+
+  it('2DH est réintégré en totalité (montant brut) dans revenuExonereRetenuPourRFR, avec ou sans option', () => {
+    const sansOption = calculer(makeInput({ case2dh: 10000 }));
+    expect(sansOption.revenuExonereRetenuPourRFR).toBe(10000);
+    const avecOption = calculer(makeInput({ case2op: true, case2dh: 10000 }));
+    expect(avecOption.revenuExonereRetenuPourRFR).toBe(10000);
+  });
+
+  it("l'abattement sur 2CH/2VV/2WW est réintégré dans revenuExonereRetenuPourRFR, quelle que soit l'option 2OP", () => {
+    const sansOption = calculer(makeInput({ case2vv: 10000 })); // 4600 € d'abattement
+    expect(sansOption.revenuExonereRetenuPourRFR).toBe(4600);
+    const avecOption = calculer(makeInput({ case2op: true, case2vv: 10000 }));
+    expect(avecOption.revenuExonereRetenuPourRFR).toBe(4600);
+  });
+
+  it("l'abattement 2CH/2VV/2WW et le montant brut de 2DH se cumulent dans revenuExonereRetenuPourRFR sans double compte", () => {
+    const result = calculer(makeInput({ case2ch: 1000, case2dh: 1000, case2vv: 1000, case2ww: 10000 }));
+    // Abattement 4600 : 1000 sur 2CH, 1000 sur 2DH, 1000 sur 2VV, 1600 restant sur 2WW
+    // RFR = 2DH brut (1000) + abattement 2CH (1000) + abattement 2VV (1000) + abattement 2WW (1600)
+    expect(result.revenuExonereRetenuPourRFR).toBe(1000 + 1000 + 1000 + 1600);
   });
 });
 
