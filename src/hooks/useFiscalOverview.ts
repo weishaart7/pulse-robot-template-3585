@@ -236,7 +236,7 @@ export function useFiscalOverview(): FiscalOverview {
       revenuCapitauxMobiliers.creditImpotAssuranceVie,
       revenuCapitauxMobiliers.creditImpotEtranger2AB,
       revenuCapitauxMobiliers.creditImpotValeursEtrangeres2CK,
-      revenuSalaires.revenuExonereRetenuPourRFR,
+      revenuSalaires.revenuExonereRetenuPourRFR + revenuCapitauxMobiliers.revenuExonereRetenuPourRFR,
     );
 
     return {

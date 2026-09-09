@@ -97,6 +97,19 @@ export interface RevenuCapitauxMobiliersResult {
    * Même famille que `creditImpotAssuranceVie` (restituable, sans plancher).
    */
   creditImpotValeursEtrangeres2CK: number;
+  /**
+   * Abattement de 40 % sur les dividendes (2DC/2FU), applicable uniquement
+   * sur option barème (2OP) : réduit `totalNetImposable`, mais est réintégré
+   * dans le revenu fiscal de référence (RFR) — art. 1417 IV 1° a CGI,
+   * confirmé (l-expert-comptable.com) : « L'abattement de 40 % sur les
+   * dividendes [...] est expressément réintégré dans le RFR. » Nul en
+   * l'absence d'option barème : le PFU taxe alors les dividendes bruts sans
+   * abattement, déjà reflétés en totalité dans `impotForfaitaire`, donc déjà
+   * dans le RFR sans réintégration supplémentaire. Transmis tel quel à
+   * `calculerImpot.ts` pour construire `revenuFiscalReference` sans polluer
+   * `totalNetImposable`/`revenuMondialFictif`.
+   */
+  revenuExonereRetenuPourRFR: number;
   casesExclues: readonly string[];
 }
 
@@ -234,6 +247,7 @@ export function calculerRevenuCapitauxMobiliers(
       creditImpotAssuranceVie,
       creditImpotEtranger2AB,
       creditImpotValeursEtrangeres2CK,
+      revenuExonereRetenuPourRFR: abattementDividendes,
       casesExclues: CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL,
     };
   }
@@ -247,6 +261,7 @@ export function calculerRevenuCapitauxMobiliers(
     creditImpotAssuranceVie,
     creditImpotEtranger2AB,
     creditImpotValeursEtrangeres2CK,
+    revenuExonereRetenuPourRFR: 0,
     casesExclues: CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL,
   };
 }

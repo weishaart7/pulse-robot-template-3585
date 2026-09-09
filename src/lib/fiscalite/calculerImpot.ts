@@ -47,16 +47,19 @@ export interface ImpotResult {
    * Revenu fiscal de référence (art. 1417 IV CGI), périmètre partiel :
    * `revenuMondialFictif` (revenu net imposable + revenu exonéré retenu pour
    * le taux effectif + revenus exceptionnels soumis au système du quotient)
-   * + `revenuExonereRetenuPourRFR` (paramètre optionnel, 0 par défaut —
-   * aujourd'hui 1GH/1HH, heures supplémentaires/RTT exonérées d'IR mais
-   * réintégrées dans le RFR par le CGI, voir JSDoc de
-   * `calculerRevenuSalaires.ts`). Encore hors périmètre : 1AD/1BD (prime de
-   * partage de la valeur — vraisemblablement aussi réintégrée, non confirmée
-   * par une source à ce jour) et les revenus imposés à taux forfaitaire hors
-   * barème (gains d'actionnariat à taux historique, carried-interest, PFU sur
-   * capitaux mobiliers — voir `impotForfaitaire`) : seul le montant d'impôt
-   * forfaitaire est disponible dans le périmètre actuel du module, pas la
-   * base de revenu sous-jacente (voir docs/fiscalite.md).
+   * + `revenuExonereRetenuPourRFR` (paramètre optionnel, 0 par défaut — la
+   * somme de `calculerRevenuSalaires.ts::revenuExonereRetenuPourRFR` — 1GH/
+   * 1HH, 1AD/1BD, voir sa JSDoc — et de
+   * `calculerRevenuCapitauxMobiliers.ts::revenuExonereRetenuPourRFR` —
+   * abattement de 40 % sur les dividendes en cas d'option barème). 1PB/1PC
+   * (pourboires) volontairement exclus malgré des sources généralistes
+   * l'affirmant : vérification empirique contre le simulateur officiel sur 2
+   * cas réels contredite (voir JSDoc de `calculerRevenuSalaires.ts`). Encore
+   * hors périmètre : les revenus imposés à taux forfaitaire hors barème
+   * (gains d'actionnariat à taux historique, carried-interest, PFU sur
+   * capitaux mobiliers hors dividendes — voir `impotForfaitaire`) : seul le
+   * montant d'impôt forfaitaire est disponible dans le périmètre actuel du
+   * module, pas la base de revenu sous-jacente (voir docs/fiscalite.md).
    */
   revenuFiscalReference: number;
   nombreParts: number;

@@ -56,7 +56,7 @@ const PLAFOND_EXONERATION_1AD_MAJORE = 6000;
  * 1AV/1BV), voir `PLAFOND_EXONERATION_1AD`.
  */
 export const CASES_SALAIRES_EXCLUES_DU_CALCUL = [
-  'case1pb', 'case1pc', // pourboires exonérés
+  'case1pb', 'case1pc', // pourboires exonérés — pas de réintégration RFR confirmée, voir JSDoc de revenuExonereRetenuPourRFR
   'case1dy', 'case1ey', // salariés impatriés, fraction exonérée
   'case1sm', 'case1dn', // sommes exonérées issues du CET
   'case1gk', 'case1gl', // "ne perçoit plus de salaires 1GB/1GF/1GG/1AG" — informatif (année suivante), aucun montant propre
@@ -142,6 +142,15 @@ export interface RevenuSalairesResult {
    * emploi. Transmis tel quel à `calculerImpot.ts` pour construire
    * `revenuFiscalReference` sans polluer `revenuMondialFictif` (qui reste
    * réservé au calcul de l'impôt lui-même).
+   *
+   * 1PB/1PC (pourboires exonérés) N'Y SONT PAS INCLUS : plusieurs sources
+   * généralistes affirment qu'ils sont retenus pour le RFR comme 1GH/1AD,
+   * mais la vérification empirique contre le simulateur officiel sur 2 cas
+   * réels **contredit** cette affirmation — l'écart officiel colle
+   * précisément à 1GH+1AD seuls (5 202 € observés pour 5 200 € attendus, puis
+   * 7 902 € pour 7 800 € attendus) ; y ajouter 1PB fait largement dépasser le
+   * RFR officiel (5 780 €/8 780 € attendus, écarts de -578 €/-878 €). Voir
+   * docs/fiscalite.md pour le détail.
    */
   revenuExonereRetenuPourRFR: number;
   casesExclues: readonly string[];

@@ -461,6 +461,22 @@ fonciers (§4).
   résiduel non expliqué (2 € et 102 € sur les 2 cas ci-dessus) : reste ouvert**, voir
   `regressionExempleUtilisateur.test.ts` (second cas, `revenuFiscalReference` attendu à 122 300 € pour un
   RFR officiel de 122 402 €).
+  **1PB/1PC (pourboires exonérés) volontairement exclus, malgré des sources généralistes affirmant le
+  contraire.** Plusieurs articles (nuxii.fr notamment) affirment que les pourboires exonérés sont eux
+  aussi retenus pour le RFR, sur le même principe que 1GH/1AD. **Vérification empirique contradictoire :**
+  en les ajoutant aux 2 cas réels ci-dessus, l'écart avec le RFR officiel passe de 2 €/102 € (1GH+1AD
+  seuls, quasi-exact) à −578 €/−878 € (1GH+1AD+1PB, dépassement net du RFR officiel). Les deux cas
+  confirment donc, de façon cohérente, que 1PB/1PC ne doit **pas** être réintégré — hypothèse retenue :
+  la loi instaurant l'exonération des pourboires (LF 2024 art. 28, prorogée LF 2025) n'a probablement pas
+  inclus la clause de réintégration RFR explicite que portent les lois sur les heures sup et la PPV, à la
+  différence de ce qu'affirment ces sources secondaires (non vérifiées auprès du texte de loi lui-même).
+  **`calculerRevenuCapitauxMobiliers.ts` étendu du même champ `revenuExonereRetenuPourRFR`.** Sur option
+  barème (2OP), l'abattement de 40 % sur les dividendes (2DC/2FU) réduit `totalNetImposable` mais est
+  réintégré dans le RFR — confirmé, art. 1417 IV 1° a CGI (l-expert-comptable.com) : *« L'abattement de
+  40 % sur les dividendes [...] est expressément réintégré dans le RFR. »* Nul en l'absence d'option
+  barème (le PFU taxe alors les dividendes bruts sans abattement, déjà comptés en totalité via
+  `impotForfaitaire`). Sommé avec celui de `calculerRevenuSalaires.ts` dans `useFiscalOverview.ts` avant
+  transmission à `calculerImpot`.
   **Hors périmètre pour l'instant : les revenus imposés à taux forfaitaire hors barème** (gains
   d'actionnariat à taux historique, carried-interest, PFU/prélèvement forfaitaire libératoire sur
   capitaux mobiliers). Ces mécanismes n'exposent aujourd'hui que le montant d'impôt forfaitaire déjà

@@ -41,6 +41,11 @@ describe('calculerRevenuCapitauxMobiliers — sans option barème (PFU 12,8 %)',
     expect(result.impotForfaitaire).toBeCloseTo(10000 * 0.128);
   });
 
+  it("revenuExonereRetenuPourRFR est nul sans option barème (PFU sur le montant brut, déjà dans le RFR)", () => {
+    const result = calculer(makeInput({ case2dc: 10000 }));
+    expect(result.revenuExonereRetenuPourRFR).toBe(0);
+  });
+
   it('agrège 2FU avec 2DC', () => {
     const result = calculer(makeInput({ case2dc: 10000, case2fu: 5000 }));
     expect(result.impotForfaitaire).toBeCloseTo(15000 * 0.128);
@@ -71,6 +76,12 @@ describe('calculerRevenuCapitauxMobiliers — avec option barème (2OP)', () => 
     const result = calculer(makeInput({ case2op: true, case2dc: 10000 }));
     expect(result.totalNetImposable).toBe(6000);
     expect(result.impotForfaitaire).toBe(0);
+  });
+
+  it("l'abattement de 40 % sur les dividendes est réintégré dans revenuExonereRetenuPourRFR", () => {
+    const result = calculer(makeInput({ case2op: true, case2dc: 10000, case2fu: 5000 }));
+    expect(result.totalNetImposable).toBe((10000 + 5000) * 0.6);
+    expect(result.revenuExonereRetenuPourRFR).toBe((10000 + 5000) * 0.4);
   });
 
   it("n'applique pas l'abattement de 40 % aux revenus sans abattement", () => {
