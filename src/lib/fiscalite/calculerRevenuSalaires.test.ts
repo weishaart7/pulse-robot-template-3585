@@ -203,6 +203,25 @@ describe('calculerRevenuSalaires — plafond d\'exonération 1GH/1HH (heures sup
   });
 });
 
+describe('calculerRevenuSalaires — revenuExonereRetenuPourRFR (1GH/1HH réintégrés dans le RFR)', () => {
+  it("sous le plafond : la totalité de 1GH/1HH est retenue pour le RFR, bien qu'exonérée d'IR", () => {
+    const result = calculerRevenuSalaires(makeInput({ case1gh: 3000, case1hh: 2000 }));
+    expect(result.totalNetImposable).toBe(0);
+    expect(result.revenuExonereRetenuPourRFR).toBe(5000);
+  });
+
+  it('au-dessus du plafond : seule la fraction exonérée (7 500 €) est retenue, le surplus est déjà dans totalNetImposable', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1gh: 10000 }));
+    expect(result.totalNetImposable).toBe(2500 - 509);
+    expect(result.revenuExonereRetenuPourRFR).toBe(7500);
+  });
+
+  it('nul par défaut (aucun 1GH/1HH renseigné)', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1aj: 30000 }));
+    expect(result.revenuExonereRetenuPourRFR).toBe(0);
+  });
+});
+
 describe('calculerRevenuSalaires — crédit d\'impôt égal à l\'impôt français (1AF/1BF)', () => {
   it("seul dans le pool : n'entre pas dans totalNetImposable, isolé dans revenuCreditImpotEgalImpotFrancais", () => {
     const result = calculerRevenuSalaires(makeInput({ case1af: 15000 }));

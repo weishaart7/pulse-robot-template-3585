@@ -438,17 +438,35 @@ fonciers (§4).
   et l'arrondi.
   **`revenuFiscalReference` (RFR, art. 1417 IV CGI), périmètre partiel.** Exposé dans `ImpotResult` et
   affiché en permanence (`FiscalOverviewCard.tsx`, `TaxRateCard.tsx`) — jusqu'ici le RFR n'était calculé
-  nulle part dans le module. Valeur identique à `revenuMondialFictif` (revenu net imposable + revenu
-  exonéré retenu pour le taux effectif + revenus exceptionnels soumis au système du quotient), réutilisée
-  sous ce nom plutôt que recalculée séparément. **Hors périmètre pour l'instant : les revenus imposés à
-  taux forfaitaire hors barème** (gains d'actionnariat à taux historique, carried-interest,
-  PFU/prélèvement forfaitaire libératoire sur capitaux mobiliers). Ces mécanismes n'exposent aujourd'hui
-  que le montant d'impôt forfaitaire déjà agrégé (`impotForfaitaire`, plusieurs taux mélangés dans un même
-  total), pas la base de revenu sous-jacente — l'inverser en divisant par un taux ne serait pas fiable.
-  Les intégrer proprement nécessiterait d'exposer un nouveau champ « base forfaitaire » dans
-  `calculerGainsActionnariatSalarie.ts`, `calculerPensionsRetraitesRentes.ts` et
-  `calculerRevenuCapitauxMobiliers.ts` — repoussé à une itération ultérieure, signalé explicitement plutôt
-  qu'absorbé silencieusement dans ce RFR partiel.
+  nulle part dans le module. Base : `revenuMondialFictif` (revenu net imposable + revenu exonéré retenu
+  pour le taux effectif + revenus exceptionnels soumis au système du quotient) + nouveau paramètre
+  optionnel `revenuExonereRetenuPourRFR` (0 par défaut). **Bug corrigé — le RFR était initialement
+  identique à `revenuMondialFictif`, sans réintégrer 1GH/1HH (heures supplémentaires/RTT exonérées d'IR).**
+  Or le BOFiP (cité dans la brochure DGFiP, art. 1417 IV-1°-c CGI) est explicite : *« Les rémunérations
+  exonérées d'IR sont toutefois prises en compte pour la détermination du revenu fiscal de référence du
+  foyer [...] Ce montant est retenu uniquement pour le calcul du revenu fiscal de référence. »* Écart
+  détecté par comparaison avec le simulateur officiel sur 2 cas réels : le RFR officiel dépassait le RFR
+  Kairos d'un montant très proche de 1GH+1AD (5 202 € observés pour 1GH=3 000 €/1AD=2 200 €, soit 5 200 €
+  attendus ; 7 902 € observés pour 1GH=3 600 €/1AD=4 200 €, soit 7 800 € attendus — écart résiduel non
+  expliqué de 2 € et 102 € respectivement). `calculerRevenuSalaires` expose désormais
+  `revenuExonereRetenuPourRFR` = la fraction de 1GH/1HH **sous le plafond** de 7 500 €/personne
+  uniquement (la fraction qui l'excède est déjà taxable, donc déjà comptée ailleurs — l'ajouter de
+  nouveau ferait double emploi), transmis à `calculerImpot` en dernier paramètre optionnel et additionné
+  **seulement** à `revenuFiscalReference`, jamais à `revenuMondialFictif` (qui reste réservé au calcul de
+  l'impôt lui-même — 1GH/1HH n'entre jamais dans l'assiette taxée ni dans le taux effectif).
+  **Hors périmètre pour l'instant :**
+  - **1AD/1BD (prime de partage de la valeur)** : vraisemblablement réintégrée elle aussi (même logique
+    légale que 1GH, et l'écart résiduel observé colle à son montant), mais aucune source n'a encore été
+    trouvée pour le confirmer — le dossier Fidroit disponible ne couvre pas ce dispositif. Un écart
+    résiduel de plusieurs milliers d'euros reste donc possible sur le RFR affiché tant que ce point n'est
+    pas tranché (voir `regressionExempleUtilisateur.test.ts`, second cas : 4 302 € d'écart documenté).
+  - **les revenus imposés à taux forfaitaire hors barème** (gains d'actionnariat à taux historique,
+    carried-interest, PFU/prélèvement forfaitaire libératoire sur capitaux mobiliers). Ces mécanismes
+    n'exposent aujourd'hui que le montant d'impôt forfaitaire déjà agrégé (`impotForfaitaire`, plusieurs
+    taux mélangés dans un même total), pas la base de revenu sous-jacente — l'inverser en divisant par un
+    taux ne serait pas fiable. Les intégrer proprement nécessiterait d'exposer un nouveau champ « base
+    forfaitaire » dans `calculerGainsActionnariatSalarie.ts`, `calculerPensionsRetraitesRentes.ts` et
+    `calculerRevenuCapitauxMobiliers.ts` — repoussé à une itération ultérieure.
 - **3 cases 2042 découvertes après vérification visuelle du formulaire officiel (revenus 2025),
   absentes du périmètre initial, ajoutées à la table et au calcul concernés.** `1AQ`/`1BQ` (agents
   généraux d'assurance, salaires **exonérés**) rejoignent `revenus_salaires`, à côté de `1GG`/`1HG`

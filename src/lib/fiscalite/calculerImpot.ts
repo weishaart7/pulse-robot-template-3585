@@ -44,15 +44,19 @@ export interface ImpotResult {
   revenuExonereTauxEffectif: number;
   revenuMondialFictif: number;
   /**
-   * Revenu fiscal de référence (art. 1417 IV CGI), périmètre partiel : revenu
-   * net imposable + revenu exonéré retenu pour le taux effectif + revenus
-   * exceptionnels soumis au système du quotient — identique à
-   * `revenuMondialFictif`, exposé sous ce nom pour affichage. Les revenus
-   * imposés à taux forfaitaire hors barème (gains d'actionnariat à taux
-   * historique, carried-interest, PFU sur capitaux mobiliers — voir
-   * `impotForfaitaire`) n'y sont **pas** réintégrés : seul le montant
-   * d'impôt forfaitaire est disponible dans le périmètre actuel du module, pas
-   * la base de revenu sous-jacente (voir docs/fiscalite.md).
+   * Revenu fiscal de référence (art. 1417 IV CGI), périmètre partiel :
+   * `revenuMondialFictif` (revenu net imposable + revenu exonéré retenu pour
+   * le taux effectif + revenus exceptionnels soumis au système du quotient)
+   * + `revenuExonereRetenuPourRFR` (paramètre optionnel, 0 par défaut —
+   * aujourd'hui 1GH/1HH, heures supplémentaires/RTT exonérées d'IR mais
+   * réintégrées dans le RFR par le CGI, voir JSDoc de
+   * `calculerRevenuSalaires.ts`). Encore hors périmètre : 1AD/1BD (prime de
+   * partage de la valeur — vraisemblablement aussi réintégrée, non confirmée
+   * par une source à ce jour) et les revenus imposés à taux forfaitaire hors
+   * barème (gains d'actionnariat à taux historique, carried-interest, PFU sur
+   * capitaux mobiliers — voir `impotForfaitaire`) : seul le montant d'impôt
+   * forfaitaire est disponible dans le périmètre actuel du module, pas la
+   * base de revenu sous-jacente (voir docs/fiscalite.md).
    */
   revenuFiscalReference: number;
   nombreParts: number;
@@ -237,6 +241,7 @@ export function calculerImpot(
   creditImpotAssuranceVie = 0,
   creditImpotEtranger2AB = 0,
   creditImpotValeursEtrangeres2CK = 0,
+  revenuExonereRetenuPourRFR = 0,
 ): ImpotResult {
   const revenu = Math.max(0, revenuImposable);
   const revenuExonere = Math.max(0, revenuExonereTauxEffectif);
@@ -294,7 +299,7 @@ export function calculerImpot(
     revenuImposable: revenu,
     revenuExonereTauxEffectif: revenuExonere,
     revenuMondialFictif,
-    revenuFiscalReference: revenuMondialFictif,
+    revenuFiscalReference: revenuMondialFictif + Math.max(0, revenuExonereRetenuPourRFR),
     nombreParts: parts.nombreParts,
     quotientFamilial: parts.nombreParts > 0 ? revenuMondialFictif / parts.nombreParts : 0,
     impotSansMajorations,

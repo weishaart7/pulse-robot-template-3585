@@ -123,6 +123,22 @@ export interface RevenuSalairesResult {
    * pensions étrangères (1AH/1BH).
    */
   salairesNetImposablesExoneresTauxEffectif: number;
+  /**
+   * 1GH/1HH (heures supplémentaires/complémentaires et RTT monétisés
+   * exonérés d'IR, dans la limite du plafond de 7 500 €/personne) : n'entrent
+   * jamais dans le revenu imposable, mais sont réintégrés dans le revenu
+   * fiscal de référence (RFR) — art. 1417 IV-1°-c CGI, confirmé par le BOFiP
+   * cité dans la brochure DGFiP : « Les rémunérations exonérées d'IR sont
+   * toutefois prises en compte pour la détermination du revenu fiscal de
+   * référence du foyer [...] Ce montant est retenu uniquement pour le calcul
+   * du revenu fiscal de référence. » Seule la fraction sous le plafond est
+   * retenue ici : la fraction qui l'excède (`surplus1gh`/`surplus1hh`) est
+   * déjà taxable et donc déjà comptée via `totalNetImposable`, l'ajouter de
+   * nouveau ici ferait double emploi. Transmis tel quel à `calculerImpot.ts`
+   * pour construire `revenuFiscalReference` sans polluer `revenuMondialFictif`
+   * (qui reste réservé au calcul de l'impôt lui-même).
+   */
+  revenuExonereRetenuPourRFR: number;
   casesExclues: readonly string[];
 }
 
@@ -304,6 +320,8 @@ export function calculerRevenuSalaires(
   const revenuCreditImpotEgalImpotFrancais = declarant1.netImposableCreditImpot + declarant2.netImposableCreditImpot;
   const salairesNetImposablesExoneresTauxEffectif = declarant1.netImposableExonereTauxEffectif
     + declarant2.netImposableExonereTauxEffectif;
+  const revenuExonereRetenuPourRFR = Math.min(input.case1gh ?? 0, PLAFOND_EXONERATION_1GH)
+    + Math.min(input.case1hh ?? 0, PLAFOND_EXONERATION_1GH);
 
   return {
     declarant1,
@@ -312,6 +330,7 @@ export function calculerRevenuSalaires(
     totalNetImposable: declarant1.netImposable + declarant2.netImposable,
     revenuCreditImpotEgalImpotFrancais,
     salairesNetImposablesExoneresTauxEffectif,
+    revenuExonereRetenuPourRFR,
     casesExclues: CASES_SALAIRES_EXCLUES_DU_CALCUL,
   };
 }

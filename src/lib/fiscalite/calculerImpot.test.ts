@@ -417,6 +417,15 @@ describe('calculerImpot — système du quotient (revenus exceptionnels, 0XX)', 
     expect(avecExceptionnel.revenuFiscalReference).toBe(270000);
   });
 
+  it('revenuFiscalReference réintègre revenuExonereRetenuPourRFR (1GH/1HH) sans l\'ajouter à revenuMondialFictif ni à l\'assiette imposée', () => {
+    const result = calculerImpot(
+      50000, makeParts(), 'celibataire', 0, 'metropole', 0, 0, 0, 0, 0, 3000,
+    );
+    expect(result.revenuMondialFictif).toBe(50000);
+    expect(result.revenuFiscalReference).toBe(53000);
+    expect(result.impotNet).toBe(calculerImpot(50000, makeParts(), 'celibataire').impotNet);
+  });
+
   it('la décote reste appliquée sur le total (montant élevé ici : décote nulle)', () => {
     const result = calculerImpot(70000, makeParts(), 'celibataire', 0, 'metropole', 0, 200000);
     expect(result.decote).toBe(0);
