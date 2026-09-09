@@ -93,6 +93,32 @@ Corrigé le 09/09/2026, priorité P1 (incohérence civile pouvant fausser une pa
 
 **B4 — Détenteur non aligné sur une bascule de qualification vers "Bien propre"/"Bien personnel".** Avant correction, seule la combinaison `detenteur === 'Le couple'` devenue invalide était détectée et vidée (`useAssetForm.ts`, ancien effet séparé) : un détenteur déjà individuel (ex. "Vous") restait tel quel après une bascule de qualification, sans aucune vérification qu'il s'agit de la bonne personne — car aucune branche de `qualifierBien()` (M2 ci-dessous) ne déduit "qui" à partir du régime matrimonial, de l'origine du bien ou de la date d'acquisition ; `detenteur` n'y est qu'une entrée, jamais une sortie. Corrigé en fusionnant la détection dans `recompute()` : sur toute transition réelle (qualification précédente ≠ nouvelle, capturée via `form.getValues('qualification_bien')` avant écrasement) vers "Bien propre"/"Bien personnel", le flag `detenteurAResoudre` est levé quel que soit l'état du champ (vidé si "Le couple", conservé sinon), et `AssetForm.tsx` affiche un choix rapide par membre du foyer pour confirmer/corriger en un clic. Limite assumée, non couverte par ce correctif (cf. section 4) : la détection porte sur la classe de qualification, pas sur la raison précise — un changement de sous-cas à qualification inchangée (ex. remploi → origine gratuite après correction de date) ne redéclenche pas l'alerte, cohérent avec l'absence de toute donnée "qui" par sous-cas dans le modèle actuel.
 
+Réalisé le 09/09/2026 (audit du lien `AssetForm.tsx` ↔ `transmission/AssuranceVie.tsx`, puis évolution UX ciblée) :
+
+**UX7 — Vocabulaire, bandeau et champ masqué pour la famille "épargne et assurance-vie".** Constat
+préalable (audit du lien entre `AssetForm.tsx` et `transmission/AssuranceVie.tsx`, cf.
+`docs/transmission.md` §2) : la clause bénéficiaire, les primes et la composition d'un contrat vivent
+entièrement dans `av_contract_details`/`av_operations` (saisies via `AVContractDetail.tsx`), sans
+aucune duplication avec `AssetForm.tsx` ; en revanche, pour les 3 natures hors succession (`Contrat
+d'assurance-vie`, `Contrat vie-génération`, `PEP assurance vie`), l'onglet "Propriété" du formulaire
+(qualification, origine, démembrement civil, indivision...) n'a aucun effet sur le régime de
+transmission réel de ces contrats — `buildPatrimonySnapshot` les exclut entièrement de la masse
+successorale (`isAssuranceVieHorsSuccession`) — bien qu'il reste utile à `usePatrimoineCalculations.ts`
+(répartition du patrimoine par personne, cf. M1). Nouvelle constante `NATURES_EPARGNE_ASSURANCE_VIE`/
+`isEpargneAssuranceVie` (`constants/assetTypes.ts`, les 4 natures de la famille), trois ajustements dans
+`AssetForm.tsx` : (1) bandeau explicatif ajouté en tête de l'onglet Propriété, visible uniquement pour
+les 3 natures hors succession (`isAssuranceVieHorsSuccession`), précisant que la transmission de ces
+contrats est pilotée par leur clause bénéficiaire (Transmission > Assurance-vie), pas par ces champs ;
+(2) libellé "Souscripteur" (au lieu de "Détenteur") pour les 4 natures — même colonne `detenteur` en
+base, vocabulaire assurantiel plus juste, harmonisé sur le `FormLabel`, le placeholder du `<Select>` et
+la prose de l'alerte "À qui appartient ce bien ?" (B4) ; (3) "Attachement émotionnel" masqué pour les 4
+natures — champ `z.number().optional()` dans `assetSchema.ts`, vérifié avant implémentation : aucun
+impact sur la validation d'un contrat déjà saisi avec cette valeur (champ non requis, valeur conservée
+en form state, simplement non affichée). Aucun champ retiré du schéma ni de la base, aucune logique de
+calcul (qualification, démembrement, plus-value) touchée. Correction fiscale associée mais distincte
+(âge du souscripteur réel résolu par contrat pour 990 I/757 B, plutôt que systématiquement celui de
+l'utilisateur principal) : cf. `docs/transmission.md` §2.
+
 ### ✅ Conformité vérifiée
 
 **C1 — Les deux taux de prélèvements sociaux (17,2 % vs 18,6 %) sont corrects, pas une incohérence.**

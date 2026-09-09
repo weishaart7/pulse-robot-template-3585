@@ -350,6 +350,15 @@ export const NATURES_AV_HORS_SUCCESSION = [
 export const isAssuranceVieHorsSuccession = (nature: string | null | undefined): boolean =>
   !!nature && NATURES_AV_HORS_SUCCESSION.includes(nature);
 
+// Les 4 natures de la famille "épargne et assurance-vie" (hors succession + "Bons & contrats de
+// capitalisation") — utilisée dans AssetForm.tsx pour le vocabulaire assurantiel ("Souscripteur"
+// plutôt que "Détenteur") et pour masquer l'attachement émotionnel, sans rapport avec le régime
+// de transmission qui ne distingue, lui, que les 3 natures hors succession ci-dessus.
+export const NATURES_EPARGNE_ASSURANCE_VIE = ASSET_CATEGORIES['épargne et assurance-vie'];
+
+export const isEpargneAssuranceVie = (nature: string | null | undefined): boolean =>
+  !!nature && (NATURES_EPARGNE_ASSURANCE_VIE as readonly string[]).includes(nature);
+
 // Natures "parts foncières/forestières" de la famille "actifs immobiliers" non éligibles au
 // module Sociétés (cf. SOCIETE_ELIGIBLE_NATURES dans societeTransfer.ts, qui ne contient que
 // "Parts de SCI") : elles reçoivent à la place, dans AssetForm.tsx, un établissement

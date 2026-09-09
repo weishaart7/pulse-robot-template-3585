@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Asset, AssetCharge } from '@/services/assetService';
 import { ChargeForm } from './ChargeForm';
-import { ASSET_NATURE_OPTIONS, getAssetCategory, NATURES_WITHOUT_ACQUISITION, NATURES_PER, CTO_SOUS_JACENT_OPTIONS, PARTS_FONCIERES_NATURES, REGIME_FISCAL_PARTS_OPTIONS, CORPS_NATURES_CHAMPS, RETRAITE_PREVOYANCE_NATURES_CHAMPS, MODE_SORTIE_OPTIONS, NATURES_EPARGNE_SALARIALE, MOTIF_DEBLOCAGE_ANTICIPE_OPTIONS, NATURES_DATE_OUVERTURE, LIQUIDITES_NATURES_CHAMPS, VALEURS_MOBILIERES_NATURES_CHAMPS } from '@/constants/assetTypes';
+import { ASSET_NATURE_OPTIONS, getAssetCategory, NATURES_WITHOUT_ACQUISITION, NATURES_PER, CTO_SOUS_JACENT_OPTIONS, PARTS_FONCIERES_NATURES, REGIME_FISCAL_PARTS_OPTIONS, CORPS_NATURES_CHAMPS, RETRAITE_PREVOYANCE_NATURES_CHAMPS, MODE_SORTIE_OPTIONS, NATURES_EPARGNE_SALARIALE, MOTIF_DEBLOCAGE_ANTICIPE_OPTIONS, NATURES_DATE_OUVERTURE, LIQUIDITES_NATURES_CHAMPS, VALEURS_MOBILIERES_NATURES_CHAMPS, isAssuranceVieHorsSuccession, isEpargneAssuranceVie } from '@/constants/assetTypes';
 import { useAssetForm, NATURES_WITH_ETABLISSEMENT } from '@/hooks/useAssetForm';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Globe, Info, TrendingUp, TrendingDown, FileText, Users, ShoppingCart, Coins, Receipt } from 'lucide-react';
@@ -103,6 +103,11 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   ).filter(option => option !== 'Indivision');
   const isImmobilier = getAssetCategory(watchedNature) === 'actifs immobiliers';
   const isSocieteEligible = isSocieteEligibleNature(watchedNature);
+  // Les 4 natures de la famille "épargne et assurance-vie" (vocabulaire "Souscripteur",
+  // attachement émotionnel masqué) vs. les 3 natures réellement hors succession parmi elles
+  // (bandeau Propriété) — cf. constants/assetTypes.ts pour la distinction.
+  const isEpargneAV = isEpargneAssuranceVie(watchedNature);
+  const isAVHorsSuccession = isAssuranceVieHorsSuccession(watchedNature);
   const hideAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature);
   const showEtablissement = NATURES_WITH_ETABLISSEMENT.includes(watchedNature);
   const showBienEtranger = watchedNature && !NATURES_LIQUIDITES_FR.includes(watchedNature);
@@ -933,36 +938,38 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         </div>
       )}
 
-      <FormField
-        control={form.control}
-        name="attachement_emotionnel"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Attachement émotionnel</FormLabel>
-            <FormDescription>
-              De 0 (aucun attachement) à 10 (attachement très fort)
-            </FormDescription>
-            <FormControl>
-              <div className="space-y-2">
-                <Slider
-                  min={0}
-                  max={10}
-                  step={0.5}
-                  value={[field.value || 0]}
-                  onValueChange={(vals) => field.onChange(vals[0])}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Aucun</span>
-                  <span className="font-medium text-foreground">{field.value || 0} / 10</span>
-                  <span>Très fort</span>
+      {!isEpargneAV && (
+        <FormField
+          control={form.control}
+          name="attachement_emotionnel"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Attachement émotionnel</FormLabel>
+              <FormDescription>
+                De 0 (aucun attachement) à 10 (attachement très fort)
+              </FormDescription>
+              <FormControl>
+                <div className="space-y-2">
+                  <Slider
+                    min={0}
+                    max={10}
+                    step={0.5}
+                    value={[field.value || 0]}
+                    onValueChange={(vals) => field.onChange(vals[0])}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Aucun</span>
+                    <span className="font-medium text-foreground">{field.value || 0} / 10</span>
+                    <span>Très fort</span>
+                  </div>
                 </div>
-              </div>
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
     </div>
   );
 
@@ -1137,6 +1144,15 @@ export const AssetForm: React.FC<AssetFormProps> = ({
 
     return (
     <div className="space-y-6">
+      {isAVHorsSuccession && (
+        <div className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
+          <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" strokeWidth={1.5} />
+          <p>
+            Ces informations n'ont aucun effet sur la transmission de ce contrat : au décès, il est transmis hors succession selon sa clause bénéficiaire, à renseigner dans Transmission → Assurance-vie. Elles ne servent qu'à la répartition du patrimoine par personne.
+          </p>
+        </div>
+      )}
+
       {proprieteRappel}
 
       {origineContent}
@@ -1254,11 +1270,13 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         {watchedDetenteur !== 'Indivision' && (
           <FormField control={form.control} name="detenteur" render={({ field }) => (
             <FormItem>
-              <FormLabel>Détenteur</FormLabel>
+              {/* "Souscripteur" pour les 4 natures épargne/assurance-vie : vocabulaire
+                  assurantiel, même colonne `detenteur` (cf. constants/assetTypes.ts). */}
+              <FormLabel>{isEpargneAV ? 'Souscripteur' : 'Détenteur'}</FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
-                    <SelectValue placeholder="Choisir un détenteur" />
+                    <SelectValue placeholder={isEpargneAV ? 'Choisir un souscripteur' : 'Choisir un détenteur'} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -1277,7 +1295,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                   <AlertTitle>À qui appartient ce bien ?</AlertTitle>
                   <AlertDescription>
                     <p>
-                      Ce bien vient d'être qualifié "{watchedQualificationBien?.toLowerCase()}" : il appartient à une seule personne. Confirmez ou corrigez le détenteur.
+                      Ce bien vient d'être qualifié "{watchedQualificationBien?.toLowerCase()}" : il appartient à une seule personne. Confirmez ou corrigez {isEpargneAV ? 'le souscripteur' : 'le détenteur'}.
                     </p>
                     <div className="flex flex-wrap gap-2 mt-2">
                       {[familyData.userFirstName, ...(familyData.hasPartner ? [familyData.partnerFirstName] : [])]
