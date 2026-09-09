@@ -206,11 +206,22 @@ export const Synthese = () => {
       // Construire le graphe familial
       const family: FamilyGraph = buildFamilyGraph(familyProfile, maritalStatus, familyLinks || []);
 
+      // Date de référence unique pour la simulation (pas de date de décès réelle :
+      // le profil "défunt" reste estDecede: false tant que l'utilisateur est en vie).
+      const referenceDate = new Date().toISOString().split('T')[0];
+
       // Répartition avant/après 70 ans par contrat, à partir des vraies primes
       // (cf. buildAVContracts) — lève AVDonneesInsuffisantesError si un
       // contrat n'a aucune opération enregistrée ou si la date de naissance
-      // du défunt simulé est inconnue : jamais de répartition devinée.
-      const avContracts = buildAVContracts(avContractsRaw, familyProfile?.date_naissance, family);
+      // du souscripteur réel (utilisateur ou conjoint, cf. row.detenteur) est
+      // inconnue : jamais de répartition devinée.
+      const avContracts = buildAVContracts(
+        avContractsRaw,
+        familyProfile?.date_naissance,
+        family,
+        referenceDate,
+        (maritalStatus as any)?.date_naissance_conjoint
+      );
 
       // Construire le patrimoine
       const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], buildPassifLines(passifs, emprunts, 'user'), totalAV, null, assetDemembrements, demembrementCtx);
@@ -238,10 +249,6 @@ export const Synthese = () => {
           valeur: transmissionParamsData.debours.valeur
         }
       };
-
-      // Date de référence unique pour la simulation (pas de date de décès réelle :
-      // le profil "défunt" reste estDecede: false tant que l'utilisateur est en vie).
-      const referenceDate = new Date().toISOString().split('T')[0];
 
       // Point d'entrée unique : computeTransmission calcule la dévolution civile
       // ET la fiscalité DMTG en interne (cf. consolidation du moteur), et renvoie

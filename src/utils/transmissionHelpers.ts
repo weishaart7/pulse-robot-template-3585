@@ -285,15 +285,29 @@ export interface AVContractRawRow {
  * de naissance (même séparation que pour l'usufruit civil de la succession).
  * Lève `AVDonneesInsuffisantesError` si la date de naissance de l'usufruitier
  * désigné est inconnue : jamais de démembrement deviné.
+ *
+ * Âge aux versements (répartition avant/après 70 ans, art. 990 I/757 B) :
+ * résolu PAR CONTRAT à partir de `row.detenteur` — la date de naissance de
+ * l'utilisateur si le contrat lui appartient, celle du conjoint si
+ * `isDetenteurSpouse(row.detenteur)`. Avant cette résolution par contrat, la
+ * date de naissance de l'utilisateur était utilisée pour tous les contrats
+ * sans distinction, ce qui faussait le calcul des contrats détenus par le
+ * seul conjoint. Si le détenteur est le conjoint et que sa date de naissance
+ * est inconnue, `splitPrimesAvantApres70` lève `AVDonneesInsuffisantesError`
+ * plutôt que de retomber sur celle de l'utilisateur : jamais d'âge deviné.
  */
 export function buildAVContracts(
   rows: AVContractRawRow[],
-  dateNaissance: string | null | undefined,
+  dateNaissanceUtilisateur: string | null | undefined,
   family: FamilyGraph,
-  referenceDate: string = new Date().toISOString().split('T')[0]
+  referenceDate: string = new Date().toISOString().split('T')[0],
+  dateNaissanceConjoint?: string | null
 ): AVContract[] {
   const resolveBeneficiaryId = (familyLinkId: string) =>
     familyLinkId === 'conjoint' ? (family.survivingSpouseId || familyLinkId) : familyLinkId;
+
+  const resolveDateNaissanceSouscripteur = (detenteur: string | null | undefined) =>
+    isDetenteurSpouse(detenteur || undefined) ? dateNaissanceConjoint : dateNaissanceUtilisateur;
 
   // "Bons & contrats de capitalisation" ne sont jamais hors succession (art. L132-12) : ils
   // intègrent l'actif successoral classique au décès (droits de succession de droit commun),
@@ -304,7 +318,7 @@ export function buildAVContracts(
     .map(row => {
       const { primesAvant70, primesApres70 } = splitPrimesAvantApres70(
         row.operations,
-        dateNaissance,
+        resolveDateNaissanceSouscripteur(row.detenteur),
         row.label || undefined
       );
 

@@ -111,8 +111,15 @@ export const ProcessusCalcul = () => {
       const patrimony = buildPatrimonySnapshot(assets, buildPassifLines(passifs, emprunts, 'user'), 0, null, assetDemembrements, demembrementCtx);
       // Répartition avant/après 70 ans à partir des vraies primes (av_operations) —
       // lève AVDonneesInsuffisantesError si un contrat n'a aucune opération
-      // enregistrée ou si la date de naissance du défunt simulé est inconnue.
-      const avContracts = buildAVContracts(avContractsRaw, familyProfile?.date_naissance, familyGraph);
+      // enregistrée ou si la date de naissance du souscripteur réel (utilisateur
+      // ou conjoint, cf. row.detenteur) est inconnue.
+      const avContracts = buildAVContracts(
+        avContractsRaw,
+        familyProfile?.date_naissance,
+        familyGraph,
+        new Date().toISOString().split('T')[0],
+        (maritalStatus as any)?.date_naissance_conjoint
+      );
       const clausesData = parseClausesData((maritalStatus as any)?.clauses_contrat);
       const exclusionBiensProfessionnelsParticipation = !!clausesData['exclusion_biens_professionnels']?.enabled;
       // regime_matrimonial n'a de sens que sous Marié(e) : ce champ n'est

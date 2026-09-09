@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { Asset } from '@/services/assetService';
-import { formatCurrency } from '@/lib/patrimoine/utils';
+import { formatCurrency, isDetenteurSpouse } from '@/lib/patrimoine/utils';
+import { computeAge } from '@/lib/patrimoine/bareme669CGI';
 import { Shield, FileText, AlertTriangle, ArrowRight, ChevronRight, Scale, UserCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -60,6 +61,7 @@ export const AssuranceVie = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedContract, setSelectedContract] = useState<Asset | null>(null);
   const [subscriberAge, setSubscriberAge] = useState<number | null>(null);
+  const [conjointAge, setConjointAge] = useState<number | null>(null);
   const [isCouple, setIsCouple] = useState(false);
   const [operationsByContract, setOperationsByContract] = useState<OperationsByContract>({});
   const [nbBeneficiaires, setNbBeneficiaires] = useState(1);
@@ -138,12 +140,8 @@ export const AssuranceVie = () => {
         const avContracts = contractsRes.data || [];
         setContracts(avContracts);
 
-        if (profileRes.data?.date_naissance) {
-          const birth = new Date(profileRes.data.date_naissance);
-          const now = new Date();
-          const age = Math.floor((now.getTime() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-          setSubscriberAge(age);
-        }
+        setSubscriberAge(computeAge(profileRes.data?.date_naissance));
+        setConjointAge(computeAge((maritalRes.data as any)?.date_naissance_conjoint));
         const statut = maritalRes.data?.statut_couple || null;
         const coupleStatus = ['Marié(e)', 'Pacsé(e)'].includes(statut || '');
         setIsCouple(coupleStatus);
@@ -220,13 +218,21 @@ export const AssuranceVie = () => {
               assetId: a.id!,
               label: a.denomination,
               valeurEstimee: a.valeur_estimee,
+              detenteur: a.detenteur,
               operations: opsByAsset.get(a.id!) || [],
               clauseBeneficiaireStructuree: clauseByAsset.get(a.id!) || null,
               nature: a.nature
             }));
 
             const family: FamilyGraph = buildFamilyGraph(profileRes.data, maritalRes.data, familyLinksRows);
-            const builtAvContracts = buildAVContracts(avContractsRaw, profileRes.data.date_naissance, family);
+            const referenceDate = new Date().toISOString().split('T')[0];
+            const builtAvContracts = buildAVContracts(
+              avContractsRaw,
+              profileRes.data.date_naissance,
+              family,
+              referenceDate,
+              (maritalRes.data as any)?.date_naissance_conjoint
+            );
             setAvContractsBuilt(builtAvContracts);
 
             const { data: allAssets } = await supabase.from('assets').select('*').eq('user_id', user.id);
@@ -267,7 +273,7 @@ export const AssuranceVie = () => {
               assetDemembrements,
               demembrementCtx,
               avContracts: builtAvContracts,
-              referenceDate: new Date().toISOString().split('T')[0],
+              referenceDate,
               clausesData,
               // regime_matrimonial n'a de sens que sous Marié(e) : ce champ
               // n'est jamais effacé en changeant de statut (cf.
@@ -417,7 +423,7 @@ export const AssuranceVie = () => {
         <AVContractDetail
           contract={selectedContract}
           onBack={() => setSelectedContract(null)}
-          subscriberAge={subscriberAge}
+          subscriberAge={isDetenteurSpouse(selectedContract.detenteur || undefined) ? conjointAge : subscriberAge}
           isCouple={isCouple}
         />
       </div>

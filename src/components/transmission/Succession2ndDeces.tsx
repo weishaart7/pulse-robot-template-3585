@@ -234,7 +234,13 @@ export const Succession2ndDeces = () => {
       // que Synthese.tsx construit déjà pour le 1er décès — même fonctions,
       // aucune logique nouvelle.
       const familyUtilisateur: FamilyGraph = buildFamilyGraph(familyProfile, maritalStatus, familyLinks || []);
-      const avContractsUtilisateur = buildAVContracts(avContractsRaw, familyProfile?.date_naissance, familyUtilisateur);
+      const avContractsUtilisateur = buildAVContracts(
+        avContractsRaw,
+        familyProfile?.date_naissance,
+        familyUtilisateur,
+        referenceDate,
+        (maritalStatus as any)?.date_naissance_conjoint
+      );
       // Passifs + emprunts fusionnés une seule fois : les quatre constructeurs
       // de patrimoine de cet écran (1er décès et 2nd décès, dans les deux
       // ordres) doivent partir du même passif, sans quoi le même écran serait

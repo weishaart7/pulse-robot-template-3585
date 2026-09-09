@@ -178,6 +178,22 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   `transmissionHelpers.avContracts.test.ts`) couvrant l'abattement 20 % (990I et non-régression sur
   757B) et l'exclusion des bons de capitalisation (`buildAVContracts`, `buildPatrimonySnapshot`) ; 9
   fixtures existantes adaptées pour renseigner `nature` ; suite complète (695 tests) au vert.
+- **Âge du souscripteur résolu par contrat, plus par utilisateur principal pour tous les contrats
+  indistinctement (09/09/2026).** `buildAVContracts` (`transmissionHelpers.ts`) calculait jusqu'ici la
+  répartition avant/après 70 ans (art. 990 I/757 B) sur la seule date de naissance de l'utilisateur
+  principal — un contrat détenu exclusivement par le conjoint (`detenteur` résolu comme `'spouse'` par
+  `isDetenteurSpouse`) était donc taxé sur le mauvais âge à chaque versement. Corrigé : la fonction
+  résout désormais la date de naissance **par contrat**, à partir de `row.detenteur` — celle du
+  conjoint (`marital_status.date_naissance_conjoint`) si le contrat lui appartient, sinon celle de
+  l'utilisateur principal ; si le détenteur est le conjoint et sa date de naissance inconnue,
+  `AVDonneesInsuffisantesError` est levée plutôt que de retomber sur celle de l'utilisateur (même
+  garde-fou que pour l'âge de l'usufruitier dans une clause démembrée, cf. §1). Répercuté dans les 4
+  écrans qui appellent `buildAVContracts` (`AssuranceVie.tsx`, `Synthese.tsx`, `Succession2ndDeces.tsx`,
+  `ProcessusCalcul.tsx`) et dans le badge 990I/757B du détail de contrat (`AVContractDetail.tsx`, qui
+  recevait jusqu'ici le même `subscriberAge` unique quel que soit le contrat sélectionné). **Vérifié** :
+  1021 tests existants au vert (dont les 67 tests assurance-vie/golden scenarios), `typecheck` sans
+  nouvelle erreur (comparé à la baseline `git stash`). Correctif UX associé côté saisie (bandeau,
+  vocabulaire "Souscripteur", champ masqué pour la famille) : cf. `docs/patrimoine.md` §3 (UX7).
 - **F19 (renonciation, effet dévolutif), F20 (exonération DMTG frère/sœur), F13 (DDV double point
   d'entrée) et F7 (ancien combattant, code retiré des formulaires)** — quatre correctifs plus anciens
   (`32c79bd`, `0e50d06`/`d443db1`, `31d1fe7`, `5122e87`), identifiés par un audit antérieur du module
