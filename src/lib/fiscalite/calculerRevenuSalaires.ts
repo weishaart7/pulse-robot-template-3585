@@ -56,7 +56,7 @@ const PLAFOND_EXONERATION_1AD_MAJORE = 6000;
  * 1AV/1BV), voir `PLAFOND_EXONERATION_1AD`.
  */
 export const CASES_SALAIRES_EXCLUES_DU_CALCUL = [
-  'case1pb', 'case1pc', // pourboires exonérés — pas de réintégration RFR confirmée, voir JSDoc de revenuExonereRetenuPourRFR
+  'case1pb', 'case1pc', // pourboires exonérés — retenus pour le RFR, voir revenuExonereRetenuPourRFR
   'case1dy', 'case1ey', // salariés impatriés, fraction exonérée — retenue pour le RFR, voir revenuExonereRetenuPourRFR
   'case1sm', 'case1dn', // sommes exonérées issues du CET — retenues pour le RFR, voir revenuExonereRetenuPourRFR
   'case1gk', 'case1gl', // "ne perçoit plus de salaires 1GB/1GF/1GG/1AG" — informatif (année suivante), aucun montant propre
@@ -154,21 +154,21 @@ export interface RevenuSalairesResult {
    * transférées vers un PERCO/PER d'entreprise) : confirmé par le BOFiP
    * (BOI-RSA-CHAMP-20-30-40, §110/§130/§170), qui renvoie explicitement à
    * l'art. 1417 IV 1° e CGI (« droits mentionnés aux articles L. 3152-4 et
-   * L. 3334-8 du code du travail »). Ces trois cases n'ont pas de plafond :
-   * la totalité du montant saisi est retenue.
+   * L. 3334-8 du code du travail »). **1PB/1PC** (pourboires exonérés) :
+   * confirmé par isolation empirique sur des cas de test propres, sans 1GB
+   * (nuxii.fr, corrigetonimpot.fr — « bien qu'exonérés d'impôt, ils entrent
+   * dans le calcul du revenu fiscal de référence » — vérifié à l'euro près,
+   * 56 800 €+980 €=57 780 €, deux fois). Une première vérification empirique
+   * sur un cas réel plus complet (incluant 1GB) avait semblé la contredire
+   * (écart de -578 €/-878 €), mais s'est révélée polluée par un écart
+   * distinct et non résolu propre à 1GB (voir docs/fiscalite.md) plutôt que
+   * par une vraie contradiction sur 1PB — d'où la réintégration malgré ce
+   * signal initial contraire. Ces quatre cases (1AQ/1BQ, 1DY/1EY, 1SM/1DN,
+   * 1PB/1PC) n'ont pas de plafond : la totalité du montant saisi est retenue.
    *
    * Transmis tel quel à `calculerImpot.ts` pour construire
    * `revenuFiscalReference` sans polluer `revenuMondialFictif` (qui reste
    * réservé au calcul de l'impôt lui-même).
-   *
-   * **1PB/1PC (pourboires exonérés) N'Y SONT PAS INCLUS**, à dessein : plusieurs
-   * sources généralistes affirment qu'ils sont retenus pour le RFR comme
-   * 1GH/1AD, mais la vérification empirique contre le simulateur officiel sur
-   * 2 cas réels **contredit** cette affirmation — l'écart officiel colle
-   * précisément à 1GH+1AD seuls (5 202 € observés pour 5 200 € attendus, puis
-   * 7 902 € pour 7 800 € attendus) ; y ajouter 1PB fait largement dépasser le
-   * RFR officiel (5 780 €/8 780 € attendus, écarts de -578 €/-878 €). Voir
-   * docs/fiscalite.md pour le détail.
    */
   revenuExonereRetenuPourRFR: number;
   casesExclues: readonly string[];
@@ -358,7 +358,8 @@ export function calculerRevenuSalaires(
     + Math.min(input.case1bd ?? 0, seuil1bd)
     + (input.case1aq ?? 0) + (input.case1bq ?? 0)
     + (input.case1dy ?? 0) + (input.case1ey ?? 0)
-    + (input.case1sm ?? 0) + (input.case1dn ?? 0);
+    + (input.case1sm ?? 0) + (input.case1dn ?? 0)
+    + (input.case1pb ?? 0) + (input.case1pc ?? 0);
 
   return {
     declarant1,

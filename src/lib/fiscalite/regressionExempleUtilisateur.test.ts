@@ -123,8 +123,9 @@ describe('régression : célibataire, 1AJ+1GB (frais réels 1AK) + 1AC/1AE (frai
     );
 
     expect(impot.impotNet).toBe(28866);
-    // RFR : 1GH (3 600 €) et 1AD (4 200 €) réintégrés — simulateur officiel donne 122 402 €,
-    // écart résiduel de 102 € non expliqué, documenté (voir docs/fiscalite.md).
-    expect(impot.revenuFiscalReference).toBe(122300);
+    // RFR : 1GH (3 600 €), 1AD (4 200 €) et 1PB (980 €) réintégrés — simulateur officiel IRPP donne
+    // 122 402 € (écart résiduel de 102 € non expliqué, lié au cas limite 1GB, voir docs/fiscalite.md) ;
+    // ClickImpôts donne 123 280 €, identique à Kairos ici (les deux réintègrent 1PB en totalité).
+    expect(impot.revenuFiscalReference).toBe(123280);
   });
 });

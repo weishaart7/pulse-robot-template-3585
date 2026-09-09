@@ -253,11 +253,17 @@ describe('calculerRevenuSalaires — revenuExonereRetenuPourRFR (1GH/1HH et 1AD/
     expect(result.revenuExonereRetenuPourRFR).toBe(1800);
   });
 
+  it('1PB/1PC (pourboires exonérés) : totalité retenue, sans plafond', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1pb: 580, case1pc: 300 }));
+    expect(result.totalNetImposable).toBe(0);
+    expect(result.revenuExonereRetenuPourRFR).toBe(880);
+  });
+
   it('toutes les cases sans plafond se cumulent avec 1GH/1AD', () => {
     const result = calculerRevenuSalaires(makeInput({
-      case1gh: 3000, case1ad: 2000, case1aq: 4000, case1dy: 1000, case1sm: 500,
+      case1gh: 3000, case1ad: 2000, case1aq: 4000, case1dy: 1000, case1sm: 500, case1pb: 980,
     }));
-    expect(result.revenuExonereRetenuPourRFR).toBe(3000 + 2000 + 4000 + 1000 + 500);
+    expect(result.revenuExonereRetenuPourRFR).toBe(3000 + 2000 + 4000 + 1000 + 500 + 980);
   });
 
   it('nul par défaut (aucune case renseignée)', () => {

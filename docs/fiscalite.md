@@ -281,11 +281,11 @@ fonciers (§4).
   1AJ/1AA/1GF/1GG/1AP/1AG/1GB du même déclarant, donc subissent le même abattement 10 %/frais réels —
   pas ajoutées après coup sans abattement. Le plafond de 7 500 € de 1GH/1HH est partagé avec la
   monétisation des jours de repos/RTT (art. 5 LFR 2022), sans distinction possible côté app puisque les
-  deux dispositifs partagent la même case CERFA (`case1gh`/`case1hh`). **Exclues volontairement du
-  calcul** (`CASES_SALAIRES_EXCLUES_DU_CALCUL`) : 1PB/1PC, 1DY/1EY, 1SM/1DN (exonérées d'IR par nature,
-  retenues seulement pour le RFR/plafond d'épargne retraite — hors périmètre du module) et 1GK/1GL (case
-  informative « ne perçoit plus de salaires… », sans montant propre). 1GB/1HB, 1AF/1BF (crédit d'impôt
-  égal à l'impôt français) et 1AD/1BD ne sont plus exclues, voir ci-dessous.
+  deux dispositifs partagent la même case CERFA (`case1gh`/`case1hh`). **Exclues volontairement du calcul
+  du revenu imposable** (`CASES_SALAIRES_EXCLUES_DU_CALCUL`) : 1PB/1PC, 1DY/1EY, 1SM/1DN, 1AQ/1BQ
+  (exonérées d'IR par nature — mais retenues pour le RFR, voir `revenuExonereRetenuPourRFR` plus bas) et
+  1GK/1GL (case informative « ne perçoit plus de salaires… », sans montant propre). 1GB/1HB, 1AF/1BF
+  (crédit d'impôt égal à l'impôt français) et 1AD/1BD ne sont plus exclues, voir ci-dessous.
   **Bug corrigé — 1GB/1HB et 1AF/1BF avaient été exclues/isolées à tort, sur la base d'une hypothèse
   jamais vérifiée (« régime de frais professionnels particulier non arbitré » pour 1GB, « pas d'option
   frais réels identifiée » pour 1AF).** Vérification de la brochure DGFiP (IR 2026, p.107, section
@@ -461,15 +461,42 @@ fonciers (§4).
   résiduel non expliqué (2 € et 102 € sur les 2 cas ci-dessus) : reste ouvert**, voir
   `regressionExempleUtilisateur.test.ts` (second cas, `revenuFiscalReference` attendu à 122 300 € pour un
   RFR officiel de 122 402 €).
-  **1PB/1PC (pourboires exonérés) volontairement exclus, malgré des sources généralistes affirmant le
-  contraire.** Plusieurs articles (nuxii.fr notamment) affirment que les pourboires exonérés sont eux
-  aussi retenus pour le RFR, sur le même principe que 1GH/1AD. **Vérification empirique contradictoire :**
-  en les ajoutant aux 2 cas réels ci-dessus, l'écart avec le RFR officiel passe de 2 €/102 € (1GH+1AD
-  seuls, quasi-exact) à −578 €/−878 € (1GH+1AD+1PB, dépassement net du RFR officiel). Les deux cas
-  confirment donc, de façon cohérente, que 1PB/1PC ne doit **pas** être réintégré — hypothèse retenue :
-  la loi instaurant l'exonération des pourboires (LF 2024 art. 28, prorogée LF 2025) n'a probablement pas
-  inclus la clause de réintégration RFR explicite que portent les lois sur les heures sup et la PPV, à la
-  différence de ce qu'affirment ces sources secondaires (non vérifiées auprès du texte de loi lui-même).
+  **Investigation approfondie de l'écart de 102 € : cause isolée, mais non résolue — piste abandonnée
+  faute de source, le RFR n'étant qu'un indicateur secondaire (l'impôt lui-même reste exact).** En
+  variant une seule case à la fois sur le cas réel ci-dessus (démarche par isolation, un cas de test
+  minimal — 1AJ + 1AK seuls — puis ajout d'une case à la fois : 1AC/1AE, 1GH, 1AD, 1PB, 1AV, 1GA), le
+  résidu **n'apparaît qu'après l'ajout de 1GB** : dès que 1GB pousse l'abattement forfaitaire calculé sur
+  le seul pool France (10 % de la base France) au-dessus des frais réels réellement engagés
+  (`case1ak`), le simulateur officiel semble calculer le « revenu net imposable » (part France,
+  effectivement taxée) en optimisant la part France **indépendamment** de la part 1AC (retenue pour le
+  taux effectif) — alors que le « revenu mondial » (qui détermine le taux) continue de refléter le choix
+  unique poolé. Formule empirique qui colle exactement à ce cas (`baseFrance − max(forfaitaireFrance
+  seule, fraisRéelsFrance seuls)` pour le revenu net imposable, vs `baseCombinée − max(forfaitaireTotal,
+  fraisRéelsTotal)` pour le revenu mondial) — **mais aucune source (BOFiP BOI-IR-LIQ-20-30-30, art. 197 C
+  CGI) ne la confirme ni ne l'infirme** : le seul exemple chiffré du BOFiP sur le taux effectif ne couvre
+  qu'un cas 100 % exonéré, jamais un mélange France + exonéré comme ici. Cette formule contredirait par
+  ailleurs le principe du choix unique déjà documenté et validé (voir le "Bug corrigé — 1AC/1AE"
+  ci-dessus). **Non implémentée, faute de confirmation.**
+  **Comparatif à 3 outils sur le cas réel (célibataire, 1GB inclus) : l'impôt est identique partout, le
+  RFR diverge entre les outils eux-mêmes.** Kairos, le simulateur officiel IRPP et ClickImpôts donnent
+  tous les trois 28 866 € d'impôt (revenu net imposable identique) mais des RFR différents : Kairos
+  122 300 €, IRPP officiel 122 402 € (+102 €), ClickImpôts 123 280 € (+980 € — exactement 1PB en plus,
+  rien d'autre, cohérent avec la réintégration de 1PB observée sur les cas isolés propres ci-dessous).
+  Trois outils de référence qui ne s'accordent pas entre eux sur le RFR (878 € d'écart entre IRPP officiel
+  et ClickImpôts) confirme que ce cas 1GB est une zone grise où même les simulateurs professionnels
+  divergent. **Décision : l'écart est laissé en l'état** — l'impôt (la donnée réellement opposable) est
+  exact, et le RFR de Kairos repose sur des sources primaires pour tout ce qu'il inclut ; l'écart résiduel
+  est du même ordre de grandeur que la divergence entre outils de référence.
+  **1PB/1PC (pourboires exonérés) réintégrés au RFR, sans plafond.** Confirmé par isolation empirique sur
+  des cas de test propres, sans 1GB (nuxii.fr, corrigetonimpot.fr — « bien qu'exonérés d'impôt, ils
+  entrent dans le calcul du revenu fiscal de référence ») : l'ajout de 1PB colle exactement à l'euro près
+  (57 780 € = 56 800 € + 980 €, vérifié deux fois). **Un premier test sur un cas réel plus complet
+  (incluant 1GB) avait semblé contredire cette réintégration** (écart de −578 €/−878 € en ajoutant
+  1PB) — la démarche par isolation (voir ci-dessus) a montré que ce signal contraire était en réalité
+  causé par l'écart distinct et non résolu propre à 1GB, pas par une vraie contradiction sur 1PB. Leçon
+  retenue : un signal empirique contradictoire sur un cas complet peut être **pollué par une autre
+  variable non isolée** — la démarche par isolation (une case à la fois) est nécessaire pour trancher
+  fiablement, pas seulement une comparaison globale contre un simulateur.
   **`calculerRevenuCapitauxMobiliers.ts` étendu du même champ `revenuExonereRetenuPourRFR`.** Sur option
   barème (2OP), l'abattement de 40 % sur les dividendes (2DC/2FU) réduit `totalNetImposable` mais est
   réintégré dans le RFR — confirmé, art. 1417 IV 1° a CGI (l-expert-comptable.com) : *« L'abattement de

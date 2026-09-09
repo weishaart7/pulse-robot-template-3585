@@ -49,12 +49,9 @@ export interface ImpotResult {
    * le taux effectif + revenus exceptionnels soumis au système du quotient)
    * + `revenuExonereRetenuPourRFR` (paramètre optionnel, 0 par défaut — la
    * somme de `calculerRevenuSalaires.ts::revenuExonereRetenuPourRFR` — 1GH/
-   * 1HH, 1AD/1BD, 1AQ/1BQ, 1DY/1EY, 1SM/1DN, voir sa JSDoc — et de
+   * 1HH, 1AD/1BD, 1AQ/1BQ, 1DY/1EY, 1SM/1DN, 1PB/1PC, voir sa JSDoc — et de
    * `calculerRevenuCapitauxMobiliers.ts::revenuExonereRetenuPourRFR` —
-   * abattement de 40 % sur les dividendes en cas d'option barème). 1PB/1PC
-   * (pourboires) volontairement exclus malgré des sources généralistes
-   * l'affirmant : vérification empirique contre le simulateur officiel sur 2
-   * cas réels contredite (voir JSDoc de `calculerRevenuSalaires.ts`). Encore
+   * abattement de 40 % sur les dividendes en cas d'option barème). Encore
    * hors périmètre : l'abattement de 4 600 €/9 200 € sur les contrats
    * d'assurance-vie ≥ 8 ans (2CH/2DH/2VV/2WW) — investigation en cours, voir
    * docs/fiscalite.md — et les revenus imposés à taux forfaitaire hors barème
