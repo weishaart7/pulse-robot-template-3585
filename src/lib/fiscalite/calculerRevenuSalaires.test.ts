@@ -235,6 +235,31 @@ describe('calculerRevenuSalaires — revenuExonereRetenuPourRFR (1GH/1HH et 1AD/
     expect(result.revenuExonereRetenuPourRFR).toBe(5000);
   });
 
+  it('1AQ/1BQ (agents généraux d\'assurance, ZFU/entreprises nouvelles) : totalité retenue, sans plafond', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1aq: 4000, case1bq: 2500 }));
+    expect(result.totalNetImposable).toBe(0);
+    expect(result.revenuExonereRetenuPourRFR).toBe(6500);
+  });
+
+  it('1DY/1EY (salariés impatriés, fraction exonérée) : totalité retenue, sans plafond', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1dy: 15000, case1ey: 8000 }));
+    expect(result.totalNetImposable).toBe(0);
+    expect(result.revenuExonereRetenuPourRFR).toBe(23000);
+  });
+
+  it('1SM/1DN (sommes exonérées issues du CET) : totalité retenue, sans plafond', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1sm: 1200, case1dn: 600 }));
+    expect(result.totalNetImposable).toBe(0);
+    expect(result.revenuExonereRetenuPourRFR).toBe(1800);
+  });
+
+  it('toutes les cases sans plafond se cumulent avec 1GH/1AD', () => {
+    const result = calculerRevenuSalaires(makeInput({
+      case1gh: 3000, case1ad: 2000, case1aq: 4000, case1dy: 1000, case1sm: 500,
+    }));
+    expect(result.revenuExonereRetenuPourRFR).toBe(3000 + 2000 + 4000 + 1000 + 500);
+  });
+
   it('nul par défaut (aucune case renseignée)', () => {
     const result = calculerRevenuSalaires(makeInput({ case1aj: 30000 }));
     expect(result.revenuExonereRetenuPourRFR).toBe(0);

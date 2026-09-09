@@ -57,10 +57,10 @@ const PLAFOND_EXONERATION_1AD_MAJORE = 6000;
  */
 export const CASES_SALAIRES_EXCLUES_DU_CALCUL = [
   'case1pb', 'case1pc', // pourboires exonérés — pas de réintégration RFR confirmée, voir JSDoc de revenuExonereRetenuPourRFR
-  'case1dy', 'case1ey', // salariés impatriés, fraction exonérée
-  'case1sm', 'case1dn', // sommes exonérées issues du CET
+  'case1dy', 'case1ey', // salariés impatriés, fraction exonérée — retenue pour le RFR, voir revenuExonereRetenuPourRFR
+  'case1sm', 'case1dn', // sommes exonérées issues du CET — retenues pour le RFR, voir revenuExonereRetenuPourRFR
   'case1gk', 'case1gl', // "ne perçoit plus de salaires 1GB/1GF/1GG/1AG" — informatif (année suivante), aucun montant propre
-  'case1aq', 'case1bq', // agents généraux d'assurance, salaires EXONÉRÉS (symétrique de 1GG/1HG, imposables)
+  'case1aq', 'case1bq', // agents généraux d'assurance, salaires EXONÉRÉS (symétrique de 1GG/1HG, imposables) — retenus pour le RFR, voir revenuExonereRetenuPourRFR
 ] as const;
 
 export interface RevenuSalairesDeclarantDetail {
@@ -124,29 +124,47 @@ export interface RevenuSalairesResult {
    */
   salairesNetImposablesExoneresTauxEffectif: number;
   /**
-   * 1GH/1HH (heures supplémentaires/complémentaires et RTT monétisés,
-   * plafond 7 500 €/personne) et 1AD/1BD (prime de partage de la valeur,
-   * plafond 3 000 €/6 000 € — voir `PLAFOND_EXONERATION_1AD`) exonérés d'IR :
-   * n'entrent jamais dans le revenu imposable, mais sont réintégrés dans le
-   * revenu fiscal de référence (RFR). Pour 1GH/1HH : art. 1417 IV-1°-c CGI,
-   * confirmé par le BOFiP cité dans la brochure DGFiP : « Les rémunérations
-   * exonérées d'IR sont toutefois prises en compte pour la détermination du
-   * revenu fiscal de référence du foyer [...] Ce montant est retenu
-   * uniquement pour le calcul du revenu fiscal de référence. » Pour 1AD/1BD :
-   * même principe, confirmé par la presse spécialisée (meilleurtaux.com,
-   * impôt 2026) : « Même lorsqu'elle est exonérée, la PPV entre dans le
-   * calcul de votre revenu fiscal de référence (RFR). » Seule la fraction
-   * sous le plafond est retenue ici : la fraction qui l'excède (`surplus1gh`/
-   * `surplus1hh`/`surplus1ad`/`surplus1bd`) est déjà taxable et donc déjà
-   * comptée via `totalNetImposable`, l'ajouter de nouveau ici ferait double
-   * emploi. Transmis tel quel à `calculerImpot.ts` pour construire
+   * Revenus exonérés d'IR mais retenus pour le revenu fiscal de référence
+   * (RFR, art. 1417 IV CGI) — n'entrent jamais dans le revenu imposable.
+   *
+   * **1GH/1HH** (heures supplémentaires/complémentaires et RTT monétisés,
+   * plafond 7 500 €/personne) : art. 1417 IV-1°-c CGI, confirmé par le BOFiP
+   * cité dans la brochure DGFiP : « Les rémunérations exonérées d'IR sont
+   * toutefois prises en compte pour la détermination du revenu fiscal de
+   * référence du foyer [...] Ce montant est retenu uniquement pour le calcul
+   * du revenu fiscal de référence. » **1AD/1BD** (prime de partage de la
+   * valeur, plafond 3 000 €/6 000 € — voir `PLAFOND_EXONERATION_1AD`) : même
+   * principe, confirmé par la presse spécialisée (meilleurtaux.com, impôt
+   * 2026) : « Même lorsqu'elle est exonérée, la PPV entre dans le calcul de
+   * votre revenu fiscal de référence (RFR). » Pour ces deux cases, seule la
+   * fraction sous le plafond est retenue ici : la fraction qui l'excède
+   * (`surplus1gh`/`surplus1hh`/`surplus1ad`/`surplus1bd`) est déjà taxable et
+   * donc déjà comptée via `totalNetImposable`, l'ajouter de nouveau ici
+   * ferait double emploi.
+   *
+   * **1AQ/1BQ** (agents généraux d'assurance, bénéfices exonérés au titre des
+   * zones franches urbaines/entreprises nouvelles) : confirmé par le texte de
+   * loi lui-même (art. 1417 IV 1° b CGI, Légifrance) — les bénéfices
+   * exonérés en application des art. 44 sexies et suivants sont explicitement
+   * réintégrés au RFR. **1DY/1EY** (salariés impatriés, fraction exonérée,
+   * art. 155 B CGI) : confirmé par le BOFiP (BOI-RSA-GEO-40-10-40, §80) :
+   * « L'ensemble du revenu exonéré d'impôt sur le revenu en application de
+   * l'article 155 B du CGI est donc pris en compte pour la détermination du
+   * revenu fiscal de référence. » **1SM/1DN** (sommes exonérées issues du CET
+   * transférées vers un PERCO/PER d'entreprise) : confirmé par le BOFiP
+   * (BOI-RSA-CHAMP-20-30-40, §110/§130/§170), qui renvoie explicitement à
+   * l'art. 1417 IV 1° e CGI (« droits mentionnés aux articles L. 3152-4 et
+   * L. 3334-8 du code du travail »). Ces trois cases n'ont pas de plafond :
+   * la totalité du montant saisi est retenue.
+   *
+   * Transmis tel quel à `calculerImpot.ts` pour construire
    * `revenuFiscalReference` sans polluer `revenuMondialFictif` (qui reste
    * réservé au calcul de l'impôt lui-même).
    *
-   * 1PB/1PC (pourboires exonérés) N'Y SONT PAS INCLUS : plusieurs sources
-   * généralistes affirment qu'ils sont retenus pour le RFR comme 1GH/1AD,
-   * mais la vérification empirique contre le simulateur officiel sur 2 cas
-   * réels **contredit** cette affirmation — l'écart officiel colle
+   * **1PB/1PC (pourboires exonérés) N'Y SONT PAS INCLUS**, à dessein : plusieurs
+   * sources généralistes affirment qu'ils sont retenus pour le RFR comme
+   * 1GH/1AD, mais la vérification empirique contre le simulateur officiel sur
+   * 2 cas réels **contredit** cette affirmation — l'écart officiel colle
    * précisément à 1GH+1AD seuls (5 202 € observés pour 5 200 € attendus, puis
    * 7 902 € pour 7 800 € attendus) ; y ajouter 1PB fait largement dépasser le
    * RFR officiel (5 780 €/8 780 € attendus, écarts de -578 €/-878 €). Voir
@@ -337,7 +355,10 @@ export function calculerRevenuSalaires(
   const revenuExonereRetenuPourRFR = Math.min(input.case1gh ?? 0, PLAFOND_EXONERATION_1GH)
     + Math.min(input.case1hh ?? 0, PLAFOND_EXONERATION_1GH)
     + Math.min(input.case1ad ?? 0, seuil1ad)
-    + Math.min(input.case1bd ?? 0, seuil1bd);
+    + Math.min(input.case1bd ?? 0, seuil1bd)
+    + (input.case1aq ?? 0) + (input.case1bq ?? 0)
+    + (input.case1dy ?? 0) + (input.case1ey ?? 0)
+    + (input.case1sm ?? 0) + (input.case1dn ?? 0);
 
   return {
     declarant1,

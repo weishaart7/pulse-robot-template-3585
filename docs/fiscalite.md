@@ -477,6 +477,32 @@ fonciers (§4).
   barème (le PFU taxe alors les dividendes bruts sans abattement, déjà comptés en totalité via
   `impotForfaitaire`). Sommé avec celui de `calculerRevenuSalaires.ts` dans `useFiscalOverview.ts` avant
   transmission à `calculerImpot`.
+  **3 cases supplémentaires réintégrées au RFR dans `calculerRevenuSalaires.ts`, sans plafond (totalité
+  du montant saisi) : 1AQ/1BQ, 1DY/1EY, 1SM/1DN.** Chacune confirmée par une source primaire (texte de
+  loi ou BOFiP), pas seulement par la presse généraliste — leçon tirée du faux positif 1PB ci-dessus.
+  **1AQ/1BQ** (agents généraux d'assurance, bénéfices exonérés au titre des zones franches
+  urbaines/entreprises nouvelles, art. 44 sexies et s. CGI) : confirmé par le texte de loi lui-même
+  (Légifrance, art. 1417 IV 1° b CGI — « du montant des bénéfices exonérés en application des articles
+  44 sexies, 44 sexies A, 44 octies A, 44 octies B, 44 terdecies à 44 septdecies »). **1DY/1EY** (salariés
+  impatriés, fraction exonérée, art. 155 B CGI) : confirmé par le BOFiP (BOI-RSA-GEO-40-10-40, §80) :
+  *« L'ensemble du revenu exonéré d'impôt sur le revenu en application de l'article 155 B du CGI est donc
+  pris en compte pour la détermination du revenu fiscal de référence. »* **1SM/1DN** (sommes exonérées
+  issues du CET transférées vers un PERCO/PER d'entreprise) : confirmé par le BOFiP
+  (BOI-RSA-CHAMP-20-30-40, §110/§130/§170), qui renvoie explicitement à l'art. 1417 IV 1° e CGI — «
+  droits mentionnés aux articles L. 3152-4 et L. 3334-8 du code du travail » — correspondance exacte
+  vérifiée avec le texte de loi.
+  **Investigation en cours, pas encore codée : l'abattement de 4 600 €/9 200 € sur les contrats
+  d'assurance-vie ≥ 8 ans (2CH/2DH/2VV/2WW).** Le BOFiP (BOI-RPPM-RCM-20-10-20-50, §330) confirme une
+  réintégration RFR, mais **plus large que prévu et pas encore modélisable simplement** : elle concerne
+  spécifiquement 2DH (produits ayant opté pour le prélèvement libératoire de 7,5 % sur primes antérieures
+  au 27/09/2017) — citation exacte : *« Ces produits ne sont pas retenus pour l'établissement de l'impôt
+  sur le revenu au titre du revenu net global (en revanche, ils sont retenus pour le calcul du revenu
+  fiscal de référence). »* Ce n'est donc pas seulement la fraction couverte par l'abattement de
+  4 600 €/9 200 € qui devrait être réintégrée, mais la **totalité du montant brut de 2DH** — qui n'entre
+  aujourd'hui nulle part dans `RevenuCapitauxMobiliersResult` (ni `totalNetImposable`, ni
+  `impotForfaitaire` ; seul `creditImpotAssuranceVie` en dérive, via `abattementSur2dh`). Aucune source
+  trouvée confirmant une règle équivalente pour 2CH/2VV/2WW. Repoussé à une itération dédiée, le temps de
+  clarifier précisément le traitement de la part de 2DH hors abattement.
   **Hors périmètre pour l'instant : les revenus imposés à taux forfaitaire hors barème** (gains
   d'actionnariat à taux historique, carried-interest, PFU/prélèvement forfaitaire libératoire sur
   capitaux mobiliers). Ces mécanismes n'exposent aujourd'hui que le montant d'impôt forfaitaire déjà
