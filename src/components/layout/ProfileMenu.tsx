@@ -1,16 +1,21 @@
 import React from 'react';
 import { CircleUserRound, Settings, Gift, CreditCard, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
-export function ProfileMenu() {
+interface ProfileMenuProps {
+  triggerClassName?: string;
+}
+
+export function ProfileMenu({ triggerClassName }: ProfileMenuProps) {
   const { user, logout } = useAuth();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="p-2 rounded-md hover:bg-accent transition-colors"
+          className={cn("p-2 rounded-md hover:bg-accent transition-colors", triggerClassName)}
           aria-label="Menu utilisateur"
         >
           <CircleUserRound className="h-4 w-4" strokeWidth={1.5} />
