@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { SegmentedTabs } from '@/components/ui/segmented-tabs';
 import { THEME_INK } from '@/lib/theme';
+import { useModuleSubNav } from '@/hooks/useModuleSubNav';
 import { BudgetResume } from '@/components/budget/BudgetResume';
 import { BudgetRevenus } from '@/components/budget/BudgetRevenus';
 import { BudgetCharges } from '@/components/budget/BudgetCharges';
@@ -18,6 +18,8 @@ export const BudgetSection = () => {
     { id: 'revenus', label: 'Revenus' },
     { id: 'charges', label: 'Charges' }
   ];
+
+  useModuleSubNav(TABS, activeTab, setActiveTab);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -40,8 +42,7 @@ export const BudgetSection = () => {
         </div>
       </div>
 
-      <div className="mb-6 flex items-center justify-between">
-        <SegmentedTabs tabs={TABS} value={activeTab} onValueChange={setActiveTab} />
+      <div className="mb-6 flex items-center justify-end">
         <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
           <Button
             variant={displayMode === 'mensuel' ? 'default' : 'ghost'}

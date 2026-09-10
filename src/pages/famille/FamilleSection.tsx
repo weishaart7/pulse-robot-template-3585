@@ -1,8 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { SegmentedTabs } from '@/components/ui/segmented-tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useModuleSubNav } from '@/hooks/useModuleSubNav';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
@@ -10,7 +10,7 @@ import { FamilyTreeCards } from '@/components/famille/FamilyTreeCards';
 import { FamilyMemberFormDialog, FamilyMemberFormDialogHandle } from '@/components/family/FamilyMemberFormDialog';
 import { IdentityCardBody, RevealCardContainer } from '@/components/ui/animated-profile-card';
 import { getInitials } from '@/lib/family/initials';
-import { User, ArrowLeft, ArrowRight, Scale } from 'lucide-react';
+import { User, ArrowLeft, ChevronRight, Scale } from 'lucide-react';
 
 type EditView = 'client';
 
@@ -29,6 +29,8 @@ const FamilleSection = () => {
     { id: 'ma-famille', label: 'Ma famille' },
     { id: 'liens-familiaux', label: 'Liens familiaux' },
   ];
+
+  useModuleSubNav(TABS, activeTab, setActiveTab);
 
   const relationStatus = (maritalData?.statut_couple as string) || '';
   const hasPartner = ['Concubinage', 'Pacsé(e)', 'Marié(e)'].includes(relationStatus);
@@ -221,11 +223,11 @@ const FamilleSection = () => {
                   {isDivorcedOrWidowed && (
                     <button
                       onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
-                      className={`inline-flex items-center gap-1.5 text-[13px] font-bold uppercase tracking-wide w-fit px-2.5 py-1 hover:opacity-85 transition-opacity duration-200 group ${FOCUS_RING}`}
+                      className={`inline-flex items-center gap-1.5 text-[13px] font-extrabold uppercase tracking-wide w-fit px-2.5 py-1 hover:opacity-85 transition-opacity duration-200 group ${FOCUS_RING}`}
                       style={{ backgroundColor: '#9bf00d', color: '#054b16' }}
                     >
                       <span className="underline-offset-2 decoration-2 group-hover:underline">Voir le détail</span>
-                      <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={2.5} />
+                      <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={3.5} />
                     </button>
                   )}
                 </div>
@@ -251,11 +253,11 @@ const FamilleSection = () => {
                 </div>
                 <button
                   onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
-                  className={`inline-flex items-center gap-1.5 text-[13px] font-bold uppercase tracking-wide shrink-0 px-2.5 py-1 rounded-none hover:opacity-85 transition-opacity duration-200 group ${FOCUS_RING}`}
+                  className={`inline-flex items-center gap-1.5 text-[13px] font-extrabold uppercase tracking-wide shrink-0 px-2.5 py-1 rounded-none hover:opacity-85 transition-opacity duration-200 group ${FOCUS_RING}`}
                   style={{ backgroundColor: '#9bf00d', color: '#054b16' }}
                 >
                   <span className="underline-offset-2 decoration-2 group-hover:underline">Voir le détail</span>
-                  <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={2.5} />
+                  <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={3.5} />
                 </button>
               </div>
             )}
@@ -298,10 +300,6 @@ const FamilleSection = () => {
     <div className="min-h-screen bg-white p-6">
       <div className="mb-6">
         <h1 className="font-playfair text-3xl font-light tracking-tight text-foreground">Famille</h1>
-      </div>
-
-      <div className="mb-6 flex justify-start">
-        <SegmentedTabs tabs={TABS} value={activeTab} onValueChange={setActiveTab} />
       </div>
 
       {renderContent()}

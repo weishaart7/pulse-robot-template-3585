@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { SegmentedTabs } from '@/components/ui/segmented-tabs';
 import { THEME_INK } from '@/lib/theme';
+import { useModuleSubNav } from '@/hooks/useModuleSubNav';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Building2, LayoutGrid, Table as TableIcon, Home } from 'lucide-react';
@@ -70,6 +70,14 @@ export const ImmobilierSection = () => {
     });
   }, [assets]);
 
+  const TABS = [
+    { id: 'biens', label: 'Vue d\'ensemble' },
+    { id: 'valorisation', label: 'Mes biens' },
+    { id: 'revenus', label: 'Gestion des biens' }
+  ];
+
+  useModuleSubNav(TABS, activeTab, setActiveTab);
+
   // If LMNP detail view is active, show it
   if (lmnpAsset) {
     return (
@@ -103,12 +111,6 @@ export const ImmobilierSection = () => {
       </div>
     );
   }
-
-  const TABS = [
-    { id: 'biens', label: 'Vue d\'ensemble' },
-    { id: 'valorisation', label: 'Mes biens' },
-    { id: 'revenus', label: 'Gestion des biens' }
-  ];
 
   const renderContent = () => {
     switch (activeTab) {
@@ -316,10 +318,6 @@ export const ImmobilierSection = () => {
         <div>
           <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>Immobilier</h1>
         </div>
-      </div>
-
-      <div className="mb-6 flex justify-start">
-        <SegmentedTabs tabs={TABS} value={activeTab} onValueChange={setActiveTab} />
       </div>
 
       {renderContent()}

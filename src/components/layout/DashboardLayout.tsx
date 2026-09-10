@@ -1,22 +1,23 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
+import { DashboardTopNav } from '@/components/layout/DashboardTopNav';
 import { DashboardSidebar } from '@/components/layout/DashboardSidebar';
-import { ProfileMenu } from '@/components/layout/ProfileMenu';
+import { SubNavProvider } from '@/contexts/SubNavContext';
 import { cn } from '@/lib/utils';
 
 const DashboardLayout = () => {
   return (
-    <div className={cn("dashboard-shell flex bg-background w-full h-screen overflow-hidden")}>
-      <DashboardSidebar />
-      <div className="relative flex-1 flex flex-col min-w-0">
-        <div className="absolute top-4 right-4 z-10">
-          <ProfileMenu />
+    <SubNavProvider>
+      <div className={cn("dashboard-shell flex flex-col bg-background w-full h-screen overflow-hidden")}>
+        <DashboardTopNav />
+        <div className="flex flex-1 min-h-0">
+          <DashboardSidebar />
+          <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 bg-background min-w-0">
+            <Outlet />
+          </main>
         </div>
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 bg-background min-w-0">
-          <Outlet />
-        </main>
       </div>
-    </div>
+    </SubNavProvider>
   );
 };
 

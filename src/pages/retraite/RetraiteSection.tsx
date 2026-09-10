@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { SegmentedTabs } from '@/components/ui/segmented-tabs';
 import { THEME_INK } from '@/lib/theme';
+import { useModuleSubNav } from '@/hooks/useModuleSubNav';
 import { Synthese } from '@/components/retraite/Synthese';
 import { Carriere } from '@/components/retraite/Carriere';
 import { EpargneRetraite } from '@/components/retraite/EpargneRetraite';
@@ -37,6 +37,8 @@ export const RetraiteSection = () => {
     { id: 'epargne', label: 'Épargne retraite' },
     { id: 'optimisation', label: 'Optimisation' }
   ];
+
+  useModuleSubNav(TABS, activeTab, setActiveTab);
 
   const colonnesProps = { hasConjoint, nomUtilisateur, nomConjoint };
 
@@ -76,10 +78,6 @@ export const RetraiteSection = () => {
         <div>
           <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>Retraite</h1>
         </div>
-      </div>
-
-      <div className="mb-6 flex justify-start">
-        <SegmentedTabs tabs={TABS} value={activeTab} onValueChange={setActiveTab} />
       </div>
 
       {renderContent()}

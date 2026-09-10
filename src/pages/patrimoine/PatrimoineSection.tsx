@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { SegmentedTabs } from '@/components/ui/segmented-tabs';
 import { THEME_INK } from '@/lib/theme';
+import { useModuleSubNav } from '@/hooks/useModuleSubNav';
 import { PatrimoineResume } from '@/components/patrimoine/PatrimoineResume';
 import { PatrimoineActifs } from '@/components/patrimoine/PatrimoineActifs';
 import { PatrimoinePassifs } from '@/components/patrimoine/PatrimoinePassifs';
@@ -42,6 +42,14 @@ export const PatrimoineSection = () => {
     { id: 'passifs', label: 'Passifs' }
   ];
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setShowPlusValuesDetail(false);
+    setShowParTeteDetail(false);
+  };
+
+  useModuleSubNav(TABS, activeTab, handleTabChange);
+
   const renderContent = () => {
     if (showPlusValuesDetail) {
       return <PatrimoinePlusValues onBack={() => setShowPlusValuesDetail(false)} />;
@@ -77,18 +85,6 @@ export const PatrimoineSection = () => {
         <div>
           <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>Patrimoine</h1>
         </div>
-      </div>
-
-      <div className="mb-6 flex justify-start">
-        <SegmentedTabs
-          tabs={TABS}
-          value={activeTab}
-          onValueChange={(value) => {
-            setActiveTab(value);
-            setShowPlusValuesDetail(false);
-            setShowParTeteDetail(false);
-          }}
-        />
       </div>
 
       {!showPlusValuesDetail && !showParTeteDetail && (

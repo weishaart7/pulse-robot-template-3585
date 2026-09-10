@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SegmentedTabs } from '@/components/ui/segmented-tabs';
 import { THEME_INK } from '@/lib/theme';
+import { useModuleSubNav } from '@/hooks/useModuleSubNav';
 import { SocietesSynthese } from '@/components/societes/SocietesSynthese';
 import { SocietesMesSocietes } from '@/components/societes/SocietesMesSocietes';
 import { SocietesGouvernance } from '@/components/societes/gouvernance/SocietesGouvernance';
@@ -40,6 +41,9 @@ export const SocietesSection = () => {
     { id: 'strategies', label: 'Stratégies fiscales' },
     { id: 'transmission', label: 'Transmission des parts' },
   ];
+
+  const isEditingForm = editingMode === 'edit' || editingMode === 'create';
+  useModuleSubNav(isEditingForm ? [] : TABS, activeTab, setActiveTab);
 
   useEffect(() => {
     if (editingMode === 'edit' && editingSocieteId) {
@@ -268,9 +272,6 @@ export const SocietesSection = () => {
         </div>
       </div>
 
-      <div className="mb-6 flex justify-start">
-        <SegmentedTabs tabs={TABS} value={activeTab} onValueChange={setActiveTab} />
-      </div>
 
       {renderContent()}
     </div>
