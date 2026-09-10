@@ -17,19 +17,21 @@ export function DashboardTopNav() {
   };
 
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-border bg-white px-4 py-2.5 shrink-0">
-      <div className="flex items-center gap-4 min-w-0">
-        <div className="flex items-center cursor-pointer shrink-0" onClick={() => navigate('/')}>
+    <div className="relative flex items-center border-b border-border bg-white px-4 py-3 shrink-0">
+      <div className="flex items-center shrink-0 z-10">
+        <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
           <Sparkle className="h-5 w-5 fill-black text-black" strokeWidth={1.5} />
         </div>
+      </div>
 
-        <PillTabs value={currentValue} onValueChange={handleNavigate}>
-          <PillTabsList shape="pill" size="sm" className="overflow-x-auto">
+      <div className="absolute inset-y-0 left-24 right-24 flex items-center justify-center overflow-x-auto">
+        <PillTabs value={currentValue} onValueChange={handleNavigate} className="min-w-0">
+          <PillTabsList shape="pill" size="md" className="items-stretch">
             {menuItems.map((item) => {
               const Icon = item.icon;
               return (
-                <PillTabsTrigger key={item.value} value={item.value} className="gap-1.5">
-                  <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+                <PillTabsTrigger key={item.value} value={item.value} className="h-full">
+                  <Icon strokeWidth={1.75} />
                   {item.label}
                 </PillTabsTrigger>
               );
@@ -38,7 +40,7 @@ export function DashboardTopNav() {
         </PillTabs>
       </div>
 
-      <div className="shrink-0">
+      <div className="ml-auto flex items-center shrink-0 z-10">
         <ProfileMenu />
       </div>
     </div>
