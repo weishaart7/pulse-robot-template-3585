@@ -32,24 +32,33 @@ interface UseAssetFormProps {
   onSubmit: (asset: AssetFormValues, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[]) => Promise<any>;
 }
 
+export interface MaritalContext {
+  statutCouple?: string;
+  regimeMatrimonial?: string;
+  dateMariage?: string;
+  conventionPacs?: string;
+  datePacs?: string;
+  societeAcquetsAssetIds?: string[];
+  societeAcquetsResidencePrincipale?: boolean;
+  extensionProprsParNature?: boolean;
+}
+
+export interface FamilyMember {
+  id?: string;
+  nom: string;
+  prenom?: string;
+  date_naissance?: string;
+}
+
 export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
   const [charges, setCharges] = useState<AssetCharge[]>([]);
   const [showChargeForm, setShowChargeForm] = useState(false);
   const [editingCharge, setEditingCharge] = useState<AssetCharge | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
-  const [familyMembers, setFamilyMembers] = useState<Array<{ id?: string; nom: string; prenom?: string; date_naissance?: string }>>([]);
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [familyData, setFamilyData] = useState<FamilyInfo>({ hasPartner: false });
-  const [maritalContext, setMaritalContext] = useState<{
-    statutCouple?: string;
-    regimeMatrimonial?: string;
-    dateMariage?: string;
-    conventionPacs?: string;
-    datePacs?: string;
-    societeAcquetsAssetIds?: string[];
-    societeAcquetsResidencePrincipale?: boolean;
-    extensionProprsParNature?: boolean;
-  }>({});
+  const [maritalContext, setMaritalContext] = useState<MaritalContext>({});
   const [indivisaires, setIndivisaires] = useState<IndivisaireDraft[]>([]);
   const [demembrements, setDemembrements] = useState<DemembrementDraft[]>([]);
   const [qualificationRaison, setQualificationRaison] = useState<string | undefined>(undefined);

@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { PatrimoineTreeView } from './PatrimoineTreeView';
 import { AssetForm } from '@/components/assets/AssetForm';
+import { AssetCreationWizard } from '@/components/assets/wizard/AssetCreationWizard';
 import { Plus } from 'lucide-react';
 import { useAssets } from '@/hooks/useAssets';
 import { Asset, AssetCharge, assetService } from '@/services/assetService';
@@ -139,16 +140,25 @@ export const PatrimoineActifs = () => {
   };
 
   if (showAssetForm) {
+    const handleCancel = () => {
+      setShowAssetForm(false);
+      setEditingAsset(null);
+    };
+
     return (
       <div className="space-y-6">
-        <AssetForm
-          asset={editingAsset || undefined}
-          onSubmit={handleAssetSubmit}
-          onCancel={() => {
-            setShowAssetForm(false);
-            setEditingAsset(null);
-          }}
-        />
+        {editingAsset ? (
+          <AssetForm
+            asset={editingAsset}
+            onSubmit={handleAssetSubmit}
+            onCancel={handleCancel}
+          />
+        ) : (
+          <AssetCreationWizard
+            onSubmit={handleAssetSubmit}
+            onCancel={handleCancel}
+          />
+        )}
       </div>
     );
   }
