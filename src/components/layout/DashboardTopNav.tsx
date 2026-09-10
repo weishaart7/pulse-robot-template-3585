@@ -26,7 +26,7 @@ export function DashboardTopNav() {
 
       <div className="absolute inset-y-0 left-24 right-24 flex items-center justify-center overflow-x-auto">
         <PillTabs value={currentValue} onValueChange={handleNavigate} className="min-w-0">
-          <PillTabsList shape="default" size="md" className="items-stretch bg-gray-100">
+          <PillTabsList shape="pill" size="md" className="items-stretch bg-gray-100">
             {menuItems.map((item) => {
               const Icon = item.icon;
               return (
