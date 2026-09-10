@@ -26,14 +26,14 @@ export function DashboardTopNav() {
 
       <div className="absolute inset-y-0 left-24 right-24 flex items-center justify-center overflow-x-auto">
         <PillTabs value={currentValue} onValueChange={handleNavigate} className="min-w-0">
-          <PillTabsList shape="pill" size="md" className="items-stretch bg-transparent gap-2">
+          <PillTabsList shape="pill" size="md" className="items-stretch bg-gray-100">
             {menuItems.map((item) => {
               const Icon = item.icon;
               return (
                 <PillTabsTrigger
                   key={item.value}
                   value={item.value}
-                  className="h-full bg-gray-100 data-[state=active]:bg-[#054b16] data-[state=active]:text-white [&[data-state=active]_svg]:text-white"
+                  className="h-full data-[state=active]:bg-[#054b16] data-[state=active]:text-white [&[data-state=active]_svg]:text-white"
                 >
                   <Icon strokeWidth={1.75} />
                   {item.label}
