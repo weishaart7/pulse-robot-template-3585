@@ -17,7 +17,7 @@ export function DashboardTopNav() {
   };
 
   return (
-    <div className="relative flex items-center border-b border-border bg-white px-4 py-3 shrink-0">
+    <div className="relative flex items-center bg-white px-4 py-3 shrink-0">
       <div className="flex items-center shrink-0 z-10">
         <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
           <Sparkle className="h-5 w-5 fill-black text-black" strokeWidth={1.5} />
