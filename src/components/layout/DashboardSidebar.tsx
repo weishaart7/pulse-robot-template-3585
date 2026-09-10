@@ -58,16 +58,14 @@ export function DashboardSidebar() {
                 !open && "justify-center"
               )}
             >
-              <motion.span
-                className="truncate whitespace-nowrap"
-                animate={{
-                  opacity: open ? 1 : 0,
-                  width: open ? 'auto' : 0,
-                }}
-                transition={{ duration: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
+              <span
+                className={cn(
+                  "truncate whitespace-nowrap overflow-hidden transition-all duration-150 ease-[cubic-bezier(0.25,0.1,0.25,1)]",
+                  open ? "max-w-[160px] opacity-100" : "max-w-0 opacity-0"
+                )}
               >
                 {item.label}
-              </motion.span>
+              </span>
             </button>
           );
         })}
@@ -91,16 +89,14 @@ export function DashboardSidebar() {
               )}
             >
               <Icon className="h-3.5 w-3.5 flex-shrink-0" strokeWidth={1.5} />
-              <motion.span
-                className="truncate whitespace-nowrap"
-                animate={{
-                  opacity: open ? 1 : 0,
-                  width: open ? 'auto' : 0,
-                }}
-                transition={{ duration: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
+              <span
+                className={cn(
+                  "truncate whitespace-nowrap overflow-hidden transition-all duration-150 ease-[cubic-bezier(0.25,0.1,0.25,1)]",
+                  open ? "max-w-[160px] opacity-100" : "max-w-0 opacity-0"
+                )}
               >
                 {item.label}
-              </motion.span>
+              </span>
             </button>
           );
         })}
