@@ -10,7 +10,7 @@ import { FamilyTreeCards } from '@/components/famille/FamilyTreeCards';
 import { FamilyMemberFormDialog, FamilyMemberFormDialogHandle } from '@/components/family/FamilyMemberFormDialog';
 import { IdentityCardBody } from '@/components/ui/animated-profile-card';
 import { getInitials } from '@/lib/family/initials';
-import { User, ArrowLeft, ChevronRight, Scale } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Scale } from 'lucide-react';
 
 type EditView = 'client';
 
@@ -78,14 +78,19 @@ const FamilleSection = () => {
 
         <div className="w-full mx-auto px-4 sm:px-6 pt-6 pb-8">
           <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <User className="h-6 w-6 text-primary" strokeWidth={1.5} />
+            <div
+              className="h-14 w-14 rounded-full flex items-center justify-center shrink-0 text-white text-lg font-semibold"
+              style={{ backgroundColor: '#006064' }}
+            >
+              {getInitials(familyProfile?.prenom, familyProfile?.nom)}
             </div>
             <div>
               <h1 className="font-playfair text-3xl font-light tracking-tight text-foreground">
                 {clientName}
               </h1>
-              <p className="text-sm text-muted-foreground mt-1">Fiche personnelle</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Fiche personnelle · {secondaryLine(familyProfile?.date_naissance)}
+              </p>
             </div>
           </div>
         </div>

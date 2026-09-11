@@ -205,13 +205,13 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
             {/* Identité */}
             <div>
               <div className="flex items-center gap-2.5 mb-6">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                  <User className="h-4 w-4 text-primary" strokeWidth={1.75} />
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#006064]/10">
+                  <User className="h-4 w-4 text-[#006064]" strokeWidth={1.75} />
                 </span>
                 <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Identité</h3>
               </div>
 
-              <div className="rounded-lg bg-muted/30 p-5 space-y-5">
+              <div className="rounded-lg bg-[#006064]/5 p-5 space-y-5">
 
               <FormField
                 control={form.control}
@@ -238,7 +238,7 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                             className={cn(
                               "flex items-center gap-2 px-4 py-2.5 rounded-md border cursor-pointer transition-all duration-200",
                               field.value === option.value
-                                ? "border-primary bg-primary/5 text-primary"
+                                ? "border-[#006064] bg-[#006064]/5 text-[#006064]"
                                 : "border-border hover:border-primary/40 hover:bg-muted/50"
                             )}
                           >
@@ -344,13 +344,13 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
             {/* Profession & Naissance */}
             <div>
               <div className="flex items-center gap-2.5 mb-6">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                  <Briefcase className="h-4 w-4 text-primary" strokeWidth={1.75} />
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#006064]/10">
+                  <Briefcase className="h-4 w-4 text-[#006064]" strokeWidth={1.75} />
                 </span>
                 <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Profession & Naissance</h3>
               </div>
 
-              <div className="rounded-lg bg-muted/30 p-5 space-y-5">
+              <div className="rounded-lg bg-[#006064]/5 p-5 space-y-5">
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <FormField
@@ -433,13 +433,13 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
             {/* Situation juridique */}
             <div>
               <div className="flex items-center gap-2.5 mb-6">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                  <ShieldCheck className="h-4 w-4 text-primary" strokeWidth={1.75} />
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#006064]/10">
+                  <ShieldCheck className="h-4 w-4 text-[#006064]" strokeWidth={1.75} />
                 </span>
                 <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Situation juridique</h3>
               </div>
 
-              <div className="rounded-lg bg-muted/30 p-5">
+              <div className="rounded-lg bg-[#006064]/5 p-5">
 
               <div className="flex flex-wrap items-end gap-6">
                 <FormField
@@ -522,7 +522,13 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
 
         {/* Bouton Enregistrer */}
         <div className="flex justify-end">
-          <Button type="submit" disabled={saving} size="lg" className="min-w-[160px]">
+          <Button
+            type="submit"
+            disabled={saving}
+            size="lg"
+            className="min-w-[160px] text-white hover:opacity-90"
+            style={{ backgroundColor: '#006064' }}
+          >
             {saving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
