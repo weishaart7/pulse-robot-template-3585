@@ -298,10 +298,6 @@ const FamilleSection = () => {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <h1 className="font-playfair text-3xl font-light tracking-tight text-foreground">Famille</h1>
-      </div>
-
       {renderContent()}
     </div>
   );
