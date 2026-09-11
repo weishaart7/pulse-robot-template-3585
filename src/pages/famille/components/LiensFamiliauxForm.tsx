@@ -113,8 +113,8 @@ export function LiensFamiliauxForm() {
               size="sm"
               className="rounded-full bg-[#006064] hover:bg-[#006064]/90 text-white gap-2 pl-1 pr-4"
             >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white">
-                <Plus className="h-4 w-4 text-[#006064]" />
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#E07856]">
+                <Plus className="h-4 w-4 text-white" />
               </span>
               Ajouter un membre
             </Button>
