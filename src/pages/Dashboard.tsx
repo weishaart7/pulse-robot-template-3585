@@ -10,6 +10,7 @@ import { PatrimoineChart } from '@/components/patrimoine/PatrimoineChart';
 import { AlertesConseil } from '@/components/alertes/AlertesConseil';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { useFiscalOverview } from '@/hooks/useFiscalOverview';
+import { ChevronRight } from 'lucide-react';
 
 function formatEuros(valeur: number): string {
   return `${Math.round(valeur).toLocaleString('fr-FR')} €`;
@@ -88,10 +89,11 @@ const Dashboard = () => {
               Notre équipe interne de conseillers financiers, de conseillers patrimoniaux et partenaires est à vos côtés pour vous accompagner sereinement, qu'il s'agisse de questions simples ou de décisions stratégiques.
             </p>
             <button
-              className="rounded-full text-sm transition-transform hover:scale-[1.02]"
-              style={{ backgroundColor: '#ffffff', color: '#006064', padding: '9px 16px', fontWeight: 450 }}
+              className="inline-flex items-center gap-1.5 text-[13px] font-extrabold uppercase tracking-wide px-2.5 py-1 hover:opacity-85 transition-opacity duration-200 group"
+              style={{ backgroundColor: '#ffffff', color: '#006064' }}
             >
               Planifier un rendez-vous
+              <ChevronRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={3.5} />
             </button>
           </div>
         </div>
