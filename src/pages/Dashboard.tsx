@@ -98,7 +98,7 @@ const Dashboard = () => {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
+        <Card className="border border-border">
           <CardHeader>
             <CardTitle className="text-xl font-medium">Patrimoine</CardTitle>
             <CardDescription>
@@ -117,7 +117,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border border-border">
           <CardHeader>
             <CardTitle className="text-xl font-medium">Budget</CardTitle>
             <CardDescription>
@@ -129,7 +129,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden border border-border">
           <CardHeader className="pb-4">
             <CardTitle className="text-xl font-medium">Fiscalité</CardTitle>
             <CardDescription>
@@ -189,7 +189,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="border border-border">
           <CardHeader>
             <CardTitle className="text-xl font-medium">Transmission</CardTitle>
             <CardDescription>
@@ -203,7 +203,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border border-border">
           <CardHeader>
             <CardTitle className="text-xl font-medium">Retraite</CardTitle>
             <CardDescription>
