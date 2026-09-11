@@ -17,14 +17,12 @@ export function DashboardTopNav() {
   };
 
   return (
-    <div className="relative flex items-center bg-white px-4 py-5 shrink-0">
-      <div className="flex items-center shrink-0 z-10">
-        <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
-          <Sparkle className="h-5 w-5 fill-black text-black" strokeWidth={1.5} />
-        </div>
+    <div className="relative bg-white h-[72px] px-4 shrink-0">
+      <div className="absolute left-4 top-12 -translate-y-1/2 z-10 flex items-center cursor-pointer" onClick={() => navigate('/')}>
+        <Sparkle className="h-5 w-5 fill-black text-black" strokeWidth={1.5} />
       </div>
 
-      <div className="absolute inset-y-0 left-24 right-24 flex items-center justify-center overflow-x-auto">
+      <div className="absolute left-24 right-24 top-12 -translate-y-1/2 flex items-center justify-center overflow-x-auto">
         <PillTabs value={currentValue} onValueChange={handleNavigate} className="min-w-0">
           <PillTabsList shape="pill" size="md" className="items-stretch bg-gray-100">
             {menuItems.map((item) => {
@@ -44,7 +42,7 @@ export function DashboardTopNav() {
         </PillTabs>
       </div>
 
-      <div className="ml-auto flex items-center shrink-0 z-10">
+      <div className="absolute right-4 top-12 -translate-y-1/2 z-10 flex items-center">
         <ProfileMenu />
       </div>
     </div>
