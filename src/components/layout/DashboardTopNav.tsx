@@ -19,12 +19,12 @@ export function DashboardTopNav() {
   return (
     <div className="relative bg-white h-[72px] px-4 shrink-0">
       <div className="absolute left-4 top-12 -translate-y-1/2 z-10 flex items-center cursor-pointer" onClick={() => navigate('/')}>
-        <Sparkle className="h-5 w-5 fill-black text-black" strokeWidth={1.5} />
+        <Sparkle className="h-7 w-7 fill-black text-black" strokeWidth={1.5} />
       </div>
 
       <div className="absolute left-24 right-24 top-12 -translate-y-1/2 flex items-center justify-center overflow-x-auto">
         <PillTabs value={currentValue} onValueChange={handleNavigate} className="min-w-0">
-          <PillTabsList shape="pill" size="md" className="items-stretch bg-gray-100">
+          <PillTabsList shape="pill" size="lg" className="items-stretch bg-gray-100">
             {menuItems.map((item) => {
               const Icon = item.icon;
               return (
