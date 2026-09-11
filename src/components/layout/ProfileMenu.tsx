@@ -10,10 +10,10 @@ export function ProfileMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="p-2.5 rounded-md hover:bg-accent transition-colors"
+          className="p-2 rounded-md hover:bg-accent transition-colors"
           aria-label="Menu utilisateur"
         >
-          <CircleUserRound className="h-6 w-6" strokeWidth={1.5} />
+          <CircleUserRound className="h-5 w-5" strokeWidth={1.5} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="max-w-64" align="end">
