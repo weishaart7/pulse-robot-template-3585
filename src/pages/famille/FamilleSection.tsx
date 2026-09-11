@@ -224,7 +224,7 @@ const FamilleSection = () => {
                     <button
                       onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
                       className={`inline-flex items-center gap-1.5 text-[13px] font-extrabold uppercase tracking-wide w-fit px-2.5 py-1 hover:opacity-85 transition-opacity duration-200 group ${FOCUS_RING}`}
-                      style={{ backgroundColor: '#006064', color: '#9bf00d' }}
+                      style={{ backgroundColor: '#9bf00d', color: '#006064' }}
                     >
                       <span className="underline-offset-2 decoration-2 group-hover:underline">Voir le détail</span>
                       <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={3.5} />
@@ -254,7 +254,7 @@ const FamilleSection = () => {
                 <button
                   onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
                   className={`inline-flex items-center gap-1.5 text-[13px] font-extrabold uppercase tracking-wide shrink-0 px-2.5 py-1 rounded-none hover:opacity-85 transition-opacity duration-200 group ${FOCUS_RING}`}
-                  style={{ backgroundColor: '#006064', color: '#9bf00d' }}
+                  style={{ backgroundColor: '#9bf00d', color: '#006064' }}
                 >
                   <span className="underline-offset-2 decoration-2 group-hover:underline">Voir le détail</span>
                   <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={3.5} />
