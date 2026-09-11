@@ -90,7 +90,7 @@ const Dashboard = () => {
             </p>
             <button
               className="inline-flex items-center gap-1.5 text-[13px] font-extrabold uppercase tracking-wide px-2.5 py-1 hover:opacity-85 transition-opacity duration-200 group"
-              style={{ backgroundColor: '#ffffff', color: '#006064' }}
+              style={{ backgroundColor: '#9bf00d', color: '#006064' }}
             >
               Planifier un rendez-vous
               <ChevronRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={3.5} />
