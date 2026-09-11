@@ -108,9 +108,15 @@ export function LiensFamiliauxForm() {
               <span>Membres de la famille</span>
               {familyLinks.length > 0 && <Badge variant="secondary">{familyLinks.length}</Badge>}
             </CardTitle>
-            <Button onClick={() => dialogRef.current?.openForAdd()} size="sm" variant="outline">
-              <Plus className="mr-2 h-4 w-4" />
-              Ajouter un membre de la famille
+            <Button
+              onClick={() => dialogRef.current?.openForAdd()}
+              size="sm"
+              className="rounded-full bg-[#006064] hover:bg-[#006064]/90 text-white gap-2 pl-1 pr-4"
+            >
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white">
+                <Plus className="h-3.5 w-3.5 text-[#006064]" />
+              </span>
+              Ajouter un membre
             </Button>
           </CardHeader>
           {familyLinks.length > 0 && <CardContent>
