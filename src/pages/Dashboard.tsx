@@ -86,16 +86,16 @@ const Dashboard = () => {
         <AlertesConseil />
       </div>
 
-      <div className="mb-6 rounded-3xl p-8" style={{ backgroundColor: '#cdfe00', boxShadow: 'none' }}>
+      <div className="mb-6 rounded-3xl p-8" style={{ backgroundColor: '#006064', boxShadow: 'none' }}>
         <div className="flex justify-end items-start">
           <div className="max-w-md">
-            <h3 className="font-medium mb-2.5" style={{ color: '#0a1217', fontSize: '14px' }}>Parlez avec un expert</h3>
-            <p className="mb-4 leading-relaxed" style={{ color: '#0a1217', opacity: 0.7, fontSize: '12px' }}>
+            <h3 className="font-medium mb-2.5 text-white" style={{ fontSize: '14px' }}>Parlez avec un expert</h3>
+            <p className="mb-4 leading-relaxed text-white/70" style={{ fontSize: '12px' }}>
               Notre équipe interne de conseillers financiers, de conseillers patrimoniaux et partenaires est à vos côtés pour vous accompagner sereinement, qu'il s'agisse de questions simples ou de décisions stratégiques.
             </p>
             <button
-              className="rounded-full text-sm text-white transition-transform hover:scale-[1.02]"
-              style={{ backgroundColor: '#0a1217', padding: '9px 16px', fontWeight: 450 }}
+              className="rounded-full text-sm transition-transform hover:scale-[1.02]"
+              style={{ backgroundColor: '#ffffff', color: '#006064', padding: '9px 16px', fontWeight: 450 }}
             >
               Planifier un rendez-vous
             </button>
