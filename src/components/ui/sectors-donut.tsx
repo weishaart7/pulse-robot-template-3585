@@ -74,7 +74,7 @@ export function SectorsDonut({
               fill="none"
               stroke={a.color}
               strokeWidth={STROKE}
-              strokeDasharray={`${(a.pct / 100) * C - 2} ${C}`}
+              strokeDasharray={`${Math.max(0, (a.pct / 100) * C - 2)} ${C}`}
               strokeDashoffset={-((a.start / 100) * C)}
               initial={{ opacity: reduced ? 1 : 0 }}
               animate={{ opacity: active === null || active === i ? 1 : 0.22 }}
