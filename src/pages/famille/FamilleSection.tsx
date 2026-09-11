@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useModuleSubNav } from '@/hooks/useModuleSubNav';
-import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
+import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
 import { getInitials } from '@/lib/family/initials';
-import { ArrowLeft, ChevronRight, Scale } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Scale, Users } from 'lucide-react';
 import profilHomme from '@/assets/Profil homme.png';
 import profilFemme from '@/assets/Profil femme.png';
 
@@ -23,10 +23,15 @@ const FamilleSection = () => {
   const [editView, setEditView] = useState<EditView | null>(null);
   const { data: familyProfile, refetch: refetchProfile } = useFamilyProfile();
   const { data: maritalData, setStatutCouple } = useMaritalStatus();
+  const { data: familyLinks = [] } = useFamilyLinks();
 
   const relationStatus = (maritalData?.statut_couple as string) || '';
   const hasPartner = ['Concubinage', 'Pacsé(e)', 'Marié(e)'].includes(relationStatus);
   const isDivorcedOrWidowed = ['Divorcé(e)', 'Veuf/Veuve'].includes(relationStatus);
+
+  const nbEnfants = familyLinks.filter((l) => l.lien_familial === 'Enfant').length;
+  const nbACharge = familyLinks.filter((l) => l.personne_a_charge || l.enfant_a_charge || l.fiscalement_a_charge).length;
+  const nbHandicap = familyLinks.filter((l) => l.handicap).length;
 
   const regimeTabLabel = relationStatus === 'Marié(e)' ? 'Régime matrimonial'
     : relationStatus === 'Pacsé(e)' ? 'PACS'
@@ -204,6 +209,47 @@ const FamilleSection = () => {
                 </div>
               )}
             </div>
+
+            {/* Composition du foyer — résumé des liens familiaux */}
+            {familyLinks.length > 0 && (
+              <div className="flex items-center justify-between gap-5 flex-wrap rounded-md border bg-card shadow-sm p-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-9 w-9 rounded-full bg-[#006064]/10 flex items-center justify-center shrink-0">
+                    <Users className="w-4 h-4 text-[#006064]" strokeWidth={1.75} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Composition du foyer
+                    </p>
+                    <p className="text-sm font-semibold text-foreground truncate">
+                      {familyLinks.length} membre{familyLinks.length > 1 ? 's' : ''} enregistré{familyLinks.length > 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6 shrink-0">
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-foreground">{nbEnfants}</p>
+                    <p className="text-xs text-muted-foreground">Enfant{nbEnfants > 1 ? 's' : ''}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-foreground">{nbACharge}</p>
+                    <p className="text-xs text-muted-foreground">À charge</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-foreground">{nbHandicap}</p>
+                    <p className="text-xs text-muted-foreground">Handicap</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveTab('liens-familiaux')}
+                  className={`inline-flex items-center gap-1.5 text-[13px] font-extrabold uppercase tracking-wide shrink-0 px-2.5 py-1 rounded-none hover:opacity-85 transition-opacity duration-200 group ${FOCUS_RING}`}
+                  style={{ backgroundColor: '#9bf00d', color: '#006064' }}
+                >
+                  <span className="underline-offset-2 decoration-2 group-hover:underline">Voir le détail</span>
+                  <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={3.5} />
+                </button>
+              </div>
+            )}
 
             {/* Régime matrimonial / PACS — carte distincte */}
             {hasPartner && (
