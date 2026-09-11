@@ -11,12 +11,6 @@ const FiscaliteSection = () => {
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="mb-6">
-        <div>
-          <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>Fiscalité</h1>
-        </div>
-      </div>
-
       {/* Main content grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column - Fiscal declarations */}

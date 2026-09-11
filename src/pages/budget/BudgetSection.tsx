@@ -36,12 +36,6 @@ export const BudgetSection = () => {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <div>
-          <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>Budget</h1>
-        </div>
-      </div>
-
       <div className="mb-6 flex items-center justify-end">
         <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
           <Button

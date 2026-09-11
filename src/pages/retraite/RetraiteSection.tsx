@@ -74,12 +74,6 @@ export const RetraiteSection = () => {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <div>
-          <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>Retraite</h1>
-        </div>
-      </div>
-
       {renderContent()}
     </div>
   );

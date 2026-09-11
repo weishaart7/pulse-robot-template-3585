@@ -81,12 +81,6 @@ export const PatrimoineSection = () => {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <div>
-          <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>Patrimoine</h1>
-        </div>
-      </div>
-
       {!showPlusValuesDetail && !showParTeteDetail && (
         <IncompleteAssetsBanner assets={assets} onAssetClick={setSelectedAsset} />
       )}

@@ -79,7 +79,6 @@ export const TransmissionSection = () => {
     <div className="kairos-transmission p-6">
       <div className="mb-6">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">Transmission</h2>
           <p className="text-[var(--text-secondary)]">
             Planifiez et optimisez la transmission de votre patrimoine
           </p>
