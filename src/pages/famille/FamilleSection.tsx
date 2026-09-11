@@ -35,7 +35,6 @@ const FamilleSection = () => {
 
   const TABS = [
     { id: 'ma-famille', label: 'Ma famille' },
-    ...(hasPartner ? [{ id: 'regime', label: regimeTabLabel }] : []),
     { id: 'liens-familiaux', label: 'Liens familiaux' },
   ];
 
@@ -205,33 +204,34 @@ const FamilleSection = () => {
                 </div>
               )}
             </div>
-          </div>
-        );
-      case 'regime':
-        return (
-          <div className="flex items-center justify-between gap-5 flex-wrap rounded-md border bg-card shadow-sm p-6">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="h-9 w-9 rounded-full bg-[#006064]/10 flex items-center justify-center shrink-0">
-                <Scale className="w-4 h-4 text-[#006064]" strokeWidth={1.75} />
+
+            {/* Régime matrimonial / PACS — carte distincte */}
+            {hasPartner && (
+              <div className="flex items-center justify-between gap-5 flex-wrap rounded-md border bg-card shadow-sm p-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-9 w-9 rounded-full bg-[#006064]/10 flex items-center justify-center shrink-0">
+                    <Scale className="w-4 h-4 text-[#006064]" strokeWidth={1.75} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      {regimeTabLabel}
+                    </p>
+                    <p className="text-sm font-semibold text-foreground truncate">{regimeStatusLine}</p>
+                    {regimeDetailLabel && (
+                      <p className="text-sm mt-0.5 text-muted-foreground truncate">{regimeDetailLabel}</p>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
+                  className={`inline-flex items-center gap-1.5 text-[13px] font-extrabold uppercase tracking-wide shrink-0 px-2.5 py-1 rounded-none hover:opacity-85 transition-opacity duration-200 group ${FOCUS_RING}`}
+                  style={{ backgroundColor: '#9bf00d', color: '#006064' }}
+                >
+                  <span className="underline-offset-2 decoration-2 group-hover:underline">Voir le détail</span>
+                  <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={3.5} />
+                </button>
               </div>
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  {regimeTabLabel}
-                </p>
-                <p className="text-sm font-semibold text-foreground truncate">{regimeStatusLine}</p>
-                {regimeDetailLabel && (
-                  <p className="text-sm mt-0.5 text-muted-foreground truncate">{regimeDetailLabel}</p>
-                )}
-              </div>
-            </div>
-            <button
-              onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
-              className={`inline-flex items-center gap-1.5 text-[13px] font-extrabold uppercase tracking-wide shrink-0 px-2.5 py-1 rounded-none hover:opacity-85 transition-opacity duration-200 group ${FOCUS_RING}`}
-              style={{ backgroundColor: '#9bf00d', color: '#006064' }}
-            >
-              <span className="underline-offset-2 decoration-2 group-hover:underline">Voir le détail</span>
-              <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={3.5} />
-            </button>
+            )}
           </div>
         );
       case 'liens-familiaux':
