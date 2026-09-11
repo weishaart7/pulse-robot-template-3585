@@ -49,6 +49,7 @@ export type MembreFamille = z.infer<typeof membreFamilleSchema>;
 const DEFAULT_VALUES: MembreFamille = {
   lien_familial: '',
   nom: '',
+  prenom: '',
   double_nationalite: false,
   est_decede: false,
   handicap: false,
