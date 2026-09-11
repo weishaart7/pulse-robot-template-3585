@@ -8,7 +8,7 @@ import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
 import { FamilyTreeCards } from '@/components/famille/FamilyTreeCards';
 import { FamilyMemberFormDialog, FamilyMemberFormDialogHandle } from '@/components/family/FamilyMemberFormDialog';
-import { IdentityCardBody, RevealCardContainer } from '@/components/ui/animated-profile-card';
+import { IdentityCardBody } from '@/components/ui/animated-profile-card';
 import { getInitials } from '@/lib/family/initials';
 import { User, ArrowLeft, ChevronRight, Scale } from 'lucide-react';
 
@@ -122,84 +122,50 @@ const FamilleSection = () => {
           <div className="space-y-5">
             {/* Foyer — identité */}
             <div className="flex flex-wrap gap-5">
-              <RevealCardContainer
+              <div
                 className="w-full sm:w-[300px] rounded-md border cursor-pointer"
                 role="button"
                 tabIndex={0}
                 onClick={() => setEditView('client')}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEditView('client'); } }}
-                base={
-                  <IdentityCardBody
-                    fullName={clientName}
-                    place={secondaryLine(familyProfile?.date_naissance)}
-                    about={familyProfile?.profession || 'Vous'}
-                    avatarUrl=""
-                    avatarText={getInitials(familyProfile?.prenom, familyProfile?.nom)}
-                    scheme="plain"
-                    displayAvatar={false}
-                    className="rounded-md shadow-sm border-0 p-6"
-                    titleCss={{ fontSize: '22px', fontWeight: 600, letterSpacing: '-0.01em' }}
-                    descClass="pt-4 text-[13px] text-muted-foreground"
-                    bioClass="text-[13px] leading-relaxed text-muted-foreground"
-                  />
-                }
-                overlay={
-                  <IdentityCardBody
-                    fullName={clientName}
-                    place={secondaryLine(familyProfile?.date_naissance)}
-                    about={familyProfile?.profession || 'Vous'}
-                    avatarUrl=""
-                    avatarText={getInitials(familyProfile?.prenom, familyProfile?.nom)}
-                    scheme="accented"
-                    displayAvatar
-                    cardCss={{ backgroundColor: 'var(--accent-color)' }}
-                    className="rounded-md p-6"
-                    titleCss={{ fontSize: '22px', fontWeight: 600, letterSpacing: '-0.01em' }}
-                    descClass="pt-4 text-[13px]"
-                    bioClass="text-[13px] leading-relaxed"
-                  />
-                }
-              />
+              >
+                <IdentityCardBody
+                  fullName={clientName}
+                  place={secondaryLine(familyProfile?.date_naissance)}
+                  about={familyProfile?.profession || 'Vous'}
+                  avatarUrl=""
+                  avatarText={getInitials(familyProfile?.prenom, familyProfile?.nom)}
+                  scheme="plain"
+                  displayAvatar={false}
+                  className="rounded-md border-0 p-6"
+                  titleCss={{ fontSize: '22px', fontWeight: 600, letterSpacing: '-0.01em' }}
+                  descClass="pt-4 text-[13px] text-muted-foreground"
+                  bioClass="text-[13px] leading-relaxed text-muted-foreground"
+                />
+              </div>
 
               {hasPartner ? (
-                <RevealCardContainer
+                <div
                   className="w-full sm:w-[300px] rounded-md border cursor-pointer"
                   role="button"
                   tabIndex={0}
                   onClick={() => navigate('/dashboard/famille/conjoint')}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/dashboard/famille/conjoint'); } }}
-                  base={
-                    <IdentityCardBody
-                      fullName={partnerName || 'Partenaire'}
-                      place={secondaryLine(maritalData?.date_naissance_conjoint)}
-                      about="Conjoint(e)"
-                      avatarUrl=""
-                      avatarText={getInitials(maritalData?.prenom_conjoint, maritalData?.nom_conjoint)}
-                      scheme="plain"
-                      displayAvatar={false}
-                      className="rounded-md shadow-sm border-0 p-6"
-                      titleCss={{ fontSize: '22px', fontWeight: 600, letterSpacing: '-0.01em' }}
-                      descClass="pt-4 text-[13px] text-muted-foreground"
-                      bioClass="text-[13px] leading-relaxed text-muted-foreground"
-                    />
-                  }
-                  overlay={
-                    <IdentityCardBody
-                      fullName={partnerName || 'Partenaire'}
-                      place={secondaryLine(maritalData?.date_naissance_conjoint)}
-                      about="Conjoint(e)"
-                      avatarUrl=""
-                      avatarText={getInitials(maritalData?.prenom_conjoint, maritalData?.nom_conjoint)}
-                      scheme="accented"
-                      displayAvatar
-                      cardCss={{ backgroundColor: 'var(--accent-color)' }}
-                      className="rounded-md p-6"
-                      titleCss={{ fontSize: '22px', fontWeight: 600, letterSpacing: '-0.01em' }}
-                      descClass="pt-4 text-[13px]"
-                      bioClass="text-[13px] leading-relaxed"
-                    />
-                  }
-                />
+                >
+                  <IdentityCardBody
+                    fullName={partnerName || 'Partenaire'}
+                    place={secondaryLine(maritalData?.date_naissance_conjoint)}
+                    about="Conjoint(e)"
+                    avatarUrl=""
+                    avatarText={getInitials(maritalData?.prenom_conjoint, maritalData?.nom_conjoint)}
+                    scheme="plain"
+                    displayAvatar={false}
+                    className="rounded-md border-0 p-6"
+                    titleCss={{ fontSize: '22px', fontWeight: 600, letterSpacing: '-0.01em' }}
+                    descClass="pt-4 text-[13px] text-muted-foreground"
+                    bioClass="text-[13px] leading-relaxed text-muted-foreground"
+                  />
+                </div>
               ) : (
                 <div className="w-full sm:w-[300px] rounded-md border bg-card shadow-sm p-6 flex flex-col gap-3 justify-center">
                   <div className="flex flex-col gap-1">
