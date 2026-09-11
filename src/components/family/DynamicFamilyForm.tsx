@@ -45,6 +45,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
   const watchDateNaissance = form.watch('date_naissance');
   const watchDoubleNationalite = form.watch('double_nationalite');
   const isFirstRender = useRef(true);
+  const isFirstRenderDecede = useRef(true);
   const enfantAChargeManuellementModifie = useRef(false);
   const fiscalementAChargeManuellementModifie = useRef(false);
 
@@ -65,6 +66,22 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchDateNaissance, linkType]);
+
+  // Sans objet pour une personne décédée : on efface ces statuts pour éviter
+  // qu'ils restent comptés dans des calculs fiscaux (ex. quotient familial
+  // via fiscalement_a_charge, cf. compterEnfantsFiscalementACharge).
+  React.useEffect(() => {
+    if (isFirstRenderDecede.current) {
+      isFirstRenderDecede.current = false;
+      return;
+    }
+    if (!watchDecede) return;
+    form.setValue('handicap', false, { shouldDirty: true });
+    form.setValue('personne_a_charge', false, { shouldDirty: true });
+    form.setValue('enfant_a_charge', false, { shouldDirty: true });
+    form.setValue('fiscalement_a_charge', false, { shouldDirty: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchDecede]);
 
   const showParentField = ['Enfant', 'Parent', 'Frère/Sœur', 'Oncle/Tante', 'Petit-enfant', 'Arrière petit-enfant', 'Grand-parent', 'Arrière grand-parent', 'Neveu/Nièce', 'Petit neveu/nièce', 'Cousin/Cousine'].includes(linkType);
   const showAdoption = ['Enfant', 'Petit-enfant', 'Arrière petit-enfant'].includes(linkType);
@@ -303,56 +320,59 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
           />
         )}
 
-        {/* Personne handicapée */}
-        <FormField
-          control={form.control}
-          name="handicap"
-          render={({ field }) => (
-            <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Personne handicapée" />
-          )}
-        />
-
-        {/* Personne à charge */}
-        <FormField
-          control={form.control}
-          name="personne_a_charge"
-          render={({ field }) => (
-            <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Personne à charge" />
-          )}
-        />
-
-        {/* Enfant à charge (civil / fiscal) */}
-        {linkType === 'Enfant' && (
+        {/* Personne handicapée / à charge : sans objet pour une personne décédée */}
+        {!watchDecede && (
           <>
             <FormField
               control={form.control}
-              name="enfant_a_charge"
+              name="handicap"
               render={({ field }) => (
-                <CheckboxWithLabel
-                  checked={field.value}
-                  onCheckedChange={(checked) => {
-                    enfantAChargeManuellementModifie.current = true;
-                    field.onChange(checked);
-                  }}
-                  label="Enfant à charge (autorité parentale / garde)"
-                />
+                <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Personne handicapée" />
               )}
             />
 
             <FormField
               control={form.control}
-              name="fiscalement_a_charge"
+              name="personne_a_charge"
               render={({ field }) => (
-                <CheckboxWithLabel
-                  checked={field.value}
-                  onCheckedChange={(checked) => {
-                    fiscalementAChargeManuellementModifie.current = true;
-                    field.onChange(checked);
-                  }}
-                  label="Fiscalement à charge (rattaché au foyer fiscal)"
-                />
+                <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Personne à charge" />
               )}
             />
+
+            {/* Enfant à charge (civil / fiscal) */}
+            {linkType === 'Enfant' && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="enfant_a_charge"
+                  render={({ field }) => (
+                    <CheckboxWithLabel
+                      checked={field.value}
+                      onCheckedChange={(checked) => {
+                        enfantAChargeManuellementModifie.current = true;
+                        field.onChange(checked);
+                      }}
+                      label="Enfant à charge (autorité parentale / garde)"
+                    />
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="fiscalement_a_charge"
+                  render={({ field }) => (
+                    <CheckboxWithLabel
+                      checked={field.value}
+                      onCheckedChange={(checked) => {
+                        fiscalementAChargeManuellementModifie.current = true;
+                        field.onChange(checked);
+                      }}
+                      label="Fiscalement à charge (rattaché au foyer fiscal)"
+                    />
+                  )}
+                />
+              </>
+            )}
           </>
         )}
 
