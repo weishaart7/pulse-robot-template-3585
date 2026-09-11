@@ -28,20 +28,18 @@ export function SmartDateInput({ value, onChange, className }: SmartDateInputPro
           onChange={(e) => {
             const raw = e.target.value;
 
-            // Permettre seulement chiffres et /
-            const cleanValue = raw.replace(/[^\d/]/g, '');
+            // Ne garder que les chiffres, et reconstruire les "/" à partir du
+            // nombre de chiffres saisis (plutôt que de manipuler la chaîne
+            // formatée précédente), pour que la saisie reste correcte quel
+            // que soit le mode de saisie (frappe touche par touche, collage
+            // d'une date complète, suppression en cours de saisie...).
+            const digits = raw.replace(/\D/g, '').slice(0, 8);
 
-            // Limiter à 10 caractères
-            if (cleanValue.length > 10) return;
-
-            // Auto-formatage pendant la saisie
-            let formattedValue = cleanValue;
-            if (cleanValue.length >= 2 && !cleanValue.includes('/')) {
-              formattedValue = cleanValue.slice(0, 2) + '/' + cleanValue.slice(2);
-            }
-            if (cleanValue.length >= 5 && cleanValue.split('/').length === 2) {
-              const parts = formattedValue.split('/');
-              formattedValue = parts[0] + '/' + parts[1].slice(0, 2) + '/' + cleanValue.slice(4);
+            let formattedValue = digits;
+            if (digits.length > 4) {
+              formattedValue = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+            } else if (digits.length > 2) {
+              formattedValue = `${digits.slice(0, 2)}/${digits.slice(2)}`;
             }
 
             // Validation finale si format complet
