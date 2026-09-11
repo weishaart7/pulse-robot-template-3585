@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import ActionHubInput from "@/components/ui/action-hub-input";
 import NationalitySelect from "@/components/ui/nationality-select";
-import { Loader2, Info } from "lucide-react";
+import { Loader2, Info, User, Briefcase, ShieldCheck } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -160,10 +160,15 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="rounded-md border bg-card p-6 shadow-sm space-y-6">
+        <div className="rounded-xl border border-border bg-card p-8 space-y-10">
             {/* Statut & Identité */}
             <div>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Identité</h3>
+              <div className="flex items-center gap-2.5 mb-6">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <User className="h-4 w-4 text-primary" strokeWidth={1.75} />
+                </span>
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Identité</h3>
+              </div>
 
               {!showPartnerFields && (
                 <div className="flex items-start gap-3 rounded-md border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
@@ -182,7 +187,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
               )}
 
               {showPartnerFields && (
-                <>
+                <div className="rounded-lg bg-muted/30 p-5 space-y-5">
                   <FormField
                     control={form.control}
                     name="civilitePartenaire"
@@ -305,7 +310,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                       )}
                     />
                   </div>
-                </>
+                </div>
               )}
             </div>
 
@@ -315,9 +320,16 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
 
                 {/* Profession & Naissance */}
                 <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Profession & Naissance</h3>
+                  <div className="flex items-center gap-2.5 mb-6">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                      <Briefcase className="h-4 w-4 text-primary" strokeWidth={1.75} />
+                    </span>
+                    <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Profession & Naissance</h3>
+                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                  <div className="rounded-lg bg-muted/30 p-5 space-y-5">
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <FormField
                       control={form.control}
                       name="profession"
@@ -389,13 +401,22 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                       />
                     )}
                   </div>
+
+                  </div>
                 </div>
 
                 <Separator />
 
                 {/* Situation juridique */}
                 <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Situation juridique</h3>
+                  <div className="flex items-center gap-2.5 mb-6">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                      <ShieldCheck className="h-4 w-4 text-primary" strokeWidth={1.75} />
+                    </span>
+                    <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Situation juridique</h3>
+                  </div>
+
+                  <div className="rounded-lg bg-muted/30 p-5">
 
                   <div className="flex flex-wrap items-end gap-6">
                     <FormField
@@ -470,6 +491,8 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                         )}
                       />
                     )}
+                  </div>
+
                   </div>
                 </div>
               </>
