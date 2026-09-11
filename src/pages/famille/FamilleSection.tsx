@@ -8,10 +8,14 @@ import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
 import { getInitials } from '@/lib/family/initials';
 import { ArrowLeft, ChevronRight, Scale } from 'lucide-react';
+import profilHomme from '@/assets/Profil homme.png';
+import profilFemme from '@/assets/Profil femme.png';
 
 type EditView = 'client';
 
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9bf00b] focus-visible:ring-offset-2 focus-visible:ring-offset-white';
+
+const profileImage = (civility?: string) => (civility === 'Mme' || civility === 'Mlle' ? profilFemme : profilHomme);
 
 const FamilleSection = () => {
   const navigate = useNavigate();
@@ -129,51 +133,47 @@ const FamilleSection = () => {
             {/* Foyer — identité */}
             <div className="flex flex-wrap gap-5">
               <div
-                className="w-full sm:w-[300px] rounded-xl border border-border p-6 flex flex-col gap-4 cursor-pointer transition-colors hover:border-[#006064]/40"
+                className="relative w-60 h-[420px] shrink-0 rounded-2xl overflow-hidden cursor-pointer group"
                 role="button"
                 tabIndex={0}
                 onClick={() => setEditView('client')}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEditView('client'); } }}
               >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="h-11 w-11 rounded-full flex items-center justify-center shrink-0 text-white text-sm font-semibold"
-                    style={{ backgroundColor: '#006064' }}
-                  >
-                    {getInitials(familyProfile?.prenom, familyProfile?.nom)}
-                  </div>
-                  <div>
-                    <p className="text-[15px] font-semibold text-foreground leading-tight">{clientName}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{secondaryLine(familyProfile?.date_naissance)}</p>
-                  </div>
+                <img
+                  src={profileImage(familyProfile?.civility)}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <p className="text-white text-[15px] font-semibold leading-tight">{clientName}</p>
+                  <p className="text-white/70 text-xs mt-1">{secondaryLine(familyProfile?.date_naissance)}</p>
+                  <p className="text-white/60 text-[13px] mt-2">{familyProfile?.profession || 'Vous'}</p>
                 </div>
-                <p className="text-[13px] text-muted-foreground">{familyProfile?.profession || 'Vous'}</p>
               </div>
 
               {hasPartner ? (
                 <div
-                  className="w-full sm:w-[300px] rounded-xl border border-border p-6 flex flex-col gap-4 cursor-pointer transition-colors hover:border-[#006064]/40"
+                  className="relative w-60 h-[420px] shrink-0 rounded-2xl overflow-hidden cursor-pointer group"
                   role="button"
                   tabIndex={0}
                   onClick={() => navigate('/dashboard/famille/conjoint')}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/dashboard/famille/conjoint'); } }}
                 >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="h-11 w-11 rounded-full flex items-center justify-center shrink-0 text-white text-sm font-semibold"
-                      style={{ backgroundColor: '#006064' }}
-                    >
-                      {getInitials(maritalData?.prenom_conjoint, maritalData?.nom_conjoint)}
-                    </div>
-                    <div>
-                      <p className="text-[15px] font-semibold text-foreground leading-tight">{partnerName || 'Partenaire'}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{secondaryLine(maritalData?.date_naissance_conjoint)}</p>
-                    </div>
+                  <img
+                    src={profileImage(maritalData?.civilite_conjoint)}
+                    alt=""
+                    className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-5">
+                    <p className="text-white text-[15px] font-semibold leading-tight">{partnerName || 'Partenaire'}</p>
+                    <p className="text-white/70 text-xs mt-1">{secondaryLine(maritalData?.date_naissance_conjoint)}</p>
+                    <p className="text-white/60 text-[13px] mt-2">Conjoint(e)</p>
                   </div>
-                  <p className="text-[13px] text-muted-foreground">Conjoint(e)</p>
                 </div>
               ) : (
-                <div className="w-full sm:w-[300px] rounded-md border bg-card shadow-sm p-6 flex flex-col gap-3 justify-center">
+                <div className="w-60 h-[420px] shrink-0 rounded-2xl border bg-card shadow-sm p-6 flex flex-col gap-3 justify-center">
                   <div className="flex flex-col gap-1">
                     <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       Statut
