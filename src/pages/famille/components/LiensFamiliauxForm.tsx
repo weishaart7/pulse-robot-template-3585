@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Plus, Trash2, Edit, Loader2, MoreHorizontal } from 'lucide-react';
+import { FamilyTreeCards } from '@/components/famille/FamilyTreeCards';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -54,7 +56,12 @@ function calculateAge(date_naissance?: string, date_deces?: string): string {
   return `${years} an${years > 1 ? 's' : ''}`;
 }
 
-export function LiensFamiliauxForm() {
+interface LiensFamiliauxFormProps {
+  onSelectMain?: () => void;
+}
+
+export function LiensFamiliauxForm({ onSelectMain }: LiensFamiliauxFormProps = {}) {
+  const navigate = useNavigate();
   const {
     data: familyLinks,
     loading,
@@ -102,6 +109,21 @@ export function LiensFamiliauxForm() {
       </div>;
   }
   return <div className="space-y-6">
+      <div className="rounded-md border bg-card shadow-sm p-6">
+        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">
+          Arbre familial
+        </p>
+        <FamilyTreeCards
+          familyProfile={familyProfile}
+          maritalStatus={maritalStatus}
+          familyLinks={familyLinks}
+          onSelectMain={() => onSelectMain?.()}
+          onSelectSpouse={() => navigate('/dashboard/famille/conjoint')}
+          onSelectMember={(member) => dialogRef.current?.openForEdit(member)}
+          onAddMember={() => dialogRef.current?.openForAdd()}
+        />
+      </div>
+
       <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
             <CardTitle className="flex items-center gap-2 text-lg">
