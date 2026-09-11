@@ -78,9 +78,7 @@ const Dashboard = () => {
   const totalRevenus = revenus.reduce((sum, revenu) => sum + toAnnual(revenu.montant, revenu.periodicite), 0) / 12;
   const totalCharges = charges.reduce((sum, charge) => sum + toAnnual(charge.montant, charge.periodicite), 0) / 12;
   return <div className="p-6">
-      <div className="mb-6">
-        <AlertesConseil />
-      </div>
+      <AlertesConseil />
 
       <div className="mb-6 rounded-3xl p-8" style={{ backgroundColor: '#006064', boxShadow: 'none' }}>
         <div className="flex justify-end items-start">

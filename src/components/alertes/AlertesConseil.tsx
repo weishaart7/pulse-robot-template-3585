@@ -15,7 +15,7 @@ export function AlertesConseil() {
   if (loading || alertes.length === 0) return null;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 mb-6">
       {alertes.map((alerte) => (
         <Alert key={alerte.id} className={NIVEAU_STYLES[alerte.niveau]}>
           <AlertTriangle className="h-4 w-4" />
