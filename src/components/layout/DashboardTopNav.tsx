@@ -33,7 +33,7 @@ export function DashboardTopNav() {
                 <PillTabsTrigger
                   key={item.value}
                   value={item.value}
-                  className="h-full data-[state=active]:bg-[#054b16] data-[state=active]:text-white [&[data-state=active]_svg]:text-white"
+                  className="h-full data-[state=active]:bg-[#006064] data-[state=active]:text-white [&[data-state=active]_svg]:text-white"
                 >
                   <Icon strokeWidth={1.75} />
                   {item.label}
