@@ -45,7 +45,7 @@ const FiscalDeclarationsCard = ({ onDeclarationClosed }: FiscalDeclarationsCardP
 
   return (
     <>
-      <Card>
+      <Card className="border border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />

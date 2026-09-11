@@ -57,7 +57,7 @@ const TaxRateCard = ({ overview }: TaxRateCardProps) => {
 
   if (loading) {
     return (
-      <Card>
+      <Card className="border border-border">
         <CardHeader>
           <CardTitle>Taux marginal d'imposition</CardTitle>
         </CardHeader>
@@ -69,7 +69,7 @@ const TaxRateCard = ({ overview }: TaxRateCardProps) => {
   }
 
   return (
-    <Card>
+    <Card className="border border-border">
       <CardHeader className="pb-4">
         <CardTitle>Taux marginal d'imposition</CardTitle>
         <div className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">

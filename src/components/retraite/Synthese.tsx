@@ -42,7 +42,7 @@ const CartePensionFoyer = ({ hasConjoint, nomUtilisateur, nomConjoint }: CartePe
     (afficherConjoint ? conjoint.pensionTotaleConsolidee : 0);
 
   return (
-    <Card>
+    <Card className="border border-border">
       <CardHeader className="p-5">
         <CardTitle className="text-[15px] font-semibold tracking-tight">
           Pension à l'âge du taux plein
@@ -115,7 +115,7 @@ const CarteTrimestresManquants = ({ personne, nom }: CarteTrimestresManquantsPro
   const anneesRestantes = trimestresManquants > 0 ? trimestresManquants / 4 : 0;
 
   return (
-    <Card>
+    <Card className="border border-border">
       <CardHeader className="p-5">
         <CardTitle className="text-[15px] font-semibold tracking-tight">
           Trimestres manquants — {nom}
@@ -147,7 +147,7 @@ const CarteTrimestresManquants = ({ personne, nom }: CarteTrimestresManquantsPro
 };
 
 const CarteComplementsRetraite = () => (
-  <Card>
+  <Card className="border border-border">
     <CardHeader className="p-5">
       <CardTitle className="text-[15px] font-semibold tracking-tight">Compléments de retraite</CardTitle>
       <CardDescription className="text-xs">PER, assurance-vie et autres épargnes retraite</CardDescription>

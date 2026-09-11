@@ -281,7 +281,7 @@ export const CarriereFonctionPublique = ({
   }, [pensionFinale, rafpAnnuelle, onResultChange]);
 
   return (
-    <Card>
+    <Card className="border border-border">
       <CardHeader className="p-5">
         <CardTitle className="text-[15px] font-semibold tracking-tight">Carrière fonction publique</CardTitle>
         <CardDescription className="text-xs">

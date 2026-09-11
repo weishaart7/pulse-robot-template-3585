@@ -173,7 +173,7 @@ export const FoncierFoyerSection = () => {
     result.nouveauDeficitReportableInterets > 0;
 
   return (
-    <Card>
+    <Card className="border border-border">
       <CardHeader>
         <CardTitle>Synthèse foncière du foyer — location nue</CardTitle>
         <CardDescription>

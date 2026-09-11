@@ -60,7 +60,7 @@ const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
 
   if (loading) {
     return (
-      <Card>
+      <Card className="border border-border">
         <CardHeader>
           <CardTitle>Imposition totale</CardTitle>
         </CardHeader>
@@ -72,7 +72,7 @@ const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
   }
 
   return (
-    <Card>
+    <Card className="border border-border">
       <CardHeader className="pb-4">
         <CardTitle>Imposition totale</CardTitle>
         {(!foyerRenseigne || !revenusRenseignes) && (

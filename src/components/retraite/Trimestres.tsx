@@ -161,7 +161,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   if (loading) {
     return (
       <div className="space-y-6">
-        <Card>
+        <Card className="border border-border">
           <CardContent className="py-8 text-center text-muted-foreground">Chargement...</CardContent>
         </Card>
       </div>
@@ -171,7 +171,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   if (!dateNaissance || ageActuel === null || dateNaissanceDetail === undefined) {
     return (
       <div className="space-y-6">
-        <Card>
+        <Card className="border border-border">
           <CardHeader className="p-5">
             <CardTitle className="text-[15px] font-semibold tracking-tight">Simulation d'âge de départ</CardTitle>
             <CardDescription className="text-xs">
@@ -354,7 +354,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="border border-border">
         <CardHeader className="p-5">
           <CardTitle className="text-[15px] font-semibold tracking-tight">Simulation de départ à la retraite</CardTitle>
           <CardDescription className="text-xs">
@@ -436,7 +436,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border border-border">
         <CardHeader className="p-5">
           <CardTitle className="text-[15px] font-semibold tracking-tight">Rachat de trimestres</CardTitle>
           <CardDescription className="text-xs">
@@ -573,7 +573,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border border-border">
         <CardHeader className="p-5">
           <CardTitle className="text-[15px] font-semibold tracking-tight">Comparatif par âge de départ</CardTitle>
           <CardDescription className="text-xs">

@@ -696,7 +696,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       <div className="flex justify-end">
         <SaveStatusIndicator status={saveStatus} />
       </div>
-      <Card>
+      <Card className="border border-border">
         <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 p-5">
           <div>
             <CardTitle className="text-[15px] font-semibold tracking-tight">Informations de carrière</CardTitle>
@@ -739,7 +739,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border border-border">
         <CardHeader className="p-5">
           <CardTitle className="text-[15px] font-semibold tracking-tight">Gestion des trimestres</CardTitle>
           <CardDescription className="text-xs">
@@ -842,7 +842,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border border-border">
         <CardHeader className="p-5">
           <CardTitle className="text-[15px] font-semibold tracking-tight">Calculs de pension</CardTitle>
           <CardDescription className="text-xs">
@@ -974,7 +974,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border border-border">
         <CardHeader className="p-5">
           <CardTitle className="text-[15px] font-semibold tracking-tight">Régimes de retraite complémentaire (points)</CardTitle>
           <CardDescription className="text-xs">
@@ -1043,7 +1043,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border border-border">
         <CardHeader className="p-5">
           <CardTitle className="text-[15px] font-semibold tracking-tight">Détail de carrière</CardTitle>
           <CardDescription className="text-xs">

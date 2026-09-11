@@ -117,7 +117,7 @@ export const ImmobilierSection = () => {
       case 'biens':
         return (
           <div className="space-y-6">
-            <Card>
+            <Card className="border border-border">
               <CardHeader>
                 <CardTitle>Vue d'ensemble</CardTitle>
                 <CardDescription>
@@ -133,7 +133,7 @@ export const ImmobilierSection = () => {
         );
       case 'valorisation':
         return (
-          <Card>
+          <Card className="border border-border">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -288,7 +288,7 @@ export const ImmobilierSection = () => {
         );
       case 'revenus':
         return (
-          <Card>
+          <Card className="border border-border">
             <CardHeader>
               <CardTitle>Gestion des biens</CardTitle>
               <CardDescription>

@@ -145,7 +145,7 @@ export const CarriereCNAVPL = ({
   }, [pensionFinale, onResultChange]);
 
   return (
-    <Card>
+    <Card className="border border-border">
       <CardHeader className="p-5">
         <CardTitle className="text-[15px] font-semibold tracking-tight">Carrière CNAVPL</CardTitle>
         <CardDescription className="text-xs">

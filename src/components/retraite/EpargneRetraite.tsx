@@ -100,7 +100,7 @@ export const EpargneRetraite = ({ personne = 'utilisateur' }: EpargneRetraitePro
         <SaveStatusIndicator status={saveStatus} />
       </div>
 
-      <Card>
+      <Card className="border border-border">
         <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 p-5">
           <div>
             <CardTitle className="text-[15px] font-semibold tracking-tight">Épargne retraite</CardTitle>
