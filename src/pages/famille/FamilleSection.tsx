@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useModuleSubNav } from '@/hooks/useModuleSubNav';
 import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
@@ -19,7 +18,6 @@ const profileImage = (civility?: string) => (civility === 'Mme' || civility === 
 
 const FamilleSection = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('ma-famille');
   const [editView, setEditView] = useState<EditView | null>(null);
   const { data: familyProfile, refetch: refetchProfile } = useFamilyProfile();
   const { data: maritalData, setStatutCouple } = useMaritalStatus();
@@ -32,13 +30,6 @@ const FamilleSection = () => {
     : relationStatus === 'Pacsé(e)' ? 'PACS'
     : relationStatus === 'Concubinage' ? 'Concubinage'
     : 'Régime matrimonial';
-
-  const TABS = [
-    { id: 'ma-famille', label: 'Ma famille' },
-    { id: 'liens-familiaux', label: 'Liens familiaux' },
-  ];
-
-  useModuleSubNav(TABS, activeTab, setActiveTab);
 
   const handleStatutChange = async (statut: string) => {
     if (statut === 'Célibataire') {
@@ -124,126 +115,113 @@ const FamilleSection = () => {
     return { regimeStatusLine: statusLine, regimeDetailLabel: detailLabel || '' };
   })();
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'ma-famille':
-        return (
-          <div className="space-y-5">
-            {/* Foyer — identité */}
-            <div className="flex flex-wrap gap-5">
-              <div
-                className="relative w-60 h-[420px] shrink-0 rounded-2xl overflow-hidden cursor-pointer group"
-                role="button"
-                tabIndex={0}
-                onClick={() => setEditView('client')}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEditView('client'); } }}
-              >
-                <img
-                  src={profileImage(familyProfile?.civility)}
-                  alt=""
-                  className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-5">
-                  <p className="text-white text-[15px] font-semibold leading-tight">{clientName}</p>
-                  <p className="text-white/70 text-xs mt-1">{secondaryLine(familyProfile?.date_naissance)}</p>
-                  <p className="text-white/60 text-[13px] mt-2">{familyProfile?.profession || 'Vous'}</p>
-                </div>
-              </div>
+  return (
+    <div className="p-6 space-y-5">
+      {/* Foyer — identité */}
+      <div className="flex flex-wrap gap-5">
+        <div
+          className="relative w-60 h-[420px] shrink-0 rounded-2xl overflow-hidden cursor-pointer group"
+          role="button"
+          tabIndex={0}
+          onClick={() => setEditView('client')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEditView('client'); } }}
+        >
+          <img
+            src={profileImage(familyProfile?.civility)}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-5">
+            <p className="text-white text-[15px] font-semibold leading-tight">{clientName}</p>
+            <p className="text-white/70 text-xs mt-1">{secondaryLine(familyProfile?.date_naissance)}</p>
+            <p className="text-white/60 text-[13px] mt-2">{familyProfile?.profession || 'Vous'}</p>
+          </div>
+        </div>
 
-              {hasPartner ? (
-                <div
-                  className="relative w-60 h-[420px] shrink-0 rounded-2xl overflow-hidden cursor-pointer group"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => navigate('/dashboard/famille/conjoint')}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/dashboard/famille/conjoint'); } }}
-                >
-                  <img
-                    src={profileImage(maritalData?.civilite_conjoint)}
-                    alt=""
-                    className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-5">
-                    <p className="text-white text-[15px] font-semibold leading-tight">{partnerName || 'Partenaire'}</p>
-                    <p className="text-white/70 text-xs mt-1">{secondaryLine(maritalData?.date_naissance_conjoint)}</p>
-                    <p className="text-white/60 text-[13px] mt-2">Conjoint(e)</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="w-60 h-[420px] shrink-0 rounded-2xl border bg-card shadow-sm p-6 flex flex-col gap-3 justify-center">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Statut
-                    </label>
-                    <Select value={relationStatus || 'Célibataire'} onValueChange={handleStatutChange}>
-                      <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Célibataire">Célibataire</SelectItem>
-                        <SelectItem value="Concubinage">Concubinage</SelectItem>
-                        <SelectItem value="Pacsé(e)">Pacsé(e)</SelectItem>
-                        <SelectItem value="Marié(e)">Marié(e)</SelectItem>
-                        <SelectItem value="Divorcé(e)">Divorcé(e)</SelectItem>
-                        <SelectItem value="Veuf/Veuve">Veuf/Veuve</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {isDivorcedOrWidowed && (
-                    <button
-                      onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
-                      className={`inline-flex items-center gap-1.5 text-[13px] font-extrabold uppercase tracking-wide w-fit px-2.5 py-1 hover:opacity-85 transition-opacity duration-200 group ${FOCUS_RING}`}
-                      style={{ backgroundColor: '#9bf00d', color: '#006064' }}
-                    >
-                      <span className="underline-offset-2 decoration-2 group-hover:underline">Voir le détail</span>
-                      <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={3.5} />
-                    </button>
-                  )}
-                </div>
-              )}
+        {hasPartner ? (
+          <div
+            className="relative w-60 h-[420px] shrink-0 rounded-2xl overflow-hidden cursor-pointer group"
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate('/dashboard/famille/conjoint')}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/dashboard/famille/conjoint'); } }}
+          >
+            <img
+              src={profileImage(maritalData?.civilite_conjoint)}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-5">
+              <p className="text-white text-[15px] font-semibold leading-tight">{partnerName || 'Partenaire'}</p>
+              <p className="text-white/70 text-xs mt-1">{secondaryLine(maritalData?.date_naissance_conjoint)}</p>
+              <p className="text-white/60 text-[13px] mt-2">Conjoint(e)</p>
             </div>
-
-            {/* Régime matrimonial / PACS — carte distincte */}
-            {hasPartner && (
-              <div className="flex items-center justify-between gap-5 flex-wrap rounded-md border bg-card shadow-sm p-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-9 w-9 rounded-full bg-[#006064]/10 flex items-center justify-center shrink-0">
-                    <Scale className="w-4 h-4 text-[#006064]" strokeWidth={1.75} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      {regimeTabLabel}
-                    </p>
-                    <p className="text-sm font-semibold text-foreground truncate">{regimeStatusLine}</p>
-                    {regimeDetailLabel && (
-                      <p className="text-sm mt-0.5 text-muted-foreground truncate">{regimeDetailLabel}</p>
-                    )}
-                  </div>
-                </div>
-                <button
-                  onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
-                  className={`inline-flex items-center gap-1.5 text-[13px] font-extrabold uppercase tracking-wide shrink-0 px-2.5 py-1 rounded-none hover:opacity-85 transition-opacity duration-200 group ${FOCUS_RING}`}
-                  style={{ backgroundColor: '#9bf00d', color: '#006064' }}
-                >
-                  <span className="underline-offset-2 decoration-2 group-hover:underline">Voir le détail</span>
-                  <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={3.5} />
-                </button>
-              </div>
+          </div>
+        ) : (
+          <div className="w-60 h-[420px] shrink-0 rounded-2xl border bg-card shadow-sm p-6 flex flex-col gap-3 justify-center">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Statut
+              </label>
+              <Select value={relationStatus || 'Célibataire'} onValueChange={handleStatutChange}>
+                <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Célibataire">Célibataire</SelectItem>
+                  <SelectItem value="Concubinage">Concubinage</SelectItem>
+                  <SelectItem value="Pacsé(e)">Pacsé(e)</SelectItem>
+                  <SelectItem value="Marié(e)">Marié(e)</SelectItem>
+                  <SelectItem value="Divorcé(e)">Divorcé(e)</SelectItem>
+                  <SelectItem value="Veuf/Veuve">Veuf/Veuve</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {isDivorcedOrWidowed && (
+              <button
+                onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
+                className={`inline-flex items-center gap-1.5 text-[13px] font-extrabold uppercase tracking-wide w-fit px-2.5 py-1 hover:opacity-85 transition-opacity duration-200 group ${FOCUS_RING}`}
+                style={{ backgroundColor: '#9bf00d', color: '#006064' }}
+              >
+                <span className="underline-offset-2 decoration-2 group-hover:underline">Voir le détail</span>
+                <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={3.5} />
+              </button>
             )}
           </div>
-        );
-      case 'liens-familiaux':
-        return <LiensFamiliauxForm onSelectMain={() => setEditView('client')} />;
-      default:
-        return null;
-    }
-  };
+        )}
+      </div>
 
-  return (
-    <div className="p-6">
-      {renderContent()}
+      {/* Régime matrimonial / PACS — carte distincte */}
+      {hasPartner && (
+        <div className="flex items-center justify-between gap-5 flex-wrap rounded-md border bg-card shadow-sm p-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-9 w-9 rounded-full bg-[#006064]/10 flex items-center justify-center shrink-0">
+              <Scale className="w-4 h-4 text-[#006064]" strokeWidth={1.75} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                {regimeTabLabel}
+              </p>
+              <p className="text-sm font-semibold text-foreground truncate">{regimeStatusLine}</p>
+              {regimeDetailLabel && (
+                <p className="text-sm mt-0.5 text-muted-foreground truncate">{regimeDetailLabel}</p>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
+            className={`inline-flex items-center gap-1.5 text-[13px] font-extrabold uppercase tracking-wide shrink-0 px-2.5 py-1 rounded-none hover:opacity-85 transition-opacity duration-200 group ${FOCUS_RING}`}
+            style={{ backgroundColor: '#9bf00d', color: '#006064' }}
+          >
+            <span className="underline-offset-2 decoration-2 group-hover:underline">Voir le détail</span>
+            <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={3.5} />
+          </button>
+        </div>
+      )}
+
+      <LiensFamiliauxForm onSelectMain={() => setEditView('client')} />
     </div>
   );
 };
