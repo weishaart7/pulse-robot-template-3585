@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { FicheClientForm } from './components/FicheClientForm';
-import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
+import { LiensFamiliauxForm, LiensFamiliauxFormHandle } from './components/LiensFamiliauxForm';
 import { getInitials } from '@/lib/family/initials';
-import { ArrowLeft, ChevronRight, Scale } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Scale, Plus } from 'lucide-react';
 import profilHomme from '@/assets/Profil homme.png';
 import profilFemme from '@/assets/Profil femme.png';
 
@@ -21,6 +21,7 @@ const FamilleSection = () => {
   const [editView, setEditView] = useState<EditView | null>(null);
   const { data: familyProfile, refetch: refetchProfile } = useFamilyProfile();
   const { data: maritalData, setStatutCouple } = useMaritalStatus();
+  const liensRef = useRef<LiensFamiliauxFormHandle>(null);
 
   const relationStatus = (maritalData?.statut_couple as string) || '';
   const hasPartner = ['Concubinage', 'Pacsé(e)', 'Marié(e)'].includes(relationStatus);
@@ -116,7 +117,19 @@ const FamilleSection = () => {
   })();
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-6 pt-0 space-y-5">
+      <div className="flex justify-end">
+        <button
+          onClick={() => liensRef.current?.openForAdd()}
+          className="inline-flex items-center gap-2 rounded-full bg-[#006064] hover:bg-[#006064]/90 text-white pl-1 pr-4 py-1 text-sm font-medium transition-colors"
+        >
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#9bf00d]">
+            <Plus className="h-4 w-4 text-[#054b16]" />
+          </span>
+          Ajouter un membre
+        </button>
+      </div>
+
       {/* Foyer — identité */}
       <div className="flex flex-wrap gap-5">
         <div
@@ -221,7 +234,7 @@ const FamilleSection = () => {
         </div>
       )}
 
-      <LiensFamiliauxForm onSelectMain={() => setEditView('client')} />
+      <LiensFamiliauxForm ref={liensRef} onSelectMain={() => setEditView('client')} />
     </div>
   );
 };

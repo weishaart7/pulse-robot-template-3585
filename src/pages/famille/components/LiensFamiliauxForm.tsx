@@ -1,7 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Plus, Trash2, Edit, Loader2, MoreHorizontal } from 'lucide-react';
+import { Trash2, Edit, Loader2, MoreHorizontal } from 'lucide-react';
 import { FamilyTreeCards } from '@/components/famille/FamilyTreeCards';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -60,7 +60,11 @@ interface LiensFamiliauxFormProps {
   onSelectMain?: () => void;
 }
 
-export function LiensFamiliauxForm({ onSelectMain }: LiensFamiliauxFormProps = {}) {
+export interface LiensFamiliauxFormHandle {
+  openForAdd: () => void;
+}
+
+export const LiensFamiliauxForm = forwardRef<LiensFamiliauxFormHandle, LiensFamiliauxFormProps>(({ onSelectMain }, ref) => {
   const navigate = useNavigate();
   const {
     data: familyLinks,
@@ -75,6 +79,10 @@ export function LiensFamiliauxForm({ onSelectMain }: LiensFamiliauxFormProps = {
   const { toast } = useToast();
   const dialogRef = useRef<FamilyMemberFormDialogHandle>(null);
   const [memberToDelete, setMemberToDelete] = useState<FamilyLink | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    openForAdd: () => dialogRef.current?.openForAdd(),
+  }), []);
 
   // Membres dont enfant_de pointe vers ce membre (Petit-enfant → Enfant,
   // Arrière petit-enfant → Petit-enfant, etc. — cf. useFamilyLinkLogic.ts::
@@ -130,16 +138,6 @@ export function LiensFamiliauxForm({ onSelectMain }: LiensFamiliauxFormProps = {
               <span>Membres de la famille</span>
               {familyLinks.length > 0 && <Badge variant="secondary">{familyLinks.length}</Badge>}
             </CardTitle>
-            <Button
-              onClick={() => dialogRef.current?.openForAdd()}
-              size="sm"
-              className="rounded-full bg-[#006064] hover:bg-[#006064]/90 text-white gap-2 pl-1 pr-4"
-            >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#9bf00d]">
-                <Plus className="h-4 w-4 text-[#054b16]" />
-              </span>
-              Ajouter un membre
-            </Button>
           </CardHeader>
           {familyLinks.length > 0 && <CardContent>
             <Table className="text-xs">
@@ -261,4 +259,5 @@ export function LiensFamiliauxForm({ onSelectMain }: LiensFamiliauxFormProps = {
         </AlertDialogContent>
       </AlertDialog>
     </div>;
-}
+});
+LiensFamiliauxForm.displayName = 'LiensFamiliauxForm';
