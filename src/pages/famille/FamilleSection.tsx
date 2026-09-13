@@ -208,7 +208,7 @@ const FamilleSection = () => {
 
       {/* Régime matrimonial / PACS — carte distincte */}
       {hasPartner && (
-        <div className="flex items-center justify-between gap-5 flex-wrap rounded-md border bg-card shadow-sm p-4">
+        <div className="flex items-center justify-between gap-5 flex-wrap rounded-3xl border bg-card shadow-sm p-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="h-9 w-9 rounded-full bg-[#006064]/10 flex items-center justify-center shrink-0">
               <Scale className="w-4 h-4 text-[#006064]" strokeWidth={1.75} />

@@ -117,7 +117,7 @@ export const LiensFamiliauxForm = forwardRef<LiensFamiliauxFormHandle, LiensFami
       </div>;
   }
   return <div className="space-y-6">
-      <div className="rounded-md border bg-card shadow-sm p-6">
+      <div className="rounded-3xl border bg-card shadow-sm p-6">
         <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">
           Arbre familial
         </p>
