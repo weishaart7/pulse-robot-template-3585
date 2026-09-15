@@ -29,7 +29,9 @@ lequel reposent tous les calculs montrés au client.
 
 **Tables Supabase** : `family_profiles`, `marital_status`, `family_links` (+ `recompenses`,
 `creances_entre_epoux`, `patrimoine_originaire`, `patrimoine_final` saisies depuis l'onglet Régime
-matrimonial mais consommées par Transmission). La table `scenarios_regime` a été retirée (voir §3).
+matrimonial mais consommées par Transmission). La table `scenarios_regime` reste active côté
+lecture (alerte de conseil n°16, voir §3) mais orpheline côté écriture : aucun formulaire ne
+permet de l'alimenter (voir §3).
 
 **Flux clés** :
 - **Ma famille** est un tableau de bord en lecture seule (dérivé de `family_profiles` /
@@ -169,6 +171,15 @@ soldés :
   lues** par `useAlertesConseil.ts:60-61`. Ce n'est pas un bug fonctionnel immédiat (aucun dossier
   n'avait de valeur sur ces colonnes selon le commit), mais c'est une incohérence de code qui
   mériterait un nettoyage du côté lecteur.
+- **`scenarios_regime` : table orpheline côté écriture.** Le service (`scenarioRegimeService.ts`)
+  et le hook de lecture (`useScenariosRegime.ts`) sont pleinement fonctionnels et alimentent la
+  règle d'alerte de conseil n°16 (`changement_regime_proche_donation`, risque d'abus de droit
+  L. 64 LPF — voir [docs/alertes-conseil-referentiel.md](alertes-conseil-referentiel.md)), mais
+  `createScenarioRegime()` n'est appelée depuis aucun formulaire : aucune fiche client ne permet
+  de tracer un changement de régime matrimonial réalisé ou envisagé. En pratique, cette alerte ne
+  se déclenchera donc jamais tant qu'un écran de saisie n'est pas ajouté (correction d'une mention
+  antérieure erronée de ce document, qui indiquait à tort que la table avait été retirée avec son
+  service).
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
@@ -206,8 +217,7 @@ saisissable via `DynamicFamilyForm.tsx` depuis cette date, mais toujours non lue
 
 Champs déjà soldés depuis l'audit initial (retirés de l'UI ou branchés à un moteur) :
 `ancien_combattant` (+ `_conjoint`, case retirée, commit `5122e87`), `exoneration_succession`
-(branché au moteur DMTG, `lib/dmtg/recall.ts`), la table `scenarios_regime` (UI et service
-retirés, commits `6f07b2b`/`ebcba21`).
+(branché au moteur DMTG, `lib/dmtg/recall.ts`).
 
 Champs retirés de l'UI de saisie par l'audit fonctionnel Famille du 2026-09-01 (colonnes
 conservées, aucune migration, valeurs existantes non affectées grâce à l'upsert partiel de

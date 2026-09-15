@@ -1,6 +1,13 @@
 /**
- * Moteur de calcul de la créance de participation (art. 1569-1581 C. civ.),
- * décès uniquement pour cette v1 (divorce = chantier séparé plus tard).
+ * Moteur de calcul de la créance de participation (art. 1569-1581 C. civ.).
+ * La formule elle-même (moitié de la différence des acquêts nets) ne dépend
+ * pas de la cause de dissolution, mais son seul consommateur est
+ * `computeTransmission` (lib/transmission/index.ts), un moteur de succession
+ * qui simule un décès. Le cas du divorce est une limite assumée, documentée
+ * dans docs/transmission.md §4 : le traiter suppose de construire une
+ * nouvelle surface produit (simulation de divorce, sans lien avec la
+ * succession/DMTG) hors périmètre décidé de l'outil, pas de corriger cette
+ * fonction — décision actée avec l'utilisateur, pas un chantier en attente.
  *
  * Indépendant du mécanisme A (qualifierBien/getPartSuccessorale) : la
  * participation aux acquêts n'a pas de masse commune, donc pas de

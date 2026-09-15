@@ -383,6 +383,17 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
     décès ; P14 (le pourcentage de détention lui-même) est en revanche corrigé.
   - **Retranchement (art. 1527)** — reste une alerte texte sans calcul, le champ `soumisRetranchement`
     reste non lu ; correction de F18/§2.6 n'a pas traité ce chapitre, resté hors périmètre du Bloc 5.
+  - **Participation aux acquêts en cas de divorce** — `computeParticipationAcquets()`
+    ([participationAcquets.ts](src/lib/patrimoine/participationAcquets.ts)) calcule la créance de
+    participation (art. 1571) elle-même indépendamment de la cause de dissolution ; ce n'est pas la
+    formule qui manque au divorce mais tout ce qui l'entoure côté transmission : elle n'est aujourd'hui
+    consommée que par `computeTransmission`, un moteur de succession/DMTG qui simule un décès (cf. §1),
+    et aucun module de simulation de divorce n'existe dans l'outil — ni pour ce régime, ni pour aucun
+    autre (le moteur de récompenses/créances entre époux a la même portée, décès uniquement). Construire
+    ce chantier reviendrait à créer une nouvelle surface produit (écran de liquidation « qui doit quoi à
+    qui » à la date de l'ONC, sans lien avec la succession/DMTG) plutôt qu'à corriger un calcul existant
+    — hors périmètre décidé d'un outil de gestion de patrimoine centré sur la transmission, pas la
+    liquidation de divorce.
   - **Droits et taxes annexes du frais de notaire** (enregistrement, taxe de publicité foncière/CSI) et
     **écrêtement complet incluant les émoluments de formalités** — l'écrêtement de l'attestation
     immobilière est corrigé, mais une décomposition complète des émoluments de formalités individuels
