@@ -53,7 +53,7 @@ export const ClauseItem: React.FC<ClauseItemProps> = ({
                   <TooltipContent side="right" className="max-w-xs">
                     <p className="text-sm">{clause.description}</p>
                     {clause.impactTransmission && clause.impactTransmission !== 'neutre' && (
-                      <p className="text-xs text-primary mt-1">
+                      <p className="text-xs text-[#006064] mt-1">
                         Impact transmission : {
                           clause.impactTransmission === 'exclut_succession' ? 'Exclus de la succession' :
                           clause.impactTransmission === 'avantage_matrimonial' ? 'Avantage matrimonial' :
@@ -91,7 +91,7 @@ export const ClauseItem: React.FC<ClauseItemProps> = ({
             >
               Sélectionner les biens
               {selectedAssetsCount > 0 && (
-                <span className="ml-1.5 px-1.5 py-0.5 bg-primary/10 text-primary rounded-full text-[10px]">
+                <span className="ml-1.5 px-1.5 py-0.5 bg-[#006064]/10 text-[#006064] rounded-full text-[10px]">
                   {selectedAssetsCount}
                 </span>
               )}

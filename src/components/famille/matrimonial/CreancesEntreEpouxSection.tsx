@@ -5,10 +5,14 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Plus, AlertTriangle, ChevronDown } from 'lucide-react';
+import { Trash2, Plus, AlertTriangle, ChevronDown, HandCoins } from 'lucide-react';
 import { useCreancesEntreEpoux } from '@/hooks/useCreancesEntreEpoux';
 import { useAssets } from '@/hooks/useAssets';
 import { CreanceEntreEpoux, EpouxConcerne, NatureDepense, ModeEvaluationConventionnel } from '@/types/creanceEntreEpoux';
+import { SectionHeader } from '@/components/family/SectionHeader';
+import { cn } from '@/lib/utils';
+
+const FIELD_CLS = "bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20";
 
 const NATURE_LABELS: Record<NatureDepense, string> = {
   acquisition: 'Acquisition',
@@ -102,16 +106,18 @@ export function CreancesEntreEpouxSection() {
     `Créance de ${epouxLabel(c.epoux_creancier)} sur ${epouxLabel(c.epoux_debiteur)}`;
 
   return (
-    <div className="rounded-md border bg-card p-6 shadow-sm">
-      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">Créances entre époux</h3>
-      <p className="text-xs text-muted-foreground mb-4">
+    <div className="rounded-xl border border-border bg-card p-8">
+      <SectionHeader icon={HandCoins} title="Créances entre époux" />
+      <p className="text-xs text-muted-foreground -mt-4 mb-5">
         Mouvements de valeur entre patrimoines propres, exigibles pendant le mariage (art. 1479, 1543 C. civ.).
       </p>
+
+      <div className="rounded-lg bg-[#006064]/5 p-5">
 
       {creances.length > 0 && (
         <div className="space-y-3 mb-5">
           {creances.map(c => (
-            <div key={c.id} className="rounded-md border p-4 flex items-start justify-between gap-3">
+            <div key={c.id} className="rounded-md border border-border bg-background p-4 flex items-start justify-between gap-3">
               <div className="space-y-1">
                 <p className="text-sm font-medium">{describe(c)}</p>
                 <p className="text-xs text-muted-foreground">
@@ -128,12 +134,12 @@ export function CreancesEntreEpouxSection() {
       )}
 
       {isAdding ? (
-        <div className="rounded-md border p-4 space-y-4">
+        <div className="rounded-md border border-border bg-background p-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label className="text-xs">Époux créancier</Label>
               <Select value={epouxCreancier} onValueChange={(v) => setEpouxCreancier(v as EpouxConcerne)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className={FIELD_CLS}><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user">Vous</SelectItem>
                   <SelectItem value="spouse">Conjoint</SelectItem>
@@ -143,7 +149,7 @@ export function CreancesEntreEpouxSection() {
             <div className="space-y-1">
               <Label className="text-xs">Époux débiteur</Label>
               <Select value={epouxDebiteur} onValueChange={(v) => setEpouxDebiteur(v as EpouxConcerne)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className={FIELD_CLS}><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user">Vous</SelectItem>
                   <SelectItem value="spouse">Conjoint</SelectItem>
@@ -158,7 +164,7 @@ export function CreancesEntreEpouxSection() {
           <div className="space-y-1">
             <Label className="text-xs">Bien concerné (facultatif)</Label>
             <Select value={bienConcerneId || '__none__'} onValueChange={(v) => setBienConcerneId(v === '__none__' ? '' : v)}>
-              <SelectTrigger className="max-w-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className={cn(FIELD_CLS, "max-w-xs")}><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">Aucun</SelectItem>
                 {assets?.map(a => (
@@ -199,7 +205,7 @@ export function CreancesEntreEpouxSection() {
               <div className="pl-6 pt-1 space-y-1">
                 <Label className="text-xs text-muted-foreground">Laquelle ?</Label>
                 <Select value={natureDetail ?? undefined} onValueChange={(v) => setNatureDetail(v as NatureDepense)}>
-                  <SelectTrigger className="max-w-xs"><SelectValue placeholder="Choisir..." /></SelectTrigger>
+                  <SelectTrigger className={cn(FIELD_CLS, "max-w-xs")}><SelectValue placeholder="Choisir..." /></SelectTrigger>
                   <SelectContent>
                     {NATURE_BIEN_OPTIONS.map(n => (
                       <SelectItem key={n} value={n}>{NATURE_LABELS[n]}</SelectItem>
@@ -214,7 +220,7 @@ export function CreancesEntreEpouxSection() {
           {natureResolue && (
             <div className="space-y-1 max-w-xs">
               <Label className="text-xs">Dépense faite (€)</Label>
-              <Input type="number" value={depenseFaite} onChange={(e) => setDepenseFaite(e.target.value)} placeholder="Ex : 40 000" />
+              <Input type="number" value={depenseFaite} onChange={(e) => setDepenseFaite(e.target.value)} placeholder="Ex : 40 000" className={FIELD_CLS} />
             </div>
           )}
 
@@ -241,11 +247,11 @@ export function CreancesEntreEpouxSection() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label className="text-xs">Valeur du bien avant (€)</Label>
-                <Input type="number" value={valeurBienAvant} onChange={(e) => setValeurBienAvant(e.target.value)} placeholder="Ex : 200 000" />
+                <Input type="number" value={valeurBienAvant} onChange={(e) => setValeurBienAvant(e.target.value)} placeholder="Ex : 200 000" className={FIELD_CLS} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Valeur du bien après (€)</Label>
-                <Input type="number" value={valeurBienApres} onChange={(e) => setValeurBienApres(e.target.value)} placeholder="Ex : 260 000" />
+                <Input type="number" value={valeurBienApres} onChange={(e) => setValeurBienApres(e.target.value)} placeholder="Ex : 260 000" className={FIELD_CLS} />
               </div>
             </div>
           )}
@@ -262,7 +268,7 @@ export function CreancesEntreEpouxSection() {
               <CollapsibleContent className="pt-2 space-y-1">
                 <Label className="text-xs">Les parties ont-elles convenu d'une évaluation nominale plutôt que le profit subsistant ?</Label>
                 <Select value={modeOverride ?? '__defaut__'} onValueChange={(v) => setModeOverride(v === '__defaut__' ? null : v as ModeOverride)}>
-                  <SelectTrigger className="max-w-xs"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className={cn(FIELD_CLS, "max-w-xs")}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__defaut__">Non, profit subsistant (défaut légal, art. 1479 al. 2)</SelectItem>
                     <SelectItem value="nominal">Oui, évaluation nominale</SelectItem>
@@ -283,7 +289,13 @@ export function CreancesEntreEpouxSection() {
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={resetForm}>Annuler</Button>
-            <Button type="button" onClick={handleSubmit} disabled={!peutSoumettre || saving}>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!peutSoumettre || saving}
+              className="text-white hover:opacity-90"
+              style={{ backgroundColor: '#006064' }}
+            >
               {saving ? 'Enregistrement...' : 'Ajouter la créance'}
             </Button>
           </div>
@@ -294,6 +306,7 @@ export function CreancesEntreEpouxSection() {
           Ajouter une créance
         </Button>
       )}
+      </div>
     </div>
   );
 }

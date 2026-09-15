@@ -4,10 +4,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2, Plus } from 'lucide-react';
+import { Trash2, Plus, Flag } from 'lucide-react';
 import { usePatrimoineFinal } from '@/hooks/usePatrimoineFinal';
 import { useAssets } from '@/hooks/useAssets';
 import { PatrimoineFinal, EpouxConcerne } from '@/types/participationAcquets';
+import { SectionHeader } from '@/components/family/SectionHeader';
+
+const FIELD_CLS = "bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20";
 
 export function PatrimoineFinalSection() {
   const { data: lignes, saving, addLigne, removeLigne } = usePatrimoineFinal();
@@ -48,16 +51,18 @@ export function PatrimoineFinalSection() {
   const describe = (l: PatrimoineFinal) => `${l.nature} (${l.epoux === 'user' ? 'vous' : 'conjoint'})`;
 
   return (
-    <div className="rounded-md border bg-card p-6 shadow-sm">
-      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">Patrimoine final</h3>
-      <p className="text-xs text-muted-foreground mb-4">
+    <div className="rounded-xl border border-border bg-card p-8">
+      <SectionHeader icon={Flag} title="Patrimoine final" />
+      <p className="text-xs text-muted-foreground -mt-4 mb-5">
         Ce que chaque époux possède au jour de la dissolution du régime (art. 1571 C. civ.).
       </p>
+
+      <div className="rounded-lg bg-[#006064]/5 p-5">
 
       {lignes.length > 0 && (
         <div className="space-y-3 mb-5">
           {lignes.map(l => (
-            <div key={l.id} className="rounded-md border p-4 flex items-start justify-between gap-3">
+            <div key={l.id} className="rounded-md border border-border bg-background p-4 flex items-start justify-between gap-3">
               <div className="space-y-1">
                 <p className="text-sm font-medium">{describe(l)}</p>
                 <p className="text-xs text-muted-foreground">
@@ -75,12 +80,12 @@ export function PatrimoineFinalSection() {
       )}
 
       {isAdding ? (
-        <div className="rounded-md border p-4 space-y-4">
+        <div className="rounded-md border border-border bg-background p-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label className="text-xs">Époux concerné</Label>
               <Select value={epoux} onValueChange={(v) => setEpoux(v as EpouxConcerne)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className={FIELD_CLS}><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user">Vous</SelectItem>
                   <SelectItem value="spouse">Conjoint</SelectItem>
@@ -102,7 +107,7 @@ export function PatrimoineFinalSection() {
                   }
                 }}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className={FIELD_CLS}><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">Aucun</SelectItem>
                   {assets?.map(a => (
@@ -116,11 +121,11 @@ export function PatrimoineFinalSection() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label className="text-xs">Nature</Label>
-              <Input value={nature} onChange={(e) => setNature(e.target.value)} placeholder="Ex : Appartement, PEA..." />
+              <Input value={nature} onChange={(e) => setNature(e.target.value)} placeholder="Ex : Appartement, PEA..." className={FIELD_CLS} />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Valeur (€)</Label>
-              <Input type="number" value={valeur} onChange={(e) => setValeur(e.target.value)} placeholder="Ex : 200 000" />
+              <Input type="number" value={valeur} onChange={(e) => setValeur(e.target.value)} placeholder="Ex : 200 000" className={FIELD_CLS} />
             </div>
           </div>
 
@@ -131,7 +136,13 @@ export function PatrimoineFinalSection() {
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={resetForm}>Annuler</Button>
-            <Button type="button" onClick={handleSubmit} disabled={!nature || !valeur || saving}>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!nature || !valeur || saving}
+              className="text-white hover:opacity-90"
+              style={{ backgroundColor: '#006064' }}
+            >
               {saving ? 'Enregistrement...' : 'Ajouter la ligne'}
             </Button>
           </div>
@@ -142,6 +153,7 @@ export function PatrimoineFinalSection() {
           Ajouter un bien au patrimoine final
         </Button>
       )}
+      </div>
     </div>
   );
 }

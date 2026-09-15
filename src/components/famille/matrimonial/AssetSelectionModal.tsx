@@ -77,8 +77,8 @@ export const AssetSelectionModal: React.FC<AssetSelectionModalProps> = ({
                     <div 
                       key={asset.id} 
                       className={`flex items-center space-x-3 p-3 rounded-lg border transition-colors ${
-                        selectedAssets.includes(asset.id) 
-                          ? 'bg-primary/5 border-primary/30' 
+                        selectedAssets.includes(asset.id)
+                          ? 'bg-[#006064]/5 border-[#006064]/30'
                           : 'border-border hover:bg-muted/50'
                       }`}
                     >
@@ -93,7 +93,7 @@ export const AssetSelectionModal: React.FC<AssetSelectionModalProps> = ({
                             <p className="font-medium">{asset.denomination || 'Sans nom'}</p>
                             <p className="text-xs text-muted-foreground">{asset.nature}</p>
                           </div>
-                          <span className="font-semibold text-primary">
+                          <span className="font-semibold text-[#006064]">
                             {formatCurrency(asset.valeur_estimee)}
                           </span>
                         </div>
@@ -130,7 +130,7 @@ export const AssetSelectionModal: React.FC<AssetSelectionModalProps> = ({
             <Button variant="outline" onClick={onClose}>
               Annuler
             </Button>
-            <Button onClick={handleConfirm}>
+            <Button onClick={handleConfirm} className="text-white hover:opacity-90" style={{ backgroundColor: '#006064' }}>
               Confirmer la sélection
             </Button>
           </div>

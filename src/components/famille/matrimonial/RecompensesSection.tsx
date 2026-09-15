@@ -7,10 +7,14 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Trash2, Plus, AlertTriangle, Info, ChevronDown, Wand2 } from 'lucide-react';
+import { Trash2, Plus, AlertTriangle, Info, ChevronDown, Wand2, Scale } from 'lucide-react';
 import { useRecompenses } from '@/hooks/useRecompenses';
 import { useAssets } from '@/hooks/useAssets';
 import { Recompense, SensRecompense, EpouxConcerne, NatureDepense, ModeEvaluationConventionnel } from '@/types/recompense';
+import { SectionHeader } from '@/components/family/SectionHeader';
+import { cn } from '@/lib/utils';
+
+const FIELD_CLS = "bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20";
 
 const SENS_LABELS: Record<SensRecompense, string> = {
   communaute_vers_epoux: 'La communauté doit récompense à l\'époux',
@@ -135,16 +139,18 @@ export function RecompensesSection() {
   };
 
   return (
-    <div className="rounded-md border bg-card p-6 shadow-sm">
-      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">Récompenses</h3>
-      <p className="text-xs text-muted-foreground mb-4">
+    <div className="rounded-xl border border-border bg-card p-8">
+      <SectionHeader icon={Scale} title="Récompenses" />
+      <p className="text-xs text-muted-foreground -mt-4 mb-5">
         Mouvements de valeur entre un patrimoine propre et la masse commune (art. 1468 à 1478 C. civ.), à régler à la liquidation.
       </p>
+
+      <div className="rounded-lg bg-[#006064]/5 p-5">
 
       {recompenses.length > 0 && (
         <div className="space-y-3 mb-5">
           {recompenses.map(r => (
-            <div key={r.id} className="rounded-md border p-4 flex items-start justify-between gap-3">
+            <div key={r.id} className="rounded-md border border-border bg-background p-4 flex items-start justify-between gap-3">
               <div className="space-y-1">
                 <p className="text-sm font-medium">{describe(r)}</p>
                 <p className="text-xs text-muted-foreground">
@@ -161,7 +167,7 @@ export function RecompensesSection() {
       )}
 
       {!isAdding && biensFinancementMixteNonCouverts.length > 0 && (
-        <div className="rounded-md border border-dashed p-4 mb-4 space-y-2">
+        <div className="rounded-md border border-dashed border-border bg-background p-4 mb-4 space-y-2">
           <p className="text-xs font-medium text-muted-foreground">
             Financement mixte déclaré sans récompense associée
           </p>
@@ -184,12 +190,12 @@ export function RecompensesSection() {
       )}
 
       {isAdding ? (
-        <div className="rounded-md border p-4 space-y-4">
+        <div className="rounded-md border border-border bg-background p-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label className="text-xs">Sens</Label>
               <Select value={sens} onValueChange={(v) => setSens(v as SensRecompense)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className={FIELD_CLS}><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="epoux_vers_communaute">{SENS_LABELS.epoux_vers_communaute}</SelectItem>
                   <SelectItem value="communaute_vers_epoux">{SENS_LABELS.communaute_vers_epoux}</SelectItem>
@@ -199,7 +205,7 @@ export function RecompensesSection() {
             <div className="space-y-1">
               <Label className="text-xs">Époux concerné</Label>
               <Select value={epoux} onValueChange={(v) => setEpoux(v as EpouxConcerne)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className={FIELD_CLS}><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user">Vous</SelectItem>
                   <SelectItem value="spouse">Conjoint</SelectItem>
@@ -211,7 +217,7 @@ export function RecompensesSection() {
           <div className="space-y-1">
             <Label className="text-xs">Bien concerné (facultatif)</Label>
             <Select value={bienConcerneId || '__none__'} onValueChange={(v) => setBienConcerneId(v === '__none__' ? '' : v)}>
-              <SelectTrigger className="max-w-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className={cn(FIELD_CLS, "max-w-xs")}><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">Aucun</SelectItem>
                 {assets?.map(a => (
@@ -252,7 +258,7 @@ export function RecompensesSection() {
               <div className="pl-6 pt-1 space-y-1">
                 <Label className="text-xs text-muted-foreground">Laquelle ?</Label>
                 <Select value={natureDetail ?? undefined} onValueChange={(v) => setNatureDetail(v as NatureDepense)}>
-                  <SelectTrigger className="max-w-xs"><SelectValue placeholder="Choisir..." /></SelectTrigger>
+                  <SelectTrigger className={cn(FIELD_CLS, "max-w-xs")}><SelectValue placeholder="Choisir..." /></SelectTrigger>
                   <SelectContent>
                     {NATURE_BIEN_OPTIONS.map(n => (
                       <SelectItem key={n} value={n}>{NATURE_LABELS[n]}</SelectItem>
@@ -289,7 +295,7 @@ export function RecompensesSection() {
           {natureResolue && (
             <div className="space-y-1 max-w-xs">
               <Label className="text-xs">Dépense faite (€)</Label>
-              <Input type="number" value={depenseFaite} onChange={(e) => setDepenseFaite(e.target.value)} placeholder="Ex : 100 000" />
+              <Input type="number" value={depenseFaite} onChange={(e) => setDepenseFaite(e.target.value)} placeholder="Ex : 100 000" className={FIELD_CLS} />
             </div>
           )}
 
@@ -316,11 +322,11 @@ export function RecompensesSection() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label className="text-xs">Valeur du bien à l'acquisition (€)</Label>
-                <Input type="number" value={valeurBienAcquisition} onChange={(e) => setValeurBienAcquisition(e.target.value)} placeholder="Ex : 200 000" />
+                <Input type="number" value={valeurBienAcquisition} onChange={(e) => setValeurBienAcquisition(e.target.value)} placeholder="Ex : 200 000" className={FIELD_CLS} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Valeur du bien à la liquidation (€)</Label>
-                <Input type="number" value={valeurBienLiquidation} onChange={(e) => setValeurBienLiquidation(e.target.value)} placeholder="Ex : 500 000" />
+                <Input type="number" value={valeurBienLiquidation} onChange={(e) => setValeurBienLiquidation(e.target.value)} placeholder="Ex : 500 000" className={FIELD_CLS} />
               </div>
             </div>
           )}
@@ -337,7 +343,7 @@ export function RecompensesSection() {
               <CollapsibleContent className="pt-2 space-y-1">
                 <Label className="text-xs">Le contrat de mariage prévoit-il une évaluation différente (nominal, plafonnée) ?</Label>
                 <Select value={modeOverride ?? '__defaut__'} onValueChange={(v) => setModeOverride(v === '__defaut__' ? null : v as ModeOverride)}>
-                  <SelectTrigger className="max-w-xs"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className={cn(FIELD_CLS, "max-w-xs")}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__defaut__">Non, profit subsistant (défaut légal, art. 1469)</SelectItem>
                     <SelectItem value="nominal">Oui, évaluation nominale</SelectItem>
@@ -359,7 +365,13 @@ export function RecompensesSection() {
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={resetForm}>Annuler</Button>
-            <Button type="button" onClick={handleSubmit} disabled={!peutSoumettre || saving}>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!peutSoumettre || saving}
+              className="text-white hover:opacity-90"
+              style={{ backgroundColor: '#006064' }}
+            >
               {saving ? 'Enregistrement...' : 'Ajouter la récompense'}
             </Button>
           </div>
@@ -370,6 +382,7 @@ export function RecompensesSection() {
           Ajouter une récompense
         </Button>
       )}
+      </div>
     </div>
   );
 }

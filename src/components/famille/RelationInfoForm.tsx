@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState, type ComponentType } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { z } from "zod";
 import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { SmartDateInput } from "@/components/family/SmartDateInput";
 import { CheckboxWithLabel } from "@/components/family/CheckboxWithLabel";
+import { SectionHeader } from "@/components/family/SectionHeader";
 import { MatrimonialRegimeOptions } from "@/components/famille/MatrimonialRegimeOptions";
 import { ClausesPersonnaliseesSection } from "@/components/famille/matrimonial/ClausesPersonnaliseesSection";
 import { RecompensesSection } from "@/components/famille/matrimonial/RecompensesSection";
@@ -99,17 +100,6 @@ const FIELD_TO_SECTION: Partial<Record<keyof FormData, Section>> = {
   dureeMariagePrecedentConjointAnnees: 'historique',
   dureeMariagePrecedentConjointMois: 'historique',
 };
-
-function SectionHeader({ icon: Icon, title }: { icon: ComponentType<{ className?: string; strokeWidth?: number }>; title: string }) {
-  return (
-    <div className="flex items-center gap-2.5 mb-6">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#006064]/10">
-        <Icon className="h-4 w-4 text-[#006064]" strokeWidth={1.75} />
-      </span>
-      <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">{title}</h3>
-    </div>
-  );
-}
 
 type Props = {
   relationStatus: string;

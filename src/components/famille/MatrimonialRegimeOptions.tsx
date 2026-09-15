@@ -96,9 +96,9 @@ export const MatrimonialRegimeOptions: React.FC<MatrimonialRegimeOptionsProps> =
     <div className="space-y-4">
       {/* Résumé des clauses actives */}
       {enabledClausesCount > 0 && (
-        <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+        <div className="p-3 bg-[#006064]/5 border border-[#006064]/20 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
-            <FileText className="h-4 w-4 text-primary" />
+            <FileText className="h-4 w-4 text-[#006064]" />
             <span className="text-sm font-medium">
               {enabledClausesCount} clause{enabledClausesCount > 1 ? 's' : ''} active{enabledClausesCount > 1 ? 's' : ''}
             </span>
@@ -154,7 +154,7 @@ export const MatrimonialRegimeOptions: React.FC<MatrimonialRegimeOptionsProps> =
             <span className="text-xs text-muted-foreground">
               {isSaving ? 'Sauvegarde...' : 'Les modifications sont sauvegardées automatiquement'}
             </span>
-            <Button onClick={() => setClauseModalOpen(false)}>
+            <Button onClick={() => setClauseModalOpen(false)} className="text-white hover:opacity-90" style={{ backgroundColor: '#006064' }}>
               Fermer
             </Button>
           </div>

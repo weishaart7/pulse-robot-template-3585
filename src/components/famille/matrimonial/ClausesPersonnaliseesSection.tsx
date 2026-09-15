@@ -5,11 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, X } from 'lucide-react';
+import { Plus, Trash2, X, FilePlus2 } from 'lucide-react';
 import { useCustomMatrimonialClauses } from '@/hooks/useCustomMatrimonialClauses';
 import { useAssets } from '@/hooks/useAssets';
 import { CUSTOM_CLAUSE_TAGS, CustomClauseTag } from '@/types/customClause';
 import { AssetSelectionModal } from './AssetSelectionModal';
+import { SectionHeader } from '@/components/family/SectionHeader';
+
+const FIELD_CLS = "bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20";
 
 export function ClausesPersonnaliseesSection() {
   const { clauses, isSaving, addClause, removeClause } = useCustomMatrimonialClauses();
@@ -60,16 +63,18 @@ export function ClausesPersonnaliseesSection() {
   const assetLabel = (assetId: string) => assets?.find(a => a.id === assetId)?.denomination || 'Bien sans nom';
 
   return (
-    <div className="rounded-md border bg-card p-6 shadow-sm">
-      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">Clauses personnalisées</h3>
-      <p className="text-xs text-muted-foreground mb-4">
+    <div className="rounded-xl border border-border bg-card p-8">
+      <SectionHeader icon={FilePlus2} title="Clauses personnalisées" />
+      <p className="text-xs text-muted-foreground -mt-4 mb-5">
         Clauses spécifiques à l'acte notarié, distinctes du catalogue ci-dessus. Aucun calcul automatique n'y est associé : à vérifier manuellement.
       </p>
+
+      <div className="rounded-lg bg-[#006064]/5 p-5">
 
       {clauses.length > 0 && (
         <div className="space-y-3 mb-5">
           {clauses.map(clause => (
-            <div key={clause.id} className="rounded-md border p-4 space-y-2">
+            <div key={clause.id} className="rounded-md border border-border bg-background p-4 space-y-2">
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1.5">
                   {clause.impacteCalcul && (
@@ -113,10 +118,10 @@ export function ClausesPersonnaliseesSection() {
       )}
 
       {isAdding ? (
-        <div className="rounded-md border p-4 space-y-4">
+        <div className="rounded-md border border-border bg-background p-4 space-y-4">
           <div className="space-y-1">
             <Label className="text-xs">Texte de la clause (fidèle à l'acte notarié)</Label>
-            <Textarea value={texte} onChange={(e) => setTexte(e.target.value)} rows={3} placeholder="Texte de la clause" />
+            <Textarea value={texte} onChange={(e) => setTexte(e.target.value)} rows={3} placeholder="Texte de la clause" className={FIELD_CLS} />
           </div>
 
           <div className="space-y-1">
@@ -161,7 +166,7 @@ export function ClausesPersonnaliseesSection() {
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Bénéficiaire de la clause</Label>
-              <Input value={beneficiaire} onChange={(e) => setBeneficiaire(e.target.value)} placeholder="Ex : conjoint survivant" />
+              <Input value={beneficiaire} onChange={(e) => setBeneficiaire(e.target.value)} placeholder="Ex : conjoint survivant" className={FIELD_CLS} />
             </div>
           </div>
 
@@ -169,7 +174,7 @@ export function ClausesPersonnaliseesSection() {
             <Label className="text-xs">Paramètre(s) chiffré(s)</Label>
             {parametres.map((p, i) => (
               <div key={i} className="flex items-center gap-2">
-                <Input value={p} onChange={(e) => handleParametreChange(i, e.target.value)} placeholder="Ex : décote 15%" />
+                <Input value={p} onChange={(e) => handleParametreChange(i, e.target.value)} placeholder="Ex : décote 15%" className={FIELD_CLS} />
                 {parametres.length > 1 && (
                   <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleRemoveParametre(i)}>
                     <X className="h-4 w-4" />
@@ -185,7 +190,13 @@ export function ClausesPersonnaliseesSection() {
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={resetForm}>Annuler</Button>
-            <Button type="button" onClick={handleSubmit} disabled={!texte.trim() || isSaving}>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!texte.trim() || isSaving}
+              className="text-white hover:opacity-90"
+              style={{ backgroundColor: '#006064' }}
+            >
               {isSaving ? 'Enregistrement...' : 'Ajouter la clause'}
             </Button>
           </div>
@@ -204,6 +215,7 @@ export function ClausesPersonnaliseesSection() {
         onConfirm={setBiensVises}
         preSelectedAssets={biensVises}
       />
+      </div>
     </div>
   );
 }
