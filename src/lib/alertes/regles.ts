@@ -1,5 +1,6 @@
 import { AlerteContext, AlerteDefinition } from './types';
 import { isDetenteurCommon } from '@/lib/patrimoine/utils';
+import { CLAUSES_IMPACTING_TRANSMISSION } from '@/constants/matrimonialClauses';
 
 const normalize = (s?: string) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -36,6 +37,56 @@ const hasAVBeneficiaireDesigne = (avContracts: AlerteContext['avContracts']) =>
       )
     )
   );
+
+// Clauses d'avantage matrimonial susceptibles de fonder une action en
+// retranchement (art. 1527 al. 2 C. civ.) en présence d'enfants non communs :
+// sous-ensemble de CLAUSES_IMPACTING_TRANSMISSION (constants/matrimonialClauses.ts),
+// qui inclut aussi 'societe_acquets' (l'adjonction elle-même est neutre, ce
+// sont ses clauses "_sub" — préciput_sub, attribution_integrale_sub,
+// partage_inegal_sub — qui portent l'avantage) et 'partage_inegal_acquets'
+// (participation aux acquêts, exclue par prudence : la doctrine évoque un
+// avantage matrimonial possible mais « sous réserve de l'appréciation
+// souveraine des tribunaux », sans retranchement clairement établi).
+const CLAUSES_RETRANCHEMENT = CLAUSES_IMPACTING_TRANSMISSION.filter(
+  (key) => key !== 'societe_acquets' && key !== 'partage_inegal_acquets'
+);
+
+const hasAvantageMatrimonialActif = (clausesContrat?: AlerteContext['clausesContrat']) =>
+  CLAUSES_RETRANCHEMENT.some((key) => !!clausesContrat?.[key]?.enabled);
+
+// Clauses révoquées de plein droit par le divorce, sauf volonté contraire
+// (art. 265 C. civ., formalisme durci par la loi n°2024-494 du 31 mai 2024) :
+// préciput, attribution intégrale, partage inégal (+ variantes société
+// d'acquêts), et pour la participation aux acquêts la clause de partage
+// inégal des acquêts. Périmètre volontairement plus large que
+// CLAUSES_RETRANCHEMENT (question juridique différente) : inclut
+// 'partage_inegal_acquets', explicitement cité par la doctrine parmi les
+// avantages qui disparaissent au divorce, contrairement au retranchement où
+// son inclusion n'est pas clairement établie.
+//
+// Hors périmètre (à trancher séparément) : 'modification_recompenses' (le
+// libellé du catalogue couvre plus large que la seule dispense de
+// récompense visée par la doctrine comme révoquée), 'prelevement_biens_communs'
+// / 'prelevement_indemnisation' / 'plafonnement_creance' /
+// 'attribution_preferentielle' (non cités explicitement parmi les clauses
+// révoquées), 'reprise_apports' / 'dissolution_alternative' (mécanismes dont
+// l'objet est justement de régler le sort du divorce, pas des avantages
+// eux-mêmes révocables par lui).
+const CLAUSES_REVOCATION_DIVORCE = [
+  'preciput',
+  'preciput_sub',
+  'attribution_integrale',
+  'attribution_integrale_sub',
+  'partage_inegal',
+  'partage_inegal_sub',
+  'partage_inegal_acquets',
+] as const;
+
+const hasAvantageMatrimonialSansMaintienDivorce = (clausesContrat?: AlerteContext['clausesContrat']) =>
+  CLAUSES_REVOCATION_DIVORCE.some((key) => {
+    const clause = clausesContrat?.[key];
+    return !!clause?.enabled && clause?.options?.maintienDivorce !== true;
+  });
 
 // Écart maximal entre un scénario de changement de régime (réalisé ou
 // envisagé) et une donation postérieure ou concomitante pour caractériser un
@@ -161,6 +212,13 @@ export const REGLES_ALERTES_CONSEIL: AlerteDefinition[] = [
     message: 'Clause révoquée de plein droit au divorce (Cass. 1re civ., 18 déc. 2019). Ajouter une stipulation expresse.',
   },
   {
+    id: 'avantage_matrimonial_sans_maintien_divorce',
+    niveau: 'eleve',
+    condition: (ctx) => hasAvantageMatrimonialSansMaintienDivorce(ctx.clausesContrat),
+    message:
+      'Cette clause sera révoquée de plein droit en cas de divorce (art. 265). Une volonté contraire doit être exprimée dans la convention matrimoniale ou lors du divorce.',
+  },
+  {
     id: 'extraneite_residence_fiscale_etranger',
     niveau: 'moyen',
     condition: (ctx) => !!ctx.clientResidenceFiscaleEtranger || !!ctx.conjointResidenceFiscaleEtranger,
@@ -189,12 +247,17 @@ export const REGLES_ALERTES_CONSEIL: AlerteDefinition[] = [
       "Donation au dernier vivant en présence d'enfant(s) non commun(s) : si l'acte ne laisse pas le choix entre les 3 quotités de l'art. 1094-1, l'enfant non commun dispose d'une faculté de substitution en usufruit sur l'excédent (art. 1098). À vérifier dans la rédaction de l'acte — non déductible depuis les données de cet outil.",
   },
   {
-    id: 'enfants_non_communs_communaute_universelle',
+    id: 'enfants_non_communs_avantage_matrimonial',
     niveau: 'critique',
-    condition: (ctx) =>
-      ctx.hasNonCommonChildren &&
-      isCommunauteUniverselle(ctx.regimeMatrimonial) &&
-      !!ctx.clausesContrat?.attribution_integrale?.enabled,
+    // Le retranchement (art. 1527 al. 2) concerne tout avantage matrimonial
+    // (préciput, attribution intégrale, partage inégal — y compris leurs
+    // variantes de société d'acquêts), dans tout régime communautaire, pas
+    // seulement l'attribution intégrale en communauté universelle. Le régime
+    // n'a pas besoin d'être vérifié explicitement : chaque clause de
+    // CLAUSES_RETRANCHEMENT n'est de toute façon proposée à la saisie que
+    // dans un régime où elle est juridiquement admise (cf.
+    // CLAUSE_REGIME_COMPATIBILITY, constants/matrimonialClauses.ts).
+    condition: (ctx) => ctx.hasNonCommonChildren && hasAvantageMatrimonialActif(ctx.clausesContrat),
     message:
       "Risque d'action en retranchement (art. 1527 al. 2). Envisager une renonciation anticipée (art. 1527 al. 3).",
   },

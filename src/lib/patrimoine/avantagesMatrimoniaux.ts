@@ -5,13 +5,11 @@
  * partage par défaut à 50/50 posé par `getPartSuccessorale`
  * (cf. src/lib/patrimoine/succession.ts).
  *
- * Module volontairement isolé : il n'est pas encore consommé par
- * `computeTransmission` (src/lib/transmission/index.ts) ni par
- * `buildPatrimonySnapshot` (src/utils/transmissionHelpers.ts). Le branchement
- * réel (mapping depuis `ClauseState`/`ClausesData` de src/types/matrimonial.ts,
- * extension de `TransmissionContext` pour faire transiter `qualification_bien`
- * des passifs) est prévu comme étape suivante, une fois ce moteur validé en
- * isolation.
+ * Branché sur `computeTransmission` (src/lib/transmission/index.ts, voir le
+ * bloc "Avantages matrimoniaux" et `deltaAvantageMatrimonial`) et sur
+ * `buildSpouseRawAssets` (src/utils/transmissionHelpers.ts) via
+ * `getPartConjointAjustee`/`buildAvantageMatrimonialCtx`, pour les deux volets
+ * civil et fiscal du calcul de transmission.
  */
 
 import { ClausesData } from '../../types/matrimonial';

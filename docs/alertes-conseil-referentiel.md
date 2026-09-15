@@ -72,42 +72,62 @@ Ordre d'apparition réel dans `REGLES_ALERTES_CONSEIL` ([regles.ts](../src/lib/a
 - **Champs/tables lus** :
   - `marital_status.clauses_contrat` (clé `exclusion_biens_professionnels.enabled` / `.options.maintienDivorce`)
 
-### 10. `extraneite_residence_fiscale_etranger`
+### 10. `avantage_matrimonial_sans_maintien_divorce`
+- **Message** : « Cette clause sera révoquée de plein droit en cas de divorce (art. 265). Une volonté contraire doit être exprimée dans la convention matrimoniale ou lors du divorce. »
+- **Champs/tables lus** :
+  - `marital_status.clauses_contrat` — clés `preciput`, `preciput_sub`, `attribution_integrale`, `attribution_integrale_sub`, `partage_inegal`, `partage_inegal_sub`, `partage_inegal_acquets` (`.enabled` / `.options.maintienDivorce`)
+- **Note** : ajoutée le 2026-09-15. Généralise le principe de la règle 9 (révocation de plein droit au divorce, art. 265 C. civ., formalisme durci par la loi n°2024-494 du 31 mai 2024) aux avantages matrimoniaux « cœur » — préciput, attribution intégrale, partage inégal, y compris leurs variantes de société d'acquêts et le partage inégal des acquêts en participation aux acquêts — jusque-là non couverts. Périmètre volontairement restreint : `modification_recompenses` (libellé du catalogue trop large pour cibler la seule dispense de récompense visée par la doctrine), `prelevement_biens_communs`, `prelevement_indemnisation`, `plafonnement_creance`, `attribution_preferentielle` (non cités explicitement par la doctrine parmi les clauses révoquées), `reprise_apports` et `dissolution_alternative` (mécanismes réglant eux-mêmes le sort du divorce, pas des avantages qui y seraient soumis) en sont exclus — voir le commentaire de `CLAUSES_REVOCATION_DIVORCE` dans [regles.ts](../src/lib/alertes/regles.ts) pour le détail. La case « Maintien exprès en cas de divorce » (`hasMaintienDivorceOption`) a été étendue aux mêmes clauses dans [`matrimonialClauses.ts`](../src/constants/matrimonialClauses.ts).
+
+### 11. `extraneite_residence_fiscale_etranger`
 - **Message** : « La loi applicable au régime matrimonial doit être vérifiée (§ 4.4). »
 - **Champs/tables lus** :
   - `family_profiles.residence_fiscale_etranger`
   - `marital_status.residence_fiscale_etranger_conjoint`
 
-### 11. `extraneite_regime_matrimonial`
+### 12. `extraneite_regime_matrimonial`
 - **Message** : « Élément d'extranéité déclaré sur le régime matrimonial : la loi applicable doit être vérifiée (§ 4.4, § 12.1). Orienter vers un notaire si besoin — non automatisé dans cet outil. »
 - **Champs/tables lus** :
   - `marital_status.pays_premier_domicile_matrimonial`, `marital_status.loi_applicable_regime`
 
-### 12. `enfants_non_communs_sans_ddv`
+### 13. `enfants_non_communs_sans_ddv`
 - **Message** : « Le conjoint ne pourra prétendre qu'à 1/4 en pleine propriété (art. 757). Une donation au dernier vivant lui ouvrirait l'option de l'usufruit total. »
 - **Champs/tables lus** :
   - `family_links.lien_familial`, `family_links.parent_de` (via `hasNonCommonChildren`)
   - `marital_status.donation_dernier_vivant_personne`, `marital_status.donation_dernier_vivant_conjoint` (via `hasDDV`)
 
-### 13. `ddv_enfant_non_commun_substitution_1098`
+### 14. `ddv_enfant_non_commun_substitution_1098`
 - **Message** : « Donation au dernier vivant en présence d'enfant(s) non commun(s) : si l'acte ne laisse pas le choix entre les 3 quotités de l'art. 1094-1, l'enfant non commun dispose d'une faculté de substitution en usufruit sur l'excédent (art. 1098). À vérifier dans la rédaction de l'acte — non déductible depuis les données de cet outil. »
 - **Champs/tables lus** :
   - `family_links.lien_familial`, `family_links.parent_de` (via `hasNonCommonChildren`)
   - `marital_status.donation_dernier_vivant_personne`, `marital_status.donation_dernier_vivant_conjoint` (via `hasDDV`)
 - **Note** : signal déclaratif volontairement partiel, sur le même principe que l'alerte assurance-vie L. 132-13 ([`Synthese.tsx:470`](../src/components/transmission/Synthese.tsx#L470)) — l'application ne capture que l'existence de la DDV (booléen + date), pas la quotité/l'option retenue dans l'acte (cf. diagnostic préalable). Ne détecte donc que le signal large « DDV + enfant non commun », pas le cas précis de l'art. 1098.
 
-### 14. `enfants_non_communs_communaute_universelle`
+### 15. `enfants_non_communs_avantage_matrimonial`
 - **Message** : « Risque d'action en retranchement (art. 1527 al. 2). Envisager une renonciation anticipée (art. 1527 al. 3). »
 - **Champs/tables lus** :
   - `family_links.lien_familial`, `family_links.parent_de` (via `hasNonCommonChildren`)
-  - `marital_status.regime_matrimonial`
-  - `marital_status.clauses_contrat` (clé `attribution_integrale.enabled`)
+  - `marital_status.clauses_contrat` — clés `preciput`, `preciput_sub`, `attribution_integrale`, `attribution_integrale_sub`, `partage_inegal`, `partage_inegal_sub` (`.enabled`)
+- **Note** : renommée et élargie le 2026-09-15 (ex-`enfants_non_communs_communaute_universelle`, qui ne couvrait que l'attribution intégrale en communauté universelle). L'action en retranchement (art. 1527 al. 2) concerne tout avantage matrimonial dans tout régime communautaire, pas seulement ce cas particulier. Le régime matrimonial n'est plus vérifié explicitement : chaque clause listée n'est de toute façon proposée à la saisie que dans un régime où elle est juridiquement admise (`CLAUSE_REGIME_COMPATIBILITY`, [matrimonialClauses.ts](../src/constants/matrimonialClauses.ts)). `partage_inegal_acquets` (participation aux acquêts) est délibérément exclu : la doctrine évoque un avantage matrimonial possible « sous réserve de l'appréciation souveraine des tribunaux », sans retranchement clairement établi — à distinguer de la règle 10, qui l'inclut (question juridique différente : révocation au divorce, explicitement citée par la doctrine pour ce cas).
 
-### 15. `changement_regime_proche_donation`
+### 16. `changement_regime_proche_donation`
 - **Message** (variable selon si la motivation civile est déjà renseignée) : « Un changement de régime matrimonial (réalisé ou envisagé) et une donation sont séparés de moins de 3 ans : risque de requalification en abus de droit (art. L. 64 LPF). Documentez la motivation civile du changement de régime, indépendante de toute optimisation fiscale. » (ou, si déjà renseignée : « Vérifiez que la motivation civile déjà renseignée reste pertinente et documentée. »)
 - **Champs/tables lus** :
   - `liberalites.type`, `liberalites.date_acte`
   - `scenarios_regime.date`, `scenarios_regime.motivation_civile`
+
+## 1bis. Point de vigilance juridique documenté, non implémenté
+
+**Déchéance des avantages matrimoniaux (art. 1399-1 à 1399-5 C. civ., loi n°2024-494 du 31 mai 2024).**
+Depuis le 2 juin 2024, un époux condamné pénalement pour des faits de violence ou d'homicide
+envers son conjoint peut être déchu des avantages matrimoniaux qui lui sont favorables (déchéance
+de plein droit ou facultative selon les faits, délai de demande de 6 mois, effets rétroactifs sur
+les revenus perçus). Volontairement non implémenté : déclencher une alerte ou un calcul
+nécessiterait de capturer qu'un époux a fait l'objet d'une condamnation pénale pour violences
+envers l'autre, une donnée relevant de l'article 10 du RGPD (données relatives aux condamnations
+pénales) qu'aucune autre partie de l'outil ne traite et qui n'a pas sa place dans un logiciel de
+gestion de patrimoine destiné à un CGP. En cas de situation de ce type signalée par un client,
+orienter vers un notaire ou un avocat — la vérification de la déchéance et de ses effets reste
+hors du périmètre de cet outil.
 
 ## 2. Règles abandonnées (hors numérotation actuelle)
 
@@ -137,8 +157,8 @@ supposition de correspondance numérique :
 | `#5` (référentiel §12.8) | [`20260724160000_add_contributeur_remboursement_emprunts.sql`](../supabase/migrations/20260724160000_add_contributeur_remboursement_emprunts.sql) | Colonne `emprunts.contributeur_remboursement` — « en séparation de biens, si un seul époux rembourse un emprunt lié à un bien indivis, ce remboursement peut être requalifié en contribution aux charges du mariage » | **6** `separation_biens_rp_indivise_remboursement_unilateral` | Champ ajouté = champ lu par la règle 6 ; formulation quasi identique au message affiché |
 | `#7` (référentiel §12.8) | [`20260724170000_add_parts_negociables_date_souscription_societes.sql`](../supabase/migrations/20260724170000_add_parts_negociables_date_souscription_societes.sql) | Colonnes `societes.parts_negociables` / `date_souscription` — « le conjoint peut revendiquer la qualité d'associé, art. 1832-2 » | **7** `parts_non_negociables_souscrites_pendant_mariage` | Champs ajoutés = champs lus par la règle 7 ; art. 1832-2 cité dans le message affiché |
 | `#8` (référentiel §12.8) | [`20260724180000_add_signe_date_signature_patrimoine_originaire.sql`](../supabase/migrations/20260724180000_add_signe_date_signature_patrimoine_originaire.sql) | Colonnes `patrimoine_originaire.signe` / `date_signature` — « participation aux acquêts sans état descriptif du patrimoine originaire signé (art. 1570) » | **8** `participation_acquets_sans_etat_descriptif_signe` | Champ ajouté = champ lu par la règle 8 ; art. 1570 cité dans le message affiché |
-| `#13` (référentiel §12.8) | [`20260724190000_add_residence_fiscale_etranger.sql`](../supabase/migrations/20260724190000_add_residence_fiscale_etranger.sql) | Colonnes `family_profiles.residence_fiscale_etranger` / `marital_status.residence_fiscale_etranger_conjoint` — « élément d'extranéité détecté (résidence fiscale à l'étranger) » | **10** `extraneite_residence_fiscale_etranger` | Champs ajoutés = champs lus par la règle 10 |
-| `#15` (sans tag §12.8 explicite, même famille de numérotation — cf. [`docs/recapitulatif-2026-07-29.md`](recapitulatif-2026-07-29.md) « Alerte #15 ») | [`20260726120000_create_scenarios_regime.sql`](../supabase/migrations/20260726120000_create_scenarios_regime.sql) + [`20260726120100_add_statut_liberalites.sql`](../supabase/migrations/20260726120100_add_statut_liberalites.sql) | « support de l'alerte #15 (changement de régime avant donation, risque d'abus de droit L. 64 LPF) » / « une donation en projet ne doit pas être traitée comme un acte réalisé » | **15** `changement_regime_proche_donation` | Table `scenarios_regime` + colonne `liberalites.statut` = données lues par la règle 15 ; art. L. 64 LPF cité dans le message affiché |
+| `#13` (référentiel §12.8) | [`20260724190000_add_residence_fiscale_etranger.sql`](../supabase/migrations/20260724190000_add_residence_fiscale_etranger.sql) | Colonnes `family_profiles.residence_fiscale_etranger` / `marital_status.residence_fiscale_etranger_conjoint` — « élément d'extranéité détecté (résidence fiscale à l'étranger) » | **11** `extraneite_residence_fiscale_etranger` | Champs ajoutés = champs lus par la règle 11 |
+| `#15` (sans tag §12.8 explicite, même famille de numérotation — cf. [`docs/recapitulatif-2026-07-29.md`](recapitulatif-2026-07-29.md) « Alerte #15 ») | [`20260726120000_create_scenarios_regime.sql`](../supabase/migrations/20260726120000_create_scenarios_regime.sql) + [`20260726120100_add_statut_liberalites.sql`](../supabase/migrations/20260726120100_add_statut_liberalites.sql) | « support de l'alerte #15 (changement de régime avant donation, risque d'abus de droit L. 64 LPF) » / « une donation en projet ne doit pas être traitée comme un acte réalisé » | **16** `changement_regime_proche_donation` | Table `scenarios_regime` + colonne `liberalites.statut` = données lues par la règle 16 ; art. L. 64 LPF cité dans le message affiché |
 
 **Repère complémentaire (non numéroté §12.8)** : le commentaire `// Simplification
 assumée (cf. Vague 0, alertes #1/#2)` dans [regles.ts:19](../src/lib/alertes/regles.ts#L19)
@@ -149,11 +169,12 @@ numérotation actuelle.
 
 Le commentaire de [`transmissionHelpers.ts:411`](../src/utils/transmissionHelpers.ts#L411)
 (« pour les besoins des alertes de conseil (§12.8, art. 1094-1) ») documente la
-fonction `hasNonCommonChildren`, partagée par les règles **12**
-(`enfants_non_communs_sans_ddv`), **13** (`ddv_enfant_non_commun_substitution_1098`,
-ajoutée le 2026-07-30) et **14** (`enfants_non_communs_communaute_universelle`).
+fonction `hasNonCommonChildren`, partagée par les règles **13**
+(`enfants_non_communs_sans_ddv`), **14** (`ddv_enfant_non_commun_substitution_1098`,
+ajoutée le 2026-07-30) et **15** (`enfants_non_communs_avantage_matrimonial`, ex-
+`enfants_non_communs_communaute_universelle`, renommée et élargie le 2026-09-15).
 L'article 1094-1 CC (quotité disponible entre époux / option du conjoint survivant)
-correspond plus précisément au contenu des règles **12** et **13**, qui traitent
+correspond plus précisément au contenu des règles **13** et **14**, qui traitent
 explicitement de la donation au dernier vivant.
 
 ## 4. Références externes non résolues
