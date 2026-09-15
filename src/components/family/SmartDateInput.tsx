@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 
@@ -18,21 +19,26 @@ interface SmartDateInputProps {
 // elle ne devient un Date qu'une fois JJ/MM/AAAA entièrement saisi et vérifié (jour/mois/année
 // réels, année dans [1900, aujourd'hui]).
 export function SmartDateInput({ value, onChange, className }: SmartDateInputProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
   return (
     <div className="flex items-center gap-2">
       <FormControl className="flex-1">
         <Input
+          ref={inputRef}
           placeholder="JJ/MM/AAAA"
           className={className}
           value={value instanceof Date ? format(value, 'dd/MM/yyyy') : value || ''}
           onChange={(e) => {
             const raw = e.target.value;
+            const caret = e.target.selectionStart ?? raw.length;
 
             // Ne garder que les chiffres, et reconstruire les "/" à partir du
             // nombre de chiffres saisis (plutôt que de manipuler la chaîne
             // formatée précédente), pour que la saisie reste correcte quel
             // que soit le mode de saisie (frappe touche par touche, collage
             // d'une date complète, suppression en cours de saisie...).
+            const digitsBeforeCaret = raw.slice(0, caret).replace(/\D/g, '').length;
             const digits = raw.replace(/\D/g, '').slice(0, 8);
 
             let formattedValue = digits;
@@ -41,6 +47,22 @@ export function SmartDateInput({ value, onChange, className }: SmartDateInputPro
             } else if (digits.length > 2) {
               formattedValue = `${digits.slice(0, 2)}/${digits.slice(2)}`;
             }
+
+            // Repositionner le curseur juste après le dernier chiffre saisi :
+            // l'insertion automatique des "/" décale le texte, et React restaure
+            // sinon le curseur à son index numérique d'avant, ce qui le place
+            // avant le chiffre qu'on vient de taper (les chiffres suivants
+            // s'insèrent alors au mauvais endroit).
+            const digitCount = Math.min(digitsBeforeCaret, digits.length);
+            let caretPos = digitCount;
+            if (digitCount > 2) caretPos += 1;
+            if (digitCount > 4) caretPos += 1;
+            caretPos = Math.min(caretPos, formattedValue.length);
+            // setTimeout(0), comme Input, pour s'exécuter après la restauration
+            // de curseur déjà planifiée par le composant Input et la gagner.
+            setTimeout(() => {
+              inputRef.current?.setSelectionRange(caretPos, caretPos);
+            }, 0);
 
             // Validation finale si format complet
             if (formattedValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
