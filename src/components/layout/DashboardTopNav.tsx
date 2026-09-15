@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Sparkle } from 'lucide-react';
 import { PillTabs, PillTabsList, PillTabsTrigger } from '@/components/ui/pill-tabs';
 import { ProfileMenu } from '@/components/layout/ProfileMenu';
@@ -33,10 +34,22 @@ export function DashboardTopNav() {
                 <PillTabsTrigger
                   key={item.value}
                   value={item.value}
-                  className="h-full text-[#000105] [&_svg]:text-[#000105] data-[state=active]:bg-[#006064] data-[state=active]:text-white [&[data-state=active]_svg]:text-white"
+                  className="relative h-full overflow-hidden text-[#000105] [&_svg]:text-[#000105] data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-white [&[data-state=active]_svg]:text-white"
                 >
-                  <Icon strokeWidth={1.75} />
-                  {item.label}
+                  {item.value === currentValue && (
+                    <motion.span
+                      layoutId="activeModulePill"
+                      className="absolute inset-0 rounded-full bg-[#006064]"
+                      transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                    />
+                  )}
+                  <Icon strokeWidth={1.75} className="relative z-10" />
+                  <span
+                    className="relative z-10 uppercase font-semibold"
+                    style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '13.05px' }}
+                  >
+                    {item.label}
+                  </span>
                 </PillTabsTrigger>
               );
             })}

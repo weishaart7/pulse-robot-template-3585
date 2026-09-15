@@ -102,8 +102,8 @@ const Dashboard = () => {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card className="border border-border">
           <CardHeader>
-            <CardTitle className="text-xl font-medium">Patrimoine</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-xl font-bold" style={{ color: '#181818', fontFamily: "Helvetica, Arial, sans-serif", letterSpacing: '0.3px' }}>Patrimoine</CardTitle>
+            <CardDescription style={{ color: '#181818', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.5px' }}>
               Suivez l'évolution de votre patrimoine
             </CardDescription>
           </CardHeader>
@@ -121,8 +121,8 @@ const Dashboard = () => {
 
         <Card className="border border-border">
           <CardHeader>
-            <CardTitle className="text-xl font-medium">Budget</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-xl font-bold" style={{ color: '#181818', fontFamily: "Helvetica, Arial, sans-serif", letterSpacing: '0.3px' }}>Budget</CardTitle>
+            <CardDescription style={{ color: '#181818', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.5px' }}>
               Contrôlez vos finances au quotidien
             </CardDescription>
           </CardHeader>
@@ -133,8 +133,8 @@ const Dashboard = () => {
 
         <Card className="overflow-hidden border border-border">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-medium">Fiscalité</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-xl font-bold" style={{ color: '#181818', fontFamily: "Helvetica, Arial, sans-serif", letterSpacing: '0.3px' }}>Fiscalité</CardTitle>
+            <CardDescription style={{ color: '#181818', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.5px' }}>
               Optimisez votre situation fiscale
             </CardDescription>
           </CardHeader>
@@ -193,8 +193,8 @@ const Dashboard = () => {
         
         <Card className="border border-border">
           <CardHeader>
-            <CardTitle className="text-xl font-medium">Transmission</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-xl font-bold" style={{ color: '#181818', fontFamily: "Helvetica, Arial, sans-serif", letterSpacing: '0.3px' }}>Transmission</CardTitle>
+            <CardDescription style={{ color: '#181818', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.5px' }}>
               Préparez la transmission de votre patrimoine
             </CardDescription>
           </CardHeader>
@@ -207,8 +207,8 @@ const Dashboard = () => {
 
         <Card className="border border-border">
           <CardHeader>
-            <CardTitle className="text-xl font-medium">Retraite</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-xl font-bold" style={{ color: '#181818', fontFamily: "Helvetica, Arial, sans-serif", letterSpacing: '0.3px' }}>Retraite</CardTitle>
+            <CardDescription style={{ color: '#181818', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.5px' }}>
               Anticipez votre retraite sereinement
             </CardDescription>
           </CardHeader>
