@@ -1,15 +1,13 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useState, type ComponentType } from "react";
 import { z } from "zod";
 import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMaritalStatus } from "@/hooks/useFamilyData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import ActionHubInput from "@/components/ui/action-hub-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog,
@@ -21,10 +19,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CalendarIcon, Loader2, Heart, FileText, Gift, History, Scale, Coins } from "lucide-react";
+import { Loader2, Heart, FileText, Gift, History, Scale, Coins } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { SmartDateInput } from "@/components/family/SmartDateInput";
+import { CheckboxWithLabel } from "@/components/family/CheckboxWithLabel";
 import { MatrimonialRegimeOptions } from "@/components/famille/MatrimonialRegimeOptions";
 import { ClausesPersonnaliseesSection } from "@/components/famille/matrimonial/ClausesPersonnaliseesSection";
 import { RecompensesSection } from "@/components/famille/matrimonial/RecompensesSection";
@@ -99,6 +99,17 @@ const FIELD_TO_SECTION: Partial<Record<keyof FormData, Section>> = {
   dureeMariagePrecedentConjointAnnees: 'historique',
   dureeMariagePrecedentConjointMois: 'historique',
 };
+
+function SectionHeader({ icon: Icon, title }: { icon: ComponentType<{ className?: string; strokeWidth?: number }>; title: string }) {
+  return (
+    <div className="flex items-center gap-2.5 mb-6">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#006064]/10">
+        <Icon className="h-4 w-4 text-[#006064]" strokeWidth={1.75} />
+      </span>
+      <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">{title}</h3>
+    </div>
+  );
+}
 
 type Props = {
   relationStatus: string;
@@ -386,127 +397,117 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
         {relationStatus === "Marié(e)" && (
           <>
             {activeSection === 'informations-generales' && (
-              <div className="rounded-md border bg-card p-6 shadow-sm space-y-6">
+              <div className="rounded-xl border border-border bg-card p-8 space-y-10">
                 <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Date & lieu</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <FormField
-                      control={form.control}
-                      name="dateMariage"
-                      render={({ field }) => (
-                        <FormItem className="space-y-1">
-                          <FormLabel>Date du mariage</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button variant="outline" className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                  {field.value ? format(field.value, "dd/MM/yyyy") : <span>Sélectionner une date</span>}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus className="p-3 pointer-events-auto" />
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="lieuMariage"
-                      render={({ field }) => (
-                        <FormItem className="space-y-1">
-                          <FormLabel>Lieu du mariage</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Lieu du mariage" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <SectionHeader icon={Heart} title="Date & lieu" />
+                  <div className="rounded-lg bg-[#006064]/5 p-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <FormField
+                        control={form.control}
+                        name="dateMariage"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="relative w-full flex flex-col gap-1">
+                              <FormLabel>Date du mariage</FormLabel>
+                              <SmartDateInput
+                                value={field.value}
+                                onChange={field.onChange}
+                                className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20"
+                              />
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="lieuMariage"
+                        render={({ field }) => (
+                          <FormItem className="space-y-1">
+                            <FormControl>
+                              <ActionHubInput
+                                label="Lieu du mariage"
+                                placeholder="Lieu du mariage"
+                                value={field.value}
+                                onChange={field.onChange}
+                                historyEnabled={false}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   </div>
                 </div>
 
                 <Separator />
 
                 <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Régime matrimonial</h3>
-                  <FormField
-                    control={form.control}
-                    name="regimeMatrimonial"
-                    render={({ field }) => (
-                      <FormItem className="space-y-1 mb-5">
-                        <FormLabel>Régime</FormLabel>
-                        <Select onValueChange={handleRegimeSelect} value={field.value} disabled={pasDeContrat}>
-                          <FormControl>
-                            <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {REGIMES_MATRIMONIAUX.map(regime => (
-                              <SelectItem key={regime} value={regime}>{regime}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <SectionHeader icon={FileText} title="Régime matrimonial" />
+                  <div className="rounded-lg bg-[#006064]/5 p-5">
+                    <FormField
+                      control={form.control}
+                      name="regimeMatrimonial"
+                      render={({ field }) => (
+                        <FormItem className="mb-5">
+                          <div className="relative w-full flex flex-col gap-1">
+                            <FormLabel>Régime</FormLabel>
+                            <Select onValueChange={handleRegimeSelect} value={field.value} disabled={pasDeContrat}>
+                              <FormControl>
+                                <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {REGIMES_MATRIMONIAUX.map(regime => (
+                                  <SelectItem key={regime} value={regime}>{regime}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <div className="flex flex-col gap-3">
-                    <FormField
-                      control={form.control}
-                      name="pasDeContrat"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                          <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                          <FormLabel className="text-sm">Pas de contrat de mariage</FormLabel>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="residenceSeparee"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                          <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                          <FormLabel className="text-sm">Résidence séparée</FormLabel>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="separationDeCorps"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                          <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                          <FormLabel className="text-sm">Séparation de corps</FormLabel>
-                        </FormItem>
-                      )}
-                    />
-                    {/* L'époux séparé de corps reste conjoint successible sauf clause de
-                        renonciation dans la convention (C. civ. art. 732, référentiel §5.1) */}
-                    <FormField
-                      control={form.control}
-                      name="separationCorpsClauseRenonciation"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              disabled={!separationDeCorps}
-                            />
-                          </FormControl>
-                          <FormLabel className={cn("text-sm", !separationDeCorps && "text-muted-foreground")}>
-                            Clause de renonciation aux droits successoraux (convention de séparation)
-                          </FormLabel>
-                        </FormItem>
-                      )}
-                    />
+                    <div className="flex flex-wrap items-center gap-6">
+                      <FormField
+                        control={form.control}
+                        name="pasDeContrat"
+                        render={({ field }) => (
+                          <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Pas de contrat de mariage" />
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="residenceSeparee"
+                        render={({ field }) => (
+                          <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Résidence séparée" />
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="separationDeCorps"
+                        render={({ field }) => (
+                          <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Séparation de corps" />
+                        )}
+                      />
+                      {/* L'époux séparé de corps reste conjoint successible sauf clause de
+                          renonciation dans la convention (C. civ. art. 732, référentiel §5.1) */}
+                      <FormField
+                        control={form.control}
+                        name="separationCorpsClauseRenonciation"
+                        render={({ field }) => (
+                          <CheckboxWithLabel
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            disabled={!separationDeCorps}
+                            label="Clause de renonciation aux droits successoraux (convention de séparation)"
+                          />
+                        )}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -514,13 +515,15 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
 
             {activeSection === 'clauses-contrat' && (
               <div className="space-y-6">
-                <div className="rounded-md border bg-card p-6 shadow-sm">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Clauses du contrat</h3>
-                  {pasDeContrat ? (
-                    <p className="text-sm text-muted-foreground">Pas de contrat de mariage sélectionné</p>
-                  ) : (
-                    <MatrimonialRegimeOptions regimeType={simplifiedRegimeType} />
-                  )}
+                <div className="rounded-xl border border-border bg-card p-8">
+                  <SectionHeader icon={FileText} title="Clauses du contrat" />
+                  <div className="rounded-lg bg-[#006064]/5 p-5">
+                    {pasDeContrat ? (
+                      <p className="text-sm text-muted-foreground">Pas de contrat de mariage sélectionné</p>
+                    ) : (
+                      <MatrimonialRegimeOptions regimeType={simplifiedRegimeType} />
+                    )}
+                  </div>
                 </div>
 
                 <ClausesPersonnaliseesSection />
@@ -545,91 +548,89 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
             )}
 
             {activeSection === 'donation' && (
-              <div className="rounded-md border bg-card p-6 shadow-sm space-y-6">
+              <div className="rounded-xl border border-border bg-card p-8 space-y-10">
                 <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Donation consentie au conjoint</h3>
-                  <div className="flex flex-wrap items-center gap-4">
-                    <FormField
-                      control={form.control}
-                      name="donationDernierVivantPersonne"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                          <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                          <FormLabel className="text-sm">J'ai consenti une donation au dernier vivant en faveur de mon conjoint</FormLabel>
-                        </FormItem>
-                      )}
-                    />
-                    {form.watch("donationDernierVivantPersonne") && (
+                  <SectionHeader icon={Gift} title="Donation consentie au conjoint" />
+                  <div className="rounded-lg bg-[#006064]/5 p-5">
+                    <div className="flex flex-wrap items-center gap-6">
                       <FormField
                         control={form.control}
-                        name="dateDonationPersonne"
+                        name="donationDernierVivantPersonne"
                         render={({ field }) => (
-                          <FormItem className="min-w-[200px]">
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button variant="outline" size="sm" className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                    {field.value ? format(field.value, "dd/MM/yyyy") : <span>Date de l'acte</span>}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus className="p-3 pointer-events-auto" />
-                              </PopoverContent>
-                            </Popover>
-                          </FormItem>
+                          <CheckboxWithLabel
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            label="J'ai consenti une donation au dernier vivant en faveur de mon conjoint"
+                          />
                         )}
                       />
-                    )}
+                      {form.watch("donationDernierVivantPersonne") && (
+                        <FormField
+                          control={form.control}
+                          name="dateDonationPersonne"
+                          render={({ field }) => (
+                            <FormItem className="min-w-[200px]">
+                              <div className="relative w-full flex flex-col gap-1">
+                                <FormLabel>Date de l'acte</FormLabel>
+                                <SmartDateInput
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20"
+                                />
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 <Separator />
 
                 <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Donation reçue du conjoint</h3>
-                  <div className="flex flex-wrap items-center gap-4">
-                    <FormField
-                      control={form.control}
-                      name="donationDernierVivantConjoint"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                          <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                          <FormLabel className="text-sm">J'ai reçu une donation au dernier vivant de la part de mon conjoint</FormLabel>
-                        </FormItem>
-                      )}
-                    />
-                    {form.watch("donationDernierVivantConjoint") && (
+                  <SectionHeader icon={Gift} title="Donation reçue du conjoint" />
+                  <div className="rounded-lg bg-[#006064]/5 p-5">
+                    <div className="flex flex-wrap items-center gap-6">
                       <FormField
                         control={form.control}
-                        name="dateDonationConjoint"
+                        name="donationDernierVivantConjoint"
                         render={({ field }) => (
-                          <FormItem className="min-w-[200px]">
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button variant="outline" size="sm" className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                    {field.value ? format(field.value, "dd/MM/yyyy") : <span>Date de l'acte</span>}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus className="p-3 pointer-events-auto" />
-                              </PopoverContent>
-                            </Popover>
-                          </FormItem>
+                          <CheckboxWithLabel
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            label="J'ai reçu une donation au dernier vivant de la part de mon conjoint"
+                          />
                         )}
                       />
-                    )}
+                      {form.watch("donationDernierVivantConjoint") && (
+                        <FormField
+                          control={form.control}
+                          name="dateDonationConjoint"
+                          render={({ field }) => (
+                            <FormItem className="min-w-[200px]">
+                              <div className="relative w-full flex flex-col gap-1">
+                                <FormLabel>Date de l'acte</FormLabel>
+                                <SmartDateInput
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20"
+                                />
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             )}
 
             {activeSection === 'historique' && (
-              <div className="rounded-md border bg-card p-6 shadow-sm space-y-6">
+              <div className="rounded-xl border border-border bg-card p-8 space-y-10">
                 {[
                   { title: "Votre mariage précédent", flag: "mariagePrecedentPersonne" as const, annees: "dureeMariagePrecedentPersonneAnnees" as const, mois: "dureeMariagePrecedentPersonneMois" as const, label: "J'ai été marié(e) précédemment" },
                   { title: "Mariage précédent du conjoint", flag: "mariagePrecedentConjoint" as const, annees: "dureeMariagePrecedentConjointAnnees" as const, mois: "dureeMariagePrecedentConjointMois" as const, label: "Mon conjoint a été marié(e) précédemment" },
@@ -637,47 +638,62 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                   <Fragment key={cfg.flag}>
                   {index > 0 && <Separator />}
                   <div>
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">{cfg.title}</h3>
-                    <FormField
-                      control={form.control}
-                      name={cfg.flag}
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                          <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                          <FormLabel className="text-sm">{cfg.label}</FormLabel>
-                        </FormItem>
+                    <SectionHeader icon={History} title={cfg.title} />
+                    <div className="rounded-lg bg-[#006064]/5 p-5">
+                      <FormField
+                        control={form.control}
+                        name={cfg.flag}
+                        render={({ field }) => (
+                          <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label={cfg.label} />
+                        )}
+                      />
+                      {form.watch(cfg.flag) && (
+                        <div className="grid grid-cols-2 gap-5 mt-4 max-w-md">
+                          <FormField
+                            control={form.control}
+                            name={cfg.annees}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Durée (années)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    placeholder="Ex: 5"
+                                    value={field.value ?? ''}
+                                    onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : (isNaN(parseInt(v)) ? null : parseInt(v))); }}
+                                    className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={cfg.mois}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Durée (mois)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="11"
+                                    placeholder="Ex: 3"
+                                    value={field.value ?? ''}
+                                    onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : (isNaN(parseInt(v)) ? null : parseInt(v))); }}
+                                    className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                       )}
-                    />
-                    {form.watch(cfg.flag) && (
-                      <div className="grid grid-cols-2 gap-5 mt-4 max-w-md">
-                        <FormField
-                          control={form.control}
-                          name={cfg.annees}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Durée (années)</FormLabel>
-                              <FormControl>
-                                <Input type="number" min="0" max="100" placeholder="Ex: 5" value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : (isNaN(parseInt(v)) ? null : parseInt(v))); }} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={cfg.mois}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Durée (mois)</FormLabel>
-                              <FormControl>
-                                <Input type="number" min="0" max="11" placeholder="Ex: 3" value={field.value ?? ''} onChange={(e) => { const v = e.target.value; field.onChange(v === '' ? null : (isNaN(parseInt(v)) ? null : parseInt(v))); }} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    )}
+                    </div>
                   </div>
                   </Fragment>
                 ))}
@@ -688,27 +704,29 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
 
         {/* PACS */}
         {relationStatus === "Pacsé(e)" && (
-          <div className="space-y-6">
-            <div className="rounded-md border bg-card p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Convention</h3>
+          <div className="rounded-xl border border-border bg-card p-8">
+            <SectionHeader icon={Heart} title="Convention" />
+            <div className="rounded-lg bg-[#006064]/5 p-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <FormField
                   control={form.control}
                   name="conventionPacs"
                   render={({ field }) => (
-                    <FormItem className="space-y-1">
-                      <FormLabel>Convention de PACS</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Régime de la séparation des biens">Régime de la séparation des biens</SelectItem>
-                          <SelectItem value="Indivision">Indivision</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <FormItem>
+                      <div className="relative w-full flex flex-col gap-1">
+                        <FormLabel>Convention de PACS</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Régime de la séparation des biens">Régime de la séparation des biens</SelectItem>
+                            <SelectItem value="Indivision">Indivision</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -717,35 +735,26 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                   control={form.control}
                   name="datePacs"
                   render={({ field }) => (
-                    <FormItem className="space-y-1">
-                      <FormLabel>Date du PACS</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button variant="outline" className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                              {field.value ? format(field.value, "dd/MM/yyyy") : <span>Sélectionner une date</span>}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus className="p-3 pointer-events-auto" />
-                        </PopoverContent>
-                      </Popover>
+                    <FormItem>
+                      <div className="relative w-full flex flex-col gap-1">
+                        <FormLabel>Date du PACS</FormLabel>
+                        <SmartDateInput
+                          value={field.value}
+                          onChange={field.onChange}
+                          className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20"
+                        />
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-              <div className="mt-5 flex flex-col gap-3">
+              <div className="mt-5">
                 <FormField
                   control={form.control}
                   name="residenceSeparee"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                      <FormLabel className="text-sm">Résidence séparée</FormLabel>
-                    </FormItem>
+                    <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Résidence séparée" />
                   )}
                 />
               </div>
@@ -755,11 +764,13 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
 
         {/* CONCUBINAGE */}
         {relationStatus === "Concubinage" && (
-          <div className="rounded-md border bg-card p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Concubinage</h3>
-            <p className="text-sm text-muted-foreground">
-              Le concubinage est une union de fait, caractérisée par une vie commune présentant un caractère de stabilité et de continuité.
-            </p>
+          <div className="rounded-xl border border-border bg-card p-8">
+            <SectionHeader icon={Heart} title="Concubinage" />
+            <div className="rounded-lg bg-[#006064]/5 p-5">
+              <p className="text-sm text-muted-foreground">
+                Le concubinage est une union de fait, caractérisée par une vie commune présentant un caractère de stabilité et de continuité.
+              </p>
+            </div>
           </div>
         )}
 
@@ -767,10 +778,12 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
             base (cf. "Option A" dans relationInfoPayload.ts : rien n'est effacé au changement de
             statut) mais jusqu'ici jamais affichées pour ces deux statuts. */}
         {(relationStatus === "Divorcé(e)" || relationStatus === "Veuf/Veuve") && (
-          <div className="rounded-md border bg-card p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-              {relationStatus === "Divorcé(e)" ? "Régime applicable au mariage dissous" : "Régime applicable au mariage"}
-            </h3>
+          <div className="rounded-xl border border-border bg-card p-8">
+            <SectionHeader
+              icon={History}
+              title={relationStatus === "Divorcé(e)" ? "Régime applicable au mariage dissous" : "Régime applicable au mariage"}
+            />
+            <div className="rounded-lg bg-[#006064]/5 p-5">
             {maritalData?.regime_matrimonial || maritalData?.date_mariage ? (
               <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 {maritalData.regime_matrimonial && (
@@ -824,11 +837,18 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
             ) : (
               <p className="text-sm text-muted-foreground">Aucune information de régime enregistrée pour cette union.</p>
             )}
+            </div>
           </div>
         )}
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={saving} size="lg" className="min-w-[160px]">
+          <Button
+            type="submit"
+            disabled={saving}
+            size="lg"
+            className="min-w-[160px] text-white hover:opacity-90"
+            style={{ backgroundColor: '#006064' }}
+          >
             {saving ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enregistrement...</>) : 'Enregistrer'}
           </Button>
         </div>
