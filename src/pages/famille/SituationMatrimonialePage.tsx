@@ -24,9 +24,6 @@ export default function SituationMatrimonialePage() {
         <h1 className="font-playfair text-3xl font-light tracking-tight text-foreground leading-tight">
           Régime matrimonial
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Régime, clauses du contrat et donation au dernier vivant
-        </p>
       </div>
 
       <div className="w-full mx-auto px-4 sm:px-6 pb-12 space-y-6">

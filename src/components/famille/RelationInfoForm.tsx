@@ -20,8 +20,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Loader2, Heart, FileText, Gift, History, Scale, Coins } from "lucide-react";
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { SmartDateInput } from "@/components/family/SmartDateInput";
 import { CheckboxWithLabel } from "@/components/family/CheckboxWithLabel";
@@ -361,26 +368,36 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-8">
-        {/* Pills */}
+        {/* Barre de navigation des sous-sections */}
         {sections.length > 0 && (
-          <div className="flex gap-2 flex-wrap">
-            {sections.map((section) => (
-              <button
-                key={section.id}
-                type="button"
-                onClick={() => setActiveSection(section.id)}
-                className={cn(
-                  "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200",
-                  activeSection === section.id
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "bg-muted text-muted-foreground hover:opacity-90"
-                )}
-              >
-                <section.icon className="h-4 w-4" />
-                {section.label}
-              </button>
-            ))}
-          </div>
+          <Breadcrumb>
+            <BreadcrumbList className="flex-nowrap overflow-x-auto text-sm sm:flex-wrap">
+              {sections.map((section, index) => (
+                <Fragment key={section.id}>
+                  {index > 0 && <BreadcrumbSeparator />}
+                  <BreadcrumbItem className="shrink-0">
+                    {activeSection === section.id ? (
+                      <BreadcrumbPage className="inline-flex items-center gap-1.5 text-[#006064] font-medium">
+                        <section.icon className="h-3.5 w-3.5" />
+                        {section.label}
+                      </BreadcrumbPage>
+                    ) : (
+                      <BreadcrumbLink asChild>
+                        <button
+                          type="button"
+                          onClick={() => setActiveSection(section.id)}
+                          className="inline-flex items-center gap-1.5"
+                        >
+                          <section.icon className="h-3.5 w-3.5" />
+                          {section.label}
+                        </button>
+                      </BreadcrumbLink>
+                    )}
+                  </BreadcrumbItem>
+                </Fragment>
+              ))}
+            </BreadcrumbList>
+          </Breadcrumb>
         )}
 
         {/* MARIÉ */}
