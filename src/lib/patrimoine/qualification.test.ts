@@ -43,11 +43,100 @@ describe('qualifierBien — biens propres par nature (art. 1404)', () => {
   });
 });
 
-describe('qualifierBien — libéralité sous communauté universelle (art. 1405 al. 2)', () => {
-  it('donation reçue pendant le mariage, sans stipulation d\'entrée en communauté : propre', () => {
+describe('qualifierBien — libéralité sous communauté universelle (art. 1526)', () => {
+  it('donation reçue pendant le mariage, sans clause d\'exclusion : commune par défaut (art. 1526, inverse du régime légal)', () => {
     const result = qualifierBien({
       statutCouple: 'Marié(e)',
       regimeMatrimonial: 'Communauté universelle',
+      dateMariage: '2015-06-01',
+      dateAcquisition: '2020-03-10',
+      origineActif: ['Donation'],
+      detenteur: 'user',
+    });
+
+    expect(result.qualification).toBe('Bien commun');
+  });
+
+  it('donation reçue pendant le mariage, avec clause d\'exclusion réservant le bien à l\'époux bénéficiaire : propre', () => {
+    const result = qualifierBien({
+      statutCouple: 'Marié(e)',
+      regimeMatrimonial: 'Communauté universelle',
+      dateMariage: '2015-06-01',
+      dateAcquisition: '2020-03-10',
+      origineActif: ['Donation'],
+      detenteur: 'user',
+      clauseEntreeCommunaute: true,
+    });
+
+    expect(result.qualification).toBe('Bien propre');
+  });
+});
+
+describe('qualifierBien — libéralité sous communauté de meubles et acquêts (art. 1498)', () => {
+  it('meuble reçu par donation pendant le mariage, sans clause d\'exclusion : commun par défaut (art. 1498 al. 1)', () => {
+    const result = qualifierBien({
+      statutCouple: 'Marié(e)',
+      regimeMatrimonial: "Communauté de meubles et d'acquêts",
+      dateMariage: '2015-06-01',
+      dateAcquisition: '2020-03-10',
+      origineActif: ['Donation'],
+      detenteur: 'user',
+      natureActif: 'Livret A',
+    });
+
+    expect(result.qualification).toBe('Bien commun');
+  });
+
+  it('meuble reçu par donation pendant le mariage, avec clause d\'exclusion : propre', () => {
+    const result = qualifierBien({
+      statutCouple: 'Marié(e)',
+      regimeMatrimonial: "Communauté de meubles et d'acquêts",
+      dateMariage: '2015-06-01',
+      dateAcquisition: '2020-03-10',
+      origineActif: ['Donation'],
+      detenteur: 'user',
+      natureActif: 'Livret A',
+      clauseEntreeCommunaute: true,
+    });
+
+    expect(result.qualification).toBe('Bien propre');
+  });
+
+  it('immeuble reçu par donation pendant le mariage, sans stipulation d\'entrée en communauté : propre (règle du régime légal transposée)', () => {
+    const result = qualifierBien({
+      statutCouple: 'Marié(e)',
+      regimeMatrimonial: "Communauté de meubles et d'acquêts",
+      dateMariage: '2015-06-01',
+      dateAcquisition: '2020-03-10',
+      origineActif: ['Donation'],
+      detenteur: 'user',
+      natureActif: 'Résidence principale',
+    });
+
+    expect(result.qualification).toBe('Bien propre');
+  });
+
+  it('immeuble reçu par donation pendant le mariage, avec stipulation expresse d\'entrée en communauté : commun', () => {
+    const result = qualifierBien({
+      statutCouple: 'Marié(e)',
+      regimeMatrimonial: "Communauté de meubles et d'acquêts",
+      dateMariage: '2015-06-01',
+      dateAcquisition: '2020-03-10',
+      origineActif: ['Donation'],
+      detenteur: 'user',
+      natureActif: 'Résidence principale',
+      clauseEntreeCommunaute: true,
+    });
+
+    expect(result.qualification).toBe('Bien commun');
+  });
+});
+
+describe('qualifierBien — libéralité sous régime légal (art. 1405 al. 2)', () => {
+  it('donation reçue pendant le mariage, sans stipulation d\'entrée en communauté : propre', () => {
+    const result = qualifierBien({
+      statutCouple: 'Marié(e)',
+      regimeMatrimonial: 'Communauté réduite aux acquêts',
       dateMariage: '2015-06-01',
       dateAcquisition: '2020-03-10',
       origineActif: ['Donation'],
@@ -60,7 +149,7 @@ describe('qualifierBien — libéralité sous communauté universelle (art. 1405
   it('donation reçue pendant le mariage, avec stipulation expresse d\'entrée en communauté : commun', () => {
     const result = qualifierBien({
       statutCouple: 'Marié(e)',
-      regimeMatrimonial: 'Communauté universelle',
+      regimeMatrimonial: 'Communauté réduite aux acquêts',
       dateMariage: '2015-06-01',
       dateAcquisition: '2020-03-10',
       origineActif: ['Donation'],

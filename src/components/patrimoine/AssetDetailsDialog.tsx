@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Calendar, TrendingUp, User, Building, Coins, Heart, Key, History, Plus, Pencil, Trash2, Check, X, Banknote, FileText, Scale, Link2 } from 'lucide-react';
-import { NATURES_WITHOUT_ACQUISITION, getNatureDisplayLabel } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, getNatureDisplayLabel, getAssetCategory } from '@/constants/assetTypes';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { useAssetValorisations } from '@/hooks/useAssetValorisations';
 import { AssetValorisation } from '@/services/assetValorisationService';
@@ -187,7 +187,14 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
             <Badge variant="outline" className="w-fit">{displayedQualification}</Badge>
             {(asset.clause_entree_communaute || asset.clause_remploi) && (
               <p className="text-xs text-muted-foreground mt-2">
-                Clause d'entrée en communauté : {asset.clause_entree_communaute ? 'Oui' : 'Non'}
+                {(() => {
+                  const regimeLower = (maritalStatus?.regime_matrimonial || '').toLowerCase();
+                  const isCU = regimeLower.includes('universelle');
+                  const isMeublesAcquets = regimeLower.includes('meubles') && regimeLower.includes('acquêts');
+                  const isImmeubleActif = getAssetCategory(asset.nature) === 'actifs immobiliers';
+                  const inverseSensClause = isCU || (isMeublesAcquets && !isImmeubleActif);
+                  return inverseSensClause ? "Clause d'exclusion de communauté" : "Clause d'entrée en communauté";
+                })()} : {asset.clause_entree_communaute ? 'Oui' : 'Non'}
                 {' · '}
                 Clause de remploi : {asset.clause_remploi ? 'Oui' : 'Non'}
               </p>

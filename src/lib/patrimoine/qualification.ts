@@ -343,12 +343,13 @@ export const qualifierBien = (ctx: QualificationContext): {
   // époux. Limite acceptée en l'absence de dossier client concerné à ce jour.
   //
   // Origine "gratuite" (donation, héritage, présent d'usage, création...) →
-  // bien propre, sauf stipulation expresse du donateur/testateur faisant
-  // entrer la libéralité dans la communauté (clauseEntreeCommunaute) — art.
-  // 1405 al. 2, qui vaut dans tous les régimes communautaires, y compris
-  // universelle : placé avant isCommunauteUniverselle() pour rester
-  // atteignable sous ce régime (sinon la branche "toujours commun"
-  // ci-dessous absorberait toute libéralité sans respecter l'exception).
+  // bien propre par défaut, sauf stipulation expresse du donateur/testateur
+  // faisant entrer la libéralité dans la communauté (clauseEntreeCommunaute)
+  // — art. 1405 al. 2, régime légal (et communauté de meubles et acquêts).
+  // Sous communauté universelle, la règle est INVERSÉE (art. 1526, corrigé le
+  // 2026-09-16 : la version précédente appliquait à tort la même présomption
+  // "propre par défaut" à ce régime) — traitée séparément ci-dessous, avant
+  // la présomption générale "propre" de cette branche.
   // Sous PACS-indivision, même exclusion par analogie (art. 515-5-2 : deniers
   // reçus par donation/succession non employés, biens créés) mais sans
   // notion de stipulation d'entrée en communauté (concept matrimonial sans
@@ -362,6 +363,49 @@ export const qualifierBien = (ctx: QualificationContext): {
         raison: 'Bien reçu à titre gratuit (donation, succession, création...) : exclu de l\'indivision du PACS (art. 515-5-2).',
       };
     }
+
+    // Communauté universelle (art. 1526) : tous les biens, y compris ceux
+    // reçus par succession ou libéralité pendant le mariage, tombent dans la
+    // communauté par défaut — à l'inverse du régime légal (art. 1405). Seule
+    // une clause d'exclusion (réservant le bien à l'époux bénéficiaire) le
+    // maintient propre. Même champ `clauseEntreeCommunaute` que la branche
+    // régime légal ci-dessous, mais son sens s'inverse sous ce régime : sous
+    // CU il représente une clause d'exclusion, pas une clause d'entrée (voir
+    // le libellé conditionnel dans OrigineQualificationFields.tsx).
+    if (isCommunauteUniverselle(regimeMatrimonial)) {
+      if (clauseEntreeCommunaute) {
+        return {
+          qualification: 'Bien propre',
+          raison: 'Bien reçu à titre gratuit sous communauté universelle, avec une clause d\'exclusion réservant sa propriété à l\'époux bénéficiaire (art. 1526) : reste propre.',
+        };
+      }
+      return {
+        qualification: 'Bien commun',
+        raison: 'Bien reçu à titre gratuit (donation, succession) : commun par défaut sous communauté universelle (art. 1526), sauf clause d\'exclusion contraire.',
+      };
+    }
+
+    // Communauté de meubles et acquêts (art. 1498) : les immeubles suivent la
+    // même règle que le régime légal (propre par défaut, sauf stipulation
+    // expresse d'entrée en communauté, art. 1405 transposé), mais les
+    // meubles sont communs par défaut (art. 1498 al. 1), sauf clause
+    // d'exclusion de communauté — même inversion de sens du champ
+    // `clauseEntreeCommunaute` que sous communauté universelle, mais
+    // seulement pour les meubles (corrigé le 2026-09-16, même famille de
+    // correctif que la communauté universelle ci-dessus).
+    if (isCommunauteMeublesEtAcquets(regimeMatrimonial) && !isImmeuble(natureActif)) {
+      if (clauseEntreeCommunaute) {
+        return {
+          qualification: 'Bien propre',
+          raison: 'Bien meuble reçu à titre gratuit sous communauté de meubles et acquêts, avec une clause d\'exclusion réservant sa propriété à l\'époux bénéficiaire (art. 1498 al. 1) : reste propre.',
+        };
+      }
+      return {
+        qualification: 'Bien commun',
+        raison: 'Bien meuble reçu à titre gratuit (donation, succession) : commun par défaut sous communauté de meubles et acquêts (art. 1498 al. 1), sauf clause d\'exclusion contraire.',
+      };
+    }
+
     if (clauseEntreeCommunaute && (origines.includes('Donation') || origines.includes('Héritage'))) {
       return {
         qualification: 'Bien commun',
@@ -370,13 +414,13 @@ export const qualifierBien = (ctx: QualificationContext): {
     }
     return {
       qualification: 'Bien propre',
-      raison: 'Bien reçu à titre gratuit (donation, héritage, présent d\'usage) : reste propre, y compris en communauté universelle (art. 1405 al. 2), sauf stipulation expresse d\'entrée en communauté.',
+      raison: 'Bien reçu à titre gratuit (donation, héritage, présent d\'usage) : reste propre (art. 1405 al. 2), sauf stipulation expresse d\'entrée en communauté.',
     };
   }
 
   // Communauté universelle → commun pour tout le reste (biens acquis à
-  // titre onéreux ou d'origine non gratuite ; les libéralités sans
-  // stipulation expresse sont déjà sorties propres ci-dessus)
+  // titre onéreux ou d'origine non gratuite ; les libéralités sont déjà
+  // traitées à part ci-dessus, art. 1526)
   if (isCommunauteUniverselle(regimeMatrimonial)) {
     return {
       qualification: 'Bien commun',
@@ -384,17 +428,6 @@ export const qualifierBien = (ctx: QualificationContext): {
     };
   }
 
-  // LIMITE CONNUE (décision arbitrage du 28/08/2026) : sous le régime de la
-  // communauté de meubles et acquêts, la loi rend communs TOUS les meubles
-  // (hors propres par nature, art. 1404), y compris ceux reçus par donation/
-  // succession PENDANT le mariage (sauf clause de non-rapport à la
-  // communauté). Ce cas n'est pas géré : seule la branche ci-dessous ("acquis
-  // avant le mariage") traite spécifiquement ce régime ; un meuble reçu par
-  // donation/succession pendant le mariage sous ce régime retombe à tort dans
-  // la branche générale "origine gratuite = propre" plus haut. Régime rare en
-  // pratique (essentiellement mariages avant 1966 sans contrat) : limite
-  // acceptée en l'absence de dossier client concerné à ce jour.
-  //
   // Bien acquis avant le mariage → propre, sauf sous le régime de la
   // communauté de meubles et acquêts : les meubles (tout sauf un immeuble)
   // acquis avant le mariage y sont communs ; seuls les immeubles acquis

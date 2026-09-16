@@ -8,7 +8,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescripti
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AssetFormValues, ORIGINE_ACTIF_OPTIONS } from '@/schemas/assetSchema';
-import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory } from '@/constants/assetTypes';
 import { QUALIFICATION_OPTIONS, isRegimeCommunautaire, isInCouple } from '@/lib/patrimoine/qualification';
 import { MaritalContext } from '@/hooks/useAssetForm';
 
@@ -39,6 +39,18 @@ export const OrigineQualificationFields: React.FC<OrigineQualificationFieldsProp
   const isDateOuverture = NATURES_DATE_OUVERTURE.includes(watchedNature);
   const isIndivisionHorsCouple = watchedDetenteur === 'Indivision';
   const showClauseEntreeCommunaute = (watchedOrigineActif || []).includes('Donation') || (watchedOrigineActif || []).includes('Héritage');
+  // Sous communauté universelle (art. 1526) ou, pour un bien meuble
+  // uniquement, sous communauté de meubles et acquêts (art. 1498 al. 1), une
+  // libéralité tombe dans la communauté PAR DÉFAUT — la case représente alors
+  // une clause d'exclusion (l'inverse de son sens sous régime légal, où elle
+  // représente une clause d'entrée, art. 1405 al. 2). Un immeuble sous
+  // communauté de meubles et acquêts suit toujours la règle du régime légal.
+  // Voir qualification.ts.
+  const regimeLower = (maritalContext.regimeMatrimonial || '').toLowerCase();
+  const isCommunauteUniverselleRegime = regimeLower.includes('universelle');
+  const isCommunauteMeublesAcquetsRegime = regimeLower.includes('meubles') && regimeLower.includes('acquêts');
+  const isImmeubleActif = getAssetCategory(watchedNature) === 'actifs immobiliers';
+  const inverseSensClause = isCommunauteUniverselleRegime || (isCommunauteMeublesAcquetsRegime && !isImmeubleActif);
   const showClauseRemploi = (watchedOrigineActif || []).includes('Acquisition à titre onéreux');
   const showEstPropreParNature = isInCouple(maritalContext.statutCouple);
   // Financement mixte (art. 1436) : ne se pose qu'en régime communautaire,
@@ -127,9 +139,11 @@ export const OrigineQualificationFields: React.FC<OrigineQualificationFieldsProp
                 />
               </FormControl>
               <div className="space-y-1 leading-none">
-                <FormLabel>Clause d'entrée en communauté</FormLabel>
+                <FormLabel>{inverseSensClause ? "Clause d'exclusion de communauté" : "Clause d'entrée en communauté"}</FormLabel>
                 <FormDescription>
-                  Le donateur (ou le testateur) a explicitement choisi que ce bien tombe dans la communauté, malgré l'origine gratuite.
+                  {inverseSensClause
+                    ? "Par défaut, une donation ou succession reçue pendant le mariage tombe dans la communauté (art. 1526, ou art. 1498 al. 1 pour un bien meuble sous communauté de meubles et acquêts). Cochez si une clause réserve ce bien à l'époux bénéficiaire."
+                    : "Le donateur (ou le testateur) a explicitement choisi que ce bien tombe dans la communauté, malgré l'origine gratuite."}
                 </FormDescription>
               </div>
             </FormItem>
