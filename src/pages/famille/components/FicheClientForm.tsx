@@ -28,7 +28,6 @@ const formSchema = z.object({
     required_error: 'Veuillez sélectionner une civilité',
   }),
   nom: z.string().min(1, 'Le nom est obligatoire'),
-  nomJeuneFille: z.string().optional(),
   prenom: z.string().min(1, 'Le prénom est obligatoire'),
   dateNaissance: z.union([
     z.date(),
@@ -75,7 +74,6 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
     defaultValues: {
       civilite: undefined,
       nom: '',
-      nomJeuneFille: '',
       prenom: '',
       dateNaissance: undefined,
       profession: '',
@@ -108,7 +106,6 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
       const formattedData = {
         civilite: (rawCivilite as 'M.' | 'Mme' | 'Mlle' | 'Autre') || undefined,
         nom: data.nom ? unescapeHtml(data.nom) : '',
-        nomJeuneFille: (data as any).nom_jeune_fille ? unescapeHtml((data as any).nom_jeune_fille) : '',
         prenom: data.prenom ? unescapeHtml(data.prenom) : '',
         dateNaissance: data.date_naissance ? new Date(data.date_naissance) : undefined,
         profession: rawProfession,
@@ -137,7 +134,6 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
       const sanitizedFormData = {
         civilite: formData.civilite,
         nom: formData.nom,
-        nomJeuneFille: formData.nomJeuneFille,
         prenom: formData.prenom,
         dateNaissance,
         profession: formData.profession?.trim() || '',
@@ -153,7 +149,6 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
       const supabaseData = {
         civility: sanitizedFormData.civilite,
         nom: sanitizedFormData.nom,
-        nom_jeune_fille: sanitizedFormData.nomJeuneFille,
         prenom: sanitizedFormData.prenom,
         date_naissance: sanitizedFormData.dateNaissance instanceof Date ? format(sanitizedFormData.dateNaissance, 'yyyy-MM-dd') : undefined,
         profession: sanitizedFormData.profession,
@@ -273,27 +268,6 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
                     </FormItem>
                   )}
                 />
-
-                {(form.watch('civilite') === 'Mme' || form.watch('civilite') === 'Mlle' || form.watch('civilite') === 'Autre') && (
-                  <FormField
-                    control={form.control}
-                    name="nomJeuneFille"
-                    render={({ field }) => (
-                      <FormItem className="space-y-1">
-                        <FormControl>
-                          <ActionHubInput
-                            label="Nom de jeune fille"
-                            placeholder="Nom de jeune fille"
-                            value={field.value}
-                            onChange={field.onChange}
-                            historyEnabled={false}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
 
                 <FormField
                   control={form.control}

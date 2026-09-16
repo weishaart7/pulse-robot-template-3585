@@ -3,7 +3,6 @@ import { useMaritalStatus, useFamilyLinks, useFamilyProfile } from '@/hooks/useF
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { useLiberalites } from '@/hooks/useLiberalites';
-import { useScenariosRegime } from '@/hooks/useScenariosRegime';
 import { useAVContracts } from '@/hooks/useAVContracts';
 import { useSocietes } from '@/hooks/useSocietes';
 import { usePatrimoineOriginaire } from '@/hooks/usePatrimoineOriginaire';
@@ -21,14 +20,13 @@ export function useAlertesConseil() {
   const { passifs, loading: passifsLoading } = usePassifs();
   const { emprunts, loading: empruntsLoading } = useEmprunts();
   const { liberalites, loading: liberalitesLoading } = useLiberalites();
-  const { scenariosRegime, loading: scenariosRegimeLoading } = useScenariosRegime();
   const { avContractsRaw, loading: avLoading } = useAVContracts(assets);
   const { societes, isLoading: societesLoading } = useSocietes();
   const { data: patrimoineOriginaire, loading: patrimoineOriginaireLoading } = usePatrimoineOriginaire();
 
   const loading =
     maritalLoading || profileLoading || familyLoading || assetsLoading || passifsLoading || empruntsLoading ||
-    liberalitesLoading || avLoading || societesLoading || patrimoineOriginaireLoading || scenariosRegimeLoading;
+    liberalitesLoading || avLoading || societesLoading || patrimoineOriginaireLoading;
 
   const alertes = useMemo(() => {
     if (loading) return [];
@@ -49,11 +47,10 @@ export function useAlertesConseil() {
       passifs.reduce((sum, p) => sum + (p.montant_du || 0), 0) -
       emprunts.filter(e => !e.societe_id).reduce((sum, e) => sum + (e.capital_restant_du || 0), 0);
 
-    // regime_matrimonial / loi_applicable_regime / pays_premier_domicile_matrimonial
-    // n'ont de sens que sous Marié(e) : ces champs ne sont jamais effacés en
-    // changeant de statut (cf. RelationInfoForm.tsx), donc un ex-marié devenu
-    // Pacsé/Concubin peut garder des valeurs périmées qui déclencheraient à
-    // tort des alertes réservées au mariage.
+    // regime_matrimonial n'a de sens que sous Marié(e) : ce champ n'est
+    // jamais effacé en changeant de statut (cf. RelationInfoForm.tsx), donc
+    // un ex-marié devenu Pacsé/Concubin peut garder une valeur périmée qui
+    // déclencherait à tort une alerte réservée au mariage.
     const estMarie = maritalStatus?.statut_couple === 'Marié(e)';
 
     const ctx: AlerteContext = {
@@ -66,16 +63,7 @@ export function useAlertesConseil() {
       clausesContrat: maritalStatus?.clauses_contrat,
       clientResidenceFiscaleEtranger: familyProfile?.residence_fiscale_etranger,
       conjointResidenceFiscaleEtranger: maritalStatus?.residence_fiscale_etranger_conjoint,
-      loiApplicableRegime: estMarie ? maritalStatus?.loi_applicable_regime : undefined,
-      paysPremierDomicileMatrimonial: estMarie ? maritalStatus?.pays_premier_domicile_matrimonial : undefined,
       liberalites,
-      scenariosRegime: scenariosRegime.map((s) => ({
-        id: s.id || '',
-        type: s.type,
-        regimeCible: s.regime_cible,
-        date: s.date,
-        motivationCivile: s.motivation_civile || undefined,
-      })),
       avContracts: avContractsRaw,
       familyLinks,
       hasNonCommonChildren: hasNonCommonChildren(familyLinks),
@@ -88,7 +76,7 @@ export function useAlertesConseil() {
     };
 
     return evaluerAlertes(ctx);
-  }, [loading, maritalStatus, familyProfile, liberalites, scenariosRegime, avContractsRaw, familyLinks, assets, passifs, emprunts, societes, patrimoineOriginaire]);
+  }, [loading, maritalStatus, familyProfile, liberalites, avContractsRaw, familyLinks, assets, passifs, emprunts, societes, patrimoineOriginaire]);
 
   return { alertes, loading };
 }

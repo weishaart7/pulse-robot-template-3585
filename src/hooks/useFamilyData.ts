@@ -25,8 +25,11 @@ export const useFamilyProfile = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
 
   const fetchData = async () => {
-    if (!isAuthenticated) return;
-    
+    if (!isAuthenticated) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const profile = await familyService.getFamilyProfile();
@@ -200,8 +203,11 @@ export const useFamilyLinks = () => {
   const { isAuthenticated } = useAuth();
 
   const fetchData = async () => {
-    if (!isAuthenticated) return;
-    
+    if (!isAuthenticated) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const links = await familyService.getFamilyLinks();

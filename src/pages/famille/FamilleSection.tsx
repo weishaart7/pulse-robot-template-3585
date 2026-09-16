@@ -48,9 +48,17 @@ const FamilleSection = () => {
     ? `${familyProfile.prenom} ${familyProfile.nom}`
     : 'Utilisateur';
 
-  const ageFromBirthDate = (dateStr?: string) => dateStr
-    ? Math.floor((new Date().getTime() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24 * 365.25))
-    : undefined;
+  const ageFromBirthDate = (dateStr?: string) => {
+    if (!dateStr) return undefined;
+    const birth = new Date(dateStr);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const beforeBirthday =
+      today.getMonth() < birth.getMonth() ||
+      (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate());
+    if (beforeBirthday) age--;
+    return age;
+  };
 
   const secondaryLine = (dateStr?: string) => {
     if (!dateStr) return '—';

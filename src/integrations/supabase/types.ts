@@ -829,6 +829,42 @@ export type Database = {
           },
         ]
       }
+      deficits_fonciers_reportes: {
+        Row: {
+          annee_origine: number
+          commentaire: string | null
+          created_at: string
+          id: string
+          montant_initial: number
+          montant_restant: number
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          annee_origine: number
+          commentaire?: string | null
+          created_at?: string
+          id?: string
+          montant_initial: number
+          montant_restant: number
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          annee_origine?: number
+          commentaire?: string | null
+          created_at?: string
+          id?: string
+          montant_initial?: number
+          montant_restant?: number
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       emprunts: {
         Row: {
           asset_id: string | null
@@ -941,7 +977,6 @@ export type Database = {
           enfant_renoncant: boolean | null
           enfant_renoncant_de: string | null
           est_decede: boolean | null
-          est_dirigeant: boolean | null
           exoneration_succession: boolean | null
           fiscalement_a_charge: boolean | null
           handicap: boolean | null
@@ -973,7 +1008,6 @@ export type Database = {
           enfant_renoncant?: boolean | null
           enfant_renoncant_de?: string | null
           est_decede?: boolean | null
-          est_dirigeant?: boolean | null
           exoneration_succession?: boolean | null
           fiscalement_a_charge?: boolean | null
           handicap?: boolean | null
@@ -1005,7 +1039,6 @@ export type Database = {
           enfant_renoncant?: boolean | null
           enfant_renoncant_de?: string | null
           est_decede?: boolean | null
-          est_dirigeant?: boolean | null
           exoneration_succession?: boolean | null
           fiscalement_a_charge?: boolean | null
           handicap?: boolean | null
@@ -1042,7 +1075,6 @@ export type Database = {
           nationalite: string | null
           nationalite_2: string | null
           nom: string | null
-          nom_jeune_fille: string | null
           pays: string | null
           pays_naissance: string | null
           personne_handicapee: boolean | null
@@ -1071,7 +1103,6 @@ export type Database = {
           nationalite?: string | null
           nationalite_2?: string | null
           nom?: string | null
-          nom_jeune_fille?: string | null
           pays?: string | null
           pays_naissance?: string | null
           personne_handicapee?: boolean | null
@@ -1100,7 +1131,6 @@ export type Database = {
           nationalite?: string | null
           nationalite_2?: string | null
           nom?: string | null
-          nom_jeune_fille?: string | null
           pays?: string | null
           pays_naissance?: string | null
           personne_handicapee?: boolean | null

@@ -91,6 +91,8 @@ const FIELD_TO_SECTION: Partial<Record<keyof FormData, Section>> = {
   dateMariage: 'informations-generales',
   lieuMariage: 'informations-generales',
   regimeMatrimonial: 'informations-generales',
+  conventionPacs: 'informations-generales',
+  datePacs: 'informations-generales',
   pasDeContrat: 'informations-generales',
   impositionDistincte: 'informations-generales',
   residenceSeparee: 'informations-generales',

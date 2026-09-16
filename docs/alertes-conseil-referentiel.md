@@ -84,36 +84,25 @@ Ordre d'apparition réel dans `REGLES_ALERTES_CONSEIL` ([regles.ts](../src/lib/a
   - `family_profiles.residence_fiscale_etranger`
   - `marital_status.residence_fiscale_etranger_conjoint`
 
-### 12. `extraneite_regime_matrimonial`
-- **Message** : « Élément d'extranéité déclaré sur le régime matrimonial : la loi applicable doit être vérifiée (§ 4.4, § 12.1). Orienter vers un notaire si besoin — non automatisé dans cet outil. »
-- **Champs/tables lus** :
-  - `marital_status.pays_premier_domicile_matrimonial`, `marital_status.loi_applicable_regime`
-
-### 13. `enfants_non_communs_sans_ddv`
+### 12. `enfants_non_communs_sans_ddv`
 - **Message** : « Le conjoint ne pourra prétendre qu'à 1/4 en pleine propriété (art. 757). Une donation au dernier vivant lui ouvrirait l'option de l'usufruit total. »
 - **Champs/tables lus** :
   - `family_links.lien_familial`, `family_links.parent_de` (via `hasNonCommonChildren`)
   - `marital_status.donation_dernier_vivant_personne`, `marital_status.donation_dernier_vivant_conjoint` (via `hasDDV`)
 
-### 14. `ddv_enfant_non_commun_substitution_1098`
+### 13. `ddv_enfant_non_commun_substitution_1098`
 - **Message** : « Donation au dernier vivant en présence d'enfant(s) non commun(s) : si l'acte ne laisse pas le choix entre les 3 quotités de l'art. 1094-1, l'enfant non commun dispose d'une faculté de substitution en usufruit sur l'excédent (art. 1098). À vérifier dans la rédaction de l'acte — non déductible depuis les données de cet outil. »
 - **Champs/tables lus** :
   - `family_links.lien_familial`, `family_links.parent_de` (via `hasNonCommonChildren`)
   - `marital_status.donation_dernier_vivant_personne`, `marital_status.donation_dernier_vivant_conjoint` (via `hasDDV`)
 - **Note** : signal déclaratif volontairement partiel, sur le même principe que l'alerte assurance-vie L. 132-13 ([`Synthese.tsx:470`](../src/components/transmission/Synthese.tsx#L470)) — l'application ne capture que l'existence de la DDV (booléen + date), pas la quotité/l'option retenue dans l'acte (cf. diagnostic préalable). Ne détecte donc que le signal large « DDV + enfant non commun », pas le cas précis de l'art. 1098.
 
-### 15. `enfants_non_communs_avantage_matrimonial`
+### 14. `enfants_non_communs_avantage_matrimonial`
 - **Message** : « Risque d'action en retranchement (art. 1527 al. 2). Envisager une renonciation anticipée (art. 1527 al. 3). »
 - **Champs/tables lus** :
   - `family_links.lien_familial`, `family_links.parent_de` (via `hasNonCommonChildren`)
   - `marital_status.clauses_contrat` — clés `preciput`, `preciput_sub`, `attribution_integrale`, `attribution_integrale_sub`, `partage_inegal`, `partage_inegal_sub` (`.enabled`)
 - **Note** : renommée et élargie le 2026-09-15 (ex-`enfants_non_communs_communaute_universelle`, qui ne couvrait que l'attribution intégrale en communauté universelle). L'action en retranchement (art. 1527 al. 2) concerne tout avantage matrimonial dans tout régime communautaire, pas seulement ce cas particulier. Le régime matrimonial n'est plus vérifié explicitement : chaque clause listée n'est de toute façon proposée à la saisie que dans un régime où elle est juridiquement admise (`CLAUSE_REGIME_COMPATIBILITY`, [matrimonialClauses.ts](../src/constants/matrimonialClauses.ts)). `partage_inegal_acquets` (participation aux acquêts) est délibérément exclu : la doctrine évoque un avantage matrimonial possible « sous réserve de l'appréciation souveraine des tribunaux », sans retranchement clairement établi — à distinguer de la règle 10, qui l'inclut (question juridique différente : révocation au divorce, explicitement citée par la doctrine pour ce cas).
-
-### 16. `changement_regime_proche_donation`
-- **Message** (variable selon si la motivation civile est déjà renseignée) : « Un changement de régime matrimonial (réalisé ou envisagé) et une donation sont séparés de moins de 3 ans : risque de requalification en abus de droit (art. L. 64 LPF). Documentez la motivation civile du changement de régime, indépendante de toute optimisation fiscale. » (ou, si déjà renseignée : « Vérifiez que la motivation civile déjà renseignée reste pertinente et documentée. »)
-- **Champs/tables lus** :
-  - `liberalites.type`, `liberalites.date_acte`
-  - `scenarios_regime.date`, `scenarios_regime.motivation_civile`
 
 ## 1bis. Point de vigilance juridique documenté, non implémenté
 
@@ -140,10 +129,16 @@ pour la traçabilité :
 - `dirigeant_regime_communautaire` — « Les dettes professionnelles engagent la masse commune (art. 1413). Vérifier les cautionnements (art. 1415). »
 - `dirigeant_societe_acquets_residence_principale` — « Le logement devient le gage des créanciers professionnels (art. 1413). Arbitrage à documenter. »
 
-Les colonnes `family_profiles.est_dirigeant`, `marital_status.est_dirigeant_conjoint`
-et `family_links.est_dirigeant` restent en base, orphelines, sans mention "référentiel
-§12.8" trouvée dans leurs migrations — elles ne concernent donc pas la table de
-correspondance ci-dessous.
+Les colonnes `family_profiles.est_dirigeant` et `marital_status.est_dirigeant_conjoint`
+restent en base, orphelines. `family_links.est_dirigeant` a été supprimée de la base le
+2026-09-16 (simplification V1, jamais exposée dans un formulaire — voir
+[docs/famille.md](famille.md) §3).
+
+Deux règles supplémentaires retirées le 2026-09-16 (passe de simplification V1, voir
+[docs/famille.md](famille.md) et [docs/idees-de-cote.md](idees-de-cote.md)) :
+
+- `extraneite_regime_matrimonial` — « Élément d'extranéité déclaré sur le régime matrimonial : la loi applicable doit être vérifiée (§ 4.4, § 12.1). Orienter vers un notaire si besoin — non automatisé dans cet outil. » Lisait `marital_status.pays_premier_domicile_matrimonial` / `.loi_applicable_regime`, deux champs déjà retirés de l'UI de saisie (`RelationInfoForm.tsx`) : elle ne pouvait plus se déclencher pour un nouveau dossier.
+- `changement_regime_proche_donation` (ex-16) — « Un changement de régime matrimonial (réalisé ou envisagé) et une donation sont séparés de moins de 3 ans : risque de requalification en abus de droit (art. L. 64 LPF). » Lisait `liberalites.type`/`.date_acte` et `scenarios_regime.date`/`.motivation_civile` — la table `scenarios_regime` n'a jamais eu d'écran de saisie, la règle ne s'est donc jamais déclenchée en pratique. Réintroduction possible : voir condition de réactivation dans [docs/idees-de-cote.md](idees-de-cote.md).
 
 ## 3. Correspondance avec les anciennes références externes
 

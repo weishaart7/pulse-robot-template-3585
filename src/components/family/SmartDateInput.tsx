@@ -75,7 +75,7 @@ export function SmartDateInput({ value, onChange, className }: SmartDateInputPro
                 date.getMonth() === month - 1 &&
                 date.getFullYear() === year &&
                 year >= 1900 &&
-                year <= new Date().getFullYear()
+                date <= new Date()
               ) {
                 onChange(date);
                 return;

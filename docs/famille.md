@@ -6,9 +6,13 @@
 > `0c34614`…`b6827c2`). Mis à jour le 2026-09-01 suite à un audit fonctionnel (simplification des
 > champs et navigation) : voir §3 et §4 pour le détail des retraits. Mis à jour le 2026-09-03 :
 > profession en texte libre (§2), double nationalité sur les 3 fiches et champ Nationalité
-> désormais saisissable sur les membres de la famille (§2, §3). Ce document reflète l'état actuel
-> du code, pas un historique daté. Volet navigation réelle en navigateur toujours non réalisé
-> (authentification requise).
+> désormais saisissable sur les membres de la famille (§2, §3). Mis à jour le 2026-09-16
+> (passe de simplification V1) : nettoyage de code mort, corrections de fiabilité mineures,
+> retrait de l'alerte de conseil n°16 (jamais déclenchable) et de l'alerte `extraneite_regime_matrimonial`
+> (branchée sur des champs déjà retirés de l'UI), retrait de deux champs dormants
+> (`family_links.est_dirigeant`, `family_profiles.nom_jeune_fille`) — voir §3 et §5. Ce document
+> reflète l'état actuel du code, pas un historique daté. Volet navigation réelle en navigateur
+> toujours non réalisé (authentification requise).
 
 ## 1. Vue d'ensemble
 
@@ -176,11 +180,9 @@ soldés :
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
-- **Dates de décès/naissance futures acceptées au clavier.** `SmartDateInput.tsx:56-58` ne valide
-  que `year <= new Date().getFullYear()` sur la saisie clavier (le 31/12 de l'année en cours passe
-  même s'il est dans le futur), alors que le sélecteur calendrier bloque correctement
-  (`SmartDateInput.tsx:85`). Affecte maintenant tous les champs date du module puisqu'ils partagent
-  ce composant.
+- *[soldé 2026-09-16]* Dates de décès/naissance futures acceptées au clavier — `SmartDateInput.tsx`
+  valide désormais `date <= new Date()` (comparaison de date complète) au lieu de comparer
+  seulement l'année, cohérent avec le sélecteur calendrier.
 - **`imposition_distincte` (art. 6-4a CGI) retirée de l'écran, colonne conservée.** Suite à l'audit
   fonctionnel Famille, la case a été retirée de `RelationInfoForm.tsx` (régimes Marié comme PACS) :
   le champ n'était lu par aucun moteur fiscal (seulement écrit via `relationInfoPayload.ts`) et
@@ -192,55 +194,53 @@ soldés :
   242, 372, 434, 474) et `FamilyMemberFormDialog.tsx:226`. Fonctionne aujourd'hui parce que le
   `Dialog` démonte son contenu à la fermeture ; un changement de ce comportement (ex. dialog
   persistant) casserait silencieusement le pré-remplissage en édition.
-- **`loi_applicable_regime` / `pays_premier_domicile_matrimonial` : colonnes désormais mortes des
-  deux côtés.** Retirées de l'UI de saisie (`RelationInfoForm.tsx`, commit `b76ee6f`, décision
-  volontaire — alerte jugée redondante avec la résidence fiscale à l'étranger) mais **toujours
-  lues** par `useAlertesConseil.ts:60-61`. Ce n'est pas un bug fonctionnel immédiat (aucun dossier
-  n'avait de valeur sur ces colonnes selon le commit), mais c'est une incohérence de code qui
-  mériterait un nettoyage du côté lecteur.
-- **`scenarios_regime` : table orpheline côté écriture.** Le service (`scenarioRegimeService.ts`)
-  et le hook de lecture (`useScenariosRegime.ts`) sont pleinement fonctionnels et alimentent la
-  règle d'alerte de conseil n°16 (`changement_regime_proche_donation`, risque d'abus de droit
-  L. 64 LPF — voir [docs/alertes-conseil-referentiel.md](alertes-conseil-referentiel.md)), mais
-  `createScenarioRegime()` n'est appelée depuis aucun formulaire : aucune fiche client ne permet
-  de tracer un changement de régime matrimonial réalisé ou envisagé. En pratique, cette alerte ne
-  se déclenchera donc jamais tant qu'un écran de saisie n'est pas ajouté (correction d'une mention
-  antérieure erronée de ce document, qui indiquait à tort que la table avait été retirée avec son
-  service).
+- *[soldé 2026-09-16]* `loi_applicable_regime` / `pays_premier_domicile_matrimonial` — l'alerte
+  `extraneite_regime_matrimonial` qui les lisait encore a été retirée du moteur (elle ne pouvait
+  plus se déclencher pour un nouveau dossier depuis le retrait des champs de saisie). Colonnes
+  conservées en base, plus aucun code ne les lit — voir
+  [docs/idees-de-cote.md](idees-de-cote.md).
+- *[soldé 2026-09-16]* `scenarios_regime` : table orpheline côté écriture — la règle d'alerte de
+  conseil n°16 (`changement_regime_proche_donation`) qui ne pouvait jamais se déclencher a été
+  retirée du moteur plutôt que de construire l'écran de saisie manquant (hors périmètre V1). Table,
+  service (`scenarioRegimeService.ts`) et hook (`useScenariosRegime.ts`) conservés tels quels,
+  simplement débranchés — voir [docs/idees-de-cote.md](idees-de-cote.md).
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
-- **Calcul d'âge divergent.** `FamilleSection.tsx:59` calcule l'âge par division `/ 365.25`
-  (imprécision possible d'un an autour de l'anniversaire), alors que `DynamicFamilyForm.tsx:39`
-  calcule correctement par différence calendaire — deux implémentations différentes dans la même
-  section.
-- **`loading` bloqué en cas d'échec d'authentification.** Dans
-  [hooks/useFamilyData.ts](src/hooks/useFamilyData.ts), `useFamilyProfile` (ligne 28) et
-  `useFamilyLinks` (ligne 203) font `if (!isAuthenticated) return;` avant tout `setLoading(false)` :
-  si l'authentification échoue, l'écran reste indéfiniment sur « Chargement… ». Le hook
-  `useMaritalStatus` du même fichier gère déjà correctement ce cas (ligne ~105-106).
-- **`FIELD_TO_SECTION` incomplet** dans `RelationInfoForm.tsx:81-95` : `conventionPacs` et
-  `datePacs` n'y figurent pas — une erreur de validation sur ces deux champs ne redirige pas vers
-  l'onglet fautif.
-- **Argument mort dans `calculateAge`.** `LiensFamiliauxForm.tsx:152` appelle
-  `calculateAge(member.date_naissance, member.date_deces)` mais l'appel est gardé par
-  `member.est_decede ? '-' : …`, donc l'argument `date_deces` n'est jamais exploité par la fonction.
-- **Code mort restant.** [FamilyTreeTimeline.tsx](src/components/FamilyTreeTimeline.tsx)
-  (161 lignes) n'a plus aucun import ailleurs dans le projet. `FamilyTree.tsx`, `FamilyTreeFlow.tsx`
-  et `PartnerInfoCard.tsx` (~336 lignes cumulées) ont déjà été supprimés (commits `57adc88`,
-  `b6827c2`).
+- *[soldé 2026-09-16]* Calcul d'âge divergent — `FamilleSection.tsx` calcule désormais l'âge par
+  différence calendaire (même méthode que `DynamicFamilyForm.tsx`) au lieu d'une division
+  approximative `/ 365.25`.
+- *[soldé 2026-09-16]* `loading` bloqué en cas d'échec d'authentification — `useFamilyProfile` et
+  `useFamilyLinks` (`hooks/useFamilyData.ts`) appellent désormais `setLoading(false)` avant de
+  sortir quand `!isAuthenticated`, alignés sur `useMaritalStatus`.
+- *[soldé 2026-09-16]* `FIELD_TO_SECTION` incomplet dans `RelationInfoForm.tsx` — `conventionPacs`
+  et `datePacs` y figurent désormais (section `informations-generales`).
+- *[soldé 2026-09-16]* Argument mort dans `calculateAge` (`LiensFamiliauxForm.tsx`) — le paramètre
+  `date_deces`, jamais atteint (appel gardé par `member.est_decede ? '-' : …`), a été retiré de la
+  signature.
+- *[soldé 2026-09-16]* Code mort — [FamilyTreeTimeline.tsx](src/components/FamilyTreeTimeline.tsx)
+  (161 lignes, plus aucun import) supprimé.
 
 ### Cases dormantes restantes
 
-Champs saisissables dans l'interface et toujours sans lecteur métier au 2026-09-03 :
+Champs saisissables dans l'interface et toujours sans lecteur métier au 2026-09-16 :
 `family_profiles.nationalite` (+ `.nationalite_2` depuis le 2026-09-03), `.profession` (texte libre
 depuis le 2026-09-03, catégorie CSP jamais lue), `.capacite_juridique`,
-`.mandat_protection_future` (+ date), `.nom_jeune_fille` (accès uniquement via `(data as any)`,
-absent de l'interface TS `FamilyProfile`) ; les colonnes homologues `_conjoint` sur
+`.mandat_protection_future` (+ date) ; les colonnes homologues `_conjoint` sur
 `marital_status` (`.profession_csp_conjoint` n'est plus écrite, voir §2) ; sur `family_links` :
-`personne_a_charge`, `est_dirigeant`, `adoption_simple_motif`, `civilite` (seul lecteur potentiel =
-composant mort `FamilyTreeTimeline`), `nationalite` (+ `.nationalite_2` depuis le 2026-09-03 —
-saisissable via `DynamicFamilyForm.tsx` depuis cette date, mais toujours non lue par un moteur).
+`personne_a_charge`, `adoption_simple_motif`, `civilite` (seul lecteur potentiel était le
+composant mort `FamilyTreeTimeline`, supprimé le 2026-09-16), `nationalite` (+ `.nationalite_2`
+depuis le 2026-09-03 — saisissable via `DynamicFamilyForm.tsx` depuis cette date, mais toujours non
+lue par un moteur).
+
+*Retirés le 2026-09-16 (simplification V1, plutôt que documentés comme dormants) :*
+`family_links.est_dirigeant` (jamais exposé dans un formulaire, colonne supprimée) et
+`family_profiles.nom_jeune_fille` (champ de saisie fonctionnel mais sans lecteur, colonne
+supprimée après vérification qu'aucune ligne en base n'était renseignée) — voir
+[docs/idees-de-cote.md](idees-de-cote.md) pour la condition de réactivation. Ne pas confondre avec
+`family_profiles.est_dirigeant` (déjà retiré de l'UI, colonne conservée, voir 🔴 ci-dessus) ni
+`marital_status.nom_jeune_fille_conjoint` (encore saisissable via `PartnerForm.tsx`, hors périmètre
+de ce retrait).
 
 Champs déjà soldés depuis l'audit initial (retirés de l'UI ou branchés à un moteur) :
 `ancien_combattant` (+ `_conjoint`, case retirée, commit `5122e87`), `exoneration_succession`

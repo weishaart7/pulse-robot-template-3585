@@ -43,11 +43,10 @@ function FamilyTag({ children, accent = false }: { children: React.ReactNode; ac
   );
 }
 
-function calculateAge(date_naissance?: string, date_deces?: string): string {
+function calculateAge(date_naissance?: string): string {
   if (!date_naissance) return '-';
   const birth = new Date(date_naissance);
-  const end = date_deces ? new Date(date_deces) : new Date();
-  const diffMs = end.getTime() - birth.getTime();
+  const diffMs = new Date().getTime() - birth.getTime();
   const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
   if (days < 30) return `${days} jour${days > 1 ? 's' : ''}`;
   const months = Math.floor(days / 30.4375);
@@ -168,7 +167,7 @@ export const LiensFamiliauxForm = forwardRef<LiensFamiliauxFormHandle, LiensFami
                       {member.date_naissance ? format(new Date(member.date_naissance), 'dd/MM/yyyy') : '-'}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {member.est_decede ? '-' : calculateAge(member.date_naissance, member.date_deces)}
+                      {member.est_decede ? '-' : calculateAge(member.date_naissance)}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1.5 flex-wrap">

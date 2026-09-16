@@ -125,7 +125,6 @@ export interface FamilyLink {
   mandat_protection_future?: boolean;
   date_mandat_protection_future?: string;
   personne_a_charge?: boolean;
-  est_dirigeant?: boolean;
   created_at?: string;
   updated_at?: string;
 }
