@@ -127,6 +127,33 @@ permet de l'alimenter (voir §3).
   `import.meta.env.DEV` (commits `57adc88`, `cb79f15`, `34eb276`), conformément à la règle
   permanente du projet.
 
+- **Partage inégal de la créance de participation aux acquêts (art. 1581 C. civ.).** La clause
+  `partage_inegal_acquets` était jusqu'ici purement déclarative : le % saisi n'alimentait qu'une
+  note informative, `computeParticipationAcquets` restait figé sur un partage par moitié.
+  Câblée dans [lib/patrimoine/participationAcquets.ts](src/lib/patrimoine/participationAcquets.ts)
+  (`partCreancierPct`, défaut 50, 100 = attribution de la totalité des acquêts de l'un à l'autre).
+  Même pattern de propagation que `exclusion_biens_professionnels` : le %, résolu par chacun des 4
+  appelants (`ProcessusCalcul.tsx`, `Synthese.tsx`, `Succession2ndDeces.tsx`, `AssuranceVie.tsx`)
+  depuis `clausesData['partage_inegal_acquets']`, transite en scalaire via
+  `TransmissionContext.participationAcquets.partageInegalPct` — jamais `clausesData` en entier
+  (même raison de risque de double pondération, voir le commentaire sur ce champ dans
+  `lib/transmission/index.ts`). Champ de saisie du taux (`PartConjointInput`, `hasPercentages`
+  dans `matrimonialClauses.ts`) désormais affiché pour cette clause dans `ClauseItem.tsx`, au même
+  titre que `partage_inegal`. Décès uniquement, comme le reste du moteur de participation aux
+  acquêts (voir [docs/transmission.md](transmission.md) §4).
+
+- **Clause d'extension de la qualification d'acquêts (art. 1570, aménagement conventionnel).**
+  Nouvelle clause `extension_qualification_acquets` du catalogue PAA (booléenne, sans taux — à
+  distinguer de `partage_inegal_acquets` ci-dessus). Transfère l'intégralité du patrimoine
+  originaire propre des époux au profit de l'indivision : câblée dans
+  [lib/patrimoine/participationAcquets.ts](src/lib/patrimoine/participationAcquets.ts)
+  (`extensionQualificationAcquets`), le patrimoine originaire n'est alors plus déduit du calcul —
+  l'acquêt net de chaque époux devient égal à son patrimoine final dans son intégralité. Même
+  pattern de propagation scalaire que les deux clauses précédentes (résolue par les 4 appelants
+  depuis `clausesData['extension_qualification_acquets']`, jamais `clausesData` en entier). Pas de
+  champ de saisie dédié (`hasPercentages` non défini) : une simple case à cocher, comme
+  `exclusion_biens_professionnels`.
+
 ## 3. Dette identifiée
 
 Classement par risque. Chaque ligne indique si l'item est toujours ouvert (vérifié dans le code au

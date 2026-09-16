@@ -394,6 +394,41 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
     qui » à la date de l'ONC, sans lien avec la succession/DMTG) plutôt qu'à corriger un calcul existant
     — hors périmètre décidé d'un outil de gestion de patrimoine centré sur la transmission, pas la
     liquidation de divorce.
+  - **Assurance-vie x participation aux acquêts — pas de mécanisme automatique dédié, décision actée.**
+    Contrairement aux régimes de communauté (`computeAVReintegrationCivile`,
+    [transmissionHelpers.ts](src/utils/transmissionHelpers.ts), doctrine Ciot §9.6.1, réintègre
+    civilement un contrat non dénoué financé par des deniers communs), aucun mécanisme équivalent
+    n'existe pour la PAA. Ce n'est pas un trou : un contrat d'assurance-vie peut déjà être saisi
+    manuellement comme ligne de `patrimoine_originaire`/`patrimoine_final`
+    (sélecteur d'actifs générique, `PatrimoineOriginaireSection.tsx`/`PatrimoineFinalSection.tsx`, aucune
+    nature exclue) et sera alors pris en compte tel quel par `computeParticipationAcquets` — à condition
+    que le conseiller y porte la bonne valeur selon la date de souscription (avant/pendant mariage),
+    l'origine des deniers ayant financé les versements (originaires ou acquêts) et le caractère
+    dénoué ou non du contrat (doctrine Fidroit, tableau croisé à 6 cas). Automatiser ce calcul en plus
+    de cette saisie manuelle créerait un risque de double-comptage dans la créance de participation :
+    rien dans le schéma actuel (pas de flag sur `patrimoine_originaire.bien_concerne_id`/
+    `patrimoine_final.bien_concerne_id`) n'empêcherait qu'un contrat déjà repris manuellement en ligne
+    de patrimoine soit également réintégré par un calcul automatique dérivé de `avContracts`. Décision :
+    documentation seule (pas de nouveau code) — le chemin de saisie manuelle existant est suffisant et
+    correct s'il est bien appliqué ; à revisiter uniquement si une automatisation prouve qu'elle peut
+    coexister avec la saisie manuelle sans risque de doublon (ex. exclusion des assets AV du sélecteur
+    dès qu'un calcul auto existe, ou détection de doublon sur `bien_concerne_id`).
+  - **Clause de détermination des acquêts nets — dérogation à l'art. 1575 (dettes déductibles du
+    patrimoine final), décision actée.** Le doc Fidroit (§4.7) décrit une clause limitant les dettes
+    déductibles du patrimoine final aux seules dettes relatives à des biens encore présents dans ce
+    patrimoine final (dérogation au principe par défaut : toute dette existant à la dissolution est
+    déductible, y compris celle d'un bien déjà aliéné). L'implémenter correctement suppose de savoir,
+    pour chaque dette, si le bien qu'elle finance est resté dans le patrimoine final ou a été aliéné —
+    donnée qui n'existe nulle part dans le modèle PAA actuel : `patrimoine_originaire`/
+    `patrimoine_final` n'ont ni notion de passif distincte de l'actif (une dette ne peut être
+    représentée qu'en détournant `valeur` en négatif, sans validation ni garde-fou), ni lien
+    structurel dette↔bien-financé, ni statut aliéné/conservé. Le seul lien dette↔bien qui existe dans
+    le repo (`emprunts.asset_id`, module Patrimoine général) vit dans des tables totalement séparées,
+    jamais croisées par `computeParticipationAcquets`. Correction : nécessiterait un chantier de
+    modélisation à part entière (nouveaux champs, migration, UI de liaison dette↔bien, statut
+    aliéné/conservé), pas un simple branchement de clause — décision actée de ne pas la coder
+    tant que ce chantier de modélisation n'a pas sa propre conception validée, plutôt que de livrer
+    une case à cocher sans effet réel ou un calcul approximatif.
   - **Droits et taxes annexes du frais de notaire** (enregistrement, taxe de publicité foncière/CSI) et
     **écrêtement complet incluant les émoluments de formalités** — l'écrêtement de l'attestation
     immobilière est corrigé, mais une décomposition complète des émoluments de formalités individuels

@@ -206,4 +206,56 @@ describe('Branchement réel — créance de participation aux acquêts dans comp
     const totalAvecExclusion = resultAvecExclusion.heirs.reduce((s, h) => s + h.partFinale, 0);
     expect(totalAvecExclusion).toBe(0);
   });
+
+  it('clause de partage inégal des acquêts active : partageInegalPct est appliqué dans computeTransmission (pas le 50/50 par défaut)', () => {
+    const result = computeTransmission({
+      family: buildFamilyUtilisateurDecede(),
+      patrimony: patrimonyVide,
+      liberalites: [],
+      params: buildParams(),
+      conjointOption: 'quart_pp',
+      referenceDate: '2026-07-24',
+      regimeMatrimonial: 'Participation aux acquêts',
+      participationAcquets: { patrimoineOriginaire, patrimoineFinal, exclusionBiensProfessionnels: false, partageInegalPct: 100 }
+    });
+
+    // Sans clause : créance de 200 000€ (cf. 1er test). Avec 100% : 400 000€,
+    // donc masse successorale du débiteur (user) toujours plafonnée à 0.
+    const totalPartsCiviles = result.heirs.reduce((s, h) => s + h.partFinale, 0);
+    expect(totalPartsCiviles).toBe(0);
+
+    const resultCreancier = computeTransmission({
+      family: buildFamilyConjointDecede(),
+      patrimony: patrimonyVide,
+      liberalites: [],
+      params: buildParams(),
+      conjointOption: 'quart_pp',
+      referenceDate: '2026-07-24',
+      regimeMatrimonial: 'Participation aux acquêts',
+      participationAcquets: { patrimoineOriginaire, patrimoineFinal, exclusionBiensProfessionnels: false, partageInegalPct: 100 }
+    });
+
+    // Défunt = spouse = créancier : +400 000€ (100% de la différence) au lieu de +200 000€ (50%).
+    const totalPartsCivilesCreancier = resultCreancier.heirs.reduce((s, h) => s + h.partFinale, 0);
+    expect(totalPartsCivilesCreancier).toBeCloseTo(400000, 0);
+  });
+
+  it("clause d'extension de la qualification d'acquêts active : extensionQualificationAcquets est appliqué dans computeTransmission (patrimoine originaire non déduit)", () => {
+    const result = computeTransmission({
+      family: buildFamilyConjointDecede(),
+      patrimony: patrimonyVide,
+      liberalites: [],
+      params: buildParams(),
+      conjointOption: 'quart_pp',
+      referenceDate: '2026-07-24',
+      regimeMatrimonial: 'Participation aux acquêts',
+      participationAcquets: { patrimoineOriginaire, patrimoineFinal, exclusionBiensProfessionnels: false, extensionQualificationAcquets: true }
+    });
+
+    // Sans clause : créance de 200 000€ (cf. 1er test, acquêts nets 600k/200k). Avec extension : acquêts
+    // nets 1 200 000€/1 000 000€ (patrimoine originaire ignoré) → créance de 100 000€.
+    // Défunt = spouse = créancier.
+    const totalPartsCiviles = result.heirs.reduce((s, h) => s + h.partFinale, 0);
+    expect(totalPartsCiviles).toBeCloseTo(100000, 0);
+  });
 });

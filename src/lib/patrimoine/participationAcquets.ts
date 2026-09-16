@@ -31,6 +31,22 @@ export interface ParticipationAcquetsInput {
   patrimoineFinal: PatrimoineLigneCalcInput[];
   /** Clause d'exclusion des biens professionnels du calcul de la créance de participation, active ou non. */
   exclusionBiensProfessionnels: boolean;
+  /**
+   * Clause de partage inégal des acquêts (art. 1581 C. civ.) : part de la
+   * différence des acquêts nets attribuée à l'époux créancier, en % (0-100).
+   * Par défaut 50 (partage par moitié, art. 1571 al. 1) si la clause n'est
+   * pas active. 100 correspond à l'attribution de la totalité des acquêts de
+   * l'un à l'autre, également permise par l'art. 1581.
+   */
+  partCreancierPct?: number;
+  /**
+   * Clause d'extension de la qualification d'acquêts : transfère l'intégralité
+   * du patrimoine originaire propre des époux au profit de l'indivision, ce qui
+   * a pour effet d'augmenter la masse de calcul de la créance de participation.
+   * En pratique, le patrimoine originaire n'est plus déduit : l'acquêt net
+   * devient égal au patrimoine final dans son intégralité.
+   */
+  extensionQualificationAcquets?: boolean;
 }
 
 export interface ParticipationAcquetsResult {
@@ -61,9 +77,12 @@ export function computeAcquetNet(
   epoux: EpouxConcerne,
   patrimoineOriginaire: PatrimoineLigneCalcInput[],
   patrimoineFinal: PatrimoineLigneCalcInput[],
-  exclusionBiensProfessionnels: boolean
+  exclusionBiensProfessionnels: boolean,
+  extensionQualificationAcquets = false
 ): number {
-  const originaire = sommeParEpoux(patrimoineOriginaire, epoux, exclusionBiensProfessionnels);
+  const originaire = extensionQualificationAcquets
+    ? 0
+    : sommeParEpoux(patrimoineOriginaire, epoux, exclusionBiensProfessionnels);
   const final = sommeParEpoux(patrimoineFinal, epoux, exclusionBiensProfessionnels);
   return Math.max(0, final - originaire);
 }
@@ -74,11 +93,11 @@ export function computeAcquetNet(
  * acquêt net à l'autre. Nulle si les deux acquêts nets sont égaux.
  */
 export function computeParticipationAcquets(input: ParticipationAcquetsInput): ParticipationAcquetsResult {
-  const { patrimoineOriginaire, patrimoineFinal, exclusionBiensProfessionnels } = input;
+  const { patrimoineOriginaire, patrimoineFinal, exclusionBiensProfessionnels, partCreancierPct, extensionQualificationAcquets } = input;
 
   const acquetNet: Record<EpouxConcerne, number> = {
-    user: computeAcquetNet('user', patrimoineOriginaire, patrimoineFinal, exclusionBiensProfessionnels),
-    spouse: computeAcquetNet('spouse', patrimoineOriginaire, patrimoineFinal, exclusionBiensProfessionnels),
+    user: computeAcquetNet('user', patrimoineOriginaire, patrimoineFinal, exclusionBiensProfessionnels, extensionQualificationAcquets),
+    spouse: computeAcquetNet('spouse', patrimoineOriginaire, patrimoineFinal, exclusionBiensProfessionnels, extensionQualificationAcquets),
   };
 
   if (acquetNet.user === acquetNet.spouse) {
@@ -87,7 +106,8 @@ export function computeParticipationAcquets(input: ParticipationAcquetsInput): P
 
   const epouxDebiteur: EpouxConcerne = acquetNet.user > acquetNet.spouse ? 'user' : 'spouse';
   const epouxCreancier: EpouxConcerne = epouxDebiteur === 'user' ? 'spouse' : 'user';
-  const montantCreance = Math.abs(acquetNet.user - acquetNet.spouse) / 2;
+  const pct = partCreancierPct ?? 50;
+  const montantCreance = Math.abs(acquetNet.user - acquetNet.spouse) * (pct / 100);
 
   return { acquetNet, epouxDebiteur, epouxCreancier, montantCreance };
 }

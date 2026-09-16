@@ -1306,20 +1306,24 @@ export function createPatrimoinySummary(assets: Asset[]): PatrimoineSummary {
  * (`patrimoine_originaire`/`patrimoine_final`) et du booléen d'exclusion des
  * biens professionnels déjà résolu par l'appelant.
  *
- * Prend volontairement ce booléen en paramètre plutôt que `ClausesData` en
- * entier : ce module ne doit jamais réexposer l'objet clauses complet vers un
- * contexte "conjoint décède en premier" (cf. commentaire de
- * TransmissionContext.participationAcquets sur le risque de double
- * pondération par bien si clausesData y était transmis).
+ * Prend volontairement ces booléens/pourcentage en paramètre plutôt que
+ * `ClausesData` en entier : ce module ne doit jamais réexposer l'objet
+ * clauses complet vers un contexte "conjoint décède en premier" (cf.
+ * commentaire de TransmissionContext.participationAcquets sur le risque de
+ * double pondération par bien si clausesData y était transmis).
  */
 export function buildParticipationAcquetsContext(
   patrimoineOriginaireRows: PatrimoineOriginaire[],
   patrimoineFinalRows: PatrimoineFinal[],
-  exclusionBiensProfessionnels: boolean
+  exclusionBiensProfessionnels: boolean,
+  partageInegalPct?: number,
+  extensionQualificationAcquets?: boolean
 ): {
   patrimoineOriginaire: PatrimoineLigneCalcInput[];
   patrimoineFinal: PatrimoineLigneCalcInput[];
   exclusionBiensProfessionnels: boolean;
+  partageInegalPct?: number;
+  extensionQualificationAcquets?: boolean;
 } {
   const toLigneCalcInput = (row: PatrimoineOriginaire | PatrimoineFinal): PatrimoineLigneCalcInput => ({
     epoux: row.epoux,
@@ -1330,7 +1334,9 @@ export function buildParticipationAcquetsContext(
   return {
     patrimoineOriginaire: patrimoineOriginaireRows.map(toLigneCalcInput),
     patrimoineFinal: patrimoineFinalRows.map(toLigneCalcInput),
-    exclusionBiensProfessionnels
+    exclusionBiensProfessionnels,
+    partageInegalPct,
+    extensionQualificationAcquets
   };
 }
 

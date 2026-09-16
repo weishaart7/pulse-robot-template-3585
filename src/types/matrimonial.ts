@@ -29,6 +29,7 @@ export type ClauseType =
   | 'simplification_preuve'
   | 'exclusion_biens_professionnels'
   | 'plafonnement_creance'
+  | 'extension_qualification_acquets'
   | 'attribution_preferentielle'
   | 'partage_inegal_acquets'
   | 'renonciation'

@@ -122,6 +122,11 @@ export const ProcessusCalcul = () => {
       );
       const clausesData = parseClausesData((maritalStatus as any)?.clauses_contrat);
       const exclusionBiensProfessionnelsParticipation = !!clausesData['exclusion_biens_professionnels']?.enabled;
+      const partageInegalAcquetsClause = clausesData['partage_inegal_acquets'];
+      const partageInegalPctParticipation = partageInegalAcquetsClause?.enabled
+        ? partageInegalAcquetsClause.partPleineProprietee
+        : undefined;
+      const extensionQualificationAcquetsParticipation = !!clausesData['extension_qualification_acquets']?.enabled;
       // regime_matrimonial n'a de sens que sous Marié(e) : ce champ n'est
       // jamais effacé en changeant de statut (cf. RelationInfoForm.tsx), donc
       // un ex-marié devenu Pacsé/Concubin peut garder une valeur périmée.
@@ -150,7 +155,7 @@ export const ProcessusCalcul = () => {
         regimeMatrimonial: regimeMatrimonialSiMarie,
         recompenses: buildRecompensesCalcInput(recompenses),
         creancesEntreEpoux: buildCreancesCalcInput(creancesEntreEpoux),
-        participationAcquets: buildParticipationAcquetsContext(patrimoineOriginaire, patrimoineFinal, exclusionBiensProfessionnelsParticipation)
+        participationAcquets: buildParticipationAcquetsContext(patrimoineOriginaire, patrimoineFinal, exclusionBiensProfessionnelsParticipation, partageInegalPctParticipation, extensionQualificationAcquetsParticipation)
       };
       return { patrimony, transmissionResult: computeTransmission(ctx), computeErrorMessage: null, computeErrorKind: null };
     } catch (error) {

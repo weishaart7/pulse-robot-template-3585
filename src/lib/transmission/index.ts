@@ -120,6 +120,21 @@ export interface TransmissionContext {
     patrimoineOriginaire: PatrimoineLigneCalcInput[];
     patrimoineFinal: PatrimoineLigneCalcInput[];
     exclusionBiensProfessionnels: boolean;
+    /**
+     * Clause de partage inégal des acquêts (art. 1581 C. civ.), résolue par
+     * l'appelant depuis clausesData['partage_inegal_acquets'] pour la même
+     * raison que exclusionBiensProfessionnels ci-dessus (scalaire, jamais
+     * ClausesData en entier). undefined = partage par moitié (défaut légal).
+     */
+    partageInegalPct?: number;
+    /**
+     * Clause d'extension de la qualification d'acquêts : transfère
+     * l'intégralité du patrimoine originaire propre des époux au profit de
+     * l'indivision (augmente la masse de calcul de la créance). Résolue par
+     * l'appelant depuis clausesData['extension_qualification_acquets'] pour
+     * la même raison que les deux champs ci-dessus.
+     */
+    extensionQualificationAcquets?: boolean;
   };
   // Valeur de rachat d'un contrat AV non dénoué du conjoint survivant, à
   // réintégrer dans la masse commune à liquider civilement (doctrine Ciot,
@@ -278,6 +293,8 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       patrimoineOriginaire: ctx.participationAcquets.patrimoineOriginaire,
       patrimoineFinal: ctx.participationAcquets.patrimoineFinal,
       exclusionBiensProfessionnels: ctx.participationAcquets.exclusionBiensProfessionnels,
+      partCreancierPct: ctx.participationAcquets.partageInegalPct,
+      extensionQualificationAcquets: ctx.participationAcquets.extensionQualificationAcquets,
     });
     if (epouxDebiteur === decedentRole) {
       deltaParticipationAcquets = -montantCreance;

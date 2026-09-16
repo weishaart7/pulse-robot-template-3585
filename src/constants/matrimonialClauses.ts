@@ -507,6 +507,16 @@ export const CLAUSES_BY_REGIME: Record<RegimeType, ClauseDefinition[]> = {
       assietteImpactee: 'masse_commune'
     },
     {
+      key: 'extension_qualification_acquets',
+      label: "Clause d'extension de la qualification d'acquêts",
+      description: "Transfère l'intégralité du patrimoine originaire propre des époux au profit de l'indivision, ce qui augmente la masse de calcul de la créance de participation : le patrimoine originaire n'est plus déduit, l'acquêt net devient égal au patrimoine final. Utile notamment en présence de titres de société dans le patrimoine originaire, souvent associée à une clause d'attribution des acquêts au conjoint survivant pour une protection maximale de celui-ci.",
+      hasMaintienDivorceOption: true,
+      impactTransmission: 'neutre',
+      momentEffet: 'dissolution',
+      soumisRetranchement: false,
+      assietteImpactee: 'masse_commune'
+    },
+    {
       key: 'attribution_preferentielle',
       label: "Clause d'attribution préférentielle",
       impactTransmission: 'neutre',
@@ -517,13 +527,13 @@ export const CLAUSES_BY_REGIME: Record<RegimeType, ClauseDefinition[]> = {
     {
       key: 'partage_inegal_acquets',
       label: 'Clause de partage inégal des acquêts',
-      // Purement déclarative à ce stade : aucun champ de saisie du taux de
-      // répartition n'existe (contrairement à partage_inegal), et
-      // computeParticipationAcquets (participationAcquets.ts) répartit
-      // toujours la créance de participation 50/50, sans lire cette clause —
-      // dette technique connue, câblage non prioritaire (nécessiterait à la
-      // fois l'UI de saisie du taux et l'adaptation de la formule de créance).
-      description: "Documente une répartition inégale de la créance de participation dans l'acte. N'a actuellement aucun effet sur le calcul : la créance reste calculée à parts égales (50/50).",
+      // Taux (partPleineProprietee, même champ que partage_inegal) appliqué
+      // par computeParticipationAcquets (participationAcquets.ts) à la place
+      // du partage par moitié par défaut — cf. art. 1581 C. civ., qui admet
+      // aussi l'attribution de la totalité des acquêts de l'un à l'autre
+      // (taux 100%).
+      description: "Fixe une répartition inégale de la créance de participation (art. 1581 C. civ.), au lieu du partage par moitié par défaut. Le taux saisi est la part de la différence des acquêts nets attribuée à l'époux créancier.",
+      hasPercentages: true,
       hasMaintienDivorceOption: true,
       impactTransmission: 'avantage_matrimonial',
       momentEffet: 'dissolution',
@@ -750,6 +760,7 @@ export const CLAUSE_REGIME_COMPATIBILITY: Partial<Record<ClauseType, RegimeType[
   attribution_preferentielle: ['communaute_reduite', 'communaute_meubles', 'communaute_universelle', 'separation_biens', 'participation_acquets', 'separation_societe_acquets'],
   exclusion_biens_professionnels: ['participation_acquets'],
   plafonnement_creance: ['participation_acquets'],
+  extension_qualification_acquets: ['participation_acquets'],
   simplification_preuve: ['separation_biens', 'separation_societe_acquets', 'participation_acquets'],
   evaluation_biens: ['participation_acquets'],
   societe_acquets: ['separation_societe_acquets'],

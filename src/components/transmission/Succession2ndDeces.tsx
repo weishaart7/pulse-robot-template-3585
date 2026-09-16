@@ -271,16 +271,23 @@ export const Succession2ndDeces = () => {
       // l'âge de l'UTILISATEUR (le survivant réel quand le conjoint décède),
       // jamais sur celui du conjoint.
       const clausesData = parseClausesData((maritalStatus as any)?.clauses_contrat);
-      // Créance de participation : seul le booléen d'exclusion des biens
-      // professionnels sort de clausesData (jamais l'objet en entier, cf.
-      // TransmissionContext.participationAcquets) — safe à passer aux DEUX
-      // sens de décès, contrairement à clausesData qui reste réservé à
-      // ctxUtilisateurDecede ci-dessus.
+      // Créance de participation : seuls le booléen d'exclusion des biens
+      // professionnels et le % de partage inégal sortent de clausesData
+      // (jamais l'objet en entier, cf. TransmissionContext.participationAcquets)
+      // — safe à passer aux DEUX sens de décès, contrairement à clausesData
+      // qui reste réservé à ctxUtilisateurDecede ci-dessus.
       const exclusionBiensProfessionnelsParticipation = !!clausesData['exclusion_biens_professionnels']?.enabled;
+      const partageInegalAcquetsClause = clausesData['partage_inegal_acquets'];
+      const partageInegalPctParticipation = partageInegalAcquetsClause?.enabled
+        ? partageInegalAcquetsClause.partPleineProprietee
+        : undefined;
+      const extensionQualificationAcquetsParticipation = !!clausesData['extension_qualification_acquets']?.enabled;
       const participationAcquets = buildParticipationAcquetsContext(
         (patrimoineOriginaireRows || []) as PatrimoineOriginaire[],
         (patrimoineFinalRows || []) as PatrimoineFinal[],
-        exclusionBiensProfessionnelsParticipation
+        exclusionBiensProfessionnelsParticipation,
+        partageInegalPctParticipation,
+        extensionQualificationAcquetsParticipation
       );
       const recompenses = buildRecompensesCalcInput((recompensesRows || []) as Recompense[]);
       const creancesEntreEpoux = buildCreancesCalcInput((creancesRows || []) as CreanceEntreEpoux[]);

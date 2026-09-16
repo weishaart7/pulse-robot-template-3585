@@ -263,6 +263,11 @@ export const AssuranceVie = () => {
 
             const clausesData = parseClausesData((maritalRes.data as any)?.clauses_contrat);
             const exclusionBiensProfessionnelsParticipation = !!clausesData['exclusion_biens_professionnels']?.enabled;
+            const partageInegalAcquetsClause = clausesData['partage_inegal_acquets'];
+            const partageInegalPctParticipation = partageInegalAcquetsClause?.enabled
+              ? partageInegalAcquetsClause.partPleineProprietee
+              : undefined;
+            const extensionQualificationAcquetsParticipation = !!clausesData['extension_qualification_acquets']?.enabled;
 
             const result = computeTransmission({
               family,
@@ -285,7 +290,9 @@ export const AssuranceVie = () => {
               participationAcquets: buildParticipationAcquetsContext(
                 (patrimoineOriginaireRes.data || []) as PatrimoineOriginaire[],
                 (patrimoineFinalRes.data || []) as PatrimoineFinal[],
-                exclusionBiensProfessionnelsParticipation
+                exclusionBiensProfessionnelsParticipation,
+                partageInegalPctParticipation,
+                extensionQualificationAcquetsParticipation
               )
             });
             setTransmissionResult(result);

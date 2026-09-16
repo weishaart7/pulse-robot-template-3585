@@ -173,7 +173,7 @@ export const ClauseItem: React.FC<ClauseItemProps> = ({
             </div>
           )}
 
-          {clause.hasPercentages && clause.key === 'partage_inegal' && (
+          {clause.hasPercentages && (clause.key === 'partage_inegal' || clause.key === 'partage_inegal_acquets') && (
             <PartConjointInput
               partPleineProprietee={state?.partPleineProprietee || 50}
               onChange={onSinglePercentageChange}

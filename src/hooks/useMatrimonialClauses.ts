@@ -119,12 +119,14 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
     const wasEnabled = clauses[clauseName]?.enabled || false;
     // Décocher une clause efface tout son état associé (biens sélectionnés, %, options) :
     // sinon ces données restent enregistrées en arrière-plan bien que la clause soit désactivée.
-    // partPleineProprietee n'a de sens que pour partage_inegal (seule clause qui le lit,
-    // via updateClausePercentage/PartConjointInput) : l'écrire par défaut sur toute autre
-    // clause activée ne faisait que persister une donnée jamais affichée ni lue.
+    // partPleineProprietee n'a de sens que pour partage_inegal et
+    // partage_inegal_acquets (seules clauses qui le lisent, via
+    // updateClausePercentage/PartConjointInput) : l'écrire par défaut sur
+    // toute autre clause activée ne faisait que persister une donnée jamais
+    // affichée ni lue.
     const newClauseState: ClauseState = wasEnabled
       ? { enabled: false }
-      : clauseName === 'partage_inegal'
+      : clauseName === 'partage_inegal' || clauseName === 'partage_inegal_acquets'
         ? { enabled: true, partPleineProprietee: 50 }
         : { enabled: true };
     const newClauses: ClausesData = {
@@ -147,9 +149,10 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
     saveClausesData(newClauses, null);
   }, [clauses, saveClausesData]);
 
-  // Dédié à partage_inegal (top-level), seule clause qui définit hasPercentages
-  // dans CLAUSES_BY_REGIME : partPleineProprietee est le seul champ lu par le
-  // moteur pour cette clause (partUsufruit a été retiré, jamais lu ni affiché).
+  // Dédié à partage_inegal et partage_inegal_acquets, les deux clauses qui
+  // définissent hasPercentages dans CLAUSES_BY_REGIME : partPleineProprietee
+  // est le seul champ lu par le moteur pour ces clauses (partUsufruit a été
+  // retiré, jamais lu ni affiché).
   const updateClausePercentage = useCallback((clauseName: string, partPP: number) => {
     const newClauses: ClausesData = {
       ...clauses,
@@ -248,6 +251,10 @@ export function useMatrimonialClauses(regimeType: RegimeType): UseMatrimonialCla
         );
         notes.push(`Préciput activé - Valeur exclue de la succession: ${valeurClause.toLocaleString()}€`);
         totalExcluSuccession += valeurClause;
+      } else if (clauseKey === 'partage_inegal_acquets') {
+        typeAvantage = 'parts_inegales';
+        const partPP = clauseState.partPleineProprietee || 50;
+        notes.push(`Partage inégal des acquêts: créance de participation attribuée à ${partPP}% au conjoint créancier`);
       } else if (clauseKey.includes('partage_inegal')) {
         typeAvantage = 'parts_inegales';
         const partPP = clauseState.partPleineProprietee || 50;
