@@ -1300,7 +1300,6 @@ export type Database = {
           adresse_pays: string | null
           adresse_rue: string | null
           adresse_ville: string | null
-          bien_en_indivision: boolean | null
           categorie: string
           created_at: string
           denomination_societe: string | null
@@ -1308,7 +1307,6 @@ export type Database = {
           id: string
           nature_droits_detenus: string | null
           pourcentage_capital: number | null
-          pourcentage_indivision: number | null
           siren: string | null
           updated_at: string
           user_id: string
@@ -1320,7 +1318,6 @@ export type Database = {
           adresse_pays?: string | null
           adresse_rue?: string | null
           adresse_ville?: string | null
-          bien_en_indivision?: boolean | null
           categorie: string
           created_at?: string
           denomination_societe?: string | null
@@ -1328,7 +1325,6 @@ export type Database = {
           id?: string
           nature_droits_detenus?: string | null
           pourcentage_capital?: number | null
-          pourcentage_indivision?: number | null
           siren?: string | null
           updated_at?: string
           user_id: string
@@ -1340,7 +1336,6 @@ export type Database = {
           adresse_pays?: string | null
           adresse_rue?: string | null
           adresse_ville?: string | null
-          bien_en_indivision?: boolean | null
           categorie?: string
           created_at?: string
           denomination_societe?: string | null
@@ -1348,7 +1343,6 @@ export type Database = {
           id?: string
           nature_droits_detenus?: string | null
           pourcentage_capital?: number | null
-          pourcentage_indivision?: number | null
           siren?: string | null
           updated_at?: string
           user_id?: string
@@ -1525,7 +1519,6 @@ export type Database = {
           adresse_pays: string | null
           adresse_rue: string | null
           adresse_ville: string | null
-          bien_en_indivision: boolean | null
           bien_mixte: boolean | null
           categorie: string
           created_at: string
@@ -1536,7 +1529,6 @@ export type Database = {
           fraction_taxable: number | null
           id: string
           nature_droits_detenus: string | null
-          pourcentage_indivision: number | null
           prix_acquisition: number | null
           superficie_terrain: number | null
           updated_at: string
@@ -1548,7 +1540,6 @@ export type Database = {
           adresse_pays?: string | null
           adresse_rue?: string | null
           adresse_ville?: string | null
-          bien_en_indivision?: boolean | null
           bien_mixte?: boolean | null
           categorie: string
           created_at?: string
@@ -1559,7 +1550,6 @@ export type Database = {
           fraction_taxable?: number | null
           id?: string
           nature_droits_detenus?: string | null
-          pourcentage_indivision?: number | null
           prix_acquisition?: number | null
           superficie_terrain?: number | null
           updated_at?: string
@@ -1571,7 +1561,6 @@ export type Database = {
           adresse_pays?: string | null
           adresse_rue?: string | null
           adresse_ville?: string | null
-          bien_en_indivision?: boolean | null
           bien_mixte?: boolean | null
           categorie?: string
           created_at?: string
@@ -1582,7 +1571,6 @@ export type Database = {
           fraction_taxable?: number | null
           id?: string
           nature_droits_detenus?: string | null
-          pourcentage_indivision?: number | null
           prix_acquisition?: number | null
           superficie_terrain?: number | null
           updated_at?: string
@@ -1598,7 +1586,6 @@ export type Database = {
           adresse_pays: string | null
           adresse_rue: string | null
           adresse_ville: string | null
-          bien_en_indivision: boolean | null
           bien_mixte: boolean | null
           categorie: string
           created_at: string
@@ -1610,7 +1597,6 @@ export type Database = {
           id: string
           nature: string | null
           nature_droits_detenus: string | null
-          pourcentage_indivision: number | null
           prix_acquisition: number | null
           superficie_terrain: number | null
           updated_at: string
@@ -1623,7 +1609,6 @@ export type Database = {
           adresse_pays?: string | null
           adresse_rue?: string | null
           adresse_ville?: string | null
-          bien_en_indivision?: boolean | null
           bien_mixte?: boolean | null
           categorie: string
           created_at?: string
@@ -1635,7 +1620,6 @@ export type Database = {
           id?: string
           nature?: string | null
           nature_droits_detenus?: string | null
-          pourcentage_indivision?: number | null
           prix_acquisition?: number | null
           superficie_terrain?: number | null
           updated_at?: string
@@ -1648,7 +1632,6 @@ export type Database = {
           adresse_pays?: string | null
           adresse_rue?: string | null
           adresse_ville?: string | null
-          bien_en_indivision?: boolean | null
           bien_mixte?: boolean | null
           categorie?: string
           created_at?: string
@@ -1660,7 +1643,6 @@ export type Database = {
           id?: string
           nature?: string | null
           nature_droits_detenus?: string | null
-          pourcentage_indivision?: number | null
           prix_acquisition?: number | null
           superficie_terrain?: number | null
           updated_at?: string

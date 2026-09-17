@@ -6,6 +6,7 @@ import { AssetCharge } from '@/services/assetService';
 import { FamilyMember } from '@/hooks/useAssetForm';
 import { FamilyInfo } from '@/lib/patrimoine/utils';
 import { DemembrementDraft } from '@/components/assets/DemembrementSection';
+import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
 import { PlusValueBlock } from '@/components/assets/fields/PlusValueBlock';
 import { ValorisationDemembreeBlock } from '@/components/assets/fields/ValorisationDemembreeBlock';
 import { WizardStepId } from '@/hooks/useAssetWizard';
@@ -16,10 +17,21 @@ interface WizardStep6RecapProps {
   familyData: FamilyInfo;
   familyMembers: FamilyMember[];
   demembrements: DemembrementDraft[];
+  indivisaires: IndivisaireDraft[];
   onEditStep: (stepId: WizardStepId) => void;
   onValidate: () => void;
   isSubmitting: boolean;
 }
+
+const formatIndivisaire = (indivisaire: IndivisaireDraft, familyMembers: FamilyMember[]): string => {
+  const label = indivisaire.type_indivisaire === 'famille'
+    ? (() => {
+        const member = familyMembers.find((m) => m.id === indivisaire.family_link_id);
+        return member ? (member.prenom ? `${member.prenom} ${member.nom}` : member.nom) : 'Membre de la famille';
+      })()
+    : (indivisaire.nom_libre || 'Tiers');
+  return `${label} (${indivisaire.pourcentage}%)`;
+};
 
 const formatEur = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
@@ -91,6 +103,7 @@ export const WizardStep6Recap: React.FC<WizardStep6RecapProps> = ({
   familyData,
   familyMembers,
   demembrements,
+  indivisaires,
   maritalContext,
   onEditStep,
   onValidate,
@@ -126,7 +139,10 @@ export const WizardStep6Recap: React.FC<WizardStep6RecapProps> = ({
           />
         )}
         {values.detenteur === 'Indivision' && (
-          <Row label="Co-indivisaires" value={`${familyMembers.length ? 'voir détail' : ''} (${demembrements.length} contrepartie(s))`.trim() || '—'} />
+          <Row
+            label="Co-indivisaires"
+            value={indivisaires.length > 0 ? indivisaires.map((i) => formatIndivisaire(i, familyMembers)).join(', ') : '—'}
+          />
         )}
       </RecapSection>
 

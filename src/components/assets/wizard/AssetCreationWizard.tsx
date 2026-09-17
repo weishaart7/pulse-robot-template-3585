@@ -147,6 +147,7 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
             familyData={familyData}
             familyMembers={familyMembers}
             demembrements={demembrements}
+            indivisaires={indivisaires}
             onEditStep={goToStep}
             onValidate={handleValidate}
             isSubmitting={isLoading}

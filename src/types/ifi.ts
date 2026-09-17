@@ -14,8 +14,6 @@ export interface IFIImmeubleBati {
   duree_bail?: string;
   bien_mixte?: boolean;
   fraction_taxable?: number;
-  bien_en_indivision?: boolean;
-  pourcentage_indivision?: number;
   nature_droits_detenus?: string;
   valeur_totale?: number;
   created_at?: string;
@@ -39,8 +37,6 @@ export interface IFIImmeableNonBati {
   duree_bail?: string;
   bien_mixte?: boolean;
   fraction_taxable?: number;
-  bien_en_indivision?: boolean;
-  pourcentage_indivision?: number;
   nature_droits_detenus?: string;
   valeur_totale?: number;
   abattement_bois_forets?: boolean;
@@ -60,8 +56,6 @@ export interface IFIBienDetenuIndirectement {
   adresse_ville?: string;
   adresse_pays?: string;
   pourcentage_capital?: number;
-  bien_en_indivision?: boolean;
-  pourcentage_indivision?: number;
   nature_droits_detenus?: string;
   valeur_venale_parts?: number;
   valeur_bien?: number;

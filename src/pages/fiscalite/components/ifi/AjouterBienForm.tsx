@@ -70,8 +70,6 @@ export const AjouterBienForm = ({ onClose, onBienAdded }: AjouterBienFormProps) 
     nombrePieces: '',
     bienMixte: false,
     fractionTaxable: '',
-    bienIndivision: false,
-    pourcentageIndivision: '',
     natureDroits: 'Pleine-propriété',
     valeurTotale: '',
     // Pour immeubles non bâtis
@@ -117,8 +115,6 @@ export const AjouterBienForm = ({ onClose, onBienAdded }: AjouterBienFormProps) 
           superficie_terrain: formData.superficieTerrain ? parseFloat(formData.superficieTerrain) : null,
           bien_mixte: formData.bienMixte,
           fraction_taxable: formData.fractionTaxable ? parseFloat(formData.fractionTaxable) : null,
-          bien_en_indivision: formData.bienIndivision,
-          pourcentage_indivision: formData.pourcentageIndivision ? parseFloat(formData.pourcentageIndivision) : null,
           nature_droits_detenus: formData.natureDroits,
           valeur_totale: formData.valeurTotale ? parseFloat(formData.valeurTotale) : null
         });
@@ -138,8 +134,6 @@ export const AjouterBienForm = ({ onClose, onBienAdded }: AjouterBienFormProps) 
           duree_bail: formData.dureeBail,
           bien_mixte: formData.bienMixte,
           fraction_taxable: formData.fractionTaxable ? parseFloat(formData.fractionTaxable) : null,
-          bien_en_indivision: formData.bienIndivision,
-          pourcentage_indivision: formData.pourcentageIndivision ? parseFloat(formData.pourcentageIndivision) : null,
           nature_droits_detenus: formData.natureDroits,
           valeur_totale: formData.valeurTotale ? parseFloat(formData.valeurTotale) : null,
           abattement_bois_forets: formData.abattementBoisForets,
@@ -155,8 +149,6 @@ export const AjouterBienForm = ({ onClose, onBienAdded }: AjouterBienFormProps) 
           adresse_ville: formData.adresseVille,
           adresse_pays: formData.adressePays,
           pourcentage_capital: formData.pourcentageCapital ? parseFloat(formData.pourcentageCapital) : null,
-          bien_en_indivision: formData.bienIndivision,
-          pourcentage_indivision: formData.pourcentageIndivision ? parseFloat(formData.pourcentageIndivision) : null,
           nature_droits_detenus: formData.natureDroits,
           valeur_venale_parts: formData.valeurVenaleParts ? parseFloat(formData.valeurVenaleParts) : null,
           valeur_bien: formData.valeurBien ? parseFloat(formData.valeurBien) : null,
@@ -401,25 +393,6 @@ export const AjouterBienForm = ({ onClose, onBienAdded }: AjouterBienFormProps) 
           )}
         </div>
 
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="bienIndivision"
-            checked={formData.bienIndivision}
-            onCheckedChange={(checked) => handleInputChange('bienIndivision', checked)}
-          />
-          <Label htmlFor="bienIndivision">Bien en indivision</Label>
-          {formData.bienIndivision && (
-            <div className="ml-4">
-              <Input
-                type="number"
-                placeholder="Pourcentage (%)"
-                value={formData.pourcentageIndivision}
-                onChange={(e) => handleInputChange('pourcentageIndivision', e.target.value)}
-                className="w-32"
-              />
-            </div>
-          )}
-        </div>
       </div>
 
       <div>
@@ -636,26 +609,6 @@ export const AjouterBienForm = ({ onClose, onBienAdded }: AjouterBienFormProps) 
 
         <div className="flex items-center space-x-2">
           <Checkbox
-            id="bienIndivisionNonBati"
-            checked={formData.bienIndivision}
-            onCheckedChange={(checked) => handleInputChange('bienIndivision', checked)}
-          />
-          <Label htmlFor="bienIndivisionNonBati">Bien en indivision</Label>
-          {formData.bienIndivision && (
-            <div className="ml-4">
-              <Input
-                type="number"
-                placeholder="Pourcentage (%)"
-                value={formData.pourcentageIndivision}
-                onChange={(e) => handleInputChange('pourcentageIndivision', e.target.value)}
-                className="w-32"
-              />
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Checkbox
             id="abattementBoisForets"
             checked={formData.abattementBoisForets}
             onCheckedChange={(checked) => handleInputChange('abattementBoisForets', checked)}
@@ -796,26 +749,6 @@ export const AjouterBienForm = ({ onClose, onBienAdded }: AjouterBienFormProps) 
             </SelectContent>
           </Select>
         </div>
-      </div>
-
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="bienIndivisionIndirect"
-          checked={formData.bienIndivision}
-          onCheckedChange={(checked) => handleInputChange('bienIndivision', checked)}
-        />
-        <Label htmlFor="bienIndivisionIndirect">Bien en indivision</Label>
-        {formData.bienIndivision && (
-          <div className="ml-4">
-            <Input
-              type="number"
-              placeholder="Pourcentage (%)"
-              value={formData.pourcentageIndivision}
-              onChange={(e) => handleInputChange('pourcentageIndivision', e.target.value)}
-              className="w-32"
-            />
-          </div>
-        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
