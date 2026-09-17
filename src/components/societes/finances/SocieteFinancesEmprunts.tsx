@@ -6,17 +6,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Landmark, Plus, Link2, Unlink, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Emprunt } from '@/services/passifService';
 
-interface Emprunt {
-  id: string;
-  libelle: string;
-  nature: string;
-  capital_restant_du: number | null;
-  mensualite: number | null;
-  taux_interet: number | null;
-  duree_restante: number | null;
-  societe_id: string | null;
-}
+// Sous-ensemble des colonnes réellement sélectionnées ci-dessous (pas de
+// select('*')) — dérivé du type canonique de passifService.ts pour éviter la
+// définition locale dupliquée qui existait ici auparavant.
+type EmpruntSociete = Pick<Emprunt, 'id' | 'libelle' | 'nature' | 'capital_restant_du' | 'mensualite' | 'taux_interet' | 'duree_restante' | 'societe_id'>;
 
 interface SocieteFinancesEmpruntsProps {
   societeId: string | null;
@@ -25,9 +20,9 @@ interface SocieteFinancesEmpruntsProps {
 export const SocieteFinancesEmprunts: React.FC<SocieteFinancesEmpruntsProps> = ({
   societeId,
 }) => {
-  const [emprunts, setEmprunts] = useState<Emprunt[]>([]);
-  const [linkedEmprunts, setLinkedEmprunts] = useState<Emprunt[]>([]);
-  const [availableEmprunts, setAvailableEmprunts] = useState<Emprunt[]>([]);
+  const [emprunts, setEmprunts] = useState<EmpruntSociete[]>([]);
+  const [linkedEmprunts, setLinkedEmprunts] = useState<EmpruntSociete[]>([]);
+  const [availableEmprunts, setAvailableEmprunts] = useState<EmpruntSociete[]>([]);
   const [loading, setLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedEmpruntId, setSelectedEmpruntId] = useState<string>('');

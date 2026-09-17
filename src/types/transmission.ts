@@ -71,16 +71,3 @@ export interface FamilySituationSummary {
     vivant: boolean;
   }>;
 }
-
-export interface PatrimoineSummary {
-  actifs: {
-    total: number;
-    immobilier: number;
-    financier: number;
-    professionnel: number;
-    autres: number;
-  };
-  passifs: number;
-  actifNet: number;
-  assuranceVie?: number;
-}

@@ -872,12 +872,14 @@ export type Database = {
           capital_garanti_deces: number | null
           capital_restant_du: number | null
           contributeur_remboursement: string | null
+          cout_total_credit: number | null
           created_at: string
           detenteur: string | null
           duree_restante: number | null
           id: string
           libelle: string
           mensualite: number | null
+          mode_amortissement: string
           nature: string
           pourcentage_conjoint: number | null
           pourcentage_utilisateur: number | null
@@ -887,8 +889,10 @@ export type Database = {
           quotite_assuree_utilisateur: number | null
           reporter_budget: boolean | null
           societe_id: string | null
+          taeg: number | null
           taux_interet: number | null
           type_garantie: string | null
+          type_taux: string
           updated_at: string
           user_id: string
         }
@@ -898,12 +902,14 @@ export type Database = {
           capital_garanti_deces?: number | null
           capital_restant_du?: number | null
           contributeur_remboursement?: string | null
+          cout_total_credit?: number | null
           created_at?: string
           detenteur?: string | null
           duree_restante?: number | null
           id?: string
           libelle: string
           mensualite?: number | null
+          mode_amortissement?: string
           nature: string
           pourcentage_conjoint?: number | null
           pourcentage_utilisateur?: number | null
@@ -913,8 +919,10 @@ export type Database = {
           quotite_assuree_utilisateur?: number | null
           reporter_budget?: boolean | null
           societe_id?: string | null
+          taeg?: number | null
           taux_interet?: number | null
           type_garantie?: string | null
+          type_taux?: string
           updated_at?: string
           user_id: string
         }
@@ -924,12 +932,14 @@ export type Database = {
           capital_garanti_deces?: number | null
           capital_restant_du?: number | null
           contributeur_remboursement?: string | null
+          cout_total_credit?: number | null
           created_at?: string
           detenteur?: string | null
           duree_restante?: number | null
           id?: string
           libelle?: string
           mensualite?: number | null
+          mode_amortissement?: string
           nature?: string
           pourcentage_conjoint?: number | null
           pourcentage_utilisateur?: number | null
@@ -939,8 +949,10 @@ export type Database = {
           quotite_assuree_utilisateur?: number | null
           reporter_budget?: boolean | null
           societe_id?: string | null
+          taeg?: number | null
           taux_interet?: number | null
           type_garantie?: string | null
+          type_taux?: string
           updated_at?: string
           user_id?: string
         }

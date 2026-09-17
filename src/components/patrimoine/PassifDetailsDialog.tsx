@@ -95,6 +95,33 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
                       <p className="font-medium">{emprunt.duree_restante} mois</p>
                     </div>
                   )}
+                  {emprunt.mode_amortissement && (
+                    <div className="p-3 rounded-lg bg-muted">
+                      <span className="text-sm text-muted-foreground">Mode d'amortissement</span>
+                      <p className="font-medium">{emprunt.mode_amortissement}</p>
+                    </div>
+                  )}
+                  {emprunt.type_taux && (
+                    <div className="p-3 rounded-lg bg-muted">
+                      <span className="text-sm text-muted-foreground">Type de taux</span>
+                      <p className="font-medium">{emprunt.type_taux}</p>
+                    </div>
+                  )}
+                  {emprunt.taeg !== undefined && emprunt.taeg !== null && (
+                    <div className="p-3 rounded-lg bg-muted">
+                      <div className="flex items-center gap-2">
+                        <Percent className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">TAEG</span>
+                      </div>
+                      <p className="font-medium">{emprunt.taeg}%</p>
+                    </div>
+                  )}
+                  {emprunt.cout_total_credit !== undefined && emprunt.cout_total_credit !== null && (
+                    <div className="p-3 rounded-lg bg-muted">
+                      <span className="text-sm text-muted-foreground">Coût total du crédit</span>
+                      <p className="font-medium">{formatCurrency(emprunt.cout_total_credit)}</p>
+                    </div>
+                  )}
                   {emprunt.type_garantie && emprunt.type_garantie !== 'Aucune' && (
                     <div className="p-3 rounded-lg bg-muted">
                       <span className="text-sm text-muted-foreground">Type de garantie</span>

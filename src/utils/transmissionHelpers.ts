@@ -3,7 +3,7 @@ import { FamilyLink, MaritalStatus, FamilyProfile } from '@/services/familyServi
 import { Asset } from '@/services/assetService';
 import { FamilyGraph, Person, PatrimonySnapshot, Liberalite, PersonId, TransmissionResult, RawAssetInput } from '@/lib/transmission/types';
 import { AVContract } from '@/lib/dmtg/types';
-import { FamilySituationSummary, PatrimoineSummary } from '@/types/transmission';
+import { FamilySituationSummary } from '@/types/transmission';
 import { getPartSuccessorale, getPartConjointSuccession } from '@/lib/patrimoine/succession';
 import { getFractionPassifAjustee, getPartConjointAjustee, buildAvantageMatrimonialCtx } from '@/lib/patrimoine/avantagesMatrimoniaux';
 import { PatrimoineLigneCalcInput } from '@/lib/patrimoine/participationAcquets';
@@ -1264,42 +1264,6 @@ export function createFamilySummary(
 /**
  * Creates a summary of the patrimony for display
  */
-export function createPatrimoinySummary(assets: Asset[]): PatrimoineSummary {
-  const summary = {
-    total: 0,
-    immobilier: 0,
-    financier: 0,
-    professionnel: 0,
-    autres: 0
-  };
-
-  assets.forEach(asset => {
-    const value = asset.valeur_estimee || asset.valeur_acquisition || 0;
-    summary.total += value;
-
-    // Categorize based on asset nature
-    const nature = asset.nature?.toLowerCase() || '';
-    if (nature.includes('immobilier') || nature.includes('résidence') || nature.includes('terrain')) {
-      summary.immobilier += value;
-    } else if (nature.includes('compte') || nature.includes('placement') || nature.includes('action')) {
-      summary.financier += value;
-    } else if (nature.includes('fonds') || nature.includes('entreprise') || nature.includes('profession')) {
-      summary.professionnel += value;
-    } else {
-      summary.autres += value;
-    }
-  });
-
-  const passifs = 0; // TODO: Calculate from asset charges
-
-  return {
-    actifs: summary,
-    passifs,
-    actifNet: summary.total - passifs,
-    assuranceVie: 0 // TODO: Extract from specific asset types
-  };
-}
-
 /**
  * Construit le contexte `participationAcquets` attendu par
  * `computeTransmission` à partir des lignes brutes Supabase

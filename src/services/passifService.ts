@@ -26,6 +26,12 @@ export interface Emprunt {
   quotite_assuree_utilisateur?: number;
   quotite_assuree_conjoint?: number;
   capital_garanti_deces?: number;
+  // Déclaratifs, saisis tels que figurant sur l'offre de prêt — jamais
+  // recalculés (cf. docs/patrimoine.md).
+  mode_amortissement?: 'Amortissable' | 'In fine' | string;
+  type_taux?: 'Fixe' | 'Variable' | 'Mixte' | string;
+  taeg?: number;
+  cout_total_credit?: number;
   created_at: string;
   updated_at: string;
 }

@@ -8,7 +8,7 @@ import {
   SelectSeparator, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
-import { EMPRUNT_NATURES, PASSIF_NATURES, TYPE_GARANTIE_OPTIONS } from '@/constants/assetTypes';
+import { EMPRUNT_NATURES, PASSIF_NATURES, TYPE_GARANTIE_OPTIONS, MODE_AMORTISSEMENT_OPTIONS, TYPE_TAUX_OPTIONS } from '@/constants/assetTypes';
 import { ArrowLeft, Wallet } from 'lucide-react';
 import { Emprunt, Passif } from '@/services/passifService';
 import { usePassifEmpruntForm } from '@/hooks/usePassifEmpruntForm';
@@ -173,6 +173,70 @@ export const PassifEmpruntForm = ({
                     <FormMessage />
                   </FormItem>
                 )} />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="mode_amortissement" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Mode d'amortissement</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger size="lg">
+                            <SelectValue placeholder="Choisir un mode" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {MODE_AMORTISSEMENT_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option}>{option}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  <FormField control={form.control} name="type_taux" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type de taux</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger size="lg">
+                            <SelectValue placeholder="Choisir un type de taux" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {TYPE_TAUX_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option}>{option}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="taeg" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>TAEG (%)</FormLabel>
+                      <FormDescription>Tel que figurant sur l'offre de prêt.</FormDescription>
+                      <FormControl>
+                        <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  <FormField control={form.control} name="cout_total_credit" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Coût total du crédit (€)</FormLabel>
+                      <FormDescription>Tel que figurant sur l'offre de prêt.</FormDescription>
+                      <FormControl>
+                        <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
 
                 <FormField control={form.control} name="type_garantie" render={({ field }) => (
                   <FormItem>

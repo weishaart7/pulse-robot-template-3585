@@ -129,6 +129,10 @@ export const usePassifEmpruntForm = ({
         quotite_assuree_utilisateur: isEmpruntItem ? item.quotite_assuree_utilisateur : undefined,
         quotite_assuree_conjoint: isEmpruntItem ? item.quotite_assuree_conjoint : undefined,
         capital_garanti_deces: isEmpruntItem ? item.capital_garanti_deces : undefined,
+        mode_amortissement: isEmpruntItem ? ((item.mode_amortissement as 'Amortissable' | 'In fine') || 'Amortissable') : 'Amortissable',
+        type_taux: isEmpruntItem ? ((item.type_taux as 'Fixe' | 'Variable' | 'Mixte') || 'Fixe') : 'Fixe',
+        taeg: isEmpruntItem ? item.taeg : undefined,
+        cout_total_credit: isEmpruntItem ? item.cout_total_credit : undefined,
       });
     }
   }, [item, familyData, form]);
@@ -260,6 +264,10 @@ export const usePassifEmpruntForm = ({
           quotite_assuree_utilisateur: values.assure ? values.quotite_assuree_utilisateur : undefined,
           quotite_assuree_conjoint: values.assure ? values.quotite_assuree_conjoint : undefined,
           capital_garanti_deces: values.assure ? values.capital_garanti_deces : undefined,
+          mode_amortissement: values.mode_amortissement || 'Amortissable',
+          type_taux: values.type_taux || 'Fixe',
+          taeg: values.taeg,
+          cout_total_credit: values.cout_total_credit,
         };
 
         if (item && isEmpruntRecord(item)) {

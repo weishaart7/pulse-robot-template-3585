@@ -121,6 +121,7 @@ export const EMPRUNT_NATURES = [
   "Crédit Lombard (prêt gagé sur portefeuille-titres)",
   "Crédit relais",
   "Crédit renouvelable / revolving",
+  "Prêt à taux zéro (PTZ)",
   "Prêt immobilier (résidence principale)",
   "Prêt immobilier (résidences secondaires)",
   "Prêt immobilier locatif (investissement locatif)",
@@ -132,6 +133,18 @@ export const TYPE_GARANTIE_OPTIONS = [
   "Caution",
   "Nantissement",
   "Aucune",
+] as const;
+
+// Déclaratifs, saisis tels que figurant sur l'offre de prêt — cf. docs/patrimoine.md.
+export const MODE_AMORTISSEMENT_OPTIONS = [
+  "Amortissable",
+  "In fine",
+] as const;
+
+export const TYPE_TAUX_OPTIONS = [
+  "Fixe",
+  "Variable",
+  "Mixte",
 ] as const;
 
 export const PASSIF_NATURES = [

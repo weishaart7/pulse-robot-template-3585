@@ -25,6 +25,10 @@ export const passifEmpruntSchema = z.object({
   quotite_assuree_utilisateur: z.number().optional(),
   quotite_assuree_conjoint: z.number().optional(),
   capital_garanti_deces: z.number().optional(),
+  mode_amortissement: z.enum(['Amortissable', 'In fine']).optional(),
+  type_taux: z.enum(['Fixe', 'Variable', 'Mixte']).optional(),
+  taeg: z.number().optional(),
+  cout_total_credit: z.number().optional(),
 });
 
 export type PassifEmpruntFormValues = z.infer<typeof passifEmpruntSchema>;
@@ -40,4 +44,6 @@ export const getDefaultPassifEmpruntValues = (): PassifEmpruntFormValues => ({
   reporter_budget: false,
   type_garantie: 'Aucune',
   assure: false,
+  mode_amortissement: 'Amortissable',
+  type_taux: 'Fixe',
 });
