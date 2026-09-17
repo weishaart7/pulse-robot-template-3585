@@ -52,4 +52,32 @@ Format par entrée : quoi / pourquoi pas maintenant / condition de réactivation
   `family_profiles`/`marital_status`) dirige une entreprise. `nom_jeune_fille` — si un document
   généré (courrier, acte) a besoin du nom de naissance du client.
 
+## 13 clauses de contrat de mariage purement déclaratives
+
+- **Quoi** : retirées le 2026-09-17 (simplification V1, module Famille) du catalogue
+  [matrimonialClauses.ts](../src/constants/matrimonialClauses.ts) et du type `ClauseType`
+  ([types/matrimonial.ts](../src/types/matrimonial.ts)) : `administration_conjointe`,
+  `apport_franc_et_quitte`, `separation_de_dettes`, `apport_plafonne`, `dissolution_alternative`,
+  `simplification_preuve`, `evaluation_biens`, `attribution_preferentielle`,
+  `modification_recompenses`, `exclusion_certains_biens`, `exclusion_reprise`, `renonciation`,
+  `indexation`. Toutes avaient `assietteImpactee: 'aucune'` (ou une absence de ligne
+  référentielle pour les trois dernières, marquées « À regarder ») : aucun moteur de calcul ne
+  les lisait, elles ne faisaient que documenter l'acte sans effet chiffré sur la qualification
+  des biens, la succession ou la transmission. `useMatrimonialClauses.ts` étant entièrement
+  générique (piloté par `CLAUSES_BY_REGIME`), aucun composant n'avait de logique spécifique à
+  retirer. Si des valeurs existent déjà en base sous ces clés dans `marital_status.clauses_contrat`
+  (JSON), elles restent stockées mais ne s'affichent plus (même pattern que les autres retraits
+  d'UI du module, upsert partiel).
+- **Pourquoi pas maintenant** : ces cases alourdissaient l'écran de saisie (jusqu'à 15 clauses
+  par régime) pour un client sans jamais influer sur un montant montré au conseiller — risque
+  d'induire en erreur (cocher une clause en pensant qu'elle change un calcul). Croisement avec
+  les référentiels Royal Formation (contrat de mariage, clauses) du 2026-09-17 : aucune de ces
+  clauses n'avait de calcul identifiable à construire à court terme, certaines n'ayant même pas
+  de ligne dans le référentiel juridique déjà cité par le code.
+- **Condition de réactivation** : au cas par cas, si un dossier client réel nécessite de
+  documenter l'une de ces clauses (ex. rédaction d'acte), ou si un moteur de calcul est construit
+  pour l'une d'entre elles (ex. `modification_recompenses` ↔ moteur de récompenses, déjà repéré
+  comme piste dans `docs/famille.md` §3). Réintroduire la clause depuis l'historique git (dernière
+  version avant retrait : commit du 2026-09-17, « simplification V1 module Famille »).
+
 <!-- Nouvelle entrée : copier le format ci-dessus -->

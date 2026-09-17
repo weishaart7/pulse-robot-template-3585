@@ -8,7 +8,7 @@ export type RegimeType =
   | 'participation_acquets'
   | 'separation_societe_acquets';
 
-export type ClauseType = 
+export type ClauseType =
   | 'attribution_integrale'
   | 'preciput'
   | 'partage_inegal'
@@ -16,33 +16,20 @@ export type ClauseType =
   | 'extension_propres_par_nature'
   | 'reprise_apports'
   | 'stipulation_bien_propre'
-  | 'modification_recompenses'
   | 'prelevement_biens_communs'
   | 'prelevement_indemnisation'
-  | 'exclusion_certains_biens'
   | 'societe_acquets'
   | 'contribution_charges'
   | 'amenagement_indivision'
   | 'maintien_indivision'
-  | 'exclusion_reprise'
-  | 'evaluation_biens'
-  | 'simplification_preuve'
   | 'exclusion_biens_professionnels'
   | 'plafonnement_creance'
   | 'extension_qualification_acquets'
-  | 'attribution_preferentielle'
   | 'partage_inegal_acquets'
-  | 'renonciation'
-  | 'indexation'
   | 'partage_inegal_sub'
   | 'attribution_integrale_sub'
   | 'preciput_sub'
-  | 'administration_conjointe'
-  | 'presomption_propriete'
-  | 'apport_franc_et_quitte'
-  | 'separation_de_dettes'
-  | 'apport_plafonne'
-  | 'dissolution_alternative';
+  | 'presomption_propriete';
 
 export interface ClauseDefinition {
   key: ClauseType;

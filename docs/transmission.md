@@ -441,3 +441,14 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
     remariage postérieur, redressement IFI, procédure de déclaration) — non pertinent pour un outil qui
     ne modélise qu'un instant T, cohérent sur l'ensemble du module plutôt que traité chapitre par
     chapitre.
+  - **Cantonnement de l'émolument du conjoint survivant (art. 1094-1 al. 2 C. civ.).** Repéré le
+    2026-09-17 lors d'un contrôle croisé côté module Famille (référentiels Royal Formation sur les
+    régimes matrimoniaux) : en présence d'une donation entre époux, le conjoint survivant peut choisir
+    de cantonner son émolument sur une partie seulement des biens dont il a été disposé en sa faveur,
+    le surplus profitant alors aux autres successibles (souvent les enfants) sans être traité comme une
+    libéralité de sa part (fiscalité CGI art. 788 bis : biens réputés transmis à titre gratuit par le
+    défunt, pas par le conjoint). Aucune trace dans le code : ni dans `ConjointOption`
+    ([lib/transmission/types.ts](src/lib/transmission/types.ts), qui ne porte que le choix 1/4 PP vs
+    usufruit total), ni ailleurs. Rattaché à ce module (pas à Famille) car c'est un choix exercé par le
+    conjoint survivant au moment du décès simulé, comme `ConjointOption` — pas une donnée du contrat de
+    mariage. Non traité à ce jour, aucune conception commencée.

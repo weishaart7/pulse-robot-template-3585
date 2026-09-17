@@ -10,7 +10,9 @@
 > (passe de simplification V1) : nettoyage de code mort, corrections de fiabilité mineures,
 > retrait de l'alerte de conseil n°16 (jamais déclenchable) et de l'alerte `extraneite_regime_matrimonial`
 > (branchée sur des champs déjà retirés de l'UI), retrait de deux champs dormants
-> (`family_links.est_dirigeant`, `family_profiles.nom_jeune_fille`) — voir §3 et §5. Ce document
+> (`family_links.est_dirigeant`, `family_profiles.nom_jeune_fille`) — voir §3 et §5. Mis à jour le
+> 2026-09-17 (suite) : contrôle croisé des référentiels Royal Formation sur le contrat de mariage,
+> retrait de 13 clauses purement déclaratives du catalogue des clauses (voir §2 et §3). Ce document
 > reflète l'état actuel du code, pas un historique daté. Volet navigation réelle en navigateur
 > toujours non réalisé (authentification requise).
 
@@ -189,6 +191,44 @@ permet de l'alimenter (voir §3).
   champ de saisie dédié (`hasPercentages` non défini) : une simple case à cocher, comme
   `exclusion_biens_professionnels`.
 
+- **Contrôle croisé « Contrat de mariage : clauses possibles », « Changer de régime matrimonial »,
+  « Communauté ou séparation », « Éviter la prestation compensatoire » et « Communauté réduite aux
+  acquêts » (2026-09-17), simplification V1 du catalogue de clauses.** Comparaison des référentiels
+  Royal Formation au code existant. Trois documents confirmés hors périmètre, à raison : la
+  procédure de changement de régime (homologation, délais d'opposition, coûts, fiscalité de la
+  mutation intercalaire) est une démarche juridique, pas une donnée à valoriser — l'outil ne gère
+  que la détection des clauses devenues incompatibles en cas de changement de régime *dans l'outil*
+  ([regimeChangeClauses.ts](../src/lib/patrimoine/regimeChangeClauses.ts)) ; la comparaison
+  communauté/séparation (quotité disponible spéciale entre époux, donation entre époux, cantonnement)
+  est déjà couverte côté module Transmission ; l'évitement de la prestation compensatoire par un
+  mariage à l'étranger (Allemagne) est une stratégie d'ingénierie internationale sans donnée
+  patrimoniale à modéliser, cohérente avec le retrait déjà fait des champs d'extranéité (voir
+  [docs/idees-de-cote.md](idees-de-cote.md)). La communauté réduite aux acquêts (qualification
+  propre/commun, remploi, financement mixte art. 1436) est déjà entièrement couverte par
+  [qualification.ts](../src/lib/patrimoine/qualification.ts) ; les pans non couverts (cogestion,
+  saisie par les créanciers, distinction titre/finance des parts sociales, timing des
+  stock-options) relèvent du fonctionnement du couple, pas de la valorisation ou de la dévolution —
+  non modélisés, à raison, même logique que le contrôle croisé du régime primaire ci-dessus. En
+  revanche, le référentiel des clauses de contrat de mariage a révélé que le catalogue
+  [matrimonialClauses.ts](../src/constants/matrimonialClauses.ts) était sur-couvert pour une V1 :
+  13 clauses purement déclaratives (aucun moteur ne les lit) ont été retirées de l'UI, voir §3 et
+  [docs/idees-de-cote.md](idees-de-cote.md).
+
+- **Contrôle croisé « Les différents régimes », « Séparation de biens avec société d'acquêts » (x2) et
+  « Comparaison union libre/PACS/mariage » (2026-09-17).** Aucun écart trouvé côté Famille. Le régime
+  `separation_societe_acquets` couvre déjà, par sa désignation de biens commune par bien
+  (`societeAcquetsAssetIds`, [qualification.ts](../src/lib/patrimoine/qualification.ts)), tous les cas
+  particuliers illustrés par le référentiel (société limitée aux immeubles, exclusion des biens
+  professionnels…) — ne pas désigner un bien dans la société d'acquêts suffit déjà à le laisser propre,
+  sans clause dédiée à construire. La « clause de reprise des apports » que ces documents décrivent est
+  un mécanisme de divorce (art. 265 al. 3), cohérent avec le statut purement déclaratif déjà documenté
+  de `reprise_apports` (l'outil ne modélise que le décès). Le tableau de comparaison union libre/PACS/
+  mariage (droits du survivant, abattements et taux DMTG) correspond à ce qui est déjà calculé. Un écart
+  a été trouvé mais rattaché au module Transmission plutôt que Famille (choix exercé par le conjoint au
+  moment du décès simulé, pas une donnée du contrat de mariage) : le cantonnement de l'émolument du
+  conjoint survivant (art. 1094-1 al. 2), absent du code — voir
+  [docs/transmission.md](transmission.md) §4.
+
 ## 3. Dette identifiée
 
 Classement par risque. Chaque ligne indique si l'item est toujours ouvert (vérifié dans le code au
@@ -229,6 +269,17 @@ soldés :
   net commun est insuffisant une fois le passif et les récompenses réglés. Cas limite (communauté peu
   fournie ou fort passif/récompenses face à un préciput important) — silencieux, aucun garde-fou ni
   message d'alerte. Identifié le 2026-09-17, non corrigé.
+  *Piste étudiée le 2026-09-17, mise en attente* : un recalcul exact touchant `lib/transmission/index.ts`
+  n'est pas possible aujourd'hui sans chantier de données — `PatrimonySnapshot.passifs` est un solde
+  global (pas de ventilation propre/commun), donc pas de base fiable pour ajuster directement le
+  montant de succession affiché. Une alerte de conseil (non bloquante) serait réalisable sans ce
+  chantier : `assets`/`emprunts` portent déjà chacun un `qualification_bien` stocké
+  (calculé par `qualifierBien()` à la saisie, cf. `useAssetForm.ts`/`usePassifEmpruntForm.ts`),
+  suffisant pour estimer un actif net commun (Σ biens communs − Σ emprunts communs hors société) à
+  comparer à la valeur des biens préciputés, dans `lib/alertes/regles.ts` (même pattern que les
+  alertes existantes). Décision explicite : ne pas construire cette alerte maintenant — à
+  retraiter une fois les autres modules passés en revue, pour une vue d'ensemble du référentiel
+  d'alertes plutôt qu'un ajout ponctuel.
 - **Droit de reprise des apports et capitaux (art. 1525 al. 2 C. civ.) absent.** Avec une attribution
   intégrale ou un partage inégal de la communauté, les héritiers de l'époux prédécédé peuvent, sauf
   stipulation contraire expresse, reprendre les apports et capitaux propres par nature du défunt
@@ -237,6 +288,13 @@ soldés :
   soustraire ces apports/capitaux au préalable. À ne pas confondre avec la clause `reprise_apports`
   existante (clause alsacienne, `matrimonialClauses.ts`), qui concerne un mécanisme différent
   (reprise au divorce, hors périmètre V1). Identifié le 2026-09-17, non corrigé.
+  *Piste étudiée le 2026-09-17, mise en attente* : même limite que ci-dessus côté calcul exact
+  (`RawAssetInput` ne transporte pas l'origine du bien, seulement sa qualification déjà résolue). Une
+  alerte de conseil serait réalisable : `assets` porte déjà `origine_actif`/`date_acquisition`/
+  `clause_remploi`/`clause_entree_communaute`, suffisant pour rejouer `qualifierBien()` en forçant le
+  régime légal (communauté réduite aux acquêts) et détecter les biens communs qui y seraient restés
+  propres, quand attribution intégrale ou partage inégal est active. Même décision de report que
+  ci-dessus.
 - *[soldé 2026-09-16]* Dates de décès/naissance futures acceptées au clavier — `SmartDateInput.tsx`
   valide désormais `date <= new Date()` (comparaison de date complète) au lieu de comparer
   seulement l'année, cohérent avec le sélecteur calendrier.
@@ -264,15 +322,16 @@ soldés :
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
-- **Apport à la communauté / dispense de récompense : catalogue déclaratif déconnecté du moteur de
-  récompenses.** Les clauses `mise_en_communaute` et `modification_recompenses`
-  (`matrimonialClauses.ts`) ne sont référencées ni dans `recompensesCreances.ts` ni dans
-  `qualification.ts` — `RecompensesSection.tsx` ne lit ni l'une ni l'autre. Rien n'empêche donc de
+- **Apport à la communauté : catalogue déclaratif déconnecté du moteur de récompenses.** La clause
+  `mise_en_communaute` (`matrimonialClauses.ts`) n'est référencée ni dans `recompensesCreances.ts`
+  ni dans `qualification.ts` — `RecompensesSection.tsx` ne la lit pas. Rien n'empêche donc de
   saisir à tort une récompense sur un bien apporté dès l'origine du contrat de mariage, cas où aucune
   récompense n'est due (Cass. civ. 1, 3 oct. 2019, n°18-20430 : aucun mouvement de valeur entre masses
   ne s'est produit). Risque de saisie erronée par l'utilisateur plutôt qu'un calcul faux en soi — le
   module Récompenses reste un registre déclaratif assumé (voir §2). Identifié le 2026-09-17, non
-  corrigé.
+  corrigé. (`modification_recompenses`, l'autre clause visée par ce constat initial, a été retirée
+  de l'UI le même jour — voir §3 « Simplification V1 » et
+  [docs/idees-de-cote.md](idees-de-cote.md).)
 - *[soldé 2026-09-16]* Calcul d'âge divergent — `FamilleSection.tsx` calcule désormais l'âge par
   différence calendaire (même méthode que `DynamicFamilyForm.tsx`) au lieu d'une division
   approximative `/ 365.25`.
