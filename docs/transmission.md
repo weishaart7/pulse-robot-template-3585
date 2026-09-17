@@ -299,7 +299,11 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
 - **Retranchement (art. 1527, avantages matrimoniaux au profit d'enfants non communs) reste une simple
   alerte texte** ([regles.ts:199](src/lib/alertes/regles.ts)), sans calcul du montant retranchable ni
   vérification du délai. `soumisRetranchement` (`matrimonialClauses.ts`) est déclaratif, jamais lu par
-  un moteur de calcul.
+  un moteur de calcul. Chiffrer ce mécanisme suppose de modéliser une contestation entre le conjoint
+  survivant et des enfants non communs (comparaison à la portion de l'art. 1094-1, calcul de la fraction
+  réduite) — complexité de même nature que le contentieux du divorce, hors périmètre V1 tant que l'outil
+  reste scopé aux couples toujours ensemble (cf. §4 "Participation aux acquêts en cas de divorce").
+  Confirmé comme limite acceptée le 2026-09-17.
 - **Droits et taxes annexes du frais de notaire non couverts** (enregistrement acte de notoriété 25 €,
   taxe de publicité foncière + contribution de sécurité immobilière 0,10 % pour l'attestation
   immobilière) : `computeNotaryFees` calcule l'émolument (correct au centime, vérifié valeur par valeur)
