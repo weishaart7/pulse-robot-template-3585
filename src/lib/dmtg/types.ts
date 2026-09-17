@@ -32,13 +32,6 @@ export interface Asset {
   isResidencePrincipale?: boolean;
   isMonumentHistoriqueOuvert?: boolean;
   isBoisForetOuGF?: boolean; // applique -75%
-  demembrement?: {
-    type: 'viager'|'temporaire'|null;
-    usufruitierAge?: number; // si viager
-    dureeAns?: number; // si temporaire
-    usufruitierId?: string;
-    nueProprietaires: Array<{ id: string; quotePart: number }>;
-  };
   // Filtrages fiscaux
   exclurePour: {
     avantageMatrimonial?: boolean;
@@ -154,11 +147,6 @@ export interface AssetValuationResult {
   // l'assiette taxable pour le calcul des droits (beneficiary.ts,
   // dmtg/index.ts) mais jamais à `totalBaseTaxable` — cf. assets.ts.
   forfaitMobilier: Money;
-}
-
-export interface DismemberedRightResult {
-  parts: Array<{ beneficiaryId: string; baseTaxable: Money }>;
-  justifs: string[];
 }
 
 export interface TaxBaseResult {

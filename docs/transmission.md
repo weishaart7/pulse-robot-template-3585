@@ -317,11 +317,20 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   corps avec clause de renonciation expresse) — la séparation de corps simple est désormais distinguée
   (commit `c65fa6b`, §2), mais ces deux cas plus rares n'ont toujours aucune façon d'être saisis, ce qui
   compterait à tort le conjoint comme héritier successible dans ces situations exceptionnelles.
-- **Champs DMTG `retourLegal`/`retourConventionnel`/`liberaliteGraduelleResiduelle` fonctionnellement
-  morts par absence de producteur.** La logique de consommation existe et fonctionne
+- **Champs DMTG `retourLegal`/`retourConventionnel`/`reversionUsufruitExoneree`/`liberaliteGraduelleResiduelle`
+  fonctionnellement morts par absence de producteur.** La logique de consommation existe et fonctionne
   (`dmtg/assets.ts:19-26`), mais `exclurePour` n'est construit qu'à `{}` aux 3 seuls points de
   construction d'un `Asset` DMTG (`index.ts:620/637/653`) — aucune UI ne permet de faire remonter l'un
   de ces flags à `true`.
+- **`valueDismemberedRight`/`Asset.demembrement` supprimés (17/09/2026), code mort confirmé sans aucun
+  appelant.** Cette fonction et ce champ (gestion démembrement viager/temporaire dédiée à l'assiette
+  DMTG générique) n'étaient invoqués nulle part — `computeDMTG` ne les référence jamais. La pondération
+  démembrement d'un actif successoral se fait en réalité en amont, via `getFractionDemembrement`
+  (`lib/patrimoine/demembrementFraction.ts`) appliquée avant construction de l'`Asset` DMTG (correctif
+  IB1, cf. `docs/patrimoine.md`) : ce chemin-là fonctionne et est testé. `valueDismemberedRight` était
+  un reliquat antérieur à ce correctif, jamais retiré ni jamais branché. Retiré avec ses tests dédiés
+  (`assets.test.ts`), vérifié sans impact (0 appelant en dehors de son propre fichier et de ses tests,
+  1036 tests restants inchangés).
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
@@ -339,8 +348,11 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   correspondante — étape manuelle non rappelée à l'utilisateur au moment de la saisie de l'actif.
 - Rattachement automatique financement mixte → récompense : documenté comme étape manuelle dans le
   commentaire de colonne, mais rien dans l'UI ne le rappelle à l'utilisateur.
-- Barème art. 669 CGI dupliqué (non documenté) entre `lib/patrimoine/bareme669CGI.ts` et
-  `lib/transmission/index.ts::getDemembrementPct` — signalé aussi par `docs/patrimoine.md`.
+- ~~Barème art. 669 CGI dupliqué entre `lib/patrimoine/bareme669CGI.ts` et
+  `lib/transmission/index.ts::getDemembrementPct`~~ — plus d'actualité (audit du 17/09/2026) :
+  `getDemembrementPct` lit `DEFAULT_DMTG_PARAMS.demembrementViager`, lui-même dérivé de
+  `BAREME_669_CGI` à l'exécution depuis le correctif ID1 (`docs/patrimoine.md`). Source unique
+  confirmée, pas de duplication.
 - Pluralité d'usufruitiers sans stipulation de part : le code retient l'âge du plus jeune usufruitier
   pour tout le bien (`bareme669CGI.ts::getTrancheBaremeForYoungest`), au lieu du partage fictif par part
   décrit au référentiel — divergence jamais confrontée en détail au texte.
@@ -387,6 +399,18 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
     décès ; P14 (le pourcentage de détention lui-même) est en revanche corrigé.
   - **Retranchement (art. 1527)** — reste une alerte texte sans calcul, le champ `soumisRetranchement`
     reste non lu ; correction de F18/§2.6 n'a pas traité ce chapitre, resté hors périmètre du Bloc 5.
+  - **Démembrement au-delà du barème 669 CGI et du DUH légal du conjoint** (audit dédié du 17/09/2026,
+    contre 4 référentiels Fidroit) — confirme et complète la dette déjà actée côté Patrimoine
+    (`docs/patrimoine.md` §4) : présomption de propriété de l'art. 751 du CGI (usufruit du défunt sur un
+    bien dont la nue-propriété appartient à ses héritiers présomptifs, réputé pleine propriété
+    successorale sauf preuve contraire) ; quasi-usufruit et dette de restitution comme passif DMTG
+    déductible ; usufruit successif/réversion (usufruit « en second ») ; renonciation à usufruit
+    (abdicative 125 € vs translative, DMTG) ; démembrement de titres de société (qualité d'associé
+    réservée au nu-propriétaire, répartition résultat courant/exceptionnel). Aucun de ces points n'est
+    codé, ni ici ni côté Patrimoine — décision de périmètre V1 cohérente entre les deux modules plutôt
+    qu'un vide silencieux propre à Transmission. La conversion d'usufruit en rente/capital (art. 759-762)
+    reste, elle, partiellement couverte : message informatif correct (`index.ts:670-693`) mais sans
+    montant chiffré ni droit fixe de 125 €.
   - **Participation aux acquêts en cas de divorce** — `computeParticipationAcquets()`
     ([participationAcquets.ts](src/lib/patrimoine/participationAcquets.ts)) calcule la créance de
     participation (art. 1571) elle-même indépendamment de la cause de dissolution ; ce n'est pas la
