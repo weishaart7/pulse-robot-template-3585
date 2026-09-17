@@ -208,9 +208,35 @@ soldés :
   maintenant saisissable pour les liens qui en ont besoin (`Grand-parent`, `Cousin/Cousine`,
   `Arrière grand-parent`, en plus de `Oncle/Tante`), aligné avec les valeurs lues par
   `transmissionHelpers.ts` et `Optimisation.tsx` (commit `de8a722`).
+- *[soldé 2026-09-17]* Profit subsistant (art. 1469 al. 3) incorrect pour les dépenses de
+  conservation/amélioration — `computeProfitSubsistant()`
+  ([lib/patrimoine/recompensesCreances.ts](../src/lib/patrimoine/recompensesCreances.ts)) appliquait
+  la formule au prorata (`valeurApres × depenseFaite / valeurAvant`) uniquement à la nature
+  `acquisition`, et un simple delta (`valeurApres - valeurAvant`) à `conservation`/`amelioration` —
+  ce qui suppose à tort que 100 % de la plus-value constatée résulte de la dépense. Exemple : travaux
+  de 40 000 € sur un bien à 200 000 € valant 260 000 € à la liquidation — l'ancien calcul donnait
+  60 000 €, la formule au prorata (identique quelle que soit la nature de la dépense, conforme à
+  l'art. 1469 al. 3) donne 52 000 €. Les deux mêmes formules alimentaient aussi les créances entre
+  époux/partenaires de PACS (`computeMontantCreance`, même fichier).
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
+- **Préciput : aucun contrôle de suffisance de l'actif net commun ni de caducité (art. 1519 C. civ.).**
+  `getFractionAjustee()` ([lib/patrimoine/avantagesMatrimoniaux.ts](../src/lib/patrimoine/avantagesMatrimoniaux.ts))
+  traite le préciput comme une simple réaffectation de fraction sur le bien désigné, sans jamais
+  vérifier que l'actif net commun (après passif et récompenses/reprises) suffit à l'honorer. En droit,
+  les créanciers de la communauté priment et le préciput devient caduc (en tout ou partie) si l'actif
+  net commun est insuffisant une fois le passif et les récompenses réglés. Cas limite (communauté peu
+  fournie ou fort passif/récompenses face à un préciput important) — silencieux, aucun garde-fou ni
+  message d'alerte. Identifié le 2026-09-17, non corrigé.
+- **Droit de reprise des apports et capitaux (art. 1525 al. 2 C. civ.) absent.** Avec une attribution
+  intégrale ou un partage inégal de la communauté, les héritiers de l'époux prédécédé peuvent, sauf
+  stipulation contraire expresse, reprendre les apports et capitaux propres par nature du défunt
+  (biens qui, sous le régime légal, lui seraient restés propres) avant application de la clause.
+  `getFractionAjustee()` applique l'attribution intégrale/le partage inégal directement, sans jamais
+  soustraire ces apports/capitaux au préalable. À ne pas confondre avec la clause `reprise_apports`
+  existante (clause alsacienne, `matrimonialClauses.ts`), qui concerne un mécanisme différent
+  (reprise au divorce, hors périmètre V1). Identifié le 2026-09-17, non corrigé.
 - *[soldé 2026-09-16]* Dates de décès/naissance futures acceptées au clavier — `SmartDateInput.tsx`
   valide désormais `date <= new Date()` (comparaison de date complète) au lieu de comparer
   seulement l'année, cohérent avec le sélecteur calendrier.
@@ -238,6 +264,15 @@ soldés :
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
+- **Apport à la communauté / dispense de récompense : catalogue déclaratif déconnecté du moteur de
+  récompenses.** Les clauses `mise_en_communaute` et `modification_recompenses`
+  (`matrimonialClauses.ts`) ne sont référencées ni dans `recompensesCreances.ts` ni dans
+  `qualification.ts` — `RecompensesSection.tsx` ne lit ni l'une ni l'autre. Rien n'empêche donc de
+  saisir à tort une récompense sur un bien apporté dès l'origine du contrat de mariage, cas où aucune
+  récompense n'est due (Cass. civ. 1, 3 oct. 2019, n°18-20430 : aucun mouvement de valeur entre masses
+  ne s'est produit). Risque de saisie erronée par l'utilisateur plutôt qu'un calcul faux en soi — le
+  module Récompenses reste un registre déclaratif assumé (voir §2). Identifié le 2026-09-17, non
+  corrigé.
 - *[soldé 2026-09-16]* Calcul d'âge divergent — `FamilleSection.tsx` calcule désormais l'âge par
   différence calendaire (même méthode que `DynamicFamilyForm.tsx`) au lieu d'une division
   approximative `/ 365.25`.

@@ -2,31 +2,18 @@
  * Moteur de calcul des récompenses (art. 1468-1478 C. civ.) et des créances
  * entre époux (art. 1479, 1543 C. civ.) — chantier 3A.
  *
- * Profit subsistant (art. 1469 al. 3) : ATTENTION, la formule ci-dessous
- * (computeProfitSubsistant) est une SIMPLIFICATION DOCUMENTÉE, pas une
- * formule légale universelle unique. Le Code civil ne fige qu'un principe
- * (« profit subsistant » = ce qui reste de la plus-value procurée par la
- * dépense au jour de la liquidation) ; en pratique notariale, l'imputation
- * de la cause d'une plus-value se fait au cas par cas dès qu'il y a
- * plusieurs causes possibles (marché, travaux, mix des deux, etc.), ce
- * qu'aucune formule fermée ne peut trancher automatiquement. Ce moteur
- * retient DEUX formules choisies pour coller aux deux exemples de
- * référence du chantier — un cas réel avec causes multiples de plus-value
- * demanderait une analyse notariale au cas par cas, pas ce calcul :
- * - 'acquisition' (financement partiel d'un achat) : le profit subsistant
- *   est la valeur actuelle du bien au prorata de la part financée —
- *   valeurApres × (depenseFaite / valeurAvant). Cas récompense de
- *   référence : 100 000 financés sur 200 000, bien à 500 000 à la
- *   liquidation → 500 000 × (100 000/200 000) = 250 000.
- * - 'conservation' / 'amelioration' (travaux sur un bien déjà détenu) : le
- *   profit subsistant est la plus-value effectivement procurée par les
- *   travaux — valeurApres - valeurAvant (on suppose que l'intégralité de
- *   la plus-value constatée résulte de la dépense, hypothèse simplificatrice
- *   en l'absence d'expertise de la valeur avant travaux hors dépense). Cas
- *   créance de référence : travaux de 40 000, bien de 200 000 → 260 000
- *   → profit subsistant = 60 000 (et non un prorata, qui donnerait 52 000 —
- *   ce point a été vérifié avec Titouan comme la lecture correcte du
- *   référentiel fourni, mais reste une lecture parmi d'autres possibles).
+ * Profit subsistant (art. 1469 al. 3) : la même formule au prorata s'applique
+ * quelle que soit la nature de la dépense (acquisition, conservation,
+ * amélioration) — valeurApres × (depenseFaite / valeurAvant). Corrigé le
+ * 2026-09-17 (revue du référentiel Fidroit sur les récompenses) : la version
+ * précédente appliquait ce prorata uniquement à 'acquisition' et un simple
+ * delta (valeurApres - valeurAvant) à 'conservation'/'amelioration', ce qui
+ * revenait à supposer que l'intégralité de la plus-value constatée résultait
+ * de la dépense — hypothèse non conforme à l'art. 1469 al. 3, qui ne
+ * distingue pas la nature de la dépense pour cette formule.
+ * Exemple (travaux de 40 000 sur un bien à 200 000, valant 260 000 à la
+ * liquidation) : profit subsistant = 260 000 × (40 000/200 000) = 52 000
+ * (et non 60 000, l'ancien calcul).
  * - 'autre' : profit subsistant non calculable, la valeur nominale
  *   (dépense faite) s'applique.
  *
@@ -76,11 +63,8 @@ export function computeProfitSubsistant(
 ): number | null {
   if (valeurAvant == null || valeurApres == null || valeurAvant === 0) return null;
 
-  if (natureDepense === 'acquisition') {
+  if (natureDepense === 'acquisition' || natureDepense === 'conservation' || natureDepense === 'amelioration') {
     return valeurApres * (depenseFaite / valeurAvant);
-  }
-  if (natureDepense === 'conservation' || natureDepense === 'amelioration') {
-    return valeurApres - valeurAvant;
   }
   return null;
 }

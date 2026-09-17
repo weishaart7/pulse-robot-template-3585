@@ -186,7 +186,8 @@ describe('computeSoldeRecompenses', () => {
 });
 
 describe('computeMontantCreance', () => {
-  it('cas 4 — profit subsistant (défaut légal, art. 1469 al. 3 par renvoi de l\'art. 1479 al. 2)', () => {
+  it('cas 4 — profit subsistant au prorata (défaut légal, art. 1469 al. 3 par renvoi de l\'art. 1479 al. 2)', () => {
+    // 260000 * (40000/200000) = 52000
     const montant = computeMontantCreance({
       epouxCreancier: 'user',
       epouxDebiteur: 'spouse',
@@ -195,7 +196,7 @@ describe('computeMontantCreance', () => {
       valeurBienApres: 260000,
       natureDepense: 'amelioration',
     });
-    expect(montant).toBe(60000);
+    expect(montant).toBe(52000);
   });
 
   it('cas 5 — mode nominal (convention contraire, art. 1479 al. 2) : montant = dépense faite', () => {
@@ -224,8 +225,8 @@ describe('computeSoldeCreancesEntreEpoux', () => {
         natureDepense: 'amelioration',
       },
     ]);
-    expect(solde.user).toBe(60000);
-    expect(solde.spouse).toBe(-60000);
+    expect(solde.user).toBe(52000);
+    expect(solde.spouse).toBe(-52000);
   });
 });
 
