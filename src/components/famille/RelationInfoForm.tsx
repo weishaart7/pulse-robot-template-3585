@@ -713,6 +713,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
 
         {/* PACS */}
         {relationStatus === "Pacsé(e)" && (
+          <Fragment>
           <div className="rounded-xl border border-border bg-card p-8">
             <SectionHeader icon={Heart} title="Convention" />
             <div className="rounded-lg bg-[#006064]/5 p-5">
@@ -769,6 +770,9 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
               </div>
             </div>
           </div>
+
+          <CreancesEntreEpouxSection contexte="pacs" />
+          </Fragment>
         )}
 
         {/* CONCUBINAGE */}

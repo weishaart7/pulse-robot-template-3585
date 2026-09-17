@@ -29,7 +29,32 @@ type NatureChoice = 'bien' | 'autre' | null;
 type OuiNon = 'oui' | 'non' | null;
 type ModeOverride = 'nominal' | null;
 
-export function CreancesEntreEpouxSection() {
+// Même mécanisme de créance (art. 1469 sur renvoi), deux bases légales
+// distinctes selon l'union : art. 1479/1543 C. civ. entre époux, art. 515-7
+// dernier al. (renvoi à l'art. 1469) entre partenaires de PACS.
+type Contexte = 'mariage' | 'pacs';
+
+const LIBELLES: Record<Contexte, { titre: string; description: string; entite: string; citationConvention: string }> = {
+  mariage: {
+    titre: 'Créances entre époux',
+    description: "Mouvements de valeur entre patrimoines propres, exigibles pendant le mariage (art. 1479, 1543 C. civ.).",
+    entite: 'Époux',
+    citationConvention: 'art. 1479 al. 2',
+  },
+  pacs: {
+    titre: 'Créances entre partenaires',
+    description: "Mouvements de valeur entre patrimoines propres, exigibles pendant le PACS (art. 515-7 dernier al., sur renvoi à l'art. 1469 C. civ.).",
+    entite: 'Partenaire',
+    citationConvention: "art. 515-7 dernier al.",
+  },
+};
+
+interface CreancesEntreEpouxSectionProps {
+  contexte?: Contexte;
+}
+
+export function CreancesEntreEpouxSection({ contexte = 'mariage' }: CreancesEntreEpouxSectionProps) {
+  const libelles = LIBELLES[contexte];
   const { data: creances, saving, addCreance, removeCreance } = useCreancesEntreEpoux();
   const { assets } = useAssets();
   const [isAdding, setIsAdding] = useState(false);
@@ -107,9 +132,9 @@ export function CreancesEntreEpouxSection() {
 
   return (
     <div className="rounded-xl border border-border bg-card p-8">
-      <SectionHeader icon={HandCoins} title="Créances entre époux" />
+      <SectionHeader icon={HandCoins} title={libelles.titre} />
       <p className="text-xs text-muted-foreground -mt-4 mb-5">
-        Mouvements de valeur entre patrimoines propres, exigibles pendant le mariage (art. 1479, 1543 C. civ.).
+        {libelles.description}
       </p>
 
       <div className="rounded-lg bg-[#006064]/5 p-5">
@@ -137,7 +162,7 @@ export function CreancesEntreEpouxSection() {
         <div className="rounded-md border border-border bg-background p-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label className="text-xs">Époux créancier</Label>
+              <Label className="text-xs">{libelles.entite} créancier</Label>
               <Select value={epouxCreancier} onValueChange={(v) => setEpouxCreancier(v as EpouxConcerne)}>
                 <SelectTrigger className={FIELD_CLS}><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -147,7 +172,7 @@ export function CreancesEntreEpouxSection() {
               </Select>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Époux débiteur</Label>
+              <Label className="text-xs">{libelles.entite} débiteur</Label>
               <Select value={epouxDebiteur} onValueChange={(v) => setEpouxDebiteur(v as EpouxConcerne)}>
                 <SelectTrigger className={FIELD_CLS}><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -270,7 +295,7 @@ export function CreancesEntreEpouxSection() {
                 <Select value={modeOverride ?? '__defaut__'} onValueChange={(v) => setModeOverride(v === '__defaut__' ? null : v as ModeOverride)}>
                   <SelectTrigger className={cn(FIELD_CLS, "max-w-xs")}><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__defaut__">Non, profit subsistant (défaut légal, art. 1479 al. 2)</SelectItem>
+                    <SelectItem value="__defaut__">Non, profit subsistant (défaut légal, {libelles.citationConvention})</SelectItem>
                     <SelectItem value="nominal">Oui, évaluation nominale</SelectItem>
                   </SelectContent>
                 </Select>

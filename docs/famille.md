@@ -131,6 +131,37 @@ permet de l'alimenter (voir §3).
   `import.meta.env.DEV` (commits `57adc88`, `cb79f15`, `34eb276`), conformément à la règle
   permanente du projet.
 
+- **Contrôle croisé « Mariage : Principes généraux » (2026-09-17).** Comparaison du référentiel
+  juridique du régime primaire (Fidroit) au code existant : la qualification propre/commun
+  (`lib/patrimoine/qualification.ts`) couvre déjà les règles citées (biens propres par nature
+  art. 1404, remploi et financement mixte art. 1435-1436, communauté de meubles et acquêts
+  art. 1498, communauté universelle art. 1526, PACS art. 515-5/515-5-2), et la contribution aux
+  charges du mariage (art. 214) est déjà couverte pour le cas du remboursement unilatéral d'un
+  emprunt sur bien indivis (alerte de conseil `#6`, voir
+  [docs/alertes-conseil-referentiel.md](alertes-conseil-referentiel.md)). Aucun écart trouvé.
+  Le reste du document (formalités du mariage, nullité, protection du logement familial art. 215,
+  autonomie bancaire art. 221, indépendance professionnelle art. 223) relève du fonctionnement du
+  couple pendant le mariage, sans impact sur une valorisation ou une dévolution patrimoniale :
+  non modélisé, à raison.
+
+- **Contrôle croisé « PACS » et « Concubinage » (2026-09-17), créances entre partenaires de PACS
+  ajoutées.** Comparaison aux référentiels Fidroit PACS et Concubinage : régime par défaut (séparation
+  depuis 2007, indivision avant), exclusions art. 515-5-2, fiscalité des donations/successions
+  (abattement 80 724 €, exonération succession, case 9GL de l'IFI) déjà couverts sans écart. Écart
+  trouvé et comblé : l'art. 515-7 dernier alinéa renvoie les créances entre partenaires de PACS
+  (financement inégal d'un bien, quelle que soit la convention — séparation ou indivision) aux mêmes
+  règles de valorisation que les créances entre époux (art. 1469 sur renvoi, nominal ou profit
+  subsistant). [`CreancesEntreEpouxSection.tsx`](../src/components/famille/matrimonial/CreancesEntreEpouxSection.tsx)
+  était déjà générique côté données (table `creances_entre_epoux`, colonnes `epoux_creancier`/
+  `epoux_debiteur` sans lien au statut du couple, moteur de calcul aval — `ProcessusCalcul.tsx`,
+  `Synthese.tsx`, `Succession2ndDeces.tsx`, `AssuranceVie.tsx` — déjà branché sans filtrage par
+  régime) : seul l'habillage (titre, libellés, base légale citée) dépendait du mariage. Une prop
+  `contexte` (`'mariage' | 'pacs'`) adapte désormais ces libellés, et le composant est affiché dans
+  le bloc PACS de `RelationInfoForm.tsx` sans condition sur la convention choisie (comme pour le
+  mariage, où les créances s'appliquent quel que soit le régime). Concubinage : aucun écart, le
+  remboursement au nominal sans mécanisme de créance (art. 1469 non applicable, confirmé par le
+  document) reste hors périmètre — cohérent, aucune fonctionnalité de créance n'existe pour ce statut.
+
 - **Partage inégal de la créance de participation aux acquêts (art. 1581 C. civ.).** La clause
   `partage_inegal_acquets` était jusqu'ici purement déclarative : le % saisi n'alimentait qu'une
   note informative, `computeParticipationAcquets` restait figé sur un partage par moitié.
@@ -264,9 +295,10 @@ duplication sur les autres membres de la famille a été retirée).
 
 - **V1 — en place** : identité client/conjoint, statut du couple, régime matrimonial (6 onglets),
   clauses du contrat, récompenses/créances, participation aux acquêts, donation au dernier vivant,
-  arbre des liens familiaux avec cascade de suppression, branchement complet au moteur de
-  succession légale (renonciation, représentation, branches familiales) et aux abattements DMTG
-  (handicap, adoption, exonération frère/sœur).
+  créances entre partenaires de PACS (art. 515-7 dernier al., voir §2), arbre des liens familiaux
+  avec cascade de suppression, branchement complet au moteur de succession légale (renonciation,
+  représentation, branches familiales) et aux abattements DMTG (handicap, adoption, exonération
+  frère/sœur).
 - **Différé / non implémenté, sans date documentée** :
   - Les champs restants listés en « cases dormantes » (§3) : nationalité, capacité juridique,
     mandat de protection future (client/conjoint uniquement, cf. retraits ci-dessus pour les autres
