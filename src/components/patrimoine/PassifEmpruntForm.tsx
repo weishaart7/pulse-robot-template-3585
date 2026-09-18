@@ -138,7 +138,7 @@ export const PassifEmpruntForm = ({
                   <FormItem>
                     <FormLabel>Capital restant dû (€)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                      <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -148,7 +148,7 @@ export const PassifEmpruntForm = ({
                   <FormItem>
                     <FormLabel>Taux d'intérêt (%)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                      <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -158,7 +158,7 @@ export const PassifEmpruntForm = ({
                   <FormItem>
                     <FormLabel>Mensualité (€)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                      <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -168,7 +168,7 @@ export const PassifEmpruntForm = ({
                   <FormItem>
                     <FormLabel>Durée restante (en mois)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseInt(e.target.value) || undefined)} />
+                      <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -220,7 +220,7 @@ export const PassifEmpruntForm = ({
                       <FormLabel>TAEG (%)</FormLabel>
                       <FormDescription>Tel que figurant sur l'offre de prêt.</FormDescription>
                       <FormControl>
-                        <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                        <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -231,7 +231,7 @@ export const PassifEmpruntForm = ({
                       <FormLabel>Coût total du crédit (€)</FormLabel>
                       <FormDescription>Tel que figurant sur l'offre de prêt.</FormDescription>
                       <FormControl>
-                        <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                        <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -299,7 +299,7 @@ export const PassifEmpruntForm = ({
                       <FormItem>
                         <FormLabel>Quotité assurée {familyData.userFirstName || 'vous'} (%)</FormLabel>
                         <FormControl>
-                          <Input type="number" min="0" max="100" step="0.1" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                          <Input type="number" min="0" max="100" step="0.1" placeholder="0" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -310,7 +310,7 @@ export const PassifEmpruntForm = ({
                         <FormItem>
                           <FormLabel>Quotité assurée {familyData.partnerFirstName || 'conjoint(e)'} (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" min="0" max="100" step="0.1" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                            <Input type="number" min="0" max="100" step="0.1" placeholder="0" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -321,7 +321,7 @@ export const PassifEmpruntForm = ({
                       <FormItem className="col-span-2">
                         <FormLabel>Capital garanti en cas de décès (€)</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                          <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -336,7 +336,7 @@ export const PassifEmpruntForm = ({
                 <FormItem>
                   <FormLabel>Montant dû (€)</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                    <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

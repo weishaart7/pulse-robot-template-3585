@@ -108,7 +108,7 @@ export const OrigineQualificationFields: React.FC<OrigineQualificationFieldsProp
             <FormLabel>Valeur d'achat / réception (€)</FormLabel>
             <FormDescription>Prix payé à l'achat, ou valeur déclarée si reçu en donation/héritage. Sert de base pour le calcul de la plus-value.</FormDescription>
             <FormControl>
-              <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+              <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -119,7 +119,7 @@ export const OrigineQualificationFields: React.FC<OrigineQualificationFieldsProp
             <FormLabel>Frais d'acquisition (€)</FormLabel>
             <FormDescription>Notaire, agence, droits d'enregistrement, etc.</FormDescription>
             <FormControl>
-              <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+              <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -182,7 +182,7 @@ export const OrigineQualificationFields: React.FC<OrigineQualificationFieldsProp
               Montant financé par des fonds propres, à comparer au prix d'acquisition total renseigné ci-dessus. Si cette contribution couvre au moins la moitié du prix : bien propre (art. 1436), récompense due à la communauté pour le solde. Sinon : bien commun, récompense due à l'époux apporteur. Sans effet si la clause de remploi ci-dessus est cochée.
             </FormDescription>
             <FormControl>
-              <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" min="0" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+              <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" min="0" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
             </FormControl>
             <FormMessage />
           </FormItem>

@@ -251,7 +251,7 @@ export const DetentionFields: React.FC<DetentionFieldsProps> = ({
               <FormLabel>Part rachetée par licitation (%)</FormLabel>
               <FormDescription>Pourcentage de la valeur du bien acquis au-delà de la part initiale de l'acquéreur.</FormDescription>
               <FormControl>
-                <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" min="0" max="100" step="0.1" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" min="0" max="100" step="0.1" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
               </FormControl>
               <FormMessage />
             </FormItem>
