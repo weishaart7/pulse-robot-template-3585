@@ -11,6 +11,13 @@ import { getAssetCategory } from '@/constants/assetTypes';
 import { getPartSuccessorale, BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 
+// Palette Famille (teal identité / lime accent positif / rose pour les
+// passifs), même triptyque que PatrimoineResume.tsx — cf. docs/patrimoine.md.
+const TEAL = '#006064';
+const LIME = '#9bf00d';
+const LIME_ICON = '#054b16';
+const PINK = '#ff1f7a';
+
 interface PatrimoineParTeteDetailProps {
   onBack?: () => void;
 }
@@ -106,7 +113,8 @@ export const PatrimoineParTeteDetail = ({ onBack }: PatrimoineParTeteDetailProps
           actifs={userActifs}
           passifs={userPassifs}
           shareOfTotal={totalValue > 0 ? (userValue / totalValue) * 100 : 100}
-          accent="bg-gradient-to-r from-primary to-primary/80"
+          badgeBg={TEAL}
+          iconColor="#fff"
           formatCurrency={formatCurrency}
           delay="0ms"
         />
@@ -118,7 +126,8 @@ export const PatrimoineParTeteDetail = ({ onBack }: PatrimoineParTeteDetailProps
             actifs={spouseActifs}
             passifs={spousePassifs}
             shareOfTotal={totalValue > 0 ? (spouseValue / totalValue) * 100 : 0}
-            accent="bg-gradient-to-r from-emerald-400 to-emerald-500"
+            badgeBg={LIME}
+            iconColor={LIME_ICON}
             formatCurrency={formatCurrency}
             delay="60ms"
           />
@@ -128,7 +137,8 @@ export const PatrimoineParTeteDetail = ({ onBack }: PatrimoineParTeteDetailProps
           subtitle="Foyer"
           value={formatCurrency(totalValue)}
           icon={Wallet}
-          accent="bg-gradient-to-r from-foreground/40 to-foreground/20"
+          badgeBg={LIME}
+          iconColor={LIME_ICON}
           delay="120ms"
         />
       </div>
@@ -181,38 +191,41 @@ export const PatrimoineParTeteDetail = ({ onBack }: PatrimoineParTeteDetailProps
 /* Sub-components */
 
 const PersonHeroCard = ({
-  icon: Icon, name, netValue, actifs, passifs, shareOfTotal, accent, formatCurrency, delay
+  icon: Icon, name, netValue, actifs, passifs, shareOfTotal, badgeBg, iconColor, formatCurrency, delay
 }: {
   icon: React.ElementType; name: string; netValue: number; actifs: number; passifs: number;
-  shareOfTotal: number; accent: string; formatCurrency: (n: number) => string; delay: string;
+  shareOfTotal: number; badgeBg: string; iconColor: string; formatCurrency: (n: number) => string; delay: string;
 }) => (
   <div
-    className="group relative rounded-md border border-border/60 bg-card overflow-hidden transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 animate-fade-in"
+    className="group relative rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 animate-fade-in"
     style={{ animationDelay: delay }}
   >
-    <div className={`h-[3px] ${accent} opacity-80 group-hover:opacity-100 transition-opacity duration-300`} />
+    <div className="h-[3px] opacity-80 group-hover:opacity-100 transition-opacity duration-300" style={{ backgroundColor: badgeBg }} />
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-widest">{name}</p>
           <p className="text-[11px] text-muted-foreground/60 mt-0.5">{shareOfTotal.toFixed(1)}% du patrimoine total</p>
         </div>
-        <div className={`h-10 w-10 rounded-md ${accent.replace('bg-gradient-to-r', 'bg-gradient-to-br')} flex items-center justify-center opacity-90 group-hover:scale-110 transition-transform duration-300`}>
-          <Icon className="h-[18px] w-[18px] text-white" strokeWidth={1.5} />
+        <div
+          className="h-10 w-10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
+          style={{ backgroundColor: badgeBg }}
+        >
+          <Icon className="h-[18px] w-[18px]" style={{ color: iconColor }} strokeWidth={1.5} />
         </div>
       </div>
       <p className="text-[28px] font-bold text-foreground tracking-tight leading-none mb-4">{formatCurrency(netValue)}</p>
       <div className="grid grid-cols-2 gap-2 pt-3 border-t border-border/40">
         <div>
           <div className="flex items-center gap-1.5">
-            <TrendingUp className="h-3 w-3 text-emerald-500" strokeWidth={2} />
+            <TrendingUp className="h-3 w-3" style={{ color: TEAL }} strokeWidth={2} />
             <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">Actifs</p>
           </div>
           <p className="text-[13px] font-semibold text-foreground tabular-nums mt-0.5">{formatCurrency(actifs)}</p>
         </div>
         <div>
           <div className="flex items-center gap-1.5">
-            <TrendingDown className="h-3 w-3 text-rose-500" strokeWidth={2} />
+            <TrendingDown className="h-3 w-3" style={{ color: PINK }} strokeWidth={2} />
             <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">Passifs</p>
           </div>
           <p className="text-[13px] font-semibold text-foreground tabular-nums mt-0.5">{formatCurrency(passifs)}</p>
@@ -223,23 +236,23 @@ const PersonHeroCard = ({
 );
 
 const SummaryCard = ({
-  label, subtitle, value, icon: Icon, accent, delay
+  label, subtitle, value, icon: Icon, badgeBg, iconColor, delay
 }: {
-  label: string; subtitle: string; value: string; icon: React.ElementType; accent: string; delay: string;
+  label: string; subtitle: string; value: string; icon: React.ElementType; badgeBg: string; iconColor: string; delay: string;
 }) => (
   <div
-    className="group relative rounded-md border border-border/60 bg-card overflow-hidden transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 animate-fade-in"
+    className="group relative rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 animate-fade-in"
     style={{ animationDelay: delay }}
   >
-    <div className={`h-[3px] ${accent} opacity-80 group-hover:opacity-100 transition-opacity duration-300`} />
+    <div className="h-[3px] opacity-80 group-hover:opacity-100 transition-opacity duration-300" style={{ backgroundColor: badgeBg }} />
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="text-[13px] font-medium text-muted-foreground tracking-wide">{label}</p>
           <p className="text-[11px] text-muted-foreground/60 mt-0.5">{subtitle}</p>
         </div>
-        <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
-          <Icon className="h-[18px] w-[18px] text-muted-foreground" strokeWidth={1.5} />
+        <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: badgeBg }}>
+          <Icon className="h-[18px] w-[18px]" style={{ color: iconColor }} strokeWidth={1.5} />
         </div>
       </div>
       <p className="text-[28px] font-bold text-foreground tracking-tight leading-none">{value}</p>
@@ -264,21 +277,21 @@ const BreakdownCard = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex h-2 w-full rounded-full overflow-hidden bg-muted/60">
-          <div className="bg-primary/70 transition-all duration-700" style={{ width: `${ownPct}%` }} />
-          <div className="bg-emerald-400/70 transition-all duration-700" style={{ width: `${sharedPct}%` }} />
+          <div className="transition-all duration-700" style={{ width: `${ownPct}%`, backgroundColor: TEAL }} />
+          <div className="transition-all duration-700" style={{ width: `${sharedPct}%`, backgroundColor: LIME }} />
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-md border border-border/40 p-3.5">
+          <div className="rounded-xl border border-border/40 p-3.5">
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 rounded-full bg-primary/70" />
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: TEAL }} />
               <p className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Biens propres</p>
             </div>
             <p className="text-[16px] font-bold text-foreground tabular-nums">{formatCurrency(ownValue)}</p>
             <p className="text-[10px] text-muted-foreground/60 mt-0.5">{ownPct.toFixed(1)}% des actifs</p>
           </div>
-          <div className="rounded-md border border-border/40 p-3.5">
+          <div className="rounded-xl border border-border/40 p-3.5">
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 rounded-full bg-emerald-400/70" />
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: LIME }} />
               <p className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Part biens communs</p>
             </div>
             <p className="text-[16px] font-bold text-foreground tabular-nums">{formatCurrency(sharedValue)}</p>

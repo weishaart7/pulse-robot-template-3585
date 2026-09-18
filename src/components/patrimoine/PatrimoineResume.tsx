@@ -18,35 +18,48 @@ interface PatrimoineResumeProps {
   onNavigateToParTete?: () => void;
 }
 
-const StatCard = ({ 
-  label, 
-  subtitle, 
-  value, 
-  icon: Icon, 
-  accentColor, 
-  delay 
-}: { 
-  label: string; 
-  subtitle: string; 
-  value: string; 
-  icon: React.ElementType; 
-  accentColor: string; 
+// Palette Famille (teal identité / lime accent positif / rose pour les
+// passifs) appliquée aux cartes résumé — cf. docs/patrimoine.md.
+const TEAL = '#006064';
+const LIME = '#9bf00d';
+const LIME_ICON = '#054b16';
+const PINK = '#ff1f7a';
+
+const StatCard = ({
+  label,
+  subtitle,
+  value,
+  icon: Icon,
+  badgeBg,
+  iconColor,
+  barColor,
+  delay
+}: {
+  label: string;
+  subtitle: string;
+  value: string;
+  icon: React.ElementType;
+  badgeBg: string;
+  iconColor: string;
+  barColor: string;
   delay: string;
 }) => (
-  <div 
-    className="group relative rounded-md border border-border/60 bg-card overflow-hidden transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 animate-fade-in"
+  <div
+    className="group relative rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 animate-fade-in"
     style={{ animationDelay: delay }}
   >
-    {/* Subtle gradient accent line */}
-    <div className={`h-[3px] ${accentColor} opacity-80 group-hover:opacity-100 transition-opacity duration-300`} />
+    <div className="h-[3px] opacity-80 group-hover:opacity-100 transition-opacity duration-300" style={{ backgroundColor: barColor }} />
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="text-[13px] font-medium text-muted-foreground tracking-wide">{label}</p>
           <p className="text-[11px] text-muted-foreground/60 mt-0.5">{subtitle}</p>
         </div>
-        <div className={`h-10 w-10 rounded-md ${accentColor.replace('bg-gradient-to-r', 'bg-gradient-to-br')} flex items-center justify-center opacity-90 group-hover:scale-110 transition-transform duration-300`}>
-          <Icon className="h-[18px] w-[18px] text-white" strokeWidth={1.5} />
+        <div
+          className="h-10 w-10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
+          style={{ backgroundColor: badgeBg }}
+        >
+          <Icon className="h-[18px] w-[18px]" style={{ color: iconColor }} strokeWidth={1.5} />
         </div>
       </div>
       <p className="text-[28px] font-bold text-foreground tracking-tight leading-none">
@@ -131,7 +144,9 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
           subtitle="Total de vos actifs"
           value={formatCurrency(financialSummary.totalActifs)}
           icon={TrendingUp}
-          accentColor="bg-gradient-to-r from-emerald-400 to-emerald-500"
+          badgeBg={`${TEAL}1a`}
+          iconColor={TEAL}
+          barColor={TEAL}
           delay="0ms"
         />
         <StatCard
@@ -139,7 +154,9 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
           subtitle="Total de vos dettes"
           value={formatCurrency(financialSummary.totalPassifs)}
           icon={TrendingDown}
-          accentColor="bg-gradient-to-r from-rose-400 to-rose-500"
+          badgeBg={`${PINK}1a`}
+          iconColor={PINK}
+          barColor={PINK}
           delay="60ms"
         />
         <StatCard
@@ -147,7 +164,9 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
           subtitle="Actifs − Passifs"
           value={formatCurrency(financialSummary.patrimoineNet)}
           icon={Wallet}
-          accentColor="bg-gradient-to-r from-primary to-primary/80"
+          badgeBg={LIME}
+          iconColor={LIME_ICON}
+          barColor={LIME}
           delay="120ms"
         />
       </div>
@@ -201,6 +220,7 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
           <CardContent className="space-y-3">
             <PersonCard
               icon={User}
+              tone="teal"
               name={patrimoineParPersonne.userFirstName}
               value={formatCurrency(patrimoineParPersonne.userValue)}
               showDetails={patrimoineParPersonne.showSpouse}
@@ -219,6 +239,7 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
             {patrimoineParPersonne.showSpouse && (
               <PersonCard
                 icon={Users}
+                tone="lime"
                 name={patrimoineParPersonne.spouseFirstName}
                 value={formatCurrency(patrimoineParPersonne.spouseValue)}
                 showDetails
@@ -237,11 +258,13 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
             <div className="space-y-3 pt-3">
               <ProgressBar
                 label={patrimoineParPersonne.userFirstName}
+                color={TEAL}
                 value={patrimoineParPersonne.totalValue > 0 ? patrimoineParPersonne.userValue / patrimoineParPersonne.totalValue * 100 : 0}
               />
               {patrimoineParPersonne.showSpouse && (
                 <ProgressBar
                   label={patrimoineParPersonne.spouseFirstName}
+                  color={LIME}
                   value={patrimoineParPersonne.totalValue > 0 ? patrimoineParPersonne.spouseValue / patrimoineParPersonne.totalValue * 100 : 0}
                 />
               )}
@@ -284,45 +307,51 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
 
 /* Sub-components */
 
-const PersonCard = ({ 
-  icon: Icon, 
-  name, 
-  value, 
-  showDetails, 
-  details 
-}: { 
-  icon: React.ElementType; 
-  name: string; 
-  value: string; 
-  showDetails?: boolean; 
+const PersonCard = ({
+  icon: Icon,
+  tone = 'teal',
+  name,
+  value,
+  showDetails,
+  details
+}: {
+  icon: React.ElementType;
+  tone?: 'teal' | 'lime';
+  name: string;
+  value: string;
+  showDetails?: boolean;
   details?: React.ReactNode;
-}) => (
-  <div className="group flex items-start gap-3.5 p-4 rounded-md border border-border/50 bg-card hover:border-border transition-all duration-300">
-    <div className="p-2 rounded-md bg-primary/5 group-hover:bg-primary/10 transition-colors duration-300">
-      <Icon className="h-[18px] w-[18px] text-primary/70" strokeWidth={1.5} />
+}) => {
+  const badgeBg = tone === 'lime' ? LIME : `${TEAL}1a`;
+  const iconColor = tone === 'lime' ? LIME_ICON : TEAL;
+  return (
+    <div className="group flex items-start gap-3.5 p-4 rounded-2xl border border-border/50 bg-card hover:border-border transition-all duration-300">
+      <div className="h-9 w-9 shrink-0 rounded-full flex items-center justify-center transition-colors duration-300" style={{ backgroundColor: badgeBg }}>
+        <Icon className="h-[18px] w-[18px]" style={{ color: iconColor }} strokeWidth={1.5} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
+          {name}
+        </p>
+        <p className="text-xl font-bold text-foreground tracking-tight">
+          {value}
+        </p>
+        {details}
+      </div>
     </div>
-    <div className="flex-1 min-w-0">
-      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
-        {name}
-      </p>
-      <p className="text-xl font-bold text-foreground tracking-tight">
-        {value}
-      </p>
-      {details}
-    </div>
-  </div>
-);
+  );
+};
 
-const ProgressBar = ({ label, value }: { label: string; value: number }) => (
+const ProgressBar = ({ label, value, color }: { label: string; value: number; color: string }) => (
   <div className="space-y-1.5">
     <div className="flex justify-between text-[11px]">
       <span className="text-muted-foreground/70">{label}</span>
       <span className="font-semibold text-foreground/80">{Math.round(value)}%</span>
     </div>
     <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden">
-      <div 
-        className="h-1.5 bg-primary/70 rounded-full transition-all duration-700 ease-out" 
-        style={{ width: `${value}%` }} 
+      <div
+        className="h-1.5 rounded-full transition-all duration-700 ease-out"
+        style={{ width: `${value}%`, backgroundColor: color }}
       />
     </div>
   </div>

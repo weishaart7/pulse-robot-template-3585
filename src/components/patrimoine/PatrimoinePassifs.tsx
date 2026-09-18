@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PassifEmpruntForm } from './PassifEmpruntForm';
-import { Plus, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { Plus, MoreHorizontal, Edit, Trash2, Landmark, Receipt } from 'lucide-react';
 import { useEmprunts, usePassifs } from '@/hooks/usePassifs';
 import { useAssets } from '@/hooks/useAssets';
 import { PassifDetailsDialog } from './PassifDetailsDialog';
@@ -13,6 +13,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+
+// Palette Famille (teal / lime / rose), même triptyque que PatrimoineResume.tsx
+// et PatrimoineParTeteDetail.tsx — cf. docs/patrimoine.md.
+const TEAL = '#006064';
+const PINK = '#ff1f7a';
 
 export const PatrimoinePassifs = () => {
   const [showForm, setShowForm] = useState(false);
@@ -49,16 +54,26 @@ export const PatrimoinePassifs = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Gestion des passifs</h3>
-        <Button onClick={() => setShowForm(true)} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
+        <button
+          onClick={() => setShowForm(true)}
+          className="inline-flex items-center gap-2 rounded-full bg-[#006064] hover:bg-[#006064]/90 text-white pl-1 pr-4 py-1 text-sm font-medium transition-colors"
+        >
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#9bf00d]">
+            <Plus className="h-4 w-4 text-[#054b16]" />
+          </span>
           Ajouter un passif/emprunt
-        </Button>
+        </button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+        <Card className="border border-border shadow-sm">
           <CardHeader>
-            <CardTitle>Emprunts</CardTitle>
+            <CardTitle className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${TEAL}1a` }}>
+                <Landmark className="h-4 w-4" style={{ color: TEAL }} />
+              </span>
+              Emprunts
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {empruntsLoading ? (
@@ -74,20 +89,25 @@ export const PatrimoinePassifs = () => {
                 {emprunts.map((emprunt) => (
                   <div
                     key={emprunt.id}
-                    className="flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
+                    className="flex items-center justify-between gap-3 p-3 rounded-2xl border border-border/60 bg-card cursor-pointer hover:shadow-sm hover:border-border transition-all"
                     onClick={() => {
                       setSelectedPassif(emprunt);
                       setPassifType('emprunt');
                       setDetailsOpen(true);
                     }}
                   >
-                    <div>
-                      <p className="font-medium">{emprunt.libelle}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {emprunt.nature} •
-                        {emprunt.capital_restant_du && ` Capital: ${emprunt.capital_restant_du.toLocaleString('fr-FR')}€`}
-                        {emprunt.mensualite && ` • Mensualité: ${emprunt.mensualite.toLocaleString('fr-FR')}€`}
-                      </p>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${TEAL}1a` }}>
+                        <Landmark className="h-4 w-4" style={{ color: TEAL }} />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{emprunt.libelle}</p>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {emprunt.nature} •
+                          {emprunt.capital_restant_du && ` Capital: ${emprunt.capital_restant_du.toLocaleString('fr-FR')}€`}
+                          {emprunt.mensualite && ` • Mensualité: ${emprunt.mensualite.toLocaleString('fr-FR')}€`}
+                        </p>
+                      </div>
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -128,9 +148,14 @@ export const PatrimoinePassifs = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border border-border shadow-sm">
           <CardHeader>
-            <CardTitle>Autres passifs</CardTitle>
+            <CardTitle className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${PINK}1a` }}>
+                <Receipt className="h-4 w-4" style={{ color: PINK }} />
+              </span>
+              Autres passifs
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {passifsLoading ? (
@@ -146,18 +171,23 @@ export const PatrimoinePassifs = () => {
                 {passifs.map((passif) => (
                   <div
                     key={passif.id}
-                    className="flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
+                    className="flex items-center justify-between gap-3 p-3 rounded-2xl border border-border/60 bg-card cursor-pointer hover:shadow-sm hover:border-border transition-all"
                     onClick={() => {
                       setSelectedPassif(passif);
                       setPassifType('passif');
                       setDetailsOpen(true);
                     }}
                   >
-                    <div>
-                      <p className="font-medium">{passif.nature}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Montant dû: {passif.montant_du.toLocaleString('fr-FR')}€
-                      </p>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${PINK}1a` }}>
+                        <Receipt className="h-4 w-4" style={{ color: PINK }} />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{passif.nature}</p>
+                        <p className="text-sm text-muted-foreground truncate">
+                          Montant dû: {passif.montant_du.toLocaleString('fr-FR')}€
+                        </p>
+                      </div>
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
