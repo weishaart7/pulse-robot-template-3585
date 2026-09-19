@@ -11,7 +11,7 @@ import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
 import { assetValorisationService, AssetValorisation } from '@/services/assetValorisationService';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { computeEvolutionPatrimoine } from '@/lib/patrimoine/evolutionPatrimoine';
-import { TrendingUp, TrendingDown, Wallet, User, Users, Target, AlertTriangle } from 'lucide-react';
+import { User, Users, Target, AlertTriangle } from 'lucide-react';
 
 interface PatrimoineResumeProps {
   onNavigateToPlusValues?: () => void;
@@ -23,51 +23,6 @@ interface PatrimoineResumeProps {
 const TEAL = '#006064';
 const LIME = '#9bf00d';
 const LIME_ICON = '#054b16';
-const PINK = '#ff1f7a';
-
-const StatCard = ({
-  label,
-  subtitle,
-  value,
-  icon: Icon,
-  badgeBg,
-  iconColor,
-  barColor,
-  delay
-}: {
-  label: string;
-  subtitle: string;
-  value: string;
-  icon: React.ElementType;
-  badgeBg: string;
-  iconColor: string;
-  barColor: string;
-  delay: string;
-}) => (
-  <div
-    className="group relative rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 animate-fade-in"
-    style={{ animationDelay: delay }}
-  >
-    <div className="h-[3px] opacity-80 group-hover:opacity-100 transition-opacity duration-300" style={{ backgroundColor: barColor }} />
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <p className="text-[13px] font-medium text-muted-foreground tracking-wide">{label}</p>
-          <p className="text-[11px] text-muted-foreground/60 mt-0.5">{subtitle}</p>
-        </div>
-        <div
-          className="h-10 w-10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
-          style={{ backgroundColor: badgeBg }}
-        >
-          <Icon className="h-[18px] w-[18px]" style={{ color: iconColor }} strokeWidth={1.5} />
-        </div>
-      </div>
-      <p className="text-[28px] font-bold text-foreground tracking-tight leading-none">
-        {value}
-      </p>
-    </div>
-  </div>
-);
 
 export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }: PatrimoineResumeProps) => {
   const { assets } = useAssets();
@@ -137,38 +92,19 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
         </div>
       )}
 
-      {/* Top summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <StatCard
-          label="Actifs"
-          subtitle="Total de vos actifs"
-          value={formatCurrency(financialSummary.totalActifs)}
-          icon={TrendingUp}
-          badgeBg={`${TEAL}1a`}
-          iconColor={TEAL}
-          barColor={TEAL}
-          delay="0ms"
-        />
-        <StatCard
-          label="Passifs"
-          subtitle="Total de vos dettes"
-          value={formatCurrency(financialSummary.totalPassifs)}
-          icon={TrendingDown}
-          badgeBg={`${PINK}1a`}
-          iconColor={PINK}
-          barColor={PINK}
-          delay="60ms"
-        />
-        <StatCard
-          label="Patrimoine net"
-          subtitle="Actifs − Passifs"
-          value={formatCurrency(financialSummary.patrimoineNet)}
-          icon={Wallet}
-          badgeBg={LIME}
-          iconColor={LIME_ICON}
-          barColor={LIME}
-          delay="120ms"
-        />
+      {/* Patrimoine net — mis en avant en titre. Le -mt-12 compense l'écart de
+          padding vertical entre <main> (pt-3) + PatrimoineSection (p-6) +
+          ce wrapper (mt-6) d'une part, et la marge du haut de la navbar
+          latérale (mt-3) d'autre part, pour aligner leurs bords supérieurs —
+          n'a d'effet visuel correct que si IncompleteAssetsBanner n'est pas
+          affiché au-dessus (cf. PatrimoineSection.tsx). */}
+      <div className="-mt-12 animate-fade-in">
+        <p className="text-[13px] font-medium text-muted-foreground uppercase tracking-wide">Patrimoine net</p>
+        <div className="mt-1">
+          <p className="text-4xl md:text-5xl font-bold text-foreground tracking-tight" style={{ fontFamily: "'Kode Mono', monospace" }}>
+            {formatCurrency(financialSummary.patrimoineNet)}
+          </p>
+        </div>
       </div>
 
       {/* Chart section */}
