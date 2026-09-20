@@ -4,6 +4,7 @@ import { EditorialChecklistSection } from "./EditorialChecklistSection";
 export function ParticuliersSection() {
   return (
     <EditorialChecklistSection
+      id="fonctionnalites"
       eyebrow="Pour vous"
       heading="Devenez votre propre expert"
       paragraphs={[

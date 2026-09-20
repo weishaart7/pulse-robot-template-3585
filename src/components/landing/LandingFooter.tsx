@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { RuixenGradientFooter } from "@/components/ui/ruixen-gradient-footer";
 
 const columns = [
   {
@@ -16,8 +15,8 @@ const columns = [
 
 export function LandingFooter() {
   return (
-    <RuixenGradientFooter gradientHeight="40vh" minReveal={0} className="bg-[var(--lp-mist)]">
-      <div className="mx-auto w-full max-w-[1200px] px-6 pt-12">
+    <footer className="bg-white">
+      <div id="a-propos" className="mx-auto w-full max-w-[1200px] px-6 pt-12">
         <div className="grid gap-10 pb-10 sm:grid-cols-2 lg:grid-cols-6">
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2 text-[var(--lp-ink)]">
@@ -75,7 +74,7 @@ export function LandingFooter() {
           </nav>
         </div>
 
-        <div className="flex flex-col items-center justify-between gap-3 border-t border-black/10 pt-6 pb-2 font-mono text-xs uppercase tracking-wider text-[var(--lp-smoke)] sm:flex-row">
+        <div className="flex flex-col items-center justify-between gap-3 border-t border-black/10 pt-6 pb-8 font-mono text-xs uppercase tracking-wider text-[var(--lp-smoke)] sm:flex-row">
           <span>© {new Date().getFullYear()} Kairos</span>
           <Link
             to="/login"
@@ -86,6 +85,6 @@ export function LandingFooter() {
           <span>France</span>
         </div>
       </div>
-    </RuixenGradientFooter>
+    </footer>
   );
 }

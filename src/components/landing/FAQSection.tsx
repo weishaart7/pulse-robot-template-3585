@@ -23,7 +23,7 @@ const faqs = [
 
 export function FAQSection() {
   return (
-    <section className="bg-[var(--lp-mist)] px-6 py-16 sm:py-20">
+    <section className="bg-white px-6 py-16 sm:py-20">
       <div className="mx-auto max-w-[720px]">
         <h2 className="lp-display mb-10 text-[36px] leading-tight">
           Questions fréquentes
@@ -33,7 +33,7 @@ export function FAQSection() {
           {faqs.map((faq) => (
             <details
               key={faq.question}
-              className="group rounded-[16px] bg-white px-5 py-4 open:pb-4"
+              className="group rounded-[16px] border border-black/10 bg-white px-5 py-4 open:pb-4"
             >
               <summary className="cursor-pointer list-none text-[16px] font-medium text-[var(--lp-ink)]">
                 {faq.question}

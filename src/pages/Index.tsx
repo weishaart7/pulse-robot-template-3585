@@ -5,6 +5,7 @@ import { ProfessionnelsSection } from "@/components/landing/ProfessionnelsSectio
 import { CredibiliteSection } from "@/components/landing/CredibiliteSection";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
 import { ConfianceSection } from "@/components/landing/ConfianceSection";
+import { PricingSection } from "@/components/landing/PricingSection";
 import { FAQSection } from "@/components/landing/FAQSection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 
@@ -19,6 +20,7 @@ const Index = () => {
         <CredibiliteSection />
         <HowItWorksSection />
         <ConfianceSection />
+        <PricingSection />
         <FAQSection />
       </main>
       <LandingFooter />

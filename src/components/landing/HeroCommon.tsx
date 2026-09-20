@@ -3,38 +3,43 @@ import { Link } from "react-router-dom";
 export function HeroCommon() {
   return (
     <section
-      className="relative flex min-h-[640px] w-full flex-col items-center justify-center overflow-hidden px-6 pt-32 pb-24 text-center"
-      style={{ background: "var(--lp-gradient)" }}
+      className="relative flex min-h-[640px] w-full flex-col items-center justify-center px-6 pt-40 pb-24 text-center"
+      style={{ background: "#ffffff" }}
     >
+      {/* mesh background, inset from the viewport edges with rounded corners */}
+      <div
+        aria-hidden
+        className="absolute inset-2.5 rounded-[18px] sm:inset-5"
+        style={{
+          backgroundImage: "url('/hero-mesh.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      />
+
       <div className="relative z-10 mx-auto flex max-w-[720px] flex-col items-center gap-6">
+        <span className="text-base font-bold text-white">{"{patrimoine, lisible}"}</span>
         <h1
           className="lp-display text-[36px] sm:text-[48px]"
           style={{
-            color: "#ffffff",
-            fontFamily: "'DM Serif Display', 'Playfair Display', serif",
-            fontWeight: 400,
+            color: "#0d1b1e",
+            fontFamily: "'Instrument Sans', 'Inter', ui-sans-serif, sans-serif",
+            fontWeight: 500,
           }}
         >
-          Votre patrimoine, enfin <em className="italic">lisible</em>.
-          <br />
           Comprendre avant de <em className="italic">gérer</em>, décider avant d'
           <em className="italic">agir</em>.
         </h1>
-        <p className="max-w-[560px] text-base leading-[1.35] text-white">
-          Kairos éclaire votre patrimoine dans son ensemble — actifs, fiscalité,
-          transmission — pour que chaque décision s'appuie sur une vision
-          claire, pas sur des suppositions.
-        </p>
         <div className="mt-2 flex items-center gap-3">
           <Link
             to="/login"
-            className="rounded-[4px] border border-white bg-transparent px-6 py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-80 sm:text-base"
+            className="rounded-[4px] border border-[#0d1b1e] bg-transparent px-6 py-3.5 text-sm font-semibold text-[#0d1b1e] transition-opacity hover:opacity-70 sm:text-base"
           >
             S'inscrire
           </Link>
           <Link
             to="/login"
-            className="rounded-[4px] bg-white px-6 py-3.5 text-sm font-semibold text-black transition-transform hover:scale-[1.02] sm:text-base"
+            className="rounded-[4px] bg-[#0d1b1e] px-6 py-3.5 text-sm font-semibold text-white transition-transform hover:scale-[1.02] sm:text-base"
           >
             Se connecter
           </Link>
@@ -43,15 +48,12 @@ export function HeroCommon() {
         {/*
           Device Mockup Card (design.md) — dips into the landscape silhouette
           at the hero's bottom, as specified.
-          TODO(design): remplacer /product-preview-placeholder.svg par une
-          vraie capture d'écran de l'app (ex: public/product-preview.png),
-          puis mettre à jour le src ci-dessous.
         */}
         <div
           className="mt-10 -mb-16 w-full max-w-[900px] rounded-[22px] bg-white p-3 sm:-mb-24 sm:p-4"
           style={{ boxShadow: "0 0 0 1px rgba(0,0,0,0.06), var(--lp-glow)" }}
         >
-          <div className="overflow-hidden rounded-[16px] bg-[var(--lp-mist)]">
+          <div className="overflow-hidden rounded-[16px] bg-white">
             <img
               src="/product-preview-placeholder.svg"
               alt="Aperçu du tableau de bord Kairos"
@@ -60,27 +62,6 @@ export function HeroCommon() {
           </div>
         </div>
       </div>
-
-      {/* landscape photo, set back behind the gradient — fades in from the sky */}
-      <img
-        src="/hero-background.png"
-        alt=""
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[65%] w-full object-cover object-bottom opacity-50"
-        style={{
-          maskImage: "linear-gradient(to bottom, transparent 0%, black 45%)",
-          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 45%)",
-        }}
-      />
-
-      {/* blends the hero's bottom edge into the mist canvas of the next section */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-32 sm:h-44"
-        style={{
-          background: "linear-gradient(to bottom, transparent, var(--lp-mist))",
-        }}
-      />
     </section>
   );
 }

@@ -7,6 +7,7 @@ export interface ChecklistItem {
 }
 
 interface EditorialChecklistSectionProps {
+  id?: string;
   eyebrow?: string;
   heading: string;
   paragraphs: string[];
@@ -15,6 +16,7 @@ interface EditorialChecklistSectionProps {
 }
 
 export function EditorialChecklistSection({
+  id,
   eyebrow,
   heading,
   paragraphs,
@@ -22,7 +24,7 @@ export function EditorialChecklistSection({
   divider = true,
 }: EditorialChecklistSectionProps) {
   return (
-    <section className="bg-[var(--lp-mist)] px-6 py-16 sm:py-20">
+    <section id={id} className="bg-white px-6 py-16 sm:py-20">
       <div className="mx-auto max-w-[720px]">
         {eyebrow && (
           <p className="mb-3 text-xs font-medium uppercase tracking-wider text-[var(--lp-smoke)]">
