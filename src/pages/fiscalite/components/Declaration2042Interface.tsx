@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { AppleSpotlight } from '@/components/block/apple-spotlight';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +30,7 @@ interface Declaration2042InterfaceProps {
 const Declaration2042Interface = ({ onClose }: Declaration2042InterfaceProps) => {
   const [activeSection, setActiveSection] = useState(DECLARATION_2042_SECTIONS[0].id);
   const [recherche, setRecherche] = useState('');
+  const [spotlightOuvert, setSpotlightOuvert] = useState(false);
   const [confirmSuppression, setConfirmSuppression] = useState(false);
   const [suppressionEnCours, setSuppressionEnCours] = useState(false);
   const [resetKey, setResetKey] = useState(0);
@@ -80,6 +81,7 @@ const Declaration2042Interface = ({ onClose }: Declaration2042InterfaceProps) =>
   const allerVersCase = (c: (typeof DECLARATION_2042_CASES)[number]) => {
     setActiveSection(c.sectionId);
     setRecherche('');
+    setSpotlightOuvert(false);
 
     setTimeout(() => {
       const champ = document.getElementById(c.elementId);
@@ -111,40 +113,43 @@ const Declaration2042Interface = ({ onClose }: Declaration2042InterfaceProps) =>
               <Trash2 className="h-4 w-4 mr-2" />
               Supprimer toutes les données
             </Button>
-            <div className="relative ml-auto w-80">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher une case (ex. 1AJ, revenus salariés...)"
-                className="pl-8"
-                value={recherche}
-                onChange={ev => setRecherche(ev.target.value)}
-              />
-              {resultats.length > 0 && (
-                <div className="absolute z-10 mt-1 w-full max-h-80 overflow-auto rounded-md border bg-popover shadow-md">
-                  {resultats.map((c, i) => {
-                    const section = DECLARATION_2042_SECTIONS.find(s => s.id === c.sectionId);
-                    return (
-                      <button
-                        key={`${c.code}-${i}`}
-                        type="button"
-                        className="w-full text-left px-3 py-2 hover:bg-accent text-sm flex flex-col gap-0.5"
-                        onClick={() => allerVersCase(c)}
-                      >
-                        <span className="font-medium">{c.code} — {c.label}</span>
-                        <span className="text-xs text-muted-foreground">{section?.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              {recherche.trim() && resultats.length === 0 && (
-                <div className="absolute z-10 mt-1 w-full rounded-md border bg-popover shadow-md px-3 py-2 text-sm text-muted-foreground">
-                  Aucune case trouvée
-                </div>
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={() => setSpotlightOuvert(true)}
+              className="ml-auto flex w-80 items-center gap-3 rounded-2xl border bg-popover px-4 py-2.5 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-accent"
+            >
+              <Search className="h-5 w-5 shrink-0" />
+              <span className="truncate">Rechercher une case (ex. 1AJ, revenus salariés...)</span>
+            </button>
           </div>
         </div>
+
+        <AppleSpotlight
+          isOpen={spotlightOuvert}
+          handleClose={() => { setSpotlightOuvert(false); setRecherche(''); }}
+          value={recherche}
+          onChange={setRecherche}
+          placeholder="Rechercher une case (ex. 1AJ, revenus salariés...)"
+        >
+          {!recherche.trim() ? null : resultats.length > 0 ? (
+            resultats.map((c, i) => {
+              const section = DECLARATION_2042_SECTIONS.find(s => s.id === c.sectionId);
+              return (
+                <button
+                  key={`${c.code}-${i}`}
+                  type="button"
+                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-accent text-sm flex flex-col gap-0.5"
+                  onClick={() => allerVersCase(c)}
+                >
+                  <span className="font-medium">{c.code} — {c.label}</span>
+                  <span className="text-xs text-muted-foreground">{section?.label}</span>
+                </button>
+              );
+            })
+          ) : (
+            <div className="px-3 py-2 text-sm text-muted-foreground">Aucune case trouvée</div>
+          )}
+        </AppleSpotlight>
 
         <div className="flex-1 overflow-auto p-6">
           <ActiveComponent key={resetKey} />
