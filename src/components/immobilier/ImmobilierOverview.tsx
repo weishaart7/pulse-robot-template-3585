@@ -4,7 +4,7 @@ import { Building2, TrendingUp, TrendingDown, DollarSign, Percent } from 'lucide
 import { Asset } from '@/services/assetService';
 import { assetService } from '@/services/assetService';
 import { formatCurrency } from '@/lib/patrimoine/utils';
-import { computeAmortissement } from '@/lib/immobilier/rentabilite';
+import { computeAmortissement, computeQuotePart } from '@/lib/immobilier/rentabilite';
 
 interface ImmobilierOverviewProps {
   assets: Asset[];
@@ -77,9 +77,14 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
         let totalCoutAcquisition = 0;
 
         for (const asset of assets) {
+          // Quote-part du foyer (indivision) : pondère revenus, charges, crédit et base de
+          // rentabilité, comme les simulateurs de rentabilité (100 % si non renseignée). La valeur
+          // estimée et la plus-value restent à 100 % du bien.
+          const quotePart = computeQuotePart(asset) / 100;
+
           // Prix d'achat et investissement total
-          const prixAchat = asset.valeur_acquisition || 0;
-          const fraisAcquisition = asset.frais_acquisition || 0;
+          const prixAchat = (asset.valeur_acquisition || 0) * quotePart;
+          const fraisAcquisition = (asset.frais_acquisition || 0) * quotePart;
           totalPrixAchat += prixAchat;
           totalInvestissement += prixAchat + fraisAcquisition;
           
@@ -102,7 +107,7 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
           // d'actif (AssetForm.tsx, onglet "Charges") qui n'est pas restreint par nature.
           const revenus = await assetService.getAssetRevenus(asset.id);
           for (const revenu of revenus) {
-            const montant = revenu.montant || 0;
+            const montant = (revenu.montant || 0) * quotePart;
             totalLoyerAnnuel += montant * annualFactor(revenu.periodicite, 1);
             totalRevenusMensuels += montant / (monthlyDivisor(revenu.periodicite, 12) as number);
           }
@@ -110,12 +115,12 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
           // Financement : mensualité de crédit + assurance emprunteur, nulles si le bien n'est pas
           // financé ou si le prêt est soldé (même moteur que les simulateurs de rentabilité).
           const credit = computeAmortissement(asset);
-          totalCreditMensuel += credit.mensualiteCredit + credit.mensualiteAssurance;
+          totalCreditMensuel += (credit.mensualiteCredit + credit.mensualiteAssurance) * quotePart;
 
           // Charges
           const charges = await assetService.getAssetCharges(asset.id);
           for (const charge of charges) {
-            const montant = charge.montant || 0;
+            const montant = (charge.montant || 0) * quotePart;
             totalChargesAnnuelles += montant * annualFactor(charge.periodicite, 0);
 
             const divisor = monthlyDivisor(charge.periodicite, null);
