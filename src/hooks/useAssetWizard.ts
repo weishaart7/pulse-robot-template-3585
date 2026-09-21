@@ -6,7 +6,7 @@ import { AssetCharge } from '@/services/assetService';
 import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
 import { DemembrementDraft } from '@/components/assets/DemembrementSection';
 
-export type WizardStepId = 'quoi' | 'detention' | 'origine' | 'particularites' | 'charges' | 'recapitulatif';
+export type WizardStepId = 'quoi' | 'qui' | 'acquisition' | 'qualification' | 'droits' | 'valeur' | 'particularites' | 'charges' | 'recapitulatif';
 
 interface WizardStepDef {
   id: WizardStepId;
@@ -21,12 +21,23 @@ interface WizardStepDef {
   isVisible: (values: Partial<AssetFormValues>) => boolean;
 }
 
-// Étape "D'où vient-il" : mêmes conditions que le bloc Origine de l'onglet
-// Propriété actuel (AssetForm.tsx) — masqué pour un bien en indivision hors
+// Étape "Acquisition" : mêmes conditions que le bloc Origine de l'onglet
+// Propriété actuel (AssetForm.tsx) — masquée pour un bien en indivision hors
 // couple (la qualification est alors directement "Indivision") et pour les
 // natures sans notion d'acquisition (livrets/comptes bancaires).
-const isOrigineStepVisible = (values: Partial<AssetFormValues>) =>
+const isAcquisitionStepVisible = (values: Partial<AssetFormValues>) =>
   values.detenteur !== 'Indivision' && !NATURES_WITHOUT_ACQUISITION.includes(values.nature || '');
+
+// Étape "Qualification" : elle porte la qualification calculée (natures avec
+// acquisition uniquement), mais aussi la quote-part et la licitation PACS,
+// qui ne concernent que "Le couple" quelle que soit la nature. Sautée en
+// indivision hors couple (qualification directement "Indivision"), et pour
+// une nature sans acquisition détenue par une seule personne (rien à
+// afficher). Reste visible pour un célibataire (qualification "Bien
+// personnel" calculée, gardée pour la parité avec l'onglet Propriété).
+const isQualificationStepVisible = (values: Partial<AssetFormValues>) =>
+  values.detenteur !== 'Indivision'
+  && (!NATURES_WITHOUT_ACQUISITION.includes(values.nature || '') || values.detenteur === 'Le couple');
 
 // Étape "Particularités" : contient toujours au moins le champ "Situation
 // particulière" (jamais masqué, quelle que soit la nature) et, pour la
@@ -37,21 +48,39 @@ const isOrigineStepVisible = (values: Partial<AssetFormValues>) =>
 const WIZARD_STEPS: WizardStepDef[] = [
   {
     id: 'quoi',
-    label: 'Quoi',
-    fields: ['nature', 'denomination', 'valeur_estimee', 'date_estimation'],
+    label: 'Le bien',
+    fields: ['nature', 'denomination'],
     isVisible: () => true,
   },
   {
-    id: 'detention',
-    label: 'À qui appartient-il',
-    fields: ['mode_detention', 'detenteur', 'pourcentage_utilisateur', 'pourcentage_conjoint', 'licitation_acquereur', 'part_licitation_personnelle'],
+    id: 'qui',
+    label: 'Qui',
+    fields: ['detenteur'],
     isVisible: () => true,
   },
   {
-    id: 'origine',
-    label: "D'où vient-il",
-    fields: ['date_acquisition', 'origine_actif', 'valeur_acquisition', 'frais_acquisition', 'clause_entree_communaute', 'clause_remploi', 'financement_mixte_apport_propre', 'est_propre_par_nature', 'qualification_bien'],
-    isVisible: isOrigineStepVisible,
+    id: 'acquisition',
+    label: 'Acquisition',
+    fields: ['date_acquisition', 'origine_actif', 'valeur_acquisition', 'frais_acquisition', 'clause_entree_communaute', 'clause_remploi', 'financement_mixte_apport_propre', 'est_propre_par_nature'],
+    isVisible: isAcquisitionStepVisible,
+  },
+  {
+    id: 'qualification',
+    label: 'Qualification',
+    fields: ['qualification_bien', 'pourcentage_utilisateur', 'pourcentage_conjoint', 'licitation_acquereur', 'part_licitation_personnelle'],
+    isVisible: isQualificationStepVisible,
+  },
+  {
+    id: 'droits',
+    label: 'Droits détenus',
+    fields: ['mode_detention'],
+    isVisible: () => true,
+  },
+  {
+    id: 'valeur',
+    label: 'Valeur',
+    fields: ['valeur_estimee', 'date_estimation'],
+    isVisible: () => true,
   },
   {
     id: 'particularites',

@@ -5,15 +5,14 @@ import { Input } from '@/components/ui/input';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { ASSET_NATURE_OPTIONS } from '@/constants/assetTypes';
 import { AssetFormValues } from '@/schemas/assetSchema';
-import { ValeurEstimeeFields } from '@/components/assets/fields/ValeurEstimeeFields';
 
-interface WizardStep1QuoiProps {
+interface WizardStepQuoiProps {
   form: UseFormReturn<AssetFormValues>;
 }
 
-// Étape 1 — "Quoi" : identique aux 4 premiers champs de l'onglet "Essentiel"
-// de AssetForm.tsx (hors blocs de calcul, affichés aux étapes 2 et 3).
-export const WizardStep1Quoi: React.FC<WizardStep1QuoiProps> = ({ form }) => (
+// Étape "Le bien" : nature et dénomination. La valeur estimée est demandée à
+// l'étape "Valeur", avec la plus-value et la valorisation démembrée.
+export const WizardStepQuoi: React.FC<WizardStepQuoiProps> = ({ form }) => (
   <div className="space-y-6">
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <FormField control={form.control} name="nature" render={({ field }) => (
@@ -36,7 +35,5 @@ export const WizardStep1Quoi: React.FC<WizardStep1QuoiProps> = ({ form }) => (
         </FormItem>
       )} />
     </div>
-
-    <ValeurEstimeeFields form={form} />
   </div>
 );

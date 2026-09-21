@@ -11,7 +11,7 @@ import { PlusValueBlock } from '@/components/assets/fields/PlusValueBlock';
 import { ValorisationDemembreeBlock } from '@/components/assets/fields/ValorisationDemembreeBlock';
 import { WizardStepId } from '@/hooks/useAssetWizard';
 
-interface WizardStep6RecapProps {
+interface WizardStepRecapProps {
   form: UseFormReturn<AssetFormValues>;
   charges: AssetCharge[];
   familyData: FamilyInfo;
@@ -93,18 +93,17 @@ const computeImpactMensuel = (charge: AssetCharge): number | null => {
   }
 };
 
-// Étape 6 — "Récapitulatif" : lecture seule de tout ce qui a été saisi,
+// Étape "Récapitulatif" : lecture seule de tout ce qui a été saisi,
 // groupé par étape, avec un lien "Modifier" par section. C'est le seul
 // endroit du wizard où le bouton final déclenche réellement la création
 // (aucune écriture en base avant ce point).
-export const WizardStep6Recap: React.FC<WizardStep6RecapProps> = ({
+export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
   form,
   charges,
   familyData,
   familyMembers,
   demembrements,
   indivisaires,
-  maritalContext,
   onEditStep,
   onValidate,
   isSubmitting
@@ -122,22 +121,13 @@ export const WizardStep6Recap: React.FC<WizardStep6RecapProps> = ({
 
   return (
     <div className="space-y-4">
-      <RecapSection title="Quoi" onEdit={() => onEditStep('quoi')}>
+      <RecapSection title="Le bien" onEdit={() => onEditStep('quoi')}>
         <Row label="Nature" value={values.nature || '—'} />
         {values.denomination && <Row label="Dénomination" value={values.denomination} />}
-        {values.valeur_estimee !== undefined && <Row label="Valeur estimée" value={formatEur(values.valeur_estimee)} />}
-        {formatDate(values.date_estimation) && <Row label="Date d'estimation" value={formatDate(values.date_estimation)} />}
       </RecapSection>
 
-      <RecapSection title="À qui appartient-il" onEdit={() => onEditStep('detention')}>
-        {values.mode_detention && <Row label="Mode de détention" value={values.mode_detention} />}
+      <RecapSection title="Qui" onEdit={() => onEditStep('qui')}>
         {values.detenteur && <Row label="Détenteur / Souscripteur" value={values.detenteur} />}
-        {values.detenteur === 'Le couple' && familyData.hasPartner && (
-          <Row
-            label="Quote-part"
-            value={`${values.pourcentage_utilisateur ?? 50}% / ${values.pourcentage_conjoint ?? 50}%`}
-          />
-        )}
         {values.detenteur === 'Indivision' && (
           <Row
             label="Co-indivisaires"
@@ -147,12 +137,36 @@ export const WizardStep6Recap: React.FC<WizardStep6RecapProps> = ({
       </RecapSection>
 
       {values.detenteur !== 'Indivision' && values.valeur_acquisition !== undefined && (
-        <RecapSection title="D'où vient-il" onEdit={() => onEditStep('origine')}>
+        <RecapSection title="Acquisition" onEdit={() => onEditStep('acquisition')}>
           {formatDate(values.date_acquisition) && <Row label="Date d'acquisition" value={formatDate(values.date_acquisition)} />}
           {values.origine_actif?.[0] && <Row label="Origine" value={values.origine_actif[0]} />}
           {values.valeur_acquisition !== undefined && <Row label="Valeur d'achat" value={formatEur(values.valeur_acquisition)} />}
           {values.frais_acquisition !== undefined && <Row label="Frais d'acquisition" value={formatEur(values.frais_acquisition)} />}
+        </RecapSection>
+      )}
+
+      {values.detenteur !== 'Indivision' && (values.qualification_bien || (values.detenteur === 'Le couple' && familyData.hasPartner)) && (
+        <RecapSection title="Qualification" onEdit={() => onEditStep('qualification')}>
           {values.qualification_bien && <Row label="Qualification" value={values.qualification_bien} />}
+          {values.detenteur === 'Le couple' && familyData.hasPartner && (
+            <Row
+              label="Quote-part"
+              value={`${values.pourcentage_utilisateur ?? 50}% / ${values.pourcentage_conjoint ?? 50}%`}
+            />
+          )}
+        </RecapSection>
+      )}
+
+      {values.mode_detention && (
+        <RecapSection title="Droits détenus" onEdit={() => onEditStep('droits')}>
+          <Row label="Mode de détention" value={values.mode_detention} />
+        </RecapSection>
+      )}
+
+      {(values.valeur_estimee !== undefined || formatDate(values.date_estimation)) && (
+        <RecapSection title="Valeur" onEdit={() => onEditStep('valeur')}>
+          {values.valeur_estimee !== undefined && <Row label="Valeur estimée" value={formatEur(values.valeur_estimee)} />}
+          {formatDate(values.date_estimation) && <Row label="Date d'estimation" value={formatDate(values.date_estimation)} />}
         </RecapSection>
       )}
 

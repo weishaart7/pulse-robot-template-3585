@@ -6,12 +6,15 @@ import { useAssetWizard } from '@/hooks/useAssetWizard';
 import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
 import { DemembrementDraft } from '@/components/assets/DemembrementSection';
 import { ChargeForm } from '@/components/assets/ChargeForm';
-import { WizardStep1Quoi } from './WizardStep1Quoi';
-import { WizardStep2Detention } from './WizardStep2Detention';
-import { WizardStep3Origine } from './WizardStep3Origine';
-import { WizardStep4Particularites } from './WizardStep4Particularites';
-import { WizardStep5Charges } from './WizardStep5Charges';
-import { WizardStep6Recap } from './WizardStep6Recap';
+import { WizardStepQuoi } from './WizardStepQuoi';
+import { WizardStepQui } from './WizardStepQui';
+import { WizardStepAcquisition } from './WizardStepAcquisition';
+import { WizardStepQualification } from './WizardStepQualification';
+import { WizardStepDroits } from './WizardStepDroits';
+import { WizardStepValeur } from './WizardStepValeur';
+import { WizardStepParticularites } from './WizardStepParticularites';
+import { WizardStepCharges } from './WizardStepCharges';
+import { WizardStepRecap } from './WizardStepRecap';
 
 interface AssetCreationWizardProps {
   onSubmit: (asset: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[]) => Promise<void>;
@@ -63,7 +66,7 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
 
   // Avertissement de fermeture (onglet/navigateur) tant que le récapitulatif
   // n'a pas été validé : aucune écriture en base n'a lieu avant ce point
-  // (handleValidate, appelé uniquement depuis WizardStep6Recap), donc tout
+  // (handleValidate, appelé uniquement depuis WizardStepRecap), donc tout
   // abandon avant coup perd la saisie en cours.
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -85,8 +88,8 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
   };
 
   // Avertissement quand la nature change après que l'utilisateur soit déjà
-  // allé au-delà de l'étape 1 : des champs saisis aux étapes "D'où vient-il"
-  // ou "Particularités" (conditionnées à la nature) peuvent devenir
+  // allé au-delà de l'étape 1 : des champs saisis aux étapes "Acquisition",
+  // "Qualification" ou "Particularités" (conditionnées à la nature) peuvent devenir
   // invalides ou masqués. On revient sur la nature précédente si l'utilisateur
   // ne confirme pas, plutôt que de perdre silencieusement ces informations.
   const previousNatureRef = useRef(form.getValues('nature'));
@@ -96,7 +99,7 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
     if (watchedNature === previousNature) return;
     if (maxStepIndexReached > 0 && previousNature) {
       const confirmed = window.confirm(
-        "Changer la nature de l'actif peut invalider ou masquer des informations déjà saisies aux étapes suivantes (origine, particularités). Continuer ?"
+        "Changer la nature de l'actif peut invalider ou masquer des informations déjà saisies aux étapes suivantes (acquisition, qualification, particularités). Continuer ?"
       );
       if (!confirmed) {
         form.setValue('nature', previousNature);
@@ -109,29 +112,54 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
   const renderStep = () => {
     switch (currentStep.id) {
       case 'quoi':
-        return <WizardStep1Quoi form={form} />;
-      case 'detention':
+        return <WizardStepQuoi form={form} />;
+      case 'qui':
         return (
-          <WizardStep2Detention
+          <WizardStepQui
             form={form}
             detenteurOptions={detenteurOptions}
             familyData={familyData}
             familyMembers={familyMembers}
-            maritalContext={maritalContext}
             indivisaires={indivisaires}
             setIndivisaires={setIndivisaires}
-            demembrements={demembrements}
-            setDemembrements={setDemembrements}
             detenteurAResoudre={detenteurAResoudre}
           />
         );
-      case 'origine':
-        return <WizardStep3Origine form={form} maritalContext={maritalContext} qualificationRaison={qualificationRaison} />;
+      case 'acquisition':
+        return <WizardStepAcquisition form={form} maritalContext={maritalContext} />;
+      case 'qualification':
+        return (
+          <WizardStepQualification
+            form={form}
+            familyData={familyData}
+            maritalContext={maritalContext}
+            qualificationRaison={qualificationRaison}
+            detenteurAResoudre={detenteurAResoudre}
+          />
+        );
+      case 'droits':
+        return (
+          <WizardStepDroits
+            form={form}
+            familyMembers={familyMembers}
+            demembrements={demembrements}
+            setDemembrements={setDemembrements}
+          />
+        );
+      case 'valeur':
+        return (
+          <WizardStepValeur
+            form={form}
+            familyData={familyData}
+            familyMembers={familyMembers}
+            demembrements={demembrements}
+          />
+        );
       case 'particularites':
-        return <WizardStep4Particularites form={form} />;
+        return <WizardStepParticularites form={form} />;
       case 'charges':
         return (
-          <WizardStep5Charges
+          <WizardStepCharges
             charges={charges}
             onAdd={() => setShowChargeForm(true)}
             onEdit={handleChargeEdit}
@@ -141,7 +169,7 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
         );
       case 'recapitulatif':
         return (
-          <WizardStep6Recap
+          <WizardStepRecap
             form={form}
             charges={charges}
             familyData={familyData}

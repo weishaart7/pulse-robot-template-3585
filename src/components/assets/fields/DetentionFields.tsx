@@ -45,20 +45,63 @@ export const ModeDetentionField: React.FC<{ form: AssetForm }> = ({ form }) => (
   )} />
 );
 
+interface DetenteurResolutionAlertProps {
+  form: AssetForm;
+  familyData: FamilyInfo;
+}
+
+// Alerte affichée quand la qualification vient de basculer vers "Bien
+// propre"/"Bien personnel" : le bien appartient alors à une seule personne
+// (cf. useAssetForm.ts, `detenteurAResoudre`).
+export const DetenteurResolutionAlert: React.FC<DetenteurResolutionAlertProps> = ({ form, familyData }) => {
+  const isEpargneAV = isEpargneAssuranceVie(form.watch('nature'));
+  const watchedQualificationBien = form.watch('qualification_bien');
+
+  return (
+    <Alert>
+      <AlertTitle>À qui appartient ce bien ?</AlertTitle>
+      <AlertDescription>
+        <p>
+          Ce bien vient d'être qualifié "{watchedQualificationBien?.toLowerCase()}" : il appartient à une seule personne. Confirmez ou corrigez {isEpargneAV ? 'le souscripteur' : 'le détenteur'}.
+        </p>
+        <div className="flex flex-wrap gap-2 mt-2">
+          {[familyData.userFirstName, ...(familyData.hasPartner ? [familyData.partnerFirstName] : [])]
+            .filter((prenom): prenom is string => !!prenom)
+            .map((prenom) => (
+              <Button
+                key={prenom}
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => form.setValue('detenteur', prenom)}
+              >
+                {prenom}
+              </Button>
+            ))}
+        </div>
+      </AlertDescription>
+    </Alert>
+  );
+};
+
 interface DetenteurFieldsProps {
   form: AssetForm;
   detenteurOptions: string[];
   familyData: FamilyInfo;
   detenteurAResoudre: boolean;
+  // Le wizard affiche l'alerte plus loin (étape Qualification), là où la
+  // qualification qui la déclenche est connue.
+  hideResolutionAlert?: boolean;
 }
 
 // Case "indivision avec un tiers" + sélecteur de détenteur, dont l'alerte de
-// résolution est portée par le même FormItem.
+// résolution est portée par le même FormItem (sauf si hideResolutionAlert).
 export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
   form,
   detenteurOptions,
   familyData,
-  detenteurAResoudre
+  detenteurAResoudre,
+  hideResolutionAlert
 }) => {
   const watchedNature = form.watch('nature');
   const watchedDetenteur = form.watch('detenteur');
@@ -120,30 +163,8 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
                 "Le couple" n'est pas proposé : ce bien est qualifié {watchedQualificationBien.toLowerCase()}, il appartient donc entièrement à une seule personne.
               </FormDescription>
             )}
-            {detenteurAResoudre && (
-              <Alert>
-                <AlertTitle>À qui appartient ce bien ?</AlertTitle>
-                <AlertDescription>
-                  <p>
-                    Ce bien vient d'être qualifié "{watchedQualificationBien?.toLowerCase()}" : il appartient à une seule personne. Confirmez ou corrigez {isEpargneAV ? 'le souscripteur' : 'le détenteur'}.
-                  </p>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {[familyData.userFirstName, ...(familyData.hasPartner ? [familyData.partnerFirstName] : [])]
-                      .filter((prenom): prenom is string => !!prenom)
-                      .map((prenom) => (
-                        <Button
-                          key={prenom}
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => form.setValue('detenteur', prenom)}
-                        >
-                          {prenom}
-                        </Button>
-                      ))}
-                  </div>
-                </AlertDescription>
-              </Alert>
+            {detenteurAResoudre && !hideResolutionAlert && (
+              <DetenteurResolutionAlert form={form} familyData={familyData} />
             )}
             <FormMessage />
           </FormItem>
@@ -263,7 +284,7 @@ export const LicitationPacsFields: React.FC<LicitationPacsFieldsProps> = ({ form
       <div className="space-y-1 leading-none">
         <FormLabel>Licitation de plus de moitié (art. 515-5-2)</FormLabel>
         <FormDescription>
-          Si l'un des partenaires a racheté aux autres indivisaires une part du bien au-delà de sa propre part initiale, cette portion rachetée reste personnelle et n'entre pas dans l'indivision du PACS. Champ déclaratif : n'est pas répercuté automatiquement dans la qualification calculée ci-dessous.
+          Si l'un des partenaires a racheté aux autres indivisaires une part du bien au-delà de sa propre part initiale, cette portion rachetée reste personnelle et n'entre pas dans l'indivision du PACS. Champ déclaratif : n'est pas répercuté automatiquement dans la qualification calculée.
         </FormDescription>
       </div>
 

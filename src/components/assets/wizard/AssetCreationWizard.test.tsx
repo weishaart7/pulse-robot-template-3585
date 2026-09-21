@@ -51,16 +51,36 @@ describe('AssetCreationWizard — navigation entre étapes', () => {
     const user = userEvent.setup();
     render(<AssetCreationWizard onSubmit={noop} onCancel={() => {}} />);
 
-    expect(screen.getByText(/Étape 1\/\d+ — Quoi/)).toBeInTheDocument();
+    expect(screen.getByText(/Étape 1\/\d+ — Le bien/)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Suivant' }));
-    expect(screen.getByText(/Étape 1\/\d+ — Quoi/)).toBeInTheDocument();
+    expect(screen.getByText(/Étape 1\/\d+ — Le bien/)).toBeInTheDocument();
 
     await user.type(screen.getByLabelText('nature'), 'Compte bancaire');
     await user.click(screen.getByRole('button', { name: 'Suivant' }));
 
-    expect(await screen.findByText(/Étape 2\/\d+ — À qui appartient-il/)).toBeInTheDocument();
-    expect(screen.getByText('Mode de détention')).toBeInTheDocument();
+    expect(await screen.findByText(/Étape 2\/\d+ — Qui/)).toBeInTheDocument();
+    expect(screen.getByText('Détenteur')).toBeInTheDocument();
+  });
+
+  it("enchaîne les étapes dans l'ordre : le bien, qui, acquisition, qualification, droits détenus, valeur", async () => {
+    const user = userEvent.setup();
+    render(<AssetCreationWizard onSubmit={noop} onCancel={() => {}} />);
+
+    await user.type(screen.getByLabelText('nature'), 'Compte bancaire');
+
+    const etapes = [
+      { label: 'Qui', champ: 'Détenteur' },
+      { label: 'Acquisition', champ: "Date d'acquisition" },
+      { label: 'Qualification', champ: 'Qualification du bien' },
+      { label: 'Droits détenus', champ: 'Mode de détention' },
+      { label: 'Valeur', champ: 'Valeur actuelle estimée (€)' },
+    ];
+    for (const { label, champ } of etapes) {
+      await user.click(screen.getByRole('button', { name: 'Suivant' }));
+      expect(await screen.findByText(new RegExp(`Étape \\d+/\\d+ — ${label}$`))).toBeInTheDocument();
+      expect(screen.getByText(champ)).toBeInTheDocument();
+    }
   });
 
   it('revient en arrière sans perdre la nature déjà saisie', async () => {
