@@ -154,8 +154,8 @@ export function computeAmortissement(asset: Asset, aujourdhui: Date = new Date()
     : 0;
 
   if (moisEcoules >= dureeMois) {
-    // Prêt déjà soldé : plus d'intérêts ni d'assurance à venir.
-    return { mensualiteCredit, mensualiteAssurance, interetsAnnee: 0, assuranceAnnee: 0, capitalEmprunte };
+    // Prêt déjà soldé : plus de mensualité, d'intérêts ni d'assurance à venir.
+    return { ...zero, capitalEmprunte };
   }
 
   // Simule le tableau d'amortissement jusqu'au mois écoulé pour obtenir le

@@ -168,6 +168,8 @@ describe('computeAmortissement', () => {
     const result = computeAmortissement(asset, new Date('2020-01-01'));
     expect(result.interetsAnnee).toBe(0);
     expect(result.assuranceAnnee).toBe(0);
+    expect(result.mensualiteCredit).toBe(0);
+    expect(result.mensualiteAssurance).toBe(0);
   });
 });
 

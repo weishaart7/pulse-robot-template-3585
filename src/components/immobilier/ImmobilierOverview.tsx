@@ -4,6 +4,7 @@ import { Building2, TrendingUp, TrendingDown, DollarSign, Percent } from 'lucide
 import { Asset } from '@/services/assetService';
 import { assetService } from '@/services/assetService';
 import { formatCurrency } from '@/lib/patrimoine/utils';
+import { computeAmortissement } from '@/lib/immobilier/rentabilite';
 
 interface ImmobilierOverviewProps {
   assets: Asset[];
@@ -69,6 +70,7 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
         let totalChargesAnnuelles = 0;
         let totalRevenusMensuels = 0;
         let totalChargesMensuelles = 0;
+        let totalCreditMensuel = 0;
         let totalPrixAchat = 0;
         let totalInvestissement = 0;
         let totalValeurActuelle = 0;
@@ -105,6 +107,11 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
             totalRevenusMensuels += montant / (monthlyDivisor(revenu.periodicite, 12) as number);
           }
 
+          // Financement : mensualité de crédit + assurance emprunteur, nulles si le bien n'est pas
+          // financé ou si le prêt est soldé (même moteur que les simulateurs de rentabilité).
+          const credit = computeAmortissement(asset);
+          totalCreditMensuel += credit.mensualiteCredit + credit.mensualiteAssurance;
+
           // Charges
           const charges = await assetService.getAssetCharges(asset.id);
           for (const charge of charges) {
@@ -125,7 +132,7 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
           ? ((totalLoyerAnnuel - totalChargesAnnuelles) / totalInvestissement) * 100
           : 0;
 
-        const cashflowMensuel = totalRevenusMensuels - totalChargesMensuelles;
+        const cashflowMensuel = totalRevenusMensuels - totalChargesMensuelles - totalCreditMensuel;
         const plusValueBrute = totalValeurActuelle - totalCoutAcquisition;
         
         const tauxPlusValue = totalCoutAcquisition > 0
@@ -228,7 +235,7 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
           <div className={`text-2xl font-bold ${metrics.cashflowMensuel >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
             {formatCurrency(metrics.cashflowMensuel)}
           </div>
-          <p className="text-xs text-muted-foreground">revenus - charges mensuelles</p>
+          <p className="text-xs text-muted-foreground">revenus - charges - crédit mensuels</p>
         </CardContent>
       </Card>
 
