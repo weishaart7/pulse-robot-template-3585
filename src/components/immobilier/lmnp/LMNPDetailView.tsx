@@ -18,8 +18,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { formatCurrency } from '@/lib/patrimoine/utils';
 import {
   ZONE_TERRAIN_PERCENTAGES,
+  computeAmortissement as computeAmortissementCredit,
   computeAmortissementImmeubleLMNP as computeAmortissement,
   computeResultatReelLMNP,
+  computeResultatReelLMP,
 } from '@/lib/immobilier/rentabilite';
 import { SimulateurRentabiliteLMNPSection } from './SimulateurRentabiliteLMNPSection';
 import { SimulateurRentabiliteLMPSection } from './SimulateurRentabiliteLMPSection';
@@ -189,8 +191,21 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
   // année. L'excédent non déduit n'est pas automatiquement reporté sur l'année suivante (aucun
   // historique par exercice n'est persisté par l'application) — affiché à l'utilisateur pour un report
   // manuel, cf. docs/immobilier.md §3.
-  const { amortissementDeductible, amortissementNonDeductible, resultatFiscal: resultatFiscalReel } =
+  const { amortissementDeductible, amortissementNonDeductible, resultatFiscal: resultatFiscalReelLMNP } =
     computeResultatReelLMNP(totalRevenusAnnuel, totalChargesAnnuel, totalAmortissementAnnuel);
+
+  // LMP (régime réel) : pas de plafonnement de l'amortissement — le déficit BIC, y compris celui créé
+  // par l'amortissement, est imputable sur le revenu global sans plafond ni limite de durée — et les
+  // intérêts d'emprunt + l'assurance emprunteur sont déductibles, comme dans le simulateur de
+  // rentabilité LMP (même moteur, rentabilite.ts). Les intérêts viennent des champs de financement
+  // enregistrés sur l'actif (pas de l'état de saisie en cours).
+  const isLMP = asset.nature === 'Immeubles locatifs (LMP)';
+  const { interetsAnnee: interetsLMP, assuranceAnnee: assuranceLMP } = isLMP
+    ? computeAmortissementCredit(asset)
+    : { interetsAnnee: 0, assuranceAnnee: 0 };
+  const resultatFiscalReel = isLMP
+    ? computeResultatReelLMP(totalRevenusAnnuel, totalChargesAnnuel + interetsLMP + assuranceLMP, totalAmortissementAnnuel).resultatFiscal
+    : resultatFiscalReelLMNP;
 
   const resultatFiscal = isMicroBic
     ? totalRevenusAnnuel - abattementMicroBic
@@ -603,11 +618,23 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
                       <span className="text-muted-foreground">Charges annuelles</span>
                       <span className="font-medium text-destructive">-{formatCurrency(totalChargesAnnuel)}</span>
                     </div>
+                    {isLMP && interetsLMP > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Intérêts d'emprunt</span>
+                        <span className="font-medium text-destructive">-{formatCurrency(interetsLMP)}</span>
+                      </div>
+                    )}
+                    {isLMP && assuranceLMP > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Assurance emprunteur</span>
+                        <span className="font-medium text-destructive">-{formatCurrency(assuranceLMP)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Amortissements déduits</span>
-                      <span className="font-medium text-destructive">-{formatCurrency(amortissementDeductible)}</span>
+                      <span className="font-medium text-destructive">-{formatCurrency(isLMP ? totalAmortissementAnnuel : amortissementDeductible)}</span>
                     </div>
-                    {amortissementNonDeductible > 0 && (
+                    {!isLMP && amortissementNonDeductible > 0 && (
                       <p className="text-xs text-amber-600">
                         {formatCurrency(amortissementNonDeductible)} d'amortissement non déduit cette année
                         (l'amortissement ne peut pas créer ni aggraver un déficit) — à reporter manuellement
@@ -626,7 +653,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
                   </div>
                   {resultatFiscal <= 0 && (
                     <Badge variant="secondary" className="mt-2 bg-emerald-100 text-emerald-700">
-                      Déficit reportable
+                      {isLMP && !isMicroBic ? 'Déficit imputable sur le revenu global' : 'Déficit reportable'}
                     </Badge>
                   )}
                 </div>
