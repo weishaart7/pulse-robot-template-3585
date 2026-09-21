@@ -78,8 +78,8 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
 
         for (const asset of assets) {
           // Quote-part du foyer (indivision) : pondère revenus, charges, crédit et base de
-          // rentabilité, comme les simulateurs de rentabilité (100 % si non renseignée). La valeur
-          // estimée et la plus-value restent à 100 % du bien.
+          // rentabilité, valeur estimée et plus-value, comme les simulateurs de rentabilité (100 % si
+          // non renseignée).
           const quotePart = computeQuotePart(asset) / 100;
 
           // Prix d'achat et investissement total
@@ -89,17 +89,17 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
           totalInvestissement += prixAchat + fraisAcquisition;
           
           // Valeur actuelle
-          totalValeurActuelle += asset.valeur_estimee || 0;
+          totalValeurActuelle += (asset.valeur_estimee || 0) * quotePart;
 
           // Coût d'acquisition complet pour plus-value
-          totalCoutAcquisition += (asset.montant_immeuble || 0)
+          totalCoutAcquisition += ((asset.montant_immeuble || 0)
             + (asset.frais_agence || 0)
             + (asset.frais_notaire || 0)
             + (asset.frais_bancaires || 0)
             + (asset.frais_hypotheque || 0)
             + (asset.travaux_renovation || 0)
             + (asset.travaux_construction || 0)
-            + (asset.meubles || 0);
+            + (asset.meubles || 0)) * quotePart;
 
           // Revenus — tous les biens transférés, pas seulement les biens locatifs : un bien
           // (résidence secondaire, terrain...) peut avoir des revenus/charges sans être de
@@ -205,7 +205,7 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatCurrency(metrics.valeurTotaleBiens)}</div>
-          <p className="text-xs text-muted-foreground">somme des valeurs estimées</p>
+          <p className="text-xs text-muted-foreground">somme des valeurs estimées (quote-part du foyer)</p>
         </CardContent>
       </Card>
 
