@@ -29,7 +29,7 @@ près : « Parts de SCI », seule nature à la fois immobilière et éligible au
 
 | Onglet | Composant | Rôle |
 |---|---|---|
-| Vue d'ensemble (par défaut) | [ImmobilierOverview.tsx](src/components/immobilier/ImmobilierOverview.tsx) + [FoncierFoyerSection.tsx](src/components/immobilier/FoncierFoyerSection.tsx) | KPI de portefeuille (nombre de biens, valeur totale, rentabilité brute/nette, cashflow mensuel, plus-value brute), puis, si le foyer détient au moins un bien en location nue (`type_location === 'Location nue'`), la synthèse foncière du foyer (voir ci-dessous) |
+| Vue d'ensemble (par défaut) | [ImmobilierOverview.tsx](src/components/immobilier/ImmobilierOverview.tsx) + [FoncierFoyerSection.tsx](src/components/immobilier/FoncierFoyerSection.tsx) | KPI de portefeuille (nombre de biens, valeur totale, rentabilité brute/nette, cashflow mensuel, plus-value brute ; revenus, charges, crédit et base de rentabilité pondérés par la quote-part d'indivision du foyer, `computeQuotePart`, comme les simulateurs — valeur totale et plus-value restent à 100 % du bien), puis, si le foyer détient au moins un bien en location nue (`type_location === 'Location nue'`), la synthèse foncière du foyer (voir ci-dessous) |
 | Mes biens | `ImmobilierSection.tsx` (cartes ou tableau) → [ImmobilierPropertyDetailView.tsx](src/components/immobilier/ImmobilierPropertyDetailView.tsx) ou [LMNPDetailView.tsx](src/components/immobilier/lmnp/LMNPDetailView.tsx) | Liste des biens transférés ; clic → fiche détail (infos générales/coûts/financement/location) ou vue LMNP dédiée si le bien est meublé |
 | Gestion des biens | [GestionBiensSection.tsx](src/components/immobilier/GestionBiensSection.tsx) | Vue consolidée en lecture seule : tous les revenus/charges de tous les biens transférés (pas seulement locatifs), groupés par bien, avec montant annualisé et sous-totaux + total portefeuille. Pas d'ajout/modification/suppression ici — reste le rôle du bouton « Gérer » |
 
@@ -453,7 +453,7 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
     par les trois simulateurs de rentabilité, par le résumé fiscal de `LMNPDetailView.tsx` (intérêts et
     assurance déduits au réel, LMNP comme LMP) et par le KPI « Cashflow mensuel » de la Vue d'ensemble
     (`ImmobilierOverview.tsx` : revenus − charges − mensualités de crédit et d'assurance, tous biens
-    transférés). Pas de quote-part d'indivision dans ce KPI de portefeuille. Il n'existe pas de colonne
+    transférés, pondérés par la quote-part du foyer). Il n'existe pas de colonne
     « date de démarrage du crédit » en base : `computeAmortissement()` utilise `date_acquisition` comme
     proxy, ce qui devient imprécis en cas de refinancement (cas non traité, documenté en commentaire
     dans le code).
