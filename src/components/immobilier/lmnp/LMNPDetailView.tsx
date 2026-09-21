@@ -191,20 +191,20 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
   // année. L'excédent non déduit n'est pas automatiquement reporté sur l'année suivante (aucun
   // historique par exercice n'est persisté par l'application) — affiché à l'utilisateur pour un report
   // manuel, cf. docs/immobilier.md §3.
-  const { amortissementDeductible, amortissementNonDeductible, resultatFiscal: resultatFiscalReelLMNP } =
-    computeResultatReelLMNP(totalRevenusAnnuel, totalChargesAnnuel, totalAmortissementAnnuel);
+  // Intérêts d'emprunt + assurance emprunteur : déductibles au régime réel (LMNP comme LMP), comme
+  // dans les simulateurs de rentabilité (même moteur, rentabilite.ts). Ils viennent des champs de
+  // financement enregistrés sur l'actif (pas de l'état de saisie en cours).
+  const { interetsAnnee: interetsCredit, assuranceAnnee: assuranceCredit } = computeAmortissementCredit(asset);
+  const chargesDeductiblesReel = totalChargesAnnuel + interetsCredit + assuranceCredit;
 
-  // LMP (régime réel) : pas de plafonnement de l'amortissement — le déficit BIC, y compris celui créé
-  // par l'amortissement, est imputable sur le revenu global sans plafond ni limite de durée — et les
-  // intérêts d'emprunt + l'assurance emprunteur sont déductibles, comme dans le simulateur de
-  // rentabilité LMP (même moteur, rentabilite.ts). Les intérêts viennent des champs de financement
-  // enregistrés sur l'actif (pas de l'état de saisie en cours).
+  const { amortissementDeductible, amortissementNonDeductible, resultatFiscal: resultatFiscalReelLMNP } =
+    computeResultatReelLMNP(totalRevenusAnnuel, chargesDeductiblesReel, totalAmortissementAnnuel);
+
+  // LMP : pas de plafonnement de l'amortissement — le déficit BIC, y compris celui créé par
+  // l'amortissement, est imputable sur le revenu global sans plafond ni limite de durée.
   const isLMP = asset.nature === 'Immeubles locatifs (LMP)';
-  const { interetsAnnee: interetsLMP, assuranceAnnee: assuranceLMP } = isLMP
-    ? computeAmortissementCredit(asset)
-    : { interetsAnnee: 0, assuranceAnnee: 0 };
   const resultatFiscalReel = isLMP
-    ? computeResultatReelLMP(totalRevenusAnnuel, totalChargesAnnuel + interetsLMP + assuranceLMP, totalAmortissementAnnuel).resultatFiscal
+    ? computeResultatReelLMP(totalRevenusAnnuel, chargesDeductiblesReel, totalAmortissementAnnuel).resultatFiscal
     : resultatFiscalReelLMNP;
 
   const resultatFiscal = isMicroBic
@@ -618,16 +618,16 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
                       <span className="text-muted-foreground">Charges annuelles</span>
                       <span className="font-medium text-destructive">-{formatCurrency(totalChargesAnnuel)}</span>
                     </div>
-                    {isLMP && interetsLMP > 0 && (
+                    {interetsCredit > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Intérêts d'emprunt</span>
-                        <span className="font-medium text-destructive">-{formatCurrency(interetsLMP)}</span>
+                        <span className="font-medium text-destructive">-{formatCurrency(interetsCredit)}</span>
                       </div>
                     )}
-                    {isLMP && assuranceLMP > 0 && (
+                    {assuranceCredit > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Assurance emprunteur</span>
-                        <span className="font-medium text-destructive">-{formatCurrency(assuranceLMP)}</span>
+                        <span className="font-medium text-destructive">-{formatCurrency(assuranceCredit)}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-sm">
