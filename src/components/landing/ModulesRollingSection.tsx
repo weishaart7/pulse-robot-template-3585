@@ -76,7 +76,7 @@ export function ModulesRollingSection() {
         </h2>
 
         <div
-          className="relative w-[200px] justify-self-center overflow-hidden"
+          className="relative w-[200px] justify-self-start overflow-hidden md:justify-self-center"
           style={{ height: ROW_HEIGHT * VISIBLE_ROWS }}
           aria-label="Modules Kairos"
         >
