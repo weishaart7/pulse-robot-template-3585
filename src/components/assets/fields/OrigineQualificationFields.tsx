@@ -12,28 +12,19 @@ import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory }
 import { QUALIFICATION_OPTIONS, isRegimeCommunautaire, isInCouple } from '@/lib/patrimoine/qualification';
 import { MaritalContext } from '@/hooks/useAssetForm';
 
-interface OrigineQualificationFieldsProps {
+interface OrigineFieldsProps {
   form: UseFormReturn<AssetFormValues>;
   maritalContext: MaritalContext;
-  qualificationRaison?: string;
 }
 
-// Reprend à l'identique les blocs "Origine" et "Qualification du bien" de
-// l'onglet Propriété (AssetForm.tsx), pour être réutilisable tel quel dans
-// le futur wizard de création (étape "D'où vient-il").
-export const OrigineQualificationFields: React.FC<OrigineQualificationFieldsProps> = ({
-  form,
-  maritalContext,
-  qualificationRaison
-}) => {
-  const [showQualificationOverride, setShowQualificationOverride] = useState(false);
-
+// Bloc "Origine" de l'onglet Propriété (AssetForm.tsx) : date, origine, prix,
+// frais et clauses matrimoniales. Exposé séparément de la qualification pour
+// pouvoir les répartir sur des étapes distinctes du wizard.
+export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalContext }) => {
   const watchedNature = form.watch('nature');
   const watchedDetenteur = form.watch('detenteur');
   const watchedOrigineActif = form.watch('origine_actif');
   const watchedClauseRemploi = form.watch('clause_remploi');
-  const watchedQualificationAuto = form.watch('qualification_auto');
-  const watchedQualificationBien = form.watch('qualification_bien');
 
   const hideAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature);
   const isDateOuverture = NATURES_DATE_OUVERTURE.includes(watchedNature);
@@ -214,78 +205,111 @@ export const OrigineQualificationFields: React.FC<OrigineQualificationFieldsProp
     </>
   );
 
-  return (
-    <>
-      {origineContent}
+  return origineContent;
+};
 
-      {!hideAcquisition && (
-        <FormField control={form.control} name="qualification_bien" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Qualification du bien</FormLabel>
-            {watchedQualificationAuto !== false && !showQualificationOverride ? (
-              <div className="flex items-start gap-3 rounded-md border p-4 bg-muted/30">
-                <FileText className="h-4 w-4 text-muted-foreground mt-0.5" strokeWidth={1.5} />
-                <div className="space-y-1 flex-1">
-                  <p className="text-sm font-semibold text-foreground">{watchedQualificationBien || 'Non calculable'}</p>
-                  {qualificationRaison && (
-                    <p className="text-xs text-muted-foreground italic">{qualificationRaison}</p>
-                  )}
-                  <Button
-                    type="button"
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0"
-                    onClick={() => setShowQualificationOverride(true)}
-                  >
-                    Modifier manuellement
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <Select
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    form.setValue('qualification_auto', false);
-                  }}
-                  value={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
-                      <SelectValue placeholder="Choisir une qualification" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {QUALIFICATION_OPTIONS.map((option) => (
-                      <SelectItem key={option} value={option}>{option}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  {watchedQualificationAuto !== false
-                    ? "Calculée automatiquement à partir du régime matrimonial, de l'origine du bien, de la date d'acquisition et du détenteur."
-                    : "Qualification définie manuellement : le calcul automatique n'écrasera plus cette valeur."}
-                </FormDescription>
-                {watchedQualificationAuto === false && (
-                  <Button
-                    type="button"
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0"
-                    onClick={() => {
-                      form.setValue('qualification_auto', true);
-                      setShowQualificationOverride(false);
-                    }}
-                  >
-                    Réactiver le calcul automatique
-                  </Button>
-                )}
-              </>
+interface QualificationFieldsProps {
+  form: UseFormReturn<AssetFormValues>;
+  qualificationRaison?: string;
+}
+
+// Bloc "Qualification du bien" de l'onglet Propriété : qualification calculée
+// (avec sa justification), correction manuelle et réactivation du calcul.
+// Masqué pour les natures sans notion d'acquisition.
+export const QualificationFields: React.FC<QualificationFieldsProps> = ({ form, qualificationRaison }) => {
+  const [showQualificationOverride, setShowQualificationOverride] = useState(false);
+
+  const watchedNature = form.watch('nature');
+  const watchedQualificationAuto = form.watch('qualification_auto');
+  const watchedQualificationBien = form.watch('qualification_bien');
+
+  if (NATURES_WITHOUT_ACQUISITION.includes(watchedNature)) return null;
+
+  return (
+    <FormField control={form.control} name="qualification_bien" render={({ field }) => (
+      <FormItem>
+        <FormLabel>Qualification du bien</FormLabel>
+        {watchedQualificationAuto !== false && !showQualificationOverride ? (
+          <div className="flex items-start gap-3 rounded-md border p-4 bg-muted/30">
+            <FileText className="h-4 w-4 text-muted-foreground mt-0.5" strokeWidth={1.5} />
+            <div className="space-y-1 flex-1">
+              <p className="text-sm font-semibold text-foreground">{watchedQualificationBien || 'Non calculable'}</p>
+              {qualificationRaison && (
+                <p className="text-xs text-muted-foreground italic">{qualificationRaison}</p>
+              )}
+              <Button
+                type="button"
+                variant="link"
+                size="sm"
+                className="h-auto p-0"
+                onClick={() => setShowQualificationOverride(true)}
+              >
+                Modifier manuellement
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <Select
+              onValueChange={(value) => {
+                field.onChange(value);
+                form.setValue('qualification_auto', false);
+              }}
+              value={field.value}
+            >
+              <FormControl>
+                <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                  <SelectValue placeholder="Choisir une qualification" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {QUALIFICATION_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>{option}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormDescription>
+              {watchedQualificationAuto !== false
+                ? "Calculée automatiquement à partir du régime matrimonial, de l'origine du bien, de la date d'acquisition et du détenteur."
+                : "Qualification définie manuellement : le calcul automatique n'écrasera plus cette valeur."}
+            </FormDescription>
+            {watchedQualificationAuto === false && (
+              <Button
+                type="button"
+                variant="link"
+                size="sm"
+                className="h-auto p-0"
+                onClick={() => {
+                  form.setValue('qualification_auto', true);
+                  setShowQualificationOverride(false);
+                }}
+              >
+                Réactiver le calcul automatique
+              </Button>
             )}
-            <FormMessage />
-          </FormItem>
-        )} />
-      )}
-    </>
+          </>
+        )}
+        <FormMessage />
+      </FormItem>
+    )} />
   );
 };
+
+interface OrigineQualificationFieldsProps {
+  form: UseFormReturn<AssetFormValues>;
+  maritalContext: MaritalContext;
+  qualificationRaison?: string;
+}
+
+// Recompose "Origine" puis "Qualification du bien" dans l'ordre de l'onglet
+// Propriété (AssetForm.tsx).
+export const OrigineQualificationFields: React.FC<OrigineQualificationFieldsProps> = ({
+  form,
+  maritalContext,
+  qualificationRaison
+}) => (
+  <>
+    <OrigineFields form={form} maritalContext={maritalContext} />
+    <QualificationFields form={form} qualificationRaison={qualificationRaison} />
+  </>
+);

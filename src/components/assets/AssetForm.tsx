@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DateInput } from '@/components/ui/date-input';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Asset, AssetCharge } from '@/services/assetService';
 import { ChargeForm } from './ChargeForm';
@@ -16,6 +15,7 @@ import { IndivisaireDraft } from './IndivisairesSection';
 import { DemembrementDraft } from './DemembrementSection';
 import { isInCouple } from '@/lib/patrimoine/qualification';
 import { PlusValueBlock } from './fields/PlusValueBlock';
+import { ValeurEstimeeFields } from './fields/ValeurEstimeeFields';
 import { ValorisationDemembreeBlock } from './fields/ValorisationDemembreeBlock';
 import { OrigineQualificationFields } from './fields/OrigineQualificationFields';
 import { DetentionFields } from './fields/DetentionFields';
@@ -105,28 +105,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         )} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <FormField control={form.control} name="valeur_estimee" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Valeur actuelle estimée (€)</FormLabel>
-            <FormDescription>Valeur du bien à ce jour. C'est elle qui est utilisée dans le calcul du patrimoine.</FormDescription>
-            <FormControl>
-              <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-
-        <FormField control={form.control} name="date_estimation" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Date d'estimation</FormLabel>
-            <FormControl>
-              <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-      </div>
+      <ValeurEstimeeFields form={form} />
 
       <PlusValueBlock form={form} />
 
