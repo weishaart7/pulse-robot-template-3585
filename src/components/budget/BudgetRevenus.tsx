@@ -1,5 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useRevenus } from '@/hooks/useBudget';
 import { useBudgetEntryDialogState } from '@/hooks/useBudgetEntryDialogState';
@@ -35,25 +33,18 @@ export const BudgetRevenus = ({ displayMode }: BudgetRevenusProps) => {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Sources de revenus</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-2xl font-bold">{revenus.length}</div>
-              <p className="text-xs text-muted-foreground">
-                entrées enregistrées
-              </p>
-            </div>
-            <Button onClick={handleAddRevenu}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nouveau revenu
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">Gestion des revenus</h3>
+        <button
+          onClick={handleAddRevenu}
+          className="inline-flex items-center gap-2 rounded-full bg-[#006064] hover:bg-[#006064]/90 text-white pl-1 pr-4 py-1 text-sm font-medium transition-colors"
+        >
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#9bf00d]">
+            <Plus className="h-4 w-4 text-[#054b16]" />
+          </span>
+          Nouveau revenu
+        </button>
+      </div>
 
       {showRevenusForm && (
         <RevenusForm

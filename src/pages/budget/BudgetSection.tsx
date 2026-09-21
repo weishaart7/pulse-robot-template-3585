@@ -4,7 +4,6 @@ import { useModuleSubNav } from '@/hooks/useModuleSubNav';
 import { BudgetResume } from '@/components/budget/BudgetResume';
 import { BudgetRevenus } from '@/components/budget/BudgetRevenus';
 import { BudgetCharges } from '@/components/budget/BudgetCharges';
-import { Button } from '@/components/ui/button';
 import { Calendar, CalendarDays } from 'lucide-react';
 
 export type DisplayMode = 'annuel' | 'mensuel';
@@ -37,25 +36,24 @@ export const BudgetSection = () => {
   return (
     <div className="p-6">
       <div className="mb-6 flex items-center justify-end">
-        <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
-          <Button
-            variant={displayMode === 'mensuel' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setDisplayMode('mensuel')}
-            className="gap-2"
-          >
-            <Calendar className="h-4 w-4" />
-            Mensuel
-          </Button>
-          <Button
-            variant={displayMode === 'annuel' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setDisplayMode('annuel')}
-            className="gap-2"
-          >
-            <CalendarDays className="h-4 w-4" />
-            Annuel
-          </Button>
+        <div className="flex items-center gap-1 rounded-full border border-border/60 bg-card p-1 shadow-sm">
+          {([
+            { mode: 'mensuel', label: 'Mensuel', Icon: Calendar },
+            { mode: 'annuel', label: 'Annuel', Icon: CalendarDays },
+          ] as const).map(({ mode, label, Icon }) => (
+            <button
+              key={mode}
+              onClick={() => setDisplayMode(mode)}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                displayMode === mode
+                  ? 'bg-[#006064] text-white'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 

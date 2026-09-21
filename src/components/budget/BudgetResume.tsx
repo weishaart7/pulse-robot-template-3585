@@ -5,6 +5,7 @@ import { useRevenus, useCharges } from '@/hooks/useBudget';
 import { Revenu, Charge } from '@/services/budgetService';
 import { REVENUS_CATEGORIES, CHARGES_CATEGORIES } from '@/constants/budgetCategories';
 import { SlidingNumber } from '@/components/ui/sliding-number';
+import { TrendingUp, TrendingDown, Wallet, Percent, Landmark, PieChart as PieIcon, BarChart3 } from 'lucide-react';
 import { DisplayMode } from '@/pages/budget/BudgetSection';
 
 interface BudgetResumeProps {
@@ -43,6 +44,57 @@ const isActiveToday = (dateDebut?: string, dateFin?: string): boolean => {
   return true;
 };
 
+// Palette Famille (teal identité / lime accent / rose pour les charges),
+// même triptyque que PatrimoineResume.tsx — cf. docs/budget.md.
+const TEAL = '#006064';
+const LIME = '#9bf00d';
+const LIME_ICON = '#054b16';
+const PINK = '#ff1f7a';
+
+const StatCard = ({ label, subtitle, icon: Icon, badgeBg, iconColor, barColor, delay, children }: {
+  label: string;
+  subtitle: string;
+  icon: React.ElementType;
+  badgeBg: string;
+  iconColor: string;
+  barColor: string;
+  delay: string;
+  children: React.ReactNode;
+}) => (
+  <div
+    className="group relative rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 animate-fade-in"
+    style={{ animationDelay: delay }}
+  >
+    <div className="h-[3px] opacity-80 group-hover:opacity-100 transition-opacity duration-300" style={{ backgroundColor: barColor }} />
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-[13px] font-medium text-muted-foreground tracking-wide">{label}</p>
+        <div
+          className="h-10 w-10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
+          style={{ backgroundColor: badgeBg }}
+        >
+          <Icon className="h-[18px] w-[18px]" style={{ color: iconColor }} strokeWidth={1.5} />
+        </div>
+      </div>
+      <div className="text-[28px] font-bold text-foreground tracking-tight leading-none flex items-center gap-1">
+        {children}
+      </div>
+      <p className="text-[11px] text-muted-foreground/70 mt-2">{subtitle}</p>
+    </div>
+  </div>
+);
+
+const CardTitleWithIcon = ({ icon: Icon, color, children }: { icon: React.ElementType; color: string; children: React.ReactNode }) => (
+  <CardTitle className="flex items-center gap-2.5">
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${color}1a` }}>
+      <Icon className="h-4 w-4" style={{ color }} />
+    </span>
+    {children}
+  </CardTitle>
+);
+
+const CARD_CLASS = 'border border-border shadow-sm rounded-2xl';
+
 export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
   const { revenus, loading: revenusLoading } = useRevenus();
   const { charges, loading: chargesLoading } = useCharges();
@@ -79,9 +131,9 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
   if (revenusLoading || chargesLoading) {
     return (
       <div className="space-y-6">
-        <Card>
+        <Card className={CARD_CLASS}>
           <CardHeader>
-            <CardTitle>Résumé du Budget</CardTitle>
+            <CardTitleWithIcon icon={Wallet} color={TEAL}>Résumé du Budget</CardTitleWithIcon>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">Chargement des données...</p>
@@ -175,83 +227,82 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
   const totalRevenusCat = revenusParCategorie.reduce((sum, cat) => sum + cat.total, 0);
   const totalChargesCat = chargesParCategorie.reduce((sum, cat) => sum + cat.total, 0);
   
+  // Revenus : dégradé teal → lime ; charges : rose et teal, sur la charte Famille.
   const REVENUS_COLORS: Record<string, string> = {
-    'Revenus du travail': '#c0ff35',
-    'Revenus du patrimoine': '#0b3319',
-    'Retraites, pensions & rentes': '#f9fba5',
-    'Aides sociales & allocations': '#79e230',
-    'Indemnités & remboursements': '#39a325',
-    'Autres revenus': '#15751e'
+    'Revenus du travail': '#006064',
+    'Revenus du patrimoine': '#9bf00d',
+    'Retraites, pensions & rentes': '#2a9d8f',
+    'Aides sociales & allocations': '#c0ff35',
+    'Indemnités & remboursements': '#4db6ac',
+    'Autres revenus': '#054b16'
   };
 
   const CHARGES_COLORS: Record<string, string> = {
-    'Emprunts & Crédits': '#2d00f7',
-    'Logement & Habitation': '#6a00f4',
-    'Transports & Mobilité': '#8900f2',
-    'Alimentation & Vie courante': '#bc00dd',
-    'Santé & Bien-être': '#e500a4',
-    'Famille, Enfants & Éducation': '#f20089',
-    'Impôts, Cotisations & Assurances': '#f20089',
-    'Épargne & Investissements': '#f20089',
-    'Loisirs, Culture & Numérique': '#f20089',
-    'Solidarité, Pensions & Divers': '#ffb600'
+    'Emprunts & Crédits': '#ff1f7a',
+    'Logement & Habitation': '#006064',
+    'Transports & Mobilité': '#f06292',
+    'Alimentation & Vie courante': '#2a9d8f',
+    'Santé & Bien-être': '#ff80ab',
+    'Famille, Enfants & Éducation': '#4db6ac',
+    'Impôts, Cotisations & Assurances': '#b0104f',
+    'Épargne & Investissements': '#9bf00d',
+    'Loisirs, Culture & Numérique': '#ffb3cf',
+    'Solidarité, Pensions & Divers': '#80cbc4'
   };
 
-  const getColorForRevenu = (categorie: string) => REVENUS_COLORS[categorie] || '#76ff61';
-  const getColorForCharge = (categorie: string) => CHARGES_COLORS[categorie] || '#2d00f7';
+  const getColorForRevenu = (categorie: string) => REVENUS_COLORS[categorie] || '#4db6ac';
+  const getColorForCharge = (categorie: string) => CHARGES_COLORS[categorie] || '#ff1f7a';
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="border border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-medium text-muted-foreground">Solde {periodLabel}</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold flex items-center gap-1 text-black">
-              {soldePeriode >= 0 ? '+' : ''}
-              <SlidingNumber value={soldePeriode} />
-              <span className="ml-1">€</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">Revenus - Dépenses</p>
-          </CardContent>
-        </Card>
+        <StatCard
+          label={`Solde ${periodLabel}`}
+          subtitle="Revenus - Dépenses"
+          icon={soldePeriode >= 0 ? TrendingUp : TrendingDown}
+          badgeBg={soldePeriode >= 0 ? LIME : `${PINK}1a`}
+          iconColor={soldePeriode >= 0 ? LIME_ICON : PINK}
+          barColor={soldePeriode >= 0 ? LIME : PINK}
+          delay="0ms"
+        >
+          {soldePeriode >= 0 ? '+' : ''}
+          <SlidingNumber value={soldePeriode} />
+          <span className="ml-1">€</span>
+        </StatCard>
 
-        <Card className="border border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-medium text-muted-foreground">Taux d'endettement</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold flex items-center gap-1 text-black">
-              <SlidingNumber value={parseFloat(tauxEndettement.toFixed(1))} />
-              <span>%</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {displayMensualitesCredits.toLocaleString('fr-FR')} € / {displayRevenus.toLocaleString('fr-FR')} €
-            </p>
-          </CardContent>
-        </Card>
+        <StatCard
+          label="Taux d'endettement"
+          subtitle={`${displayMensualitesCredits.toLocaleString('fr-FR')} € / ${displayRevenus.toLocaleString('fr-FR')} €`}
+          icon={Percent}
+          badgeBg={`${PINK}1a`}
+          iconColor={PINK}
+          barColor={PINK}
+          delay="60ms"
+        >
+          <SlidingNumber value={parseFloat(tauxEndettement.toFixed(1))} />
+          <span>%</span>
+        </StatCard>
 
-        <Card className="border border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-medium text-muted-foreground">Capacité d'endettement</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold flex items-center gap-1 text-black">
-              <SlidingNumber value={capaciteEndettement} />
-              <span className="ml-1">€</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">Maximum à 35% des revenus</p>
-          </CardContent>
-        </Card>
+        <StatCard
+          label="Capacité d'endettement"
+          subtitle="Maximum à 35% des revenus"
+          icon={Landmark}
+          badgeBg={`${TEAL}1a`}
+          iconColor={TEAL}
+          barColor={TEAL}
+          delay="120ms"
+        >
+          <SlidingNumber value={capaciteEndettement} />
+          <span className="ml-1">€</span>
+        </StatCard>
       </div>
 
       {/* Répartition par catégories */}
       <div className="grid gap-6 md:grid-cols-2 mt-6">
         {/* Répartition des revenus par catégories */}
-        <Card className="border border-border">
+        <Card className={CARD_CLASS}>
           <CardHeader>
-            <CardTitle>Répartition des revenus par catégories</CardTitle>
+            <CardTitleWithIcon icon={PieIcon} color={TEAL}>Répartition des revenus par catégories</CardTitleWithIcon>
             <CardDescription>Distribution des revenus selon leur nature</CardDescription>
           </CardHeader>
           <CardContent>
@@ -292,9 +343,9 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
         </Card>
 
         {/* Répartition des charges par catégories */}
-        <Card className="border border-border">
+        <Card className={CARD_CLASS}>
           <CardHeader>
-            <CardTitle>Répartition des charges par catégories</CardTitle>
+            <CardTitleWithIcon icon={PieIcon} color={PINK}>Répartition des charges par catégories</CardTitleWithIcon>
             <CardDescription>Distribution des charges selon leur nature</CardDescription>
           </CardHeader>
           <CardContent>
@@ -336,9 +387,9 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
       </div>
 
       {/* Saisonnalité - Évolution mensuelle */}
-      <Card className="mt-6 border border-border">
+      <Card className={`mt-6 ${CARD_CLASS}`}>
         <CardHeader>
-          <CardTitle>Évolution mensuelle</CardTitle>
+          <CardTitleWithIcon icon={BarChart3} color={TEAL}>Évolution mensuelle</CardTitleWithIcon>
           <CardDescription>Comparaison revenus et charges sur 12 mois</CardDescription>
         </CardHeader>
         <CardContent>
@@ -484,12 +535,12 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
         <ComposedChart data={monthlyData} margin={{ top: 20, right: 16, left: 0, bottom: 0 }} barGap={4} barCategoryGap="20%">
           <defs>
             <linearGradient id="revenusGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#2a9d8f" stopOpacity={1} />
-              <stop offset="100%" stopColor="#21867a" stopOpacity={0.85} />
+              <stop offset="0%" stopColor="#006064" stopOpacity={1} />
+              <stop offset="100%" stopColor="#2a9d8f" stopOpacity={0.85} />
             </linearGradient>
             <linearGradient id="chargesGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#b0413e" stopOpacity={1} />
-              <stop offset="100%" stopColor="#8f3432" stopOpacity={0.85} />
+              <stop offset="0%" stopColor="#ff1f7a" stopOpacity={1} />
+              <stop offset="100%" stopColor="#f06292" stopOpacity={0.85} />
             </linearGradient>
             <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
               <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.1"/>
@@ -560,10 +611,10 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
           <Line
             type="monotone"
             dataKey="solde"
-            stroke="#f59e0b"
+            stroke="#9bf00d"
             strokeWidth={2.5}
-            dot={{ fill: '#f59e0b', strokeWidth: 0, r: 4 }}
-            activeDot={{ r: 6, fill: '#f59e0b', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
+            dot={{ fill: '#9bf00d', strokeWidth: 0, r: 4 }}
+            activeDot={{ r: 6, fill: '#9bf00d', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
             name="solde"
             animationBegin={400}
             animationDuration={1000}

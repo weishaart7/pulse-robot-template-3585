@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Trash2, Edit, MoreHorizontal, Building2 } from 'lucide-react';
+import { Trash2, Edit, MoreHorizontal, Building2, TrendingUp, TrendingDown } from 'lucide-react';
 import { Revenu, Charge } from '@/services/budgetService';
 import { DisplayMode } from '@/pages/budget/BudgetSection';
 
@@ -22,6 +22,10 @@ interface BudgetListProps {
   loading?: boolean;
   displayMode?: DisplayMode;
 }
+
+// Palette Famille (teal / rose), cf. PatrimoinePassifs.tsx et docs/budget.md.
+const TEAL = '#006064';
+const PINK = '#ff1f7a';
 
 export const BudgetList = ({
   revenus,
@@ -113,11 +117,14 @@ export const BudgetList = ({
     <div className="space-y-6">
       {/* Liste des revenus */}
       {revenus.length > 0 && (
-        <Card>
+        <Card className="border border-border shadow-sm rounded-2xl">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${TEAL}1a` }}>
+                <TrendingUp className="h-4 w-4" style={{ color: TEAL }} />
+              </span>
               Revenus
-              <Badge variant="outline" className="font-normal">
+              <Badge variant="outline" className="font-normal rounded-full">
                 {periodLabel}
               </Badge>
             </CardTitle>
@@ -126,11 +133,11 @@ export const BudgetList = ({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Dénomination</TableHead>
-                  <TableHead>Bénéficiaire</TableHead>
-                  <TableHead className="text-right">Montant</TableHead>
-                  <TableHead className="text-right">%</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider">Dénomination</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider">Bénéficiaire</TableHead>
+                  <TableHead className="text-right text-[11px] uppercase tracking-wider">Montant</TableHead>
+                  <TableHead className="text-right text-[11px] uppercase tracking-wider">%</TableHead>
+                  <TableHead className="text-right text-[11px] uppercase tracking-wider">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -140,7 +147,7 @@ export const BudgetList = ({
                       <div className="flex items-center gap-2">
                         {revenu.libelle}
                         {isFromImmobilier(revenu) && (
-                          <Badge variant="secondary" className="text-xs gap-1">
+                          <Badge variant="secondary" className="text-xs gap-1 rounded-full">
                             <Building2 className="h-3 w-3" />
                             Immobilier
                           </Badge>
@@ -189,7 +196,7 @@ export const BudgetList = ({
                     </TableCell>
                   </TableRow>
                 ))}
-                <TableRow className="font-bold bg-muted/50">
+                <TableRow className="font-bold bg-muted/50 hover:bg-muted/50">
                   <TableCell colSpan={2}>Total</TableCell>
                   <TableCell className="text-right">
                     {formatCurrency(displayMode === 'mensuel' ? toMonthly(totalRevenusAnnuel) : totalRevenusAnnuel)}
@@ -205,11 +212,14 @@ export const BudgetList = ({
 
       {/* Liste des charges */}
       {charges.length > 0 && (
-        <Card>
+        <Card className="border border-border shadow-sm rounded-2xl">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${PINK}1a` }}>
+                <TrendingDown className="h-4 w-4" style={{ color: PINK }} />
+              </span>
               Charges
-              <Badge variant="outline" className="font-normal">
+              <Badge variant="outline" className="font-normal rounded-full">
                 {periodLabel}
               </Badge>
             </CardTitle>
@@ -218,11 +228,11 @@ export const BudgetList = ({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Dénomination</TableHead>
-                  <TableHead>Débiteur</TableHead>
-                  <TableHead className="text-right">Montant</TableHead>
-                  <TableHead className="text-right">%</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider">Dénomination</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider">Débiteur</TableHead>
+                  <TableHead className="text-right text-[11px] uppercase tracking-wider">Montant</TableHead>
+                  <TableHead className="text-right text-[11px] uppercase tracking-wider">%</TableHead>
+                  <TableHead className="text-right text-[11px] uppercase tracking-wider">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -232,7 +242,7 @@ export const BudgetList = ({
                       <div className="flex items-center gap-2">
                         {charge.libelle}
                         {isReadOnly(charge) && (
-                          <Badge variant="secondary" className="text-xs gap-1">
+                          <Badge variant="secondary" className="text-xs gap-1 rounded-full">
                             <Building2 className="h-3 w-3" />
                             {readOnlySourceLabel(charge)}
                           </Badge>
@@ -281,7 +291,7 @@ export const BudgetList = ({
                     </TableCell>
                   </TableRow>
                 ))}
-                <TableRow className="font-bold bg-muted/50">
+                <TableRow className="font-bold bg-muted/50 hover:bg-muted/50">
                   <TableCell colSpan={2}>Total</TableCell>
                   <TableCell className="text-right">
                     {formatCurrency(displayMode === 'mensuel' ? toMonthly(totalChargesAnnuel) : totalChargesAnnuel)}
@@ -296,7 +306,7 @@ export const BudgetList = ({
       )}
 
       {revenus.length === 0 && charges.length === 0 && (
-        <div className="text-center text-muted-foreground py-8">
+        <div className="text-center text-muted-foreground py-8 rounded-2xl border border-dashed border-border/60">
           Aucun revenu ou charge enregistré pour le moment.
         </div>
       )}
