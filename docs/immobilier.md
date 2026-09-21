@@ -443,19 +443,20 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
     [assetTypes.ts](src/constants/assetTypes.ts)). Cette information existe donc en base
     (`assets.revenus_distribues_12m`, `assets.regime_fiscal_parts`) mais reste invisible depuis
     Immobilier, qui continue d'afficher le message « à venir » pour ces natures.
-  - **Financement (`financement_*`) : désormais consommé par les trois simulateurs de rentabilité
-    (location nue, LMNP, LMP), toujours dormant ailleurs.** Les 5 champs `financement_actif`/
-    `financement_duree_mois`/`financement_apport`/`financement_taux_credit`/`financement_taux_assurance`,
-    saisissables via
+  - **Financement (`financement_*`) : consommé partout où un résultat ou un cashflow est calculé.** Les 5
+    champs `financement_actif`/`financement_duree_mois`/`financement_apport`/`financement_taux_credit`/
+    `financement_taux_assurance`, saisissables via
     [PropertyFinancingSection.tsx](src/components/immobilier/property/PropertyFinancingSection.tsx) et
     persistés par `useImmobilierPropertyForm.ts:69-73`, alimentent `computeAmortissement()` dans
-    [rentabilite.ts](src/lib/immobilier/rentabilite.ts) (mensualité, intérêts de l'année en cours),
-    partagé par les trois simulateurs. **Toujours dormants ailleurs** : `ImmobilierOverview.tsx` (KPI de
-    portefeuille) ne lit toujours pas ces champs — le cashflow de portefeuille reste calculé sans tenir
-    compte du crédit (le résumé fiscal de `LMNPDetailView.tsx` déduit en revanche intérêts et assurance,
-    pour LMNP comme pour LMP). Il n'existe pas de colonne « date de démarrage du
-    crédit » en base : `computeAmortissement()` utilise `date_acquisition` comme proxy, ce qui devient
-    imprécis en cas de refinancement (cas non traité, documenté en commentaire dans le code).
+    [rentabilite.ts](src/lib/immobilier/rentabilite.ts) (mensualité de crédit et d'assurance, intérêts et
+    assurance de l'année en cours ; tout à 0 pour un bien non financé ou un prêt soldé). Il est utilisé
+    par les trois simulateurs de rentabilité, par le résumé fiscal de `LMNPDetailView.tsx` (intérêts et
+    assurance déduits au réel, LMNP comme LMP) et par le KPI « Cashflow mensuel » de la Vue d'ensemble
+    (`ImmobilierOverview.tsx` : revenus − charges − mensualités de crédit et d'assurance, tous biens
+    transférés). Pas de quote-part d'indivision dans ce KPI de portefeuille. Il n'existe pas de colonne
+    « date de démarrage du crédit » en base : `computeAmortissement()` utilise `date_acquisition` comme
+    proxy, ce qui devient imprécis en cas de refinancement (cas non traité, documenté en commentaire
+    dans le code).
   - **Distinction LMNP/LMP** dans le calcul lui-même : les nouveaux simulateurs de rentabilité
     distinguent désormais les deux statuts (plafonnement de l'amortissement et PS à 18,6 % en LMNP ;
     pas de plafonnement, déficit imputable sans limite et cotisations sociales en saisie libre en LMP,
