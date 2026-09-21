@@ -171,10 +171,10 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
 - **LMNP et LMP partagent la même vue et le même amortissement comptable, mais plus le même résultat
   fiscal réel.** `LMNPDetailView` sert les natures « Immeubles locatifs (LMNP) » et « (LMP) » et calcule
   le même tableau d'amortissement par composants (mécanique identique entre les deux statuts). Son
-  résumé fiscal distingue en revanche le régime réel : LMNP plafonne l'amortissement déductible et ignore
-  le financement, LMP applique `computeResultatReelLMP` (pas de plafonnement, intérêts d'emprunt et
-  assurance emprunteur déduits, déficit imputable sans plafond sur le revenu global), donc le même
-  résultat que le simulateur de rentabilité LMP. Reste non traité : cotisations sociales SSI et régime
+  résumé fiscal déduit dans les deux cas les intérêts d'emprunt et l'assurance emprunteur au régime réel
+  et distingue le traitement de l'amortissement : LMNP le plafonne (`computeResultatReelLMNP`), LMP ne le
+  plafonne pas et impute le déficit sans plafond sur le revenu global (`computeResultatReelLMP`) — donc
+  les mêmes résultats que les simulateurs de rentabilité correspondants. Reste non traité : cotisations sociales SSI et régime
   des plus-values professionnelles pour le LMP, cf. §3/§4.
 
 - **`ImmobilierPropertyDialog.tsx` : code mort.** Composant strictement équivalent à
@@ -344,8 +344,7 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
   `transfert_societe` pour cette nature) — cf. §2 pour le détail. Distinct de l'incohérence
   historique déjà corrigée en base pour les actifs existants.
 - **Le résumé fiscal de `LMNPDetailView.tsx` ne modélise pas les cotisations sociales SSI ni la
-  plus-value professionnelle du LMP**, et ignore toujours le financement pour LMNP (il ne le prend en
-  compte que pour LMP). La distinction du régime réel est faite : `computeResultatReelLMNP` plafonne
+  plus-value professionnelle du LMP.** La distinction du régime réel est faite : `computeResultatReelLMNP` plafonne
   l'amortissement déductible, `computeResultatReelLMP` ne le plafonne pas, déduit intérêts et assurance
   emprunteur et impute le déficit sans limite sur le revenu global — dans le résumé fiscal comme dans
   les simulateurs de rentabilité (§1). Les intérêts du résumé viennent des champs de financement
@@ -452,9 +451,9 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
     persistés par `useImmobilierPropertyForm.ts:69-73`, alimentent `computeAmortissement()` dans
     [rentabilite.ts](src/lib/immobilier/rentabilite.ts) (mensualité, intérêts de l'année en cours),
     partagé par les trois simulateurs. **Toujours dormants ailleurs** : `ImmobilierOverview.tsx` (KPI de
-    portefeuille) et le résumé fiscal de `LMNPDetailView.tsx` pour LMNP (hors simulateurs) ne lisent
-    toujours pas ces champs — le cashflow de portefeuille et le résultat fiscal LMNP restent calculés
-    sans tenir compte du crédit (le résumé LMP, lui, déduit intérêts et assurance). Il n'existe pas de colonne « date de démarrage du
+    portefeuille) ne lit toujours pas ces champs — le cashflow de portefeuille reste calculé sans tenir
+    compte du crédit (le résumé fiscal de `LMNPDetailView.tsx` déduit en revanche intérêts et assurance,
+    pour LMNP comme pour LMP). Il n'existe pas de colonne « date de démarrage du
     crédit » en base : `computeAmortissement()` utilise `date_acquisition` comme proxy, ce qui devient
     imprécis en cas de refinancement (cas non traité, documenté en commentaire dans le code).
   - **Distinction LMNP/LMP** dans le calcul lui-même : les nouveaux simulateurs de rentabilité
