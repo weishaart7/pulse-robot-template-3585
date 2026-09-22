@@ -2,8 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calculator, Users, Scale, FileText, PiggyBank, Receipt, TrendingUp, Lightbulb, AlertCircle, ArrowRight } from 'lucide-react';
+import { Calculator, Users, Scale, FileText, PiggyBank, Receipt, TrendingUp, Lightbulb, AlertCircle, ArrowRight, UserSquare2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { useAssets } from '@/hooks/useAssets';
 import { useFamilyData, useMaritalStatus, useFamilyProfile } from '@/hooks/useFamilyData';
@@ -280,7 +281,7 @@ export const ProcessusCalcul = () => {
         nbEnfants === 2 ? "• 2 enfants : réserve 2/3, QD 1/3" :
         "• 3 enfants ou + : réserve 3/4, QD 1/4"
       ],
-      formula: `Réserve = ${transmissionResult.masseCalcul.toLocaleString('fr-FR')} × ${nbEnfants}/${nbEnfants + 1} = ${transmissionResult.reserve.toLocaleString('fr-FR')} €`,
+      formula: `Réserve = ${transmissionResult.masseCalcul.toLocaleString('fr-FR')} × ${nbEnfants === 1 ? '1/2' : nbEnfants === 2 ? '2/3' : '3/4'} = ${transmissionResult.reserve.toLocaleString('fr-FR')} €`,
       conseils: [
         "La réserve protège vos enfants : vous ne pouvez pas en disposer librement",
         `Vous pouvez donner librement ${(transmissionResult.quotiteDisponible / transmissionResult.masseCalcul * 100).toFixed(0)}% de votre patrimoine`,
@@ -393,6 +394,76 @@ export const ProcessusCalcul = () => {
     }
   ];
 
+  // Détail par héritier (façon étude notariale) : agrège pour chaque personne
+  // sa part successorale (dmtg.perBeneficiary), ses donations antérieures
+  // (transmissionLiberalites) et son capital d'assurance-vie net déjà calculés
+  // ailleurs — aucune nouvelle logique fiscale ici, uniquement de l'agrégation
+  // d'affichage (cf. netBreakdown.ts, dmtg/index.ts, comment de TransmissionResult
+  // sur la source unique de vérité).
+  const heritierDetails = (() => {
+    // Identité (nom/lien) par personId — dédupliquée depuis `heirs`, qui peut
+    // contenir plusieurs lignes par personne en cas de démembrement
+    // (usufruit + nue-propriété). `partFinale` n'est PAS utilisé ici : c'est
+    // une part de la masse de calcul (patrimoine + donations rapportées,
+    // cf. transmission/index.ts ~L367-403), pas le patrimoine réellement
+    // transmis — l'"héritage brut" ci-dessous vient de dmtg.baseApresFrais,
+    // qui est la même base que celle déjà affichée à l'étape 7 ("sur X €").
+    const identites = new Map<string, { personId: string; nom: string; lien: string }>();
+    transmissionResult.heirs.forEach(h => {
+      if (!identites.has(h.personId)) {
+        identites.set(h.personId, { personId: h.personId, nom: h.nom, lien: h.lien });
+      }
+    });
+
+    return Array.from(identites.values()).map(g => {
+      const dmtgHeir = transmissionResult.dmtg.perBeneficiary[g.personId];
+      const donationsHeritier = transmissionLiberalites.filter(l => l.type === 'donation' && l.beneficiaireId === g.personId);
+      const donationsBrutes = donationsHeritier.reduce((s, l) => s + l.valeur, 0);
+      const reductionTotal = transmissionResult.details.reductions
+        .filter(r => donationsHeritier.some(l => l.id === r.liberaliteId))
+        .reduce((s, r) => s + r.montantReduit, 0);
+      const donationsNettes = donationsBrutes - reductionTotal;
+
+      const heritageBrut = dmtgHeir?.baseApresFrais ?? 0;
+      const abattement = dmtgHeir?.allowanceGeneralResidual ?? 0;
+      const partNetteTaxable = dmtgHeir?.taxableAfterAllowance ?? 0;
+      const droitsSuccession = dmtgHeir?.droitsHorsAV ?? 0;
+      const heritageNet = heritageBrut - droitsSuccession;
+      const capitalAVNet = dmtgHeir?.capitalAVNet ?? 0;
+      const prelev990I = dmtgHeir?.prelev990I ?? 0;
+      const droitsTotaux = dmtgHeir?.droitsTotaux ?? 0;
+      const transmissionNetteHeritier = heritageNet + donationsNettes + capitalAVNet;
+      const tauxMoyenSuccession = heritageBrut > 0 ? (droitsSuccession / heritageBrut) * 100 : 0;
+      // Taux de couverture des droits par les capitaux décès (même logique que le
+      // tableau "Transmission et droits" d'une étude notariale) : les capitaux AV
+      // nets couvrent-ils les droits totaux dus par cet héritier ?
+      const tauxCouverture = droitsTotaux > 0
+        ? (capitalAVNet >= droitsTotaux ? '> 100 %' : `${((capitalAVNet / droitsTotaux) * 100).toFixed(0)} %`)
+        : (capitalAVNet > 0 ? '> 100 %' : '—');
+
+      return {
+        personId: g.personId,
+        nom: g.nom,
+        lien: g.lien,
+        heritageBrut,
+        abattement,
+        partNetteTaxable,
+        droitsSuccession,
+        tauxMoyenSuccession,
+        heritageNet,
+        donationsNettes,
+        reductionTotal,
+        capitalAVNet,
+        prelev990I,
+        droitsTotaux,
+        transmissionNetteHeritier,
+        tauxCouverture
+      };
+    });
+  })();
+
+  const totalTransmissionNette = heritierDetails.reduce((s, h) => s + h.transmissionNetteHeritier, 0);
+
   return (
     <div className="kairos-transmission space-y-6">
       <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
@@ -461,6 +532,98 @@ export const ProcessusCalcul = () => {
               )}
             </div>
           ))}
+
+          <Separator className="my-6 bg-[var(--border)]" />
+
+          <div className="space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--ink-050)]">
+                <UserSquare2 className="h-5 w-5 text-[var(--ink-700)]" />
+              </div>
+              <div className="flex-1 space-y-2">
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">Détail par héritier</h3>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Vue consolidée de ce que reçoit chaque héritier au titre de la succession, des donations
+                  antérieures et de l'assurance-vie — donations et capitaux décès inclus, contrairement au
+                  "Transmission nette" de l'onglet Synthèse qui ne couvre que le net de succession.
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-[var(--border)]">
+                    <TableHead className="text-[var(--text-secondary)]">Héritier</TableHead>
+                    <TableHead className="text-right text-[var(--text-secondary)]">Héritage brut</TableHead>
+                    <TableHead className="text-right text-[var(--text-secondary)]">Droits de succession</TableHead>
+                    <TableHead className="text-right text-[var(--text-secondary)]">Capitaux décès nets</TableHead>
+                    <TableHead className="text-right text-[var(--text-secondary)]">Taux de couverture</TableHead>
+                    <TableHead className="text-right font-semibold text-[var(--text-secondary)]">Transmission nette</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {heritierDetails.map(h => (
+                    <TableRow key={h.personId} className="border-[var(--border)]">
+                      <TableCell>
+                        <span className="font-medium text-[var(--text-primary)]">{h.nom}</span>
+                        <span className="text-xs text-[var(--text-secondary)] ml-1.5">({h.lien})</span>
+                      </TableCell>
+                      <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{h.heritageBrut.toLocaleString('fr-FR')} €</TableCell>
+                      <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{h.droitsSuccession.toLocaleString('fr-FR')} €</TableCell>
+                      <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{h.capitalAVNet.toLocaleString('fr-FR')} €</TableCell>
+                      <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{h.tauxCouverture}</TableCell>
+                      <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{h.transmissionNetteHeritier.toLocaleString('fr-FR')} €</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="border-t-2 border-[var(--border-strong)]">
+                    <TableCell className="font-semibold text-[var(--text-primary)]">Total</TableCell>
+                    <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{heritierDetails.reduce((s, h) => s + h.heritageBrut, 0).toLocaleString('fr-FR')} €</TableCell>
+                    <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{heritierDetails.reduce((s, h) => s + h.droitsSuccession, 0).toLocaleString('fr-FR')} €</TableCell>
+                    <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{heritierDetails.reduce((s, h) => s + h.capitalAVNet, 0).toLocaleString('fr-FR')} €</TableCell>
+                    <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">—</TableCell>
+                    <TableCell className="kairos-num text-right tabular-nums font-bold text-[var(--text-primary)]">{totalTransmissionNette.toLocaleString('fr-FR')} €</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {heritierDetails.map(h => (
+                <div key={h.personId} className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-sunken)] p-4 space-y-4">
+                  <h4 className="text-sm font-semibold text-[var(--text-primary)]">{h.nom} <span className="font-normal text-[var(--text-secondary)]">({h.lien})</span></h4>
+
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-secondary)] mb-1.5">Succession</p>
+                    <dl className="text-sm space-y-1">
+                      <div className="flex justify-between"><dt className="text-[var(--text-secondary)]">Héritage brut</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.heritageBrut.toLocaleString('fr-FR')} €</dd></div>
+                      <div className="flex justify-between"><dt className="text-[var(--text-secondary)]">Abattement disponible</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.abattement === Infinity ? 'Illimité' : `${h.abattement.toLocaleString('fr-FR')} €`}</dd></div>
+                      <div className="flex justify-between"><dt className="text-[var(--text-secondary)]">Part nette taxable</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.partNetteTaxable.toLocaleString('fr-FR')} €</dd></div>
+                      <div className="flex justify-between"><dt className="text-[var(--text-secondary)]">Droits de succession</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.droitsSuccession.toLocaleString('fr-FR')} €</dd></div>
+                      <div className="flex justify-between"><dt className="text-[var(--text-secondary)]">Taux moyen d'imposition</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.tauxMoyenSuccession.toFixed(2)} %</dd></div>
+                    </dl>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-secondary)] mb-1.5">Transmission du patrimoine</p>
+                    <dl className="text-sm space-y-1">
+                      <div className="flex justify-between"><dt className="text-[var(--text-secondary)]">Héritage net</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.heritageNet.toLocaleString('fr-FR')} €</dd></div>
+                      <div className="flex justify-between"><dt className="text-[var(--text-secondary)]">Donations nettes</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.donationsNettes.toLocaleString('fr-FR')} €</dd></div>
+                      {h.reductionTotal > 0 && (
+                        <div className="flex justify-between"><dt className="text-[var(--text-secondary)]">Donations réduites en valeur</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.reductionTotal.toLocaleString('fr-FR')} €</dd></div>
+                      )}
+                      <div className="flex justify-between"><dt className="text-[var(--text-secondary)]">Capitaux décès nets</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.capitalAVNet.toLocaleString('fr-FR')} €</dd></div>
+                      <div className="flex justify-between font-semibold"><dt className="text-[var(--text-primary)]">Transmission nette</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.transmissionNetteHeritier.toLocaleString('fr-FR')} €</dd></div>
+                      <div className="flex justify-between"><dt className="text-[var(--text-secondary)]">Droits de mutation</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.droitsSuccession.toLocaleString('fr-FR')} €</dd></div>
+                      {h.prelev990I > 0 && (
+                        <div className="flex justify-between"><dt className="text-[var(--text-secondary)]">Prélèvement sur les capitaux décès</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.prelev990I.toLocaleString('fr-FR')} €</dd></div>
+                      )}
+                    </dl>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
           <div className="mt-8 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-sunken)] p-6">
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-[var(--text-primary)]">

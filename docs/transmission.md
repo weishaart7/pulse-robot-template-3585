@@ -39,7 +39,7 @@ module Famille (liens familiaux, statut du couple) — voir `docs/patrimoine.md`
 | Écran | Composant | Rôle |
 |---|---|---|
 | Synthèse | [Synthese.tsx](src/components/transmission/Synthese.tsx) | Résultat consolidé du 1er décès : dévolution, part de chaque héritier, net à recevoir, fiscalité |
-| Processus de calcul | [ProcessusCalcul.tsx](src/components/transmission/ProcessusCalcul.tsx) | Détail pédagogique des étapes de liquidation (masse de calcul, réserve/QD, imputation, réduction, rapport) |
+| Processus de calcul | [ProcessusCalcul.tsx](src/components/transmission/ProcessusCalcul.tsx) | Détail pédagogique des étapes de liquidation (masse de calcul, réserve/QD, imputation, réduction, rapport) + tableau et fiches « Détail par héritier » (succession + donations antérieures + assurance-vie, façon étude notariale) |
 | 2nd décès | [Succession2ndDeces.tsx](src/components/transmission/Succession2ndDeces.tsx) | Chaînage : simule le décès du conjoint survivant à partir du patrimoine reçu au 1er décès |
 | Assurance-vie | [AssuranceVie.tsx](src/components/transmission/AssuranceVie.tsx) | Contrats hors succession civile, taxation 990 I / art. 757 B séparée |
 | Donations & legs | `DonationForm.tsx`, `LegsForm.tsx`, [Liberalites.tsx](src/components/transmission/Liberalites.tsx) | Saisie des libéralités consommées par le moteur de liquidation |
@@ -206,6 +206,40 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   (`32c79bd`, `0e50d06`/`d443db1`, `31d1fe7`, `5122e87`), identifiés par un audit antérieur du module
   Famille, ré-audités formellement par le Bloc 5 (`docs/audit/archive/audit-transmission-bloc5-correctifs-2026-08.md`) :
   les 4 restent corrects, aucune régression introduite par les chantiers ultérieurs sur `index.ts`.
+- **Capital net d'assurance-vie désormais intégré à la transmission nette (2026-09-22)** — jusqu'ici
+  `netBreakdown.ts` documentait explicitement ce périmètre comme volontairement limité au net de
+  succession, l'AV restant hors calcul (décision du 2026-07-17). `dmtg/assurance-vie.ts` expose
+  maintenant le capital brut résolu par bénéficiaire (`AssuranceVieResult.perBeneficiary[].capitalBrut`),
+  reporté dans `DMTGBeneficiaryResult.capitalAVNet` (= capital brut − prélèvement 990 I ; le 757 B reste
+  dans `baseHorsAV`, pas retranché une 2e fois) et additionné à `netARecevoir`
+  (`netBreakdown.ts::computeNetPerHeir`) ainsi qu'à `transmissionNette` (`transmission/index.ts`). Le
+  droit de partage n'en tient jamais compte (l'AV n'est jamais dans l'indivision successorale, art.
+  L132-12 C. assur.). **Piège corrigé au passage** : `DMTGBeneficiaryResult.droitsTotaux` inclut déjà le
+  990 I — le passer tel quel à `netBreakdown` aurait soustrait ce prélèvement une 2e fois (une fois via
+  les coûts de succession, une fois via `capitalAVNet`) ; `transmission/index.ts` passe désormais
+  `droitsHorsAV` à `netBreakdown`. **Vérifié** : golden scenario existant mis à jour + nouveau test
+  dédié (`goldenScenarios.test.ts`, scénario 3), 1006 tests au vert.
+- **Exonération des dons familiaux de sommes d'argent (art. 790 G, 31 865 €) désormais réellement
+  appliquée (2026-09-22)** — `dmtg/recall.ts` savait traiter `Donation.type === 'familiale_790G'` mais
+  `transmission/index.ts::dmtgDonations` ne renseignait jamais ce champ quelle que soit la `nature`
+  choisie dans `DonationForm.tsx` (code mort en production, aucun test ne l'exerçait). Corrigé : `nature
+  === "Dons familiaux de sommes d'argent"` → `type: 'familiale_790G'` ; `transmissionHelpers.ts`
+  transportait déjà `nature` en le perdant en route (ajouté à `LiberaliteRow` et à la construction de
+  `Liberalite`). **2e bug trouvé au passage dans `recall.ts`** : la fraction du don excédant les 31 865 €
+  exonérés ne consommait jamais l'abattement général de 100 000 € (le commentaire du code le présentait
+  comme volontaire — "ne consomme pas l'abattement général" — alors que l'art. 779 CGI traite cette
+  fraction comme une donation ordinaire). Corrigé pour que seule la part exonérée (≤ 31 865 €) échappe à
+  l'abattement général ; l'excédent le consomme normalement. **Vérifié** : 3 nouveaux tests dédiés
+  (`recall.test.ts`), résultat recoupé avec une étude notarielle réelle (donation de 42 000 € → 10 135 €
+  imposables → abattement résiduel 89 865 €, conforme).
+- **Forfait mobilier (art. 764 CGI, 5 % du taxable) sans réglage pour le désactiver — limitation
+  connue, non corrigée.** `dmtg/assets.ts:7` expose un paramètre `inventaireNotarieProduit` qui met le
+  forfait à 0 quand un inventaire notarié réel remplace la présomption forfaitaire, mais **aucun écran
+  ne le renseigne** (`grep` sur `inventaireNotarieProduit` : uniquement lu, jamais écrit côté UI/DB) —
+  toujours `false` par défaut, forfait toujours appliqué. Explique un écart résiduel constant d'environ
+  5 % du taxable entre l'app et toute étude qui écarte explicitement cette option (cas réel rencontré :
+  écart de 237 €/enfant sur une base ~3 000 €). Candidat pour une prochaine phase (ajouter le réglage
+  côté "Hypothèses" de la succession), pas un correctif ponctuel.
 
 ## 3. Dette identifiée
 
