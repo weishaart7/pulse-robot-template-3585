@@ -1,9 +1,7 @@
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AssetFormValues, MODE_DETENTION_OPTIONS } from '@/schemas/assetSchema';
@@ -13,6 +11,7 @@ import { FamilyMember, MaritalContext } from '@/hooks/useAssetForm';
 import { FamilyInfo } from '@/lib/patrimoine/utils';
 import { IndivisairesSection, IndivisaireDraft } from '@/components/assets/IndivisairesSection';
 import { DemembrementSection, DemembrementDraft } from '@/components/assets/DemembrementSection';
+import { FieldHelp } from '@/components/ui/field-help';
 
 type AssetForm = UseFormReturn<AssetFormValues>;
 
@@ -45,63 +44,15 @@ export const ModeDetentionField: React.FC<{ form: AssetForm }> = ({ form }) => (
   )} />
 );
 
-interface DetenteurResolutionAlertProps {
-  form: AssetForm;
-  familyData: FamilyInfo;
-}
-
-// Alerte affichée quand la qualification vient de basculer vers "Bien
-// propre"/"Bien personnel" : le bien appartient alors à une seule personne
-// (cf. useAssetForm.ts, `detenteurAResoudre`).
-export const DetenteurResolutionAlert: React.FC<DetenteurResolutionAlertProps> = ({ form, familyData }) => {
-  const isEpargneAV = isEpargneAssuranceVie(form.watch('nature'));
-  const watchedQualificationBien = form.watch('qualification_bien');
-
-  return (
-    <Alert>
-      <AlertTitle>À qui appartient ce bien ?</AlertTitle>
-      <AlertDescription>
-        <p>
-          Ce bien vient d'être qualifié "{watchedQualificationBien?.toLowerCase()}" : il appartient à une seule personne. Confirmez ou corrigez {isEpargneAV ? 'le souscripteur' : 'le détenteur'}.
-        </p>
-        <div className="flex flex-wrap gap-2 mt-2">
-          {[familyData.userFirstName, ...(familyData.hasPartner ? [familyData.partnerFirstName] : [])]
-            .filter((prenom): prenom is string => !!prenom)
-            .map((prenom) => (
-              <Button
-                key={prenom}
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => form.setValue('detenteur', prenom)}
-              >
-                {prenom}
-              </Button>
-            ))}
-        </div>
-      </AlertDescription>
-    </Alert>
-  );
-};
-
 interface DetenteurFieldsProps {
   form: AssetForm;
   detenteurOptions: string[];
-  familyData: FamilyInfo;
-  detenteurAResoudre: boolean;
-  // Le wizard affiche l'alerte plus loin (étape Qualification), là où la
-  // qualification qui la déclenche est connue.
-  hideResolutionAlert?: boolean;
 }
 
-// Case "indivision avec un tiers" + sélecteur de détenteur, dont l'alerte de
-// résolution est portée par le même FormItem (sauf si hideResolutionAlert).
+// Case "indivision avec un tiers" + sélecteur de détenteur.
 export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
   form,
-  detenteurOptions,
-  familyData,
-  detenteurAResoudre,
-  hideResolutionAlert
+  detenteurOptions
 }) => {
   const watchedNature = form.watch('nature');
   const watchedDetenteur = form.watch('detenteur');
@@ -119,7 +70,7 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
 
   return (
     <>
-      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 col-span-full">
+      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-2xl border p-4 col-span-full">
         <FormControl>
           <Checkbox
             checked={watchedDetenteur === 'Indivision'}
@@ -134,9 +85,9 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
         </FormControl>
         <div className="space-y-1 leading-none">
           <FormLabel>Ce bien est détenu en indivision avec un tiers (hors couple)</FormLabel>
-          <FormDescription>
+          <FieldHelp>
             Dans ce cas, la qualification du bien est directement "Indivision", quel que soit le régime matrimonial ou l'origine du bien.
-          </FormDescription>
+          </FieldHelp>
         </div>
       </FormItem>
 
@@ -146,6 +97,11 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
             {/* "Souscripteur" pour les 4 natures épargne/assurance-vie : vocabulaire
                 assurantiel, même colonne `detenteur` (cf. constants/assetTypes.ts). */}
             <FormLabel>{isEpargneAV ? 'Souscripteur' : 'Détenteur'}</FormLabel>
+            {(watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel') && (
+              <FieldHelp>
+                "Le couple" n'est pas proposé : ce bien est qualifié {watchedQualificationBien.toLowerCase()}, il appartient donc entièrement à une seule personne.
+              </FieldHelp>
+            )}
             <Select onValueChange={field.onChange} value={field.value}>
               <FormControl>
                 <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
@@ -158,14 +114,6 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
                 ))}
               </SelectContent>
             </Select>
-            {(watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel') && (
-              <FormDescription>
-                "Le couple" n'est pas proposé : ce bien est qualifié {watchedQualificationBien.toLowerCase()}, il appartient donc entièrement à une seule personne.
-              </FormDescription>
-            )}
-            {detenteurAResoudre && !hideResolutionAlert && (
-              <DetenteurResolutionAlert form={form} familyData={familyData} />
-            )}
             <FormMessage />
           </FormItem>
         )} />
@@ -196,9 +144,9 @@ export const QuotePartFields: React.FC<QuotePartFieldsProps> = ({ form, familyDa
       return (
         <FormItem className="col-span-full">
           <FormLabel>Quote-part de {familyData.userFirstName || 'vous'} dans l'indivision (%)</FormLabel>
-          <FormDescription>
+          <FieldHelp>
             La quote-part de {familyData.partnerFirstName || 'votre conjoint(e)'} est le complément à 100 % : {partConjoint} %.
-          </FormDescription>
+          </FieldHelp>
           <FormControl>
             <Input
               className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
@@ -221,7 +169,8 @@ export const QuotePartFields: React.FC<QuotePartFieldsProps> = ({ form, familyDa
     }} />
   ) : (
     <div className="col-span-full text-sm text-muted-foreground bg-muted rounded-[5px] px-3 py-2">
-      Réparti 50% / 50% entre {familyData.userFirstName || 'vous'} et {familyData.partnerFirstName || 'votre conjoint(e)'} — bien commun, fixé par la loi (non modifiable).
+      Réparti 50 % / 50 % entre {familyData.userFirstName || 'vous'} et {familyData.partnerFirstName || 'votre conjoint(e)'}
+      <FieldHelp>Bien commun : répartition fixée par la loi, non modifiable.</FieldHelp>
     </div>
   );
 };
@@ -280,12 +229,12 @@ export const LicitationPacsFields: React.FC<LicitationPacsFieldsProps> = ({ form
   if (!showLicitationPacs) return null;
 
   return (
-    <div className="space-y-4 rounded-md border p-4">
+    <div className="space-y-4 rounded-2xl border p-4">
       <div className="space-y-1 leading-none">
         <FormLabel>Licitation de plus de moitié (art. 515-5-2)</FormLabel>
-        <FormDescription>
+        <FieldHelp>
           Si l'un des partenaires a racheté aux autres indivisaires une part du bien au-delà de sa propre part initiale, cette portion rachetée reste personnelle et n'entre pas dans l'indivision du PACS. Champ déclaratif : n'est pas répercuté automatiquement dans la qualification calculée.
-        </FormDescription>
+        </FieldHelp>
       </div>
 
       <FormField control={form.control} name="licitation_acquereur" render={({ field }) => (
@@ -309,7 +258,7 @@ export const LicitationPacsFields: React.FC<LicitationPacsFieldsProps> = ({ form
       <FormField control={form.control} name="part_licitation_personnelle" render={({ field }) => (
         <FormItem>
           <FormLabel>Part rachetée par licitation (%)</FormLabel>
-          <FormDescription>Pourcentage de la valeur du bien acquis au-delà de la part initiale de l'acquéreur.</FormDescription>
+          <FieldHelp>Pourcentage de la valeur du bien acquis au-delà de la part initiale de l'acquéreur.</FieldHelp>
           <FormControl>
             <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" min="0" max="100" step="0.1" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
           </FormControl>
@@ -330,7 +279,6 @@ interface DetentionFieldsProps {
   setIndivisaires: (value: IndivisaireDraft[]) => void;
   demembrements: DemembrementDraft[];
   setDemembrements: (value: DemembrementDraft[]) => void;
-  detenteurAResoudre: boolean;
 }
 
 // Reprend à l'identique le bloc "détention" de l'onglet Propriété
@@ -345,18 +293,12 @@ export const DetentionFields: React.FC<DetentionFieldsProps> = ({
   indivisaires,
   setIndivisaires,
   demembrements,
-  setDemembrements,
-  detenteurAResoudre
+  setDemembrements
 }) => (
   <>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <ModeDetentionField form={form} />
-      <DetenteurFields
-        form={form}
-        detenteurOptions={detenteurOptions}
-        familyData={familyData}
-        detenteurAResoudre={detenteurAResoudre}
-      />
+      <DetenteurFields form={form} detenteurOptions={detenteurOptions} />
       <QuotePartFields form={form} familyData={familyData} />
     </div>
 

@@ -6,7 +6,7 @@ import { AssetCharge } from '@/services/assetService';
 import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
 import { DemembrementDraft } from '@/components/assets/DemembrementSection';
 
-export type WizardStepId = 'quoi' | 'qui' | 'acquisition' | 'qualification' | 'droits' | 'valeur' | 'particularites' | 'charges' | 'recapitulatif';
+export type WizardStepId = 'quoi' | 'origine' | 'prix' | 'droitsvaleur' | 'particularites' | 'charges' | 'recapitulatif';
 
 interface WizardStepDef {
   id: WizardStepId;
@@ -21,23 +21,13 @@ interface WizardStepDef {
   isVisible: (values: Partial<AssetFormValues>) => boolean;
 }
 
-// Étape "Acquisition" : mêmes conditions que le bloc Origine de l'onglet
-// Propriété actuel (AssetForm.tsx) — masquée pour un bien en indivision hors
-// couple (la qualification est alors directement "Indivision") et pour les
-// natures sans notion d'acquisition (livrets/comptes bancaires).
-const isAcquisitionStepVisible = (values: Partial<AssetFormValues>) =>
-  values.detenteur !== 'Indivision' && !NATURES_WITHOUT_ACQUISITION.includes(values.nature || '');
-
-// Étape "Qualification" : elle porte la qualification calculée (natures avec
-// acquisition uniquement), mais aussi la quote-part et la licitation PACS,
-// qui ne concernent que "Le couple" quelle que soit la nature. Sautée en
-// indivision hors couple (qualification directement "Indivision"), et pour
-// une nature sans acquisition détenue par une seule personne (rien à
-// afficher). Reste visible pour un célibataire (qualification "Bien
-// personnel" calculée, gardée pour la parité avec l'onglet Propriété).
-const isQualificationStepVisible = (values: Partial<AssetFormValues>) =>
-  values.detenteur !== 'Indivision'
-  && (!NATURES_WITHOUT_ACQUISITION.includes(values.nature || '') || values.detenteur === 'Le couple');
+// Étape "Prix" : valeur d'achat, frais et financement mixte. Masquée pour les
+// natures sans notion d'acquisition (livrets/comptes bancaires). Contrairement
+// à l'ancien bloc Origine, elle reste visible pour un bien en indivision hors
+// couple : la qualification y est directement "Indivision", mais le prix
+// d'achat reste utile au calcul de la plus-value latente.
+const isPrixStepVisible = (values: Partial<AssetFormValues>) =>
+  !NATURES_WITHOUT_ACQUISITION.includes(values.nature || '');
 
 // Étape "Particularités" : contient toujours au moins le champ "Situation
 // particulière" (jamais masqué, quelle que soit la nature) et, pour la
@@ -53,33 +43,24 @@ const WIZARD_STEPS: WizardStepDef[] = [
     isVisible: () => true,
   },
   {
-    id: 'qui',
-    label: 'Qui',
-    fields: ['detenteur'],
+    id: 'origine',
+    label: 'Origine et propriété',
+    fields: ['date_acquisition', 'origine_actif', 'clause_entree_communaute', 'clause_remploi', 'est_propre_par_nature', 'detenteur', 'qualification_bien', 'pourcentage_utilisateur', 'pourcentage_conjoint', 'licitation_acquereur', 'part_licitation_personnelle'],
+    // Toujours visible : pour une nature sans acquisition ou un bien en
+    // indivision hors couple, seuls détenteur, quote-part et licitation
+    // restent affichés (cf. WizardStepOrigine.tsx).
     isVisible: () => true,
   },
   {
-    id: 'acquisition',
-    label: 'Acquisition',
-    fields: ['date_acquisition', 'origine_actif', 'valeur_acquisition', 'frais_acquisition', 'clause_entree_communaute', 'clause_remploi', 'financement_mixte_apport_propre', 'est_propre_par_nature'],
-    isVisible: isAcquisitionStepVisible,
+    id: 'prix',
+    label: 'Prix',
+    fields: ['valeur_acquisition', 'frais_acquisition', 'financement_mixte_apport_propre'],
+    isVisible: isPrixStepVisible,
   },
   {
-    id: 'qualification',
-    label: 'Qualification',
-    fields: ['qualification_bien', 'pourcentage_utilisateur', 'pourcentage_conjoint', 'licitation_acquereur', 'part_licitation_personnelle'],
-    isVisible: isQualificationStepVisible,
-  },
-  {
-    id: 'droits',
-    label: 'Droits détenus',
-    fields: ['mode_detention'],
-    isVisible: () => true,
-  },
-  {
-    id: 'valeur',
-    label: 'Valeur',
-    fields: ['valeur_estimee', 'date_estimation'],
+    id: 'droitsvaleur',
+    label: 'Droits et valeur',
+    fields: ['mode_detention', 'valeur_estimee', 'date_estimation'],
     isVisible: () => true,
   },
   {

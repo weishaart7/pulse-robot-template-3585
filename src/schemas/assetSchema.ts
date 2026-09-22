@@ -1,17 +1,30 @@
 import * as z from 'zod';
 
 // Constants
+// Origines proposées à l'utilisateur. `value` est ce qui est stocké dans
+// assets.origine_actif et lu par qualifierBien() (qualification.ts) : il ne
+// change pas. `label` est le libellé affiché, en langage courant.
 export const ORIGINE_ACTIF_OPTIONS = [
-  'Acquisition à titre gratuit',
-  'Acquisition à titre onéreux',
-  'Acquisition par occupation',
-  'Création',
-  'Découverte',
-  'Donation',
-  'Échange',
-  'Héritage',
-  'Présent d\'usage'
+  { value: 'Acquisition à titre onéreux', label: 'Achat' },
+  { value: 'Donation', label: 'Donation reçue' },
+  { value: 'Héritage', label: 'Héritage ou legs' },
+  { value: 'Présent d\'usage', label: 'Cadeau courant (anniversaire, Noël…)' },
+  { value: 'Acquisition à titre gratuit', label: 'Autre bien reçu gratuitement' },
+  { value: 'Échange', label: 'Échange contre un autre bien' },
+  { value: 'Création', label: 'Création (œuvre, brevet, entreprise…)' },
 ] as const;
+
+// Valeurs retirées de la liste proposée mais encore comprises par le moteur de
+// qualification : un actif qui les porterait continue de s'afficher.
+const ORIGINE_ACTIF_LEGACY_LABELS: Record<string, string> = {
+  'Découverte': 'Découverte (trésor)',
+  'Acquisition par occupation': 'Occupation (chasse, pêche…)',
+};
+
+export const getOrigineActifLabel = (value: string): string =>
+  ORIGINE_ACTIF_OPTIONS.find((option) => option.value === value)?.label
+  ?? ORIGINE_ACTIF_LEGACY_LABELS[value]
+  ?? value;
 
 export const SITUATION_PARTICULIERE_OPTIONS = [
   'Antichrèse',

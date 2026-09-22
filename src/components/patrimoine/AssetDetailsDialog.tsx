@@ -23,6 +23,7 @@ import { getTrancheDemembrement } from '@/lib/patrimoine/demembrementFraction';
 import { passifService, Emprunt } from '@/services/passifService';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/patrimoine/utils';
 import { format } from 'date-fns';
+import { getOrigineActifLabel } from '@/schemas/assetSchema';
 
 const NATURE_DROITS_A_ROYALTIES = 'Droits à royalties';
 
@@ -443,7 +444,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
                     <span className="text-sm text-muted-foreground">Origine de l'actif</span>
                     <div className="flex flex-wrap gap-2 mt-1">
                       {asset.origine_actif.map((origine, index) => (
-                        <Badge key={index} variant="secondary">{origine}</Badge>
+                        <Badge key={index} variant="secondary">{getOrigineActifLabel(origine)}</Badge>
                       ))}
                     </div>
                   </div>

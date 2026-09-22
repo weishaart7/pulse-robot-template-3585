@@ -7,11 +7,12 @@ import {
   Select, SelectContent, SelectGroup, SelectItem, SelectLabel,
   SelectSeparator, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { EMPRUNT_NATURES, PASSIF_NATURES, TYPE_GARANTIE_OPTIONS, MODE_AMORTISSEMENT_OPTIONS, TYPE_TAUX_OPTIONS } from '@/constants/assetTypes';
 import { ArrowLeft, Wallet } from 'lucide-react';
 import { Emprunt, Passif } from '@/services/passifService';
 import { usePassifEmpruntForm } from '@/hooks/usePassifEmpruntForm';
+import { FieldHelp } from '@/components/ui/field-help';
 
 interface PassifEmpruntFormProps {
   item?: Emprunt | Passif;
@@ -115,9 +116,9 @@ export const PassifEmpruntForm = ({
                 <FormField control={form.control} name="asset_id" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Actif financé / garanti</FormLabel>
-                    <FormDescription>
+                    <FieldHelp>
                       Le détenteur et la quote-part seront préremplis depuis cet actif, puis restent modifiables (emprunt non solidaire).
-                    </FormDescription>
+                    </FieldHelp>
                     <Select onValueChange={field.onChange} value={field.value || undefined}>
                       <FormControl>
                         <SelectTrigger size="lg">
@@ -218,7 +219,7 @@ export const PassifEmpruntForm = ({
                   <FormField control={form.control} name="taeg" render={({ field }) => (
                     <FormItem>
                       <FormLabel>TAEG (%)</FormLabel>
-                      <FormDescription>Tel que figurant sur l'offre de prêt.</FormDescription>
+                      <FieldHelp>Tel que figurant sur l'offre de prêt.</FieldHelp>
                       <FormControl>
                         <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                       </FormControl>
@@ -229,7 +230,7 @@ export const PassifEmpruntForm = ({
                   <FormField control={form.control} name="cout_total_credit" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Coût total du crédit (€)</FormLabel>
-                      <FormDescription>Tel que figurant sur l'offre de prêt.</FormDescription>
+                      <FieldHelp>Tel que figurant sur l'offre de prêt.</FieldHelp>
                       <FormControl>
                         <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                       </FormControl>
@@ -347,6 +348,11 @@ export const PassifEmpruntForm = ({
               <FormField control={form.control} name="detenteur" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Détenteur</FormLabel>
+                  {(watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel') && (
+                    <FieldHelp>
+                      "Le couple" n'est pas proposé : cette dette est qualifiée {watchedQualificationBien.toLowerCase()}, elle appartient donc entièrement à une seule personne.
+                    </FieldHelp>
+                  )}
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger size="lg">
@@ -359,11 +365,6 @@ export const PassifEmpruntForm = ({
                       ))}
                     </SelectContent>
                   </Select>
-                  {(watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel') && (
-                    <FormDescription>
-                      "Le couple" n'est pas proposé : cette dette est qualifiée {watchedQualificationBien.toLowerCase()}, elle appartient donc entièrement à une seule personne.
-                    </FormDescription>
-                  )}
                   <FormMessage />
                 </FormItem>
               )} />
@@ -371,7 +372,8 @@ export const PassifEmpruntForm = ({
 
             {watchedDetenteur === 'Le couple' && familyData.hasPartner && (
               <div className="text-sm text-muted-foreground bg-muted rounded-[5px] px-3 py-2">
-                Réparti 50% / 50% entre {familyData.userFirstName || 'vous'} et {familyData.partnerFirstName || 'votre conjoint(e)'} — bien commun, fixé par la loi (non modifiable).
+                Réparti 50 % / 50 % entre {familyData.userFirstName || 'vous'} et {familyData.partnerFirstName || 'votre conjoint(e)'}
+                <FieldHelp>Bien commun : répartition fixée par la loi, non modifiable.</FieldHelp>
               </div>
             )}
 
@@ -379,6 +381,9 @@ export const PassifEmpruntForm = ({
               <FormField control={form.control} name="contributeur_remboursement" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Contributeur au remboursement</FormLabel>
+                  <FieldHelp>
+                    Qui règle effectivement les mensualités, indépendamment de la titularité juridique de la dette ci-dessus.
+                  </FieldHelp>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger size="lg">
@@ -391,9 +396,6 @@ export const PassifEmpruntForm = ({
                       <SelectItem value="les_deux">Les deux</SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormDescription>
-                    Qui règle effectivement les mensualités, indépendamment de la titularité juridique de la dette ci-dessus.
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )} />

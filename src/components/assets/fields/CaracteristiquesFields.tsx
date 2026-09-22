@@ -3,7 +3,7 @@ import { Globe } from 'lucide-react';
 import { UseFormReturn } from 'react-hook-form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DateInput } from '@/components/ui/date-input';
-import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
@@ -26,6 +26,7 @@ import {
 import { NATURES_LIQUIDITES_FR } from '@/schemas/assetSchema';
 import { NATURES_WITH_ETABLISSEMENT } from '@/hooks/useAssetForm';
 import { isSocieteEligibleNature } from '@/lib/patrimoine/societeTransfer';
+import { FieldHelp } from '@/components/ui/field-help';
 
 interface CaracteristiquesFieldsProps {
   form: UseFormReturn<AssetFormValues>;
@@ -191,7 +192,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           control={form.control}
           name="certificat_expertise"
           render={({ field }) => (
-            <FormItem className="rounded-md border p-4 space-y-3">
+            <FormItem className="rounded-2xl border p-4 space-y-3">
               <div className="flex flex-row items-start space-x-3 space-y-0">
                 <FormControl>
                   <Checkbox
@@ -225,7 +226,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           control={form.control}
           name="bien_etranger"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-muted/30">
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-2xl border p-4 bg-muted/30">
               <FormControl>
                 <Checkbox
                   checked={field.value}
@@ -237,9 +238,9 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                   <Globe className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                   Bien situé à l'étranger
                 </FormLabel>
-                <FormDescription>
+                <FieldHelp>
                   Impact fiscal : déclaration spécifique (formulaire 3916 pour les comptes, conventions fiscales, IFI sur immobilier étranger). À traiter au cas par cas.
-                </FormDescription>
+                </FieldHelp>
               </div>
             </FormItem>
           )}
@@ -257,7 +258,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           control={form.control}
           name="transfert_immobilier"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-2xl border p-4">
               <FormControl>
                 <Checkbox
                   checked={field.value}
@@ -269,10 +270,10 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               </FormControl>
               <div className="space-y-1 leading-none">
                 <FormLabel>Transfert dans Immobilier</FormLabel>
-                <FormDescription>
+                <FieldHelp>
                   Ce bien apparaîtra dans la section "Immobilier" → "Mes biens"
                   {' '}(exclusif avec "Transfert dans Sociétés")
-                </FormDescription>
+                </FieldHelp>
               </div>
             </FormItem>
           )}
@@ -284,7 +285,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           control={form.control}
           name="transfert_societe"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-2xl border p-4">
               <FormControl>
                 <Checkbox
                   checked={field.value}
@@ -296,10 +297,10 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               </FormControl>
               <div className="space-y-1 leading-none">
                 <FormLabel>Transfert dans Sociétés</FormLabel>
-                <FormDescription>
+                <FieldHelp>
                   Une fiche société sera créée automatiquement dans la section "Sociétés" → "Mes sociétés"
                   {isImmobilier && ' (exclusif avec "Transfert dans Immobilier")'}
-                </FormDescription>
+                </FieldHelp>
               </div>
             </FormItem>
           )}
@@ -453,7 +454,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
             control={form.control}
             name="cto_multi_actifs"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-2xl border p-4">
                 <FormControl>
                   <Checkbox
                     checked={field.value}
@@ -711,9 +712,9 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           render={({ field }) => (
             <FormItem>
               <FormLabel>Attachement émotionnel</FormLabel>
-              <FormDescription>
+              <FieldHelp>
                 De 0 (aucun attachement) à 10 (attachement très fort)
-              </FormDescription>
+              </FieldHelp>
               <FormControl>
                 <div className="space-y-2">
                   <Slider

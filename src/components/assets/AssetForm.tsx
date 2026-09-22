@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { IndivisaireDraft } from './IndivisairesSection';
 import { DemembrementDraft } from './DemembrementSection';
 import { isInCouple } from '@/lib/patrimoine/qualification';
+import { ActifFormFrame } from './ActifFormFrame';
 import { PlusValueBlock } from './fields/PlusValueBlock';
 import { ValeurEstimeeFields } from './fields/ValeurEstimeeFields';
 import { ValorisationDemembreeBlock } from './fields/ValorisationDemembreeBlock';
@@ -21,6 +22,7 @@ import { OrigineQualificationFields } from './fields/OrigineQualificationFields'
 import { DetentionFields } from './fields/DetentionFields';
 import { CaracteristiquesFields } from './fields/CaracteristiquesFields';
 import { ChargesListFields } from './fields/ChargesListFields';
+import { FieldHelp } from '@/components/ui/field-help';
 
 interface AssetFormProps {
   asset?: Asset;
@@ -61,7 +63,6 @@ export const AssetForm: React.FC<AssetFormProps> = ({
     demembrements,
     setDemembrements,
     qualificationRaison,
-    detenteurAResoudre,
     handleSubmit,
     handleChargeSubmit,
     handleChargeDelete,
@@ -122,7 +123,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
 
   const renderProprieteSection = () => {
     const proprieteRappel = isInCouple(maritalContext.statutCouple) ? (
-      <div className="rounded-md border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
+      <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
         <p>
           Régime matrimonial : <span className="font-medium text-foreground">{maritalContext.regimeMatrimonial || 'Non renseigné'}</span>
         </p>
@@ -138,10 +139,13 @@ export const AssetForm: React.FC<AssetFormProps> = ({
     return (
     <div className="space-y-6">
       {isAVHorsSuccession && (
-        <div className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
-          <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" strokeWidth={1.5} />
+        <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+          <Info className="h-4 w-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
           <p>
-            Ces informations n'ont aucun effet sur la transmission de ce contrat : au décès, il est transmis hors succession selon sa clause bénéficiaire, à renseigner dans Transmission → Assurance-vie. Elles ne servent qu'à la répartition du patrimoine par personne.
+            Sans effet sur la transmission
+            <FieldHelp>
+              Ces informations n'ont aucun effet sur la transmission de ce contrat : au décès, il est transmis hors succession selon sa clause bénéficiaire, à renseigner dans Transmission → Assurance-vie. Elles ne servent qu'à la répartition du patrimoine par personne.
+            </FieldHelp>
           </p>
         </div>
       )}
@@ -164,7 +168,6 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         setIndivisaires={setIndivisaires}
         demembrements={demembrements}
         setDemembrements={setDemembrements}
-        detenteurAResoudre={detenteurAResoudre}
       />
     </div>
     );
@@ -191,12 +194,9 @@ export const AssetForm: React.FC<AssetFormProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight">
-          {asset ? 'Modifier l\'actif' : 'Ajouter un actif'}
-        </h2>
-      </div>
-
+      <ActifFormFrame
+        title={asset ? "Modifier l'actif" : 'Ajouter un actif'}
+      >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           <div className="flex flex-col gap-1.5">
@@ -217,12 +217,12 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                       setActiveTab(tab.id);
                     }}
                     className={cn(
-                      "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200",
+                      "af-mono inline-flex items-center gap-2 rounded-lg px-3.5 py-2 transition-all duration-200",
                       locked
-                        ? "bg-[#ebf1f1] text-[#62706d] opacity-50 cursor-not-allowed"
+                        ? "bg-[var(--af-track)] text-[var(--af-smoke)] opacity-50 cursor-not-allowed"
                         : activeTab === tab.id
-                          ? "bg-[#62706d] text-[#ebf1f1] shadow-sm"
-                          : "bg-[#ebf1f1] text-[#62706d] hover:opacity-90"
+                          ? "bg-[var(--af-ink)] text-white"
+                          : "bg-[var(--af-track)] text-[var(--af-smoke)] hover:text-[var(--af-ink)]"
                     )}
                   >
                     {tab.label}
@@ -241,7 +241,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             {renderContent()}
           </div>
 
-          <div className="flex justify-between pt-6 border-t">
+          <div className="flex justify-between pt-8">
             {asset?.id && onDelete && (
               <Button type="button" variant="destructive" onClick={handleDelete} disabled={isLoading}>
                 Supprimer l'actif
@@ -258,6 +258,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
           </div>
         </form>
       </Form>
+      </ActifFormFrame>
 
       {showChargeForm && (
         <ChargeForm

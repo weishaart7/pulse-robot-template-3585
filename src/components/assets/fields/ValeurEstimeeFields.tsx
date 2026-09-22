@@ -1,9 +1,10 @@
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { DateInput } from '@/components/ui/date-input';
-import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { AssetFormValues } from '@/schemas/assetSchema';
+import { FieldHelp } from '@/components/ui/field-help';
 
 interface ValeurEstimeeFieldsProps {
   form: UseFormReturn<AssetFormValues>;
@@ -17,7 +18,7 @@ export const ValeurEstimeeFields: React.FC<ValeurEstimeeFieldsProps> = ({ form }
     <FormField control={form.control} name="valeur_estimee" render={({ field }) => (
       <FormItem>
         <FormLabel>Valeur actuelle estimée (€)</FormLabel>
-        <FormDescription>Valeur du bien à ce jour. C'est elle qui est utilisée dans le calcul du patrimoine.</FormDescription>
+        <FieldHelp>Valeur du bien à ce jour. C'est elle qui est utilisée dans le calcul du patrimoine.</FieldHelp>
         <FormControl>
           <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
         </FormControl>

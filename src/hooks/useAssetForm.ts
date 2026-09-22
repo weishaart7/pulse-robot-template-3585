@@ -62,12 +62,6 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
   const [indivisaires, setIndivisaires] = useState<IndivisaireDraft[]>([]);
   const [demembrements, setDemembrements] = useState<DemembrementDraft[]>([]);
   const [qualificationRaison, setQualificationRaison] = useState<string | undefined>(undefined);
-  // Passe à `true` quand la qualification vient de basculer vers "Bien
-  // propre"/"Bien personnel" (un bien qui n'appartient qu'à une seule
-  // personne) : sert à proposer un choix rapide du détenteur plutôt qu'une
-  // resaisie à l'aveugle, cf. AssetForm.tsx. Repasse à `false` dès que
-  // `detenteur` est renseigné (choix rapide ou resélection manuelle).
-  const [detenteurAResoudre, setDetenteurAResoudre] = useState(false);
 
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
@@ -282,15 +276,14 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
       // "Le couple" comme détenteur n'a de sens que pour un bien commun (50/50
       // fixé par la loi) — jamais pour "Bien propre"/"Bien personnel" (100/0
       // binaire, cf. getPartSuccessorale). On ne réagit qu'à une transition
-      // réelle vers cet état (et non à chaque recalcul qui le confirme) pour
-      // ne pas rouvrir l'alerte en boucle tant que rien n'a changé côté
-      // qualification. Si "Le couple" était sélectionné, la combinaison est
-      // invalide en base et doit être vidée (cf. incident du 2026-07-18 —
-      // pourcentages saisis mais silencieusement ignorés par le calcul de
-      // succession) ; si un détenteur individuel était déjà renseigné, rien
-      // ne garantit qu'il s'agit de la bonne personne (qualifierBien() ne
+      // réelle vers cet état (et non à chaque recalcul qui le confirme). Si
+      // "Le couple" était sélectionné, la combinaison est invalide en base et
+      // doit être vidée (cf. incident du 2026-07-18 — pourcentages saisis mais
+      // silencieusement ignorés par le calcul de succession) ; un détenteur
+      // individuel déjà renseigné est laissé tel quel (qualifierBien() ne
       // déduit "qui" pour aucun des cas menant à "Bien propre"/"Bien
-      // personnel") : on le laisse tel quel mais on invite à le confirmer.
+      // personnel"). DetenteurFields explique pourquoi "Le couple" n'est plus
+      // proposé.
       const devientProprePersonnel =
         (qualification === 'Bien propre' || qualification === 'Bien personnel') &&
         qualificationPrecedente !== qualification;
@@ -300,7 +293,6 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
           form.setValue('pourcentage_utilisateur', undefined);
           form.setValue('pourcentage_conjoint', undefined);
         }
-        setDetenteurAResoudre(true);
       }
     };
 
@@ -324,7 +316,6 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name === 'detenteur' && value.detenteur) {
-        setDetenteurAResoudre(false);
         const detenteur = value.detenteur;
 
         if (detenteur === familyData.userFirstName || detenteur === 'Vous') {
@@ -472,7 +463,6 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
     demembrements,
     setDemembrements,
     qualificationRaison,
-    detenteurAResoudre,
     handleSubmit,
     handleChargeSubmit,
     handleChargeDelete,

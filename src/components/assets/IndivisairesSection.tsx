@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
 import { AssetIndivisaire } from '@/services/assetIndivisaireService';
+import { FieldHelp } from '@/components/ui/field-help';
 
 export interface IndivisaireDraft {
   type_indivisaire: 'famille' | 'tiers';
@@ -44,7 +45,7 @@ export const IndivisairesSection: React.FC<Props> = ({ familyMembers, value, onC
   };
 
   return (
-    <div className="space-y-4 rounded-md border p-4 bg-muted/20">
+    <div className="space-y-4 rounded-2xl border p-4 bg-muted/20">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
@@ -62,7 +63,8 @@ export const IndivisairesSection: React.FC<Props> = ({ familyMembers, value, onC
 
       {value.length === 0 ? (
         <p className="text-xs text-muted-foreground italic">
-          Aucun co-indivisaire. Ajoutez un membre de la famille ou un tiers (libellé libre).
+          Aucun co-indivisaire
+          <FieldHelp>Ajoutez un membre de la famille ou un tiers (libellé libre).</FieldHelp>
         </p>
       ) : (
         <div className="space-y-2">

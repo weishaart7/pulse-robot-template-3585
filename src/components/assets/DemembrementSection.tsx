@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
 import { AssetDemembrement } from '@/services/assetDemembrementService';
+import { FieldHelp } from '@/components/ui/field-help';
 
 export interface DemembrementDraft {
   type_partie: 'famille' | 'tiers';
@@ -45,7 +46,7 @@ export const DemembrementSection: React.FC<Props> = ({ role, familyMembers, valu
   const roleLabel = role === 'Usufruitier' ? 'Usufruitier(s)' : 'Nu(s)-propriétaire(s)';
 
   return (
-    <div className="space-y-4 rounded-md border p-4 bg-muted/20">
+    <div className="space-y-4 rounded-2xl border p-4 bg-muted/20">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
@@ -63,7 +64,8 @@ export const DemembrementSection: React.FC<Props> = ({ role, familyMembers, valu
 
       {value.length === 0 ? (
         <p className="text-xs text-muted-foreground italic">
-          Aucune contrepartie renseignée. Ajoutez un membre de la famille ou un tiers (ex. vendeur ayant conservé l'usufruit).
+          Aucune contrepartie renseignée
+          <FieldHelp>Ajoutez un membre de la famille ou un tiers (ex. vendeur ayant conservé l'usufruit).</FieldHelp>
         </p>
       ) : (
         <div className="space-y-2">

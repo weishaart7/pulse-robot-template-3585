@@ -16,8 +16,7 @@ interface ChargesListFieldsProps {
 // wizard de création (la modale ChargeForm reste pilotée par l'appelant).
 export const ChargesListFields: React.FC<ChargesListFieldsProps> = ({ charges, onAdd, onEdit, onDelete }) => (
   <div className="space-y-6">
-    <div className="flex items-center justify-between">
-      <p className="text-sm text-muted-foreground">Gérez les charges associées à cet actif</p>
+    <div className="flex items-center justify-end">
       <Button type="button" variant="outline" onClick={onAdd} className="flex items-center gap-2">
         <Plus className="h-4 w-4" />
         Ajouter une charge

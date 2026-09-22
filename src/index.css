@@ -414,3 +414,47 @@
   line-height: 1;
   font-weight: 400;
 }
+
+/*
+  Formulaires du module Actifs (wizard de création, formulaire de modification)
+  — reprend le langage visuel de la landing page : noir profond #0d1b1e,
+  Instrument Sans pour les titres, mono capitales pour les libellés d'étape,
+  filets fins, grandes cartes arrondies. Scopé à .actifs-form : les tokens de
+  :root, qui pilotent le reste du dashboard, ne changent pas.
+*/
+.actifs-form {
+  --af-ink: #0d1b1e;
+  --af-smoke: #636363;
+  --af-hairline: rgba(13, 27, 30, 0.14);
+  --af-track: #e7ecec;
+
+  /* Rebranche les composants shadcn (Button, Checkbox, focus...) sur le noir. */
+  --primary: 189 40% 8%;
+  --ring: 189 40% 8%;
+  /* Remplace le bleu "temporaire" des bordures de champs (règle globale plus haut). */
+  --form-field-accent: 189 20% 82%;
+
+  color: var(--af-ink);
+}
+
+/* Focus / ouverture d'un champ : bordure noire plutôt que le filet gris. */
+.actifs-form [class~="bg-muted"][class~="border-transparent"]:focus-visible,
+.actifs-form [class~="bg-muted"][class~="border-transparent"][data-state="open"] {
+  border-color: var(--af-ink) !important;
+  background-color: #ffffff;
+}
+
+.actifs-form .af-display {
+  font-family: 'Instrument Sans', 'Inter', ui-sans-serif, sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--af-ink);
+}
+
+.actifs-form .af-mono {
+  font-family: 'Roboto Mono', ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
