@@ -13,6 +13,7 @@ import profilFemme from '@/assets/Profil femme.png';
 type EditView = 'client';
 
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9bf00b] focus-visible:ring-offset-2 focus-visible:ring-offset-white';
+const CARD_GLOW = { boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 0 0 5px #f7f7f7' };
 
 const profileImage = (civility?: string) => (civility === 'Mme' || civility === 'Mlle' ? profilFemme : profilHomme);
 
@@ -69,7 +70,7 @@ const FamilleSection = () => {
   // Full-screen edit view (fiche client uniquement — partenaire/relation vivent désormais sur leur propre page)
   if (editView === 'client') {
     return (
-      <div className="bg-white">
+      <div className="famille-form bg-white">
         <div className="w-full mx-auto px-4 sm:px-6 pt-8">
           <button
             onClick={() => setEditView(null)}
@@ -84,12 +85,12 @@ const FamilleSection = () => {
           <div className="flex items-center gap-4">
             <div
               className="h-14 w-14 rounded-full flex items-center justify-center shrink-0 text-white text-lg font-semibold"
-              style={{ backgroundColor: '#006064' }}
+              style={{ backgroundColor: '#0d1b1e' }}
             >
               {getInitials(familyProfile?.prenom, familyProfile?.nom)}
             </div>
             <div>
-              <h1 className="font-playfair text-3xl font-light tracking-tight text-foreground">
+              <h1 className="ff-display text-3xl sm:text-4xl">
                 {clientName}
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
@@ -125,7 +126,7 @@ const FamilleSection = () => {
   })();
 
   return (
-    <div className="p-6 pt-0 space-y-5">
+    <div className="famille-form p-6 pt-0 space-y-5">
       <div className="flex justify-end">
         <button
           onClick={() => liensRef.current?.openForAdd()}
@@ -141,7 +142,7 @@ const FamilleSection = () => {
       {/* Foyer — identité */}
       <div className="flex flex-wrap gap-5">
         <div
-          className="relative w-60 h-[420px] shrink-0 rounded-2xl overflow-hidden cursor-pointer group"
+          className="relative w-60 h-[420px] shrink-0 rounded-[22px] overflow-hidden cursor-pointer group"
           role="button"
           tabIndex={0}
           onClick={() => setEditView('client')}
@@ -162,7 +163,7 @@ const FamilleSection = () => {
 
         {hasPartner ? (
           <div
-            className="relative w-60 h-[420px] shrink-0 rounded-2xl overflow-hidden cursor-pointer group"
+            className="relative w-60 h-[420px] shrink-0 rounded-[22px] overflow-hidden cursor-pointer group"
             role="button"
             tabIndex={0}
             onClick={() => navigate('/dashboard/famille/conjoint')}
@@ -181,7 +182,7 @@ const FamilleSection = () => {
             </div>
           </div>
         ) : (
-          <div className="w-60 h-[420px] shrink-0 rounded-2xl border bg-card shadow-sm p-6 flex flex-col gap-3 justify-center">
+          <div className="w-60 h-[420px] shrink-0 rounded-[22px] bg-white p-6 flex flex-col gap-3 justify-center" style={CARD_GLOW}>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Statut
@@ -216,10 +217,10 @@ const FamilleSection = () => {
 
       {/* Régime matrimonial / PACS — carte distincte */}
       {hasPartner && (
-        <div className="flex items-center justify-between gap-5 flex-wrap rounded-3xl border bg-card shadow-sm p-4">
+        <div className="flex items-center justify-between gap-5 flex-wrap rounded-[22px] bg-white p-4" style={CARD_GLOW}>
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-9 w-9 rounded-full bg-[#006064]/10 flex items-center justify-center shrink-0">
-              <Scale className="w-4 h-4 text-[#006064]" strokeWidth={1.75} />
+            <div className="h-9 w-9 rounded-full bg-[#0d1b1e]/10 flex items-center justify-center shrink-0">
+              <Scale className="w-4 h-4 text-[#0d1b1e]" strokeWidth={1.75} />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">

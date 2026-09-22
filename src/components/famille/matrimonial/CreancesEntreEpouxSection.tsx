@@ -131,13 +131,13 @@ export function CreancesEntreEpouxSection({ contexte = 'mariage' }: CreancesEntr
     `Créance de ${epouxLabel(c.epoux_creancier)} sur ${epouxLabel(c.epoux_debiteur)}`;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-8">
+    <div className="rounded-[22px] bg-white p-8" style={{ boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 0 0 5px #f7f7f7' }}>
       <SectionHeader icon={HandCoins} title={libelles.titre} />
       <p className="text-xs text-muted-foreground -mt-4 mb-5">
         {libelles.description}
       </p>
 
-      <div className="rounded-lg bg-[#006064]/5 p-5">
+      <div className="rounded-lg bg-[#0d1b1e]/[0.04] p-5">
 
       {creances.length > 0 && (
         <div className="space-y-3 mb-5">
@@ -319,7 +319,7 @@ export function CreancesEntreEpouxSection({ contexte = 'mariage' }: CreancesEntr
               onClick={handleSubmit}
               disabled={!peutSoumettre || saving}
               className="text-white hover:opacity-90"
-              style={{ backgroundColor: '#006064' }}
+              style={{ backgroundColor: '#0d1b1e' }}
             >
               {saving ? 'Enregistrement...' : 'Ajouter la créance'}
             </Button>

@@ -61,7 +61,7 @@ function MemberCard({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex items-center gap-2.5 rounded-md border px-3 h-[54px] w-[210px] shrink-0 text-left transition-shadow duration-200 shadow-sm hover:shadow-md",
+        "flex items-center gap-2.5 rounded-xl border px-3 h-[54px] w-[210px] shrink-0 text-left transition-shadow duration-200 shadow-sm hover:shadow-md",
         isMe ? "bg-primary/5 border-primary/20" : "bg-card border-border",
         FOCUS_RING
       )}
@@ -95,7 +95,7 @@ function AddMemberCard({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       aria-label="Ajouter un membre de la famille"
       className={cn(
-        "flex items-center justify-center gap-2 rounded-md px-3 h-[54px] w-[210px] shrink-0 border border-dashed border-border text-muted-foreground transition-colors duration-200 hover:bg-muted/50",
+        "flex items-center justify-center gap-2 rounded-xl px-3 h-[54px] w-[210px] shrink-0 border border-dashed border-border text-muted-foreground transition-colors duration-200 hover:bg-muted/50",
         FOCUS_RING
       )}
     >

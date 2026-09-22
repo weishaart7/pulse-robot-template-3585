@@ -54,7 +54,7 @@ export const QualificationRegimeOptions: React.FC<QualificationRegimeOptionsProp
         >
           Sélectionner les biens
           {selectedAssets.length > 0 && (
-            <span className="ml-1.5 px-1.5 py-0.5 bg-[#006064]/10 text-[#006064] rounded-full text-[10px]">
+            <span className="ml-1.5 px-1.5 py-0.5 bg-[#0d1b1e]/10 text-[#0d1b1e] rounded-full text-[10px]">
               {selectedAssets.length}
             </span>
           )}

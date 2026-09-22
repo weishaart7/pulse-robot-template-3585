@@ -273,7 +273,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                   {index > 0 && <BreadcrumbSeparator />}
                   <BreadcrumbItem className="shrink-0">
                     {activeSection === section.id ? (
-                      <BreadcrumbPage className="inline-flex items-center gap-1.5 text-[#006064] font-medium">
+                      <BreadcrumbPage className="inline-flex items-center gap-1.5 text-[#0d1b1e] font-medium">
                         <section.icon className="h-3.5 w-3.5" />
                         {section.label}
                       </BreadcrumbPage>
@@ -300,10 +300,10 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
         {relationStatus === "Marié(e)" && (
           <>
             {activeSection === 'informations-generales' && (
-              <div className="rounded-xl border border-border bg-card p-8 space-y-10">
+              <div className="rounded-[22px] bg-white p-8 space-y-10" style={{ boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 0 0 5px #f7f7f7' }}>
                 <div>
                   <SectionHeader icon={Heart} title="Date & lieu" />
-                  <div className="rounded-lg bg-[#006064]/5 p-5">
+                  <div className="rounded-lg bg-[#0d1b1e]/[0.04] p-5">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <FormField
                         control={form.control}
@@ -348,7 +348,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
 
                 <div>
                   <SectionHeader icon={FileText} title="Régime matrimonial" />
-                  <div className="rounded-lg bg-[#006064]/5 p-5">
+                  <div className="rounded-lg bg-[#0d1b1e]/[0.04] p-5">
                     <FormField
                       control={form.control}
                       name="regimeMatrimonial"
@@ -440,10 +440,10 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
             )}
 
             {activeSection === 'donation' && (
-              <div className="rounded-xl border border-border bg-card p-8 space-y-10">
+              <div className="rounded-[22px] bg-white p-8 space-y-10" style={{ boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 0 0 5px #f7f7f7' }}>
                 <div>
                   <SectionHeader icon={Gift} title="Donation consentie au conjoint" />
-                  <div className="rounded-lg bg-[#006064]/5 p-5">
+                  <div className="rounded-lg bg-[#0d1b1e]/[0.04] p-5">
                     <div className="flex flex-wrap items-center gap-6">
                       <FormField
                         control={form.control}
@@ -483,7 +483,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
 
                 <div>
                   <SectionHeader icon={Gift} title="Donation reçue du conjoint" />
-                  <div className="rounded-lg bg-[#006064]/5 p-5">
+                  <div className="rounded-lg bg-[#0d1b1e]/[0.04] p-5">
                     <div className="flex flex-wrap items-center gap-6">
                       <FormField
                         control={form.control}
@@ -522,7 +522,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
             )}
 
             {activeSection === 'historique' && (
-              <div className="rounded-xl border border-border bg-card p-8 space-y-10">
+              <div className="rounded-[22px] bg-white p-8 space-y-10" style={{ boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 0 0 5px #f7f7f7' }}>
                 {[
                   { title: "Votre mariage précédent", flag: "mariagePrecedentPersonne" as const, annees: "dureeMariagePrecedentPersonneAnnees" as const, mois: "dureeMariagePrecedentPersonneMois" as const, label: "J'ai été marié(e) précédemment" },
                   { title: "Mariage précédent du conjoint", flag: "mariagePrecedentConjoint" as const, annees: "dureeMariagePrecedentConjointAnnees" as const, mois: "dureeMariagePrecedentConjointMois" as const, label: "Mon conjoint a été marié(e) précédemment" },
@@ -531,7 +531,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                   {index > 0 && <Separator />}
                   <div>
                     <SectionHeader icon={History} title={cfg.title} />
-                    <div className="rounded-lg bg-[#006064]/5 p-5">
+                    <div className="rounded-lg bg-[#0d1b1e]/[0.04] p-5">
                       <FormField
                         control={form.control}
                         name={cfg.flag}
@@ -597,9 +597,9 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
         {/* PACS */}
         {relationStatus === "Pacsé(e)" && (
           <Fragment>
-          <div className="rounded-xl border border-border bg-card p-8">
+          <div className="rounded-[22px] bg-white p-8" style={{ boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 0 0 5px #f7f7f7' }}>
             <SectionHeader icon={Heart} title="Convention" />
-            <div className="rounded-lg bg-[#006064]/5 p-5">
+            <div className="rounded-lg bg-[#0d1b1e]/[0.04] p-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <FormField
                   control={form.control}
@@ -660,9 +660,9 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
 
         {/* CONCUBINAGE */}
         {relationStatus === "Concubinage" && (
-          <div className="rounded-xl border border-border bg-card p-8">
+          <div className="rounded-[22px] bg-white p-8" style={{ boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 0 0 5px #f7f7f7' }}>
             <SectionHeader icon={Heart} title="Concubinage" />
-            <div className="rounded-lg bg-[#006064]/5 p-5">
+            <div className="rounded-lg bg-[#0d1b1e]/[0.04] p-5">
               <p className="text-sm text-muted-foreground">
                 Le concubinage est une union de fait, caractérisée par une vie commune présentant un caractère de stabilité et de continuité.
               </p>
@@ -674,12 +674,12 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
             base (cf. "Option A" dans relationInfoPayload.ts : rien n'est effacé au changement de
             statut) mais jusqu'ici jamais affichées pour ces deux statuts. */}
         {(relationStatus === "Divorcé(e)" || relationStatus === "Veuf/Veuve") && (
-          <div className="rounded-xl border border-border bg-card p-8">
+          <div className="rounded-[22px] bg-white p-8" style={{ boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 0 0 5px #f7f7f7' }}>
             <SectionHeader
               icon={History}
               title={relationStatus === "Divorcé(e)" ? "Régime applicable au mariage dissous" : "Régime applicable au mariage"}
             />
-            <div className="rounded-lg bg-[#006064]/5 p-5">
+            <div className="rounded-lg bg-[#0d1b1e]/[0.04] p-5">
             {maritalData?.regime_matrimonial || maritalData?.date_mariage ? (
               <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 {maritalData.regime_matrimonial && (
@@ -743,7 +743,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
             disabled={saving}
             size="lg"
             className="min-w-[160px] text-white hover:opacity-90"
-            style={{ backgroundColor: '#006064' }}
+            style={{ backgroundColor: '#0d1b1e' }}
           >
             {saving ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enregistrement...</>) : 'Enregistrer'}
           </Button>

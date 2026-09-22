@@ -116,7 +116,7 @@ export const LiensFamiliauxForm = forwardRef<LiensFamiliauxFormHandle, LiensFami
       </div>;
   }
   return <div className="space-y-6">
-      <div className="rounded-3xl border bg-card shadow-sm p-6">
+      <div className="rounded-[22px] bg-white p-6" style={{ boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 0 0 5px #f7f7f7' }}>
         <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">
           Arbre familial
         </p>
@@ -131,7 +131,7 @@ export const LiensFamiliauxForm = forwardRef<LiensFamiliauxFormHandle, LiensFami
         />
       </div>
 
-      <Card>
+      <Card className="rounded-[22px] border-none" style={{ boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 0 0 5px #f7f7f7' }}>
           <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
             <CardTitle className="flex items-center gap-2 text-lg">
               <span>Membres de la famille</span>

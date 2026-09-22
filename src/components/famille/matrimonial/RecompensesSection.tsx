@@ -139,13 +139,13 @@ export function RecompensesSection() {
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card p-8">
+    <div className="rounded-[22px] bg-white p-8" style={{ boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 0 0 5px #f7f7f7' }}>
       <SectionHeader icon={Scale} title="Récompenses" />
       <p className="text-xs text-muted-foreground -mt-4 mb-5">
         Mouvements de valeur entre un patrimoine propre et la masse commune (art. 1468 à 1478 C. civ.), à régler à la liquidation.
       </p>
 
-      <div className="rounded-lg bg-[#006064]/5 p-5">
+      <div className="rounded-lg bg-[#0d1b1e]/[0.04] p-5">
 
       {recompenses.length > 0 && (
         <div className="space-y-3 mb-5">
@@ -370,7 +370,7 @@ export function RecompensesSection() {
               onClick={handleSubmit}
               disabled={!peutSoumettre || saving}
               className="text-white hover:opacity-90"
-              style={{ backgroundColor: '#006064' }}
+              style={{ backgroundColor: '#0d1b1e' }}
             >
               {saving ? 'Enregistrement...' : 'Ajouter la récompense'}
             </Button>
