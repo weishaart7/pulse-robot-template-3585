@@ -247,7 +247,6 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
       'financement_mixte_apport_propre', 'valeur_acquisition', 'frais_acquisition',
     ];
     const recompute = (value: any) => {
-      const qualificationPrecedente = form.getValues('qualification_bien');
       const { qualification, raison } = qualifierBien({
         statutCouple: maritalContext.statutCouple,
         regimeMatrimonial: maritalContext.regimeMatrimonial,
@@ -275,24 +274,48 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
 
       // "Le couple" comme détenteur n'a de sens que pour un bien commun (50/50
       // fixé par la loi) — jamais pour "Bien propre"/"Bien personnel" (100/0
-      // binaire, cf. getPartSuccessorale). On ne réagit qu'à une transition
-      // réelle vers cet état (et non à chaque recalcul qui le confirme). Si
-      // "Le couple" était sélectionné, la combinaison est invalide en base et
-      // doit être vidée (cf. incident du 2026-07-18 — pourcentages saisis mais
-      // silencieusement ignorés par le calcul de succession) ; un détenteur
-      // individuel déjà renseigné est laissé tel quel (qualifierBien() ne
-      // déduit "qui" pour aucun des cas menant à "Bien propre"/"Bien
-      // personnel"). DetenteurFields explique pourquoi "Le couple" n'est plus
-      // proposé.
-      const devientProprePersonnel =
-        (qualification === 'Bien propre' || qualification === 'Bien personnel') &&
-        qualificationPrecedente !== qualification;
-      if (devientProprePersonnel) {
-        if (value.detenteur === 'Le couple') {
+      // binaire, cf. getPartSuccessorale). Vérifié à chaque recalcul (pas
+      // seulement sur une transition de qualification) : sous régime légal,
+      // le détenteur n'entre pas dans qualifierBien(), donc changer le
+      // détenteur seul ne produit aucune transition de qualification alors
+      // que la combinaison peut devenir invalide. Si "Le couple" est
+      // sélectionné pour un bien propre/personnel, la combinaison est
+      // invalide en base et doit être vidée (cf. incident du 2026-07-18 —
+      // pourcentages saisis mais silencieusement ignorés par le calcul de
+      // succession). DetenteurFields explique pourquoi "Le couple" n'est plus
+      // proposé dans ce cas.
+      // Différé au tick suivant : un setValue('detenteur', ...) appelé de façon
+      // synchrone et réentrante depuis le watch() du champ `detenteur`
+      // lui-même (ce recompute est déclenché par ce même champ) met bien à
+      // jour la valeur interne du formulaire, mais pas le rendu du Controller
+      // qui pilote le <Select> — l'utilisateur voit alors son ancien choix
+      // affiché alors que la valeur réelle a changé (constaté en test manuel
+      // le 2026-09-22). Un setTimeout(0) sort de ce cycle de rendu en cours et
+      // laisse le Controller se resynchroniser normalement.
+      if ((qualification === 'Bien propre' || qualification === 'Bien personnel') && value.detenteur === 'Le couple') {
+        setTimeout(() => {
           form.setValue('detenteur', '');
           form.setValue('pourcentage_utilisateur', undefined);
           form.setValue('pourcentage_conjoint', undefined);
-        }
+        }, 0);
+      }
+
+      // Symétriquement, un détenteur individuel n'a de sens que pour un bien
+      // propre/personnel — jamais pour "Bien commun" (50/50 fixé par la loi,
+      // cf. getPartSuccessorale qui ignore detenteur/pourcentages dès que la
+      // qualification est "Bien commun"). Même raisonnement : vérifié à
+      // chaque recalcul, pas seulement sur transition, sinon choisir un
+      // détenteur individuel sur un bien déjà (et resté) "Bien commun" sous
+      // régime légal ne serait jamais corrigé.
+      const detenteurIndividuel =
+        value.detenteur === familyData.userFirstName || value.detenteur === 'Vous' ||
+        value.detenteur === familyData.partnerFirstName || value.detenteur === 'Conjoint';
+      if (qualification === 'Bien commun' && detenteurIndividuel) {
+        setTimeout(() => {
+          form.setValue('detenteur', 'Le couple');
+          form.setValue('pourcentage_utilisateur', 50);
+          form.setValue('pourcentage_conjoint', 50);
+        }, 0);
       }
     };
 
@@ -310,7 +333,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
       recompute(value);
     });
     return () => subscription.unsubscribe();
-  }, [form, maritalContext, asset?.id]);
+  }, [form, maritalContext, asset?.id, familyData]);
 
   // Auto-adjust percentages when detenteur changes, and auto-set origine for NP
   useEffect(() => {

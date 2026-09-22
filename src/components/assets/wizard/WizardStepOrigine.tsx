@@ -47,6 +47,7 @@ export const WizardStepOrigine: React.FC<WizardStepOrigineProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <DetenteurFields form={form} detenteurOptions={detenteurOptions} />
+        <QualificationFields form={form} qualificationRaison={qualificationRaison} />
       </div>
 
       <IndivisairesFields
@@ -55,8 +56,6 @@ export const WizardStepOrigine: React.FC<WizardStepOrigineProps> = ({
         indivisaires={indivisaires}
         setIndivisaires={setIndivisaires}
       />
-
-      <QualificationFields form={form} qualificationRaison={qualificationRaison} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <QuotePartFields form={form} familyData={familyData} />

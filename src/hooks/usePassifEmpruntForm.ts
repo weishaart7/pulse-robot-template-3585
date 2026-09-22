@@ -213,19 +213,44 @@ export const usePassifEmpruntForm = ({
 
   // "Le couple" (commun, 50/50 fixé par la loi) n'a de sens que si la
   // qualification n'est pas "Bien propre"/"Bien personnel" — même garde-fou
-  // que useAssetForm.ts (cf. incident du 2026-07-18).
+  // que useAssetForm.ts (cf. incident du 2026-07-18). Symétriquement, un
+  // détenteur individuel n'a de sens que hors "Bien commun" : sans cette
+  // correction, la combinaison qualification "Bien commun" + detenteur
+  // individuel + 100/0 serait enregistrée en base.
+  //
+  // Le setValue('detenteur', ...) ci-dessous est différé (setTimeout 0) : ce
+  // watch est lui-même déclenché en cascade réentrante par un changement de
+  // `detenteur` (cf. l'effet d'auto-qualification ci-dessus, qui écrit
+  // qualification_bien en réaction à detenteur). Un setValue('detenteur', ...)
+  // synchrone à ce stade met à jour la valeur interne du formulaire mais pas
+  // le rendu du Controller qui pilote le <Select> "Détenteur" — constaté en
+  // test manuel le 2026-09-22 sur useAssetForm.ts, même symptôme ici.
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name !== 'qualification_bien') return;
       const invalidPourCouple = value.qualification_bien === 'Bien propre' || value.qualification_bien === 'Bien personnel';
       if (invalidPourCouple && value.detenteur === 'Le couple') {
-        form.setValue('detenteur', '');
-        form.setValue('pourcentage_utilisateur', undefined);
-        form.setValue('pourcentage_conjoint', undefined);
+        setTimeout(() => {
+          form.setValue('detenteur', '');
+          form.setValue('pourcentage_utilisateur', undefined);
+          form.setValue('pourcentage_conjoint', undefined);
+        }, 0);
+        return;
+      }
+
+      const detenteurIndividuel =
+        value.detenteur === familyData.userFirstName || value.detenteur === 'Vous' ||
+        value.detenteur === familyData.partnerFirstName || value.detenteur === 'Conjoint';
+      if (value.qualification_bien === 'Bien commun' && detenteurIndividuel) {
+        setTimeout(() => {
+          form.setValue('detenteur', 'Le couple');
+          form.setValue('pourcentage_utilisateur', 50);
+          form.setValue('pourcentage_conjoint', 50);
+        }, 0);
       }
     });
     return () => subscription.unsubscribe();
-  }, [form]);
+  }, [form, familyData]);
 
   const handleSubmit = async (values: PassifEmpruntFormValues) => {
     setIsLoading(true);
