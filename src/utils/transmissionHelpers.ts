@@ -62,6 +62,10 @@ export interface LiberaliteRow {
   clauses?: string[] | null;
   montant_rapport_forfaitaire?: number | null;
   generation_intermediaire_id?: string | null;
+  // "Dons familiaux de sommes d'argent" (DonationForm.tsx::naturesOptions) déclenche
+  // l'exonération dédiée art. 790 G CGI (31 865€, cumulable avec l'abattement général) —
+  // cf. lib/transmission/index.ts::dmtgDonations, lib/dmtg/recall.ts.
+  nature?: string | null;
 }
 
 interface AssetValeur {
@@ -145,7 +149,8 @@ export function buildTransmissionLiberalites(
       beneficiaireName: row.beneficiaire_nom,
       clauses: row.clauses || undefined,
       montantRapportForfaitaire: row.montant_rapport_forfaitaire ?? undefined,
-      generationIntermediaireId: row.generation_intermediaire_id || undefined
+      generationIntermediaireId: row.generation_intermediaire_id || undefined,
+      nature: row.nature || undefined
     });
   }
 

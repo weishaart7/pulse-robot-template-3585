@@ -782,7 +782,13 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       date: l.date,
       donorId: family.decedentId,
       doneeId: l.beneficiaireId,
-      valeurDon: l.valeur
+      valeurDon: l.valeur,
+      // Don familial de sommes d'argent (art. 790 G CGI) : exonération
+      // dédiée de 31 865€ (params.abattements.don_790G), cumulable avec et
+      // distincte de l'abattement général en ligne directe — cf. recall.ts,
+      // branche `type === 'familiale_790G'`. Valeur de `nature` alignée sur
+      // l'option "Dons familiaux de sommes d'argent" de DonationForm.tsx.
+      type: l.nature === 'Dons familiaux de sommes d\'argent' ? 'familiale_790G' as const : undefined
     }));
 
   const dmtgResult = computeDMTG({
@@ -810,12 +816,17 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   const fraisNotaireTotal = notaryFeesResult.frais + deboursMontant;
 
   // 10. Transmission nette = Patrimoine net - droits DMTG réels - frais de
-  // notaire (émoluments + débours). L'AV n'est plus à soustraire séparément
-  // depuis que buildPatrimonySnapshot exclut déjà les contrats AV de
-  // `biensExistants` en amont (cf. décision du 2026-07-18) : la resoustraire
-  // ici la compterait deux fois.
+  // notaire (émoluments + débours) + capital AV net hors succession. L'AV
+  // n'est plus à soustraire séparément depuis que buildPatrimonySnapshot
+  // exclut déjà les contrats AV de `biensExistants` en amont (cf. décision
+  // du 2026-07-18) : la resoustraire ici la compterait deux fois — mais son
+  // capital net (capitalBrut - prélèvement 990I, cf. dmtg/assurance-vie.ts)
+  // doit bien être rajouté, sans quoi la transmission nette globale ignore
+  // entièrement l'assurance-vie (cf. décision du 2026-07-17, revue depuis).
   const patrimoineNet = patrimony.biensExistants - patrimony.passifs;
-  const transmissionNette = patrimoineNet - dmtgResult.totals.droitsTotaux - fraisNotaireTotal;
+  const capitalAVNetTotal = Object.values(dmtgResult.perBeneficiary)
+    .reduce((sum, b) => sum + (b.capitalAVNet || 0), 0);
+  const transmissionNette = patrimoineNet + capitalAVNetTotal - dmtgResult.totals.droitsTotaux - fraisNotaireTotal;
 
   // 11. Répartition nette par héritier (droits DMTG + frais de notaire +
   // droit de partage, prorata part civile) : source unique de vérité pour
@@ -826,8 +837,11 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       nom: h.nom,
       lien: h.lien,
       baseApresFrais: dmtgResult.perBeneficiary[h.personId]?.baseApresFrais || 0,
-      droitsTotaux: dmtgResult.perBeneficiary[h.personId]?.droitsTotaux || 0,
-      typeQuotePart: h.typeQuotePart
+      // droitsHorsAV (PAS droitsTotaux) : le 990I porte sur le capital AV,
+      // déjà déduit une fois dans capitalAVNet ci-dessous — cf. netBreakdown.ts.
+      droitsTotaux: dmtgResult.perBeneficiary[h.personId]?.droitsHorsAV || 0,
+      typeQuotePart: h.typeQuotePart,
+      capitalAVNet: dmtgResult.perBeneficiary[h.personId]?.capitalAVNet || 0
     })),
     {
       actifBrut: patrimony.biensExistants,

@@ -272,7 +272,7 @@ describe('Golden Scenarios — Transmission (docs/Golden_Scenarios_Transmission.
       expect(resultAvecAV.dmtg.totals.prelev990I).toBeCloseTo(19500, 0);
     });
 
-    it('transmissionNette ne soustrait pas l\'assurance-vie deux fois : le contrat AV (250 000€) est exclu de biensExistants par buildPatrimonySnapshot, donc pas à retrancher une seconde fois dans transmissionNette', () => {
+    it('transmissionNette compte l\'assurance-vie une seule fois : exclue de biensExistants par buildPatrimonySnapshot (jamais dans l\'assiette civile), puis son capital net (capitalBrut - prélèvement 990I) rajouté une seule fois au niveau global', () => {
       // Même patrimoine que le reste du scénario 3, plus un vrai bien AV dans
       // rawAssets (pas seulement le total informatif du 3e argument) — pour
       // exercer réellement l'exclusion de buildPatrimonySnapshot, pas
@@ -314,20 +314,56 @@ describe('Golden Scenarios — Transmission (docs/Golden_Scenarios_Transmission.
 
       // Calcul à la main : masse civile hors AV (déjà exclue par
       // buildPatrimonySnapshot) − passifs − droits DMTG (hors AV, dmtgAssets
-      // l'exclut aussi) − frais de notaire. Aucun terme AV supplémentaire —
-      // ni la valeur du contrat, ni son prélèvement 990I, ne doivent
-      // apparaître dans cette soustraction.
+      // l'exclut aussi) − frais de notaire, PLUS le capital AV net hors
+      // succession (capitalBrut 250 000€ − prélèvement 990I 19 500€, cf. test
+      // précédent) rajouté une seule fois.
       const patrimoineNetAttendu = patrimonyWithAV.biensExistants - patrimonyWithAV.passifs;
-      const transmissionNetteAttendue = patrimoineNetAttendu - resultAvecAV.dmtg.totals.droitsTotaux - resultAvecAV.fraisNotaire;
+      const capitalAVNetAttendu = 250000 - 19500;
+      const transmissionNetteAttendue =
+        patrimoineNetAttendu + capitalAVNetAttendu - resultAvecAV.dmtg.totals.droitsTotaux - resultAvecAV.fraisNotaire;
 
       expect(resultAvecAV.transmissionNette).toBeCloseTo(transmissionNetteAttendue, 0);
 
-      // Contrôle négatif : si l'AV était encore soustraite en plus (régression
-      // du bug de double-comptage), l'écart serait exactement 250 000€.
-      expect(Math.abs(resultAvecAV.transmissionNette - (transmissionNetteAttendue - 250000))).toBeGreaterThan(1000);
+      // Contrôle négatif : si l'AV était comptée deux fois (régression du bug
+      // de double-comptage), l'écart serait exactement 250 000€ (valeur du
+      // contrat) au-delà de transmissionNetteAttendue.
+      expect(Math.abs(resultAvecAV.transmissionNette - (transmissionNetteAttendue + 250000))).toBeGreaterThan(1000);
     });
 
-    it.todo('netARecevoir final (succession nette + AV nette) par héritier — cf. limitation 2');
+    it('netARecevoir final (succession nette + AV nette) par héritier : enfant1 reçoit sa part successorale nette + 230 500€ d\'AV nette, les autres héritiers n\'ont que leur part successorale', () => {
+      const avContracts = buildAVContracts(
+        [{
+          assetId: 'av1',
+          nature: "Contrat d'assurance-vie",
+          label: 'Contrat AV',
+          valeurEstimee: 250000,
+          operations: [{ type_operation: 'versement', montant: 250000, date_operation: '2015-01-01' }],
+          clauseBeneficiaireStructuree: { niveaux: [{ beneficiaires: [{ familyLinkId: 'enfant1', pourcentage: 100 }] }] }
+        }],
+        '1970-01-01',
+        family
+      );
+
+      const resultAvecAV = computeTransmission({
+        family,
+        patrimony,
+        liberalites: [],
+        params: buildParams(),
+        conjointOption: 'usufruit_total',
+        referenceDate: '2026-07-17',
+        rawAssets,
+        avContracts
+      });
+
+      const enfant1 = resultAvecAV.netBreakdown.heirs.find(h => h.personId === 'enfant1')!;
+      const enfant2 = resultAvecAV.netBreakdown.heirs.find(h => h.personId === 'enfant2')!;
+      const conjoint = resultAvecAV.netBreakdown.heirs.find(h => h.personId === 'conjoint')!;
+
+      expect(enfant1.capitalAVNet).toBeCloseTo(230500, 0);
+      expect(enfant2.capitalAVNet).toBe(0);
+      expect(conjoint.capitalAVNet).toBe(0);
+      expect(enfant1.netARecevoir - enfant2.netARecevoir).toBeCloseTo(230500, 0);
+    });
   });
 
   describe('Scénario 4 — Séparation de biens, enfant unique, conjoint usufruit (55 ans)', () => {

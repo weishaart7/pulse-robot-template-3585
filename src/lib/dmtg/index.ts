@@ -94,6 +94,7 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
 
     const prelev990I = avResult.perBeneficiary[benId]?.prelev990I || 0;
     const droitsTotaux = taxResult.taxe + prelev990I;
+    const capitalBrutAV = avResult.perBeneficiary[benId]?.capitalBrut || 0;
 
     totalDroitsHorsAV += taxResult.taxe;
     totalPrelev990I += prelev990I;
@@ -110,6 +111,7 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
       prelev990I: Math.round(prelev990I),
       reintegration757B: Math.round(reintegration757B),
       droitsTotaux: Math.round(droitsTotaux),
+      capitalAVNet: Math.round(capitalBrutAV - prelev990I),
       notes: [
         ...assetValuations.lignes.filter(l => l.assetId.includes(benId)).flatMap(l => l.justifs),
         ...avResult.notes.filter(note => note.includes(benId))

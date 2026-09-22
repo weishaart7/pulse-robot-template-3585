@@ -171,7 +171,7 @@ export interface ProgressiveTaxResult {
 }
 
 export interface AssuranceVieResult {
-  perBeneficiary: Record<string, { prelev990I: Money; reintegration757B: Money }>;
+  perBeneficiary: Record<string, { prelev990I: Money; reintegration757B: Money; capitalBrut: Money }>;
   notes: string[];
 }
 
@@ -190,6 +190,11 @@ export interface DMTGBeneficiaryResult {
   prelev990I: Money;
   reintegration757B: Money;
   droitsTotaux: Money; // droitsHorsAV + prelev990I (hors 757B, déjà intégré dans base)
+  // Capital AV net hors succession = capitalBrut - prelev990I (le 757B n'est
+  // pas retranché ici : cette part est déjà réintégrée dans baseHorsAV/la
+  // succession classique, cf. dmtg/assurance-vie.ts — le retrancher ici la
+  // compterait une seconde fois). Alimente netBreakdown.ts::NetPerHeirInput.
+  capitalAVNet: Money;
   netARecevoir?: Money; // optionnel si on veut
   notes: string[];
 }

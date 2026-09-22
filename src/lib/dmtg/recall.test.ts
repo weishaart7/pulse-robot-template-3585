@@ -101,3 +101,43 @@ describe('droits totaux frère/sœur — chaînage abattement + barème (mécani
     expect(computeDroits(false)).toBe(35388);
   });
 });
+
+describe('computeRecallAndAllowances — don familial de sommes d\'argent (art. 790 G CGI)', () => {
+  const enfant: Beneficiary = { id: 'enfant', lien: 'enfant' };
+
+  it('don de 42 000€ (> 31 865€) : la fraction exonérée (31 865€) ne consomme jamais l\'abattement général, mais l\'excédent (10 135€) le consomme comme une donation ordinaire — abattement résiduel = 100 000 − 10 135 = 89 865€', () => {
+    const result = computeRecallAndAllowances({
+      beneficiary: enfant,
+      donations15y: [{ id: 'd1', date: '2025-01-13', donorId: 'defunt', doneeId: 'enfant', valeurDon: 42000, type: 'familiale_790G' }],
+      params,
+    });
+
+    expect(result.allowanceGeneralResidual).toBe(89865);
+    expect(result.consumedBracketsAmount).toBe(0);
+  });
+
+  it('don de 20 000€ (< 31 865€) : intégralement exonéré, abattement général intact à 100 000€', () => {
+    const result = computeRecallAndAllowances({
+      beneficiary: enfant,
+      donations15y: [{ id: 'd1', date: '2025-01-13', donorId: 'defunt', doneeId: 'enfant', valeurDon: 20000, type: 'familiale_790G' }],
+      params,
+    });
+
+    expect(result.allowanceGeneralResidual).toBe(100000);
+    expect(result.consumedBracketsAmount).toBe(0);
+  });
+
+  it('don de 42 000€ suivi d\'une donation ordinaire de 95 000€ : l\'excédent 790G (10 135€) est bien consommé en premier, donc seuls 89 865€ d\'abattement restent pour la 2e donation (5 135€ imposables)', () => {
+    const result = computeRecallAndAllowances({
+      beneficiary: enfant,
+      donations15y: [
+        { id: 'd1', date: '2025-01-13', donorId: 'defunt', doneeId: 'enfant', valeurDon: 42000, type: 'familiale_790G' },
+        { id: 'd2', date: '2025-06-01', donorId: 'defunt', doneeId: 'enfant', valeurDon: 95000, type: 'simple' }
+      ],
+      params,
+    });
+
+    expect(result.allowanceGeneralResidual).toBe(0);
+    expect(result.consumedBracketsAmount).toBe(5135);
+  });
+});

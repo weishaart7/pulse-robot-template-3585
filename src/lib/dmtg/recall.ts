@@ -75,18 +75,20 @@ export function computeRecallAndAllowances(input: {
   for (const donation of donations15y) {
     const valeurDon = donation.valeurDon;
     
-    // Donations 790G (familiales) : abattement séparé, ne consomme pas l'abattement général
-    if (donation.type === 'familiale_790G') {
-      const abattement790G = params.abattements.don_790G;
-      const imposable790G = Math.max(0, valeurDon - abattement790G);
-      consumedBracketsAmount += imposable790G;
-      continue;
-    }
+    // Donations 790G (familiales) : exonération dédiée de 31 865€, cumulable
+    // avec l'abattement général mais pas superposable — seule la fraction du
+    // don qui EXCÈDE cette exonération est un don ordinaire, qui consomme
+    // l'abattement général exactement comme n'importe quelle autre donation
+    // (art. 790 G + art. 779 CGI : l'exonération ne dispense pas l'excédent
+    // du régime de droit commun).
+    const valeurSoumiseAbattementGeneral = donation.type === 'familiale_790G'
+      ? Math.max(0, valeurDon - params.abattements.don_790G)
+      : valeurDon;
 
     // Appliquer l'abattement général disponible
     const abattementDisponible = Math.max(0, abattementBase - abattementConsomme);
-    const abattementUtilise = Math.min(valeurDon, abattementDisponible);
-    const imposableDonation = valeurDon - abattementUtilise;
+    const abattementUtilise = Math.min(valeurSoumiseAbattementGeneral, abattementDisponible);
+    const imposableDonation = valeurSoumiseAbattementGeneral - abattementUtilise;
 
     abattementConsomme += abattementUtilise;
     consumedBracketsAmount += imposableDonation;

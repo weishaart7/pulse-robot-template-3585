@@ -7,15 +7,12 @@
  * bloc "Coûts de la succession" de l'autre), chacun avec sa propre
  * définition erronée de la quote-part.
  *
- * Portée volontairement limitée : ne couvre que le net de succession
- * (droits DMTG + frais de notaire + droit de partage). Le capital net
- * d'assurance-vie hors succession (capitalDeces − prélèvement 990 I) n'y
- * est pas encore intégré — `avContracts` reste une liste vide côté
- * transmission/index.ts, faute de table/UI pour saisir un contrat avec
- * bénéficiaire désigné (décision du 2026-07-17 : chantier de modélisation
- * séparé, pas un fix de code). Un futur ajout d'avContracts devra étendre
- * NetPerHeirInput avec un champ `capitalAVNet`, additionné après coup à
- * `netARecevoir` sans toucher au reste de cette fonction.
+ * Couvre le net de succession (droits DMTG + frais de notaire + droit de
+ * partage) ET le capital net d'assurance-vie hors succession (capitalBrut −
+ * prélèvement 990 I, cf. dmtg/assurance-vie.ts::capitalBrut et
+ * DMTGBeneficiaryResult.capitalAVNet), additionné à `netARecevoir` sans
+ * entrer dans l'assiette du droit de partage (l'AV n'est jamais dans
+ * l'indivision successorale, art. L132-12 C. assur.).
  *
  * Correction apportée au passage : le droit de partage (art. 746, 747
  * CGI) se calcule sur l'actif net partagé = actif brut − passif, PAS sur
@@ -32,13 +29,21 @@ export interface NetPerHeirInput {
    *  les frais de notaire et le droit de partage (art. 1705 CGI : au prorata de la part
    *  dans la succession, pas au prorata du net déjà taxé). */
   baseApresFrais: number;
-  /** DMTGBeneficiaryResult.droitsTotaux : droits DMTG + prélèvement 990 I déjà cumulés
-   *  pour cet héritier. */
+  /** DMTGBeneficiaryResult.droitsHorsAV : droits de succession sur la part hors AV
+   *  uniquement (PAS droitsTotaux, qui inclut le prélèvement 990I — une taxe sur le
+   *  capital AV, hors assiette de `baseApresFrais` ci-dessus ; le mélanger ici
+   *  soustrairait le 990I une seconde fois, en plus de la soustraction déjà faite
+   *  dans `capitalAVNet` ci-dessous). */
   droitsTotaux: number;
   /** HeirShare.typeQuotePart : présence d'un usufruit ou d'une nue-propriété sur CET
    *  héritier suffit à écarter le droit de partage pour TOUTE la succession (un
    *  usufruitier et un nu-propriétaire ne sont jamais en indivision l'un avec l'autre). */
   typeQuotePart?: 'pleine_propriete' | 'usufruit' | 'nue_propriete';
+  /** DMTGBeneficiaryResult.capitalAVNet : capital d'assurance-vie net hors succession
+   *  (capitalBrut - prélèvement 990I) revenant à cet héritier. Hors indivision
+   *  successorale (art. L132-12 C. assur.) : n'entre jamais dans l'assiette du droit
+   *  de partage, seulement ajouté au net final. Défaut 0 (héritier sans contrat AV). */
+  capitalAVNet?: number;
 }
 
 export interface NetPerHeirResult {
@@ -50,6 +55,8 @@ export interface NetPerHeirResult {
   fraisNotaire: number;
   droitPartage: number;
   totalCouts: number;
+  /** Capital AV net hors succession déjà additionné à `netARecevoir` (cf. NetPerHeirInput). */
+  capitalAVNet: number;
   netARecevoir: number;
   /** Part de ce net dans le total net réparti entre héritiers, en %, arrondie à 1 décimale.
    *  Par construction, la somme des percentage de tous les héritiers vaut 100 (±0.1 d'arrondi). */
@@ -60,6 +67,7 @@ export interface NetBreakdownTotals {
   droitsDMTG: number;
   fraisNotaire: number;
   droitPartage: number;
+  capitalAVNet: number;
   netTotal: number;
 }
 
@@ -123,7 +131,8 @@ export function computeNetPerHeir(
     const fraisNotaire = Math.round(params.fraisNotaireTotal * quotePart);
     const droitPartage = Math.round(droitPartageTotal * quotePart);
     const totalCouts = h.droitsTotaux + fraisNotaire + droitPartage;
-    const netARecevoir = Math.max(0, h.baseApresFrais - totalCouts);
+    const capitalAVNet = h.capitalAVNet || 0;
+    const netARecevoir = Math.max(0, h.baseApresFrais - totalCouts) + capitalAVNet;
 
     return {
       personId: h.personId,
@@ -134,6 +143,7 @@ export function computeNetPerHeir(
       fraisNotaire,
       droitPartage,
       totalCouts,
+      capitalAVNet,
       netARecevoir
     };
   });
@@ -151,6 +161,7 @@ export function computeNetPerHeir(
       droitsDMTG: result.reduce((sum, h) => sum + h.droitsDMTG, 0),
       fraisNotaire: result.reduce((sum, h) => sum + h.fraisNotaire, 0),
       droitPartage: result.reduce((sum, h) => sum + h.droitPartage, 0),
+      capitalAVNet: result.reduce((sum, h) => sum + h.capitalAVNet, 0),
       netTotal
     }
   };

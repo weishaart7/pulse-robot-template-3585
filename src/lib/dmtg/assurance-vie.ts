@@ -62,12 +62,12 @@ export function computeAssuranceVie(
   params: DmtgParams,
   deathDate: string
 ): AssuranceVieResult {
-  const perBeneficiary: Record<string, { prelev990I: number; reintegration757B: number }> = {};
+  const perBeneficiary: Record<string, { prelev990I: number; reintegration757B: number; capitalBrut: number }> = {};
   const notes: string[] = [];
 
   // Initialiser pour chaque bénéficiaire
   beneficiaries.forEach(ben => {
-    perBeneficiary[ben.id] = { prelev990I: 0, reintegration757B: 0 };
+    perBeneficiary[ben.id] = { prelev990I: 0, reintegration757B: 0, capitalBrut: 0 };
   });
 
   // Calculer la réintégration 757B globale
@@ -92,6 +92,13 @@ export function computeAssuranceVie(
     effectiveShares.forEach(share => {
       const benef = beneficiaries.find(b => b.id === share.beneficiaryId);
       if (!benef) return;
+
+      // Capital brut transmis à ce bénéficiaire sur ce contrat (quote-part
+      // effective de la valeur réelle du contrat, pas seulement des primes
+      // servant d'assiette 990I/757B) — sert à exposer le net hors succession
+      // (capitalBrut - prelev990I) à netBreakdown.ts, cf. décision du
+      // 2026-07-17 (AV absente de la transmission nette globale).
+      perBeneficiary[benef.id].capitalBrut += contract.capitalDeces * share.quotePart;
 
       // Réintégration 757B (prorata des quotes-parts effectives)
       const reintegration757B = exces757BContrat * share.quotePart;
@@ -137,6 +144,7 @@ export function computeAssuranceVie(
   Object.keys(perBeneficiary).forEach(benId => {
     perBeneficiary[benId].prelev990I = Math.round(perBeneficiary[benId].prelev990I);
     perBeneficiary[benId].reintegration757B = Math.round(perBeneficiary[benId].reintegration757B);
+    perBeneficiary[benId].capitalBrut = Math.round(perBeneficiary[benId].capitalBrut);
   });
 
   return { perBeneficiary, notes };
