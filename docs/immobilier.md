@@ -29,7 +29,7 @@ près : « Parts de SCI », seule nature à la fois immobilière et éligible au
 
 | Onglet | Composant | Rôle |
 |---|---|---|
-| Vue d'ensemble (par défaut) | [ImmobilierOverview.tsx](src/components/immobilier/ImmobilierOverview.tsx) + [FoncierFoyerSection.tsx](src/components/immobilier/FoncierFoyerSection.tsx) | KPI de portefeuille (nombre de biens, valeur totale, rentabilité brute/nette, cashflow mensuel, plus-value brute ; tous pondérés par la quote-part d'indivision du foyer, `computeQuotePart`, comme les simulateurs — sauf le nombre de biens), puis, si le foyer détient au moins un bien en location nue (`type_location === 'Location nue'`), la synthèse foncière du foyer (voir ci-dessous) |
+| Vue d'ensemble (par défaut) | [ImmobilierOverview.tsx](src/components/immobilier/ImmobilierOverview.tsx) + [FoncierFoyerSection.tsx](src/components/immobilier/FoncierFoyerSection.tsx) | KPI de portefeuille (nombre de biens, valeur totale, rentabilité brute/nette, cashflow mensuel, plus-value brute ; tous pondérés par la quote-part d'indivision du foyer, `computeQuotePart`, comme les simulateurs — sauf le nombre de biens ; valeur totale et plus-value pondérées en plus par la fraction de démembrement du bien, `getFractionDemembrement`, à l'identique du Résumé Patrimoine), puis, si le foyer détient au moins un bien en location nue (`type_location === 'Location nue'`), la synthèse foncière du foyer (voir ci-dessous) |
 | Mes biens | `ImmobilierSection.tsx` (cartes ou tableau) → [ImmobilierPropertyDetailView.tsx](src/components/immobilier/ImmobilierPropertyDetailView.tsx) ou [LMNPDetailView.tsx](src/components/immobilier/lmnp/LMNPDetailView.tsx) | Liste des biens transférés ; clic → fiche détail (infos générales/coûts/financement/location) ou vue LMNP dédiée si le bien est meublé |
 | Gestion des biens | [GestionBiensSection.tsx](src/components/immobilier/GestionBiensSection.tsx) | Vue consolidée en lecture seule : tous les revenus/charges de tous les biens transférés (pas seulement locatifs), groupés par bien, avec montant annualisé et sous-totaux + total portefeuille. Pas d'ajout/modification/suppression ici — reste le rôle du bouton « Gérer » |
 
@@ -134,6 +134,8 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
   unique `foncierFoyer.ts` → `rentabilite.ts` (jamais l'inverse), pour éviter toute dépendance circulaire.
   **Dette restante** : `ImmobilierOverview.tsx` (rentabilité,
   cashflow, plus-value brute de portefeuille) implémente toujours sa propre annualisation inline, non
+  liée à `computeAmortissement` ; `ImmobilierOverview.tsx` a en revanche été aligné sur le Résumé
+  Patrimoine pour la valeur totale et la plus-value (voir §3), sans changer cette annualisation
   partagée — une **troisième** convention de périodicité coexiste donc pour les KPI de portefeuille (à
   vérifier avant toute fusion : `rentabilite.ts` suit exactement les deux conventions réellement
   stockées en base, cf. `annualiserRevenu`/`annualiserCharge`). Le résumé fiscal existant de
@@ -334,6 +336,25 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
   ([ImmobilierOverview.tsx](src/components/immobilier/ImmobilierOverview.tsx)) — le cashflow mensuel
   traite désormais tous les biens transférés, comme la rentabilité et comme l'onglet « Gestion des
   biens » (§1).
+
+- **« Valeur totale » et « Plus-value brute » de la Vue d'ensemble ignoraient le démembrement et le
+  coût d'acquisition générique — corrigé, aligné sur le Résumé Patrimoine.** Deux écarts distincts avec
+  `usePatrimoineCalculations`/`PatrimoinePlusValues.tsx` : (1) un bien en usufruit/nue-propriété était
+  compté à sa valeur estimée pleine, alors que Patrimoine la pondère par la fraction du barème 669 CGI
+  (`getFractionDemembrement`) ; (2) le coût d'acquisition pour la plus-value ne regardait que les champs
+  immobilier détaillés (`montant_immeuble` + frais annexes), valant `0` pour un actif créé via le
+  formulaire générique Patrimoine (seuls `valeur_acquisition`/`frais_acquisition` renseignés) — toute sa
+  valeur comptait alors comme plus-value. Fix : `ImmobilierOverview.tsx` importe désormais
+  `getFractionDemembrement` (même contexte que `PatrimoinePlusValues.tsx` — `useFamilyProfile`/
+  `useMaritalStatus`/`useFamilyLinks`, `assetDemembrementService.getAllForUser()`), exclut des deux
+  totaux un bien démembré dont l'âge de l'usufruitier n'est pas calculable (même traitement que
+  Patrimoine, pas compté à sa valeur pleine), et replie le coût d'acquisition sur
+  `valeur_acquisition × fraction + frais_acquisition` (frais non pondéré, à l'identique de
+  `calculatePlusValue`) quand les champs détaillés sont vides. **Vérifié sur cas concret** (données
+  réelles, lecture seule) : résidence secondaire en usufruit à 300 000€, usufruitier de 26 ans (tranche
+  669 → 80 %) → 240 000€ au lieu de 300 000€, désormais identique aux 1 062 000€ de « Valeur totale »
+  affichés par Patrimoine pour le même périmètre de biens ; plus-value recalculée à la main
+  (20 000 + 40 000 − 8 000 − 45 500 = 6 500€) conforme à l'écran.
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
