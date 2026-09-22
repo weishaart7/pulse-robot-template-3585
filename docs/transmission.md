@@ -16,7 +16,14 @@
 > inhabituellement élevé de correctifs a été livré entre la rédaction de ces audits et ce document
 > (commits du 2026-08-05 au 2026-08-07, cf. §2) : chaque bug « bloquant » a été revérifié contre le
 > code au 2026-08-27 (lecture directe + `git log`) avant classement en §3. Les items déjà soldés sont
-> mentionnés en §2 comme décisions/corrections historiques, pas comme dette ouverte.
+> mentionnés en §2 comme décisions/corrections historiques, pas comme dette ouverte. Mis à jour le
+> 2026-09-22 : retrait complet du catalogue de clauses du contrat de mariage (préciput, attribution
+> intégrale, partage inégal, participation aux acquêts, clauses personnalisées) — `TransmissionContext.clausesData`
+> et `avantagesMatrimoniaux.ts` supprimés, `computeParticipationAcquets` retombe systématiquement sur
+> son comportement par défaut (partage par moitié, sans exclusion des biens professionnels ni
+> extension de la qualification d'acquêts). Voir
+> [docs/regimes-matrimoniaux-clauses-v1-retire.md](regimes-matrimoniaux-clauses-v1-retire.md) et
+> [docs/famille.md](famille.md) §2.
 
 ## 1. Vue d'ensemble
 
@@ -261,16 +268,18 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   réel~~ — **corrigé le 2026-08-27.** `PassifLine` porte désormais `detenteur`,
   `pourcentage_utilisateur`, `pourcentage_conjoint` ([transmissionHelpers.ts](src/utils/transmissionHelpers.ts)),
   alimentés par `buildPassifLines` depuis les colonnes déjà existantes des tables `passifs`/`emprunts`
-  (aucune migration nécessaire). `buildPatrimonySnapshot` pondère maintenant un passif `Bien propre`/
+  (aucune migration nécessaire). `buildPatrimonySnapshot` pondère un passif `Bien propre`/
   `Bien personnel`/`Indivision` via `getPartSuccessorale` (même fonction que pour les actifs) au lieu du
-  fallback `?? 1`, en appelant la nouvelle fonction `getFractionPassifParDetenteur` quand aucune clause
-  d'avantage matrimonial (`getFractionPassifAjustee`) ne s'applique déjà. Un passif `Bien commun` sans
-  clause de partage inégal, ou de qualification absente/`À qualifier`, reste déduit à 100 % — comportement
-  historique volontairement inchangé (cf. commentaire `partConjointInegal` sur `buildPatrimonySnapshot`),
-  hors périmètre de ce correctif ciblé. Vérifié sur 3 cas concrets (passif propre détenu par le
-  conjoint → 0 € déduit du défunt simulé ; détenu par l'utilisateur → 100 % déduit ; indivision 30/70 →
-  30 % déduit) ; suite de tests existante (`empruntsPassif.branchement.test.ts`,
-  `avantageMatrimonial.branchement.test.ts`, `goldenScenarios.test.ts`) toujours au vert.
+  fallback `?? 1`, via `getFractionPassifParDetenteur`. Un passif `Bien commun`, ou de qualification
+  absente/`À qualifier`, reste déduit à 100 % — comportement historique volontairement inchangé.
+  Vérifié sur 3 cas concrets (passif propre détenu par le conjoint → 0 € déduit du défunt simulé ;
+  détenu par l'utilisateur → 100 % déduit ; indivision 30/70 → 30 % déduit) ; suite de tests
+  `empruntsPassif.branchement.test.ts` toujours au vert. *(Mise à jour 2026-09-22 : le paramètre
+  `partConjointInegal`/`getFractionPassifAjustee`, qui appliquait la symétrie d'une clause de partage
+  inégal sur ce passif, a été retiré avec tout le catalogue de clauses — voir
+  [docs/regimes-matrimoniaux-clauses-v1-retire.md](regimes-matrimoniaux-clauses-v1-retire.md). Aucun
+  appelant réel ne passait de valeur non nulle pour ce paramètre, donc aucun changement de
+  comportement.)*
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
@@ -296,14 +305,13 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   d'usufruit, DUH, droit de jouissance temporaire — §2) : le conseiller voit une mention narrative dans
   les explications, mais aucun montant résultant de ces mécanismes n'entre dans le calcul du net à
   recevoir. Risque de confusion si l'utilisateur interprète la mention comme un calcul déjà intégré.
-- **Retranchement (art. 1527, avantages matrimoniaux au profit d'enfants non communs) reste une simple
-  alerte texte** ([regles.ts:199](src/lib/alertes/regles.ts)), sans calcul du montant retranchable ni
-  vérification du délai. `soumisRetranchement` (`matrimonialClauses.ts`) est déclaratif, jamais lu par
-  un moteur de calcul. Chiffrer ce mécanisme suppose de modéliser une contestation entre le conjoint
-  survivant et des enfants non communs (comparaison à la portion de l'art. 1094-1, calcul de la fraction
-  réduite) — complexité de même nature que le contentieux du divorce, hors périmètre V1 tant que l'outil
-  reste scopé aux couples toujours ensemble (cf. §4 "Participation aux acquêts en cas de divorce").
-  Confirmé comme limite acceptée le 2026-09-17.
+- *[caduc 2026-09-22]* L'alerte texte de retranchement (art. 1527, avantages matrimoniaux au profit
+  d'enfants non communs) et le catalogue de clauses dont elle dépendait (`matrimonialClauses.ts`,
+  `soumisRetranchement`) ont été retirés avec tout le catalogue de clauses — voir
+  [docs/regimes-matrimoniaux-clauses-v1-retire.md](regimes-matrimoniaux-clauses-v1-retire.md). Le
+  chiffrage de ce mécanisme (modéliser une contestation entre le conjoint survivant et des enfants
+  non communs, comparaison à la portion de l'art. 1094-1) reste une limite à traiter dans la
+  reconstruction.
 - **Droits et taxes annexes du frais de notaire non couverts** (enregistrement acte de notoriété 25 €,
   taxe de publicité foncière + contribution de sécurité immobilière 0,10 % pour l'attestation
   immobilière) : `computeNotaryFees` calcule l'émolument (correct au centime, vérifié valeur par valeur)

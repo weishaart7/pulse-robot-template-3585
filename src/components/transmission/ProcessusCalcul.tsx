@@ -24,8 +24,7 @@ import {
   buildCreancesCalcInput,
   buildParticipationAcquetsContext,
   computeAVReintegrationCivile,
-  AVDonneesInsuffisantesError,
-  parseClausesData
+  AVDonneesInsuffisantesError
 } from '@/utils/transmissionHelpers';
 import { computeTransmission, TransmissionContext } from '@/lib/transmission';
 import { FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission/types';
@@ -108,7 +107,7 @@ export const ProcessusCalcul = () => {
 
     try {
       // Assurance-vie non séparée ici : pas de régression, à traiter séparément si besoin
-      const patrimony = buildPatrimonySnapshot(assets, buildPassifLines(passifs, emprunts, 'user'), 0, null, assetDemembrements, demembrementCtx);
+      const patrimony = buildPatrimonySnapshot(assets, buildPassifLines(passifs, emprunts, 'user'), 0, assetDemembrements, demembrementCtx);
       // Répartition avant/après 70 ans à partir des vraies primes (av_operations) —
       // lève AVDonneesInsuffisantesError si un contrat n'a aucune opération
       // enregistrée ou si la date de naissance du souscripteur réel (utilisateur
@@ -120,13 +119,6 @@ export const ProcessusCalcul = () => {
         new Date().toISOString().split('T')[0],
         (maritalStatus as any)?.date_naissance_conjoint
       );
-      const clausesData = parseClausesData((maritalStatus as any)?.clauses_contrat);
-      const exclusionBiensProfessionnelsParticipation = !!clausesData['exclusion_biens_professionnels']?.enabled;
-      const partageInegalAcquetsClause = clausesData['partage_inegal_acquets'];
-      const partageInegalPctParticipation = partageInegalAcquetsClause?.enabled
-        ? partageInegalAcquetsClause.partPleineProprietee
-        : undefined;
-      const extensionQualificationAcquetsParticipation = !!clausesData['extension_qualification_acquets']?.enabled;
       // regime_matrimonial n'a de sens que sous Marié(e) : ce champ n'est
       // jamais effacé en changeant de statut (cf. RelationInfoForm.tsx), donc
       // un ex-marié devenu Pacsé/Concubin peut garder une valeur périmée.
@@ -151,11 +143,10 @@ export const ProcessusCalcul = () => {
         avReintegrationCivileMontant: computeAVReintegrationCivile(avContracts, 'spouse', regimeMatrimonialSiMarie),
         partageEnvisage: !!(maritalStatus as any)?.partage_envisage,
         duhOpte: !!(maritalStatus as any)?.duh_opte,
-        clausesData,
         regimeMatrimonial: regimeMatrimonialSiMarie,
         recompenses: buildRecompensesCalcInput(recompenses),
         creancesEntreEpoux: buildCreancesCalcInput(creancesEntreEpoux),
-        participationAcquets: buildParticipationAcquetsContext(patrimoineOriginaire, patrimoineFinal, exclusionBiensProfessionnelsParticipation, partageInegalPctParticipation, extensionQualificationAcquetsParticipation)
+        participationAcquets: buildParticipationAcquetsContext(patrimoineOriginaire, patrimoineFinal, false)
       };
       return { patrimony, transmissionResult: computeTransmission(ctx), computeErrorMessage: null, computeErrorKind: null };
     } catch (error) {

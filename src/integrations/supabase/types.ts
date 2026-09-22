@@ -1811,7 +1811,6 @@ export type Database = {
           capacite_juridique_conjoint: string
           civilite_conjoint: string | null
           clauses_contrat: Json | null
-          clauses_personnalisees: Json
           code_postal_conjoint: string | null
           convention_pacs: string | null
           created_at: string | null
@@ -1872,7 +1871,6 @@ export type Database = {
           capacite_juridique_conjoint?: string
           civilite_conjoint?: string | null
           clauses_contrat?: Json | null
-          clauses_personnalisees?: Json
           code_postal_conjoint?: string | null
           convention_pacs?: string | null
           created_at?: string | null
@@ -1933,7 +1931,6 @@ export type Database = {
           capacite_juridique_conjoint?: string
           civilite_conjoint?: string | null
           clauses_contrat?: Json | null
-          clauses_personnalisees?: Json
           code_postal_conjoint?: string | null
           convention_pacs?: string | null
           created_at?: string | null

@@ -12,9 +12,16 @@
 > (branchée sur des champs déjà retirés de l'UI), retrait de deux champs dormants
 > (`family_links.est_dirigeant`, `family_profiles.nom_jeune_fille`) — voir §3 et §5. Mis à jour le
 > 2026-09-17 (suite) : contrôle croisé des référentiels Royal Formation sur le contrat de mariage,
-> retrait de 13 clauses purement déclaratives du catalogue des clauses (voir §2 et §3). Ce document
-> reflète l'état actuel du code, pas un historique daté. Volet navigation réelle en navigateur
-> toujours non réalisé (authentification requise).
+> retrait de 13 clauses purement déclaratives du catalogue des clauses. Mis à jour le 2026-09-22 :
+> retrait complet du catalogue de clauses du contrat de mariage restant (préciput, attribution
+> intégrale, partage inégal, participation aux acquêts, clauses personnalisées) pour la V1 — seule
+> la sélection du régime matrimonial lui-même est conservée, ainsi que la désignation des biens de
+> la société d'acquêts et l'extension aux propres par nature, reclassées en mécanisme de
+> qualification de bien plutôt qu'en clause (voir §2 et
+> [docs/regimes-matrimoniaux-clauses-v1-retire.md](regimes-matrimoniaux-clauses-v1-retire.md) pour
+> le détail du retrait et la marche à suivre pour une reconstruction). Ce document reflète l'état
+> actuel du code, pas un historique daté. Volet navigation réelle en navigateur toujours non réalisé
+> (authentification requise).
 
 ## 1. Vue d'ensemble
 
@@ -30,7 +37,7 @@ lequel reposent tous les calculs montrés au client.
 | Ma famille (onglet par défaut) | `/dashboard/famille` | [FamilleSection.tsx](src/pages/famille/FamilleSection.tsx) |
 | Fiche client | vue plein écran locale (pas de route) | [FicheClientForm.tsx](src/pages/famille/components/FicheClientForm.tsx) |
 | Conjoint | `/dashboard/famille/conjoint` | [ConjointPage.tsx](src/pages/famille/ConjointPage.tsx) → [PartnerForm.tsx](src/components/famille/PartnerForm.tsx) |
-| Régime matrimonial (6 onglets) | `/dashboard/famille/situation-matrimoniale` | [SituationMatrimonialePage.tsx](src/pages/famille/SituationMatrimonialePage.tsx) → [RelationInfoForm.tsx](src/components/famille/RelationInfoForm.tsx) |
+| Régime matrimonial (5 onglets) | `/dashboard/famille/situation-matrimoniale` | [SituationMatrimonialePage.tsx](src/pages/famille/SituationMatrimonialePage.tsx) → [RelationInfoForm.tsx](src/components/famille/RelationInfoForm.tsx) |
 | Liens familiaux (onglet) | `/dashboard/famille` | [LiensFamiliauxForm.tsx](src/pages/famille/components/LiensFamiliauxForm.tsx) + [FamilyMemberFormDialog.tsx](src/components/family/FamilyMemberFormDialog.tsx) + [DynamicFamilyForm.tsx](src/components/family/DynamicFamilyForm.tsx) |
 
 **Tables Supabase** : `family_profiles`, `marital_status`, `family_links` (+ `recompenses`,
@@ -47,9 +54,12 @@ permet de l'alimenter (voir §3).
 - **Fiche client** et **Conjoint** saisissent l'identité civile de chaque membre du couple, dont
   une bonne partie de champs déclaratifs (adresse, nationalité…) qui restent aujourd'hui dormants
   (§3).
-- **Régime matrimonial** structure 6 onglets visibles seulement si `statut_couple === 'Marié(e)'`
-  (vues distinctes pour Pacsé(e)/Concubinage) : régime légal, clauses du contrat,
-  récompenses/créances, participation aux acquêts, donation au dernier vivant, historique. Pour
+- **Régime matrimonial** structure 5 onglets visibles seulement si `statut_couple === 'Marié(e)'`
+  (vues distinctes pour Pacsé(e)/Concubinage) : régime légal (avec, sous les régimes concernés, la
+  désignation des biens de la société d'acquêts et l'extension aux propres par nature — voir §2),
+  récompenses/créances, participation aux acquêts, donation au dernier vivant, historique. Le
+  catalogue de clauses du contrat (préciput, attribution intégrale, partage inégal, clauses
+  personnalisées) a été retiré en V1, voir §2. Pour
   Divorcé(e)/Veuf-Veuve, un bloc lecture seule affiche le régime de l'union dissoute (régime
   matrimonial, date/lieu, donation au dernier vivant) directement depuis les colonnes conservées en
   base — aucune édition possible, cohérent avec la politique « Option A » de
@@ -164,70 +174,35 @@ permet de l'alimenter (voir §3).
   remboursement au nominal sans mécanisme de créance (art. 1469 non applicable, confirmé par le
   document) reste hors périmètre — cohérent, aucune fonctionnalité de créance n'existe pour ce statut.
 
-- **Partage inégal de la créance de participation aux acquêts (art. 1581 C. civ.).** La clause
-  `partage_inegal_acquets` était jusqu'ici purement déclarative : le % saisi n'alimentait qu'une
-  note informative, `computeParticipationAcquets` restait figé sur un partage par moitié.
-  Câblée dans [lib/patrimoine/participationAcquets.ts](src/lib/patrimoine/participationAcquets.ts)
-  (`partCreancierPct`, défaut 50, 100 = attribution de la totalité des acquêts de l'un à l'autre).
-  Même pattern de propagation que `exclusion_biens_professionnels` : le %, résolu par chacun des 4
-  appelants (`ProcessusCalcul.tsx`, `Synthese.tsx`, `Succession2ndDeces.tsx`, `AssuranceVie.tsx`)
-  depuis `clausesData['partage_inegal_acquets']`, transite en scalaire via
-  `TransmissionContext.participationAcquets.partageInegalPct` — jamais `clausesData` en entier
-  (même raison de risque de double pondération, voir le commentaire sur ce champ dans
-  `lib/transmission/index.ts`). Champ de saisie du taux (`PartConjointInput`, `hasPercentages`
-  dans `matrimonialClauses.ts`) désormais affiché pour cette clause dans `ClauseItem.tsx`, au même
-  titre que `partage_inegal`. Décès uniquement, comme le reste du moteur de participation aux
-  acquêts (voir [docs/transmission.md](transmission.md) §4).
+- **Retrait complet du catalogue de clauses du contrat de mariage (2026-09-22).** Après le retrait
+  des 13 clauses purement déclaratives le 2026-09-17, le reste du catalogue (préciput, attribution
+  intégrale, partage inégal, partage inégal des acquêts, extension de la qualification d'acquêts,
+  exclusion des biens professionnels du calcul de la créance de participation, clauses
+  personnalisées) a été retiré à son tour pour la V1 : UI de saisie (`MatrimonialRegimeOptions.tsx`,
+  `ClauseItem.tsx`, `ClausesPersonnaliseesSection.tsx`), hooks (`useMatrimonialClauses.ts`,
+  `useCustomMatrimonialClauses.ts`), constantes (`matrimonialClauses.ts`, `customClause.ts`) et
+  moteur de calcul dédié (`avantagesMatrimoniaux.ts`, `analyseClausesTransmission.ts`,
+  `regimeChangeClauses.ts`, `TransmissionContext.clausesData`) supprimés.
+  `computeParticipationAcquets` retombe donc systématiquement sur son comportement par défaut
+  (partage par moitié de la créance, sans exclusion des biens professionnels ni extension de la
+  qualification d'acquêts) — voir [docs/transmission.md](transmission.md) §4. Détail complet du
+  catalogue retiré et marche à suivre pour une reconstruction :
+  [docs/regimes-matrimoniaux-clauses-v1-retire.md](regimes-matrimoniaux-clauses-v1-retire.md). La
+  colonne `marital_status.clauses_personnalisees` a été supprimée (aucune ligne active en base au
+  moment du retrait) ; `marital_status.clauses_contrat` est conservée, réservée aux deux clés
+  ci-dessous.
 
-- **Clause d'extension de la qualification d'acquêts (art. 1570, aménagement conventionnel).**
-  Nouvelle clause `extension_qualification_acquets` du catalogue PAA (booléenne, sans taux — à
-  distinguer de `partage_inegal_acquets` ci-dessus). Transfère l'intégralité du patrimoine
-  originaire propre des époux au profit de l'indivision : câblée dans
-  [lib/patrimoine/participationAcquets.ts](src/lib/patrimoine/participationAcquets.ts)
-  (`extensionQualificationAcquets`), le patrimoine originaire n'est alors plus déduit du calcul —
-  l'acquêt net de chaque époux devient égal à son patrimoine final dans son intégralité. Même
-  pattern de propagation scalaire que les deux clauses précédentes (résolue par les 4 appelants
-  depuis `clausesData['extension_qualification_acquets']`, jamais `clausesData` en entier). Pas de
-  champ de saisie dédié (`hasPercentages` non défini) : une simple case à cocher, comme
-  `exclusion_biens_professionnels`.
-
-- **Contrôle croisé « Contrat de mariage : clauses possibles », « Changer de régime matrimonial »,
-  « Communauté ou séparation », « Éviter la prestation compensatoire » et « Communauté réduite aux
-  acquêts » (2026-09-17), simplification V1 du catalogue de clauses.** Comparaison des référentiels
-  Royal Formation au code existant. Trois documents confirmés hors périmètre, à raison : la
-  procédure de changement de régime (homologation, délais d'opposition, coûts, fiscalité de la
-  mutation intercalaire) est une démarche juridique, pas une donnée à valoriser — l'outil ne gère
-  que la détection des clauses devenues incompatibles en cas de changement de régime *dans l'outil*
-  ([regimeChangeClauses.ts](../src/lib/patrimoine/regimeChangeClauses.ts)) ; la comparaison
-  communauté/séparation (quotité disponible spéciale entre époux, donation entre époux, cantonnement)
-  est déjà couverte côté module Transmission ; l'évitement de la prestation compensatoire par un
-  mariage à l'étranger (Allemagne) est une stratégie d'ingénierie internationale sans donnée
-  patrimoniale à modéliser, cohérente avec le retrait déjà fait des champs d'extranéité (voir
-  [docs/idees-de-cote.md](idees-de-cote.md)). La communauté réduite aux acquêts (qualification
-  propre/commun, remploi, financement mixte art. 1436) est déjà entièrement couverte par
-  [qualification.ts](../src/lib/patrimoine/qualification.ts) ; les pans non couverts (cogestion,
-  saisie par les créanciers, distinction titre/finance des parts sociales, timing des
-  stock-options) relèvent du fonctionnement du couple, pas de la valorisation ou de la dévolution —
-  non modélisés, à raison, même logique que le contrôle croisé du régime primaire ci-dessus. En
-  revanche, le référentiel des clauses de contrat de mariage a révélé que le catalogue
-  [matrimonialClauses.ts](../src/constants/matrimonialClauses.ts) était sur-couvert pour une V1 :
-  13 clauses purement déclaratives (aucun moteur ne les lit) ont été retirées de l'UI, voir §3 et
-  [docs/idees-de-cote.md](idees-de-cote.md).
-
-- **Contrôle croisé « Les différents régimes », « Séparation de biens avec société d'acquêts » (x2) et
-  « Comparaison union libre/PACS/mariage » (2026-09-17).** Aucun écart trouvé côté Famille. Le régime
-  `separation_societe_acquets` couvre déjà, par sa désignation de biens commune par bien
-  (`societeAcquetsAssetIds`, [qualification.ts](../src/lib/patrimoine/qualification.ts)), tous les cas
-  particuliers illustrés par le référentiel (société limitée aux immeubles, exclusion des biens
-  professionnels…) — ne pas désigner un bien dans la société d'acquêts suffit déjà à le laisser propre,
-  sans clause dédiée à construire. La « clause de reprise des apports » que ces documents décrivent est
-  un mécanisme de divorce (art. 265 al. 3), cohérent avec le statut purement déclaratif déjà documenté
-  de `reprise_apports` (l'outil ne modélise que le décès). Le tableau de comparaison union libre/PACS/
-  mariage (droits du survivant, abattements et taux DMTG) correspond à ce qui est déjà calculé. Un écart
-  a été trouvé mais rattaché au module Transmission plutôt que Famille (choix exercé par le conjoint au
-  moment du décès simulé, pas une donnée du contrat de mariage) : le cantonnement de l'émolument du
-  conjoint survivant (art. 1094-1 al. 2), absent du code — voir
-  [docs/transmission.md](transmission.md) §4.
+- **Société d'acquêts et extension aux propres par nature : gardées comme mécanisme de
+  qualification, pas comme clause (2026-09-22).** Ces deux entrées de l'ancien catalogue ne sont pas
+  de simples avantages matrimoniaux optionnels : `qualification.ts::qualifierBien` en a
+  structurellement besoin pour déterminer si un bien est propre ou commun — seul mécanisme
+  désignant les biens de la société d'acquêts sous `separation_societe_acquets`, seul mécanisme
+  faisant tomber un bien propre par nature (art. 1404) en commun sous un régime communautaire
+  (art. 1526). Elles restent donc éditables, dans le nouveau composant minimal
+  [QualificationRegimeOptions.tsx](../src/components/famille/matrimonial/QualificationRegimeOptions.tsx)
+  (monté dans la section « Régime matrimonial » de `RelationInfoForm.tsx`, réutilise
+  `AssetSelectionModal.tsx`), et stockées avec le même format qu'avant dans
+  `marital_status.clauses_contrat.societe_acquets` / `.extension_propres_par_nature`.
 
 ## 3. Dette identifiée
 
@@ -261,40 +236,13 @@ soldés :
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
-- **Préciput : aucun contrôle de suffisance de l'actif net commun ni de caducité (art. 1519 C. civ.).**
-  `getFractionAjustee()` ([lib/patrimoine/avantagesMatrimoniaux.ts](../src/lib/patrimoine/avantagesMatrimoniaux.ts))
-  traite le préciput comme une simple réaffectation de fraction sur le bien désigné, sans jamais
-  vérifier que l'actif net commun (après passif et récompenses/reprises) suffit à l'honorer. En droit,
-  les créanciers de la communauté priment et le préciput devient caduc (en tout ou partie) si l'actif
-  net commun est insuffisant une fois le passif et les récompenses réglés. Cas limite (communauté peu
-  fournie ou fort passif/récompenses face à un préciput important) — silencieux, aucun garde-fou ni
-  message d'alerte. Identifié le 2026-09-17, non corrigé.
-  *Piste étudiée le 2026-09-17, mise en attente* : un recalcul exact touchant `lib/transmission/index.ts`
-  n'est pas possible aujourd'hui sans chantier de données — `PatrimonySnapshot.passifs` est un solde
-  global (pas de ventilation propre/commun), donc pas de base fiable pour ajuster directement le
-  montant de succession affiché. Une alerte de conseil (non bloquante) serait réalisable sans ce
-  chantier : `assets`/`emprunts` portent déjà chacun un `qualification_bien` stocké
-  (calculé par `qualifierBien()` à la saisie, cf. `useAssetForm.ts`/`usePassifEmpruntForm.ts`),
-  suffisant pour estimer un actif net commun (Σ biens communs − Σ emprunts communs hors société) à
-  comparer à la valeur des biens préciputés, dans `lib/alertes/regles.ts` (même pattern que les
-  alertes existantes). Décision explicite : ne pas construire cette alerte maintenant — à
-  retraiter une fois les autres modules passés en revue, pour une vue d'ensemble du référentiel
-  d'alertes plutôt qu'un ajout ponctuel.
-- **Droit de reprise des apports et capitaux (art. 1525 al. 2 C. civ.) absent.** Avec une attribution
-  intégrale ou un partage inégal de la communauté, les héritiers de l'époux prédécédé peuvent, sauf
-  stipulation contraire expresse, reprendre les apports et capitaux propres par nature du défunt
-  (biens qui, sous le régime légal, lui seraient restés propres) avant application de la clause.
-  `getFractionAjustee()` applique l'attribution intégrale/le partage inégal directement, sans jamais
-  soustraire ces apports/capitaux au préalable. À ne pas confondre avec la clause `reprise_apports`
-  existante (clause alsacienne, `matrimonialClauses.ts`), qui concerne un mécanisme différent
-  (reprise au divorce, hors périmètre V1). Identifié le 2026-09-17, non corrigé.
-  *Piste étudiée le 2026-09-17, mise en attente* : même limite que ci-dessus côté calcul exact
-  (`RawAssetInput` ne transporte pas l'origine du bien, seulement sa qualification déjà résolue). Une
-  alerte de conseil serait réalisable : `assets` porte déjà `origine_actif`/`date_acquisition`/
-  `clause_remploi`/`clause_entree_communaute`, suffisant pour rejouer `qualifierBien()` en forçant le
-  régime légal (communauté réduite aux acquêts) et détecter les biens communs qui y seraient restés
-  propres, quand attribution intégrale ou partage inégal est active. Même décision de report que
-  ci-dessus.
+- *[caduc 2026-09-22]* Deux constats du 2026-09-17 sur le préciput (absence de contrôle de
+  suffisance de l'actif net commun, art. 1519 C. civ.) et l'attribution intégrale/partage inégal
+  (absence du droit de reprise des apports, art. 1525 al. 2 C. civ.) portaient sur `getFractionAjustee()`
+  (`avantagesMatrimoniaux.ts`), supprimé avec tout le catalogue de clauses ce jour — voir §2 et
+  [docs/regimes-matrimoniaux-clauses-v1-retire.md](regimes-matrimoniaux-clauses-v1-retire.md). Les
+  deux points restent pertinents pour une reconstruction en V2 (le document d'extraction les
+  reprend), mais n'ont plus d'objet dans le code actuel.
 - *[soldé 2026-09-16]* Dates de décès/naissance futures acceptées au clavier — `SmartDateInput.tsx`
   valide désormais `date <= new Date()` (comparaison de date complète) au lieu de comparer
   seulement l'année, cohérent avec le sélecteur calendrier.
@@ -322,16 +270,9 @@ soldés :
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
-- **Apport à la communauté : catalogue déclaratif déconnecté du moteur de récompenses.** La clause
-  `mise_en_communaute` (`matrimonialClauses.ts`) n'est référencée ni dans `recompensesCreances.ts`
-  ni dans `qualification.ts` — `RecompensesSection.tsx` ne la lit pas. Rien n'empêche donc de
-  saisir à tort une récompense sur un bien apporté dès l'origine du contrat de mariage, cas où aucune
-  récompense n'est due (Cass. civ. 1, 3 oct. 2019, n°18-20430 : aucun mouvement de valeur entre masses
-  ne s'est produit). Risque de saisie erronée par l'utilisateur plutôt qu'un calcul faux en soi — le
-  module Récompenses reste un registre déclaratif assumé (voir §2). Identifié le 2026-09-17, non
-  corrigé. (`modification_recompenses`, l'autre clause visée par ce constat initial, a été retirée
-  de l'UI le même jour — voir §3 « Simplification V1 » et
-  [docs/idees-de-cote.md](idees-de-cote.md).)
+- *[caduc 2026-09-22]* Constat du 2026-09-17 sur la clause `mise_en_communaute`
+  (risque de saisie erronée d'une récompense sur un bien apporté dès l'origine du contrat) : la
+  clause a été retirée avec tout le catalogue — voir §2.
 - *[soldé 2026-09-16]* Calcul d'âge divergent — `FamilleSection.tsx` calcule désormais l'âge par
   différence calendaire (même méthode que `DynamicFamilyForm.tsx`) au lieu d'une division
   approximative `/ 365.25`.
@@ -387,13 +328,18 @@ duplication sur les autres membres de la famille a été retirée).
 
 ## 4. Périmètre V1 / différé
 
-- **V1 — en place** : identité client/conjoint, statut du couple, régime matrimonial (6 onglets),
-  clauses du contrat, récompenses/créances, participation aux acquêts, donation au dernier vivant,
-  créances entre partenaires de PACS (art. 515-7 dernier al., voir §2), arbre des liens familiaux
-  avec cascade de suppression, branchement complet au moteur de succession légale (renonciation,
-  représentation, branches familiales) et aux abattements DMTG (handicap, adoption, exonération
-  frère/sœur).
+- **V1 — en place** : identité client/conjoint, statut du couple, régime matrimonial (5 onglets,
+  sans le catalogue de clauses du contrat retiré le 2026-09-22 — voir §2), désignation des biens de
+  la société d'acquêts et extension aux propres par nature, récompenses/créances, participation aux
+  acquêts, donation au dernier vivant, créances entre partenaires de PACS (art. 515-7 dernier al.,
+  voir §2), arbre des liens familiaux avec cascade de suppression, branchement complet au moteur de
+  succession légale (renonciation, représentation, branches familiales) et aux abattements DMTG
+  (handicap, adoption, exonération frère/sœur).
 - **Différé / non implémenté, sans date documentée** :
+  - Catalogue de clauses du contrat de mariage (préciput, attribution intégrale, partage inégal,
+    exclusion des biens professionnels, extension de la qualification d'acquêts, clauses
+    personnalisées) : retiré le 2026-09-22 pour la V1, reconstruction documentée dans
+    [docs/regimes-matrimoniaux-clauses-v1-retire.md](regimes-matrimoniaux-clauses-v1-retire.md).
   - Les champs restants listés en « cases dormantes » (§3) : nationalité, capacité juridique,
     mandat de protection future (client/conjoint uniquement, cf. retraits ci-dessus pour les autres
     membres). Ces champs sont dans le schéma et l'UI de saisie mais aucun moteur (fiscalité,

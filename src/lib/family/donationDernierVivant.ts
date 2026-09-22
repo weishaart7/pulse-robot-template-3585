@@ -1,15 +1,11 @@
 // Logique pure de fusion pour l'écriture centralisée des 4 colonnes de
-// donation au dernier vivant (marital_status), partagée par
-// RelationInfoForm.tsx (onglet "Donation") et useMatrimonialClauses.ts
-// (onglet "Clauses du contrat", écriture de clauses_contrat qui réembarquait
-// jusqu'ici une copie figée de la donation) via
+// donation au dernier vivant (marital_status), utilisée par
+// RelationInfoForm.tsx (onglet "Donation") via
 // useMaritalStatus().setDonationDernierVivant().
 //
 // `updates: null` signifie "je ne touche pas à la donation" : dans ce cas on
 // réécrit la valeur `fresh` (lue en base juste avant l'appel, cf.
-// useFamilyData.ts) plutôt qu'une copie locale potentiellement périmée —
-// c'est ce qui évite d'écraser silencieusement une modification faite
-// entre-temps dans l'autre onglet.
+// useFamilyData.ts) plutôt qu'une copie locale potentiellement périmée.
 
 export interface DonationDernierVivantFields {
   donation_dernier_vivant_personne?: boolean;

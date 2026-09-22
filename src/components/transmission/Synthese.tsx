@@ -22,8 +22,7 @@ import {
   computeAVReintegrationCivile,
   AVContractRawRow,
   AVDonneesInsuffisantesError,
-  LegsCaduc,
-  parseClausesData
+  LegsCaduc
 } from '@/utils/transmissionHelpers';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
@@ -50,7 +49,6 @@ export const Synthese = () => {
   const [loading, setLoading] = useState(true);
   const [transmissionResult, setTransmissionResult] = useState<any>(null);
   const [hasAssets, setHasAssets] = useState(false);
-  const [hasCustomClausesToCheck, setHasCustomClausesToCheck] = useState(false);
   const [legsCaducs, setLegsCaducs] = useState<LegsCaduc[]>([]);
   const [hasDeceasedAVBeneficiaire, setHasDeceasedAVBeneficiaire] = useState(false);
   const [hasAVContracts, setHasAVContracts] = useState(false);
@@ -91,10 +89,6 @@ export const Synthese = () => {
       const optionConjoint = (maritalStatus as any)?.option_conjoint as string | null;
       const partageEnvisage = !!(maritalStatus as any)?.partage_envisage;
       const duhOpte = !!(maritalStatus as any)?.duh_opte;
-
-      const clausesPersonnalisees = (maritalStatus as any)?.clauses_personnalisees;
-      const clausesPersonnaliseesList = Array.isArray(clausesPersonnalisees) ? clausesPersonnalisees : [];
-      setHasCustomClausesToCheck(clausesPersonnaliseesList.some((c: any) => c?.impacteCalcul === true));
 
       const { data: familyLinks } = await supabase
         .from('family_links')
@@ -224,7 +218,7 @@ export const Synthese = () => {
       );
 
       // Construire le patrimoine
-      const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], buildPassifLines(passifs, emprunts, 'user'), totalAV, null, assetDemembrements, demembrementCtx);
+      const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], buildPassifLines(passifs, emprunts, 'user'), totalAV, assetDemembrements, demembrementCtx);
 
       // Transformer les libéralités : jointure live vers assets pour la valeur
       // des legs (jamais figée en base), et exclusion des legs caducs (bien
@@ -254,13 +248,6 @@ export const Synthese = () => {
       // ET la fiscalité DMTG en interne (cf. consolidation du moteur), et renvoie
       // un résultat déjà complet (dmtg, netBreakdown, family...). Ce composant ne
       // fait plus que l'afficher.
-      const clausesData = parseClausesData((maritalStatus as any)?.clauses_contrat);
-      const exclusionBiensProfessionnelsParticipation = !!clausesData['exclusion_biens_professionnels']?.enabled;
-      const partageInegalAcquetsClause = clausesData['partage_inegal_acquets'];
-      const partageInegalPctParticipation = partageInegalAcquetsClause?.enabled
-        ? partageInegalAcquetsClause.partPleineProprietee
-        : undefined;
-      const extensionQualificationAcquetsParticipation = !!clausesData['extension_qualification_acquets']?.enabled;
       // regime_matrimonial n'a de sens que sous Marié(e) : ce champ n'est
       // jamais effacé en changeant de statut (cf. RelationInfoForm.tsx), donc
       // un ex-marié devenu Pacsé/Concubin peut garder une valeur périmée.
@@ -287,16 +274,13 @@ export const Synthese = () => {
         avReintegrationCivileMontant: computeAVReintegrationCivile(avContracts, 'spouse', regimeMatrimonialSiMarie),
         partageEnvisage,
         duhOpte,
-        clausesData,
         regimeMatrimonial: regimeMatrimonialSiMarie,
         recompenses: buildRecompensesCalcInput((recompensesRows || []) as Recompense[]),
         creancesEntreEpoux: buildCreancesCalcInput((creancesRows || []) as CreanceEntreEpoux[]),
         participationAcquets: buildParticipationAcquetsContext(
           (patrimoineOriginaireRows || []) as PatrimoineOriginaire[],
           (patrimoineFinalRows || []) as PatrimoineFinal[],
-          exclusionBiensProfessionnelsParticipation,
-          partageInegalPctParticipation,
-          extensionQualificationAcquetsParticipation
+          false
         )
       });
 
@@ -484,14 +468,6 @@ export const Synthese = () => {
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             Le calcul de transmission n'a pas pu aboutir. Vérifiez que votre situation familiale est complète.
-          </AlertDescription>
-        </Alert>
-      )}
-      {hasCustomClausesToCheck && (
-        <Alert className="bg-[var(--warning-soft)] border-[var(--warning)]/30">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            Une ou plusieurs clauses personnalisées existent dans le contrat de mariage et doivent être vérifiées manuellement.
           </AlertDescription>
         </Alert>
       )}

@@ -25,8 +25,7 @@ import {
   computeAVReintegrationCivile,
   AVContractRawRow,
   AVDonneesInsuffisantesError,
-  SpouseSuccessionNonModelisableError,
-  parseClausesData
+  SpouseSuccessionNonModelisableError
 } from '@/utils/transmissionHelpers';
 import {
   computeTransmission,
@@ -256,38 +255,11 @@ export const Succession2ndDeces = () => {
       // pas déduite).
       const passifLinesUtilisateur = buildPassifLines(passifs, emprunts, 'user');
       const passifLinesBrut = buildPassifLines(passifs, emprunts);
-      const patrimonyUtilisateur = buildPatrimonySnapshot(assets || [], passifLinesUtilisateur, totalAV, null, assetDemembrements, demembrementCtx);
-      // clausesData est transmis à ctxUtilisateurDecede (1er décès
-      // Utilisateur, rawAssets bruts avec leur vraie qualification_bien) —
-      // ET, désormais, aux contextes "conjoint" ci-dessous (chained.
-      // secondDeath, ctxConjointDecede) via buildSpouseRawAssets(assets,
-      // clausesData, familyProfile?.date_naissance, referenceDate) :
-      // buildSpouseRawAssets applique lui-même getPartConjointAjustee (miroir
-      // de getFractionAjustee, cf. lib/patrimoine/avantagesMatrimoniaux.ts)
-      // PENDANT que la vraie qualification_bien est encore disponible, avant
-      // de neutraliser qualification_bien à 'Bien propre' et de préponderer
-      // valeur_estimee — donc plus de double pondération ni de trou sur les
-      // avantages matrimoniaux côté conjoint. npSurvivant y est calculé sur
-      // l'âge de l'UTILISATEUR (le survivant réel quand le conjoint décède),
-      // jamais sur celui du conjoint.
-      const clausesData = parseClausesData((maritalStatus as any)?.clauses_contrat);
-      // Créance de participation : seuls le booléen d'exclusion des biens
-      // professionnels et le % de partage inégal sortent de clausesData
-      // (jamais l'objet en entier, cf. TransmissionContext.participationAcquets)
-      // — safe à passer aux DEUX sens de décès, contrairement à clausesData
-      // qui reste réservé à ctxUtilisateurDecede ci-dessus.
-      const exclusionBiensProfessionnelsParticipation = !!clausesData['exclusion_biens_professionnels']?.enabled;
-      const partageInegalAcquetsClause = clausesData['partage_inegal_acquets'];
-      const partageInegalPctParticipation = partageInegalAcquetsClause?.enabled
-        ? partageInegalAcquetsClause.partPleineProprietee
-        : undefined;
-      const extensionQualificationAcquetsParticipation = !!clausesData['extension_qualification_acquets']?.enabled;
+      const patrimonyUtilisateur = buildPatrimonySnapshot(assets || [], passifLinesUtilisateur, totalAV, assetDemembrements, demembrementCtx);
       const participationAcquets = buildParticipationAcquetsContext(
         (patrimoineOriginaireRows || []) as PatrimoineOriginaire[],
         (patrimoineFinalRows || []) as PatrimoineFinal[],
-        exclusionBiensProfessionnelsParticipation,
-        partageInegalPctParticipation,
-        extensionQualificationAcquetsParticipation
+        false
       );
       const recompenses = buildRecompensesCalcInput((recompensesRows || []) as Recompense[]);
       const creancesEntreEpoux = buildCreancesCalcInput((creancesRows || []) as CreanceEntreEpoux[]);
@@ -310,7 +282,6 @@ export const Succession2ndDeces = () => {
         avReintegrationCivileMontant: computeAVReintegrationCivile(avContractsUtilisateur, 'spouse', regimeMatrimonial),
         partageEnvisage,
         duhOpte,
-        clausesData,
         regimeMatrimonial,
         participationAcquets,
         recompenses,
@@ -343,7 +314,7 @@ export const Succession2ndDeces = () => {
             liberalites: [],
             params,
             referenceDate,
-            rawAssets: buildSpouseRawAssets(assets || [], clausesData, familyProfile?.date_naissance, referenceDate, assetDemembrements, demembrementCtx),
+            rawAssets: buildSpouseRawAssets(assets || [], assetDemembrements, demembrementCtx),
             assetDemembrements,
             demembrementCtx,
             avContracts: []
@@ -365,7 +336,7 @@ export const Succession2ndDeces = () => {
           liberalites: [],
           params,
           referenceDate,
-          rawAssets: buildSpouseRawAssets(assets || [], clausesData, familyProfile?.date_naissance, referenceDate, assetDemembrements, demembrementCtx),
+          rawAssets: buildSpouseRawAssets(assets || [], assetDemembrements, demembrementCtx),
           assetDemembrements,
           demembrementCtx,
           // avContracts volontairement vide : limitation connue (décision du
@@ -384,14 +355,7 @@ export const Succession2ndDeces = () => {
           // regimeMatrimonial + participationAcquets + recompenses/
           // creancesEntreEpoux : safe côté conjoint, aucun de ces mécanismes
           // n'opère sur rawAssets/qualification_bien, cf. commentaire
-          // ctxUtilisateurDecede ci-dessus. clausesData n'est PAS répété ici
-          // (dans ce TransmissionContext) : il ne sert qu'à
-          // buildSpouseRawAssets ci-dessus (avantages matrimoniaux déjà
-          // appliqués dans rawAssets) — le passer aussi ici activerait à tort
-          // avantageMatrimonialCtx/getFractionAjustee dans computeTransmission
-          // sur des rawAssets déjà pré-pondérés et à qualification_bien
-          // neutralisée (cf. lib/transmission/index.ts, commentaire de
-          // TransmissionContext.participationAcquets sur ce même risque).
+          // ctxUtilisateurDecede ci-dessus.
           regimeMatrimonial,
           participationAcquets,
           recompenses,
@@ -400,7 +364,7 @@ export const Succession2ndDeces = () => {
         const firstDeathConjoint = computeTransmission(ctxConjointDecede);
 
         const utilisateurVeufFamily = widowFamilyGraph(familyUtilisateur, familyLinks || []);
-        const utilisateurBasePatrimony = buildPatrimonySnapshot(assets || [], passifLinesUtilisateur, 0, null, assetDemembrements, demembrementCtx);
+        const utilisateurBasePatrimony = buildPatrimonySnapshot(assets || [], passifLinesUtilisateur, 0, assetDemembrements, demembrementCtx);
         const utilisateurVeufPatrimony = addReunifiedFullOwnership(
           utilisateurBasePatrimony,
           firstDeathConjoint,

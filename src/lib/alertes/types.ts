@@ -18,7 +18,6 @@ export interface AlerteContext {
   datePacs?: string;
   conventionPacs?: string;
   pasDeContratMariage?: boolean;
-  clausesContrat?: Record<string, { enabled?: boolean; options?: { residencePrincipale?: boolean; maintienDivorce?: boolean } }>;
   clientResidenceFiscaleEtranger?: boolean;
   conjointResidenceFiscaleEtranger?: boolean;
   liberalites: Liberalite[];

@@ -170,12 +170,10 @@ export const useMaritalStatus = () => {
     saveData(buildStatutCoupleWrite(statutCouple, extra));
 
   // Point d'écriture unique des 4 colonnes de donation au dernier vivant,
-  // appelé par RelationInfoForm.tsx (onglet Donation) et
-  // useMatrimonialClauses.ts (onglet Clauses du contrat) — plutôt que chacun
-  // upsert sa propre copie, potentiellement périmée, de ces champs. Relit
-  // l'état frais en base juste avant d'écrire (updates: null) pour ne jamais
-  // écraser silencieusement une modification faite entre-temps dans l'autre
-  // onglet.
+  // appelé par RelationInfoForm.tsx (onglet Donation) — plutôt qu'un upsert
+  // partiel dupliqué. Relit l'état frais en base juste avant d'écrire
+  // (updates: null) pour ne jamais écraser silencieusement une modification
+  // faite entre-temps ailleurs.
   const setDonationDernierVivant = async (
     updates: DonationDernierVivantFields | null,
     extra?: Partial<MaritalStatus>

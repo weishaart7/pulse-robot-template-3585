@@ -60,7 +60,6 @@ export function useAlertesConseil() {
       datePacs: maritalStatus?.date_pacs,
       conventionPacs: maritalStatus?.convention_pacs,
       pasDeContratMariage: maritalStatus?.pas_de_contrat_mariage,
-      clausesContrat: maritalStatus?.clauses_contrat,
       clientResidenceFiscaleEtranger: familyProfile?.residence_fiscale_etranger,
       conjointResidenceFiscaleEtranger: maritalStatus?.residence_fiscale_etranger_conjoint,
       liberalites,

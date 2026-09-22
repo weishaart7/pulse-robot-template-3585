@@ -33,12 +33,6 @@ import {
   regimeIsParticipationAcquets,
   PatrimoineLigneCalcInput,
 } from '../patrimoine/participationAcquets';
-import {
-  getFractionAjustee,
-  resolvePreciputMode,
-  AvantageMatrimonialContext,
-} from '../patrimoine/avantagesMatrimoniaux';
-import { ClausesData } from '../../types/matrimonial';
 import { getAssetCategory, isAssuranceVieHorsSuccession } from '../../constants/assetTypes';
 import {
   computeDMTG,
@@ -62,11 +56,11 @@ export interface TransmissionContext {
   // appelé par l'UI, computeDMTG n'est plus jamais invoqué depuis un composant).
   rawAssets?: RawAssetInput[];
   // Démembrement (barème 669 CGI) des rawAssets déjà en Usufruit/Nue-propriété
-  // au jour de cette simulation — pondère valeurVenale (dmtgAssets),
-  // deltaAvantageMatrimonial et la valeur DUH ci-dessous, même mécanisme que
-  // usePatrimoineCalculations.ts côté module Patrimoine (lib/patrimoine/
-  // demembrementFraction.ts). Sans ces deux champs, un rawAsset démembré reste
-  // compté à sa valeur pleine propriété (comportement historique).
+  // au jour de cette simulation — pondère valeurVenale (dmtgAssets) et la
+  // valeur DUH ci-dessous, même mécanisme que usePatrimoineCalculations.ts
+  // côté module Patrimoine (lib/patrimoine/demembrementFraction.ts). Sans ces
+  // deux champs, un rawAsset démembré reste compté à sa valeur pleine
+  // propriété (comportement historique).
   assetDemembrements?: AssetDemembrement[];
   demembrementCtx?: DemembrementFractionContext;
   // Contrats AV déjà construits par utils/transmissionHelpers.ts::buildAVContracts
@@ -96,44 +90,15 @@ export interface TransmissionContext {
   // bien par bien (mécanisme A laissé intact).
   recompenses?: RecompenseCalcInput[];
   creancesEntreEpoux?: CreanceCalcInput[];
-  // Clauses d'avantage matrimonial (préciput, attribution intégrale, partage
-  // inégal — art. 1515 à 1524 C. civ., cf. src/types/matrimonial.ts et
-  // lib/patrimoine/avantagesMatrimoniaux.ts). Ajuste la fraction successorale
-  // par bien commun concerné, en remplacement du 50% par défaut de
-  // getPartSuccessorale — même mécanisme A que les récompenses/créances
-  // ci-dessus.
-  clausesData?: ClausesData;
   // Créance de participation (art. 1569-1581 C. civ.), décès uniquement pour
-  // cette v1. Volontairement PAS dérivé de clausesData ici (contrairement à
-  // preciput/attribution_integrale/partage_inegal ci-dessus) : ce champ ne
-  // porte qu'un booléen scalaire résolu par l'appelant depuis
-  // clausesData['exclusion_biens_professionnels'], jamais l'objet ClausesData
-  // en entier — passer clausesData tel quel activerait aussi
-  // avantageMatrimonialCtx/getFractionAjustee (pondération PAR ACTIF) pour un
-  // contexte "conjoint décède en premier" construit avec buildSpouseRawAssets
-  // (valeurs déjà pré-pondérées, qualification_bien neutralisée), ce qui
-  // fausserait la masse successorale. Le calcul lui-même n'opère jamais sur
-  // rawAssets/qualification_bien (patrimoines originaire/final indépendants
-  // des assets), donc reste symétrique dans les deux sens de décès sans ce
-  // risque — cf. diagnostic chantier participation aux acquêts.
+  // cette v1.
   participationAcquets?: {
     patrimoineOriginaire: PatrimoineLigneCalcInput[];
     patrimoineFinal: PatrimoineLigneCalcInput[];
     exclusionBiensProfessionnels: boolean;
-    /**
-     * Clause de partage inégal des acquêts (art. 1581 C. civ.), résolue par
-     * l'appelant depuis clausesData['partage_inegal_acquets'] pour la même
-     * raison que exclusionBiensProfessionnels ci-dessus (scalaire, jamais
-     * ClausesData en entier). undefined = partage par moitié (défaut légal).
-     */
+    /** Partage inégal de la créance de participation. undefined = partage par moitié (défaut légal). */
     partageInegalPct?: number;
-    /**
-     * Clause d'extension de la qualification d'acquêts : transfère
-     * l'intégralité du patrimoine originaire propre des époux au profit de
-     * l'indivision (augmente la masse de calcul de la créance). Résolue par
-     * l'appelant depuis clausesData['extension_qualification_acquets'] pour
-     * la même raison que les deux champs ci-dessus.
-     */
+    /** Extension de la qualification d'acquêts (augmente la masse de calcul de la créance). */
     extensionQualificationAcquets?: boolean;
   };
   // Valeur de rachat d'un contrat AV non dénoué du conjoint survivant, à
@@ -303,63 +268,11 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     }
   }
 
-  // 0bis. Avantages matrimoniaux (préciput, attribution intégrale, partage
-  // inégal) : construit le contexte attendu par getFractionAjustee à partir
-  // de ClausesData (mapping validé : preciputAssetIds ← selectedAssets,
-  // preciputMode ← resolvePreciputMode(options), attributionIntegraleMode ←
-  // options.porteSur (défaut 'pleine_propriete' si la clause est active sans
-  // porteSur renseigné), partConjointInegal ← partPleineProprietee).
-  const preciputClause = ctx.clausesData?.['preciput'];
-  const attributionIntegraleClause = ctx.clausesData?.['attribution_integrale'];
-  const partageInegalClause = ctx.clausesData?.['partage_inegal'];
-
-  const preciputMode = preciputClause?.enabled ? resolvePreciputMode(preciputClause.options) : null;
-  const attributionIntegraleMode = attributionIntegraleClause?.enabled
-    ? (attributionIntegraleClause.options?.porteSur || 'pleine_propriete')
-    : null;
-  const partConjointInegal = partageInegalClause?.enabled
-    ? (partageInegalClause.partPleineProprietee ?? null)
-    : null;
-
-  // npSurvivant (barème art. 669 CGI) n'est résolu que si une clause en
-  // usufruit est réellement active : getConjointAge lève si la date de
-  // naissance du conjoint est manquante, à éviter pour les dossiers qui ne
-  // se servent d'aucune clause en usufruit.
-  const needsNpSurvivant = preciputMode === 'usufruit' || attributionIntegraleMode === 'usufruit';
-  const npSurvivant = needsNpSurvivant
-    ? getDemembrementPct(getConjointAge(family, referenceDate), 'nue_propriete')
-    : 0;
-
-  const avantageMatrimonialCtx: AvantageMatrimonialContext | null =
-    preciputMode || attributionIntegraleMode || partConjointInegal !== null
-      ? {
-          preciputAssetIds: preciputClause?.selectedAssets || [],
-          preciputMode,
-          attributionIntegraleMode,
-          partConjointInegal,
-          npSurvivant
-        }
-      : null;
-
-  // Fraction successorale par bien : avantage matrimonial si une clause
-  // concerne ce bien, sinon repli sur getPartSuccessorale (comportement
-  // inchangé) — même fonction utilisée côté civil (delta ci-dessous) et
-  // côté fiscal (dmtgAssets plus bas), pour rester alignés.
-  const getFractionSuccessorale = (asset: RawAssetInput): number => {
-    const ajustee = avantageMatrimonialCtx ? getFractionAjustee(asset, avantageMatrimonialCtx) : null;
-    return ajustee ?? getPartSuccessorale(asset, asset.denomination || asset.id);
-  };
-
-  const deltaAvantageMatrimonial = avantageMatrimonialCtx
-    ? (rawAssets || [])
-        .filter(asset => !isAssuranceVieHorsSuccession(asset.nature))
-        .reduce((sum, asset) => {
-          const ajustee = getFractionAjustee(asset, avantageMatrimonialCtx);
-          if (ajustee === null) return sum;
-          const defaut = getPartSuccessorale(asset, asset.denomination || asset.id);
-          return sum + (ajustee - defaut) * getValeurEstimeePonderee(asset);
-        }, 0)
-    : 0;
+  // Fraction successorale par bien : getPartSuccessorale (comportement
+  // légal par défaut) — même fonction utilisée côté civil (delta ci-dessous)
+  // et côté fiscal (dmtgAssets plus bas), pour rester alignés.
+  const getFractionSuccessorale = (asset: RawAssetInput): number =>
+    getPartSuccessorale(asset, asset.denomination || asset.id);
 
   // patrimony est ré-ancré ici (plutôt que déstructuré directement depuis ctx
   // avec les autres champs ci-dessus) pour que TOUTES les lectures en aval de
@@ -369,7 +282,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // bougerait, désalignant à nouveau le civil et le fiscal (cf. le bug déjà
   // corrigé une fois entre Synthese.tsx et ProcessusCalcul.tsx sur
   // netBreakdown, lib/patrimoine/succession.ts).
-  const deltaCivilTotal = deltaRecompensesCreances + deltaParticipationAcquets + deltaAvantageMatrimonial
+  const deltaCivilTotal = deltaRecompensesCreances + deltaParticipationAcquets
     + (ctx.avReintegrationCivileMontant || 0);
   const patrimony: PatrimonySnapshot = deltaCivilTotal !== 0
     ? { ...ctx.patrimony, biensExistants: ctx.patrimony.biensExistants + deltaCivilTotal }
@@ -792,11 +705,10 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // condition d'occupation (hypothèse simplificatrice actée, cohérente avec
   // l'abattement IFI équivalent).
   //
-  // valeurVenale est pondérée par getFractionSuccessorale (avantage matrimonial
-  // si une clause concerne le bien, sinon lib/patrimoine/succession.ts::
-  // getPartSuccessorale — régime matrimonial / indivision) : mêmes fonctions
-  // que le chemin civil (deltaAvantageMatrimonial ci-dessus,
-  // transmissionHelpers.ts::buildPatrimonySnapshot), pour que le fiscal et le
+  // valeurVenale est pondérée par getFractionSuccessorale
+  // (lib/patrimoine/succession.ts::getPartSuccessorale — régime matrimonial /
+  // indivision) : même fonction que le chemin civil
+  // (transmissionHelpers.ts::buildPatrimonySnapshot), pour que le fiscal et le
   // civil restent alignés sur la même assiette successorale.
   // Les contrats d'assurance-vie réellement hors succession (art. L132-12 code des assurances —
   // "Contrat d'assurance-vie"/"Contrat vie-génération"/"PEP assurance vie", PAS "Bons & contrats

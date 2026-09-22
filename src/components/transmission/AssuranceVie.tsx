@@ -21,8 +21,7 @@ import {
   buildCreancesCalcInput,
   buildParticipationAcquetsContext,
   AVContractRawRow,
-  AVDonneesInsuffisantesError,
-  parseClausesData
+  AVDonneesInsuffisantesError
 } from '@/utils/transmissionHelpers';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission';
 import { resolveEffectiveAVBeneficiaires } from '@/lib/dmtg/assurance-vie';
@@ -248,7 +247,6 @@ export const AssuranceVie = () => {
               allAssets || [],
               buildPassifLines(passifsRes.data || [], empruntsRes.data || [], 'user'),
               0,
-              null,
               assetDemembrements,
               demembrementCtx
             );
@@ -261,14 +259,6 @@ export const AssuranceVie = () => {
               }
             };
 
-            const clausesData = parseClausesData((maritalRes.data as any)?.clauses_contrat);
-            const exclusionBiensProfessionnelsParticipation = !!clausesData['exclusion_biens_professionnels']?.enabled;
-            const partageInegalAcquetsClause = clausesData['partage_inegal_acquets'];
-            const partageInegalPctParticipation = partageInegalAcquetsClause?.enabled
-              ? partageInegalAcquetsClause.partPleineProprietee
-              : undefined;
-            const extensionQualificationAcquetsParticipation = !!clausesData['extension_qualification_acquets']?.enabled;
-
             const result = computeTransmission({
               family,
               patrimony,
@@ -279,7 +269,6 @@ export const AssuranceVie = () => {
               demembrementCtx,
               avContracts: builtAvContracts,
               referenceDate,
-              clausesData,
               // regime_matrimonial n'a de sens que sous Marié(e) : ce champ
               // n'est jamais effacé en changeant de statut (cf.
               // RelationInfoForm.tsx), donc un ex-marié devenu Pacsé/Concubin
@@ -290,9 +279,7 @@ export const AssuranceVie = () => {
               participationAcquets: buildParticipationAcquetsContext(
                 (patrimoineOriginaireRes.data || []) as PatrimoineOriginaire[],
                 (patrimoineFinalRes.data || []) as PatrimoineFinal[],
-                exclusionBiensProfessionnelsParticipation,
-                partageInegalPctParticipation,
-                extensionQualificationAcquetsParticipation
+                false
               )
             });
             setTransmissionResult(result);
