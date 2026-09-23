@@ -80,6 +80,7 @@ export function computeProgressiveTax(
 export function getBaremeForLien(lien: Lien, params: DmtgParams, comesFromRepresentationWithPlurality?: boolean): Array<{ upTo: number | null; rate: number }> {
   switch (lien) {
     case 'enfant':
+    case 'petit_enfant':
     case 'ascendant':
       return params.baremes.ligne_directe;
     case 'frere_soeur':

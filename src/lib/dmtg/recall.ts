@@ -30,6 +30,8 @@ export function computeRecallAndAllowances(input: {
     case 'neveu_niece':
       abattementBase = params.abattements.neveu_niece;
       break;
+    // 'petit_enfant' (hors représentation, art. 788 IV CGI), 'collateral_4',
+    // 'autre' : abattement de droit commun.
     default:
       abattementBase = params.abattements.tiers;
   }

@@ -414,6 +414,12 @@ export const ProcessusCalcul = () => {
         identites.set(h.personId, { personId: h.personId, nom: h.nom, lien: h.lien });
       }
     });
+    // Légataires non héritiers : même détail fiscal que les héritiers.
+    (transmissionResult.legataires || []).forEach(l => {
+      if (!identites.has(l.personId)) {
+        identites.set(l.personId, { personId: l.personId, nom: l.nom, lien: l.lien });
+      }
+    });
 
     return Array.from(identites.values()).map(g => {
       const dmtgHeir = transmissionResult.dmtg.perBeneficiary[g.personId];

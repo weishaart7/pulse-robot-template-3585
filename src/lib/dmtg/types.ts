@@ -1,5 +1,8 @@
 export type Money = number;
-export type Lien = 'conjoint'|'pacs'|'enfant'|'ascendant'|'frere_soeur'|'neveu_niece'|'collateral_4'|'autre';
+// 'petit_enfant' : petit-enfant venant de son propre chef (légataire, hors
+// représentation) — barème ligne directe, abattement de droit commun 1 594€
+// (art. 788 IV CGI). Un petit-enfant représentant reste 'enfant'.
+export type Lien = 'conjoint'|'pacs'|'enfant'|'petit_enfant'|'ascendant'|'frere_soeur'|'neveu_niece'|'collateral_4'|'autre';
 
 export interface Beneficiary {
   id: string;

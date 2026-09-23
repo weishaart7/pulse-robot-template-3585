@@ -44,6 +44,13 @@ export interface NetPerHeirInput {
    *  successorale (art. L132-12 C. assur.) : n'entre jamais dans l'assiette du droit
    *  de partage, seulement ajouté au net final. Défaut 0 (héritier sans contrat AV). */
   capitalAVNet?: number;
+  /** Légataire d'un bien ou d'une somme déterminés, qui n'hérite pas : jamais en
+   *  indivision avec les héritiers, donc exclu du droit de partage (ni compté dans
+   *  le nombre de copartageants, ni débiteur d'une quote-part). Défaut false. */
+  horsIndivision?: boolean;
+  /** Montant légué, sorti de l'actif partagé entre héritiers (pertinent seulement si
+   *  horsIndivision). Défaut : baseApresFrais. */
+  montantHorsIndivision?: number;
 }
 
 export interface NetPerHeirResult {
@@ -118,18 +125,29 @@ export function computeNetPerHeir(
   const hasDemembrement = heirs.some(
     h => h.typeQuotePart === 'usufruit' || h.typeQuotePart === 'nue_propriete'
   );
-  const actifNetPartage = Math.max(0, params.actifBrut - params.passif);
+  // Seuls les héritiers en indivision partagent : les légataires hors
+  // indivision (cf. NetPerHeirInput.horsIndivision) sortent de l'assiette et du
+  // décompte des copartageants.
+  const copartageants = heirs.filter(h => !h.horsIndivision);
+  const baseHorsIndivision = heirs
+    .filter(h => h.horsIndivision)
+    .reduce((sum, h) => sum + (h.montantHorsIndivision ?? h.baseApresFrais), 0);
+  const actifNetPartage = Math.max(0, params.actifBrut - params.passif - baseHorsIndivision);
   const droitPartageTotal =
-    heirs.length > 1 && !hasDemembrement && params.partageEnvisage
+    copartageants.length > 1 && !hasDemembrement && params.partageEnvisage
       ? Math.round(actifNetPartage * taux)
       : 0;
 
   const totalBase = heirs.reduce((sum, h) => sum + h.baseApresFrais, 0);
+  const totalBaseCopartageants = copartageants.reduce((sum, h) => sum + h.baseApresFrais, 0);
 
   const provisional = heirs.map(h => {
     const quotePart = totalBase > 0 ? h.baseApresFrais / totalBase : 1 / heirs.length;
     const fraisNotaire = Math.round(params.fraisNotaireTotal * quotePart);
-    const droitPartage = Math.round(droitPartageTotal * quotePart);
+    const quotePartPartage = h.horsIndivision || totalBaseCopartageants <= 0
+      ? 0
+      : h.baseApresFrais / totalBaseCopartageants;
+    const droitPartage = Math.round(droitPartageTotal * quotePartPartage);
     const totalCouts = h.droitsTotaux + fraisNotaire + droitPartage;
     const capitalAVNet = h.capitalAVNet || 0;
     const netARecevoir = Math.max(0, h.baseApresFrais - totalCouts) + capitalAVNet;

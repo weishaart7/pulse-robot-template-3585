@@ -275,6 +275,16 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   donation-partage ou projet non signé, où il est repris d'office du montant saisi. Exonération 790 G :
   plafond unique de 31 865 € par donataire sur la fenêtre de 15 ans, consommé chronologiquement ;
   l'excédent consomme l'abattement général. Tests : `lib/transmission/phase3Audit.test.ts`.
+- **Légataires non héritiers (`index.ts` §6bis-0).** Un legs maintenu (après réduction) à une
+  personne absente de `heirs` sort du résiduel réel AVANT la répartition du cash entre héritiers
+  (`residuelHeritiers`) ; ramené au prorata si les legs excèdent le résiduel. Le légataire reçoit sa
+  propre `civilShare` (legs / résiduel réel) et devient bénéficiaire DMTG, lien déduit du graphe :
+  `survivingSpouseId` (conjoint ou PACS) → exonéré ; Petit-enfant → `petit_enfant` (ligne directe,
+  abattement 1 594 €, art. 788 IV) ; Parent/Grand-parent → ascendant ; Frère/Sœur (+ 796-0 ter) ;
+  Neveu/Nièce ; Oncle/Tante/Cousin → `collateral_4` ; sinon et `tiers` (une ligne `tiers-<id legs>`
+  par legs) → 60 %. Exposés dans `TransmissionResult.legataires` et dans `netBreakdown` avec
+  `horsIndivision` (jamais débiteurs du droit de partage, montant légué retiré de son assiette).
+  Affichés dans `Synthese.tsx` et `ProcessusCalcul.tsx`. Tests : `lib/transmission/phase4bAudit.test.ts`.
 - **Liens fiscaux des héritiers hors ordres 1-2.** Grands-parents et arrière-grands-parents → `ascendant`
   (abattement 100 000 €, barème ligne directe) ; oncles/tantes et cousins germains → `collateral_4`
   (55 %, abattement 1 594 €). Tests : `lib/transmission/phase1Audit.test.ts`, `lib/dmtg/phase2Audit.test.ts`.
@@ -283,11 +293,6 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
 
 ### 🔴 Bloquant (peut fausser un calcul montré au client)
 
-- **Legs à un légataire non héritier : ni sorti de la masse des héritiers, ni taxé** (confirmé
-  2026-09-23). La branche « surplus » du §6bis (`index.ts`) reverse le montant légué aux héritiers, qui
-  sont taxés dessus ; le légataire n'apparaît pas dans les bénéficiaires DMTG. Ex. : 500 k€, un enfant,
-  legs de 100 k€ à un ami → enfant taxé sur 498 500 € au lieu d'environ 398 500 €, ami non taxé.
-  Correctif prévu en phase 4b.
 
 - **La valeur au jour du partage (art. 860) n'est jamais capturée séparément, donc l'indemnité de
   réduction n'est jamais réévaluée entre le décès et le partage** (finding T3, art. 924-2).
@@ -360,6 +365,9 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   comportement.)*
 
 ### 🟠 À surveiller (cas limite, peu probable)
+- **Conjoint / partenaire de PACS non sélectionnable comme légataire.** `LegsForm.tsx` ne propose que
+  les `family_links`, où le conjoint ne figure pas (il vit dans `marital_status`). Le moteur sait
+  exonérer un legs au partenaire de PACS (`survivingSpouseId`), mais aucun écran ne permet de le saisir.
 - **Conditions 790 G non vérifiées.** Âge du donateur (< 80 ans) et majorité du donataire ne sont
   pas contrôlés : la nature « Dons familiaux de sommes d'argent » suffit à ouvrir l'exonération.
 - **Donation démembrée : valeur de la nue-propriété non contrôlée.** Rien ne vérifie que la valeur

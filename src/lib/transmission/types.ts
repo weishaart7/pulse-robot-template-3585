@@ -219,6 +219,11 @@ export interface TransmissionResult {
     rapports: { personId: PersonId; montantRapport: number }[];
   };
   explicationsTexte?: string[];
+  // Légataires qui n'héritent pas (tiers, famille hors dévolution légale,
+  // partenaire de PACS) : absents de `heirs`, mais bénéficiaires DMTG et lignes
+  // de netBreakdown à part entière (clé = personId). `montant` = legs maintenu
+  // après réduction, réellement prélevé sur le résiduel.
+  legataires: { personId: PersonId; nom: string; lien: string; montant: number }[];
   optionConjoint?: {
     quartPP: boolean;
     usufruitTotal: boolean;

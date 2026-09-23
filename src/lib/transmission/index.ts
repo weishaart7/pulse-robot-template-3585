@@ -494,13 +494,50 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // le conjoint en priorité). Cf. docs/design-rapport-moins-prenant-2026-08.md
   // pour la démonstration et la vérification contre 5 scénarios.
   const residuelReel = Math.max(0, patrimony.biensExistants - patrimony.passifs);
+
+  // 6bis-0. Legs maintenus à des légataires qui n'héritent pas (tiers, famille
+  // hors dévolution légale, partenaire de PACS) : déjà retirés de
+  // massePartageable par computeRapport, ils doivent aussi sortir du résiduel
+  // réel AVANT la répartition du cash entre héritiers — sans quoi la branche
+  // « surplus » ci-dessous les reverse aux héritiers (qui seraient taxés sur
+  // un bien qui ne leur revient pas) et le légataire n'est jamais taxé. Un
+  // legs sans bénéficiaire identifié ('tiers') reste une ligne distincte par
+  // legs (personnes a priori différentes). Si les legs excèdent le résiduel
+  // (passif important), ils sont ramenés au prorata du disponible.
+  const heirIds = new Set(heirs.map(h => h.personId));
+  const legsNonHeritiersBruts = liberalites
+    .filter(lib => lib.type === 'legs' && !heirIds.has(lib.beneficiaireId))
+    .map(lib => {
+      const reduction = reductionResult.reductions.find(r => r.liberaliteId === lib.id);
+      return {
+        personId: lib.beneficiaireId === 'tiers' ? `tiers-${lib.id}` : lib.beneficiaireId,
+        nom: lib.beneficiaireName || 'Légataire',
+        montant: Math.max(0, lib.valeur - (reduction?.montantReduit || 0))
+      };
+    })
+    .filter(l => l.montant > 0);
+  const totalLegsNonHeritiersBrut = legsNonHeritiersBruts.reduce((sum, l) => sum + l.montant, 0);
+  const ratioLegs = totalLegsNonHeritiersBrut > residuelReel && totalLegsNonHeritiersBrut > 0
+    ? residuelReel / totalLegsNonHeritiersBrut
+    : 1;
+  const legsParLegataire = new Map<PersonId, { personId: PersonId; nom: string; montant: number }>();
+  legsNonHeritiersBruts.forEach(l => {
+    const existing = legsParLegataire.get(l.personId);
+    if (existing) existing.montant += l.montant * ratioLegs;
+    else legsParLegataire.set(l.personId, { ...l, montant: l.montant * ratioLegs });
+  });
+  const legsNonHeritiers = Array.from(legsParLegataire.values());
+  const totalLegsNonHeritiers = legsNonHeritiers.reduce((sum, l) => sum + l.montant, 0);
+  // Résiduel réellement disponible pour les héritiers.
+  const residuelHeritiers = Math.max(0, residuelReel - totalLegsNonHeritiers);
+
   const cashDus = heirs.map((h, i) => Math.max(0, h.partFinale - dejaDetenus[i]));
   const sumCashDu = cashDus.reduce((sum, c) => sum + c, 0);
 
   let cashReparti: number[];
-  if (sumCashDu <= residuelReel) {
+  if (sumCashDu <= residuelHeritiers) {
     cashReparti = cashDus.slice();
-    const surplus = residuelReel - sumCashDu;
+    const surplus = residuelHeritiers - sumCashDu;
     if (surplus > 0) {
       // Résiduel réel strictement supérieur à la somme des cashDu théoriques :
       // sous-cas non rencontré dans les 5 scénarios de docs/design-rapport-
@@ -522,9 +559,9 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     // moins-prenant-2026-08.md §1.2), faute de clé de répartition explicite
     // dans le référentiel entre plusieurs héritiers simultanément sous-dotés.
     // Approximation à confirmer par le notaire, pas un partage légalement figé.
-    cashReparti = cashDus.map(c => sumCashDu > 0 ? residuelReel * (c / sumCashDu) : 0);
+    cashReparti = cashDus.map(c => sumCashDu > 0 ? residuelHeritiers * (c / sumCashDu) : 0);
     successionLegaleResult.explicationsTexte.push(
-      `Le résiduel réellement disponible (${Math.round(residuelReel).toLocaleString('fr-FR')} €) ` +
+      `Le résiduel réellement disponible (${Math.round(residuelHeritiers).toLocaleString('fr-FR')} €) ` +
       `est insuffisant pour couvrir les parts dues aux héritiers non intégralement couvertes ` +
       `par leurs libéralités déjà perçues (${Math.round(sumCashDu).toLocaleString('fr-FR')} € au total, art. 758-5, 858 C. civ.). ` +
       `La répartition affichée est une approximation proportionnelle aux montants dus par chacun, ` +
@@ -618,6 +655,13 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     fraction: residuelReel > 0 ? cashReparti[i] / residuelReel : 0,
     source: 'legal'
   }));
+  legsNonHeritiers.forEach(l => {
+    civilShares.push({
+      beneficiaryId: l.personId,
+      fraction: residuelReel > 0 ? l.montant / residuelReel : 0,
+      source: 'legal'
+    });
+  });
 
   const beneficiaries: DmtgBeneficiary[] = heirs.map(heir => {
     // Le lien retenu pour la fiscalité DMTG est celui calculé par la
@@ -657,6 +701,36 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       adoptionSimpleAbattementPlein: person?.adoptionSimpleAbattementPlein || false,
       exonerationSuccession: person?.exonerationSuccession || false
     };
+  });
+
+  // Légataires non héritiers : lien fiscal déduit du graphe familial (jamais
+  // de la dévolution civile, qui ne les connaît pas). Conjoint marié ou
+  // partenaire de PACS (survivingSpouseId, présent dans le graphe dans les
+  // deux cas) : exonéré (art. 796-0 bis CGI). Petit-enfant de son propre chef :
+  // barème ligne directe, abattement 1 594€ (art. 788 IV). Tiers hors fiche
+  // famille : 60 %.
+  const lienFiscalLegataire = (personId: PersonId): DmtgBeneficiary['lien'] => {
+    if (personId === family.survivingSpouseId) return 'conjoint';
+    const lien = family.persons.find(p => p.id === personId)?.lienFamilial?.toLowerCase() || '';
+    if (lien === 'enfant') return 'enfant';
+    if (lien.includes('petit-enfant') || lien.includes('petit_enfant')) return 'petit_enfant';
+    if (lien === 'parent' || lien === 'père' || lien === 'mère' || lien.includes('grand-parent') ||
+        lien.includes('grand_parent') || lien.includes('arrière-grand') || lien.includes('arriere-grand') ||
+        lien === 'grand-père' || lien === 'grand-mère') return 'ascendant';
+    if (lien.includes('frère') || lien.includes('sœur') || lien === 'frere_soeur') return 'frere_soeur';
+    if (lien.includes('neveu') || lien.includes('nièce')) return 'neveu_niece';
+    if (lien.includes('oncle') || lien.includes('tante') || lien.includes('cousin')) return 'collateral_4';
+    return 'autre';
+  };
+  legsNonHeritiers.forEach(l => {
+    const person = family.persons.find(p => p.id === l.personId);
+    beneficiaries.push({
+      id: l.personId,
+      lien: lienFiscalLegataire(l.personId),
+      isAdoptionSimple: person?.enfantAdopte === 'Adoption simple',
+      adoptionSimpleAbattementPlein: person?.adoptionSimpleAbattementPlein || false,
+      exonerationSuccession: person?.exonerationSuccession || false
+    });
   });
 
   // Un bénéficiaire désigné dans une clause AV n'est pas forcément un héritier
@@ -851,8 +925,18 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // 11. Répartition nette par héritier (droits DMTG + frais de notaire +
   // droit de partage, prorata part civile) : source unique de vérité pour
   // tous les écrans (Synthese.tsx, ProcessusCalcul.tsx), cf. netBreakdown.ts.
+  const legatairesResult = legsNonHeritiers.map(l => {
+    const person = family.persons.find(p => p.id === l.personId);
+    return {
+      personId: l.personId,
+      nom: person ? `${person.prenom || ''} ${person.nom || ''}`.trim() || l.nom : l.nom,
+      lien: person?.lienFamilial || (l.personId === family.survivingSpouseId ? 'conjoint' : 'légataire'),
+      montant: Math.round(l.montant)
+    };
+  });
+
   const netBreakdown = computeNetPerHeir(
-    heirs.map(h => ({
+    [...heirs.map(h => ({
       personId: h.personId,
       nom: h.nom,
       lien: h.lien,
@@ -863,6 +947,17 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       typeQuotePart: h.typeQuotePart,
       capitalAVNet: dmtgResult.perBeneficiary[h.personId]?.capitalAVNet || 0
     })),
+    ...legatairesResult.map(l => ({
+      personId: l.personId,
+      nom: l.nom,
+      lien: l.lien,
+      baseApresFrais: dmtgResult.perBeneficiary[l.personId]?.baseApresFrais || 0,
+      droitsTotaux: dmtgResult.perBeneficiary[l.personId]?.droitsHorsAV || 0,
+      typeQuotePart: 'pleine_propriete' as const,
+      capitalAVNet: dmtgResult.perBeneficiary[l.personId]?.capitalAVNet || 0,
+      horsIndivision: true,
+      montantHorsIndivision: l.montant
+    }))],
     {
       actifBrut: patrimony.biensExistants,
       passif: patrimony.passifs,
@@ -887,6 +982,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       rapports: rapportResult.rapports
     },
     explicationsTexte: successionLegaleResult.explicationsTexte,
+    legataires: legatairesResult,
     optionConjoint: successionLegaleResult.optionConjoint
   };
 }

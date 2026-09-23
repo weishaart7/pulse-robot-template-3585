@@ -357,7 +357,18 @@ export const Synthese = () => {
   // Un même héritier peut porter plusieurs parts (ex: conjoint 1/4 PP + usufruit 3/4) :
   // on les regroupe en une seule ligne pour l'affichage synthétique, en gardant le détail des types.
   const heritiersData = (() => {
-    const heirsSource: any[] = transmissionResult.heirs || [];
+    // Légataires non héritiers (cf. TransmissionResult.legataires) : affichés
+    // comme des bénéficiaires à part entière, leur net venant de netBreakdown.
+    const heirsSource: any[] = [
+      ...(transmissionResult.heirs || []),
+      ...(transmissionResult.legataires || []).map(l => ({
+        personId: l.personId,
+        nom: l.nom,
+        lien: l.lien,
+        partFinale: l.montant,
+        typeQuotePart: 'pleine_propriete'
+      }))
+    ];
 
     if (heirsSource.length === 0) {
       return [{
