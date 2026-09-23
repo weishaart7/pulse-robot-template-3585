@@ -5,8 +5,14 @@ export function buildTaxBaseByBeneficiary(
   assetValuations: AssetValuationResult,
   beneficiaries: Beneficiary[],
   params: DmtgParams,
-  deathDate: string
+  deathDate: string,
+  passif: number = 0
 ): TaxBaseResult {
+  // Actif net taxable (art. 768 CGI) : le passif s'impute sur l'actif après
+  // abattements par bien (RP, bois…), jamais sous 0. Le forfait mobilier
+  // reste réparti sur sa propre assiette (actif brut), cf. plus bas.
+  const actifNetTaxable = Math.max(0, assetValuations.totalBaseTaxable - passif);
+
   const perBeneficiary: Record<string, number> = {};
   const perBeneficiaryForfaitMobilier: Record<string, number> = {};
   const justifs: string[] = [];
@@ -20,7 +26,7 @@ export function buildTaxBaseByBeneficiary(
   // Répartir selon les parts civiles
   civilShares.forEach(share => {
     if (perBeneficiary.hasOwnProperty(share.beneficiaryId)) {
-      const partBrute = assetValuations.totalBaseTaxable * share.fraction;
+      const partBrute = actifNetTaxable * share.fraction;
       perBeneficiary[share.beneficiaryId] += partBrute;
       justifs.push(`${share.beneficiaryId} : ${(share.fraction * 100)}% = ${Math.round(partBrute)}€`);
 

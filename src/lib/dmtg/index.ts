@@ -12,7 +12,7 @@ import { BAREME_669_CGI } from '@/lib/patrimoine/bareme669CGI';
  */
 export function computeDMTG(ctx: DMTGContext): DMTGResult {
   const logs: string[] = [];
-  const { deathDate, params, assets, civilShares, beneficiaries, donations, avContracts, inventaireNotarieProduit } = ctx;
+  const { deathDate, params, assets, civilShares, beneficiaries, donations, avContracts, inventaireNotarieProduit, passif } = ctx;
 
   logs.push(`=== Calcul DMTG pour décès du ${deathDate} ===`);
   if (import.meta.env.DEV) console.log('Context DMTG:', ctx);
@@ -34,7 +34,8 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
     assetValuations,
     beneficiaries,
     params,
-    deathDate
+    deathDate,
+    passif || 0
   );
   logs.push(`Base répartie entre ${beneficiaries.length} bénéficiaires`);
 

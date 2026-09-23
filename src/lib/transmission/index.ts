@@ -627,9 +627,14 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     let dmtgLien: DmtgBeneficiary['lien'] = 'autre';
     if (heir.lien === 'conjoint') dmtgLien = 'conjoint';
     else if (heir.lien === 'enfant' || heir.lien === 'petit_enfant') dmtgLien = 'enfant';
-    else if (heir.lien === 'parent') dmtgLien = 'ascendant';
+    // Tout ascendant (parents, grands-parents, arrière-grands-parents) relève
+    // de l'abattement et du barème en ligne directe (art. 779 I et 777 CGI).
+    else if (heir.lien === 'parent' || heir.lien === 'grand_parent' || heir.lien === 'arriere_grand_parent') dmtgLien = 'ascendant';
     else if (heir.lien === 'frere_soeur') dmtgLien = 'frere_soeur';
     else if (heir.lien === 'neveu_niece') dmtgLien = 'neveu_niece';
+    // Collatéraux ordinaires jusqu'au 4e degré (oncles/tantes 3e, cousins
+    // germains 4e) : 55%, abattement de droit commun 1 594€ (art. 777 CGI).
+    else if (heir.lien === 'oncle_tante' || heir.lien === 'cousin') dmtgLien = 'collateral_4';
 
     // Représentation : un petit-enfant représentant un enfant
     // prédécédé/renonçant partage l'abattement enfant (100 000€) de la
@@ -800,7 +805,8 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     beneficiaries,
     donations: dmtgDonations,
     avContracts,
-    inventaireNotarieProduit: params.inventaireNotarieProduit
+    inventaireNotarieProduit: params.inventaireNotarieProduit,
+    passif: patrimony.passifs
   });
 
   // 9. Frais de notaire : émoluments (barème dégressif déclaration de

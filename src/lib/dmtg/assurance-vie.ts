@@ -64,6 +64,8 @@ export function computeAssuranceVie(
 ): AssuranceVieResult {
   const perBeneficiary: Record<string, { prelev990I: number; reintegration757B: number; capitalBrut: number }> = {};
   const notes: string[] = [];
+  // Assiette 990I cumulée par bénéficiaire, tous contrats confondus.
+  const assiette990IParBenef: Record<string, number> = {};
 
   // Initialiser pour chaque bénéficiaire
   beneficiaries.forEach(ben => {
@@ -104,10 +106,10 @@ export function computeAssuranceVie(
       const reintegration757B = exces757BContrat * share.quotePart;
       perBeneficiary[benef.id].reintegration757B += reintegration757B;
 
-      // Prélèvement 990I
-      let prelev990I = 0;
-
-      // Vérifier les exonérations
+      // Prélèvement 990I : on ne cumule ici que l'assiette de ce contrat.
+      // L'abattement de 152 500€ et le barème s'appliquent une seule fois
+      // par bénéficiaire, tous contrats confondus (art. 990 I CGI), cf.
+      // boucle après le traitement des contrats.
       const isConjointPacsExonere = (benef.lien === 'conjoint' || benef.lien === 'pacs') && contract.isExonereBeneficiaireConjointPacs;
       const isFraterieExonere = benef.lien === 'frere_soeur' && contract.isSiblingExonEligible;
 
@@ -115,29 +117,32 @@ export function computeAssuranceVie(
         // Capital soumis au prélèvement (primes avant 70 ans)
         const capitalSoumis = contract.primesAvant70 * share.quotePart;
 
-        // "Contrat vie-génération" (art. 990 I bis CGI) : abattement supplémentaire de 20% sur
-        // la part de capital transmise à chaque bénéficiaire, appliqué AVANT l'abattement de
-        // 152 500€ — uniquement sur les primes avant 70 ans (primesAvant70/990I) ; les primes
-        // après 70 ans (757B, ci-dessus) ne sont jamais concernées par cet abattement.
+        // "Contrat vie-génération" (art. 990 I bis CGI) : abattement de 20%
+        // propre à chaque contrat concerné, appliqué AVANT l'abattement de
+        // 152 500€ — uniquement sur les primes avant 70 ans ; les primes
+        // après 70 ans (757B, ci-dessus) ne sont jamais concernées.
         const capitalApresAbattement20 = contract.nature === 'Contrat vie-génération'
           ? capitalSoumis * 0.8
           : capitalSoumis;
 
-        // Abattement 990I par bénéficiaire
-        const baseImposable990I = Math.max(0, capitalApresAbattement20 - params.abattements.av_990I_allowance);
-
-        if (baseImposable990I > 0) {
-          // Appliquer le barème 990I
-          prelev990I = computeBareme990I(baseImposable990I, params);
-        }
+        assiette990IParBenef[benef.id] = (assiette990IParBenef[benef.id] || 0) + capitalApresAbattement20;
       }
 
-      perBeneficiary[benef.id].prelev990I += prelev990I;
-
-      if (prelev990I > 0 || reintegration757B > 0) {
-        notes.push(`${benef.id} - Contrat ${contract.id} : 990I=${Math.round(prelev990I)}€, 757B=${Math.round(reintegration757B)}€`);
+      if (reintegration757B > 0) {
+        notes.push(`${benef.id} - Contrat ${contract.id} : 757B=${Math.round(reintegration757B)}€`);
       }
     });
+  });
+
+  // Abattement 990I et barème, une seule fois par bénéficiaire sur le cumul
+  // de ses contrats.
+  Object.entries(assiette990IParBenef).forEach(([benId, assiette]) => {
+    const baseImposable990I = Math.max(0, assiette - params.abattements.av_990I_allowance);
+    if (baseImposable990I > 0) {
+      const prelev990I = computeBareme990I(baseImposable990I, params);
+      perBeneficiary[benId].prelev990I += prelev990I;
+      notes.push(`${benId} : 990I=${Math.round(prelev990I)}€ (assiette cumulée ${Math.round(assiette)}€)`);
+    }
   });
 
   // Arrondir les résultats

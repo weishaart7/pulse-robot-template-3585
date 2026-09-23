@@ -220,4 +220,9 @@ export interface DMTGContext {
   // alternative à un inventaire réel). true = inventaire produit, pas de
   // forfait. Défaut false = comportement le plus prudent fiscalement.
   inventaireNotarieProduit?: boolean;
+  // Passif déductible de la succession (art. 768 CGI) — même montant que
+  // patrimony.passifs côté civil. Déduit de l'actif taxable avant répartition
+  // entre bénéficiaires (beneficiary.ts), jamais de l'assiette du forfait
+  // mobilier (calculé sur l'actif brut, art. 764 CGI). Défaut 0.
+  passif?: number;
 }

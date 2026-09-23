@@ -33,7 +33,7 @@
     ]
   },
   "av_990I_rates": [
-    { "upTo": 852500, "rate": 0.20 },
+    { "upTo": 700000, "rate": 0.20 },
     { "upTo": null, "rate": 0.3125 }
   ],
   "demembrementViager": [

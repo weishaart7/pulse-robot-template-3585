@@ -241,9 +241,37 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   écart de 237 €/enfant sur une base ~3 000 €). Candidat pour une prochaine phase (ajouter le réglage
   côté "Hypothèses" de la succession), pas un correctif ponctuel.
 
+- **Assiette DMTG nette du passif (art. 768 CGI).** `computeTransmission` transmet `patrimony.passifs`
+  à `computeDMTG` (`DMTGContext.passif`) ; `dmtg/beneficiary.ts` répartit entre bénéficiaires
+  `max(0, actif taxable − passif)` (actif taxable = après abattements par bien : RP, bois…). Le forfait
+  mobilier de 5 % reste calculé sur l'actif brut, jamais réduit par le passif. Le passif `Bien commun`
+  est encore déduit à 100 % (cf. §3).
+- **990 I cumulé par bénéficiaire.** `dmtg/assurance-vie.ts` cumule d'abord l'assiette de chaque
+  bénéficiaire sur tous ses contrats (abattement vie-génération de 20 % appliqué contrat par contrat),
+  puis applique **une seule fois** l'abattement de 152 500 € et le barème : 20 % jusqu'à 700 000 € de
+  part taxable, 31,25 % au-delà (`params-dmtg.json`, `av_990I_rates`).
+- **Liens fiscaux des héritiers hors ordres 1-2.** Grands-parents et arrière-grands-parents → `ascendant`
+  (abattement 100 000 €, barème ligne directe) ; oncles/tantes et cousins germains → `collateral_4`
+  (55 %, abattement 1 594 €). Tests : `lib/transmission/phase1Audit.test.ts`.
+
 ## 3. Dette identifiée
 
 ### 🔴 Bloquant (peut fausser un calcul montré au client)
+
+- **Assurance-vie : écarts restants avec l'art. 990 I / 757 B.** (1) l'abattement de 30 500 € (757 B)
+  est réparti entre tous les bénéficiaires, conjoint exonéré compris, au lieu des seuls non exonérés ;
+  (2) en clause démembrée, usufruitier et nu-propriétaire reçoivent chacun l'abattement de 152 500 €
+  entier au lieu de se le partager au prorata ; (3) l'assiette 990 I est le montant des primes versées
+  avant 70 ans, pas le capital décès correspondant (plus-values ignorées), et les rachats partiels ne
+  sont pas déduits.
+- **Rappel fiscal des donations sur la mauvaise valeur.** `dmtg/recall.ts` reçoit `Liberalite.valeur`
+  (valeur au décès, art. 922) au lieu de la valeur au jour de la donation (art. 784 CGI) ; et
+  l'exonération 790 G (31 865 €) est déduite de chaque don au lieu d'être un plafond unique sur 15 ans
+  par couple donateur/donataire.
+- **Passif `Bien commun` déduit à 100 %** alors que l'actif commun n'entre qu'à 50 % : sous-évalue la
+  succession, au civil comme au fiscal.
+- **Legs à un tiers non héritier non taxé** (à confirmer) : seuls les héritiers légaux et les
+  bénéficiaires AV figurent dans la liste des bénéficiaires DMTG.
 
 - **La valeur au jour du partage (art. 860) n'est jamais capturée séparément, donc l'indemnité de
   réduction n'est jamais réévaluée entre le décès et le partage** (finding T3, art. 924-2).
