@@ -536,7 +536,7 @@ export const CarriereFonctionPublique = ({
                   </p>
                 )}
                 {!regimeAffiliation && (moyenneAnnuelleNBINum > 0 || trimestresLiquidablesNBINum > 0) && (
-                  <p className="text-xs text-amber-600 mt-1">
+                  <p className="text-xs text-spark mt-1">
                     Versant fonction publique non renseigné ci-dessus : le supplément NBI n'est pas
                     calculé malgré la saisie NBI.
                   </p>

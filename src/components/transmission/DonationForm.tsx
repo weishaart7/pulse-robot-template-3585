@@ -897,14 +897,14 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
                         <span className="font-medium">Total des pourcentages : </span>
                         <span className={`${
                           beneficiaries.reduce((sum, b) => sum + b.pourcentage, 0) === 100 
-                            ? 'text-green-600' 
-                            : 'text-orange-600'
+                            ? 'text-[var(--kt-positive)]' 
+                            : 'text-[var(--warning)]'
                         } font-medium`}>
                           {beneficiaries.reduce((sum, b) => sum + b.pourcentage, 0).toFixed(2)}%
                         </span>
                       </div>
                       {beneficiaries.reduce((sum, b) => sum + b.pourcentage, 0) !== 100 && (
-                        <p className="text-xs text-orange-600 mt-1">
+                        <p className="text-xs text-[var(--warning)] mt-1">
                           Le total doit être égal à 100% pour une donation complète
                         </p>
                       )}

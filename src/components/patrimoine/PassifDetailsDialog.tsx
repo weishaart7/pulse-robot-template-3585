@@ -38,7 +38,7 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
           <DialogTitle className="text-2xl font-bold">
             {emprunt ? emprunt.libelle : simplePassif?.nature}
           </DialogTitle>
-          <Badge variant="outline" className="w-fit mt-2 bg-red-50 text-red-700 border-red-200">
+          <Badge variant="outline" className="w-fit mt-2 bg-destructive/10 text-destructive border-destructive/30">
             {type === 'emprunt' ? 'Emprunt' : 'Passif'}
           </Badge>
         </DialogHeader>
@@ -50,10 +50,10 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
               {/* Montant principal */}
               <div className="p-4 rounded-lg border bg-card">
                 <div className="flex items-center gap-2 mb-2">
-                  <TrendingDown className="h-4 w-4 text-red-500" />
+                  <TrendingDown className="h-4 w-4 text-destructive" />
                   <span className="text-sm text-muted-foreground">Capital restant dû</span>
                 </div>
-                <div className="text-2xl font-bold text-red-600">
+                <div className="text-2xl font-bold text-destructive">
                   {formatCurrency(emprunt.capital_restant_du)}
                 </div>
               </div>
@@ -193,7 +193,7 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
                         return (
                           <div className="p-3 rounded-lg bg-muted">
                             <span className="text-sm text-muted-foreground">Coût total des intérêts</span>
-                            <p className="font-medium text-lg text-red-600">
+                            <p className="font-medium text-lg text-destructive">
                               {isCalculable ? formatCurrency(coutInterets) : 'Non calculable'}
                             </p>
                             {isCalculable && (
@@ -216,10 +216,10 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
             <>
               <div className="p-4 rounded-lg border bg-card">
                 <div className="flex items-center gap-2 mb-2">
-                  <TrendingDown className="h-4 w-4 text-red-500" />
+                  <TrendingDown className="h-4 w-4 text-destructive" />
                   <span className="text-sm text-muted-foreground">Montant dû</span>
                 </div>
-                <div className="text-2xl font-bold text-red-600">
+                <div className="text-2xl font-bold text-destructive">
                   {formatCurrency(simplePassif.montant_du)}
                 </div>
               </div>

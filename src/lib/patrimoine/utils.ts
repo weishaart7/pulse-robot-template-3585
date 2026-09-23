@@ -1,22 +1,24 @@
+import { SERIES, ASH } from '@/lib/palette';
 /**
  * Patrimoine utilities - centralized functions for asset/liability management
  */
 
 // Category colors for consistent visualization
+// Couleur par catégorie d'actif, dans la série du simulateur (lib/palette.ts).
 export const CATEGORY_COLORS: Record<string, string> = {
-  'actifs immobiliers': '#05E8A4',
-  'actifs corporels': '#2609D6',
-  'actifs professionnels': '#D5B7FF',
-  'épargne retraite et prévoyance': '#7B0700',
-  'épargne et assurance-vie': '#FF0095',
-  'épargne salariale': '#FF8B55',
-  'épargne bancaire / liquidités': '#314A46',
-  'valeurs mobilières et placements financiers': '#89FC00',
-  'autres': '#FF8B55',
+  'actifs immobiliers': SERIES[0],
+  'épargne et assurance-vie': SERIES[1],
+  'valeurs mobilières et placements financiers': SERIES[2],
+  'épargne retraite et prévoyance': SERIES[3],
+  'actifs corporels': SERIES[4],
+  'épargne bancaire / liquidités': SERIES[5],
+  'actifs professionnels': SERIES[6],
+  'épargne salariale': SERIES[8],
+  'autres': SERIES[7],
 };
 
 export const getCategoryColor = (category: string): string => {
-  return CATEGORY_COLORS[category.toLowerCase()] || '#000000';
+  return CATEGORY_COLORS[category.toLowerCase()] || ASH;
 };
 
 // Currency formatting

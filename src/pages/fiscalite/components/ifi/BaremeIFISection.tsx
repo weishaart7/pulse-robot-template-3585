@@ -169,7 +169,7 @@ const BaremeIFISection = () => {
                 <TableCell colSpan={3}>Montant de l'IFI dû</TableCell>
                 <TableCell className="text-right">{formatCurrency(ifiFinal)}</TableCell>
               </TableRow>
-              <TableRow className="bg-blue-50 dark:bg-blue-950 border-t-2">
+              <TableRow className="bg-secondary border-t-2">
                 <TableCell colSpan={3} className="font-semibold">Patrimoine net après IFI</TableCell>
                 <TableCell className="text-right font-semibold">{formatCurrency(baseImposable - ifiFinal)}</TableCell>
               </TableRow>
@@ -179,14 +179,14 @@ const BaremeIFISection = () => {
       </Card>
 
       {decote > 0 && (
-        <Card className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800">
+        <Card className="bg-positive/10 border-positive/30 ">
           <CardContent className="pt-6">
             <div className="text-center">
-              <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">Décote applicable</h4>
-              <p className="text-sm text-green-700 dark:text-green-300">
+              <h4 className="font-semibold text-positive mb-2">Décote applicable</h4>
+              <p className="text-sm text-positive ">
                 Votre patrimoine étant compris entre 1,3M€ et 1,4M€, une décote de {formatCurrency(decote)} s'applique.
               </p>
-              <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+              <p className="text-xs text-positive mt-2">
                 Formule: 17 500 € - (1,25% × {formatCurrency(baseImposable)}) = {formatCurrency(decote)}
               </p>
             </div>
@@ -205,11 +205,11 @@ const BaremeIFISection = () => {
       )}
 
       {reductionPlafonnement > 0 && (
-        <Card className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800">
+        <Card className="bg-positive/10 border-positive/30 ">
           <CardContent className="pt-6">
             <div className="text-center">
-              <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">Plafonnement applicable</h4>
-              <p className="text-sm text-green-700 dark:text-green-300">
+              <h4 className="font-semibold text-positive mb-2">Plafonnement applicable</h4>
+              <p className="text-sm text-positive ">
                 L'IFI et l'IR/PS de l'année excèdent 75 % de vos revenus N-1 : une réduction de {formatCurrency(reductionPlafonnement)} s'applique.
               </p>
             </div>

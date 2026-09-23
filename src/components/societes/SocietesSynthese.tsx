@@ -1,3 +1,4 @@
+import { ASH, STONE } from '@/lib/palette';
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +8,7 @@ import { societeBilanService, SocieteBilan } from '@/services/societeExtendedSer
 import { Building2, TrendingUp, Scale, ShieldCheck, AlertTriangle, Wallet } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
-const COLORS = ['hsl(var(--primary))', 'hsl(var(--ring))', 'hsl(var(--muted-foreground))', 'hsl(var(--accent-foreground))', '#94a3b8', '#cbd5e1'];
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--ring))', 'hsl(var(--muted-foreground))', 'hsl(var(--accent-foreground))', ASH, STONE];
 
 export const SocietesSynthese = () => {
   const { societes, isLoading } = useSocietes();

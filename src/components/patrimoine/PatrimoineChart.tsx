@@ -6,6 +6,7 @@ import { AssetDemembrement } from '@/services/assetDemembrementService';
 import { getAssetCategory } from '@/constants/assetTypes';
 import { getFractionDemembrement, DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
 import { CATEGORY_COLORS, formatCurrency } from '@/lib/patrimoine/utils';
+import { ASH, NEGATIVE } from '@/lib/palette';
 interface PatrimoineChartProps {
   assets: Asset[];
   passifs: Passif[];
@@ -52,7 +53,7 @@ export function computePatrimoineBreakdown(
   const actifData = Object.values(categoryData).map(item => ({
     name: item.category.charAt(0).toUpperCase() + item.category.slice(1),
     value: item.value,
-    color: CATEGORY_COLORS[item.category] || '#FF8B55',
+    color: CATEGORY_COLORS[item.category] || ASH,
     assets: item.assets,
     type: 'actif'
   }));
@@ -63,7 +64,7 @@ export function computePatrimoineBreakdown(
     actifData.push({
       name: 'Passifs',
       value: totalPassifs,
-      color: '#EF4444',
+      color: NEGATIVE,
       assets: [],
       type: 'passif'
     });

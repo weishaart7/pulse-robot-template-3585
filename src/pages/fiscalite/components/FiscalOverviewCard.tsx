@@ -1,3 +1,4 @@
+import { INK, VIOLET, EMBER } from '@/lib/palette';
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -51,9 +52,9 @@ const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
     + prelevementsSociauxGainsActionnariat.prelevementsSociaux;
 
   const composition: DonutSector[] = [
-    { label: 'Salaires', value: revenuSalaires.totalNetImposable, color: '#05aaa4' },
-    { label: "Gains d'actionnariat", value: gainsActionnariat.totalNetImposable, color: '#2AA173' },
-    { label: 'Pensions, retraites, rentes', value: pensionsRetraitesRentes.totalNetImposable, color: '#0b5563' },
+    { label: 'Salaires', value: revenuSalaires.totalNetImposable, color: INK },
+    { label: "Gains d'actionnariat", value: gainsActionnariat.totalNetImposable, color: VIOLET },
+    { label: 'Pensions, retraites, rentes', value: pensionsRetraitesRentes.totalNetImposable, color: EMBER },
   ]
     .filter(s => (s.value ?? 0) > 0)
     .map(s => ({ ...s, pct: impot.revenuImposable > 0 ? ((s.value ?? 0) / impot.revenuImposable) * 100 : 0 }));
@@ -141,9 +142,9 @@ const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
 
               <TabsContent value="income" className="space-y-4 mt-4">
                 <div className="space-y-1.5">
-                  <DetailRow label="Revenu net imposable (salaires)" value={formatEuros(revenuSalaires.totalNetImposable)} color="#05aaa4" />
-                  <DetailRow label="Gains d'actionnariat salarié imposables" value={formatEuros(gainsActionnariat.totalNetImposable)} color="#2AA173" />
-                  <DetailRow label="Pensions, retraites et rentes imposables" value={formatEuros(pensionsRetraitesRentes.totalNetImposable)} color="#0b5563" />
+                  <DetailRow label="Revenu net imposable (salaires)" value={formatEuros(revenuSalaires.totalNetImposable)} color={INK} />
+                  <DetailRow label="Gains d'actionnariat salarié imposables" value={formatEuros(gainsActionnariat.totalNetImposable)} color={VIOLET} />
+                  <DetailRow label="Pensions, retraites et rentes imposables" value={formatEuros(pensionsRetraitesRentes.totalNetImposable)} color={EMBER} />
                   {revenuExonereTauxEffectif.totalRetenu > 0 && (
                     <DetailRow
                       label="Revenus exonérés retenus (taux effectif)"

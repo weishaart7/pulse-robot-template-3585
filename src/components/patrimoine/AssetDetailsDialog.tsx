@@ -215,7 +215,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
             )}
             <p className="text-xs text-muted-foreground italic mt-2">{displayedQualificationRaison}</p>
             {qualificationPerimee && (
-              <p className="text-xs text-amber-700 dark:text-amber-400 mt-2">
+              <p className="text-xs text-foreground mt-2">
                 Qualification à jour : {qualificationResult.qualification} — resauvegardez cette fiche pour actualiser les totaux, qui utilisent encore « {asset.qualification_bien} ».
               </p>
             )}

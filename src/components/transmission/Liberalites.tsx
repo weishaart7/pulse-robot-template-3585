@@ -161,12 +161,12 @@ export const Liberalites = () => {
 
   const renderGroupRows = (groups: LiberaliteGroup[], onEdit: (group: LiberaliteGroup) => void) =>
     groups.map((group) => (
-      <TableRow key={group.groupKey} className="border-[var(--border)]">
+      <TableRow key={group.groupKey} className="border-[var(--kt-border)]">
         <TableCell className="font-medium text-[var(--text-primary)]">
           <div className="flex items-center gap-2">
             <span>{group.denomination}</span>
             {group.statut === 'projet' && (
-              <Badge variant="outline" className="shrink-0 text-amber-700 border-amber-300 dark:text-amber-400 dark:border-amber-800">
+              <Badge variant="outline" className="shrink-0 text-[var(--text-primary)] border-[var(--warning)]/30 ">
                 Projet
               </Badge>
             )}
@@ -212,7 +212,7 @@ export const Liberalites = () => {
                     size="sm"
                     onClick={() => onEdit(group)}
                     disabled={group.hasBeneficiaireInconnu}
-                    className="bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
+                    className="bg-[var(--surface)] text-[var(--text-primary)] border-[var(--kt-border-strong)] rounded-[var(--radius-lg)]"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -232,7 +232,7 @@ export const Liberalites = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => setGroupToDelete(group)}
-                  className="bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
+                  className="bg-[var(--surface)] text-[var(--text-primary)] border-[var(--kt-border-strong)] rounded-[var(--radius-lg)]"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -257,14 +257,14 @@ export const Liberalites = () => {
       <Button
         variant="outline"
         onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
-        className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
+        className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--kt-border-strong)] rounded-[var(--radius-lg)]"
       >
         Déclarer un scénario de changement de régime
         <ArrowRight className="h-4 w-4" />
       </Button>
 
       {/* Bloc Donations */}
-      <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+      <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
         <CardHeader className="p-5">
           <CardTitle className="flex items-center justify-between text-[15px] font-semibold text-[var(--text-primary)]">
             Donations
@@ -285,7 +285,7 @@ export const Liberalites = () => {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="border-[var(--border)]">
+                <TableRow className="border-[var(--kt-border)]">
                   <TableHead className="text-[var(--text-secondary)]">Dénomination</TableHead>
                   <TableHead className="text-[var(--text-secondary)]">Bénéficiaire(s)</TableHead>
                   <TableHead className="text-[var(--text-secondary)]">Montant</TableHead>
@@ -302,7 +302,7 @@ export const Liberalites = () => {
       </Card>
 
       {/* Bloc Legs */}
-      <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+      <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
         <CardHeader className="p-5">
           <CardTitle className="flex items-center justify-between text-[15px] font-semibold text-[var(--text-primary)]">
             Legs (Testament)
@@ -323,7 +323,7 @@ export const Liberalites = () => {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="border-[var(--border)]">
+                <TableRow className="border-[var(--kt-border)]">
                   <TableHead className="text-[var(--text-secondary)]">Dénomination</TableHead>
                   <TableHead className="text-[var(--text-secondary)]">Bénéficiaire(s)</TableHead>
                   <TableHead className="text-[var(--text-secondary)]">Montant</TableHead>

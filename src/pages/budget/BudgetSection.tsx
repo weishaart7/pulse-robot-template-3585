@@ -46,7 +46,7 @@ export const BudgetSection = () => {
               onClick={() => setDisplayMode(mode)}
               className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                 displayMode === mode
-                  ? 'bg-[#006064] text-white'
+                  ? 'bg-foreground text-background shadow-whisper'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >

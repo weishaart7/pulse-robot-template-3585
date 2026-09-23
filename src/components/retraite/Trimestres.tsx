@@ -404,7 +404,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
                   decoteOuSurcoteSelection < 0
                     ? 'text-destructive'
                     : decoteOuSurcoteSelection > 0
-                    ? 'text-green-600'
+                    ? 'text-positive'
                     : 'text-muted-foreground'
                 }`}
               >
@@ -427,7 +427,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
               complémentaires calculables : {formatEuro2(totalPensionComplementaireAnnuelle)}
             </p>
             {regimesPointsExclusCount > 0 && (
-              <p className="text-xs text-orange-600 mt-1">
+              <p className="text-xs text-spark mt-1">
                 {regimesPointsExclusCount} régime{regimesPointsExclusCount > 1 ? 's' : ''} non
                 inclus, valeur du point manquante
               </p>
@@ -523,7 +523,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
               </div>
 
               {coutUnitaireRachat === undefined ? (
-                <p className="text-xs text-orange-600">
+                <p className="text-xs text-spark">
                   Rachat non disponible au-delà de 66 ans (votre âge actuel : {ageActuelConfirme} ans).
                 </p>
               ) : (
@@ -553,7 +553,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
 
                   {gainPensionAnnuelRachat > 0 ? (
                     <p className="text-xs">
-                      Gain de pension : <span className="font-semibold text-green-600">
+                      Gain de pension : <span className="font-semibold text-positive">
                         +{formatEuro2(gainPensionAnnuelRachat)} / an
                       </span>
                       {pointMortRachat !== undefined && coutTotalRachat !== undefined && (
@@ -607,7 +607,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
                         decoteOuSurcoteLigne < 0
                           ? 'text-destructive'
                           : decoteOuSurcoteLigne > 0
-                          ? 'text-green-600'
+                          ? 'text-positive'
                           : undefined
                       }
                     >

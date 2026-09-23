@@ -72,7 +72,7 @@ export const PatrimoinePlusValues = ({ onBack }: PatrimoinePlusValuesProps) => {
           subtitle="Gains latents"
           value={`+${formatCurrency(totalPlusValues)}`}
           icon={TrendingUp}
-          accentColor="bg-gradient-to-r from-emerald-400 to-emerald-500"
+          accentColor="bg-gradient-to-r from-positive to-positive"
           delay="0ms"
         />
         <SummaryCard
@@ -80,7 +80,7 @@ export const PatrimoinePlusValues = ({ onBack }: PatrimoinePlusValuesProps) => {
           subtitle="Pertes latentes"
           value={`-${formatCurrency(totalMoinsValues)}`}
           icon={TrendingDown}
-          accentColor="bg-gradient-to-r from-rose-400 to-rose-500"
+          accentColor="bg-gradient-to-r from-destructive to-destructive"
           delay="60ms"
         />
         <SummaryCard
@@ -88,7 +88,7 @@ export const PatrimoinePlusValues = ({ onBack }: PatrimoinePlusValuesProps) => {
           subtitle="Balance globale"
           value={`${isPositive ? '+' : ''}${formatCurrency(netPlusValue)}`}
           icon={Wallet}
-          accentColor={isPositive ? "bg-gradient-to-r from-primary to-primary/80" : "bg-gradient-to-r from-rose-400 to-rose-500"}
+          accentColor={isPositive ? "bg-gradient-to-r from-primary to-primary/80" : "bg-gradient-to-r from-destructive to-destructive"}
           delay="120ms"
         />
       </div>
@@ -137,11 +137,11 @@ export const PatrimoinePlusValues = ({ onBack }: PatrimoinePlusValuesProps) => {
                             <td className="py-3.5 text-right">
                               <div className="flex items-center justify-end gap-1">
                                 {positive ? (
-                                  <ArrowUpRight className="h-3 w-3 text-emerald-500" strokeWidth={2} />
+                                  <ArrowUpRight className="h-3 w-3 text-positive" strokeWidth={2} />
                                 ) : (
-                                  <ArrowDownRight className="h-3 w-3 text-rose-500" strokeWidth={2} />
+                                  <ArrowDownRight className="h-3 w-3 text-destructive" strokeWidth={2} />
                                 )}
-                                <span className={`font-semibold text-[13px] tabular-nums ${positive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                <span className={`font-semibold text-[13px] tabular-nums ${positive ? 'text-positive ' : 'text-destructive '}`}>
                                   {positive ? '+' : ''}{formatCurrency(asset.plusValue)}
                                 </span>
                               </div>
@@ -149,8 +149,8 @@ export const PatrimoinePlusValues = ({ onBack }: PatrimoinePlusValuesProps) => {
                             <td className="py-3.5 text-right">
                               <span className={`text-[11px] font-semibold px-2 py-[3px] rounded-md tabular-nums ${
                                 positive 
-                                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300' 
-                                  : 'bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-300'
+                                  ? 'bg-positive/10 text-positive ' 
+                                  : 'bg-destructive/10 text-destructive '
                               }`}>
                                 {positive ? '+' : ''}{pct.toFixed(1)}%
                               </span>
@@ -190,7 +190,7 @@ export const PatrimoinePlusValues = ({ onBack }: PatrimoinePlusValuesProps) => {
                         </span>
                         <span className="text-[10px] text-muted-foreground/50 ml-auto tabular-nums">{data.count} actif{data.count > 1 ? 's' : ''}</span>
                       </div>
-                      <p className={`text-lg font-bold ml-[19px] tracking-tight ${positive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      <p className={`text-lg font-bold ml-[19px] tracking-tight ${positive ? 'text-positive ' : 'text-destructive '}`}>
                         {positive ? '+' : ''}{formatCurrency(data.plusValue)}
                       </p>
                     </div>
@@ -266,11 +266,11 @@ const SummaryCard = ({
 );
 
 const REGIME_BADGE_CLASSES: Record<string, string> = {
-  pfu: 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300',
-  exonere_partiel: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300',
-  exonere_total: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300',
-  informatif: 'bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-300',
-  choix: 'bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-300',
+  pfu: 'bg-spark/10 text-foreground ',
+  exonere_partiel: 'bg-positive/10 text-positive ',
+  exonere_total: 'bg-positive/10 text-positive ',
+  informatif: 'bg-secondary text-muted-foreground ',
+  choix: 'bg-secondary text-muted-foreground ',
   non_determine: 'bg-muted text-muted-foreground/70',
 };
 
@@ -318,21 +318,21 @@ const FiscalContent = ({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <FiscalSummaryCard
           icon={BadgePercent}
-          iconColor="text-amber-500"
+          iconColor="text-spark"
           label="Fiscalité estimée"
           value={formatCurrency(totalCalcule)}
           valueColor="text-foreground"
           subtitle="Total des régimes calculables"
-          accentColor="bg-gradient-to-r from-amber-400 to-amber-500"
+          accentColor="bg-gradient-to-r from-spark to-spark"
         />
         <FiscalSummaryCard
           icon={ShieldCheck}
-          iconColor="text-emerald-500"
+          iconColor="text-positive"
           label="Dont IR exonéré"
           value={formatCurrency(totalExonerePartiel)}
-          valueColor="text-emerald-600 dark:text-emerald-400"
+          valueColor="text-positive "
           subtitle="PS (18,6%) restant dus"
-          accentColor="bg-gradient-to-r from-emerald-400 to-emerald-500"
+          accentColor="bg-gradient-to-r from-positive to-positive"
         />
         <FiscalSummaryCard
           icon={null}
@@ -366,7 +366,7 @@ const FiscalContent = ({
                     <p className="font-medium text-foreground text-[13px]">{asset.denomination}</p>
                     <p className="text-[11px] text-muted-foreground/60 mt-0.5">{asset.nature}</p>
                   </td>
-                  <td className="py-3.5 text-right font-medium text-emerald-600 dark:text-emerald-400 text-[13px] tabular-nums">
+                  <td className="py-3.5 text-right font-medium text-positive text-[13px] tabular-nums">
                     +{formatCurrency(asset.plusValue)}
                   </td>
                   <td className="py-3.5 text-center">

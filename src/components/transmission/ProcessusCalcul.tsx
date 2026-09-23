@@ -171,7 +171,7 @@ export const ProcessusCalcul = () => {
   ) {
     return (
       <div className="kairos-transmission">
-        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardHeader className="p-5">
             <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Processus de calcul de transmission</CardTitle>
             <CardDescription className="text-[var(--text-secondary)]">Chargement des données...</CardDescription>
@@ -184,12 +184,12 @@ export const ProcessusCalcul = () => {
   if (!familyGraph || !transmissionResult || !patrimony) {
     return (
       <div className="kairos-transmission">
-        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardHeader className="p-5">
             <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Processus de calcul de transmission</CardTitle>
           </CardHeader>
           <CardContent className="p-5 pt-0">
-            <Alert className="bg-[var(--surface-sunken)] border-[var(--border)]">
+            <Alert className="bg-[var(--surface-sunken)] border-[var(--kt-border)]">
               <AlertCircle className="h-4 w-4 text-[var(--ink-400)]" />
               <AlertDescription className="text-[var(--text-secondary)]">
                 {computeErrorMessage || "Veuillez d'abord renseigner votre situation familiale et votre patrimoine pour visualiser le processus de calcul."}
@@ -199,7 +199,7 @@ export const ProcessusCalcul = () => {
               <Button
                 variant="outline"
                 onClick={() => navigate('/dashboard/transmission?tab=assurance-vie')}
-                className="gap-2 mt-4 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
+                className="gap-2 mt-4 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--kt-border-strong)] rounded-[var(--radius-lg)]"
               >
                 Renseigner le contrat dans Assurance-vie
                 <ArrowRight className="h-4 w-4" />
@@ -209,7 +209,7 @@ export const ProcessusCalcul = () => {
               <Button
                 variant="outline"
                 onClick={() => navigate('/dashboard/patrimoine?tab=actifs')}
-                className="gap-2 mt-4 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
+                className="gap-2 mt-4 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--kt-border-strong)] rounded-[var(--radius-lg)]"
               >
                 Qualifier ce bien dans Patrimoine
                 <ArrowRight className="h-4 w-4" />
@@ -477,7 +477,7 @@ export const ProcessusCalcul = () => {
 
   return (
     <div className="kairos-transmission space-y-6">
-      <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+      <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
         <CardHeader className="p-5">
           <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-[var(--text-primary)]">
             <Calculator className="h-5 w-5 text-[var(--ink-400)]" />
@@ -514,14 +514,14 @@ export const ProcessusCalcul = () => {
                     </ul>
                   </div>
 
-                  <div className="mt-4 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--border)] p-3">
+                  <div className="mt-4 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--kt-border)] p-3">
                     <p className="kairos-num text-sm font-mono text-[var(--text-primary)]">{step.formula}</p>
                   </div>
                 </div>
 
                 {/* Colonne droite : Conseils */}
                 <div className="lg:col-span-1">
-                  <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-sunken)] p-4 space-y-3 h-full">
+                  <div className="rounded-[var(--radius-lg)] border border-[var(--kt-border)] bg-[var(--surface-sunken)] p-4 space-y-3 h-full">
                     <div className="flex items-center gap-2 text-[var(--text-primary)]">
                       <Lightbulb className="h-4 w-4 text-[var(--ink-400)]" />
                       <h4 className="text-sm font-semibold">Conseils pratiques</h4>
@@ -539,12 +539,12 @@ export const ProcessusCalcul = () => {
               </div>
 
               {index < calculSteps.length - 1 && (
-                <Separator className="my-6 bg-[var(--border)]" />
+                <Separator className="my-6 bg-[var(--kt-border)]" />
               )}
             </div>
           ))}
 
-          <Separator className="my-6 bg-[var(--border)]" />
+          <Separator className="my-6 bg-[var(--kt-border)]" />
 
           <div className="space-y-6">
             <div className="flex items-start gap-4">
@@ -564,7 +564,7 @@ export const ProcessusCalcul = () => {
             <div className="overflow-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-[var(--border)]">
+                  <TableRow className="border-[var(--kt-border)]">
                     <TableHead className="text-[var(--text-secondary)]">Héritier</TableHead>
                     <TableHead className="text-right text-[var(--text-secondary)]">Héritage brut</TableHead>
                     <TableHead className="text-right text-[var(--text-secondary)]">Droits de succession</TableHead>
@@ -575,7 +575,7 @@ export const ProcessusCalcul = () => {
                 </TableHeader>
                 <TableBody>
                   {heritierDetails.map(h => (
-                    <TableRow key={h.personId} className="border-[var(--border)]">
+                    <TableRow key={h.personId} className="border-[var(--kt-border)]">
                       <TableCell>
                         <span className="font-medium text-[var(--text-primary)]">{h.nom}</span>
                         <span className="text-xs text-[var(--text-secondary)] ml-1.5">({h.lien})</span>
@@ -587,7 +587,7 @@ export const ProcessusCalcul = () => {
                       <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{h.transmissionNetteHeritier.toLocaleString('fr-FR')} €</TableCell>
                     </TableRow>
                   ))}
-                  <TableRow className="border-t-2 border-[var(--border-strong)]">
+                  <TableRow className="border-t-2 border-[var(--kt-border-strong)]">
                     <TableCell className="font-semibold text-[var(--text-primary)]">Total</TableCell>
                     <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{heritierDetails.reduce((s, h) => s + h.heritageBrut, 0).toLocaleString('fr-FR')} €</TableCell>
                     <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{heritierDetails.reduce((s, h) => s + h.droitsSuccession, 0).toLocaleString('fr-FR')} €</TableCell>
@@ -601,7 +601,7 @@ export const ProcessusCalcul = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {heritierDetails.map(h => (
-                <div key={h.personId} className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-sunken)] p-4 space-y-4">
+                <div key={h.personId} className="rounded-[var(--radius-lg)] border border-[var(--kt-border)] bg-[var(--surface-sunken)] p-4 space-y-4">
                   <h4 className="text-sm font-semibold text-[var(--text-primary)]">{h.nom} <span className="font-normal text-[var(--text-secondary)]">({h.lien})</span></h4>
 
                   <div>
@@ -636,7 +636,7 @@ export const ProcessusCalcul = () => {
             </div>
           </div>
 
-          <div className="mt-8 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-sunken)] p-6">
+          <div className="mt-8 rounded-[var(--radius-lg)] border border-[var(--kt-border)] bg-[var(--surface-sunken)] p-6">
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-[var(--text-primary)]">
               <TrendingUp className="h-5 w-5 text-[var(--ink-400)]" />
               Synthèse du processus

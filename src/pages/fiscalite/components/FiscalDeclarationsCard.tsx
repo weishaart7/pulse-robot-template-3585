@@ -69,8 +69,8 @@ const FiscalDeclarationsCard = ({ onDeclarationClosed }: FiscalDeclarationsCardP
                       onClick={() => openDeclaration(item.code)}
                       className="flex w-full items-center gap-3 rounded-md p-2.5 text-left transition-colors enabled:hover:bg-muted/50 disabled:cursor-default"
                     >
-                      <div className="h-8 w-8 shrink-0 rounded-full bg-[#05aaa4]/10 flex items-center justify-center">
-                        <item.icon className="h-4 w-4 text-[#05aaa4]" />
+                      <div className="h-8 w-8 shrink-0 rounded-full bg-secondary flex items-center justify-center">
+                        <item.icon className="h-4 w-4 text-foreground" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-medium leading-snug text-wrap break-words">

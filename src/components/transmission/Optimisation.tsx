@@ -217,7 +217,7 @@ export const Optimisation = () => {
   const renderNoActionMessage = () => {
     if (scenario === 'no_marriage') {
       return (
-        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3 text-[var(--text-secondary)]">
               <Info className="h-5 w-5 mt-0.5 shrink-0" />
@@ -229,7 +229,7 @@ export const Optimisation = () => {
     }
     if (scenario === 'no_children') {
       return (
-        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3 text-[var(--text-secondary)]">
               <Info className="h-5 w-5 mt-0.5 shrink-0" />
@@ -257,13 +257,13 @@ export const Optimisation = () => {
   return (
     <div className="kairos-transmission space-y-6">
       {/* Option du conjoint survivant */}
-      <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+      <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
         <CardHeader className="p-5">
           <div className="flex items-center gap-2">
             <Heart className="h-5 w-5 text-[var(--ink-400)]" />
             <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Option du conjoint survivant</CardTitle>
             {saving && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[var(--ink-900)]" />}
-            {selectedOption && !saving && <Check className="h-4 w-4 text-[var(--positive)]" />}
+            {selectedOption && !saving && <Check className="h-4 w-4 text-[var(--kt-positive)]" />}
           </div>
           <CardDescription className="text-[var(--text-secondary)]">
             Choisissez l'option successorale du conjoint survivant en fonction de votre situation familiale.
@@ -278,7 +278,7 @@ export const Optimisation = () => {
                   {label}
                 </Badge>
               ))}
-              <Badge variant="outline" className="text-xs bg-transparent text-[var(--text-secondary)] border-[var(--border-strong)] rounded-[var(--radius-md)]">
+              <Badge variant="outline" className="text-xs bg-transparent text-[var(--text-secondary)] border-[var(--kt-border-strong)] rounded-[var(--radius-md)]">
                 {enfants.length} enfant{enfants.length > 1 ? 's' : ''}
               </Badge>
             </div>
@@ -291,7 +291,7 @@ export const Optimisation = () => {
               className="space-y-3"
             >
               {options.map((opt) => (
-                <div key={opt.value} className="flex items-start space-x-3 rounded-[var(--radius-lg)] border border-[var(--border)] p-4 hover:bg-[var(--fill-hover)] transition-colors">
+                <div key={opt.value} className="flex items-start space-x-3 rounded-[var(--radius-lg)] border border-[var(--kt-border)] p-4 hover:bg-[var(--fill-hover)] transition-colors">
                   <RadioGroupItem value={opt.value} id={opt.value} className="mt-0.5" />
                   <Label htmlFor={opt.value} className="flex-1 cursor-pointer space-y-1">
                     <span className="font-medium text-sm text-[var(--text-primary)]">{opt.label}</span>
@@ -305,7 +305,7 @@ export const Optimisation = () => {
           )}
 
           {scenario === 'married_no_ddv_noncommon' && (
-            <div className="flex items-start gap-2 mt-3 p-3 rounded-[var(--radius-md)] bg-[var(--surface-sunken)] border border-[var(--border)]">
+            <div className="flex items-start gap-2 mt-3 p-3 rounded-[var(--radius-md)] bg-[var(--surface-sunken)] border border-[var(--kt-border)]">
               <AlertCircle className="h-4 w-4 text-[var(--text-secondary)] mt-0.5 shrink-0" />
               <p className="text-xs text-[var(--text-secondary)]">
                 En présence d'au moins un enfant non commun, le conjoint ne peut recevoir que 1/4 en pleine propriété. L'option en usufruit n'est pas disponible.
@@ -317,7 +317,7 @@ export const Optimisation = () => {
 
       {/* Droit d'usage et d'habitation (DUH, C. civ. art. 764-766) */}
       {isMarried && (
-        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardHeader className="p-5">
             <div className="flex items-center gap-2">
               <Home className="h-5 w-5 text-[var(--ink-400)]" />
@@ -340,7 +340,7 @@ export const Optimisation = () => {
       )}
 
       {/* Hypothèse de partage (droit de partage, art. 746 CGI) */}
-      <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+      <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
         <CardHeader className="p-5">
           <div className="flex items-center gap-2">
             <Handshake className="h-5 w-5 text-[var(--ink-400)]" />

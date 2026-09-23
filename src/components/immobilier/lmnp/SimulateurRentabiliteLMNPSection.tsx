@@ -94,7 +94,7 @@ export const SimulateurRentabiliteLMNPSection = ({ asset }: SimulateurRentabilit
                   Revenu imposable (abattement {(result.microBic.abattementTaux * 100).toFixed(0)} %) : {formatCurrency(result.microBic.revenuImposable)}
                 </p>
                 {result.microBic.depassementPlafond && (
-                  <p className="text-sm text-amber-600">
+                  <p className="text-sm text-spark">
                     Dépassement du plafond micro-BIC ({formatCurrency(result.microBic.plafondRecettes)}) — bascule au réel obligatoire.
                   </p>
                 )}

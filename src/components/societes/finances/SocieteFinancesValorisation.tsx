@@ -157,7 +157,7 @@ export const SocieteFinancesValorisation: React.FC<SocieteFinancesValorisationPr
             <p className="text-xs text-muted-foreground">Évolution</p>
             <p className={`text-sm font-semibold flex items-center justify-center gap-1 ${
               stats.evolutionPourcent !== null 
-                ? stats.evolutionPourcent >= 0 ? 'text-green-600' : 'text-red-600'
+                ? stats.evolutionPourcent >= 0 ? 'text-positive' : 'text-destructive'
                 : ''
             }`}>
               {stats.evolutionPourcent !== null ? (

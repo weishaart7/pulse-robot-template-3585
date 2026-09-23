@@ -199,14 +199,14 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
     if (plusValue > 0) {
       return {
         display: `+${formatCurrency(plusValue)}`,
-        className: 'text-green-600 dark:text-green-400',
+        className: 'text-positive ',
         value: plusValue,
         regimeNonDetermine
       };
     } else if (plusValue < 0) {
       return {
         display: formatCurrency(plusValue),
-        className: 'text-red-600 dark:text-red-400',
+        className: 'text-destructive ',
         value: plusValue,
         regimeNonDetermine
       };
@@ -247,12 +247,12 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
     if (total > 0) {
       return { 
         display: `+${formatCurrency(total)}`, 
-        className: 'text-green-600 dark:text-green-400 font-semibold'
+        className: 'text-positive font-semibold'
       };
     } else if (total < 0) {
       return { 
         display: formatCurrency(total), 
-        className: 'text-red-600 dark:text-red-400 font-semibold'
+        className: 'text-destructive font-semibold'
       };
     }
     return { display: '0 €', className: 'text-muted-foreground font-semibold' };
@@ -409,8 +409,8 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
                             {plusValueInfo.regimeNonDetermine && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className="inline-flex items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 p-0.5">
-                                    <AlertTriangle className="h-3 w-3 text-amber-600 dark:text-amber-400" strokeWidth={2} />
+                                  <span className="inline-flex items-center justify-center rounded-full bg-spark/10 p-0.5">
+                                    <AlertTriangle className="h-3 w-3 text-spark " strokeWidth={2} />
                                   </span>
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="text-xs">

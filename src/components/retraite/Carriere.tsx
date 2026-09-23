@@ -827,8 +827,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                 <div className="text-center p-3 border rounded-lg">
                   <div className={`text-xl font-bold ${
                     parseInt(trimestresValides) >= trimestresRequis
-                      ? 'text-green-600'
-                      : 'text-orange-600'
+                      ? 'text-positive'
+                      : 'text-spark'
                   }`}>
                     {Math.max(0, trimestresRequis - parseInt(trimestresValides))}
                   </div>
@@ -870,7 +870,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
               <Label className="text-xs">Décote / Surcote</Label>
               <div className={`text-xl font-semibold ${
                 decoteSurcote + surcoteTotalePct < 0 ? 'text-destructive' :
-                decoteSurcote + surcoteTotalePct > 0 ? 'text-green-600' : 'text-muted-foreground'
+                decoteSurcote + surcoteTotalePct > 0 ? 'text-positive' : 'text-muted-foreground'
               }`}>
                 {decoteSurcote + surcoteTotalePct > 0 ? '+' : ''}{(decoteSurcote + surcoteTotalePct).toFixed(2)}%
               </div>
@@ -926,7 +926,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                 </p>
               )}
               {ecretementApplique && (
-                <p className="text-xs text-orange-600 mt-1">
+                <p className="text-xs text-spark mt-1">
                   Écrêtement appliqué : majoration MICO réduite de{' '}
                   {formatEuro2(majorationMicoTotaleAvantEcretement - majorationMicoTotaleApresEcretement)} / an
                   (plafond global de pensions dépassé, référentiel §3.5.5).
@@ -955,7 +955,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                 Pension de base ajustée : {formatEuro2(pensionBaseAjustee)} + pensions complémentaires calculables : {formatEuro2(totalPensionComplementaireAnnuelle)}
               </p>
               {regimesPointsExclusCount > 0 && (
-                <p className="text-xs text-orange-600 mt-1">
+                <p className="text-xs text-spark mt-1">
                   {regimesPointsExclusCount} régime{regimesPointsExclusCount > 1 ? 's' : ''} non inclus, valeur du point manquante
                 </p>
               )}
@@ -1022,7 +1022,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                           Pension complémentaire : {formatEuro2(pensionAnnuelle)} / an ({formatEuro2(pensionAnnuelle / 12)} / mois)
                         </div>
                       ) : (
-                        <div className="text-xs text-orange-600">
+                        <div className="text-xs text-spark">
                           Valeur du point manquante, montant non calculable
                         </div>
                       )}
@@ -1053,13 +1053,13 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         <CardContent className="p-5 pt-0 space-y-3">
           {trimestresValides && detailCarriere.length > 0 && (
             Math.abs(ecartCoherenceTrimestres) <= SEUIL_ECART_COHERENCE_TRIMESTRES ? (
-              <div className="flex items-center gap-2 text-xs text-green-600">
+              <div className="flex items-center gap-2 text-xs text-positive">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />
                 Cohérent avec la carrière saisie ({totalDeriveCarriere} trimestres dérivés de la carrière, contre{' '}
                 {trimValidesRegimeGeneral} trimestres validés au RIS)
               </div>
             ) : (
-              <div className="flex items-start gap-2 text-xs text-orange-600 p-2.5 border border-orange-500/20 rounded-lg bg-orange-500/10">
+              <div className="flex items-start gap-2 text-xs text-spark p-2.5 border border-spark/20 rounded-lg bg-spark/10">
                 <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>
                   Écart détecté entre le RIS importé ({trimValidesRegimeGeneral} trimestres) et la carrière saisie

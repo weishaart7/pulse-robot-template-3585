@@ -124,8 +124,8 @@ export const AVOperationsTable: React.FC<AVOperationsTableProps> = ({ operations
               <div key={op.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 transition-colors group">
                 <div className="flex items-center gap-3">
                   {op.type_operation === 'versement' ? (
-                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                      <TrendingUp className="h-4 w-4 text-emerald-500" />
+                    <div className="w-8 h-8 rounded-full bg-[var(--kt-positive)]/10 flex items-center justify-center">
+                      <TrendingUp className="h-4 w-4 text-[var(--kt-positive)]" />
                     </div>
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center">
@@ -147,7 +147,7 @@ export const AVOperationsTable: React.FC<AVOperationsTableProps> = ({ operations
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`font-semibold ${op.type_operation === 'versement' ? 'text-emerald-600' : 'text-destructive'}`}>
+                  <span className={`font-semibold ${op.type_operation === 'versement' ? 'text-[var(--kt-positive)]' : 'text-destructive'}`}>
                     {op.type_operation === 'versement' ? '+' : '-'}{formatCurrency(op.montant)}
                   </span>
                   <Button

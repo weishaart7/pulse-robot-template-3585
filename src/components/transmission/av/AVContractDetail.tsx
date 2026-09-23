@@ -344,7 +344,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
         <Card className="bg-muted/30 border border-border ">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+              <TrendingUp className="h-3.5 w-3.5 text-[var(--kt-positive)]" />
               <span className="text-xs text-muted-foreground">Versements</span>
             </div>
             <p className="text-lg font-semibold">{formatCurrency(totalVersements)}</p>

@@ -1,3 +1,4 @@
+import { SERIES } from '@/lib/palette';
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 
@@ -14,7 +15,7 @@ export interface DonutSector {
   color?: string;
 }
 
-const DEFAULT_COLORS = ['#4790E4', '#7FB4EF', '#2E5FA3', '#2AA173', '#B98634', 'var(--muted-foreground)'];
+const DEFAULT_COLORS: string[] = [...SERIES];
 
 const SIZE = 156;
 const CENTER = SIZE / 2;

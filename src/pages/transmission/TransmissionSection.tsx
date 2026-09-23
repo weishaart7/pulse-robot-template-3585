@@ -86,7 +86,7 @@ export const TransmissionSection = () => {
       </div>
 
       <div className="mb-6 flex justify-start">
-        <div className="flex gap-7 border-b border-[var(--border)]">
+        <div className="flex gap-7 border-b border-[var(--kt-border)]">
           <AnimatedBackground
             defaultValue="synthese"
             onValueChange={(value) => setActiveTab(value || 'synthese')}

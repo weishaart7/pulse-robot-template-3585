@@ -222,7 +222,7 @@ export const SocieteFinancesComptables: React.FC<SocieteFinancesComptablesProps>
           </div>
           <div className="bg-muted/50 rounded-lg p-3 text-center">
             <p className="text-xs text-muted-foreground">Résultat</p>
-            <p className={`text-sm font-semibold ${(formData.resultat_net || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <p className={`text-sm font-semibold ${(formData.resultat_net || 0) >= 0 ? 'text-positive' : 'text-destructive'}`}>
               {formatCurrency(formData.resultat_net)}
             </p>
           </div>

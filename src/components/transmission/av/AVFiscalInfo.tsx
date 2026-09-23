@@ -28,11 +28,11 @@ export const AVFiscalInfo: React.FC<AVFiscalInfoProps> = ({ fiscalRegime, contra
         return (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-emerald-500" />
+              <Check className="h-4 w-4 text-[var(--kt-positive)]" />
               <span className="text-sm">Impôt sur le revenu : <strong>Exonéré</strong></span>
             </div>
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <AlertTriangle className="h-4 w-4 text-[var(--warning)]" />
               <span className="text-sm">Prélèvements sociaux : <strong>17,2%</strong> sur les gains</span>
             </div>
           </div>

@@ -49,16 +49,16 @@ export const IncompleteAssetsBanner: React.FC<Props> = ({ assets, onAssetClick }
   if (dismissed || incomplete.length === 0) return null;
 
   return (
-    <div className="rounded-lg border border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-800/40 p-4">
+    <div className="rounded-lg border border-spark/30/60 bg-spark/10/60 p-4">
       <div className="flex items-start gap-3">
-        <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" strokeWidth={1.75} />
+        <AlertTriangle className="h-5 w-5 text-spark mt-0.5 shrink-0" strokeWidth={1.75} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+              <p className="text-sm font-semibold text-foreground ">
                 {incomplete.length} actif{incomplete.length > 1 ? 's ont' : ' a'} des informations manquantes
               </p>
-              <p className="text-xs text-amber-800/80 dark:text-amber-200/70">
+              <p className="text-xs text-foreground/80 ">
                 Complétez ces informations pour des analyses fiscales et patrimoniales fiables.
               </p>
             </div>
@@ -68,7 +68,7 @@ export const IncompleteAssetsBanner: React.FC<Props> = ({ assets, onAssetClick }
                 variant="ghost"
                 size="sm"
                 onClick={() => setExpanded((e) => !e)}
-                className="text-amber-900 dark:text-amber-100 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                className="text-foreground hover:bg-spark/10 "
               >
                 {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 {expanded ? 'Masquer' : 'Détails'}
@@ -78,7 +78,7 @@ export const IncompleteAssetsBanner: React.FC<Props> = ({ assets, onAssetClick }
                 variant="ghost"
                 size="icon"
                 onClick={handleDismiss}
-                className="text-amber-900 dark:text-amber-100 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                className="text-foreground hover:bg-spark/10 "
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -97,7 +97,7 @@ export const IncompleteAssetsBanner: React.FC<Props> = ({ assets, onAssetClick }
                     <span className="font-medium">{asset.denomination || asset.nature}</span>
                     <span className="text-muted-foreground"> — {asset.nature}</span>
                   </div>
-                  <span className="text-amber-700 dark:text-amber-300 shrink-0">
+                  <span className="text-foreground shrink-0">
                     Manque : {missing.join(', ')}
                   </span>
                 </li>

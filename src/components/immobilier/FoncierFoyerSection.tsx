@@ -291,7 +291,7 @@ export const FoncierFoyerSection = () => {
         )}
 
         {(result.nouveauDeficitReportableHorsInterets > 0 || result.nouveauDeficitReportableInterets > 0) && (
-          <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 space-y-1 dark:border-amber-900 dark:bg-amber-950">
+          <div className="rounded-lg border border-spark/30 bg-spark/10 p-4 space-y-1 ">
             <p className="text-sm font-medium">Nouveau déficit reportable généré cette année (10 ans, revenus fonciers uniquement)</p>
             {result.nouveauDeficitReportableHorsInterets > 0 && (
               <p className="text-sm text-muted-foreground">

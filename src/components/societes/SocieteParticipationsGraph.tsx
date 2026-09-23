@@ -1,3 +1,4 @@
+import { SMOKE } from '@/lib/palette';
 import React, { useMemo, useCallback, useEffect } from 'react';
 import {
   ReactFlow,
@@ -103,9 +104,9 @@ export const SocieteParticipationsGraph = ({ societes, participations, onSelectS
       target: edge.target,
       type: 'smoothstep',
       label: `${edge.pourcentage}%`,
-      style: { stroke: '#3b82f6', strokeWidth: 2 },
+      style: { stroke: SMOKE, strokeWidth: 2 },
       labelStyle: { fontSize: 12, fontWeight: 500 },
-      markerEnd: { type: 'arrowclosed' as const, color: '#3b82f6' },
+      markerEnd: { type: 'arrowclosed' as const, color: SMOKE },
     }));
 
     return { nodes, edges };

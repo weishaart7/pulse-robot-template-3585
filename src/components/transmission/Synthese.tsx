@@ -331,7 +331,7 @@ export const Synthese = () => {
           <Button
             variant="outline"
             onClick={() => navigate('/dashboard/transmission?tab=assurance-vie')}
-            className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
+            className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--kt-border-strong)] rounded-[var(--radius-lg)]"
           >
             Renseigner le contrat dans Assurance-vie
             <ArrowRight className="h-4 w-4" />
@@ -341,7 +341,7 @@ export const Synthese = () => {
           <Button
             variant="outline"
             onClick={() => navigate('/dashboard/patrimoine?tab=actifs')}
-            className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
+            className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--kt-border-strong)] rounded-[var(--radius-lg)]"
           >
             Qualifier ce bien dans Patrimoine
             <ArrowRight className="h-4 w-4" />
@@ -516,7 +516,7 @@ export const Synthese = () => {
       )}
       {/* Affichage des explications de succession légale */}
       {transmissionResult.explicationsTexte && transmissionResult.explicationsTexte.length > 0 && (
-        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardHeader className="p-5">
             <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Succession légale</CardTitle>
             <CardDescription className="text-[var(--text-secondary)]">
@@ -533,7 +533,7 @@ export const Synthese = () => {
             </div>
 
             {transmissionResult.optionConjoint && (
-              <div className="mt-4 p-4 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--border)]">
+              <div className="mt-4 p-4 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--kt-border)]">
                 <h4 className="font-medium mb-2 text-[var(--text-primary)]">Option du conjoint survivant</h4>
                 <p className="text-sm text-[var(--text-secondary)]">
                   Le conjoint peut choisir entre :
@@ -550,7 +550,7 @@ export const Synthese = () => {
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Graphique de transmission nette */}
-        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardHeader className="p-5">
             <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Transmission nette</CardTitle>
             <CardDescription className="text-[var(--text-secondary)]">
@@ -599,7 +599,7 @@ export const Synthese = () => {
         </Card>
 
         {/* Détails par héritier */}
-        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardHeader className="p-5">
             <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Détail par héritier</CardTitle>
             <CardDescription className="text-[var(--text-secondary)]">
@@ -616,7 +616,7 @@ export const Synthese = () => {
                 heritiersData
                   .sort((a, b) => b.value - a.value)
                   .map((heritier) => (
-                    <div key={heritier.name} className="flex items-center justify-between p-3 bg-[var(--surface-sunken)] border border-[var(--border)] rounded-[var(--radius-lg)]">
+                    <div key={heritier.name} className="flex items-center justify-between p-3 bg-[var(--surface-sunken)] border border-[var(--kt-border)] rounded-[var(--radius-lg)]">
                       <div className="flex items-center gap-3">
                         <div
                           className="w-4 h-4 rounded-full flex-shrink-0"
@@ -652,7 +652,7 @@ export const Synthese = () => {
 
       {/* Coûts de succession par héritier */}
       {transmissionResult.dmtg && (
-        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardHeader className="p-5">
             <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-[var(--text-primary)]">
               <Calculator className="h-5 w-5 text-[var(--ink-400)]" />
@@ -696,7 +696,7 @@ export const Synthese = () => {
                   <div className="overflow-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-[var(--border)]">
+                        <TableRow className="border-[var(--kt-border)]">
                           <TableHead className="text-[var(--text-secondary)]">Héritier</TableHead>
                           <TableHead className="text-right text-[var(--text-secondary)]">DMTG</TableHead>
                           <TableHead className="text-right text-[var(--text-secondary)]">Frais de notaire</TableHead>
@@ -706,7 +706,7 @@ export const Synthese = () => {
                       </TableHeader>
                       <TableBody>
                         {rows.map((row) => (
-                          <TableRow key={row.name} className="border-[var(--border)]">
+                          <TableRow key={row.name} className="border-[var(--kt-border)]">
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: row.color }} />
@@ -722,7 +722,7 @@ export const Synthese = () => {
                             <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{formatCurrency(row.totalCouts)}</TableCell>
                           </TableRow>
                         ))}
-                        <TableRow className="border-t-2 border-[var(--border-strong)]">
+                        <TableRow className="border-t-2 border-[var(--kt-border-strong)]">
                           <TableCell className="font-semibold text-[var(--text-primary)]">Total</TableCell>
                           <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{formatCurrency(totalDMTG)}</TableCell>
                           <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{formatCurrency(totalFrais)}</TableCell>
@@ -737,7 +737,7 @@ export const Synthese = () => {
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={rows} layout="vertical" margin={{ left: 20, right: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--kt-border)" />
                         <XAxis type="number" tickFormatter={(v) => `${Math.round(v / 1000)}k€`} stroke="var(--ink-500)" fontSize={12} />
                         <YAxis type="category" dataKey="name" width={100} stroke="var(--ink-500)" fontSize={12} />
                         <Tooltip formatter={(value: number) => formatCurrency(value)} />
@@ -757,7 +757,7 @@ export const Synthese = () => {
 
       {/* Abattements restants par héritier */}
       {transmissionResult.dmtg && (
-        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardHeader className="p-5">
             <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-[var(--text-primary)]">
               <Shield className="h-5 w-5 text-[var(--ink-400)]" />
@@ -811,7 +811,7 @@ export const Synthese = () => {
               return (
                 <div className="space-y-4">
                   {abattementRows.map((row) => (
-                    <div key={row.name} className="p-4 rounded-[var(--radius-lg)] border border-[var(--border)] space-y-3">
+                    <div key={row.name} className="p-4 rounded-[var(--radius-lg)] border border-[var(--kt-border)] space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: row.color }} />
@@ -823,7 +823,7 @@ export const Synthese = () => {
                       </div>
 
                       {row.isExonere ? (
-                        <div className="text-sm text-[var(--positive)] font-medium">
+                        <div className="text-sm text-[var(--kt-positive)] font-medium">
                           Exonéré de droits de succession (conjoint ou partenaire de PACS)
                         </div>
                       ) : (
@@ -839,7 +839,7 @@ export const Synthese = () => {
                             </div>
                             <div>
                               <div className="text-[var(--text-secondary)]">Restant</div>
-                              <div className="kairos-num font-semibold text-[var(--positive)]">{row.residuel}</div>
+                              <div className="kairos-num font-semibold text-[var(--kt-positive)]">{row.residuel}</div>
                             </div>
                           </div>
                           <div className="w-full bg-[var(--ink-050)] rounded-full h-2">
@@ -847,7 +847,7 @@ export const Synthese = () => {
                               className="h-2 rounded-full transition-all"
                               style={{
                                 width: `${Math.min(100, row.pctUtilise)}%`,
-                                backgroundColor: row.pctUtilise > 75 ? 'var(--negative)' : row.pctUtilise > 50 ? 'var(--warning)' : 'var(--positive)'
+                                backgroundColor: row.pctUtilise > 75 ? 'var(--negative)' : row.pctUtilise > 50 ? 'var(--warning)' : 'var(--kt-positive)'
                               }}
                             />
                           </div>
@@ -864,7 +864,7 @@ export const Synthese = () => {
           </CardContent>
         </Card>
       )}
-      <Card className="mt-6 bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+      <Card className="mt-6 bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
         <CardHeader className="p-5">
           <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Répartition patrimoniale</CardTitle>
           <CardDescription className="text-[var(--text-secondary)]">
@@ -873,7 +873,7 @@ export const Synthese = () => {
         </CardHeader>
         <CardContent className="p-5 pt-0">
           <div className="grid gap-6 md:grid-cols-2">
-            <div className="text-center p-6 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-sunken)]">
+            <div className="text-center p-6 rounded-[var(--radius-lg)] border border-[var(--kt-border)] bg-[var(--surface-sunken)]">
               <div className="kairos-num text-[26px] font-semibold tracking-[-0.02em] text-[var(--text-primary)] mb-2">
                 {formatCurrency(transmissionResult.reserve)}
               </div>
@@ -888,7 +888,7 @@ export const Synthese = () => {
               </div>
             </div>
 
-            <div className="text-center p-6 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-sunken)]">
+            <div className="text-center p-6 rounded-[var(--radius-lg)] border border-[var(--kt-border)] bg-[var(--surface-sunken)]">
               <div className="kairos-num text-[26px] font-semibold tracking-[-0.02em] text-[var(--text-primary)] mb-2">
                 {formatCurrency(Math.max(0, transmissionResult.masseCalcul - transmissionResult.reserve))}
               </div>

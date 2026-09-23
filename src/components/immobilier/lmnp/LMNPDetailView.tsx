@@ -635,7 +635,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
                       <span className="font-medium text-destructive">-{formatCurrency(isLMP ? totalAmortissementAnnuel : amortissementDeductible)}</span>
                     </div>
                     {!isLMP && amortissementNonDeductible > 0 && (
-                      <p className="text-xs text-amber-600">
+                      <p className="text-xs text-spark">
                         {formatCurrency(amortissementNonDeductible)} d'amortissement non déduit cette année
                         (l'amortissement ne peut pas créer ni aggraver un déficit) — à reporter manuellement
                         l'année prochaine, ce report n'est pas encore automatisé.
@@ -647,12 +647,12 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
                 <div className="border-t pt-3">
                   <div className="flex justify-between">
                     <span className="font-semibold">Résultat fiscal</span>
-                    <span className={`font-bold text-lg ${resultatFiscal <= 0 ? 'text-emerald-600' : 'text-foreground'}`}>
+                    <span className={`font-bold text-lg ${resultatFiscal <= 0 ? 'text-positive' : 'text-foreground'}`}>
                       {formatCurrency(resultatFiscal)}
                     </span>
                   </div>
                   {resultatFiscal <= 0 && (
-                    <Badge variant="secondary" className="mt-2 bg-emerald-100 text-emerald-700">
+                    <Badge variant="secondary" className="mt-2 bg-positive/10 text-positive">
                       {isLMP && !isMicroBic ? 'Déficit imputable sur le revenu global' : 'Déficit reportable'}
                     </Badge>
                   )}

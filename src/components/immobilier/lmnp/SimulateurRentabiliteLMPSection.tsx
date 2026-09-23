@@ -115,7 +115,7 @@ export const SimulateurRentabiliteLMPSection = ({ asset }: SimulateurRentabilite
                   Revenu imposable (abattement {(result.microBic.abattementTaux * 100).toFixed(0)} %) : {formatCurrency(result.microBic.revenuImposable)}
                 </p>
                 {result.microBic.depassementPlafond && (
-                  <p className="text-sm text-amber-600">
+                  <p className="text-sm text-spark">
                     Dépassement du plafond micro-BIC ({formatCurrency(result.microBic.plafondRecettes)}) — bascule au réel obligatoire.
                   </p>
                 )}
@@ -131,7 +131,7 @@ export const SimulateurRentabiliteLMPSection = ({ asset }: SimulateurRentabilite
                 </p>
                 <p className="text-sm">Résultat fiscal : {formatCurrency(result.reel.resultatFiscal)}</p>
                 {result.reel.deficitImputableRevenuGlobal > 0 && (
-                  <p className="text-sm text-emerald-600">
+                  <p className="text-sm text-positive">
                     Déficit imputable sur le revenu global, sans plafond en LMP : {formatCurrency(result.reel.deficitImputableRevenuGlobal)}
                     {' '}— économie d'impôt potentielle : {formatCurrency(result.reel.economieImpotPotentielle)}
                   </p>

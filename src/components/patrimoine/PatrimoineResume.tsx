@@ -1,3 +1,4 @@
+import { INK, VIOLET, EGGSHELL } from '@/lib/palette';
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,9 +21,9 @@ interface PatrimoineResumeProps {
 
 // Palette Famille (teal identité / lime accent positif / rose pour les
 // passifs) appliquée aux cartes résumé — cf. docs/patrimoine.md.
-const TEAL = '#006064';
-const LIME = '#9bf00d';
-const LIME_ICON = '#054b16';
+const TEAL = INK;
+const LIME = VIOLET;
+const LIME_ICON = EGGSHELL;
 
 export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }: PatrimoineResumeProps) => {
   const { assets } = useAssets();
@@ -79,13 +80,13 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
   return (
     <div className="space-y-8">
       {unqualifiedItems.length > 0 && (
-        <div className="rounded-lg border border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-800/40 p-4 flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" strokeWidth={1.75} />
+        <div className="rounded-lg border border-spark/30/60 bg-spark/10/60 p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-spark mt-0.5 shrink-0" strokeWidth={1.75} />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+            <p className="text-sm font-semibold text-foreground ">
               {unqualifiedItems.length} élément{unqualifiedItems.length > 1 ? 's' : ''} exclu{unqualifiedItems.length > 1 ? 's' : ''} des totaux ci-dessous
             </p>
-            <p className="text-xs text-amber-800/80 dark:text-amber-200/70">
+            <p className="text-xs text-foreground/80 ">
               {unqualifiedItems.map(i => `${i.label}${i.reason === 'demembrement' ? ' (âge de l\'usufruitier non renseigné)' : ' (propre/commun non qualifié)'}`).join(', ')} — à compléter dans Patrimoine pour être pris en compte.
             </p>
           </div>

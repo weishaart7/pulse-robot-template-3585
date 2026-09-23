@@ -1,3 +1,4 @@
+import { ASH, EGGSHELL, EMBER, EMBER_SOFT, GRAPHITE, INK, SERIES, VIOLET } from '@/lib/palette';
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Line, ReferenceLine } from 'recharts';
@@ -46,10 +47,10 @@ const isActiveToday = (dateDebut?: string, dateFin?: string): boolean => {
 
 // Palette Famille (teal identité / lime accent / rose pour les charges),
 // même triptyque que PatrimoineResume.tsx — cf. docs/budget.md.
-const TEAL = '#006064';
-const LIME = '#9bf00d';
-const LIME_ICON = '#054b16';
-const PINK = '#ff1f7a';
+const TEAL = INK;
+const LIME = VIOLET;
+const LIME_ICON = EGGSHELL;
+const PINK = EMBER;
 
 const StatCard = ({ label, subtitle, icon: Icon, badgeBg, iconColor, barColor, delay, children }: {
   label: string;
@@ -227,31 +228,31 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
   const totalRevenusCat = revenusParCategorie.reduce((sum, cat) => sum + cat.total, 0);
   const totalChargesCat = chargesParCategorie.reduce((sum, cat) => sum + cat.total, 0);
   
-  // Revenus : dégradé teal → lime ; charges : rose et teal, sur la charte Famille.
+  // Revenus : famille encre / violet ; charges : série complète (lib/palette.ts).
   const REVENUS_COLORS: Record<string, string> = {
-    'Revenus du travail': '#006064',
-    'Revenus du patrimoine': '#9bf00d',
-    'Retraites, pensions & rentes': '#2a9d8f',
-    'Aides sociales & allocations': '#c0ff35',
-    'Indemnités & remboursements': '#4db6ac',
-    'Autres revenus': '#054b16'
+    'Revenus du travail': SERIES[0],
+    'Revenus du patrimoine': SERIES[1],
+    'Retraites, pensions & rentes': SERIES[3],
+    'Aides sociales & allocations': SERIES[4],
+    'Indemnités & remboursements': SERIES[7],
+    'Autres revenus': SERIES[8]
   };
 
   const CHARGES_COLORS: Record<string, string> = {
-    'Emprunts & Crédits': '#ff1f7a',
-    'Logement & Habitation': '#006064',
-    'Transports & Mobilité': '#f06292',
-    'Alimentation & Vie courante': '#2a9d8f',
-    'Santé & Bien-être': '#ff80ab',
-    'Famille, Enfants & Éducation': '#4db6ac',
-    'Impôts, Cotisations & Assurances': '#b0104f',
-    'Épargne & Investissements': '#9bf00d',
-    'Loisirs, Culture & Numérique': '#ffb3cf',
-    'Solidarité, Pensions & Divers': '#80cbc4'
+    'Emprunts & Crédits': SERIES[2],
+    'Logement & Habitation': SERIES[0],
+    'Transports & Mobilité': SERIES[1],
+    'Alimentation & Vie courante': SERIES[3],
+    'Santé & Bien-être': SERIES[5],
+    'Famille, Enfants & Éducation': SERIES[4],
+    'Impôts, Cotisations & Assurances': SERIES[6],
+    'Épargne & Investissements': SERIES[8],
+    'Loisirs, Culture & Numérique': SERIES[9],
+    'Solidarité, Pensions & Divers': SERIES[7]
   };
 
-  const getColorForRevenu = (categorie: string) => REVENUS_COLORS[categorie] || '#4db6ac';
-  const getColorForCharge = (categorie: string) => CHARGES_COLORS[categorie] || '#ff1f7a';
+  const getColorForRevenu = (categorie: string) => REVENUS_COLORS[categorie] || ASH;
+  const getColorForCharge = (categorie: string) => CHARGES_COLORS[categorie] || EMBER;
 
   return (
     <div className="space-y-6">
@@ -535,12 +536,12 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
         <ComposedChart data={monthlyData} margin={{ top: 20, right: 16, left: 0, bottom: 0 }} barGap={4} barCategoryGap="20%">
           <defs>
             <linearGradient id="revenusGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#006064" stopOpacity={1} />
-              <stop offset="100%" stopColor="#2a9d8f" stopOpacity={0.85} />
+              <stop offset="0%" stopColor={INK} stopOpacity={1} />
+              <stop offset="100%" stopColor={GRAPHITE} stopOpacity={0.85} />
             </linearGradient>
             <linearGradient id="chargesGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#ff1f7a" stopOpacity={1} />
-              <stop offset="100%" stopColor="#f06292" stopOpacity={0.85} />
+              <stop offset="0%" stopColor={EMBER} stopOpacity={1} />
+              <stop offset="100%" stopColor={EMBER_SOFT} stopOpacity={0.85} />
             </linearGradient>
             <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
               <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.1"/>
@@ -611,10 +612,10 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
           <Line
             type="monotone"
             dataKey="solde"
-            stroke="#9bf00d"
+            stroke={VIOLET}
             strokeWidth={2.5}
-            dot={{ fill: '#9bf00d', strokeWidth: 0, r: 4 }}
-            activeDot={{ r: 6, fill: '#9bf00d', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
+            dot={{ fill: VIOLET, strokeWidth: 0, r: 4 }}
+            activeDot={{ r: 6, fill: VIOLET, stroke: 'hsl(var(--background))', strokeWidth: 2 }}
             name="solde"
             animationBegin={400}
             animationDuration={1000}

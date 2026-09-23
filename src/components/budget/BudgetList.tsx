@@ -1,3 +1,4 @@
+import { INK, EMBER } from '@/lib/palette';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,8 +25,8 @@ interface BudgetListProps {
 }
 
 // Palette Famille (teal / rose), cf. PatrimoinePassifs.tsx et docs/budget.md.
-const TEAL = '#006064';
-const PINK = '#ff1f7a';
+const TEAL = INK;
+const PINK = EMBER;
 
 export const BudgetList = ({
   revenus,

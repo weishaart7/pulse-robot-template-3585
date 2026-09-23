@@ -78,7 +78,7 @@ export const SocieteFinancesImpactFiscal: React.FC<SocieteFinancesImpactFiscalPr
               <span className="font-medium text-sm">IFI (Impôt sur la Fortune Immobilière)</span>
             </div>
             {isIFIExempt ? (
-              <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
+              <Badge variant="outline" className="bg-positive/10 text-positive border-positive/30">
                 <Check className="h-3 w-3 mr-1" />
                 Exonéré
               </Badge>

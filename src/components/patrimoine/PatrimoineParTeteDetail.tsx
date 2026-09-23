@@ -1,3 +1,4 @@
+import { INK, EMBER, VIOLET, EGGSHELL } from '@/lib/palette';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,10 +14,10 @@ import { assetDemembrementService, AssetDemembrement } from '@/services/assetDem
 
 // Palette Famille (teal identité / lime accent positif / rose pour les
 // passifs), même triptyque que PatrimoineResume.tsx — cf. docs/patrimoine.md.
-const TEAL = '#006064';
-const LIME = '#9bf00d';
-const LIME_ICON = '#054b16';
-const PINK = '#ff1f7a';
+const TEAL = INK;
+const LIME = VIOLET;
+const LIME_ICON = EGGSHELL;
+const PINK = EMBER;
 
 interface PatrimoineParTeteDetailProps {
   onBack?: () => void;

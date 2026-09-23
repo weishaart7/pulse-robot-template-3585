@@ -68,12 +68,11 @@ charges uniquement, `reporter_budget = true` uniquement).
 
 ## 2. Architecture & décisions
 
-**Charte graphique** — le module reprend celle de Famille/Patrimoine (cf. `PatrimoineResume.tsx`,
-`PatrimoinePassifs.tsx`) : teal `#006064` (identité, revenus), lime `#9bf00d` (accent positif, solde
-excédentaire), rose `#ff1f7a` (charges, endettement, solde négatif). Cartes `rounded-2xl` avec pastille
-d'icône ronde, KPI du Résumé en `StatCard` (barre de couleur + badge rond), bouton d'ajout en pilule
-teal/lime, sélecteur Mensuel/Annuel en pilule, donuts et graphique de saisonnalité recolorés sur la même
-palette. Purement visuel : aucune logique de calcul modifiée.
+**Charte graphique** — design system du simulateur ([design-system.md](design-system.md)) :
+encre (identité, revenus), braise `#ff4704` (charges, endettement, solde négatif), violet `#0447ff`
+(solde excédentaire, courbe de solde), via `src/lib/palette.ts`. Cartes `rounded-card` avec pastille
+d'icône ronde, KPI du Résumé en `StatCard` (barre de couleur + badge rond), bouton d'ajout et sélecteur
+Mensuel/Annuel en pilule encre, donuts sur `SERIES`. Purement visuel : aucune logique de calcul modifiée.
 
 - **Pas de `src/lib/budget/` — confirmé, et à la différence d'Immobilier ce n'est pas un écart au
   pattern `lib/ifi/` mais un choix cohérent avec le rôle du module : il n'y a aucune règle métier

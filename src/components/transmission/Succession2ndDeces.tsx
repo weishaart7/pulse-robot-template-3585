@@ -428,7 +428,7 @@ export const Succession2ndDeces = () => {
     <div className="kairos-transmission space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-sm font-medium text-[var(--text-secondary)]">Ordre des décès :</span>
-        <div className="inline-flex rounded-[var(--radius-lg)] border border-[var(--border)] overflow-hidden">
+        <div className="inline-flex rounded-[var(--radius-lg)] border border-[var(--kt-border)] overflow-hidden">
           <button
             type="button"
             onClick={() => setOrdre('normal')}
@@ -445,7 +445,7 @@ export const Succession2ndDeces = () => {
             type="button"
             onClick={() => setOrdre('inverse')}
             className={
-              'px-4 py-2 text-sm font-medium transition-colors border-l border-[var(--border)] ' +
+              'px-4 py-2 text-sm font-medium transition-colors border-l border-[var(--kt-border)] ' +
               (ordre === 'inverse'
                 ? 'bg-[var(--ink-900)] text-white'
                 : 'bg-[var(--surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]')
@@ -466,7 +466,7 @@ export const Succession2ndDeces = () => {
             <Button
               variant="outline"
               onClick={() => navigate('/dashboard/transmission?tab=assurance-vie')}
-              className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
+              className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--kt-border-strong)] rounded-[var(--radius-lg)]"
             >
               Renseigner le contrat dans Assurance-vie
               <ArrowRight className="h-4 w-4" />
@@ -476,7 +476,7 @@ export const Succession2ndDeces = () => {
             <Button
               variant="outline"
               onClick={() => navigate('/dashboard/patrimoine?tab=actifs')}
-              className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
+              className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--kt-border-strong)] rounded-[var(--radius-lg)]"
             >
               Qualifier ce bien dans Patrimoine
               <ArrowRight className="h-4 w-4" />
@@ -486,7 +486,7 @@ export const Succession2ndDeces = () => {
             <Button
               variant="outline"
               onClick={() => navigate('/dashboard/famille')}
-              className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
+              className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--kt-border-strong)] rounded-[var(--radius-lg)]"
             >
               Renseigner la famille dans le module Famille
               <ArrowRight className="h-4 w-4" />
@@ -537,7 +537,7 @@ const Succession2ndDecesContent: React.FC<ContentProps> = ({
 
   return (
     <div className="space-y-6">
-      <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+      <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
         <CardHeader className="p-5">
           <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">
             Succession de {decedentSecondNom} (2nd décès)
@@ -549,13 +549,13 @@ const Succession2ndDecesContent: React.FC<ContentProps> = ({
         </CardHeader>
         <CardContent className="p-5 pt-0">
           <div className="grid gap-6 md:grid-cols-2">
-            <div className="text-center p-6 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-sunken)]">
+            <div className="text-center p-6 rounded-[var(--radius-lg)] border border-[var(--kt-border)] bg-[var(--surface-sunken)]">
               <div className="kairos-num text-[26px] font-semibold tracking-[-0.02em] text-[var(--text-primary)] mb-2">
                 {formatCurrency(masseFiscale)}
               </div>
               <div className="text-sm font-medium text-[var(--text-secondary)]">Masse fiscale</div>
             </div>
-            <div className="text-center p-6 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-sunken)]">
+            <div className="text-center p-6 rounded-[var(--radius-lg)] border border-[var(--kt-border)] bg-[var(--surface-sunken)]">
               <div className="kairos-num text-[26px] font-semibold tracking-[-0.02em] text-[var(--text-primary)] mb-2">
                 {formatCurrency(droitsTotal)}
               </div>
@@ -565,7 +565,7 @@ const Succession2ndDecesContent: React.FC<ContentProps> = ({
         </CardContent>
       </Card>
 
-      <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+      <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
         <CardHeader className="p-5">
           <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">
             Réunion de l'usufruit
@@ -577,7 +577,7 @@ const Succession2ndDecesContent: React.FC<ContentProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent className="p-5 pt-0 space-y-4">
-          <div className="flex items-center justify-between rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--positive-subtle,var(--surface-sunken))] px-5 py-4">
+          <div className="flex items-center justify-between rounded-[var(--radius-lg)] border border-[var(--kt-border)] bg-[var(--positive-subtle,var(--surface-sunken))] px-5 py-4">
             <span className="text-sm font-medium text-[var(--text-secondary)]">
               Valeur totale réunie, hors taxation
             </span>
@@ -607,7 +607,7 @@ const Succession2ndDecesContent: React.FC<ContentProps> = ({
         </CardContent>
       </Card>
 
-      <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+      <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
         <CardHeader className="p-5">
           <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">
             Transmission nette combinée

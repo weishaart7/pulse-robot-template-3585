@@ -1,3 +1,4 @@
+import { INK } from '@/lib/palette';
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BAREME_2026 } from '@/lib/fiscalite';
@@ -91,11 +92,11 @@ const TaxRateCard = ({ overview }: TaxRateCardProps) => {
                   <div
                     key={index}
                     className="flex-1 relative"
-                    style={{ backgroundColor: bracket.active ? '#05aaa4' : '#05aaa41a' }}
+                    style={{ backgroundColor: bracket.active ? INK : '#0c0a091a' }}
                   >
                     {bracket.active && (
                       <div
-                        className="absolute top-0 bottom-0 w-0.5 bg-red-600"
+                        className="absolute top-0 bottom-0 w-0.5 bg-destructive"
                         style={{ left: `${getUserPositionInBracket()}%` }}
                       />
                     )}

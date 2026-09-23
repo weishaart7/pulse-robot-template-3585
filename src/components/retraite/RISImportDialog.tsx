@@ -147,7 +147,7 @@ export function RISImportDialog({
               </div>
 
               {anneeNaissance === null ? (
-                <p className="text-sm text-orange-600">
+                <p className="text-sm text-spark">
                   Date de naissance non renseignée dans la fiche famille : le salaire annuel moyen ne peut pas être
                   estimé automatiquement. Renseignez-la, puis réimportez le relevé pour obtenir une estimation.
                 </p>

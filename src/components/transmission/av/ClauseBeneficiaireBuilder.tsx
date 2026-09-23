@@ -416,7 +416,7 @@ export const ClauseBeneficiaireBuilder: React.FC<ClauseBeneficiaireBuilderProps>
                   </div>
 
                   {benef.statut === 'decede' && (
-                    <div className="flex items-start gap-2 px-3 py-2 rounded-md bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200 text-xs">
+                    <div className="flex items-start gap-2 px-3 py-2 rounded-md bg-[var(--warning-soft)] text-[var(--text-primary)] text-xs">
                       <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                       <span>
                         Bénéficiaire marqué décédé : la répartition n'est pas recalculée automatiquement, vérifiez la clause.
@@ -498,7 +498,7 @@ export const ClauseBeneficiaireBuilder: React.FC<ClauseBeneficiaireBuilderProps>
                         )}
                       </span>
                       {estRenoncant && (
-                        <Badge variant="outline" className="ml-2 text-xs border-amber-300 text-amber-800 dark:text-amber-200">
+                        <Badge variant="outline" className="ml-2 text-xs border-[var(--warning)]/30 text-[var(--text-primary)] ">
                           Renonçant — redistribué
                         </Badge>
                       )}

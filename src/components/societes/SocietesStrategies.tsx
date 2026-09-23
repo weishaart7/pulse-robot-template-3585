@@ -124,7 +124,7 @@ export const SocietesStrategies = () => {
                 <CardTitle className="text-sm font-medium">Biens professionnels exonérés</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-2xl font-bold text-positive">
                   {ifiData.biensProfessionnels.reduce((s, b) => s + b.valeurBrute, 0).toLocaleString('fr-FR')} €
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -138,7 +138,7 @@ export const SocietesStrategies = () => {
                 <CardTitle className="text-sm font-medium">Économie IFI</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-2xl font-bold text-positive">
                   {(ifiData.biensProfessionnels.reduce((s, b) => s + b.valeurBrute, 0) * 0.015).toLocaleString('fr-FR')} €
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -168,7 +168,7 @@ export const SocietesStrategies = () => {
                     </div>
                     <div className="text-right">
                       {calc.type === 'professionnel_exonere' ? (
-                        <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                        <Badge variant="outline" className="bg-positive/10 text-positive border-positive/20">
                           <CheckCircle2 className="h-3 w-3 mr-1" />
                           Exonéré
                         </Badge>
@@ -187,12 +187,12 @@ export const SocietesStrategies = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-blue-500/20 bg-blue-500/5">
+          <Card className="border-foreground/20 bg-foreground/5">
             <CardContent className="pt-4">
               <div className="flex gap-3">
-                <Info className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                <Info className="h-5 w-5 text-foreground flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-blue-700">Optimisation possible</p>
+                  <p className="font-medium text-foreground">Optimisation possible</p>
                   <p className="text-sm text-muted-foreground mt-1">
                     Transformer une holding passive en holding animatrice permet d'exonérer la valeur des parts de l'IFI. 
                     Cela nécessite une implication réelle dans la gestion des filiales (animation, services, etc.).
@@ -247,12 +247,12 @@ export const SocietesStrategies = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className={isirComparison.avantageIS ? 'border-green-500/50' : ''}>
+                <Card className={isirComparison.avantageIS ? 'border-positive/50' : ''}>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center justify-between">
                       <span>Impôt sur les Sociétés</span>
                       {isirComparison.avantageIS && (
-                        <Badge className="bg-green-500">Recommandé</Badge>
+                        <Badge className="bg-positive">Recommandé</Badge>
                       )}
                     </CardTitle>
                   </CardHeader>
@@ -273,18 +273,18 @@ export const SocietesStrategies = () => {
                       <hr className="my-2" />
                       <div className="flex justify-between font-semibold">
                         <span>Net associés</span>
-                        <span className="text-green-600">{isirComparison.is.netAssocies.toLocaleString('fr-FR')} €</span>
+                        <span className="text-positive">{isirComparison.is.netAssocies.toLocaleString('fr-FR')} €</span>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className={!isirComparison.avantageIS ? 'border-green-500/50' : ''}>
+                <Card className={!isirComparison.avantageIS ? 'border-positive/50' : ''}>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center justify-between">
                       <span>Impôt sur le Revenu</span>
                       {!isirComparison.avantageIS && (
-                        <Badge className="bg-green-500">Recommandé</Badge>
+                        <Badge className="bg-positive">Recommandé</Badge>
                       )}
                     </CardTitle>
                   </CardHeader>
@@ -297,19 +297,19 @@ export const SocietesStrategies = () => {
                       <hr className="my-2" />
                       <div className="flex justify-between font-semibold">
                         <span>Net associé</span>
-                        <span className="text-green-600">{isirComparison.ir.net.toLocaleString('fr-FR')} €</span>
+                        <span className="text-positive">{isirComparison.ir.net.toLocaleString('fr-FR')} €</span>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
-              <Card className="border-amber-500/20 bg-amber-500/5">
+              <Card className="border-spark/20 bg-spark/5">
                 <CardContent className="pt-4">
                   <div className="flex gap-3">
-                    <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                    <AlertTriangle className="h-5 w-5 text-spark flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-medium text-amber-700">Simulation simplifiée</p>
+                      <p className="font-medium text-foreground">Simulation simplifiée</p>
                       <p className="text-sm text-muted-foreground mt-1">
                         Cette simulation ne prend pas en compte tous les paramètres (CSG/CRDS, abattements, charges sociales TNS, etc.). 
                         Consultez un expert-comptable pour une analyse personnalisée.
@@ -338,7 +338,7 @@ export const SocietesStrategies = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 bg-muted/50 rounded-lg">
                   <h4 className="font-medium flex items-center gap-2 mb-2">
-                    <TrendingUp className="h-4 w-4 text-green-600" />
+                    <TrendingUp className="h-4 w-4 text-positive" />
                     Régime mère-fille
                   </h4>
                   <p className="text-sm text-muted-foreground">
@@ -348,7 +348,7 @@ export const SocietesStrategies = () => {
 
                 <div className="p-4 bg-muted/50 rounded-lg">
                   <h4 className="font-medium flex items-center gap-2 mb-2">
-                    <Percent className="h-4 w-4 text-green-600" />
+                    <Percent className="h-4 w-4 text-positive" />
                     Plus-values sur titres
                   </h4>
                   <p className="text-sm text-muted-foreground">
@@ -358,7 +358,7 @@ export const SocietesStrategies = () => {
 
                 <div className="p-4 bg-muted/50 rounded-lg">
                   <h4 className="font-medium flex items-center gap-2 mb-2">
-                    <Scale className="h-4 w-4 text-green-600" />
+                    <Scale className="h-4 w-4 text-positive" />
                     Impact IFI
                   </h4>
                   <p className="text-sm text-muted-foreground">
@@ -368,7 +368,7 @@ export const SocietesStrategies = () => {
 
                 <div className="p-4 bg-muted/50 rounded-lg">
                   <h4 className="font-medium flex items-center gap-2 mb-2">
-                    <ArrowRight className="h-4 w-4 text-green-600" />
+                    <ArrowRight className="h-4 w-4 text-positive" />
                     Transmission
                   </h4>
                   <p className="text-sm text-muted-foreground">
@@ -404,7 +404,7 @@ export const SocietesStrategies = () => {
                           Holding {societe.holding}
                         </Badge>
                         {societe.holding === 'Animatrice' && (
-                          <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                          <Badge variant="outline" className="bg-positive/10 text-positive border-positive/20">
                             <CheckCircle2 className="h-3 w-3 mr-1" />
                             IFI exonéré
                           </Badge>

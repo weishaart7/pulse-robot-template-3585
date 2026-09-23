@@ -424,7 +424,7 @@ export const AssuranceVie = () => {
                   "whitespace-nowrap rounded-[var(--radius-lg)] shadow-none " +
                   (c.id === selectedContract.id
                     ? "bg-[var(--ink-900)] text-white border border-[var(--ink-900)] hover:bg-[var(--ink-800)]"
-                    : "bg-[var(--surface)] text-[var(--text-primary)] border border-[var(--border-strong)]")
+                    : "bg-[var(--surface)] text-[var(--text-primary)] border border-[var(--kt-border-strong)]")
                 }
               >
                 {c.denomination || c.nature}
@@ -457,7 +457,7 @@ export const AssuranceVie = () => {
   if (contracts.length === 0) {
     return (
       <div className="kairos-transmission">
-        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardContent className="py-12">
             <div className="text-center space-y-4">
               <div className="mx-auto w-12 h-12 rounded-full bg-[var(--ink-050)] flex items-center justify-center">
@@ -472,7 +472,7 @@ export const AssuranceVie = () => {
               <Button
                 variant="outline"
                 onClick={() => navigate('/dashboard/patrimoine')}
-                className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--border-strong)] rounded-[var(--radius-lg)]"
+                className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--kt-border-strong)] rounded-[var(--radius-lg)]"
               >
                 Aller au Patrimoine
                 <ArrowRight className="h-4 w-4" />
@@ -488,7 +488,7 @@ export const AssuranceVie = () => {
     <div className="kairos-transmission space-y-6">
       {/* Résumé */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-[var(--radius-lg)] bg-[var(--ink-050)] flex items-center justify-center">
@@ -502,7 +502,7 @@ export const AssuranceVie = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-[var(--radius-lg)] bg-[var(--ink-050)] flex items-center justify-center">
@@ -516,7 +516,7 @@ export const AssuranceVie = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-[var(--radius-lg)] bg-[var(--warning-soft)] flex items-center justify-center">
@@ -535,7 +535,7 @@ export const AssuranceVie = () => {
 
       {/* Fiscal 990I / 757B summary */}
       {transmissionResult && contracts.length > 0 && (
-        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardHeader className="pb-3 p-5">
             <CardTitle className="text-[15px] font-semibold flex items-center gap-2 text-[var(--text-primary)]">
               <Scale className="h-4 w-4 text-[var(--ink-400)]" />
@@ -545,7 +545,7 @@ export const AssuranceVie = () => {
           <CardContent className="p-5 pt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* 990I */}
-              <div className="space-y-3 p-4 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--border)]">
+              <div className="space-y-3 p-4 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--kt-border)]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Badge className="bg-[var(--ink-900)] text-white border-transparent rounded-[var(--radius-md)]">Art. 990 I</Badge>
@@ -559,9 +559,9 @@ export const AssuranceVie = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[var(--text-secondary)]">Abattements ({fiscalSummary.nbTaxable} bénéf., 152 500 € max. chacun)</span>
-                    <span className="kairos-num font-medium text-[var(--positive)]">- {formatCurrency(fiscalSummary.abattement990I)}</span>
+                    <span className="kairos-num font-medium text-[var(--kt-positive)]">- {formatCurrency(fiscalSummary.abattement990I)}</span>
                   </div>
-                  <Separator className="bg-[var(--border)]" />
+                  <Separator className="bg-[var(--kt-border)]" />
                   <div className="flex justify-between">
                     <span className="text-[var(--text-secondary)]">Assiette taxable</span>
                     <span className="kairos-num font-medium text-[var(--text-primary)]">{formatCurrency(fiscalSummary.assiette990I)}</span>
@@ -580,7 +580,7 @@ export const AssuranceVie = () => {
                       )}
                     </>
                   )}
-                  <Separator className="bg-[var(--border)]" />
+                  <Separator className="bg-[var(--kt-border)]" />
                   <div className="flex justify-between font-semibold">
                     <span className="text-[var(--text-primary)]">Prélèvement estimé</span>
                     <span className="kairos-num text-[var(--negative)]">{formatCurrency(fiscalSummary.droits990I)}</span>
@@ -589,7 +589,7 @@ export const AssuranceVie = () => {
               </div>
 
               {/* 757B */}
-              <div className="space-y-3 p-4 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--border)]">
+              <div className="space-y-3 p-4 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--kt-border)]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Badge className="bg-[var(--ink-050)] text-[var(--ink-700)] border-transparent rounded-[var(--radius-md)]">Art. 757 B</Badge>
@@ -603,14 +603,14 @@ export const AssuranceVie = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[var(--text-secondary)]">Abattement global (30 500 €, bénéf. non exonérés)</span>
-                    <span className="kairos-num font-medium text-[var(--positive)]">- {formatCurrency(fiscalSummary.abattement757B)}</span>
+                    <span className="kairos-num font-medium text-[var(--kt-positive)]">- {formatCurrency(fiscalSummary.abattement757B)}</span>
                   </div>
-                  <Separator className="bg-[var(--border)]" />
+                  <Separator className="bg-[var(--kt-border)]" />
                   <div className="flex justify-between">
                     <span className="text-[var(--text-secondary)]">Assiette taxable</span>
                     <span className="kairos-num font-medium text-[var(--text-primary)]">{formatCurrency(fiscalSummary.assiette757B)}</span>
                   </div>
-                  <Separator className="bg-[var(--border)]" />
+                  <Separator className="bg-[var(--kt-border)]" />
                   <div className="flex justify-between font-semibold">
                     <span className="text-[var(--text-primary)]">Réintégré aux droits de succession</span>
                     <span className="kairos-num text-[var(--negative)]">{formatCurrency(fiscalSummary.totalReintegration757B)}</span>
@@ -622,7 +622,7 @@ export const AssuranceVie = () => {
               </div>
             </div>
 
-            <div className="mt-4 flex items-start gap-2 p-3 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--border)]">
+            <div className="mt-4 flex items-start gap-2 p-3 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--kt-border)]">
               <AlertTriangle className="h-4 w-4 text-[var(--warning)] shrink-0 mt-0.5" />
               <p className="text-xs text-[var(--text-secondary)]">
                 Calcul basé sur l'âge réel du souscripteur à chaque versement enregistré (pas sur son âge actuel).
@@ -646,7 +646,7 @@ export const AssuranceVie = () => {
 
       {/* Beneficiary breakdown */}
       {transmissionResult && contracts.length > 0 && fiscalSummary.beneficiaireDetails.length > 0 && (
-        <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardHeader className="pb-3 p-5">
             <CardTitle className="text-[15px] font-semibold flex items-center gap-2 text-[var(--text-primary)]">
               <UserCheck className="h-4 w-4 text-[var(--ink-400)]" />
@@ -656,7 +656,7 @@ export const AssuranceVie = () => {
           <CardContent className="p-5 pt-0">
             <div className="space-y-3">
               {/* Header */}
-              <div className="grid grid-cols-4 gap-4 text-xs font-medium text-[var(--text-secondary)] pb-2 border-b border-[var(--border)]">
+              <div className="grid grid-cols-4 gap-4 text-xs font-medium text-[var(--text-secondary)] pb-2 border-b border-[var(--kt-border)]">
                 <span>Bénéficiaire</span>
                 <span className="text-right">Capital brut</span>
                 <span className="text-right">Prélèvement</span>
@@ -676,7 +676,7 @@ export const AssuranceVie = () => {
                   <p className="kairos-num text-right font-medium text-[var(--text-primary)]">{formatCurrency(b.capitalBrut)}</p>
                   <p className="text-right">
                     {b.exonere ? (
-                      <Badge variant="outline" className="text-xs bg-[var(--positive-soft)] text-[var(--positive)] border-transparent rounded-[var(--radius-md)]">Exonéré</Badge>
+                      <Badge variant="outline" className="text-xs bg-[var(--kt-positive-soft)] text-[var(--kt-positive)] border-transparent rounded-[var(--radius-md)]">Exonéré</Badge>
                     ) : (
                       <span className="kairos-num text-[var(--negative)] font-medium">- {formatCurrency(b.droits)}</span>
                     )}
@@ -685,7 +685,7 @@ export const AssuranceVie = () => {
                 </div>
               ))}
               {/* Total row */}
-              <Separator className="bg-[var(--border)]" />
+              <Separator className="bg-[var(--kt-border)]" />
               <div className="grid grid-cols-4 gap-4 text-sm font-semibold text-[var(--text-primary)]">
                 <span>Total</span>
                 <span className="kairos-num text-right">{formatCurrency(fiscalSummary.totalValeur)}</span>
@@ -698,14 +698,14 @@ export const AssuranceVie = () => {
       )}
 
       {/* Liste des contrats - cliquable */}
-      <Card className="bg-[var(--surface)] border-[var(--border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+      <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
         <CardHeader className="p-5">
           <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Contrats d'assurance-vie</CardTitle>
         </CardHeader>
         <CardContent className="p-5 pt-0 space-y-1">
           {contracts.map((contract, index) => (
             <React.Fragment key={contract.id}>
-              {index > 0 && <Separator className="bg-[var(--border)]" />}
+              {index > 0 && <Separator className="bg-[var(--kt-border)]" />}
               <button
                 className="w-full flex items-center justify-between py-3 px-2 rounded-[var(--radius-lg)] hover:bg-[var(--fill-hover)] transition-colors text-left"
                 onClick={() => setSelectedContract(contract)}
