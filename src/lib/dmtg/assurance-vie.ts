@@ -1,4 +1,4 @@
-import { AVContract, Beneficiary, DmtgParams, AssuranceVieResult } from './types';
+import { AVContract, Beneficiary, DmtgParams, AssuranceVieResult, AVDetailBeneficiaire } from './types';
 
 interface ResolvedAVShare {
   beneficiaryId: string;
@@ -70,6 +70,13 @@ export function computeAssuranceVie(
   const notes: string[] = [];
   // Assiette 990I cumulée par bénéficiaire, tous contrats confondus.
   const assiette990IParBenef: Record<string, number> = {};
+  const detailParBeneficiaire: Record<string, AVDetailBeneficiaire> = {};
+  const detail = (benId: string): AVDetailBeneficiaire => {
+    if (!detailParBeneficiaire[benId]) {
+      detailParBeneficiaire[benId] = { assiette990I: 0, abattement990I: 0, base990I: 0, primes757B: 0, abattement757B: 0, exonere757B: false };
+    }
+    return detailParBeneficiaire[benId];
+  };
 
   // Initialiser pour chaque bénéficiaire
   beneficiaries.forEach(ben => {
@@ -148,6 +155,10 @@ export function computeAssuranceVie(
       : params.abattements.apres70_AV_global * (primes / totalPrimes757BNonExoneres);
     const reintegration757B = Math.max(0, primes - abattement);
     perBeneficiary[benId].reintegration757B += reintegration757B;
+    const d = detail(benId);
+    d.primes757B = Math.round(primes);
+    d.abattement757B = Math.round(Math.min(primes, abattement));
+    d.exonere757B = isExonere757B(benef);
     if (reintegration757B > 0) {
       notes.push(`${benId} : 757B=${Math.round(reintegration757B)}€ (primes ${Math.round(primes)}€, abattement ${Math.round(abattement)}€)`);
     }
@@ -162,6 +173,10 @@ export function computeAssuranceVie(
     const coef = Math.min(1, coefAbattementParBenef[benId] || 0);
     const abattement = params.abattements.av_990I_allowance * coef;
     const baseImposable990I = Math.max(0, assiette - abattement);
+    const d = detail(benId);
+    d.assiette990I = Math.round(assiette);
+    d.abattement990I = Math.round(Math.min(assiette, abattement));
+    d.base990I = Math.round(baseImposable990I);
     if (baseImposable990I > 0) {
       const prelev990I = computeBareme990I(baseImposable990I, params);
       perBeneficiary[benId].prelev990I += prelev990I;
@@ -176,7 +191,7 @@ export function computeAssuranceVie(
     perBeneficiary[benId].capitalBrut = Math.round(perBeneficiary[benId].capitalBrut);
   });
 
-  return { perBeneficiary, notes };
+  return { perBeneficiary, detailParBeneficiaire, notes };
 }
 
 function computeBareme990I(baseImposable: number, params: DmtgParams): number {

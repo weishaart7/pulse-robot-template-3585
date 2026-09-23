@@ -285,6 +285,16 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   par legs) → 60 %. Exposés dans `TransmissionResult.legataires` et dans `netBreakdown` avec
   `horsIndivision` (jamais débiteurs du droit de partage, montant légué retiré de son assiette).
   Affichés dans `Synthese.tsx` et `ProcessusCalcul.tsx`. Tests : `lib/transmission/phase4bAudit.test.ts`.
+- **Libéralité au conjoint / partenaire de PACS.** Le conjoint n'est pas dans `family_links` :
+  `liberalites.beneficiaire_conjoint` (booléen, exclusif de `beneficiaire_id` par contrainte) le désigne,
+  `buildTransmissionLiberalites` le traduit en sentinelle `'conjoint'`, résolue vers
+  `family.survivingSpouseId` en tête de `computeTransmission` (sans conjoint → `'tiers'`). `LegsForm.tsx`
+  propose le conjoint (Marié(e)/Pacsé(e), libellé « Partenaire de PACS » le cas échéant) en tête des
+  légataires.
+- **Écran Assurance-vie : détail lu dans le moteur.** `computeAssuranceVie` expose
+  `detailParBeneficiaire` (assiette/abattement/base 990 I, primes/abattement 757 B, exonération),
+  repris dans `DMTGBeneficiaryResult.detailAV`. `AssuranceVie.tsx` ne fait que sommer ces valeurs ;
+  les tranches 990 I affichées sont la somme des tranches de chaque bénéficiaire.
 - **Liens fiscaux des héritiers hors ordres 1-2.** Grands-parents et arrière-grands-parents → `ascendant`
   (abattement 100 000 €, barème ligne directe) ; oncles/tantes et cousins germains → `collateral_4`
   (55 %, abattement 1 594 €). Tests : `lib/transmission/phase1Audit.test.ts`, `lib/dmtg/phase2Audit.test.ts`.
@@ -365,9 +375,6 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   comportement.)*
 
 ### 🟠 À surveiller (cas limite, peu probable)
-- **Conjoint / partenaire de PACS non sélectionnable comme légataire.** `LegsForm.tsx` ne propose que
-  les `family_links`, où le conjoint ne figure pas (il vit dans `marital_status`). Le moteur sait
-  exonérer un legs au partenaire de PACS (`survivingSpouseId`), mais aucun écran ne permet de le saisir.
 - **Conditions 790 G non vérifiées.** Âge du donateur (< 80 ans) et majorité du donataire ne sont
   pas contrôlés : la nature « Dons familiaux de sommes d'argent » suffit à ouvrir l'exonération.
 - **Donation démembrée : valeur de la nue-propriété non contrôlée.** Rien ne vérifie que la valeur
@@ -375,11 +382,6 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
 
 - **757 B et rachats partiels.** Les primes après 70 ans retenues ne sont pas diminuées des rachats
   partiels : traitement doctrinal incertain, non tranché.
-- **Écran Assurance-vie : ligne « abattement » recalculée localement.** `AssuranceVie.tsx` affiche
-  `152 500 € × nb bénéficiaires non-conjoint` et `min(30 500, primes 757 B)` au lieu des abattements
-  réellement appliqués par le moteur (répartition démembrée, exclusion des exonérés) ; les montants
-  de prélèvement affichés, eux, viennent bien du moteur.
-
 - **Conditions de l'exception de valorisation « à l'acte » pour une donation-partage jamais vérifiées.**
   Le référentiel autorise la valeur à l'acte pour une donation-partage (§8.4) sous deux conditions
   (accord de tous les héritiers réservataires, allotissement de tous) ; le code accepte

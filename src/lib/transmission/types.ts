@@ -69,7 +69,10 @@ export const CLAUSE_RAPPORT_FORFAITAIRE =
 export interface Liberalite {
   id: string;
   type: "donation" | "legs";
-  beneficiaireId: PersonId | "tiers";
+  // "conjoint" : libéralité au conjoint marié ou au partenaire de PACS
+  // (liberalites.beneficiaire_conjoint), résolue vers family.survivingSpouseId
+  // en tête de computeTransmission — jamais vue sous cette forme en aval.
+  beneficiaireId: PersonId | "tiers" | "conjoint";
   nature?: string;
   // Valeur unique, dont la sémantique dépend de typeImputation ci-dessous
   // (décision audit Bloc 1 T1, 2026-08 : relabel plutôt que refonte du

@@ -173,8 +173,25 @@ export interface ProgressiveTaxResult {
   trancheDetails: Array<{ from: Money; to: Money; rate: number; base: Money; duty: Money }>;
 }
 
+// Détail des assiettes et abattements AV réellement retenus pour un
+// bénéficiaire — exposé pour l'affichage (AssuranceVie.tsx), qui ne doit
+// jamais les recalculer lui-même.
+export interface AVDetailBeneficiaire {
+  // 990 I : assiette cumulée (après -20 % vie-génération), abattement retenu
+  // (réparti en cas de démembrement), base après abattement. 0 si exonéré.
+  assiette990I: Money;
+  abattement990I: Money;
+  base990I: Money;
+  // 757 B : primes après 70 ans revenant au bénéficiaire, sa quote-part de
+  // l'abattement global de 30 500€ (0 si exonéré).
+  primes757B: Money;
+  abattement757B: Money;
+  exonere757B: boolean;
+}
+
 export interface AssuranceVieResult {
   perBeneficiary: Record<string, { prelev990I: Money; reintegration757B: Money; capitalBrut: Money }>;
+  detailParBeneficiaire: Record<string, AVDetailBeneficiaire>;
   notes: string[];
 }
 
@@ -193,6 +210,8 @@ export interface DMTGBeneficiaryResult {
   prelev990I: Money;
   reintegration757B: Money;
   droitsTotaux: Money; // droitsHorsAV + prelev990I (hors 757B, déjà intégré dans base)
+  // Détail AV (assiettes/abattements retenus), absent si aucun contrat ne le concerne.
+  detailAV?: AVDetailBeneficiaire;
   // Capital AV net hors succession = capitalBrut - prelev990I (le 757B n'est
   // pas retranché ici : cette part est déjà réintégrée dans baseHorsAV/la
   // succession classique, cf. dmtg/assurance-vie.ts — le retrancher ici la

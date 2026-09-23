@@ -25,6 +25,7 @@ import {
 } from '@/utils/transmissionHelpers';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission';
 import { resolveEffectiveAVBeneficiaires } from '@/lib/dmtg/assurance-vie';
+import type { DMTGBeneficiaryResult } from '@/lib/dmtg/types';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
 import { assetDemembrementService } from '@/services/assetDemembrementService';
@@ -310,10 +311,28 @@ export const AssuranceVie = () => {
   // (dmtg/assurance-vie.ts, jamais recalculés ici).
   const fiscalSummary = useMemo(() => {
     const totalValeur = contracts.reduce((sum, c) => sum + (c.valeur_estimee || 0), 0);
-    const montant990I = avContractsBuilt.reduce((sum, c) => sum + c.primesAvant70, 0);
-    const montant757B = avContractsBuilt.reduce((sum, c) => sum + c.primesApres70, 0);
-
     const dmtgPerBeneficiary = transmissionResult?.dmtg?.perBeneficiary || {};
+
+    // Assiettes et abattements réellement retenus par le moteur
+    // (dmtg/assurance-vie.ts, detailAV) : cumul par bénéficiaire, abattement
+    // 990 I réparti en cas de démembrement, abattement 757 B partagé entre les
+    // seuls non-exonérés — jamais recalculés ici. Le barème 990 I s'applique
+    // bénéficiaire par bénéficiaire : les tranches affichées sont la somme des
+    // tranches de chacun, pas un barème appliqué au total.
+    const detailsAV = Object.values(dmtgPerBeneficiary)
+      .map((b: any) => b.detailAV)
+      .filter(Boolean) as NonNullable<DMTGBeneficiaryResult['detailAV']>[];
+    const montant990I = detailsAV.reduce((sum, d) => sum + d.assiette990I, 0);
+    const abattement990I = detailsAV.reduce((sum, d) => sum + d.abattement990I, 0);
+    const assiette990I = detailsAV.reduce((sum, d) => sum + d.base990I, 0);
+    const tranche990I20 = detailsAV.reduce((sum, d) => sum + Math.min(d.base990I, 700000) * 0.20, 0);
+    const tranche990I3125 = detailsAV.reduce((sum, d) => sum + Math.max(0, d.base990I - 700000) * 0.3125, 0);
+    const montant757B = detailsAV.reduce((sum, d) => sum + d.primes757B, 0);
+    const abattement757B = detailsAV.reduce((sum, d) => sum + d.abattement757B, 0);
+    const assiette757B = detailsAV
+      .filter(d => !d.exonere757B)
+      .reduce((sum, d) => sum + Math.max(0, d.primes757B - d.abattement757B), 0);
+    const nbTaxable = detailsAV.filter(d => d.assiette990I > 0).length;
 
     const benefMap = new Map<string, { nom: string; prenom: string; lien: string; capitalBrut: number }>();
     avContractsBuilt.forEach(contract => {
@@ -348,9 +367,6 @@ export const AssuranceVie = () => {
         ? [{ id: '', nom: 'Non renseigné', prenom: '', lien: '', capitalBrut: totalValeur }]
         : [];
 
-    const nbTaxable = Math.max(1, allBenefs.filter(b => b.lien !== 'Conjoint').length);
-    const abattement990I = 152500 * nbTaxable;
-    const abattement757B = 30500;
 
     // Prélèvement 990I / réintégration 757B lus directement dans le résultat
     // du vrai moteur (dmtg/assurance-vie.ts) — jamais recalculés ici. Le
@@ -379,8 +395,10 @@ export const AssuranceVie = () => {
       montant757B,
       abattement990I,
       abattement757B,
-      assiette990I: Math.max(0, montant990I - abattement990I),
-      assiette757B: Math.max(0, montant757B - abattement757B),
+      assiette990I,
+      assiette757B,
+      tranche990I20,
+      tranche990I3125,
       droits990I,
       totalReintegration757B,
       totalValeur,
@@ -540,8 +558,8 @@ export const AssuranceVie = () => {
                     <span className="kairos-num font-medium text-[var(--text-primary)]">{formatCurrency(fiscalSummary.montant990I)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[var(--text-secondary)]">Abattement ({fiscalSummary.nbTaxable} bénéf. × 152 500 €)</span>
-                    <span className="kairos-num font-medium text-[var(--positive)]">- {formatCurrency(Math.min(fiscalSummary.abattement990I, fiscalSummary.montant990I))}</span>
+                    <span className="text-[var(--text-secondary)]">Abattements ({fiscalSummary.nbTaxable} bénéf., 152 500 € max. chacun)</span>
+                    <span className="kairos-num font-medium text-[var(--positive)]">- {formatCurrency(fiscalSummary.abattement990I)}</span>
                   </div>
                   <Separator className="bg-[var(--border)]" />
                   <div className="flex justify-between">
@@ -551,13 +569,13 @@ export const AssuranceVie = () => {
                   {fiscalSummary.assiette990I > 0 && (
                     <>
                       <div className="flex justify-between text-xs text-[var(--text-secondary)]">
-                        <span>Jusqu'à 700 000 € → 20 %</span>
-                        <span className="kairos-num">{formatCurrency(Math.min(fiscalSummary.assiette990I, 700000) * 0.20)}</span>
+                        <span>Jusqu'à 700 000 € par bénéf. → 20 %</span>
+                        <span className="kairos-num">{formatCurrency(fiscalSummary.tranche990I20)}</span>
                       </div>
-                      {fiscalSummary.assiette990I > 700000 && (
+                      {fiscalSummary.tranche990I3125 > 0 && (
                         <div className="flex justify-between text-xs text-[var(--text-secondary)]">
                           <span>Au-delà → 31,25 %</span>
-                          <span className="kairos-num">{formatCurrency((fiscalSummary.assiette990I - 700000) * 0.3125)}</span>
+                          <span className="kairos-num">{formatCurrency(fiscalSummary.tranche990I3125)}</span>
                         </div>
                       )}
                     </>
@@ -584,8 +602,8 @@ export const AssuranceVie = () => {
                     <span className="kairos-num font-medium text-[var(--text-primary)]">{formatCurrency(fiscalSummary.montant757B)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[var(--text-secondary)]">Abattement global</span>
-                    <span className="kairos-num font-medium text-[var(--positive)]">- {formatCurrency(Math.min(30500, fiscalSummary.montant757B))}</span>
+                    <span className="text-[var(--text-secondary)]">Abattement global (30 500 €, bénéf. non exonérés)</span>
+                    <span className="kairos-num font-medium text-[var(--positive)]">- {formatCurrency(fiscalSummary.abattement757B)}</span>
                   </div>
                   <Separator className="bg-[var(--border)]" />
                   <div className="flex justify-between">
@@ -738,8 +756,8 @@ export const AssuranceVie = () => {
             <div className="space-y-2 text-sm">
               <p className="font-medium text-[var(--text-primary)]">Régime fiscal de l'assurance-vie en cas de décès</p>
               <ul className="list-disc list-inside space-y-1 text-[var(--text-secondary)]">
-                <li><strong className="text-[var(--text-primary)]">Primes versées avant 70 ans :</strong> abattement de 152 500 € par bénéficiaire, puis prélèvement de 20 % jusqu'à 700 000 € et 31,25 % au-delà (art. 990 I CGI)</li>
-                <li><strong className="text-[var(--text-primary)]">Primes versées après 70 ans :</strong> abattement global de 30 500 € tous bénéficiaires confondus, excédent soumis aux droits de succession (art. 757 B CGI)</li>
+                <li><strong className="text-[var(--text-primary)]">Primes versées avant 70 ans :</strong> abattement de 152 500 € par bénéficiaire tous contrats confondus (partagé entre usufruitier et nu-propriétaire en cas de clause démembrée), puis prélèvement de 20 % jusqu'à 700 000 € et 31,25 % au-delà (art. 990 I CGI)</li>
+                <li><strong className="text-[var(--text-primary)]">Primes versées après 70 ans :</strong> abattement global de 30 500 € réparti entre les bénéficiaires non exonérés au prorata de leurs primes, excédent soumis aux droits de succession (art. 757 B CGI)</li>
                 <li><strong className="text-[var(--text-primary)]">Conjoint / partenaire PACS :</strong> exonéré dans tous les cas</li>
               </ul>
             </div>

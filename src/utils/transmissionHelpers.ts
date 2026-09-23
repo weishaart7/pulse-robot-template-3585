@@ -62,6 +62,7 @@ export interface LiberaliteRow {
   clauses?: string[] | null;
   montant_rapport_forfaitaire?: number | null;
   valeur_fiscale_acte?: number | null;
+  beneficiaire_conjoint?: boolean | null;
   generation_intermediaire_id?: string | null;
   // "Dons familiaux de sommes d'argent" (DonationForm.tsx::naturesOptions) déclenche
   // l'exonération dédiée art. 790 G CGI (31 865€, cumulable avec l'abattement général) —
@@ -143,7 +144,10 @@ export function buildTransmissionLiberalites(
     liberalites.push({
       id: row.id || '',
       type: row.type as 'donation' | 'legs',
-      beneficiaireId: row.beneficiaire_id || 'tiers',
+      // 'conjoint' : sentinelle résolue vers family.survivingSpouseId par
+      // computeTransmission (même convention que les clauses AV, cf.
+      // buildAVContracts::resolveBeneficiaryId).
+      beneficiaireId: row.beneficiaire_conjoint ? 'conjoint' : (row.beneficiaire_id || 'tiers'),
       valeur,
       date: row.date_acte || new Date().toISOString().split('T')[0],
       typeImputation: (row.type_imputation as Liberalite['typeImputation']) || undefined,

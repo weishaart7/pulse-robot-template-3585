@@ -5,7 +5,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { computeTransmission, FamilyGraph, Liberalite } from './index';
-import { buildPatrimonySnapshot } from '../../utils/transmissionHelpers';
+import { buildPatrimonySnapshot, buildTransmissionLiberalites } from '../../utils/transmissionHelpers';
 
 const REF = '2026-09-23';
 
@@ -94,5 +94,24 @@ describe('Phase 4b — legs à un non-héritier', () => {
     expect(netAmi.droitPartage).toBe(0);
     // Assiette du partage : 500 000 − 100 000 légués, × 2,5 %.
     expect(r.netBreakdown.totals.droitPartage).toBe(10000);
+  });
+
+  it('sentinelle \'conjoint\' (liberalites.beneficiaire_conjoint) : résolue vers le partenaire de PACS', () => {
+    const r = run(famille([], { id: 'pacs1', marie: false }), [legs('conjoint', 100000)]);
+    expect(r.legataires.map(l => l.personId)).toEqual(['pacs1']);
+    expect(r.dmtg.perBeneficiary.pacs1.droitsHorsAV).toBe(0);
+  });
+
+  it('sentinelle \'conjoint\' sans conjoint dans le graphe : traitée comme un tiers', () => {
+    const r = run(famille(), [legs('conjoint', 100000)]);
+    expect(r.dmtg.perBeneficiary['tiers-l1'].droitsHorsAV).toBe(61864);
+  });
+
+  it('buildTransmissionLiberalites : beneficiaire_conjoint → sentinelle \'conjoint\'', () => {
+    const { liberalites } = buildTransmissionLiberalites(
+      [{ id: 'l', type: 'legs', beneficiaire_nom: 'Claire', denomination: 'Legs', beneficiaire_conjoint: true, biens: [{ asset_id: 'a' }] }],
+      [{ id: 'a', valeur_estimee: 100000 }]
+    );
+    expect(liberalites[0].beneficiaireId).toBe('conjoint');
   });
 });

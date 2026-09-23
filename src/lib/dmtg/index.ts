@@ -113,6 +113,7 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
       reintegration757B: Math.round(reintegration757B),
       droitsTotaux: Math.round(droitsTotaux),
       capitalAVNet: Math.round(capitalBrutAV - prelev990I),
+      detailAV: avResult.detailParBeneficiaire[benId],
       notes: [
         ...assetValuations.lignes.filter(l => l.assetId.includes(benId)).flatMap(l => l.justifs),
         ...avResult.notes.filter(note => note.includes(benId))

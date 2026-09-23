@@ -190,7 +190,15 @@ export function getConjointAge(family: FamilyGraph, referenceDateISO: string): n
  * par l'UI — computeDMTG n'est plus invoqué directement par les composants.
  */
 export function computeTransmission(ctx: TransmissionContext): TransmissionResult {
-  const { family, liberalites, params, conjointOption, rawAssets, partageEnvisage, duhOpte } = ctx;
+  const { family, params, conjointOption, rawAssets, partageEnvisage, duhOpte } = ctx;
+  // Sentinelle 'conjoint' (liberalites.beneficiaire_conjoint) résolue vers le
+  // conjoint du graphe — marié (héritier) ou partenaire de PACS (légataire
+  // seulement). Sans conjoint dans le graphe : traité comme un tiers.
+  const liberalites = ctx.liberalites.map(lib =>
+    lib.beneficiaireId === 'conjoint'
+      ? { ...lib, beneficiaireId: family.survivingSpouseId || 'tiers' }
+      : lib
+  );
   const referenceDate = ctx.referenceDate || new Date().toISOString().split('T')[0];
 
   // 0. Récompenses (art. 1468-1478 C. civ.) et créances entre époux

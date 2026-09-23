@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,10 +9,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useAssets } from '@/hooks/useAssets';
-import { useFamilyData } from '@/hooks/useFamilyData';
+import { useFamilyData, useMaritalStatus } from '@/hooks/useFamilyData';
 import { useToast } from '@/hooks/use-toast';
 import { liberaliteService, Liberalite, LiberaliteTypeImputation } from '@/services/liberaliteService';
 import { X } from 'lucide-react';
+
+const CONJOINT_ID = 'conjoint';
 
 interface LegsFormProps {
   open: boolean;
@@ -47,7 +49,25 @@ const DEFAULT_FORM_DATA = {
 
 export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingGroup, onSaved }) => {
   const { assets } = useAssets();
-  const { familyMembers: familyLinks } = useFamilyData();
+  const { familyMembers: familyLinksBruts } = useFamilyData();
+  const { data: maritalStatus } = useMaritalStatus();
+
+  // Le conjoint marié ou le partenaire de PACS ne figure pas dans
+  // family_links (il vit dans marital_status) : ajouté ici comme légataire
+  // possible, sous l'id sentinelle CONJOINT_ID, enregistré via
+  // beneficiaire_conjoint (jamais beneficiaire_id, FK family_links).
+  const familyLinks = useMemo(() => {
+    const conjointLegataire = maritalStatus?.statut_couple &&
+      ['Marié(e)', 'Pacsé(e)'].includes(maritalStatus.statut_couple)
+      ? [{
+          id: CONJOINT_ID,
+          nom: maritalStatus.nom_conjoint || 'Conjoint',
+          prenom: maritalStatus.prenom_conjoint || '',
+          lien_familial: maritalStatus.statut_couple === 'Pacsé(e)' ? 'Partenaire de PACS' : 'Conjoint',
+        }]
+      : [];
+    return [...conjointLegataire, ...familyLinksBruts];
+  }, [maritalStatus, familyLinksBruts]);
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -173,7 +193,9 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
     if (!open || !editingGroup || editingGroup.length === 0 || familyLinks.length === 0) return;
     const rebuilt = editingGroup
       .map(row => {
-        const member = familyLinks.find(m => m.id === row.beneficiaire_id);
+        const member = familyLinks.find(m =>
+          row.beneficiaire_conjoint ? m.id === CONJOINT_ID : m.id === row.beneficiaire_id
+        );
         if (!member) return null;
         return {
           id: member.id!,
@@ -217,7 +239,8 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
         const created = await liberaliteService.createLiberalite({
           type: 'legs',
           denomination: formData.libelle,
-          beneficiaire_id: legataire.id,
+          beneficiaire_id: legataire.id === CONJOINT_ID ? undefined : legataire.id,
+          beneficiaire_conjoint: legataire.id === CONJOINT_ID,
           beneficiaire_nom: legataire.nom,
           groupe_id: groupeId,
           // Proratise la valeur relue en live des biens légués entre les
