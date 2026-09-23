@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { BAREME_669_CGI, computeAge } from './bareme669CGI';
+import { BAREME_669_CGI, computeAge, computeValeurNueProprieteDonation } from './bareme669CGI';
 import { DEFAULT_DMTG_PARAMS } from '../dmtg';
 
 describe('BAREME_669_CGI vs demembrementViager (params-dmtg.json) — cohérence croisée', () => {
@@ -40,3 +40,21 @@ describe('computeAge — date de référence paramétrable', () => {
     expect(ageEnDix2010).not.toBe(ageAujourdHui);
   });
 });
+
+describe('computeValeurNueProprieteDonation', () => {
+  it('donateur de 65 ans à l\'acte : nue-propriété à 60 %', () => {
+    expect(computeValeurNueProprieteDonation(400000, '1955-03-01', '2020-06-01'))
+      .toEqual({ valeur: 240000, nuePropriete: 0.6, age: 65 });
+  });
+
+  it('âge calculé au jour de l\'acte, pas aujourd\'hui', () => {
+    // 60 ans à l'acte (50 %), 71 ans aujourd'hui.
+    expect(computeValeurNueProprieteDonation(100000, '1955-03-01', '2015-06-01')?.valeur).toBe(50000);
+  });
+
+  it('date de naissance ou date d\'acte manquante : null', () => {
+    expect(computeValeurNueProprieteDonation(100000, null, '2020-01-01')).toBeNull();
+    expect(computeValeurNueProprieteDonation(100000, '1955-03-01', undefined)).toBeNull();
+  });
+});
+

@@ -281,6 +281,10 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   arrière-petit-enfant ou, à défaut de descendance, neveu/nièce. Condition non remplie → don ordinaire,
   signalé ; date de naissance manquante → exonération maintenue, signalée non vérifiable.
   `DonationForm.tsx` avertit (sans bloquer) pour un donataire hors de ces liens.
+  Donation avec réserve d'usufruit : l'utilisateur saisit la pleine propriété à l'acte, la valeur
+  fiscale enregistrée est la nue-propriété au barème art. 669 CGI selon l'âge du donateur au jour de
+  l'acte (`computeValeurNueProprieteDonation`, `lib/patrimoine/bareme669CGI.ts`) — date d'acte et date
+  de naissance du donateur obligatoires. La valeur civile (`montant`) reste la pleine propriété.
   Tests : `lib/transmission/phase3Audit.test.ts`.
 - **Légataires non héritiers (`index.ts` §6bis-0).** Un legs maintenu (après réduction) à une
   personne absente de `heirs` sort du résiduel réel AVANT la répartition du cash entre héritiers
@@ -383,9 +387,9 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   comportement.)*
 
 ### 🟠 À surveiller (cas limite, peu probable)
-- **Donation démembrée : valeur de la nue-propriété non contrôlée.** Rien ne vérifie que la valeur
-  à l'acte saisie correspond au barème art. 669 CGI.
-
+- **Réserve d'usufruit réversible au conjoint.** Au décès du donateur, l'usufruit passe au conjoint
+  (exonéré : droits inchangés), mais le nu-propriétaire n'entre en jouissance qu'au décès du conjoint —
+  décalage non modélisé dans le net affiché.
 - **Conditions de l'exception de valorisation « à l'acte » pour une donation-partage jamais vérifiées.**
   Le référentiel autorise la valeur à l'acte pour une donation-partage (§8.4) sous deux conditions
   (accord de tous les héritiers réservataires, allotissement de tous) ; le code accepte

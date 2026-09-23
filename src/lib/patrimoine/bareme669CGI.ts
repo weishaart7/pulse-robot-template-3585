@@ -54,3 +54,22 @@ export const getTrancheBaremeForYoungest = (ages: number[]): TrancheBareme669 | 
   if (validAges.length === 0) return null;
   return getTrancheBareme669(Math.min(...validAges));
 };
+
+/**
+ * Valeur fiscale de la nue-propriété transmise par une donation avec réserve
+ * d'usufruit (art. 669 I CGI, barème obligatoire en usufruit viager) : valeur
+ * en pleine propriété × part de nue-propriété, selon l'âge du donateur
+ * (usufruitier) au jour de l'acte. Null si l'âge n'est pas calculable.
+ */
+export const computeValeurNueProprieteDonation = (
+  valeurPleinePropriete: number,
+  dateNaissanceDonateur: string | undefined | null,
+  dateActe: Date | string | undefined | null
+): { valeur: number; nuePropriete: number; age: number } | null => {
+  if (!dateActe) return null;
+  const age = computeAge(dateNaissanceDonateur, new Date(dateActe));
+  if (age === null) return null;
+  const { nuePropriete } = getTrancheBareme669(age);
+  return { valeur: valeurPleinePropriete * nuePropriete, nuePropriete, age };
+};
+

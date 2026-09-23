@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,8 @@ import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAssets } from '@/hooks/useAssets';
-import { useMaritalStatus } from '@/hooks/useFamilyData';
+import { useMaritalStatus, useFamilyProfile } from '@/hooks/useFamilyData';
+import { computeValeurNueProprieteDonation } from '@/lib/patrimoine/bareme669CGI';
 import { useToast } from '@/hooks/use-toast';
 import { liberaliteService, Liberalite, LiberaliteTypeImputation } from '@/services/liberaliteService';
 import { CLAUSE_DISPENSE_RAPPORT, CLAUSE_RAPPORT_FORFAITAIRE } from '@/lib/transmission/types';
@@ -90,6 +91,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: maritalStatus } = useMaritalStatus();
+  const { data: familyProfile } = useFamilyProfile();
 
   // Donataires possibles : conjoint marié ou partenaire de PACS (même
   // convention que LegsForm.tsx), puis les membres de family_links.
@@ -119,10 +121,21 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
   // l'acte, art. 1078) : la valeur à l'acte est la valeur saisie des biens,
   // reprise d'office sans champ dédié. Projet non signé : pas encore d'acte,
   // la valeur actuelle tient lieu de valeur déclarée.
-  const valeurActeReprise =
+  //
+  // Donation démembrée (réserve d'usufruit) : jamais reprise d'office. Le
+  // donataire ne reçoit que la nue-propriété, dont la valeur fiscale est
+  // imposée par le barème art. 669 CGI selon l'âge du donateur au jour de
+  // l'acte — l'utilisateur saisit la valeur en pleine propriété
+  // (formData.valeurFiscaleActe), la valeur fiscale enregistrée en dérive.
+  const isDemembree = formData.demembrement !== 'aucun';
+  const valeurActeReprise = !isDemembree && (
     formData.nature === "Dons familiaux de sommes d'argent" ||
     formData.typeDonation === 'partage' ||
-    formData.statut === 'projet';
+    formData.statut === 'projet'
+  );
+  const calculNuePropriete = isDemembree
+    ? computeValeurNueProprieteDonation(formData.valeurFiscaleActe ?? 0, familyProfile?.date_naissance, formData.date)
+    : null;
 
   // Avertissement non bloquant : lien de parenté hors du champ de l'art. 790 G
   // (le moteur, transmission/index.ts, vérifie aussi les conditions d'âge).
@@ -259,6 +272,24 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
     }
   }, [open, editingGroup]);
 
+  // Édition d'une donation démembrée : la base stocke la valeur fiscale de la
+  // nue-propriété ; le champ affiche la pleine propriété, reconstituée une
+  // seule fois par ouverture (dès que le profil du donateur est chargé).
+  const pleineProprieteReconstituee = useRef(false);
+  useEffect(() => {
+    if (!open) {
+      pleineProprieteReconstituee.current = false;
+      return;
+    }
+    const first = editingGroup?.[0];
+    if (pleineProprieteReconstituee.current || !first?.demembrement || first.valeur_fiscale_acte == null) return;
+    const bareme = computeValeurNueProprieteDonation(1, familyProfile?.date_naissance, first.date_acte);
+    if (!bareme || bareme.nuePropriete <= 0) return;
+    pleineProprieteReconstituee.current = true;
+    const nueProprieteTotale = first.valeur_fiscale_acte / ((first.pourcentage ?? 100) / 100);
+    setFormData(prev => ({ ...prev, valeurFiscaleActe: nueProprieteTotale / bareme.nuePropriete }));
+  }, [open, editingGroup, familyProfile]);
+
   // Reconstruction des donataires : nécessite familyMembers chargé pour
   // retrouver nom/prénom/lien à partir de beneficiaire_id.
   useEffect(() => {
@@ -336,6 +367,15 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
       return;
     }
 
+    if (isDemembree && !calculNuePropriete) {
+      toast({
+        title: "Erreur",
+        description: "Donation démembrée : la date de l'acte et la date de naissance du donateur (profil) sont nécessaires pour valoriser la nue-propriété (barème art. 669 CGI).",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!valeurActeReprise && (formData.valeurFiscaleActe === undefined || formData.valeurFiscaleActe <= 0)) {
       toast({
         title: "Erreur",
@@ -350,7 +390,9 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
     try {
       const montantTotal = selectedAssets.reduce((sum, a) => sum + a.valeurDonation, 0);
       const biens = selectedAssets.map(a => ({ asset_id: a.id, valeur: a.valeurDonation }));
-      const valeurActeTotale = valeurActeReprise ? montantTotal : (formData.valeurFiscaleActe ?? montantTotal);
+      const valeurActeTotale = isDemembree && calculNuePropriete
+        ? calculNuePropriete.valeur
+        : valeurActeReprise ? montantTotal : (formData.valeurFiscaleActe ?? montantTotal);
       const groupeId = beneficiaries.length > 1 ? crypto.randomUUID() : undefined;
       const dateActe = formData.date ? format(formData.date, 'yyyy-MM-dd') : undefined;
 
@@ -654,7 +696,9 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
           {/* Valeur déclarée dans l'acte */}
           {!valeurActeReprise && (
             <div>
-              <Label htmlFor="valeurFiscaleActe">Valeur déclarée dans l'acte *</Label>
+              <Label htmlFor="valeurFiscaleActe">
+                {isDemembree ? "Valeur en pleine propriété déclarée dans l'acte *" : "Valeur déclarée dans l'acte *"}
+              </Label>
               <Input
                 id="valeurFiscaleActe"
                 type="number"
@@ -672,6 +716,13 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
                 rappel fiscal des donations de moins de 15 ans (art. 784 CGI) ; la valeur actuelle saisie
                 plus bas sert, elle, au calcul civil (réserve, rapport).
               </p>
+              {isDemembree && (
+                <p className="text-xs mt-1 text-[var(--text-secondary)]">
+                  {calculNuePropriete
+                    ? `Nue-propriété transmise (barème art. 669 CGI) : ${(formData.valeurFiscaleActe ?? 0).toLocaleString('fr-FR')} € × ${Math.round(calculNuePropriete.nuePropriete * 100)} % (donateur de ${calculNuePropriete.age} ans à l'acte) = ${Math.round(calculNuePropriete.valeur).toLocaleString('fr-FR')} €`
+                    : "Renseignez la date de l'acte (et la date de naissance du donateur dans le profil) pour calculer la valeur de la nue-propriété."}
+                </p>
+              )}
             </div>
           )}
 
