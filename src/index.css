@@ -492,3 +492,14 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+
+/* Landing navbar: entrée par extension horizontale depuis le centre */
+@keyframes navIntroCentered {
+  0% { opacity: 0; clip-path: inset(0 50% round 12px); }
+  15% { opacity: 1; }
+  100% { opacity: 1; clip-path: inset(0 0 round 12px); }
+}
+.nav-intro-centered, .nav-intro { animation: navIntroCentered 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.15s backwards; }
+@media (prefers-reduced-motion: reduce) {
+  .nav-intro-centered, .nav-intro { animation: none; }
+}

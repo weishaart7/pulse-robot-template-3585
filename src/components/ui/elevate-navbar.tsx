@@ -775,7 +775,7 @@ function ElevateNavbarDesktop({
       ref={navWrapRef}
       onMouseEnter={onHeaderMouseEnter}
       onMouseLeave={onHeaderMouseLeave}
-      className="fixed left-1/2 top-12 z-50 -translate-x-1/2 rounded-xl bg-black px-1.5 py-1.5 pl-4 text-xs shadow-[0_8px_24px_rgba(0,0,0,0.25)]"
+      className="nav-intro-centered fixed left-1/2 top-12 z-50 -translate-x-1/2 rounded-xl bg-black px-1.5 py-1.5 pl-4 text-xs"
     >
       <div className="relative flex h-full w-full items-center gap-6">
         <div className="flex h-full items-center gap-6">
@@ -1028,7 +1028,7 @@ function ElevateNavbarMobile({
         style={{ pointerEvents: "none" }}
       />
 
-      <div className="flex items-center justify-end rounded-xl border border-white/10 bg-black px-1.5 py-1.5">
+      <div className="nav-intro flex items-center justify-end rounded-xl border border-white/10 bg-black px-1.5 py-1.5">
         <button
           ref={toggleButtonRef}
           type="button"
