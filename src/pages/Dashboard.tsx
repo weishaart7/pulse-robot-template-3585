@@ -1,19 +1,137 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import BudgetStatisticsCard from '@/components/ui/budget-statistics-card';
+import { DashCard, DASH_ACCENT, DASH_INK, DOT_FONT } from '@/components/ui/dash-card';
 import { useRevenus, useCharges } from '@/hooks/useBudget';
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
-import { PatrimoineChart } from '@/components/patrimoine/PatrimoineChart';
+import { computePatrimoineBreakdown } from '@/components/patrimoine/PatrimoineChart';
 import { AlertesConseil } from '@/components/alertes/AlertesConseil';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { useFiscalOverview } from '@/hooks/useFiscalOverview';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Users, Gift, Scale, FileText, Landmark, Hourglass, PiggyBank, CalendarDays, Wallet, type LucideIcon } from 'lucide-react';
 
 function formatEuros(valeur: number): string {
   return `${Math.round(valeur).toLocaleString('fr-FR')} €`;
+}
+
+// Contenu des cartes de la Vue d'ensemble (Ledgerix × Creator Finance, cf. dash-card.tsx) :
+// gros chiffres noirs serrés, « € » réduit et grisé, graphiques en traits fins,
+// compteurs en matrice de points, accent lime réservé à l'élément principal.
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return <p className="text-[11px] font-medium text-[#0d1b1e]/45">{children}</p>;
+}
+
+function Figure({ value, size = 40 }: { value: number; size?: number }) {
+  return (
+    <span className="font-medium leading-none tabular-nums" style={{ fontSize: size, letterSpacing: '-0.05em' }}>
+      {value < 0 ? '−' : ''}{Math.round(Math.abs(value)).toLocaleString('fr-FR')}
+      <span className="ml-1 text-[0.38em] font-normal text-[#0d1b1e]/40" style={{ letterSpacing: 0 }}>€</span>
+    </span>
+  );
+}
+
+function Row({ label, value, count, dot, muted }: { label: string; value: string; count?: number; dot?: string; muted?: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-t border-[#0d1b1e]/[0.07] py-2 text-[12px]">
+      <span className="flex min-w-0 items-center gap-2.5 text-[#0d1b1e]/60">
+        <span className="h-3 w-3 shrink-0 rounded-full border border-[#0d1b1e]/25 p-[2px]">
+          {dot && <span className="block h-full w-full rounded-full" style={{ background: dot }} />}
+        </span>
+        <span className="truncate">{label}</span>
+        {count !== undefined && <span className="text-[13px] text-[#0d1b1e]/40" style={DOT_FONT}>{count}</span>}
+      </span>
+      <span className={`shrink-0 font-medium tabular-nums ${muted ? 'text-[#0d1b1e]/30' : ''}`}>{value}</span>
+    </div>
+  );
+}
+
+// Ligne de catégorie : nom, part, bande « code-barres » de 28 traits dont la part
+// remplie suit le poids de la catégorie, puis la valeur. La première passe en lime.
+function CategoryStrip({ name, value, pct, lead }: { name: string; value: number; pct: number; lead?: boolean }) {
+  const TICKS = 28;
+  const filled = Math.max(1, Math.round((pct / 100) * TICKS));
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1">
+      <span className="flex min-w-0 items-baseline gap-2 text-[12px]">
+        <span className="truncate">{name}</span>
+        <span className="tabular-nums text-[#0d1b1e]/40">{Math.round(pct)} %</span>
+      </span>
+      <span className="text-[12px] font-medium tabular-nums">{formatEuros(value)}</span>
+      <div className="col-span-2 flex h-3 items-end gap-[2px]">
+        {Array.from({ length: TICKS }, (_, i) => (
+          <span
+            key={i}
+            className="flex-1 rounded-full"
+            style={{
+              height: i < filled ? '100%' : '45%',
+              background: i < filled ? (lead ? DASH_ACCENT : DASH_INK) : 'rgba(13,27,30,0.12)',
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Jauge en graduations (Ledgerix) : part des charges dans les revenus.
+function TickGauge({ ratio, solde }: { ratio: number; solde: number }) {
+  const TICKS = 41;
+  const filled = Math.round((ratio / 100) * (TICKS - 1));
+  return (
+    <div className="relative mx-auto w-full max-w-[180px]">
+      <svg viewBox="0 0 200 110" className="block w-full">
+        {Array.from({ length: TICKS }, (_, i) => {
+          const a = Math.PI * (1 - i / (TICKS - 1));
+          const r1 = 80, r2 = i === filled ? 98 : 92;
+          const on = i <= filled && ratio > 0;
+          return (
+            <line
+              key={i}
+              x1={100 + r1 * Math.cos(a)} y1={102 - r1 * Math.sin(a)}
+              x2={100 + r2 * Math.cos(a)} y2={102 - r2 * Math.sin(a)}
+              stroke={i === filled ? DASH_ACCENT : on ? DASH_INK : 'rgba(13,27,30,0.12)'}
+              strokeWidth={i === filled ? 3.5 : 2}
+              strokeLinecap="round"
+            />
+          );
+        })}
+      </svg>
+      <div className="absolute inset-x-0 bottom-0 text-center">
+        <div className="text-[22px] font-medium leading-none tabular-nums" style={{ letterSpacing: '-0.05em' }}>
+          {solde >= 0 ? '+' : '−'}{Math.round(Math.abs(solde)).toLocaleString('fr-FR')}
+          <span className="ml-1 text-[12px] font-normal text-[#0d1b1e]/40" style={{ letterSpacing: 0 }}>€</span>
+        </div>
+        <div className="mt-0.5 text-[10px] text-[#0d1b1e]/45">disponible / mois</div>
+      </div>
+    </div>
+  );
+}
+
+// Orbite d'icônes (Creator Finance) pour les modules pas encore branchés.
+function Orbit({ center: Center, satellites }: { center: LucideIcon; satellites: LucideIcon[] }) {
+  const pos = ['left-1/2 top-0 -translate-x-1/2', 'right-0 top-1/2 -translate-y-1/2', 'left-1/2 bottom-0 -translate-x-1/2', 'left-0 top-1/2 -translate-y-1/2'];
+  return (
+    <div className="relative mx-auto h-24 w-24">
+      <div className="absolute inset-3 rounded-full border border-dashed border-[#0d1b1e]/15" />
+      <div className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[#0d1b1e]/[0.08] bg-white">
+        <Center className="h-4 w-4" strokeWidth={1.75} />
+      </div>
+      {satellites.slice(0, 4).map((Icon, i) => (
+        <div key={i} className={`absolute flex h-7 w-7 items-center justify-center rounded-full bg-white/80 backdrop-blur ${pos[i]}`}>
+          <Icon className="h-3.5 w-3.5 text-[#0d1b1e]/60" strokeWidth={1.75} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SoonChip() {
+  return (
+    <div className="mx-auto mt-3 w-fit rounded-xl bg-[#0d1b1e]/80 px-3 py-1.5 text-[10px] text-white backdrop-blur">
+      Contenu à venir
+    </div>
+  );
 }
 
 const Dashboard = () => {
@@ -78,6 +196,15 @@ const Dashboard = () => {
 
   const totalRevenus = revenus.reduce((sum, revenu) => sum + toAnnual(revenu.montant, revenu.periodicite), 0) / 12;
   const totalCharges = charges.reduce((sum, charge) => sum + toAnnual(charge.montant, charge.periodicite), 0) / 12;
+  const soldeMensuel = totalRevenus - totalCharges;
+  const ratioCharges = totalRevenus > 0 ? Math.min(100, (totalCharges / totalRevenus) * 100) : 0;
+
+  const repartition = computePatrimoineBreakdown(assets, passifs, emprunts, assetDemembrements, { familyProfile, maritalStatus, familyLinks });
+  const actifs = repartition.filter(item => item.type === 'actif' && item.value > 0);
+  const totalActifs = actifs.reduce((sum, item) => sum + item.value, 0);
+  const totalPassifs = repartition.filter(item => item.type === 'passif').reduce((sum, item) => sum + item.value, 0);
+  const patrimoineNet = totalActifs - totalPassifs;
+
   return <div className="p-6 pt-0">
       <AlertesConseil />
 
@@ -99,125 +226,69 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="border border-border">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold" style={{ color: '#181818', fontFamily: "Helvetica, Arial, sans-serif", letterSpacing: '0.3px' }}>Patrimoine</CardTitle>
-            <CardDescription style={{ color: '#181818', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.5px' }}>
-              Suivez l'évolution de votre patrimoine
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <PatrimoineChart
-              assets={assets}
-              passifs={passifs}
-              emprunts={emprunts}
-              selectedCategory={null}
-              assetDemembrements={assetDemembrements}
-              demembrementCtx={{ familyProfile, maritalStatus, familyLinks }}
-            />
-          </CardContent>
-        </Card>
-
-        <Card className="border border-border">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold" style={{ color: '#181818', fontFamily: "Helvetica, Arial, sans-serif", letterSpacing: '0.3px' }}>Budget</CardTitle>
-            <CardDescription style={{ color: '#181818', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.5px' }}>
-              Contrôlez vos finances au quotidien
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <BudgetStatisticsCard totalRevenus={totalRevenus} totalCharges={totalCharges} revenusCount={revenus.length} chargesCount={charges.length} />
-          </CardContent>
-        </Card>
-
-        <Card className="overflow-hidden border border-border">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-bold" style={{ color: '#181818', fontFamily: "Helvetica, Arial, sans-serif", letterSpacing: '0.3px' }}>Fiscalité</CardTitle>
-            <CardDescription style={{ color: '#181818', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.5px' }}>
-              Optimisez votre situation fiscale
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Montant principal avec fond coloré */}
-            <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-md p-3 border border-primary/20">
-              <div className="text-xs font-medium text-muted-foreground mb-1">Imposition totale</div>
-              <div className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                {formatEuros(impositionTotale)}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <DashCard title="Patrimoine" to="/dashboard/patrimoine" tag="Aujourd'hui" meta={{ count: actifs.length, label: actifs.length > 1 ? 'catégories d\'actifs' : 'catégorie d\'actifs' }} className="sm:col-span-2">
+          <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+            <div className="flex flex-col justify-between gap-4">
+              <div>
+                <Eyebrow>Patrimoine net</Eyebrow>
+                <div className="mt-2"><Figure value={patrimoineNet} /></div>
+              </div>
+              {/* Info-bulle dépolie actifs / passifs */}
+              <div className="w-fit rounded-2xl border border-[#0d1b1e]/[0.08] bg-white/65 px-3 py-2 text-[11px]">
+                <div className="flex items-center justify-between gap-6">
+                  <span className="text-[#0d1b1e]/50">Actifs</span>
+                  <span className="font-medium tabular-nums">{formatEuros(totalActifs)}</span>
+                </div>
+                <div className="mt-1 flex items-center justify-between gap-6">
+                  <span className="text-[#0d1b1e]/50">Passifs</span>
+                  <span className={`font-medium tabular-nums ${totalPassifs === 0 ? 'text-[#0d1b1e]/30' : ''}`}>
+                    {totalPassifs > 0 ? `− ${formatEuros(totalPassifs)}` : formatEuros(0)}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Répartition détaillée */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between p-2.5 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-2">
-                  <div className="h-7 w-7 rounded-full bg-[#05aaa4]/10 flex items-center justify-center">
-                    <div className="h-1.5 w-1.5 rounded-full bg-[#05aaa4]" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-medium">IR et Prélèvements sociaux</div>
-                    <div className="text-[10px] text-muted-foreground">Impôt sur le revenu</div>
-                  </div>
-                </div>
-                <div className="text-sm font-bold">{formatEuros(impositionTotale)}</div>
-              </div>
-
-              <div className="flex items-center justify-between p-2.5 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-2">
-                  <div className="h-7 w-7 rounded-full bg-[#0b5563]/10 flex items-center justify-center">
-                    <div className="h-1.5 w-1.5 rounded-full bg-[#0b5563]" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-medium">IFI</div>
-                    <div className="text-[10px] text-muted-foreground">Impôt sur la fortune immobilière</div>
-                  </div>
-                </div>
-                <div className="text-sm font-bold text-muted-foreground">0 €</div>
-              </div>
-
-              <div className="flex items-center justify-between p-2.5 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-2">
-                  <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center">
-                    <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-medium">Autres impôts</div>
-                    <div className="text-[10px] text-muted-foreground">Taxes diverses</div>
-                  </div>
-                </div>
-                <div className="text-sm font-bold text-muted-foreground">0 €</div>
-              </div>
+            <div className="space-y-3">
+              {actifs.length === 0
+                ? <p className="text-[12px] text-[#0d1b1e]/45">Ajoutez vos actifs pour voir leur répartition.</p>
+                : actifs.slice(0, 4).map((item, i) => (
+                  <CategoryStrip key={item.name} name={item.name} value={item.value} pct={(item.value / totalActifs) * 100} lead={i === 0} />
+                ))}
+              {actifs.length > 4 && (
+                <p className="text-[11px] text-[#0d1b1e]/40">+ {actifs.length - 4} autre{actifs.length - 4 > 1 ? 's' : ''} catégorie{actifs.length - 4 > 1 ? 's' : ''}</p>
+              )}
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border border-border">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold" style={{ color: '#181818', fontFamily: "Helvetica, Arial, sans-serif", letterSpacing: '0.3px' }}>Transmission</CardTitle>
-            <CardDescription style={{ color: '#181818', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.5px' }}>
-              Préparez la transmission de votre patrimoine
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Contenu à venir...
-            </p>
-          </CardContent>
-        </Card>
+          </div>
+        </DashCard>
 
-        <Card className="border border-border">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold" style={{ color: '#181818', fontFamily: "Helvetica, Arial, sans-serif", letterSpacing: '0.3px' }}>Retraite</CardTitle>
-            <CardDescription style={{ color: '#181818', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.5px' }}>
-              Anticipez votre retraite sereinement
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Contenu à venir...
-            </p>
-          </CardContent>
-        </Card>
+        <DashCard title="Budget" to="/dashboard/budget" tag="Par mois" meta={{ count: revenus.length + charges.length, label: 'lignes de budget' }}>
+          <TickGauge ratio={ratioCharges} solde={soldeMensuel} />
+          <div className="mt-3">
+            <Row dot={DASH_ACCENT} label="Revenus" value={formatEuros(totalRevenus)} />
+            <Row dot={DASH_INK} label="Charges" value={formatEuros(totalCharges)} />
+          </div>
+        </DashCard>
+
+        <DashCard title="Fiscalité" to="/dashboard/fiscalite" tag="Estimation">
+          <Eyebrow>Imposition totale</Eyebrow>
+          <div className="mt-2"><Figure value={impositionTotale} size={30} /></div>
+          <div className="mt-3">
+            <Row dot={DASH_ACCENT} label="IR et Prélèvements sociaux" value={formatEuros(impositionTotale)} />
+            <Row label="IFI" value={formatEuros(0)} muted />
+            <Row label="Autres impôts" value={formatEuros(0)} muted />
+          </div>
+        </DashCard>
+
+        <DashCard title="Transmission" to="/dashboard/transmission" variant="deep">
+          <Orbit center={Users} satellites={[Gift, Scale, FileText, Landmark]} />
+          <SoonChip />
+        </DashCard>
+
+        <DashCard title="Retraite" to="/dashboard/retraite" variant="deep">
+          <Orbit center={Hourglass} satellites={[PiggyBank, CalendarDays, Landmark, Wallet]} />
+          <SoonChip />
+        </DashCard>
       </div>
     </div>;
 };
