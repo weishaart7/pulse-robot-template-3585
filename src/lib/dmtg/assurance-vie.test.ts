@@ -52,7 +52,7 @@ describe('resolveEffectiveAVBeneficiaires', () => {
 
     // Niveau 1 intégralement renoncé → niveau 2, où D renonce à son tour :
     // C (seul acceptant du niveau 2) récupère 100%.
-    expect(shares).toEqual([{ beneficiaryId: 'C', quotePart: 1 }]);
+    expect(shares).toEqual([{ beneficiaryId: 'C', quotePart: 1, coefAbattement990I: 1 }]);
   });
 
   it('tous les niveaux intégralement renoncés : aucun bénéficiaire résolu (clause retombe sur "mes héritiers", non modélisé)', () => {
@@ -77,8 +77,8 @@ describe('resolveEffectiveAVBeneficiaires', () => {
     const shares = resolveEffectiveAVBeneficiaires(niveaux);
 
     expect(shares).toEqual([
-      { beneficiaryId: 'A', quotePart: 0.5 },
-      { beneficiaryId: 'B', quotePart: 0.5 }
+      { beneficiaryId: 'A', quotePart: 0.5, coefAbattement990I: 1 },
+      { beneficiaryId: 'B', quotePart: 0.5, coefAbattement990I: 1 }
     ]);
   });
 
@@ -100,8 +100,8 @@ describe('resolveEffectiveAVBeneficiaires', () => {
     const shares = resolveEffectiveAVBeneficiaires(niveaux);
 
     expect(shares).toEqual([
-      { beneficiaryId: 'usufruitier', quotePart: 0.4 },
-      { beneficiaryId: 'nu-proprietaire', quotePart: 0.6 }
+      { beneficiaryId: 'usufruitier', quotePart: 0.4, coefAbattement990I: 0.4 },
+      { beneficiaryId: 'nu-proprietaire', quotePart: 0.6, coefAbattement990I: 0.6 }
     ]);
   });
 });
@@ -143,7 +143,7 @@ describe('computeAssuranceVie — intégration cascade + démembrement dans le c
     expect(result.perBeneficiary['enfant2'].prelev990I).toBeCloseTo(9500, 0);
   });
 
-  it('usufruit/nue-propriété sur la clause AV : chacun taxé séparément sur sa part démembrée avec son propre abattement', () => {
+  it('usufruit/nue-propriété sur la clause AV : abattement 990 I réparti entre usufruitier et nu-propriétaire (art. 990 I al. 3)', () => {
     const contracts: AVContract[] = [{
       id: 'av1',
       capitalDeces: 500000,
@@ -165,9 +165,10 @@ describe('computeAssuranceVie — intégration cascade + démembrement dans le c
 
     // Conjoint usufruitier : exonéré (990 I 2e alinéa), quelle que soit sa part.
     expect(result.perBeneficiary['conjoint'].prelev990I).toBe(0);
-    // Enfant1 nu-propriétaire : 60% de 500 000€ = 300 000€, abattement 152 500€
-    // → base imposable 147 500€ × 20% = 29 500€.
-    expect(result.perBeneficiary['enfant1'].prelev990I).toBeCloseTo(29500, 0);
+    // Enfant1 nu-propriétaire : 60% de 500 000€ = 300 000€, abattement réduit
+    // à 60% × 152 500€ = 91 500€ (la fraction de l'usufruitier exonéré est
+    // perdue, pas reportée) → base 208 500€ × 20% = 41 700€.
+    expect(result.perBeneficiary['enfant1'].prelev990I).toBeCloseTo(41700, 0);
   });
 
   it('bénéficiaire décédé : le calcul reste identique à un bénéficiaire acceptant classique (aucune redistribution)', () => {

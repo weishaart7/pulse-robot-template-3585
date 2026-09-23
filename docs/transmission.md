@@ -246,24 +246,28 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   `max(0, actif taxable − passif)` (actif taxable = après abattements par bien : RP, bois…). Le forfait
   mobilier de 5 % reste calculé sur l'actif brut, jamais réduit par le passif. Le passif `Bien commun`
   est encore déduit à 100 % (cf. §3).
-- **990 I cumulé par bénéficiaire.** `dmtg/assurance-vie.ts` cumule d'abord l'assiette de chaque
-  bénéficiaire sur tous ses contrats (abattement vie-génération de 20 % appliqué contrat par contrat),
-  puis applique **une seule fois** l'abattement de 152 500 € et le barème : 20 % jusqu'à 700 000 € de
-  part taxable, 31,25 % au-delà (`params-dmtg.json`, `av_990I_rates`).
+- **Assurance-vie : 990 I et 757 B (`dmtg/assurance-vie.ts`).**
+  - Assiette 990 I = capital décès rattaché aux primes versées avant 70 ans, au prorata des primes
+    (`capitalDeces × primesAvant70 / (primesAvant70 + primesApres70)`), plus-values comprises.
+    Approximation : pas de suivi de la valeur acquise versement par versement.
+  - Cumul par bénéficiaire sur tous ses contrats (abattement vie-génération de 20 % appliqué contrat
+    par contrat), puis **un seul** abattement et barème : 20 % jusqu'à 700 000 € de part taxable,
+    31,25 % au-delà (`params-dmtg.json`, `av_990I_rates`).
+  - Clause démembrée (art. 990 I al. 3) : chaque part porte un coefficient d'abattement (1 en PP,
+    `usufruitPct` pour l'usufruitier, `1 − usufruitPct` pour le nu-propriétaire) ; abattement d'une
+    personne = 152 500 € × min(1, Σ coefficients). La fraction d'un usufruitier exonéré (conjoint) est
+    perdue, jamais reportée sur le nu-propriétaire.
+  - 757 B : réintégration des primes après 70 ans (jamais les gains), abattement global de 30 500 €
+    réparti entre les seuls bénéficiaires non exonérés (conjoint/PACS, frère-sœur 796-0 ter exclus) au
+    prorata de leurs primes.
 - **Liens fiscaux des héritiers hors ordres 1-2.** Grands-parents et arrière-grands-parents → `ascendant`
   (abattement 100 000 €, barème ligne directe) ; oncles/tantes et cousins germains → `collateral_4`
-  (55 %, abattement 1 594 €). Tests : `lib/transmission/phase1Audit.test.ts`.
+  (55 %, abattement 1 594 €). Tests : `lib/transmission/phase1Audit.test.ts`, `lib/dmtg/phase2Audit.test.ts`.
 
 ## 3. Dette identifiée
 
 ### 🔴 Bloquant (peut fausser un calcul montré au client)
 
-- **Assurance-vie : écarts restants avec l'art. 990 I / 757 B.** (1) l'abattement de 30 500 € (757 B)
-  est réparti entre tous les bénéficiaires, conjoint exonéré compris, au lieu des seuls non exonérés ;
-  (2) en clause démembrée, usufruitier et nu-propriétaire reçoivent chacun l'abattement de 152 500 €
-  entier au lieu de se le partager au prorata ; (3) l'assiette 990 I est le montant des primes versées
-  avant 70 ans, pas le capital décès correspondant (plus-values ignorées), et les rachats partiels ne
-  sont pas déduits.
 - **Rappel fiscal des donations sur la mauvaise valeur.** `dmtg/recall.ts` reçoit `Liberalite.valeur`
   (valeur au décès, art. 922) au lieu de la valeur au jour de la donation (art. 784 CGI) ; et
   l'exonération 790 G (31 865 €) est déduite de chaque don au lieu d'être un plafond unique sur 15 ans
@@ -344,6 +348,13 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   comportement.)*
 
 ### 🟠 À surveiller (cas limite, peu probable)
+
+- **757 B et rachats partiels.** Les primes après 70 ans retenues ne sont pas diminuées des rachats
+  partiels : traitement doctrinal incertain, non tranché.
+- **Écran Assurance-vie : ligne « abattement » recalculée localement.** `AssuranceVie.tsx` affiche
+  `152 500 € × nb bénéficiaires non-conjoint` et `min(30 500, primes 757 B)` au lieu des abattements
+  réellement appliqués par le moteur (répartition démembrée, exclusion des exonérés) ; les montants
+  de prélèvement affichés, eux, viennent bien du moteur.
 
 - **Conditions de l'exception de valorisation « à l'acte » pour une donation-partage jamais vérifiées.**
   Le référentiel autorise la valeur à l'acte pour une donation-partage (§8.4) sous deux conditions

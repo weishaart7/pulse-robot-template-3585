@@ -3,6 +3,10 @@ import { AVContract, Beneficiary, DmtgParams, AssuranceVieResult } from './types
 interface ResolvedAVShare {
   beneficiaryId: string;
   quotePart: number;
+  // Fraction de l'abattement 990 I attachée à cette part (art. 990 I al. 3) :
+  // 1 en pleine propriété, usufruitPct pour l'usufruitier, 1 − usufruitPct
+  // pour le nu-propriétaire d'une clause démembrée.
+  coefAbattement990I: number;
 }
 
 /**
@@ -43,10 +47,10 @@ export function resolveEffectiveAVBeneficiaires(niveaux: AVContract['niveaux']):
       const effectiveQuotePart = totalNiveau * (b.quotePart / totalAcceptantsPct);
 
       if (b.typeDetention === 'usufruit' && b.nuProprietaireId && b.usufruitPct !== undefined) {
-        shares.push({ beneficiaryId: b.beneficiaryId, quotePart: effectiveQuotePart * b.usufruitPct });
-        shares.push({ beneficiaryId: b.nuProprietaireId, quotePart: effectiveQuotePart * (1 - b.usufruitPct) });
+        shares.push({ beneficiaryId: b.beneficiaryId, quotePart: effectiveQuotePart * b.usufruitPct, coefAbattement990I: b.usufruitPct });
+        shares.push({ beneficiaryId: b.nuProprietaireId, quotePart: effectiveQuotePart * (1 - b.usufruitPct), coefAbattement990I: 1 - b.usufruitPct });
       } else {
-        shares.push({ beneficiaryId: b.beneficiaryId, quotePart: effectiveQuotePart });
+        shares.push({ beneficiaryId: b.beneficiaryId, quotePart: effectiveQuotePart, coefAbattement990I: 1 });
       }
     });
 
@@ -72,76 +76,96 @@ export function computeAssuranceVie(
     perBeneficiary[ben.id] = { prelev990I: 0, reintegration757B: 0, capitalBrut: 0 };
   });
 
-  // Calculer la réintégration 757B globale
-  const totalPrimesApres70 = contracts.reduce((sum, contract) => sum + contract.primesApres70, 0);
-  const exces757B = Math.max(0, totalPrimesApres70 - params.abattements.apres70_AV_global);
+  // Assiettes cumulées par bénéficiaire, tous contrats confondus :
+  // - primes757BParBenef : primes versées après 70 ans revenant à chacun ;
+  // - coefAbattementParBenef : somme des coefficients d'abattement 990 I de
+  //   ses parts (plafonnée à 1 plus bas, cf. art. 990 I al. 3).
+  const primes757BParBenef: Record<string, number> = {};
+  const coefAbattementParBenef: Record<string, number> = {};
 
-  if (exces757B > 0) {
-    notes.push(`Primes après 70 ans : ${totalPrimesApres70}€ - Plafond : ${params.abattements.apres70_AV_global}€ - Excédent à réintégrer : ${exces757B}€`);
-  }
+  // Exonérés au titre du 757 B : conjoint/PACS (exonération de la
+  // succession, art. 796-0 bis) et frère/sœur remplissant l'art. 796-0 ter.
+  const isExonere757B = (benef: Beneficiary) =>
+    benef.lien === 'conjoint' || benef.lien === 'pacs' ||
+    (benef.lien === 'frere_soeur' && !!benef.exonerationSuccession);
 
-  // Traiter chaque contrat
   contracts.forEach(contract => {
-    // Calculer la répartition de l'excédent 757B pour ce contrat
-    const ratioContrat = totalPrimesApres70 > 0 ? contract.primesApres70 / totalPrimesApres70 : 0;
-    const exces757BContrat = exces757B * ratioContrat;
-
     // Bénéficiaires effectifs : cascade de renonciation + démembrement déjà
     // résolus (cf. resolveEffectiveAVBeneficiaires ci-dessus) — le calcul
     // fiscal qui suit n'a plus à connaître la structure en niveaux.
     const effectiveShares = resolveEffectiveAVBeneficiaires(contract.niveaux);
+
+    // Capital décès rattaché aux primes versées avant 70 ans (assiette 990 I :
+    // sommes dues, plus-values comprises), au prorata des primes — approximation
+    // faute de valeur acquise suivie versement par versement.
+    const totalPrimes = contract.primesAvant70 + contract.primesApres70;
+    const capital990I = totalPrimes > 0
+      ? contract.capitalDeces * (contract.primesAvant70 / totalPrimes)
+      : 0;
 
     effectiveShares.forEach(share => {
       const benef = beneficiaries.find(b => b.id === share.beneficiaryId);
       if (!benef) return;
 
       // Capital brut transmis à ce bénéficiaire sur ce contrat (quote-part
-      // effective de la valeur réelle du contrat, pas seulement des primes
-      // servant d'assiette 990I/757B) — sert à exposer le net hors succession
-      // (capitalBrut - prelev990I) à netBreakdown.ts, cf. décision du
-      // 2026-07-17 (AV absente de la transmission nette globale).
+      // effective de la valeur réelle du contrat) — sert à exposer le net hors
+      // succession (capitalBrut - prelev990I) à netBreakdown.ts.
       perBeneficiary[benef.id].capitalBrut += contract.capitalDeces * share.quotePart;
 
-      // Réintégration 757B (prorata des quotes-parts effectives)
-      const reintegration757B = exces757BContrat * share.quotePart;
-      perBeneficiary[benef.id].reintegration757B += reintegration757B;
+      // 757 B : primes après 70 ans (jamais les gains), prorata des parts.
+      primes757BParBenef[benef.id] = (primes757BParBenef[benef.id] || 0) + contract.primesApres70 * share.quotePart;
 
-      // Prélèvement 990I : on ne cumule ici que l'assiette de ce contrat.
-      // L'abattement de 152 500€ et le barème s'appliquent une seule fois
-      // par bénéficiaire, tous contrats confondus (art. 990 I CGI), cf.
-      // boucle après le traitement des contrats.
       const isConjointPacsExonere = (benef.lien === 'conjoint' || benef.lien === 'pacs') && contract.isExonereBeneficiaireConjointPacs;
       const isFraterieExonere = benef.lien === 'frere_soeur' && contract.isSiblingExonEligible;
 
       if (!isConjointPacsExonere && !isFraterieExonere) {
-        // Capital soumis au prélèvement (primes avant 70 ans)
-        const capitalSoumis = contract.primesAvant70 * share.quotePart;
+        const capitalSoumis = capital990I * share.quotePart;
 
         // "Contrat vie-génération" (art. 990 I bis CGI) : abattement de 20%
         // propre à chaque contrat concerné, appliqué AVANT l'abattement de
-        // 152 500€ — uniquement sur les primes avant 70 ans ; les primes
-        // après 70 ans (757B, ci-dessus) ne sont jamais concernées.
+        // 152 500€ — uniquement sur l'assiette 990 I, jamais sur le 757 B.
         const capitalApresAbattement20 = contract.nature === 'Contrat vie-génération'
           ? capitalSoumis * 0.8
           : capitalSoumis;
 
         assiette990IParBenef[benef.id] = (assiette990IParBenef[benef.id] || 0) + capitalApresAbattement20;
-      }
-
-      if (reintegration757B > 0) {
-        notes.push(`${benef.id} - Contrat ${contract.id} : 757B=${Math.round(reintegration757B)}€`);
+        coefAbattementParBenef[benef.id] = (coefAbattementParBenef[benef.id] || 0) + share.coefAbattement990I;
       }
     });
   });
 
-  // Abattement 990I et barème, une seule fois par bénéficiaire sur le cumul
-  // de ses contrats.
+  // 757 B : abattement global de 30 500€ réparti entre les seuls bénéficiaires
+  // non exonérés, au prorata de leurs primes (BOI-TCAS-AUT-60). Un exonéré
+  // réintègre sa part sans abattement — sans effet fiscal, ses droits étant nuls.
+  const totalPrimes757BNonExoneres = Object.entries(primes757BParBenef)
+    .filter(([benId]) => !isExonere757B(beneficiaries.find(b => b.id === benId)!))
+    .reduce((sum, [, primes]) => sum + primes, 0);
+
+  Object.entries(primes757BParBenef).forEach(([benId, primes]) => {
+    const benef = beneficiaries.find(b => b.id === benId)!;
+    const abattement = isExonere757B(benef) || totalPrimes757BNonExoneres <= 0
+      ? 0
+      : params.abattements.apres70_AV_global * (primes / totalPrimes757BNonExoneres);
+    const reintegration757B = Math.max(0, primes - abattement);
+    perBeneficiary[benId].reintegration757B += reintegration757B;
+    if (reintegration757B > 0) {
+      notes.push(`${benId} : 757B=${Math.round(reintegration757B)}€ (primes ${Math.round(primes)}€, abattement ${Math.round(abattement)}€)`);
+    }
+  });
+
+  // 990 I : abattement et barème une seule fois par bénéficiaire sur le cumul
+  // de ses contrats. En clause démembrée, l'abattement est réparti entre
+  // usufruitier et nu-propriétaire dans les proportions du barème 669 (art.
+  // 990 I al. 3) ; une personne cumulant plusieurs parts ne dépasse jamais
+  // l'abattement plein.
   Object.entries(assiette990IParBenef).forEach(([benId, assiette]) => {
-    const baseImposable990I = Math.max(0, assiette - params.abattements.av_990I_allowance);
+    const coef = Math.min(1, coefAbattementParBenef[benId] || 0);
+    const abattement = params.abattements.av_990I_allowance * coef;
+    const baseImposable990I = Math.max(0, assiette - abattement);
     if (baseImposable990I > 0) {
       const prelev990I = computeBareme990I(baseImposable990I, params);
       perBeneficiary[benId].prelev990I += prelev990I;
-      notes.push(`${benId} : 990I=${Math.round(prelev990I)}€ (assiette cumulée ${Math.round(assiette)}€)`);
+      notes.push(`${benId} : 990I=${Math.round(prelev990I)}€ (assiette cumulée ${Math.round(assiette)}€, abattement ${Math.round(abattement)}€)`);
     }
   });
 
