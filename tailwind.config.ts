@@ -1,7 +1,6 @@
 import type { Config } from "tailwindcss";
 
 export default {
-	darkMode: ["class"],
 	content: [
 		"./pages/**/*.{ts,tsx}",
 		"./components/**/*.{ts,tsx}",
@@ -62,6 +61,11 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
+				// Échelle chaude du simulateur (tokens dans index.css)
+				graphite: 'hsl(var(--graphite))',
+				ash: 'hsl(var(--ash))',
+				spark: 'hsl(var(--spark))',
+				positive: 'hsl(var(--positive))',
 				// Custom colors for Pulse Robot
 				pulse: {
 					"50": "#f0fdff",
@@ -86,7 +90,8 @@ export default {
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
+				sm: 'calc(var(--radius) - 4px)',
+				card: '20px'
 			},
 			keyframes: {
 				'accordion-down': {
@@ -150,6 +155,8 @@ export default {
 			boxShadow: {
 				'elegant': '0 4px 20px rgba(0, 0, 0, 0.08)',
 				'elegant-hover': '0 8px 30px rgba(0, 0, 0, 0.12)',
+				// Ombre « murmure » ElevenLabs : filet 1px + flou quasi invisible
+				'whisper': 'rgba(0,0,0,0.4) 0 0 1px 0, rgba(0,0,0,0.04) 0 1px 1px 0, rgba(0,0,0,0.04) 0 2px 4px 0',
 			}
 		}
 	},
