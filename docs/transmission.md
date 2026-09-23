@@ -260,6 +260,14 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   - 757 B : réintégration des primes après 70 ans (jamais les gains), abattement global de 30 500 €
     réparti entre les seuls bénéficiaires non exonérés (conjoint/PACS, frère-sœur 796-0 ter exclus) au
     prorata de leurs primes.
+- **Rappel fiscal des donations (`dmtg/recall.ts`).** Deux valeurs par donation : `montant` /
+  `Liberalite.valeur` = valeur au décès (calcul civil, art. 922) ; `valeur_fiscale_acte` /
+  `valeurFiscaleActe` = valeur déclarée dans l'acte (art. 784 CGI), seule base du rappel sur 15 ans.
+  Absente (donation antérieure à la colonne) : repli sur `valeur` avec avertissement dans
+  `explicationsTexte`. `DonationForm.tsx` rend le champ obligatoire, sauf somme d'argent,
+  donation-partage ou projet non signé, où il est repris d'office du montant saisi. Exonération 790 G :
+  plafond unique de 31 865 € par donataire sur la fenêtre de 15 ans, consommé chronologiquement ;
+  l'excédent consomme l'abattement général. Tests : `lib/transmission/phase3Audit.test.ts`.
 - **Liens fiscaux des héritiers hors ordres 1-2.** Grands-parents et arrière-grands-parents → `ascendant`
   (abattement 100 000 €, barème ligne directe) ; oncles/tantes et cousins germains → `collateral_4`
   (55 %, abattement 1 594 €). Tests : `lib/transmission/phase1Audit.test.ts`, `lib/dmtg/phase2Audit.test.ts`.
@@ -268,10 +276,6 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
 
 ### 🔴 Bloquant (peut fausser un calcul montré au client)
 
-- **Rappel fiscal des donations sur la mauvaise valeur.** `dmtg/recall.ts` reçoit `Liberalite.valeur`
-  (valeur au décès, art. 922) au lieu de la valeur au jour de la donation (art. 784 CGI) ; et
-  l'exonération 790 G (31 865 €) est déduite de chaque don au lieu d'être un plafond unique sur 15 ans
-  par couple donateur/donataire.
 - **Passif `Bien commun` déduit à 100 %** alors que l'actif commun n'entre qu'à 50 % : sous-évalue la
   succession, au civil comme au fiscal.
 - **Legs à un tiers non héritier non taxé** (à confirmer) : seuls les héritiers légaux et les
@@ -348,6 +352,10 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   comportement.)*
 
 ### 🟠 À surveiller (cas limite, peu probable)
+- **Conditions 790 G non vérifiées.** Âge du donateur (< 80 ans) et majorité du donataire ne sont
+  pas contrôlés : la nature « Dons familiaux de sommes d'argent » suffit à ouvrir l'exonération.
+- **Donation démembrée : valeur de la nue-propriété non contrôlée.** Rien ne vérifie que la valeur
+  à l'acte saisie correspond au barème art. 669 CGI.
 
 - **757 B et rachats partiels.** Les primes après 70 ans retenues ne sont pas diminuées des rachats
   partiels : traitement doctrinal incertain, non tranché.

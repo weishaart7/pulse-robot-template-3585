@@ -1734,6 +1734,7 @@ export type Database = {
           type_imputation: string | null
           updated_at: string
           user_id: string
+          valeur_fiscale_acte: number | null
         }
         Insert: {
           beneficiaire_id?: string | null
@@ -1760,6 +1761,7 @@ export type Database = {
           type_imputation?: string | null
           updated_at?: string
           user_id: string
+          valeur_fiscale_acte?: number | null
         }
         Update: {
           beneficiaire_id?: string | null
@@ -1786,6 +1788,7 @@ export type Database = {
           type_imputation?: string | null
           updated_at?: string
           user_id?: string
+          valeur_fiscale_acte?: number | null
         }
         Relationships: [
           {

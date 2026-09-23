@@ -61,6 +61,7 @@ export interface LiberaliteRow {
   // Bloc 1, T6, 2026-08.
   clauses?: string[] | null;
   montant_rapport_forfaitaire?: number | null;
+  valeur_fiscale_acte?: number | null;
   generation_intermediaire_id?: string | null;
   // "Dons familiaux de sommes d'argent" (DonationForm.tsx::naturesOptions) déclenche
   // l'exonération dédiée art. 790 G CGI (31 865€, cumulable avec l'abattement général) —
@@ -149,6 +150,7 @@ export function buildTransmissionLiberalites(
       beneficiaireName: row.beneficiaire_nom,
       clauses: row.clauses || undefined,
       montantRapportForfaitaire: row.montant_rapport_forfaitaire ?? undefined,
+      valeurFiscaleActe: row.valeur_fiscale_acte ?? undefined,
       generationIntermediaireId: row.generation_intermediaire_id || undefined,
       nature: row.nature || undefined
     });

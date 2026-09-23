@@ -67,6 +67,9 @@ const DEFAULT_FORM_DATA = {
   // transgénérationnelle. Pertinent uniquement si nature ===
   // 'Donation-partage transgénérationnelle' et typeDonation === 'partage'.
   generationIntermediaireId: undefined as string | undefined,
+  // Valeur totale déclarée dans l'acte (art. 784 CGI), base du rappel fiscal
+  // — répartie ensuite entre donataires au même pourcentage que `montant`.
+  valeurFiscaleActe: undefined as number | undefined,
 };
 
 export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: DonationFormProps) => {
@@ -90,6 +93,15 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
   const isTransgenerationnelle =
     formData.nature === 'Donation-partage transgénérationnelle' &&
     formData.typeDonation === 'partage';
+
+  // Somme d'argent (valeur nominale) ou donation-partage (valeur figée à
+  // l'acte, art. 1078) : la valeur à l'acte est la valeur saisie des biens,
+  // reprise d'office sans champ dédié. Projet non signé : pas encore d'acte,
+  // la valeur actuelle tient lieu de valeur déclarée.
+  const valeurActeReprise =
+    formData.nature === "Dons familiaux de sommes d'argent" ||
+    formData.typeDonation === 'partage' ||
+    formData.statut === 'projet';
 
   const enfantsDuDefunt = familyMembers.filter(m => m.lien_familial === 'Enfant');
 
@@ -200,6 +212,10 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
         statut: first.statut || 'acte',
         montantRapportForfaitaire: first.montant_rapport_forfaitaire ?? undefined,
         generationIntermediaireId: first.generation_intermediaire_id ?? undefined,
+        // Colonne stockée par donataire (proratisée) : on reconstitue le total.
+        valeurFiscaleActe: first.valeur_fiscale_acte != null
+          ? first.valeur_fiscale_acte / ((first.pourcentage ?? 100) / 100)
+          : undefined,
       });
       setSelectedClauses(first.clauses || []);
       setSelectedAssets((first.biens || []).map(b => ({ id: b.asset_id, valeurDonation: b.valeur || 0 })));
@@ -286,11 +302,21 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
       return;
     }
 
+    if (!valeurActeReprise && (formData.valeurFiscaleActe === undefined || formData.valeurFiscaleActe <= 0)) {
+      toast({
+        title: "Erreur",
+        description: "Renseignez la valeur déclarée dans l'acte de donation (base du rappel fiscal des donations).",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     const createdIds: string[] = [];
     try {
       const montantTotal = selectedAssets.reduce((sum, a) => sum + a.valeurDonation, 0);
       const biens = selectedAssets.map(a => ({ asset_id: a.id, valeur: a.valeurDonation }));
+      const valeurActeTotale = valeurActeReprise ? montantTotal : (formData.valeurFiscaleActe ?? montantTotal);
       const groupeId = beneficiaries.length > 1 ? crypto.randomUUID() : undefined;
       const dateActe = formData.date ? format(formData.date, 'yyyy-MM-dd') : undefined;
 
@@ -305,6 +331,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
           beneficiaire_nom: `${beneficiaire.prenom || ''} ${beneficiaire.nom}`.trim(),
           groupe_id: groupeId,
           montant: montantTotal * (beneficiaire.pourcentage / 100),
+          valeur_fiscale_acte: valeurActeTotale * (beneficiaire.pourcentage / 100),
           pourcentage: beneficiaire.pourcentage,
           date_acte: dateActe,
           nature: formData.nature || undefined,
@@ -581,6 +608,30 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
               rows={3}
             />
           </div>
+
+          {/* Valeur déclarée dans l'acte */}
+          {!valeurActeReprise && (
+            <div>
+              <Label htmlFor="valeurFiscaleActe">Valeur déclarée dans l'acte *</Label>
+              <Input
+                id="valeurFiscaleActe"
+                type="number"
+                min="0"
+                value={formData.valeurFiscaleActe ?? ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  valeurFiscaleActe: e.target.value === '' ? undefined : Number(e.target.value)
+                })}
+                placeholder="Ex : 250000"
+                className="mt-1 max-w-xs"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Valeur totale des biens au jour de la donation, telle que déclarée dans l'acte. Sert au
+                rappel fiscal des donations de moins de 15 ans (art. 784 CGI) ; la valeur actuelle saisie
+                plus bas sert, elle, au calcul civil (réserve, rapport).
+              </p>
+            </div>
+          )}
 
           {/* Date */}
           <div>

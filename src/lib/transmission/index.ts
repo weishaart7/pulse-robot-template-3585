@@ -780,6 +780,20 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // rappel des donations antérieures. avContracts : contrats réels construits
   // par l'appelant (buildAVContracts), primes déjà réparties avant/après 70
   // ans par versement réel (cf. décision du 2026-07-18).
+  // valeurDon = valeur déclarée dans l'acte (art. 784 CGI), jamais la valeur
+  // au décès (`valeur`, calcul civil). Donation sans valeur à l'acte
+  // (antérieure à la colonne) : repli sur `valeur`, signalé ci-dessous.
+  const donationsSansValeurActe = liberalites.filter(
+    l => l.type === 'donation' && l.valeurFiscaleActe === undefined
+  );
+  if (donationsSansValeurActe.length > 0) {
+    successionLegaleResult.explicationsTexte.push(
+      `${donationsSansValeurActe.length} donation(s) sans valeur déclarée dans l'acte : le rappel ` +
+      `fiscal des donations de moins de 15 ans (art. 784 CGI) retient à défaut leur valeur actuelle, ` +
+      `qui peut différer de la valeur déclarée à l'époque. Renseignez la valeur de l'acte pour un calcul exact.`
+    );
+  }
+
   const dmtgDonations: DmtgDonation[] = liberalites
     .filter(l => l.type === 'donation')
     .map(l => ({
@@ -787,7 +801,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       date: l.date,
       donorId: family.decedentId,
       doneeId: l.beneficiaireId,
-      valeurDon: l.valeur,
+      valeurDon: l.valeurFiscaleActe ?? l.valeur,
       // Don familial de sommes d'argent (art. 790 G CGI) : exonération
       // dédiée de 31 865€ (params.abattements.don_790G), cumulable avec et
       // distincte de l'abattement général en ligne directe — cf. recall.ts,

@@ -71,6 +71,11 @@ export function computeRecallAndAllowances(input: {
   let abattementConsomme = 0;
   let consumedBracketsAmount = 0;
 
+  // Exonération 790 G déjà consommée : plafond unique de 31 865€ par couple
+  // donateur/donataire sur la fenêtre de 15 ans (donations15y déjà filtrées
+  // sur ce donataire et cette fenêtre), consommé dans l'ordre chronologique.
+  let exo790GConsommee = 0;
+
   // Traiter les donations par ordre chronologique
   for (const donation of donations15y) {
     const valeurDon = donation.valeurDon;
@@ -81,9 +86,13 @@ export function computeRecallAndAllowances(input: {
     // l'abattement général exactement comme n'importe quelle autre donation
     // (art. 790 G + art. 779 CGI : l'exonération ne dispense pas l'excédent
     // du régime de droit commun).
-    const valeurSoumiseAbattementGeneral = donation.type === 'familiale_790G'
-      ? Math.max(0, valeurDon - params.abattements.don_790G)
-      : valeurDon;
+    let valeurSoumiseAbattementGeneral = valeurDon;
+    if (donation.type === 'familiale_790G') {
+      const exo790GDisponible = Math.max(0, params.abattements.don_790G - exo790GConsommee);
+      const exo790GUtilisee = Math.min(valeurDon, exo790GDisponible);
+      exo790GConsommee += exo790GUtilisee;
+      valeurSoumiseAbattementGeneral = valeurDon - exo790GUtilisee;
+    }
 
     // Appliquer l'abattement général disponible
     const abattementDisponible = Math.max(0, abattementBase - abattementConsomme);

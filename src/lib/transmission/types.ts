@@ -114,6 +114,11 @@ export interface Liberalite {
   // 100 000 €, rapport forfaitaire 100 000 €, valeur au partage 120 000 €
   // → 100 000 € sur la réserve, 20 000 € sur la QD, 100 000 € rapportés.
   montantRapportForfaitaire?: number;
+  // Valeur déclarée dans l'acte de donation (art. 784 CGI) : seule base du
+  // rappel fiscal des donations sur 15 ans (lib/dmtg/recall.ts), distincte
+  // de `valeur` (valeur au décès, calcul civil). Absente sur une donation
+  // antérieure à la colonne : index.ts retombe sur `valeur` avec avertissement.
+  valeurFiscaleActe?: number;
   // Donation-partage transgénérationnelle (art. 1078-8, référentiel §8.6.2) :
   // id du parent (génération intermédiaire consentante) sur la réserve duquel
   // cette donation-partage au petit-enfant s'impute, au lieu de la QD comme le
