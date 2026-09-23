@@ -110,6 +110,15 @@ export function computeAssuranceVie(
       ? contract.capitalDeces * (contract.primesAvant70 / totalPrimes)
       : 0;
 
+    // Assiette 757 B du contrat : primes versées après 70 ans, jamais
+    // diminuées des rachats partiels (BOI-ENR-DMTG-10-10-20-20 § 190), mais
+    // plafonnées au capital décès qui leur correspond quand le contrat est en
+    // moins-value (les sommes versées sont alors inférieures aux primes).
+    const capital757B = totalPrimes > 0
+      ? contract.capitalDeces * (contract.primesApres70 / totalPrimes)
+      : 0;
+    const assiette757BContrat = Math.min(contract.primesApres70, capital757B);
+
     effectiveShares.forEach(share => {
       const benef = beneficiaries.find(b => b.id === share.beneficiaryId);
       if (!benef) return;
@@ -120,7 +129,7 @@ export function computeAssuranceVie(
       perBeneficiary[benef.id].capitalBrut += contract.capitalDeces * share.quotePart;
 
       // 757 B : primes après 70 ans (jamais les gains), prorata des parts.
-      primes757BParBenef[benef.id] = (primes757BParBenef[benef.id] || 0) + contract.primesApres70 * share.quotePart;
+      primes757BParBenef[benef.id] = (primes757BParBenef[benef.id] || 0) + assiette757BContrat * share.quotePart;
 
       const isConjointPacsExonere = (benef.lien === 'conjoint' || benef.lien === 'pacs') && contract.isExonereBeneficiaireConjointPacs;
       const isFraterieExonere = benef.lien === 'frere_soeur' && contract.isSiblingExonEligible;

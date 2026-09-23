@@ -82,3 +82,18 @@ describe('Phase 2 — assiette 990 I sur le capital décès', () => {
     expect(r.perBeneficiary.e1.reintegration757B).toBe(69500);
   });
 });
+
+describe('757 B — rachats partiels et moins-value', () => {
+  it('rachats partiels non déduits : primes après 70 ans retenues en entier si le capital les couvre', () => {
+    // 100 k€ de primes après 70 ans, rachats passés sans incidence : le capital
+    // décès (120 k€) couvre les primes, qui sont retenues en entier.
+    const r = computeAssuranceVie([av({ capitalDeces: 120000, primesApres70: 100000 })], benefs, DEFAULT_DMTG_PARAMS, REF);
+    expect(r.perBeneficiary.e1.reintegration757B).toBe(69500);
+  });
+
+  it('contrat en moins-value : assiette plafonnée au capital décès', () => {
+    const r = computeAssuranceVie([av({ capitalDeces: 80000, primesApres70: 100000 })], benefs, DEFAULT_DMTG_PARAMS, REF);
+    expect(r.perBeneficiary.e1.reintegration757B).toBe(80000 - 30500);
+  });
+});
+

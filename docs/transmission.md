@@ -264,7 +264,9 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
     `usufruitPct` pour l'usufruitier, `1 − usufruitPct` pour le nu-propriétaire) ; abattement d'une
     personne = 152 500 € × min(1, Σ coefficients). La fraction d'un usufruitier exonéré (conjoint) est
     perdue, jamais reportée sur le nu-propriétaire.
-  - 757 B : réintégration des primes après 70 ans (jamais les gains), abattement global de 30 500 €
+  - 757 B : réintégration des primes après 70 ans (jamais les gains, jamais diminuées des rachats
+    partiels — BOI-ENR-DMTG-10-10-20-20 § 190 — mais plafonnées au capital décès correspondant si le
+    contrat est en moins-value), abattement global de 30 500 €
     réparti entre les seuls bénéficiaires non exonérés (conjoint/PACS, frère-sœur 796-0 ter exclus) au
     prorata de leurs primes.
 - **Rappel fiscal des donations (`dmtg/recall.ts`).** Deux valeurs par donation : `montant` /
@@ -381,8 +383,6 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
 - **Donation démembrée : valeur de la nue-propriété non contrôlée.** Rien ne vérifie que la valeur
   à l'acte saisie correspond au barème art. 669 CGI.
 
-- **757 B et rachats partiels.** Les primes après 70 ans retenues ne sont pas diminuées des rachats
-  partiels : traitement doctrinal incertain, non tranché.
 - **Conditions de l'exception de valorisation « à l'acte » pour une donation-partage jamais vérifiées.**
   Le référentiel autorise la valeur à l'acte pour une donation-partage (§8.4) sous deux conditions
   (accord de tous les héritiers réservataires, allotissement de tous) ; le code accepte
