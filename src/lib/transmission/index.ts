@@ -876,6 +876,55 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     );
   }
 
+  // Don familial de sommes d'argent (art. 790 G CGI) : exonération réservée
+  // aux dons d'un donateur de moins de 80 ans à un donataire majeur (émancipation
+  // non enregistrée par l'app), enfant/petit-enfant/arrière-petit-enfant ou, à
+  // défaut de descendance, neveu/nièce — conditions appréciées au jour du don.
+  // Condition non remplie : don ordinaire (consomme l'abattement général),
+  // signalé. Donnée manquante (date de naissance) : exonération maintenue,
+  // signalée comme non vérifiable (décision actée, audit 2026-09).
+  const NATURE_790G = "Dons familiaux de sommes d'argent";
+  const donateur = family.persons.find(p => p.id === family.decedentId);
+  const aDesDescendants = family.childrenOfDecedent.length > 0;
+  const verifier790G = (l: Liberalite): boolean => {
+    const donataire = family.persons.find(p => p.id === l.beneficiaireId);
+    const nomDonataire = l.beneficiaireName || (donataire ? `${donataire.prenom} ${donataire.nom}`.trim() : 'donataire');
+    const lien = donataire?.lienFamilial?.toLowerCase() || '';
+    const estDescendant = lien === 'enfant' || lien.includes('petit-enfant');
+    const estNeveu = lien.includes('neveu') || lien.includes('nièce');
+    const motifs: string[] = [];
+    if (!(estDescendant || (estNeveu && !aDesDescendants))) {
+      motifs.push(estNeveu
+        ? 'un neveu ou une nièce n\'est éligible qu\'à défaut de descendance du donateur'
+        : 'le donataire n\'est ni un descendant ni, à défaut, un neveu ou une nièce');
+    }
+    const nonVerifiable: string[] = [];
+    if (donateur?.dateNaissance) {
+      if (getAgeAtDate(donateur.dateNaissance, l.date) >= 80) motifs.push('le donateur avait 80 ans ou plus au jour du don');
+    } else {
+      nonVerifiable.push('date de naissance du donateur');
+    }
+    if (donataire?.dateNaissance) {
+      if (getAgeAtDate(donataire.dateNaissance, l.date) < 18) motifs.push('le donataire était mineur au jour du don (émancipation non prise en compte)');
+    } else if (estDescendant || estNeveu) {
+      nonVerifiable.push('date de naissance du donataire');
+    }
+    if (motifs.length > 0) {
+      successionLegaleResult.explicationsTexte.push(
+        `Don de sommes d'argent à ${nomDonataire} : exonération de l'art. 790 G non retenue (${motifs.join(' ; ')}). ` +
+        `Traité comme une donation ordinaire pour le rappel fiscal.`
+      );
+      return false;
+    }
+    if (nonVerifiable.length > 0) {
+      successionLegaleResult.explicationsTexte.push(
+        `Don de sommes d'argent à ${nomDonataire} : exonération de l'art. 790 G retenue sans vérification ` +
+        `possible des conditions d'âge (${nonVerifiable.join(', ')} manquante).`
+      );
+    }
+    return true;
+  };
+
   const dmtgDonations: DmtgDonation[] = liberalites
     .filter(l => l.type === 'donation')
     .map(l => ({
@@ -889,7 +938,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       // distincte de l'abattement général en ligne directe — cf. recall.ts,
       // branche `type === 'familiale_790G'`. Valeur de `nature` alignée sur
       // l'option "Dons familiaux de sommes d'argent" de DonationForm.tsx.
-      type: l.nature === 'Dons familiaux de sommes d\'argent' ? 'familiale_790G' as const : undefined
+      type: l.nature === NATURE_790G && verifier790G(l) ? 'familiale_790G' as const : undefined
     }));
 
   const dmtgResult = computeDMTG({

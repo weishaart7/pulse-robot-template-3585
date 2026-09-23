@@ -124,6 +124,17 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
     formData.typeDonation === 'partage' ||
     formData.statut === 'projet';
 
+  // Avertissement non bloquant : lien de parenté hors du champ de l'art. 790 G
+  // (le moteur, transmission/index.ts, vérifie aussi les conditions d'âge).
+  const donatairesNonEligibles790G = formData.nature === "Dons familiaux de sommes d'argent"
+    ? beneficiaries
+        .filter(b => {
+          const lien = (b.lien_familial || '').toLowerCase();
+          return !(lien === 'enfant' || lien.includes('petit-enfant') || lien.includes('neveu') || lien.includes('nièce'));
+        })
+        .map(b => `${b.prenom || ''} ${b.nom}`.trim())
+    : [];
+
   const enfantsDuDefunt = familyMembers.filter(m => m.lien_familial === 'Enfant');
 
   const naturesOptions = [
@@ -461,6 +472,13 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
                 ))}
               </SelectContent>
             </Select>
+            {donatairesNonEligibles790G.length > 0 && (
+              <p className="text-xs text-[var(--negative)] mt-1">
+                Exonération des dons d'argent (art. 790 G) réservée aux enfants, petits-enfants,
+                arrière-petits-enfants et, à défaut de descendance, aux neveux et nièces — non applicable
+                à : {donatairesNonEligibles790G.join(', ')}. Ce don sera traité comme une donation ordinaire.
+              </p>
+            )}
           </div>
 
           {/* Démembrement */}

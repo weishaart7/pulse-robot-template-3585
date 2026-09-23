@@ -95,3 +95,56 @@ describe('Phase 3 — plafond 790 G unique', () => {
     expect(r.dmtg.perBeneficiary.enfant1.allowanceGeneralResidual).toBe(100000);
   });
 });
+
+describe('790 G — conditions d\'âge et de lien', () => {
+  const famille790G = (donateurNaissance?: string, enfantNaissance?: string, extra: FamilyGraph['persons'] = [], avecEnfant = true): FamilyGraph => ({
+    ...family,
+    persons: [
+      { id: 'defunt', nom: 'Dupont', prenom: 'Jean', dateNaissance: donateurNaissance },
+      ...(avecEnfant ? [{ id: 'enfant1', nom: 'Dupont', prenom: 'Léo', lienFamilial: 'Enfant', dateNaissance: enfantNaissance }] : []),
+      ...extra
+    ],
+    links: avecEnfant ? family.links : [],
+    childrenOfDecedent: avecEnfant ? ['enfant1'] : []
+  } as FamilyGraph);
+
+  const donArgent = (beneficiaireId: string, date: string): Liberalite =>
+    donation({ id: `d-${beneficiaireId}`, beneficiaireId, date, valeur: 31865, valeurFiscaleActe: 31865, nature: "Dons familiaux de sommes d'argent", typeImputation: 'hors_part' });
+
+  const runFamille = (f: FamilyGraph, libs: Liberalite[]) => {
+    const patrimony = buildPatrimonySnapshot(rawAssets, [], 0);
+    return computeTransmission({ family: f, patrimony, liberalites: libs, params: {} as any, referenceDate: REF, rawAssets });
+  };
+
+  it('conditions remplies : exonéré, abattement intact', () => {
+    const r = runFamille(famille790G('1950-01-01', '1990-01-01'), [donArgent('enfant1', '2020-01-01')]);
+    expect(r.dmtg.perBeneficiary.enfant1.allowanceGeneralResidual).toBe(100000);
+    expect(r.explicationsTexte.some(t => t.includes('790 G'))).toBe(false);
+  });
+
+  it('donateur de 80 ans ou plus : don ordinaire', () => {
+    const r = runFamille(famille790G('1935-01-01', '1970-01-01'), [donArgent('enfant1', '2020-01-01')]);
+    expect(r.dmtg.perBeneficiary.enfant1.allowanceGeneralResidual).toBe(100000 - 31865);
+    expect(r.explicationsTexte.some(t => t.includes('80 ans ou plus'))).toBe(true);
+  });
+
+  it('donataire mineur au jour du don : don ordinaire', () => {
+    const r = runFamille(famille790G('1970-01-01', '2010-01-01'), [donArgent('enfant1', '2020-01-01')]);
+    expect(r.dmtg.perBeneficiary.enfant1.allowanceGeneralResidual).toBe(100000 - 31865);
+    expect(r.explicationsTexte.some(t => t.includes('mineur'))).toBe(true);
+  });
+
+  it('neveu alors que le donateur a un enfant : non éligible', () => {
+    const r = runFamille(
+      famille790G('1950-01-01', '1990-01-01', [{ id: 'nev', nom: 'Dupont', prenom: 'Tom', lienFamilial: 'Neveu/Nièce', dateNaissance: '1995-01-01' }]),
+      [donArgent('nev', '2020-01-01')]
+    );
+    expect(r.explicationsTexte.some(t => t.includes("à défaut de descendance"))).toBe(true);
+  });
+
+  it('dates de naissance manquantes : exonération maintenue, signalée non vérifiable', () => {
+    const r = runFamille(famille790G(undefined, undefined), [donArgent('enfant1', '2020-01-01')]);
+    expect(r.dmtg.perBeneficiary.enfant1.allowanceGeneralResidual).toBe(100000);
+    expect(r.explicationsTexte.some(t => t.includes('sans vérification'))).toBe(true);
+  });
+});

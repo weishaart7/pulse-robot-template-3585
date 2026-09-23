@@ -276,7 +276,12 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   `explicationsTexte`. `DonationForm.tsx` rend le champ obligatoire, sauf somme d'argent,
   donation-partage ou projet non signé, où il est repris d'office du montant saisi. Exonération 790 G :
   plafond unique de 31 865 € par donataire sur la fenêtre de 15 ans, consommé chronologiquement ;
-  l'excédent consomme l'abattement général. Tests : `lib/transmission/phase3Audit.test.ts`.
+  l'excédent consomme l'abattement général. Conditions vérifiées par `index.ts` au jour du don :
+  donateur < 80 ans, donataire majeur (émancipation non enregistrée), enfant/petit-enfant/
+  arrière-petit-enfant ou, à défaut de descendance, neveu/nièce. Condition non remplie → don ordinaire,
+  signalé ; date de naissance manquante → exonération maintenue, signalée non vérifiable.
+  `DonationForm.tsx` avertit (sans bloquer) pour un donataire hors de ces liens.
+  Tests : `lib/transmission/phase3Audit.test.ts`.
 - **Légataires non héritiers (`index.ts` §6bis-0).** Un legs maintenu (après réduction) à une
   personne absente de `heirs` sort du résiduel réel AVANT la répartition du cash entre héritiers
   (`residuelHeritiers`) ; ramené au prorata si les legs excèdent le résiduel. Le légataire reçoit sa
@@ -378,8 +383,6 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   comportement.)*
 
 ### 🟠 À surveiller (cas limite, peu probable)
-- **Conditions 790 G non vérifiées.** Âge du donateur (< 80 ans) et majorité du donataire ne sont
-  pas contrôlés : la nature « Dons familiaux de sommes d'argent » suffit à ouvrir l'exonération.
 - **Donation démembrée : valeur de la nue-propriété non contrôlée.** Rien ne vérifie que la valeur
   à l'acte saisie correspond au barème art. 669 CGI.
 
