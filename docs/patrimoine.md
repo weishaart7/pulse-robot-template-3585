@@ -58,6 +58,8 @@ Corrigé le 28/08/2026, priorité P2 (cosmétique/UX/dette de code, sans impact 
 
 **R2 — `IncompleteAssetsBanner.onAssetClick` câblé.** `PatrimoineSection.tsx` passe désormais `onAssetClick={setSelectedAsset}` et monte `AssetDetailsDialog` pour l'actif sélectionné — cliquer sur une ligne du bandeau ouvre bien sa fiche.
 
+**Alignement du titre « Patrimoine net ».** `PatrimoineResume.tsx` remonte le titre (`-mt-12`) pour aligner son bord supérieur sur celui de la barre latérale. Le bandeau est rendu dans un conteneur `[data-banner]` de `PatrimoineSection.tsx` : quand ce conteneur n'est pas vide, la marge négative est annulée (`group-has-[[data-banner]:not(:empty)]`), le titre ne passe plus sous le bandeau.
+
 **R3 — Faux positifs de `checkMissing()` sur les actifs liquides corrigés.** `mode_detention` et `date_estimation` ne sont plus exigés pour les natures listées dans `NATURES_WITHOUT_ACQUISITION` (livrets, comptes courants...).
 
 **R4 — Note d'estimation ajoutée sur le "Coût total des intérêts".** `PassifDetailsDialog.tsx` affiche désormais une note précisant que ce montant suppose une mensualité constante, hors variation de taux et remboursement anticipé — sur le modèle des notes déjà présentes dans `regimeFiscalPlusValue.ts`/`regimeFiscalPVI.ts`.

@@ -80,10 +80,13 @@ export const PatrimoineSection = () => {
   };
 
   return (
-    <div className="p-6">
-      {!showPlusValuesDetail && !showParTeteDetail && (
-        <IncompleteAssetsBanner assets={assets} onAssetClick={setSelectedAsset} />
-      )}
+    <div className="group/patrimoine p-6">
+      {/* data-banner : PatrimoineResume annule son -mt-12 quand ce conteneur n'est pas vide. */}
+      <div data-banner>
+        {!showPlusValuesDetail && !showParTeteDetail && (
+          <IncompleteAssetsBanner assets={assets} onAssetClick={setSelectedAsset} />
+        )}
+      </div>
 
       <div className="mt-6">
         {renderContent()}

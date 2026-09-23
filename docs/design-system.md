@@ -106,6 +106,4 @@ auparavant le thème du système, faute de `ThemeProvider`).
   Mensuel / Annuel du Budget, bouton « Ajouter un actif »).
 - Couleurs codées en dur dans les composants métier (`text-green-600`, `bg-amber-50`…) et
   palette Transmission propre (`kairos-transmission.css`, Hanken Grotesk).
-- Patrimoine › Résumé : le `-mt-12` de `PatrimoineResume.tsx` fait chevaucher le titre
-  « Patrimoine net » par le bandeau d'actifs incomplets quand celui-ci est affiché.
 - Palette des graphiques (`--chart-*`) non retravaillée.

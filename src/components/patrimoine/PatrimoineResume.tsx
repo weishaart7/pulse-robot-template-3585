@@ -96,10 +96,10 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
       {/* Patrimoine net — mis en avant en titre. Le -mt-12 compense l'écart de
           padding vertical entre <main> (pt-3) + PatrimoineSection (p-6) +
           ce wrapper (mt-6) d'une part, et la marge du haut de la navbar
-          latérale (mt-3) d'autre part, pour aligner leurs bords supérieurs —
-          n'a d'effet visuel correct que si IncompleteAssetsBanner n'est pas
-          affiché au-dessus (cf. PatrimoineSection.tsx). */}
-      <div className="-mt-12 animate-fade-in">
+          latérale (mt-3) d'autre part, pour aligner leurs bords supérieurs. Annulé
+          quand IncompleteAssetsBanner est affiché au-dessus (conteneur
+          [data-banner] non vide, cf. PatrimoineSection.tsx). */}
+      <div className="-mt-12 group-has-[[data-banner]:not(:empty)]/patrimoine:mt-0 animate-fade-in">
         <p className="text-[13px] font-medium text-muted-foreground uppercase tracking-wide">Patrimoine net</p>
         <div className="mt-1">
           <p className="text-4xl md:text-5xl font-bold text-foreground tracking-tight" style={{ fontFamily: "'Kode Mono', monospace" }}>
