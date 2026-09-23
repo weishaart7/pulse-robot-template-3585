@@ -114,4 +114,16 @@ describe('Phase 4b — legs à un non-héritier', () => {
     );
     expect(liberalites[0].beneficiaireId).toBe('conjoint');
   });
+
+  it('donation au conjoint marié (sentinelle \'conjoint\') : créditée à sa part, jamais à un tiers', () => {
+    const family = famille([], { id: 'cj', marie: true });
+    const sansDon = computeTransmission({ family, patrimony: buildPatrimonySnapshot(rawAssets, [], 0), liberalites: [], params: {} as any, referenceDate: REF, rawAssets, conjointOption: 'quart_pp' });
+    const avecDon = computeTransmission({
+      family, patrimony: buildPatrimonySnapshot(rawAssets, [], 0), params: {} as any, referenceDate: REF, rawAssets, conjointOption: 'quart_pp',
+      liberalites: [{ id: 'd', type: 'donation', beneficiaireId: 'conjoint', valeur: 50000, valeurFiscaleActe: 50000, date: '2020-01-01', typeImputation: 'hors_part' }]
+    });
+    const partConjoint = (r: typeof avecDon) => r.heirs.filter(h => h.personId === 'cj').reduce((sum, h) => sum + h.partFinale, 0);
+    expect(avecDon.legataires).toEqual([]);
+    expect(partConjoint(avecDon) - partConjoint(sansDon)).toBeCloseTo(50000, 0); // hors part : hors masse partageable, créditée telle quelle
+  });
 });

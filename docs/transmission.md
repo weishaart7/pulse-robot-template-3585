@@ -289,8 +289,9 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   `liberalites.beneficiaire_conjoint` (booléen, exclusif de `beneficiaire_id` par contrainte) le désigne,
   `buildTransmissionLiberalites` le traduit en sentinelle `'conjoint'`, résolue vers
   `family.survivingSpouseId` en tête de `computeTransmission` (sans conjoint → `'tiers'`). `LegsForm.tsx`
-  propose le conjoint (Marié(e)/Pacsé(e), libellé « Partenaire de PACS » le cas échéant) en tête des
-  légataires.
+  et `DonationForm.tsx` proposent le conjoint (Marié(e)/Pacsé(e), libellé « Partenaire de PACS » le cas
+  échéant) en tête des légataires / donataires ; `ProcessusCalcul.tsx` résout la même sentinelle pour
+  rattacher une donation au conjoint à sa ligne.
 - **Écran Assurance-vie : détail lu dans le moteur.** `computeAssuranceVie` expose
   `detailParBeneficiaire` (assiette/abattement/base 990 I, primes/abattement 757 B, exonération),
   repris dans `DMTGBeneficiaryResult.detailAV`. `AssuranceVie.tsx` ne fait que sommer ces valeurs ;

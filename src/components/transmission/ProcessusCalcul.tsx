@@ -423,7 +423,12 @@ export const ProcessusCalcul = () => {
 
     return Array.from(identites.values()).map(g => {
       const dmtgHeir = transmissionResult.dmtg.perBeneficiary[g.personId];
-      const donationsHeritier = transmissionLiberalites.filter(l => l.type === 'donation' && l.beneficiaireId === g.personId);
+      // Sentinelle 'conjoint' (liberalites.beneficiaire_conjoint) : même
+      // résolution que computeTransmission, vers le conjoint du graphe.
+      const donationsHeritier = transmissionLiberalites.filter(l => l.type === 'donation' && (
+        l.beneficiaireId === g.personId ||
+        (l.beneficiaireId === 'conjoint' && g.personId === transmissionResult.family.survivingSpouseId)
+      ));
       const donationsBrutes = donationsHeritier.reduce((s, l) => s + l.valeur, 0);
       const reductionTotal = transmissionResult.details.reductions
         .filter(r => donationsHeritier.some(l => l.id === r.liberaliteId))

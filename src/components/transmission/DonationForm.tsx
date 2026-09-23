@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,9 +15,14 @@ import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAssets } from '@/hooks/useAssets';
+import { useMaritalStatus } from '@/hooks/useFamilyData';
 import { useToast } from '@/hooks/use-toast';
 import { liberaliteService, Liberalite, LiberaliteTypeImputation } from '@/services/liberaliteService';
 import { CLAUSE_DISPENSE_RAPPORT, CLAUSE_RAPPORT_FORFAITAIRE } from '@/lib/transmission/types';
+
+// Id sentinelle du conjoint/partenaire de PACS, absent de family_links :
+// enregistré via liberalites.beneficiaire_conjoint, jamais beneficiaire_id.
+const CONJOINT_ID = 'conjoint';
 
 interface FamilyMember {
   id: string;
@@ -84,6 +89,22 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { data: maritalStatus } = useMaritalStatus();
+
+  // Donataires possibles : conjoint marié ou partenaire de PACS (même
+  // convention que LegsForm.tsx), puis les membres de family_links.
+  const donatairesPossibles = useMemo<FamilyMember[]>(() => {
+    const conjoint = maritalStatus?.statut_couple &&
+      ['Marié(e)', 'Pacsé(e)'].includes(maritalStatus.statut_couple)
+      ? [{
+          id: CONJOINT_ID,
+          nom: maritalStatus.nom_conjoint || 'Conjoint',
+          prenom: maritalStatus.prenom_conjoint || '',
+          lien_familial: maritalStatus.statut_couple === 'Pacsé(e)' ? 'Partenaire de PACS' : 'Conjoint',
+        }]
+      : [];
+    return [...conjoint, ...familyMembers];
+  }, [maritalStatus, familyMembers]);
 
   // Donation-partage transgénérationnelle (art. 1078-8) : condition affichant
   // le sélecteur de génération intermédiaire et déterminant si
@@ -230,16 +251,18 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
   // Reconstruction des donataires : nécessite familyMembers chargé pour
   // retrouver nom/prénom/lien à partir de beneficiaire_id.
   useEffect(() => {
-    if (!open || !editingGroup || editingGroup.length === 0 || familyMembers.length === 0) return;
+    if (!open || !editingGroup || editingGroup.length === 0 || donatairesPossibles.length === 0) return;
     const rebuilt = editingGroup
       .map(row => {
-        const member = familyMembers.find(m => m.id === row.beneficiaire_id);
+        const member = donatairesPossibles.find(m =>
+          row.beneficiaire_conjoint ? m.id === CONJOINT_ID : m.id === row.beneficiaire_id
+        );
         if (!member) return null;
         return { ...member, pourcentage: row.pourcentage ?? 100 };
       })
       .filter((b): b is Beneficiary => b !== null);
     setBeneficiaries(rebuilt);
-  }, [open, editingGroup, familyMembers]);
+  }, [open, editingGroup, donatairesPossibles]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -327,7 +350,8 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
         const created = await liberaliteService.createLiberalite({
           type: 'donation',
           denomination: formData.libelle,
-          beneficiaire_id: beneficiaire.id,
+          beneficiaire_id: beneficiaire.id === CONJOINT_ID ? undefined : beneficiaire.id,
+          beneficiaire_conjoint: beneficiaire.id === CONJOINT_ID,
           beneficiaire_nom: `${beneficiaire.prenom || ''} ${beneficiaire.nom}`.trim(),
           groupe_id: groupeId,
           montant: montantTotal * (beneficiaire.pourcentage / 100),
@@ -741,7 +765,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
               <CardTitle>Donataires</CardTitle>
             </CardHeader>
             <CardContent>
-              {familyMembers.length === 0 ? (
+              {donatairesPossibles.length === 0 ? (
                 <p className="text-muted-foreground">
                   Aucun lien familial renseigné. Ajoutez des membres de famille dans la section "Liens familiaux" pour les sélectionner comme donataires.
                 </p>
@@ -750,7 +774,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
                   <p className="text-sm text-muted-foreground mb-4">
                     Sélectionnez les personnes qui recevront cette donation et indiquez le pourcentage reçu par chacune.
                   </p>
-                  {familyMembers.map((member) => {
+                  {donatairesPossibles.map((member) => {
                     const isSelected = beneficiaries.find(b => b.id === member.id);
                     return (
                       <div key={member.id} className="border rounded-lg p-4 space-y-3">
