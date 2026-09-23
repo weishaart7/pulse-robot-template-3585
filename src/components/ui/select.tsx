@@ -46,9 +46,7 @@ const selectTriggerVariants = cva(
     flex bg-background w-full items-center justify-between outline-none border border-border shadow-none transition-colors
     text-foreground data-placeholder:text-muted-foreground hover:border-foreground/25 focus-visible:border-primary focus-visible:outline-none focus-visible:ring-1
     focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-border [&>span]:line-clamp-1
-    aria-invalid:border-destructive/60 aria-invalid:ring-destructive/10 dark:aria-invalid:border-destructive dark:aria-invalid:ring-destructive/20
-    [[data-invalid=true]_&]:border-destructive/60 [[data-invalid=true]_&]:ring-destructive/10  dark:[[data-invalid=true]_&]:border-destructive dark:[[data-invalid=true]_&]:ring-destructive/20
-  `,
+    aria-invalid:border-destructive/60 aria-invalid:ring-destructive/10     [[data-invalid=true]_&]:border-destructive/60 [[data-invalid=true]_&]:ring-destructive/10    `,
   {
     variants: {
       size: {
