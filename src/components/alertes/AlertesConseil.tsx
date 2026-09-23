@@ -4,9 +4,9 @@ import { useAlertesConseil } from '@/hooks/useAlertesConseil';
 import { NiveauAlerte } from '@/lib/alertes';
 
 const NIVEAU_STYLES: Record<NiveauAlerte, string> = {
-  critique: 'bg-[var(--negative-soft)] border-[var(--negative)]/30 text-[var(--negative)]',
-  eleve: 'bg-[var(--warning-soft)] border-[var(--warning)]/30',
-  moyen: 'bg-[var(--surface-sunken)] border-[var(--border)]',
+  critique: 'rounded-card bg-destructive/[0.06] border-destructive/25 text-destructive [&>svg]:text-destructive',
+  eleve: 'rounded-card bg-spark/[0.06] border-spark/25 [&>svg]:text-spark',
+  moyen: 'rounded-card bg-secondary border-border',
 };
 
 export function AlertesConseil() {

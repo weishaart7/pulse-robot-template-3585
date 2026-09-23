@@ -15,13 +15,15 @@ de synthèse par module. Aucune logique métier propre : la page agrège des cal
 
 ## 2. Habillage
 
-Cadre commun [dash-card.tsx](../src/components/ui/dash-card.tsx) (`DashCard`), croisement de
-deux références Rondesignlab (Ledgerix, Creator Finance) : plaques claires en dégradé
-dépoli (`mist`, ou `deep` plus soutenu pour les modules à venir), filet fin encre 8 %,
-**aucune ombre**, coins 22 px. En-tête : titre, pastille de période (`tag`), compteur en
-police à points Doto (`meta`). Pied : trois points décoratifs + bouton noir « Voir le détail »
-vers la page du module (`to`). Police Instrument Sans (celle du titre de la landing),
-encre `#0d1b1e`, accent unique lime `#a6f25c` réservé à l'élément principal.
+Suit [design-system.md](design-system.md). Cadre commun [dash-card.tsx](../src/components/ui/dash-card.tsx)
+(`DashCard`) : plaque taupe à plat (`bg-secondary`, ou `bg-border` pour les modules à venir,
+`variant="soon"`), coins 20 px, ni ombre ni bordure. En-tête : titre, pastille de période (`tag`),
+compteur (`meta`). Pied : bouton pilule encre « Voir le détail » vers la page du module (`to`).
+Chiffres en Inter 300 ; graphiques achromatiques — encre pour l'élément principal, cendre
+`#a59f97` pour le secondaire, piste `#ddd8d2`.
+
+Bandeau « Parlez avec un expert » : carte sombre (encre, coins 24 px) avec une sphère en dégradé
+orange / rose / violet à gauche — seul visuel coloré de l'app. Bouton pilule eggshell.
 
 Grille : 1 colonne mobile, 2 en `sm`, 4 en `lg` (Patrimoine sur 2).
 
@@ -30,7 +32,6 @@ Grille : 1 colonne mobile, 2 en `sm`, 4 en `lg` (Patrimoine sur 2).
 - Fiscalité : la ligne « IR et Prélèvements sociaux » affiche le total, IFI et « Autres impôts »
   sont codés en dur à 0 €.
 - Pastille « Estimation » de la carte Fiscalité : année du calcul non vérifiée.
-- Les trois points du pied de carte sont décoratifs.
 - [budget-statistics-card.tsx](../src/components/ui/budget-statistics-card.tsx) n'est plus utilisé (code mort).
 - Erreur de typage préexistante sur `demembrementCtx.familyLinks` (`FamilyLink[]`) dans `Dashboard.tsx`.
 - Rendu non vérifié en session authentifiée.

@@ -18,7 +18,7 @@ export function DashboardSidebar() {
 
   return (
     <motion.div
-      className="flex flex-col overflow-hidden shrink-0 relative bg-gray-100 text-[#000105] rounded-xl ml-3 mt-3 mb-3"
+      className="flex flex-col overflow-hidden shrink-0 relative bg-secondary text-foreground rounded-card ml-3 mt-3 mb-3"
       animate={{
         width: open ? 196 : 64,
       }}
@@ -31,7 +31,7 @@ export function DashboardSidebar() {
       <div className={cn("py-3 flex items-center", open ? "pl-3 pr-3 justify-end" : "justify-center")}>
         <button
           onClick={() => setOpen(!open)}
-          className="p-1 rounded-md hover:bg-sidebar-accent transition-colors"
+          className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
           aria-label={open ? 'Réduire la barre latérale' : 'Ouvrir la barre latérale'}
         >
           {open ? (
@@ -43,7 +43,7 @@ export function DashboardSidebar() {
       </div>
 
       {/* Sous-menu du module actif */}
-      <nav className="flex-1 p-2 space-y-0 overflow-y-auto overflow-x-hidden">
+      <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
         {subNavItems.map(item => {
           const isActive = subNavActiveId === item.id;
           return (
@@ -51,10 +51,10 @@ export function DashboardSidebar() {
               key={item.id}
               onClick={() => onSubNavSelect(item.id)}
               className={cn(
-                "relative w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors text-left",
+                "relative w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-full transition-colors text-left",
                 isActive
-                  ? "text-[#000105] font-semibold before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
-                  : "font-medium text-[#8B9095] hover:bg-sidebar-accent",
+                  ? "bg-background text-foreground font-medium shadow-whisper"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/60",
                 !open && "justify-center"
               )}
             >
@@ -72,7 +72,7 @@ export function DashboardSidebar() {
       </nav>
 
       {/* Sections du bas */}
-      <div className="p-2 space-y-0 border-t border-border">
+      <div className="p-2 space-y-0.5 border-t border-border">
         {bottomItems.map(item => {
           const Icon = item.icon;
           const isActive = location.pathname === item.href;
@@ -81,10 +81,10 @@ export function DashboardSidebar() {
               key={item.href}
               onClick={() => handleNavigation(item.href)}
               className={cn(
-                "relative w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors text-left",
+                "relative w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-full transition-colors text-left",
                 isActive
-                  ? "text-[#000105] font-semibold before:content-[''] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-primary before:rounded-full"
-                  : "font-medium text-[#8B9095] hover:bg-sidebar-accent",
+                  ? "bg-background text-foreground font-medium shadow-whisper"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/60",
                 !open && "justify-center"
               )}
             >
