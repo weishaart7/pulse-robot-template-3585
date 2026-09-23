@@ -97,7 +97,6 @@ export interface Liberalite {
   // 2026-08). DonationForm.tsx impose désormais une valeur explicite à la
   // saisie ; ce cas ne subsiste que pour des lignes créées avant ce correctif.
   typeImputation?: "avance_part" | "hors_part" | "partage";
-  donationEntreEpoux?: boolean;
   beneficiaireName?: string;
   // Clauses insérées dans l'acte (DonationForm.tsx::clausesOptions), reprises
   // telles quelles depuis liberalites.clauses. Seule CLAUSE_DISPENSE_RAPPORT

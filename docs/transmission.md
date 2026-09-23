@@ -442,8 +442,6 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
-- Champ `donationEntreEpoux?: boolean` ([types.ts:69](src/lib/transmission/types.ts)) — orphelin,
-  jamais assigné ni lu ailleurs dans le code (recherche exhaustive confirmée). À brancher ou retirer.
 - Distinction « dépense nécessaire » indépendante de « dépense qualifiante » réduite à 2 branches au
   lieu des 4 cas légaux de l'art. 1469 pour le calcul des récompenses (`computeMontantRecompense`,
   [recompensesCreances.ts](src/lib/patrimoine/recompensesCreances.ts) — moteur côté Patrimoine, cf.
