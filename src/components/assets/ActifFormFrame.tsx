@@ -7,17 +7,14 @@ interface ActifFormFrameProps {
   children: React.ReactNode;
 }
 
-// Cadre commun au wizard de création et au formulaire de modification d'un
-// actif, sur le modèle de la carte du hero de la landing page : une carte
-// blanche très arrondie, cerclée d'un filet (sans le fond "mesh" du hero).
-// Le scope `.actifs-form` (index.css) porte les variables de couleur.
+// Cadre commun aux formulaires d'actif (wizard de création, modification) :
+// grande carte eggshell coins 24 px cerclée d'un filet, titre Inter 300 (docs/design-system.md).
 export const ActifFormFrame: React.FC<ActifFormFrameProps> = ({ title, aside, children }) => (
   <div
-    className="actifs-form rounded-[22px] bg-white p-5 sm:p-8"
-    style={{ boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 0 0 5px #f7f7f7' }}
+    className="rounded-3xl border border-border bg-card p-5 sm:p-8"
   >
     <div className="mb-6 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-      <h2 className="af-display text-[28px] sm:text-[34px]">{title}</h2>
+      <h2 className="ds-display text-[28px] sm:text-[34px]">{title}</h2>
       {aside}
     </div>
     {children}

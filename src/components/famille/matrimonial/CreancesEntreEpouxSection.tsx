@@ -131,13 +131,13 @@ export function CreancesEntreEpouxSection({ contexte = 'mariage' }: CreancesEntr
     `Créance de ${epouxLabel(c.epoux_creancier)} sur ${epouxLabel(c.epoux_debiteur)}`;
 
   return (
-    <div className="rounded-[22px] bg-white p-8" style={{ boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 0 0 5px #f7f7f7' }}>
+    <div className="rounded-3xl border border-border bg-card p-8">
       <SectionHeader icon={HandCoins} title={libelles.titre} />
       <p className="text-xs text-muted-foreground -mt-4 mb-5">
         {libelles.description}
       </p>
 
-      <div className="rounded-lg bg-[#0d1b1e]/[0.04] p-5">
+      <div className="rounded-lg bg-secondary p-5">
 
       {creances.length > 0 && (
         <div className="space-y-3 mb-5">
@@ -304,7 +304,7 @@ export function CreancesEntreEpouxSection({ contexte = 'mariage' }: CreancesEntr
           )}
 
           {valeursManquantes && (
-            <div className="flex items-start gap-2 px-3 py-2 rounded-md bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200 text-xs">
+            <div className="flex items-start gap-2 px-3 py-2 rounded-md bg-amber-50 text-amber-900 text-xs">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
               <span>
                 Il manque la valeur du bien avant et/ou après la dépense. Sans ces deux montants, le calcul retiendra la dépense telle quelle (montant nominal), même si vous avez choisi un autre mode d'évaluation ci-dessus.
@@ -318,8 +318,8 @@ export function CreancesEntreEpouxSection({ contexte = 'mariage' }: CreancesEntr
               type="button"
               onClick={handleSubmit}
               disabled={!peutSoumettre || saving}
-              className="text-white hover:opacity-90"
-              style={{ backgroundColor: '#0d1b1e' }}
+              className="bg-foreground text-background hover:opacity-90"
+              
             >
               {saving ? 'Enregistrement...' : 'Ajouter la créance'}
             </Button>

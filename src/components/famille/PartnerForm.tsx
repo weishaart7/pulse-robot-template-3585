@@ -161,7 +161,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="rounded-[22px] bg-white p-8 space-y-10" style={{ boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 0 0 5px #f7f7f7' }}>
+        <div className="rounded-3xl border border-border bg-card p-8 space-y-10">
             {/* Statut & Identité */}
             <div>
               <SectionHeader icon={User} title="Identité" />
@@ -183,7 +183,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
               )}
 
               {showPartnerFields && (
-                <div className="rounded-lg bg-[#0d1b1e]/[0.04] p-5 space-y-5">
+                <div className="rounded-lg bg-secondary p-5 space-y-5">
                   <FormField
                     control={form.control}
                     name="civilitePartenaire"
@@ -209,7 +209,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                                 className={cn(
                                   "flex items-center gap-2 px-4 py-2.5 rounded-md border cursor-pointer transition-all duration-200",
                                   field.value === option.value
-                                    ? "border-[#0d1b1e] bg-[#0d1b1e]/5 text-[#0d1b1e]"
+                                    ? "border-foreground bg-foreground/5 text-foreground"
                                     : "border-border hover:border-primary/40 hover:bg-muted/50"
                                 )}
                               >
@@ -318,7 +318,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                 <div>
                   <SectionHeader icon={Briefcase} title="Profession & Naissance" />
 
-                  <div className="rounded-lg bg-[#0d1b1e]/[0.04] p-5 space-y-5">
+                  <div className="rounded-lg bg-secondary p-5 space-y-5">
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <FormField
@@ -402,7 +402,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                 <div>
                   <SectionHeader icon={ShieldCheck} title="Situation juridique" />
 
-                  <div className="rounded-lg bg-[#0d1b1e]/[0.04] p-5">
+                  <div className="rounded-lg bg-secondary p-5">
 
                   <div className="flex flex-wrap items-end gap-6">
                     <FormField
@@ -491,8 +491,8 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
             type="submit"
             disabled={saving}
             size="lg"
-            className="min-w-[160px] text-white hover:opacity-90"
-            style={{ backgroundColor: '#0d1b1e' }}
+            className="bg-foreground min-w-[160px] text-background hover:opacity-90"
+            
           >
             {saving ? (
               <>

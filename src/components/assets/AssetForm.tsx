@@ -217,12 +217,12 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                       setActiveTab(tab.id);
                     }}
                     className={cn(
-                      "af-mono inline-flex items-center gap-2 rounded-lg px-3.5 py-2 transition-all duration-200",
+                      "ds-eyebrow inline-flex items-center gap-2 rounded-lg px-3.5 py-2 transition-all duration-200",
                       locked
-                        ? "bg-[var(--af-track)] text-[var(--af-smoke)] opacity-50 cursor-not-allowed"
+                        ? "bg-border text-muted-foreground opacity-50 cursor-not-allowed"
                         : activeTab === tab.id
-                          ? "bg-[var(--af-ink)] text-white"
-                          : "bg-[var(--af-track)] text-[var(--af-smoke)] hover:text-[var(--af-ink)]"
+                          ? "bg-foreground text-background"
+                          : "bg-border text-muted-foreground hover:text-foreground"
                     )}
                   >
                     {tab.label}

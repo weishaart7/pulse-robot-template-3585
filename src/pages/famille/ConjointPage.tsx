@@ -21,7 +21,7 @@ export default function ConjointPage() {
   })();
 
   return (
-    <div className="famille-form bg-white">
+    <div>
       <div className="w-full mx-auto px-4 sm:px-6 pt-8">
         <button
           onClick={() => navigate('/dashboard/famille')}
@@ -35,13 +35,13 @@ export default function ConjointPage() {
       <div className="w-full mx-auto px-4 sm:px-6 pt-6 pb-8">
         <div className="flex items-center gap-4">
           <div
-            className="h-14 w-14 rounded-full flex items-center justify-center shrink-0 text-white text-lg font-semibold"
-            style={{ backgroundColor: '#0d1b1e' }}
+            className="bg-foreground h-14 w-14 rounded-full flex items-center justify-center shrink-0 text-background text-lg font-semibold"
+            
           >
             {getInitials(maritalData?.prenom_conjoint, maritalData?.nom_conjoint)}
           </div>
           <div>
-            <h1 className="ff-display text-3xl sm:text-4xl leading-tight">
+            <h1 className="ds-display text-3xl sm:text-4xl leading-tight">
               {partnerName}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">

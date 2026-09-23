@@ -53,7 +53,7 @@ export const PlusValueBlock: React.FC<PlusValueBlockProps> = ({ form }) => {
             ) : (
               <TrendingDown className="h-4 w-4 text-rose-500" strokeWidth={2} />
             )}
-            <p className={`text-[15px] font-bold tabular-nums ${plusValueLive >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+            <p className={`text-[15px] font-bold tabular-nums ${plusValueLive >= 0 ? 'text-emerald-600 ' : 'text-rose-600 '}`}>
               {plusValueLive >= 0 ? '+' : ''}{formatEur(plusValueLive)}
               <span className="text-[11px] font-medium ml-1.5 opacity-70">({plusValuePct >= 0 ? '+' : ''}{plusValuePct.toFixed(1)}%)</span>
             </p>

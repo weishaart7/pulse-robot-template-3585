@@ -12,8 +12,7 @@ import profilFemme from '@/assets/Profil femme.png';
 
 type EditView = 'client';
 
-const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9bf00b] focus-visible:ring-offset-2 focus-visible:ring-offset-white';
-const CARD_GLOW = { boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 0 0 5px #f7f7f7' };
+const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
 const profileImage = (civility?: string) => (civility === 'Mme' || civility === 'Mlle' ? profilFemme : profilHomme);
 
@@ -70,7 +69,7 @@ const FamilleSection = () => {
   // Full-screen edit view (fiche client uniquement — partenaire/relation vivent désormais sur leur propre page)
   if (editView === 'client') {
     return (
-      <div className="famille-form bg-white">
+      <div>
         <div className="w-full mx-auto px-4 sm:px-6 pt-8">
           <button
             onClick={() => setEditView(null)}
@@ -84,13 +83,13 @@ const FamilleSection = () => {
         <div className="w-full mx-auto px-4 sm:px-6 pt-6 pb-8">
           <div className="flex items-center gap-4">
             <div
-              className="h-14 w-14 rounded-full flex items-center justify-center shrink-0 text-white text-lg font-semibold"
-              style={{ backgroundColor: '#0d1b1e' }}
+              className="bg-foreground h-14 w-14 rounded-full flex items-center justify-center shrink-0 text-background text-lg font-semibold"
+              
             >
               {getInitials(familyProfile?.prenom, familyProfile?.nom)}
             </div>
             <div>
-              <h1 className="ff-display text-3xl sm:text-4xl">
+              <h1 className="ds-display text-3xl sm:text-4xl">
                 {clientName}
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
@@ -126,14 +125,14 @@ const FamilleSection = () => {
   })();
 
   return (
-    <div className="famille-form p-6 pt-0 space-y-5">
+    <div className="p-6 pt-0 space-y-5">
       <div className="flex justify-end">
         <button
           onClick={() => liensRef.current?.openForAdd()}
-          className="inline-flex items-center gap-2 rounded-full bg-[#006064] hover:bg-[#006064]/90 text-white pl-1 pr-4 py-1 text-sm font-medium transition-colors"
+          className="inline-flex items-center gap-2 rounded-full bg-foreground hover:bg-foreground/85 text-background shadow-whisper pl-1 pr-4 py-1 text-sm font-medium transition-colors"
         >
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#9bf00d]">
-            <Plus className="h-4 w-4 text-[#054b16]" />
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background/15">
+            <Plus className="h-4 w-4 text-background" />
           </span>
           Ajouter un membre
         </button>
@@ -182,7 +181,7 @@ const FamilleSection = () => {
             </div>
           </div>
         ) : (
-          <div className="w-60 h-[420px] shrink-0 rounded-[22px] bg-white p-6 flex flex-col gap-3 justify-center" style={CARD_GLOW}>
+          <div className="w-60 h-[420px] shrink-0 rounded-card border border-border bg-card p-6 flex flex-col gap-3 justify-center">
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Statut
@@ -204,11 +203,10 @@ const FamilleSection = () => {
             {isDivorcedOrWidowed && (
               <button
                 onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
-                className={`inline-flex items-center gap-1.5 text-[13px] font-extrabold uppercase tracking-wide w-fit px-2.5 py-1 hover:opacity-85 transition-opacity duration-200 group ${FOCUS_RING}`}
-                style={{ backgroundColor: '#9bf00d', color: '#006064' }}
+                className={`group inline-flex w-fit items-center gap-1.5 rounded-full bg-foreground px-3.5 py-1.5 text-[12px] font-medium text-background shadow-whisper transition-opacity duration-200 hover:opacity-85 ${FOCUS_RING}`}
               >
-                <span className="underline-offset-2 decoration-2 group-hover:underline" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Voir le détail</span>
-                <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={3.5} />
+                Voir le détail
+                <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={2} />
               </button>
             )}
           </div>
@@ -217,10 +215,10 @@ const FamilleSection = () => {
 
       {/* Régime matrimonial / PACS — carte distincte */}
       {hasPartner && (
-        <div className="flex items-center justify-between gap-5 flex-wrap rounded-[22px] bg-white p-4" style={CARD_GLOW}>
+        <div className="flex items-center justify-between gap-5 flex-wrap rounded-card border border-border bg-card p-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-9 w-9 rounded-full bg-[#0d1b1e]/10 flex items-center justify-center shrink-0">
-              <Scale className="w-4 h-4 text-[#0d1b1e]" strokeWidth={1.75} />
+            <div className="h-9 w-9 rounded-full bg-foreground/10 flex items-center justify-center shrink-0">
+              <Scale className="w-4 h-4 text-foreground" strokeWidth={1.75} />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -234,11 +232,10 @@ const FamilleSection = () => {
           </div>
           <button
             onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
-            className={`inline-flex items-center gap-1.5 text-[13px] font-extrabold uppercase tracking-wide shrink-0 px-2.5 py-1 rounded-none hover:opacity-85 transition-opacity duration-200 group ${FOCUS_RING}`}
-            style={{ backgroundColor: '#9bf00d', color: '#006064' }}
+            className={`group inline-flex shrink-0 items-center gap-1.5 rounded-full bg-foreground px-3.5 py-1.5 text-[12px] font-medium text-background shadow-whisper transition-opacity duration-200 hover:opacity-85 ${FOCUS_RING}`}
           >
-            <span className="underline-offset-2 decoration-2 group-hover:underline" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Voir le détail</span>
-            <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={3.5} />
+            Voir le détail
+            <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={2} />
           </button>
         </div>
       )}

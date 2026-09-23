@@ -7,17 +7,14 @@ interface FamilleFormFrameProps {
   children: React.ReactNode;
 }
 
-// Cadre commun aux pages et formulaires du module Famille, sur le modèle de
-// ActifFormFrame (module Actifs) : une carte blanche très arrondie, cerclée
-// d'un filet, avec le halo de la landing page. Le scope `.famille-form`
-// (index.css) porte les variables de couleur.
+// Cadre commun aux formulaires du module Famille :
+// grande carte eggshell coins 24 px cerclée d'un filet, titre Inter 300 (docs/design-system.md).
 export const FamilleFormFrame: React.FC<FamilleFormFrameProps> = ({ title, aside, children }) => (
   <div
-    className="famille-form rounded-[22px] bg-white p-5 sm:p-8"
-    style={{ boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 0 0 5px #f7f7f7' }}
+    className="rounded-3xl border border-border bg-card p-5 sm:p-8"
   >
     <div className="mb-6 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-      <h2 className="ff-display text-[28px] sm:text-[34px]">{title}</h2>
+      <h2 className="ds-display text-[28px] sm:text-[34px]">{title}</h2>
       {aside}
     </div>
     {children}

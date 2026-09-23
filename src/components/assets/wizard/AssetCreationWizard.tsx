@@ -183,7 +183,7 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
       <ActifFormFrame
         title="Ajouter un actif"
         aside={
-          <p className="af-mono text-[var(--af-smoke)]">
+          <p className="ds-eyebrow text-muted-foreground">
             Étape {currentStepIndex + 1}/{totalSteps} — {currentStep.label}
           </p>
         }
@@ -192,7 +192,7 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
           {steps.map((step, index) => (
             <div
               key={step.id}
-              className={`h-1 flex-1 rounded-full transition-colors ${index <= currentStepIndex ? 'bg-[var(--af-ink)]' : 'bg-[var(--af-track)]'}`}
+              className={`h-1 flex-1 rounded-full transition-colors ${index <= currentStepIndex ? 'bg-foreground' : 'bg-border'}`}
             />
           ))}
         </div>

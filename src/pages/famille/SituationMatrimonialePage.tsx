@@ -9,7 +9,7 @@ export default function SituationMatrimonialePage() {
   const relationStatus = (maritalData?.statut_couple as string) || '';
 
   return (
-    <div className="famille-form bg-white">
+    <div>
       <div className="w-full mx-auto px-4 sm:px-6 pt-8">
         <button
           onClick={() => navigate('/dashboard/famille')}
@@ -21,7 +21,7 @@ export default function SituationMatrimonialePage() {
       </div>
 
       <div className="w-full mx-auto px-4 sm:px-6 pt-6 pb-4">
-        <h1 className="ff-display text-3xl sm:text-4xl leading-tight">
+        <h1 className="ds-display text-3xl sm:text-4xl leading-tight">
           Régime matrimonial
         </h1>
       </div>

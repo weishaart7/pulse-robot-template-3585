@@ -23,8 +23,7 @@ interface WizardConfirmDialogProps {
 // Remplace window.confirm dans le wizard : ce dialogue natif est bloqué dans
 // le navigateur intégré de l'app desktop (il renvoie `false` immédiatement,
 // sans rien afficher), ce qui rendait "Annuler" inopérant dès qu'une saisie
-// existait. `.actifs-form` sur le contenu (rendu dans un portail) rebranche les
-// couleurs de la charte des formulaires d'actif.
+// existait.
 export const WizardConfirmDialog: React.FC<WizardConfirmDialogProps> = ({
   open,
   title,
@@ -35,9 +34,9 @@ export const WizardConfirmDialog: React.FC<WizardConfirmDialogProps> = ({
   onCancel,
 }) => (
   <AlertDialog open={open} onOpenChange={(next) => { if (!next) onCancel(); }}>
-    <AlertDialogContent className="actifs-form">
+    <AlertDialogContent>
       <AlertDialogHeader>
-        <AlertDialogTitle className="af-display">{title}</AlertDialogTitle>
+        <AlertDialogTitle className="ds-display">{title}</AlertDialogTitle>
         <AlertDialogDescription>{description}</AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>

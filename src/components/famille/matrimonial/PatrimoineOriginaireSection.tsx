@@ -59,13 +59,13 @@ export function PatrimoineOriginaireSection() {
   const describe = (l: PatrimoineOriginaire) => `${l.nature} (${l.epoux === 'user' ? 'vous' : 'conjoint'})`;
 
   return (
-    <div className="rounded-[22px] bg-white p-8" style={{ boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 0 0 5px #f7f7f7' }}>
+    <div className="rounded-3xl border border-border bg-card p-8">
       <SectionHeader icon={Landmark} title="Patrimoine originaire" />
       <p className="text-xs text-muted-foreground -mt-4 mb-5">
         Ce que chaque époux possédait au jour du mariage, ou reçu depuis par succession/donation (art. 1570 C. civ.).
       </p>
 
-      <div className="rounded-lg bg-[#0d1b1e]/[0.04] p-5">
+      <div className="rounded-lg bg-secondary p-5">
 
       {lignes.length > 0 && (
         <div className="space-y-3 mb-5">
@@ -161,8 +161,8 @@ export function PatrimoineOriginaireSection() {
               type="button"
               onClick={handleSubmit}
               disabled={!nature || !valeur || saving}
-              className="text-white hover:opacity-90"
-              style={{ backgroundColor: '#0d1b1e' }}
+              className="bg-foreground text-background hover:opacity-90"
+              
             >
               {saving ? 'Enregistrement...' : 'Ajouter la ligne'}
             </Button>

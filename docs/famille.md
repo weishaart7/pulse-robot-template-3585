@@ -207,22 +207,15 @@ permet de l'alimenter (voir §3).
   `AssetSelectionModal.tsx`), et stockées avec le même format qu'avant dans
   `marital_status.clauses_contrat.societe_acquets` / `.extension_propres_par_nature`.
 
-- **Habillage aligné sur la landing page (2026-09-22).** Le module reprenait un langage visuel
-  propre (teal `#006064`, lime `#9bf00d`, `font-playfair` appliqué au cas par cas), sans rapport
-  avec la landing page ni avec le module Actifs, déjà aligné dessus (voir
-  [docs/patrimoine.md](patrimoine.md) §3, `.actifs-form`/`ActifFormFrame.tsx`). Même recette
-  reprise ici, scopée à la classe `.famille-form` (`index.css`) pour ne pas toucher aux tokens du
-  dashboard : encre `#0d1b1e` (remplace `--primary`/`--ring`), cartes blanches à 22 px cerclées
-  d'un filet fin + halo `#f7f7f7`, titres en Instrument Sans (`.ff-display`). Le cadre commun
-  [FamilleFormFrame.tsx](../src/components/famille/FamilleFormFrame.tsx) existe (sur le modèle
-  d'`ActifFormFrame.tsx`) mais n'est pour l'instant utilisé par aucune page — chaque page applique
-  directement la classe et les styles de carte, l'en-tête (photo + titre) étant propre à chaque
-  écran. [SectionHeader.tsx](../src/components/family/SectionHeader.tsx) (badge icône + libellé
-  mono capitales) est repris tel quel dans `FicheClientForm.tsx`, `PartnerForm.tsx` et
-  `RelationInfoForm.tsx`, qui dupliquaient auparavant ce bloc en dur. Exception assumée, à la
-  demande explicite : le bouton « Ajouter un membre » (`FamilleSection.tsx`) et les pills
-  « Voir le détail » (statut de couple, régime matrimonial) conservent leur teal/lime d'origine —
-  seuls éléments du module encore hors de cette charte. Aucun champ, schéma de validation ni
+- **Habillage : design system du simulateur** ([design-system.md](design-system.md)). Plus de
+  scope `.famille-form` : pages et formulaires suivent les tokens de `:root` (encre, fond eggshell,
+  cartes `rounded-3xl` à filet `border-border` sans halo, blocs de champs `bg-secondary`, titres
+  Inter 300). Le cadre commun [FamilleFormFrame.tsx](../src/components/famille/FamilleFormFrame.tsx)
+  existe mais n'est utilisé par aucune page (code mort). [SectionHeader.tsx](../src/components/family/SectionHeader.tsx)
+  (badge icône + surtitre `.ds-eyebrow`) est repris dans `FicheClientForm.tsx`, `PartnerForm.tsx`
+  et `RelationInfoForm.tsx`. Le bouton « Ajouter un membre » et les pills « Voir le détail » (statut de couple, régime
+  matrimonial) sont des pilules encre, comme le reste de l'app.
+  Aucun champ, schéma de validation ni
   logique métier n'est modifié par cet habillage.
 
 ## 3. Dette identifiée
