@@ -23,7 +23,9 @@ Ordre des sections dans `Index.tsx` :
 10. `FAQSection`
 11. `LandingFooter`
 
-`EditorialChecklistSection.tsx` existe dans le dossier mais n'est pas montée dans `Index.tsx`.
+`EditorialChecklistSection.tsx` est le gabarit partagé (texte + checklist) utilisé par les
+sections Particuliers, Professionnels, Crédibilité, HowItWorks et Confiance, qui ne font que
+lui passer leur contenu.
 
 ## 3. Navbar
 
