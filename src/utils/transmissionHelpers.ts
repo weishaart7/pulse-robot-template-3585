@@ -816,25 +816,30 @@ export function buildPassifLines(
 }
 
 /**
- * Fraction (0 à 1) d'un passif `Bien propre`/`Bien personnel`/`Indivision`
- * entrant dans la succession du défunt, pondérée par son détenteur réel via
- * `getPartSuccessorale` (même logique que pour un actif, cf.
- * succession.ts). Un passif `Bien commun`, ou dont la qualification est
- * absente/`À qualifier`, reste déduit à 100 % — comportement historique
- * volontairement inchangé pour ces deux cas (cf. §3 de docs/transmission.md
- * pour l'absence de qualification : ne jamais deviner une répartition, la
- * valeur la plus prudente pour un passif est de le déduire en totalité
- * plutôt que de sous-estimer la dette).
+ * Fraction (0 à 1) d'un passif entrant dans la succession étudiée, même
+ * pondération que l'actif du même régime (succession.ts) :
+ * - `Bien commun` : 50 % (la succession ne supporte que la moitié du passif
+ *   commun, symétrique du demi-boni de l'actif commun) ;
+ * - `Bien propre`/`Bien personnel`/`Indivision` : selon le détenteur réel ou
+ *   la quote-part, via getPartSuccessorale (défunt = Utilisateur) ou
+ *   getPartConjointSuccession (défunt = conjoint, `cote === 'conjoint'`) ;
+ * - qualification absente/`À qualifier` : 100 %, jamais devinée — la valeur
+ *   la plus prudente pour un passif est de le déduire en totalité plutôt que
+ *   de sous-estimer la dette (cf. §3 de docs/transmission.md).
  */
-function getFractionPassifParDetenteur(passif: PassifLine): number {
+function getFractionPassifParDetenteur(passif: PassifLine, cote: 'user' | 'conjoint' = 'user'): number {
   const qualification = passif.qualification_bien;
+  if (qualification === 'Bien commun') {
+    return 0.5;
+  }
   if (qualification === 'Bien propre' || qualification === 'Bien personnel' || qualification === 'Indivision') {
-    return getPartSuccessorale({
+    const input = {
       qualification_bien: qualification,
       detenteur: passif.detenteur,
       pourcentage_utilisateur: passif.pourcentage_utilisateur,
       pourcentage_conjoint: passif.pourcentage_conjoint
-    });
+    };
+    return cote === 'conjoint' ? getPartConjointSuccession(input) : getPartSuccessorale(input);
   }
   return 1;
 }
@@ -942,7 +947,7 @@ function capitalDecesNetPourBeneficiaire(
  */
 export function buildSurvivingSpousePatrimony(
   assets: Asset[],
-  spousePassifs: { montant_du: number }[],
+  spousePassifs: PassifLine[],
   firstDeathResult: TransmissionResult,
   survivingSpouseId: PersonId,
   avContracts: AVContract[] = [],
@@ -969,7 +974,9 @@ export function buildSurvivingSpousePatrimony(
   const prelev990IConjoint = firstDeathResult.dmtg.perBeneficiary[survivingSpouseId]?.prelev990I || 0;
   const capitalDecesNetConjoint = capitalDecesNetPourBeneficiaire(avContracts, survivingSpouseId, prelev990IConjoint);
 
-  const totalPassifsConjoint = spousePassifs.reduce((sum, p) => sum + (p.montant_du || 0), 0);
+  const totalPassifsConjoint = spousePassifs.reduce(
+    (sum, p) => sum + (p.montant_du || 0) * getFractionPassifParDetenteur(p, 'conjoint'), 0
+  );
 
   return {
     date: new Date().toISOString().split('T')[0],
@@ -1036,7 +1043,7 @@ export function buildSpouseRawAssets(
  */
 export function buildSpouseOwnBasePatrimony(
   assets: Asset[],
-  spousePassifs: { montant_du: number }[],
+  spousePassifs: PassifLine[],
   // Démembrement (barème 669 CGI) des `assets` — voir buildPatrimonySnapshot.
   assetDemembrements: AssetDemembrement[] = [],
   demembrementCtx: DemembrementFractionContext = {}
@@ -1047,7 +1054,9 @@ export function buildSpouseOwnBasePatrimony(
       const valeur = getValeurEstimeePonderee(asset, assetDemembrements, demembrementCtx);
       return sum + valeur * getPartConjointSuccession(asset, asset.denomination || asset.id);
     }, 0);
-  const totalPassifs = spousePassifs.reduce((sum, p) => sum + (p.montant_du || 0), 0);
+  const totalPassifs = spousePassifs.reduce(
+    (sum, p) => sum + (p.montant_du || 0) * getFractionPassifParDetenteur(p, 'conjoint'), 0
+  );
 
   return {
     date: new Date().toISOString().split('T')[0],

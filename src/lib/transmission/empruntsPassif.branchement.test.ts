@@ -7,12 +7,10 @@
  * la masse successorale civile, ni de l'assiette DMTG, ni de la base du droit
  * de partage.
  *
- * Pondération attendue : un emprunt « Bien commun » est compté à 100%, pas à
- * 50% — exactement le traitement des `passifs` aujourd'hui (cf.
- * avantagesMatrimoniaux.ts::getFractionPassifAjustee, qui ne renvoie une
- * fraction qu'en présence d'une clause de partage inégal). Cette tâche ajoute
- * les emprunts au passif existant, elle ne rouvre pas la pondération des
- * passifs communs.
+ * Pondération attendue : un emprunt « Bien commun » est compté à 50 %,
+ * exactement comme l'actif commun et comme les `passifs` (audit Transmission
+ * 2026-09, phase 4a — la succession ne supporte que la moitié du passif
+ * commun).
  */
 import { describe, it, expect } from 'vitest';
 import { computeTransmission, FamilyGraph, TransmissionParams } from './index';
@@ -84,10 +82,10 @@ describe('buildPassifLines — fusion passifs + emprunts', () => {
 });
 
 describe('Branchement — un emprunt seul réduit le patrimoine transmis', () => {
-  it('emprunt « Bien commun » sans aucun passif : compté à 100% dans patrimony.passifs, comme un passif', () => {
+  it('emprunt « Bien commun » sans aucun passif : compté à 50% dans patrimony.passifs, comme un passif', () => {
     const emprunts = [{ capital_restant_du: 100000, qualification_bien: 'Bien commun', societe_id: null }];
     const patrimony = buildPatrimonySnapshot([], buildPassifLines([], emprunts));
-    expect(patrimony.passifs).toBe(100000);
+    expect(patrimony.passifs).toBe(50000);
   });
 
   it('emprunt seul : la masse partageable est réduite du capital restant dû', () => {
@@ -98,9 +96,9 @@ describe('Branchement — un emprunt seul réduit le patrimoine transmis', () =>
     const emprunts = [{ capital_restant_du: 100000, qualification_bien: 'Bien commun', societe_id: null }];
 
     const patrimony = buildPatrimonySnapshot(rawAssets as any, buildPassifLines([], emprunts), 0);
-    // Actif commun pondéré à 50% (getPartSuccessorale), emprunt commun à 100%.
+    // Actif commun et emprunt commun tous deux pondérés à 50%.
     expect(patrimony.biensExistants).toBeCloseTo(250000, 0);
-    expect(patrimony.passifs).toBe(100000);
+    expect(patrimony.passifs).toBe(50000);
 
     const result = computeTransmission({
       family,
@@ -112,9 +110,9 @@ describe('Branchement — un emprunt seul réduit le patrimoine transmis', () =>
       rawAssets
     });
 
-    // Masse partageable = 250 000 − 100 000 (computeMasseCalcul nette le passif).
+    // Masse partageable = 250 000 − 50 000 (computeMasseCalcul nette le passif).
     const totalPartsCiviles = result.heirs.reduce((s, h) => s + h.partFinale, 0);
-    expect(totalPartsCiviles).toBeCloseTo(150000, 0);
+    expect(totalPartsCiviles).toBeCloseTo(200000, 0);
   });
 
   it('régression : sans emprunt, le résultat est strictement celui d\'avant le branchement', () => {

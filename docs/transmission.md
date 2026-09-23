@@ -244,8 +244,15 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
 - **Assiette DMTG nette du passif (art. 768 CGI).** `computeTransmission` transmet `patrimony.passifs`
   à `computeDMTG` (`DMTGContext.passif`) ; `dmtg/beneficiary.ts` répartit entre bénéficiaires
   `max(0, actif taxable − passif)` (actif taxable = après abattements par bien : RP, bois…). Le forfait
-  mobilier de 5 % reste calculé sur l'actif brut, jamais réduit par le passif. Le passif `Bien commun`
-  est encore déduit à 100 % (cf. §3).
+  mobilier de 5 % reste calculé sur l'actif brut, jamais réduit par le passif. Le passif lui-même est
+  pondéré comme l'actif du même régime (cf. point suivant).
+- **Pondération du passif (`getFractionPassifParDetenteur`, `utils/transmissionHelpers.ts`).**
+  `Bien commun` → 50 % ; `Bien propre`/`Bien personnel`/`Indivision` → détenteur ou quote-part via
+  `getPartSuccessorale` (défunt = Utilisateur) ou `getPartConjointSuccession` (défunt = conjoint) ;
+  qualification absente/`À qualifier` → 100 % (prudence, jamais devinée). Appliqué au 1er décès
+  (`buildPatrimonySnapshot`) comme côté conjoint (`buildSurvivingSpousePatrimony`,
+  `buildSpouseOwnBasePatrimony`, qui reprenaient auparavant tout le passif brut à 100 %, dettes propres
+  du 1er défunt comprises). Tests : `lib/transmission/phase4aAudit.test.ts`.
 - **Assurance-vie : 990 I et 757 B (`dmtg/assurance-vie.ts`).**
   - Assiette 990 I = capital décès rattaché aux primes versées avant 70 ans, au prorata des primes
     (`capitalDeces × primesAvant70 / (primesAvant70 + primesApres70)`), plus-values comprises.
@@ -276,10 +283,11 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
 
 ### 🔴 Bloquant (peut fausser un calcul montré au client)
 
-- **Passif `Bien commun` déduit à 100 %** alors que l'actif commun n'entre qu'à 50 % : sous-évalue la
-  succession, au civil comme au fiscal.
-- **Legs à un tiers non héritier non taxé** (à confirmer) : seuls les héritiers légaux et les
-  bénéficiaires AV figurent dans la liste des bénéficiaires DMTG.
+- **Legs à un légataire non héritier : ni sorti de la masse des héritiers, ni taxé** (confirmé
+  2026-09-23). La branche « surplus » du §6bis (`index.ts`) reverse le montant légué aux héritiers, qui
+  sont taxés dessus ; le légataire n'apparaît pas dans les bénéficiaires DMTG. Ex. : 500 k€, un enfant,
+  legs de 100 k€ à un ami → enfant taxé sur 498 500 € au lieu d'environ 398 500 €, ami non taxé.
+  Correctif prévu en phase 4b.
 
 - **La valeur au jour du partage (art. 860) n'est jamais capturée séparément, donc l'indemnité de
   réduction n'est jamais réévaluée entre le décès et le partage** (finding T3, art. 924-2).
@@ -340,8 +348,8 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   alimentés par `buildPassifLines` depuis les colonnes déjà existantes des tables `passifs`/`emprunts`
   (aucune migration nécessaire). `buildPatrimonySnapshot` pondère un passif `Bien propre`/
   `Bien personnel`/`Indivision` via `getPartSuccessorale` (même fonction que pour les actifs) au lieu du
-  fallback `?? 1`, via `getFractionPassifParDetenteur`. Un passif `Bien commun`, ou de qualification
-  absente/`À qualifier`, reste déduit à 100 % — comportement historique volontairement inchangé.
+  fallback `?? 1`, via `getFractionPassifParDetenteur`. *(Depuis 2026-09-23 : passif
+  `Bien commun` à 50 %, cf. §2 ; seule la qualification absente/`À qualifier` reste à 100 %.)*
   Vérifié sur 3 cas concrets (passif propre détenu par le conjoint → 0 € déduit du défunt simulé ;
   détenu par l'utilisateur → 100 % déduit ; indivision 30/70 → 30 % déduit) ; suite de tests
   `empruntsPassif.branchement.test.ts` toujours au vert. *(Mise à jour 2026-09-22 : le paramètre
