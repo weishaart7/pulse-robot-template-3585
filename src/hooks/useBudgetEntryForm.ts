@@ -7,6 +7,7 @@ import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { useSecureForm } from '@/hooks/useSecureForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { sanitizeTextInput, sanitizeNumericInput } from '@/lib/security';
+import { hasConjoint } from '@/lib/family/maritalStatus';
 
 // Logique partagée par RevenusForm.tsx et ChargesForm.tsx : configuration
 // React Hook Form + Zod, sanitation, intégration useSecureForm, options de
@@ -156,16 +157,13 @@ export function useBudgetEntryForm<TPayload extends Record<string, unknown>>({
       ? `${familyProfile.prenom} ${familyProfile.nom}`
       : "Moi";
 
-    const statut = maritalStatus?.statut_couple || "";
-    const hasSpouse = ["Marié(e)", "Pacsé(e)", "Concubinage"].includes(statut);
-
-    if (!hasSpouse) {
+    if (!hasConjoint(maritalStatus)) {
       return [userFullName];
     }
 
-    const spouseFullName = maritalStatus?.prenom_conjoint && maritalStatus?.nom_conjoint
+    const spouseFullName = maritalStatus?.nom_conjoint
       ? `${maritalStatus.prenom_conjoint} ${maritalStatus.nom_conjoint}`
-      : "Conjoint";
+      : `${maritalStatus?.prenom_conjoint}`;
 
     return [userFullName, spouseFullName, "Le couple"];
   }, [familyProfile, maritalStatus]);

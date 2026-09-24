@@ -145,12 +145,12 @@ Mensuel/Annuel en pilule encre, donuts sur `SERIES`. Purement visuel : aucune lo
   pour remplacer un `as any` — la seule méthode du service qui type sa jointure Supabase explicitement.
 
 - **Résolution du bénéficiaire/débiteur via `mapDetenteurToDisplay()`.** Pour les lignes d'origine
-  `'immobilier'`/`'emprunt'`, `getAssetRevenusForBudget`/`getAssetChargesForBudget`/
-  `getEmpruntsChargesForBudget` résolvent `assets.detenteur`/`emprunts.detenteur` (stocké en base sous les
-  codes bruts `'user'`/`'spouse'`/`'common'`, jamais en libellé français) via
-  `mapDetenteurToDisplay()` ([lib/patrimoine/utils.ts](src/lib/patrimoine/utils.ts)) — le même mapping que
-  Patrimoine, alimenté par `familyService.getFamilyProfile()`/`getMaritalStatus()` (`getFamilyInfoForDetenteur()`
-  dans `budgetService.ts`).
+  `'immobilier'`/`'emprunt'`, les codes bruts `'user'`/`'spouse'`/`'common'` sont traduits en prénom ou
+  « Le couple » avec le même mapping que Patrimoine. Pour une charge d'actif, le débiteur saisi sur la
+  charge (`asset_charges.debiteur` : `'Époux 1'` = utilisateur, `'Époux 2'` = conjoint, `'Couple'`) prime ;
+  le détenteur de l'actif n'est utilisé qu'à défaut. Le conjoint n'est retenu, dans le service comme dans
+  le formulaire, que via `hasConjoint()` (`lib/family/maritalStatus.ts`) : statut en couple **et** prénom
+  renseigné — même règle que `useAssetForm`/`usePassifEmpruntForm`.
 
 - **Catégorisation par « nature » à vocabulaire disjoint entre Budget et Patrimoine/Immobilier.**
   `REVENUS_CATEGORIES`/`CHARGES_CATEGORIES` ([budgetCategories.ts](src/constants/budgetCategories.ts))
@@ -293,12 +293,8 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les trois points identifi
 - **`revenu_disponible` : champ persisté, jamais exposé dans l'UI Budget**, toujours `false` à la
   création manuelle, `true` uniquement pour les revenus d'origine immobilière, sans qu'aucun composant du
   périmètre ne le lise pour filtrer ou distinguer l'affichage.
-- **`asset_charges.debiteur`** (`'Époux 1'`/`'Époux 2'`/`'Couple'`) est lu mais ignoré : le débiteur
-  affiché est toujours le détenteur de l'actif.
-- **Détection du conjoint divergente** : le formulaire se fonde sur `statut_couple`, le service sur
-  `prenom_conjoint` ; le bénéficiaire saisi est stocké en texte libre (« Prénom Nom »), non relié à Famille.
-- **`logSecurityEvent`** (`lib/security.ts`) garde ses logs derrière `process.env.NODE_ENV` plutôt que
-  `import.meta.env.DEV`, et `useSecureForm` journalise la soumission comme réussie avant l'écriture.
+- **Bénéficiaire/débiteur des lignes saisies dans Budget stocké en texte libre** (« Prénom Nom ») : non
+  relié à Famille, un changement de prénom n'est pas répercuté sur les lignes existantes.
 
 ## 4. Périmètre V1 / différé
 

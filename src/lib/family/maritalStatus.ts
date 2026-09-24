@@ -4,6 +4,15 @@
 // champ "Statut matrimonial", devenu redondant avec le menu de FamilleSection.tsx)
 // via useMaritalStatus().setStatutCouple().
 
+const STATUTS_EN_COUPLE = ['Marié(e)', 'Pacsé(e)', 'Concubinage', 'MARIE', 'PACS', 'PACSE', 'CONCUBINAGE'];
+
+// Un conjoint n'est retenu que si le statut est « en couple » ET que son prénom est renseigné — même règle
+// que useAssetForm/usePassifEmpruntForm, pour que Budget propose et affiche les mêmes personnes.
+export const hasConjoint = (
+  maritalStatus?: { statut_couple?: string | null; prenom_conjoint?: string | null } | null
+): boolean =>
+  !!maritalStatus?.prenom_conjoint && STATUTS_EN_COUPLE.includes(maritalStatus.statut_couple || '');
+
 export const isSingleStatus = (statutCouple?: string | null): boolean =>
   statutCouple === 'Célibataire';
 

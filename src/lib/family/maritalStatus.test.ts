@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isSingleStatus, buildStatutCoupleWrite } from './maritalStatus';
+import { hasConjoint, isSingleStatus, buildStatutCoupleWrite } from './maritalStatus';
 
 describe('isSingleStatus', () => {
   it('true uniquement pour "Célibataire"', () => {
@@ -46,5 +46,15 @@ describe('buildStatutCoupleWrite', () => {
   it('le statut passé écrase toujours toute valeur statut_couple présente dans extra', () => {
     const extra = { statut_couple: 'Marié(e)' as string | null };
     expect(buildStatutCoupleWrite('Célibataire', extra)).toEqual({ statut_couple: 'Célibataire' });
+  });
+});
+
+describe('hasConjoint', () => {
+  it('exige un statut en couple et un prénom de conjoint', () => {
+    expect(hasConjoint({ statut_couple: 'Marié(e)', prenom_conjoint: 'B' })).toBe(true);
+    expect(hasConjoint({ statut_couple: 'PACS', prenom_conjoint: 'B' })).toBe(true);
+    expect(hasConjoint({ statut_couple: 'Marié(e)', prenom_conjoint: null })).toBe(false);
+    expect(hasConjoint({ statut_couple: 'Célibataire', prenom_conjoint: 'B' })).toBe(false);
+    expect(hasConjoint(null)).toBe(false);
   });
 });

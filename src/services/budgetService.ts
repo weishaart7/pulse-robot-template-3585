@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, FamilyInfo } from '@/lib/patrimoine/utils';
+import { hasConjoint } from '@/lib/family/maritalStatus';
 import { partFoyerEmprunt, estimateEmpruntFin } from '@/lib/budget/emprunts';
 
 export type Periodicite = 'mensuel' | 'trimestriel' | 'semestriel' | 'annuel' | 'ponctuel';
@@ -78,11 +79,20 @@ const getFamilyInfoForDetenteur = async (): Promise<FamilyInfo> => {
     familyService.getFamilyProfile(),
     familyService.getMaritalStatus(),
   ]);
+  const partner = hasConjoint(maritalStatus);
   return {
-    hasPartner: !!maritalStatus?.prenom_conjoint,
+    hasPartner: partner,
     userFirstName: familyProfile?.prenom,
-    partnerFirstName: maritalStatus?.prenom_conjoint,
+    partnerFirstName: partner ? maritalStatus?.prenom_conjoint : undefined,
   };
+};
+
+// asset_charges.debiteur ('Époux 1' = utilisateur, 'Époux 2' = conjoint, 'Couple') est le débiteur saisi
+// sur la charge elle-même : il prime sur le détenteur de l'actif, utilisé seulement à défaut.
+const ASSET_CHARGE_DEBITEUR_TO_DETENTEUR: Record<string, string> = {
+  'Époux 1': 'user',
+  'Époux 2': 'spouse',
+  'Couple': 'common',
 };
 
 // Fait correspondre la nature libre d'un emprunt (EMPRUNT_NATURES, src/constants/assetTypes.ts) à l'une
@@ -291,8 +301,10 @@ export const budgetService = {
     return ((data || []) as AssetChargeWithAsset[])
       .filter(item => item.assets?.user_id === user.id)
       .map(item => {
-        // Déterminer le débiteur basé sur le détenteur de l'asset ('user'/'spouse'/'common' en base)
-        const debiteurFinal = mapDetenteurToDisplay(item.assets?.detenteur, familyInfo);
+        const debiteurFinal = mapDetenteurToDisplay(
+          (item.debiteur && ASSET_CHARGE_DEBITEUR_TO_DETENTEUR[item.debiteur]) || item.assets?.detenteur,
+          familyInfo
+        );
 
         return {
           id: item.id,

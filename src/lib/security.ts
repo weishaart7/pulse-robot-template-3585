@@ -145,7 +145,7 @@ export function logSecurityEvent(event: SecurityEvent): void {
   };
   
   // SECURITY: Only log to console in development mode
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     const logLevel = event.success ? 'info' : 'warn';
     const logMessage = `[SECURITY_AUDIT][${event.severity?.toUpperCase()}] ${event.action}`;
     console[logLevel](logMessage, {
@@ -228,6 +228,8 @@ function storeSecurityEvent(event: any): void {
     if (stored.length > 50) stored.splice(0, stored.length - 50);
     localStorage.setItem('security_events', JSON.stringify(stored));
   } catch (error) {
-    console.error('Failed to store security event:', error);
+    if (import.meta.env.DEV) {
+      console.error('Failed to store security event:', error);
+    }
   }
 }

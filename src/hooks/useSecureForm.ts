@@ -44,6 +44,9 @@ export const useSecureForm = ({
         // Sanitize input data
         const sanitizedData = sanitizeObject(formData);
 
+        // Submit sanitized data — succès journalisé seulement une fois l'écriture effectuée
+        await submitFunction(sanitizedData);
+
         // Log security event for sensitive form submission
         logSecurityEvent({
           action: 'form_submission',
@@ -64,9 +67,6 @@ export const useSecureForm = ({
             success: true,
           });
         }
-
-        // Submit sanitized data
-        await submitFunction(sanitizedData);
         return true;
 
       } catch (error) {
