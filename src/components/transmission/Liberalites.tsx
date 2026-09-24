@@ -144,7 +144,9 @@ export const Liberalites = () => {
       });
       await fetchLiberalites();
     } catch (error) {
-      console.error('Error deleting liberalite group:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error deleting liberalite group:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de supprimer la libéralité. Certaines lignes du groupe ont peut-être déjà été retirées — vérifiez le tableau.",

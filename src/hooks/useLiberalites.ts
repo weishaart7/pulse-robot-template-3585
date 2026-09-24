@@ -17,7 +17,9 @@ export const useLiberalites = () => {
         description: "Impossible de charger les libéralités",
         variant: "destructive",
       });
-      console.error('Error fetching liberalites:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error fetching liberalites:', error);
+      }
     } finally {
       setLoading(false);
     }

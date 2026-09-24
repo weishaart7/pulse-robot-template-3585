@@ -80,7 +80,9 @@ export const Optimisation = () => {
         description: "L'option du conjoint survivant a été enregistrée.",
       });
     } catch (error) {
-      console.error('Error saving option_conjoint:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error saving option_conjoint:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible d'enregistrer l'option.",
@@ -114,7 +116,9 @@ export const Optimisation = () => {
         description: "L'hypothèse de partage a été enregistrée.",
       });
     } catch (error) {
-      console.error('Error saving partage_envisage:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error saving partage_envisage:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible d'enregistrer l'hypothèse de partage.",
@@ -150,7 +154,9 @@ export const Optimisation = () => {
         description: "L'option du droit d'usage et d'habitation a été enregistrée.",
       });
     } catch (error) {
-      console.error('Error saving duh_opte:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error saving duh_opte:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible d'enregistrer l'option.",

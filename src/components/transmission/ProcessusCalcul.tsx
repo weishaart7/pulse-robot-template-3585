@@ -151,7 +151,9 @@ export const ProcessusCalcul = () => {
       };
       return { patrimony, transmissionResult: computeTransmission(ctx), computeErrorMessage: null, computeErrorKind: null };
     } catch (error) {
-      console.error('Erreur calcul transmission:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur calcul transmission:', error);
+      }
       if (error instanceof BienNonQualifieError) {
         return { patrimony: null, transmissionResult: null, computeErrorMessage: error.message, computeErrorKind: 'bien-non-qualifie' };
       }

@@ -187,7 +187,9 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
         }
       }
     } catch (error) {
-      console.error('Error fetching AV details:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error fetching AV details:', error);
+      }
     } finally {
       setIsLoading(false);
     }

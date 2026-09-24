@@ -149,11 +149,15 @@ export const Succession2ndDeces = () => {
         : [{ data: [], error: null }, { data: [], error: null }];
 
       if (avDetailsRes.error) {
-        console.error('Erreur chargement détails assurance-vie:', avDetailsRes.error);
+        if (import.meta.env.DEV) {
+          console.error('Erreur chargement détails assurance-vie:', avDetailsRes.error);
+        }
         throw new Error("Les données d'assurance-vie n'ont pas pu être chargées, le calcul ne peut pas être fiable.");
       }
       if (avOperationsRes.error) {
-        console.error('Erreur chargement opérations assurance-vie:', avOperationsRes.error);
+        if (import.meta.env.DEV) {
+          console.error('Erreur chargement opérations assurance-vie:', avOperationsRes.error);
+        }
         throw new Error("Les opérations d'assurance-vie n'ont pas pu être chargées, le calcul ne peut pas être fiable.");
       }
 

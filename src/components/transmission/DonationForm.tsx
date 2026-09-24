@@ -199,7 +199,9 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
       if (error) throw error;
       setFamilyMembers(data || []);
     } catch (error) {
-      console.error('Erreur lors du chargement des liens familiaux:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors du chargement des liens familiaux:', error);
+      }
     }
   };
 
@@ -436,7 +438,9 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
             await liberaliteService.deleteLiberalite(oldRow.id!);
           }
         } catch (deleteError) {
-          console.error('Error deleting previous donation rows:', deleteError);
+          if (import.meta.env.DEV) {
+            console.error('Error deleting previous donation rows:', deleteError);
+          }
           toast({
             title: "Attention",
             description: "La donation a été mise à jour, mais l'ancienne version n'a pas pu être supprimée automatiquement. Supprimez-la manuellement dans le tableau.",
@@ -455,7 +459,9 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
       onSaved?.();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error saving donation:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error saving donation:', error);
+      }
       // La création a échoué en cours de route : nettoyage best-effort des
       // lignes déjà créées pour ne pas laisser de doublons partiels. Les
       // anciennes lignes (si édition) n'ont pas été touchées.
@@ -463,7 +469,9 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
         try {
           await liberaliteService.deleteLiberalite(id);
         } catch (cleanupError) {
-          console.error('Cleanup error after failed donation save:', cleanupError);
+          if (import.meta.env.DEV) {
+            console.error('Cleanup error after failed donation save:', cleanupError);
+          }
         }
       }
       toast({

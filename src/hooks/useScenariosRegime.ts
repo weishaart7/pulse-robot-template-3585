@@ -17,7 +17,9 @@ export const useScenariosRegime = () => {
         description: "Impossible de charger les scénarios de changement de régime",
         variant: "destructive",
       });
-      console.error('Error fetching scenarios regime:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error fetching scenarios regime:', error);
+      }
     } finally {
       setLoading(false);
     }

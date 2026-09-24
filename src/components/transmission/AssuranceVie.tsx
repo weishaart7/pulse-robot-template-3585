@@ -286,7 +286,9 @@ export const AssuranceVie = () => {
             setTransmissionResult(result);
             setComputeErrorMessage(null);
           } catch (calcError) {
-            console.error('Erreur calcul fiscal assurance-vie:', calcError);
+            if (import.meta.env.DEV) {
+              console.error('Erreur calcul fiscal assurance-vie:', calcError);
+            }
             setTransmissionResult(null);
             setComputeErrorMessage(
               calcError instanceof AVDonneesInsuffisantesError || calcError instanceof BienNonQualifieError
@@ -296,7 +298,9 @@ export const AssuranceVie = () => {
           }
         }
       } catch (error) {
-        console.error('Error fetching AV contracts:', error);
+        if (import.meta.env.DEV) {
+          console.error('Error fetching AV contracts:', error);
+        }
       } finally {
         setIsLoading(false);
       }

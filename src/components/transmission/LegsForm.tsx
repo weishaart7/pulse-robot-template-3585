@@ -264,7 +264,9 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
             await liberaliteService.deleteLiberalite(oldRow.id!);
           }
         } catch (deleteError) {
-          console.error('Error deleting previous legs rows:', deleteError);
+          if (import.meta.env.DEV) {
+            console.error('Error deleting previous legs rows:', deleteError);
+          }
           toast({
             title: "Attention",
             description: "Le legs a été mis à jour, mais l'ancienne version n'a pas pu être supprimée automatiquement. Supprimez-la manuellement dans le tableau.",
@@ -283,14 +285,18 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
       onSaved?.();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error saving legs:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error saving legs:', error);
+      }
       // Création interrompue en cours de route : nettoyage best-effort des
       // lignes déjà créées. Les anciennes lignes (si édition) sont intactes.
       for (const id of createdIds) {
         try {
           await liberaliteService.deleteLiberalite(id);
         } catch (cleanupError) {
-          console.error('Cleanup error after failed legs save:', cleanupError);
+          if (import.meta.env.DEV) {
+            console.error('Cleanup error after failed legs save:', cleanupError);
+          }
         }
       }
       toast({

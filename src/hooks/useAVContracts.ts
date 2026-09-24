@@ -44,7 +44,9 @@ export function useAVContracts(assets: Asset[]) {
       if (cancelled) return;
 
       if (detailsRes.error || opsRes.error) {
-        console.error('Erreur chargement contrats assurance-vie:', detailsRes.error || opsRes.error);
+        if (import.meta.env.DEV) {
+          console.error('Erreur chargement contrats assurance-vie:', detailsRes.error || opsRes.error);
+        }
         setAvContractsRaw([]);
         setError("Les données d'assurance-vie n'ont pas pu être chargées.");
         setLoading(false);
