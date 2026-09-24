@@ -598,6 +598,20 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       `qu'usufruitier. Si les époux étaient locataires, les loyers remboursés par la succession ` +
       `sont déductibles de l'actif en cas d'exécution en espèces (art. 768 CGI) — à confirmer au cas par cas.`
     );
+  } else if (family.survivantPartenairePacs && family.survivingSpouseId) {
+    // Partenaire de PACS : même droit temporaire d'un an (art. 515-6 al. 3,
+    // renvoi à l'art. 763 al. 1 et 2), alors qu'il n'est pas héritier. Le
+    // droit viager au logement (art. 764) ne lui est en revanche pas ouvert.
+    successionLegaleResult.explicationsTexte.push(
+      `Le partenaire de PACS survivant bénéficie de plein droit, pendant un an à compter du décès, ` +
+      `de la jouissance gratuite du logement qui constituait sa résidence principale effective ` +
+      `et du mobilier qui le garnit (C. civ. art. 515-6 al. 3, renvoyant à l'art. 763 al. 1 et 2), ` +
+      `bien qu'il ne soit pas héritier. Si le logement était loué, les loyers de cette année sont ` +
+      `remboursés par la succession. Il n'a en revanche aucun droit viager au logement (art. 764 ` +
+      `réservé au conjoint marié) : au-delà d'un an, son maintien dans les lieux suppose un legs ` +
+      `ou l'accord des héritiers. Mêmes exclusions que pour le conjoint (résidence secondaire, SCI, ` +
+      `logement dont le défunt n'était qu'usufruitier) — à confirmer au cas par cas.`
+    );
   }
 
   // 6quater. Faculté de conversion de l'usufruit du conjoint (C. civ. art.

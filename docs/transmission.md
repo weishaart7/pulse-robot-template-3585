@@ -67,6 +67,14 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   l'option choisie). Tests : `lib/transmission/ddvEnfantNonCommun.test.ts`. Limite connue :
   `graph.hasDDV` est vrai si l'un ou l'autre époux a consenti une DDV, sans vérifier que le défunt
   simulé en est le donateur (non vérifié au 2nd décès).
+- **Droit temporaire au logement (1 an).** Message informatif, sans effet sur les parts. Conjoint
+  marié successible : art. 763. Partenaire de PACS : même droit par renvoi de l'art. 515-6 al. 3
+  (logement et mobilier, loyers remboursés par la succession), avec rappel qu'il n'a ni droit viager
+  (art. 764) ni vocation successorale. Le graphe porte `survivantPartenairePacs` (posé par
+  `buildFamilyGraph` pour un statut Pacsé(e), remis à `false` par `widowFamilyGraph`) : on ne peut
+  pas déduire le PACS de `survivingSpouseId` seul, également renseigné pour un époux séparé de corps
+  ayant renoncé à ses droits, qui ne reçoit aucun des deux messages. Tests :
+  `lib/transmission/jouissanceTemporaireLogement.test.ts`, `utils/transmissionHelpers.pacs.test.ts`.
 - Le régime matrimonial (récompenses, créances entre époux, participation aux acquêts, avantages
   matrimoniaux — saisis et calculés côté Patrimoine, cf. `docs/patrimoine.md` §2) est liquidé en amont
   et injecté dans `patrimony.biensExistants` via `deltaCivilTotal` (`index.ts`) avant tout calcul de

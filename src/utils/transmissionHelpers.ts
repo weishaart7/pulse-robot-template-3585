@@ -480,6 +480,7 @@ export function buildFamilyGraph(
 
   let hasSurvivingSpouse = false;
   let survivingSpouseId: string | undefined;
+  let survivantPartenairePacs = false;
 
   if (maritalStatus?.statut_couple &&
       ['Marié(e)', 'Pacsé(e)'].includes(maritalStatus.statut_couple)) {
@@ -506,6 +507,8 @@ export function buildFamilyGraph(
         maritalStatus.separation_de_corps === true &&
         maritalStatus.separation_corps_clause_renonciation === true;
       hasSurvivingSpouse = !perdQualiteSuccessible;
+    } else {
+      survivantPartenairePacs = true;
     }
     survivingSpouseId = spouseId;
 
@@ -590,7 +593,8 @@ export function buildFamilyGraph(
     survivingSpouseId,
     childrenOfDecedent,
     childrenCommonWithSpouse,
-    hasDDV: hasDDV(maritalStatus)
+    hasDDV: hasDDV(maritalStatus),
+    survivantPartenairePacs
   };
 }
 
@@ -1126,6 +1130,7 @@ export function widowFamilyGraph(graph: FamilyGraph, familyLinks: FamilyLink[]):
     marriages: [],
     hasSurvivingSpouse: false,
     survivingSpouseId: undefined,
+    survivantPartenairePacs: false,
     childrenOfDecedent: graph.childrenOfDecedent.filter(id => !spouseOnlyChildIds.has(id)),
     childrenCommonWithSpouse: []
   };
