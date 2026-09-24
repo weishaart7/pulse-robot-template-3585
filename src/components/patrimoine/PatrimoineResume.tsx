@@ -68,8 +68,11 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
   });
 
   const evolutionPatrimoine = useMemo(
-    () => computeEvolutionPatrimoine(assets, valorisations),
-    [assets, valorisations]
+    () => computeEvolutionPatrimoine(assets, valorisations, {
+      assetDemembrements,
+      demembrementCtx: { familyProfile, maritalStatus, familyLinks }
+    }),
+    [assets, valorisations, assetDemembrements, familyProfile, maritalStatus, familyLinks]
   );
 
   const evolutionPoints = useMemo(
@@ -129,7 +132,7 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
         {/* Evolution chart */}
         <Card className="lg:col-span-2 border border-border hover:shadow-sm transition-shadow duration-500 animate-fade-in" style={{ animationDelay: '210ms' }}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-[15px] font-semibold tracking-tight">Évolution du patrimoine</CardTitle>
+            <CardTitle className="text-[15px] font-semibold tracking-tight">Évolution des actifs</CardTitle>
           </CardHeader>
           <CardContent>
             {evolutionPatrimoine.length === 0 ? (

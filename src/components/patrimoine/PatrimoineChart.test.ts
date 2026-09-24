@@ -40,3 +40,25 @@ describe('computePatrimoineBreakdown', () => {
     expect(p.spouseActifs).toBeCloseTo(200000);
   });
 });
+
+describe('plus-value d\'un actif démembré', () => {
+  const np = (date_acquisition?: string) => [{
+    id: 'np', nature: 'Résidences secondaires', valeur_estimee: 200000, valeur_acquisition: 100000,
+    date_acquisition, qualification_bien: 'Bien propre', detenteur: 'user', mode_detention: 'Nue-propriété',
+  }] as unknown as Asset[];
+  // Usufruitier (tiers) né le 01/06/1965 : 45 ans en 2010 (NP 40 %), 61 ans aujourd'hui (NP 60 %).
+  const assetDemembrements = [{ asset_id: 'np', type_partie: 'tiers', date_naissance_tiers: '1965-06-01' }] as never[];
+
+  it("valeur d'acquisition pondérée par la fraction à la date d'acquisition", () => {
+    const { result } = renderHook(() => usePatrimoineCalculations({ assets: np('2010-01-01'), passifs: [], emprunts: [], assetDemembrements }));
+    const pv = result.current.plusValuesSummary.assetsWithPlusValue[0];
+    expect(pv.valeurAcquisition).toBeCloseTo(40000);
+    expect(pv.valeurEstimee).toBeCloseTo(120000);
+    expect(pv.plusValue).toBeCloseTo(80000);
+  });
+
+  it("sans date d'acquisition : plus-value non calculée", () => {
+    const { result } = renderHook(() => usePatrimoineCalculations({ assets: np(undefined), passifs: [], emprunts: [], assetDemembrements }));
+    expect(result.current.plusValuesSummary.assetsWithPlusValue).toHaveLength(0);
+  });
+});

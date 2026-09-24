@@ -93,7 +93,6 @@ export const usePatrimoineCalculations = ({
   // `BienNonQualifieError`, cf. `unqualifiedItems` plus bas.
   const demembrement = useMemo(() => {
     const valueById = new Map<string, number>();
-    const fractionById = new Map<string, number>();
     const unqualifiedIds = new Set<string>();
     assets.forEach((asset) => {
       if (!asset.id) return;
@@ -102,13 +101,11 @@ export const usePatrimoineCalculations = ({
       if (fraction === null) {
         unqualifiedIds.add(asset.id);
         valueById.set(asset.id, 0);
-        fractionById.set(asset.id, 0);
       } else {
         valueById.set(asset.id, (asset.valeur_estimee || 0) * fraction);
-        fractionById.set(asset.id, fraction);
       }
     });
-    return { valueById, fractionById, unqualifiedIds };
+    return { valueById, unqualifiedIds };
   }, [assets, assetDemembrements, demembrementCtx]);
 
   // Source unique de vérité pour "part revenant à l'utilisateur" : même
@@ -264,20 +261,31 @@ export const usePatrimoineCalculations = ({
       // (cf. `demembrement.unqualifiedIds` plus haut).
       if (asset.id && demembrement.unqualifiedIds.has(asset.id)) return;
 
-      // Valeur estimée ET valeur d'acquisition pondérées par la même fraction
-      // de démembrement (barème 669 CGI), pour que la plus-value d'un actif
-      // démembré reste cohérente (une nue-propriété acquise 100k€ vaut
-      // aujourd'hui une fraction de sa valeur pleine propriété, tout comme son
-      // coût d'acquisition d'origine représentait déjà cette même fraction).
-      // Pondération supplémentaire par la part du foyer : en indivision avec
-      // des tiers, seule la quote-part du foyer entre dans la plus-value.
-      // Un bien non qualifié (absent de foyerShareById) reste à 100 %.
+      // Pondération par la part du foyer : en indivision avec des tiers,
+      // seule la quote-part du foyer entre dans la plus-value. Un bien non
+      // qualifié (absent de foyerShareById) reste à 100 %.
       const partFoyer = asset.id ? foyerShareById.get(asset.id) ?? 1 : 1;
-      const fraction = (asset.id ? demembrement.fractionById.get(asset.id) ?? 1 : 1) * partFoyer;
       const valeurEstimeePonderee = ((asset.id ? demembrement.valueById.get(asset.id) : undefined) ?? (asset.valeur_estimee || 0)) * partFoyer;
+
+      // Actif démembré : `valeur_acquisition` est la valeur en pleine
+      // propriété au jour de l'acquisition (convention retenue), pondérée
+      // par la fraction du barème 669 CGI à CETTE date (âge de l'usufruitier
+      // d'alors) — la fraction actuelle, elle, pondère la valeur estimée.
+      // Utiliser la fraction actuelle des deux côtés effacerait la
+      // reconstitution de la nue-propriété. Sans date d'acquisition, la
+      // plus-value n'est pas calculée plutôt que fausse.
+      let fractionAcquisition: number | null = 1;
+      if (asset.mode_detention === 'Usufruit' || asset.mode_detention === 'Nue-propriété') {
+        const dateAcq = asset.date_acquisition ? new Date(asset.date_acquisition) : null;
+        fractionAcquisition = dateAcq && !isNaN(dateAcq.getTime())
+          ? getFractionDemembrement(asset, assetDemembrements.filter((d) => d.asset_id === asset.id), demembrementCtx, dateAcq)
+          : null;
+      }
+      if (fractionAcquisition === null) return;
+
       const valeurAcquisitionPonderee = (asset.valeur_acquisition === undefined || asset.valeur_acquisition === null)
         ? asset.valeur_acquisition
-        : asset.valeur_acquisition * fraction;
+        : asset.valeur_acquisition * fractionAcquisition * partFoyer;
       const { plusValue, hasData } = calculatePlusValue(
         valeurEstimeePonderee,
         valeurAcquisitionPonderee,
@@ -318,7 +326,7 @@ export const usePatrimoineCalculations = ({
       byCategory,
       assetsWithPlusValue: assetsWithPlusValue.sort((a, b) => b.plusValue - a.plusValue)
     };
-  }, [assets, demembrement, foyerShareById]);
+  }, [assets, demembrement, foyerShareById, assetDemembrements, demembrementCtx]);
 
   const formatCurrency = formatCurrencyUtil;
 
