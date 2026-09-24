@@ -16,7 +16,7 @@ import { assetIndivisaireService, AssetIndivisaireWithAsset } from '@/services/a
 import { Asset } from '@/services/assetService';
 import { AssetDetailsDialog } from '@/components/patrimoine/AssetDetailsDialog';
 import { useToast } from '@/hooks/use-toast';
-import { LINKS_WITH_BRANCHE, LINKS_WITH_EXONERATION, evaluerExonerationFrereSoeur, sanitizeMemberForLink } from '@/lib/family/familyLinkRules';
+import { LINKS_WITH_BRANCHE, LINKS_WITH_EXONERATION, evaluerExonerationFrereSoeur, sanitizeMemberForLink, verifierCoherenceAscendance } from '@/lib/family/familyLinkRules';
 
 export const membreFamilleSchema = z.object({
   lien_familial: z.string().min(1, 'Le lien familial est obligatoire'),
@@ -193,6 +193,20 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
       // Champs masqués pour ce lien (ou rendus sans objet) remis à zéro avant
       // enregistrement, cf. familyLinkRules.ts.
       const data = sanitizeMemberForLink(rawData);
+      // R1-R5 : deux parents au plus par personne, ascendant né avant son enfant.
+      const erreurs = verifierCoherenceAscendance({
+        lien_familial: data.lien_familial ?? '',
+        enfant_de: data.enfant_de,
+        date_naissance: data.date_naissance,
+      }, familyLinks, {
+        editingId: editingMember?.id,
+        dateNaissanceClient: familyProfile?.date_naissance,
+        dateNaissanceConjoint: maritalStatus?.date_naissance_conjoint,
+      });
+      if (erreurs.length > 0) {
+        erreurs.forEach(e => memberForm.setError(e.path, { type: 'custom', message: e.message }));
+        return;
+      }
       try {
         const memberData = {
           lien_familial: data.lien_familial,
@@ -306,7 +320,7 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
                 {(selectedLinkType || editingMember) && (
                   <DynamicFamilyForm
                     linkType={selectedLinkType || editingMember?.lien_familial || ''}
-                    parentOptions={familyLinkLogic.getParentOptions(selectedLinkType || editingMember?.lien_familial || '')}
+                    parentOptions={familyLinkLogic.getParentOptions(selectedLinkType || editingMember?.lien_familial || '', editingMember?.id)}
                     parentsForRenunciation={familyLinkLogic.getParentsForRenunciation()}
                   />
                 )}

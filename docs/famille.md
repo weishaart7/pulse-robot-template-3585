@@ -127,6 +127,16 @@ permet de l'alimenter (voir §3).
   l'ouverture en modification. `buildFamilyGraph.ts` relie un enfant sans rattachement au seul
   client, aligné sur le moteur (seul `both_parents` fait un enfant commun).
 
+- **Cohérence de l'ascendance (R1-R5).** `verifierCoherenceAscendance()` et
+  `rattachementsComplets()` ([lib/family/familyLinkRules.ts](../src/lib/family/familyLinkRules.ts))
+  bloquent l'enregistrement dans `FamilyMemberFormDialog.tsx` : au plus deux Parents par
+  rattachement (`enfant_de` = `user` ou `spouse`), deux Grands-parents par Parent, deux Arrière
+  grands-parents par Grand-parent (le membre modifié n'est pas compté) ; un ascendant naît
+  strictement avant la personne à laquelle il est rattaché, un Enfant / Petit-enfant / Arrière
+  petit-enfant strictement après (y compris en sens inverse lors d'une modification). Contrôle sur
+  les dates renseignées uniquement. Les rattachements déjà pleins sont grisés dans « Enfant de ».
+  Pas de contrainte en base : les données saisies avant ces règles ne sont pas corrigées.
+
 - **`parent_de` vs `enfant_de`.** Les deux colonnes portent des sémantiques opposées dans le
   schéma, mais ne sont écrites de façon cohérente que pour `lien_familial === 'Enfant'`
   (`FamilyMemberFormDialog.tsx:172` : `parent_de` vaut `null` sinon). Ne pas supposer que

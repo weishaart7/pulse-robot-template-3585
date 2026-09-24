@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { FamilyLink, FamilyProfile, MaritalStatus } from '@/services/familyService';
 import { isSingleStatus } from '@/lib/family/maritalStatus';
+import { rattachementsComplets } from '@/lib/family/familyLinkRules';
 
 export interface FamilyLinkOption {
   value: string;
@@ -134,8 +135,8 @@ export const useFamilyLinkLogic = (
     return links;
   }, [existingLinks]);
 
-  const getParentOptions = (linkType: string) => {
-    const options: { value: string; label: string }[] = [];
+  const getParentOptions = (linkType: string, editingId?: string) => {
+    const options: { value: string; label: string; disabled?: boolean }[] = [];
 
     // For direct descendants (Petit-enfant, Arrière petit-enfant, etc.), 
     // only show appropriate family members, not the user/spouse
@@ -225,7 +226,10 @@ export const useFamilyLinkLogic = (
         break;
     }
 
-    return options;
+    // R1-R4 : une personne ayant déjà deux parents n'est plus proposée
+    // (sauf si c'est le rattachement actuel du membre modifié).
+    const complets = rattachementsComplets(linkType, familyLinks, editingId);
+    return options.map(o => complets.has(o.value) ? { ...o, disabled: true, label: `${o.label} (2 parents déjà renseignés)` } : o);
   };
 
   const getParentsForRenunciation = () => {

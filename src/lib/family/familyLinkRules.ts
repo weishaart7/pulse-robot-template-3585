@@ -115,3 +115,125 @@ export function sanitizeMemberForLink<T extends SanitizableMember>(data: T): T {
 
   return out;
 }
+
+// ── Cohérence de l'ascendance (R1-R5) ────────────────────────────────────────
+// R1-R4 : au plus deux parents par personne. Un Parent est rattaché au client
+// ('user') ou au conjoint ('spouse'), un Grand-parent à un Parent, un Arrière
+// grand-parent à un Grand-parent (enfant_de porte la personne dont il est le parent).
+// R5 : un ascendant naît strictement avant la personne dont il est le parent.
+
+export const MAX_PARENTS_PAR_PERSONNE = 2;
+export const LINKS_ASCENDANTS = ['Parent', 'Grand-parent', 'Arrière grand-parent'];
+// Descendants dont enfant_de désigne un de leurs parents.
+export const LINKS_DESCENDANTS = ['Enfant', 'Petit-enfant', 'Arrière petit-enfant'];
+
+interface LienPourCoherence {
+  id?: string;
+  lien_familial: string;
+  enfant_de?: string | null;
+  date_naissance?: string | Date | null;
+}
+
+export interface ContexteCoherence {
+  editingId?: string | null;
+  dateNaissanceClient?: string | null;
+  dateNaissanceConjoint?: string | null;
+}
+
+export interface ErreurCoherence {
+  path: 'enfant_de' | 'date_naissance';
+  message: string;
+}
+
+const toIso = (d?: string | Date | null): string | null => {
+  if (!d) return null;
+  if (typeof d === 'string') return d.slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const j = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${j}`;
+};
+
+// Valeurs enfant_de déjà « pleines » (deux parents saisis) pour un lien
+// ascendant, en excluant le membre en cours de modification.
+export function rattachementsComplets(
+  lien: string,
+  links: LienPourCoherence[],
+  editingId?: string | null
+): Set<string> {
+  const complets = new Set<string>();
+  if (!LINKS_ASCENDANTS.includes(lien)) return complets;
+  const compte: Record<string, number> = {};
+  links.forEach(l => {
+    if (l.lien_familial !== lien || !l.enfant_de || (editingId && l.id === editingId)) return;
+    compte[l.enfant_de] = (compte[l.enfant_de] ?? 0) + 1;
+    if (compte[l.enfant_de] >= MAX_PARENTS_PAR_PERSONNE) complets.add(l.enfant_de);
+  });
+  return complets;
+}
+
+export function verifierCoherenceAscendance(
+  membre: LienPourCoherence,
+  links: LienPourCoherence[],
+  ctx: ContexteCoherence = {}
+): ErreurCoherence[] {
+  const erreurs: ErreurCoherence[] = [];
+  const lien = membre.lien_familial;
+  const autres = links.filter(l => !(ctx.editingId && l.id === ctx.editingId));
+  const naissance = toIso(membre.date_naissance);
+
+  if (membre.enfant_de && rattachementsComplets(lien, links, ctx.editingId).has(membre.enfant_de)) {
+    erreurs.push({ path: 'enfant_de', message: 'Cette personne a déjà deux parents renseignés' });
+  }
+
+  if (!naissance) return erreurs;
+
+  // Dates de naissance des personnes désignées par enfant_de.
+  const datesRattachement = (enfantDe?: string | null): { nom: string; date: string | null }[] => {
+    if (!enfantDe) return [];
+    const client = { nom: 'le client', date: toIso(ctx.dateNaissanceClient) };
+    const conjoint = { nom: 'le conjoint', date: toIso(ctx.dateNaissanceConjoint) };
+    if (enfantDe === 'user') return [client];
+    if (enfantDe === 'spouse') return [conjoint];
+    if (enfantDe === 'both_parents') return [client, conjoint];
+    const l = autres.find(x => x.id === enfantDe);
+    return l ? [{ nom: 'la personne de rattachement', date: toIso(l.date_naissance) }] : [];
+  };
+
+  const estAscendant = LINKS_ASCENDANTS.includes(lien);
+  const estDescendant = LINKS_DESCENDANTS.includes(lien);
+
+  // Le membre face à la personne à laquelle il est rattaché.
+  if (estAscendant || estDescendant) {
+    for (const r of datesRattachement(membre.enfant_de)) {
+      if (!r.date) continue;
+      if (estAscendant && naissance >= r.date) {
+        erreurs.push({ path: 'date_naissance', message: `Un parent doit être né avant ${r.nom}` });
+      }
+      if (estDescendant && naissance <= r.date) {
+        erreurs.push({ path: 'date_naissance', message: `Un enfant doit être né après ${r.nom}` });
+      }
+    }
+  }
+
+  // Le membre modifié face aux membres qui lui sont rattachés.
+  if (ctx.editingId) {
+    autres
+      .filter(l => l.enfant_de === ctx.editingId)
+      .forEach(l => {
+        const d = toIso(l.date_naissance);
+        if (!d) return;
+        // Ses propres parents (ex. Grand-parent rattaché à ce Parent).
+        if (estAscendant && LINKS_ASCENDANTS.includes(l.lien_familial) && naissance <= d) {
+          erreurs.push({ path: 'date_naissance', message: 'Doit être né après ses propres parents renseignés' });
+        }
+        // Ses enfants (ex. Petit-enfant rattaché à cet Enfant).
+        if (estDescendant && LINKS_DESCENDANTS.includes(l.lien_familial) && naissance >= d) {
+          erreurs.push({ path: 'date_naissance', message: 'Doit être né avant ses enfants renseignés' });
+        }
+      });
+  }
+
+  // Dédoublonnage (both_parents peut produire deux fois le même message).
+  return erreurs.filter((e, i) => erreurs.findIndex(x => x.path === e.path && x.message === e.message) === i);
+}

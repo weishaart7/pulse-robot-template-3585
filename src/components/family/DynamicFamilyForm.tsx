@@ -23,7 +23,7 @@ import {
 
 interface DynamicFamilyFormProps {
   linkType: string;
-  parentOptions: { value: string; label: string }[];
+  parentOptions: { value: string; label: string; disabled?: boolean }[];
   parentsForRenunciation: { value: string; label: string }[];
 }
 
@@ -105,7 +105,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
 
   // Une seule option possible (ex. Enfant d'un client sans partenaire → lui-même) :
   // présélectionnée, pour que la valeur enregistrée soit celle affichée.
-  const singleParentOption = parentOptions.length === 1 ? parentOptions[0].value : null;
+  const singleParentOption = parentOptions.length === 1 && !parentOptions[0].disabled ? parentOptions[0].value : null;
   React.useEffect(() => {
     if (showParentField && singleParentOption && !form.getValues('enfant_de')) {
       form.setValue('enfant_de', singleParentOption, { shouldDirty: true });
@@ -158,7 +158,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
                 </FormControl>
                 <SelectContent>
                   {parentOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
+                    <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
                       {option.label}
                     </SelectItem>
                   ))}
