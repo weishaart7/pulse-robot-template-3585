@@ -253,10 +253,6 @@ Aucun bloquant ouvert au 2026-08-27 — les quatre écarts précédemment listé
   `dmtg`/`transmission` — tous les barèmes réglementaires (trimestres requis, taux de décote, PASS,
   seuils de validation) restent en dur dans le TS, dispersés entre `lib/retraite/` et deux composants
   (`CarriereCNAVPL.tsx`, `CarriereFonctionPublique.tsx` pour les valeurs de point CNAVPL/RAFP 2026).
-- **Colonnes DB orphelines** : `trimestres_requis` (défaut 172, jamais lue — `Carriere.tsx` calcule
-  désormais dynamiquement via `trimestresRequisPourGeneration()`, sans jamais relire ni écrire cette
-  colonne), `epargne_per`, `epargne_assurance_vie` (le total réel est recalculé à la volée depuis
-  `assets`, jamais stocké dans ces colonnes).
 - **`strict: false` / `strictNullChecks: false` au niveau du projet** : les unions discriminées sur un
   booléen (ex. `AgeLegalResultat`) ne se restreignent pas via `.stable` — utiliser `'raison' in x`.
   Réglage global, hors périmètre du module.

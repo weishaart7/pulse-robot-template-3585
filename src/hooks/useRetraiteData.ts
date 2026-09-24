@@ -9,9 +9,6 @@ export interface RetraiteData {
   id?: string;
   salaire_annuel_moyen?: number;
   trimestres_valides?: number;
-  trimestres_requis?: number;
-  epargne_per?: number;
-  epargne_assurance_vie?: number;
   autres_epargnes?: number;
   regimes_points?: RegimeDetecte[];
   // Pensions personnelles brutes d'autres régimes non modélisés par cet

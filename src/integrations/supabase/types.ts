@@ -2361,8 +2361,6 @@ export type Database = {
           created_at: string
           depart_anticipe_categorie_active: boolean
           depart_pour_invalidite: boolean
-          epargne_assurance_vie: number | null
-          epargne_per: number | null
           has_cnavpl: boolean
           has_fonction_publique: boolean
           id: string
@@ -2381,7 +2379,6 @@ export type Database = {
           trimestres_cotises_apres_age_legal_fp: number
           trimestres_liquidables_fp: number | null
           trimestres_liquidables_nbi: number | null
-          trimestres_requis: number | null
           trimestres_valides: number | null
           updated_at: string
           user_id: string
@@ -2397,8 +2394,6 @@ export type Database = {
           created_at?: string
           depart_anticipe_categorie_active?: boolean
           depart_pour_invalidite?: boolean
-          epargne_assurance_vie?: number | null
-          epargne_per?: number | null
           has_cnavpl?: boolean
           has_fonction_publique?: boolean
           id?: string
@@ -2417,7 +2412,6 @@ export type Database = {
           trimestres_cotises_apres_age_legal_fp?: number
           trimestres_liquidables_fp?: number | null
           trimestres_liquidables_nbi?: number | null
-          trimestres_requis?: number | null
           trimestres_valides?: number | null
           updated_at?: string
           user_id: string
@@ -2433,8 +2427,6 @@ export type Database = {
           created_at?: string
           depart_anticipe_categorie_active?: boolean
           depart_pour_invalidite?: boolean
-          epargne_assurance_vie?: number | null
-          epargne_per?: number | null
           has_cnavpl?: boolean
           has_fonction_publique?: boolean
           id?: string
@@ -2453,7 +2445,6 @@ export type Database = {
           trimestres_cotises_apres_age_legal_fp?: number
           trimestres_liquidables_fp?: number | null
           trimestres_liquidables_nbi?: number | null
-          trimestres_requis?: number | null
           trimestres_valides?: number | null
           updated_at?: string
           user_id?: string
