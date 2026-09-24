@@ -75,11 +75,10 @@ uniquement applicatif via `familyService`.
   dur dans le TS, contrairement à `params-dmtg.json`). Écart d'architecture assumé, non corrigé à ce
   jour (§3).
 - **Couverture de test — rattrapée depuis l'audit initial.** L'audit du 2026-08-11 constatait une
-  couverture nulle sur ce module ; au 2026-09-03, 13 fichiers `*.test.ts` co-localisés couvrent le
+  couverture nulle sur ce module ; 10 fichiers `*.test.ts` co-localisés couvrent le
   moteur (`calcul.test.ts`, `calculSAM.test.ts`, `calculTrimestres.test.ts`, `calculFonctionPublique.test.ts`,
   `calculCNAVPL.test.ts`, `parseRIS.test.ts`, `pensionConsolidee.test.ts`, `hypotheseRevenuFutur.test.ts`,
-  `enfantsEligiblesMajoration.test.ts`, `regimesSaisieManuelle.test.ts`) — 698 tests passants au total
-  sur l'ensemble du dépôt (`npx vitest run`), aucune régression. Rien côté rendu de composant (pas de
+  `enfantsEligiblesMajoration.test.ts`, `regimesSaisieManuelle.test.ts`) — 269 tests sur le module (`npx vitest run src/lib/retraite`). Rien côté rendu de composant (pas de
   `@testing-library/react`, environnement vitest en `node`) : la vérification visuelle des écrans
   reste manuelle, limite documentée dans quasiment chaque rapport de session.
 - **Barème par génération : bascule par date d'effet, pas seulement par année de naissance
@@ -258,8 +257,11 @@ Aucun bloquant ouvert au 2026-08-27 — les quatre écarts précédemment listé
   désormais dynamiquement via `trimestresRequisPourGeneration()`, sans jamais relire ni écrire cette
   colonne), `epargne_per`, `epargne_assurance_vie` (le total réel est recalculé à la volée depuis
   `assets`, jamais stocké dans ces colonnes).
-- **`ageLegalPourGeneration()` a un seul appelant réel** (`Trimestres.tsx`, via `simulerPourAge()`) —
-  la fonction reste correctement testée mais peu réutilisée ailleurs (ex. jamais affichée à l'écran).
+- **`strict: false` / `strictNullChecks: false` au niveau du projet** : les unions discriminées sur un
+  booléen (ex. `AgeLegalResultat`) ne se restreignent pas via `.stable` — utiliser `'raison' in x`.
+  Réglage global, hors périmètre du module.
+- **`retraite_carriere_detail` sans contrainte d'unicité** : l'import RIS remplace toutes les périodes
+  (suppression puis insertion), donc pas de doublon attendu, mais aucune clé naturelle n'est définie.
 - **`Trimestres.tsx` (onglet « Optimisation ») n'affiche ni MICO/MIGA, ni majoration enfants** —
   décision produit documentée (écran volontairement plus simple qu'un détail de pension complet), pas
   un oubli, mais crée une divergence de niveau de détail entre les deux écrans de simulation.
@@ -282,21 +284,19 @@ Aucun bloquant ouvert au 2026-08-27 — les quatre écarts précédemment listé
   4/an combiné, priorité aux cotisés, chômage indemnisé/non indemnisé, micro-entrepreneur avec
   abattement forfaitaire par sous-type), décote/surcote (trimestres + âge, le plus favorable des deux),
   surcote parentale déclarative, majoration pour 3 enfants (cas filiation directe/adoption plénière),
-  MICO à deux paliers + écrêtement, MIGA par palier, décote fonction publique par millésime d'ouverture
+  MICO à deux paliers + écrêtement, MIGA par palier, supplément NBI (SRE/CNRACL), décote fonction publique par millésime d'ouverture
   des droits, pension consolidée unifiée Carrière/Synthèse, export PDF, simulation de départ avec
   rachat de trimestres, support conjoint/partenaire.
 - **Différé, décisions explicitement documentées** :
   - **Majoration enfants, branche « recueilli sans filiation »** (adoption simple, enfant du conjoint,
     condition des 9 ans) : nécessite un nouveau modèle de données sur `family_links` — décision produit
-    non prise, classée bloquante en §3 tant qu'un client réel se trouve dans ce cas.
+    non prise, classée « à surveiller » en §3 (à reclasser bloquante dès qu'un client réel est dans ce cas).
   - **Système MDA complet** (répartition de trimestres par enfant entre parents, options, garde,
     autorité parentale) : explicitement écarté au profit d'une saisie déclarative simple (§2) — écart
     volontaire, pas un chantier commencé puis abandonné.
-  - **Supplément NBI fonction publique** : formule implémentée et testée, branchement différé dans
-    l'attente d'un choix de modélisation SRE/CNRACL.
-  - **Chronologie infra-annuelle de la surcote et du SAM** (année de rachat, année à dominante
-    assimilée hors maternité) : non implémentée, faute de données structurées (pas de valeur « rachat »
-    dans `retraite_carriere_detail.type_activite`, pas de catégorie maternité dans `TypeActivite`).
+  - **Chronologie infra-annuelle de la surcote et du SAM** (année de rachat) : non implémentée,
+    faute de données structurées (pas de valeur « rachat » dans `retraite_carriere_detail.type_activite`).
+    L'exclusion d'une année uniquement assimilée est en place, avec la catégorie `'maternite'` (§3).
   - **Régimes hors périmètre de l'outil** : SSI hors alignement CNAVPL implicite, CNBF (hors majoration
     enfants/surcote, testées mais sans moteur de pension de base dédié), artistes-auteurs, agents
     contractuels/IRCANTEC en tant que régime distinct, MSA agricole non-salarié, régimes étrangers —

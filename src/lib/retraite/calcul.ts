@@ -267,13 +267,9 @@ export type AgeLegalResultat = { stable: true; age: AgeLegal } | { stable: false
  * Âge légal de départ à la retraite, résolu selon la génération ET la date
  * d'effet (référentiel §2.1.3), reconnectée à `resoudreParJeu()` — la même
  * table que `trimestresRequisPourGeneration()` (auparavant deux tables non
- * synchronisées, cf. docs/audit/conception-date-effet.md §1). Aucun écran ne
- * consomme aujourd'hui la valeur d'âge légal elle-même pour l'affichage
- * (recherche confirmée dans la note de conception) ; cette fonction est
- * néanmoins appelée en production par Trimestres.tsx, dont le résultat est
- * inclus dans l'objet de scénario retourné par `simulerPourAge()` — prêt
- * pour un affichage futur (Session B), et n'est donc plus un point d'entrée
- * mort.
+ * synchronisées, cf. docs/audit/conception-date-effet.md §1). Appelée par
+ * Trimestres.tsx, pensionConsolidee.ts (âge légal affiché dans l'export PDF
+ * de la synthèse) et hypotheseRevenuFutur.ts.
  */
 export function ageLegalPourGeneration(dateNaissance: DateNaissance, dateEffet: Date): AgeLegalResultat {
   const jeu = jeuBaremeApplicable(dateEffet);
