@@ -52,7 +52,11 @@ permet de l'alimenter (voir §3).
 **Flux clés** :
 - **Ma famille** est un tableau de bord en lecture seule (dérivé de `family_profiles` /
   `marital_status` / `family_links`) doté d'un menu déroulant Statut (6 valeurs) toujours
-  modifiable, y compris en couple (menu au-dessus des cartes client/conjoint). Quitter un statut en
+  modifiable, y compris en couple. La page est organisée en trois blocs : un bandeau « Foyer »
+  compact (client, conjoint, statut, régime et « Voir le détail » sur une rangée), l'arbre
+  familial, puis le tableau « Membres de la famille » (seul point d'entrée « Ajouter un membre »,
+  dans son en-tête, et état vide explicatif sans membre). Les personnes décédées sont estompées
+  (carte en pointillés, « † année ») dans l'arbre et grisées dans le tableau. Quitter un statut en
   couple (vers Célibataire, Divorcé(e), Veuf/Veuve) passe par une confirmation qui liste les enfants
   rattachés au partenaire (`spouse` / `both_parents`) ; rien n'est effacé ni réaffecté
   (`lib/family/statutTransition.ts`, politique « Option A ») ; pour Divorcé(e)/Veuf-Veuve il affiche le statut réel et un lien vers le
@@ -72,9 +76,8 @@ permet de l'alimenter (voir §3).
   `relationInfoPayload.ts` (rien n'est écrit ni effacé pour ces deux statuts).
 - **Liens familiaux** saisit les membres de la famille (`family_links`), qui est le socle de tout
   calcul successoral (dévolution légale, représentation, abattements DMTG) et alimente aussi les
-  majorations retraite pour enfants. Un membre peut aussi être ajouté directement depuis l'arbre
-  familial de la carte « Ma famille » (bouton « + » en génération 0 de `FamilyTreeCards.tsx`), qui
-  ouvre le même `FamilyMemberFormDialog` que l'onglet Liens familiaux — aucune logique dupliquée.
+  majorations retraite pour enfants. Un clic sur une carte de l'arbre ouvre le même
+  `FamilyMemberFormDialog` en modification.
 
 ## 2. Architecture & décisions
 

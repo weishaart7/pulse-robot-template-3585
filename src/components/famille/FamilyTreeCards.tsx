@@ -1,5 +1,4 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Plus } from 'lucide-react';
 import { FamilyLink, FamilyProfile, MaritalStatus } from '@/services/familyService';
 import { buildFamilyGraph, FamilyGraphNode } from '@/lib/family/buildFamilyGraph';
 import { initialsFromFullName } from '@/lib/family/initials';
@@ -12,7 +11,6 @@ interface FamilyTreeCardsProps {
   onSelectMain: () => void;
   onSelectSpouse: () => void;
   onSelectMember: (member: FamilyLink) => void;
-  onAddMember: () => void;
 }
 
 const CONNECTOR_COLOR = '#E5E5E3';
@@ -53,7 +51,10 @@ function MemberCard({
   cardRef: (el: HTMLButtonElement | null) => void;
 }) {
   const isMe = !!node.isMain;
-  const secondaryLabel = node.isMain ? 'Vous' : node.isSpouse ? 'Conjoint(e)' : node.relation;
+  const relationLabel = node.isMain ? 'Vous' : node.isSpouse ? 'Conjoint(e)' : node.relation;
+  const secondaryLabel = node.isDeceased
+    ? `${relationLabel} · †${node.deathYear ? ` ${node.deathYear}` : ''}`
+    : relationLabel;
 
   return (
     <button
@@ -63,6 +64,9 @@ function MemberCard({
       className={cn(
         "flex items-center gap-2.5 rounded-xl border px-3 h-[54px] w-[210px] shrink-0 text-left transition-shadow duration-200 shadow-sm hover:shadow-md",
         isMe ? "bg-primary/5 border-primary/20" : "bg-card border-border",
+        // Décédé : carte estompée mais toujours reliée à ses descendants
+        // (qui viennent à la succession par représentation).
+        node.isDeceased && "border-dashed bg-muted/40 shadow-none opacity-70",
         FOCUS_RING
       )}
     >
@@ -77,7 +81,7 @@ function MemberCard({
         </span>
       </div>
       <div className="min-w-0">
-        <p className="text-[14px] font-semibold truncate text-foreground">
+        <p className={cn("text-[14px] font-semibold truncate", node.isDeceased ? "text-muted-foreground" : "text-foreground")}>
           {node.name}
         </p>
         <p className="text-[11px] uppercase tracking-wide truncate mt-0.5 text-muted-foreground">
@@ -88,24 +92,7 @@ function MemberCard({
   );
 }
 
-function AddMemberCard({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label="Ajouter un membre de la famille"
-      className={cn(
-        "flex items-center justify-center gap-2 rounded-xl px-3 h-[54px] w-[210px] shrink-0 border border-dashed border-border text-muted-foreground transition-colors duration-200 hover:bg-muted/50",
-        FOCUS_RING
-      )}
-    >
-      <Plus className="h-4 w-4" />
-      <span className="text-[13px] font-medium">Ajouter</span>
-    </button>
-  );
-}
-
-export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onSelectMain, onSelectSpouse, onSelectMember, onAddMember }: FamilyTreeCardsProps) {
+export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onSelectMain, onSelectSpouse, onSelectMember }: FamilyTreeCardsProps) {
   const graph = useMemo(
     () => buildFamilyGraph(familyProfile, maritalStatus, familyLinks),
     [familyProfile, maritalStatus, familyLinks]
@@ -221,7 +208,6 @@ export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onS
             {rowsByGeneration.get(generation)!.map(node => (
               <MemberCard key={node.id} node={node} onClick={() => handleSelect(node)} cardRef={getCardRef(node.id)} />
             ))}
-            {generation === 0 && <AddMemberCard onClick={onAddMember} />}
           </div>
         </div>
       ))}

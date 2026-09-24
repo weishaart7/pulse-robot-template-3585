@@ -1,7 +1,7 @@
-import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Trash2, Edit, Loader2, MoreHorizontal } from 'lucide-react';
+import { Trash2, Edit, Loader2, MoreHorizontal, Plus } from 'lucide-react';
 import { FamilyTreeCards } from '@/components/famille/FamilyTreeCards';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -59,11 +59,7 @@ interface LiensFamiliauxFormProps {
   onSelectMain?: () => void;
 }
 
-export interface LiensFamiliauxFormHandle {
-  openForAdd: () => void;
-}
-
-export const LiensFamiliauxForm = forwardRef<LiensFamiliauxFormHandle, LiensFamiliauxFormProps>(({ onSelectMain }, ref) => {
+export function LiensFamiliauxForm({ onSelectMain }: LiensFamiliauxFormProps) {
   const navigate = useNavigate();
   const {
     data: familyLinks,
@@ -78,10 +74,6 @@ export const LiensFamiliauxForm = forwardRef<LiensFamiliauxFormHandle, LiensFami
   const { toast } = useToast();
   const dialogRef = useRef<FamilyMemberFormDialogHandle>(null);
   const [memberToDelete, setMemberToDelete] = useState<FamilyLink | null>(null);
-
-  useImperativeHandle(ref, () => ({
-    openForAdd: () => dialogRef.current?.openForAdd(),
-  }), []);
 
   // Membres dont enfant_de pointe vers ce membre (Petit-enfant → Enfant,
   // Arrière petit-enfant → Petit-enfant, etc. — cf. useFamilyLinkLogic.ts::
@@ -127,7 +119,6 @@ export const LiensFamiliauxForm = forwardRef<LiensFamiliauxFormHandle, LiensFami
           onSelectMain={() => onSelectMain?.()}
           onSelectSpouse={() => navigate('/dashboard/famille/conjoint')}
           onSelectMember={(member) => dialogRef.current?.openForEdit(member)}
-          onAddMember={() => dialogRef.current?.openForAdd()}
         />
       </div>
 
@@ -137,7 +128,22 @@ export const LiensFamiliauxForm = forwardRef<LiensFamiliauxFormHandle, LiensFami
               <span>Membres de la famille</span>
               {familyLinks.length > 0 && <Badge variant="secondary">{familyLinks.length}</Badge>}
             </CardTitle>
+            <button
+              onClick={() => dialogRef.current?.openForAdd()}
+              className="inline-flex items-center gap-2 rounded-full bg-foreground hover:bg-foreground/85 text-background shadow-whisper pl-1 pr-4 py-1 text-sm font-medium transition-colors"
+            >
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background/15">
+                <Plus className="h-4 w-4 text-background" />
+              </span>
+              Ajouter un membre
+            </button>
           </CardHeader>
+          {familyLinks.length === 0 && <CardContent>
+            <p className="text-sm text-muted-foreground max-w-xl">
+              Aucun membre renseigné. Ajoutez les enfants, parents, frères et sœurs… : ils servent au
+              calcul de la succession et des abattements.
+            </p>
+          </CardContent>}
           {familyLinks.length > 0 && <CardContent>
             <Table className="text-xs">
               <TableHeader>
@@ -152,7 +158,7 @@ export const LiensFamiliauxForm = forwardRef<LiensFamiliauxFormHandle, LiensFami
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {familyLinks.map(member => <TableRow key={member.id}>
+                {familyLinks.map(member => <TableRow key={member.id} className={cn(member.est_decede && "text-muted-foreground")}>
                     <TableCell>
                       <div className="flex gap-1.5 flex-wrap items-center">
                         <FamilyTag>{member.lien_familial}</FamilyTag>
@@ -171,7 +177,7 @@ export const LiensFamiliauxForm = forwardRef<LiensFamiliauxFormHandle, LiensFami
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1.5 flex-wrap">
-                        {member.est_decede && <FamilyTag>Décédé</FamilyTag>}
+                        {member.est_decede && <FamilyTag>{member.date_deces ? `† ${new Date(member.date_deces).getFullYear()}` : 'Décédé'}</FamilyTag>}
                         {member.handicap && <FamilyTag>Handicap</FamilyTag>}
                         {member.enfant_a_charge && member.fiscalement_a_charge ? <FamilyTag accent>À charge (civil + fiscal)</FamilyTag> : <>
                           {member.enfant_a_charge && <FamilyTag accent>À charge (civil)</FamilyTag>}
@@ -258,5 +264,4 @@ export const LiensFamiliauxForm = forwardRef<LiensFamiliauxFormHandle, LiensFami
         </AlertDialogContent>
       </AlertDialog>
     </div>;
-});
-LiensFamiliauxForm.displayName = 'LiensFamiliauxForm';
+}

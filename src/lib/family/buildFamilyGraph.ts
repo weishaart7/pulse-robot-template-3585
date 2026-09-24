@@ -6,6 +6,7 @@ export interface FamilyGraphNode {
   name: string;
   birthDate: string | null;
   isDeceased: boolean;
+  deathYear?: number;
   relation: string;
   generation: number;
   isMain?: boolean;
@@ -83,6 +84,7 @@ export function buildFamilyGraph(
       name: `${member.prenom || ''} ${member.nom}`.trim(),
       birthDate: member.date_naissance ? format(new Date(member.date_naissance), 'dd/MM/yyyy') : null,
       isDeceased: member.est_decede || false,
+      deathYear: member.est_decede && member.date_deces ? new Date(member.date_deces).getFullYear() : undefined,
       relation: member.lien_familial,
       generation,
       originalData: member,
