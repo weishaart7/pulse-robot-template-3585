@@ -101,6 +101,9 @@ export const useRevenus = () => {
 
 export const useCharges = () => {
   const [charges, setCharges] = useState<Charge[]>([]);
+  // Charges d'actif exprimées en % : aucune assiette n'est définie en amont (Patrimoine/Immobilier se
+  // contentent de les afficher), elles sont donc exclues du budget et seulement signalées (docs/budget.md).
+  const [chargesEnPourcentage, setChargesEnPourcentage] = useState<Charge[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -115,7 +118,8 @@ export const useCharges = () => {
       ]);
 
       // Merge all sources
-      setCharges([...classicCharges, ...assetCharges, ...empruntsCharges]);
+      setCharges([...classicCharges, ...assetCharges.filter(c => c.unite !== '%'), ...empruntsCharges]);
+      setChargesEnPourcentage(assetCharges.filter(c => c.unite === '%'));
     } catch (error) {
       toast({
         title: "Erreur",
@@ -189,6 +193,7 @@ export const useCharges = () => {
 
   return {
     charges,
+    chargesEnPourcentage,
     loading,
     fetchCharges,
     createCharge,

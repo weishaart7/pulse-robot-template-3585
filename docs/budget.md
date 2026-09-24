@@ -105,6 +105,16 @@ Mensuel/Annuel en pilule encre, donuts sur `SERIES`. Purement visuel : aucune lo
   n'ait qu'une seule convention à gérer. C'est la correction directe du point de friction n°3 remonté par
   `docs/immobilier.md` (bug de périodicité `ImmobilierOverview.tsx`) — **verdict détaillé en §3**.
 
+- **Report des emprunts (`src/lib/budget/emprunts.ts`)**, appliqué par `getEmpruntsChargesForBudget` :
+  - prêt de société (`societe_id`) exclu, comme dans `PatrimoineChart.tsx` ;
+  - mensualité × part du foyer (`getRepartitionFoyer`, même règle que Patrimoine) : 100 % pour un prêt
+    commun au couple, part du foyer en indivision avec des tiers ; emprunt non qualifié exclu ;
+  - `duree_restante` (mois) n'a pas de date de référence en base : la fin est estimée au dernier jour du
+    mois situé `duree_restante` mois après `updated_at`, et posée en `date_fin` de la charge — l'emprunt
+    échu reste listé mais sort des totaux (filtre `isActiveOn`). Estimation d'autant plus juste que la
+    durée restante est mise à jour régulièrement.
+  Tests dans `emprunts.test.ts`.
+
 - **`AssetChargeWithAsset`, type explicite pour la jointure `asset_charges → assets`**
   ([budgetService.ts:68-73](src/services/budgetService.ts:68-73)), introduit par le même commit `8274980`
   pour remplacer un `as any` — la seule méthode du service qui type sa jointure Supabase explicitement.
@@ -167,16 +177,12 @@ Mensuel/Annuel en pilule encre, donuts sur `SERIES`. Purement visuel : aucune lo
 
 ### Vérification des 3 points de friction signalés par les audits Patrimoine/Immobilier
 
-- **Point 1 (`docs/patrimoine.md` §3) — charges en unité `%` traitées comme des € bruts : toujours
-  ouvert, confirmé.** `getAssetChargesForBudget` ne sélectionne pas la colonne `unite`
-  ([budgetService.ts:228-246](src/services/budgetService.ts:228-246)) alors que celle-ci existe belle et
-  bien en base (`asset_charges.unite`, `NOT NULL`, contrainte `CHECK (unite = ANY (ARRAY['€','%']))`,
-  vérifiée par requête directe) et est saisissable dans `ChargeForm.tsx` (onglet Charges de
-  `AssetForm`). Une charge d'actif saisie « 8 % des loyers » (unité `%`) remonte donc dans Budget comme
-  « 8 €/mois », sans conversion ni avertissement. **Vérifié en base au 2026-08-27** : 0 ligne
-  `asset_charges` a actuellement `impact_budget = true`, donc l'impact réel actuel sur un budget affiché
-  à un client est nul — mais le bug est bien vivant dans le code et se déclenchera à la première charge
-  en `%` cochée « impact budget ».
+- **Point 1 (`docs/patrimoine.md` §3) — charges en unité `%` traitées comme des € bruts : traité.**
+  Aucun module ne définit l'assiette d'un pourcentage (Patrimoine/Immobilier se contentent d'afficher
+  « 8 % »), il n'y a donc pas de conversion possible. `getAssetChargesForBudget` lit désormais
+  `asset_charges.unite` ; `useCharges()` exclut les lignes en `%` des charges (et donc de tous les totaux)
+  et les expose dans `chargesEnPourcentage`, affichées dans un bandeau de l'onglet Charges invitant à les
+  ressaisir en € depuis Patrimoine.
 - **Point 2 (`docs/patrimoine.md`, cases dormantes) — `emprunts.reporter_budget` jamais lu par le
   Budget : corrigé le 2026-08-27.** `budgetService.getEmpruntsChargesForBudget()` lit désormais
   `emprunts` filtrés sur `reporter_budget = true` et `user_id`, et les fusionne dans `useCharges()`
@@ -236,10 +242,6 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les trois points identifi
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
-- **Emprunts reportés au budget : lecture incomplète** (`getEmpruntsChargesForBudget`). `societe_id`
-  est ignoré (un prêt de société coché gonflerait le taux d'endettement personnel), comme la quote-part
-  (`pourcentage_utilisateur`/`pourcentage_conjoint`) et `duree_restante` (un prêt soldé reste compté).
-  Table `emprunts` vide au 2026-09-24 : pas d'impact actuel.
 - **Taux d'endettement non conforme à la norme HCSF** malgré le libellé « Maximum à 35 % » : 100 % des
   revenus retenus, loyers compris (les banques en retiennent en général 70 %). Règle métier à valider
   avant correction.
@@ -304,10 +306,9 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les trois points identifi
   - **Aucun rapprochement bancaire ni suivi d'exécution** : le module ne distingue à aucun moment un
     revenu/charge *prévu* (budget) d'un mouvement *réellement constaté* sur un compte — toutes les lignes
     sont des montants déclaratifs, lissés sur l'année, sans lien avec une transaction réelle.
-  - **Pas de prise en compte de l'unité `%` des charges d'actif** (`asset_charges.unite`) — traité comme
-    un chantier commencé côté Patrimoine (le champ existe, contraint en base) mais jamais consommé côté
-    Budget, plutôt qu'un écart assumé et documenté.
-  - **Pas de vue par bénéficiaire/débiteur agrégée** — le champ existe, est saisi et correctement résolu
+  - **Pas d'assiette pour les charges d'actif en `%`** : exclues et signalées (§3), à convertir le jour où
+  Patrimoine/Immobilier définiront à quoi s'applique le pourcentage.
+- **Pas de vue par bénéficiaire/débiteur agrégée** — le champ existe, est saisi et correctement résolu
     en libellé civil pour les lignes d'actif/emprunt (§3), mais n'alimente aucun total « par personne »,
     contrairement au module Patrimoine qui a une vue « par tête ».
 - **Hors périmètre de cet audit, signalé comme travail de suivi** : un audit du bug d'origine Patrimoine

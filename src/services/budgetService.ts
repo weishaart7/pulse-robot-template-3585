@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, FamilyInfo } from '@/lib/patrimoine/utils';
+import { partFoyerEmprunt, estimateEmpruntFin } from '@/lib/budget/emprunts';
 
 export type Periodicite = 'mensuel' | 'trimestriel' | 'semestriel' | 'annuel' | 'ponctuel';
 
@@ -44,6 +45,8 @@ export interface Charge {
   source?: 'budget' | 'immobilier' | 'emprunt';
   asset_id?: string;
   asset_name?: string;
+  // Charges d'actif uniquement : '€' ou '%' (asset_charges.unite)
+  unite?: string;
 }
 
 // asset_charges/asset_revenus stockent la périodicité à l'accord féminin
@@ -100,7 +103,7 @@ const mapEmpruntNatureToBudgetCategory = (nature: string): string =>
 // Forme des lignes retournées par la jointure asset_charges -> assets (colonnes sélectionnées uniquement)
 type AssetChargeWithAsset = Pick<
   Tables<'asset_charges'>,
-  'id' | 'asset_id' | 'type_charge' | 'denomination' | 'debiteur' | 'montant' | 'periodicite' | 'date_debut' | 'duree_fin_date' | 'created_at' | 'updated_at'
+  'id' | 'asset_id' | 'type_charge' | 'denomination' | 'debiteur' | 'montant' | 'unite' | 'periodicite' | 'date_debut' | 'duree_fin_date' | 'created_at' | 'updated_at'
 > & {
   assets: Pick<Tables<'assets'>, 'id' | 'denomination' | 'user_id' | 'detenteur'>;
 };
@@ -265,6 +268,7 @@ export const budgetService = {
           denomination,
           debiteur,
           montant,
+          unite,
           periodicite,
           date_debut,
           duree_fin_date,
@@ -297,6 +301,7 @@ export const budgetService = {
           libelle: `${item.denomination || item.type_charge} - ${item.assets?.denomination || 'Bien immobilier'}`,
           debiteur: debiteurFinal,
           montant: item.montant || 0,
+          unite: item.unite,
           commentaire: undefined,
           periodicite: normalizeAssetPeriodicite(item.periodicite),
           date_debut: item.date_debut,
@@ -311,9 +316,9 @@ export const budgetService = {
   },
 
   // Mensualités des emprunts réels de Patrimoine marqués « reporter au budget » — seule source qui
-  // alimente aujourd'hui le taux/capacité d'endettement avec un crédit réel (cf. docs/budget.md §3).
-  // Lecture seule ici (source: 'emprunt'), au même titre que getAssetChargesForBudget : la modification
-  // se fait exclusivement depuis Patrimoine, pour éviter toute ressaisie manuelle en double dans Budget.
+  // alimente le taux/capacité d'endettement avec un crédit réel. Prêts de société exclus, mensualité ramenée
+  // à la part du foyer et fin estimée depuis duree_restante (règles dans src/lib/budget/emprunts.ts).
+  // Lecture seule ici (source: 'emprunt') : la modification se fait exclusivement depuis Patrimoine.
   async getEmpruntsChargesForBudget(): Promise<Charge[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
@@ -321,7 +326,7 @@ export const budgetService = {
     const [{ data, error }, familyInfo] = await Promise.all([
       supabase
         .from('emprunts')
-        .select('id, nature, libelle, mensualite, detenteur, created_at, updated_at')
+        .select('id, nature, libelle, mensualite, detenteur, qualification_bien, pourcentage_utilisateur, pourcentage_conjoint, societe_id, duree_restante, created_at, updated_at')
         .eq('user_id', user.id)
         .eq('reporter_budget', true),
       getFamilyInfoForDetenteur(),
@@ -329,20 +334,23 @@ export const budgetService = {
 
     if (error) throw error;
 
-    return (data || [])
-      .filter(item => item.mensualite && item.mensualite > 0)
-      .map(item => ({
+    return (data || []).flatMap(item => {
+      const part = partFoyerEmprunt(item);
+      if (part === null || !item.mensualite || item.mensualite <= 0) return [];
+      return [{
         id: item.id,
         user_id: user.id,
         nature: mapEmpruntNatureToBudgetCategory(item.nature),
         libelle: item.libelle,
         debiteur: mapDetenteurToDisplay(item.detenteur, familyInfo),
-        montant: item.mensualite,
+        montant: Math.round(item.mensualite * part * 100) / 100,
         periodicite: 'mensuel',
+        date_fin: estimateEmpruntFin(item.updated_at, item.duree_restante),
         created_at: item.created_at,
         updated_at: item.updated_at,
         source: 'emprunt' as const,
-      }));
+      }];
+    });
   },
 
   async createCharge(charge: Omit<Charge, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Charge> {
