@@ -53,19 +53,26 @@ Surtitres techniques (étapes de wizard, en-têtes de section `SectionHeader`) :
 ## 5. Cadre de l'app (`src/components/layout`)
 
 - Fond eggshell partout (plus de `bg-white` sur la zone principale).
-- Écran large (≥ `md`) : **pas de barre du haut**. Navigation dans `DashboardSidebar.tsx` :
-  - **Rail des modules** : colonne noire 64 px, coins 16 px, sans ombre — exception assumée à la
-    palette taupe, reprise de la navbar de la landing. Logo (→ `/`), 9 modules en icônes 18 px
-    blanc 55 % (survol voile blanc 10 %), module actif sur carré blanc 15 % coins 12 px qui glisse
-    d'un module à l'autre (ressort, `layoutId`). En bas, sous un filet blanc 10 % : Blog,
-    Nouveautés, Suggestion et le menu profil (`ProfileMenu`, ouvert à droite). Infobulles à droite.
-  - **Panneau du sous-menu** : plaque taupe 216 px, coins 20 px, affichée seulement si le module
+- Écran large (≥ `md`) : **pas de barre du haut**. Fond taupe sur toute la hauteur ; la zone de contenu est une plaque
+  eggshell coins 12 px, filet stone 1 px, entourée d'une bande taupe de 6 px (haut, bas, droite ; à gauche, la
+  barre latérale), ce qui arrondit visuellement le bord droit du panneau du sous-menu. Navigation dans `DashboardSidebar.tsx` :
+  Bande taupe (`bg-secondary`) collée aux bords haut, bas et gauche de l'écran, qui porte le rail
+  (marge 6 px) et le panneau du sous-menu.
+  Parti pris : sobre, sans effets décoratifs (pas de ressort, de voile translucide, d'ombre ni de
+  suivi du survol).
+  - **Rail des modules** : colonne noire 64 px, coins 12 px — exception assumée à la palette taupe,
+    reprise de la navbar de la landing. Logo (→ `/`), 9 modules en icônes 18 px blanc 55 % (blanc
+    au survol) ; module actif en carré blanc plein coins 8 px, icône noire (comme le bouton blanc
+    de la navbar). En bas, sous un filet blanc 10 % : Blog, Nouveautés, Suggestion et le menu
+    profil (`ProfileMenu`, ouvert à droite). Infobulles à droite.
+  - **Panneau du sous-menu** : 188 px, sans plaque propre (posé sur la bande taupe), affiché seulement si le module
     déclare un sous-menu (`useModuleSubNav` : Patrimoine, Immobilier, Sociétés, Budget, Retraite).
-    Repliable (bouton de l'en-tête, clic sur l'icône du module actif, `⌘B` / `Ctrl+B`), état
-    mémorisé en `localStorage` (`kairos.sidebar.open`). En-tête : nom du module en Playfair Display
-    italique 22 px. Entrées en texte seul, Inter 14 px, en arbre : filet vertical stone à gauche et
-    repère encre 2 px qui suit le survol (ressort) puis revient sur l'entrée active ; entrée active
-    en pastille eggshell coins 10 px + `shadow-whisper`, `aria-current="page"`.
+    Repliable par simple glissement de largeur (bouton de l'en-tête, clic sur l'icône du module
+    actif, `⌘B` / `Ctrl+B`), état mémorisé en `localStorage` (`kairos.sidebar.open`). En-tête : nom
+    du module en Instrument Sans 500 22 px, tracking -0.02em (police du titre du hero de la
+    landing). Entrées en texte seul, Inter 14 px, en arbre : filet vertical stone à gauche ; entrée
+    active en encre 500 avec repère encre 2 px sur le filet, inactives en smoke ;
+    `aria-current="page"`.
 - Téléphone (< 768 px) : rail et panneau masqués. Barre du haut (`DashboardTopNav`, `md:hidden`) :
   bouton menu, logo, sélecteur de modules en pilules sur piste taupe filetée (module actif en
   pastille encre, ramené en vue), profil. Le bouton menu ouvre un panneau latéral gauche taupe avec

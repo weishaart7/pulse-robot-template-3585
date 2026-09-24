@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { PanelLeftClose, Sparkle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { bottomItems, menuItems, getCurrentNavValue } from '@/components/layout/navigation-items';
 import { useSubNav } from '@/contexts/SubNavContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -10,8 +10,7 @@ import { ProfileMenu } from '@/components/layout/ProfileMenu';
 
 const STORAGE_KEY = 'kairos.sidebar.open';
 const EASE = [0.25, 0.1, 0.25, 1] as const;
-const SPRING = { type: 'spring', stiffness: 500, damping: 40 } as const;
-const PANEL_WIDTH = 216;
+const PANEL_WIDTH = 188;
 
 function readStoredOpen(): boolean {
   try {
@@ -22,26 +21,23 @@ function readStoredOpen(): boolean {
 }
 
 const railButton = cn(
-  "relative h-10 w-10 flex items-center justify-center rounded-[12px] transition-colors outline-none",
+  "relative h-10 w-10 flex items-center justify-center rounded-[8px] transition-colors outline-none",
   "focus-visible:ring-1 focus-visible:ring-white/70"
 );
 
-// Sous-menu en arbre : filet vertical à gauche, repère encre qui suit le survol
-// (ressort) et se pose sur l'entrée active.
+// Sous-menu en arbre : filet vertical à gauche, repère encre sur l'entrée active.
 function SubNavTree({ onItemClick }: { onItemClick?: () => void }) {
   const { items, activeId, onSelect } = useSubNav();
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [marker, setMarker] = useState<{ top: number; height: number } | null>(null);
   const refs = useRef(new Map<string, HTMLButtonElement>());
 
-  const targetId = hoveredId ?? activeId;
   useLayoutEffect(() => {
-    const el = refs.current.get(targetId);
+    const el = refs.current.get(activeId);
     setMarker(el ? { top: el.offsetTop + 8, height: el.offsetHeight - 16 } : null);
-  }, [targetId, items]);
+  }, [activeId, items]);
 
   return (
-    <nav className="relative" onMouseLeave={() => setHoveredId(null)}>
+    <nav className="relative">
       <span aria-hidden className="absolute left-3 top-1 bottom-1 w-px bg-border" />
       {marker && (
         <motion.span
@@ -49,10 +45,10 @@ function SubNavTree({ onItemClick }: { onItemClick?: () => void }) {
           className="absolute left-3 w-[2px] -ml-[0.5px] rounded-full bg-foreground"
           initial={false}
           animate={marker}
-          transition={SPRING}
+          transition={{ duration: 0.15, ease: EASE }}
         />
       )}
-      <ul className="space-y-0.5 pl-6">
+      <ul className="space-y-0.5 pl-5">
         {items.map(item => {
           const active = item.id === activeId;
           return (
@@ -66,16 +62,11 @@ function SubNavTree({ onItemClick }: { onItemClick?: () => void }) {
                   onSelect(item.id);
                   onItemClick?.();
                 }}
-                onMouseEnter={() => setHoveredId(item.id)}
-                onFocus={() => setHoveredId(item.id)}
-                onBlur={() => setHoveredId(null)}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  "w-full flex items-center px-3 py-2 text-sm rounded-[10px] text-left transition-colors outline-none",
+                  "w-full flex items-center px-2 py-1.5 text-sm text-left transition-colors outline-none rounded-[6px]",
                   "focus-visible:ring-1 focus-visible:ring-ring",
-                  active
-                    ? "bg-background text-foreground font-medium shadow-whisper"
-                    : "text-muted-foreground hover:text-foreground"
+                  active ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <span className="truncate">{item.label}</span>
@@ -106,7 +97,7 @@ export function SidebarNav({
   return (
     <>
       <div className="flex items-start justify-between gap-2 px-5 pt-5 pb-4">
-        <div className="font-['Playfair_Display',serif] italic text-[22px] leading-none text-foreground truncate">
+        <div className="font-['Instrument_Sans','Inter',sans-serif] font-medium text-[22px] leading-none tracking-[-0.02em] text-foreground truncate">
           {moduleLabel}
         </div>
         {onCollapse && (
@@ -176,7 +167,6 @@ export function DashboardSidebar() {
   const navigate = useNavigate();
   const { items: subNavItems } = useSubNav();
   const currentValue = getCurrentNavValue(location.pathname);
-  const railScope = useId();
 
   const [open, setOpenState] = useState(readStoredOpen);
   const setOpen = useCallback((value: boolean) => {
@@ -203,13 +193,12 @@ export function DashboardSidebar() {
   const panelVisible = open && subNavItems.length > 0;
 
   return (
-    <div className="hidden md:flex shrink-0 ml-3 my-3 gap-2">
+    <div className="hidden md:flex shrink-0 p-1.5 bg-secondary">
       {/* Rail des modules */}
-      <LayoutGroup id={railScope}>
-        <div className="w-16 flex flex-col items-center py-4 gap-1 bg-black text-white rounded-[16px]">
+        <div className="w-16 flex flex-col items-center py-4 gap-1 bg-black text-white rounded-[12px]">
           <button
             onClick={() => navigate('/')}
-            className={cn(railButton, "mb-4 hover:bg-white/10")}
+            className={cn(railButton, "mb-4")}
             aria-label="Accueil Kairos"
           >
             <Sparkle className="h-6 w-6 fill-white text-white" strokeWidth={1.5} />
@@ -225,16 +214,9 @@ export function DashboardSidebar() {
                     onClick={() => (active ? setOpen(!open) : navigate(item.href))}
                     aria-label={item.label}
                     aria-current={active ? 'page' : undefined}
-                    className={cn(railButton, active ? "text-white" : "text-white/55 hover:text-white hover:bg-white/10")}
+                    className={cn(railButton, active ? "bg-white text-black" : "text-white/55 hover:text-white")}
                   >
-                    {active && (
-                      <motion.span
-                        layoutId="rail-active"
-                        className="absolute inset-0 rounded-[12px] bg-white/15 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
-                        transition={SPRING}
-                      />
-                    )}
-                    <Icon className="relative h-[18px] w-[18px]" strokeWidth={1.5} />
+                    <Icon className="h-[18px] w-[18px]" strokeWidth={1.5} />
                   </button>
                 </RailTooltip>
               );
@@ -251,7 +233,7 @@ export function DashboardSidebar() {
                     onClick={() => navigate(item.href)}
                     aria-label={item.label}
                     aria-current={active ? 'page' : undefined}
-                    className={cn(railButton, active ? "bg-white/15 text-white" : "text-white/55 hover:text-white hover:bg-white/10")}
+                    className={cn(railButton, active ? "bg-white text-black" : "text-white/55 hover:text-white")}
                   >
                     <Icon className="h-4 w-4" strokeWidth={1.5} />
                   </button>
@@ -261,22 +243,21 @@ export function DashboardSidebar() {
             <ProfileMenu
               side="right"
               align="end"
-              triggerClassName={cn(railButton, "text-white/55 hover:text-white hover:bg-white/10")}
+              triggerClassName={cn(railButton, "text-white/55 hover:text-white hover:bg-transparent")}
             />
           </div>
         </div>
-      </LayoutGroup>
 
       {/* Panneau du sous-menu */}
       <AnimatePresence initial={false}>
         {panelVisible && (
           <motion.div
             key="subnav-panel"
-            className="flex flex-col overflow-hidden bg-secondary rounded-card"
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: PANEL_WIDTH, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: EASE }}
+            className="flex flex-col overflow-hidden"
+            initial={{ width: 0 }}
+            animate={{ width: PANEL_WIDTH }}
+            exit={{ width: 0 }}
+            transition={{ duration: 0.2, ease: EASE }}
           >
             <div className="flex flex-col h-full" style={{ width: PANEL_WIDTH }}>
               <SidebarNav onCollapse={() => setOpen(false)} />
