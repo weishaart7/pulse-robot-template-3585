@@ -9,7 +9,7 @@
  * distinction entre les deux statuts.
  */
 import { describe, it, expect } from 'vitest';
-import { buildFamilyGraph, buildAVContracts } from './transmissionHelpers';
+import { buildFamilyGraph, buildAVContracts, widowFamilyGraph } from './transmissionHelpers';
 import { calculateSuccessionLegale } from '@/lib/transmission/successionLegale';
 import { computeTransmission, TransmissionParams } from '@/lib/transmission';
 import { FamilyProfile, MaritalStatus, FamilyLink } from '@/services/familyService';
@@ -117,5 +117,51 @@ describe("Partenaire pacsé légataire — bénéficiaire d'assurance-vie, exon�
     });
 
     expect(result.dmtg.perBeneficiary['conjoint-defunt-1'].prelev990I).toBe(0);
+  });
+});
+
+describe('Partenaire pacsé — droit temporaire au logement (art. 515-6 al. 3, renvoi à 763)', () => {
+  const run = (maritalStatus: MaritalStatus) =>
+    computeTransmission({
+      family: buildFamilyGraph(familyProfile, maritalStatus, [enfant]),
+      patrimony: { date: '2026-09-24', biensExistants: 300000, passifs: 0 },
+      liberalites: [],
+      params: buildParams(),
+      referenceDate: '2026-09-24'
+    });
+
+  it('buildFamilyGraph : survivantPartenairePacs vrai pour un PACS, faux pour un mariage', () => {
+    expect(buildFamilyGraph(familyProfile, maritalStatusPacs, [enfant]).survivantPartenairePacs).toBe(true);
+    expect(
+      buildFamilyGraph(familyProfile, { ...maritalStatusPacs, statut_couple: 'Marié(e)' }, [enfant]).survivantPartenairePacs
+    ).toBe(false);
+  });
+
+  it('PACS : message art. 515-6 affiché, sans droit viager ni part successorale', () => {
+    const result = run(maritalStatusPacs);
+    const message = result.explicationsTexte?.find(t => t.includes('515-6'));
+    expect(message).toBeDefined();
+    expect(message).toContain('un an');
+    expect(message).toContain('art. 764');
+    // Le message propre au conjoint marié n'apparaît pas.
+    expect(result.explicationsTexte?.some(t => t.startsWith('Le conjoint survivant bénéficie'))).toBe(false);
+    // Le partenaire n'hérite toujours de rien.
+    expect(result.heirs.some(h => h.personId === 'conjoint-defunt-1')).toBe(false);
+  });
+
+  it('époux séparé de corps ayant renoncé à ses droits successoraux : aucun des deux messages', () => {
+    const result = run({
+      ...maritalStatusPacs,
+      statut_couple: 'Marié(e)',
+      separation_de_corps: true,
+      separation_corps_clause_renonciation: true
+    } as MaritalStatus);
+    expect(result.explicationsTexte?.some(t => t.includes('515-6'))).toBe(false);
+    expect(result.explicationsTexte?.some(t => t.includes('art. 763'))).toBe(false);
+  });
+
+  it('widowFamilyGraph (2nd décès) : le partenaire décédé ne porte plus le droit', () => {
+    const graph = widowFamilyGraph(buildFamilyGraph(familyProfile, maritalStatusPacs, [enfant]), [enfant]);
+    expect(graph.survivantPartenairePacs).toBe(false);
   });
 });

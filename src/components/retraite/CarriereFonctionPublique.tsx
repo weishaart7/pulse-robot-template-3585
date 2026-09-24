@@ -12,8 +12,6 @@ import {
 } from '@/components/ui/select';
 import {
   tauxProratisation,
-  decoteApplicable,
-  decoteSurTrimestresPlafond25,
   pensionComplementaireAnnuelle,
   ageLegalAtteint,
   ageLegalParentaleEligible,
@@ -24,8 +22,7 @@ import {
 } from '@/lib/retraite/calcul';
 import {
   pensionBaseFonctionPublique,
-  decoteSurAgeFonctionPublique,
-  tauxDecoteParTrimestreFonctionPublique,
+  decoteFonctionPublique,
   minimumGaranti,
   pensionFonctionPubliqueFinale,
   majorationEnfantsFonctionPublique,
@@ -102,6 +99,9 @@ interface CarriereFonctionPubliqueProps {
   // pour la surcote (écarts #5/#6). `null` tant que le profil famille n'est
   // pas encore chargé.
   dateNaissance: DateNaissance | null;
+  // Date d'effet du scénario (départ à l'âge légal, cf. Carriere.tsx) —
+  // même date que le total consolidé de pensionConsolidee.ts.
+  dateEffet: Date;
   // Condition n°1 (déclarative) de la surcote parentale (référentiel §2.3.2,
   // écart #6) — état du parent (case à cocher unique par client, pas propre
   // à un régime).
@@ -146,6 +146,7 @@ export const CarriereFonctionPublique = ({
   trimestresLiquidablesNBI,
   onTrimestresLiquidablesNBIChange,
   dateNaissance,
+  dateEffet,
   auMoinsUnTrimestreMajorationEnfant,
   nombreEnfantsEligibles,
   onResultChange,
@@ -161,39 +162,20 @@ export const CarriereFonctionPublique = ({
   // undefined si non renseigné, pour retomber sur le défaut 1,25 % (comportement
   // historique inchangé en l'absence de saisie).
   const anneeOuvertureDroitsNum = anneeOuvertureDroits === '' ? undefined : parseInt(anneeOuvertureDroits, 10);
-  const tauxDecoteParTrimestre = tauxDecoteParTrimestreFonctionPublique(anneeOuvertureDroitsNum);
-
   const taux = tauxProratisation(trimestresLiquidablesNum, trimestresRequis);
-  // Décote basée sur le total de trimestres tous régimes confondus
-  // (fonction publique + autres régimes saisis), avec le plafond propre à la
-  // fonction publique (-25 %).
-  //
-  // ⚠️ decoteSurTrimestresPlafond25() est symétrique : au-delà de
-  // trimestresRequis, elle renvoie une valeur positive qui n'est PAS une
-  // surcote légitime (aucune porte d'éligibilité, aucun plafond à 5 % pour
-  // la parentale) — écrêtée à 0 ci-dessous. La vraie surcote (classique +
-  // parentale, exclusive pour ce régime) est calculée séparément plus bas
-  // via surcoteTotale(). Cf. docs/audit/branchement-majorations-pension-finale.md
-  // §1.b.
-  const decoteTrimestres = Math.min(
-    decoteSurTrimestresPlafond25(trimestresLiquidablesNum + trimestresAutresRegimes, trimestresRequis),
-    0
-  );
-
-  // La décote basée sur l'âge n'est prise en compte que si un départ
-  // anticipé catégorie active est explicitement saisi (âge de départ +
-  // âge d'annulation de la décote) : sans ces deux âges, il n'y a pas de
-  // notion de "départ" dans cette section (même principe que le régime
-  // général dans Carriere.tsx, qui n'applique decoteSurAge que dans la
-  // simulation d'âge de l'onglet Optimisation, pas ici).
-  const decoteAgeUtilisable =
-    departAnticipeCategorieActive && !Number.isNaN(ageDepartAnticipeNum) && !Number.isNaN(ageAnnulationDecoteNum);
-  const decote = decoteAgeUtilisable
-    ? decoteApplicable(
-        decoteTrimestres,
-        decoteSurAgeFonctionPublique(ageDepartAnticipeNum, ageAnnulationDecoteNum, tauxDecoteParTrimestre)
-      )
-    : decoteTrimestres;
+  // Décote (référentiel §7.3) : plus favorable des décotes sur la durée tous
+  // régimes et sur l'âge, au taux du millésime d'ouverture des droits —
+  // même fonction que le total consolidé (pensionConsolidee.ts).
+  const decote = decoteFonctionPublique({
+    trimestresTousRegimes: trimestresLiquidablesNum + trimestresAutresRegimes,
+    trimestresRequis,
+    anneeOuvertureDroits: anneeOuvertureDroitsNum,
+    departAnticipeCategorieActive,
+    ageDepartAnticipe: ageDepartAnticipeNum,
+    ageAnnulationDecote: ageAnnulationDecoteNum,
+    dateNaissance,
+    dateEffet,
+  });
 
   const pensionCalculee = pensionBaseFonctionPublique(tib, taux, decote);
   const minimumGarantiValue = minimumGaranti(
@@ -209,10 +191,9 @@ export const CarriereFonctionPublique = ({
   // ajoutée APRÈS le MIGA (référentiel §12.3), même principe que le régime
   // général dans Carriere.tsx.
   const pensionCalculeeAvantDecote = pensionBaseFonctionPublique(tib, taux, 0);
-  const dateEffetProxy = new Date();
-  const ageLegalAtteintFlag = dateNaissance ? ageLegalAtteint(dateNaissance, dateEffetProxy) : undefined;
+  const ageLegalAtteintFlag = dateNaissance ? ageLegalAtteint(dateNaissance, dateEffet) : undefined;
   const ageLegalParentaleEligibleFlag = dateNaissance
-    ? ageLegalParentaleEligible(dateNaissance, dateEffetProxy)
+    ? ageLegalParentaleEligible(dateNaissance, dateEffet)
     : undefined;
   const dureeRequiseAtteinte = trimestresLiquidablesNum + trimestresAutresRegimes >= trimestresRequis;
   // ⚠️ Aucun détail de carrière par année pour ce régime (trimestresLiquidables
@@ -516,6 +497,13 @@ export const CarriereFonctionPublique = ({
                   indice majoré 227) — la valeur 2026 n'est pas encore confirmée par une source
                   opposable.
                 </p>
+                {dureeRequiseAtteinte && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Surcote non calculée pour ce régime : les trimestres cotisés après l'âge légal ne
+                    sont pas connus (saisie en total). Une éventuelle surcote n'est pas incluse dans
+                    ce montant.
+                  </p>
+                )}
                 {surcoteTotalePct > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Surcote : +{surcoteTotalePct.toFixed(2)}% ({formatEuro2(surcoteMontant)} / an) —

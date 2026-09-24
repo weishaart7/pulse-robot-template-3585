@@ -58,6 +58,41 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   libéralités, applique les réductions et le rapport → `transmission/index.ts::computeTransmission`
   orchestre l'ensemble, y répartit le **cash réellement disponible** par héritier (§6bis, « rapport en
   moins prenant »), puis appelle `computeDMTG` (`lib/dmtg/`) pour la fiscalité par bénéficiaire.
+- **Option du conjoint face aux enfants.** Sans DDV (art. 757) : 1/4 PP ou 100 % usufruit si tous
+  les enfants sont communs, 1/4 PP imposé dès qu'un enfant ne l'est pas. Avec DDV (art. 1094-1) :
+  les quatre options (`quart_pp`, `usufruit_total`, `quart_pp_3quarts_us`, `qd_pp`) sont ouvertes
+  quelle que soit la filiation, conformément à ce que propose déjà `Optimisation.tsx`. En présence
+  d'un enfant non commun et d'une option comportant de l'usufruit, un message informatif rappelle
+  la faculté de conversion de l'art. 1098, non exercée d'office (les parts restent celles de
+  l'option choisie). Tests : `lib/transmission/ddvEnfantNonCommun.test.ts`.
+- **Sens de la DDV.** Seule la donation consentie par le défunt simulé joue dans sa succession :
+  `hasDDVConsentieParDefunt(maritalStatus, 'user' | 'spouse')` lit
+  `donation_dernier_vivant_personne` (consentie par l'Utilisateur) pour `buildFamilyGraph` et
+  l'écran Optimisation, `donation_dernier_vivant_conjoint` (consentie par le conjoint) pour
+  `buildSpouseAsDecedentFamilyGraph`. `hasDDV()` (l'une ou l'autre) ne sert plus qu'aux alertes de
+  conseil, vue « couple ». Tests : `utils/transmissionHelpers.ddvSens.test.ts`.
+- **Ordre inversé du 2nd décès (conjoint décédé en premier).** `Succession2ndDeces.tsx` appelle
+  `buildSpouseAsDecedentFamilyGraph(..., { utilisateurSurvivant: true })` : l'Utilisateur y est
+  conjoint survivant (id `familyProfile.id`), héritier s'il est marié et non séparé de corps avec
+  renonciation, partenaire de PACS sinon (droit au logement art. 515-6, pas de part). Enfants
+  `both_parents` communs, `spouse` non communs ; DDV du conjoint (`_conjoint`) seule prise en compte ;
+  usufruit valorisé à l'âge de l'Utilisateur. Option du survivant **commune aux deux ordres**
+  (`marital_status.option_conjoint`, décision V1) : si elle n'est pas ouverte dans ce sens,
+  `successionLegale.ts` retombe sur 1/4 PP ; mention affichée sous le sélecteur d'ordre. Au 2nd
+  décès, `addReunifiedFullOwnership` ajoute la PP reçue au patrimoine de l'Utilisateur veuf et
+  `computeChainedTransmission` réunit l'usufruit hors taxation. Sans l'option (2nd décès de l'ordre
+  normal), aucun survivant. Récompenses, créances et participation aux acquêts suivent déjà le sens
+  du décès (`decedentRole`). Limites restantes : contrats d'assurance-vie et libéralités du conjoint
+  non modélisés dans sa succession ; conjoint sans enfant renseigné non modélisable. Tests :
+  `utils/transmissionHelpers.ordreInverse.test.ts`.
+- **Droit temporaire au logement (1 an).** Message informatif, sans effet sur les parts. Conjoint
+  marié successible : art. 763. Partenaire de PACS : même droit par renvoi de l'art. 515-6 al. 3
+  (logement et mobilier, loyers remboursés par la succession), avec rappel qu'il n'a ni droit viager
+  (art. 764) ni vocation successorale. Le graphe porte `survivantPartenairePacs` (posé par
+  `buildFamilyGraph` pour un statut Pacsé(e), remis à `false` par `widowFamilyGraph`) : on ne peut
+  pas déduire le PACS de `survivingSpouseId` seul, également renseigné pour un époux séparé de corps
+  ayant renoncé à ses droits, qui ne reçoit aucun des deux messages. Tests :
+  `lib/transmission/jouissanceTemporaireLogement.test.ts`, `utils/transmissionHelpers.pacs.test.ts`.
 - Le régime matrimonial (récompenses, créances entre époux, participation aux acquêts, avantages
   matrimoniaux — saisis et calculés côté Patrimoine, cf. `docs/patrimoine.md` §2) est liquidé en amont
   et injecté dans `patrimony.biensExistants` via `deltaCivilTotal` (`index.ts`) avant tout calcul de

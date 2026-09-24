@@ -300,6 +300,49 @@ export function dateAnniversaireLegal(dateNaissance: DateNaissance, ageLegal: Ag
 }
 
 /**
+ * Premier jour du mois civil suivant `date` (UTC).
+ */
+function premierJourMoisSuivant(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
+}
+
+/**
+ * Date d'effet d'un départ à l'âge légal : 1er jour du mois suivant le mois
+ * anniversaire de l'âge légal (le jour de naissance n'est pas connu ici).
+ * Si l'âge légal est déjà dépassé à `aujourdHui`, 1er jour du mois suivant
+ * `aujourdHui` (départ au plus tôt). L'âge légal dépend lui-même de la date
+ * d'effet (bascule de barème, `jeuBaremeApplicable()`) : résolu une seconde
+ * fois à la date candidate. `null` si le barème n'est pas déterminé.
+ *
+ * Date d'effet unique des écrans Carrière et Synthèse (scénario « départ à
+ * l'âge légal ») : trimestres requis, âge légal atteint, surcote, MICO et
+ * âge de départ sont tous évalués à cette date.
+ */
+export function dateEffetDepartAgeLegal(dateNaissance: DateNaissance, aujourdHui: Date): Date | null {
+  const auPlusTot = premierJourMoisSuivant(aujourdHui);
+  let dateEffet = auPlusTot;
+  for (let i = 0; i < 2; i++) {
+    const ageLegal = ageLegalPourGeneration(dateNaissance, dateEffet);
+    if (!ageLegal.stable) return null;
+    const candidate = premierJourMoisSuivant(dateAnniversaireLegal(dateNaissance, ageLegal.age));
+    dateEffet = candidate.getTime() > auPlusTot.getTime() ? candidate : auPlusTot;
+  }
+  return dateEffet;
+}
+
+/**
+ * Âge en mois révolus à `dateEffet`. Le jour de naissance n'étant pas connu
+ * (`DateNaissance` = année + mois), l'anniversaire du mois est supposé non
+ * encore atteint le 1er du mois — hypothèse prudente, qui ne peut que sous-
+ * estimer l'âge d'au plus un mois (sans effet sur la décote pour une date
+ * d'effet au 1er du mois suivant l'anniversaire, cf. `decoteSurAge()`).
+ */
+export function ageEnMois(dateNaissance: DateNaissance, dateEffet: Date): number {
+  const moisEffet = dateEffet.getUTCFullYear() * 12 + dateEffet.getUTCMonth();
+  return moisEffet - moisAbsolu(dateNaissance) - 1;
+}
+
+/**
  * Indique si l'âge légal (référentiel §2.1, §2.3.1 condition n° 2) est
  * atteint à la date d'effet — condition cumulative de la surcote, avec
  * `dureeRequiseAtteinte` (simple comparaison trimestresValides >=
@@ -391,6 +434,76 @@ export function surcotePourTrimestresCotises(
     return 0;
   }
   return Math.max(0, trimestresCotisesDansPeriodeDeReference) * 1.25;
+}
+
+/**
+ * Index absolu d'un trimestre civil (année × 4 + trimestre 0-3), en UTC.
+ */
+export function indexTrimestreCivil(date: Date): number {
+  return date.getUTCFullYear() * 4 + Math.floor(date.getUTCMonth() / 3);
+}
+
+/**
+ * Nombre de trimestres ouvrant droit à la surcote classique (référentiel
+ * §2.3.1, art. L. 351-1-2 et D. 351-1-4 CSS) — à passer tel quel à
+ * `surcotePourTrimestresCotises()`.
+ *
+ * Période de référence :
+ * - début : 1er jour du trimestre civil suivant l'atteinte de l'âge légal
+ *   (le jour de naissance n'étant pas connu, le trimestre civil suivant celui
+ *   du mois anniversaire) ;
+ * - fin : dernier jour du trimestre civil précédant la date d'effet.
+ * Seuls les trimestres COTISÉS de la période comptent (`parAnnee[].cotises`,
+ * déjà plafonnés à 4/an), dans la limite, pour chaque année, du nombre de
+ * trimestres civils de cette année inclus dans la période — approximation
+ * assumée : le détail de carrière n'est connu que par année civile.
+ *
+ * Second bord de la période (durée requise atteinte APRÈS l'âge légal : la
+ * période ne démarre qu'au trimestre suivant l'acquisition du dernier
+ * trimestre requis) : non reconstitué chronologiquement (les trimestres des
+ * autres régimes ne sont pas datés) mais borné par l'excédent
+ * `trimestresTousRegimes - trimestresRequis` — un trimestre de surcote est
+ * forcément un trimestre au-delà de la durée requise.
+ *
+ * `projeterDepuis` (optionnel, simulation d'un départ futur) : chaque
+ * trimestre civil postérieur à celui contenant cette date est supposé
+ * cotisé (hypothèse de poursuite d'activité), en plus des trimestres réels.
+ *
+ * Retourne 0 si le barème de l'âge légal n'est pas déterminé (même principe
+ * que `ageLegalAtteint()` : jamais de surcote fabriquée).
+ */
+export function trimestresSurcoteClassique(params: {
+  parAnnee: { annee: number; cotises: number }[];
+  dateNaissance: DateNaissance;
+  dateEffet: Date;
+  trimestresTousRegimes: number;
+  trimestresRequis: number;
+  projeterDepuis?: Date;
+}): number {
+  const { parAnnee, dateNaissance, dateEffet, trimestresTousRegimes, trimestresRequis, projeterDepuis } = params;
+  const ageLegal = ageLegalPourGeneration(dateNaissance, dateEffet);
+  if (!ageLegal.stable) return 0;
+
+  const excedent = Math.max(0, trimestresTousRegimes - trimestresRequis);
+  if (excedent === 0) return 0;
+
+  const debut = indexTrimestreCivil(dateAnniversaireLegal(dateNaissance, ageLegal.age)) + 1;
+  const fin = indexTrimestreCivil(dateEffet) - 1;
+  if (fin < debut) return 0;
+
+  const debutProjection = projeterDepuis ? indexTrimestreCivil(projeterDepuis) + 1 : Infinity;
+  const cotisesParAnnee = new Map(parAnnee.map((a) => [a.annee, a.cotises]));
+
+  let total = 0;
+  for (let annee = Math.floor(debut / 4); annee <= Math.floor(fin / 4); annee++) {
+    const premier = Math.max(debut, annee * 4);
+    const dernier = Math.min(fin, annee * 4 + 3);
+    const trimestresCivilsDansPeriode = dernier - premier + 1;
+    const trimestresProjetes = Math.max(0, dernier - Math.max(premier, debutProjection) + 1);
+    const cotises = (cotisesParAnnee.get(annee) ?? 0) + trimestresProjetes;
+    total += Math.min(cotises, trimestresCivilsDansPeriode);
+  }
+  return Math.min(total, excedent);
 }
 
 /**
@@ -497,13 +610,14 @@ export function tauxProratisation(trimestresValides: number, trimestresRequis: n
 
 /**
  * Décote/surcote basée sur l'écart de trimestres validés par rapport aux
- * trimestres requis : -1,25 % par trimestre manquant (plafonné à -20 %),
- * +1,25 % par trimestre excédentaire.
+ * trimestres requis : -1,25 % par trimestre manquant (plafonné à -25 %,
+ * soit 20 trimestres — taux minimal de 37,5 % au lieu de 50 %, minoration
+ * de 0,625 point de taux par trimestre), +1,25 % par trimestre excédentaire.
  */
 export function decoteSurTrimestres(trimestresValides: number, trimestresRequis: number): number {
   const difference = trimestresValides - trimestresRequis;
   if (difference < 0) {
-    return Math.max(difference * 1.25, -20);
+    return Math.max(difference * 1.25, -25);
   }
   if (difference > 0) {
     return difference * 1.25;
@@ -513,13 +627,12 @@ export function decoteSurTrimestres(trimestresValides: number, trimestresRequis:
 
 /**
  * Décote/surcote basée sur l'écart de trimestres validés par rapport aux
- * trimestres requis, avec un plafond de -25 % (20 trimestres) au lieu de
- * -20 % — mécanique partagée par plusieurs régimes dont le barème de décote
- * diffère du régime général sur ce seul point (fonction publique, CNAVPL).
+ * trimestres requis, plafond -25 % (20 trimestres) — utilisée par la
+ * fonction publique et la CNAVPL.
  *
- * ⚠️ Ne pas confondre avec decoteSurTrimestres() ci-dessus (plafond -20 %,
- * régime général) : la mécanique (1,25 %/trimestre) est identique, seul le
- * plafond change selon le régime.
+ * ⚠️ Désormais strictement identique à decoteSurTrimestres() ci-dessus
+ * depuis la correction du plafond du régime général (-20 % → -25 %) :
+ * doublon à fusionner, conservé tel quel pour ne pas élargir le périmètre.
  */
 export function decoteSurTrimestresPlafond25(trimestresValides: number, trimestresRequis: number): number {
   const difference = trimestresValides - trimestresRequis;
@@ -534,18 +647,20 @@ export function decoteSurTrimestresPlafond25(trimestresValides: number, trimestr
 
 /**
  * Décote basée sur l'écart d'âge par rapport à l'âge du taux plein
- * automatique (67 ans par défaut) : même barème que decoteSurTrimestres pour
- * un départ anticipé (1,25 % par trimestre d'écart, 4 trimestres par année
- * d'écart, plafonné à -20 %). À partir de l'âge du taux plein automatique,
- * celui-ci est acquis d'office : cette règle ne génère jamais de surcote (la
- * seule surcote possible vient de decoteSurTrimestres, via decoteApplicable).
+ * automatique (67 ans par défaut) : 1,25 % par trimestre manquant, plafonné
+ * à -25 % (20 trimestres). `ageDepart` peut être fractionnaire (âge au mois
+ * près, cf. `ageEnMois()`) : le nombre de trimestres manquants est arrondi
+ * au trimestre SUPÉRIEUR (règle CNAV — un trimestre entamé manque en
+ * entier). À partir de l'âge du taux plein automatique, celui-ci est acquis
+ * d'office : cette règle ne génère jamais de surcote.
  */
 export function decoteSurAge(ageDepart: number, ageTauxPleinAuto = 67): number {
   if (ageDepart >= ageTauxPleinAuto) {
     return 0;
   }
-  const ecartTrimestres = (ageDepart - ageTauxPleinAuto) * 4;
-  return Math.max(ecartTrimestres * 1.25, -20);
+  const moisManquants = Math.round((ageTauxPleinAuto - ageDepart) * 12);
+  const trimestresManquants = Math.ceil(moisManquants / 3);
+  return Math.max(-trimestresManquants * 1.25, -25);
 }
 
 /**

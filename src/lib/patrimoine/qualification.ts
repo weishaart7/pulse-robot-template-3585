@@ -26,8 +26,10 @@
  * - Régime de communauté universelle → commun pour tout le reste (biens à
  *   titre onéreux, ou libéralités sans stipulation expresse)
  * - PACS avec convention de séparation de patrimoines (par défaut) → bien propre
- * - PACS avec convention d'indivision → bien commun (assimilé, pas de notion
- *   distincte pour les besoins de cet outil : répartition/transmission identiques)
+ * - PACS avec convention d'indivision (ou PACS conclu avant 2007 sans convention
+ *   renseignée) → indivision (art. 515-5-1), jamais « commun » : la notion de
+ *   bien commun est propre au contrat de mariage. Biens à caractère personnel,
+ *   remploi et biens reçus à titre gratuit → bien personnel (art. 515-5-2)
  * - Concubinage → aucune masse commune ni régime légal (le concubinage n'est
  *   pas une union juridique, art. 515-8) : bien personnel s'il est détenu par
  *   un seul concubin, indivision de droit commun s'il est détenu par les deux

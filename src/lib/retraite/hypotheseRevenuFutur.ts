@@ -1,6 +1,6 @@
 /**
- * Hypothèse de revenu pour les années futures manquantes (entre l'année en
- * cours et l'année de départ légal en retraite) — permet d'estimer les
+ * Hypothèse de revenu pour la période future (du trimestre civil en cours au
+ * trimestre précédant la date d'effet d'un départ à l'âge légal) — permet d'estimer les
  * trimestres futurs et la pension pour un profil dont la carrière connue
  * (RIS) s'arrête avant l'âge légal réel. Fonctions pures, sans JSX ni state
  * React — sur le modèle de calculSAM.ts.
@@ -11,8 +11,9 @@
  *   était partielle.
  * - `revenu_moyen_projete` : revenu saisi manuellement par le conseiller.
  *
- * Chaque année manquante ainsi projetée est comptée comme 4 trimestres
- * validés (hypothèse de carrière continue) — volontairement PAS recalculée
+ * Chaque trimestre civil de la période projetée est compté comme validé
+ * (hypothèse de carrière continue), dans la limite de 4 par année civile
+ * trimestres réels déjà validés compris — volontairement PAS recalculée
  * via `trimestresCotisesEtAssimilesDepuisCarriere()` : le barème de seuil de
  * validation (`SEUIL_VALIDATION_TRIMESTRE_PAR_ANNEE`) ne couvre que jusqu'à
  * 2026, une année future au-delà retomberait à tort sur 0 trimestre validé.
@@ -20,7 +21,7 @@
 
 import { PeriodeCarriere } from './parseRIS';
 import { ResultatTrimestresCotisesEtAssimiles, trimestresCotisesEtAssimilesDepuisCarriere } from './calculTrimestres';
-import { DateNaissance, ageLegalPourGeneration, dateAnniversaireLegal } from './calcul';
+import { DateNaissance, dateEffetDepartAgeLegal, indexTrimestreCivil } from './calcul';
 import { calculerSAM } from './calculSAM';
 
 export type ModeHypotheseRevenuFutur = 'derniere_annee_connue' | 'revenu_moyen_projete';
@@ -62,65 +63,106 @@ export function revenuAnnuelHypotheseDerniereAnneeConnue(
   return (derniereAnnee.revenuCotise / (trimestresValides * 3)) * 12;
 }
 
+export interface TrimestresProjetesAnnee {
+  annee: number;
+  trimestres: number;
+  premierTrimestre: number; // 0-3, premier trimestre civil projeté de l'année
+  dernierTrimestre: number; // 0-3, dernier trimestre civil projeté de l'année
+}
+
 /**
- * Années à projeter, de `anneeCourante` (incluse) à `anneeRetraite` (incluse)
- * — liste vide si `anneeRetraite < anneeCourante` (taux plein déjà atteint ou
- * âge légal déjà dépassé).
+ * Trimestres projetés par année civile, du trimestre civil contenant
+ * `aujourdHui` (inclus) au trimestre civil précédant `dateEffet` (inclus —
+ * fin de la période d'assurance retenue pour une liquidation à cette date).
+ * Pour chaque année : au plus le nombre de trimestres civils de la période
+ * dans cette année, et au plus `4 - trimestres déjà validés` dans le détail
+ * de carrière réel (plafond de 4/an, pas de double compte de l'année en
+ * cours). Aucune année antérieure à l'année en cours n'est projetée : un
+ * trou dans le passé (RIS ancien) n'est jamais comblé, cf.
+ * `anneesPasseesSansDonnees()`.
  */
-export function anneesManquantes(anneeCourante: number, anneeRetraite: number): number[] {
+export function trimestresProjetesParAnnee(
+  parAnnee: ResultatTrimestresCotisesEtAssimiles['parAnnee'],
+  aujourdHui: Date,
+  dateEffet: Date
+): TrimestresProjetesAnnee[] {
+  const debut = indexTrimestreCivil(aujourdHui);
+  const fin = indexTrimestreCivil(dateEffet) - 1;
+  const valides = new Map(parAnnee.map((a) => [a.annee, a.cotises + a.assimiles]));
+  const resultat: TrimestresProjetesAnnee[] = [];
+  for (let annee = Math.floor(debut / 4); annee <= Math.floor(fin / 4); annee++) {
+    const premier = Math.max(debut, annee * 4) - annee * 4;
+    const dernier = Math.min(fin, annee * 4 + 3) - annee * 4;
+    const trimestres = Math.min(dernier - premier + 1, Math.max(0, 4 - (valides.get(annee) ?? 0)));
+    if (trimestres > 0) resultat.push({ annee, trimestres, premierTrimestre: premier, dernierTrimestre: dernier });
+  }
+  return resultat;
+}
+
+/**
+ * Années passées (entre la dernière année validée du détail de carrière et
+ * l'année en cours, exclues) sans aucune donnée — non projetées, à signaler
+ * à l'écran (RIS probablement ancien).
+ */
+export function anneesPasseesSansDonnees(
+  parAnnee: ResultatTrimestresCotisesEtAssimiles['parAnnee'],
+  aujourdHui: Date
+): number[] {
+  const derniere = derniereAnneeAvecTrimestreValide(parAnnee);
+  if (derniere === null) return [];
   const annees: number[] = [];
-  for (let annee = anneeCourante; annee <= anneeRetraite; annee++) {
+  for (let annee = derniere.annee + 1; annee < aujourdHui.getUTCFullYear(); annee++) {
     annees.push(annee);
   }
   return annees;
 }
 
 /**
- * Trimestres validés apportés par les années manquantes projetées — 4 par
- * année (hypothèse de carrière continue), cf. docstring de ce fichier pour
- * pourquoi ce n'est pas dérivé du moteur à seuil de calculTrimestres.ts.
- */
-export function trimestresProjetesAnneesManquantes(annees: number[]): number {
-  return annees.length * 4;
-}
-
-/**
- * Construit des `PeriodeCarriere` synthétiques (une par année manquante,
- * année civile complète, régime de base) pour injection dans
+ * Construit des `PeriodeCarriere` synthétiques (une par année projetée,
+ * couvrant les trimestres civils projetés de l'année, revenu au prorata
+ * `revenuAnnuel × trimestres / 4`, régime de base) pour injection dans
  * `calculerSAM()` aux côtés des périodes réelles du RIS — seul usage prévu
  * de ces périodes synthétiques : ne jamais les persister ni les mélanger au
  * `detailCarriere` affiché/enregistré sur l'écran Carrière.
  */
-export function periodesSynthetiquesAnneesManquantes(annees: number[], revenuHypothese: number): PeriodeCarriere[] {
-  return annees.map((annee) => ({
-    employeur: 'Hypothèse de revenu futur',
-    typeActivite: 'employeur',
-    dateDebut: `${annee}-01-01`,
-    dateFin: `${annee}-12-31`,
-    revenu: revenuHypothese,
-    estChiffreAffaires: false,
-    regimes: ["L'Assurance retraite"],
-  }));
+export function periodesSynthetiquesProjetees(
+  projection: TrimestresProjetesAnnee[],
+  revenuAnnuel: number
+): PeriodeCarriere[] {
+  const deuxChiffres = (n: number) => String(n).padStart(2, '0');
+  return projection.map(({ annee, trimestres, premierTrimestre, dernierTrimestre }) => {
+    const moisFin = dernierTrimestre * 3 + 3;
+    const jourFin = new Date(Date.UTC(annee, moisFin, 0)).getUTCDate();
+    return {
+      employeur: 'Hypothèse de revenu futur',
+      typeActivite: 'employeur',
+      dateDebut: `${annee}-${deuxChiffres(premierTrimestre * 3 + 1)}-01`,
+      dateFin: `${annee}-${deuxChiffres(moisFin)}-${deuxChiffres(jourFin)}`,
+      revenu: (revenuAnnuel * trimestres) / 4,
+      estChiffreAffaires: false,
+      regimes: ["L'Assurance retraite"],
+    };
+  });
 }
 
 export interface ProjectionRevenuFutur {
   salaireAnnuelMoyenProjete: number;
   trimestresValidesProjetes: number;
+  /** Date d'effet du scénario (départ à l'âge légal), `null` si indéterminée. */
+  dateEffet: Date | null;
+  /** Années passées sans donnée, non projetées (cf. `anneesPasseesSansDonnees()`). */
+  anneesPasseesSansDonnees: number[];
 }
 
 /**
  * Glue de la projection de revenu futur — orchestre les fonctions pures
- * ci-dessus (`anneesManquantes`, `trimestresProjetesAnneesManquantes`,
- * `periodesSynthetiquesAnneesManquantes`, `revenuAnnuelHypotheseDerniereAnneeConnue`)
- * pour produire un salaire annuel moyen et un nombre de trimestres projetés,
- * à ajouter aux valeurs réelles avant de les passer à
- * `calculerPensionConsolidee()`.
+ * ci-dessus pour produire la date d'effet du scénario « départ à l'âge
+ * légal », un salaire annuel moyen et un nombre de trimestres projetés, à
+ * ajouter aux valeurs réelles avant de les passer à
+ * `calculerPensionConsolidee()` AVEC cette même date d'effet.
  *
- * Extraite pour être appelée à l'identique par `usePensionConsolidee.ts`
- * (Synthèse) et par `Carriere.tsx` (cf.
- * docs/audit/audit-pension-consolidation.md, étape 2 de la fusion) — un seul
- * endroit où corriger cette logique si elle évolue, plutôt que deux copies
- * à faire diverger.
+ * Appelée à l'identique par `usePensionConsolidee.ts` (Synthèse) et par
+ * `Carriere.tsx` — un seul endroit où corriger cette logique.
  */
 export function calculerProjectionRevenuFutur(
   dateNaissance: DateNaissance | null,
@@ -128,40 +170,34 @@ export function calculerProjectionRevenuFutur(
   salaireAnnuelMoyen: number,
   modeHypothese: ModeHypotheseRevenuFutur,
   revenuHypotheseManuel: number | null,
-  dateEffet: Date
+  aujourdHui: Date
 ): ProjectionRevenuFutur {
-  const anneeLegaleResultat = dateNaissance ? ageLegalPourGeneration(dateNaissance, dateEffet) : null;
-  const anneeRetraite =
-    dateNaissance && anneeLegaleResultat?.stable
-      ? dateAnniversaireLegal(dateNaissance, anneeLegaleResultat.age).getUTCFullYear()
-      : null;
-  const anneeCourante = dateEffet.getUTCFullYear();
-  const anneesManquantesListe = anneeRetraite !== null ? anneesManquantes(anneeCourante, anneeRetraite) : [];
+  const dateEffet = dateNaissance ? dateEffetDepartAgeLegal(dateNaissance, aujourdHui) : null;
+  const { parAnnee } = trimestresCotisesEtAssimilesDepuisCarriere(detailCarriere);
+  const sansProjection = {
+    salaireAnnuelMoyenProjete: salaireAnnuelMoyen,
+    trimestresValidesProjetes: 0,
+    dateEffet,
+    anneesPasseesSansDonnees: anneesPasseesSansDonnees(parAnnee, aujourdHui),
+  };
+  if (!dateNaissance || !dateEffet) return sansProjection;
 
-  const resultatTrimestresPourHypothese = trimestresCotisesEtAssimilesDepuisCarriere(detailCarriere);
   const revenuHypothese =
     modeHypothese === 'derniere_annee_connue'
-      ? revenuAnnuelHypotheseDerniereAnneeConnue(resultatTrimestresPourHypothese.parAnnee)
+      ? revenuAnnuelHypotheseDerniereAnneeConnue(parAnnee)
       : revenuHypotheseManuel;
-
-  const projectionApplicable =
-    revenuHypothese !== null && revenuHypothese > 0 && anneesManquantesListe.length > 0 && dateNaissance !== null;
-
-  const trimestresValidesProjetes = projectionApplicable
-    ? trimestresProjetesAnneesManquantes(anneesManquantesListe)
-    : 0;
-
-  if (!projectionApplicable || !dateNaissance) {
-    return { salaireAnnuelMoyenProjete: salaireAnnuelMoyen, trimestresValidesProjetes };
+  const projection = trimestresProjetesParAnnee(parAnnee, aujourdHui, dateEffet);
+  const trimestresValidesProjetes = projection.reduce((total, a) => total + a.trimestres, 0);
+  if (revenuHypothese === null || revenuHypothese <= 0 || trimestresValidesProjetes === 0) {
+    return sansProjection;
   }
 
-  const periodesSynthetiques = periodesSynthetiquesAnneesManquantes(anneesManquantesListe, revenuHypothese!);
   const salaireAnnuelMoyenProjete = calculerSAM(
-    [...detailCarriere, ...periodesSynthetiques],
+    [...detailCarriere, ...periodesSynthetiquesProjetees(projection, revenuHypothese)],
     dateNaissance.annee,
     undefined,
-    anneeRetraite!
+    dateEffet.getUTCFullYear()
   ).sam;
 
-  return { salaireAnnuelMoyenProjete, trimestresValidesProjetes };
+  return { ...sansProjection, salaireAnnuelMoyenProjete, trimestresValidesProjetes };
 }

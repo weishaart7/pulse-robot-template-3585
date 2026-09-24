@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { hasDDVConsentieParDefunt } from '@/utils/transmissionHelpers';
 import './kairos-transmission.css';
 
 type ConjointOption = 
@@ -38,7 +39,8 @@ export const Optimisation = () => {
 
   // Determine situation
   const isMarried = maritalData?.statut_couple?.toLowerCase().includes('marié') || maritalData?.statut_couple?.toLowerCase() === 'marie';
-  const hasDDV = !!maritalData?.donation_dernier_vivant_personne || !!maritalData?.donation_dernier_vivant_conjoint;
+  // Simulation du décès de l'Utilisateur : seule la DDV qu'il a consentie joue.
+  const hasDDV = hasDDVConsentieParDefunt(maritalData, 'user');
 
   const enfants = (familyLinks || []).filter(l => l.lien_familial.toLowerCase() === 'enfant');
   const hasChildren = enfants.length > 0;

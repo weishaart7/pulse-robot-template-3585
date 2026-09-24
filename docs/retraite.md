@@ -51,9 +51,10 @@ uniquement applicatif via `familyService`.
   pension de base → décote/surcote (classique + parentale) → étage minimum (MICO/MIGA si applicable)
   → majoration pour 3 enfants ou plus → total consolidé tous régimes. Auto-sauvegarde (debounce) vers
   Supabase.
-- **Synthèse** consomme le même pipeline (`calculerPensionConsolidee()`, unifié avec Carrière depuis
-  le 2026-08-18, cf. §2), avec en plus la projection d'une hypothèse de revenu futur pour les années
-  manquantes jusqu'à l'âge de départ.
+- **Carrière et Synthèse** simulent un même scénario, « départ à l'âge légal », évalué à une date
+  d'effet unique (cf. §2) et affichée à l'écran. Même pipeline (`calculerPensionConsolidee()`,
+  unifié depuis le 2026-08-18) avec la projection d'une hypothèse de revenu futur du trimestre en
+  cours jusqu'à cette date d'effet.
 - **Optimisation** simule un scénario de date de liquidation (sélecteur de date, pas un slider d'âge
   depuis le 2026-08-13) avec le même moteur de décote/surcote, plus un simulateur de rachat de
   trimestres (coût, gain de pension, point mort) — sandbox non persistée.
@@ -78,7 +79,7 @@ uniquement applicatif via `familyService`.
   couverture nulle sur ce module ; 10 fichiers `*.test.ts` co-localisés couvrent le
   moteur (`calcul.test.ts`, `calculSAM.test.ts`, `calculTrimestres.test.ts`, `calculFonctionPublique.test.ts`,
   `calculCNAVPL.test.ts`, `parseRIS.test.ts`, `pensionConsolidee.test.ts`, `hypotheseRevenuFutur.test.ts`,
-  `enfantsEligiblesMajoration.test.ts`, `regimesSaisieManuelle.test.ts`) — 269 tests sur le module (`npx vitest run src/lib/retraite`). Rien côté rendu de composant (pas de
+  `enfantsEligiblesMajoration.test.ts`, `regimesSaisieManuelle.test.ts`) — 309 tests sur le module (`npx vitest run src/lib/retraite`). Rien côté rendu de composant (pas de
   `@testing-library/react`, environnement vitest en `node`) : la vérification visuelle des écrans
   reste manuelle, limite documentée dans quasiment chaque rapport de session.
 - **Barème par génération : bascule par date d'effet, pas seulement par année de naissance
@@ -141,6 +142,79 @@ uniquement applicatif via `familyService`.
   parenthèses — un régime valide retombait alors à tort sur le repli « Régime non identifié » quand
   son étiquette suivait la valeur au lieu de la précéder (collision d'arrondi de coordonnée Y à
   moins d'1pt, mise en page à 2 colonnes).
+- **SAM : plafonnement au PASS AVANT revalorisation.** `calculerSAM()` retient chaque salaire
+  annuel dans la limite du PASS de l'année de perception, puis revalorise ce montant plafonné
+  (coefficient CNAV) — règle CNAV. L'ordre inverse, en place jusqu'au 2026-09-24, comparait un
+  montant revalorisé à un PASS nominal ancien et sous-estimait le SAM des années au plafond ou proches
+  du plafond. PASS 2026 (48 060 €) ajouté ; au-delà de la dernière année connue (années projetées),
+  `passPourAnnee()` retient le dernier PASS connu (revenus projetés en euros constants).
+  ⚠️ Le SAM est calculé à l'import RIS puis persisté (`retraite_data.salaire_annuel_moyen`) : les
+  dossiers importés avant cette correction gardent un SAM erroné tant que le RIS n'est pas réimporté
+  (ou le SAM ressaisi).
+- **Surcote classique : trimestres cotisés APRÈS l'âge légal.** `trimestresSurcoteClassique()`
+  (calcul.ts) compte les trimestres cotisés entre le 1er jour du trimestre civil suivant l'âge légal et
+  le dernier jour du trimestre civil précédant la date d'effet (référentiel §2.3.1), borné par
+  l'excédent `trimestresTousRegimes - trimestresRequis` (second bord de la période quand la durée
+  requise est atteinte après l'âge légal, non reconstituable chronologiquement faute de dates pour les
+  autres régimes). Détail de carrière connu par année civile : pour chaque année, au plus autant de
+  trimestres cotisés que de trimestres civils de l'année inclus dans la période. Un départ dès l'âge
+  légal ne donne donc aucune surcote. Branchée sur `pensionConsolidee.ts` (date d'effet = aujourd'hui)
+  et `Trimestres.tsx` (date de liquidation choisie, trimestres futurs supposés cotisés via
+  `projeterDepuis`). La surcote **parentale** garde sa propre période (année précédant l'âge légal,
+  §2.3.2). La condition de durée requise des deux surcotes du régime général est appréciée tous
+  régimes confondus. Jusqu'au 2026-09-24, la surcote classique comptait à tort les trimestres de
+  l'année précédant l'âge légal.
+- **Date d'effet unique par scénario (Carrière, Synthèse).** `dateEffetDepartAgeLegal()` (calcul.ts) :
+  1er jour du mois suivant le mois anniversaire de l'âge légal, ou 1er jour du mois prochain si l'âge
+  légal est déjà dépassé (âge légal résolu à la date candidate, bascule de barème comprise). Cette date
+  est passée à `calculerPensionConsolidee()` (champ `dateEffet`, qui remplace l'ancien `ageActuel` et
+  les `new Date()` internes, FP/CNAVPL compris) et sert aux trimestres requis, à l'âge de départ, à
+  l'âge légal atteint, à la surcote et au MICO. Jusqu'au 2026-09-24, trimestres et SAM étaient
+  projetés à l'âge légal mais tout le reste était évalué à la date du jour. La carte de la Synthèse
+  s'intitule en conséquence « Pension au départ à l'âge légal ».
+- **Âge de départ au mois près.** `ageEnMois()` (mois révolus ; jour de naissance inconnu, anniversaire
+  supposé non atteint le 1er du mois) ; `decoteSurAge()` accepte un âge fractionnaire et arrondit les
+  trimestres manquants avant 67 ans au trimestre supérieur (règle CNAV). Utilisé par
+  `pensionConsolidee.ts` et `Trimestres.tsx` (dont les lignes « N ans » du tableau comparatif ont
+  désormais un effet au 1er du mois suivant l'anniversaire, soit N ans 0 mois).
+- **Projection des trimestres futurs par trimestre civil.** `trimestresProjetesParAnnee()`
+  (hypotheseRevenuFutur.ts) : du trimestre civil en cours au trimestre précédant la date d'effet, au
+  plus `4 - trimestres déjà validés` par année (pas de double compte de l'année en cours) ; l'année de
+  départ ne compte que ses trimestres écoulés. Les années passées sans donnée
+  (`anneesPasseesSansDonnees()`, RIS ancien) ne sont jamais projetées, et sont signalées sur Carrière.
+  SAM projeté avec des périodes synthétiques bornées aux mêmes trimestres, revenu au prorata.
+  `Trimestres.tsx` utilise la même projection (auparavant 4 × écart d'âge en années entières).
+- **Écrêtement du MICO tous régimes.** Le plafond global (référentiel §3.5.5) est comparé à P0 + MICO +
+  toutes les pensions personnelles connues : complémentaires à points (`regimes_points`), fonction
+  publique (pension finale, majoration enfants et NBI comprises), RAFP, CNAVPL, plus les autres
+  pensions déclarées. `pensionConsolidee.ts` calcule donc la FP et la CNAVPL avant l'écrêtement du
+  régime général. Jusqu'au 2026-09-24, seuls P0 et les autres pensions déclarées étaient comparés au
+  plafond (MICO surestimé).
+- **Décote CNAVPL : plus favorable des deux comptages.** `decoteCNAVPL()` (calculCNAVPL.ts) : durée
+  tous régimes ou âge à la date d'effet par rapport à 67 ans (taux plein automatique, référentiel
+  §5.3), plafond -25 %. Jusqu'au 2026-09-24, seule la décote sur la durée s'appliquait.
+- **Décote fonction publique.** `decoteFonctionPublique()` (calculFonctionPublique.ts), partagée par
+  le moteur et la carte : plus favorable des décotes sur la durée tous régimes et sur l'âge, au taux
+  du millésime d'ouverture des droits (`tauxDecoteParTrimestreFonctionPublique()`) pour les DEUX
+  comptages (auparavant 1,25 % fixe pour la durée). Catégorie sédentaire : âge à la date d'effet
+  contre `ageAnnulationDecoteSedentaire()` (66 ans 6 mois en 1956, 66 ans 9 mois en 1957, 67 ans
+  ensuite) — auparavant aucune décote âge hors catégorie active. Catégorie active : âges saisis.
+  Trimestres d'âge manquants arrondis au supérieur. Plafond : 20 trimestres au taux du millésime —
+  ⚠️ non sourcé pour les millésimes 2011-2014 (montée en charge de la réforme 2010).
+- **Cartes FP/CNAVPL alignées sur la date d'effet du scénario.** `CarriereFonctionPublique.tsx` et
+  `CarriereCNAVPL.tsx` reçoivent `dateEffet` de Carriere.tsx (au lieu de `new Date()`) et appellent
+  les mêmes fonctions de décote que le moteur. Elles conservent néanmoins leur propre assemblage du
+  reste de la pension (duplication de `pensionConsolidee.ts`, cf. §3).
+- **Surcote fonction publique et CNAVPL : non calculée, signalée à l'écran.** Faute de donnée datée
+  (trimestres FP/CNAVPL saisis en total), la surcote de ces régimes reste à 0 ; les cartes
+  `CarriereFonctionPublique.tsx`/`CarriereCNAVPL.tsx` affichent une mention dès que la durée requise
+  est atteinte. Décision du 2026-09-24 (plutôt qu'un champ déclaratif et une migration, à reconsidérer
+  si un dossier réel est concerné ; la CNAVPL impliquerait en plus le taux de 0,75 % de certaines
+  périodes antérieures au 01/09/2023, non détaillé par le référentiel).
+- **Plafond de décote : -25 % (20 trimestres) dans tous les régimes modélisés.** Régime général
+  compris (`decoteSurTrimestres()`, `decoteSurAge()`) : minoration de 0,625 point de taux par
+  trimestre manquant, taux minimal 37,5 %. Le régime général était plafonné à tort à -20 % jusqu'au
+  2026-09-24. `decoteSurTrimestresPlafond25()` est depuis un doublon exact de `decoteSurTrimestres()`.
 - **Double comptage fonction publique/CNAVPL — deux mécanismes distincts, tous deux soldés :**
   1) *[soldé, commit `d8c8e31`]* trimestres SRE/CNRACL comptés à tort dans le panier « régime général »
      à l'import RIS (`estRegimeSaisieManuelle()`, [regimesSaisieManuelle.ts](src/lib/retraite/regimesSaisieManuelle.ts)),
@@ -169,14 +243,32 @@ uniquement applicatif via `familyService`.
 
 ## 3. Dette identifiée
 
-Classement par risque, revérifié contre le code au 2026-08-27 (`git log`, lecture directe). Les
+Classement par risque, revérifié contre le code au 2026-09-24 (`git log`, lecture directe). Les
 écarts numérotés (#1 à #16) renvoient à `docs/audit/audit-retraite.md` §7, qui les compare à
 `docs/retraite-base-referentiel.md`.
 
 ### 🔴 Bloquant (peut fausser un calcul montré au client)
 
-Aucun bloquant ouvert au 2026-08-27 — les quatre écarts précédemment listés ici ont été traités (cf.
-§2 pour le détail des corrections) :
+Un seul point ouvert au 2026-09-24 (ci-dessous). L'audit des calculs du 2026-09-24 a relevé cinq anomalies
+bloquantes, toutes soldées (cf. §2) : plafonnement SAM avant revalorisation + PASS 2026, plafond de
+décote -25 %, période de la surcote classique, date d'effet unique et projection des trimestres,
+écrêtement du MICO tous régimes.
+
+- **MIGA accordé sans condition de taux plein.** `minimumGaranti()` ne vérifie ni la durée requise ni
+  l'âge d'annulation de la décote. L'article L. 17 CPCMR (réforme 2010) subordonnerait l'accès au MIGA
+  à l'une de ces conditions (sauf exceptions, dont l'invalidité), mais le référentiel (§7.5) n'en dit
+  rien : non implémenté (décision du 2026-09-24) en attendant vérification de la source. MIGA
+  probablement surestimé pour un fonctionnaire décoté.
+- **Calcul FP/CNAVPL dupliqué entre les cartes et `pensionConsolidee.ts`** : chaque correction de
+  règle doit être reportée aux deux endroits (décotes désormais partagées, mais pas MIGA, surcote,
+  majorations, NBI). `decoteSurTrimestresPlafond25()` (calcul.ts) n'est plus appelée que par des
+  tests : code mort, doublon de `decoteSurTrimestres()`.
+- Limites connues de la projection (phase 3) : un client ayant dépassé l'âge légal se voit projeter le
+  trimestre en cours comme travaillé (hypothèse de poursuite d'activité, même pour un RIS ancien) ;
+  `Trimestres.tsx` ne projette pas le SAM (salaire annuel moyen saisi) ; l'export PDF garde le libellé
+  « Âge du taux plein retenu » sans la date d'effet simulée.
+
+Écarts antérieurs soldés :
 
 - **Écart #2/RIS-SAM — proxy de date d'effet manquant à l'import RIS : soldé.** `RISImportDialog.tsx`
   passe désormais `new Date()` à `calculerSAM()`, cohérent avec le proxy « aujourd'hui » déjà utilisé
@@ -218,12 +310,11 @@ Aucun bloquant ouvert au 2026-08-27 — les quatre écarts précédemment listé
   taux tout en dégradant potentiellement le SAM). Nécessite une décision produit et une migration de
   schéma — vérification manuelle recommandée pour ces dossiers en attendant.
 
-- **Chronologie infra-annuelle de la surcote non modélisée.** `surcotePourTrimestresCotises()` reçoit
-  un nombre de trimestres cotisés sur l'« année de référence », dérivé par année civile entière
-  (`parAnnee`) — si l'anniversaire légal ou la date d'effet tombe au milieu d'une année mêlant
-  activité cotisée et assimilée, aucune donnée ne permet de départager les trimestres avant/après le
-  pivot. Documenté dans plusieurs rapports comme limite assumée (pas un bug), affecte uniquement le
-  cas d'un départ précisément au fil de l'année.
+- **Surcote classique : approximations assumées.** Détail de carrière par année civile (dans l'année
+  de l'âge légal ou de la date d'effet, les trimestres cotisés ne sont pas localisés avant/après le
+  pivot : au plus le nombre de trimestres civils de la période est retenu) ; jour de naissance ignoré
+  (trimestre civil suivant le mois anniversaire) ; durée requise atteinte après l'âge légal bornée par
+  l'excédent tous régimes plutôt que datée ; rachats option 2 non modélisés.
 - **Cumul surcote classique/surcote parentale non confirmé pour CNAVPL et CNBF.** Le référentiel
   précise explicitement la règle pour le régime général (additif) et la fonction publique (exclusif,
   la plus favorable), mais reste muet pour CNAVPL/CNBF — `surcoteTotale()` est appelée en mode
@@ -290,7 +381,7 @@ Aucun bloquant ouvert au 2026-08-27 — les quatre écarts précédemment listé
   - **Système MDA complet** (répartition de trimestres par enfant entre parents, options, garde,
     autorité parentale) : explicitement écarté au profit d'une saisie déclarative simple (§2) — écart
     volontaire, pas un chantier commencé puis abandonné.
-  - **Chronologie infra-annuelle de la surcote et du SAM** (année de rachat) : non implémentée,
+  - **Chronologie infra-annuelle du SAM** (année de rachat) : non implémentée,
     faute de données structurées (pas de valeur « rachat » dans `retraite_carriere_detail.type_activite`).
     L'exclusion d'une année uniquement assimilée est en place, avec la catégorie `'maternite'` (§3).
   - **Régimes hors périmètre de l'outil** : SSI hors alignement CNAVPL implicite, CNBF (hors majoration

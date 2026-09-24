@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pensionBaseCNAVPL } from './calculCNAVPL';
+import { pensionBaseCNAVPL, decoteCNAVPL } from './calculCNAVPL';
 import {
   majorationTroisEnfants,
   surcotePourTrimestresCotises,
@@ -92,5 +92,20 @@ describe('CNBF — majoration pour 3 enfants (référentiel §6.3 : 10 %, à com
   it('même taux flat 10 % que le régime général, aucun palier', () => {
     expect(majorationTroisEnfants(3)).toBe(10);
     expect(majorationTroisEnfants(5)).toBe(10); // pas de +5 %/enfant, à la différence de la fonction publique
+  });
+});
+
+describe('decoteCNAVPL — taux plein à 67 ans quel que soit le nombre de trimestres (référentiel §5.3)', () => {
+  it('à 67 ans avec des trimestres manquants : aucune décote', () => {
+    expect(decoteCNAVPL(120, 172, 67)).toBe(0);
+  });
+  it('plus favorable des deux comptages : 64 ans (12 trimestres) contre 30 trimestres manquants → -15 %', () => {
+    expect(decoteCNAVPL(142, 172, 64)).toBeCloseTo(-15, 10);
+  });
+  it('âge inconnu : décote sur la durée seule, plafonnée à -25 %', () => {
+    expect(decoteCNAVPL(100, 172, null)).toBe(-25);
+  });
+  it('durée atteinte : jamais de décote ni de surcote', () => {
+    expect(decoteCNAVPL(180, 172, 62)).toBe(0);
   });
 });

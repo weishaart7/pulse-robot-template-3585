@@ -14,7 +14,7 @@ const entreeBase: EntreePensionConsolidee = {
   trimestresValides: 160,
   trimestresRequis: 172,
   dateNaissance: { annee: 1990, mois: 6 },
-  ageActuel: 35,
+  dateEffet: new Date(Date.UTC(2054, 6, 1)), // départ à l'âge légal (64 ans) pour une naissance en juin 1990
   regimesPoints: [{ nom: 'Agirc-Arrco', type: 'points', points: 5000, valeurPoint: 1.3498 }],
   detailCarriere: [
     {
@@ -81,7 +81,7 @@ describe('calculerPensionConsolidee — detailRegimeGeneral (non-régression Car
       trimestresValides: 160,
       trimestresRequis: 172,
       dateNaissance: null,
-      ageActuel: null,
+      dateEffet: new Date(Date.UTC(2026, 9, 1)),
     };
     const resultat = calculerPensionConsolidee(entree);
 
@@ -121,7 +121,7 @@ describe('calculerPensionConsolidee — detailRegimeGeneral (non-régression Car
       trimestresValides: 180,
       trimestresRequis: 160,
       dateNaissance: { annee: 1955, mois: 1 },
-      ageActuel: 71,
+      dateEffet: new Date(Date.UTC(2026, 9, 1)),
       detailCarriere: detailCarriereLongue,
     };
     const resultat = calculerPensionConsolidee(entree);
@@ -177,5 +177,149 @@ describe('calculerPensionConsolidee — detailRegimeGeneral (non-régression Car
     expect(resultat.detailRegimeGeneral.nombreEnfantsEligibles).toBe(nombreEnfantsAttendu);
     expect(resultat.detailRegimeGeneral.majorationEnfantsPct).toBe(majorationTroisEnfants(nombreEnfantsAttendu));
     expect(resultat.detailRegimeGeneral.majorationEnfantsPct).toBeGreaterThan(0);
+  });
+});
+
+describe('calculerPensionConsolidee — surcote classique après l’âge légal (référentiel §2.3.1)', () => {
+  // Né en mars 1960 : âge légal 62 ans (anniversaire mars 2022), période de
+  // référence à partir du 01/04/2022 ; date d'effet = 24/09/2026 →
+  // fin de période au 30/06/2026.
+  const annees = (de: number, a: number) =>
+    Array.from({ length: a - de + 1 }, (_, i) => ({
+      employeur: 'Test',
+      typeActivite: 'employeur' as const,
+      dateDebut: `${de + i}-01-01`,
+      dateFin: `${de + i}-12-31`,
+      revenu: 40000,
+      estChiffreAffaires: false,
+      regimes: ["L'Assurance retraite"],
+    }));
+
+  const entree = (detailCarriere: EntreePensionConsolidee['detailCarriere'], trimestresValides: number) => ({
+    ...entreeBase,
+    dateNaissance: { annee: 1960, mois: 3 },
+    dateEffet: new Date(Date.UTC(2026, 8, 24)),
+    trimestresRequis: 167,
+    trimestresValides,
+    detailCarriere,
+  });
+
+  it('trimestres cotisés après l’âge légal, bornés par l’excédent sur la durée requise', () => {
+    // Période : T2-T4 2022 (3) + 2023-2025 (12) + T1-T2 2026 (2) = 17 ;
+    // excédent 180 - 167 = 13 → 13 trimestres, 16,25 %.
+    const resultat = calculerPensionConsolidee(entree(annees(1981, 2026), 180));
+    expect(resultat.detailRegimeGeneral.surcoteClassiquePct).toBeCloseTo(16.25, 6);
+  });
+
+  it('non-régression : l’année précédant l’âge légal ne génère plus de surcote classique', () => {
+    const resultat = calculerPensionConsolidee(entree(annees(1981, 2021), 180));
+    expect(resultat.detailRegimeGeneral.surcoteClassiquePct).toBe(0);
+  });
+
+  it('durée requise appréciée tous régimes : trimestres FP inclus', () => {
+    const resultat = calculerPensionConsolidee({
+      ...entree(annees(1981, 2026), 160),
+      fonctionPublique: {
+        traitementIndiciaireBrut: 0,
+        trimestresLiquidables: 20,
+        pointsRAFP: 0,
+        departAnticipeCategorieActive: false,
+        departPourInvalidite: false,
+        moyenneAnnuelleNBI: 0,
+        trimestresLiquidablesNBI: 0,
+      },
+    });
+    // 160 RG + 20 FP = 180 ≥ 167 → excédent 13.
+    expect(resultat.detailRegimeGeneral.surcoteClassiquePct).toBeCloseTo(16.25, 6);
+  });
+});
+
+describe('calculerPensionConsolidee — date d’effet unique (âge de départ au mois près)', () => {
+  it('départ à 64 ans 0 mois avec trimestres manquants : décote âge -15 % retenue si plus favorable', () => {
+    // Né en mars 1970, effet au 01/04/2034 (64 ans 0 mois) : 12 trimestres
+    // avant 67 ans → -15 %, plus favorable que la décote trimestres (-25 %).
+    const resultat = calculerPensionConsolidee({
+      ...entreeBase,
+      dateNaissance: { annee: 1970, mois: 3 },
+      dateEffet: new Date(Date.UTC(2034, 3, 1)),
+      trimestresValides: 140,
+      trimestresRequis: 172,
+    });
+    expect(resultat.detailRegimeGeneral.decote).toBeCloseTo(-15, 10);
+  });
+
+  it('départ à l’âge légal : aucune surcote classique même avec un excédent de trimestres', () => {
+    const resultat = calculerPensionConsolidee({
+      ...entreeBase,
+      dateNaissance: { annee: 1970, mois: 3 },
+      dateEffet: new Date(Date.UTC(2034, 3, 1)),
+      trimestresValides: 180,
+      trimestresRequis: 172,
+    });
+    expect(resultat.detailRegimeGeneral.surcoteClassiquePct).toBe(0);
+    expect(resultat.detailRegimeGeneral.decote).toBe(0);
+  });
+
+  it('texte du taux plein apprécié tous régimes (RG + FP)', () => {
+    const resultat = calculerPensionConsolidee({
+      ...entreeBase,
+      trimestresValides: 160,
+      trimestresRequis: 172,
+      fonctionPublique: {
+        traitementIndiciaireBrut: 0,
+        trimestresLiquidables: 20,
+        pointsRAFP: 0,
+        departAnticipeCategorieActive: false,
+        departPourInvalidite: false,
+        moyenneAnnuelleNBI: 0,
+        trimestresLiquidablesNBI: 0,
+      },
+    });
+    expect(resultat.ageTauxPlein).toBe('Taux plein atteint avec les trimestres validés');
+  });
+});
+
+describe('calculerPensionConsolidee — écrêtement du MICO tous régimes (référentiel §3.5.5)', () => {
+  // Petite pension RG au taux plein (départ à 67 ans) → MICO applicable.
+  const entreeMico: EntreePensionConsolidee = {
+    ...entreeBase,
+    salaireAnnuelMoyen: 8000,
+    trimestresValides: 172,
+    trimestresRequis: 172,
+    dateNaissance: { annee: 1960, mois: 5 },
+    dateEffet: new Date(Date.UTC(2027, 5, 1)),
+    regimesPoints: [],
+    detailCarriere: [],
+  };
+
+  it('sans autre pension : majoration MICO non écrêtée', () => {
+    const r = calculerPensionConsolidee(entreeMico).detailRegimeGeneral;
+    expect(r.majorationMicoApresEcretement).toBeCloseTo(r.majorationMicoAvantEcretement, 6);
+    expect(r.majorationMicoAvantEcretement).toBeGreaterThan(0);
+  });
+
+  it('la complémentaire Agirc-Arrco calculée par l’outil entre dans le plafond', () => {
+    const complementaire = 16000; // au-delà du plafond à elle seule avec P0
+    const r = calculerPensionConsolidee({
+      ...entreeMico,
+      regimesPoints: [{ nom: 'Agirc-Arrco', type: 'points', points: complementaire, valeurPoint: 1 }],
+    }).detailRegimeGeneral;
+    expect(r.majorationMicoApresEcretement).toBe(0);
+  });
+
+  it('la pension CNAVPL calculée par l’outil entre dans le plafond (réduction à due concurrence)', () => {
+    const sans = calculerPensionConsolidee(entreeMico).detailRegimeGeneral;
+    const pensionCNAVPL = 10000; // 4 000 (P0) + ~5 075 (MICO) + 10 000 > 16 930,68
+    const r = calculerPensionConsolidee({
+      ...entreeMico,
+      cnavpl: { trimestresCNAVPL: 0, pointsCNAVPL: pensionCNAVPL, valeurPointCNAVPL: 1 },
+    }).detailRegimeGeneral;
+    const p0 = r.pensionBaseBrute * (1 + r.decote / 100);
+    const depassement = p0 + sans.majorationMicoAvantEcretement + pensionCNAVPL - 16930.68;
+    expect(depassement).toBeGreaterThan(0);
+    expect(r.majorationMicoApresEcretement).toBeCloseTo(
+      Math.max(0, sans.majorationMicoAvantEcretement - Math.max(0, depassement)),
+      6
+    );
   });
 });

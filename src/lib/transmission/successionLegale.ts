@@ -103,51 +103,63 @@ function calculateBrancheA(
     // Déterminer si DDV existe (on vérifie dans le graph si le mariage a une DDV)
     const hasDDV = !!graph.hasDDV;
 
-    if (tousCommuns) {
-      result.optionConjoint = {
-        quartPP: true,
-        usufruitTotal: true,
-        enfantsCommuns: true
-      };
+    // Options du conjoint :
+    // - sans DDV (art. 757) : 1/4 PP ou 100 % usufruit si tous les enfants sont communs,
+    //   1/4 PP imposé dès qu'un enfant n'est pas commun ;
+    // - avec DDV (art. 1094-1) : les options de la quotité spéciale entre époux sont
+    //   ouvertes quelle que soit la filiation des enfants.
+    const optionsOuvertes = tousCommuns || hasDDV;
+    result.optionConjoint = {
+      quartPP: true,
+      usufruitTotal: optionsOuvertes,
+      enfantsCommuns: tousCommuns
+    };
 
-      if (optionConjoint === 'usufruit_total') {
-        conjointPart = 1.0;
-        conjointTypeQuotePart = 'usufruit';
-        enfantsTypeQuotePart = 'nue_propriete';
-        result.explicationsTexte.push(
-          `Le conjoint reçoit 100% en usufruit. Les enfants reçoivent la nue-propriété.`
-        );
-      } else if (optionConjoint === 'quart_pp_3quarts_us' && hasDDV) {
-        // Le conjoint porte deux droits distincts : 1/4 en pleine propriété + usufruit sur le solde.
-        // Les enfants reçoivent la nue-propriété uniquement sur les 3/4 grevés d'usufruit.
-        result.heritiers.push({
-          personId: conjoint.id, nom: conjoint.nom, prenom: conjoint.prenom || '',
-          lien: 'conjoint', quotePart: 0.25, typeQuotePart: 'pleine_propriete', ordre: 0
-        });
-        result.heritiers.push({
-          personId: conjoint.id, nom: conjoint.nom, prenom: conjoint.prenom || '',
-          lien: 'conjoint', quotePart: 0.75, typeQuotePart: 'usufruit', ordre: 0
-        });
-        distributeToSouchesWithType(result, souchesEnfants, 0.75, 'nue_propriete');
-        result.explicationsTexte.push(
-          `Le conjoint reçoit 1/4 en pleine propriété et l'usufruit sur les 3/4 restants (donation au dernier vivant). Les enfants reçoivent la nue-propriété sur ces 3/4.`
-        );
-        return result;
-      } else if (optionConjoint === 'qd_pp' && hasDDV) {
-        const nbEnfants = souchesEnfants.length;
-        conjointPart = nbEnfants === 1 ? 0.5 : nbEnfants === 2 ? 1/3 : 0.25;
-        result.explicationsTexte.push(
-          `Le conjoint reçoit la quotité disponible (${Math.round(conjointPart * 100)}%) en pleine propriété (donation au dernier vivant).`
-        );
-      } else {
-        // Par défaut ou quart_pp
-        conjointPart = 0.25;
-        result.explicationsTexte.push(
-          `Le conjoint reçoit 1/4 en pleine propriété. Les enfants se partagent les 3/4 restants.`
-        );
-      }
+    // Art. 1098 : un enfant non commun peut demander la conversion de l'usufruit
+    // (rente viagère ou abandon de l'usufruit sur sa réserve). Faculté non exercée
+    // d'office : simple information, sans effet sur les parts.
+    const messageArt1098 =
+      `Présence d'un enfant non commun : il peut demander la conversion de l'usufruit du conjoint en rente viagère, ou l'abandon de l'usufruit portant sur sa réserve (C. civ. art. 1098). Le calcul retient l'option choisie, sans cette conversion.`;
+
+    if (optionsOuvertes && optionConjoint === 'usufruit_total') {
+      conjointPart = 1.0;
+      conjointTypeQuotePart = 'usufruit';
+      enfantsTypeQuotePart = 'nue_propriete';
+      result.explicationsTexte.push(
+        `Le conjoint reçoit 100% en usufruit${tousCommuns ? '' : ' (donation au dernier vivant)'}. Les enfants reçoivent la nue-propriété.`
+      );
+      if (!tousCommuns) result.explicationsTexte.push(messageArt1098);
+    } else if (optionConjoint === 'quart_pp_3quarts_us' && hasDDV) {
+      // Le conjoint porte deux droits distincts : 1/4 en pleine propriété + usufruit sur le solde.
+      // Les enfants reçoivent la nue-propriété uniquement sur les 3/4 grevés d'usufruit.
+      result.heritiers.push({
+        personId: conjoint.id, nom: conjoint.nom, prenom: conjoint.prenom || '',
+        lien: 'conjoint', quotePart: 0.25, typeQuotePart: 'pleine_propriete', ordre: 0
+      });
+      result.heritiers.push({
+        personId: conjoint.id, nom: conjoint.nom, prenom: conjoint.prenom || '',
+        lien: 'conjoint', quotePart: 0.75, typeQuotePart: 'usufruit', ordre: 0
+      });
+      distributeToSouchesWithType(result, souchesEnfants, 0.75, 'nue_propriete');
+      result.explicationsTexte.push(
+        `Le conjoint reçoit 1/4 en pleine propriété et l'usufruit sur les 3/4 restants (donation au dernier vivant). Les enfants reçoivent la nue-propriété sur ces 3/4.`
+      );
+      if (!tousCommuns) result.explicationsTexte.push(messageArt1098);
+      return result;
+    } else if (optionConjoint === 'qd_pp' && hasDDV) {
+      const nbEnfants = souchesEnfants.length;
+      conjointPart = nbEnfants === 1 ? 0.5 : nbEnfants === 2 ? 1/3 : 0.25;
+      result.explicationsTexte.push(
+        `Le conjoint reçoit la quotité disponible (${Math.round(conjointPart * 100)}%) en pleine propriété (donation au dernier vivant).`
+      );
+    } else if (tousCommuns || hasDDV) {
+      // Par défaut ou quart_pp
+      conjointPart = 0.25;
+      result.explicationsTexte.push(
+        `Le conjoint reçoit 1/4 en pleine propriété. Les enfants se partagent les 3/4 restants.`
+      );
     } else {
-      // Au moins un enfant non commun → 1/4 PP obligatoire
+      // Au moins un enfant non commun, sans DDV → 1/4 PP obligatoire (art. 757)
       conjointPart = 0.25;
       result.explicationsTexte.push(
         `Le conjoint reçoit 1/4 en pleine propriété (au moins un enfant non commun).`

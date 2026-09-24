@@ -44,6 +44,9 @@ export interface FamilyGraph {
   childrenOfDecedent: PersonId[];
   childrenCommonWithSpouse: PersonId[];
   hasDDV?: boolean;
+  // Survivant lié au défunt par un PACS (jamais héritier légal, mais titulaire
+  // du droit temporaire au logement, C. civ. art. 515-6 al. 3 renvoyant à 763).
+  survivantPartenairePacs?: boolean;
 }
 
 export interface PatrimonySnapshot {

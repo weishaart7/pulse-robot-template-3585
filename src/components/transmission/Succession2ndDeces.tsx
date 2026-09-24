@@ -332,13 +332,19 @@ export const Succession2ndDeces = () => {
       // --- Ordre inversé (conjoint d'abord) ---
       let inverseResult: OrdreResult;
       try {
-        const spouseFamilyFirst = buildSpouseAsDecedentFamilyGraph(familyProfile, maritalStatus, familyLinks || []);
+        // L'Utilisateur survit au conjoint : héritier (marié) ou partenaire de PACS.
+        const spouseFamilyFirst = buildSpouseAsDecedentFamilyGraph(familyProfile, maritalStatus, familyLinks || [], { utilisateurSurvivant: true });
         const spouseBasePatrimony = buildSpouseOwnBasePatrimony(assets || [], passifLinesBrut, assetDemembrements, demembrementCtx);
         const ctxConjointDecede: TransmissionContext = {
           family: spouseFamilyFirst,
           patrimony: spouseBasePatrimony,
           liberalites: [],
           params,
+          // Option du survivant commune aux deux ordres (décision V1) : celle
+          // choisie pour le conjoint au décès de l'Utilisateur. Si elle n'est
+          // pas ouverte dans ce sens (DDV non consentie par le conjoint,
+          // enfant non commun), successionLegale.ts retombe sur 1/4 PP.
+          conjointOption: (optionConjoint as any) || undefined,
           referenceDate,
           rawAssets: buildSpouseRawAssets(assets || [], assetDemembrements, demembrementCtx),
           assetDemembrements,
@@ -459,6 +465,14 @@ export const Succession2ndDeces = () => {
           </button>
         </div>
       </div>
+
+      {ordre === 'inverse' && (
+        <p className="text-xs text-[var(--text-secondary)]">
+          L'option retenue par le survivant (1/4 en pleine propriété, usufruit…) est celle choisie dans
+          Optimisation, appliquée aux deux ordres. Si elle n'est pas ouverte dans ce sens, le calcul
+          retient 1/4 en pleine propriété.
+        </p>
+      )}
 
       {!current.result ? (
         <div className="kairos-transmission text-center py-12">
