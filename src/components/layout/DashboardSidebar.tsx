@@ -1,12 +1,13 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { PanelLeftClose, Sparkle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { bottomItems, menuItems, getCurrentNavValue } from '@/components/layout/navigation-items';
 import { useSubNav } from '@/contexts/SubNavContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ProfileMenu } from '@/components/layout/ProfileMenu';
+import { TreeNav } from '@/components/ui/tree-nav';
 
 const STORAGE_KEY = 'kairos.sidebar.open';
 const EASE = [0.25, 0.1, 0.25, 1] as const;
@@ -25,56 +26,21 @@ const railButton = cn(
   "focus-visible:ring-1 focus-visible:ring-white/70"
 );
 
-// Sous-menu en arbre : filet vertical à gauche, repère encre sur l'entrée active.
+// Sous-menu en arbre (TreeNav) : rail vertical, repère losange et fond qui
+// suivent le survol puis reviennent sur l'entrée active.
 function SubNavTree({ onItemClick }: { onItemClick?: () => void }) {
   const { items, activeId, onSelect } = useSubNav();
-  const [marker, setMarker] = useState<{ top: number; height: number } | null>(null);
-  const refs = useRef(new Map<string, HTMLButtonElement>());
-
-  useLayoutEffect(() => {
-    const el = refs.current.get(activeId);
-    setMarker(el ? { top: el.offsetTop + 8, height: el.offsetHeight - 16 } : null);
-  }, [activeId, items]);
-
   return (
-    <nav className="relative">
-      <span aria-hidden className="absolute left-3 top-1 bottom-1 w-px bg-border" />
-      {marker && (
-        <motion.span
-          aria-hidden
-          className="absolute left-3 w-[2px] -ml-[0.5px] rounded-full bg-foreground"
-          initial={false}
-          animate={marker}
-          transition={{ duration: 0.15, ease: EASE }}
-        />
-      )}
-      <ul className="space-y-0.5 pl-5">
-        {items.map(item => {
-          const active = item.id === activeId;
-          return (
-            <li key={item.id}>
-              <button
-                ref={el => {
-                  if (el) refs.current.set(item.id, el);
-                  else refs.current.delete(item.id);
-                }}
-                onClick={() => {
-                  onSelect(item.id);
-                  onItemClick?.();
-                }}
-                aria-current={active ? 'page' : undefined}
-                className={cn(
-                  "w-full flex items-center px-2 py-1.5 text-sm text-left transition-colors outline-none rounded-[6px]",
-                  "focus-visible:ring-1 focus-visible:ring-ring",
-                  active ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <span className="truncate">{item.label}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+    <nav>
+      <TreeNav
+        items={items.map(item => ({ label: item.label, href: `#${item.id}` }))}
+        activeHref={`#${activeId}`}
+        onSelect={(item, event) => {
+          event.preventDefault();
+          onSelect(item.href.slice(1));
+          onItemClick?.();
+        }}
+      />
     </nav>
   );
 }
@@ -105,10 +71,10 @@ export function SidebarNav({
             <TooltipTrigger asChild>
               <button
                 onClick={onCollapse}
-                className="-mt-1 p-1 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-background transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="-mt-1 p-1 rounded-[6px] text-muted-foreground hover:text-foreground transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 aria-label="Réduire le panneau"
               >
-                <PanelLeftClose className="h-4 w-4" strokeWidth={1.5} />
+                <ChevronLeft className="h-4 w-4" strokeWidth={2.25} />
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">Réduire (⌘B)</TooltipContent>
@@ -247,6 +213,24 @@ export function DashboardSidebar() {
             />
           </div>
         </div>
+
+      {/* Panneau replié : bouton miroir de « Réduire », à la même hauteur, sur la bande taupe. */}
+      {!open && subNavItems.length > 0 && (
+        <div className="w-10 flex justify-center pt-4">
+          <Tooltip delayDuration={200}>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setOpen(true)}
+                className="h-fit p-1 rounded-[6px] text-muted-foreground hover:text-foreground transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                aria-label="Afficher le panneau"
+              >
+                <ChevronRight className="h-4 w-4" strokeWidth={2.25} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Afficher (⌘B)</TooltipContent>
+          </Tooltip>
+        </div>
+      )}
 
       {/* Panneau du sous-menu */}
       <AnimatePresence initial={false}>

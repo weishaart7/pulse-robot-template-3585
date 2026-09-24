@@ -68,11 +68,15 @@ Surtitres techniques (étapes de wizard, en-têtes de section `SectionHeader`) :
   - **Panneau du sous-menu** : 188 px, sans plaque propre (posé sur la bande taupe), affiché seulement si le module
     déclare un sous-menu (`useModuleSubNav` : Patrimoine, Immobilier, Sociétés, Budget, Retraite).
     Repliable par simple glissement de largeur (bouton de l'en-tête, clic sur l'icône du module
-    actif, `⌘B` / `Ctrl+B`), état mémorisé en `localStorage` (`kairos.sidebar.open`). En-tête : nom
+    actif, `⌘B` / `Ctrl+B`) ; replié, un bouton miroir « Afficher le panneau »
+    reste visible sur la bande taupe, à droite du rail, à la hauteur de l'ancien bouton « Réduire ». Les deux boutons sont une simple tête de flèche
+    (`ChevronLeft` / `ChevronRight`, 16 px) en smoke, encre au survol, sans fond ; état mémorisé en `localStorage` (`kairos.sidebar.open`). En-tête : nom
     du module en Instrument Sans 500 22 px, tracking -0.02em (police du titre du hero de la
-    landing). Entrées en texte seul, Inter 14 px, en arbre : filet vertical stone à gauche ; entrée
-    active en encre 500 avec repère encre 2 px sur le filet, inactives en smoke ;
-    `aria-current="page"`.
+    landing). Entrées via `TreeNav` (`components/ui/tree-nav.tsx`, lignes de 32 px, Inter 13 px) :
+    rail vertical stone terminé par un point, repère losange encre et fond encre 5 % qui glissent
+    (ressort sans rebond) vers l'entrée survolée puis reviennent sur l'entrée active, tracé encre du
+    rail jusqu'au repère ; active en encre 500, inactives en smoke ; animations coupées si
+    `prefers-reduced-motion` ; `aria-current="page"`.
 - Téléphone (< 768 px) : rail et panneau masqués. Barre du haut (`DashboardTopNav`, `md:hidden`) :
   bouton menu, logo, sélecteur de modules en pilules sur piste taupe filetée (module actif en
   pastille encre, ramené en vue), profil. Le bouton menu ouvre un panneau latéral gauche taupe avec
