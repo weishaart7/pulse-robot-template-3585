@@ -11,6 +11,7 @@ import { sireneService, type SireneData } from '@/services/sireneService';
 import { toast } from 'sonner';
 import { QUALIFICATION_OPTIONS } from '@/lib/patrimoine/qualification';
 import { mapDetenteurToDisplay, mapDetenteurToDb, type FamilyInfo } from '@/lib/patrimoine/utils';
+import { hasConjoint } from '@/lib/family/maritalStatus';
 import { familyService } from '@/services/familyService';
 
 interface SocieteFormData {
@@ -171,11 +172,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
           familyInfo.userFirstName = familyProfile.prenom;
         }
 
-        const hasPartner = maritalStatus?.statut_couple &&
-          ['Marié(e)', 'Pacsé(e)', 'Concubinage', 'MARIE', 'PACS', 'PACSE', 'CONCUBINAGE'].includes(maritalStatus.statut_couple) &&
-          maritalStatus.prenom_conjoint;
-
-        if (hasPartner) {
+        if (hasConjoint(maritalStatus)) {
           options.push(maritalStatus.prenom_conjoint);
           familyInfo.hasPartner = true;
           familyInfo.partnerFirstName = maritalStatus.prenom_conjoint;

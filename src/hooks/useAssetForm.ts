@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { assetSchema, AssetFormValues, getDefaultAssetValues } from '@/schemas/assetSchema';
 import { Asset, AssetCharge } from '@/services/assetService';
+import { hasConjoint } from '@/lib/family/maritalStatus';
 import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, mapDetenteurToDb, getPartUtilisateurIndivisionTiers, FamilyInfo } from '@/lib/patrimoine/utils';
 import { ASSET_CATEGORIES, getAssetCategory, PARTS_FONCIERES_NATURES } from '@/constants/assetTypes';
@@ -88,11 +89,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         familyInfo.userDateNaissance = familyProfile?.date_naissance;
         familyInfo.partnerDateNaissance = maritalStatus?.date_naissance_conjoint;
 
-        const hasPartner = maritalStatus?.statut_couple &&
-          ['Marié(e)', 'Pacsé(e)', 'Concubinage', 'MARIE', 'PACS', 'PACSE', 'CONCUBINAGE'].includes(maritalStatus.statut_couple) &&
-          maritalStatus.prenom_conjoint;
-
-        if (hasPartner) {
+        if (hasConjoint(maritalStatus)) {
           options.push(maritalStatus.prenom_conjoint);
           familyInfo.hasPartner = true;
           familyInfo.partnerFirstName = maritalStatus.prenom_conjoint;

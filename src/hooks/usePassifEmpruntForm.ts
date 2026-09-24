@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { passifEmpruntSchema, PassifEmpruntFormValues, getDefaultPassifEmpruntValues } from '@/schemas/passifEmpruntSchema';
 import { Emprunt, Passif } from '@/services/passifService';
 import { Asset, assetService } from '@/services/assetService';
+import { hasConjoint } from '@/lib/family/maritalStatus';
 import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, mapDetenteurToDb, FamilyInfo } from '@/lib/patrimoine/utils';
 import { EMPRUNT_NATURES } from '@/constants/assetTypes';
@@ -66,11 +67,7 @@ export const usePassifEmpruntForm = ({
           familyInfo.userFirstName = familyProfile.prenom;
         }
 
-        const hasPartner = maritalStatus?.statut_couple &&
-          ['Marié(e)', 'Pacsé(e)', 'Concubinage', 'MARIE', 'PACS', 'PACSE', 'CONCUBINAGE'].includes(maritalStatus.statut_couple) &&
-          maritalStatus.prenom_conjoint;
-
-        if (hasPartner) {
+        if (hasConjoint(maritalStatus)) {
           options.push(maritalStatus.prenom_conjoint);
           familyInfo.hasPartner = true;
           familyInfo.partnerFirstName = maritalStatus.prenom_conjoint;

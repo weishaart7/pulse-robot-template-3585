@@ -214,6 +214,15 @@ permet de l'alimenter (voir §3).
   postérieure à la naissance si « Décédé », « Renonce à la succession de » obligatoire si
   renonçant.
 
+- **« A un conjoint » : deux règles distinctes, selon la question posée.**
+  - Répartition par personne (détenteur/débiteur dans Patrimoine, Sociétés, Emprunts, Budget) :
+    `hasConjoint()` ([lib/family/maritalStatus.ts](src/lib/family/maritalStatus.ts)) — statut en couple
+    (marié, pacsé, concubinage) **et** prénom du conjoint renseigné, pour ne jamais proposer une personne
+    sans nom.
+  - Statut seul, volontairement : Famille (`FamilleSection`, `useFamilyLinkLogic`, `buildFamilyGraph` —
+    c'est ce statut qui ouvre la saisie du conjoint) et Retraite (`checkIsInCouple`). Transmission ne
+    retient que marié/pacsé : règle successorale, le concubin n'étant pas héritier.
+
 - **RGPD.** Tous les `console.error` du périmètre Famille sont encadrés par
   `import.meta.env.DEV` (commits `57adc88`, `cb79f15`, `34eb276`), conformément à la règle
   permanente du projet.

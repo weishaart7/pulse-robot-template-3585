@@ -1,3 +1,4 @@
+import { hasConjoint } from '@/lib/family/maritalStatus';
 import React, { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import { ChevronDown, ChevronRight, MoreHorizontal, Edit, Trash2, Search, TrendingUp, TrendingDown, Scale, Link2, AlertTriangle } from 'lucide-react';
@@ -107,7 +108,7 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
   );
 
   const familyInfo = useMemo(() => ({
-    hasPartner: !!maritalStatus?.prenom_conjoint,
+    hasPartner: hasConjoint(maritalStatus),
     userFirstName: familyProfile?.prenom || 'Utilisateur',
     partnerFirstName: maritalStatus?.prenom_conjoint || 'Conjoint'
   }), [familyProfile, maritalStatus]);
