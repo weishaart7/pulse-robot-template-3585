@@ -148,13 +148,13 @@ permet de l'alimenter (voir §3).
   Nationalité n'existait auparavant sur aucun formulaire membre de la famille alors que la colonne
   `family_links.nationalite` existait déjà en base (jamais câblée à l'UI) ; il est maintenant
   saisissable comme sur les fiches client/conjoint. Migrations
-  `20260903000000_add_double_nationalite_family.sql` et
-  `20260903010000_add_nationalite_2_family_links.sql`. Aucun moteur ne consomme ces colonnes à ce
+  `20260903082905_add_double_nationalite_family.sql` et
+  `20260903083526_add_nationalite_2_family_links.sql`. Aucun moteur ne consomme ces colonnes à ce
   jour (voir « Cases dormantes » en §3).
 
 - **Cascade de suppression atomique.** `deleteLinkWithCascade()`
   ([hooks/useFamilyData.ts](../src/hooks/useFamilyData.ts)) appelle la fonction Postgres
-  `delete_family_link_cascade(p_id)` (migration `20260924100000_delete_family_link_cascade.sql`,
+  `delete_family_link_cascade(p_id)` (migration `20260924083058_delete_family_link_cascade.sql`,
   `SECURITY INVOKER` donc soumise à la RLS) qui ré-initialise `enfant_de`/`parent_de` des membres
   dépendants puis supprime le membre dans une seule transaction. Confirmation utilisateur
   (`AlertDialog`) listant les dépendants avant suppression.
@@ -204,7 +204,7 @@ permet de l'alimenter (voir §3).
   `assurance-vie.ts`) ; le formulaire affiche le résultat et les conditions manquantes. Limite : la
   condition d'âge est figée à la date d'enregistrement (un frère qui passe 50 ans n'est exonéré
   qu'au prochain enregistrement de sa fiche). Migration
-  `20260924120000_add_conditions_exoneration_frere_soeur.sql`.
+  `20260924084418_add_conditions_exoneration_frere_soeur.sql`.
 
 - **Champs d'un membre selon le lien.** [lib/family/familyLinkRules.ts](../src/lib/family/familyLinkRules.ts)
   centralise quels champs s'appliquent à quel lien (rattachement, branche, adoption, champs enfant,
