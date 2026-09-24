@@ -12,7 +12,9 @@ export const ErrorBoundaryFallback: React.FC<ErrorBoundaryFallbackProps> = ({
   error, 
   resetError 
 }) => {
-  console.error('💥 ErrorBoundaryFallback rendering with error:', error?.message);
+  if (import.meta.env.DEV) {
+    console.error('💥 ErrorBoundaryFallback rendering with error:', error?.message);
+  }
   
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">

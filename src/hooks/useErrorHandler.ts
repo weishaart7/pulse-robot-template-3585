@@ -6,7 +6,9 @@ export const useErrorHandler = () => {
   const { toast } = useToast();
 
   const handleError = useCallback((error: unknown, customMessage?: string, userId?: string) => {
-    console.error('Error occurred:', error);
+    if (import.meta.env.DEV) {
+      console.error('Error occurred:', error);
+    }
     
     let errorMessage = customMessage || 'Une erreur inattendue s\'est produite';
     

@@ -29,7 +29,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Only log in development mode for security
-  const isDev = process.env.NODE_ENV === 'development';
+  const isDev = import.meta.env.DEV;
   
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -62,7 +62,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // Token is expired, try to refresh
             const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession();
             if (error) {
-              console.error('🔐 Failed to refresh session:', error.message);
+              if (import.meta.env.DEV) {
+                console.error('🔐 Failed to refresh session:', error.message);
+              }
               setSession(null);
               setUser(null);
             } else if (refreshedSession) {
@@ -86,7 +88,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // THEN check for existing session with validation
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (error) {
-        console.error('🔐 Error getting session:', error.message);
+        if (import.meta.env.DEV) {
+          console.error('🔐 Error getting session:', error.message);
+        }
         setSession(null);
         setUser(null);
         setLoading(false);
@@ -102,7 +106,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (isDev) console.log('🔐 Initial session expired, refreshing...');
           const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
           if (refreshError) {
-            console.error('🔐 Failed to refresh initial session:', refreshError.message);
+            if (import.meta.env.DEV) {
+              console.error('🔐 Failed to refresh initial session:', refreshError.message);
+            }
             setSession(null);
             setUser(null);
           } else if (refreshedSession) {
