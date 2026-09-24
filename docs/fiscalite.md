@@ -1107,15 +1107,6 @@ fonciers (§4).
   faible, mais ce module n'a **jamais reçu** le durcissement « défense en profondeur » appliqué à
   Patrimoine/Sociétés le même jour : `git log` ne montre aucun commit touchant `ifiService.ts` après
   sa création (`c0cf6bd`, `06c2b4c`).
-- **Non-conformité RGPD/logs systématique sur tout `useIFI.ts`.** Les 22 occurrences de
-  `console.error` du fichier ([useIFI.ts](src/hooks/useIFI.ts), une par branche `catch` des 6 hooks)
-  sont **toutes** non encadrées par `import.meta.env.DEV`, contrairement à la règle `CLAUDE.md`
-  (« Pas de `console.log` actif en production ») déjà appliquée au reste de Patrimoine/Sociétés par le
-  commit `ea3a695`. Le message loggé est un libellé français fixe suivi de l'objet `error` brut de
-  Supabase (pas de montant ni d'identité directement, mais l'objet d'erreur peut selon le cas inclure
-  des fragments de la requête) — non conforme à la lettre de la règle même si le risque de fuite de
-  donnée patrimoniale sensible reste faible en pratique. `ifiService.ts`, lui, ne logge rien (se
-  contente de `throw`) — la non-conformité est localisée au hook, pas au service.
 - **`src/lib/fiscalite/calculerPrelevementsSociauxCapitauxMobiliers.ts` — prélèvements sociaux (PS) sur
   le cadre 2 « Capitaux mobiliers » (Phase 1 du chantier PS, périmètre volontairement partiel).**
   Premier module d'un chantier plus large : calculer les PS (CSG/CRDS/prélèvement de solidarité) pour
@@ -1420,9 +1411,6 @@ fonciers (§4).
   `--project tsconfig.app.json` la révèle). À corriger la prochaine fois qu'on touche
   `foyerFiscalService.ts`/`foyerFiscalToRow`, par exemple en castant `as unknown as Json` au point de
   sérialisation ou en élargissant `EnfantCharge`/`PersonneInvalideCharge` avec un index signature.
-- **22 occurrences de `console.error` non encadrées par `import.meta.env.DEV`** dans
-  [useIFI.ts](src/hooks/useIFI.ts) — non-conformité systématique à la règle `CLAUDE.md`, jamais
-  corrigée dans ce fichier contrairement au reste de Patrimoine/Sociétés (commit `ea3a695`).
 - **Sidebar IFI trompeuse sur le contenu réel de chaque section** (§2) : « Barème de l'IFI » contient
   en réalité le montant final dû, tandis que « Montant redevable à l'IFI » et « Réduction &
   Plafonnement de l'IFI » sont des stubs vides — à renommer ou à compléter pour que le libellé

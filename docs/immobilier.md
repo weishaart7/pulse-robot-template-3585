@@ -398,11 +398,6 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
   redondant avec `ImmobilierPropertyDetailView.tsx`.
 - **Auto-calcul des frais de notaire (7,5 %) dupliqué à l'identique** dans
   `useImmobilierPropertyForm.ts` et `PropertyCostSection.tsx`, sur la même instance de formulaire.
-- **`console.error` non gardé par `import.meta.env.DEV`** — deux occurrences :
-  [ImmobilierOverview.tsx:148](src/components/immobilier/ImmobilierOverview.tsx:148) et
-  [RevenuForm.tsx:87](src/components/immobilier/RevenuForm.tsx:87). Non-conformité à la règle
-  `CLAUDE.md` (« pas de `console.log` actif en production »), déjà corrigée ailleurs dans le
-  périmètre Patrimoine par le commit `ea3a695`, mais pas étendue à ces deux fichiers Immobilier.
 - **`useImmobilierPropertyForm.ts`/`LMNPDetailView.tsx` écrivent directement sur `supabase.from
   ('assets')`** au lieu de passer par `assetService.updateAsset`, perdant le contrôle de propriété
   applicatif que ce dernier effectue avant écriture (RLS reste le filet de sécurité).
