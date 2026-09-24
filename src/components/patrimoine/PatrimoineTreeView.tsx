@@ -18,7 +18,8 @@ import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useF
 import { useEmprunts } from '@/hooks/usePassifs';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { AssetDetailsDialog } from './AssetDetailsDialog';
-import { formatCurrency, getCategoryColor, calculatePlusValue, mapDetenteurToDisplay } from '@/lib/patrimoine/utils';
+import { formatCurrency, getCategoryColor, mapDetenteurToDisplay } from '@/lib/patrimoine/utils';
+import { computePlusValueActif } from '@/lib/patrimoine/plusValueActif';
 import { resolveAssetFiscalRegime } from '@/lib/patrimoine/assetFiscalRegime';
 import { getFractionDemembrement, DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
 
@@ -161,37 +162,19 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
       return { display: '—', className: 'text-muted-foreground', value: 0, regimeNonDetermine: false };
     }
 
-    // Actif démembré dont l'âge de l'usufruitier n'est pas calculable : exclu,
-    // même traitement que usePatrimoineCalculations.ts::plusValuesSummary.
-    const fraction = getDemembrementFraction(asset);
-    if (fraction === null) {
-      return { display: '—', className: 'text-muted-foreground', value: 0, regimeNonDetermine: false };
-    }
-
-    // Valeur estimée ET valeur d'acquisition pondérées par la même fraction de
-    // démembrement (barème 669 CGI), même logique que
-    // usePatrimoineCalculations.ts::plusValuesSummary.
-    const valeurEstimeePonderee = (asset.valeur_estimee === undefined || asset.valeur_estimee === null)
-      ? asset.valeur_estimee
-      : asset.valeur_estimee * fraction;
-    const valeurAcquisitionPonderee = (asset.valeur_acquisition === undefined || asset.valeur_acquisition === null)
-      ? asset.valeur_acquisition
-      : asset.valeur_acquisition * fraction;
-
-    const { plusValue, hasData } = calculatePlusValue(
-      valeurEstimeePonderee,
-      valeurAcquisitionPonderee,
-      asset.frais_acquisition
-    );
-
-    if (!hasData) return { display: '—', className: 'text-muted-foreground', value: 0, regimeNonDetermine: false };
+    // Même calcul que le Résumé (computePlusValueActif), à la valeur totale
+    // de la ligne (part = 1) : null si non calculable (âge de l'usufruitier
+    // inconnu, démembré sans date d'acquisition, valeurs absentes).
+    const pv = computePlusValueActif(asset, asset.id ? (demembrementsByAsset[asset.id] || []) : [], demembrementCtx);
+    if (!pv) return { display: '—', className: 'text-muted-foreground', value: 0, regimeNonDetermine: false };
+    const { plusValue } = pv;
 
     const regime = resolveAssetFiscalRegime({
       nature: asset.nature,
       ctoMultiActifs: asset.cto_multi_actifs,
       ctoNatureSousJacent: asset.cto_nature_sous_jacent,
       plusValue,
-      valeurEstimee: valeurEstimeePonderee || 0,
+      valeurEstimee: pv.valeurEstimee,
       dateAcquisition: asset.date_acquisition,
     });
     const regimeNonDetermine = regime.tone === 'non_determine';
@@ -220,22 +203,10 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
     let hasAnyData = false;
 
     categoryAssets.forEach(asset => {
-      // Même exclusion et pondération que getPlusValueDisplay ci-dessus.
-      const fraction = getDemembrementFraction(asset);
-      if (fraction === null) return;
-
-      const valeurEstimeePonderee = (asset.valeur_estimee === undefined || asset.valeur_estimee === null)
-        ? asset.valeur_estimee
-        : asset.valeur_estimee * fraction;
-      const valeurAcquisitionPonderee = (asset.valeur_acquisition === undefined || asset.valeur_acquisition === null)
-        ? asset.valeur_acquisition
-        : asset.valeur_acquisition * fraction;
-
-      const { plusValue, hasData } = calculatePlusValue(
-        valeurEstimeePonderee,
-        valeurAcquisitionPonderee,
-        asset.frais_acquisition
-      );
+      // Même calcul que getPlusValueDisplay ci-dessus.
+      const pv = computePlusValueActif(asset, asset.id ? (demembrementsByAsset[asset.id] || []) : [], demembrementCtx);
+      const hasData = pv !== null;
+      const plusValue = pv?.plusValue ?? 0;
       if (hasData) {
         total += plusValue;
         hasAnyData = true;

@@ -279,7 +279,7 @@ const FiscalContent = ({
   assets,
   formatCurrency
 }: {
-  assetsWithPlusValue: Array<{ id: string; denomination: string; nature: string; plusValue: number; valeurEstimee: number; valeurAcquisition: number; dateAcquisition?: string }>;
+  assetsWithPlusValue: Array<{ id: string; denomination: string; nature: string; plusValue: number; valeurEstimee: number; valeurAcquisition: number; fraisAcquisition: number; dateAcquisition?: string; origineActif?: string[]; partsCedants: number[] }>;
   assets: Asset[];
   formatCurrency: (v: number) => string;
 }) => {
@@ -294,6 +294,10 @@ const FiscalContent = ({
         plusValue: a.plusValue,
         valeurEstimee: a.valeurEstimee,
         dateAcquisition: a.dateAcquisition,
+        valeurAcquisition: a.valeurAcquisition,
+        fraisAcquisition: a.fraisAcquisition,
+        origineActif: a.origineActif,
+        partsCedants: a.partsCedants,
       }),
     };
   });

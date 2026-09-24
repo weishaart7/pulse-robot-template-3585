@@ -9,7 +9,19 @@ import { formatCurrency } from './utils';
  */
 
 const PVI_IR_RATE = 0.19;
+// 17,2 % et non 18,6 % : la hausse de CSG de la LFSS 2026 (loi n° 2025-1403,
+// CSG capital 9,2 % → 10,6 %) ne s'applique pas aux plus-values
+// immobilières, qui restent à 9,2 % de CSG. Différence voulue avec
+// `PFU_PS` (regimeFiscalPlusValue.ts) — ne pas « harmoniser ».
 const PVI_PS_RATE = 0.172;
+const PVI_TOTAL_LABEL = `${((PVI_IR_RATE + PVI_PS_RATE) * 100).toFixed(1).replace('.', ',')}%`;
+
+// Forfaits de majoration du prix d'acquisition (art. 150 VB II CGI) :
+// 7,5 % pour frais d'acquisition (acquisition à titre onéreux uniquement),
+// 15 % pour travaux après 5 ans de détention (immeubles bâtis uniquement).
+const FORFAIT_FRAIS_ACQUISITION = 0.075;
+const FORFAIT_TRAVAUX = 0.15;
+const NATURES_NON_BATIES = ['Terrains', 'Parking / Garage / Box', 'Parts de SCPI'];
 
 const NATURE_RESIDENCE_PRINCIPALE = 'Résidence principale';
 
@@ -87,14 +99,55 @@ const formatPct = (rate: number): string => `${(rate * 100).toFixed(1).replace(/
 
 export interface ComputePVIRegimeInput {
   nature: string;
+  // Plus-value latente économique (valeur estimée − prix − frais réels).
   plusValue: number;
   dateAcquisition?: string;
+  // Optionnels : sans eux, la plus-value fiscale = `plusValue` (pas de
+  // forfait) et la surtaxe est appréciée sur un seul cédant.
+  valeurAcquisition?: number;
+  fraisAcquisition?: number;
+  acquisitionOnereuse?: boolean;
+  // Quote-part de chaque cédant dans la plus-value (somme = 1) : le seuil de
+  // 50 000 € de la surtaxe s'apprécie par cédant (BOI-RFPI-TPVIE-20 :
+  // indivisaires, époux pour un bien de communauté, partenaires de PACS).
+  partsCedants?: number[];
 }
+
+/**
+ * Plus-value FISCALE : prix d'acquisition majoré du plus favorable entre
+ * frais réels et forfait 7,5 % (onéreux), et du forfait travaux 15 % au-delà
+ * de 5 ans (bâti). Les travaux réels ne sont pas repris (champs du module
+ * Immobilier, possiblement déjà déduits des revenus fonciers).
+ */
+const computePlusValueFiscale = (
+  plusValue: number,
+  nature: string,
+  years: number,
+  valeurAcquisition?: number,
+  fraisAcquisition?: number,
+  acquisitionOnereuse?: boolean
+): number => {
+  if (valeurAcquisition === undefined) return plusValue;
+  const frais = fraisAcquisition ?? 0;
+  const fraisRetenus = acquisitionOnereuse
+    ? Math.max(frais, valeurAcquisition * FORFAIT_FRAIS_ACQUISITION)
+    : frais;
+  const travaux = years > 5 && !NATURES_NON_BATIES.includes(nature)
+    ? valeurAcquisition * FORFAIT_TRAVAUX
+    : 0;
+  // plusValue = valeurEstimee − valeurAcquisition − frais : on remplace les
+  // frais réels par les frais retenus et on retire le forfait travaux.
+  return plusValue + frais - fraisRetenus - travaux;
+};
 
 export const computePVIRegime = ({
   nature,
-  plusValue,
+  plusValue: plusValueLatente,
   dateAcquisition,
+  valeurAcquisition,
+  fraisAcquisition,
+  acquisitionOnereuse,
+  partsCedants = [1],
 }: ComputePVIRegimeInput): FiscalRegimeResult | null => {
   if (nature === NATURE_RESIDENCE_PRINCIPALE) {
     return {
@@ -126,13 +179,19 @@ export const computePVIRegime = ({
     };
   }
 
+  const plusValue = computePlusValueFiscale(plusValueLatente, nature, years, valeurAcquisition, fraisAcquisition, acquisitionOnereuse);
+  const forfaitNote = valeurAcquisition !== undefined
+    ? `Plus-value imposable ${formatCurrency(Math.max(plusValue, 0))} après forfaits (frais d'acquisition 7,5 % si plus favorable${years > 5 && !NATURES_NON_BATIES.includes(nature) ? ', travaux 15 %' : ''}).`
+    : undefined;
+
   if (plusValue <= 0) {
     return {
-      badge: isLMNP ? 'LMNP 36,2%' : 'PVI 36,2%',
+      badge: 'Moins-value — aucun impôt',
       tone: 'exonere_total',
       ir: 0,
       ps: 0,
       total: 0,
+      note: forfaitNote,
     };
   }
 
@@ -145,22 +204,23 @@ export const computePVIRegime = ({
   // Les terrains à bâtir sont exclus par la loi de la surtaxe, mais faute de
   // pouvoir les distinguer des autres terrains (voir commentaire plus haut),
   // la surtaxe s'applique ici à "Terrains" comme au reste du régime général.
-  const surtaxeDue = surtaxe(pvImposableIR);
+  // Seuil apprécié par cédant, sur sa quote-part de plus-value imposable.
+  const surtaxeDue = partsCedants.reduce((sum, part) => sum + surtaxe(pvImposableIR * part), 0);
   const total = irDue + psDue + surtaxeDue;
 
   const isExonereTotal = tauxAbattementIR >= 1 && tauxAbattementPS >= 1;
 
-  const notes: string[] = [];
+  const notes: string[] = forfaitNote ? [forfaitNote] : [];
   if (isLMNP) {
     notes.push(
       "Depuis 2025, les amortissements déduits pendant la détention doivent être réintégrés dans le calcul (ils réduisent la valeur d'acquisition prise en compte, donc majorent la plus-value imposable). Ce montant cumulé n'est pas un champ du formulaire actif : à renseigner/estimer manuellement, il n'est pas ajouté ici. La plus-value réellement imposable est donc probablement supérieure à celle affichée."
     );
   }
   if (surtaxeDue > 0) {
-    notes.push("Surtaxe progressive incluse (plus-value imposable à l'IR supérieure à 50 000 €).");
+    notes.push("Surtaxe progressive incluse (quote-part de plus-value imposable à l'IR d'au moins un cédant supérieure à 50 000 €).");
   }
 
-  const badgeBase = isLMNP ? 'LMNP 36,2%' : 'PVI 36,2%';
+  const badgeBase = `${isLMNP ? 'LMNP' : 'PVI'} ${PVI_TOTAL_LABEL}`;
 
   return {
     badge: isExonereTotal ? `${badgeBase} — exonéré (22/30 ans)` : badgeBase,

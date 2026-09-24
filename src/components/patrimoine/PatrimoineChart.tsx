@@ -41,10 +41,17 @@ export function computePatrimoineBreakdown(
     }
   };
 
+  const demembrementsByAsset = new Map<string, AssetDemembrement[]>();
+  assetDemembrements.forEach((d) => {
+    const list = demembrementsByAsset.get(d.asset_id);
+    if (list) list.push(d);
+    else demembrementsByAsset.set(d.asset_id, [d]);
+  });
+
   // Vue par catégorie pour les actifs
   const categoryData = assets.reduce((acc, asset) => {
     const category = getAssetCategory(asset.nature);
-    const demembrementsForAsset = asset.id ? assetDemembrements.filter((d) => d.asset_id === asset.id) : [];
+    const demembrementsForAsset = asset.id ? demembrementsByAsset.get(asset.id) ?? [] : [];
     const fraction = getFractionDemembrement(asset, demembrementsForAsset, demembrementCtx);
     // fraction === null : actif démembré dont l'âge de l'usufruitier n'est
     // pas calculable — exclu du total plutôt que compté à sa valeur pleine
@@ -93,12 +100,15 @@ export const PatrimoineChart = ({
   passifs,
   emprunts,
   selectedCategory,
-  assetDemembrements = [],
-  demembrementCtx = {}
+  assetDemembrements,
+  demembrementCtx
 }: PatrimoineChartProps) => {
+  // Contexte stabilisé sur ses champs (l'appelant passe un objet littéral
+  // recréé à chaque rendu, qui invaliderait le useMemo ci-dessous).
+  const { familyProfile, maritalStatus, familyLinks } = demembrementCtx ?? {};
   const chartData = useMemo(
-    () => computePatrimoineBreakdown(assets, passifs, emprunts, assetDemembrements, demembrementCtx),
-    [assets, passifs, emprunts, assetDemembrements, demembrementCtx]
+    () => computePatrimoineBreakdown(assets, passifs, emprunts, assetDemembrements, { familyProfile, maritalStatus, familyLinks }),
+    [assets, passifs, emprunts, assetDemembrements, familyProfile, maritalStatus, familyLinks]
   );
   const totalActifs = chartData.filter(item => item.type === 'actif').reduce((sum, item) => sum + item.value, 0);
   const totalPassifs = chartData.filter(item => item.type === 'passif').reduce((sum, item) => sum + item.value, 0);

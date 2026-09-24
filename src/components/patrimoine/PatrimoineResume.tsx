@@ -50,6 +50,11 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
       });
   }, []);
 
+  const demembrementCtx = useMemo(
+    () => ({ familyProfile, maritalStatus, familyLinks }),
+    [familyProfile, maritalStatus, familyLinks]
+  );
+
   const {
     financialSummary,
     patrimoineParPersonne,
@@ -64,15 +69,15 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
     spouseFirstName: maritalStatus?.prenom_conjoint || 'Conjoint',
     statutCouple: maritalStatus?.statut_couple,
     assetDemembrements,
-    demembrementCtx: { familyProfile, maritalStatus, familyLinks }
+    demembrementCtx
   });
 
   const evolutionPatrimoine = useMemo(
     () => computeEvolutionPatrimoine(assets, valorisations, {
       assetDemembrements,
-      demembrementCtx: { familyProfile, maritalStatus, familyLinks }
+      demembrementCtx
     }),
-    [assets, valorisations, assetDemembrements, familyProfile, maritalStatus, familyLinks]
+    [assets, valorisations, assetDemembrements, demembrementCtx]
   );
 
   const evolutionPoints = useMemo(
@@ -124,7 +129,7 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
               emprunts={emprunts}
               selectedCategory={null}
               assetDemembrements={assetDemembrements}
-              demembrementCtx={{ familyProfile, maritalStatus, familyLinks }}
+              demembrementCtx={demembrementCtx}
             />
           </CardContent>
         </Card>

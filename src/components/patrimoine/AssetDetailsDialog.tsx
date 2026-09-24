@@ -21,7 +21,7 @@ import { qualifierBien } from '@/lib/patrimoine/qualification';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { getTrancheDemembrement } from '@/lib/patrimoine/demembrementFraction';
 import { passifService, Emprunt } from '@/services/passifService';
-import { formatCurrency as formatCurrencyUtil } from '@/lib/patrimoine/utils';
+import { formatCurrency as formatCurrencyUtil, isDetenteurCommon } from '@/lib/patrimoine/utils';
 import { format } from 'date-fns';
 import { getOrigineActifLabel } from '@/schemas/assetSchema';
 
@@ -383,7 +383,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
           )}
 
           {/* Propriété */}
-          {(asset.detenteur === 'common' || asset.detenteur === 'commun' || asset.detenteur === 'couple') && (asset.pourcentage_utilisateur || asset.pourcentage_conjoint || asset.mode_detention) && (
+          {isDetenteurCommon(asset.detenteur) && (asset.pourcentage_utilisateur != null || asset.pourcentage_conjoint != null || !!asset.mode_detention) && (
             <>
               <Separator />
               <div>
@@ -395,13 +395,13 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
                       <p className="font-medium">{asset.mode_detention}</p>
                     </div>
                   )}
-                  {asset.pourcentage_utilisateur && (
+                  {asset.pourcentage_utilisateur != null && (
                     <div>
                       <span className="text-sm text-muted-foreground">Part utilisateur</span>
                       <p className="font-medium">{asset.pourcentage_utilisateur}%</p>
                     </div>
                   )}
-                  {asset.pourcentage_conjoint && (
+                  {asset.pourcentage_conjoint != null && (
                     <div>
                       <span className="text-sm text-muted-foreground">Part conjoint</span>
                       <p className="font-medium">{asset.pourcentage_conjoint}%</p>

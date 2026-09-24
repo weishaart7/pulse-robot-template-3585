@@ -77,7 +77,7 @@ export interface QualificationContext {
   apportFondsPropres?: number;
 }
 
-const ORIGINES_PROPRES = [
+export const ORIGINES_PROPRES = [
   'Donation',
   'Héritage',
   "Présent d'usage",

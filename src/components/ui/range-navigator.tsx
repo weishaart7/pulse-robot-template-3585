@@ -118,7 +118,9 @@ export default function RangeNavigator({
     const lo = Math.min(...values);
     const hi = Math.max(...values);
     const pad = (hi - lo) * 0.1 || Math.max(1, Math.abs(lo) * 0.05);
-    const min = lo - pad;
+    // Pas de marge sous zéro quand toutes les valeurs sont positives : un
+    // axe gradué en négatif n'a pas de sens pour une série de montants ≥ 0.
+    const min = lo >= 0 ? Math.max(0, lo - pad) : lo - pad;
     const max = hi + pad;
     // espacement proportionnel au temps écoulé entre les dates, pas à leur index
     const x = (i: number) => PAD.l + (n === 1 ? 0.5 : (times[i] - t0) / tSpan) * plotW;

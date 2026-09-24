@@ -12,7 +12,15 @@ import { differenceInYears } from 'date-fns';
 
 export const PFU_RATE = 0.314;
 export const PFU_IR = 0.128;
+// 18,6 % : CSG sur les revenus du capital portée de 9,2 % à 10,6 % par la
+// LFSS 2026 (loi n° 2025-1403). Ne s'applique PAS aux plus-values
+// immobilières ni aux métaux précieux (CSG maintenue à 9,2 %, soit 17,2 %) —
+// cf. PVI_PS_RATE (regimeFiscalPVI.ts) et METAUX_PS ci-dessous.
 export const PFU_PS = 0.186;
+// Or / métaux précieux, option plus-value réelle : 19 % IR + 17,2 % PS.
+const METAUX_IR = 0.19;
+const METAUX_PS = 0.172;
+const METAUX_TOTAL = METAUX_IR + METAUX_PS;
 
 export type FiscalTone = 'pfu' | 'exonere_partiel' | 'exonere_total' | 'informatif' | 'choix' | 'non_determine';
 
@@ -288,11 +296,11 @@ export const computeFiscalRegime = ({
     const note = "Deux régimes possibles, au choix du contribuable : taxe forfaitaire (aucun justificatif d'acquisition requis) ou option plus-value réelle (nécessite un justificatif de prix et de date d'acquisition).";
     if (years !== null && plusValue > 0) {
       const abattement = years >= 22 ? 1 : Math.min(Math.max(years - 2, 0) * 0.05, 1);
-      const totalReelle = plusValue * (1 - abattement) * 0.376;
+      const totalReelle = plusValue * (1 - abattement) * METAUX_TOTAL;
       alternatives.push({
         label: years >= 22
           ? 'Option plus-value réelle (exonérée après 22 ans de détention)'
-          : `Option plus-value réelle 37,6% (abattement ${(abattement * 100).toFixed(0)}% pour ${years} an${years > 1 ? 's' : ''} de détention)`,
+          : `Option plus-value réelle ${(METAUX_TOTAL * 100).toFixed(1).replace('.', ',')}% (abattement ${(abattement * 100).toFixed(0)}% pour ${years} an${years > 1 ? 's' : ''} de détention)`,
         total: totalReelle,
       });
     }
