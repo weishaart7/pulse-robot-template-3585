@@ -29,7 +29,9 @@ export const useIFIImmeubleBatis = () => {
       const data = await ifiImmeubleBatiService.getAll();
       setBiens(data);
     } catch (error) {
-      console.error('Erreur lors du chargement des immeubles bâtis:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors du chargement des immeubles bâtis:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de charger les immeubles bâtis",
@@ -50,7 +52,9 @@ export const useIFIImmeubleBatis = () => {
       });
       return newBien;
     } catch (error) {
-      console.error('Erreur lors de la création:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la création:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible d'ajouter l'immeuble bâti",
@@ -70,7 +74,9 @@ export const useIFIImmeubleBatis = () => {
       });
       return updatedBien;
     } catch (error) {
-      console.error('Erreur lors de la modification:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la modification:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de modifier l'immeuble bâti",
@@ -89,7 +95,9 @@ export const useIFIImmeubleBatis = () => {
         description: "Immeuble bâti supprimé avec succès",
       });
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la suppression:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de supprimer l'immeuble bâti",
@@ -124,7 +132,9 @@ export const useIFIImmeublesNonBatis = () => {
       const data = await ifiImmeableNonBatiService.getAll();
       setBiens(data);
     } catch (error) {
-      console.error('Erreur lors du chargement des immeubles non bâtis:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors du chargement des immeubles non bâtis:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de charger les immeubles non bâtis",
@@ -145,7 +155,9 @@ export const useIFIImmeublesNonBatis = () => {
       });
       return newBien;
     } catch (error) {
-      console.error('Erreur lors de la création:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la création:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible d'ajouter l'immeuble non bâti",
@@ -165,7 +177,9 @@ export const useIFIImmeublesNonBatis = () => {
       });
       return updatedBien;
     } catch (error) {
-      console.error('Erreur lors de la modification:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la modification:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de modifier l'immeuble non bâti",
@@ -184,7 +198,9 @@ export const useIFIImmeublesNonBatis = () => {
         description: "Immeuble non bâti supprimé avec succès",
       });
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la suppression:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de supprimer l'immeuble non bâti",
@@ -219,7 +235,9 @@ export const useIFIBiensDetenusIndirectement = () => {
       const data = await ifiBienDetenuIndirectementService.getAll();
       setBiens(data);
     } catch (error) {
-      console.error('Erreur lors du chargement des biens détenus indirectement:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors du chargement des biens détenus indirectement:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de charger les biens détenus indirectement",
@@ -240,7 +258,9 @@ export const useIFIBiensDetenusIndirectement = () => {
       });
       return newBien;
     } catch (error) {
-      console.error('Erreur lors de la création:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la création:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible d'ajouter le bien détenu indirectement",
@@ -260,7 +280,9 @@ export const useIFIBiensDetenusIndirectement = () => {
       });
       return updatedBien;
     } catch (error) {
-      console.error('Erreur lors de la modification:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la modification:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de modifier le bien détenu indirectement",
@@ -279,7 +301,9 @@ export const useIFIBiensDetenusIndirectement = () => {
         description: "Bien détenu indirectement supprimé avec succès",
       });
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la suppression:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de supprimer le bien détenu indirectement",
@@ -314,7 +338,9 @@ export const useIFIBiensProfessionnelsExoneres = () => {
       const data = await ifiBienProfessionnelExonereService.getAll();
       setBiens(data);
     } catch (error) {
-      console.error('Erreur lors du chargement des biens professionnels exonérés:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors du chargement des biens professionnels exonérés:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de charger les biens professionnels exonérés",
@@ -335,7 +361,9 @@ export const useIFIBiensProfessionnelsExoneres = () => {
       });
       return newBien;
     } catch (error) {
-      console.error('Erreur lors de la création:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la création:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible d'ajouter le bien professionnel exonéré",
@@ -355,7 +383,9 @@ export const useIFIBiensProfessionnelsExoneres = () => {
       });
       return updatedBien;
     } catch (error) {
-      console.error('Erreur lors de la modification:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la modification:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de modifier le bien professionnel exonéré",
@@ -374,7 +404,9 @@ export const useIFIBiensProfessionnelsExoneres = () => {
         description: "Bien professionnel exonéré supprimé avec succès",
       });
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la suppression:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de supprimer le bien professionnel exonéré",
@@ -408,7 +440,9 @@ export const useIFIPassifsDeductions = () => {
       const data = await ifiPassifDeductionService.getAll();
       setPassifs(data);
     } catch (error) {
-      console.error('Erreur lors du chargement des passifs IFI:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors du chargement des passifs IFI:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de charger les passifs et déductions",
@@ -429,7 +463,9 @@ export const useIFIPassifsDeductions = () => {
       });
       return newPassif;
     } catch (error) {
-      console.error('Erreur lors de la création:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la création:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible d'ajouter le passif",
@@ -449,7 +485,9 @@ export const useIFIPassifsDeductions = () => {
       });
       return updatedPassif;
     } catch (error) {
-      console.error('Erreur lors de la modification:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la modification:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de modifier le passif",
@@ -468,7 +506,9 @@ export const useIFIPassifsDeductions = () => {
         description: "Passif supprimé avec succès",
       });
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la suppression:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de supprimer le passif",
@@ -503,7 +543,9 @@ export const useIFIHypotheses = () => {
       const data = await ifiHypotheseService.getAll();
       setHypotheses(data);
     } catch (error) {
-      console.error('Erreur lors du chargement des hypothèses IFI:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors du chargement des hypothèses IFI:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de charger les hypothèses",
@@ -525,7 +567,9 @@ export const useIFIHypotheses = () => {
       });
       return saved;
     } catch (error) {
-      console.error("Erreur lors de la sauvegarde de l'hypothèse:", error);
+      if (import.meta.env.DEV) {
+        console.error("Erreur lors de la sauvegarde de l'hypothèse:", error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible d'enregistrer l'hypothèse",
