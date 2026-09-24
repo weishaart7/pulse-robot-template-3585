@@ -1,125 +1,289 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { PanelLeftClose, Sparkle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
-import { bottomItems } from '@/components/layout/navigation-items';
+import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
+import { bottomItems, menuItems, getCurrentNavValue } from '@/components/layout/navigation-items';
 import { useSubNav } from '@/contexts/SubNavContext';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { ProfileMenu } from '@/components/layout/ProfileMenu';
 
-// Contenu de navigation (sous-menu du module + liens du bas), partagé par la
-// barre latérale (écran large) et le panneau mobile (DashboardTopNav).
-export function SidebarNav({ open = true, onItemClick }: { open?: boolean; onItemClick?: () => void }) {
+const STORAGE_KEY = 'kairos.sidebar.open';
+const EASE = [0.25, 0.1, 0.25, 1] as const;
+const SPRING = { type: 'spring', stiffness: 500, damping: 40 } as const;
+const PANEL_WIDTH = 216;
+
+function readStoredOpen(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEY) !== 'false';
+  } catch {
+    return true;
+  }
+}
+
+const railButton = cn(
+  "relative h-10 w-10 flex items-center justify-center rounded-[12px] transition-colors outline-none",
+  "focus-visible:ring-1 focus-visible:ring-white/70"
+);
+
+// Sous-menu en arbre : filet vertical à gauche, repère encre qui suit le survol
+// (ressort) et se pose sur l'entrée active.
+function SubNavTree({ onItemClick }: { onItemClick?: () => void }) {
+  const { items, activeId, onSelect } = useSubNav();
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [marker, setMarker] = useState<{ top: number; height: number } | null>(null);
+  const refs = useRef(new Map<string, HTMLButtonElement>());
+
+  const targetId = hoveredId ?? activeId;
+  useLayoutEffect(() => {
+    const el = refs.current.get(targetId);
+    setMarker(el ? { top: el.offsetTop + 8, height: el.offsetHeight - 16 } : null);
+  }, [targetId, items]);
+
+  return (
+    <nav className="relative" onMouseLeave={() => setHoveredId(null)}>
+      <span aria-hidden className="absolute left-3 top-1 bottom-1 w-px bg-border" />
+      {marker && (
+        <motion.span
+          aria-hidden
+          className="absolute left-3 w-[2px] -ml-[0.5px] rounded-full bg-foreground"
+          initial={false}
+          animate={marker}
+          transition={SPRING}
+        />
+      )}
+      <ul className="space-y-0.5 pl-6">
+        {items.map(item => {
+          const active = item.id === activeId;
+          return (
+            <li key={item.id}>
+              <button
+                ref={el => {
+                  if (el) refs.current.set(item.id, el);
+                  else refs.current.delete(item.id);
+                }}
+                onClick={() => {
+                  onSelect(item.id);
+                  onItemClick?.();
+                }}
+                onMouseEnter={() => setHoveredId(item.id)}
+                onFocus={() => setHoveredId(item.id)}
+                onBlur={() => setHoveredId(null)}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  "w-full flex items-center px-3 py-2 text-sm rounded-[10px] text-left transition-colors outline-none",
+                  "focus-visible:ring-1 focus-visible:ring-ring",
+                  active
+                    ? "bg-background text-foreground font-medium shadow-whisper"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <span className="truncate">{item.label}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
+// Contenu du panneau (nom du module + sous-menu), partagé par le panneau clair
+// (écran large) et le panneau mobile (DashboardTopNav), qui y ajoute les liens du bas.
+export function SidebarNav({
+  onItemClick,
+  onCollapse,
+  showBottomLinks = false,
+}: {
+  onItemClick?: () => void;
+  onCollapse?: () => void;
+  showBottomLinks?: boolean;
+}) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { items: subNavItems, activeId: subNavActiveId, onSelect: onSubNavSelect } = useSubNav();
-
-  const onSubNavClick = (id: string) => {
-    onSubNavSelect(id);
-    onItemClick?.();
-  };
-
-  const handleNavigation = (href: string) => {
-    navigate(href);
-    onItemClick?.();
-  };
+  const moduleLabel = menuItems.find(m => m.value === getCurrentNavValue(location.pathname))?.label;
 
   return (
     <>
-      {/* Sous-menu du module actif */}
-      <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
-        {subNavItems.map(item => {
-          const isActive = subNavActiveId === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onSubNavClick(item.id)}
-              className={cn(
-                "relative w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-full transition-colors text-left",
-                isActive
-                  ? "bg-background text-foreground font-medium shadow-whisper"
-                  : "text-muted-foreground hover:text-foreground hover:bg-background/60",
-                !open && "justify-center"
-              )}
-            >
-              <span
-                className={cn(
-                  "truncate whitespace-nowrap overflow-hidden transition-all duration-150 ease-[cubic-bezier(0.25,0.1,0.25,1)]",
-                  open ? "max-w-[160px] opacity-100" : "max-w-0 opacity-0"
-                )}
+      <div className="flex items-start justify-between gap-2 px-5 pt-5 pb-4">
+        <div className="font-['Playfair_Display',serif] italic text-[22px] leading-none text-foreground truncate">
+          {moduleLabel}
+        </div>
+        {onCollapse && (
+          <Tooltip delayDuration={200}>
+            <TooltipTrigger asChild>
+              <button
+                onClick={onCollapse}
+                className="-mt-1 p-1 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-background transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                aria-label="Réduire le panneau"
               >
-                {item.label}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
-
-      {/* Sections du bas */}
-      <div className="p-2 space-y-0.5 border-t border-border">
-        {bottomItems.map(item => {
-          const Icon = item.icon;
-          const isActive = location.pathname === item.href;
-          return (
-            <button
-              key={item.href}
-              onClick={() => handleNavigation(item.href)}
-              className={cn(
-                "relative w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-full transition-colors text-left",
-                isActive
-                  ? "bg-background text-foreground font-medium shadow-whisper"
-                  : "text-muted-foreground hover:text-foreground hover:bg-background/60",
-                !open && "justify-center"
-              )}
-            >
-              <Icon className="h-3.5 w-3.5 flex-shrink-0" strokeWidth={1.5} />
-              <span
-                className={cn(
-                  "truncate whitespace-nowrap overflow-hidden transition-all duration-150 ease-[cubic-bezier(0.25,0.1,0.25,1)]",
-                  open ? "max-w-[160px] opacity-100" : "max-w-0 opacity-0"
-                )}
-              >
-                {item.label}
-              </span>
-            </button>
-          );
-        })}
+                <PanelLeftClose className="h-4 w-4" strokeWidth={1.5} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Réduire (⌘B)</TooltipContent>
+          </Tooltip>
+        )}
       </div>
+
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-2 pb-3">
+        <SubNavTree onItemClick={onItemClick} />
+      </div>
+
+      {showBottomLinks && (
+        <div className="p-2 border-t border-border space-y-0.5">
+          {bottomItems.map(item => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.href;
+            return (
+              <button
+                key={item.href}
+                onClick={() => {
+                  navigate(item.href);
+                  onItemClick?.();
+                }}
+                aria-current={isActive ? 'page' : undefined}
+                className={cn(
+                  "w-full flex items-center gap-2 px-3 py-2 text-sm rounded-[10px] transition-colors text-left",
+                  isActive
+                    ? "bg-background text-foreground font-medium shadow-whisper"
+                    : "text-muted-foreground hover:text-foreground hover:bg-background/60"
+                )}
+              >
+                <Icon className="h-3.5 w-3.5 flex-shrink-0" strokeWidth={1.5} />
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </>
   );
 }
 
+function RailTooltip({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <Tooltip delayDuration={150}>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side="right">{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+// Écran large : rail noir des modules (esprit navbar de la landing) + panneau clair
+// du sous-menu, repliable. Masqués sur téléphone (navigation dans DashboardTopNav).
 export function DashboardSidebar() {
-  const [open, setOpen] = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { items: subNavItems } = useSubNav();
+  const currentValue = getCurrentNavValue(location.pathname);
+  const railScope = useId();
+
+  const [open, setOpenState] = useState(readStoredOpen);
+  const setOpen = useCallback((value: boolean) => {
+    setOpenState(value);
+    try {
+      localStorage.setItem(STORAGE_KEY, String(value));
+    } catch {
+      // stockage indisponible : l'état reste en mémoire
+    }
+  }, []);
+
+  // Raccourci ⌘B / Ctrl+B
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        setOpen(!open);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, setOpen]);
+
+  const panelVisible = open && subNavItems.length > 0;
 
   return (
-    <motion.div
-      // Masquée sur téléphone : la navigation passe dans le panneau ouvert
-      // depuis le bouton menu de DashboardTopNav.
-      className="hidden md:flex flex-col overflow-hidden shrink-0 relative bg-secondary text-foreground rounded-card ml-3 mt-3 mb-3"
-      animate={{
-        width: open ? 196 : 64,
-      }}
-      transition={{
-        duration: 0.25,
-        ease: [0.25, 0.1, 0.25, 1],
-      }}
-    >
-      {/* Toggle */}
-      <div className={cn("py-3 flex items-center", open ? "pl-3 pr-3 justify-end" : "justify-center")}>
-        <button
-          onClick={() => setOpen(!open)}
-          className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
-          aria-label={open ? 'Réduire la barre latérale' : 'Ouvrir la barre latérale'}
-        >
-          {open ? (
-            <PanelLeftClose className="h-4 w-4" strokeWidth={1.5} />
-          ) : (
-            <PanelLeftOpen className="h-4 w-4" strokeWidth={1.5} />
-          )}
-        </button>
-      </div>
+    <div className="hidden md:flex shrink-0 ml-3 my-3 gap-2">
+      {/* Rail des modules */}
+      <LayoutGroup id={railScope}>
+        <div className="w-16 flex flex-col items-center py-4 gap-1 bg-black text-white rounded-[16px]">
+          <button
+            onClick={() => navigate('/')}
+            className={cn(railButton, "mb-4 hover:bg-white/10")}
+            aria-label="Accueil Kairos"
+          >
+            <Sparkle className="h-6 w-6 fill-white text-white" strokeWidth={1.5} />
+          </button>
 
-      <SidebarNav open={open} />
-    </motion.div>
+          <nav aria-label="Modules" className="flex flex-col items-center gap-1">
+            {menuItems.map(item => {
+              const Icon = item.icon;
+              const active = item.value === currentValue;
+              return (
+                <RailTooltip key={item.value} label={item.label}>
+                  <button
+                    onClick={() => (active ? setOpen(!open) : navigate(item.href))}
+                    aria-label={item.label}
+                    aria-current={active ? 'page' : undefined}
+                    className={cn(railButton, active ? "text-white" : "text-white/55 hover:text-white hover:bg-white/10")}
+                  >
+                    {active && (
+                      <motion.span
+                        layoutId="rail-active"
+                        className="absolute inset-0 rounded-[12px] bg-white/15 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
+                        transition={SPRING}
+                      />
+                    )}
+                    <Icon className="relative h-[18px] w-[18px]" strokeWidth={1.5} />
+                  </button>
+                </RailTooltip>
+              );
+            })}
+          </nav>
+
+          <div className="mt-auto flex flex-col items-center gap-1 pt-3 border-t border-white/10">
+            {bottomItems.map(item => {
+              const Icon = item.icon;
+              const active = location.pathname === item.href;
+              return (
+                <RailTooltip key={item.href} label={item.label}>
+                  <button
+                    onClick={() => navigate(item.href)}
+                    aria-label={item.label}
+                    aria-current={active ? 'page' : undefined}
+                    className={cn(railButton, active ? "bg-white/15 text-white" : "text-white/55 hover:text-white hover:bg-white/10")}
+                  >
+                    <Icon className="h-4 w-4" strokeWidth={1.5} />
+                  </button>
+                </RailTooltip>
+              );
+            })}
+            <ProfileMenu
+              side="right"
+              align="end"
+              triggerClassName={cn(railButton, "text-white/55 hover:text-white hover:bg-white/10")}
+            />
+          </div>
+        </div>
+      </LayoutGroup>
+
+      {/* Panneau du sous-menu */}
+      <AnimatePresence initial={false}>
+        {panelVisible && (
+          <motion.div
+            key="subnav-panel"
+            className="flex flex-col overflow-hidden bg-secondary rounded-card"
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: PANEL_WIDTH, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: EASE }}
+          >
+            <div className="flex flex-col h-full" style={{ width: PANEL_WIDTH }}>
+              <SidebarNav onCollapse={() => setOpen(false)} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

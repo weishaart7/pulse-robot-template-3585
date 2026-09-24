@@ -16,7 +16,8 @@ export function DashboardTopNav() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const tabsRef = useRef<HTMLDivElement>(null);
 
-  // Sur écran étroit, la barre d'onglets défile : on ramène l'onglet actif en vue.
+  // Barre du haut réservée au téléphone ; sur écran large, les modules sont dans le rail
+  // de DashboardSidebar. Sur écran étroit, la barre d'onglets défile : on ramène l'onglet actif en vue.
   useEffect(() => {
     const active = tabsRef.current?.querySelector<HTMLElement>('[data-state="active"]');
     active?.scrollIntoView({ inline: 'center', block: 'nearest' });
@@ -28,7 +29,7 @@ export function DashboardTopNav() {
   };
 
   return (
-    <div className="relative flex items-center bg-background px-4 py-5 shrink-0">
+    <div className="relative flex md:hidden items-center bg-background px-4 py-5 shrink-0">
       <div className="flex items-center gap-3 shrink-0 z-10">
         <button
           type="button"
@@ -78,8 +79,8 @@ export function DashboardTopNav() {
 
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
         <SheetContent side="left" className="w-64 p-0 bg-secondary flex flex-col">
-          <SheetTitle className="px-4 pt-5 pb-2 text-sm font-medium">Menu</SheetTitle>
-          <SidebarNav onItemClick={() => setMobileNavOpen(false)} />
+          <SheetTitle className="sr-only">Menu</SheetTitle>
+          <SidebarNav showBottomLinks onItemClick={() => setMobileNavOpen(false)} />
         </SheetContent>
       </Sheet>
     </div>

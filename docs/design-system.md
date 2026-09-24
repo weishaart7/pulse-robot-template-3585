@@ -53,13 +53,23 @@ Surtitres techniques (étapes de wizard, en-têtes de section `SectionHeader`) :
 ## 5. Cadre de l'app (`src/components/layout`)
 
 - Fond eggshell partout (plus de `bg-white` sur la zone principale).
-- Barre du haut : sélecteur de modules en pilules sur piste taupe filetée, module actif en
-  pastille encre ; libellés Inter 500 13 px en casse normale ; barre de défilement masquée.
-- Barre latérale : plaque taupe coins 20 px ; entrée active en pastille eggshell + `shadow-whisper`,
-  inactives en smoke.
-- Téléphone (< 768 px, breakpoint `md`) : barre latérale masquée, son contenu (`SidebarNav`, partagé)
-  s'ouvre dans un panneau latéral gauche depuis un bouton menu à gauche du logo ; l'onglet de module
-  actif est ramené en vue dans la barre du haut ; marge latérale de la zone principale 16 px
+- Écran large (≥ `md`) : **pas de barre du haut**. Navigation dans `DashboardSidebar.tsx` :
+  - **Rail des modules** : colonne noire 64 px, coins 16 px, sans ombre — exception assumée à la
+    palette taupe, reprise de la navbar de la landing. Logo (→ `/`), 9 modules en icônes 18 px
+    blanc 55 % (survol voile blanc 10 %), module actif sur carré blanc 15 % coins 12 px qui glisse
+    d'un module à l'autre (ressort, `layoutId`). En bas, sous un filet blanc 10 % : Blog,
+    Nouveautés, Suggestion et le menu profil (`ProfileMenu`, ouvert à droite). Infobulles à droite.
+  - **Panneau du sous-menu** : plaque taupe 216 px, coins 20 px, affichée seulement si le module
+    déclare un sous-menu (`useModuleSubNav` : Patrimoine, Immobilier, Sociétés, Budget, Retraite).
+    Repliable (bouton de l'en-tête, clic sur l'icône du module actif, `⌘B` / `Ctrl+B`), état
+    mémorisé en `localStorage` (`kairos.sidebar.open`). En-tête : nom du module en Playfair Display
+    italique 22 px. Entrées en texte seul, Inter 14 px, en arbre : filet vertical stone à gauche et
+    repère encre 2 px qui suit le survol (ressort) puis revient sur l'entrée active ; entrée active
+    en pastille eggshell coins 10 px + `shadow-whisper`, `aria-current="page"`.
+- Téléphone (< 768 px) : rail et panneau masqués. Barre du haut (`DashboardTopNav`, `md:hidden`) :
+  bouton menu, logo, sélecteur de modules en pilules sur piste taupe filetée (module actif en
+  pastille encre, ramené en vue), profil. Le bouton menu ouvre un panneau latéral gauche taupe avec
+  le même contenu (`SidebarNav`) plus les liens du bas. Marge latérale de la zone principale 16 px
   (`px-4`), 24 px à partir de `md`.
 - Alertes conseil : `destructive` (critique), `spark` (élevé), taupe (moyen), coins 20 px.
 - Vue d'ensemble : voir [dashboard.md](dashboard.md).
