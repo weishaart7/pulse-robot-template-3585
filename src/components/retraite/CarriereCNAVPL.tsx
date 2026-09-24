@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  decoteSurTrimestresPlafond25,
+  ageEnMois,
   ageLegalAtteint,
   ageLegalParentaleEligible,
   surcotePourTrimestresCotises,
@@ -13,7 +13,7 @@ import {
   majorationTroisEnfants,
   DateNaissance,
 } from '@/lib/retraite/calcul';
-import { pensionBaseCNAVPL } from '@/lib/retraite/calculCNAVPL';
+import { pensionBaseCNAVPL, decoteCNAVPL } from '@/lib/retraite/calculCNAVPL';
 
 // Valeur du point CNAVPL 2026 (source : CNAVPL, cnavpl.fr) — pré-remplie
 // mais modifiable par l'utilisateur, pas codée en dur dans le calcul.
@@ -44,6 +44,9 @@ interface CarriereCNAVPLProps {
   // ageLegalParentaleEligible() pour la surcote (écarts #5/#6), même
   // principe que CarriereFonctionPublique.
   dateNaissance: DateNaissance | null;
+  // Date d'effet du scénario (départ à l'âge légal, cf. Carriere.tsx) —
+  // même date que le total consolidé de pensionConsolidee.ts.
+  dateEffet: Date;
   // Condition n°1 (déclarative) de la surcote parentale (référentiel §2.3.2).
   auMoinsUnTrimestreMajorationEnfant: boolean;
   // Nombre d'enfants éligibles à la majoration pour 3 enfants ou plus
@@ -70,6 +73,7 @@ export const CarriereCNAVPL = ({
   trimestresCNAVPL,
   onTrimestresCNAVPLChange,
   dateNaissance,
+  dateEffet,
   auMoinsUnTrimestreMajorationEnfant,
   nombreEnfantsEligibles,
   pointsCNAVPL,
@@ -82,21 +86,14 @@ export const CarriereCNAVPL = ({
   const valeurPointNum = parseFloat(valeurPointCNAVPL) || 0;
   const trimestresCNAVPLNum = parseInt(trimestresCNAVPL) || 0;
 
-  // Décote basée sur le total de trimestres tous régimes confondus
-  // (CNAVPL + régime général + fonction publique le cas échéant), avec le
-  // plafond -25 % partagé (identique fonction publique). Pas de taux de
-  // proratisation ici : les points CNAVPL accumulés reflètent déjà la
-  // carrière réelle, contrairement au régime général (SAM × durée requise).
-  //
-  // ⚠️ decoteSurTrimestresPlafond25() est symétrique : au-delà de
-  // trimestresRequis, elle renvoie une valeur positive qui n'est PAS une
-  // surcote légitime — écrêtée à 0 ci-dessous. La vraie surcote (classique +
-  // parentale, additive pour ce régime) est calculée séparément plus bas via
-  // surcoteTotale(), sans étage MICO à intercaler (référentiel §5.5). Cf.
-  // docs/audit/branchement-majorations-pension-finale.md §1.b.
-  const decoteSeule = Math.min(
-    decoteSurTrimestresPlafond25(trimestresCNAVPLNum + trimestresAutresRegimes, trimestresRequis),
-    0
+  // Décote (référentiel §5.3) : plus favorable des décotes sur la durée tous
+  // régimes et sur l'âge à la date d'effet (taux plein à 67 ans) — même
+  // fonction que le total consolidé (pensionConsolidee.ts). Pas de taux de
+  // proratisation : les points reflètent déjà la carrière réelle.
+  const decoteSeule = decoteCNAVPL(
+    trimestresCNAVPLNum + trimestresAutresRegimes,
+    trimestresRequis,
+    dateNaissance ? ageEnMois(dateNaissance, dateEffet) / 12 : null
   );
 
   // Surcote (classique écart #5 + parentale écart #6) : assise sur la
@@ -105,10 +102,9 @@ export const CarriereCNAVPL = ({
   // §5.5), donc pas de Math.max ici, contrairement au régime général.
   const pensionAvantDecoteSurcote = pensionBaseCNAVPL(pointsNum, valeurPointNum, 0);
   const pensionApresDecote = pensionBaseCNAVPL(pointsNum, valeurPointNum, decoteSeule);
-  const dateEffetProxy = new Date();
-  const ageLegalAtteintFlag = dateNaissance ? ageLegalAtteint(dateNaissance, dateEffetProxy) : undefined;
+  const ageLegalAtteintFlag = dateNaissance ? ageLegalAtteint(dateNaissance, dateEffet) : undefined;
   const ageLegalParentaleEligibleFlag = dateNaissance
-    ? ageLegalParentaleEligible(dateNaissance, dateEffetProxy)
+    ? ageLegalParentaleEligible(dateNaissance, dateEffet)
     : undefined;
   const dureeRequiseAtteinte = trimestresCNAVPLNum + trimestresAutresRegimes >= trimestresRequis;
   // ⚠️ Même limitation que la fonction publique : pas de détail carrière par

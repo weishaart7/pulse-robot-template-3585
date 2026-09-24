@@ -2,6 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   pensionBaseFonctionPublique,
   decoteSurAgeFonctionPublique,
+  decoteFonctionPublique,
+  decoteSurTrimestresFonctionPublique,
+  ageAnnulationDecoteSedentaire,
   tauxDecoteParTrimestreFonctionPublique,
   minimumGaranti,
   pensionFonctionPubliqueFinale,
@@ -421,5 +424,61 @@ describe('Profil complet — fonction publique (mission : branchement des majora
       tib
     );
     expect(pensionIncorrecte).not.toBeCloseTo(pensionFinale, 6);
+  });
+});
+
+describe('decoteFonctionPublique — plus favorable des deux comptages, taux du millésime (référentiel §7.3)', () => {
+  const base = {
+    trimestresRequis: 167,
+    departAnticipeCategorieActive: false,
+    dateNaissance: { annee: 1960, mois: 5 },
+    // 01/06/2022 : 62 ans 0 mois révolus.
+    dateEffet: new Date(Date.UTC(2022, 5, 1)),
+  };
+
+  it('exemple du référentiel : 62 ans, 161/167 trimestres → 6 trimestres de durée retenus (-7,5 %)', () => {
+    const decote = decoteFonctionPublique({ ...base, trimestresTousRegimes: 161, anneeOuvertureDroits: 2022 });
+    expect(decote).toBeCloseTo(-7.5, 10);
+    // 75 % × 3 000 × 161/167 × (1 - 7,5 %) ≈ 2 006,47 € (le référentiel arrondit
+    // l'étape intermédiaire à 2 169 €, d'où 2 006,32 €).
+    expect(pensionBaseFonctionPublique(3000, 161 / 167, decote)).toBeCloseTo(2006.47, 1);
+  });
+
+  it('catégorie sédentaire à 67 ans : décote annulée par l’âge, même avec des trimestres manquants', () => {
+    expect(
+      decoteFonctionPublique({
+        ...base,
+        trimestresTousRegimes: 120,
+        dateEffet: new Date(Date.UTC(2027, 5, 1)),
+      })
+    ).toBe(0);
+  });
+
+  it('taux du millésime appliqué à la décote sur la durée (2012 : 0,875 %)', () => {
+    expect(
+      decoteFonctionPublique({ ...base, trimestresTousRegimes: 163, anneeOuvertureDroits: 2012 })
+    ).toBeCloseTo(-4 * 0.875, 10);
+  });
+
+  it('plafond de 20 trimestres au taux du millésime (2011 : 20 × 0,75 % = -15 %)', () => {
+    expect(decoteSurTrimestresFonctionPublique(100, 167, 0.75)).toBeCloseTo(-15, 10);
+  });
+
+  it('âge d’annulation sédentaire : 66 ans 6 mois (1956), 66 ans 9 mois (1957), 67 ans ensuite', () => {
+    expect(ageAnnulationDecoteSedentaire(1956)).toBe(66.5);
+    expect(ageAnnulationDecoteSedentaire(1957)).toBe(66.75);
+    expect(ageAnnulationDecoteSedentaire(1965)).toBe(67);
+  });
+
+  it('catégorie active : âges saisis retenus, pas l’âge à la date d’effet', () => {
+    expect(
+      decoteFonctionPublique({
+        ...base,
+        trimestresTousRegimes: 150,
+        departAnticipeCategorieActive: true,
+        ageDepartAnticipe: 60,
+        ageAnnulationDecote: 62,
+      })
+    ).toBeCloseTo(-10, 10); // 8 trimestres d'âge < 17 de durée
   });
 });

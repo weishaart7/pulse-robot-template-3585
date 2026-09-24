@@ -278,3 +278,48 @@ describe('calculerPensionConsolidee — date d’effet unique (âge de départ a
     expect(resultat.ageTauxPlein).toBe('Taux plein atteint avec les trimestres validés');
   });
 });
+
+describe('calculerPensionConsolidee — écrêtement du MICO tous régimes (référentiel §3.5.5)', () => {
+  // Petite pension RG au taux plein (départ à 67 ans) → MICO applicable.
+  const entreeMico: EntreePensionConsolidee = {
+    ...entreeBase,
+    salaireAnnuelMoyen: 8000,
+    trimestresValides: 172,
+    trimestresRequis: 172,
+    dateNaissance: { annee: 1960, mois: 5 },
+    dateEffet: new Date(Date.UTC(2027, 5, 1)),
+    regimesPoints: [],
+    detailCarriere: [],
+  };
+
+  it('sans autre pension : majoration MICO non écrêtée', () => {
+    const r = calculerPensionConsolidee(entreeMico).detailRegimeGeneral;
+    expect(r.majorationMicoApresEcretement).toBeCloseTo(r.majorationMicoAvantEcretement, 6);
+    expect(r.majorationMicoAvantEcretement).toBeGreaterThan(0);
+  });
+
+  it('la complémentaire Agirc-Arrco calculée par l’outil entre dans le plafond', () => {
+    const complementaire = 16000; // au-delà du plafond à elle seule avec P0
+    const r = calculerPensionConsolidee({
+      ...entreeMico,
+      regimesPoints: [{ nom: 'Agirc-Arrco', type: 'points', points: complementaire, valeurPoint: 1 }],
+    }).detailRegimeGeneral;
+    expect(r.majorationMicoApresEcretement).toBe(0);
+  });
+
+  it('la pension CNAVPL calculée par l’outil entre dans le plafond (réduction à due concurrence)', () => {
+    const sans = calculerPensionConsolidee(entreeMico).detailRegimeGeneral;
+    const pensionCNAVPL = 10000; // 4 000 (P0) + ~5 075 (MICO) + 10 000 > 16 930,68
+    const r = calculerPensionConsolidee({
+      ...entreeMico,
+      cnavpl: { trimestresCNAVPL: 0, pointsCNAVPL: pensionCNAVPL, valeurPointCNAVPL: 1 },
+    }).detailRegimeGeneral;
+    const p0 = r.pensionBaseBrute * (1 + r.decote / 100);
+    const depassement = p0 + sans.majorationMicoAvantEcretement + pensionCNAVPL - 16930.68;
+    expect(depassement).toBeGreaterThan(0);
+    expect(r.majorationMicoApresEcretement).toBeCloseTo(
+      Math.max(0, sans.majorationMicoAvantEcretement - Math.max(0, depassement)),
+      6
+    );
+  });
+});

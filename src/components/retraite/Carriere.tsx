@@ -1171,6 +1171,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         trimestresLiquidablesNBI={trimestresLiquidablesNBI}
         onTrimestresLiquidablesNBIChange={setTrimestresLiquidablesNBI}
         dateNaissance={dateNaissanceDetail}
+        dateEffet={dateEffetScenario}
         auMoinsUnTrimestreMajorationEnfant={auMoinsUnTrimestreMajorationEnfant}
         nombreEnfantsEligibles={nombreEnfantsEligibles}
       />
@@ -1187,6 +1188,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         valeurPointCNAVPL={valeurPointCNAVPL}
         onValeurPointCNAVPLChange={setValeurPointCNAVPL}
         dateNaissance={dateNaissanceDetail}
+        dateEffet={dateEffetScenario}
         auMoinsUnTrimestreMajorationEnfant={auMoinsUnTrimestreMajorationEnfant}
         nombreEnfantsEligibles={nombreEnfantsEligibles}
       />

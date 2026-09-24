@@ -45,8 +45,7 @@ import {
 import { nombreEnfantsEligiblesMajorationTroisEnfants } from './enfantsEligiblesMajoration';
 import {
   pensionBaseFonctionPublique,
-  decoteSurAgeFonctionPublique,
-  tauxDecoteParTrimestreFonctionPublique,
+  decoteFonctionPublique,
   minimumGaranti,
   pensionFonctionPubliqueFinale,
   majorationEnfantsFonctionPublique,
@@ -54,8 +53,7 @@ import {
   VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
   supplementNBI,
 } from './calculFonctionPublique';
-import { pensionBaseCNAVPL } from './calculCNAVPL';
-import { decoteSurTrimestresPlafond25 } from './calcul';
+import { pensionBaseCNAVPL, decoteCNAVPL } from './calculCNAVPL';
 
 const VALEUR_SERVICE_POINT_RAFP_2026 = 0.05671;
 
@@ -155,25 +153,17 @@ function calculerResultatFonctionPublique(
   auMoinsUnTrimestreMajorationEnfant: boolean,
   nombreEnfantsEligibles: number
 ): { pensionFinale: number; rafpAnnuelle: number } {
-  const tauxDecoteParTrimestre = tauxDecoteParTrimestreFonctionPublique(donnees.anneeOuvertureDroits);
   const taux = tauxProratisation(donnees.trimestresLiquidables, trimestresRequis);
-  const decoteTrimestres = Math.min(
-    decoteSurTrimestresPlafond25(donnees.trimestresLiquidables + trimestresAutresRegimes, trimestresRequis),
-    0
-  );
-
-  const decoteAgeUtilisable =
-    donnees.departAnticipeCategorieActive &&
-    donnees.ageDepartAnticipe !== undefined &&
-    !Number.isNaN(donnees.ageDepartAnticipe) &&
-    donnees.ageAnnulationDecote !== undefined &&
-    !Number.isNaN(donnees.ageAnnulationDecote);
-  const decote = decoteAgeUtilisable
-    ? decoteApplicable(
-        decoteTrimestres,
-        decoteSurAgeFonctionPublique(donnees.ageDepartAnticipe!, donnees.ageAnnulationDecote!, tauxDecoteParTrimestre)
-      )
-    : decoteTrimestres;
+  const decote = decoteFonctionPublique({
+    trimestresTousRegimes: donnees.trimestresLiquidables + trimestresAutresRegimes,
+    trimestresRequis,
+    anneeOuvertureDroits: donnees.anneeOuvertureDroits,
+    departAnticipeCategorieActive: donnees.departAnticipeCategorieActive,
+    ageDepartAnticipe: donnees.ageDepartAnticipe,
+    ageAnnulationDecote: donnees.ageAnnulationDecote,
+    dateNaissance,
+    dateEffet,
+  });
 
   const pensionCalculee = pensionBaseFonctionPublique(donnees.traitementIndiciaireBrut, taux, decote);
   const minimumGarantiValue = minimumGaranti(
@@ -245,9 +235,10 @@ function calculerResultatCNAVPL(
   auMoinsUnTrimestreMajorationEnfant: boolean,
   nombreEnfantsEligibles: number
 ): { pensionFinale: number } {
-  const decoteSeule = Math.min(
-    decoteSurTrimestresPlafond25(donnees.trimestresCNAVPL + trimestresAutresRegimes, trimestresRequis),
-    0
+  const decoteSeule = decoteCNAVPL(
+    donnees.trimestresCNAVPL + trimestresAutresRegimes,
+    trimestresRequis,
+    dateNaissance ? ageEnMois(dateNaissance, dateEffet) / 12 : null
   );
 
   const pensionAvantDecoteSurcote = pensionBaseCNAVPL(donnees.pointsCNAVPL, donnees.valeurPointCNAVPL, 0);
@@ -390,28 +381,13 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
     trimestresTousRegimes
   );
 
-  const autresPensionsAnnuelles = autresPensionsMensuelles * 12;
-  const majorationMicoTotaleAvantEcretement = majorationPalier1 + majorationPalier2;
-  const majorationMicoTotaleApresEcretement = ecretementMICO(
-    pensionBaseHorsMicoHorsSurcote,
-    majorationMicoTotaleAvantEcretement,
-    autresPensionsAnnuelles
-  );
-
-  const pensionApresMico = pensionBaseHorsMicoHorsSurcote + majorationMicoTotaleApresEcretement;
-  const surcoteMontantRegimeGeneral = pensionBaseBrute * (surcoteTotalePct / 100);
-  const pensionApresSurcoteRegimeGeneral = pensionApresMico + surcoteMontantRegimeGeneral;
-
   const nombreEnfantsEligibles = nombreEnfantsEligiblesMajorationTroisEnfants(familyLinks);
   const majorationEnfantsPct = majorationTroisEnfants(nombreEnfantsEligibles);
-  const pensionBaseAjustee = pensionApresSurcoteRegimeGeneral * (1 + majorationEnfantsPct / 100);
 
   const totalPensionComplementaireAnnuelle = regimesPoints.reduce((total, regime) => {
     const pension = pensionComplementaireAnnuelle(regime);
     return pension !== undefined ? total + pension : total;
   }, 0);
-
-  const pensionTotaleRegimeGeneral = pensionBaseAjustee + totalPensionComplementaireAnnuelle;
 
   const resultatFonctionPublique = hasFonctionPublique
     ? calculerResultatFonctionPublique(
@@ -436,6 +412,30 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
         nombreEnfantsEligibles
       )
     : { pensionFinale: 0 };
+
+  // Écrêtement du MICO (référentiel §3.5.5) : le plafond porte sur le total
+  // des pensions personnelles brutes tous régimes, base et complémentaires —
+  // pensions calculées par l'outil (complémentaires à points, fonction
+  // publique, RAFP, CNAVPL) plus les autres pensions déclarées.
+  const autresPensionsAnnuelles =
+    autresPensionsMensuelles * 12 +
+    totalPensionComplementaireAnnuelle +
+    (hasFonctionPublique ? resultatFonctionPublique.pensionFinale + resultatFonctionPublique.rafpAnnuelle : 0) +
+    (hasCNAVPL ? resultatCNAVPL.pensionFinale : 0);
+  const majorationMicoTotaleAvantEcretement = majorationPalier1 + majorationPalier2;
+  const majorationMicoTotaleApresEcretement = ecretementMICO(
+    pensionBaseHorsMicoHorsSurcote,
+    majorationMicoTotaleAvantEcretement,
+    autresPensionsAnnuelles
+  );
+
+  const pensionApresMico = pensionBaseHorsMicoHorsSurcote + majorationMicoTotaleApresEcretement;
+  const surcoteMontantRegimeGeneral = pensionBaseBrute * (surcoteTotalePct / 100);
+  const pensionApresSurcoteRegimeGeneral = pensionApresMico + surcoteMontantRegimeGeneral;
+
+  const pensionBaseAjustee = pensionApresSurcoteRegimeGeneral * (1 + majorationEnfantsPct / 100);
+
+  const pensionTotaleRegimeGeneral = pensionBaseAjustee + totalPensionComplementaireAnnuelle;
 
   const pensionTotaleConsolidee = pensionTotaleConsolideeTousRegimes(
     pensionTotaleRegimeGeneral,

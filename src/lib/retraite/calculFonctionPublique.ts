@@ -9,13 +9,12 @@
  * fonction publique, doit être saisi/passé ici en équivalent annuel
  * (TIB mensuel × 12) — à la charge de l'appelant (UI), pas de cette fonction.
  *
- * La décote/surcote sur trimestres tous régimes confondus et la règle d'âge
- * générique restent gérées par calcul.ts (trimestresRequisPourGeneration,
- * decoteApplicable, decoteSurTrimestresPlafond25) — non dupliquées ici.
- * Seul le taux de décote par trimestre propre à la fonction publique
- * (millésime d'ouverture des droits) justifie une variante locale de
- * decoteSurAge, documentée ci-dessous.
+ * La décote fonction publique (durée tous régimes et âge, au taux du
+ * millésime d'ouverture des droits) est portée par `decoteFonctionPublique()`
+ * ci-dessous, partagée par pensionConsolidee.ts et CarriereFonctionPublique.tsx.
  */
+
+import { DateNaissance, ageEnMois, decoteApplicable } from './calcul';
 
 /**
  * Pension de base fonction publique = TIB annuel de référence (dernier
@@ -91,11 +90,8 @@ export function tauxDecoteParTrimestreFonctionPublique(anneeOuvertureDroits?: nu
  * `tauxDecoteParTrimestreFonctionPublique()` pour le barème par année
  * d'ouverture des droits.
  *
- * ⚠️ Variante locale de decoteSurAge() de calcul.ts (le plafond -25 % côté
- * trimestres a été généralisé et déplacé dans calcul.ts en
- * decoteSurTrimestresPlafond25, réutilisable par d'autres régimes — mais la
- * règle d'âge fonction publique reste spécifique, aucune généralisation
- * demandée pour l'instant).
+ * Variante de decoteSurAge() de calcul.ts : même arrondi au trimestre
+ * supérieur, mais taux du millésime et plafond de 20 trimestres à ce taux.
  */
 export function decoteSurAgeFonctionPublique(
   ageDepart: number,
@@ -105,8 +101,95 @@ export function decoteSurAgeFonctionPublique(
   if (ageDepart >= ageAnnulationDecote) {
     return 0;
   }
-  const ecartTrimestres = (ageDepart - ageAnnulationDecote) * 4;
-  return Math.max(ecartTrimestres * tauxParTrimestre, -25);
+  // Trimestres manquants arrondis au supérieur (âge au mois près), même règle
+  // que decoteSurAge() de calcul.ts ; plafond de 20 trimestres au taux du
+  // millésime.
+  const moisManquants = Math.round((ageAnnulationDecote - ageDepart) * 12);
+  const trimestresManquants = Math.min(Math.ceil(moisManquants / 3), PLAFOND_TRIMESTRES_DECOTE_FP);
+  return -trimestresManquants * tauxParTrimestre;
+}
+
+/**
+ * Plafond de la décote fonction publique, en trimestres (20 : taux minimal
+ * de 75 % × 75 % au taux de 1,25 %). ⚠️ Le référentiel (§7.3) ne précise
+ * pas ce plafond pour les millésimes 2011-2014 (montée en charge
+ * progressive de la réforme 2010) : 20 trimestres retenus pour tous les
+ * millésimes, hypothèse non sourcée.
+ */
+export const PLAFOND_TRIMESTRES_DECOTE_FP = 20;
+
+/**
+ * Décote fonction publique sur la durée d'assurance tous régimes :
+ * trimestres manquants × taux du millésime d'ouverture des droits
+ * (référentiel §7.3), plafonnée à 20 trimestres. Jamais positive (la
+ * surcote est un mécanisme distinct).
+ */
+export function decoteSurTrimestresFonctionPublique(
+  trimestresTousRegimes: number,
+  trimestresRequis: number,
+  tauxParTrimestre = 1.25
+): number {
+  const manquants = Math.min(Math.max(0, trimestresRequis - trimestresTousRegimes), PLAFOND_TRIMESTRES_DECOTE_FP);
+  return manquants === 0 ? 0 : -manquants * tauxParTrimestre;
+}
+
+/**
+ * Âge d'annulation de la décote en catégorie sédentaire (référentiel §7.3,
+ * art. L. 14 bis) : 66 ans 6 mois (génération 1956), 66 ans 9 mois (1957),
+ * 67 ans ensuite. Les générations antérieures (âges plus bas) ne sont pas
+ * détaillées par le référentiel : 67 ans retenus (décote éventuellement
+ * surestimée pour ces générations de plus de 70 ans).
+ */
+export function ageAnnulationDecoteSedentaire(anneeNaissance: number): number {
+  if (anneeNaissance === 1956) return 66.5;
+  if (anneeNaissance === 1957) return 66.75;
+  return 67;
+}
+
+export interface EntreeDecoteFonctionPublique {
+  trimestresTousRegimes: number;
+  trimestresRequis: number;
+  anneeOuvertureDroits?: number;
+  departAnticipeCategorieActive: boolean;
+  ageDepartAnticipe?: number;
+  ageAnnulationDecote?: number;
+  dateNaissance: DateNaissance | null;
+  dateEffet: Date;
+}
+
+/**
+ * Décote fonction publique retenue (référentiel §7.3) : la plus favorable
+ * entre la décote sur la durée tous régimes et la décote sur l'âge, au taux
+ * du millésime d'ouverture des droits.
+ * - Catégorie active (départ anticipé) : âge de départ et âge d'annulation
+ *   saisis par le conseiller.
+ * - Catégorie sédentaire : âge à la date d'effet (`ageEnMois()`) et âge
+ *   d'annulation `ageAnnulationDecoteSedentaire()`.
+ * Sans âge exploitable, seule la décote sur la durée s'applique.
+ * Partagée par pensionConsolidee.ts et CarriereFonctionPublique.tsx.
+ */
+export function decoteFonctionPublique(e: EntreeDecoteFonctionPublique): number {
+  const taux = tauxDecoteParTrimestreFonctionPublique(e.anneeOuvertureDroits);
+  const decoteDuree = decoteSurTrimestresFonctionPublique(e.trimestresTousRegimes, e.trimestresRequis, taux);
+
+  const ageActiveSaisi =
+    e.departAnticipeCategorieActive &&
+    e.ageDepartAnticipe !== undefined &&
+    !Number.isNaN(e.ageDepartAnticipe) &&
+    e.ageAnnulationDecote !== undefined &&
+    !Number.isNaN(e.ageAnnulationDecote);
+
+  let decoteAge: number | null = null;
+  if (ageActiveSaisi) {
+    decoteAge = decoteSurAgeFonctionPublique(e.ageDepartAnticipe!, e.ageAnnulationDecote!, taux);
+  } else if (!e.departAnticipeCategorieActive && e.dateNaissance) {
+    decoteAge = decoteSurAgeFonctionPublique(
+      ageEnMois(e.dateNaissance, e.dateEffet) / 12,
+      ageAnnulationDecoteSedentaire(e.dateNaissance.annee),
+      taux
+    );
+  }
+  return decoteAge === null ? decoteDuree : decoteApplicable(decoteDuree, decoteAge);
 }
 
 /**
