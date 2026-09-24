@@ -322,7 +322,7 @@ describe('ageLegalPourGeneration', () => {
       (dateNaissance) => {
         const resultat = ageLegalPourGeneration(dateNaissance, EFFET_ANTERIEUR_2023);
         expect(resultat.stable).toBe(false);
-        if (resultat.stable) throw new Error('unreachable');
+        if (!('raison' in resultat)) throw new Error('unreachable');
         expect(resultat.raison.length).toBeGreaterThan(0);
         expect(resultat.raison).toContain('1er septembre 2023');
       }

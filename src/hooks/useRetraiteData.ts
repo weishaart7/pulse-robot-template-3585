@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { RegimeDetecte } from '@/lib/retraite/parseRIS';
 import { ModeHypotheseRevenuFutur } from '@/lib/retraite/hypotheseRevenuFutur';
+import type { Json, Tables, TablesUpdate } from '@/integrations/supabase/types';
 
 export interface RetraiteData {
   id?: string;
@@ -60,6 +61,23 @@ export interface RetraiteData {
 // 20260815000000_add_personne_to_retraite_tables.sql.
 export type Personne = 'utilisateur' | 'conjoint';
 
+// Conversion ligne DB <-> RetraiteData : la base type `regimes_points` en Json
+// et les colonnes à valeurs contraintes (CHECK) en string ; les valeurs
+// autorisées sont garanties par les contraintes CHECK de retraite_data.
+const depuisLigne = (ligne: Tables<'retraite_data'>): RetraiteData => ({
+  ...ligne,
+  regimes_points: (ligne.regimes_points ?? undefined) as unknown as RegimeDetecte[] | undefined,
+  regime_affiliation_fp: (ligne.regime_affiliation_fp ?? undefined) as RetraiteData['regime_affiliation_fp'],
+  mode_hypothese_revenu_futur: ligne.mode_hypothese_revenu_futur as ModeHypotheseRevenuFutur,
+} as RetraiteData);
+
+const versLigne = (updates: Partial<RetraiteData>): TablesUpdate<'retraite_data'> => {
+  const { regimes_points, ...reste } = updates;
+  return regimes_points === undefined
+    ? reste
+    : { ...reste, regimes_points: regimes_points as unknown as Json };
+};
+
 export const useRetraiteData = (personne: Personne = 'utilisateur') => {
   const [data, setData] = useState<RetraiteData>({});
   const [loading, setLoading] = useState(true);
@@ -77,8 +95,8 @@ export const useRetraiteData = (personne: Personne = 'utilisateur') => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: retraiteData, error } = await (supabase
-        .from('retraite_data') as any)
+      const { data: retraiteData, error } = await supabase
+        .from('retraite_data')
         .select('*')
         .eq('user_id', user.id)
         .eq('personne', personne)
@@ -92,7 +110,7 @@ export const useRetraiteData = (personne: Personne = 'utilisateur') => {
       }
 
       if (retraiteData) {
-        setData(retraiteData as any);
+        setData(depuisLigne(retraiteData));
       }
     } catch (error) {
       if (import.meta.env.DEV) {
@@ -121,10 +139,10 @@ export const useRetraiteData = (personne: Personne = 'utilisateur') => {
         // Mise à jour d'un enregistrement existant
         const { error } = await supabase
           .from('retraite_data')
-          .update(updates as any)
+          .update(versLigne(updates))
           .eq('id', data.id)
           .eq('user_id', user.id)
-          .eq('personne', personne as any);
+          .eq('personne', personne);
 
         if (error) {
           if (import.meta.env.DEV) {
@@ -143,7 +161,7 @@ export const useRetraiteData = (personne: Personne = 'utilisateur') => {
         // Création (ou fusion si une sauvegarde concurrente a déjà créé la ligne)
         const { data: newRecord, error } = await supabase
           .from('retraite_data')
-          .upsert([{ ...updates, user_id: user.id, personne }] as any, { onConflict: 'user_id,personne' })
+          .upsert([{ ...versLigne(updates), user_id: user.id, personne }], { onConflict: 'user_id,personne' })
           .select()
           .single();
 
@@ -160,7 +178,7 @@ export const useRetraiteData = (personne: Personne = 'utilisateur') => {
         }
 
         if (newRecord) {
-          setData(newRecord as any);
+          setData(depuisLigne(newRecord));
         }
       }
 

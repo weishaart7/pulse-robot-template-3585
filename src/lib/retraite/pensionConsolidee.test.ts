@@ -140,6 +140,8 @@ describe('calculerPensionConsolidee — detailRegimeGeneral (non-régression Car
         pointsRAFP: 4000,
         departAnticipeCategorieActive: false,
         departPourInvalidite: false,
+        moyenneAnnuelleNBI: 0,
+        trimestresLiquidablesNBI: 0,
       },
       cnavpl: {
         trimestresCNAVPL: 40,

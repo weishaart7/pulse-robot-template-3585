@@ -24,8 +24,8 @@ export const useCarriereDetail = (personne: Personne = 'utilisateur') => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await (supabase
-        .from('retraite_carriere_detail') as any)
+      const { data, error } = await supabase
+        .from('retraite_carriere_detail')
         .select('*')
         .eq('user_id', user.id)
         .eq('personne', personne)
@@ -71,7 +71,7 @@ export const useCarriereDetail = (personne: Personne = 'utilisateur') => {
         .from('retraite_carriere_detail')
         .delete()
         .eq('user_id', user.id)
-        .eq('personne', personne as any);
+        .eq('personne', personne);
 
       if (erreurSuppression) throw erreurSuppression;
 
@@ -87,7 +87,7 @@ export const useCarriereDetail = (personne: Personne = 'utilisateur') => {
             revenu: periode.revenu,
             est_chiffre_affaires: periode.estChiffreAffaires,
             regimes: periode.regimes,
-          })) as any
+          }))
         );
         if (erreurInsertion) throw erreurInsertion;
       }

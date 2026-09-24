@@ -208,7 +208,11 @@ const HypothesesCalcul = ({ donnees }: { donnees: DonneesPersonneExportPDF }) =>
     <Text style={{ marginBottom: 6 }}>{donnees.ageTauxPlein}</Text>
     <Text style={styles.cardLabel}>Âge légal de départ</Text>
     <Text style={{ marginBottom: 6 }}>
-      {donnees.ageLegal?.stable ? formatAgeLegal(donnees.ageLegal.age) : donnees.ageLegal?.raison ?? 'Non déterminé.'}
+      {!donnees.ageLegal
+        ? 'Non déterminé.'
+        : 'raison' in donnees.ageLegal
+          ? donnees.ageLegal.raison
+          : formatAgeLegal(donnees.ageLegal.age)}
     </Text>
     <Text style={styles.cardLabel}>Trimestres requis pour le taux plein</Text>
     <Text>{donnees.trimestresRequis} trimestres</Text>
