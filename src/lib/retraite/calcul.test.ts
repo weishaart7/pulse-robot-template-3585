@@ -340,9 +340,9 @@ describe('Carriere.tsx — combinaison decoteSurTrimestres + decoteSurAge (écar
   const trimestresRequis = 172; // génération 1969+, valeur stable
   const ageActuel = 67; // âge du taux plein automatique (référentiel §2.1.4)
 
-  it("« avant correction » (bug reproduit) : decoteSurTrimestres seule, décote à tort de -20 %", () => {
+  it("« avant correction » (bug reproduit) : decoteSurTrimestres seule, décote à tort de -25 %", () => {
     const decoteAvantCorrection = decoteSurTrimestres(trimestresValides, trimestresRequis);
-    expect(decoteAvantCorrection).toBe(-20); // (140-172)*1.25 = -40, plafonné à -20
+    expect(decoteAvantCorrection).toBe(-25); // (140-172)*1.25 = -40, plafonné à -25 (20 trimestres)
 
     // Cascade vers le MICO : minimumContributif() exclut toute pension
     // décotée (decote < 0) — l'éligibilité est donc refusée à tort.
@@ -355,7 +355,7 @@ describe('Carriere.tsx — combinaison decoteSurTrimestres + decoteSurAge (écar
     const decoteApresCorrection = decoteApplicable(decoteTrimestres, decoteAge);
 
     expect(decoteAge).toBe(0); // 67 ans = âge du taux plein automatique, aucune décote
-    expect(decoteApresCorrection).toBe(0); // le plus favorable des deux (max(-20, 0))
+    expect(decoteApresCorrection).toBe(0); // le plus favorable des deux (max(-25, 0))
 
     // Cascade vers le MICO : decote >= 0 → éligible, proratisé sur les
     // trimestres régime général (référentiel §3.5.1, condition 1 : « atteinte
@@ -885,15 +885,15 @@ describe('Profil complet — régime général (mission : branchement des majora
   const p0 = pensionBase(salaireAnnuelMoyen, taux, 0);
   const trimestresCotisesAnneeReference = 4;
 
-  it('profil avec décote (durée requise non atteinte) : ni surcote ni MICO, pension réduite de 20 %', () => {
+  it('profil avec décote (durée requise non atteinte) : ni surcote ni MICO, pension réduite de 25 %', () => {
     const trimValidesIncomplet = 150; // 22 trimestres manquants
     const tauxIncomplet = Math.min(trimValidesIncomplet / trimestresRequis, 1);
     const p0Incomplet = pensionBase(salaireAnnuelMoyen, tauxIncomplet, 0);
-    const decote = decoteSurTrimestres(trimValidesIncomplet, trimestresRequis); // -20 % (plafonné)
+    const decote = decoteSurTrimestres(trimValidesIncomplet, trimestresRequis); // -25 % (plafonné, 22 > 20 trimestres)
     const mico = minimumContributif(trimValidesIncomplet, trimestresRequis, decote); // 0 € (decote < 0 → inéligible)
     const dureeRequiseAtteinte = trimValidesIncomplet >= trimestresRequis; // false
 
-    expect(decote).toBe(-20);
+    expect(decote).toBe(-25);
     expect(mico).toBe(0);
 
     const surcoteClassiquePct = surcotePourTrimestresCotises(0, true, dureeRequiseAtteinte);
@@ -901,7 +901,7 @@ describe('Profil complet — régime général (mission : branchement des majora
     expect(surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true)).toBe(0);
 
     const pensionFinale = Math.max(p0Incomplet * (1 + decote / 100), mico);
-    expect(pensionFinale).toBeCloseTo(p0Incomplet * 0.8, 6);
+    expect(pensionFinale).toBeCloseTo(p0Incomplet * 0.75, 6);
   });
 
   it('profil avec surcote classique ET parentale cumulées (écarts #5+#6, additif régime général)', () => {
@@ -1122,5 +1122,22 @@ describe('pensionTotaleConsolideeTousRegimes — non-régression docs/audit/audi
 
     expect(totalApresRechargement).toBe(totalAvantRechargement);
     expect(totalApresRechargement).toBeGreaterThan(pensionTotaleRegimeGeneral);
+  });
+});
+
+describe('Plafond de décote du régime général — 20 trimestres, -25 % (taux minimal 37,5 %)', () => {
+  it('decoteSurTrimestres : 16 trimestres manquants → -20 % (non plafonné)', () => {
+    expect(decoteSurTrimestres(156, 172)).toBe(-20);
+  });
+  it('decoteSurTrimestres : 20 trimestres manquants → -25 %, et plafonné au-delà', () => {
+    expect(decoteSurTrimestres(152, 172)).toBe(-25);
+    expect(decoteSurTrimestres(100, 172)).toBe(-25);
+  });
+  it('decoteSurAge : départ à 62 ans (20 trimestres avant 67) → -25 %, plafonné en dessous', () => {
+    expect(decoteSurAge(62)).toBe(-25);
+    expect(decoteSurAge(60)).toBe(-25);
+  });
+  it('taux de liquidation minimal = 37,5 % (50 % × 0,75)', () => {
+    expect(pensionBase(10000, 1, decoteSurTrimestres(100, 172))).toBeCloseTo(10000 * 0.375, 6);
   });
 });

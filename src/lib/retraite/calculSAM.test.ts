@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { PeriodeCarriere } from './parseRIS';
-import { calculerSAM } from './calculSAM';
+import { calculerSAM, PASS_PAR_ANNEE, passPourAnnee } from './calculSAM';
+import { COEFFICIENT_REVALORISATION_CNAV } from './coefficientsRevalorisationCNAV';
 
 const periode = (overrides: Partial<PeriodeCarriere>): PeriodeCarriere => ({
   employeur: 'Test',
@@ -106,5 +107,36 @@ describe('calculerSAM — exclusions des meilleures années (référentiel §3.4
     // restantes (pas en réintégrant les années exclues).
     expect(resultat.anneesRetenues).toHaveLength(resultat.nombreAnneesRequis);
     expect(resultat.sam).toBeGreaterThan(0);
+  });
+});
+
+describe('calculerSAM — plafonnement au PASS AVANT revalorisation', () => {
+  it('revenu au-dessus du PASS : plafonné au PASS nominal de l’année, puis revalorisé', () => {
+    const { anneesDisponibles } = calculerSAM(
+      [periode({ dateDebut: '1995-01-01', dateFin: '1995-12-31', revenu: 30000 })],
+      1970
+    );
+    const a1995 = anneesDisponibles.find((a) => a.annee === 1995)!;
+    expect(a1995.revenuPlafonne).toBeCloseTo(PASS_PAR_ANNEE[1995] * COEFFICIENT_REVALORISATION_CNAV[1995], 6);
+  });
+
+  it('revenu sous le PASS mais revalorisé au-dessus : pas de plafonnement', () => {
+    const { anneesDisponibles } = calculerSAM(
+      [periode({ dateDebut: '1995-01-01', dateFin: '1995-12-31', revenu: 20000 })],
+      1970
+    );
+    const a1995 = anneesDisponibles.find((a) => a.annee === 1995)!;
+    expect(a1995.revenuPlafonne).toBeCloseTo(20000 * COEFFICIENT_REVALORISATION_CNAV[1995], 6);
+  });
+
+  it('PASS 2026 appliqué, et repli sur le dernier PASS connu pour les années futures', () => {
+    expect(passPourAnnee(2026)).toBe(48060);
+    expect(passPourAnnee(2030)).toBe(48060);
+    const { anneesDisponibles } = calculerSAM(
+      [periode({ dateDebut: '2028-01-01', dateFin: '2028-12-31', revenu: 100000 })],
+      1970
+    );
+    const a2028 = anneesDisponibles.find((a) => a.annee === 2028)!;
+    expect(a2028.revenuPlafonne).toBeCloseTo(48060 * (COEFFICIENT_REVALORISATION_CNAV[2028] ?? 1), 6);
   });
 });

@@ -12,8 +12,9 @@
  * La décote/surcote sur trimestres tous régimes confondus et la règle d'âge
  * générique restent gérées par calcul.ts (trimestresRequisPourGeneration,
  * decoteApplicable, decoteSurTrimestresPlafond25) — non dupliquées ici.
- * Seule la règle d'âge propre à la fonction publique (-25 % au lieu de
- * -20 %) justifie une variante locale de decoteSurAge, documentée ci-dessous.
+ * Seul le taux de décote par trimestre propre à la fonction publique
+ * (millésime d'ouverture des droits) justifie une variante locale de
+ * decoteSurAge, documentée ci-dessous.
  */
 
 /**
@@ -75,8 +76,8 @@ export function tauxDecoteParTrimestreFonctionPublique(anneeOuvertureDroits?: nu
 /**
  * Décote fonction publique basée sur l'écart d'âge par rapport à l'âge
  * d'annulation de la décote (67 ans par défaut en catégorie sédentaire —
- * même valeur que le régime général, mais plafond différent : -25 % ici
- * contre -20 % dans decoteSurAge() de calcul.ts).
+ * même valeur et même plafond -25 % que decoteSurAge() de calcul.ts ; seul
+ * le taux par trimestre, variable selon le millésime, diffère).
  *
  * Pour un départ anticipé catégorie active, ageAnnulationDecote doit être
  * saisi manuellement par l'utilisateur (pas de table de corps encodée ici —

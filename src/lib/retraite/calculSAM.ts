@@ -1,8 +1,8 @@
 /**
  * Calcul du salaire annuel moyen (SAM) réglementaire : moyenne des N
  * meilleures années de revenu du régime de base (N selon la génération),
- * chaque année revalorisée (coefficient CNAV) puis plafonnée au plafond
- * annuel de la Sécurité sociale (PASS) de l'année concernée. Complète les
+ * chaque année plafonnée au plafond annuel de la Sécurité sociale (PASS)
+ * de l'année concernée puis revalorisée (coefficient CNAV). Complète les
  * années manquantes par une projection à revenu constant si la carrière
  * connue est plus courte que le nombre d'années requis.
  * Fonctions pures, sans JSX ni state React — sur le modèle de calcul.ts.
@@ -37,8 +37,8 @@ import { trimestresCotisesEtAssimilesDepuisCarriere } from './calculTrimestres';
  * (carrière démarrée il y a plus de 75 ans). Contrairement au seuil de
  * validation de trimestre (calculTrimestres.ts), cette lacune n'est pas
  * signalée par un champ dédié dans `ResultatSAM` : une année sans PASS
- * connu reste plafonnée par défaut à sa valeur revalorisée non plafonnée
- * (`revenuPlafonne = revenuRevalorise`, cf. plus bas) — comportement déjà
+ * connu n'est pas plafonnée (`revenuPlafonne = revenuRevalorise`, cf.
+ * plus bas) — comportement déjà
  * défini et sûr (pas de plafond erroné, juste absent), pas un calcul
  * silencieusement faux au même sens que le seuil de trimestre.
  */
@@ -119,7 +119,22 @@ export const PASS_PAR_ANNEE: Record<number, number> = {
   2023: 43992,
   2024: 46368,
   2025: 47100,
+  2026: 48060,
 };
+
+/**
+ * PASS applicable à une année. Au-delà de la dernière année connue (années
+ * projetées par l'hypothèse de revenu futur), repli sur le dernier PASS
+ * connu : les revenus projetés sont exprimés en euros constants de la
+ * dernière année connue, le plafond doit l'être aussi. Avant 1950 :
+ * `undefined` (lacune documentée ci-dessus, pas de plafond appliqué).
+ */
+const DERNIERE_ANNEE_PASS = Math.max(...Object.keys(PASS_PAR_ANNEE).map(Number));
+
+export function passPourAnnee(annee: number): number | undefined {
+  if (annee > DERNIERE_ANNEE_PASS) return PASS_PAR_ANNEE[DERNIERE_ANNEE_PASS];
+  return PASS_PAR_ANNEE[annee];
+}
 
 /**
  * Âge de départ par défaut utilisé pour borner la projection des années
@@ -324,15 +339,18 @@ export function calculerSAM(
     repartirRevenuParAnnee(periode, revenuParAnnee);
   }
 
-  // Revalorisation (coefficient CNAV) PUIS plafonnement (PASS) — l'ordre
-  // compte : plafonner avant revalorisation minorerait à tort des revenus
-  // qui, une fois revalorisés, auraient dépassé le plafond.
+  // Plafonnement (PASS de l'année) PUIS revalorisation (coefficient CNAV) —
+  // règle CNAV : le salaire est retenu dans la limite du plafond de l'année
+  // où il a été perçu, et c'est ce montant plafonné qui est revalorisé.
+  // L'ordre inverse comparerait un montant revalorisé à un plafond nominal
+  // ancien et ferait perdre le coefficient aux années au plafond.
+  // `revenuRevalorise` reste le brut revalorisé non plafonné (affichage).
   const anneesConnues: AnneeSAM[] = Array.from(revenuParAnnee.entries())
     .map(([annee, revenuBrut]) => {
       const coefficient = COEFFICIENT_REVALORISATION_CNAV[annee] ?? 1;
       const revenuRevalorise = revenuBrut * coefficient;
-      const plafond = PASS_PAR_ANNEE[annee];
-      const revenuPlafonne = plafond !== undefined ? Math.min(revenuRevalorise, plafond) : revenuRevalorise;
+      const plafond = passPourAnnee(annee);
+      const revenuPlafonne = (plafond !== undefined ? Math.min(revenuBrut, plafond) : revenuBrut) * coefficient;
       return { annee, revenuBrut, revenuRevalorise, revenuPlafonne, projete: false };
     })
     .sort((a, b) => a.annee - b.annee);

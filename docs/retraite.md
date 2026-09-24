@@ -78,7 +78,7 @@ uniquement applicatif via `familyService`.
   couverture nulle sur ce module ; 10 fichiers `*.test.ts` co-localisés couvrent le
   moteur (`calcul.test.ts`, `calculSAM.test.ts`, `calculTrimestres.test.ts`, `calculFonctionPublique.test.ts`,
   `calculCNAVPL.test.ts`, `parseRIS.test.ts`, `pensionConsolidee.test.ts`, `hypotheseRevenuFutur.test.ts`,
-  `enfantsEligiblesMajoration.test.ts`, `regimesSaisieManuelle.test.ts`) — 269 tests sur le module (`npx vitest run src/lib/retraite`). Rien côté rendu de composant (pas de
+  `enfantsEligiblesMajoration.test.ts`, `regimesSaisieManuelle.test.ts`) — 276 tests sur le module (`npx vitest run src/lib/retraite`). Rien côté rendu de composant (pas de
   `@testing-library/react`, environnement vitest en `node`) : la vérification visuelle des écrans
   reste manuelle, limite documentée dans quasiment chaque rapport de session.
 - **Barème par génération : bascule par date d'effet, pas seulement par année de naissance
@@ -141,6 +141,19 @@ uniquement applicatif via `familyService`.
   parenthèses — un régime valide retombait alors à tort sur le repli « Régime non identifié » quand
   son étiquette suivait la valeur au lieu de la précéder (collision d'arrondi de coordonnée Y à
   moins d'1pt, mise en page à 2 colonnes).
+- **SAM : plafonnement au PASS AVANT revalorisation.** `calculerSAM()` retient chaque salaire
+  annuel dans la limite du PASS de l'année de perception, puis revalorise ce montant plafonné
+  (coefficient CNAV) — règle CNAV. L'ordre inverse, en place jusqu'au 2026-09-24, comparait un
+  montant revalorisé à un PASS nominal ancien et sous-estimait le SAM des années au plafond ou proches
+  du plafond. PASS 2026 (48 060 €) ajouté ; au-delà de la dernière année connue (années projetées),
+  `passPourAnnee()` retient le dernier PASS connu (revenus projetés en euros constants).
+  ⚠️ Le SAM est calculé à l'import RIS puis persisté (`retraite_data.salaire_annuel_moyen`) : les
+  dossiers importés avant cette correction gardent un SAM erroné tant que le RIS n'est pas réimporté
+  (ou le SAM ressaisi).
+- **Plafond de décote : -25 % (20 trimestres) dans tous les régimes modélisés.** Régime général
+  compris (`decoteSurTrimestres()`, `decoteSurAge()`) : minoration de 0,625 point de taux par
+  trimestre manquant, taux minimal 37,5 %. Le régime général était plafonné à tort à -20 % jusqu'au
+  2026-09-24. `decoteSurTrimestresPlafond25()` est depuis un doublon exact de `decoteSurTrimestres()`.
 - **Double comptage fonction publique/CNAVPL — deux mécanismes distincts, tous deux soldés :**
   1) *[soldé, commit `d8c8e31`]* trimestres SRE/CNRACL comptés à tort dans le panier « régime général »
      à l'import RIS (`estRegimeSaisieManuelle()`, [regimesSaisieManuelle.ts](src/lib/retraite/regimesSaisieManuelle.ts)),
@@ -175,8 +188,24 @@ Classement par risque, revérifié contre le code au 2026-08-27 (`git log`, lect
 
 ### 🔴 Bloquant (peut fausser un calcul montré au client)
 
-Aucun bloquant ouvert au 2026-08-27 — les quatre écarts précédemment listés ici ont été traités (cf.
-§2 pour le détail des corrections) :
+Audit des calculs du 2026-09-24 : cinq anomalies bloquantes relevées, corrigées par phases.
+Soldées : plafonnement SAM avant revalorisation + PASS 2026, plafond de décote -25 % (§2). Ouvertes :
+
+- **Surcote classique assise sur la mauvaise période** (`pensionConsolidee.ts`, `Trimestres.tsx`) :
+  compte les trimestres cotisés de l'année *précédant* l'âge légal (règle de la surcote parentale) au
+  lieu de ceux cotisés *après* l'âge légal et la durée requise atteints.
+- **Écrêtement MICO** : le plafond global ne voit que P0 + `autresPensionsMensuelles`, pas les
+  complémentaires, la FP, le RAFP ni la CNAVPL calculés par l'app — MICO surestimé.
+- **Synthèse : dates d'effet incohérentes** — trimestres/SAM projetés à l'âge légal, mais décote âge,
+  surcote et âge légal atteint évalués à la date du jour ; `anneesManquantes()` compte l'année en
+  cours et l'année de départ pour 4 trimestres pleines (double compte possible).
+- Hors bloquants (même audit) : CNAVPL sans décote âge (taux plein à 67 ans ignoré) ; FP sédentaire
+  sans annulation de décote à 67 ans ; taux de décote FP par millésime non appliqué à la décote
+  trimestres ; surcote FP/CNAVPL toujours nulle (`trimestresCotisesAnneeReference = 0` en dur) ;
+  condition de durée de la surcote RG limitée au RG ; MIGA sans condition de taux plein ; âges en
+  années entières (`computeAge`) dans `decoteSurAge` et la projection de `Trimestres.tsx`.
+
+Écarts antérieurs soldés :
 
 - **Écart #2/RIS-SAM — proxy de date d'effet manquant à l'import RIS : soldé.** `RISImportDialog.tsx`
   passe désormais `new Date()` à `calculerSAM()`, cohérent avec le proxy « aujourd'hui » déjà utilisé
