@@ -211,6 +211,11 @@ uniquement applicatif via `familyService`.
   est atteinte. Décision du 2026-09-24 (plutôt qu'un champ déclaratif et une migration, à reconsidérer
   si un dossier réel est concerné ; la CNAVPL impliquerait en plus le taux de 0,75 % de certaines
   périodes antérieures au 01/09/2023, non détaillé par le référentiel).
+  Les colonnes `retraite_data.trimestres_cotises_apres_age_legal_fp` et `_cnavpl` (entier, défaut 0,
+  migration `20260901101148_add_trimestres_cotises_apres_age_legal.sql`) existent pourtant en base :
+  elles viennent d'une tentative antérieure de champ déclaratif (branche `fix/audit-retraite-carriere`,
+  jamais fusionnée) et ne sont lues ni écrites par aucun code — à réutiliser si la décision est
+  reconsidérée, sinon à supprimer par migration.
 - **Plafond de décote : -25 % (20 trimestres) dans tous les régimes modélisés.** Régime général
   compris (`decoteSurTrimestres()`, `decoteSurAge()`) : minoration de 0,625 point de taux par
   trimestre manquant, taux minimal 37,5 %. Le régime général était plafonné à tort à -20 % jusqu'au
