@@ -47,7 +47,9 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
       await onSave(articleData);
       onClose();
     } catch (error) {
-      console.error('Error saving article:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error saving article:', error);
+      }
     } finally {
       setIsSaving(false);
     }

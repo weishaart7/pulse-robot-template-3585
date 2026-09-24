@@ -37,7 +37,9 @@ export const useBlogArticles = () => {
       if (error) throw error;
       setArticles(data || []);
     } catch (error) {
-      console.error('Error fetching articles:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error fetching articles:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de charger les articles",
@@ -69,7 +71,9 @@ export const useBlogArticles = () => {
       await fetchArticles();
       return data;
     } catch (error) {
-      console.error('Error creating article:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error creating article:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de créer l'article",
@@ -98,7 +102,9 @@ export const useBlogArticles = () => {
       await fetchArticles();
       return data;
     } catch (error) {
-      console.error('Error updating article:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error updating article:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de mettre à jour l'article",
@@ -124,7 +130,9 @@ export const useBlogArticles = () => {
 
       await fetchArticles();
     } catch (error) {
-      console.error('Error deleting article:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error deleting article:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de supprimer l'article",
@@ -156,7 +164,9 @@ export const useBlogArticles = () => {
       await fetchArticles();
       return data;
     } catch (error) {
-      console.error('Error publishing article:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error publishing article:', error);
+      }
       toast({
         title: "Erreur",
         description: "Impossible de publier l'article",
