@@ -57,7 +57,9 @@ class SireneService {
 
       return this.mapToSireneData(data.results[0]);
     } catch (error) {
-      console.error('Error searching by SIREN:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error searching by SIREN:', error);
+      }
       throw error;
     }
   }
@@ -72,7 +74,9 @@ class SireneService {
       
       return data.results.map(result => this.mapToSireneData(result));
     } catch (error) {
-      console.error('Error searching by denomination:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error searching by denomination:', error);
+      }
       throw error;
     }
   }
