@@ -159,6 +159,11 @@ uniquement applicatif via `familyService`.
   au passage, `autresPensionsMensuelles` (jusqu'ici saisi sur Carrière mais jamais persisté, donc
   toujours à `0` côté Synthèse) devient une colonne persistée (`retraite_data.autres_pensions_mensuelles`,
   migration `20260818000000`), consommée par les deux écrans.
+- **Une ligne `retraite_data` par personne.** Contrainte `UNIQUE (user_id, personne)` (migration
+  `20260924120000`) ; la création dans `useRetraiteData.saveRetraiteData()` passe par un `upsert`
+  (`onConflict: 'user_id,personne'`), de sorte que deux sauvegardes automatiques concurrentes, avant
+  que l'`id` de la première insertion soit connu, fusionnent au lieu de créer un doublon (qui faisait
+  échouer silencieusement le chargement via `.maybeSingle()`).
 - **RGPD.** Aucun spécimen de RIS réel n'est jamais committé (`.gitignore` couvre `/exemples/`) ; les
   sessions d'audit ayant exécuté le parser contre un relevé réel l'ont fait sur un fichier local
   temporaire, supprimé après usage.

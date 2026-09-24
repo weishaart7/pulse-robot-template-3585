@@ -140,10 +140,10 @@ export const useRetraiteData = (personne: Personne = 'utilisateur') => {
 
         setData((prev) => ({ ...prev, ...updates }));
       } else {
-        // Création d'un nouvel enregistrement
+        // Création (ou fusion si une sauvegarde concurrente a déjà créé la ligne)
         const { data: newRecord, error } = await supabase
           .from('retraite_data')
-          .insert([{ ...updates, user_id: user.id, personne }] as any)
+          .upsert([{ ...updates, user_id: user.id, personne }] as any, { onConflict: 'user_id,personne' })
           .select()
           .single();
 
