@@ -56,7 +56,7 @@ permet de l'alimenter (voir §3).
   compact (client, conjoint, statut, régime et « Voir le détail » sur une rangée), l'arbre
   familial, puis le tableau « Membres de la famille » (seul point d'entrée « Ajouter un membre »,
   dans son en-tête, et état vide explicatif sans membre). Les personnes décédées sont estompées
-  (carte en pointillés, « † année ») dans l'arbre et grisées dans le tableau. Quitter un statut en
+  (carte détourée d'un filet, « † année ») dans l'arbre et grisées dans le tableau. Quitter un statut en
   couple (vers Célibataire, Divorcé(e), Veuf/Veuve) passe par une confirmation qui liste les enfants
   rattachés au partenaire (`spouse` / `both_parents`) ; rien n'est effacé ni réaffecté
   (`lib/family/statutTransition.ts`, politique « Option A ») ; pour Divorcé(e)/Veuf-Veuve il affiche le statut réel et un lien vers le
@@ -177,7 +177,17 @@ permet de l'alimenter (voir §3).
 - **Âge.** [lib/family/age.ts](../src/lib/family/age.ts) (`ageEnAnnees`, `formatAgeCourt`) est le
   seul calcul d'âge du module (différence calendaire).
 
-- **Affichage de l'arbre et du formulaire membre.** Chaque ligne de l'arbre est libellée d'après
+- **Affichage de l'arbre et du formulaire membre.** [FamilyTreeCards.tsx](../src/components/famille/FamilyTreeCards.tsx)
+  dispose l'arbre en deux branches centrées sur le couple : famille du client à gauche, famille du
+  conjoint à droite, descendance (enfants, petits-enfants…) centrée dessous. Le côté se déduit du
+  lien (`Parent` selon `enfant_de`, `Beau-parent` et `Beau-frère/Belle-sœur` côté conjoint, les
+  autres héritent du nœud auquel ils sont reliés) ; dans chaque branche, les liens directs sont
+  au plus près de l'axe. Traits généalogiques : parents reliés entre eux, un trait descend de leur
+  milieu vers une barre d'où partent les enfants ; un enfant rattaché à un seul parent rejoint la
+  fratrie de ce parent. Cartes : couple en encre, autres en taupe, défunts détourés ; pastille
+  braise pour « À charge » ou « Handicap ». Sur téléphone, le défilement s'ouvre centré sur le
+  couple. Purement visuel : `buildFamilyGraph` et les liens lus par la succession ne changent pas.
+  Chaque ligne de l'arbre est libellée d'après
   les liens qu'elle contient (ex. « Parents / Oncles et tantes », « Vous / Frères et sœurs »). Le
   tableau affiche le nom complet en une colonne. Le formulaire membre est découpé en blocs
   Rattachement / Identité / Situation / Succession. La page régime est titrée selon le statut

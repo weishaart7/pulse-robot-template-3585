@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { FamilyLink, FamilyProfile, MaritalStatus } from '@/services/familyService';
-import { buildFamilyGraph, FamilyGraphNode } from '@/lib/family/buildFamilyGraph';
+import { buildFamilyGraph, FamilyGraph, FamilyGraphNode } from '@/lib/family/buildFamilyGraph';
 import { initialsFromFullName } from '@/lib/family/initials';
 import { cn } from '@/lib/utils';
 
@@ -13,7 +13,6 @@ interface FamilyTreeCardsProps {
   onSelectMember: (member: FamilyLink) => void;
 }
 
-const CONNECTOR_COLOR = '#E5E5E3';
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
 // Libellé d'une ligne d'après les liens réellement présents (une même
@@ -47,15 +46,54 @@ function generationLabels(members: FamilyGraphNode[]): string[] {
   return labels;
 }
 
-// Place le client et son conjoint au centre de la génération 0, la fratrie répartie de part et d'autre.
-function orderGenerationZero(members: FamilyGraphNode[]) {
-  const main = members.find(m => m.isMain);
-  const spouse = members.find(m => m.isSpouse);
-  const others = members.filter(m => !m.isMain && !m.isSpouse);
-  const half = Math.ceil(others.length / 2);
-  const core = [main, spouse].filter((m): m is FamilyGraphNode => !!m);
-  return [...others.slice(0, half), ...core, ...others.slice(half)];
+// ─── Disposition en deux branches ────────────────────────────────────────────
+// Famille du client à gauche, famille du conjoint à droite, descendance du
+// couple centrée dessous. Purement visuel : le graphe (buildFamilyGraph) et
+// donc les liens utilisés par la succession ne changent pas.
+
+type Side = 'user' | 'spouse' | 'center';
+
+// Côté imposé par la nature du lien ; les autres héritent du nœud auquel ils sont reliés.
+const FIXED_SIDE: Record<string, Side> = {
+  'Beau-parent': 'spouse',
+  'Beau-frère/Belle-sœur': 'spouse',
+  'Enfant': 'center',
+  'Petit-enfant': 'center',
+  'Arrière petit-enfant': 'center',
+  'Tierce personne': 'user',
+};
+
+function assignSides(graph: FamilyGraph): Map<string, Side> {
+  const sides = new Map<string, Side>();
+  graph.nodes.forEach(n => {
+    if (n.isMain) sides.set(n.id, 'user');
+    else if (n.isSpouse) sides.set(n.id, 'spouse');
+    else if (FIXED_SIDE[n.relation]) sides.set(n.id, FIXED_SIDE[n.relation]);
+    else if (n.relation === 'Parent') sides.set(n.id, n.originalData?.enfant_de === 'spouse' ? 'spouse' : 'user');
+  });
+  // Propagation le long des arêtes (fratrie ← parent, grand-parent → parent, neveu ← frère…).
+  for (let pass = 0; pass < 6; pass++) {
+    graph.edges.forEach(e => {
+      if (e.id === 'edge-main-spouse') return;
+      const a = sides.get(e.source);
+      const b = sides.get(e.target);
+      if (a && !b && a !== 'center') sides.set(e.target, a);
+      if (b && !a && b !== 'center') sides.set(e.source, b);
+    });
+  }
+  graph.nodes.forEach(n => { if (!sides.has(n.id)) sides.set(n.id, 'user'); });
+  return sides;
 }
+
+// Plus le rang est petit, plus la carte est proche de l'axe central du couple.
+const PROXIMITY: Record<string, number> = {
+  'Parent': 0, 'Beau-parent': 0, 'Grand-parent': 0, 'Arrière grand-parent': 0,
+  'Frère/Sœur': 1, 'Beau-frère/Belle-sœur': 1, 'Oncle/Tante': 1,
+  'Cousin/Cousine': 2, 'Neveu/Nièce': 1, 'Petit neveu/nièce': 1, 'Tierce personne': 3,
+};
+const proximity = (n: FamilyGraphNode) => (n.isMain || n.isSpouse ? -1 : PROXIMITY[n.relation] ?? 2);
+
+// ─── Carte ───────────────────────────────────────────────────────────────────
 
 function MemberCard({
   node,
@@ -66,68 +104,76 @@ function MemberCard({
   onClick: () => void;
   cardRef: (el: HTMLButtonElement | null) => void;
 }) {
-  const isMe = !!node.isMain;
+  const isCouple = !!(node.isMain || node.isSpouse);
   const relationLabel = node.isMain ? 'Vous' : node.isSpouse ? 'Conjoint(e)' : node.relation;
   const secondaryLabel = node.isDeceased
     ? `${relationLabel} · †${node.deathYear ? ` ${node.deathYear}` : ''}`
     : relationLabel;
+  const m = node.originalData;
+  const flag = m && !m.est_decede && (m.handicap
+    ? 'Handicap'
+    : m.enfant_a_charge || m.fiscalement_a_charge ? 'À charge' : null);
 
   return (
     <button
       ref={cardRef}
       type="button"
       onClick={onClick}
+      title={flag ? `${node.name} · ${flag}` : node.name}
       className={cn(
-        "flex items-center gap-2.5 rounded-xl border px-3 h-[54px] w-[210px] shrink-0 text-left transition-shadow duration-200 shadow-sm hover:shadow-md",
-        isMe ? "bg-primary/5 border-primary/20" : "bg-card border-border",
+        'relative flex h-14 w-[188px] shrink-0 items-center gap-2.5 rounded-2xl px-3 text-left transition-colors duration-200',
+        isCouple
+          ? 'bg-foreground text-background shadow-whisper hover:bg-foreground/90'
+          : 'bg-secondary text-foreground hover:bg-border',
         // Décédé : carte estompée mais toujours reliée à ses descendants
         // (qui viennent à la succession par représentation).
-        node.isDeceased && "border-dashed bg-muted/40 shadow-none opacity-70",
+        node.isDeceased && 'bg-transparent shadow-[inset_0_0_0_1px_hsl(var(--input))] text-muted-foreground hover:bg-secondary',
         FOCUS_RING
       )}
     >
-      <div
+      <span
         className={cn(
-          "h-7 w-7 rounded-full flex items-center justify-center shrink-0",
-          isMe ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+          'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-medium',
+          isCouple ? 'bg-background/15 text-background' : 'bg-background text-foreground',
+          node.isDeceased && 'bg-secondary text-muted-foreground'
         )}
       >
-        <span className="text-[11px] font-semibold">
-          {initialsFromFullName(node.name)}
-        </span>
-      </div>
-      <div className="min-w-0">
-        <p className={cn("text-[14px] font-semibold truncate", node.isDeceased ? "text-muted-foreground" : "text-foreground")}>
-          {node.name}
-        </p>
-        <p className="text-[11px] uppercase tracking-wide truncate mt-0.5 text-muted-foreground">
+        {initialsFromFullName(node.name)}
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-[13px] font-medium">{node.name}</span>
+        <span className={cn('ds-eyebrow mt-0.5 block truncate !text-[10px]', isCouple ? 'text-background/60' : 'text-muted-foreground')}>
           {secondaryLabel}
-        </p>
-      </div>
+        </span>
+      </span>
+      {flag && <span aria-label={flag} className="absolute right-2.5 top-2.5 h-1.5 w-1.5 rounded-full bg-spark" />}
     </button>
   );
 }
+
+// ─── Arbre ───────────────────────────────────────────────────────────────────
 
 export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onSelectMain, onSelectSpouse, onSelectMember }: FamilyTreeCardsProps) {
   const graph = useMemo(
     () => buildFamilyGraph(familyProfile, maritalStatus, familyLinks),
     [familyProfile, maritalStatus, familyLinks]
   );
+  const sides = useMemo(() => assignSides(graph), [graph]);
 
-  const rowsByGeneration = new Map<number, FamilyGraphNode[]>();
-  graph.nodes.forEach(node => {
-    if (!rowsByGeneration.has(node.generation)) rowsByGeneration.set(node.generation, []);
-    rowsByGeneration.get(node.generation)!.push(node);
-  });
-  rowsByGeneration.forEach((members, generation) => {
-    if (generation === 0) rowsByGeneration.set(generation, orderGenerationZero(members));
-  });
-  const generations = Array.from(rowsByGeneration.keys()).sort((a, b) => a - b);
+  const generations = useMemo(
+    () => Array.from(new Set(graph.nodes.map(n => n.generation))).sort((a, b) => a - b),
+    [graph]
+  );
+  const zone = (generation: number, side: Side) =>
+    graph.nodes
+      .filter(n => n.generation === generation && sides.get(n.id) === side)
+      .sort((a, b) => proximity(a) - proximity(b));
 
+  const scrollRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const cardEls = useRef(new Map<string, HTMLButtonElement>());
   const cardRefSetters = useRef(new Map<string, (el: HTMLButtonElement | null) => void>());
-  const [connectors, setConnectors] = useState<{ id: string; d: string }[]>([]);
+  const [paths, setPaths] = useState<string[]>([]);
 
   const getCardRef = useCallback((id: string) => {
     if (!cardRefSetters.current.has(id)) {
@@ -139,100 +185,146 @@ export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onS
     return cardRefSetters.current.get(id)!;
   }, []);
 
-  const measureConnectors = useCallback(() => {
+  // Traits « généalogiques » : les parents d'un même groupe d'enfants sont
+  // reliés entre eux, un trait unique descend de leur milieu jusqu'à une barre
+  // horizontale d'où partent les enfants.
+  const measure = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
-    const containerRect = container.getBoundingClientRect();
+    const origin = container.getBoundingClientRect();
+    const rect = (id: string) => {
+      const el = cardEls.current.get(id);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return { l: r.left - origin.left, r: r.right - origin.left, t: r.top - origin.top, b: r.bottom - origin.top, cx: r.left - origin.left + r.width / 2, cy: r.top - origin.top + r.height / 2 };
+    };
+    const byId = new Map(graph.nodes.map(n => [n.id, n]));
 
-    const next = graph.edges
-      .map(edge => {
-        const source = graph.nodes.find(n => n.id === edge.source);
-        const target = graph.nodes.find(n => n.id === edge.target);
-        if (!source || !target) return null;
+    // Parents (génération supérieure) de chaque enfant.
+    const parentsOf = new Map<string, Set<string>>();
+    graph.edges.forEach(e => {
+      const s = byId.get(e.source), t = byId.get(e.target);
+      if (!s || !t || s.generation === t.generation) return;
+      const [up, down] = s.generation < t.generation ? [s, t] : [t, s];
+      if (!parentsOf.has(down.id)) parentsOf.set(down.id, new Set());
+      parentsOf.get(down.id)!.add(up.id);
+    });
 
-        const sourceEl = cardEls.current.get(edge.source);
-        const targetEl = cardEls.current.get(edge.target);
-        if (!sourceEl || !targetEl) return null;
+    // Groupes d'enfants par ensemble de parents ; un ensemble inclus dans un
+    // autre est fusionné (un frère rattaché à un seul parent rejoint la fratrie).
+    const groups: { parents: Set<string>; children: string[] }[] = [];
+    [...parentsOf.entries()]
+      .sort((a, b) => b[1].size - a[1].size)
+      .forEach(([child, parents]) => {
+        const host = groups.find(g => [...parents].every(p => g.parents.has(p)));
+        if (host) host.children.push(child);
+        else groups.push({ parents: new Set(parents), children: [child] });
+      });
 
-        const sourceRect = sourceEl.getBoundingClientRect();
-        const targetRect = targetEl.getBoundingClientRect();
+    const d: string[] = [];
+    const joined = new Set<string>();
+    const joinPair = (a: string, b: string) => {
+      const key = [a, b].sort().join('|');
+      if (joined.has(key)) return;
+      const ra = rect(a), rb = rect(b);
+      if (!ra || !rb || Math.abs(ra.cy - rb.cy) > 2) return;
+      const [left, right] = ra.l < rb.l ? [ra, rb] : [rb, ra];
+      d.push(`M ${left.r} ${left.cy} H ${right.l}`);
+      joined.add(key);
+    };
 
-        if (source.generation === target.generation) {
-          // Même génération (ex. client ↔ conjoint) : lien horizontal direct.
-          const leftRect = sourceRect.left <= targetRect.left ? sourceRect : targetRect;
-          const rightRect = sourceRect.left <= targetRect.left ? targetRect : sourceRect;
-          const x1 = leftRect.right - containerRect.left;
-          const x2 = rightRect.left - containerRect.left;
-          const y = leftRect.top + leftRect.height / 2 - containerRect.top;
-          return { id: edge.id, d: `M ${x1} ${y} H ${x2}` };
-        }
+    if (byId.has('spouse')) joinPair('main', 'spouse');
 
-        // Générations différentes : lien vertical, avec coude horizontal si les cartes ne sont pas alignées.
-        const upperRect = source.generation < target.generation ? sourceRect : targetRect;
-        const lowerRect = source.generation < target.generation ? targetRect : sourceRect;
-        const x1 = upperRect.left + upperRect.width / 2 - containerRect.left;
-        const y1 = upperRect.bottom - containerRect.top;
-        const x2 = lowerRect.left + lowerRect.width / 2 - containerRect.left;
-        const y2 = lowerRect.top - containerRect.top;
-        const midY = (y1 + y2) / 2;
+    groups.forEach(({ parents, children }) => {
+      const pr = [...parents].map(rect).filter(Boolean) as NonNullable<ReturnType<typeof rect>>[];
+      const cr = children.map(rect).filter(Boolean) as NonNullable<ReturnType<typeof rect>>[];
+      if (!pr.length || !cr.length) return;
+      const ps = [...parents];
+      for (let i = 1; i < ps.length; i++) joinPair(ps[i - 1], ps[i]);
 
-        return { id: edge.id, d: `M ${x1} ${y1} V ${midY} H ${x2} V ${y2}` };
-      })
-      .filter((c): c is { id: string; d: string } => c !== null);
+      // Départ : milieu du trait entre deux parents alignés, sinon bas de la carte.
+      const x0 = pr.reduce((s, r) => s + r.cx, 0) / pr.length;
+      const y0 = pr.length > 1 ? pr[0].cy : Math.max(...pr.map(r => r.b));
+      const top = Math.min(...cr.map(r => r.t));
+      const bar = top - 14;
+      d.push(`M ${x0} ${y0} V ${bar}`);
+      const xs = cr.map(r => r.cx).concat(x0);
+      d.push(`M ${Math.min(...xs)} ${bar} H ${Math.max(...xs)}`);
+      cr.forEach(r => d.push(`M ${r.cx} ${bar} V ${r.t}`));
+    });
 
-    setConnectors(next);
-  }, [graph.edges, graph.nodes]);
+    setPaths(d);
+  }, [graph]);
 
   useLayoutEffect(() => {
-    measureConnectors();
+    measure();
     const container = containerRef.current;
     if (!container) return;
-    const resizeObserver = new ResizeObserver(() => measureConnectors());
-    resizeObserver.observe(container);
-    window.addEventListener('resize', measureConnectors);
-    return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener('resize', measureConnectors);
-    };
-  }, [measureConnectors]);
+    const ro = new ResizeObserver(() => measure());
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [measure]);
+
+  // À l'ouverture (téléphone notamment), on centre le défilement sur le couple.
+  useLayoutEffect(() => {
+    const scroller = scrollRef.current;
+    const main = cardEls.current.get('main');
+    if (!scroller || !main || scroller.scrollWidth <= scroller.clientWidth) return;
+    const s = scroller.getBoundingClientRect(), m = main.getBoundingClientRect();
+    scroller.scrollLeft += m.right - s.left - s.width / 2;
+  }, [graph]);
 
   const handleSelect = (node: FamilyGraphNode) => {
     if (node.isMain) return onSelectMain();
     if (node.isSpouse) return onSelectSpouse();
     if (node.originalData) return onSelectMember(node.originalData);
   };
+  const card = (node: FamilyGraphNode) => (
+    <MemberCard key={node.id} node={node} onClick={() => handleSelect(node)} cardRef={getCardRef(node.id)} />
+  );
 
   return (
-    // Défilement horizontal de l'arbre entier (et non ligne par ligne) : les
-    // traits de liaison, mesurés dans le conteneur interne, restent alignés.
-    <div className="overflow-x-auto">
-    <div ref={containerRef} className="relative flex flex-col gap-6 py-1 min-w-max">
-      <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
-        {connectors.map(connector => (
-          <path key={connector.id} d={connector.d} fill="none" stroke={CONNECTOR_COLOR} strokeWidth={1.5} />
-        ))}
-      </svg>
+    // Défilement horizontal de l'arbre entier : les traits, mesurés dans le
+    // conteneur interne, restent alignés.
+    <div ref={scrollRef} className="overflow-x-auto [scrollbar-width:thin]">
+      <div
+        ref={containerRef}
+        className="relative grid w-full min-w-max grid-cols-[6rem_1fr_1fr] items-center gap-x-6 gap-y-10 py-2 md:gap-x-10"
+      >
+        <svg className="pointer-events-none absolute inset-0 h-full w-full overflow-visible" aria-hidden>
+          {paths.map((p, i) => (
+            <path key={i} d={p} fill="none" stroke="hsl(var(--input))" strokeWidth={1.25} strokeLinejoin="round" />
+          ))}
+        </svg>
 
-      {generations.map((generation) => (
-        <div key={generation} className="relative flex items-center gap-4">
-          <div
-            className={cn(
-              "w-20 md:w-24 shrink-0 text-right text-[11px] uppercase tracking-wide leading-tight",
-              generation === 0 ? "text-foreground" : "text-muted-foreground"
-            )}
-          >
-            {generationLabels(rowsByGeneration.get(generation)!).map(label => (
-              <span key={label} className="block">{label}</span>
-            ))}
-          </div>
-          <div className="flex-1 flex flex-nowrap items-center gap-4 pb-1">
-            {rowsByGeneration.get(generation)!.map(node => (
-              <MemberCard key={node.id} node={node} onClick={() => handleSelect(node)} cardRef={getCardRef(node.id)} />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
+        {generations.map(generation => {
+          const center = zone(generation, 'center');
+          const left = zone(generation, 'user');
+          const right = zone(generation, 'spouse');
+          const rowNodes = [...left, ...center, ...right];
+          return (
+            <div key={generation} className="contents">
+              <div
+                className={cn(
+                  'ds-eyebrow self-center text-left !text-[10px] leading-snug',
+                  generation === 0 ? 'text-foreground' : 'text-ash'
+                )}
+              >
+                {generationLabels(rowNodes).map(label => <span key={label} className="block">{label}</span>)}
+              </div>
+              {center.length > 0 && left.length === 0 && right.length === 0 ? (
+                <div className="col-span-2 flex justify-center gap-4">{center.map(card)}</div>
+              ) : (
+                <>
+                  {/* Branche client : de l'extérieur vers le centre. */}
+                  <div className="flex flex-row-reverse justify-start gap-4">{left.map(card)}{center.map(card)}</div>
+                  <div className="flex justify-start gap-4">{right.map(card)}</div>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

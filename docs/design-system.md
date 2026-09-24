@@ -106,8 +106,8 @@ auparavant le thème du système, faute de `ThemeProvider`).
 
 ## 10. Points ouverts
 
-- Bleu-vert `#006064` et lime `#9bf00d` encore présents dans les modules (ex. bascule
-  Mensuel / Annuel du Budget, bouton « Ajouter un actif »).
-- Couleurs codées en dur dans les composants métier (`text-green-600`, `bg-amber-50`…) et
-  palette Transmission propre (`kairos-transmission.css`, Hanken Grotesk).
-- Palette des graphiques (`--chart-*`) non retravaillée.
+- Quelques couleurs Tailwind codées en dur hors du périmètre traité : sections du régime
+  matrimonial (`RecompensesSection`, `CreancesEntreEpouxSection`), `IndivisairesSection`,
+  pages Blog et Nouveautés, composants `ui/` génériques (`toast`, `action-hub-input`).
+- Écrans non vérifiés à l'écran après la refonte : onglets de Transmission hors Synthèse,
+  onglets de détail de Retraite, Immobilier (LMNP) et Fiscalité (IFI), Sociétés avec données.
