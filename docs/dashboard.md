@@ -8,7 +8,7 @@ de synthèse par module. Aucune logique métier propre : la page agrège des cal
 
 | Carte | Contenu | Source |
 |---|---|---|
-| Patrimoine (2 colonnes) | Patrimoine net, bulle Actifs / Passifs, 4 principales catégories d'actifs (part + bande de 28 traits + valeur), compteur de catégories | `computePatrimoineBreakdown` ([PatrimoineChart.tsx](../src/components/patrimoine/PatrimoineChart.tsx)), même calcul que le module Patrimoine, démembrements inclus |
+| Patrimoine (2 colonnes) | Patrimoine net, bulle Actifs / Passifs, 4 principales catégories d'actifs (part + bande de 28 traits + valeur), compteur de catégories | `computePatrimoineBreakdown` ([PatrimoineChart.tsx](../src/components/patrimoine/PatrimoineChart.tsx)), même calcul que le module Patrimoine : démembrements, part du foyer (hors tiers indivisaires) et exclusion des éléments non qualifiés, net égal à la carte « Patrimoine net » |
 | Budget | Jauge en graduations (part des charges dans les revenus), disponible mensuel, lignes Revenus / Charges, compteur de lignes | `useRevenus` / `useCharges`, montants ramenés au mois selon la périodicité |
 | Fiscalité | Imposition totale, lignes IR + PS / IFI / Autres | `useFiscalOverview`, même somme que `FiscalOverviewCard.tsx` |
 | Transmission, Retraite | Orbite d'icônes + « Contenu à venir » | — |

@@ -32,7 +32,7 @@ surcote, rachat de trimestres) et une synthèse consolidée exportable en PDF.
 | Carrière | [Carriere.tsx](src/components/retraite/Carriere.tsx) | Écran principal : SAM, trimestres, import RIS, sous-cartes fonction publique/CNAVPL, détail MICO/surcote/majoration par régime |
 | — sous-carte | [CarriereFonctionPublique.tsx](src/components/retraite/CarriereFonctionPublique.tsx) | TIB, trimestres liquidables, RAFP, décote catégorie active, MIGA |
 | — sous-carte | [CarriereCNAVPL.tsx](src/components/retraite/CarriereCNAVPL.tsx) | Points CNAVPL, valeur du point, décote/surcote |
-| Épargne retraite | [EpargneRetraite.tsx](src/components/retraite/EpargneRetraite.tsx) | Agrégation PER/assurance-vie depuis le module Patrimoine |
+| Épargne retraite | [EpargneRetraite.tsx](src/components/retraite/EpargneRetraite.tsx) | Agrégation PER/assurance-vie depuis le module Patrimoine ; colonnes Utilisateur/Conjoint via `getRepartitionFoyer` (part des tiers indivisaires et actifs non qualifiés exclus) |
 | Optimisation (fichier `Trimestres.tsx`) | [Trimestres.tsx](src/components/retraite/Trimestres.tsx) | Simulation d'âge/date de départ, tableau comparatif 62-70 ans, rachat de trimestres |
 | (dialog) | [RISImportDialog.tsx](src/components/retraite/RISImportDialog.tsx) | Vérification/correction des données extraites d'un RIS PDF |
 

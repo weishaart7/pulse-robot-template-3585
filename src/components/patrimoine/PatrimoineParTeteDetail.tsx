@@ -9,7 +9,7 @@ import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useF
 import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
 import { getCategoryColor } from '@/lib/patrimoine/utils';
 import { getAssetCategory } from '@/constants/assetTypes';
-import { getPartSuccessorale, BienNonQualifieError } from '@/lib/patrimoine/succession';
+import { getRepartitionFoyer, BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 
 // Palette Famille (teal identité / lime accent positif / rose pour les
@@ -65,7 +65,7 @@ export const PatrimoineParTeteDetail = ({ onBack }: PatrimoineParTeteDetailProps
   } = patrimoineParPersonne;
 
   // Répartition par catégorie / par personne (parts attribuées) — même
-  // source unique que patrimoineParPersonne (getPartSuccessorale) : un bien
+  // source unique que patrimoineParPersonne (getRepartitionFoyer) : un bien
   // jamais qualifié est exclu silencieusement ici (déjà signalé une fois par
   // le résumé principal via unqualifiedItems, pas la peine de dupliquer
   // l'avertissement dans cette vue détaillée).
@@ -74,14 +74,14 @@ export const PatrimoineParTeteDetail = ({ onBack }: PatrimoineParTeteDetailProps
     assets.forEach((a: any) => {
       const valeur = Number(a.valeur_estimee || 0);
       if (!valeur) return;
-      let userFraction: number;
+      let repartition: { user: number; spouse: number };
       try {
-        userFraction = getPartSuccessorale(a, a.denomination || a.nature);
+        repartition = getRepartitionFoyer(a, a.denomination || a.nature);
       } catch (error) {
         if (error instanceof BienNonQualifieError) return;
         throw error;
       }
-      const part = valeur * (forSpouse ? (1 - userFraction) : userFraction);
+      const part = valeur * (forSpouse ? repartition.spouse : repartition.user);
       if (part > 0) {
         const cat = getAssetCategory(a.nature);
         map[cat] = (map[cat] || 0) + part;

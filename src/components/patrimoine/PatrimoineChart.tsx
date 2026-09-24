@@ -6,6 +6,7 @@ import { AssetDemembrement } from '@/services/assetDemembrementService';
 import { getAssetCategory } from '@/constants/assetTypes';
 import { getFractionDemembrement, DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
 import { CATEGORY_COLORS, formatCurrency } from '@/lib/patrimoine/utils';
+import { getRepartitionFoyer, BienNonQualifieError, SuccessionAssetInput } from '@/lib/patrimoine/succession';
 import { ASH, NEGATIVE } from '@/lib/palette';
 interface PatrimoineChartProps {
   assets: Asset[];
@@ -26,6 +27,20 @@ export function computePatrimoineBreakdown(
   assetDemembrements: AssetDemembrement[] = [],
   demembrementCtx: DemembrementFractionContext = {}
 ) {
+  // Même périmètre que usePatrimoineCalculations (cartes du Résumé) : seule
+  // la part du foyer compte (hors quote-part de tiers indivisaires), et un
+  // élément non qualifié est exclu (0) — le net au centre du donut est ainsi
+  // égal à la carte « Patrimoine net ».
+  const partFoyer = (item: SuccessionAssetInput): number => {
+    try {
+      const { user, spouse } = getRepartitionFoyer(item);
+      return user + spouse;
+    } catch (error) {
+      if (error instanceof BienNonQualifieError) return 0;
+      throw error;
+    }
+  };
+
   // Vue par catégorie pour les actifs
   const categoryData = assets.reduce((acc, asset) => {
     const category = getAssetCategory(asset.nature);
@@ -34,7 +49,7 @@ export function computePatrimoineBreakdown(
     // fraction === null : actif démembré dont l'âge de l'usufruitier n'est
     // pas calculable — exclu du total plutôt que compté à sa valeur pleine
     // propriété (même règle que usePatrimoineCalculations.ts).
-    const value = fraction === null ? 0 : (asset.valeur_estimee || 0) * fraction;
+    const value = fraction === null ? 0 : (asset.valeur_estimee || 0) * fraction * partFoyer(asset);
     if (!acc[category]) {
       acc[category] = {
         category,
@@ -59,7 +74,8 @@ export function computePatrimoineBreakdown(
   }));
 
   // Ajouter les passifs (hors emprunts de société, déjà reflétés dans la valorisation des parts)
-  const totalPassifs = passifs.reduce((sum, passif) => sum + (passif.montant_du || 0), 0) + emprunts.filter(e => !e.societe_id).reduce((sum, emprunt) => sum + (emprunt.capital_restant_du || 0), 0);
+  const totalPassifs = passifs.reduce((sum, passif) => sum + (passif.montant_du || 0) * partFoyer(passif), 0)
+    + emprunts.filter(e => !e.societe_id).reduce((sum, emprunt) => sum + (emprunt.capital_restant_du || 0) * partFoyer(emprunt), 0);
   if (totalPassifs > 0) {
     actifData.push({
       name: 'Passifs',

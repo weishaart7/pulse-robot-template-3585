@@ -169,8 +169,8 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         userPercentage = 0;
         spousePercentage = 100;
       } else if (displayDetenteur === 'Le couple') {
-        userPercentage = asset.pourcentage_utilisateur || 50;
-        spousePercentage = asset.pourcentage_conjoint || 50;
+        userPercentage = asset.pourcentage_utilisateur ?? 50;
+        spousePercentage = asset.pourcentage_conjoint ?? 50;
       } else if (displayDetenteur === 'Indivision') {
         userPercentage = getPartUtilisateurIndivisionTiers(indivisaires);
         spousePercentage = 0;
@@ -181,13 +181,13 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         denomination: asset.denomination || '',
         etablissement: asset.etablissement || '',
         mode_detention: asset.mode_detention || '',
-        valeur_estimee: asset.valeur_estimee || undefined,
+        valeur_estimee: asset.valeur_estimee ?? undefined,
         date_estimation: asset.date_estimation ? new Date(asset.date_estimation) : undefined,
         detenteur: displayDetenteur,
         pourcentage_utilisateur: userPercentage,
         pourcentage_conjoint: spousePercentage,
-        valeur_acquisition: asset.valeur_acquisition || undefined,
-        frais_acquisition: asset.frais_acquisition || undefined,
+        valeur_acquisition: asset.valeur_acquisition ?? undefined,
+        frais_acquisition: asset.frais_acquisition ?? undefined,
         date_acquisition: asset.date_acquisition ? new Date(asset.date_acquisition) : undefined,
         origine_actif: asset.origine_actif || ['Acquisition à titre onéreux'],
         situation_particuliere: asset.situation_particuliere || ['Non'],
@@ -211,7 +211,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         certificat_expertise: asset.certificat_expertise || false,
         certificat_expertise_reference: asset.certificat_expertise_reference || undefined,
         numero_serie: asset.numero_serie || undefined,
-        quantite_millesime: asset.quantite_millesime || undefined,
+        quantite_millesime: asset.quantite_millesime ?? undefined,
         capital_garanti: asset.capital_garanti ?? undefined,
         beneficiaire_designe: asset.beneficiaire_designe || undefined,
         mode_sortie: asset.mode_sortie || undefined,
@@ -222,7 +222,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         taux_remuneration: asset.taux_remuneration ?? undefined,
         date_echeance: asset.date_echeance ? new Date(asset.date_echeance) : undefined,
         plafond_verse: asset.plafond_verse ?? undefined,
-        duree_blocage: asset.duree_blocage || undefined,
+        duree_blocage: asset.duree_blocage ?? undefined,
         reduction_ir_entree: asset.reduction_ir_entree ?? undefined,
         date_attribution: asset.date_attribution ? new Date(asset.date_attribution) : undefined,
         prix_exercice: asset.prix_exercice ?? undefined,
@@ -230,7 +230,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         montant_appele: asset.montant_appele ?? undefined,
         sous_jacent: asset.sous_jacent || undefined,
         lieu_stockage: asset.lieu_stockage || undefined,
-        quantite: asset.quantite || undefined,
+        quantite: asset.quantite ?? undefined,
       });
     }
     // `indivisaires` est chargé de façon asynchrone par l'effet précédent

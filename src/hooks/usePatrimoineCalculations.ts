@@ -8,7 +8,7 @@ import {
   formatCurrency as formatCurrencyUtil
 } from '@/lib/patrimoine/utils';
 import { getAssetCategory } from '@/constants/assetTypes';
-import { getPartSuccessorale, BienNonQualifieError } from '@/lib/patrimoine/succession';
+import { getRepartitionFoyer, BienNonQualifieError, SuccessionAssetInput } from '@/lib/patrimoine/succession';
 import { getFractionDemembrement, DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
 
 interface FinancialSummary {
@@ -120,9 +120,10 @@ export const usePatrimoineCalculations = ({
   // (binaire), "Shared" = 'Bien commun'/'Indivision' (fraction). Un bien/
   // passif/emprunt jamais qualifié est exclu des totaux (jamais deviné) et
   // remonté dans `unqualifiedItems`.
-  const { patrimoineParPersonne, unqualifiedItems } = useMemo<{
+  const { patrimoineParPersonne, unqualifiedItems, foyerShareById } = useMemo<{
     patrimoineParPersonne: PatrimoineParPersonne;
     unqualifiedItems: UnqualifiedItem[];
+    foyerShareById: Map<string, number>;
   }>(() => {
     let userOwnValue = 0;
     let userSharedValue = 0;
@@ -133,75 +134,80 @@ export const usePatrimoineCalculations = ({
     let spouseOwnPassifs = 0;
     let spouseSharedPassifs = 0;
     const unqualified: UnqualifiedItem[] = [];
+    // Part du bien détenue par le foyer (user + conjoint) : < 1 pour une
+    // indivision avec des tiers, réutilisée pour pondérer les plus-values.
+    const foyerShare = new Map<string, number>();
 
     const isShared = (qualification?: string | null) =>
       qualification === 'Bien commun' || qualification === 'Indivision';
 
+    // Répartit `montant` entre utilisateur et conjoint (getRepartitionFoyer,
+    // jamais `1 - part utilisateur`, cf. indivision avec des tiers). Retourne
+    // null si l'élément n'est pas qualifié (exclu des totaux).
+    const repartir = (
+      item: SuccessionAssetInput & { qualification_bien?: string | null },
+      label: string,
+      onUnqualified: () => void
+    ): { user: number; spouse: number; shared: boolean } | null => {
+      try {
+        const { user, spouse } = getRepartitionFoyer(item, label);
+        return { user, spouse, shared: isShared(item.qualification_bien) };
+      } catch (error) {
+        if (error instanceof BienNonQualifieError) {
+          onUnqualified();
+          return null;
+        }
+        throw error;
+      }
+    };
+
     // Process assets
     assets.forEach(asset => {
+      const label = asset.denomination || asset.nature;
       if (asset.id && demembrement.unqualifiedIds.has(asset.id)) {
-        unqualified.push({ id: asset.id, label: asset.denomination || asset.nature, type: 'actif', reason: 'demembrement' });
+        unqualified.push({ id: asset.id, label, type: 'actif', reason: 'demembrement' });
         return;
       }
       const estimatedValue = (asset.id ? demembrement.valueById.get(asset.id) : undefined) ?? (asset.valeur_estimee || 0);
-      try {
-        const userFraction = getPartSuccessorale(asset, asset.denomination || asset.nature);
-        if (isShared(asset.qualification_bien)) {
-          userSharedValue += estimatedValue * userFraction;
-          spouseSharedValue += estimatedValue * (1 - userFraction);
-        } else {
-          userOwnValue += estimatedValue * userFraction;
-          spouseOwnValue += estimatedValue * (1 - userFraction);
-        }
-      } catch (error) {
-        if (error instanceof BienNonQualifieError) {
-          unqualified.push({ id: asset.id!, label: asset.denomination || asset.nature, type: 'actif', reason: 'qualification' });
-        } else {
-          throw error;
-        }
+      const r = repartir(asset, label, () =>
+        unqualified.push({ id: asset.id!, label, type: 'actif', reason: 'qualification' })
+      );
+      if (!r) return;
+      if (asset.id) foyerShare.set(asset.id, r.user + r.spouse);
+      if (r.shared) {
+        userSharedValue += estimatedValue * r.user;
+        spouseSharedValue += estimatedValue * r.spouse;
+      } else {
+        userOwnValue += estimatedValue * r.user;
+        spouseOwnValue += estimatedValue * r.spouse;
       }
     });
 
+    const ajouterPassif = (montant: number, r: { user: number; spouse: number; shared: boolean }) => {
+      if (r.shared) {
+        userSharedPassifs += montant * r.user;
+        spouseSharedPassifs += montant * r.spouse;
+      } else {
+        userOwnPassifs += montant * r.user;
+        spouseOwnPassifs += montant * r.spouse;
+      }
+    };
+
     // Process passifs
     passifs.forEach(passif => {
-      const montant = passif.montant_du || 0;
-      try {
-        const userFraction = getPartSuccessorale(passif, passif.nature);
-        if (isShared(passif.qualification_bien)) {
-          userSharedPassifs += montant * userFraction;
-          spouseSharedPassifs += montant * (1 - userFraction);
-        } else {
-          userOwnPassifs += montant * userFraction;
-          spouseOwnPassifs += montant * (1 - userFraction);
-        }
-      } catch (error) {
-        if (error instanceof BienNonQualifieError) {
-          unqualified.push({ id: passif.id, label: passif.nature, type: 'passif', reason: 'qualification' });
-        } else {
-          throw error;
-        }
-      }
+      const r = repartir(passif, passif.nature, () =>
+        unqualified.push({ id: passif.id, label: passif.nature, type: 'passif', reason: 'qualification' })
+      );
+      if (r) ajouterPassif(passif.montant_du || 0, r);
     });
 
     // Process emprunts (hors emprunts de société, déjà reflétés dans la valorisation des parts)
     emprunts.filter(e => !e.societe_id).forEach(emprunt => {
-      const montant = emprunt.capital_restant_du || 0;
-      try {
-        const userFraction = getPartSuccessorale(emprunt, emprunt.libelle || emprunt.nature);
-        if (isShared(emprunt.qualification_bien)) {
-          userSharedPassifs += montant * userFraction;
-          spouseSharedPassifs += montant * (1 - userFraction);
-        } else {
-          userOwnPassifs += montant * userFraction;
-          spouseOwnPassifs += montant * (1 - userFraction);
-        }
-      } catch (error) {
-        if (error instanceof BienNonQualifieError) {
-          unqualified.push({ id: emprunt.id, label: emprunt.libelle || emprunt.nature, type: 'emprunt', reason: 'qualification' });
-        } else {
-          throw error;
-        }
-      }
+      const label = emprunt.libelle || emprunt.nature;
+      const r = repartir(emprunt, label, () =>
+        unqualified.push({ id: emprunt.id, label, type: 'emprunt', reason: 'qualification' })
+      );
+      if (r) ajouterPassif(emprunt.capital_restant_du || 0, r);
     });
 
     const userActifs = userOwnValue + userSharedValue;
@@ -229,7 +235,8 @@ export const usePatrimoineCalculations = ({
         totalValue,
         showSpouse: isInCouple
       },
-      unqualifiedItems: unqualified
+      unqualifiedItems: unqualified,
+      foyerShareById: foyerShare
     };
   }, [assets, passifs, emprunts, userFirstName, spouseFirstName, isInCouple, demembrement]);
 
@@ -262,15 +269,19 @@ export const usePatrimoineCalculations = ({
       // démembré reste cohérente (une nue-propriété acquise 100k€ vaut
       // aujourd'hui une fraction de sa valeur pleine propriété, tout comme son
       // coût d'acquisition d'origine représentait déjà cette même fraction).
-      const fraction = asset.id ? demembrement.fractionById.get(asset.id) ?? 1 : 1;
-      const valeurEstimeePonderee = (asset.id ? demembrement.valueById.get(asset.id) : undefined) ?? (asset.valeur_estimee || 0);
+      // Pondération supplémentaire par la part du foyer : en indivision avec
+      // des tiers, seule la quote-part du foyer entre dans la plus-value.
+      // Un bien non qualifié (absent de foyerShareById) reste à 100 %.
+      const partFoyer = asset.id ? foyerShareById.get(asset.id) ?? 1 : 1;
+      const fraction = (asset.id ? demembrement.fractionById.get(asset.id) ?? 1 : 1) * partFoyer;
+      const valeurEstimeePonderee = ((asset.id ? demembrement.valueById.get(asset.id) : undefined) ?? (asset.valeur_estimee || 0)) * partFoyer;
       const valeurAcquisitionPonderee = (asset.valeur_acquisition === undefined || asset.valeur_acquisition === null)
         ? asset.valeur_acquisition
         : asset.valeur_acquisition * fraction;
       const { plusValue, hasData } = calculatePlusValue(
         valeurEstimeePonderee,
         valeurAcquisitionPonderee,
-        asset.frais_acquisition
+        asset.frais_acquisition == null ? asset.frais_acquisition : asset.frais_acquisition * partFoyer
       );
 
       if (hasData) {
@@ -307,7 +318,7 @@ export const usePatrimoineCalculations = ({
       byCategory,
       assetsWithPlusValue: assetsWithPlusValue.sort((a, b) => b.plusValue - a.plusValue)
     };
-  }, [assets, demembrement]);
+  }, [assets, demembrement, foyerShareById]);
 
   const formatCurrency = formatCurrencyUtil;
 

@@ -10,7 +10,7 @@ import { useAutoSave } from '@/hooks/useAutoSave';
 import { SaveStatusIndicator } from '@/components/ui/save-status-indicator';
 import { useAssets } from '@/hooks/useAssets';
 import { NATURES_PER } from '@/constants/assetTypes';
-import { getPartSuccessorale, BienNonQualifieError } from '@/lib/patrimoine/succession';
+import { getRepartitionFoyer, BienNonQualifieError } from '@/lib/patrimoine/succession';
 
 // Natures de la catégorie "épargne et assurance-vie" (assetTypes.ts) retenues
 // ici pour le total assurance-vie de la section Retraite.
@@ -57,27 +57,22 @@ export const EpargneRetraite = ({ personne = 'utilisateur' }: EpargneRetraitePro
   const perAssetsFoyer = assets.filter(a => NATURES_PER.includes(a.nature));
   const assuranceVieAssetsFoyer = assets.filter(a => NATURES_ASSURANCE_VIE.includes(a.nature));
 
-  // Part du conjoint dans un actif détenu par le foyer — même moteur que
-  // Patrimoine > Vue par tête (PatrimoineParTeteDetail.tsx::computeByCategory) :
-  // getPartSuccessorale() renvoie la fraction utilisateur, 1 - fraction pour
-  // le conjoint. Un bien jamais qualifié (qualification_bien absent/"À
-  // qualifier") est exclu silencieusement plutôt que deviné, même convention
-  // que la vue par tête — pas de nouvelle règle introduite ici.
-  const partConjoint = (asset: (typeof assets)[number]): number => {
+  // Parts utilisateur/conjoint d'un actif — même moteur que Patrimoine > Vue
+  // par tête (getRepartitionFoyer). Jamais `1 - part de l'autre` : en
+  // indivision avec des tiers, la part des tiers n'appartient à aucun des
+  // deux. Un bien jamais qualifié (qualification_bien absent/"À qualifier")
+  // est exclu des deux colonnes plutôt que deviné — auparavant il tombait
+  // à 100 % côté utilisateur, contrairement à la vue par tête.
+  const repartition = (asset: (typeof assets)[number]): { user: number; spouse: number } => {
     try {
-      return 1 - getPartSuccessorale(asset);
+      return getRepartitionFoyer(asset);
     } catch (error) {
-      if (error instanceof BienNonQualifieError) return 0;
+      if (error instanceof BienNonQualifieError) return { user: 0, spouse: 0 };
       throw error;
     }
   };
-
-  // Corrigé le 28/08/2026 (cf. audit patrimoine.md, IR3) : colonne
-  // utilisateur = part complémentaire à `partConjoint`, même convention que
-  // "Patrimoine par tête" (userValue + spouseValue = totalValue). Avant ce
-  // correctif, la colonne utilisateur affichait le total du foyer entier
-  // (PER/AV de l'utilisateur ET du conjoint), rompant cette symétrie.
-  const partUtilisateur = (asset: (typeof assets)[number]): number => 1 - partConjoint(asset);
+  const partConjoint = (asset: (typeof assets)[number]): number => repartition(asset).spouse;
+  const partUtilisateur = (asset: (typeof assets)[number]): number => repartition(asset).user;
 
   const perAssets = personne === 'conjoint'
     ? perAssetsFoyer.filter(a => partConjoint(a) > 0)

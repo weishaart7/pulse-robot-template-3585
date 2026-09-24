@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getPartSuccessorale, getPartConjointSuccession, BienNonQualifieError } from './succession';
+import { getPartSuccessorale, getPartConjointSuccession, getRepartitionFoyer, BienNonQualifieError } from './succession';
 import { getPartUtilisateurIndivisionTiers } from './utils';
 
 describe('getPartSuccessorale', () => {
@@ -72,5 +72,22 @@ describe('getPartSuccessorale', () => {
     } catch (e) {
       expect(e).toBeInstanceOf(BienNonQualifieError);
     }
+  });
+});
+
+describe('getRepartitionFoyer', () => {
+  it('indivision avec des tiers à 30 % : la part des tiers n\'est attribuée à personne', () => {
+    const r = getRepartitionFoyer({ qualification_bien: 'Indivision', detenteur: 'Indivision', pourcentage_utilisateur: 30, pourcentage_conjoint: 0 });
+    expect(r.user).toBeCloseTo(0.3);
+    expect(r.spouse).toBe(0);
+  });
+
+  it('bien commun, bien propre : user + spouse = 100 %', () => {
+    expect(getRepartitionFoyer({ qualification_bien: 'Bien commun' })).toEqual({ user: 0.5, spouse: 0.5 });
+    expect(getRepartitionFoyer({ qualification_bien: 'Bien propre', detenteur: 'spouse' })).toEqual({ user: 0, spouse: 1 });
+  });
+
+  it('bien non qualifié : lève BienNonQualifieError', () => {
+    expect(() => getRepartitionFoyer({ qualification_bien: null })).toThrow(BienNonQualifieError);
   });
 });

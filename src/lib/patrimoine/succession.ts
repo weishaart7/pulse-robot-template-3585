@@ -124,3 +124,20 @@ export function getPartConjointSuccession(asset: SuccessionAssetInput, label?: s
   // 'Bien propre' ou 'Bien personnel' : inverse exact de getPartSuccessorale.
   return isDetenteurSpouse(asset.detenteur ?? undefined) ? 1 : 0;
 }
+
+/**
+ * Répartition d'un bien entre utilisateur et conjoint, pour les totaux
+ * agrégés (Résumé, donut, vue par tête, Retraite > Épargne). Ne fait pas
+ * `spouse = 1 - user` : en indivision avec des tiers, la part des tiers
+ * n'appartient à aucun des deux (user + spouse < 1) et ne doit entrer dans
+ * aucun total. Lève `BienNonQualifieError` comme les deux fonctions appelées.
+ */
+export function getRepartitionFoyer(
+  asset: SuccessionAssetInput,
+  label?: string
+): { user: number; spouse: number } {
+  return {
+    user: getPartSuccessorale(asset, label),
+    spouse: getPartConjointSuccession(asset, label),
+  };
+}
