@@ -410,12 +410,30 @@ export function computeAVReintegrationCivile(
 }
 
 /**
- * Le couple a-t-il une donation au dernier vivant / donation entre époux ?
+ * Au moins l'un des époux a-t-il consenti une donation au dernier vivant ?
+ * Vue « couple », pour les alertes de conseil uniquement : ne jamais
+ * l'utiliser pour un calcul de succession, qui dépend du donateur
+ * (cf. hasDDVConsentieParDefunt).
  */
 export function hasDDV(
   maritalStatus: Pick<MaritalStatus, 'donation_dernier_vivant_personne' | 'donation_dernier_vivant_conjoint'> | null | undefined
 ): boolean {
   return !!maritalStatus?.donation_dernier_vivant_personne || !!maritalStatus?.donation_dernier_vivant_conjoint;
+}
+
+/**
+ * Le défunt simulé a-t-il lui-même consenti une DDV à son conjoint ? Seule la
+ * donation du prédécédé joue dans sa succession (art. 1094-1).
+ * `donation_dernier_vivant_personne` = consentie par l'Utilisateur ;
+ * `donation_dernier_vivant_conjoint` = consentie par le conjoint (« reçue »).
+ */
+export function hasDDVConsentieParDefunt(
+  maritalStatus: Pick<MaritalStatus, 'donation_dernier_vivant_personne' | 'donation_dernier_vivant_conjoint'> | null | undefined,
+  defunt: 'user' | 'spouse'
+): boolean {
+  return defunt === 'user'
+    ? !!maritalStatus?.donation_dernier_vivant_personne
+    : !!maritalStatus?.donation_dernier_vivant_conjoint;
 }
 
 /**
@@ -593,7 +611,7 @@ export function buildFamilyGraph(
     survivingSpouseId,
     childrenOfDecedent,
     childrenCommonWithSpouse,
-    hasDDV: hasDDV(maritalStatus),
+    hasDDV: hasDDVConsentieParDefunt(maritalStatus, 'user'),
     survivantPartenairePacs
   };
 }
@@ -709,7 +727,7 @@ export function buildSpouseAsDecedentFamilyGraph(
     hasSurvivingSpouse: false,
     childrenOfDecedent,
     childrenCommonWithSpouse: [],
-    hasDDV: hasDDV(maritalStatus)
+    hasDDV: hasDDVConsentieParDefunt(maritalStatus, 'spouse')
   };
 }
 

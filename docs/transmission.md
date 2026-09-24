@@ -64,9 +64,18 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   quelle que soit la filiation, conformément à ce que propose déjà `Optimisation.tsx`. En présence
   d'un enfant non commun et d'une option comportant de l'usufruit, un message informatif rappelle
   la faculté de conversion de l'art. 1098, non exercée d'office (les parts restent celles de
-  l'option choisie). Tests : `lib/transmission/ddvEnfantNonCommun.test.ts`. Limite connue :
-  `graph.hasDDV` est vrai si l'un ou l'autre époux a consenti une DDV, sans vérifier que le défunt
-  simulé en est le donateur (non vérifié au 2nd décès).
+  l'option choisie). Tests : `lib/transmission/ddvEnfantNonCommun.test.ts`.
+- **Sens de la DDV.** Seule la donation consentie par le défunt simulé joue dans sa succession :
+  `hasDDVConsentieParDefunt(maritalStatus, 'user' | 'spouse')` lit
+  `donation_dernier_vivant_personne` (consentie par l'Utilisateur) pour `buildFamilyGraph` et
+  l'écran Optimisation, `donation_dernier_vivant_conjoint` (consentie par le conjoint) pour
+  `buildSpouseAsDecedentFamilyGraph`. `hasDDV()` (l'une ou l'autre) ne sert plus qu'aux alertes de
+  conseil, vue « couple ». Tests : `utils/transmissionHelpers.ddvSens.test.ts`.
+- **Limite connue — ordre inversé du 2nd décès.** Quand le conjoint décède en premier,
+  `buildSpouseAsDecedentFamilyGraph` pose `hasSurvivingSpouse: false` : l'Utilisateur survivant ne
+  reçoit aucun droit de conjoint (ni 1/4 PP, ni usufruit, ni DDV), ses enfants prennent 100 %.
+  Le graphe est pensé pour le conjoint 2nd défunt mais sert aussi quand il est 1er défunt ; droits et
+  patrimoine du 2nd décès de cet ordre sont donc faux. Non corrigé.
 - **Droit temporaire au logement (1 an).** Message informatif, sans effet sur les parts. Conjoint
   marié successible : art. 763. Partenaire de PACS : même droit par renvoi de l'art. 515-6 al. 3
   (logement et mobilier, loyers remboursés par la succession), avec rappel qu'il n'a ni droit viager
