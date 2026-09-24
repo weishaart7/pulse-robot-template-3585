@@ -90,7 +90,7 @@ export function LiensFamiliauxForm({ onSelectMain }: LiensFamiliauxFormProps) {
       </div>;
   }
   return <div className="space-y-6">
-      <div className="rounded-3xl border border-border bg-card p-6">
+      <div className="rounded-3xl border border-border bg-card p-4 md:p-6">
         <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">
           Arbre familial
         </p>
@@ -105,14 +105,14 @@ export function LiensFamiliauxForm({ onSelectMain }: LiensFamiliauxFormProps) {
       </div>
 
       <Card className="rounded-3xl">
-          <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
-            <CardTitle className="flex items-center gap-2 text-lg">
+          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4 space-y-0">
+            <CardTitle className="flex items-center gap-2 text-lg whitespace-nowrap">
               <span>Membres de la famille</span>
               {familyLinks.length > 0 && <Badge variant="secondary">{familyLinks.length}</Badge>}
             </CardTitle>
             <button
               onClick={() => dialogRef.current?.openForAdd()}
-              className="inline-flex items-center gap-2 rounded-full bg-foreground hover:bg-foreground/85 text-background shadow-whisper pl-1 pr-4 py-1 text-sm font-medium transition-colors"
+              className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-foreground hover:bg-foreground/85 text-background shadow-whisper pl-1 pr-4 py-1 text-sm font-medium transition-colors"
             >
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background/15">
                 <Plus className="h-4 w-4 text-background" />

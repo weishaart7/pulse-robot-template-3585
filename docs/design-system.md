@@ -57,6 +57,10 @@ Surtitres techniques (étapes de wizard, en-têtes de section `SectionHeader`) :
   pastille encre ; libellés Inter 500 13 px en casse normale ; barre de défilement masquée.
 - Barre latérale : plaque taupe coins 20 px ; entrée active en pastille eggshell + `shadow-whisper`,
   inactives en smoke.
+- Téléphone (< 768 px, breakpoint `md`) : barre latérale masquée, son contenu (`SidebarNav`, partagé)
+  s'ouvre dans un panneau latéral gauche depuis un bouton menu à gauche du logo ; l'onglet de module
+  actif est ramené en vue dans la barre du haut ; marge latérale de la zone principale 16 px
+  (`px-4`), 24 px à partir de `md`.
 - Alertes conseil : `destructive` (critique), `spark` (élevé), taupe (moyen), coins 20 px.
 - Vue d'ensemble : voir [dashboard.md](dashboard.md).
 

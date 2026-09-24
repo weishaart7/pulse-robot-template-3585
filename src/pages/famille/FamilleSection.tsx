@@ -186,7 +186,7 @@ const FamilleSection = () => {
   );
 
   return (
-    <div className="p-6 pt-0 space-y-5">
+    <div className="pb-6 md:px-6 space-y-5">
       {/* Foyer : client, conjoint, statut et régime sur une seule rangée */}
       <div className="rounded-card border border-border bg-card p-4 flex flex-wrap items-center gap-x-8 gap-y-4">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">

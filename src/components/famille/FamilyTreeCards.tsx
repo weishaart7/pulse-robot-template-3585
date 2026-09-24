@@ -203,7 +203,10 @@ export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onS
   };
 
   return (
-    <div ref={containerRef} className="relative flex flex-col gap-6 py-1">
+    // Défilement horizontal de l'arbre entier (et non ligne par ligne) : les
+    // traits de liaison, mesurés dans le conteneur interne, restent alignés.
+    <div className="overflow-x-auto">
+    <div ref={containerRef} className="relative flex flex-col gap-6 py-1 min-w-max">
       <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
         {connectors.map(connector => (
           <path key={connector.id} d={connector.d} fill="none" stroke={CONNECTOR_COLOR} strokeWidth={1.5} />
@@ -214,7 +217,7 @@ export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onS
         <div key={generation} className="relative flex items-center gap-4">
           <div
             className={cn(
-              "w-24 shrink-0 text-right text-[11px] uppercase tracking-wide leading-tight",
+              "w-20 md:w-24 shrink-0 text-right text-[11px] uppercase tracking-wide leading-tight",
               generation === 0 ? "text-foreground" : "text-muted-foreground"
             )}
           >
@@ -222,13 +225,14 @@ export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onS
               <span key={label} className="block">{label}</span>
             ))}
           </div>
-          <div className="flex-1 flex flex-nowrap items-center gap-4 overflow-x-auto pb-1">
+          <div className="flex-1 flex flex-nowrap items-center gap-4 pb-1">
             {rowsByGeneration.get(generation)!.map(node => (
               <MemberCard key={node.id} node={node} onClick={() => handleSelect(node)} cardRef={getCardRef(node.id)} />
             ))}
           </div>
         </div>
       ))}
+    </div>
     </div>
   );
 }
