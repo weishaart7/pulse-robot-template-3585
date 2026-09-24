@@ -75,9 +75,9 @@ export const SocietesMesSocietes = ({ onEdit, onAdd }: SocietesMesSocietesProps)
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-3">
         <h3 className="text-lg font-semibold">Mes sociétés</h3>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <SocieteParticipationsDialog
             societes={societes}
             participations={participations}

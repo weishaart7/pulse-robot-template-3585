@@ -53,8 +53,8 @@ export const IncompleteAssetsBanner: React.FC<Props> = ({ assets, onAssetClick }
       <div className="flex items-start gap-3">
         <AlertTriangle className="h-5 w-5 text-spark mt-0.5 shrink-0" strokeWidth={1.75} />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-3">
-            <div>
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+            <div className="min-w-[12rem] flex-1">
               <p className="text-sm font-semibold text-foreground ">
                 {incomplete.length} actif{incomplete.length > 1 ? 's ont' : ' a'} des informations manquantes
               </p>

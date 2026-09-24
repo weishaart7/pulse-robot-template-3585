@@ -257,7 +257,7 @@ export const Liberalites = () => {
       <Button
         variant="outline"
         onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
-        className="gap-2 bg-[var(--surface)] text-[var(--text-primary)] border-[var(--kt-border-strong)] rounded-[var(--radius-lg)]"
+        className="h-auto min-h-10 max-w-full gap-2 whitespace-normal text-left bg-[var(--surface)] text-[var(--text-primary)] border-[var(--kt-border-strong)] rounded-[var(--radius-lg)]"
       >
         Déclarer un scénario de changement de régime
         <ArrowRight className="h-4 w-4" />

@@ -94,7 +94,7 @@ const ToggleHypotheseRevenuFutur = ({ personne, hypothese }: ToggleHypotheseReve
         </p>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button
           type="button"
           variant={mode === 'derniere_annee_connue' ? 'default' : 'outline'}
@@ -697,7 +697,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         <SaveStatusIndicator status={saveStatus} />
       </div>
       <Card className="border border-border">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 p-5">
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4 space-y-0 p-5">
           <div>
             <CardTitle className="text-[15px] font-semibold tracking-tight">Informations de carrière</CardTitle>
             <CardDescription className="text-xs">

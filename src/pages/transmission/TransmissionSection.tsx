@@ -85,8 +85,9 @@ export const TransmissionSection = () => {
         </div>
       </div>
 
-      <div className="mb-6 flex justify-start">
-        <div className="flex gap-7 border-b border-[var(--kt-border)]">
+      {/* Onglets défilants sur écran étroit (barre de défilement masquée) */}
+      <div className="mb-6 flex justify-start overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex w-max shrink-0 gap-5 md:gap-7 border-b border-[var(--kt-border)]">
           <AnimatedBackground
             defaultValue="synthese"
             onValueChange={(value) => setActiveTab(value || 'synthese')}
