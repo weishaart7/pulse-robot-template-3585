@@ -20,10 +20,14 @@ export const RetraiteSection = () => {
 
   useEffect(() => {
     familyService.getFamilyProfile().then(setFamilyProfile).catch((error) => {
-      console.error('Erreur lors du chargement du profil famille:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors du chargement du profil famille:', error);
+      }
     });
     familyService.getMaritalStatus().then(setMaritalStatus).catch((error) => {
-      console.error('Erreur lors du chargement du statut marital:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors du chargement du statut marital:', error);
+      }
     });
   }, []);
 

@@ -100,7 +100,9 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
         if (!cancelled) setDateNaissance(date);
       })
       .catch((error) => {
-        console.error('Erreur lors du chargement de la date de naissance:', error);
+        if (import.meta.env.DEV) {
+          console.error('Erreur lors du chargement de la date de naissance:', error);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoadingProfile(false);

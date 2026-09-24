@@ -85,7 +85,9 @@ export const useRetraiteData = (personne: Personne = 'utilisateur') => {
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error loading retirement data:', error);
+        if (import.meta.env.DEV) {
+          console.error('Error loading retirement data:', error);
+        }
         return;
       }
 
@@ -93,7 +95,9 @@ export const useRetraiteData = (personne: Personne = 'utilisateur') => {
         setData(retraiteData as any);
       }
     } catch (error) {
-      console.error('Error loading retirement data:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error loading retirement data:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -123,7 +127,9 @@ export const useRetraiteData = (personne: Personne = 'utilisateur') => {
           .eq('personne', personne as any);
 
         if (error) {
-          console.error('Error updating retirement data:', error);
+          if (import.meta.env.DEV) {
+            console.error('Error updating retirement data:', error);
+          }
           toast({
             title: "Erreur de sauvegarde",
             description: "Impossible de sauvegarder les données de retraite.",
@@ -142,7 +148,9 @@ export const useRetraiteData = (personne: Personne = 'utilisateur') => {
           .single();
 
         if (error) {
-          console.error('Error creating retirement data:', error);
+          if (import.meta.env.DEV) {
+            console.error('Error creating retirement data:', error);
+          }
           toast({
             title: "Erreur de sauvegarde",
             description: "Impossible de créer les données de retraite.",
@@ -164,7 +172,9 @@ export const useRetraiteData = (personne: Personne = 'utilisateur') => {
       }
       return true;
     } catch (error) {
-      console.error('Error saving retirement data:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error saving retirement data:', error);
+      }
       toast({
         title: "Erreur de sauvegarde",
         description: "Une erreur est survenue lors de la sauvegarde.",

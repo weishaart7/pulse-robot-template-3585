@@ -445,7 +445,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       setPeriodesDetectees(detailDetecte);
       setRisDialogOpen(true);
     } catch (error) {
-      console.error('Erreur lors de la lecture du RIS:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la lecture du RIS:', error);
+      }
       toast({
         title: 'Import impossible',
         description: 'Impossible de lire ce document automatiquement, merci de saisir les informations manuellement.',

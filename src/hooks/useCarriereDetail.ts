@@ -32,7 +32,9 @@ export const useCarriereDetail = (personne: Personne = 'utilisateur') => {
         .order('date_debut');
 
       if (error) {
-        console.error('Erreur lors du chargement du détail de carrière:', error);
+        if (import.meta.env.DEV) {
+          console.error('Erreur lors du chargement du détail de carrière:', error);
+        }
         return;
       }
 
@@ -93,7 +95,9 @@ export const useCarriereDetail = (personne: Personne = 'utilisateur') => {
       await chargerPeriodes();
       return true;
     } catch (error) {
-      console.error('Erreur lors de l\'enregistrement du détail de carrière:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de l\'enregistrement du détail de carrière:', error);
+      }
       toast({
         title: 'Erreur',
         description: 'Impossible d\'enregistrer le détail de carrière.',
@@ -108,7 +112,9 @@ export const useCarriereDetail = (personne: Personne = 'utilisateur') => {
   const supprimerPeriode = async (id: string): Promise<void> => {
     const { error } = await supabase.from('retraite_carriere_detail').delete().eq('id', id);
     if (error) {
-      console.error('Erreur lors de la suppression de la période:', error);
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors de la suppression de la période:', error);
+      }
       toast({
         title: 'Erreur',
         description: 'Impossible de supprimer cette période.',

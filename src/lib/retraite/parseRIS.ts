@@ -562,7 +562,9 @@ async function etape<T>(nom: string, fn: () => Promise<T> | T): Promise<T> {
   try {
     return await fn();
   } catch (error) {
-    console.error(`Erreur parsing RIS à l'étape "${nom}":`, error);
+    if (import.meta.env.DEV) {
+      console.error(`Erreur parsing RIS à l'étape "${nom}":`, error);
+    }
     throw error;
   }
 }
