@@ -49,7 +49,7 @@ export const IncompleteAssetsBanner: React.FC<Props> = ({ assets, onAssetClick }
   if (dismissed || incomplete.length === 0) return null;
 
   return (
-    <div className="rounded-lg border border-spark/30/60 bg-spark/10/60 p-4">
+    <div className="rounded-lg border border-spark/30 bg-spark/10 p-4">
       <div className="flex items-start gap-3">
         <AlertTriangle className="h-5 w-5 text-spark mt-0.5 shrink-0" strokeWidth={1.75} />
         <div className="flex-1 min-w-0">

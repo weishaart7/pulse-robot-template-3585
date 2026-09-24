@@ -80,7 +80,7 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
   return (
     <div className="space-y-8">
       {unqualifiedItems.length > 0 && (
-        <div className="rounded-lg border border-spark/30/60 bg-spark/10/60 p-4 flex items-start gap-3">
+        <div className="rounded-lg border border-spark/30 bg-spark/10 p-4 flex items-start gap-3">
           <AlertTriangle className="h-5 w-5 text-spark mt-0.5 shrink-0" strokeWidth={1.75} />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground ">
