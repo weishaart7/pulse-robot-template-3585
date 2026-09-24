@@ -8,42 +8,11 @@ import { REVENUS_CATEGORIES, CHARGES_CATEGORIES } from '@/constants/budgetCatego
 import { SlidingNumber } from '@/components/ui/sliding-number';
 import { TrendingUp, TrendingDown, Wallet, Percent, Landmark, PieChart as PieIcon, BarChart3 } from 'lucide-react';
 import { DisplayMode } from '@/pages/budget/BudgetSection';
+import { toAnnual, isActiveOn, isPonctuel, parseLocalDate } from '@/lib/budget/periodicite';
 
 interface BudgetResumeProps {
   displayMode: DisplayMode;
 }
-
-// Convertir un montant périodique en montant annuel
-const toAnnual = (montant: number, periodicite?: string): number => {
-  const p = (periodicite || 'mensuel').toLowerCase();
-  switch (p) {
-    case 'mensuel':
-    case 'mensuelle':
-      return montant * 12;
-    case 'trimestriel':
-    case 'trimestrielle':
-      return montant * 4;
-    case 'semestriel':
-    case 'semestrielle':
-      return montant * 2;
-    case 'annuel':
-    case 'annuelle':
-    case 'ponctuel':
-    default:
-      return montant;
-  }
-};
-
-// Une ligne est active « aujourd'hui » si elle a démarré (ou n'a pas de date_debut) et n'est pas
-// terminée (ou n'a pas de date_fin) — utilisé pour exclure du Solde/Taux/Capacité d'endettement les
-// lignes déjà terminées, cohérent avec le filtrage déjà appliqué par SeasonalityChart plus bas.
-const isActiveToday = (dateDebut?: string, dateFin?: string): boolean => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  if (dateFin && new Date(dateFin) < today) return false;
-  if (dateDebut && new Date(dateDebut) > today) return false;
-  return true;
-};
 
 // Palette Famille (teal identité / lime accent / rose pour les charges),
 // même triptyque que PatrimoineResume.tsx — cf. docs/budget.md.
@@ -104,11 +73,11 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
   // ou pas encore démarrée (date_debut future) ne doit pas gonfler le Solde ni les indicateurs
   // d'endettement (cf. docs/budget.md §3).
   const activeRevenus = useMemo(
-    () => revenus.filter(r => isActiveToday(r.date_debut, r.date_fin)),
+    () => revenus.filter(r => isActiveOn(r)),
     [revenus]
   );
   const activeCharges = useMemo(
-    () => charges.filter(c => isActiveToday(c.date_debut, c.date_fin)),
+    () => charges.filter(c => isActiveOn(c)),
     [charges]
   );
 
@@ -412,116 +381,45 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
   const MONTHS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
   const currentYear = new Date().getFullYear();
 
-  // Calculer les mois où un item s'applique
-  // Pour les revenus/charges récurrents, on affiche tous les mois de l'année (budget lissé)
-  // Sauf pour ponctuel où on respecte la date exacte
-  const getApplicableMonths = (
-    periodicite?: string,
-    dateDebut?: string,
-    dateFin?: string
-  ): number[] => {
-    const p = (periodicite || 'mensuel').toLowerCase();
-    
-    // Pour ponctuel uniquement, restreindre au mois de date_debut de l'année en cours
-    if (p === 'ponctuel') {
-      if (dateDebut) {
-        const startDate = new Date(dateDebut);
-        const startYear = startDate.getFullYear();
-        if (startYear === currentYear) {
-          return [startDate.getMonth()];
-        }
-        return []; // Pas dans l'année en cours
-      }
-      return [0]; // Par défaut janvier si pas de date
+  // Montant de la ligne sur chaque mois de l'année civile courante : un ponctuel tombe en entier sur le mois
+  // de sa date_debut (janvier sans date) ; une ligne récurrente est lissée (annuel / 12) sur les mois
+  // où elle est active, date_debut/date_fin comprises.
+  const monthlyAmounts = (line: Revenu | Charge): number[] => {
+    const amounts = new Array(12).fill(0);
+    const montant = Number(line.montant) || 0;
+    if (!isFinite(montant) || montant === 0) return amounts;
+    if (isPonctuel(line.periodicite)) {
+      const d = line.date_debut ? parseLocalDate(line.date_debut) : new Date(currentYear, 0, 1);
+      if (d.getFullYear() === currentYear) amounts[d.getMonth()] = montant;
+      return amounts;
     }
-    
-    // Pour les périodicités récurrentes (mensuel, trimestriel, semestriel, annuel)
-    // On affiche sur tous les mois de l'année (vue budget lissé)
-    // Sauf si explicitement terminé avant l'année en cours
-    if (dateFin) {
-      const endDate = new Date(dateFin);
-      if (endDate.getFullYear() < currentYear) {
-        return []; // Terminé avant cette année
-      }
+    const monthly = toAnnual(montant, line.periodicite) / 12;
+    const start = line.date_debut ? parseLocalDate(line.date_debut) : null;
+    const end = line.date_fin ? parseLocalDate(line.date_fin) : null;
+    for (let m = 0; m < 12; m++) {
+      const monthStart = new Date(currentYear, m, 1);
+      const monthEnd = new Date(currentYear, m + 1, 0);
+      if (start && start > monthEnd) continue;
+      if (end && end < monthStart) continue;
+      amounts[m] = monthly;
     }
-    
-    // Sauf si ça commence après l'année en cours
-    if (dateDebut) {
-      const startDate = new Date(dateDebut);
-      if (startDate.getFullYear() > currentYear) {
-        return []; // Pas encore commencé
-      }
-    }
-    
-    // Pour tout le reste, afficher sur les 12 mois
-    return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    return amounts;
   };
 
-  // Convertir un montant périodique en montant mensuel
-  const toMonthlyAmount = (montant: number, periodicite?: string): number => {
-    const p = (periodicite || 'mensuel').toLowerCase();
-    switch (p) {
-      case 'annuel':
-      case 'annuelle':
-        return montant / 12;
-      case 'semestriel':
-      case 'semestrielle':
-        return montant / 6;
-      case 'trimestriel':
-      case 'trimestrielle':
-        return montant / 3;
-      case 'ponctuel':
-        return montant; // Montant unique affiché tel quel le mois concerné
-      default: // mensuel, mensuelle
-        return montant;
-    }
-  };
-
-  // Calculer les montants par mois (distribués mensuellement pour toutes les périodicités sauf ponctuel)
   const monthlyData = useMemo(() => {
-    return MONTHS.map((month, monthIndex) => {
-      // Revenus pour ce mois
-      let monthRevenus = 0;
-      revenus.forEach(revenu => {
-        const montant = Number(revenu.montant) || 0;
-        if (!isFinite(montant) || montant === 0) return;
-        
-        const applicableMonths = getApplicableMonths(revenu.periodicite, revenu.date_debut, revenu.date_fin);
-        if (applicableMonths.includes(monthIndex)) {
-          // Pour ponctuel, on garde le montant complet; sinon on convertit en mensuel
-          const p = (revenu.periodicite || 'mensuel').toLowerCase();
-          if (p === 'ponctuel') {
-            monthRevenus += montant;
-          } else {
-            monthRevenus += toMonthlyAmount(montant, revenu.periodicite);
-          }
-        }
-      });
-      
-      // Charges pour ce mois
-      let monthCharges = 0;
-      charges.forEach(charge => {
-        const montant = Number(charge.montant) || 0;
-        if (!isFinite(montant) || montant === 0) return;
-        
-        const applicableMonths = getApplicableMonths(charge.periodicite, charge.date_debut, charge.date_fin);
-        if (applicableMonths.includes(monthIndex)) {
-          const p = (charge.periodicite || 'mensuel').toLowerCase();
-          if (p === 'ponctuel') {
-            monthCharges += montant;
-          } else {
-            monthCharges += toMonthlyAmount(montant, charge.periodicite);
-          }
-        }
-      });
-      
-      return {
-        month,
-        revenus: Math.round(monthRevenus),
-        charges: Math.round(monthCharges),
-        solde: Math.round(monthRevenus - monthCharges)
-      };
-    });
+    const sumByMonth = (lines: (Revenu | Charge)[]) => lines.reduce((acc, l) => {
+      monthlyAmounts(l).forEach((v, i) => { acc[i] += v; });
+      return acc;
+    }, new Array(12).fill(0));
+    const rev = sumByMonth(revenus);
+    const ch = sumByMonth(charges);
+    return MONTHS.map((month, i) => ({
+      month,
+      revenus: Math.round(rev[i]),
+      charges: Math.round(ch[i]),
+      solde: Math.round(rev[i] - ch[i]),
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [revenus, charges, currentYear]);
 
   const hasData = revenus.length > 0 || charges.length > 0;

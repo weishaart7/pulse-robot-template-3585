@@ -39,9 +39,8 @@ pour les charges :
 | Revenus | [BudgetRevenus.tsx](src/components/budget/BudgetRevenus.tsx) → [RevenusForm.tsx](src/components/budget/RevenusForm.tsx), [BudgetList.tsx](src/components/budget/BudgetList.tsx) | CRUD des revenus saisis dans Budget + liste fusionnée avec les revenus d'actifs |
 | Charges | [BudgetCharges.tsx](src/components/budget/BudgetCharges.tsx) → [ChargesForm.tsx](src/components/budget/ChargesForm.tsx), `BudgetList.tsx` | Idem côté charges |
 
-Un widget indépendant, [budget-statistics-card.tsx](src/components/ui/budget-statistics-card.tsx), est
-affiché sur le Dashboard global (`src/pages/Dashboard.tsx`) — **quatrième** implémentation de la même
-conversion de périodicité (voir §2/§3), avec son propre calcul dupliqué de `toAnnual`.
+La carte « Budget » du Dashboard global (`src/pages/Dashboard.tsx`) affiche le solde mensuel calculé
+avec le même module `src/lib/budget/periodicite.ts` que l'onglet Résumé (voir §2).
 
 **Tables Supabase** : `revenus`, `charges` (propres au module) ; `asset_revenus`, `asset_charges`
 (consommées en lecture, `impact_budget = true` uniquement) ; `emprunts` (consommée en lecture côté
@@ -74,23 +73,28 @@ encre (identité, revenus), braise `#ff4704` (charges, endettement, solde négat
 d'icône ronde, KPI du Résumé en `StatCard` (barre de couleur + badge rond), bouton d'ajout et sélecteur
 Mensuel/Annuel en pilule encre, donuts sur `SERIES`. Purement visuel : aucune logique de calcul modifiée.
 
-- **Pas de `src/lib/budget/` — confirmé, et à la différence d'Immobilier ce n'est pas un écart au
-  pattern `lib/ifi/` mais un choix cohérent avec le rôle du module : il n'y a aucune règle métier
-  réglementaire à isoler, seulement une conversion de périodicité et des totaux additifs.** Cette
-  conversion (`toAnnual`) est en revanche **dupliquée quatre fois, avec des définitions légèrement
-  différentes**, faute d'un point d'entrée partagé :
-  1. [BudgetList.tsx:43-63](src/components/budget/BudgetList.tsx:43-63)
-  2. [BudgetResume.tsx:15-33](src/components/budget/BudgetResume.tsx:15-33)
-  3. `SeasonalityChart` dans `BudgetResume.tsx` — une **cinquième** variante, `toMonthlyAmount`
-     ([BudgetResume.tsx:386-403](src/components/budget/BudgetResume.tsx:386-403)), qui convertit vers le
-     mensuel plutôt que vers l'annuel et traite `ponctuel` différemment (montant affiché tel quel sur le
-     seul mois de `date_debut` plutôt que lissé sur l'année, cf. plus bas)
-  4. [Dashboard.tsx:26-46](src/pages/Dashboard.tsx:26-46) — copie quasi identique de la variante
-     `BudgetList`, avec le commentaire explicite `// logique reprise de BudgetList.tsx` qui documente lui-
-     même la duplication.
-  Les quatre/cinq variantes gèrent toutes correctement les deux graphies (masculine `mensuel` et féminine
-  `mensuelle`, etc.) pour `mensuel(le)`/`trimestriel(le)`/`semestriel(le)`/`annuel(le)`, mais **divergent
-  sur le cas par défaut** (valeur de périodicité non reconnue) — voir §3.
+- **`src/lib/budget/periodicite.ts` : point d'entrée unique de la conversion de périodicité.** Il n'y a
+  aucune règle réglementaire à isoler, mais la conversion était recopiée en quatre variantes divergentes
+  (`BudgetList`, `BudgetResume`, `SeasonalityChart`, `Dashboard`). Le module expose :
+  - `toAnnual(montant, periodicite)` : ×12 / ×4 / ×2 / ×1, les deux graphies et toute casse acceptées ;
+    une valeur inconnue ou absente est traitée comme mensuelle (défaut du formulaire) ; un ponctuel vaut
+    son montant, une fois ;
+  - `isActiveOn(ligne, date)` : une ligne récurrente est active si elle a démarré et n'est pas terminée ;
+    **une ligne ponctuelle n'est comptée que dans l'année civile de sa `date_debut`** (sans date : l'année
+    en cours), pour ne jamais être répétée chaque année ;
+  - `sumAnnualActive(lignes)` : total annuel des lignes actives, utilisé par les totaux de `BudgetList`,
+    et par le Dashboard (qui ne filtrait pas les lignes inactives et divergeait donc du module Budget) ;
+  - `parseLocalDate` : les dates `YYYY-MM-DD` sont lues en heure locale (lues en UTC, une ligne démarrant
+    le jour même était exclue à Paris).
+  `BudgetResume` (KPI, donuts, graphique mensuel), `BudgetList` et `Dashboard.tsx` consomment tous ce
+  module ; tests dans `periodicite.test.ts`.
+
+- **Graphique « Évolution mensuelle » (`SeasonalityChart`)** : une ligne récurrente est lissée
+  (annuel / 12) sur chaque mois de l'année civile où elle est active, `date_debut`/`date_fin` comprises au
+  mois près ; un ponctuel tombe en entier sur le mois de sa `date_debut` (janvier sans date).
+
+- **Parts en % de `BudgetList`** : calculées sur le total des lignes actives ; une ligne inactive reste
+  listée (éditable) mais sans part affichée, pour que la colonne somme à 100 %.
 
 - **Normalisation de la périodicité corrigée le 2026-07-14 (commit `8274980`), antérieure à cet audit.**
   `asset_charges`/`asset_revenus` stockent la périodicité à l'accord féminin
@@ -232,6 +236,13 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les trois points identifi
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
+- **Emprunts reportés au budget : lecture incomplète** (`getEmpruntsChargesForBudget`). `societe_id`
+  est ignoré (un prêt de société coché gonflerait le taux d'endettement personnel), comme la quote-part
+  (`pourcentage_utilisateur`/`pourcentage_conjoint`) et `duree_restante` (un prêt soldé reste compté).
+  Table `emprunts` vide au 2026-09-24 : pas d'impact actuel.
+- **Taux d'endettement non conforme à la norme HCSF** malgré le libellé « Maximum à 35 % » : 100 % des
+  revenus retenus, loyers compris (les banques en retiennent en général 70 %). Règle métier à valider
+  avant correction.
 - **Double comptage résiduel possible entre un emprunt réel (`reporter_budget = true`) et une charge
   Budget ressaisie manuellement pour le même crédit.** Depuis le fix du point ci-dessus (🔴, résolu), un
   crédit avec `reporter_budget = true` apparaît automatiquement dans Budget — plus besoin de le ressaisir
@@ -241,21 +252,6 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les trois points identifi
   **Vérifié en base au 2026-08-27** : la table `emprunts` est actuellement vide (0 ligne), ce risque est
   donc nul en pratique aujourd'hui ; à surveiller à mesure que des emprunts réels sont saisis avec ce flag
   coché.
-- **Cas par défaut de `toAnnual` divergent entre les quatre implémentations, pour une périodicité non
-  reconnue.** `BudgetList.tsx:60-62` traite tout défaut comme mensuel (`× 12`) ; `BudgetResume.tsx:27-32`
-  et `Dashboard.tsx:43-45` diffèrent aussi entre eux : `BudgetResume` range le défaut dans le même `case`
-  que `'annuel'/'annuelle'/'ponctuel'` (aucune multiplication) tandis que `Dashboard.tsx` reprend le `× 12`
-  de `BudgetList`. En pratique, la seule valeur susceptible de heurter ce défaut est `'ponctuelle'`
-  (accord féminin de « ponctuel ») en provenance d'`asset_charges` : `normalizeAssetPeriodicite()` ne
-  connaît que `'mensuelle'/'trimestrielle'/'annuelle'` (§2) et laisse passer `'ponctuelle'` telle quelle,
-  qui ne matche ensuite aucun `case` explicite de `toAnnual`. **Vérifié en base** : la contrainte
-  `CHECK` réelle sur `asset_charges.periodicite` n'autorise que
-  `ARRAY['annuelle','trimestrielle','mensuelle']` — `'ponctuelle'` n'est **pas** une valeur acceptée par
-  la base pour cette table, malgré sa présence dans la constante UI
-  `PERIODICITE_OPTIONS` de [assetTypes.ts:164-169](src/constants/assetTypes.ts:164-169) (bug côté
-  Patrimoine, hors périmètre de cet audit, signalé en fin de section). Ce cas précis ne peut donc pas se
-  produire aujourd'hui via `asset_charges` ; il reste un point de divergence de code à corriger si la
-  contrainte base évolue un jour pour accepter « Ponctuelle ».
 - **Catégorisation par nature des lignes importées d'un actif : systématiquement « non catégorisée »,
   pas un cas limite occasionnel.** Le vocabulaire de `nature` utilisé par Patrimoine/Immobilier ne
   recoupe jamais celui de `REVENUS_CATEGORIES`/`CHARGES_CATEGORIES` : côté charges,
@@ -280,22 +276,21 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les trois points identifi
 - **Code mort : `src/constants/budgetTypes.ts`**, jamais importé depuis sa création par le commit
   `fdb0059` — doublon obsolète de `budgetCategories.ts` avec un contenu différent, source de confusion
   pour un futur développeur qui chercherait « la » liste de natures.
-- **`toAnnual` dupliqué quatre fois** (`BudgetList.tsx`, `BudgetResume.tsx`, `Dashboard.tsx`) plus une
-  cinquième variante `toMonthlyAmount` dans `SeasonalityChart` — aucune n'est extraite dans un module
-  partagé, malgré une logique strictement identique dans l'intention. `Dashboard.tsx:25` documente lui-
-  même la duplication dans son commentaire (« logique reprise de BudgetList.tsx »).
 - **`revenu_disponible` : champ persisté, jamais exposé dans l'UI Budget**, toujours `false` à la
   création manuelle, `true` uniquement pour les revenus d'origine immobilière, sans qu'aucun composant du
   périmètre ne le lise pour filtrer ou distinguer l'affichage.
-- **`BudgetStatisticsCard` (Dashboard) ignore le sélecteur Mensuel/Annuel de `BudgetSection`** — il
-  recalcule son propre `totalRevenus`/`totalCharges` toujours ramené au mensuel
-  (`/ 12`, [Dashboard.tsx:48-49](src/pages/Dashboard.tsx:48-49)), sans lien avec l'état `displayMode` de
-  l'onglet Budget (les deux écrans sont indépendants, ce qui est attendu, mais aucun des deux ne
-  réutilise le calcul de l'autre).
-- **`SeasonalityChart` lisse tous les revenus/charges récurrents sur les 12 mois de l'année civile
-  courante**, y compris ceux dont la `date_debut` est postérieure à aujourd'hui mais dans l'année en
-  cours — seul un début d'année **suivante** est exclu (`BudgetResume.tsx:374-379`). Un revenu commençant
-  en décembre apparaît donc lissé dès janvier de la même année dans le graphique de saisonnalité.
+- **Code mort : `src/components/ui/budget-statistics-card.tsx`**, plus importé nulle part depuis la
+  refonte du Dashboard.
+- **Pas de contrainte `CHECK` sur `revenus.periodicite`/`charges.periodicite`** ; `asset_revenus`
+  contient des graphies capitalisées (`'Mensuelle'`), absorbées par la normalisation insensible à la casse.
+- **`asset_charges.debiteur`** (`'Époux 1'`/`'Époux 2'`/`'Couple'`) est lu mais ignoré : le débiteur
+  affiché est toujours le détenteur de l'actif.
+- **Détection du conjoint divergente** : le formulaire se fonde sur `statut_couple`, le service sur
+  `prenom_conjoint` ; le bénéficiaire saisi est stocké en texte libre (« Prénom Nom »), non relié à Famille.
+- **Requêtes non mutualisées** : chaque onglet et le Dashboard instancient leurs propres
+  `useRevenus`/`useCharges` (jusqu'à 5 appels Supabase par écran), sans cache partagé.
+- **`logSecurityEvent`** (`lib/security.ts`) garde ses logs derrière `process.env.NODE_ENV` plutôt que
+  `import.meta.env.DEV`, et `useSecureForm` journalise la soumission comme réussie avant l'écriture.
 
 ## 4. Périmètre V1 / différé
 

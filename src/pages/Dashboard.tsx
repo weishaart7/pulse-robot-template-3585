@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { DashCard, DASH_INK, DASH_MUTED, DASH_TRACK } from '@/components/ui/dash-card';
 import { useRevenus, useCharges } from '@/hooks/useBudget';
+import { sumAnnualActive } from '@/lib/budget/periodicite';
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
@@ -170,31 +171,9 @@ const Dashboard = () => {
         toast.error("Impossible de charger les démembrements");
       });
   }, []);
-  // Convertir un montant en annuel selon sa périodicité (logique reprise de BudgetList.tsx)
-  const toAnnual = (amount: number | undefined, periodicite: string | undefined): number => {
-    if (!amount) return 0;
-    const p = (periodicite || 'mensuel').toLowerCase();
-    switch (p) {
-      case 'mensuel':
-      case 'mensuelle':
-        return amount * 12;
-      case 'trimestriel':
-      case 'trimestrielle':
-        return amount * 4;
-      case 'semestriel':
-      case 'semestrielle':
-        return amount * 2;
-      case 'annuel':
-      case 'annuelle':
-      case 'ponctuel':
-        return amount;
-      default:
-        return amount * 12; // Par défaut mensuel
-    }
-  };
-
-  const totalRevenus = revenus.reduce((sum, revenu) => sum + toAnnual(revenu.montant, revenu.periodicite), 0) / 12;
-  const totalCharges = charges.reduce((sum, charge) => sum + toAnnual(charge.montant, charge.periodicite), 0) / 12;
+  // Même calcul que le module Budget (lignes actives uniquement), via src/lib/budget/periodicite.ts.
+  const totalRevenus = sumAnnualActive(revenus) / 12;
+  const totalCharges = sumAnnualActive(charges) / 12;
   const soldeMensuel = totalRevenus - totalCharges;
   const ratioCharges = totalRevenus > 0 ? Math.min(100, (totalCharges / totalRevenus) * 100) : 0;
 

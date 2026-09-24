@@ -12,6 +12,7 @@ import {
 import { Trash2, Edit, MoreHorizontal, Building2, TrendingUp, TrendingDown } from 'lucide-react';
 import { Revenu, Charge } from '@/services/budgetService';
 import { DisplayMode } from '@/pages/budget/BudgetSection';
+import { toAnnual, isActiveOn, sumAnnualActive } from '@/lib/budget/periodicite';
 
 interface BudgetListProps {
   revenus: Revenu[];
@@ -44,29 +45,6 @@ export const BudgetList = ({
 
   const periodLabel = displayMode === 'mensuel' ? '/mois' : '/an';
 
-  // Convertir un montant en annuel selon sa périodicité
-  const toAnnual = (amount: number | undefined, periodicite: string | undefined): number => {
-    if (!amount) return 0;
-    const p = (periodicite || 'mensuel').toLowerCase();
-    switch (p) {
-      case 'mensuel':
-      case 'mensuelle':
-        return amount * 12;
-      case 'trimestriel':
-      case 'trimestrielle':
-        return amount * 4;
-      case 'semestriel':
-      case 'semestrielle':
-        return amount * 2;
-      case 'annuel':
-      case 'annuelle':
-      case 'ponctuel':
-        return amount;
-      default:
-        return amount * 12; // Par défaut mensuel
-    }
-  };
-
   // Convertir un montant annuel en mensuel
   const toMonthly = (annualAmount: number): number => {
     return annualAmount / 12;
@@ -88,24 +66,14 @@ export const BudgetList = ({
     });
   };
 
-  // Une ligne terminée (date_fin passée) ou pas encore démarrée (date_debut future) ne doit pas
-  // gonfler le total affiché, même si elle reste listée ci-dessous pour que l'utilisateur puisse la
-  // gérer (cf. docs/budget.md §3).
-  const isActiveToday = (dateDebut?: string, dateFin?: string): boolean => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (dateFin && new Date(dateFin) < today) return false;
-    if (dateDebut && new Date(dateDebut) > today) return false;
-    return true;
-  };
-
-  // Calculer les totaux en annuel pour une comparaison cohérente (lignes actives uniquement)
-  const totalRevenusAnnuel = revenus
-    .filter(revenu => isActiveToday(revenu.date_debut, revenu.date_fin))
-    .reduce((sum, revenu) => sum + toAnnual(revenu.montant, revenu.periodicite), 0);
-  const totalChargesAnnuel = charges
-    .filter(charge => isActiveToday(charge.date_debut, charge.date_fin))
-    .reduce((sum, charge) => sum + toAnnual(charge.montant, charge.periodicite), 0);
+  // Totaux et parts calculés sur les seules lignes actives (cf. src/lib/budget/periodicite.ts) ; les lignes
+  // inactives restent listées pour rester éditables, sans part affichée.
+  const totalRevenusAnnuel = sumAnnualActive(revenus);
+  const totalChargesAnnuel = sumAnnualActive(charges);
+  const shareOf = (item: Revenu | Charge, total: number) =>
+    total > 0 && item.montant && isActiveOn(item)
+      ? ((toAnnual(item.montant, item.periodicite) / total) * 100).toFixed(1) + '%'
+      : '-';
 
   const isFromImmobilier = (item: Revenu | Charge) => item.source === 'immobilier';
   // Les charges d'emprunt (mensualités reportées depuis Patrimoine) sont aussi en lecture seule dans
@@ -160,10 +128,7 @@ export const BudgetList = ({
                       {formatCurrency(getDisplayAmount(revenu.montant, revenu.periodicite))}
                     </TableCell>
                     <TableCell className="text-right">
-                      {totalRevenusAnnuel > 0 && revenu.montant 
-                        ? ((toAnnual(revenu.montant, revenu.periodicite) / totalRevenusAnnuel) * 100).toFixed(1) + '%'
-                        : '-'
-                      }
+                      {shareOf(revenu, totalRevenusAnnuel)}
                     </TableCell>
                     <TableCell className="text-right">
                       {isFromImmobilier(revenu) ? (
@@ -255,10 +220,7 @@ export const BudgetList = ({
                       {formatCurrency(getDisplayAmount(charge.montant, charge.periodicite))}
                     </TableCell>
                     <TableCell className="text-right">
-                      {totalChargesAnnuel > 0 && charge.montant 
-                        ? ((toAnnual(charge.montant, charge.periodicite) / totalChargesAnnuel) * 100).toFixed(1) + '%'
-                        : '-'
-                      }
+                      {shareOf(charge, totalChargesAnnuel)}
                     </TableCell>
                     <TableCell className="text-right">
                       {isReadOnly(charge) ? (
