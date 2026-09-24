@@ -11,7 +11,13 @@ import { cn } from '@/lib/utils';
 import { SmartDateInput } from '@/components/family/SmartDateInput';
 import { CheckboxWithLabel } from '@/components/family/CheckboxWithLabel';
 import NationalitySelect from '@/components/ui/nationality-select';
-import { LINKS_WITH_BRANCHE } from '@/lib/family/familyLinkRules';
+import {
+  LINKS_WITH_ADOPTION,
+  LINKS_WITH_BRANCHE,
+  LINKS_WITH_CHILD_FIELDS,
+  LINKS_WITH_EXONERATION,
+  LINKS_WITH_PARENT,
+} from '@/lib/family/familyLinkRules';
 
 interface DynamicFamilyFormProps {
   linkType: string;
@@ -84,11 +90,11 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchDecede]);
 
-  const showParentField = ['Enfant', 'Parent', 'Frère/Sœur', 'Oncle/Tante', 'Petit-enfant', 'Arrière petit-enfant', 'Grand-parent', 'Arrière grand-parent', 'Neveu/Nièce', 'Petit neveu/nièce', 'Cousin/Cousine'].includes(linkType);
-  const showAdoption = ['Enfant', 'Petit-enfant', 'Arrière petit-enfant'].includes(linkType);
-  const showRenunciation = linkType === 'Enfant';
+  const showParentField = LINKS_WITH_PARENT.includes(linkType);
+  const showAdoption = LINKS_WITH_ADOPTION.includes(linkType);
+  const showRenunciation = LINKS_WITH_CHILD_FIELDS.includes(linkType);
   const showBranche = LINKS_WITH_BRANCHE.includes(linkType);
-  const showExoneration = linkType === 'Frère/Sœur';
+  const showExoneration = LINKS_WITH_EXONERATION.includes(linkType);
 
   // Une seule option possible (ex. Enfant d'un client sans partenaire → lui-même) :
   // présélectionnée, pour que la valeur enregistrée soit celle affichée.
@@ -323,7 +329,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
             name="date_deces"
             render={({ field }) => (
               <FormItem className="ml-6">
-                <FormLabel>Date de décès</FormLabel>
+                <FormLabel>Date de décès *</FormLabel>
                 <SmartDateInput value={field.value} onChange={field.onChange} className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20" />
                 <FormMessage />
               </FormItem>
@@ -351,7 +357,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
             />
 
             {/* Enfant à charge (civil / fiscal) */}
-            {linkType === 'Enfant' && (
+            {LINKS_WITH_CHILD_FIELDS.includes(linkType) && (
               <>
                 <FormField
                   control={form.control}
@@ -496,8 +502,8 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
                 name="enfant_renoncant_de"
                 render={({ field }) => (
                   <FormItem className="ml-6">
-                    <FormLabel>Renonce à la succession de</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormLabel>Renonce à la succession de *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
                       <FormControl>
                         <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                           <SelectValue placeholder="Sélectionner un parent" />

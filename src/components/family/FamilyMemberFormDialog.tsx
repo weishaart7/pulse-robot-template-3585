@@ -16,7 +16,7 @@ import { assetIndivisaireService, AssetIndivisaireWithAsset } from '@/services/a
 import { Asset } from '@/services/assetService';
 import { AssetDetailsDialog } from '@/components/patrimoine/AssetDetailsDialog';
 import { useToast } from '@/hooks/use-toast';
-import { LINKS_WITH_BRANCHE } from '@/lib/family/familyLinkRules';
+import { LINKS_WITH_BRANCHE, sanitizeMemberForLink } from '@/lib/family/familyLinkRules';
 
 export const membreFamilleSchema = z.object({
   lien_familial: z.string().min(1, 'Le lien familial est obligatoire'),
@@ -54,6 +54,15 @@ export const membreFamilleSchema = z.object({
   // Branche familiale : sans elle, successionLegale.ts exclut le membre de la fente.
   if (LINKS_WITH_BRANCHE.includes(data.lien_familial) && !data.branche_familiale) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['branche_familiale'], message: 'Veuillez sélectionner une branche' });
+  }
+  if (data.est_decede && !data.date_deces) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['date_deces'], message: 'La date de décès est obligatoire' });
+  }
+  if (data.est_decede && data.date_deces && data.date_naissance && data.date_deces < data.date_naissance) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['date_deces'], message: 'La date de décès ne peut pas précéder la date de naissance' });
+  }
+  if (data.lien_familial === 'Enfant' && data.enfant_renoncant && !data.enfant_renoncant_de) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['enfant_renoncant_de'], message: 'Veuillez indiquer la succession concernée' });
   }
 });
 export type MembreFamille = z.infer<typeof membreFamilleSchema>;
@@ -171,7 +180,10 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
       },
     }), [memberForm]);
 
-    const handleMemberSubmit = async (data: MembreFamille) => {
+    const handleMemberSubmit = async (rawData: MembreFamille) => {
+      // Champs masqués pour ce lien (ou rendus sans objet) remis à zéro avant
+      // enregistrement, cf. familyLinkRules.ts.
+      const data = sanitizeMemberForLink(rawData);
       try {
         const memberData = {
           lien_familial: data.lien_familial,
@@ -182,7 +194,7 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
           nationalite: data.nationalite,
           nationalite_2: data.double_nationalite ? (data.nationalite_2 || '') : '',
           est_decede: data.est_decede,
-          date_deces: data.date_deces ? format(data.date_deces, 'yyyy-MM-dd') : undefined,
+          date_deces: data.date_deces ? format(data.date_deces, 'yyyy-MM-dd') : null,
           handicap: data.handicap,
           enfant_adopte: data.enfant_adopte,
           adoption_simple_abattement_plein: data.adoption_simple_abattement_plein,

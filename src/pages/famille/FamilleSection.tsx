@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
+import { useFamilyLinks, useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm, LiensFamiliauxFormHandle } from './components/LiensFamiliauxForm';
 import { getInitials } from '@/lib/family/initials';
@@ -35,6 +35,7 @@ const FamilleSection = () => {
   const [editView, setEditView] = useState<EditView | null>(null);
   const { data: familyProfile, refetch: refetchProfile } = useFamilyProfile();
   const { data: maritalData, setStatutCouple } = useMaritalStatus();
+  const { data: familyLinks } = useFamilyLinks();
   const liensRef = useRef<LiensFamiliauxFormHandle>(null);
 
   const relationStatus = (maritalData?.statut_couple as string) || '';
@@ -55,13 +56,12 @@ const FamilleSection = () => {
     } else {
       await setStatutCouple(statut);
     }
-    liensRef.current?.refreshMaritalStatus();
   };
 
   const handleStatutChange = async (statut: string) => {
     if (statut === relationStatus) return;
     if (leavesCouple(relationStatus, statut)) {
-      setPendingStatut({ statut, children: childrenLinkedToSpouse(liensRef.current?.getFamilyLinks() ?? []) });
+      setPendingStatut({ statut, children: childrenLinkedToSpouse(familyLinks) });
       return;
     }
     await applyStatut(statut);

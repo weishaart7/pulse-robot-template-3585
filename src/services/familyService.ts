@@ -293,17 +293,11 @@ export const familyService = {
     return data;
   },
 
-  async deleteFamilyLink(id: string): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
-
-    // Cf. updateFamilyLink ci-dessus : la RLS fait déjà foi, ce .eq('user_id', ...)
-    // évite juste de supprimer 0 ligne silencieusement sur un id d'un autre user.
-    const { error } = await supabase
-      .from('family_links')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', user.id);
+  // Suppression atomique (fonction Postgres delete_family_link_cascade, SECURITY
+  // INVOKER donc soumise à la RLS) : réinitialise enfant_de/parent_de des membres
+  // dépendants puis supprime le membre, dans une seule transaction.
+  async deleteFamilyLinkCascade(id: string): Promise<void> {
+    const { error } = await supabase.rpc('delete_family_link_cascade', { p_id: id });
 
     if (error) {
       if (import.meta.env.DEV) {
@@ -311,5 +305,5 @@ export const familyService = {
       }
       throw error;
     }
-  }
+  },
 };

@@ -149,10 +149,30 @@ permet de l'alimenter (voir §3).
   `20260903010000_add_nationalite_2_family_links.sql`. Aucun moteur ne consomme ces colonnes à ce
   jour (voir « Cases dormantes » en §3).
 
-- **Cascade de suppression applicative.** `deleteLinkWithCascade()`
-  ([hooks/useFamilyData.ts:291](src/hooks/useFamilyData.ts:291)) gère la suppression d'un membre en
-  ré-initialisant les liens `enfant_de` pointant vers l'id supprimé, avec confirmation utilisateur
+- **Cascade de suppression atomique.** `deleteLinkWithCascade()`
+  ([hooks/useFamilyData.ts](../src/hooks/useFamilyData.ts)) appelle la fonction Postgres
+  `delete_family_link_cascade(p_id)` (migration `20260924100000_delete_family_link_cascade.sql`,
+  `SECURITY INVOKER` donc soumise à la RLS) qui ré-initialise `enfant_de`/`parent_de` des membres
+  dépendants puis supprime le membre dans une seule transaction. Confirmation utilisateur
   (`AlertDialog`) listant les dépendants avant suppression.
+
+- **Cache partagé des données Famille (React Query).** `useFamilyProfile`, `useMaritalStatus` et
+  `useFamilyLinks` lisent un cache React Query commun (clés `['family', 'profile'|'marital'|'links',
+  userId]`, `staleTime` 30 s, pas de rechargement au retour sur l'onglet pour ne pas réinitialiser
+  un formulaire en cours). Chaque écriture passant par ces hooks met à jour le cache pour tous les
+  composants abonnés (~20, Famille, Transmission, Patrimoine, Budget…). La resynchronisation de
+  `marital_status.nombre_enfants_charges` est faite après écriture, hors mise à jour d'état React.
+  Limite connue : `Optimisation.tsx` (Transmission) écrit directement dans `marital_status`
+  (`option_conjoint`, `partage_envisage`, `duh_opte`) sans passer par le hook — le cache peut rester
+  périmé jusqu'à 30 s sur ces trois colonnes.
+
+- **Champs d'un membre selon le lien.** [lib/family/familyLinkRules.ts](../src/lib/family/familyLinkRules.ts)
+  centralise quels champs s'appliquent à quel lien (rattachement, branche, adoption, champs enfant,
+  exonération) ; `DynamicFamilyForm.tsx` s'en sert pour l'affichage et
+  `sanitizeMemberForLink()` remet à zéro, à l'enregistrement, les champs sans objet (lien changé en
+  cours de saisie, case décochée). Contrôles de saisie du schéma : date de décès obligatoire et
+  postérieure à la naissance si « Décédé », « Renonce à la succession de » obligatoire si
+  renonçant.
 
 - **RGPD.** Tous les `console.error` du périmètre Famille sont encadrés par
   `import.meta.env.DEV` (commits `57adc88`, `cb79f15`, `34eb276`), conformément à la règle
@@ -288,10 +308,10 @@ soldés :
   et le champ dans le schéma zod du formulaire sont conservés — la valeur existante en base
   continue d'être chargée et réenregistrée telle quelle (upsert partiel) — en vue d'une
   réintroduction lors du développement du module Fiscalité.
-- **`<Select defaultValue>` non contrôlés** dans `DynamicFamilyForm.tsx` (lignes 116, 144, 172,
-  242, 372, 434, 474) et `FamilyMemberFormDialog.tsx:226`. Fonctionne aujourd'hui parce que le
-  `Dialog` démonte son contenu à la fermeture ; un changement de ce comportement (ex. dialog
-  persistant) casserait silencieusement le pré-remplissage en édition.
+- **`<Select defaultValue>` non contrôlés** restants dans `DynamicFamilyForm.tsx` (civilité, adoption,
+  motif d'adoption) et `FamilyMemberFormDialog.tsx` (lien familial) — « Enfant de », branche
+  familiale et « Renonce à la succession de » sont désormais contrôlés. Fonctionne parce que le
+  `Dialog` démonte son contenu à la fermeture.
 - *[soldé 2026-09-16]* `loi_applicable_regime` / `pays_premier_domicile_matrimonial` — l'alerte
   `extraneite_regime_matrimonial` qui les lisait encore a été retirée du moteur (elle ne pouvait
   plus se déclencher pour un nouveau dossier depuis le retrait des champs de saisie). Colonnes
