@@ -120,6 +120,16 @@ Mensuel/Annuel en pilule encre, donuts sur `SERIES`. Purement visuel : aucune lo
   prélèvement à la source ; saisi après impôt, il surestime légèrement le taux. Tests dans
   `endettement.test.ts`.
 
+- **Chargement via React Query** (`useBudget.ts`) : `useRevenus`/`useCharges` partagent un cache
+  (`budgetQueryKeys`, par utilisateur) entre les onglets et le Dashboard ; les requêtes simultanées sont
+  dédupliquées et un écran rouvert s'affiche depuis le cache, revalidé en arrière-plan à chaque montage
+  (`staleTime` 0, car Patrimoine/Immobilier modifient les sources importées sans invalider ce cache).
+  Création/modification/suppression mettent le cache à jour directement.
+
+- **Contrainte en base** : `revenus.periodicite`/`charges.periodicite` sont `NOT NULL` et limitées à
+  `mensuel`/`trimestriel`/`semestriel`/`annuel`/`ponctuel` (`revenus_periodicite_check`,
+  `charges_periodicite_check`, migration `20260924132738_budget_periodicite_check.sql`).
+
 - **Report des emprunts (`src/lib/budget/emprunts.ts`)**, appliqué par `getEmpruntsChargesForBudget` :
   - prêt de société (`societe_id`) exclu, comme dans `PatrimoineChart.tsx` ;
   - mensualité × part du foyer (`getRepartitionFoyer`, même règle que Patrimoine) : 100 % pour un prêt
@@ -163,13 +173,6 @@ Mensuel/Annuel en pilule encre, donuts sur `SERIES`. Purement visuel : aucune lo
   ([budgetService.ts:134](src/services/budgetService.ts:134)) pour les revenus d'origine immobilière.
   Aucun composant du périmètre Budget ne lit ce champ pour filtrer ou distinguer l'affichage — cases
   dormantes, cf. §4.
-
-- **`src/constants/budgetTypes.ts` : fichier mort depuis sa création.** `git log --diff-filter=A` montre
-  qu'il a été ajouté par le commit `fdb0059` (« Run SQL schema ») et n'a plus été modifié depuis ; `grep`
-  sur tout `src/` ne trouve aucun import de ce fichier — `budgetCategories.ts` (structure de données
-  proche mais contenu différent et plus riche) est la version réellement utilisée par tous les
-  composants. Les deux fichiers coexistent avec des listes de natures différentes, ce qui peut induire un
-  développeur en erreur sur lequel modifier.
 
 - **Sécurité applicative : RLS seule, sans filtre `user_id` en plus, sur `getRevenus`/`getCharges`.**
   `budgetService.getRevenus()`/`getCharges()` ([budgetService.ts:78-84,212-219](src/services/budgetService.ts:78-84))
@@ -287,22 +290,13 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les trois points identifi
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
-- **Code mort : `src/constants/budgetTypes.ts`**, jamais importé depuis sa création par le commit
-  `fdb0059` — doublon obsolète de `budgetCategories.ts` avec un contenu différent, source de confusion
-  pour un futur développeur qui chercherait « la » liste de natures.
 - **`revenu_disponible` : champ persisté, jamais exposé dans l'UI Budget**, toujours `false` à la
   création manuelle, `true` uniquement pour les revenus d'origine immobilière, sans qu'aucun composant du
   périmètre ne le lise pour filtrer ou distinguer l'affichage.
-- **Code mort : `src/components/ui/budget-statistics-card.tsx`**, plus importé nulle part depuis la
-  refonte du Dashboard.
-- **Pas de contrainte `CHECK` sur `revenus.periodicite`/`charges.periodicite`** ; `asset_revenus`
-  contient des graphies capitalisées (`'Mensuelle'`), absorbées par la normalisation insensible à la casse.
 - **`asset_charges.debiteur`** (`'Époux 1'`/`'Époux 2'`/`'Couple'`) est lu mais ignoré : le débiteur
   affiché est toujours le détenteur de l'actif.
 - **Détection du conjoint divergente** : le formulaire se fonde sur `statut_couple`, le service sur
   `prenom_conjoint` ; le bénéficiaire saisi est stocké en texte libre (« Prénom Nom »), non relié à Famille.
-- **Requêtes non mutualisées** : chaque onglet et le Dashboard instancient leurs propres
-  `useRevenus`/`useCharges` (jusqu'à 5 appels Supabase par écran), sans cache partagé.
 - **`logSecurityEvent`** (`lib/security.ts`) garde ses logs derrière `process.env.NODE_ENV` plutôt que
   `import.meta.env.DEV`, et `useSecureForm` journalise la soumission comme réussie avant l'écriture.
 
