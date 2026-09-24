@@ -78,7 +78,7 @@ uniquement applicatif via `familyService`.
   couverture nulle sur ce module ; 10 fichiers `*.test.ts` co-localisés couvrent le
   moteur (`calcul.test.ts`, `calculSAM.test.ts`, `calculTrimestres.test.ts`, `calculFonctionPublique.test.ts`,
   `calculCNAVPL.test.ts`, `parseRIS.test.ts`, `pensionConsolidee.test.ts`, `hypotheseRevenuFutur.test.ts`,
-  `enfantsEligiblesMajoration.test.ts`, `regimesSaisieManuelle.test.ts`) — 276 tests sur le module (`npx vitest run src/lib/retraite`). Rien côté rendu de composant (pas de
+  `enfantsEligiblesMajoration.test.ts`, `regimesSaisieManuelle.test.ts`) — 286 tests sur le module (`npx vitest run src/lib/retraite`). Rien côté rendu de composant (pas de
   `@testing-library/react`, environnement vitest en `node`) : la vérification visuelle des écrans
   reste manuelle, limite documentée dans quasiment chaque rapport de session.
 - **Barème par génération : bascule par date d'effet, pas seulement par année de naissance
@@ -150,6 +150,25 @@ uniquement applicatif via `familyService`.
   ⚠️ Le SAM est calculé à l'import RIS puis persisté (`retraite_data.salaire_annuel_moyen`) : les
   dossiers importés avant cette correction gardent un SAM erroné tant que le RIS n'est pas réimporté
   (ou le SAM ressaisi).
+- **Surcote classique : trimestres cotisés APRÈS l'âge légal.** `trimestresSurcoteClassique()`
+  (calcul.ts) compte les trimestres cotisés entre le 1er jour du trimestre civil suivant l'âge légal et
+  le dernier jour du trimestre civil précédant la date d'effet (référentiel §2.3.1), borné par
+  l'excédent `trimestresTousRegimes - trimestresRequis` (second bord de la période quand la durée
+  requise est atteinte après l'âge légal, non reconstituable chronologiquement faute de dates pour les
+  autres régimes). Détail de carrière connu par année civile : pour chaque année, au plus autant de
+  trimestres cotisés que de trimestres civils de l'année inclus dans la période. Un départ dès l'âge
+  légal ne donne donc aucune surcote. Branchée sur `pensionConsolidee.ts` (date d'effet = aujourd'hui)
+  et `Trimestres.tsx` (date de liquidation choisie, trimestres futurs supposés cotisés via
+  `projeterDepuis`). La surcote **parentale** garde sa propre période (année précédant l'âge légal,
+  §2.3.2). La condition de durée requise des deux surcotes du régime général est appréciée tous
+  régimes confondus. Jusqu'au 2026-09-24, la surcote classique comptait à tort les trimestres de
+  l'année précédant l'âge légal.
+- **Surcote fonction publique et CNAVPL : non calculée, signalée à l'écran.** Faute de donnée datée
+  (trimestres FP/CNAVPL saisis en total), la surcote de ces régimes reste à 0 ; les cartes
+  `CarriereFonctionPublique.tsx`/`CarriereCNAVPL.tsx` affichent une mention dès que la durée requise
+  est atteinte. Décision du 2026-09-24 (plutôt qu'un champ déclaratif et une migration, à reconsidérer
+  si un dossier réel est concerné ; la CNAVPL impliquerait en plus le taux de 0,75 % de certaines
+  périodes antérieures au 01/09/2023, non détaillé par le référentiel).
 - **Plafond de décote : -25 % (20 trimestres) dans tous les régimes modélisés.** Régime général
   compris (`decoteSurTrimestres()`, `decoteSurAge()`) : minoration de 0,625 point de taux par
   trimestre manquant, taux minimal 37,5 %. Le régime général était plafonné à tort à -20 % jusqu'au
@@ -189,20 +208,18 @@ Classement par risque, revérifié contre le code au 2026-08-27 (`git log`, lect
 ### 🔴 Bloquant (peut fausser un calcul montré au client)
 
 Audit des calculs du 2026-09-24 : cinq anomalies bloquantes relevées, corrigées par phases.
-Soldées : plafonnement SAM avant revalorisation + PASS 2026, plafond de décote -25 % (§2). Ouvertes :
+Soldées : plafonnement SAM avant revalorisation + PASS 2026, plafond de décote -25 %, période de la
+surcote classique (§2). Ouvertes :
 
-- **Surcote classique assise sur la mauvaise période** (`pensionConsolidee.ts`, `Trimestres.tsx`) :
-  compte les trimestres cotisés de l'année *précédant* l'âge légal (règle de la surcote parentale) au
-  lieu de ceux cotisés *après* l'âge légal et la durée requise atteints.
 - **Écrêtement MICO** : le plafond global ne voit que P0 + `autresPensionsMensuelles`, pas les
   complémentaires, la FP, le RAFP ni la CNAVPL calculés par l'app — MICO surestimé.
 - **Synthèse : dates d'effet incohérentes** — trimestres/SAM projetés à l'âge légal, mais décote âge,
-  surcote et âge légal atteint évalués à la date du jour ; `anneesManquantes()` compte l'année en
+  surcote et âge légal atteint évalués à la date du jour (la Synthèse montre donc la surcote acquise à
+  ce jour, pas celle d'un départ projeté) ; `anneesManquantes()` compte l'année en
   cours et l'année de départ pour 4 trimestres pleines (double compte possible).
 - Hors bloquants (même audit) : CNAVPL sans décote âge (taux plein à 67 ans ignoré) ; FP sédentaire
   sans annulation de décote à 67 ans ; taux de décote FP par millésime non appliqué à la décote
-  trimestres ; surcote FP/CNAVPL toujours nulle (`trimestresCotisesAnneeReference = 0` en dur) ;
-  condition de durée de la surcote RG limitée au RG ; MIGA sans condition de taux plein ; âges en
+  trimestres ; MIGA sans condition de taux plein ; âges en
   années entières (`computeAge`) dans `decoteSurAge` et la projection de `Trimestres.tsx`.
 
 Écarts antérieurs soldés :
@@ -247,12 +264,11 @@ Soldées : plafonnement SAM avant revalorisation + PASS 2026, plafond de décote
   taux tout en dégradant potentiellement le SAM). Nécessite une décision produit et une migration de
   schéma — vérification manuelle recommandée pour ces dossiers en attendant.
 
-- **Chronologie infra-annuelle de la surcote non modélisée.** `surcotePourTrimestresCotises()` reçoit
-  un nombre de trimestres cotisés sur l'« année de référence », dérivé par année civile entière
-  (`parAnnee`) — si l'anniversaire légal ou la date d'effet tombe au milieu d'une année mêlant
-  activité cotisée et assimilée, aucune donnée ne permet de départager les trimestres avant/après le
-  pivot. Documenté dans plusieurs rapports comme limite assumée (pas un bug), affecte uniquement le
-  cas d'un départ précisément au fil de l'année.
+- **Surcote classique : approximations assumées.** Détail de carrière par année civile (dans l'année
+  de l'âge légal ou de la date d'effet, les trimestres cotisés ne sont pas localisés avant/après le
+  pivot : au plus le nombre de trimestres civils de la période est retenu) ; jour de naissance ignoré
+  (trimestre civil suivant le mois anniversaire) ; durée requise atteinte après l'âge légal bornée par
+  l'excédent tous régimes plutôt que datée ; rachats option 2 non modélisés.
 - **Cumul surcote classique/surcote parentale non confirmé pour CNAVPL et CNBF.** Le référentiel
   précise explicitement la règle pour le régime général (additif) et la fonction publique (exclusif,
   la plus favorable), mais reste muet pour CNAVPL/CNBF — `surcoteTotale()` est appelée en mode
@@ -319,7 +335,7 @@ Soldées : plafonnement SAM avant revalorisation + PASS 2026, plafond de décote
   - **Système MDA complet** (répartition de trimestres par enfant entre parents, options, garde,
     autorité parentale) : explicitement écarté au profit d'une saisie déclarative simple (§2) — écart
     volontaire, pas un chantier commencé puis abandonné.
-  - **Chronologie infra-annuelle de la surcote et du SAM** (année de rachat) : non implémentée,
+  - **Chronologie infra-annuelle du SAM** (année de rachat) : non implémentée,
     faute de données structurées (pas de valeur « rachat » dans `retraite_carriere_detail.type_activite`).
     L'exclusion d'une année uniquement assimilée est en place, avec la catégorie `'maternite'` (§3).
   - **Régimes hors périmètre de l'outil** : SSI hors alignement CNAVPL implicite, CNBF (hors majoration

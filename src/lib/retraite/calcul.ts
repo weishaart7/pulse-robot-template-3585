@@ -394,6 +394,76 @@ export function surcotePourTrimestresCotises(
 }
 
 /**
+ * Index absolu d'un trimestre civil (année × 4 + trimestre 0-3), en UTC.
+ */
+function indexTrimestreCivil(date: Date): number {
+  return date.getUTCFullYear() * 4 + Math.floor(date.getUTCMonth() / 3);
+}
+
+/**
+ * Nombre de trimestres ouvrant droit à la surcote classique (référentiel
+ * §2.3.1, art. L. 351-1-2 et D. 351-1-4 CSS) — à passer tel quel à
+ * `surcotePourTrimestresCotises()`.
+ *
+ * Période de référence :
+ * - début : 1er jour du trimestre civil suivant l'atteinte de l'âge légal
+ *   (le jour de naissance n'étant pas connu, le trimestre civil suivant celui
+ *   du mois anniversaire) ;
+ * - fin : dernier jour du trimestre civil précédant la date d'effet.
+ * Seuls les trimestres COTISÉS de la période comptent (`parAnnee[].cotises`,
+ * déjà plafonnés à 4/an), dans la limite, pour chaque année, du nombre de
+ * trimestres civils de cette année inclus dans la période — approximation
+ * assumée : le détail de carrière n'est connu que par année civile.
+ *
+ * Second bord de la période (durée requise atteinte APRÈS l'âge légal : la
+ * période ne démarre qu'au trimestre suivant l'acquisition du dernier
+ * trimestre requis) : non reconstitué chronologiquement (les trimestres des
+ * autres régimes ne sont pas datés) mais borné par l'excédent
+ * `trimestresTousRegimes - trimestresRequis` — un trimestre de surcote est
+ * forcément un trimestre au-delà de la durée requise.
+ *
+ * `projeterDepuis` (optionnel, simulation d'un départ futur) : chaque
+ * trimestre civil postérieur à celui contenant cette date est supposé
+ * cotisé (hypothèse de poursuite d'activité), en plus des trimestres réels.
+ *
+ * Retourne 0 si le barème de l'âge légal n'est pas déterminé (même principe
+ * que `ageLegalAtteint()` : jamais de surcote fabriquée).
+ */
+export function trimestresSurcoteClassique(params: {
+  parAnnee: { annee: number; cotises: number }[];
+  dateNaissance: DateNaissance;
+  dateEffet: Date;
+  trimestresTousRegimes: number;
+  trimestresRequis: number;
+  projeterDepuis?: Date;
+}): number {
+  const { parAnnee, dateNaissance, dateEffet, trimestresTousRegimes, trimestresRequis, projeterDepuis } = params;
+  const ageLegal = ageLegalPourGeneration(dateNaissance, dateEffet);
+  if (!ageLegal.stable) return 0;
+
+  const excedent = Math.max(0, trimestresTousRegimes - trimestresRequis);
+  if (excedent === 0) return 0;
+
+  const debut = indexTrimestreCivil(dateAnniversaireLegal(dateNaissance, ageLegal.age)) + 1;
+  const fin = indexTrimestreCivil(dateEffet) - 1;
+  if (fin < debut) return 0;
+
+  const debutProjection = projeterDepuis ? indexTrimestreCivil(projeterDepuis) + 1 : Infinity;
+  const cotisesParAnnee = new Map(parAnnee.map((a) => [a.annee, a.cotises]));
+
+  let total = 0;
+  for (let annee = Math.floor(debut / 4); annee <= Math.floor(fin / 4); annee++) {
+    const premier = Math.max(debut, annee * 4);
+    const dernier = Math.min(fin, annee * 4 + 3);
+    const trimestresCivilsDansPeriode = dernier - premier + 1;
+    const trimestresProjetes = Math.max(0, dernier - Math.max(premier, debutProjection) + 1);
+    const cotises = (cotisesParAnnee.get(annee) ?? 0) + trimestresProjetes;
+    total += Math.min(cotises, trimestresCivilsDansPeriode);
+  }
+  return Math.min(total, excedent);
+}
+
+/**
  * Surcote parentale (référentiel §2.3.2) — fonction dédiée et séparée de
  * `surcotePourTrimestresCotises()` (la surcote classique) : mécanisme
  * distinct du référentiel, avec sa propre porte d'éligibilité et son propre

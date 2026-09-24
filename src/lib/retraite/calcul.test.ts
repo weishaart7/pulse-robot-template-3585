@@ -20,6 +20,7 @@ import {
   ageLegalAtteint,
   ageLegalParentaleEligible,
   surcotePourTrimestresCotises,
+  trimestresSurcoteClassique,
   surcoteParentale,
   surcoteTotale,
   pensionBase,
@@ -1139,5 +1140,100 @@ describe('Plafond de décote du régime général — 20 trimestres, -25 % (taux
   });
   it('taux de liquidation minimal = 37,5 % (50 % × 0,75)', () => {
     expect(pensionBase(10000, 1, decoteSurTrimestres(100, 172))).toBeCloseTo(10000 * 0.375, 6);
+  });
+});
+
+describe('trimestresSurcoteClassique — période de référence après l’âge légal (référentiel §2.3.1)', () => {
+  // Né en mars 1970 : âge légal 64 ans → anniversaire mars 2034 (T1),
+  // période de référence à partir du 1er avril 2034 (T2).
+  const dateNaissance = { annee: 1970, mois: 3 };
+  const plein = (de: number, a: number) =>
+    Array.from({ length: a - de + 1 }, (_, i) => ({ annee: de + i, cotises: 4 }));
+
+  it('départ dès l’âge légal : aucune surcote, même avec un excédent de trimestres', () => {
+    expect(
+      trimestresSurcoteClassique({
+        parAnnee: plein(1990, 2034),
+        dateNaissance,
+        dateEffet: new Date(Date.UTC(2034, 3, 1)),
+        trimestresTousRegimes: 180,
+        trimestresRequis: 172,
+      })
+    ).toBe(0);
+  });
+
+  it('les trimestres cotisés l’année PRÉCÉDANT l’âge légal ne comptent pas', () => {
+    expect(
+      trimestresSurcoteClassique({
+        parAnnee: plein(1990, 2033),
+        dateNaissance,
+        dateEffet: new Date(Date.UTC(2035, 0, 1)),
+        trimestresTousRegimes: 180,
+        trimestresRequis: 172,
+      })
+    ).toBe(0);
+  });
+
+  it('année de l’âge légal partielle (T2-T4) puis année pleine : 3 + 4 = 7', () => {
+    expect(
+      trimestresSurcoteClassique({
+        parAnnee: plein(1990, 2035),
+        dateNaissance,
+        dateEffet: new Date(Date.UTC(2036, 0, 1)),
+        trimestresTousRegimes: 190,
+        trimestresRequis: 172,
+      })
+    ).toBe(7);
+  });
+
+  it('date d’effet en cours de trimestre : le trimestre en cours n’est pas compté', () => {
+    // Effet 1er février 2035 → fin de période 31/12/2034 : T2-T4 2034 = 3.
+    expect(
+      trimestresSurcoteClassique({
+        parAnnee: plein(1990, 2035),
+        dateNaissance,
+        dateEffet: new Date(Date.UTC(2035, 1, 1)),
+        trimestresTousRegimes: 190,
+        trimestresRequis: 172,
+      })
+    ).toBe(3);
+  });
+
+  it('durée requise atteinte après l’âge légal : borné par l’excédent tous régimes', () => {
+    expect(
+      trimestresSurcoteClassique({
+        parAnnee: plein(1990, 2035),
+        dateNaissance,
+        dateEffet: new Date(Date.UTC(2036, 0, 1)),
+        trimestresTousRegimes: 174,
+        trimestresRequis: 172,
+      })
+    ).toBe(2);
+  });
+
+  it('seuls les trimestres cotisés comptent (année sans cotisation → 0)', () => {
+    const parAnnee = [...plein(1990, 2033), { annee: 2034, cotises: 0 }, { annee: 2035, cotises: 2 }];
+    expect(
+      trimestresSurcoteClassique({
+        parAnnee,
+        dateNaissance,
+        dateEffet: new Date(Date.UTC(2036, 0, 1)),
+        trimestresTousRegimes: 190,
+        trimestresRequis: 172,
+      })
+    ).toBe(2);
+  });
+
+  it('projection : trimestres futurs supposés cotisés après la date de projection', () => {
+    expect(
+      trimestresSurcoteClassique({
+        parAnnee: plein(1990, 2025),
+        dateNaissance,
+        dateEffet: new Date(Date.UTC(2036, 0, 1)),
+        trimestresTousRegimes: 190,
+        trimestresRequis: 172,
+        projeterDepuis: new Date(Date.UTC(2026, 8, 24)),
+      })
+    ).toBe(7);
   });
 });

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { calculerPensionConsolidee, EntreePensionConsolidee } from './pensionConsolidee';
 import {
   tauxProratisation,
@@ -177,5 +177,67 @@ describe('calculerPensionConsolidee — detailRegimeGeneral (non-régression Car
     expect(resultat.detailRegimeGeneral.nombreEnfantsEligibles).toBe(nombreEnfantsAttendu);
     expect(resultat.detailRegimeGeneral.majorationEnfantsPct).toBe(majorationTroisEnfants(nombreEnfantsAttendu));
     expect(resultat.detailRegimeGeneral.majorationEnfantsPct).toBeGreaterThan(0);
+  });
+});
+
+describe('calculerPensionConsolidee — surcote classique après l’âge légal (référentiel §2.3.1)', () => {
+  // Né en mars 1960 : âge légal 62 ans (anniversaire mars 2022), période de
+  // référence à partir du 01/04/2022 ; date d'effet proxy = 24/09/2026 →
+  // fin de période au 30/06/2026.
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(Date.UTC(2026, 8, 24)));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const annees = (de: number, a: number) =>
+    Array.from({ length: a - de + 1 }, (_, i) => ({
+      employeur: 'Test',
+      typeActivite: 'employeur' as const,
+      dateDebut: `${de + i}-01-01`,
+      dateFin: `${de + i}-12-31`,
+      revenu: 40000,
+      estChiffreAffaires: false,
+      regimes: ["L'Assurance retraite"],
+    }));
+
+  const entree = (detailCarriere: EntreePensionConsolidee['detailCarriere'], trimestresValides: number) => ({
+    ...entreeBase,
+    dateNaissance: { annee: 1960, mois: 3 },
+    ageActuel: 66,
+    trimestresRequis: 167,
+    trimestresValides,
+    detailCarriere,
+  });
+
+  it('trimestres cotisés après l’âge légal, bornés par l’excédent sur la durée requise', () => {
+    // Période : T2-T4 2022 (3) + 2023-2025 (12) + T1-T2 2026 (2) = 17 ;
+    // excédent 180 - 167 = 13 → 13 trimestres, 16,25 %.
+    const resultat = calculerPensionConsolidee(entree(annees(1981, 2026), 180));
+    expect(resultat.detailRegimeGeneral.surcoteClassiquePct).toBeCloseTo(16.25, 6);
+  });
+
+  it('non-régression : l’année précédant l’âge légal ne génère plus de surcote classique', () => {
+    const resultat = calculerPensionConsolidee(entree(annees(1981, 2021), 180));
+    expect(resultat.detailRegimeGeneral.surcoteClassiquePct).toBe(0);
+  });
+
+  it('durée requise appréciée tous régimes : trimestres FP inclus', () => {
+    const resultat = calculerPensionConsolidee({
+      ...entree(annees(1981, 2026), 160),
+      fonctionPublique: {
+        traitementIndiciaireBrut: 0,
+        trimestresLiquidables: 20,
+        pointsRAFP: 0,
+        departAnticipeCategorieActive: false,
+        departPourInvalidite: false,
+        moyenneAnnuelleNBI: 0,
+        trimestresLiquidablesNBI: 0,
+      },
+    });
+    // 160 RG + 20 FP = 180 ≥ 167 → excédent 13.
+    expect(resultat.detailRegimeGeneral.surcoteClassiquePct).toBeCloseTo(16.25, 6);
   });
 });

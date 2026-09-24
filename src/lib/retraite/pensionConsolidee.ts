@@ -31,6 +31,7 @@ import {
   dateAnniversaireLegal,
   ageLegalPourGeneration,
   surcotePourTrimestresCotises,
+  trimestresSurcoteClassique,
   surcoteParentale,
   surcoteTotale,
   majorationTroisEnfants,
@@ -182,6 +183,9 @@ function calculerResultatFonctionPublique(
     ? ageLegalParentaleEligible(dateNaissance, dateEffetProxy)
     : undefined;
   const dureeRequiseAtteinte = donnees.trimestresLiquidables + trimestresAutresRegimes >= trimestresRequis;
+  // Surcote non calculée pour ce régime (décision du 2026-09-24, option B de
+  // l'audit des calculs) : aucune donnée datée ne permet de compter les
+  // trimestres cotisés après l'âge légal — branché à 0 et signalé à l'écran.
   const trimestresCotisesAnneeReference = 0;
   const surcoteClassiquePct = surcotePourTrimestresCotises(
     trimestresCotisesAnneeReference,
@@ -246,6 +250,9 @@ function calculerResultatCNAVPL(
     ? ageLegalParentaleEligible(dateNaissance, dateEffetProxy)
     : undefined;
   const dureeRequiseAtteinte = donnees.trimestresCNAVPL + trimestresAutresRegimes >= trimestresRequis;
+  // Surcote non calculée pour ce régime (décision du 2026-09-24, option B de
+  // l'audit des calculs) : aucune donnée datée ne permet de compter les
+  // trimestres cotisés après l'âge légal — branché à 0 et signalé à l'écran.
   const trimestresCotisesAnneeReference = 0;
   const surcoteClassiquePct = surcotePourTrimestresCotises(
     trimestresCotisesAnneeReference,
@@ -324,17 +331,33 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
   const ageLegalParentaleEligibleFlag = dateNaissance
     ? ageLegalParentaleEligible(dateNaissance, dateEffetProxy)
     : undefined;
-  const dureeRequiseAtteinte = trimestresValides >= trimestresRequis;
-  const anneeReferenceSurcote =
+  // Durée requise appréciée tous régimes confondus (référentiel §2.3.1
+  // condition n° 1, §2.3.2 condition n° 2), pas sur le seul régime général.
+  const dureeRequiseAtteinte = trimestresTousRegimes >= trimestresRequis;
+  // Surcote classique : trimestres cotisés APRÈS l'âge légal, jusqu'au
+  // trimestre civil précédant la date d'effet (référentiel §2.3.1).
+  const trimestresSurcoteClassiqueRG = dateNaissance
+    ? trimestresSurcoteClassique({
+        parAnnee: resultatTrimestresDetailCarriere.parAnnee,
+        dateNaissance,
+        dateEffet: dateEffetProxy,
+        trimestresTousRegimes,
+        trimestresRequis,
+      })
+    : 0;
+  // Surcote parentale : trimestres cotisés sur l'année PRÉCÉDANT l'âge légal
+  // (référentiel §2.3.2) — règle propre à la surcote parentale, à ne pas
+  // confondre avec la période de la surcote classique ci-dessus.
+  const anneeReferenceSurcoteParentale =
     ageLegalResultat?.stable && dateNaissance
       ? dateAnniversaireLegal(dateNaissance, ageLegalResultat.age).getUTCFullYear() - 1
       : null;
-  const trimestresCotisesAnneeReference =
-    anneeReferenceSurcote !== null
-      ? resultatTrimestresDetailCarriere.parAnnee.find((a) => a.annee === anneeReferenceSurcote)?.cotises ?? 0
+  const trimestresCotisesAnneeReferenceParentale =
+    anneeReferenceSurcoteParentale !== null
+      ? resultatTrimestresDetailCarriere.parAnnee.find((a) => a.annee === anneeReferenceSurcoteParentale)?.cotises ?? 0
       : 0;
   const surcoteClassiquePct = surcotePourTrimestresCotises(
-    trimestresCotisesAnneeReference,
+    trimestresSurcoteClassiqueRG,
     ageLegalAtteintFlag,
     dureeRequiseAtteinte
   );
@@ -342,7 +365,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
     auMoinsUnTrimestreMajorationEnfant,
     ageLegalParentaleEligibleFlag,
     dureeRequiseAtteinte,
-    trimestresCotisesAnneeReference
+    trimestresCotisesAnneeReferenceParentale
   );
   const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true);
 

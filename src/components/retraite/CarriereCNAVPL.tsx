@@ -226,6 +226,13 @@ export const CarriereCNAVPL = ({
                   </>
                 )}
               </p>
+              {dureeRequiseAtteinte && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Surcote non calculée pour ce régime : les trimestres cotisés après l'âge légal ne
+                  sont pas connus (saisie en total). Une éventuelle surcote n'est pas incluse dans
+                  ce montant.
+                </p>
+              )}
               {majorationEnfantsPct > 0 && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Majoration pour {nombreEnfantsEligibles} enfants : +{majorationEnfantsPct}%

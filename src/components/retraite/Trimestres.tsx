@@ -27,6 +27,7 @@ import {
   dateEffetSimuleeParAge,
   dateDepuisISO,
   surcotePourTrimestresCotises,
+  trimestresSurcoteClassique,
   surcoteParentale,
   surcoteTotale,
   OptionRachat,
@@ -64,7 +65,7 @@ interface TrimestresProps {
 export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) => {
   const { data: retraiteData, loading: loadingRetraite } = useRetraiteData(personne);
   // Détail de carrière par année (import RIS), même source que Carriere.tsx —
-  // nécessaire à trimestresCotisesAnneeReference (surcote classique/parentale,
+  // nécessaire aux trimestres de surcote (classique/parentale,
   // cf. docs/audit/branchement-surcote-optimisation.md §1.3) : sans cette
   // donnée, la surcote resterait figée à 0 ici alors qu'elle ne l'est pas sur
   // l'écran Carrière pour le même client, ce qui romprait la parité visée.
@@ -151,8 +152,8 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   ).length;
 
   // Trimestres cotisés par année, dérivés du détail de carrière (import RIS)
-  // — même calcul que Carriere.tsx, réutilisé tel quel pour déterminer
-  // trimestresCotisesAnneeReference plus bas (surcote classique/parentale).
+  // — même calcul que Carriere.tsx, réutilisé tel quel pour les trimestres de
+  // surcote classique et parentale plus bas.
   const resultatTrimestresDetailCarriere = useMemo(
     () => trimestresCotisesEtAssimilesDepuisCarriere(detailCarriere),
     [detailCarriere]
@@ -249,17 +250,31 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     const ageLegalAtteintFlag = ageLegalAtteint(dateNaissanceConfirmee, dateEffet);
     const ageLegalParentaleEligibleFlag = ageLegalParentaleEligible(dateNaissanceConfirmee, dateEffet);
     const dureeRequiseAtteinte = trimestresValidesProjetes >= trimestresRequis;
-    const anneeReferenceSurcote =
+    // Surcote classique : trimestres cotisés APRÈS l'âge légal jusqu'au
+    // trimestre civil précédant la date de liquidation (référentiel §2.3.1).
+    // Les trimestres futurs (après aujourd'hui) sont supposés cotisés —
+    // même hypothèse de poursuite d'activité que trimestresValidesProjetes.
+    const trimestresSurcote = trimestresSurcoteClassique({
+      parAnnee: resultatTrimestresDetailCarriere.parAnnee,
+      dateNaissance: dateNaissanceConfirmee,
+      dateEffet,
+      trimestresTousRegimes: trimestresValidesProjetes,
+      trimestresRequis,
+      projeterDepuis: new Date(),
+    });
+    // Surcote parentale : trimestres cotisés sur l'année PRÉCÉDANT l'âge
+    // légal (référentiel §2.3.2) — période distincte de la surcote classique.
+    const anneeReferenceSurcoteParentale =
       ageLegal.stable
         ? dateAnniversaireLegal(dateNaissanceConfirmee, ageLegal.age).getUTCFullYear() - 1
         : null;
-    const trimestresCotisesAnneeReference =
-      anneeReferenceSurcote !== null
-        ? resultatTrimestresDetailCarriere.parAnnee.find((a) => a.annee === anneeReferenceSurcote)
+    const trimestresCotisesAnneeReferenceParentale =
+      anneeReferenceSurcoteParentale !== null
+        ? resultatTrimestresDetailCarriere.parAnnee.find((a) => a.annee === anneeReferenceSurcoteParentale)
             ?.cotises ?? 0
         : 0;
     const surcoteClassiquePct = surcotePourTrimestresCotises(
-      trimestresCotisesAnneeReference,
+      trimestresSurcote,
       ageLegalAtteintFlag,
       dureeRequiseAtteinte
     );
@@ -267,7 +282,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
       auMoinsUnTrimestreMajorationEnfant,
       ageLegalParentaleEligibleFlag,
       dureeRequiseAtteinte,
-      trimestresCotisesAnneeReference
+      trimestresCotisesAnneeReferenceParentale
     );
     const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true);
 

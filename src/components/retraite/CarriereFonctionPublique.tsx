@@ -516,6 +516,13 @@ export const CarriereFonctionPublique = ({
                   indice majoré 227) — la valeur 2026 n'est pas encore confirmée par une source
                   opposable.
                 </p>
+                {dureeRequiseAtteinte && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Surcote non calculée pour ce régime : les trimestres cotisés après l'âge légal ne
+                    sont pas connus (saisie en total). Une éventuelle surcote n'est pas incluse dans
+                    ce montant.
+                  </p>
+                )}
                 {surcoteTotalePct > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Surcote : +{surcoteTotalePct.toFixed(2)}% ({formatEuro2(surcoteMontant)} / an) —
