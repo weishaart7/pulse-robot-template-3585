@@ -194,7 +194,9 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
           tauxPlusValue,
         });
       } catch (error) {
-        console.error('Error calculating metrics:', error);
+        if (import.meta.env.DEV) {
+          console.error('Error calculating metrics:', error);
+        }
       } finally {
         setLoading(false);
       }
