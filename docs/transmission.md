@@ -71,11 +71,20 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   l'écran Optimisation, `donation_dernier_vivant_conjoint` (consentie par le conjoint) pour
   `buildSpouseAsDecedentFamilyGraph`. `hasDDV()` (l'une ou l'autre) ne sert plus qu'aux alertes de
   conseil, vue « couple ». Tests : `utils/transmissionHelpers.ddvSens.test.ts`.
-- **Limite connue — ordre inversé du 2nd décès.** Quand le conjoint décède en premier,
-  `buildSpouseAsDecedentFamilyGraph` pose `hasSurvivingSpouse: false` : l'Utilisateur survivant ne
-  reçoit aucun droit de conjoint (ni 1/4 PP, ni usufruit, ni DDV), ses enfants prennent 100 %.
-  Le graphe est pensé pour le conjoint 2nd défunt mais sert aussi quand il est 1er défunt ; droits et
-  patrimoine du 2nd décès de cet ordre sont donc faux. Non corrigé.
+- **Ordre inversé du 2nd décès (conjoint décédé en premier).** `Succession2ndDeces.tsx` appelle
+  `buildSpouseAsDecedentFamilyGraph(..., { utilisateurSurvivant: true })` : l'Utilisateur y est
+  conjoint survivant (id `familyProfile.id`), héritier s'il est marié et non séparé de corps avec
+  renonciation, partenaire de PACS sinon (droit au logement art. 515-6, pas de part). Enfants
+  `both_parents` communs, `spouse` non communs ; DDV du conjoint (`_conjoint`) seule prise en compte ;
+  usufruit valorisé à l'âge de l'Utilisateur. Option du survivant **commune aux deux ordres**
+  (`marital_status.option_conjoint`, décision V1) : si elle n'est pas ouverte dans ce sens,
+  `successionLegale.ts` retombe sur 1/4 PP ; mention affichée sous le sélecteur d'ordre. Au 2nd
+  décès, `addReunifiedFullOwnership` ajoute la PP reçue au patrimoine de l'Utilisateur veuf et
+  `computeChainedTransmission` réunit l'usufruit hors taxation. Sans l'option (2nd décès de l'ordre
+  normal), aucun survivant. Récompenses, créances et participation aux acquêts suivent déjà le sens
+  du décès (`decedentRole`). Limites restantes : contrats d'assurance-vie et libéralités du conjoint
+  non modélisés dans sa succession ; conjoint sans enfant renseigné non modélisable. Tests :
+  `utils/transmissionHelpers.ordreInverse.test.ts`.
 - **Droit temporaire au logement (1 an).** Message informatif, sans effet sur les parts. Conjoint
   marié successible : art. 763. Partenaire de PACS : même droit par renvoi de l'art. 515-6 al. 3
   (logement et mobilier, loyers remboursés par la succession), avec rappel qu'il n'a ni droit viager

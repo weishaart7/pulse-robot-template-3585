@@ -644,11 +644,21 @@ export class SpouseSuccessionNonModelisableError extends Error {
  * ou 'both_parents'), jamais un enfant exclusif de l'Utilisateur
  * (`parent_de === 'user'`) — à la différence de `buildFamilyGraph` qui
  * n'opère jamais dans ce sens et n'a donc pas besoin de ce filtre.
+ *
+ * `options.utilisateurSurvivant` : ordre inversé, le conjoint décède EN
+ * PREMIER et l'Utilisateur lui survit. Miroir de buildFamilyGraph :
+ * l'Utilisateur est ajouté comme conjoint survivant (id = familyProfile.id,
+ * clé déjà attendue par addReunifiedFullOwnership), héritier s'il est marié
+ * et non séparé de corps avec renonciation, simple partenaire (droit au
+ * logement art. 515-6) s'il est pacsé ; les enfants `both_parents` sont
+ * communs. Sans cette option (2nd décès de l'ordre normal, Utilisateur déjà
+ * décédé) : aucun survivant, comportement inchangé.
  */
 export function buildSpouseAsDecedentFamilyGraph(
   familyProfile: FamilyProfile | null,
   maritalStatus: MaritalStatus | null,
-  familyLinks: FamilyLink[]
+  familyLinks: FamilyLink[],
+  options: { utilisateurSurvivant?: boolean } = {}
 ): FamilyGraph {
   if (!familyProfile?.id) {
     throw new Error('buildSpouseAsDecedentFamilyGraph requires a familyProfile with an id');
@@ -670,6 +680,7 @@ export function buildSpouseAsDecedentFamilyGraph(
 
   const links: FamilyGraph['links'] = [];
   const childrenOfDecedent: string[] = [];
+  const childrenCommonWithSpouse: string[] = [];
 
   familyLinks.forEach(link => {
     const estEnfantDuConjoint = link.lien_familial === 'Enfant' && link.parent_de !== 'user';
@@ -701,6 +712,7 @@ export function buildSpouseAsDecedentFamilyGraph(
       const childId = link.id!;
       childrenOfDecedent.push(childId);
       links.push({ from: decedentId, to: childId, relation: 'child' });
+      if (link.parent_de === 'both_parents') childrenCommonWithSpouse.push(childId);
     }
 
     // Même mécanisme de chaînage descendant que buildFamilyGraph, pour la
@@ -719,15 +731,47 @@ export function buildSpouseAsDecedentFamilyGraph(
     );
   }
 
+  if (!options.utilisateurSurvivant) {
+    return {
+      persons,
+      links,
+      marriages: [],
+      decedentId,
+      hasSurvivingSpouse: false,
+      childrenOfDecedent,
+      childrenCommonWithSpouse: [],
+      hasDDV: hasDDVConsentieParDefunt(maritalStatus, 'spouse')
+    };
+  }
+
+  // Ordre inversé : l'Utilisateur survit au conjoint.
+  const utilisateurId = familyProfile.id;
+  persons.push({
+    id: utilisateurId,
+    nom: familyProfile.nom || 'Utilisateur',
+    prenom: familyProfile.prenom || '',
+    dateNaissance: familyProfile.date_naissance,
+    estDecede: false,
+    lienFamilial: 'conjoint'
+  });
+  links.push({ from: decedentId, to: utilisateurId, relation: 'spouse' });
+
+  const estMarie = maritalStatus.statut_couple === 'Marié(e)';
+  const perdQualiteSuccessible =
+    maritalStatus.separation_de_corps === true &&
+    maritalStatus.separation_corps_clause_renonciation === true;
+
   return {
     persons,
     links,
-    marriages: [],
+    marriages: [{ spouseA: decedentId, spouseB: utilisateurId, regime: maritalStatus.regime_matrimonial }],
     decedentId,
-    hasSurvivingSpouse: false,
+    hasSurvivingSpouse: estMarie && !perdQualiteSuccessible,
+    survivingSpouseId: utilisateurId,
     childrenOfDecedent,
-    childrenCommonWithSpouse: [],
-    hasDDV: hasDDVConsentieParDefunt(maritalStatus, 'spouse')
+    childrenCommonWithSpouse,
+    hasDDV: hasDDVConsentieParDefunt(maritalStatus, 'spouse'),
+    survivantPartenairePacs: !estMarie
   };
 }
 
