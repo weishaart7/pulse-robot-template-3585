@@ -45,7 +45,7 @@ const CartePensionFoyer = ({ hasConjoint, nomUtilisateur, nomConjoint }: CartePe
     <Card className="border border-border">
       <CardHeader className="p-5">
         <CardTitle className="text-[15px] font-semibold tracking-tight">
-          Pension à l'âge du taux plein
+          Pension au départ à l'âge légal
         </CardTitle>
       </CardHeader>
       <CardContent className="p-5 pt-0">
@@ -65,6 +65,11 @@ const CartePensionFoyer = ({ hasConjoint, nomUtilisateur, nomConjoint }: CartePe
                     {formatEuro0(utilisateur.pensionTotaleConsolidee)} / an
                   </div>
                   <p className="text-xs text-muted-foreground">{utilisateur.ageTauxPlein}</p>
+                  {utilisateur.dateEffet && (
+                    <p className="text-xs text-muted-foreground">
+                      Départ simulé au {utilisateur.dateEffet.toLocaleDateString('fr-FR', { timeZone: 'UTC' })}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -77,6 +82,11 @@ const CartePensionFoyer = ({ hasConjoint, nomUtilisateur, nomConjoint }: CartePe
                     {formatEuro0(conjoint.pensionTotaleConsolidee)} / an
                   </div>
                   <p className="text-xs text-muted-foreground">{conjoint.ageTauxPlein}</p>
+                  {conjoint.dateEffet && (
+                    <p className="text-xs text-muted-foreground">
+                      Départ simulé au {conjoint.dateEffet.toLocaleDateString('fr-FR', { timeZone: 'UTC' })}
+                    </p>
+                  )}
                 </div>
               </div>
             )}

@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
 import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
-import { computeAge } from '@/lib/patrimoine/bareme669CGI';
 import {
   calculerPensionConsolidee,
   ResultatPensionConsolidee,
@@ -24,6 +23,11 @@ export interface UsePensionConsolideeResult extends ResultatPensionConsolidee {
   // que le calcul de décote/MICO ci-dessus, validé avec l'utilisateur).
   trimestresRequis: number;
   trimestresValidesTousRegimes: number;
+  // Date d'effet du scénario simulé (départ à l'âge légal), `null` si non
+  // déterminable (date de naissance inconnue) — à afficher avec le montant.
+  dateEffet: Date | null;
+  // Années passées sans donnée dans le détail de carrière, non projetées.
+  anneesPasseesSansDonnees: number[];
 }
 
 /**
@@ -38,16 +42,10 @@ export interface UsePensionConsolideeResult extends ResultatPensionConsolidee {
 export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePensionConsolideeResult => {
   const { data, loading: loadingRetraiteData } = useRetraiteData(personne);
   const { periodes: detailCarriere, loading: loadingCarriereDetail } = useCarriereDetail(personne);
-  const { dateNaissanceDetail, dateNaissanceISO, familyLinks, loading: loadingProfil } =
+  const { dateNaissanceDetail, familyLinks, loading: loadingProfil } =
     useProfilFamilialRetraite(personne);
 
   const loading = loadingRetraiteData || loadingCarriereDetail || loadingProfil;
-
-  const trimestresRequis = dateNaissanceDetail
-    ? trimestresRequisPourGeneration(dateNaissanceDetail, new Date())
-    : 172;
-
-  const ageActuel = computeAge(dateNaissanceISO);
 
   const salaireAnnuelMoyen = data.salaire_annuel_moyen ?? 0;
   const trimestresValides = data.trimestres_valides ?? 0;
@@ -69,7 +67,12 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
   // étape 2 de la fusion) — glue extraite dans calculerProjectionRevenuFutur()
   // pour n'exister qu'à un seul endroit.
   const modeHypothese = data.mode_hypothese_revenu_futur ?? 'derniere_annee_connue';
-  const { salaireAnnuelMoyenProjete, trimestresValidesProjetes: trimestresProjetes } = useMemo(
+  const {
+    salaireAnnuelMoyenProjete,
+    trimestresValidesProjetes: trimestresProjetes,
+    dateEffet: dateEffetProjection,
+    anneesPasseesSansDonnees,
+  } = useMemo(
     () =>
       calculerProjectionRevenuFutur(
         dateNaissanceDetail,
@@ -82,12 +85,20 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     [dateNaissanceDetail, detailCarriereSansId, salaireAnnuelMoyen, modeHypothese, data.revenu_hypothese_manuel]
   );
 
+  // Date d'effet unique du scénario « départ à l'âge légal » (cf.
+  // dateEffetDepartAgeLegal()) : trimestres requis et moteur évalués à la
+  // même date que la projection. Repli sur aujourd'hui si indéterminée.
+  const dateEffet = dateEffetProjection ?? new Date();
+  const trimestresRequis = dateNaissanceDetail
+    ? trimestresRequisPourGeneration(dateNaissanceDetail, dateEffet)
+    : 172;
+
   const resultat = calculerPensionConsolidee({
     salaireAnnuelMoyen: salaireAnnuelMoyenProjete,
     trimestresValides: trimestresValides + trimestresProjetes,
     trimestresRequis,
     dateNaissance: dateNaissanceDetail,
-    ageActuel,
+    dateEffet,
     regimesPoints: data.regimes_points ?? [],
     detailCarriere: detailCarriereSansId,
     familyLinks,
@@ -131,5 +142,7 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     aDesDonnees,
     trimestresRequis,
     trimestresValidesTousRegimes,
+    dateEffet: dateEffetProjection,
+    anneesPasseesSansDonnees,
   };
 };

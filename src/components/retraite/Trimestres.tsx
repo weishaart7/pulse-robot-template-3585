@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
+import { trimestresProjetesParAnnee } from '@/lib/retraite/hypotheseRevenuFutur';
 import { familyService } from '@/services/familyService';
 import { computeAge } from '@/lib/patrimoine/bareme669CGI';
 import {
@@ -28,6 +29,7 @@ import {
   dateDepuisISO,
   surcotePourTrimestresCotises,
   trimestresSurcoteClassique,
+  ageEnMois,
   surcoteParentale,
   surcoteTotale,
   OptionRachat,
@@ -220,8 +222,18 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   // docs/audit/implementation-date-effet-moteur.md, point d'entrée #4).
   const simulerPourDateEffet = (dateEffet: Date) => {
     const ageAffiche = computeAge(dateNaissance, dateEffet) ?? ageActuelConfirme;
+    // Âge de départ au mois près (décote âge, trimestres manquants arrondis
+    // au supérieur) et trimestres projetés par trimestre civil, du trimestre
+    // en cours au trimestre précédant la date d'effet, plafonnés à 4/an
+    // trimestres réels compris — mêmes fonctions que Carrière/Synthèse
+    // (auparavant : 4 × écart d'âge en années entières).
+    const ageDepartAnnees = ageEnMois(dateNaissanceConfirmee, dateEffet) / 12;
     const trimestresValidesProjetes =
-      trimestresValidesActuels + 4 * Math.max(0, ageAffiche - ageActuelConfirme);
+      trimestresValidesActuels +
+      trimestresProjetesParAnnee(resultatTrimestresDetailCarriere.parAnnee, new Date(), dateEffet).reduce(
+        (total, a) => total + a.trimestres,
+        0
+      );
     const trimestresRequis = trimestresRequisPourGeneration(dateNaissanceConfirmee, dateEffet);
     // Calculée mais non encore affichée (aucun écran ne montre l'âge légal à
     // ce jour) — reconnecte ageLegalPourGeneration() à un appelant réel,
@@ -237,7 +249,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     const decote = Math.min(
       decoteApplicable(
         decoteSurTrimestres(trimestresValidesProjetes, trimestresRequis),
-        decoteSurAge(ageAffiche)
+        decoteSurAge(ageDepartAnnees)
       ),
       0
     );
@@ -291,6 +303,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
       pensionBaseBrute * (1 + decote / 100) + pensionBaseBrute * (surcoteTotalePct / 100);
     return {
       ageAffiche,
+      ageDepartAnnees,
       trimestresValidesProjetes,
       trimestresRequis,
       ageLegal,
@@ -307,8 +320,14 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   // reste piloté par âge via l'ancien proxy `dateEffetSimuleeParAge()`,
   // inchangé par cette session (point d'entrée interne, cf.
   // docs/audit/implementation-date-effet-ui.md §1).
+  // Date d'effet d'une ligne « N ans » : 1er du mois suivant le mois
+  // anniversaire (âge révolu de N ans 0 mois, cf. ageEnMois()) — et non le
+  // 1er du mois anniversaire, qui ferait compter un trimestre de décote en
+  // trop.
   const simulerPourAge = (age: number) =>
-    simulerPourDateEffet(dateEffetSimuleeParAge(dateNaissanceConfirmee, age));
+    simulerPourDateEffet(
+      new Date(Date.UTC(dateNaissanceConfirmee.annee + age, dateNaissanceConfirmee.mois, 1))
+    );
 
   const resultatSelection = simulerPourDateEffet(dateLiquidationEffet);
   // Pourcentage combiné affiché — même convention que Carriere.tsx (somme
@@ -355,7 +374,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   const decoteAvecRachat = Math.min(
     decoteApplicable(
       decoteSurTrimestres(trimestresValidesProjetesAvecRachat, resultatSelection.trimestresRequis),
-      decoteSurAge(resultatSelection.ageAffiche)
+      decoteSurAge(resultatSelection.ageDepartAnnees)
     ),
     0
   );

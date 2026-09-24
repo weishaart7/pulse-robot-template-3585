@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   derniereAnneeAvecTrimestreValide,
   revenuAnnuelHypotheseDerniereAnneeConnue,
-  anneesManquantes,
-  trimestresProjetesAnneesManquantes,
-  periodesSynthetiquesAnneesManquantes,
+  trimestresProjetesParAnnee,
+  anneesPasseesSansDonnees,
+  periodesSynthetiquesProjetees,
   calculerProjectionRevenuFutur,
 } from './hypotheseRevenuFutur';
 import { ResultatTrimestresCotisesEtAssimiles } from './calculTrimestres';
@@ -79,53 +79,69 @@ describe('revenuAnnuelHypotheseDerniereAnneeConnue', () => {
   });
 });
 
-describe('anneesManquantes', () => {
-  it('liste les années de la borne courante à la borne de retraite, incluses', () => {
-    expect(anneesManquantes(2026, 2029)).toEqual([2026, 2027, 2028, 2029]);
-  });
+describe('trimestresProjetesParAnnee', () => {
+  const aujourdHui = new Date(Date.UTC(2026, 8, 24)); // T3 2026
 
-  it('retourne une liste vide si la retraite est déjà atteinte (borne < année courante)', () => {
-    expect(anneesManquantes(2026, 2020)).toEqual([]);
-  });
-
-  it('retourne une seule année si courante === retraite', () => {
-    expect(anneesManquantes(2026, 2026)).toEqual([2026]);
-  });
-});
-
-describe('trimestresProjetesAnneesManquantes', () => {
-  it('compte 4 trimestres par année manquante, indépendamment du revenu', () => {
-    expect(trimestresProjetesAnneesManquantes([2026, 2027, 2028])).toBe(12);
-  });
-
-  it('retourne 0 pour une liste vide', () => {
-    expect(trimestresProjetesAnneesManquantes([])).toBe(0);
-  });
-});
-
-describe('periodesSynthetiquesAnneesManquantes', () => {
-  it('construit une période employeur année civile complète par année, régime de base', () => {
-    const periodes = periodesSynthetiquesAnneesManquantes([2026, 2027], 30000);
-    expect(periodes).toEqual([
-      {
-        employeur: 'Hypothèse de revenu futur',
-        typeActivite: 'employeur',
-        dateDebut: '2026-01-01',
-        dateFin: '2026-12-31',
-        revenu: 30000,
-        estChiffreAffaires: false,
-        regimes: ["L'Assurance retraite"],
-      },
-      {
-        employeur: 'Hypothèse de revenu futur',
-        typeActivite: 'employeur',
-        dateDebut: '2027-01-01',
-        dateFin: '2027-12-31',
-        revenu: 30000,
-        estChiffreAffaires: false,
-        regimes: ["L'Assurance retraite"],
-      },
+  it('du trimestre en cours au trimestre précédant la date d’effet, années partielles incluses', () => {
+    const projection = trimestresProjetesParAnnee([], aujourdHui, new Date(Date.UTC(2028, 3, 1)));
+    // 2026 : T3-T4 (2) ; 2027 : 4 ; 2028 : T1 (1) — effet au 01/04/2028.
+    expect(projection.map((a) => [a.annee, a.trimestres])).toEqual([
+      [2026, 2],
+      [2027, 4],
+      [2028, 1],
     ]);
+  });
+
+  it('pas de double compte : l’année en cours est plafonnée à 4 moins les trimestres déjà validés', () => {
+    const projection = trimestresProjetesParAnnee(
+      parAnnee([{ annee: 2026, cotises: 3, assimiles: 0, revenuCotise: 30000 }]),
+      aujourdHui,
+      new Date(Date.UTC(2028, 0, 1))
+    );
+    expect(projection.map((a) => [a.annee, a.trimestres])).toEqual([
+      [2026, 1],
+      [2027, 4],
+    ]);
+  });
+
+  it('date d’effet au trimestre suivant : seul le trimestre en cours est projeté', () => {
+    expect(
+      trimestresProjetesParAnnee([], aujourdHui, new Date(Date.UTC(2026, 9, 1))).map((a) => [a.annee, a.trimestres])
+    ).toEqual([[2026, 1]]);
+  });
+
+  it('date d’effet dans le trimestre en cours : aucune projection', () => {
+    expect(trimestresProjetesParAnnee([], new Date(Date.UTC(2026, 6, 10)), new Date(Date.UTC(2026, 7, 1)))).toEqual([]);
+  });
+});
+
+describe('anneesPasseesSansDonnees', () => {
+  it('liste les années entre la dernière année validée et l’année en cours, exclues', () => {
+    expect(
+      anneesPasseesSansDonnees(
+        parAnnee([{ annee: 2023, cotises: 4, assimiles: 0, revenuCotise: 30000 }]),
+        new Date(Date.UTC(2026, 8, 24))
+      )
+    ).toEqual([2024, 2025]);
+  });
+});
+
+describe('periodesSynthetiquesProjetees', () => {
+  it('une période par année, bornée aux trimestres projetés, revenu au prorata', () => {
+    const periodes = periodesSynthetiquesProjetees(
+      [
+        { annee: 2026, trimestres: 2, premierTrimestre: 2, dernierTrimestre: 3 },
+        { annee: 2027, trimestres: 4, premierTrimestre: 0, dernierTrimestre: 3 },
+        { annee: 2028, trimestres: 1, premierTrimestre: 0, dernierTrimestre: 0 },
+      ],
+      40000
+    );
+    expect(periodes.map((p) => [p.dateDebut, p.dateFin, p.revenu])).toEqual([
+      ['2026-07-01', '2026-12-31', 20000],
+      ['2027-01-01', '2027-12-31', 40000],
+      ['2028-01-01', '2028-03-31', 10000],
+    ]);
+    expect(periodes[0].regimes).toEqual(["L'Assurance retraite"]);
   });
 });
 
@@ -152,10 +168,12 @@ describe('calculerProjectionRevenuFutur', () => {
       null,
       new Date('2026-06-01')
     );
-    expect(resultat).toEqual({ salaireAnnuelMoyenProjete: 30000, trimestresValidesProjetes: 0 });
+    expect(resultat.salaireAnnuelMoyenProjete).toBe(30000);
+    expect(resultat.trimestresValidesProjetes).toBe(0);
+    expect(resultat.dateEffet).toBeNull();
   });
 
-  it('non applicable si aucune année manquante (âge légal déjà atteint) : pas de projection', () => {
+  it('âge légal déjà dépassé : départ au 1er du mois suivant, seul le trimestre en cours est projeté', () => {
     const resultat = calculerProjectionRevenuFutur(
       { annee: 1955, mois: 1 },
       [periodeReelle(2020, 30000)],
@@ -164,8 +182,9 @@ describe('calculerProjectionRevenuFutur', () => {
       null,
       new Date('2026-06-01')
     );
-    expect(resultat.trimestresValidesProjetes).toBe(0);
-    expect(resultat.salaireAnnuelMoyenProjete).toBe(30000);
+    expect(resultat.dateEffet?.toISOString().slice(0, 10)).toBe('2026-07-01');
+    expect(resultat.trimestresValidesProjetes).toBe(1);
+    expect(resultat.anneesPasseesSansDonnees).toEqual([2021, 2022, 2023, 2024, 2025]);
   });
 
   it('mode manuel non renseigné (0 ou vide) : pas de projection, même avec des années manquantes', () => {
@@ -181,7 +200,7 @@ describe('calculerProjectionRevenuFutur', () => {
     expect(resultat.salaireAnnuelMoyenProjete).toBe(30000);
   });
 
-  it('mode manuel renseigné, années manquantes : projette 4 trimestres par année manquante et un SAM recalculé', () => {
+  it('mode manuel renseigné : projette jusqu’au trimestre précédant la date d’effet et recalcule le SAM', () => {
     const resultat = calculerProjectionRevenuFutur(
       { annee: 1995, mois: 1 },
       [periodeReelle(2020, 30000)],
@@ -190,8 +209,10 @@ describe('calculerProjectionRevenuFutur', () => {
       35000,
       new Date('2026-06-01')
     );
-    expect(resultat.trimestresValidesProjetes).toBeGreaterThan(0);
-    expect(resultat.trimestresValidesProjetes % 4).toBe(0);
+    // Né en janvier 1995 : âge légal 64 ans → effet au 01/02/2059 ; projection
+    // du T2 2026 au T4 2058 = 3 + 32 × 4 = 131 trimestres.
+    expect(resultat.dateEffet?.toISOString().slice(0, 10)).toBe('2059-02-01');
+    expect(resultat.trimestresValidesProjetes).toBe(131);
     expect(resultat.salaireAnnuelMoyenProjete).toBeGreaterThan(0);
   });
 

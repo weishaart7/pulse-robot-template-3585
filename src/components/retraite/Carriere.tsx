@@ -19,13 +19,13 @@ import { PeriodeCarriereEditDialog } from '@/components/retraite/PeriodeCarriere
 import {
   pensionComplementaireAnnuelle,
   trimestresRequisPourGeneration,
+  dateEffetDepartAgeLegal,
 } from '@/lib/retraite/calcul';
 import { calculerPensionConsolidee, EntreePensionConsolidee } from '@/lib/retraite/pensionConsolidee';
 import { calculerProjectionRevenuFutur } from '@/lib/retraite/hypotheseRevenuFutur';
 import { CarriereFonctionPublique } from '@/components/retraite/CarriereFonctionPublique';
 import { CarriereCNAVPL, VALEUR_POINT_CNAVPL_2026 } from '@/components/retraite/CarriereCNAVPL';
 import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
-import { computeAge } from '@/lib/patrimoine/bareme669CGI';
 
 // Seuil de tolérance pour l'indicateur de cohérence RIS ↔ carrière saisie
 // (cf. ci-dessous, section "Détail de carrière") : un écart de 4 trimestres
@@ -254,25 +254,26 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   // Dérivée de dateNaissanceISO plutôt que rechargée séparément.
   const anneeNaissance = dateNaissanceISO ? new Date(dateNaissanceISO).getFullYear() : null;
 
-  // Âge actuel : cet écran n'a pas de simulation de date de départ (à la
-  // différence de l'onglet Optimisation) — le proxy de date d'effet retenu
-  // pour cette carte est « aujourd'hui » (cf. l'effet trimestresRequis
-  // ci-dessous), donc l'âge à comparer à l'âge du taux plein automatique
-  // (decoteSurAge()) est l'âge actuel du client, pas un âge de départ simulé.
-  const ageActuel = computeAge(dateNaissanceISO);
+  // Date d'effet unique du scénario affiché sur cet écran : départ à l'âge
+  // légal (1er du mois suivant l'anniversaire, ou 1er du mois prochain si
+  // l'âge légal est déjà dépassé) — cf. dateEffetDepartAgeLegal(). Trimestres
+  // requis, projection de revenu futur et moteur de pension sont tous
+  // évalués à cette date (auparavant : projection à l'âge légal mais décote
+  // âge/surcote/MICO évalués à la date du jour). Repli sur aujourd'hui si la
+  // date de naissance est inconnue.
+  const dateEffetScenario = useMemo(
+    () => (dateNaissanceDetail ? dateEffetDepartAgeLegal(dateNaissanceDetail, new Date()) : null) ?? new Date(),
+    [dateNaissanceDetail]
+  );
 
   // Trimestres requis pour le taux plein : résolus depuis la génération
-  // réelle du client, plutôt que la constante 172 figée auparavant (écart
-  // #2/#3 de l'audit référentiel). Proxy de date d'effet : « aujourd'hui »
-  // (`new Date()`) — cet écran n'a pas de simulation d'âge de départ
-  // (contrairement à l'onglet Optimisation) ; ajouter une vraie date de
-  // liquidation saisie par l'utilisateur est réservé à la Session B, cf.
-  // docs/audit/conception-date-effet.md (Option B).
+  // réelle du client et la date d'effet du scénario (barème par date
+  // d'effet, référentiel §2.1.3).
   useEffect(() => {
     if (dateNaissanceDetail) {
-      setTrimestresRequis(trimestresRequisPourGeneration(dateNaissanceDetail, new Date()));
+      setTrimestresRequis(trimestresRequisPourGeneration(dateNaissanceDetail, dateEffetScenario));
     }
-  }, [dateNaissanceDetail]);
+  }, [dateNaissanceDetail, dateEffetScenario]);
 
   // Chargement des données depuis Supabase
   useEffect(() => {
@@ -586,7 +587,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       trimestresValides: (parseInt(trimestresValides) || 0) + projectionRevenuFutur.trimestresValidesProjetes,
       trimestresRequis,
       dateNaissance: dateNaissanceDetail,
-      ageActuel,
+      dateEffet: dateEffetScenario,
       regimesPoints,
       detailCarriere,
       familyLinks,
@@ -621,7 +622,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       trimestresValides,
       trimestresRequis,
       dateNaissanceDetail,
-      ageActuel,
+      dateEffetScenario,
       regimesPoints,
       detailCarriere,
       familyLinks,
@@ -804,6 +805,18 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
               <div className="text-sm font-semibold text-primary mt-1">
                 {ageTauxPlein}
               </div>
+              {dateNaissanceDetail && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Pension simulée pour un départ au {dateEffetScenario.toLocaleDateString('fr-FR', { timeZone: 'UTC' })}{' '}
+                  (âge légal, ou au plus tôt si déjà atteint).
+                </p>
+              )}
+              {projectionRevenuFutur.anneesPasseesSansDonnees.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Aucune donnée de carrière pour {projectionRevenuFutur.anneesPasseesSansDonnees.join(', ')} :
+                  ces années ne sont pas projetées (relevé de carrière à mettre à jour ?).
+                </p>
+              )}
             </div>
 
             {trimestresValides && (

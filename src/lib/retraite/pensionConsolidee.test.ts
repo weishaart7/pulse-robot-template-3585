@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { calculerPensionConsolidee, EntreePensionConsolidee } from './pensionConsolidee';
 import {
   tauxProratisation,
@@ -14,7 +14,7 @@ const entreeBase: EntreePensionConsolidee = {
   trimestresValides: 160,
   trimestresRequis: 172,
   dateNaissance: { annee: 1990, mois: 6 },
-  ageActuel: 35,
+  dateEffet: new Date(Date.UTC(2054, 6, 1)), // départ à l'âge légal (64 ans) pour une naissance en juin 1990
   regimesPoints: [{ nom: 'Agirc-Arrco', type: 'points', points: 5000, valeurPoint: 1.3498 }],
   detailCarriere: [
     {
@@ -81,7 +81,7 @@ describe('calculerPensionConsolidee — detailRegimeGeneral (non-régression Car
       trimestresValides: 160,
       trimestresRequis: 172,
       dateNaissance: null,
-      ageActuel: null,
+      dateEffet: new Date(Date.UTC(2026, 9, 1)),
     };
     const resultat = calculerPensionConsolidee(entree);
 
@@ -121,7 +121,7 @@ describe('calculerPensionConsolidee — detailRegimeGeneral (non-régression Car
       trimestresValides: 180,
       trimestresRequis: 160,
       dateNaissance: { annee: 1955, mois: 1 },
-      ageActuel: 71,
+      dateEffet: new Date(Date.UTC(2026, 9, 1)),
       detailCarriere: detailCarriereLongue,
     };
     const resultat = calculerPensionConsolidee(entree);
@@ -182,16 +182,8 @@ describe('calculerPensionConsolidee — detailRegimeGeneral (non-régression Car
 
 describe('calculerPensionConsolidee — surcote classique après l’âge légal (référentiel §2.3.1)', () => {
   // Né en mars 1960 : âge légal 62 ans (anniversaire mars 2022), période de
-  // référence à partir du 01/04/2022 ; date d'effet proxy = 24/09/2026 →
+  // référence à partir du 01/04/2022 ; date d'effet = 24/09/2026 →
   // fin de période au 30/06/2026.
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(Date.UTC(2026, 8, 24)));
-  });
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   const annees = (de: number, a: number) =>
     Array.from({ length: a - de + 1 }, (_, i) => ({
       employeur: 'Test',
@@ -206,7 +198,7 @@ describe('calculerPensionConsolidee — surcote classique après l’âge légal
   const entree = (detailCarriere: EntreePensionConsolidee['detailCarriere'], trimestresValides: number) => ({
     ...entreeBase,
     dateNaissance: { annee: 1960, mois: 3 },
-    ageActuel: 66,
+    dateEffet: new Date(Date.UTC(2026, 8, 24)),
     trimestresRequis: 167,
     trimestresValides,
     detailCarriere,
@@ -239,5 +231,50 @@ describe('calculerPensionConsolidee — surcote classique après l’âge légal
     });
     // 160 RG + 20 FP = 180 ≥ 167 → excédent 13.
     expect(resultat.detailRegimeGeneral.surcoteClassiquePct).toBeCloseTo(16.25, 6);
+  });
+});
+
+describe('calculerPensionConsolidee — date d’effet unique (âge de départ au mois près)', () => {
+  it('départ à 64 ans 0 mois avec trimestres manquants : décote âge -15 % retenue si plus favorable', () => {
+    // Né en mars 1970, effet au 01/04/2034 (64 ans 0 mois) : 12 trimestres
+    // avant 67 ans → -15 %, plus favorable que la décote trimestres (-25 %).
+    const resultat = calculerPensionConsolidee({
+      ...entreeBase,
+      dateNaissance: { annee: 1970, mois: 3 },
+      dateEffet: new Date(Date.UTC(2034, 3, 1)),
+      trimestresValides: 140,
+      trimestresRequis: 172,
+    });
+    expect(resultat.detailRegimeGeneral.decote).toBeCloseTo(-15, 10);
+  });
+
+  it('départ à l’âge légal : aucune surcote classique même avec un excédent de trimestres', () => {
+    const resultat = calculerPensionConsolidee({
+      ...entreeBase,
+      dateNaissance: { annee: 1970, mois: 3 },
+      dateEffet: new Date(Date.UTC(2034, 3, 1)),
+      trimestresValides: 180,
+      trimestresRequis: 172,
+    });
+    expect(resultat.detailRegimeGeneral.surcoteClassiquePct).toBe(0);
+    expect(resultat.detailRegimeGeneral.decote).toBe(0);
+  });
+
+  it('texte du taux plein apprécié tous régimes (RG + FP)', () => {
+    const resultat = calculerPensionConsolidee({
+      ...entreeBase,
+      trimestresValides: 160,
+      trimestresRequis: 172,
+      fonctionPublique: {
+        traitementIndiciaireBrut: 0,
+        trimestresLiquidables: 20,
+        pointsRAFP: 0,
+        departAnticipeCategorieActive: false,
+        departPourInvalidite: false,
+        moyenneAnnuelleNBI: 0,
+        trimestresLiquidablesNBI: 0,
+      },
+    });
+    expect(resultat.ageTauxPlein).toBe('Taux plein atteint avec les trimestres validés');
   });
 });

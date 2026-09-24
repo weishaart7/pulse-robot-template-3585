@@ -300,6 +300,49 @@ export function dateAnniversaireLegal(dateNaissance: DateNaissance, ageLegal: Ag
 }
 
 /**
+ * Premier jour du mois civil suivant `date` (UTC).
+ */
+function premierJourMoisSuivant(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
+}
+
+/**
+ * Date d'effet d'un départ à l'âge légal : 1er jour du mois suivant le mois
+ * anniversaire de l'âge légal (le jour de naissance n'est pas connu ici).
+ * Si l'âge légal est déjà dépassé à `aujourdHui`, 1er jour du mois suivant
+ * `aujourdHui` (départ au plus tôt). L'âge légal dépend lui-même de la date
+ * d'effet (bascule de barème, `jeuBaremeApplicable()`) : résolu une seconde
+ * fois à la date candidate. `null` si le barème n'est pas déterminé.
+ *
+ * Date d'effet unique des écrans Carrière et Synthèse (scénario « départ à
+ * l'âge légal ») : trimestres requis, âge légal atteint, surcote, MICO et
+ * âge de départ sont tous évalués à cette date.
+ */
+export function dateEffetDepartAgeLegal(dateNaissance: DateNaissance, aujourdHui: Date): Date | null {
+  const auPlusTot = premierJourMoisSuivant(aujourdHui);
+  let dateEffet = auPlusTot;
+  for (let i = 0; i < 2; i++) {
+    const ageLegal = ageLegalPourGeneration(dateNaissance, dateEffet);
+    if (!ageLegal.stable) return null;
+    const candidate = premierJourMoisSuivant(dateAnniversaireLegal(dateNaissance, ageLegal.age));
+    dateEffet = candidate.getTime() > auPlusTot.getTime() ? candidate : auPlusTot;
+  }
+  return dateEffet;
+}
+
+/**
+ * Âge en mois révolus à `dateEffet`. Le jour de naissance n'étant pas connu
+ * (`DateNaissance` = année + mois), l'anniversaire du mois est supposé non
+ * encore atteint le 1er du mois — hypothèse prudente, qui ne peut que sous-
+ * estimer l'âge d'au plus un mois (sans effet sur la décote pour une date
+ * d'effet au 1er du mois suivant l'anniversaire, cf. `decoteSurAge()`).
+ */
+export function ageEnMois(dateNaissance: DateNaissance, dateEffet: Date): number {
+  const moisEffet = dateEffet.getUTCFullYear() * 12 + dateEffet.getUTCMonth();
+  return moisEffet - moisAbsolu(dateNaissance) - 1;
+}
+
+/**
  * Indique si l'âge légal (référentiel §2.1, §2.3.1 condition n° 2) est
  * atteint à la date d'effet — condition cumulative de la surcote, avec
  * `dureeRequiseAtteinte` (simple comparaison trimestresValides >=
@@ -396,7 +439,7 @@ export function surcotePourTrimestresCotises(
 /**
  * Index absolu d'un trimestre civil (année × 4 + trimestre 0-3), en UTC.
  */
-function indexTrimestreCivil(date: Date): number {
+export function indexTrimestreCivil(date: Date): number {
   return date.getUTCFullYear() * 4 + Math.floor(date.getUTCMonth() / 3);
 }
 
@@ -604,18 +647,20 @@ export function decoteSurTrimestresPlafond25(trimestresValides: number, trimestr
 
 /**
  * Décote basée sur l'écart d'âge par rapport à l'âge du taux plein
- * automatique (67 ans par défaut) : même barème que decoteSurTrimestres pour
- * un départ anticipé (1,25 % par trimestre d'écart, 4 trimestres par année
- * d'écart, plafonné à -25 %). À partir de l'âge du taux plein automatique,
- * celui-ci est acquis d'office : cette règle ne génère jamais de surcote (la
- * seule surcote possible vient de decoteSurTrimestres, via decoteApplicable).
+ * automatique (67 ans par défaut) : 1,25 % par trimestre manquant, plafonné
+ * à -25 % (20 trimestres). `ageDepart` peut être fractionnaire (âge au mois
+ * près, cf. `ageEnMois()`) : le nombre de trimestres manquants est arrondi
+ * au trimestre SUPÉRIEUR (règle CNAV — un trimestre entamé manque en
+ * entier). À partir de l'âge du taux plein automatique, celui-ci est acquis
+ * d'office : cette règle ne génère jamais de surcote.
  */
 export function decoteSurAge(ageDepart: number, ageTauxPleinAuto = 67): number {
   if (ageDepart >= ageTauxPleinAuto) {
     return 0;
   }
-  const ecartTrimestres = (ageDepart - ageTauxPleinAuto) * 4;
-  return Math.max(ecartTrimestres * 1.25, -25);
+  const moisManquants = Math.round((ageTauxPleinAuto - ageDepart) * 12);
+  const trimestresManquants = Math.ceil(moisManquants / 3);
+  return Math.max(-trimestresManquants * 1.25, -25);
 }
 
 /**

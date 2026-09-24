@@ -21,6 +21,8 @@ import {
   ageLegalParentaleEligible,
   surcotePourTrimestresCotises,
   trimestresSurcoteClassique,
+  dateEffetDepartAgeLegal,
+  ageEnMois,
   surcoteParentale,
   surcoteTotale,
   pensionBase,
@@ -1235,5 +1237,37 @@ describe('trimestresSurcoteClassique — période de référence après l’âge
         projeterDepuis: new Date(Date.UTC(2026, 8, 24)),
       })
     ).toBe(7);
+  });
+});
+
+describe('decoteSurAge — âge au mois près, trimestres manquants arrondis au supérieur', () => {
+  it('64 ans pile : 12 trimestres manquants → -15 %', () => {
+    expect(decoteSurAge(64)).toBe(-15);
+  });
+  it('64 ans 1 mois : 35 mois manquants → 12 trimestres (arrondi supérieur) → -15 %', () => {
+    expect(decoteSurAge(64 + 1 / 12)).toBe(-15);
+  });
+  it('64 ans 3 mois : 33 mois manquants → 11 trimestres → -13,75 %', () => {
+    expect(decoteSurAge(64 + 3 / 12)).toBeCloseTo(-13.75, 10);
+  });
+  it('66 ans 11 mois : 1 mois manquant → 1 trimestre → -1,25 %', () => {
+    expect(decoteSurAge(66 + 11 / 12)).toBeCloseTo(-1.25, 10);
+  });
+});
+
+describe('dateEffetDepartAgeLegal / ageEnMois', () => {
+  it('né en mars 1970 (âge légal 64 ans) : effet au 01/04/2034, âge 64 ans 0 mois', () => {
+    const dn = { annee: 1970, mois: 3 };
+    const effet = dateEffetDepartAgeLegal(dn, new Date(Date.UTC(2026, 8, 24)))!;
+    expect(effet.toISOString().slice(0, 10)).toBe('2034-04-01');
+    expect(ageEnMois(dn, effet)).toBe(64 * 12);
+  });
+  it('mois anniversaire en décembre : effet au 1er janvier suivant', () => {
+    const effet = dateEffetDepartAgeLegal({ annee: 1970, mois: 12 }, new Date(Date.UTC(2026, 8, 24)))!;
+    expect(effet.toISOString().slice(0, 10)).toBe('2035-01-01');
+  });
+  it('âge légal déjà dépassé : effet au 1er du mois suivant aujourd’hui', () => {
+    const effet = dateEffetDepartAgeLegal({ annee: 1958, mois: 5 }, new Date(Date.UTC(2026, 8, 24)))!;
+    expect(effet.toISOString().slice(0, 10)).toBe('2026-10-01');
   });
 });
