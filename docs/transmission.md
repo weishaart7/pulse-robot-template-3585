@@ -58,6 +58,15 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   libéralités, applique les réductions et le rapport → `transmission/index.ts::computeTransmission`
   orchestre l'ensemble, y répartit le **cash réellement disponible** par héritier (§6bis, « rapport en
   moins prenant »), puis appelle `computeDMTG` (`lib/dmtg/`) pour la fiscalité par bénéficiaire.
+- **Option du conjoint face aux enfants.** Sans DDV (art. 757) : 1/4 PP ou 100 % usufruit si tous
+  les enfants sont communs, 1/4 PP imposé dès qu'un enfant ne l'est pas. Avec DDV (art. 1094-1) :
+  les quatre options (`quart_pp`, `usufruit_total`, `quart_pp_3quarts_us`, `qd_pp`) sont ouvertes
+  quelle que soit la filiation, conformément à ce que propose déjà `Optimisation.tsx`. En présence
+  d'un enfant non commun et d'une option comportant de l'usufruit, un message informatif rappelle
+  la faculté de conversion de l'art. 1098, non exercée d'office (les parts restent celles de
+  l'option choisie). Tests : `lib/transmission/ddvEnfantNonCommun.test.ts`. Limite connue :
+  `graph.hasDDV` est vrai si l'un ou l'autre époux a consenti une DDV, sans vérifier que le défunt
+  simulé en est le donateur (non vérifié au 2nd décès).
 - Le régime matrimonial (récompenses, créances entre époux, participation aux acquêts, avantages
   matrimoniaux — saisis et calculés côté Patrimoine, cf. `docs/patrimoine.md` §2) est liquidé en amont
   et injecté dans `patrimony.biensExistants` via `deltaCivilTotal` (`index.ts`) avant tout calcul de
