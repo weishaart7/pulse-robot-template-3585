@@ -115,13 +115,13 @@ export function buildFamilyGraph(
     if (member.relation === 'Enfant') {
       const enfantDe = member.originalData?.enfant_de;
       const hasSpouse = !!nodes.find(m => m.id === 'spouse');
-      const sources = enfantDe === 'user'
-        ? ['main']
-        : enfantDe === 'spouse' && hasSpouse
-          ? ['spouse']
-          : enfantDe === 'both_parents' || !enfantDe
-            ? hasSpouse ? ['main', 'spouse'] : ['main']
-            : ['main'];
+      // Sans rattachement renseigné : enfant du seul client, comme le moteur de
+      // transmission (seul 'both_parents' fait un enfant commun).
+      const sources = enfantDe === 'spouse' && hasSpouse
+        ? ['spouse']
+        : enfantDe === 'both_parents' && hasSpouse
+          ? ['main', 'spouse']
+          : ['main'];
       sources.forEach(source => {
         edges.push({ id: `edge-${source}-${member.id}`, source, target: member.id });
       });

@@ -16,6 +16,7 @@ import { assetIndivisaireService, AssetIndivisaireWithAsset } from '@/services/a
 import { Asset } from '@/services/assetService';
 import { AssetDetailsDialog } from '@/components/patrimoine/AssetDetailsDialog';
 import { useToast } from '@/hooks/use-toast';
+import { LINKS_WITH_BRANCHE } from '@/lib/family/familyLinkRules';
 
 export const membreFamilleSchema = z.object({
   lien_familial: z.string().min(1, 'Le lien familial est obligatoire'),
@@ -43,6 +44,17 @@ export const membreFamilleSchema = z.object({
   mandat_protection_future: z.boolean().default(false),
   date_mandat_protection_future: z.date().optional(),
   personne_a_charge: z.boolean().default(false),
+}).superRefine((data, ctx) => {
+  // « Enfant de » : parent_de en dépend (enfant commun / exclusif) pour la
+  // dévolution légale — un vide serait dessiné comme enfant commun dans l'arbre
+  // mais traité comme enfant du seul client par le moteur.
+  if (data.lien_familial === 'Enfant' && !data.enfant_de) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['enfant_de'], message: 'Veuillez indiquer de qui il est l\'enfant' });
+  }
+  // Branche familiale : sans elle, successionLegale.ts exclut le membre de la fente.
+  if (LINKS_WITH_BRANCHE.includes(data.lien_familial) && !data.branche_familiale) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['branche_familiale'], message: 'Veuillez sélectionner une branche' });
+  }
 });
 export type MembreFamille = z.infer<typeof membreFamilleSchema>;
 
@@ -152,6 +164,10 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
           personne_a_charge: member.personne_a_charge || false,
         });
         setDialogOpen(true);
+        // Membre saisi avant que la branche ne soit obligatoire : erreur affichée dès l'ouverture.
+        if (LINKS_WITH_BRANCHE.includes(member.lien_familial) && !member.branche_familiale) {
+          setTimeout(() => memberForm.trigger('branche_familiale'), 0);
+        }
       },
     }), [memberForm]);
 
@@ -232,6 +248,12 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
                         onValueChange={value => {
                           field.onChange(value);
                           setSelectedLinkType(value);
+                          // Valeur par défaut réellement écrite (et non seulement affichée),
+                          // uniquement sur un choix de lien : un membre existant sans branche
+                          // doit rester signalé comme incomplet à l'ouverture.
+                          if (LINKS_WITH_BRANCHE.includes(value) && !memberForm.getValues('branche_familiale')) {
+                            memberForm.setValue('branche_familiale', 'Branche paternelle');
+                          }
                         }}
                         defaultValue={field.value}
                       >

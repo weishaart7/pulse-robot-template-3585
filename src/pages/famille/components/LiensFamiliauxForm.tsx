@@ -61,6 +61,10 @@ interface LiensFamiliauxFormProps {
 
 export interface LiensFamiliauxFormHandle {
   openForAdd: () => void;
+  getFamilyLinks: () => FamilyLink[];
+  // Recharge le statut du couple vu par l'arbre et le formulaire membre après
+  // un changement fait depuis FamilleSection (instances de hook distinctes).
+  refreshMaritalStatus: () => void;
 }
 
 export const LiensFamiliauxForm = forwardRef<LiensFamiliauxFormHandle, LiensFamiliauxFormProps>(({ onSelectMain }, ref) => {
@@ -74,14 +78,16 @@ export const LiensFamiliauxForm = forwardRef<LiensFamiliauxFormHandle, LiensFami
     deleteLinkWithCascade
   } = useFamilyLinks();
   const { data: familyProfile } = useFamilyProfile();
-  const { data: maritalStatus } = useMaritalStatus();
+  const { data: maritalStatus, refetch: refetchMaritalStatus } = useMaritalStatus();
   const { toast } = useToast();
   const dialogRef = useRef<FamilyMemberFormDialogHandle>(null);
   const [memberToDelete, setMemberToDelete] = useState<FamilyLink | null>(null);
 
   useImperativeHandle(ref, () => ({
     openForAdd: () => dialogRef.current?.openForAdd(),
-  }), []);
+    getFamilyLinks: () => familyLinks,
+    refreshMaritalStatus: () => { refetchMaritalStatus(); },
+  }), [familyLinks, refetchMaritalStatus]);
 
   // Membres dont enfant_de pointe vers ce membre (Petit-enfant → Enfant,
   // Arrière petit-enfant → Petit-enfant, etc. — cf. useFamilyLinkLogic.ts::

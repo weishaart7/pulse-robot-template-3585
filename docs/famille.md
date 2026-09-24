@@ -52,7 +52,10 @@ permet de l'alimenter (voir §3).
 **Flux clés** :
 - **Ma famille** est un tableau de bord en lecture seule (dérivé de `family_profiles` /
   `marital_status` / `family_links`) doté d'un menu déroulant Statut (6 valeurs) toujours
-  modifiable en un clic ; pour Divorcé(e)/Veuf-Veuve il affiche le statut réel et un lien vers le
+  modifiable, y compris en couple (menu au-dessus des cartes client/conjoint). Quitter un statut en
+  couple (vers Célibataire, Divorcé(e), Veuf/Veuve) passe par une confirmation qui liste les enfants
+  rattachés au partenaire (`spouse` / `both_parents`) ; rien n'est effacé ni réaffecté
+  (`lib/family/statutTransition.ts`, politique « Option A ») ; pour Divorcé(e)/Veuf-Veuve il affiche le statut réel et un lien vers le
   détail du régime passé. Il route vers les 3 autres écrans.
 - **Fiche client** et **Conjoint** saisissent l'identité civile de chaque membre du couple, dont
   une bonne partie de champs déclaratifs (adresse, nationalité…) qui restent aujourd'hui dormants
@@ -111,6 +114,15 @@ permet de l'alimenter (voir §3).
   mariage, PACS, donations, mandat). Avant son introduction, chaque formulaire faisait son propre
   `toISOString().split('T')[0]`, ce qui produisait un décalage d'un jour en fuseau français
   (voir §3, F24 encore ouvert sur la validation clavier de ce composant).
+
+- **Rattachement des enfants et branche familiale obligatoires.** Le schéma zod de
+  `FamilyMemberFormDialog.tsx` exige « Enfant de » pour un Enfant (présélectionné quand une seule
+  option existe, ex. client sans partenaire → lui-même) et la branche familiale pour les liens de
+  `LINKS_WITH_BRANCHE` ([lib/family/familyLinkRules.ts](../src/lib/family/familyLinkRules.ts)).
+  « Branche paternelle » est écrite dans le formulaire au choix du lien (auparavant seulement
+  affichée, jamais enregistrée) ; un membre existant sans branche est signalé en erreur dès
+  l'ouverture en modification. `buildFamilyGraph.ts` relie un enfant sans rattachement au seul
+  client, aligné sur le moteur (seul `both_parents` fait un enfant commun).
 
 - **`parent_de` vs `enfant_de`.** Les deux colonnes portent des sémantiques opposées dans le
   schéma, mais ne sont écrites de façon cohérente que pour `lien_familial === 'Enfant'`
@@ -247,6 +259,15 @@ soldés :
   60 000 €, la formule au prorata (identique quelle que soit la nature de la dépense, conforme à
   l'art. 1469 al. 3) donne 52 000 €. Les deux mêmes formules alimentaient aussi les créances entre
   époux/partenaires de PACS (`computeMontantCreance`, même fichier).
+
+- *[soldé 2026-09-24]* Statut du couple non modifiable une fois en couple (menu masqué, aucun autre
+  formulaire ne l'exposait) — voir §1.
+- *[soldé 2026-09-24]* Enfant sans « Enfant de » dessiné comme enfant commun dans l'arbre mais
+  traité comme enfant du seul client par le moteur — champ obligatoire, arbre aligné (§2).
+- *[soldé 2026-09-24, donnée à reprendre]* Branche familiale affichée « paternelle » mais enregistrée
+  vide : `successionLegale.ts` excluait le membre de la fente. Correctif de saisie en place ; 1
+  Grand-parent sans branche restait en base au 2026-09-24, à corriger manuellement via l'écran
+  (pas de reprise SQL, la branche réelle n'étant pas déductible).
 
 ### 🟠 À surveiller (cas limite, peu probable)
 

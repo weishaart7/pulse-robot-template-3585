@@ -6,6 +6,18 @@ import { useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm, LiensFamiliauxFormHandle } from './components/LiensFamiliauxForm';
 import { getInitials } from '@/lib/family/initials';
+import { childrenLinkedToSpouse, leavesCouple } from '@/lib/family/statutTransition';
+import { FamilyLink } from '@/services/familyService';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { ArrowLeft, ChevronRight, Scale, Plus } from 'lucide-react';
 import profilHomme from '@/assets/Profil homme.png';
 import profilFemme from '@/assets/Profil femme.png';
@@ -13,6 +25,8 @@ import profilFemme from '@/assets/Profil femme.png';
 type EditView = 'client';
 
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+
+const STATUTS = ['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)', 'Divorcé(e)', 'Veuf/Veuve'];
 
 const profileImage = (civility?: string) => (civility === 'Mme' || civility === 'Mlle' ? profilFemme : profilHomme);
 
@@ -32,13 +46,39 @@ const FamilleSection = () => {
     : relationStatus === 'Concubinage' ? 'Concubinage'
     : 'Régime matrimonial';
 
-  const handleStatutChange = async (statut: string) => {
+  // Transition en attente de confirmation (sortie d'un statut en couple).
+  const [pendingStatut, setPendingStatut] = useState<{ statut: string; children: FamilyLink[] } | null>(null);
+
+  const applyStatut = async (statut: string) => {
     if (statut === 'Célibataire') {
       await setStatutCouple('Célibataire', { parent_isole: false });
     } else {
       await setStatutCouple(statut);
     }
+    liensRef.current?.refreshMaritalStatus();
   };
+
+  const handleStatutChange = async (statut: string) => {
+    if (statut === relationStatus) return;
+    if (leavesCouple(relationStatus, statut)) {
+      setPendingStatut({ statut, children: childrenLinkedToSpouse(liensRef.current?.getFamilyLinks() ?? []) });
+      return;
+    }
+    await applyStatut(statut);
+  };
+
+  const statutSelect = (
+    <Select value={relationStatus || 'Célibataire'} onValueChange={handleStatutChange}>
+      <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {STATUTS.map(statut => (
+          <SelectItem key={statut} value={statut}>{statut}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
 
   const partnerName = maritalData?.prenom_conjoint && maritalData?.nom_conjoint
     ? `${maritalData.prenom_conjoint} ${maritalData.nom_conjoint}`
@@ -126,7 +166,15 @@ const FamilleSection = () => {
 
   return (
     <div className="p-6 pt-0 space-y-5">
-      <div className="flex justify-end">
+      <div className="flex items-end justify-between gap-4 flex-wrap">
+        {hasPartner ? (
+          <div className="flex flex-col gap-1 w-60">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Statut
+            </label>
+            {statutSelect}
+          </div>
+        ) : <div />}
         <button
           onClick={() => liensRef.current?.openForAdd()}
           className="inline-flex items-center gap-2 rounded-full bg-foreground hover:bg-foreground/85 text-background shadow-whisper pl-1 pr-4 py-1 text-sm font-medium transition-colors"
@@ -186,19 +234,7 @@ const FamilleSection = () => {
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Statut
               </label>
-              <Select value={relationStatus || 'Célibataire'} onValueChange={handleStatutChange}>
-                <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Célibataire">Célibataire</SelectItem>
-                  <SelectItem value="Concubinage">Concubinage</SelectItem>
-                  <SelectItem value="Pacsé(e)">Pacsé(e)</SelectItem>
-                  <SelectItem value="Marié(e)">Marié(e)</SelectItem>
-                  <SelectItem value="Divorcé(e)">Divorcé(e)</SelectItem>
-                  <SelectItem value="Veuf/Veuve">Veuf/Veuve</SelectItem>
-                </SelectContent>
-              </Select>
+              {statutSelect}
             </div>
             {isDivorcedOrWidowed && (
               <button
@@ -241,6 +277,47 @@ const FamilleSection = () => {
       )}
 
       <LiensFamiliauxForm ref={liensRef} onSelectMain={() => setEditView('client')} />
+
+      <AlertDialog open={!!pendingStatut} onOpenChange={(open) => { if (!open) setPendingStatut(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Passer au statut « {pendingStatut?.statut} » ?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  Le partenaire n'apparaîtra plus dans l'arbre familial ni dans les calculs.
+                  Ses informations et celles du régime restent enregistrées.
+                </p>
+                {pendingStatut && pendingStatut.children.length > 0 && (
+                  <>
+                    <p>
+                      {pendingStatut.children.length} enfant(s) sont rattachés au partenaire. Leur
+                      rattachement n'est pas modifié : vérifiez-le après le changement.
+                    </p>
+                    <ul className="list-disc pl-5">
+                      {pendingStatut.children.map(child => (
+                        <li key={child.id}>{child.prenom ? `${child.prenom} ` : ''}{child.nom}</li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const statut = pendingStatut?.statut;
+                setPendingStatut(null);
+                if (statut) applyStatut(statut);
+              }}
+            >
+              Confirmer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { SmartDateInput } from '@/components/family/SmartDateInput';
 import { CheckboxWithLabel } from '@/components/family/CheckboxWithLabel';
 import NationalitySelect from '@/components/ui/nationality-select';
+import { LINKS_WITH_BRANCHE } from '@/lib/family/familyLinkRules';
 
 interface DynamicFamilyFormProps {
   linkType: string;
@@ -86,8 +87,18 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
   const showParentField = ['Enfant', 'Parent', 'Frère/Sœur', 'Oncle/Tante', 'Petit-enfant', 'Arrière petit-enfant', 'Grand-parent', 'Arrière grand-parent', 'Neveu/Nièce', 'Petit neveu/nièce', 'Cousin/Cousine'].includes(linkType);
   const showAdoption = ['Enfant', 'Petit-enfant', 'Arrière petit-enfant'].includes(linkType);
   const showRenunciation = linkType === 'Enfant';
-  const showBranche = ['Oncle/Tante', 'Grand-parent', 'Cousin/Cousine', 'Arrière grand-parent'].includes(linkType);
+  const showBranche = LINKS_WITH_BRANCHE.includes(linkType);
   const showExoneration = linkType === 'Frère/Sœur';
+
+  // Une seule option possible (ex. Enfant d'un client sans partenaire → lui-même) :
+  // présélectionnée, pour que la valeur enregistrée soit celle affichée.
+  const singleParentOption = parentOptions.length === 1 ? parentOptions[0].value : null;
+  React.useEffect(() => {
+    if (showParentField && singleParentOption && !form.getValues('enfant_de')) {
+      form.setValue('enfant_de', singleParentOption, { shouldDirty: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showParentField, singleParentOption]);
 
   const getParentLabel = () => {
     switch (linkType) {
@@ -121,8 +132,8 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
           name="enfant_de"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{getParentLabel()}</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormLabel>{getParentLabel()}{linkType === 'Enfant' ? ' *' : ''}</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value ?? ''}>
                 <FormControl>
                   <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                     <SelectValue placeholder="Sélectionner" />
@@ -149,8 +160,8 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
           name="branche_familiale"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Branche familiale</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value || 'Branche paternelle'}>
+              <FormLabel>Branche familiale *</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value ?? ''}>
                 <FormControl>
                   <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                     <SelectValue placeholder="Sélectionner une branche" />
