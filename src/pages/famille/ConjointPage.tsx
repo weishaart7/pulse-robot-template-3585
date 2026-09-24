@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { PartnerForm } from '@/components/famille/PartnerForm';
 import { useMaritalStatus } from '@/hooks/useFamilyData';
 import { getInitials } from '@/lib/family/initials';
+import { ageEnAnnees } from '@/lib/family/age';
 
 export default function ConjointPage() {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ export default function ConjointPage() {
   const secondaryLine = (() => {
     const dateStr = maritalData?.date_naissance_conjoint;
     if (!dateStr) return null;
-    const age = Math.floor((new Date().getTime() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+    const age = ageEnAnnees(dateStr);
     return `${format(new Date(dateStr), 'dd/MM/yyyy')} · ${age} ans`;
   })();
 
@@ -45,7 +46,7 @@ export default function ConjointPage() {
               {partnerName}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Identité et coordonnées du partenaire{secondaryLine ? ` · ${secondaryLine}` : ''}
+              Identité du partenaire{secondaryLine ? ` · ${secondaryLine}` : ''}
             </p>
           </div>
         </div>

@@ -24,10 +24,10 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useFamilyLinks, useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
-import { useToast } from '@/hooks/use-toast';
 import { FamilyLink } from '@/services/familyService';
 import { FamilyMemberFormDialog, FamilyMemberFormDialogHandle } from '@/components/family/FamilyMemberFormDialog';
 import { cn } from '@/lib/utils';
+import { formatAgeCourt } from '@/lib/family/age';
 
 // Tag de la table Liens familiaux — accent = avantage fiscal.
 function FamilyTag({ children, accent = false }: { children: React.ReactNode; accent?: boolean }) {
@@ -41,18 +41,6 @@ function FamilyTag({ children, accent = false }: { children: React.ReactNode; ac
       {children}
     </span>
   );
-}
-
-function calculateAge(date_naissance?: string): string {
-  if (!date_naissance) return '-';
-  const birth = new Date(date_naissance);
-  const diffMs = new Date().getTime() - birth.getTime();
-  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (days < 30) return `${days} jour${days > 1 ? 's' : ''}`;
-  const months = Math.floor(days / 30.4375);
-  if (months < 12) return `${months} mois`;
-  const years = Math.floor(days / 365.25);
-  return `${years} an${years > 1 ? 's' : ''}`;
 }
 
 interface LiensFamiliauxFormProps {
@@ -71,7 +59,6 @@ export function LiensFamiliauxForm({ onSelectMain }: LiensFamiliauxFormProps) {
   } = useFamilyLinks();
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
-  const { toast } = useToast();
   const dialogRef = useRef<FamilyMemberFormDialogHandle>(null);
   const [memberToDelete, setMemberToDelete] = useState<FamilyLink | null>(null);
 
@@ -86,16 +73,11 @@ export function LiensFamiliauxForm({ onSelectMain }: LiensFamiliauxFormProps) {
     if (!memberToDelete?.id) return;
     try {
       await deleteLinkWithCascade(memberToDelete.id);
-      toast({ title: "Succès", description: "Le membre de la famille a été supprimé." });
     } catch (error) {
+      // Notification déjà affichée par useFamilyLinks.
       if (import.meta.env.DEV) {
         console.error('Erreur lors de la suppression:', error);
       }
-      toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la suppression.",
-        variant: "destructive",
-      });
     } finally {
       setMemberToDelete(null);
     }
@@ -145,12 +127,11 @@ export function LiensFamiliauxForm({ onSelectMain }: LiensFamiliauxFormProps) {
             </p>
           </CardContent>}
           {familyLinks.length > 0 && <CardContent>
-            <Table className="text-xs">
+            <Table className="text-sm">
               <TableHeader>
                 <TableRow>
+                  <TableHead>Membre</TableHead>
                   <TableHead>Lien familial</TableHead>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Prénom</TableHead>
                   <TableHead>Date de naissance</TableHead>
                   <TableHead>Âge</TableHead>
                   <TableHead>Statut</TableHead>
@@ -159,6 +140,9 @@ export function LiensFamiliauxForm({ onSelectMain }: LiensFamiliauxFormProps) {
               </TableHeader>
               <TableBody>
                 {familyLinks.map(member => <TableRow key={member.id} className={cn(member.est_decede && "text-muted-foreground")}>
+                    <TableCell className={cn("font-medium", !member.est_decede && "text-foreground")}>
+                      {[member.prenom, member.nom].filter(Boolean).join(' ')}
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-1.5 flex-wrap items-center">
                         <FamilyTag>{member.lien_familial}</FamilyTag>
@@ -167,13 +151,11 @@ export function LiensFamiliauxForm({ onSelectMain }: LiensFamiliauxFormProps) {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium">{member.nom}</TableCell>
-                    <TableCell>{member.prenom || '-'}</TableCell>
                     <TableCell>
                       {member.date_naissance ? format(new Date(member.date_naissance), 'dd/MM/yyyy') : '-'}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {member.est_decede ? '-' : calculateAge(member.date_naissance)}
+                      {member.est_decede ? '-' : formatAgeCourt(member.date_naissance)}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1.5 flex-wrap">

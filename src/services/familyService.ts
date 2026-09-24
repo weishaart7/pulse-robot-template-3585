@@ -119,6 +119,9 @@ export interface FamilyLink {
   enfant_de?: string | null;
   parent_de?: string | null;
   exoneration_succession?: boolean;
+  exo_frere_soeur_seul?: boolean;
+  exo_frere_soeur_infirmite?: boolean;
+  exo_frere_soeur_cohabitation_5_ans?: boolean;
   enfant_a_charge?: boolean;
   fiscalement_a_charge?: boolean;
   mesure_protection_juridique?: string;

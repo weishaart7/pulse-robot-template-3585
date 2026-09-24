@@ -136,13 +136,12 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
       };
 
       await setStatutCouple(formData.statutCouple ?? null, supabaseData);
-      toast({ title: "Succès", description: "Les informations ont été sauvegardées avec succès." });
       onSuccess?.();
     } catch (error) {
+      // Notification déjà affichée par useMaritalStatus.
       if (import.meta.env.DEV) {
         console.error('Erreur lors de la sauvegarde:', error);
       }
-      toast({ title: "Erreur", description: "Une erreur est survenue lors de la sauvegarde.", variant: "destructive" });
     }
   };
 

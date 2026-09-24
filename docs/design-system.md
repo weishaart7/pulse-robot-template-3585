@@ -63,7 +63,7 @@ Surtitres techniques (étapes de wizard, en-têtes de section `SectionHeader`) :
 ## 6. Formulaires (Actifs, Famille)
 
 Plus de scope dédié : les formulaires suivent les tokens de `:root`.
-- Cadres `ActifFormFrame`, `FamilleFormFrame` et cartes des formulaires Famille / régime
+- Cadre `ActifFormFrame` et cartes des formulaires Famille / régime
   matrimonial : `rounded-3xl` (24 px), filet `border-border`, fond `bg-card`, sans halo.
 - Blocs de champs internes : `bg-secondary` (taupe), coins 14 px.
 - Champs `bg-muted` au focus ou ouverts : bordure encre, fond eggshell (règle globale dans

@@ -989,6 +989,9 @@ export type Database = {
           enfant_renoncant: boolean | null
           enfant_renoncant_de: string | null
           est_decede: boolean | null
+          exo_frere_soeur_cohabitation_5_ans: boolean
+          exo_frere_soeur_infirmite: boolean
+          exo_frere_soeur_seul: boolean
           exoneration_succession: boolean | null
           fiscalement_a_charge: boolean | null
           handicap: boolean | null
@@ -1020,6 +1023,9 @@ export type Database = {
           enfant_renoncant?: boolean | null
           enfant_renoncant_de?: string | null
           est_decede?: boolean | null
+          exo_frere_soeur_cohabitation_5_ans?: boolean
+          exo_frere_soeur_infirmite?: boolean
+          exo_frere_soeur_seul?: boolean
           exoneration_succession?: boolean | null
           fiscalement_a_charge?: boolean | null
           handicap?: boolean | null
@@ -1051,6 +1057,9 @@ export type Database = {
           enfant_renoncant?: boolean | null
           enfant_renoncant_de?: string | null
           est_decede?: boolean | null
+          exo_frere_soeur_cohabitation_5_ans?: boolean
+          exo_frere_soeur_infirmite?: boolean
+          exo_frere_soeur_seul?: boolean
           exoneration_succession?: boolean | null
           fiscalement_a_charge?: boolean | null
           handicap?: boolean | null

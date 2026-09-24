@@ -16,7 +16,7 @@ import { assetIndivisaireService, AssetIndivisaireWithAsset } from '@/services/a
 import { Asset } from '@/services/assetService';
 import { AssetDetailsDialog } from '@/components/patrimoine/AssetDetailsDialog';
 import { useToast } from '@/hooks/use-toast';
-import { LINKS_WITH_BRANCHE, sanitizeMemberForLink } from '@/lib/family/familyLinkRules';
+import { LINKS_WITH_BRANCHE, LINKS_WITH_EXONERATION, evaluerExonerationFrereSoeur, sanitizeMemberForLink } from '@/lib/family/familyLinkRules';
 
 export const membreFamilleSchema = z.object({
   lien_familial: z.string().min(1, 'Le lien familial est obligatoire'),
@@ -38,6 +38,9 @@ export const membreFamilleSchema = z.object({
   branche_familiale: z.string().optional(),
   enfant_de: z.string().optional(),
   exoneration_succession: z.boolean().default(false),
+  exo_frere_soeur_seul: z.boolean().default(false),
+  exo_frere_soeur_infirmite: z.boolean().default(false),
+  exo_frere_soeur_cohabitation_5_ans: z.boolean().default(false),
   enfant_a_charge: z.boolean().default(false),
   fiscalement_a_charge: z.boolean().default(false),
   mesure_protection_juridique: z.string().default('Aucune'),
@@ -78,6 +81,9 @@ const DEFAULT_VALUES: MembreFamille = {
   adoption_simple_abattement_plein: false,
   enfant_renoncant: false,
   exoneration_succession: false,
+  exo_frere_soeur_seul: false,
+  exo_frere_soeur_infirmite: false,
+  exo_frere_soeur_cohabitation_5_ans: false,
   enfant_a_charge: false,
   fiscalement_a_charge: false,
   mesure_protection_juridique: 'Aucune',
@@ -165,6 +171,9 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
           branche_familiale: member.branche_familiale || '',
           enfant_de: member.enfant_de || '',
           exoneration_succession: member.exoneration_succession || false,
+          exo_frere_soeur_seul: member.exo_frere_soeur_seul || false,
+          exo_frere_soeur_infirmite: member.exo_frere_soeur_infirmite || false,
+          exo_frere_soeur_cohabitation_5_ans: member.exo_frere_soeur_cohabitation_5_ans || false,
           enfant_a_charge: member.enfant_a_charge || false,
           fiscalement_a_charge: member.fiscalement_a_charge || false,
           mesure_protection_juridique: member.mesure_protection_juridique || 'Aucune',
@@ -208,7 +217,16 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
           // la dévolution légale) — null explicite sinon, pour ne pas laisser
           // traîner un id de membre sans signification sur les autres types de lien.
           parent_de: data.lien_familial === 'Enfant' ? data.enfant_de : null,
-          exoneration_succession: data.exoneration_succession,
+          // Dérivé des trois conditions de l'art. 796-0 ter CGI (lu tel quel par le moteur DMTG).
+          exoneration_succession: LINKS_WITH_EXONERATION.includes(data.lien_familial) && evaluerExonerationFrereSoeur({
+            seul: data.exo_frere_soeur_seul,
+            infirmite: data.exo_frere_soeur_infirmite,
+            cohabitation5Ans: data.exo_frere_soeur_cohabitation_5_ans,
+            dateNaissance: data.date_naissance,
+          }).exonere,
+          exo_frere_soeur_seul: data.exo_frere_soeur_seul,
+          exo_frere_soeur_infirmite: data.exo_frere_soeur_infirmite,
+          exo_frere_soeur_cohabitation_5_ans: data.exo_frere_soeur_cohabitation_5_ans,
           enfant_a_charge: data.enfant_a_charge,
           fiscalement_a_charge: data.fiscalement_a_charge,
           mesure_protection_juridique: data.mesure_protection_juridique,
@@ -225,16 +243,11 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
         setEditingMember(null);
         setSelectedLinkType('');
         memberForm.reset(DEFAULT_VALUES);
-        toast({ title: "Succès", description: "Les informations ont été sauvegardées avec succès." });
       } catch (error) {
+        // Notification déjà affichée par useFamilyLinks : la fenêtre reste ouverte.
         if (import.meta.env.DEV) {
           console.error('Erreur lors de la sauvegarde du membre:', error);
         }
-        toast({
-          title: "Erreur",
-          description: "Une erreur est survenue lors de la sauvegarde.",
-          variant: "destructive",
-        });
       }
     };
 

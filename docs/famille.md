@@ -169,6 +169,33 @@ permet de l'alimenter (voir §3).
   (`option_conjoint`, `partage_envisage`, `duh_opte`) sans passer par le hook — le cache peut rester
   périmé jusqu'à 30 s sur ces trois colonnes.
 
+- **Notifications d'enregistrement.** Les hooks de `useFamilyData.ts` sont la seule source des
+  notifications de succès et d'erreur d'écriture ; les formulaires n'en émettent plus (évite les
+  doubles toasts) et restent ouverts en cas d'échec. `FicheClientForm.tsx` ne ferme la fiche que si
+  `submitSecureForm` renvoie `true` (échec ou limite de tentatives = on reste sur la fiche).
+
+- **Âge.** [lib/family/age.ts](../src/lib/family/age.ts) (`ageEnAnnees`, `formatAgeCourt`) est le
+  seul calcul d'âge du module (différence calendaire).
+
+- **Affichage de l'arbre et du formulaire membre.** Chaque ligne de l'arbre est libellée d'après
+  les liens qu'elle contient (ex. « Parents / Oncles et tantes », « Vous / Frères et sœurs »). Le
+  tableau affiche le nom complet en une colonne. Le formulaire membre est découpé en blocs
+  Rattachement / Identité / Situation / Succession. La page régime est titrée selon le statut
+  (Régime matrimonial, PACS, Concubinage, Mariage dissous, Mariage (veuvage)).
+
+- **Exonération des frères et sœurs (art. 796-0 ter CGI).** Trois conditions cumulatives saisies
+  séparément sur un Frère/Sœur : seul (célibataire, veuf, divorcé ou séparé de corps —
+  `exo_frere_soeur_seul`), plus de 50 ans (calculé depuis `date_naissance`, 50 ans révolus à la
+  date du jour prise comme date de décès simulée) ou infirmité l'empêchant de subvenir à ses besoins
+  (`exo_frere_soeur_infirmite`, case dédiée distincte du handicap), domicile commun continu depuis
+  5 ans (`exo_frere_soeur_cohabitation_5_ans`). `evaluerExonerationFrereSoeur()`
+  ([familyLinkRules.ts](../src/lib/family/familyLinkRules.ts)) en dérive `exoneration_succession`
+  à l'enregistrement — colonne toujours lue telle quelle par le moteur DMTG (`tax.ts`,
+  `assurance-vie.ts`) ; le formulaire affiche le résultat et les conditions manquantes. Limite : la
+  condition d'âge est figée à la date d'enregistrement (un frère qui passe 50 ans n'est exonéré
+  qu'au prochain enregistrement de sa fiche). Migration
+  `20260924120000_add_conditions_exoneration_frere_soeur.sql`.
+
 - **Champs d'un membre selon le lien.** [lib/family/familyLinkRules.ts](../src/lib/family/familyLinkRules.ts)
   centralise quels champs s'appliquent à quel lien (rattachement, branche, adoption, champs enfant,
   exonération) ; `DynamicFamilyForm.tsx` s'en sert pour l'affichage et
@@ -245,8 +272,7 @@ permet de l'alimenter (voir §3).
 - **Habillage : design system du simulateur** ([design-system.md](design-system.md)). Plus de
   scope `.famille-form` : pages et formulaires suivent les tokens de `:root` (encre, fond eggshell,
   cartes `rounded-3xl` à filet `border-border` sans halo, blocs de champs `bg-secondary`, titres
-  Inter 300). Le cadre commun [FamilleFormFrame.tsx](../src/components/famille/FamilleFormFrame.tsx)
-  existe mais n'est utilisé par aucune page (code mort). [SectionHeader.tsx](../src/components/family/SectionHeader.tsx)
+  Inter 300). [SectionHeader.tsx](../src/components/family/SectionHeader.tsx)
   (badge icône + surtitre `.ds-eyebrow`) est repris dans `FicheClientForm.tsx`, `PartnerForm.tsx`
   et `RelationInfoForm.tsx`. Le bouton « Ajouter un membre » et les pills « Voir le détail » (statut de couple, régime
   matrimonial) sont des pilules encre, comme le reste de l'app.

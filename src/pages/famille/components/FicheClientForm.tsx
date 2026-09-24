@@ -162,14 +162,16 @@ export function FicheClientForm({ onSuccess }: { onSuccess?: () => void } = {}) 
         date_mandat_protection_future: sanitizedFormData.dateMandatProtectionFuture instanceof Date ? format(sanitizedFormData.dateMandatProtectionFuture, 'yyyy-MM-dd') : undefined,
       };
 
-      await submitSecureForm(
+      // false si l'envoi a échoué ou a été bloqué (limite de tentatives) : l'erreur
+      // a déjà été signalée par useSecureForm / useFamilyProfile, on reste sur la fiche.
+      const ok = await submitSecureForm(
         supabaseData,
         async (sanitizedData) => {
           await saveData(sanitizedData);
         },
         user?.id
       );
-      toast({ title: "Succès", description: "Les informations ont été sauvegardées avec succès." });
+      if (!ok) return;
       onSuccess?.();
     } catch (error) {
       if (import.meta.env.DEV) {

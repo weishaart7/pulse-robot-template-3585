@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sanitizeMemberForLink } from './familyLinkRules';
+import { sanitizeMemberForLink, evaluerExonerationFrereSoeur } from './familyLinkRules';
 
 const base = {
   lien_familial: 'Enfant',
@@ -64,5 +64,46 @@ describe('sanitizeMemberForLink', () => {
 
   it('non décédé : pas de date de décès', () => {
     expect(sanitizeMemberForLink({ ...base, date_deces: new Date(2020, 0, 1) }).date_deces).toBeUndefined();
+  });
+});
+
+describe('evaluerExonerationFrereSoeur (art. 796-0 ter CGI)', () => {
+  const today = new Date(2026, 8, 24);
+  const plus50 = new Date(1970, 0, 1);
+  const moins50 = new Date(1990, 0, 1);
+
+  it('exonéré : seul, plus de 50 ans, 5 ans de cohabitation', () => {
+    expect(evaluerExonerationFrereSoeur({ seul: true, cohabitation5Ans: true, dateNaissance: plus50 }, today).exonere).toBe(true);
+  });
+
+  it('exonéré : moins de 50 ans mais infirmité', () => {
+    expect(evaluerExonerationFrereSoeur({ seul: true, cohabitation5Ans: true, infirmite: true, dateNaissance: moins50 }, today).exonere).toBe(true);
+  });
+
+  it('50 ans révolus au jour du décès suffisent', () => {
+    expect(evaluerExonerationFrereSoeur({ seul: true, cohabitation5Ans: true, dateNaissance: new Date(1976, 8, 24) }, today).exonere).toBe(true);
+    expect(evaluerExonerationFrereSoeur({ seul: true, cohabitation5Ans: true, dateNaissance: new Date(1976, 8, 25) }, today).exonere).toBe(false);
+  });
+
+  it('non exonéré : moins de 50 ans sans infirmité', () => {
+    const r = evaluerExonerationFrereSoeur({ seul: true, cohabitation5Ans: true, dateNaissance: moins50 }, today);
+    expect(r.exonere).toBe(false);
+    expect(r.conditionsManquantes).toEqual(['plus de 50 ans ou infirmité']);
+  });
+
+  it('non exonéré : marié (pas seul)', () => {
+    expect(evaluerExonerationFrereSoeur({ seul: false, cohabitation5Ans: true, dateNaissance: plus50 }, today).exonere).toBe(false);
+  });
+
+  it('non exonéré : cohabitation seule (ancien comportement)', () => {
+    const r = evaluerExonerationFrereSoeur({ cohabitation5Ans: true }, today);
+    expect(r.exonere).toBe(false);
+    expect(r.conditionsManquantes).toHaveLength(2);
+  });
+
+  it('date de naissance absente sans infirmité : condition d\'âge signalée', () => {
+    const r = evaluerExonerationFrereSoeur({ seul: true, cohabitation5Ans: true }, today);
+    expect(r.exonere).toBe(false);
+    expect(r.conditionsManquantes[0]).toContain('date de naissance non renseignée');
   });
 });

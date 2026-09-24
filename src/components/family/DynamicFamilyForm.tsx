@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { ageEnAnnees } from '@/lib/family/age';
 import { SmartDateInput } from '@/components/family/SmartDateInput';
 import { CheckboxWithLabel } from '@/components/family/CheckboxWithLabel';
 import NationalitySelect from '@/components/ui/nationality-select';
@@ -17,6 +18,7 @@ import {
   LINKS_WITH_CHILD_FIELDS,
   LINKS_WITH_EXONERATION,
   LINKS_WITH_PARENT,
+  evaluerExonerationFrereSoeur,
 } from '@/lib/family/familyLinkRules';
 
 interface DynamicFamilyFormProps {
@@ -33,14 +35,13 @@ const adoptionSimpleMotifs = [
 ];
 const brancheFamiliale = ['Branche paternelle', 'Branche maternelle'];
 
-function ageEnAnnees(dateNaissance: Date): number {
-  const today = new Date();
-  let age = today.getFullYear() - dateNaissance.getFullYear();
-  const moisEcoules = today.getMonth() - dateNaissance.getMonth();
-  if (moisEcoules < 0 || (moisEcoules === 0 && today.getDate() < dateNaissance.getDate())) {
-    age--;
-  }
-  return age;
+// Titre de bloc du formulaire membre (Rattachement / Identité / Situation / Succession).
+function FormSectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide border-b border-border pb-2">
+      {children}
+    </p>
+  );
 }
 
 export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciation }: DynamicFamilyFormProps) {
@@ -95,6 +96,12 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
   const showRenunciation = LINKS_WITH_CHILD_FIELDS.includes(linkType);
   const showBranche = LINKS_WITH_BRANCHE.includes(linkType);
   const showExoneration = LINKS_WITH_EXONERATION.includes(linkType);
+  const exoneration = evaluerExonerationFrereSoeur({
+    seul: form.watch('exo_frere_soeur_seul'),
+    infirmite: form.watch('exo_frere_soeur_infirmite'),
+    cohabitation5Ans: form.watch('exo_frere_soeur_cohabitation_5_ans'),
+    dateNaissance: watchDateNaissance,
+  });
 
   // Une seule option possible (ex. Enfant d'un client sans partenaire → lui-même) :
   // présélectionnée, pour que la valeur enregistrée soit celle affichée.
@@ -131,6 +138,10 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
 
   return (
     <div className="space-y-6">
+      {((showParentField && parentOptions.length > 0) || showBranche) && (
+        <FormSectionTitle>Rattachement</FormSectionTitle>
+      )}
+
       {/* Parent/Enfant de field */}
       {showParentField && parentOptions.length > 0 && (
         <FormField
@@ -186,6 +197,8 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
           )}
         />
       )}
+
+      <FormSectionTitle>Identité</FormSectionTitle>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Civilité */}
@@ -311,7 +324,8 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
         )}
       </div>
 
-      {/* Checkboxes */}
+      <FormSectionTitle>Situation</FormSectionTitle>
+
       <div className="space-y-4">
         {/* Décédé */}
         <FormField
@@ -393,6 +407,13 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
           </>
         )}
 
+      </div>
+
+      {(showAdoption || showRenunciation || showExoneration) && (
+        <FormSectionTitle>Succession</FormSectionTitle>
+      )}
+
+      <div className="space-y-4">
         {/* Enfant adopté */}
         {showAdoption && (
           <FormField
@@ -525,19 +546,37 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
           </>
         )}
 
-        {/* Exonération succession pour frère/sœur */}
+        {/* Exonération des frères et sœurs (art. 796-0 ter CGI) : 3 conditions cumulatives */}
         {showExoneration && (
-          <FormField
-            control={form.control}
-            name="exoneration_succession"
-            render={({ field }) => (
-              <CheckboxWithLabel
-                checked={field.value}
-                onCheckedChange={field.onChange}
-                label="Vivant sous le même toit et bénéficiant d'une exonération de droits de succession"
-              />
-            )}
-          />
+          <div className="space-y-3">
+            <p className="text-sm font-medium">Exonération de droits de succession (art. 796-0 ter CGI)</p>
+            <FormField
+              control={form.control}
+              name="exo_frere_soeur_seul"
+              render={({ field }) => (
+                <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Célibataire, veuf(ve), divorcé(e) ou séparé(e) de corps" />
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="exo_frere_soeur_infirmite"
+              render={({ field }) => (
+                <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Infirmité l'empêchant de subvenir à ses besoins (sinon : plus de 50 ans requis)" />
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="exo_frere_soeur_cohabitation_5_ans"
+              render={({ field }) => (
+                <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Domicilié(e) avec vous de façon continue depuis au moins 5 ans" />
+              )}
+            />
+            <p className={cn("text-sm rounded-md px-3 py-2", exoneration.exonere ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
+              {exoneration.exonere
+                ? 'Exonéré de droits de succession.'
+                : `Non exonéré — condition manquante : ${exoneration.conditionsManquantes.join(' ; ')}.`}
+            </p>
+          </div>
         )}
       </div>
     </div>

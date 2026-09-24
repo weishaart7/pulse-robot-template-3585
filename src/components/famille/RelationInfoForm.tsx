@@ -175,17 +175,12 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
         await saveData(payload as any);
       }
 
-      toast({ title: "Succès", description: "Les informations ont été sauvegardées avec succès." });
       onSuccess?.();
     } catch (error) {
+      // Notification déjà affichée par useMaritalStatus.
       if (import.meta.env.DEV) {
         console.error('Erreur de sauvegarde:', error);
       }
-      toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la sauvegarde.",
-        variant: "destructive",
-      });
     }
   };
 

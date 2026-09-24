@@ -16,19 +16,35 @@ interface FamilyTreeCardsProps {
 const CONNECTOR_COLOR = '#E5E5E3';
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
-const GENERATION_NAMES: Record<number, string> = {
-  '-3': 'Arrière grands-parents',
-  '-2': 'Grands-parents',
-  '-1': 'Parents',
-  0: 'Vous',
-  1: 'Enfants',
-  2: 'Petits-enfants',
-  3: 'Arrière petits-enfants',
-} as unknown as Record<number, string>;
+// Libellé d'une ligne d'après les liens réellement présents (une même
+// génération mêle par ex. parents et oncles/tantes, ou petits-enfants et
+// neveux/nièces), plutôt qu'un nom de génération qui ne décrit qu'une partie.
+const RELATION_PLURALS: Record<string, string> = {
+  'Arrière grand-parent': 'Arrière-grands-parents',
+  'Grand-parent': 'Grands-parents',
+  'Parent': 'Parents',
+  'Beau-parent': 'Beaux-parents',
+  'Oncle/Tante': 'Oncles et tantes',
+  'Frère/Sœur': 'Frères et sœurs',
+  'Beau-frère/Belle-sœur': 'Beaux-frères et belles-sœurs',
+  'Cousin/Cousine': 'Cousins',
+  'Tierce personne': 'Tiers',
+  'Enfant': 'Enfants',
+  'Petit-enfant': 'Petits-enfants',
+  'Neveu/Nièce': 'Neveux et nièces',
+  'Arrière petit-enfant': 'Arrière-petits-enfants',
+  'Petit neveu/nièce': 'Petits-neveux et nièces',
+};
 
-function generationLabel(generation: number, rowIndex: number) {
-  const name = GENERATION_NAMES[generation] ?? `Génération ${generation}`;
-  return `${String(rowIndex + 1).padStart(2, '0')} · ${name}`;
+function generationLabels(members: FamilyGraphNode[]): string[] {
+  const labels: string[] = [];
+  if (members.some(m => m.isMain || m.isSpouse)) labels.push('Vous');
+  members.forEach(m => {
+    if (m.isMain || m.isSpouse) return;
+    const label = RELATION_PLURALS[m.relation] ?? m.relation;
+    if (!labels.includes(label)) labels.push(label);
+  });
+  return labels;
 }
 
 // Place le client et son conjoint au centre de la génération 0, la fratrie répartie de part et d'autre.
@@ -194,7 +210,7 @@ export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onS
         ))}
       </svg>
 
-      {generations.map((generation, rowIndex) => (
+      {generations.map((generation) => (
         <div key={generation} className="relative flex items-center gap-4">
           <div
             className={cn(
@@ -202,7 +218,9 @@ export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onS
               generation === 0 ? "text-foreground" : "text-muted-foreground"
             )}
           >
-            {generationLabel(generation, rowIndex)}
+            {generationLabels(rowsByGeneration.get(generation)!).map(label => (
+              <span key={label} className="block">{label}</span>
+            ))}
           </div>
           <div className="flex-1 flex flex-nowrap items-center gap-4 overflow-x-auto pb-1">
             {rowsByGeneration.get(generation)!.map(node => (

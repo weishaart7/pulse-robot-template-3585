@@ -75,7 +75,8 @@ export const useFamilyProfile = () => {
         title: "Chargement",
         description: "Vérification de l'authentification en cours...",
       });
-      return;
+      // Erreur plutôt que retour silencieux : l'appelant ne doit pas croire à un succès.
+      throw new Error('Authentification en cours de chargement');
     }
 
     if (!isAuthenticated) {
@@ -185,7 +186,10 @@ export const useMaritalStatus = () => {
     updates: DonationDernierVivantFields | null,
     extra?: Partial<MaritalStatus>
   ) => {
-    const fresh = await familyService.getMaritalStatus();
+    const fresh = await withLoadErrorToast(
+      () => familyService.getMaritalStatus(),
+      "Impossible d'enregistrer la situation matrimoniale"
+    );
     return saveData(buildDonationDernierVivantWrite(updates, fresh, extra));
   };
 

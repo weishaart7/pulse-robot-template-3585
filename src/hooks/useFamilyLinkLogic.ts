@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { FamilyLink } from '@/services/familyService';
+import { FamilyLink, FamilyProfile, MaritalStatus } from '@/services/familyService';
 import { isSingleStatus } from '@/lib/family/maritalStatus';
 
 export interface FamilyLinkOption {
@@ -10,8 +10,8 @@ export interface FamilyLinkOption {
 
 export const useFamilyLinkLogic = (
   familyLinks: FamilyLink[],
-  familyProfile: any,
-  maritalStatus: any
+  familyProfile: FamilyProfile | null,
+  maritalStatus: MaritalStatus | null
 ) => {
   const userDisplayName = useMemo(() => {
     if (!familyProfile) return 'Utilisateur';

@@ -6,6 +6,7 @@ import { useFamilyLinks, useFamilyProfile, useMaritalStatus } from '@/hooks/useF
 import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
 import { getInitials } from '@/lib/family/initials';
+import { ageEnAnnees } from '@/lib/family/age';
 import { childrenLinkedToSpouse, leavesCouple } from '@/lib/family/statutTransition';
 import { FamilyLink } from '@/services/familyService';
 import {
@@ -110,21 +111,9 @@ const FamilleSection = () => {
     ? `${familyProfile.prenom} ${familyProfile.nom}`
     : 'Utilisateur';
 
-  const ageFromBirthDate = (dateStr?: string) => {
-    if (!dateStr) return undefined;
-    const birth = new Date(dateStr);
-    const today = new Date();
-    let age = today.getFullYear() - birth.getFullYear();
-    const beforeBirthday =
-      today.getMonth() < birth.getMonth() ||
-      (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate());
-    if (beforeBirthday) age--;
-    return age;
-  };
-
   const secondaryLine = (dateStr?: string) => {
     if (!dateStr) return '—';
-    const age = ageFromBirthDate(dateStr);
+    const age = ageEnAnnees(dateStr);
     return `${format(new Date(dateStr), 'dd/MM/yyyy')} · ${age} ans`;
   };
 
