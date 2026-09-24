@@ -10,7 +10,7 @@ Sources : historique git (`main`, jusqu'à `2835f30`), `docs/audit-patrimoine-20
 
 - **Affichage progressif** de la partie évaluation dans les formulaires récompenses/créances (857efe0).
 - **Avertissement + blocage** du mode "profit subsistant" quand les données nécessaires manquent (175eccf).
-- **Champ `depense_necessaire`** ajouté + implémentation des **4 branches légales de l'art. 1469** (au lieu de 2 approximées avant) — migration `20260729120000_add_depense_necessaire_recompenses.sql` (999a24c).
+- **Champ `depense_necessaire`** ajouté + implémentation des **4 branches légales de l'art. 1469** (au lieu de 2 approximées avant) — migration `20260729140006_add_depense_necessaire_recompenses.sql` (999a24c).
 - **Pré-remplissage assisté** : financement mixte (`assets.financement_mixte_apport_propre`) → suggestion automatique d'une ligne récompense, avant totalement manuel (97e4f9f).
 - **Déduction de l'assurance emprunteur** dans le passif transmis à l'Utilisateur : `capital_garanti_deces` prime sur les quotités assurées, clampées `[0,100]`, montant net jamais négatif (00ba091).
 - **Audit diagnostic** (sans modification de moteur) du module récompenses/créances — voir §3.

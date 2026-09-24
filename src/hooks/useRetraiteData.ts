@@ -55,7 +55,7 @@ export interface RetraiteData {
 // 'conjoint' : même user_id (le conjoint n'a pas de compte séparé, cf.
 // marital_status.prenom_conjoint/nom_conjoint) — seule la colonne `personne`
 // distingue les deux jeux de données, cf. migration
-// 20260815000000_add_personne_to_retraite_tables.sql.
+// 20260814235607_add_personne_to_retraite_tables.sql.
 export type Personne = 'utilisateur' | 'conjoint';
 
 // Conversion ligne DB <-> RetraiteData : la base type `regimes_points` en Json

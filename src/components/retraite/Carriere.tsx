@@ -149,7 +149,7 @@ interface CarriereProps {
   // même composant, deuxième instance, données routées vers la ligne
   // 'conjoint' de retraite_data/retraite_carriere_detail (même user_id, pas
   // de compte séparé — cf. migration
-  // 20260815000000_add_personne_to_retraite_tables.sql).
+  // 20260814235607_add_personne_to_retraite_tables.sql).
   personne?: Personne;
 }
 

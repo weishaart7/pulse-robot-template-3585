@@ -195,7 +195,7 @@ identité SIRENE, régime fiscal, 6 champs comptables « snapshot »), et 8 tabl
   réduit IS PME » cochée explicitement sur la fiche société (capital libéré et détention ≥ 75 % par des
   personnes physiques — non modélisables automatiquement, aucun champ en base pour ces 2 conditions ;
   nouveau champ `societes.eligible_taux_reduit_pme boolean not null default false`, migration
-  `20260827000000_add_eligible_taux_reduit_pme_societes.sql`). La case seule ne suffit pas : cochée avec
+  `20260827203455_add_eligible_taux_reduit_pme_societes.sql`). La case seule ne suffit pas : cochée avec
   un CA ≥ 10 M€, le taux normal s'applique quand même (garde-fou). Les simulateurs génériques de
   `SocietesStrategiesFiscales.tsx` (IS vs IR, holding), qui ne portent pas sur une société réelle et n'ont
   donc ni CA ni case à vérifier, conservent l'ancien comportement (taux réduit supposé) via l'appel sans
