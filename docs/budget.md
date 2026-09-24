@@ -35,7 +35,7 @@ pour les charges :
 
 | Onglet | Composant | Rôle |
 |---|---|---|
-| Résumé (par défaut) | [BudgetResume.tsx](src/components/budget/BudgetResume.tsx) | KPI (solde, taux d'endettement, capacité d'endettement), répartition par catégories (2 donuts), graphique de saisonnalité sur 12 mois |
+| Résumé (par défaut) | [BudgetResume.tsx](src/components/budget/BudgetResume.tsx) | KPI (solde, taux d'effort HCSF, capacité d'endettement), répartition par catégories (2 donuts), graphique de saisonnalité sur 12 mois |
 | Revenus | [BudgetRevenus.tsx](src/components/budget/BudgetRevenus.tsx) → [RevenusForm.tsx](src/components/budget/RevenusForm.tsx), [BudgetList.tsx](src/components/budget/BudgetList.tsx) | CRUD des revenus saisis dans Budget + liste fusionnée avec les revenus d'actifs |
 | Charges | [BudgetCharges.tsx](src/components/budget/BudgetCharges.tsx) → [ChargesForm.tsx](src/components/budget/ChargesForm.tsx), `BudgetList.tsx` | Idem côté charges |
 
@@ -104,6 +104,21 @@ Mensuel/Annuel en pilule encre, donuts sur `SERIES`. Purement visuel : aucune lo
   trois valeurs féminines reconnues à la graphie masculine **dès la lecture**, pour que le reste du code
   n'ait qu'une seule convention à gérer. C'est la correction directe du point de friction n°3 remonté par
   `docs/immobilier.md` (bug de périodicité `ImmobilierOverview.tsx`) — **verdict détaillé en §3**.
+
+- **Taux d'effort HCSF (`src/lib/budget/endettement.ts`)**, affiché dans le Résumé (« Taux d'effort
+  (HCSF) » et « Capacité d'endettement ») — décision HCSF D-HCSF-2021-7 : charges d'emprunt, assurance
+  comprise, sur revenus nets avant impôt, plafond 35 %. Le HCSF ne fixe pas la pondération des revenus ;
+  celle retenue suit la pratique bancaire :
+  - numérateur : charges actives non ponctuelles de la catégorie « Emprunts & Crédits » (dont les emprunts
+    reportés depuis Patrimoine, à la part du foyer, et le leasing/LOA/LLD). Aucun champ d'assurance
+    emprunteur n'existe : la mensualité saisie est supposée l'inclure ;
+  - dénominateur : revenus actifs pondérés — travail, retraites/pensions/rentes à 100 % ; revenus fonciers
+    et locatifs (location nue, LMNP, SCPI/OPCI, SCI) et revenus importés d'un actif immobilier à 70 % ;
+    placements financiers, aides sociales, indemnités, « Autres revenus » et toute ligne ponctuelle exclus ;
+  - capacité = 35 % × revenus pondérés − mensualités, en mensuel ou annuel selon le sélecteur.
+  Le Solde reste calculé sur 100 % des revenus. Limite connue : « Salaire net » ne précise pas avant/après
+  prélèvement à la source ; saisi après impôt, il surestime légèrement le taux. Tests dans
+  `endettement.test.ts`.
 
 - **Report des emprunts (`src/lib/budget/emprunts.ts`)**, appliqué par `getEmpruntsChargesForBudget` :
   - prêt de société (`societe_id`) exclu, comme dans `PatrimoineChart.tsx` ;
@@ -242,9 +257,6 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les trois points identifi
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
-- **Taux d'endettement non conforme à la norme HCSF** malgré le libellé « Maximum à 35 % » : 100 % des
-  revenus retenus, loyers compris (les banques en retiennent en général 70 %). Règle métier à valider
-  avant correction.
 - **Double comptage résiduel possible entre un emprunt réel (`reporter_budget = true`) et une charge
   Budget ressaisie manuellement pour le même crédit.** Depuis le fix du point ci-dessus (🔴, résolu), un
   crédit avec `reporter_budget = true` apparaît automatiquement dans Budget — plus besoin de le ressaisir

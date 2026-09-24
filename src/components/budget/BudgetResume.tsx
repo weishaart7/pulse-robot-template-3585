@@ -9,6 +9,7 @@ import { SlidingNumber } from '@/components/ui/sliding-number';
 import { TrendingUp, TrendingDown, Wallet, Percent, Landmark, PieChart as PieIcon, BarChart3 } from 'lucide-react';
 import { DisplayMode } from '@/pages/budget/BudgetSection';
 import { toAnnual, isActiveOn, isPonctuel, parseLocalDate } from '@/lib/budget/periodicite';
+import { computeEndettement } from '@/lib/budget/endettement';
 
 interface BudgetResumeProps {
   displayMode: DisplayMode;
@@ -113,18 +114,17 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
     );
   }
 
-  // Calculer les mensualités de crédits (charges dont la nature appartient à la catégorie fermée "Emprunts & Crédits")
-  const creditsNatures = CHARGES_CATEGORIES['Emprunts & Crédits'] as readonly string[];
-  const mensualitesCreditsAnnuel = activeCharges
-    .filter(c => c.nature && creditsNatures.includes(c.nature))
-    .reduce((sum, c) => sum + toAnnual(c.montant || 0, c.periodicite), 0);
-  const displayMensualitesCredits = Math.round(mensualitesCreditsAnnuel / divisor);
+  // Taux d'effort et capacité d'endettement au sens HCSF, sur revenus pondérés (src/lib/budget/endettement.ts).
+  // Le Solde, lui, reste calculé sur 100 % des revenus.
+  const endettement = computeEndettement(revenus, charges);
+  const displayMensualitesCredits = Math.round(endettement.mensualitesCreditsAnnuel / divisor);
+  const displayRevenusPonderes = Math.round(endettement.revenusPonderesAnnuel / divisor);
 
   // Calculer les indicateurs
   const soldePeriode = displayRevenus - displayCharges;
-  const tauxEndettement = displayRevenus > 0 ? displayMensualitesCredits / displayRevenus * 100 : 0;
-  const capaciteEndettement = Math.round(displayRevenus * 0.35 - displayMensualitesCredits);
-  
+  const tauxEndettement = endettement.tauxEffort;
+  const capaciteEndettement = Math.round(endettement.capaciteAnnuel / divisor);
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -241,8 +241,8 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
         </StatCard>
 
         <StatCard
-          label="Taux d'endettement"
-          subtitle={`${displayMensualitesCredits.toLocaleString('fr-FR')} € / ${displayRevenus.toLocaleString('fr-FR')} €`}
+          label="Taux d'effort (HCSF)"
+          subtitle={`${displayMensualitesCredits.toLocaleString('fr-FR')} € / ${displayRevenusPonderes.toLocaleString('fr-FR')} € pondérés · loyers à 70 %, revenus non pérennes exclus`}
           icon={Percent}
           badgeBg={`${PINK}1a`}
           iconColor={PINK}
@@ -255,7 +255,7 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
 
         <StatCard
           label="Capacité d'endettement"
-          subtitle="Maximum à 35% des revenus"
+          subtitle="35 % des revenus pondérés, moins les crédits en cours"
           icon={Landmark}
           badgeBg={`${TEAL}1a`}
           iconColor={TEAL}
