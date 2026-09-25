@@ -3,12 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useFamilyLinks, useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
-import { FicheClientForm } from './components/FicheClientForm';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
-import { getInitials } from '@/lib/family/initials';
 import { ageEnAnnees } from '@/lib/family/age';
 import { childrenLinkedToSpouse, leavesCouple } from '@/lib/family/statutTransition';
 import { FamilyLink } from '@/services/familyService';
+import { useFamilleSubNav } from './useFamilleSubNav';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,11 +18,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ArrowLeft, ChevronRight, Scale } from 'lucide-react';
+import { ChevronRight, Scale } from 'lucide-react';
 import profilHomme from '@/assets/Profil homme.png';
 import profilFemme from '@/assets/Profil femme.png';
-
-type EditView = 'client';
 
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
@@ -56,10 +53,10 @@ function PersonChip({ image, name, secondary, role, onClick }: {
 
 const FamilleSection = () => {
   const navigate = useNavigate();
-  const [editView, setEditView] = useState<EditView | null>(null);
-  const { data: familyProfile, refetch: refetchProfile } = useFamilyProfile();
+  const { data: familyProfile } = useFamilyProfile();
   const { data: maritalData, setStatutCouple } = useMaritalStatus();
   const { data: familyLinks } = useFamilyLinks();
+  useFamilleSubNav('foyer');
 
   const relationStatus = (maritalData?.statut_couple as string) || '';
   const hasPartner = ['Concubinage', 'Pacsé(e)', 'Marié(e)'].includes(relationStatus);
@@ -117,49 +114,6 @@ const FamilleSection = () => {
     return `${format(new Date(dateStr), 'dd/MM/yyyy')} · ${age} ans`;
   };
 
-  // Full-screen edit view (fiche client uniquement — partenaire/relation vivent désormais sur leur propre page)
-  if (editView === 'client') {
-    return (
-      <div>
-        <div className="w-full mx-auto px-4 sm:px-6 pt-8">
-          <button
-            onClick={() => setEditView(null)}
-            className="group inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" strokeWidth={1.5} />
-            Retour
-          </button>
-        </div>
-
-        <div className="w-full mx-auto px-4 sm:px-6 pt-6 pb-8">
-          <div className="flex items-center gap-4">
-            <div
-              className="bg-foreground h-14 w-14 rounded-full flex items-center justify-center shrink-0 text-background text-lg font-semibold"
-              
-            >
-              {getInitials(familyProfile?.prenom, familyProfile?.nom)}
-            </div>
-            <div>
-              <h1 className="ds-display text-3xl sm:text-4xl">
-                {clientName}
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Fiche personnelle · {secondaryLine(familyProfile?.date_naissance)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="w-full mx-auto px-4 sm:px-6 pb-12">
-          <FicheClientForm onSuccess={() => {
-            setEditView(null);
-            refetchProfile();
-          }} />
-        </div>
-      </div>
-    );
-  }
-
   const { regimeStatusLine, regimeDetailLabel } = (() => {
     if (!hasPartner) return { regimeStatusLine: '', regimeDetailLabel: '' };
     let statusLine = relationStatus;
@@ -195,7 +149,7 @@ const FamilleSection = () => {
             name={clientName}
             secondary={secondaryLine(familyProfile?.date_naissance)}
             role={familyProfile?.profession || 'Vous'}
-            onClick={() => setEditView('client')}
+            onClick={() => navigate('/dashboard/famille/client')}
           />
           {hasPartner && (
             <PersonChip
@@ -239,7 +193,7 @@ const FamilleSection = () => {
         </div>
       </div>
 
-      <LiensFamiliauxForm onSelectMain={() => setEditView('client')} />
+      <LiensFamiliauxForm view="arbre" />
 
       <AlertDialog open={!!pendingStatut} onOpenChange={(open) => { if (!open) setPendingStatut(null); }}>
         <AlertDialogContent>

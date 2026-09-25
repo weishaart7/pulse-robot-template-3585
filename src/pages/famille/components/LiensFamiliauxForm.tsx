@@ -44,10 +44,12 @@ function FamilyTag({ children, accent = false }: { children: React.ReactNode; ac
 }
 
 interface LiensFamiliauxFormProps {
-  onSelectMain?: () => void;
+  // « arbre » : arbre familial du Foyer ; « membres » : tableau de la sous-section Membres.
+  // Le dialogue d'ajout/modification est commun aux deux vues.
+  view: 'arbre' | 'membres';
 }
 
-export function LiensFamiliauxForm({ onSelectMain }: LiensFamiliauxFormProps) {
+export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
   const navigate = useNavigate();
   const {
     data: familyLinks,
@@ -90,21 +92,29 @@ export function LiensFamiliauxForm({ onSelectMain }: LiensFamiliauxFormProps) {
       </div>;
   }
   return <div className="space-y-6">
-      <div className="rounded-3xl border border-border bg-card p-4 md:p-6">
-        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">
-          Arbre familial
-        </p>
+      {view === 'arbre' && <div className="rounded-3xl border border-border bg-card p-4 md:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
+          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            Arbre familial
+          </p>
+          <button
+            onClick={() => navigate('/dashboard/famille/membres')}
+            className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+          >
+            {familyLinks.length === 0 ? 'Ajouter des membres' : 'Gérer les membres'}
+          </button>
+        </div>
         <FamilyTreeCards
           familyProfile={familyProfile}
           maritalStatus={maritalStatus}
           familyLinks={familyLinks}
-          onSelectMain={() => onSelectMain?.()}
+          onSelectMain={() => navigate('/dashboard/famille/client')}
           onSelectSpouse={() => navigate('/dashboard/famille/conjoint')}
           onSelectMember={(member) => dialogRef.current?.openForEdit(member)}
         />
-      </div>
+      </div>}
 
-      <Card className="rounded-3xl">
+      {view === 'membres' && <Card className="rounded-3xl">
           <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4 space-y-0">
             <CardTitle className="flex items-center gap-2 text-lg whitespace-nowrap">
               <span>Membres de la famille</span>
@@ -199,7 +209,7 @@ export function LiensFamiliauxForm({ onSelectMain }: LiensFamiliauxFormProps) {
               </TableBody>
             </Table>
           </CardContent>}
-        </Card>
+        </Card>}
 
       <FamilyMemberFormDialog
         ref={dialogRef}

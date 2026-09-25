@@ -1,24 +1,24 @@
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ArrowLeft } from 'lucide-react';
-import { PartnerForm } from '@/components/famille/PartnerForm';
-import { useMaritalStatus } from '@/hooks/useFamilyData';
+import { FicheClientForm } from './components/FicheClientForm';
+import { useFamilyProfile } from '@/hooks/useFamilyData';
 import { getInitials } from '@/lib/family/initials';
 import { ageEnAnnees } from '@/lib/family/age';
 import { useFamilleSubNav } from './useFamilleSubNav';
 
-export default function ConjointPage() {
+export default function ClientPage() {
   const navigate = useNavigate();
-  const { data: maritalData } = useMaritalStatus();
+  const { data: familyProfile, refetch: refetchProfile } = useFamilyProfile();
   useFamilleSubNav('foyer');
 
-  const partnerName = maritalData?.prenom_conjoint && maritalData?.nom_conjoint
-    ? `${maritalData.prenom_conjoint} ${maritalData.nom_conjoint}`
-    : 'Conjoint';
+  const clientName = familyProfile?.prenom && familyProfile?.nom
+    ? `${familyProfile.prenom} ${familyProfile.nom}`
+    : 'Utilisateur';
 
   const secondaryLine = (() => {
-    const dateStr = maritalData?.date_naissance_conjoint;
-    if (!dateStr) return null;
+    const dateStr = familyProfile?.date_naissance;
+    if (!dateStr) return '—';
     const age = ageEnAnnees(dateStr);
     return `${format(new Date(dateStr), 'dd/MM/yyyy')} · ${age} ans`;
   })();
@@ -37,25 +37,25 @@ export default function ConjointPage() {
 
       <div className="w-full mx-auto px-4 sm:px-6 pt-6 pb-8">
         <div className="flex items-center gap-4">
-          <div
-            className="bg-foreground h-14 w-14 rounded-full flex items-center justify-center shrink-0 text-background text-lg font-semibold"
-            
-          >
-            {getInitials(maritalData?.prenom_conjoint, maritalData?.nom_conjoint)}
+          <div className="bg-foreground h-14 w-14 rounded-full flex items-center justify-center shrink-0 text-background text-lg font-semibold">
+            {getInitials(familyProfile?.prenom, familyProfile?.nom)}
           </div>
           <div>
-            <h1 className="ds-display text-3xl sm:text-4xl leading-tight">
-              {partnerName}
+            <h1 className="ds-display text-3xl sm:text-4xl">
+              {clientName}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Identité du partenaire{secondaryLine ? ` · ${secondaryLine}` : ''}
+              Fiche personnelle · {secondaryLine}
             </p>
           </div>
         </div>
       </div>
 
       <div className="w-full mx-auto px-4 sm:px-6 pb-12">
-        <PartnerForm />
+        <FicheClientForm onSuccess={() => {
+          refetchProfile();
+          navigate('/dashboard/famille');
+        }} />
       </div>
     </div>
   );

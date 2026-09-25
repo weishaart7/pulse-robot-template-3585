@@ -12,15 +12,17 @@ régime matrimonial et arbre familial. Il alimente directement les moteurs de re
 fiscalité (IFI, IR) et transmission (DMTG, succession légale) : c'est le socle de donnée sur
 lequel reposent tous les calculs montrés au client.
 
-**Écrans principaux** (route → composant) :
+**Navigation** : le panneau latéral du module affiche trois sous-sections, déclarées dans
+[useFamilleSubNav.ts](../src/pages/famille/useFamilleSubNav.ts) (mécanisme commun
+`useModuleSubNav`, mais chaque entrée est ici une route et non un onglet local).
 
-| Sous-section | Route | Composant |
+| Sous-section (panneau) | Route | Composant |
 |---|---|---|
-| Ma famille (onglet par défaut) | `/dashboard/famille` | [FamilleSection.tsx](../src/pages/famille/FamilleSection.tsx) |
-| Fiche client | vue plein écran locale (pas de route) | [FicheClientForm.tsx](../src/pages/famille/components/FicheClientForm.tsx) |
-| Conjoint | `/dashboard/famille/conjoint` | [ConjointPage.tsx](../src/pages/famille/ConjointPage.tsx) → [PartnerForm.tsx](../src/components/famille/PartnerForm.tsx) |
+| Foyer | `/dashboard/famille` | [FamilleSection.tsx](../src/pages/famille/FamilleSection.tsx) (bandeau Foyer + arbre, via [LiensFamiliauxForm.tsx](../src/pages/famille/components/LiensFamiliauxForm.tsx) `view="arbre"`) |
+| ↳ Fiche client (Foyer actif) | `/dashboard/famille/client` | [ClientPage.tsx](../src/pages/famille/ClientPage.tsx) → [FicheClientForm.tsx](../src/pages/famille/components/FicheClientForm.tsx) |
+| ↳ Conjoint (Foyer actif) | `/dashboard/famille/conjoint` | [ConjointPage.tsx](../src/pages/famille/ConjointPage.tsx) → [PartnerForm.tsx](../src/components/famille/PartnerForm.tsx) |
 | Régime matrimonial (5 onglets) | `/dashboard/famille/situation-matrimoniale` | [SituationMatrimonialePage.tsx](../src/pages/famille/SituationMatrimonialePage.tsx) → [RelationInfoForm.tsx](../src/components/famille/RelationInfoForm.tsx) |
-| Liens familiaux (onglet) | `/dashboard/famille` | [LiensFamiliauxForm.tsx](../src/pages/famille/components/LiensFamiliauxForm.tsx) + [FamilyMemberFormDialog.tsx](../src/components/family/FamilyMemberFormDialog.tsx) + [DynamicFamilyForm.tsx](../src/components/family/DynamicFamilyForm.tsx) |
+| Membres de la famille | `/dashboard/famille/membres` | [MembresPage.tsx](../src/pages/famille/MembresPage.tsx) → [LiensFamiliauxForm.tsx](../src/pages/famille/components/LiensFamiliauxForm.tsx) `view="membres"` + [FamilyMemberFormDialog.tsx](../src/components/family/FamilyMemberFormDialog.tsx) + [DynamicFamilyForm.tsx](../src/components/family/DynamicFamilyForm.tsx) |
 
 **Tables Supabase** : `family_profiles`, `marital_status`, `family_links` (+ `recompenses`,
 `creances_entre_epoux`, `patrimoine_originaire`, `patrimoine_final` saisies depuis l'onglet Régime
@@ -29,17 +31,18 @@ lecture (alerte de conseil n°16, voir §3) mais orpheline côté écriture : au
 permet de l'alimenter (voir §3).
 
 **Flux clés** :
-- **Ma famille** est un tableau de bord en lecture seule (dérivé de `family_profiles` /
+- **Foyer** est un tableau de bord en lecture seule (dérivé de `family_profiles` /
   `marital_status` / `family_links`) doté d'un menu déroulant Statut (6 valeurs) toujours
-  modifiable, y compris en couple. La page est organisée en trois blocs : un bandeau « Foyer »
-  compact (client, conjoint, statut, régime et « Voir le détail » sur une rangée), l'arbre
-  familial, puis le tableau « Membres de la famille » (seul point d'entrée « Ajouter un membre »,
-  dans son en-tête, et état vide explicatif sans membre). Les personnes décédées sont estompées
+  modifiable, y compris en couple. La page Foyer compte deux blocs : un bandeau « Foyer »
+  compact (client, conjoint, statut, régime et « Voir le détail » sur une rangée ; les cartes client
+  et conjoint ouvrent leur fiche) et l'arbre familial, avec un lien « Ajouter / Gérer les membres »
+  vers la sous-section Membres. Le tableau des membres (seul point d'entrée « Ajouter un membre »,
+  état vide explicatif sans membre) vit dans la sous-section Membres de la famille. Les personnes décédées sont estompées
   (carte détourée d'un filet, « † année ») dans l'arbre et grisées dans le tableau. Quitter un statut en
   couple (vers Célibataire, Divorcé(e), Veuf/Veuve) passe par une confirmation qui liste les enfants
   rattachés au partenaire (`spouse` / `both_parents`) ; rien n'est effacé ni réaffecté
   (`lib/family/statutTransition.ts`, politique « Option A ») ; pour Divorcé(e)/Veuf-Veuve il affiche le statut réel et un lien vers le
-  détail du régime passé. Il route vers les 3 autres écrans.
+  détail du régime passé. Il route vers les fiches client et conjoint, le régime et les membres.
 - **Fiche client** et **Conjoint** saisissent l'identité civile de chaque membre du couple, dont
   une bonne partie de champs déclaratifs (adresse, nationalité…) qui restent aujourd'hui dormants
   (§3).
@@ -53,7 +56,7 @@ permet de l'alimenter (voir §3).
   matrimonial, date/lieu, donation au dernier vivant) directement depuis les colonnes conservées en
   base — aucune édition possible, cohérent avec la politique « Option A » de
   `relationInfoPayload.ts` (rien n'est écrit ni effacé pour ces deux statuts).
-- **Liens familiaux** saisit les membres de la famille (`family_links`), qui est le socle de tout
+- **Membres de la famille** saisit les membres de la famille (`family_links`), qui est le socle de tout
   calcul successoral (dévolution légale, représentation, abattements DMTG) et alimente aussi les
   majorations retraite pour enfants. Un clic sur une carte de l'arbre ouvre le même
   `FamilyMemberFormDialog` en modification.
