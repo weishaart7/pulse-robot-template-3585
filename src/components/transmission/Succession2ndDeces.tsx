@@ -41,7 +41,7 @@ import { assetDemembrementService } from '@/services/assetDemembrementService';
 import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcquets';
 import { Recompense } from '@/types/recompense';
 import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
-import { getAssetCategory } from '@/constants/assetTypes';
+import { hasDonneesContratAV } from '@/constants/assetTypes';
 import transmissionParamsData from '@/data/transmission-params.json';
 import './kairos-transmission.css';
 
@@ -138,7 +138,7 @@ export const Succession2ndDeces = () => {
       const assetDemembrements = await assetDemembrementService.getAllForUser();
       const demembrementCtx: DemembrementFractionContext = { familyProfile, maritalStatus, familyLinks };
 
-      const avAssets = (assets || []).filter(a => getAssetCategory(a.nature || '') === 'épargne et assurance-vie');
+      const avAssets = (assets || []).filter(a => hasDonneesContratAV(a));
       const totalAV = avAssets.reduce((sum, a) => sum + (Number(a.valeur_estimee) || 0), 0);
       const avAssetIds = avAssets.map(a => a.id);
       const [avDetailsRes, avOperationsRes] = avAssetIds.length > 0
@@ -181,7 +181,8 @@ export const Succession2ndDeces = () => {
         origineFonds: avOrigineFondsByAsset.get(a.id) || null,
         operations: avOperationsByAsset.get(a.id) || [],
         clauseBeneficiaireStructuree: avClauseByAsset.get(a.id) || null,
-        nature: a.nature
+        nature: a.nature,
+        sousTypePer: a.sous_type_per
       }));
 
       const { data: liberalites } = await supabase

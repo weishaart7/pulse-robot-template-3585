@@ -33,7 +33,7 @@ import {
   regimeIsParticipationAcquets,
   PatrimoineLigneCalcInput,
 } from '../patrimoine/participationAcquets';
-import { getAssetCategory, isAssuranceVieHorsSuccession } from '../../constants/assetTypes';
+import { getAssetCategory, isContratHorsSuccession } from '../../constants/assetTypes';
 import {
   computeDMTG,
   DEFAULT_DMTG_PARAMS,
@@ -816,9 +816,9 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // de capitalisation" qui intègrent l'actif successoral classique) sont exclus de l'assiette
   // DMTG, taxés séparément via avContracts (990 I / 757 B, cf. dmtg/assurance-vie.ts) — sans
   // cette exclusion, un même contrat serait taxé deux fois dès qu'avContracts est réellement
-  // alimenté (cf. isAssuranceVieHorsSuccession, constants/assetTypes.ts).
+  // alimenté (cf. isContratHorsSuccession, constants/assetTypes.ts — inclut le PER assurantiel).
   const dmtgAssets: DmtgAsset[] = (rawAssets || [])
-    .filter(asset => !isAssuranceVieHorsSuccession(asset.nature))
+    .filter(asset => !isContratHorsSuccession(asset))
     .map(asset => ({
       id: asset.id,
       label: asset.denomination || '',
@@ -1039,6 +1039,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
 
   return {
     masseCalcul: reserveResult.masseCalcul,
+    reintegrationsCiviles: deltaCivilTotal,
     reserve: reserveResult.reserveGlobale,
     quotiteDisponible: reserveResult.quotiteDisponible,
     transmissionNette,

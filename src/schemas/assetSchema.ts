@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { isPERNonQualifie } from '@/constants/assetTypes';
 
 // Constants
 // Origines proposées à l'utilisateur. `value` est ce qui est stocké dans
@@ -133,6 +134,17 @@ export const assetSchema = z.object({
   sous_jacent: z.string().optional(),
   lieu_stockage: z.string().optional(),
   quantite: z.string().optional(),
+}).superRefine((values, ctx) => {
+  // PER : le sous-type détermine si le contrat sort de la succession (assurantiel)
+  // ou y reste (bancaire) — obligatoire, sauf PER obligatoire (toujours assurantiel,
+  // cf. constants/assetTypes.ts::isPERAssurantiel).
+  if (isPERNonQualifie(values)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['sous_type_per'],
+      message: 'Précisez si ce PER est assurantiel ou bancaire',
+    });
+  }
 });
 
 export type AssetFormValues = z.infer<typeof assetSchema>;

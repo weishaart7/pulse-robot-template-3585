@@ -169,6 +169,9 @@ export interface RawAssetInput {
   // getValeurEstimeePonderee), même ordre que buildPatrimonySnapshot côté civil.
   valeur_acquisition?: number | null;
   nature?: string | null;
+  // 'Assurantiel' | 'Bancaire' pour les natures PER : un PER assurantiel sort de
+  // l'actif successoral (cf. constants/assetTypes.ts::isContratHorsSuccession).
+  sous_type_per?: string | null;
   // Régime matrimonial / indivision (cf. lib/patrimoine/succession.ts::getPartSuccessorale) :
   // détermine la part de ce bien qui entre réellement dans la succession.
   qualification_bien?: string | null;
@@ -198,6 +201,11 @@ export interface HeirShare {
 
 export interface TransmissionResult {
   masseCalcul: number;
+  // Ajustements civils ajoutés aux biens existants avant la masse de calcul
+  // (récompenses/créances entre époux, créance de participation, AV non
+  // dénouée du conjoint — doctrine Ciot) : exposé pour que l'affichage de la
+  // formule de masse (ProcessusCalcul.tsx) retombe sur masseCalcul.
+  reintegrationsCiviles: number;
   reserve: number;
   quotiteDisponible: number;
   transmissionNette: number;

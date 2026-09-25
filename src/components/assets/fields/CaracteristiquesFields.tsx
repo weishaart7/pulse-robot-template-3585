@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Globe } from 'lucide-react';
 import { UseFormReturn } from 'react-hook-form';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -11,6 +11,7 @@ import { AssetFormValues, SITUATION_PARTICULIERE_OPTIONS } from '@/schemas/asset
 import {
   getAssetCategory,
   NATURES_PER,
+  NATURE_PER_TOUJOURS_ASSURANTIEL,
   CTO_SOUS_JACENT_OPTIONS,
   PARTS_FONCIERES_NATURES,
   REGIME_FISCAL_PARTS_OPTIONS,
@@ -45,6 +46,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
   const showEtablissement = NATURES_WITH_ETABLISSEMENT.includes(watchedNature);
   const showBienEtranger = watchedNature && !NATURES_LIQUIDITES_FR.includes(watchedNature);
   const isPER = NATURES_PER.includes(watchedNature);
+  const isPERObligatoire = watchedNature === NATURE_PER_TOUJOURS_ASSURANTIEL;
   const isCTO = watchedNature === 'Compte-titres (CTO)';
   const isPartsFoncieres = (PARTS_FONCIERES_NATURES as readonly string[]).includes(watchedNature);
   const etablissementLabel = watchedNature === 'Parts de SCPI'
@@ -62,12 +64,18 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
   const showCapitalGaranti = retraitePrevoyanceChamps.includes('capital_garanti');
   const showModeSortie = retraitePrevoyanceChamps.includes('mode_sortie');
   const watchedSousTypePer = form.watch('sous_type_per');
-  // Pour les 3 natures PER, le bénéficiaire désigné n'a de sens que pour la variante
-  // assurantielle (support de placement en unités de compte avec clause bénéficiaire) —
-  // masqué si Bancaire ou non renseigné. Pour les 3 natures de prévoyance/décès, aucune
-  // condition supplémentaire : isPER est faux, la condition passe telle quelle.
-  const showBeneficiaireDesigne = retraitePrevoyanceChamps.includes('beneficiaire_designe')
-    && (!isPER || watchedSousTypePer === 'Assurantiel');
+  // PER : le champ texte libre "Bénéficiaire désigné" n'est plus proposé — la clause d'un PER
+  // assurantiel se saisit dans Transmission → Assurance-vie (clause structurée, seule lue par le
+  // calcul de transmission). Pour les 3 natures de prévoyance/décès, le champ reste affiché.
+  const showBeneficiaireDesigne = retraitePrevoyanceChamps.includes('beneficiaire_designe') && !isPER;
+  const showRenvoiClausePER = isPERObligatoire || (isPER && watchedSousTypePer === 'Assurantiel');
+
+  // PER obligatoire : sous-type figé sur Assurantiel, enregistré tel quel.
+  useEffect(() => {
+    if (isPERObligatoire && form.getValues('sous_type_per') !== 'Assurantiel') {
+      form.setValue('sous_type_per', 'Assurantiel');
+    }
+  }, [isPERObligatoire, form]);
   const isEpargneSalariale = (NATURES_EPARGNE_SALARIALE as readonly string[]).includes(watchedNature);
   const liquiditesChamps = LIQUIDITES_NATURES_CHAMPS[watchedNature] || [];
   const showTauxRemuneration = liquiditesChamps.includes('taux_remuneration');
@@ -311,7 +319,11 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
         <FormField control={form.control} name="sous_type_per" render={({ field }) => (
           <FormItem>
             <FormLabel>Sous-type</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value}>
+            <Select
+              onValueChange={field.onChange}
+              value={isPERObligatoire ? 'Assurantiel' : field.value}
+              disabled={isPERObligatoire}
+            >
               <FormControl>
                 <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
                   <SelectValue placeholder="Choisir un sous-type" />
@@ -322,7 +334,17 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                 <SelectItem value="Assurantiel">Assurantiel</SelectItem>
               </SelectContent>
             </Select>
+            <FieldHelp>
+              {isPERObligatoire
+                ? "Un PER obligatoire est toujours souscrit via un contrat d'assurance de groupe : il est assurantiel."
+                : "Assurantiel : contrat d'assurance de groupe géré par un assureur, avec une clause bénéficiaire — capital transmis hors succession. Bancaire : compte-titres ouvert auprès d'une banque ou d'une société de gestion, sans clause bénéficiaire — l'épargne entre dans la succession."}
+            </FieldHelp>
             <FormMessage />
+            {showRenvoiClausePER && (
+              <FieldHelp>
+                La clause bénéficiaire de ce PER se renseigne dans Transmission → Assurance-vie.
+              </FieldHelp>
+            )}
           </FormItem>
         )} />
       )}

@@ -220,6 +220,48 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   `transmissionHelpers.avContracts.test.ts`) couvrant l'abattement 20 % (990I et non-régression sur
   757B) et l'exclusion des bons de capitalisation (`buildAVContracts`, `buildPatrimonySnapshot`) ; 9
   fixtures existantes adaptées pour renseigner `nature` ; suite complète (695 tests) au vert.
+- **PER assurantiel hors succession.** Un PER (natures `NATURES_PER`) n'est traité comme contrat
+  hors succession (art. L132-12 C. assur.) que s'il est assurantiel : `isPERAssurantiel` /
+  `isContratHorsSuccession` (`constants/assetTypes.ts`) combinent nature **et** `sous_type_per`, et
+  remplacent `isAssuranceVieHorsSuccession` (nature seule) partout où l'actif successoral est
+  construit (`buildPatrimonySnapshot`, `buildSurvivingSpousePatrimony`, `buildSpouseRawAssets`,
+  `buildSpouseOwnBasePatrimony`, `dmtgAssets` de `computeTransmission`, `buildAVContracts`). Un PER
+  bancaire reste dans l'actif successoral de droit commun. « PER entreprise obligatoire » est
+  toujours assurantiel (`NATURE_PER_TOUJOURS_ASSURANTIEL`). Un PER sans sous-type bloque le calcul
+  (`assertPERQualifies` → `BienNonQualifieError`, renvoi « Qualifier ce bien dans Patrimoine ») :
+  jamais deviné. Régime fiscal (`splitPrimesPER`) : fixé par l'**âge du titulaire au décès**
+  (`referenceDate`), pas par l'âge à chaque versement — avant 70 ans, tout le capital relève du
+  990 I (renvoyé en `primesAvant70 = capitalDeces`, aucune opération requise) ; à 70 ans ou plus,
+  les primes versées relèvent du 757 B (versements obligatoires, sinon `AVDonneesInsuffisantesError`).
+  La clause bénéficiaire d'un PER assurantiel se saisit comme celle d'une assurance-vie
+  (`av_contract_details` / `av_operations`, onglet Assurance-vie qui liste désormais les PER
+  assurantiels) ; le champ texte libre `assets.beneficiaire_designe` n'est plus proposé pour les PER
+  et n'est lu par aucun calcul. Chargement des données de contrat : `hasDonneesContratAV`
+  (`useAVContracts.ts`, `Synthese.tsx`, `Succession2ndDeces.tsx`, `AssuranceVie.tsx`).
+  **PER du conjoint survivant non dénoué** : jamais réintégré dans la communauté à liquider
+  (décision actée — PER en principe non rachetable, application de la doctrine Ciot discutée),
+  exclu de `computeAVReintegrationCivile` ; `hasPERNonDenoueConjoint` alimente un avertissement dans
+  `Synthese.tsx`. Hors périmètre : PERP, contrats Madelin et article 83 (aussi assurantiels, restent
+  pour l'instant dans l'actif successoral). Tests : `utils/transmissionHelpers.per.test.ts`.
+- **Assurance-vie non dénouée du conjoint survivant (doctrine Ciot, §9.6.1).** Sous régime de
+  communauté, un contrat détenu par le conjoint survivant et financé en deniers communs est un bien
+  commun : `computeAVReintegrationCivile` réintègre **la moitié** de sa valeur de rachat (part du
+  défunt) dans la masse civile, jamais dans l'assiette fiscale — même pondération 50 % que tout autre
+  bien commun. Deniers propres : aucune réintégration. L'origine des fonds
+  (`av_contract_details.origine_fonds`) n'a plus de valeur par défaut : `NULL` = non renseignée,
+  choix obligatoire à l'enregistrement du contrat (`AVContractDetail.tsx`). Une origine absente sur
+  un contrat du conjoint survivant, sous communauté, bloque le calcul (`AVDonneesInsuffisantesError`,
+  renvoi vers l'onglet Assurance-vie) — jamais présumée. Les lignes antérieures à ce changement ont
+  gardé la valeur `deniers_communs` appliquée par l'ancien défaut, qu'elle ait été choisie ou non.
+- **Processus de calcul aligné sur la Synthèse.** `ProcessusCalcul.tsx` lit `option_conjoint`
+  (comme `Synthese.tsx`/`Succession2ndDeces.tsx`) au lieu d'une option `quart_pp` figée ; le libellé
+  « Conjoint survivant » est dérivé des droits réellement attribués par le moteur. La formule de la
+  masse de calcul reprend la composition de `reserve.ts::computeMasseCalcul` : biens existants
+  + `TransmissionResult.reintegrationsCiviles` (récompenses/créances, participation, AV non dénouée
+  du conjoint) − passif + donations ; les legs, déjà compris dans les biens, n'y sont pas ajoutés.
+- **Abattements restants (Synthèse)** : le libellé d'abattement légal compare le lien sans tenir
+  compte de la casse (`family_links.lien_familial` est capitalisé : `Enfant`, `Parent`,
+  `Frère/Sœur`…) ; affichage seul, le résiduel vient toujours de `dmtg.perBeneficiary`.
 - **Âge du souscripteur résolu par contrat, plus par utilisateur principal pour tous les contrats
   indistinctement (09/09/2026).** `buildAVContracts` (`transmissionHelpers.ts`) calculait jusqu'ici la
   répartition avant/après 70 ans (art. 990 I/757 B) sur la seule date de naissance de l'utilisateur

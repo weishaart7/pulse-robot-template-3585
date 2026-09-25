@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { AVContractDetail } from './av/AVContractDetail';
 import { ClauseStructuree, BeneficiaireEntry } from './av/ClauseBeneficiaireBuilder';
-import { NATURES_AV_HORS_SUCCESSION } from '@/constants/assetTypes';
+import { NATURES_AV_HORS_SUCCESSION, NATURES_PER, isContratHorsSuccession } from '@/constants/assetTypes';
 import {
   buildFamilyGraph,
   buildPatrimonySnapshot,
@@ -39,7 +39,9 @@ import transmissionParamsData from '@/data/transmission-params.json';
 // successoral classique (droits de succession de droit commun selon le lien de parenté), pas le
 // régime 990I/757B ni une clause bénéficiaire hors succession. Il apparaît comme n'importe quel
 // autre actif financier dans Synthèse/ProcessusCalcul, pas ici (cf. NATURES_AV_HORS_SUCCESSION).
-const AV_NATURES = NATURES_AV_HORS_SUCCESSION;
+// Les PER sont chargés avec, puis filtrés côté client : seul un PER assurantiel a une clause
+// bénéficiaire hors succession (cf. isContratHorsSuccession), un PER bancaire reste ici exclu.
+const AV_NATURES = [...NATURES_AV_HORS_SUCCESSION, ...NATURES_PER];
 
 interface OperationsByContract {
   [assetId: string]: { type_operation: string; montant: number }[];
@@ -137,7 +139,7 @@ export const AssuranceVie = () => {
             .eq('user_id', user.id),
         ]);
 
-        const avContracts = contractsRes.data || [];
+        const avContracts = (contractsRes.data || []).filter(isContratHorsSuccession);
         setContracts(avContracts);
 
         setSubscriberAge(computeAge(profileRes.data?.date_naissance));
@@ -221,7 +223,8 @@ export const AssuranceVie = () => {
               detenteur: a.detenteur,
               operations: opsByAsset.get(a.id!) || [],
               clauseBeneficiaireStructuree: clauseByAsset.get(a.id!) || null,
-              nature: a.nature
+              nature: a.nature,
+              sousTypePer: a.sous_type_per
             }));
 
             const family: FamilyGraph = buildFamilyGraph(profileRes.data, maritalRes.data, familyLinksRows);
@@ -468,9 +471,9 @@ export const AssuranceVie = () => {
                 <Shield className="h-6 w-6 text-[var(--ink-400)]" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-[var(--text-primary)]">Aucun contrat d'assurance-vie</h3>
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">Aucun contrat d'assurance-vie ni PER assurantiel</h3>
                 <p className="text-sm text-[var(--text-secondary)] mt-1">
-                  Ajoutez vos contrats d'assurance-vie dans la section Patrimoine pour les visualiser ici.
+                  Ajoutez vos contrats d'assurance-vie et PER assurantiels dans la section Patrimoine pour les visualiser ici.
                 </p>
               </div>
               <Button
@@ -704,7 +707,7 @@ export const AssuranceVie = () => {
       {/* Liste des contrats - cliquable */}
       <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
         <CardHeader className="p-5">
-          <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Contrats d'assurance-vie</CardTitle>
+          <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Contrats d'assurance-vie et PER assurantiels</CardTitle>
         </CardHeader>
         <CardContent className="p-5 pt-0 space-y-1">
           {contracts.map((contract, index) => (

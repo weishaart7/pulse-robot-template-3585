@@ -78,6 +78,8 @@ export interface AVBeneficiaireNiveau {
 
 export interface AVContract {
   id: string;
+  // assets.denomination — messages d'erreur lisibles uniquement.
+  label?: string;
   // niveaux[0] = bénéficiaires principaux, niveaux[1+] = "à défaut" —
   // remplace l'ancienne liste plate, insuffisante pour représenter une
   // clause à plusieurs rangs (cf. diagnostic renonciation clause AV).

@@ -297,10 +297,10 @@ describe('computeAVReintegrationCivile (doctrine Ciot, §9.6.1)', () => {
     origineFonds: 'deniers_communs'
   };
 
-  it('régime de communauté + deniers communs + contrat détenu par le conjoint : réintègre la valeur de rachat', () => {
+  it('régime de communauté + deniers communs + contrat détenu par le conjoint : réintègre la moitié de la valeur de rachat (part du défunt)', () => {
     expect(
       computeAVReintegrationCivile([contratConjointDeniersCommuns], 'spouse', 'Communauté réduite aux acquêts')
-    ).toBe(50000);
+    ).toBe(25000);
   });
 
   it('régime de communauté + deniers propres : pas de réintégration civile', () => {
@@ -320,6 +320,15 @@ describe('computeAVReintegrationCivile (doctrine Ciot, §9.6.1)', () => {
     expect(computeAVReintegrationCivile([contratUtilisateur], 'spouse', 'Communauté universelle')).toBe(0);
   });
 
+  it('origine des fonds non renseignée sur un contrat du conjoint, sous communauté : calcul bloqué, jamais présumée', () => {
+    const { origineFonds: _omis, ...contratSansOrigine } = contratConjointDeniersCommuns;
+    expect(() => computeAVReintegrationCivile([contratSansOrigine], 'spouse', 'Communauté réduite aux acquêts'))
+      .toThrow(AVDonneesInsuffisantesError);
+    // Sans effet hors communauté, ni sur un contrat dénoué par le décès simulé.
+    expect(computeAVReintegrationCivile([contratSansOrigine], 'spouse', 'Séparation de biens')).toBe(0);
+    expect(computeAVReintegrationCivile([{ ...contratSansOrigine, detenteur: 'user' }], 'spouse', 'Communauté réduite aux acquêts')).toBe(0);
+  });
+
   it('additionne plusieurs contrats éligibles et ignore les non-éligibles dans le même appel', () => {
     expect(
       computeAVReintegrationCivile(
@@ -327,7 +336,7 @@ describe('computeAVReintegrationCivile (doctrine Ciot, §9.6.1)', () => {
         'spouse',
         'Communauté réduite aux acquêts'
       )
-    ).toBe(50000);
+    ).toBe(25000);
   });
 });
 

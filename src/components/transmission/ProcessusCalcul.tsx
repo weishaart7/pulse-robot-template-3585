@@ -27,7 +27,7 @@ import {
   computeAVReintegrationCivile,
   AVDonneesInsuffisantesError
 } from '@/utils/transmissionHelpers';
-import { computeTransmission, TransmissionContext } from '@/lib/transmission';
+import { computeTransmission, TransmissionContext, ConjointOption } from '@/lib/transmission';
 import { FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission/types';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
@@ -131,7 +131,9 @@ export const ProcessusCalcul = () => {
         patrimony,
         liberalites: transmissionLiberalites,
         params,
-        conjointOption: 'quart_pp',
+        // Même source que Synthese.tsx/Succession2ndDeces.tsx : l'option
+        // enregistrée dans l'onglet Optimisation, jamais une valeur figée.
+        conjointOption: ((maritalStatus as any)?.option_conjoint as ConjointOption | null) || undefined,
         rawAssets: assets || [],
         assetDemembrements,
         demembrementCtx,
@@ -229,6 +231,19 @@ export const ProcessusCalcul = () => {
   // enfants au sens civil sans refléter les souches actives.
   const nbEnfants = transmissionResult.nbSouchesEnfants;
   const hasConjoint = familyGraph.hasSurvivingSpouse;
+  // Libellé dérivé des droits réellement attribués par le moteur (l'option
+  // enregistrée peut être écartée, ex. 100 % usufruit impossible en présence
+  // d'un enfant non commun sans DDV) plutôt que de l'option demandée.
+  const TYPE_QUOTE_PART_LABEL: Record<string, string> = {
+    pleine_propriete: 'en pleine propriété',
+    usufruit: 'en usufruit',
+    nue_propriete: 'en nue-propriété'
+  };
+  const totalDonations = transmissionLiberalites.filter(l => l.type === 'donation').reduce((s, l) => s + l.valeur, 0);
+  const optionConjointLabel = transmissionResult.heirs
+    .filter(h => h.lien === 'conjoint')
+    .map(h => `${(h.partCivile / transmissionResult.masseCalcul * 100).toFixed(1)}% ${TYPE_QUOTE_PART_LABEL[h.typeQuotePart as string] ?? ''}`.trim())
+    .join(' + ');
   const calculSteps = [
     {
       icon: Users,
@@ -236,7 +251,7 @@ export const ProcessusCalcul = () => {
       description: "Détermination des héritiers légaux et de leurs parts civiles",
       details: [
         `Nombre d'enfants héritiers : ${nbEnfants}`,
-        `Conjoint survivant : ${hasConjoint ? 'Oui (option 1/4 en pleine propriété)' : 'Non'}`,
+        `Conjoint survivant : ${hasConjoint ? `Oui (${optionConjointLabel})` : 'Non'}`,
         `Héritiers identifiés : ${transmissionResult.heirs.length}`,
         ...transmissionResult.heirs.map(h => 
           `• ${h.nom} (${h.lien}) : ${(h.partCivile / transmissionResult.masseCalcul * 100).toFixed(1)}% civil`
@@ -256,14 +271,20 @@ export const ProcessusCalcul = () => {
       description: "Reconstitution du patrimoine fictif pour le calcul de la réserve",
       details: [
         `Patrimoine net : ${(patrimony.biensExistants - patrimony.passifs).toLocaleString('fr-FR')} €`,
-        `Donations antérieures : ${transmissionLiberalites.filter(l => l.type === 'donation').reduce((s, l) => s + l.valeur, 0).toLocaleString('fr-FR')} €`,
-        `Legs consentis : ${transmissionLiberalites.filter(l => l.type === 'legs').reduce((s, l) => s + l.valeur, 0).toLocaleString('fr-FR')} €`,
+        transmissionResult.reintegrationsCiviles !== 0
+          ? `Réintégrations civiles (récompenses, créances entre époux, participation, assurance-vie non dénouée du conjoint) : ${transmissionResult.reintegrationsCiviles.toLocaleString('fr-FR')} €`
+          : null,
+        `Donations antérieures : ${totalDonations.toLocaleString('fr-FR')} €`,
+        `Legs consentis (déjà compris dans le patrimoine, non ajoutés) : ${transmissionLiberalites.filter(l => l.type === 'legs').reduce((s, l) => s + l.valeur, 0).toLocaleString('fr-FR')} €`,
         `= Masse de calcul : ${transmissionResult.masseCalcul.toLocaleString('fr-FR')} €`,
         legsCaducs.length > 0
           ? `⚠️ ${legsCaducs.length} legs caduc${legsCaducs.length > 1 ? 's' : ''} exclu${legsCaducs.length > 1 ? 's' : ''} du calcul (bien légué introuvable) : ${legsCaducs.map(l => l.denomination).join(', ')}`
           : null
       ].filter(Boolean),
-      formula: `${patrimony.biensExistants.toLocaleString('fr-FR')} - ${patrimony.passifs.toLocaleString('fr-FR')} + ${transmissionLiberalites.reduce((s, l) => s + l.valeur, 0).toLocaleString('fr-FR')} = ${transmissionResult.masseCalcul.toLocaleString('fr-FR')} €`,
+      // Même composition que reserve.ts::computeMasseCalcul : biens (y compris
+      // réintégrations civiles) - passif + donations ; les legs portent sur
+      // des biens déjà présents et ne sont jamais rajoutés.
+      formula: `${patrimony.biensExistants.toLocaleString('fr-FR')}${transmissionResult.reintegrationsCiviles !== 0 ? ` + ${transmissionResult.reintegrationsCiviles.toLocaleString('fr-FR')}` : ''} - ${patrimony.passifs.toLocaleString('fr-FR')} + ${totalDonations.toLocaleString('fr-FR')} = ${transmissionResult.masseCalcul.toLocaleString('fr-FR')} €`,
       conseils: [
         "Les donations faites il y a moins de 15 ans sont réintégrées dans la masse",
         patrimony.passifs > 0 ? "Vos dettes viennent réduire l'assiette taxable - conservez les justificatifs" : null,

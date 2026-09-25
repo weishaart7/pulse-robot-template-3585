@@ -66,7 +66,8 @@ const WIZARD_STEPS: WizardStepDef[] = [
   {
     id: 'particularites',
     label: 'Particularités',
-    fields: [],
+    // sous_type_per : obligatoire pour les PER (cf. assetSchema.ts).
+    fields: ['sous_type_per'],
     isVisible: () => true,
   },
   {

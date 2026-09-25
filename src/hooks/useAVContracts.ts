@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { getAssetCategory } from '@/constants/assetTypes';
+import { hasDonneesContratAV } from '@/constants/assetTypes';
 import { AVContractRawRow } from '@/utils/transmissionHelpers';
 import { Asset } from '@/services/assetService';
 
@@ -18,7 +18,7 @@ export function useAVContracts(assets: Asset[]) {
   const [error, setError] = useState<string | null>(null);
 
   const avAssetIds = assets
-    .filter(a => getAssetCategory(a.nature || '') === 'épargne et assurance-vie')
+    .filter(a => hasDonneesContratAV(a))
     .map(a => a.id)
     .filter((id): id is string => !!id)
     .sort()
@@ -75,7 +75,8 @@ export function useAVContracts(assets: Asset[]) {
         origineFonds: origineFondsByAsset.get(a.id!) || null,
         operations: opsByAsset.get(a.id!) || [],
         clauseBeneficiaireStructuree: clauseByAsset.get(a.id!) || null,
-        nature: a.nature
+        nature: a.nature,
+        sousTypePer: a.sous_type_per
       }));
 
       setAvContractsRaw(rows);

@@ -363,6 +363,40 @@ export const NATURES_AV_HORS_SUCCESSION = [
 export const isAssuranceVieHorsSuccession = (nature: string | null | undefined): boolean =>
   !!nature && NATURES_AV_HORS_SUCCESSION.includes(nature);
 
+// "PER entreprise obligatoire" (ex-article 83) est toujours souscrit via un contrat d'assurance
+// de groupe : son sous-type est figé sur Assurantiel, quelle que soit la valeur en base.
+export const NATURE_PER_TOUJOURS_ASSURANTIEL = "PER entreprise obligatoire";
+
+export const isPER = (nature: string | null | undefined): boolean =>
+  !!nature && NATURES_PER.includes(nature);
+
+// PER sans sous-type renseigné (hors PER obligatoire) : impossible de savoir s'il sort de la
+// succession — l'appelant doit bloquer le calcul (cf. transmissionHelpers.ts::assertPERQualifies),
+// jamais deviner.
+export const isPERNonQualifie = (asset: { nature?: string | null; sous_type_per?: string | null }): boolean =>
+  isPER(asset.nature) && asset.nature !== NATURE_PER_TOUJOURS_ASSURANTIEL
+  && asset.sous_type_per !== 'Assurantiel' && asset.sous_type_per !== 'Bancaire';
+
+// PER assurantiel (contrat d'assurance de groupe, loi PACTE) : capital décès versé hors
+// succession aux bénéficiaires de la clause (art. L132-12 C. assur.), taxé en 990 I si le
+// titulaire décède avant 70 ans, 757 B après. Un PER bancaire (compte-titres) reste, lui,
+// dans l'actif successoral de droit commun.
+export const isPERAssurantiel = (asset: { nature?: string | null; sous_type_per?: string | null }): boolean =>
+  isPER(asset.nature)
+  && (asset.nature === NATURE_PER_TOUJOURS_ASSURANTIEL || asset.sous_type_per === 'Assurantiel');
+
+// Tout contrat transmis hors succession via une clause bénéficiaire (assurance-vie ou PER
+// assurantiel) — à utiliser partout où l'actif successoral est construit, à la place de
+// isAssuranceVieHorsSuccession qui ne voit que la nature.
+// Biens dont les données de contrat (av_contract_details : clause bénéficiaire, origine des
+// fonds ; av_operations : versements) sont chargées pour le calcul de transmission : famille
+// "épargne et assurance-vie" + PER assurantiels.
+export const hasDonneesContratAV = (asset: { nature?: string | null; sous_type_per?: string | null }): boolean =>
+  getAssetCategory(asset.nature || '') === 'épargne et assurance-vie' || isPERAssurantiel(asset);
+
+export const isContratHorsSuccession = (asset: { nature?: string | null; sous_type_per?: string | null }): boolean =>
+  isAssuranceVieHorsSuccession(asset.nature) || isPERAssurantiel(asset);
+
 // Les 4 natures de la famille "épargne et assurance-vie" (hors succession + "Bons & contrats de
 // capitalisation") — utilisée dans AssetForm.tsx pour le vocabulaire assurantiel ("Souscripteur"
 // plutôt que "Détenteur") et pour masquer l'attachement émotionnel, sans rapport avec le régime

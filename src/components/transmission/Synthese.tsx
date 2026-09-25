@@ -20,6 +20,7 @@ import {
   buildCreancesCalcInput,
   buildParticipationAcquetsContext,
   computeAVReintegrationCivile,
+  hasPERNonDenoueConjoint,
   AVContractRawRow,
   AVDonneesInsuffisantesError,
   LegsCaduc
@@ -28,7 +29,7 @@ import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
 import { assetDemembrementService } from '@/services/assetDemembrementService';
-import { getAssetCategory } from '@/constants/assetTypes';
+import { hasDonneesContratAV } from '@/constants/assetTypes';
 import { Recompense } from '@/types/recompense';
 import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
 import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcquets';
@@ -51,6 +52,7 @@ export const Synthese = () => {
   const [hasAssets, setHasAssets] = useState(false);
   const [legsCaducs, setLegsCaducs] = useState<LegsCaduc[]>([]);
   const [hasDeceasedAVBeneficiaire, setHasDeceasedAVBeneficiaire] = useState(false);
+  const [hasPERConjointNonReintegre, setHasPERConjointNonReintegre] = useState(false);
   const [hasAVContracts, setHasAVContracts] = useState(false);
   const [computeErrorMessage, setComputeErrorMessage] = useState<string | null>(null);
   // Distingue la cause du blocage pour orienter vers le bon écran : un bien
@@ -112,7 +114,7 @@ export const Synthese = () => {
       // le libellé humain du formulaire ("Contrat d'assurance-vie", etc.),
       // jamais le littéral 'assurance-vie' — même famille de bug que celui
       // déjà corrigé sur l'immobilier avec getAssetCategory.
-      const avAssets = (assets || []).filter(a => getAssetCategory(a.nature || '') === 'épargne et assurance-vie');
+      const avAssets = (assets || []).filter(a => hasDonneesContratAV(a));
       const totalAV = avAssets.reduce((sum, a) => sum + (Number(a.valeur_estimee) || 0), 0);
       setHasAVContracts(avAssets.length > 0);
 
@@ -159,7 +161,8 @@ export const Synthese = () => {
         origineFonds: avOrigineFondsByAsset.get(a.id) || null,
         operations: avOperationsByAsset.get(a.id) || [],
         clauseBeneficiaireStructuree: avClauseByAsset.get(a.id) || null,
-        nature: a.nature
+        nature: a.nature,
+        sousTypePer: a.sous_type_per
       }));
 
       // Statut 'decede' de la clause bénéficiaire AV : aucune cascade automatique
@@ -258,6 +261,8 @@ export const Synthese = () => {
       const regimeMatrimonialSiMarie = (maritalStatus as any)?.statut_couple === 'Marié(e)'
         ? (maritalStatus as any)?.regime_matrimonial
         : undefined;
+
+      setHasPERConjointNonReintegre(hasPERNonDenoueConjoint(avContracts, 'spouse', regimeMatrimonialSiMarie));
 
       const combinedResult = computeTransmission({
         family,
@@ -493,6 +498,14 @@ export const Synthese = () => {
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             Assurance-vie hors succession civile, sous réserve des primes manifestement exagérées (art. L. 132-13 C. assur.) — critère d'appréciation multicritère (âge, situation patrimoniale et familiale, utilité du contrat) laissé à votre analyse, non automatisé dans cet outil.
+          </AlertDescription>
+        </Alert>
+      )}
+      {hasPERConjointNonReintegre && (
+        <Alert className="bg-[var(--surface-sunken)] border-[var(--kt-border)]">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Le PER assurantiel du conjoint survivant n'est pas réintégré dans la communauté à liquider : un PER n'est en principe pas rachetable avant la retraite, et l'application à sa valeur de la règle retenue pour l'assurance-vie non dénouée est discutée. À apprécier au cas par cas.
           </AlertDescription>
         </Alert>
       )}
@@ -778,13 +791,16 @@ export const Synthese = () => {
               const dmtg = transmissionResult.dmtg;
               const family = transmissionResult.family;
 
+              // `lien` vient soit du graphe familial (family_links.lien_familial,
+              // capitalisé : 'Enfant', 'Parent', 'Frère/Sœur'…), soit du moteur
+              // (minuscules) — comparaison insensible à la casse.
               const getAbattementLegal = (lien: string): { montant: number; label: string } => {
-                switch (lien) {
+                switch (lien.toLowerCase()) {
                   case 'enfant': return { montant: 100000, label: 'Enfant / Ascendant (100 000 €)' };
                   case 'conjoint': return { montant: Infinity, label: 'Conjoint / Partenaire (exonéré)' };
-                  case 'parent': return { montant: 100000, label: 'Ascendant (100 000 €)' };
-                  case 'frère': case 'sœur': case 'frere_soeur': return { montant: 15932, label: 'Frère / Sœur (15 932 €)' };
-                  case 'neveu': case 'nièce': case 'neveu_niece': return { montant: 7967, label: 'Neveu / Nièce (7 967 €)' };
+                  case 'parent': case 'grand-parent': return { montant: 100000, label: 'Ascendant (100 000 €)' };
+                  case 'frère': case 'sœur': case 'frère/sœur': case 'frere_soeur': return { montant: 15932, label: 'Frère / Sœur (15 932 €)' };
+                  case 'neveu': case 'nièce': case 'neveu/nièce': case 'neveu_niece': return { montant: 7967, label: 'Neveu / Nièce (7 967 €)' };
                   default: return { montant: 1594, label: 'Autre (1 594 €)' };
                 }
               };

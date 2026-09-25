@@ -9,7 +9,8 @@ import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcqu
 import { RecompenseCalcInput, CreanceCalcInput } from '@/lib/patrimoine/recompensesCreances';
 import { Recompense } from '@/types/recompense';
 import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
-import { isAssuranceVieHorsSuccession } from '@/constants/assetTypes';
+import { isContratHorsSuccession, isPER, isPERAssurantiel, isPERNonQualifie } from '@/constants/assetTypes';
+import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { getAgeAtDate, getDemembrementPct } from '@/lib/transmission';
 import { resolveEffectiveAVBeneficiaires } from '@/lib/dmtg/assurance-vie';
 import { isDetenteurSpouse } from '@/lib/patrimoine/utils';
@@ -230,6 +231,46 @@ export function splitPrimesAvantApres70(
   return { primesAvant70, primesApres70 };
 }
 
+/**
+ * PER assurantiel : contrairement à l'assurance-vie, le régime fiscal dépend
+ * de l'âge du titulaire AU DÉCÈS, pas de l'âge à chaque versement (art. 990 I
+ * et 757 B CGI, rédaction loi PACTE) :
+ * - décès avant 70 ans : tout le capital relève du 990 I — renvoyé comme
+ *   `primesAvant70 = capitalDeces` (computeAssuranceVie proratise le capital
+ *   sur la part des primes avant 70 ans, soit 100 % ici) ; aucune opération
+ *   n'est nécessaire ;
+ * - décès à 70 ans ou après : 757 B sur les primes versées — opérations
+ *   requises, sinon AVDonneesInsuffisantesError (jamais de primes devinées).
+ * Date de naissance du titulaire inconnue : AVDonneesInsuffisantesError.
+ */
+export function splitPrimesPER(
+  operations: AVOperationRow[],
+  dateNaissance: string | null | undefined,
+  capitalDeces: number,
+  referenceDate: string,
+  contractLabel?: string
+): { primesAvant70: number; primesApres70: number } {
+  const label = contractLabel ? ` ${contractLabel}` : '';
+  if (!dateNaissance) {
+    throw new AVDonneesInsuffisantesError(
+      `Date de naissance du titulaire non renseignée — impossible de déterminer son âge au décès pour le PER${label} (990 I avant 70 ans, 757 B après).`
+    );
+  }
+  if (getAgeAtDate(dateNaissance, referenceDate) < 70) {
+    return { primesAvant70: capitalDeces, primesApres70: 0 };
+  }
+  const versements = operations.filter(op => op.type_operation === 'versement');
+  if (versements.length === 0) {
+    throw new AVDonneesInsuffisantesError(
+      `Aucun versement enregistré pour le PER${label} — titulaire de 70 ans ou plus au décès, les primes versées sont nécessaires au calcul 757 B.`
+    );
+  }
+  return {
+    primesAvant70: 0,
+    primesApres70: versements.reduce((sum, op) => sum + (Number(op.montant) || 0), 0)
+  };
+}
+
 export interface AVContractRawRow {
   assetId: string;
   label?: string | null;
@@ -239,6 +280,9 @@ export interface AVContractRawRow {
   // dmtg/assurance-vie.ts d'appliquer l'abattement 990 I bis (20%) réservé au
   // "Contrat vie-génération".
   nature?: string | null;
+  // assets.sous_type_per — un PER n'est traité comme contrat hors succession
+  // que s'il est assurantiel (cf. isPERAssurantiel).
+  sousTypePer?: string | null;
   // assets.detenteur (texte libre, 'user'/'spouse' par convention, cf.
   // lib/patrimoine/utils.ts::isDetenteurSpouse) — détenteur réel du contrat,
   // pour distinguer un contrat de l'Utilisateur de celui du conjoint
@@ -321,14 +365,24 @@ export function buildAVContracts(
   // intègrent l'actif successoral classique au décès (droits de succession de droit commun),
   // pas le régime 990I/757B — filtrés ici pour ne jamais devenir un AVContract, quel que soit
   // l'appelant (défense en profondeur, cf. isAssuranceVieHorsSuccession).
+  // Même filtre pour les PER : seul un PER assurantiel devient un AVContract,
+  // un PER bancaire reste dans l'actif successoral (cf. isContratHorsSuccession).
   return rows
-    .filter(row => isAssuranceVieHorsSuccession(row.nature))
+    .filter(row => isContratHorsSuccession({ nature: row.nature, sous_type_per: row.sousTypePer }))
     .map(row => {
-      const { primesAvant70, primesApres70 } = splitPrimesAvantApres70(
-        row.operations,
-        resolveDateNaissanceSouscripteur(row.detenteur),
-        row.label || undefined
-      );
+      const { primesAvant70, primesApres70 } = isPERAssurantiel({ nature: row.nature, sous_type_per: row.sousTypePer })
+        ? splitPrimesPER(
+          row.operations,
+          resolveDateNaissanceSouscripteur(row.detenteur),
+          Number(row.valeurEstimee) || 0,
+          referenceDate,
+          row.label || undefined
+        )
+        : splitPrimesAvantApres70(
+          row.operations,
+          resolveDateNaissanceSouscripteur(row.detenteur),
+          row.label || undefined
+        );
 
       const niveaux = (row.clauseBeneficiaireStructuree?.niveaux || []).map(niveau => ({
         beneficiaires: niveau.beneficiaires
@@ -370,6 +424,7 @@ export function buildAVContracts(
 
       return {
         id: row.assetId,
+        label: row.label || undefined,
         niveaux,
         capitalDeces: Number(row.valeurEstimee) || 0,
         primesAvant70,
@@ -377,15 +432,20 @@ export function buildAVContracts(
         isExonereBeneficiaireConjointPacs: hasConjointBeneficiaire,
         isSiblingExonEligible: hasExoneratedSiblingBeneficiaire,
         detenteur: isDetenteurSpouse(row.detenteur || undefined) ? 'spouse' : 'user',
-        origineFonds: row.origineFonds === 'deniers_propres' ? 'deniers_propres' : 'deniers_communs',
+        // Non renseignée (NULL, ou contrat sans ligne av_contract_details) :
+        // laissée indéfinie, jamais présumée — computeAVReintegrationCivile
+        // bloque le calcul seulement si elle est réellement nécessaire.
+        origineFonds: row.origineFonds === 'deniers_propres' || row.origineFonds === 'deniers_communs'
+          ? row.origineFonds
+          : undefined,
         nature: row.nature || undefined
       };
     });
 }
 
 /**
- * Valeur de rachat des contrats AV non dénoués du conjoint survivant à
- * réintégrer dans la masse commune à liquider civilement (doctrine Ciot,
+ * Part successorale (50 %) de la valeur de rachat des contrats AV non
+ * dénoués du conjoint survivant, réintégrée dans la masse commune à liquider civilement (doctrine Ciot,
  * §9.6.1) : uniquement sous régime de communauté, pour les contrats détenus
  * par `holderNonDenoue` (le détenteur qui n'est PAS le défunt simulé dans ce
  * calcul) dont l'origine des fonds est 'deniers_communs'. Un contrat financé
@@ -404,9 +464,37 @@ export function computeAVReintegrationCivile(
   regimeMatrimonial: string | null | undefined
 ): number {
   if (!isRegimeCommunautaire(regimeMatrimonial || undefined)) return 0;
+  const contratSansOrigine = avContracts.find(
+    c => c.detenteur === holderNonDenoue && !isPER(c.nature) && !c.origineFonds
+  );
+  if (contratSansOrigine) {
+    throw new AVDonneesInsuffisantesError(
+      `Origine des fonds non renseignée pour le contrat « ${contratSansOrigine.label || contratSansOrigine.id} » du conjoint survivant — sous régime de communauté, elle détermine si sa valeur de rachat entre dans la succession. Renseignez-la dans le détail du contrat.`
+    );
+  }
   return avContracts
-    .filter(c => c.detenteur === holderNonDenoue && c.origineFonds === 'deniers_communs')
-    .reduce((sum, c) => sum + c.capitalDeces, 0);
+    // PER exclu (décision actée) : un PER n'est en principe pas rachetable
+    // avant la retraite, l'application de la doctrine Ciot à sa valeur est
+    // discutée — non réintégré, signalé à l'écran (cf. hasPERNonDenoueConjoint).
+    .filter(c => c.detenteur === holderNonDenoue && c.origineFonds === 'deniers_communs' && !isPER(c.nature))
+    // Bien commun : seule la moitié de la valeur de rachat revient à la
+    // succession du défunt, l'autre moitié restant au conjoint survivant —
+    // même pondération que tout autre bien commun (getPartSuccessorale).
+    .reduce((sum, c) => sum + c.capitalDeces * 0.5, 0);
+}
+
+/**
+ * Le conjoint survivant détient-il un PER assurantiel non dénoué, que
+ * computeAVReintegrationCivile ne réintègre volontairement pas ? Sert
+ * uniquement à afficher l'avertissement correspondant.
+ */
+export function hasPERNonDenoueConjoint(
+  avContracts: AVContract[],
+  holderNonDenoue: 'user' | 'spouse',
+  regimeMatrimonial: string | null | undefined
+): boolean {
+  if (!isRegimeCommunautaire(regimeMatrimonial || undefined)) return false;
+  return avContracts.some(c => c.detenteur === holderNonDenoue && isPER(c.nature));
 }
 
 /**
@@ -915,6 +1003,21 @@ function getFractionPassifParDetenteur(passif: PassifLine, cote: 'user' | 'conjo
 }
 
 /**
+ * Bloque le calcul si un PER n'a pas de sous-type (Assurantiel/Bancaire) :
+ * selon la réponse, il sort ou non de l'actif successoral — jamais deviné.
+ * BienNonQualifieError pour réutiliser le renvoi "Qualifier ce bien dans
+ * Patrimoine" déjà affiché par Synthese/ProcessusCalcul/Succession2ndDeces.
+ */
+export function assertPERQualifies(assets: Array<{ nature?: string | null; sous_type_per?: string | null; denomination?: string | null }>): void {
+  const perNonQualifie = assets.find(isPERNonQualifie);
+  if (perNonQualifie) {
+    throw new BienNonQualifieError(
+      `Le PER « ${perNonQualifie.denomination || perNonQualifie.nature} » n'a pas de sous-type (Assurantiel ou Bancaire) : impossible de savoir s'il sort de la succession. Renseignez-le dans la fiche du bien.`
+    );
+  }
+}
+
+/**
  * Converts asset data to patrimony snapshot for transmission calculations
  */
 export function buildPatrimonySnapshot(
@@ -943,8 +1046,9 @@ export function buildPatrimonySnapshot(
   // n'importe quel autre actif. Sans cette exclusion nature par nature, un contrat AV réel (une
   // fois les opérations renseignées) aurait été compté à la fois dans la masse successorale
   // civile ET dans `assuranceVieTotal` (double compte).
+  assertPERQualifies(assets);
   const totalAssets = assets
-    .filter(asset => !isAssuranceVieHorsSuccession(asset.nature))
+    .filter(asset => !isContratHorsSuccession(asset))
     .reduce((sum, asset) => {
       const valeur = getValeurEstimeePonderee(asset, assetDemembrements, demembrementCtx);
       const partSuccessorale = getPartSuccessorale(asset, asset.denomination || asset.id);
@@ -1026,7 +1130,7 @@ export function buildSurvivingSpousePatrimony(
   demembrementCtx: DemembrementFractionContext = {}
 ): PatrimonySnapshot {
   const totalAssetsConjoint = assets
-    .filter(asset => !isAssuranceVieHorsSuccession(asset.nature))
+    .filter(asset => !isContratHorsSuccession(asset))
     .reduce((sum, asset) => {
       const valeur = getValeurEstimeePonderee(asset, assetDemembrements, demembrementCtx);
       const partConjoint = getPartConjointSuccession(asset, asset.denomination || asset.id);
@@ -1083,7 +1187,7 @@ export function buildSpouseRawAssets(
   demembrementCtx: DemembrementFractionContext = {}
 ): RawAssetInput[] {
   return assets
-    .filter(asset => !isAssuranceVieHorsSuccession(asset.nature))
+    .filter(asset => !isContratHorsSuccession(asset))
     .map(asset => {
       const partConjoint = getPartConjointSuccession(asset, asset.denomination || asset.id);
 
@@ -1119,7 +1223,7 @@ export function buildSpouseOwnBasePatrimony(
   demembrementCtx: DemembrementFractionContext = {}
 ): PatrimonySnapshot {
   const totalAssetsConjoint = assets
-    .filter(asset => !isAssuranceVieHorsSuccession(asset.nature))
+    .filter(asset => !isContratHorsSuccession(asset))
     .reduce((sum, asset) => {
       const valeur = getValeurEstimeePonderee(asset, assetDemembrements, demembrementCtx);
       return sum + valeur * getPartConjointSuccession(asset, asset.denomination || asset.id);

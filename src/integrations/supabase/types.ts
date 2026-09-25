@@ -568,7 +568,7 @@ export type Database = {
           frais_versement: number | null
           id: string
           objectif: string | null
-          origine_fonds: string
+          origine_fonds: string | null
           part_fonds_euros: number | null
           part_unites_compte: number | null
           rachats_programmes: boolean | null
@@ -591,7 +591,7 @@ export type Database = {
           frais_versement?: number | null
           id?: string
           objectif?: string | null
-          origine_fonds?: string
+          origine_fonds?: string | null
           part_fonds_euros?: number | null
           part_unites_compte?: number | null
           rachats_programmes?: boolean | null
@@ -614,7 +614,7 @@ export type Database = {
           frais_versement?: number | null
           id?: string
           objectif?: string | null
-          origine_fonds?: string
+          origine_fonds?: string | null
           part_fonds_euros?: number | null
           part_unites_compte?: number | null
           rachats_programmes?: boolean | null

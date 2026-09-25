@@ -14,6 +14,7 @@ import { ArrowLeft, Calendar, TrendingUp, TrendingDown, Shield, Users, FileText,
 import { supabase } from '@/integrations/supabase/client';
 import { Asset } from '@/services/assetService';
 import { formatCurrency } from '@/lib/patrimoine/utils';
+import { isPER } from '@/constants/assetTypes';
 import { toast } from 'sonner';
 import { AVFiscalInfo } from './AVFiscalInfo';
 import { AVOperationsTable } from './AVOperationsTable';
@@ -49,7 +50,9 @@ interface AVDetails {
   // computeAVReintegrationCivile). Champ binaire déclaratif, pas de
   // financement mixte proportionnel comme pour les biens ordinaires
   // (art. 1436) : un contrat n'a pas de prix d'acquisition unique.
-  origine_fonds: 'deniers_propres' | 'deniers_communs';
+  // null = non renseignée : plus de valeur présumée (choix obligatoire à
+  // l'enregistrement, cf. saveDetails).
+  origine_fonds: 'deniers_propres' | 'deniers_communs' | null;
 }
 
 interface AVOperation {
@@ -76,7 +79,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
     rachats_programmes: false,
     rachats_programmes_montant: null,
     rachats_programmes_periodicite: null,
-    origine_fonds: 'deniers_communs',
+    origine_fonds: null,
   });
   const [operations, setOperations] = useState<AVOperation[]>([]);
   const [beneficiaires, setBeneficiaires] = useState<{ id: string; nom: string; prenom: string | null; lien: string }[]>([]);
@@ -159,7 +162,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
           rachats_programmes: d.rachats_programmes || false,
           rachats_programmes_montant: d.rachats_programmes_montant || null,
           rachats_programmes_periodicite: d.rachats_programmes_periodicite || null,
-          origine_fonds: d.origine_fonds === 'deniers_propres' ? 'deniers_propres' : 'deniers_communs',
+          origine_fonds: d.origine_fonds === 'deniers_propres' || d.origine_fonds === 'deniers_communs' ? d.origine_fonds : null,
         });
         // Restore structured clause if exists
         if (d.clause_beneficiaire_structuree) {
@@ -196,6 +199,10 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
   };
 
   const saveDetails = async () => {
+    if (!details.origine_fonds) {
+      toast.error("Précisez l'origine des fonds (deniers propres ou communs) avant d'enregistrer.");
+      return;
+    }
     setIsSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -323,6 +330,13 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
               </span>
             )}
           </div>
+          {isPER(contract.nature) && (
+            <p className="text-sm text-muted-foreground mt-2 flex items-start gap-1.5">
+              <Info className="h-4 w-4 mt-0.5 shrink-0" />
+              PER assurantiel : régime fixé par l'âge du titulaire au décès — avant 70 ans, tout le capital relève du 990 I ;
+              à partir de 70 ans, les primes versées relèvent du 757 B (les versements doivent alors être renseignés).
+            </p>
+          )}
         </div>
         <div className="text-right">
           <p className="text-2xl font-bold">{formatCurrency(contract.valeur_estimee || 0)}</p>
@@ -466,7 +480,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
             </CardHeader>
             <CardContent>
               <RadioGroup
-                value={details.origine_fonds}
+                value={details.origine_fonds ?? ''}
                 onValueChange={(val: 'deniers_propres' | 'deniers_communs') =>
                   setDetails(prev => ({ ...prev, origine_fonds: val }))
                 }
@@ -482,6 +496,9 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
                   </div>
                 ))}
               </RadioGroup>
+              {!details.origine_fonds && (
+                <p className="text-xs text-destructive mt-2">À renseigner — aucune valeur n'est présumée.</p>
+              )}
               <p className="text-xs text-muted-foreground mt-2">
                 Détermine, si ce contrat n'est pas dénoué au décès simulé, si sa valeur de rachat est réintégrée dans la masse commune à liquider (régime de communauté uniquement).
               </p>
