@@ -1,30 +1,9 @@
 # Module Famille
 
-> Document consolidé le 2026-08-27, fusion et mise à jour de `docs/audit/audit-famille.md`
-> (audit statique du 2026-07-29). L'audit d'origine listait 26 constats (F1-F26) sur la branche
-> `main` au commit `2835f30` ; la quasi-totalité a été corrigée depuis (voir commits
-> `0c34614`…`b6827c2`). Mis à jour le 2026-09-01 suite à un audit fonctionnel (simplification des
-> champs et navigation) : voir §3 et §4 pour le détail des retraits. Mis à jour le 2026-09-03 :
-> profession en texte libre (§2), double nationalité sur les 3 fiches et champ Nationalité
-> désormais saisissable sur les membres de la famille (§2, §3). Mis à jour le 2026-09-16
-> (passe de simplification V1) : nettoyage de code mort, corrections de fiabilité mineures,
-> retrait de l'alerte de conseil n°16 (jamais déclenchable) et de l'alerte `extraneite_regime_matrimonial`
-> (branchée sur des champs déjà retirés de l'UI), retrait de deux champs dormants
-> (`family_links.est_dirigeant`, `family_profiles.nom_jeune_fille`) — voir §3 et §5. Mis à jour le
-> 2026-09-17 (suite) : contrôle croisé des référentiels Royal Formation sur le contrat de mariage,
-> retrait de 13 clauses purement déclaratives du catalogue des clauses. Mis à jour le 2026-09-22 :
-> retrait complet du catalogue de clauses du contrat de mariage restant (préciput, attribution
-> intégrale, partage inégal, participation aux acquêts, clauses personnalisées) pour la V1 — seule
-> la sélection du régime matrimonial lui-même est conservée, ainsi que la désignation des biens de
-> la société d'acquêts et l'extension aux propres par nature, reclassées en mécanisme de
-> qualification de bien plutôt qu'en clause (voir §2 et
-> [docs/regimes-matrimoniaux-clauses-v1-retire.md](regimes-matrimoniaux-clauses-v1-retire.md) pour
-> le détail du retrait et la marche à suivre pour une reconstruction). Mis à jour le 2026-09-22
-> (suite) : habillage visuel du module aligné sur la landing page, sur le même principe que le
-> module Actifs — voir §2. Ce document reflète l'état actuel du code, pas un historique daté. Volet
-> navigation réelle en navigateur : vérifié en session authentifiée le 2026-09-22 pour le rendu
-> visuel (Ma famille, Fiche personnelle, Conjoint, Régime matrimonial) ; remplissage de données de
-> test et cohérence écran ↔ moteur toujours non réalisés.
+> Ce document reflète l'état actuel du module (issu de l'audit statique `docs/audit/audit-famille.md`,
+> constats F1-F26, depuis intégrés ou soldés). Le catalogue de clauses du contrat de mariage est
+> retiré pour la V1 : voir §2 et
+> [docs/regimes-matrimoniaux-clauses-v1-retire.md](regimes-matrimoniaux-clauses-v1-retire.md).
 
 ## 1. Vue d'ensemble
 
@@ -37,11 +16,11 @@ lequel reposent tous les calculs montrés au client.
 
 | Sous-section | Route | Composant |
 |---|---|---|
-| Ma famille (onglet par défaut) | `/dashboard/famille` | [FamilleSection.tsx](src/pages/famille/FamilleSection.tsx) |
-| Fiche client | vue plein écran locale (pas de route) | [FicheClientForm.tsx](src/pages/famille/components/FicheClientForm.tsx) |
-| Conjoint | `/dashboard/famille/conjoint` | [ConjointPage.tsx](src/pages/famille/ConjointPage.tsx) → [PartnerForm.tsx](src/components/famille/PartnerForm.tsx) |
-| Régime matrimonial (5 onglets) | `/dashboard/famille/situation-matrimoniale` | [SituationMatrimonialePage.tsx](src/pages/famille/SituationMatrimonialePage.tsx) → [RelationInfoForm.tsx](src/components/famille/RelationInfoForm.tsx) |
-| Liens familiaux (onglet) | `/dashboard/famille` | [LiensFamiliauxForm.tsx](src/pages/famille/components/LiensFamiliauxForm.tsx) + [FamilyMemberFormDialog.tsx](src/components/family/FamilyMemberFormDialog.tsx) + [DynamicFamilyForm.tsx](src/components/family/DynamicFamilyForm.tsx) |
+| Ma famille (onglet par défaut) | `/dashboard/famille` | [FamilleSection.tsx](../src/pages/famille/FamilleSection.tsx) |
+| Fiche client | vue plein écran locale (pas de route) | [FicheClientForm.tsx](../src/pages/famille/components/FicheClientForm.tsx) |
+| Conjoint | `/dashboard/famille/conjoint` | [ConjointPage.tsx](../src/pages/famille/ConjointPage.tsx) → [PartnerForm.tsx](../src/components/famille/PartnerForm.tsx) |
+| Régime matrimonial (5 onglets) | `/dashboard/famille/situation-matrimoniale` | [SituationMatrimonialePage.tsx](../src/pages/famille/SituationMatrimonialePage.tsx) → [RelationInfoForm.tsx](../src/components/famille/RelationInfoForm.tsx) |
+| Liens familiaux (onglet) | `/dashboard/famille` | [LiensFamiliauxForm.tsx](../src/pages/famille/components/LiensFamiliauxForm.tsx) + [FamilyMemberFormDialog.tsx](../src/components/family/FamilyMemberFormDialog.tsx) + [DynamicFamilyForm.tsx](../src/components/family/DynamicFamilyForm.tsx) |
 
 **Tables Supabase** : `family_profiles`, `marital_status`, `family_links` (+ `recompenses`,
 `creances_entre_epoux`, `patrimoine_originaire`, `patrimoine_final` saisies depuis l'onglet Régime
@@ -86,12 +65,12 @@ permet de l'alimenter (voir §3).
   (`statut_couple`, les 4 colonnes de donation au dernier vivant). Ces cas ont été résolus par des
   points d'écriture uniques plutôt que par une synchronisation entre copies :
   - `statut_couple` : `setStatutCouple()` / `buildStatutCoupleWrite()` dans
-    [lib/family/maritalStatus.ts](src/lib/family/maritalStatus.ts).
+    [lib/family/maritalStatus.ts](../src/lib/family/maritalStatus.ts).
   - Donation au dernier vivant : `setDonationDernierVivant()` dans
-    [lib/family/donationDernierVivant.ts](src/lib/family/donationDernierVivant.ts), qui relit
+    [lib/family/donationDernierVivant.ts](../src/lib/family/donationDernierVivant.ts), qui relit
     l'état frais en base avant d'écrire plutôt que de réembarquer une copie locale périmée.
   - Écriture conditionnelle au statut du couple : `buildRelationInfoPayload()` /
-    [lib/family/relationInfoPayload.ts](src/lib/family/relationInfoPayload.ts) — un couple
+    [lib/family/relationInfoPayload.ts](../src/lib/family/relationInfoPayload.ts) — un couple
     Pacsé(e)/Concubinage n'écrase plus les colonnes du régime matrimonial avec les valeurs par
     défaut du schéma zod.
   - Convention : ce découpage en `lib/family/` fait suite à un pattern déjà établi
@@ -100,23 +79,23 @@ permet de l'alimenter (voir §3).
 
 - **Vocabulaire de liaison famille → moteur de succession.** `useFamilyLinkLogic.ts` produit des
   valeurs `'user'` / `'spouse'` / `'both'` pour désigner qui est concerné (renonciation, filiation).
-  `resolveRenoncantDe()` ([utils/transmissionHelpers.ts:447](src/utils/transmissionHelpers.ts:447))
+  `resolveRenoncantDe()` ([utils/transmissionHelpers.ts:447](../src/utils/transmissionHelpers.ts:447))
   traduit ces valeurs vers l'id réel du défunt (`familyProfile.id` ou `` `conjoint-${id}` ``) attendu
-  par [successionLegale.ts](src/lib/transmission/successionLegale.ts). Point pivot à connaître :
+  par [successionLegale.ts](../src/lib/transmission/successionLegale.ts). Point pivot à connaître :
   toute nouvelle valeur de statut de renonciation doit être ajoutée des deux côtés (émission dans
   `useFamilyLinkLogic.ts`, traduction dans `resolveRenoncantDe`), sinon le silence est total (voir
   l'historique de F19 en §3).
 
-- **Construction de l'arbre familial.** [buildFamilyGraph.ts](src/lib/family/buildFamilyGraph.ts)
+- **Construction de l'arbre familial.** [buildFamilyGraph.ts](../src/lib/family/buildFamilyGraph.ts)
   construit les arêtes de l'arbre affiché (`FamilyTreeCards.tsx`) à partir du lien réellement saisi
   (`enfant_de`) plutôt que du premier membre trouvé du même type — correction nécessaire pour les
   familles recomposées ou à plusieurs branches (commit `b6827c2`).
 
-- **Saisie de dates.** `SmartDateInput` ([components/family/SmartDateInput.tsx](src/components/family/SmartDateInput.tsx))
+- **Saisie de dates.** `SmartDateInput` ([components/family/SmartDateInput.tsx](../src/components/family/SmartDateInput.tsx))
   centralise désormais la saisie JJ/MM/AAAA pour tous les champs date du module (naissance, décès,
   mariage, PACS, donations, mandat). Avant son introduction, chaque formulaire faisait son propre
-  `toISOString().split('T')[0]`, ce qui produisait un décalage d'un jour en fuseau français
-  (voir §3, F24 encore ouvert sur la validation clavier de ce composant).
+  `toISOString().split('T')[0]`, ce qui produisait un décalage d'un jour en fuseau français.
+  Les dates futures sont refusées au clavier comme au calendrier (voir §3).
 
 - **Rattachement des enfants et branche familiale obligatoires.** Le schéma zod de
   `FamilyMemberFormDialog.tsx` exige « Enfant de » pour un Enfant (présélectionné quand une seule
@@ -226,7 +205,7 @@ permet de l'alimenter (voir §3).
 
 - **« A un conjoint » : deux règles distinctes, selon la question posée.**
   - Répartition par personne (détenteur/débiteur dans Patrimoine, Sociétés, Emprunts, Budget) :
-    `hasConjoint()` ([lib/family/maritalStatus.ts](src/lib/family/maritalStatus.ts)) — statut en couple
+    `hasConjoint()` ([lib/family/maritalStatus.ts](../src/lib/family/maritalStatus.ts)) — statut en couple
     (marié, pacsé, concubinage) **et** prénom du conjoint renseigné, pour ne jamais proposer une personne
     sans nom.
   - Statut seul, volontairement : Famille (`FamilleSection`, `useFamilyLinkLogic`, `buildFamilyGraph` —
@@ -397,7 +376,7 @@ soldés :
 - *[soldé 2026-09-16]* Argument mort dans `calculateAge` (`LiensFamiliauxForm.tsx`) — le paramètre
   `date_deces`, jamais atteint (appel gardé par `member.est_decede ? '-' : …`), a été retiré de la
   signature.
-- *[soldé 2026-09-16]* Code mort — [FamilyTreeTimeline.tsx](src/components/FamilyTreeTimeline.tsx)
+- *[soldé 2026-09-16]* Code mort — `FamilyTreeTimeline.tsx`
   (161 lignes, plus aucun import) supprimé.
 
 ### Cases dormantes restantes
@@ -463,6 +442,6 @@ duplication sur les autres membres de la famille a été retirée).
     consommés par un moteur) — colonnes conservées en base, sans plan de réintroduction documenté.
   - `imposition_distincte` (art. 6-4a CGI) : retirée de l'écran de saisie (voir §3), en attente
     d'être réintroduite avec le moteur IR lors du développement du module Fiscalité.
-  - Volet navigation réelle en navigateur (remplissage de données de test, vérification des liens/
-    boutons, cohérence écran ↔ moteur) : jamais réalisé côté audit, bloqué sur l'authentification
-    Supabase — aucune régression connue mais aucune preuve visuelle non plus.
+  - Volet navigation réelle en navigateur : rendu visuel vérifié en session authentifiée (Ma
+    famille, Fiche personnelle, Conjoint, Régime matrimonial) ; remplissage de données de test et
+    cohérence écran ↔ moteur toujours non réalisés.
