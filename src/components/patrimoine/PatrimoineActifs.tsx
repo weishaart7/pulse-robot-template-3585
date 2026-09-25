@@ -123,7 +123,11 @@ export const PatrimoineActifs = () => {
       );
     } catch (error) {
       if (import.meta.env.DEV) console.error('Sauvegarde du démembrement échouée:', error);
-      stepErrors.push("la contrepartie de démembrement n'a pas pu être enregistrée");
+      stepErrors.push(
+        error instanceof Error && error.message.includes('membre de la famille')
+          ? error.message
+          : "la contrepartie de démembrement n'a pas pu être enregistrée"
+      );
     }
 
     setShowAssetForm(false);

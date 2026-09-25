@@ -275,6 +275,13 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
                             const m = familyLinks.find((fl) => fl.id === d.family_link_id);
                             return m ? (m.prenom ? `${m.prenom} ${m.nom}` : m.nom) : 'Membre de la famille';
                           })();
+                      if (d.type_partie === 'famille' && !d.family_link_id) {
+                        // Membre supprimé de la fiche famille (FK ON DELETE SET NULL) :
+                        // l'actif est exclu des totaux tant qu'il n'est pas ressaisi.
+                        return (
+                          <p key={d.id} className="text-sm font-medium text-destructive">Membre supprimé — à ressaisir</p>
+                        );
+                      }
                       return (
                         <p key={d.id} className="text-sm font-medium">{label}</p>
                       );

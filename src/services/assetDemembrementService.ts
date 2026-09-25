@@ -64,6 +64,14 @@ export const assetDemembrementService = {
   },
 
   async replaceForAsset(assetId: string, demembrements: Omit<AssetDemembrement, 'id' | 'user_id' | 'created_at' | 'updated_at'>[]) {
+    // Une contrepartie « famille » sans membre rattaché rendrait l'actif non
+    // valorisable (âge de l'usufruitier introuvable) : refusée à la saisie.
+    // Pas de CHECK en base, qui bloquerait la suppression du membre (FK ON
+    // DELETE SET NULL).
+    if (demembrements.some((d) => d.type_partie === 'famille' && !d.family_link_id)) {
+      throw new Error('Sélectionnez le membre de la famille concerné par le démembrement.');
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 

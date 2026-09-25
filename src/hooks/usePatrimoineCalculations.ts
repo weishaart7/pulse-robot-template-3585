@@ -44,8 +44,9 @@ export interface UnqualifiedItem {
   type: 'actif' | 'passif' | 'emprunt';
   // Motif de l'exclusion des totaux : qualification civile absente (défaut,
   // cf. BienNonQualifieError) ou, pour un actif démembré, âge de l'usufruitier
-  // non renseigné (barème 669 CGI non calculable).
-  reason?: 'qualification' | 'demembrement';
+  // non renseigné (barème 669 CGI non calculable), ou contrepartie famille
+  // supprimée (`family_link_id` passé à NULL par la FK ON DELETE SET NULL).
+  reason?: 'qualification' | 'demembrement' | 'demembrement_contrepartie';
 }
 
 interface PlusValuesSummary {
@@ -75,8 +76,8 @@ interface UsePatrimoineCalculationsProps {
   spouseFirstName?: string;
   statutCouple?: string;
   // Optionnels : nécessaires pour pondérer un actif en usufruit/nue-propriété
-  // par le barème 669 CGI dans les totaux. Sans eux, tout actif démembré
-  // reste compté à sa valeur pleine propriété (comportement historique).
+  // par le barème 669 CGI dans les totaux. Sans eux, l'âge de l'usufruitier
+  // est introuvable : tout actif démembré est exclu des totaux (unqualifiedItems).
   assetDemembrements?: AssetDemembrement[];
   demembrementCtx?: DemembrementFractionContext;
 }
@@ -188,7 +189,14 @@ export const usePatrimoineCalculations = ({
     assets.forEach(asset => {
       const label = asset.denomination || asset.nature;
       if (asset.id && demembrement.unqualifiedIds.has(asset.id)) {
-        unqualified.push({ id: asset.id, label, type: 'actif', reason: 'demembrement' });
+        const contrepartieSupprimee = (demembrementsByAsset.get(asset.id) ?? [])
+          .some((d) => d.type_partie === 'famille' && !d.family_link_id);
+        unqualified.push({
+          id: asset.id,
+          label,
+          type: 'actif',
+          reason: contrepartieSupprimee ? 'demembrement_contrepartie' : 'demembrement',
+        });
         return;
       }
       const estimatedValue = (asset.id ? demembrement.valueById.get(asset.id) : undefined) ?? (asset.valeur_estimee || 0);

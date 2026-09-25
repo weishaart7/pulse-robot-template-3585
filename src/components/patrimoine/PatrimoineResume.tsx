@@ -8,7 +8,7 @@ import { PlusValuesCard } from './PlusValuesCard';
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
-import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
+import { usePatrimoineCalculations, UnqualifiedItem } from '@/hooks/usePatrimoineCalculations';
 import { assetValorisationService, AssetValorisation } from '@/services/assetValorisationService';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { computeEvolutionPatrimoine } from '@/lib/patrimoine/evolutionPatrimoine';
@@ -24,6 +24,12 @@ interface PatrimoineResumeProps {
 const TEAL = INK;
 const LIME = VIOLET;
 const LIME_ICON = EGGSHELL;
+
+const UNQUALIFIED_REASON_LABEL: Record<NonNullable<UnqualifiedItem['reason']>, string> = {
+  qualification: ' (propre/commun non qualifié)',
+  demembrement: " (âge de l'usufruitier non renseigné)",
+  demembrement_contrepartie: ' (contrepartie du démembrement supprimée)',
+};
 
 export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }: PatrimoineResumeProps) => {
   const { assets } = useAssets();
@@ -95,7 +101,7 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
               {unqualifiedItems.length} élément{unqualifiedItems.length > 1 ? 's' : ''} exclu{unqualifiedItems.length > 1 ? 's' : ''} des totaux ci-dessous
             </p>
             <p className="text-xs text-foreground/80 ">
-              {unqualifiedItems.map(i => `${i.label}${i.reason === 'demembrement' ? ' (âge de l\'usufruitier non renseigné)' : ' (propre/commun non qualifié)'}`).join(', ')} — à compléter dans Patrimoine pour être pris en compte.
+              {unqualifiedItems.map(i => `${i.label}${UNQUALIFIED_REASON_LABEL[i.reason ?? 'qualification']}`).join(', ')} — à compléter dans Patrimoine pour être pris en compte.
             </p>
           </div>
         </div>
