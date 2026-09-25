@@ -70,6 +70,7 @@ export const AssuranceVie = () => {
   const [nbBeneficiaires, setNbBeneficiaires] = useState(1);
   const [beneficiaires, setBeneficiaires] = useState<Beneficiaire[]>([]);
   const [conjointName, setConjointName] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const [contractClauses, setContractClauses] = useState<ContractClause[]>([]);
   // Résultat du vrai moteur fiscal (computeTransmission -> dmtg.perBeneficiary,
   // cf. dmtg/assurance-vie.ts::computeAssuranceVie) — remplace l'estimation
@@ -144,6 +145,7 @@ export const AssuranceVie = () => {
         setContracts(avContracts);
 
         setSubscriberAge(computeAge(profileRes.data?.date_naissance));
+        setUserName(`${profileRes.data?.prenom || ''} ${profileRes.data?.nom || ''}`.trim() || null);
         setConjointAge(computeAge((maritalRes.data as any)?.date_naissance_conjoint));
         const statut = maritalRes.data?.statut_couple || null;
         const coupleStatus = ['Marié(e)', 'Pacsé(e)'].includes(statut || '');
@@ -343,7 +345,12 @@ export const AssuranceVie = () => {
     const nbTaxable = detailsAV.filter(d => d.assiette990I > 0).length;
 
     const benefMap = new Map<string, { nom: string; prenom: string; lien: string; capitalBrut: number }>();
-    avContractsBuilt.forEach(contract => {
+    // Seuls les contrats dénoués par le décès simulé (celui de l'utilisateur)
+    // sont versés à ses bénéficiaires — même filtre que computeTransmission
+    // pour le calcul fiscal ; ceux du conjoint survivant restent en cours.
+    const contratsDenoues = avContractsBuilt.filter(contract => (contract.detenteur ?? 'user') === 'user');
+    const valeurDenoues = contratsDenoues.reduce((sum, c) => sum + c.capitalDeces, 0);
+    contratsDenoues.forEach(contract => {
       // Bénéficiaires EFFECTIFS (cascade de renonciation + démembrement déjà
       // résolus, cf. dmtg/assurance-vie.ts::resolveEffectiveAVBeneficiaires) —
       // plus la seule liste plate du niveau 1, pour que ce résumé reste
@@ -371,8 +378,8 @@ export const AssuranceVie = () => {
 
     const allBenefs = benefMap.size > 0
       ? Array.from(benefMap.entries()).map(([id, b]) => ({ id, ...b }))
-      : totalValeur > 0
-        ? [{ id: '', nom: 'Non renseigné', prenom: '', lien: '', capitalBrut: totalValeur }]
+      : valeurDenoues > 0
+        ? [{ id: '', nom: 'Non renseigné', prenom: '', lien: '', capitalBrut: valeurDenoues }]
         : [];
 
 
@@ -410,6 +417,9 @@ export const AssuranceVie = () => {
       droits990I,
       totalReintegration757B,
       totalValeur,
+      // Capitaux réellement versés au décès simulé (contrats dénoués
+      // uniquement), à la différence de totalValeur (tous les contrats).
+      totalVerse: allBenefs.reduce((sum, b) => sum + b.capitalBrut, 0),
       totalDroits: droits990I,
       beneficiaireDetails,
       nbTaxable,
@@ -668,6 +678,10 @@ export const AssuranceVie = () => {
             <CardTitle className="text-[15px] font-semibold flex items-center gap-2 text-[var(--text-primary)]">
               <UserCheck className="h-4 w-4 text-[var(--ink-400)]" />
               Répartition par bénéficiaire
+              <FieldHelp>
+                Capitaux versés au décès simulé de l'utilisateur principal : seuls ses propres contrats sont
+                dénoués. Ceux du conjoint restent en cours et n'apparaissent pas ici.
+              </FieldHelp>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5 pt-0">
@@ -705,9 +719,9 @@ export const AssuranceVie = () => {
               <Separator className="bg-[var(--kt-border)]" />
               <div className="grid grid-cols-4 gap-4 text-sm font-semibold text-[var(--text-primary)]">
                 <span>Total</span>
-                <span className="kairos-num text-right">{formatCurrency(fiscalSummary.totalValeur)}</span>
+                <span className="kairos-num text-right">{formatCurrency(fiscalSummary.totalVerse)}</span>
                 <span className="kairos-num text-right text-[var(--negative)]">- {formatCurrency(fiscalSummary.totalDroits)}</span>
-                <span className="kairos-num text-right">{formatCurrency(fiscalSummary.totalValeur - fiscalSummary.totalDroits)}</span>
+                <span className="kairos-num text-right">{formatCurrency(fiscalSummary.totalVerse - fiscalSummary.totalDroits)}</span>
               </div>
             </div>
           </CardContent>
@@ -741,7 +755,11 @@ export const AssuranceVie = () => {
                       <span>{contract.etablissement}</span>
                     )}
                     {contract.detenteur && (
-                      <span>Détenteur : {contract.detenteur}</span>
+                      <span>
+                        Souscripteur : {isDetenteurSpouse(contract.detenteur)
+                          ? (conjointName || 'Conjoint')
+                          : (userName || 'Vous')}
+                      </span>
                     )}
                     {contract.date_acquisition && (
                       <span>Ouvert le {new Date(contract.date_acquisition).toLocaleDateString('fr-FR')}</span>

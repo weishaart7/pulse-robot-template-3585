@@ -11,7 +11,7 @@ import { Recompense } from '@/types/recompense';
 import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
 import { isContratHorsSuccession, isPER, isPERAssurantiel, isPERNonQualifie } from '@/constants/assetTypes';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
-import { getAgeAtDate, getDemembrementPct } from '@/lib/transmission';
+import { getAgeAtDate, getDemembrementPct, getDecedentRole } from '@/lib/transmission';
 import { resolveEffectiveAVBeneficiaires } from '@/lib/dmtg/assurance-vie';
 import { isDetenteurSpouse } from '@/lib/patrimoine/utils';
 import { isRegimeCommunautaire } from '@/lib/patrimoine/qualification';
@@ -355,8 +355,18 @@ export function buildAVContracts(
   referenceDate: string = new Date().toISOString().split('T')[0],
   dateNaissanceConjoint?: string | null
 ): AVContract[] {
-  const resolveBeneficiaryId = (familyLinkId: string) =>
-    familyLinkId === 'conjoint' ? (family.survivingSpouseId || familyLinkId) : familyLinkId;
+  // `familyLinkId: 'conjoint'` désigne le conjoint DU SOUSCRIPTEUR : le
+  // conjoint survivant pour un contrat du défunt simulé, mais le défunt
+  // lui-même pour un contrat détenu par le conjoint survivant (non dénoué
+  // par ce décès — cf. computeTransmission, qui ne le taxe pas ; seul
+  // l'affichage de la clause, ex. AssuranceVie.tsx, en dépend).
+  const decedentRole = getDecedentRole(family.decedentId);
+  const resolveBeneficiaryIdPour = (detenteur: string | null | undefined) => {
+    const holderRole = isDetenteurSpouse(detenteur || undefined) ? 'spouse' : 'user';
+    const conjointDuSouscripteur = holderRole === decedentRole ? family.survivingSpouseId : family.decedentId;
+    return (familyLinkId: string) =>
+      familyLinkId === 'conjoint' ? (conjointDuSouscripteur || familyLinkId) : familyLinkId;
+  };
 
   const resolveDateNaissanceSouscripteur = (detenteur: string | null | undefined) =>
     isDetenteurSpouse(detenteur || undefined) ? dateNaissanceConjoint : dateNaissanceUtilisateur;
@@ -370,6 +380,7 @@ export function buildAVContracts(
   return rows
     .filter(row => isContratHorsSuccession({ nature: row.nature, sous_type_per: row.sousTypePer }))
     .map(row => {
+      const resolveBeneficiaryId = resolveBeneficiaryIdPour(row.detenteur);
       const { primesAvant70, primesApres70 } = isPERAssurantiel({ nature: row.nature, sous_type_per: row.sousTypePer })
         ? splitPrimesPER(
           row.operations,

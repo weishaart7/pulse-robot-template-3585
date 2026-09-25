@@ -147,3 +147,15 @@ describe('PER assurantiel du conjoint survivant, non dénoué', () => {
     expect(hasPERNonDenoueConjoint(avContracts, 'spouse', REGIME)).toBe(true);
   });
 });
+
+describe('clause « conjoint » d\'un contrat détenu par le conjoint survivant', () => {
+  it('désigne le défunt (conjoint du souscripteur), jamais le survivant lui-même', () => {
+    const family = buildFamilyGraph(familyProfile as never, maritalStatus as never, familyLinks as never);
+    const [contrat] = buildAVContracts(
+      [perRow('PER_F', 20000, 'spouse', 'Assurantiel', clause(['conjoint', 100]))],
+      familyProfile.date_naissance, family, REF, maritalStatus.date_naissance_conjoint
+    );
+    expect(contrat.niveaux[0].beneficiaires[0].beneficiaryId).toBe(family.decedentId);
+    expect(contrat.niveaux[0].beneficiaires[0].beneficiaryId).not.toBe(family.survivingSpouseId);
+  });
+});

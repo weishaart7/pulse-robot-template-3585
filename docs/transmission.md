@@ -41,7 +41,7 @@ module Famille (liens familiaux, statut du couple) — voir `docs/patrimoine.md`
 | Synthèse | [Synthese.tsx](src/components/transmission/Synthese.tsx) | Résultat consolidé du 1er décès : dévolution, part de chaque héritier, net à recevoir, fiscalité. Explications du moteur réduites à leur première phrase (`resumerExplication`), texte complet et précisions des avertissements derrière un « ? » (`FieldHelp`) |
 | Processus de calcul | [ProcessusCalcul.tsx](src/components/transmission/ProcessusCalcul.tsx) | Étapes de liquidation (masse de calcul, réserve/QD, imputation, réduction, rapport) : détail chiffré et formule affichés, description et conseils derrière un « ? » (`FieldHelp`) + tableau et fiches « Détail par héritier » (succession + donations antérieures + assurance-vie, façon étude notariale) |
 | 2nd décès | [Succession2ndDeces.tsx](src/components/transmission/Succession2ndDeces.tsx) | Chaînage : simule le décès du conjoint survivant à partir du patrimoine reçu au 1er décès |
-| Assurance-vie | [AssuranceVie.tsx](src/components/transmission/AssuranceVie.tsx) | Contrats hors succession civile, taxation 990 I / art. 757 B séparée |
+| Assurance-vie | [AssuranceVie.tsx](src/components/transmission/AssuranceVie.tsx) | Contrats hors succession civile (AV et PER assurantiels des deux époux), taxation 990 I / art. 757 B séparée. La répartition par bénéficiaire et son total ne portent que sur les contrats dénoués au décès simulé de l'utilisateur, même filtre que `computeTransmission` |
 | Donations & legs | `DonationForm.tsx`, `LegsForm.tsx`, [Liberalites.tsx](src/components/transmission/Liberalites.tsx) | Saisie des libéralités consommées par le moteur de liquidation |
 
 **Principe d'affichage** : à l'écran, chiffres, formules et avertissements bloquants ; les explications
@@ -258,6 +258,11 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   un contrat du conjoint survivant, sous communauté, bloque le calcul (`AVDonneesInsuffisantesError`,
   renvoi vers l'onglet Assurance-vie) — jamais présumée. Les lignes antérieures à ce changement ont
   gardé la valeur `deniers_communs` appliquée par l'ancien défaut, qu'elle ait été choisie ou non.
+- **Clause « conjoint » relative au souscripteur.** Dans `buildAVContracts`, le marqueur
+  `familyLinkId: 'conjoint'` désigne le conjoint du souscripteur : le conjoint survivant pour un contrat
+  du défunt simulé, le défunt lui-même pour un contrat détenu par le conjoint survivant (résolu via
+  `getDecedentRole(family.decedentId)` et `row.detenteur`). Sans effet fiscal (un contrat du survivant
+  n'est pas dénoué), mais évite d'afficher le survivant comme bénéficiaire de son propre contrat.
 - **Processus de calcul aligné sur la Synthèse.** `ProcessusCalcul.tsx` lit `option_conjoint`
   (comme `Synthese.tsx`/`Succession2ndDeces.tsx`) au lieu d'une option `quart_pp` figée ; le libellé
   « Conjoint survivant » est dérivé des droits réellement attribués par le moteur. La formule de la
