@@ -6,7 +6,7 @@ import { useModuleSubNav } from '@/hooks/useModuleSubNav';
 const FAMILLE_SUBNAV = [
   { id: 'foyer', label: 'Foyer', href: '/dashboard/famille' },
   { id: 'regime', label: 'Régime matrimonial', href: '/dashboard/famille/situation-matrimoniale' },
-  { id: 'membres', label: 'Membres de la famille', href: '/dashboard/famille/membres' },
+  { id: 'membres', label: 'Membres', href: '/dashboard/famille/membres' },
 ] as const;
 
 export type FamilleSubNavId = typeof FAMILLE_SUBNAV[number]['id'];

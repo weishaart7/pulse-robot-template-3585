@@ -62,7 +62,7 @@ export function SidebarNav({
 
   return (
     <>
-      <div className="flex items-start justify-between gap-2 px-5 pt-5 pb-4">
+      <div className="flex items-center justify-between gap-2 px-5 pt-5 pb-4">
         <div className="font-['Instrument_Sans','Inter',sans-serif] font-medium text-[22px] leading-none tracking-[-0.02em] text-foreground truncate">
           {moduleLabel}
         </div>
@@ -71,7 +71,7 @@ export function SidebarNav({
             <TooltipTrigger asChild>
               <button
                 onClick={onCollapse}
-                className="-mt-1 p-1 rounded-[6px] text-muted-foreground hover:text-foreground transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="-my-1 p-1 rounded-[6px] text-muted-foreground hover:text-foreground transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 aria-label="Réduire le panneau"
               >
                 <ChevronLeft className="h-4 w-4" strokeWidth={2.25} />
@@ -216,7 +216,7 @@ export function DashboardSidebar() {
 
       {/* Panneau replié : bouton miroir de « Réduire », à la même hauteur, sur la bande taupe. */}
       {!open && subNavItems.length > 0 && (
-        <div className="w-10 flex justify-center pt-4">
+        <div className="w-10 flex justify-center pt-[19px]">
           <Tooltip delayDuration={200}>
             <TooltipTrigger asChild>
               <button

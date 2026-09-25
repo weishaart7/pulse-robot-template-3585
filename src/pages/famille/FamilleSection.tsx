@@ -7,6 +7,7 @@ import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
 import { ageEnAnnees } from '@/lib/family/age';
 import { childrenLinkedToSpouse, leavesCouple } from '@/lib/family/statutTransition';
 import { FamilyLink } from '@/services/familyService';
+import { ChevronRight } from 'lucide-react';
 import { useFamilleSubNav } from './useFamilleSubNav';
 import {
   AlertDialog,
@@ -18,7 +19,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ChevronRight, Scale } from 'lucide-react';
 import profilHomme from '@/assets/Profil homme.png';
 import profilFemme from '@/assets/Profil femme.png';
 
@@ -28,25 +28,32 @@ const STATUTS = ['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)', 'Divor
 
 const profileImage = (civility?: string) => (civility === 'Mme' || civility === 'Mlle' ? profilFemme : profilHomme);
 
-function PersonChip({ image, name, secondary, role, onClick }: {
+// Carte d'identité du Foyer (client ou conjoint) : ouvre la fiche au clic.
+function PersonCard({ image, eyebrow, name, details, onClick, className = '' }: {
+  className?: string;
   image: string;
+  eyebrow: string;
   name: string;
-  secondary: string;
-  role: string;
+  details: string[];
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`group flex items-center gap-3 rounded-xl p-1.5 pr-3 text-left transition-colors hover:bg-muted/50 ${FOCUS_RING}`}
+      className={`group flex w-full items-center gap-4 ${className} rounded-card border border-border bg-card p-4 text-left transition-colors hover:border-foreground/25 ${FOCUS_RING}`}
     >
-      <img src={image} alt="" className="h-14 w-14 shrink-0 rounded-full object-cover object-top" />
-      <div className="min-w-0">
-        <p className="text-[15px] font-semibold leading-tight text-foreground truncate">{name}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">{secondary}</p>
-        <p className="text-xs text-muted-foreground/80 mt-0.5 truncate">{role}</p>
+      <img src={image} alt="" className="h-14 w-14 shrink-0 rounded-full object-cover object-top ring-1 ring-border" />
+      <div className="min-w-0 flex-1">
+        <p className="ds-eyebrow text-muted-foreground">{eyebrow}</p>
+        <p className="mt-1 text-base font-semibold leading-tight text-foreground truncate">{name}</p>
+        <p className="mt-1 text-xs text-muted-foreground truncate">
+          {details.length > 0 ? details.join(' · ') : 'Fiche à compléter'}
+        </p>
       </div>
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors group-hover:bg-muted group-hover:text-foreground">
+        <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
+      </span>
     </button>
   );
 }
@@ -60,12 +67,6 @@ const FamilleSection = () => {
 
   const relationStatus = (maritalData?.statut_couple as string) || '';
   const hasPartner = ['Concubinage', 'Pacsé(e)', 'Marié(e)'].includes(relationStatus);
-  const isDivorcedOrWidowed = ['Divorcé(e)', 'Veuf/Veuve'].includes(relationStatus);
-
-  const regimeTabLabel = relationStatus === 'Marié(e)' ? 'Régime matrimonial'
-    : relationStatus === 'Pacsé(e)' ? 'PACS'
-    : relationStatus === 'Concubinage' ? 'Concubinage'
-    : 'Régime matrimonial';
 
   // Transition en attente de confirmation (sortie d'un statut en couple).
   const [pendingStatut, setPendingStatut] = useState<{ statut: string; children: FamilyLink[] } | null>(null);
@@ -108,88 +109,36 @@ const FamilleSection = () => {
     ? `${familyProfile.prenom} ${familyProfile.nom}`
     : 'Utilisateur';
 
-  const secondaryLine = (dateStr?: string) => {
-    if (!dateStr) return '—';
-    const age = ageEnAnnees(dateStr);
-    return `${format(new Date(dateStr), 'dd/MM/yyyy')} · ${age} ans`;
-  };
-
-  const { regimeStatusLine, regimeDetailLabel } = (() => {
-    if (!hasPartner) return { regimeStatusLine: '', regimeDetailLabel: '' };
-    let statusLine = relationStatus;
-    const startDateStr = relationStatus === 'Marié(e)' ? maritalData?.date_mariage
-      : relationStatus === 'Pacsé(e)' ? maritalData?.date_pacs
-      : undefined;
-    if (startDateStr) {
-      statusLine += ` depuis ${new Date(startDateStr).getFullYear()}`;
-    }
-    const detailLabel = relationStatus === 'Marié(e)' ? maritalData?.regime_matrimonial
-      : relationStatus === 'Pacsé(e)' ? maritalData?.convention_pacs
-      : undefined;
-    return { regimeStatusLine: statusLine, regimeDetailLabel: detailLabel || '' };
-  })();
-
-  const detailButton = (
-    <button
-      onClick={() => navigate('/dashboard/famille/situation-matrimoniale')}
-      className={`group inline-flex shrink-0 items-center gap-1.5 rounded-full bg-foreground px-3.5 py-1.5 text-[12px] font-medium text-background shadow-whisper transition-opacity duration-200 hover:opacity-85 ${FOCUS_RING}`}
-    >
-      Voir le détail
-      <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={2} />
-    </button>
-  );
+  // Naissance · âge · profession, en omettant ce qui n'est pas renseigné.
+  const personDetails = (dateStr?: string, profession?: string) => [
+    ...(dateStr ? [`${format(new Date(dateStr), 'dd/MM/yyyy')}`, `${ageEnAnnees(dateStr)} ans`] : []),
+    ...(profession ? [profession] : []),
+  ];
 
   return (
     <div className="pb-6 md:px-6 space-y-5">
-      {/* Foyer : client, conjoint, statut et régime sur une seule rangée */}
-      <div className="rounded-card border border-border bg-card p-4 flex flex-wrap items-center gap-x-8 gap-y-4">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <PersonChip
-            image={profileImage(familyProfile?.civility)}
-            name={clientName}
-            secondary={secondaryLine(familyProfile?.date_naissance)}
-            role={familyProfile?.profession || 'Vous'}
-            onClick={() => navigate('/dashboard/famille/client')}
+      {/* Foyer : client, conjoint et statut ; le détail du régime vit dans sa sous-section */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+        <PersonCard
+          image={profileImage(familyProfile?.civility)}
+          eyebrow="Client"
+          className={hasPartner ? '' : 'sm:col-span-2 lg:col-span-2'}
+          name={clientName}
+          details={personDetails(familyProfile?.date_naissance, familyProfile?.profession)}
+          onClick={() => navigate('/dashboard/famille/client')}
+        />
+        {hasPartner ? (
+          <PersonCard
+            image={profileImage(maritalData?.civilite_conjoint)}
+            eyebrow={relationStatus === 'Marié(e)' ? 'Conjoint(e)' : 'Partenaire'}
+            name={partnerName || 'Partenaire'}
+            details={personDetails(maritalData?.date_naissance_conjoint, maritalData?.profession_conjoint)}
+            onClick={() => navigate('/dashboard/famille/conjoint')}
           />
-          {hasPartner && (
-            <PersonChip
-              image={profileImage(maritalData?.civilite_conjoint)}
-              name={partnerName || 'Partenaire'}
-              secondary={secondaryLine(maritalData?.date_naissance_conjoint)}
-              role="Conjoint(e)"
-              onClick={() => navigate('/dashboard/famille/conjoint')}
-            />
-          )}
-        </div>
-
-        <div className="hidden lg:block h-12 w-px bg-border" aria-hidden="true" />
-
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 flex-1 min-w-0">
-          <div className="flex flex-col gap-1 w-48">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Statut
-            </label>
-            {statutSelect}
-          </div>
-
-          {hasPartner && (
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="h-9 w-9 rounded-full bg-foreground/10 flex items-center justify-center shrink-0">
-                <Scale className="w-4 h-4 text-foreground" strokeWidth={1.75} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  {regimeTabLabel}
-                </p>
-                <p className="text-sm font-semibold text-foreground truncate">{regimeStatusLine}</p>
-                {regimeDetailLabel && (
-                  <p className="text-sm text-muted-foreground truncate">{regimeDetailLabel}</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {(hasPartner || isDivorcedOrWidowed) && <div className="ml-auto">{detailButton}</div>}
+        ) : null}
+        <div className="flex flex-col justify-center gap-1.5 rounded-card border border-border bg-card p-4 sm:col-span-2 lg:col-span-1 lg:w-56">
+          <label className="ds-eyebrow text-muted-foreground">Statut</label>
+          {statutSelect}
         </div>
       </div>
 
