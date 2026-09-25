@@ -22,8 +22,11 @@ compteur (`meta`). Pied : bouton pilule encre « Voir le détail » vers la page
 Chiffres en Inter 300 ; graphiques achromatiques — encre pour l'élément principal, cendre
 `#a59f97` pour le secondaire, piste `#ddd8d2`.
 
-Bandeau « Parlez avec un expert » : carte sombre (encre, coins 24 px) avec une sphère en dégradé
-orange / rose / violet à gauche — seul visuel coloré de l'app. Bouton pilule eggshell.
+Bandeau « Parlez avec un expert » : carte claire (coins 24 px) au fond blanc
+façon maillage flou de la landing : mêmes couleurs que `hero-mesh.png` (bleu ciel en haut à gauche,
+sarcelle en bas au centre, vert anis à droite) ; couleurs fixes, identiques en thème sombre — seul visuel coloré de l'app. Grain
+(bruit SVG `feTurbulence` en `mix-blend-multiply`) par-dessus. Titre en graisse 500, texte
+et bouton pilule en encre (neutral-900).
 
 Grille : 1 colonne mobile, 2 en `sm`, 4 en `lg` (Patrimoine sur 2).
 

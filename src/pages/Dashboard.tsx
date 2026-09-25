@@ -186,22 +186,36 @@ const Dashboard = () => {
   return <div className="p-6 pt-0">
       <AlertesConseil />
 
-      {/* Bandeau sombre (Awesomic) ; la sphère en dégradé est le seul visuel coloré de
-          l'app — l'unique endroit où violet et orange sont admis (ElevenLabs). */}
-      <div className="relative mb-6 overflow-hidden rounded-3xl bg-foreground p-8">
+      {/* Bandeau clair aux couleurs du fond de landing (maillage flou sur blanc) : bleu ciel,
+          sarcelle, vert anis — seul visuel coloré de l'app. Couleurs fixes, identiques en thème sombre. */}
+      <div
+        className="relative mb-6 overflow-hidden rounded-3xl p-8"
+        style={{
+          background: [
+            'radial-gradient(48% 85% at 45% 112%, rgba(140,215,222,0.9) 0%, rgba(185,232,236,0.6) 40%, transparent 75%)',
+            'radial-gradient(45% 90% at 0% 0%, rgba(214,241,248,1) 0%, transparent 72%)',
+            'radial-gradient(38% 75% at 5% 100%, rgba(200,236,245,0.85) 0%, transparent 72%)',
+            'radial-gradient(35% 120% at 100% 55%, rgba(232,252,170,1) 0%, rgba(240,252,200,0.7) 45%, transparent 78%)',
+            'linear-gradient(#ffffff, #fdf8fb)',
+          ].join(', '),
+        }}
+      >
+        {/* Grain : bruit SVG en superposition, comme la texture du fond de la landing. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -left-10 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full opacity-90 blur-2xl"
-          style={{ background: 'radial-gradient(circle at 35% 35%, #ff4704 0%, #f59ac2 35%, #0447ff 70%, transparent 72%)' }}
+          className="pointer-events-none absolute inset-0 opacity-75 mix-blend-multiply"
+          style={{
+            backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+          }}
         />
         <div className="relative flex justify-end items-start">
           <div className="max-w-md">
-            <h3 className="ds-display mb-2.5 text-[22px] text-background">Parlez avec un expert</h3>
-            <p className="mb-5 leading-relaxed text-background/65" style={{ fontSize: '12px' }}>
+            <h3 className="ds-display mb-2.5 text-[22px] text-neutral-900" style={{ fontWeight: 500 }}>Parlez avec un expert</h3>
+            <p className="mb-5 leading-relaxed text-neutral-600" style={{ fontSize: '12px' }}>
               Notre équipe interne de conseillers financiers, de conseillers patrimoniaux et partenaires est à vos côtés pour vous accompagner sereinement, qu'il s'agisse de questions simples ou de décisions stratégiques.
             </p>
             <button
-              className="group inline-flex items-center gap-1.5 rounded-full bg-background px-4 py-2 text-[12px] font-medium text-foreground transition-opacity duration-200 hover:opacity-85"
+              className="group inline-flex items-center gap-1.5 rounded-full bg-neutral-900 px-4 py-2 text-[12px] font-medium text-white transition-opacity duration-200 hover:opacity-85"
             >
               Planifier un rendez-vous
               <ChevronRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={2} />
