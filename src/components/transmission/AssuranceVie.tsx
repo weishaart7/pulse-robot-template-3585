@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { FieldHelp } from '@/components/ui/field-help';
 import { AVContractDetail } from './av/AVContractDetail';
 import { ClauseStructuree, BeneficiaireEntry } from './av/ClauseBeneficiaireBuilder';
-import { NATURES_AV_HORS_SUCCESSION, NATURES_PER, isContratHorsSuccession } from '@/constants/assetTypes';
+import { NATURES_AV_HORS_SUCCESSION, NATURES_PER, NATURES_RETRAITE_RENTE, isContratHorsSuccession, isRetraiteRenteSansGarantie } from '@/constants/assetTypes';
 import {
   buildFamilyGraph,
   buildPatrimonySnapshot,
@@ -40,9 +40,10 @@ import transmissionParamsData from '@/data/transmission-params.json';
 // successoral classique (droits de succession de droit commun selon le lien de parenté), pas le
 // régime 990I/757B ni une clause bénéficiaire hors succession. Il apparaît comme n'importe quel
 // autre actif financier dans Synthèse/ProcessusCalcul, pas ici (cf. NATURES_AV_HORS_SUCCESSION).
-// Les PER sont chargés avec, puis filtrés côté client : seul un PER assurantiel a une clause
-// bénéficiaire hors succession (cf. isContratHorsSuccession), un PER bancaire reste ici exclu.
-const AV_NATURES = [...NATURES_AV_HORS_SUCCESSION, ...NATURES_PER];
+// Les PER et contrats de retraite par rente sont chargés avec, puis filtrés côté client : seuls
+// un PER assurantiel et un contrat de retraite avec garantie décès ont une clause bénéficiaire
+// hors succession (bons de capitalisation toujours exclus, cf. isContratHorsSuccession).
+const AV_NATURES = [...NATURES_AV_HORS_SUCCESSION, ...NATURES_PER, ...NATURES_RETRAITE_RENTE];
 
 interface OperationsByContract {
   [assetId: string]: { type_operation: string; montant: number }[];
@@ -141,7 +142,9 @@ export const AssuranceVie = () => {
             .eq('user_id', user.id),
         ]);
 
-        const avContracts = (contractsRes.data || []).filter(isContratHorsSuccession);
+        // Seuls les contrats transmettant un capital via une clause : exclut PER
+        // bancaire et contrat de retraite par rente sans garantie décès.
+        const avContracts = (contractsRes.data || []).filter(a => isContratHorsSuccession(a) && !isRetraiteRenteSansGarantie(a));
         setContracts(avContracts);
 
         setSubscriberAge(computeAge(profileRes.data?.date_naissance));
@@ -227,7 +230,9 @@ export const AssuranceVie = () => {
               operations: opsByAsset.get(a.id!) || [],
               clauseBeneficiaireStructuree: clauseByAsset.get(a.id!) || null,
               nature: a.nature,
-              sousTypePer: a.sous_type_per
+              sousTypePer: a.sous_type_per,
+              garantieDeces: a.garantie_deces,
+              conditionsExoneration990I: a.conditions_exoneration_990i
             }));
 
             const family: FamilyGraph = buildFamilyGraph(profileRes.data, maritalRes.data, familyLinksRows);

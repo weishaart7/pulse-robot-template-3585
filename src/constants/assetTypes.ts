@@ -388,14 +388,53 @@ export const isPERAssurantiel = (asset: { nature?: string | null; sous_type_per?
 // Tout contrat transmis hors succession via une clause bénéficiaire (assurance-vie ou PER
 // assurantiel) — à utiliser partout où l'actif successoral est construit, à la place de
 // isAssuranceVieHorsSuccession qui ne voit que la nature.
+// Contrats de retraite par rente, d'assurance (PERP, Madelin, article 83, Préfon, retraite
+// mutualiste du combattant). Au décès en phase de constitution, tout dépend de la garantie
+// décès (contre-assurance / réversion) : sans elle, l'épargne reste acquise à l'assureur
+// (mutualisation) — rien n'est transmis ni n'entre dans la succession ; avec elle, rente ou
+// capital versé hors succession aux bénéficiaires de la clause. Exclus du 990 I si primes
+// échelonnées sur 15 ans et sortie au plus tôt à la retraite (art. 990 I al. 2 CGI,
+// BOI-TCAS-AUT-60 §150-171) ; le 757 B reste applicable aux primes versées après 70 ans.
+export const NATURES_RETRAITE_RENTE = [
+  "PERP",
+  "Contrat loi Madelin",
+  "Contrat loi Madelin Agricole",
+  "Contrat article 83",
+  "Contrat Préfon-retraite",
+  "Contrat retraite mutualiste du combattant",
+];
+
+// Madelin et article 83 remplissent par construction les conditions d'exclusion du 990 I
+// (cotisations périodiques, sortie à la retraite) : valeur proposée par défaut dans le formulaire.
+export const NATURES_RETRAITE_RENTE_EXONERATION_990I_PAR_DEFAUT = [
+  "Contrat loi Madelin",
+  "Contrat loi Madelin Agricole",
+  "Contrat article 83",
+];
+
+export const isRetraiteRente = (nature: string | null | undefined): boolean =>
+  !!nature && NATURES_RETRAITE_RENTE.includes(nature);
+
+type ContratInput = { nature?: string | null; sous_type_per?: string | null; garantie_deces?: boolean | null };
+
+// Garantie décès non renseignée : impossible de savoir si le contrat transmet quoi que ce
+// soit — calcul bloqué (cf. transmissionHelpers.ts::assertContratsRetraiteQualifies).
+export const isRetraiteRenteNonQualifie = (asset: ContratInput): boolean =>
+  isRetraiteRente(asset.nature) && asset.garantie_deces !== true && asset.garantie_deces !== false;
+
+// Sans garantie décès : hors succession ET non transmis (épargne acquise à l'assureur).
+export const isRetraiteRenteSansGarantie = (asset: ContratInput): boolean =>
+  isRetraiteRente(asset.nature) && asset.garantie_deces === false;
+
 // Biens dont les données de contrat (av_contract_details : clause bénéficiaire, origine des
 // fonds ; av_operations : versements) sont chargées pour le calcul de transmission : famille
-// "épargne et assurance-vie" + PER assurantiels.
-export const hasDonneesContratAV = (asset: { nature?: string | null; sous_type_per?: string | null }): boolean =>
-  getAssetCategory(asset.nature || '') === 'épargne et assurance-vie' || isPERAssurantiel(asset);
+// "épargne et assurance-vie" + PER assurantiels + contrats de retraite par rente avec garantie décès.
+export const hasDonneesContratAV = (asset: ContratInput): boolean =>
+  getAssetCategory(asset.nature || '') === 'épargne et assurance-vie' || isPERAssurantiel(asset)
+  || (isRetraiteRente(asset.nature) && asset.garantie_deces === true);
 
-export const isContratHorsSuccession = (asset: { nature?: string | null; sous_type_per?: string | null }): boolean =>
-  isAssuranceVieHorsSuccession(asset.nature) || isPERAssurantiel(asset);
+export const isContratHorsSuccession = (asset: ContratInput): boolean =>
+  isAssuranceVieHorsSuccession(asset.nature) || isPERAssurantiel(asset) || isRetraiteRente(asset.nature);
 
 // Les 4 natures de la famille "épargne et assurance-vie" (hors succession + "Bons & contrats de
 // capitalisation") — utilisée dans AssetForm.tsx pour le vocabulaire assurantiel ("Souscripteur"

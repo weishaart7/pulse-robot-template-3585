@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { isPERNonQualifie } from '@/constants/assetTypes';
+import { isPERNonQualifie, isRetraiteRenteNonQualifie } from '@/constants/assetTypes';
 
 // Constants
 // Origines proposées à l'utilisateur. `value` est ce qui est stocké dans
@@ -93,6 +93,9 @@ export const assetSchema = z.object({
   qualification_bien: z.string().optional(),
   qualification_auto: z.boolean().optional(),
   sous_type_per: z.enum(['Bancaire', 'Assurantiel']).optional(),
+  // Contrats de retraite par rente (cf. NATURES_RETRAITE_RENTE).
+  garantie_deces: z.boolean().optional(),
+  conditions_exoneration_990i: z.boolean().optional(),
   cto_multi_actifs: z.boolean().optional(),
   cto_nature_sous_jacent: z.string().optional(),
   clause_entree_communaute: z.boolean().optional(),
@@ -143,6 +146,15 @@ export const assetSchema = z.object({
       code: z.ZodIssueCode.custom,
       path: ['sous_type_per'],
       message: 'Précisez si ce PER est assurantiel ou bancaire',
+    });
+  }
+  // Contrat de retraite par rente : la garantie décès détermine si quoi que ce
+  // soit est transmis au décès — obligatoire, jamais présumée.
+  if (isRetraiteRenteNonQualifie(values)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['garantie_deces'],
+      message: 'Précisez si ce contrat comporte une garantie décès',
     });
   }
 });

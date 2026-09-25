@@ -249,8 +249,8 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   **PER du conjoint survivant non dénoué** : jamais réintégré dans la communauté à liquider
   (décision actée — PER en principe non rachetable, application de la doctrine Ciot discutée),
   exclu de `computeAVReintegrationCivile` ; `hasPERNonDenoueConjoint` alimente un avertissement dans
-  `Synthese.tsx`. Hors périmètre : PERP, contrats Madelin et article 83 (aussi assurantiels, restent
-  pour l'instant dans l'actif successoral). Tests : `utils/transmissionHelpers.per.test.ts`.
+  `Synthese.tsx`. Les PER du conjoint et les contrats de retraite par rente ne sont jamais réintégrés
+  (`isContratRetraiteNonRachetable`). Tests : `utils/transmissionHelpers.per.test.ts`.
 - **Assurance-vie non dénouée du conjoint survivant (doctrine Ciot, §9.6.1).** Sous régime de
   communauté, un contrat détenu par le conjoint survivant et financé en deniers communs est un bien
   commun : `computeAVReintegrationCivile` réintègre **la moitié** de sa valeur de rachat (part du
@@ -286,6 +286,19 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   de l'assiette DMTG (`computeTransmission`), jamais en 990 I / 757 B. Une clause sans aucun
   bénéficiaire saisi n'est jamais caduque (donnée manquante). Conséquence : une renonciation de tous
   les bénéficiaires, jusqu'ici sans effet, fait aussi entrer le capital dans la succession.
+- **Contrats de retraite par rente** (`NATURES_RETRAITE_RENTE` : PERP, Madelin, Madelin agricole,
+  article 83, Préfon, retraite mutualiste du combattant). Toujours hors succession
+  (`isContratHorsSuccession`). `assets.garantie_deces` (obligatoire, jamais présumé ; absent →
+  `BienNonQualifieError` via `assertPERQualifies`) : sans garantie décès, l'épargne reste acquise à
+  l'assureur — ni succession ni transmission (`isRetraiteRenteSansGarantie`, pas d'`AVContract`) ;
+  avec garantie décès, clause saisie comme une assurance-vie (onglet Assurance-vie), primes réparties
+  avant/après 70 ans comme une AV. `assets.conditions_exoneration_990i` (primes sur 15 ans au moins,
+  sortie au plus tôt à la liquidation de la retraite, art. 990 I al. 2 CGI, BOI-TCAS-AUT-60
+  §150-171) → `AVContract.exonere990I` : exclu du prélèvement 990 I, le 757 B restant applicable aux
+  primes versées après 70 ans (l'art. 757 B ne prévoit aucune exclusion). Proposé à « oui » par défaut
+  pour Madelin et article 83. Valorisation : `valeur_estimee` du contrat en approximation du capital
+  transmis (rente de réversion non valorisée séparément). La distinction avec/sans garantie décès et
+  l'application du 757 B à ces contrats relèvent de la pratique, pas d'un texte cité.
 - **Processus de calcul aligné sur la Synthèse.** `ProcessusCalcul.tsx` lit `option_conjoint`
   (comme `Synthese.tsx`/`Succession2ndDeces.tsx`) au lieu d'une option `quart_pp` figée ; le libellé
   « Conjoint survivant » est dérivé des droits réellement attribués par le moteur. La formule de la

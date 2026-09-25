@@ -365,6 +365,8 @@ export type Database = {
           societe_id: string | null
           sous_jacent: string | null
           sous_type_per: string | null
+          garantie_deces: boolean | null
+          conditions_exoneration_990i: boolean | null
           statut_bien: string | null
           support_investissement: string | null
           surface_m2: number | null
@@ -447,6 +449,8 @@ export type Database = {
           societe_id?: string | null
           sous_jacent?: string | null
           sous_type_per?: string | null
+          garantie_deces?: boolean | null
+          conditions_exoneration_990i?: boolean | null
           statut_bien?: string | null
           support_investissement?: string | null
           surface_m2?: number | null
@@ -529,6 +533,8 @@ export type Database = {
           societe_id?: string | null
           sous_jacent?: string | null
           sous_type_per?: string | null
+          garantie_deces?: boolean | null
+          conditions_exoneration_990i?: boolean | null
           statut_bien?: string | null
           support_investissement?: string | null
           surface_m2?: number | null

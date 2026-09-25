@@ -106,6 +106,10 @@ export interface AVContract {
   // (filtrés en amont dans buildAVContracts, cf. transmissionHelpers.ts) : ce
   // champ ne voit donc jamais cette nature-là en pratique.
   nature?: string;
+  // Contrat de retraite par rente (PERP, Madelin, article 83…) remplissant les
+  // conditions de l'art. 990 I al. 2 CGI (primes sur 15 ans, sortie à la
+  // retraite) : exclu du prélèvement 990 I, le 757 B restant applicable.
+  exonere990I?: boolean;
 }
 
 export interface Donation {

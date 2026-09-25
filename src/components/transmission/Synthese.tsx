@@ -179,7 +179,9 @@ export const Synthese = () => {
         operations: avOperationsByAsset.get(a.id) || [],
         clauseBeneficiaireStructuree: avClauseByAsset.get(a.id) || null,
         nature: a.nature,
-        sousTypePer: a.sous_type_per
+        sousTypePer: a.sous_type_per,
+        garantieDeces: a.garantie_deces,
+        conditionsExoneration990I: a.conditions_exoneration_990i
       }));
 
       // Statut 'decede' de la clause bénéficiaire AV : redistribué par le moteur
@@ -526,9 +528,9 @@ export const Synthese = () => {
         <Alert className="bg-[var(--surface-sunken)] border-[var(--kt-border)]">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            PER assurantiel du conjoint survivant non réintégré dans la communauté.
+            PER ou contrat de retraite du conjoint survivant non réintégré dans la communauté.
             <FieldHelp>
-              Un PER n'est en principe pas rachetable avant la retraite, et l'application à sa valeur de la
+              Un PER ou un contrat de retraite par rente n'est en principe pas rachetable avant la retraite, et l'application à sa valeur de la
               règle retenue pour l'assurance-vie non dénouée est discutée. À apprécier au cas par cas.
             </FieldHelp>
           </AlertDescription>

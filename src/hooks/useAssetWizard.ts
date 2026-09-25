@@ -66,8 +66,9 @@ const WIZARD_STEPS: WizardStepDef[] = [
   {
     id: 'particularites',
     label: 'Particularités',
-    // sous_type_per : obligatoire pour les PER (cf. assetSchema.ts).
-    fields: ['sous_type_per'],
+    // sous_type_per (PER) et garantie_deces (retraite par rente) : obligatoires
+    // selon la nature (cf. assetSchema.ts).
+    fields: ['sous_type_per', 'garantie_deces'],
     isVisible: () => true,
   },
   {

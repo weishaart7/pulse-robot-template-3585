@@ -12,6 +12,8 @@ import {
   getAssetCategory,
   NATURES_PER,
   NATURE_PER_TOUJOURS_ASSURANTIEL,
+  NATURES_RETRAITE_RENTE_EXONERATION_990I_PAR_DEFAUT,
+  isRetraiteRente,
   CTO_SOUS_JACENT_OPTIONS,
   PARTS_FONCIERES_NATURES,
   REGIME_FISCAL_PARTS_OPTIONS,
@@ -69,6 +71,20 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
   // calcul de transmission). Pour les 3 natures de prévoyance/décès, le champ reste affiché.
   const showBeneficiaireDesigne = retraitePrevoyanceChamps.includes('beneficiaire_designe') && !isPER;
   const showRenvoiClausePER = isPERObligatoire || (isPER && watchedSousTypePer === 'Assurantiel');
+
+  const isRetraiteRenteNature = isRetraiteRente(watchedNature);
+  const watchedGarantieDeces = form.watch('garantie_deces');
+  // Madelin / article 83 : conditions d'exclusion du 990 I remplies par
+  // construction — proposées par défaut, modifiables.
+  useEffect(() => {
+    if (
+      watchedGarantieDeces === true
+      && NATURES_RETRAITE_RENTE_EXONERATION_990I_PAR_DEFAUT.includes(watchedNature)
+      && form.getValues('conditions_exoneration_990i') === undefined
+    ) {
+      form.setValue('conditions_exoneration_990i', true);
+    }
+  }, [watchedGarantieDeces, watchedNature, form]);
 
   // PER obligatoire : sous-type figé sur Assurantiel, enregistré tel quel.
   useEffect(() => {
@@ -347,6 +363,69 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
             )}
           </FormItem>
         )} />
+      )}
+
+      {isRetraiteRenteNature && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField control={form.control} name="garantie_deces" render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                Garantie décès
+                <FieldHelp>
+                  Contre-assurance ou réversion prévue en cas de décès avant la retraite. Sans elle, l'épargne
+                  reste acquise à l'assureur : rien n'est transmis ni n'entre dans la succession. Avec elle,
+                  une rente ou un capital est versé hors succession aux bénéficiaires de la clause (à saisir
+                  dans Transmission → Assurance-vie).
+                </FieldHelp>
+              </FormLabel>
+              <Select
+                onValueChange={val => field.onChange(val === 'oui')}
+                value={field.value === true ? 'oui' : field.value === false ? 'non' : undefined}
+              >
+                <FormControl>
+                  <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                    <SelectValue placeholder="Choisir" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="oui">Oui</SelectItem>
+                  <SelectItem value="non">Non</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          {watchedGarantieDeces === true && (
+            <FormField control={form.control} name="conditions_exoneration_990i" render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Exonération du prélèvement 990 I
+                  <FieldHelp>
+                    Primes versées régulièrement pendant au moins 15 ans et sortie au plus tôt à la liquidation
+                    de la retraite (art. 990 I al. 2 CGI) : le capital transmis échappe au prélèvement 990 I.
+                    Les primes versées après 70 ans restent soumises au 757 B.
+                  </FieldHelp>
+                </FormLabel>
+                <Select
+                  onValueChange={val => field.onChange(val === 'oui')}
+                  value={field.value === true ? 'oui' : field.value === false ? 'non' : undefined}
+                >
+                  <FormControl>
+                    <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                      <SelectValue placeholder="Choisir" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="oui">Conditions remplies</SelectItem>
+                    <SelectItem value="non">Conditions non remplies</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+        </div>
       )}
 
       {(showCapitalGaranti || showCapitalGarantiVM || showBeneficiaireDesigne || showModeSortie) && (

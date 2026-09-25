@@ -172,6 +172,9 @@ export interface RawAssetInput {
   // 'Assurantiel' | 'Bancaire' pour les natures PER : un PER assurantiel sort de
   // l'actif successoral (cf. constants/assetTypes.ts::isContratHorsSuccession).
   sous_type_per?: string | null;
+  // Contrats de retraite par rente (cf. constants/assetTypes.ts::
+  // NATURES_RETRAITE_RENTE) : sans garantie décès, rien n'est transmis.
+  garantie_deces?: boolean | null;
   // Régime matrimonial / indivision (cf. lib/patrimoine/succession.ts::getPartSuccessorale) :
   // détermine la part de ce bien qui entre réellement dans la succession.
   qualification_bien?: string | null;

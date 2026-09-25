@@ -147,7 +147,10 @@ export function computeAssuranceVie(
       const isConjointPacsExonere = (benef.lien === 'conjoint' || benef.lien === 'pacs') && contract.isExonereBeneficiaireConjointPacs;
       const isFraterieExonere = benef.lien === 'frere_soeur' && contract.isSiblingExonEligible;
 
-      if (!isConjointPacsExonere && !isFraterieExonere) {
+      // Rente viagère de retraite professionnelle / PERP remplissant les
+      // conditions de l'art. 990 I al. 2 : hors 990 I (le 757 B ci-dessus
+      // reste applicable aux primes versées après 70 ans).
+      if (!isConjointPacsExonere && !isFraterieExonere && !contract.exonere990I) {
         const capitalSoumis = capital990I * share.quotePart;
 
         // "Contrat vie-génération" (art. 990 I bis CGI) : abattement de 20%

@@ -76,7 +76,9 @@ export function useAVContracts(assets: Asset[]) {
         operations: opsByAsset.get(a.id!) || [],
         clauseBeneficiaireStructuree: clauseByAsset.get(a.id!) || null,
         nature: a.nature,
-        sousTypePer: a.sous_type_per
+        sousTypePer: a.sous_type_per,
+        garantieDeces: a.garantie_deces,
+        conditionsExoneration990I: a.conditions_exoneration_990i
       }));
 
       setAvContractsRaw(rows);

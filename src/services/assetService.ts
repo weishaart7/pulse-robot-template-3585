@@ -55,6 +55,8 @@ export interface Asset {
   transfert_societe?: boolean;
   societe_id?: string | null;
   sous_type_per?: 'Bancaire' | 'Assurantiel' | string;
+  garantie_deces?: boolean | null;
+  conditions_exoneration_990i?: boolean | null;
   cto_multi_actifs?: boolean;
   cto_nature_sous_jacent?: string;
   clause_entree_communaute?: boolean;

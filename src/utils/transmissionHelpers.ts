@@ -9,7 +9,7 @@ import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcqu
 import { RecompenseCalcInput, CreanceCalcInput } from '@/lib/patrimoine/recompensesCreances';
 import { Recompense } from '@/types/recompense';
 import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
-import { isContratHorsSuccession, isPER, isPERAssurantiel, isPERNonQualifie } from '@/constants/assetTypes';
+import { isContratHorsSuccession, isPER, isPERAssurantiel, isPERNonQualifie, isRetraiteRente, isRetraiteRenteNonQualifie, isRetraiteRenteSansGarantie } from '@/constants/assetTypes';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { getAgeAtDate, getDemembrementPct, getDecedentRole } from '@/lib/transmission';
 import { resolveEffectiveAVBeneficiaires } from '@/lib/dmtg/assurance-vie';
@@ -283,6 +283,10 @@ export interface AVContractRawRow {
   // assets.sous_type_per — un PER n'est traité comme contrat hors succession
   // que s'il est assurantiel (cf. isPERAssurantiel).
   sousTypePer?: string | null;
+  // assets.garantie_deces / conditions_exoneration_990i — contrats de retraite
+  // par rente uniquement (cf. NATURES_RETRAITE_RENTE).
+  garantieDeces?: boolean | null;
+  conditionsExoneration990I?: boolean | null;
   // assets.detenteur (texte libre, 'user'/'spouse' par convention, cf.
   // lib/patrimoine/utils.ts::isDetenteurSpouse) — détenteur réel du contrat,
   // pour distinguer un contrat de l'Utilisateur de celui du conjoint
@@ -377,8 +381,11 @@ export function buildAVContracts(
   // l'appelant (défense en profondeur, cf. isAssuranceVieHorsSuccession).
   // Même filtre pour les PER : seul un PER assurantiel devient un AVContract,
   // un PER bancaire reste dans l'actif successoral (cf. isContratHorsSuccession).
+  // Contrat de retraite par rente sans garantie décès : épargne acquise à
+  // l'assureur, jamais transmise — pas un AVContract.
   return rows
-    .filter(row => isContratHorsSuccession({ nature: row.nature, sous_type_per: row.sousTypePer }))
+    .filter(row => isContratHorsSuccession({ nature: row.nature, sous_type_per: row.sousTypePer })
+      && !isRetraiteRenteSansGarantie({ nature: row.nature, garantie_deces: row.garantieDeces }))
     .map(row => {
       const resolveBeneficiaryId = resolveBeneficiaryIdPour(row.detenteur);
       const { primesAvant70, primesApres70 } = isPERAssurantiel({ nature: row.nature, sous_type_per: row.sousTypePer })
@@ -456,7 +463,8 @@ export function buildAVContracts(
         origineFonds: row.origineFonds === 'deniers_propres' || row.origineFonds === 'deniers_communs'
           ? row.origineFonds
           : undefined,
-        nature: row.nature || undefined
+        nature: row.nature || undefined,
+        exonere990I: isRetraiteRente(row.nature) && row.conditionsExoneration990I === true
       };
     });
 }
@@ -483,7 +491,7 @@ export function computeAVReintegrationCivile(
 ): number {
   if (!isRegimeCommunautaire(regimeMatrimonial || undefined)) return 0;
   const contratSansOrigine = avContracts.find(
-    c => c.detenteur === holderNonDenoue && !isPER(c.nature) && !c.origineFonds
+    c => c.detenteur === holderNonDenoue && !isContratRetraiteNonRachetable(c.nature) && !c.origineFonds
   );
   if (contratSansOrigine) {
     throw new AVDonneesInsuffisantesError(
@@ -494,7 +502,7 @@ export function computeAVReintegrationCivile(
     // PER exclu (décision actée) : un PER n'est en principe pas rachetable
     // avant la retraite, l'application de la doctrine Ciot à sa valeur est
     // discutée — non réintégré, signalé à l'écran (cf. hasPERNonDenoueConjoint).
-    .filter(c => c.detenteur === holderNonDenoue && c.origineFonds === 'deniers_communs' && !isPER(c.nature))
+    .filter(c => c.detenteur === holderNonDenoue && c.origineFonds === 'deniers_communs' && !isContratRetraiteNonRachetable(c.nature))
     // Bien commun : seule la moitié de la valeur de rachat revient à la
     // succession du défunt, l'autre moitié restant au conjoint survivant —
     // même pondération que tout autre bien commun (getPartSuccessorale).
@@ -512,7 +520,7 @@ export function hasPERNonDenoueConjoint(
   regimeMatrimonial: string | null | undefined
 ): boolean {
   if (!isRegimeCommunautaire(regimeMatrimonial || undefined)) return false;
-  return avContracts.some(c => c.detenteur === holderNonDenoue && isPER(c.nature));
+  return avContracts.some(c => c.detenteur === holderNonDenoue && isContratRetraiteNonRachetable(c.nature));
 }
 
 /**
@@ -1026,13 +1034,27 @@ function getFractionPassifParDetenteur(passif: PassifLine, cote: 'user' | 'conjo
  * BienNonQualifieError pour réutiliser le renvoi "Qualifier ce bien dans
  * Patrimoine" déjà affiché par Synthese/ProcessusCalcul/Succession2ndDeces.
  */
-export function assertPERQualifies(assets: Array<{ nature?: string | null; sous_type_per?: string | null; denomination?: string | null }>): void {
+export function assertPERQualifies(assets: Array<{ nature?: string | null; sous_type_per?: string | null; garantie_deces?: boolean | null; denomination?: string | null }>): void {
   const perNonQualifie = assets.find(isPERNonQualifie);
   if (perNonQualifie) {
     throw new BienNonQualifieError(
       `Le PER « ${perNonQualifie.denomination || perNonQualifie.nature} » n'a pas de sous-type (Assurantiel ou Bancaire) : impossible de savoir s'il sort de la succession. Renseignez-le dans la fiche du bien.`
     );
   }
+  // Même garde-fou pour les contrats de retraite par rente : sans l'information
+  // "garantie décès", impossible de savoir si le contrat transmet quoi que ce soit.
+  const retraiteNonQualifiee = assets.find(isRetraiteRenteNonQualifie);
+  if (retraiteNonQualifiee) {
+    throw new BienNonQualifieError(
+      `Le contrat « ${retraiteNonQualifiee.denomination || retraiteNonQualifiee.nature} » n'indique pas s'il comporte une garantie décès : impossible de savoir s'il transmet un capital ou une rente. Renseignez-le dans la fiche du bien.`
+    );
+  }
+}
+
+// PER et contrats de retraite par rente : en principe non rachetables avant la
+// retraite — jamais réintégrés au titre de la doctrine Ciot (décision actée).
+function isContratRetraiteNonRachetable(nature: string | null | undefined): boolean {
+  return isPER(nature) || isRetraiteRente(nature);
 }
 
 /**

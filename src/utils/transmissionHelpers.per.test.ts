@@ -212,3 +212,45 @@ describe('clause bénéficiaire caduque (bénéficiaire unique prédécédé, sa
     expect(contrat.niveaux[0].beneficiaires[0].statut).toBe('decede');
   });
 });
+
+describe('contrats de retraite par rente (PERP, Madelin, article 83…)', () => {
+  const rowRetraite = (garantieDeces: boolean | null, conditions: boolean | null): AVContractRawRow => ({
+    assetId: 'MAD', label: 'MAD', valeurEstimee: 400000, detenteur: 'user', origineFonds: 'deniers_propres',
+    nature: 'Contrat loi Madelin', garantieDeces, conditionsExoneration990I: conditions,
+    operations: [{ type_operation: 'versement', montant: 300000, date_operation: '2010-01-01' }],
+    clauseBeneficiaireStructuree: clause([HUGO, 100])
+  });
+  const assetRetraite = (garantie_deces: boolean | null) =>
+    asset('MAD', 'Contrat loi Madelin', 400000, 'user', { garantie_deces });
+
+  it('garantie décès non renseignée : calcul bloqué', () => {
+    expect(() => buildPatrimonySnapshot([assetRetraite(null)] as never, [])).toThrow(BienNonQualifieError);
+  });
+
+  it('sans garantie décès : ni succession, ni transmission', () => {
+    const { patrimony, avContracts } = run([rowRetraite(false, null)], [assetRetraite(false)]);
+    expect(patrimony.biensExistants).toBe(525000);
+    expect(avContracts).toHaveLength(0);
+  });
+
+  it('avec garantie décès et conditions remplies : hors succession, exonéré du 990 I', () => {
+    const { patrimony, result } = run([rowRetraite(true, true)], [assetRetraite(true)]);
+    expect(patrimony.biensExistants).toBe(525000);
+    expect(result.dmtg.perBeneficiary[HUGO].prelev990I).toBe(0);
+    expect(result.dmtg.perBeneficiary[HUGO].capitalAVNet).toBe(400000);
+  });
+
+  it('avec garantie décès, conditions non remplies : 990 I comme une assurance-vie', () => {
+    const { result } = run([rowRetraite(true, false)], [assetRetraite(true)]);
+    // (400 000 - 152 500) × 20 %
+    expect(result.dmtg.perBeneficiary[HUGO].prelev990I).toBeCloseTo(49500, 0);
+  });
+
+  it('jamais réintégré au titre de la doctrine Ciot (contrat non rachetable)', () => {
+    const { avContracts } = run(
+      [{ ...rowRetraite(true, true), detenteur: 'spouse', origineFonds: 'deniers_communs' }],
+      [{ ...assetRetraite(true), detenteur: 'spouse', pourcentage_utilisateur: 0, pourcentage_conjoint: 100 }]
+    );
+    expect(computeAVReintegrationCivile(avContracts, 'spouse', REGIME)).toBe(0);
+  });
+});
