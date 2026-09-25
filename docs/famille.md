@@ -37,7 +37,7 @@ permet de l'alimenter (voir §3).
   compact (cartes client et conjoint — surtitre, nom, naissance · âge · profession, chevron — qui
   ouvrent leur fiche, et carte Statut ; sans partenaire, la carte client s'élargit ; le détail du régime
   n'y est plus répété, il vit dans la sous-section Régime matrimonial) et l'arbre familial, avec un lien « Ajouter / Gérer les membres »
-  vers la sous-section Membres. Le tableau des membres (seul point d'entrée « Ajouter un membre »,
+  vers la sous-section Membres. La liste des membres (une carte par branche — descendants, ascendants, collatéraux, alliés, autres — via `lib/family/groupesMembres.ts`, disposées côte à côte en colonnes sur écran large ; ligne cliquable pour modifier ; seul point d'entrée « Ajouter un membre »,
   état vide explicatif sans membre) vit dans la sous-section Membres. Les personnes décédées sont estompées
   (carte détourée d'un filet, « † année ») dans l'arbre et grisées dans le tableau. Quitter un statut en
   couple (vers Célibataire, Divorcé(e), Veuf/Veuve) passe par une confirmation qui liste les enfants
