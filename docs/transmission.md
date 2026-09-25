@@ -38,11 +38,16 @@ module Famille (liens familiaux, statut du couple) — voir `docs/patrimoine.md`
 
 | Écran | Composant | Rôle |
 |---|---|---|
-| Synthèse | [Synthese.tsx](src/components/transmission/Synthese.tsx) | Résultat consolidé du 1er décès : dévolution, part de chaque héritier, net à recevoir, fiscalité |
-| Processus de calcul | [ProcessusCalcul.tsx](src/components/transmission/ProcessusCalcul.tsx) | Détail pédagogique des étapes de liquidation (masse de calcul, réserve/QD, imputation, réduction, rapport) + tableau et fiches « Détail par héritier » (succession + donations antérieures + assurance-vie, façon étude notariale) |
+| Synthèse | [Synthese.tsx](src/components/transmission/Synthese.tsx) | Résultat consolidé du 1er décès : dévolution, part de chaque héritier, net à recevoir, fiscalité. Explications du moteur réduites à leur première phrase (`resumerExplication`), texte complet et précisions des avertissements derrière un « ? » (`FieldHelp`) |
+| Processus de calcul | [ProcessusCalcul.tsx](src/components/transmission/ProcessusCalcul.tsx) | Étapes de liquidation (masse de calcul, réserve/QD, imputation, réduction, rapport) : détail chiffré et formule affichés, description et conseils derrière un « ? » (`FieldHelp`) + tableau et fiches « Détail par héritier » (succession + donations antérieures + assurance-vie, façon étude notariale) |
 | 2nd décès | [Succession2ndDeces.tsx](src/components/transmission/Succession2ndDeces.tsx) | Chaînage : simule le décès du conjoint survivant à partir du patrimoine reçu au 1er décès |
 | Assurance-vie | [AssuranceVie.tsx](src/components/transmission/AssuranceVie.tsx) | Contrats hors succession civile, taxation 990 I / art. 757 B séparée |
 | Donations & legs | `DonationForm.tsx`, `LegsForm.tsx`, [Liberalites.tsx](src/components/transmission/Liberalites.tsx) | Saisie des libéralités consommées par le moteur de liquidation |
+
+**Principe d'affichage** : à l'écran, chiffres, formules et avertissements bloquants ; les explications
+juridiques (fondement, exclusions, nuances) et les aides contextuelles derrière un « ? » (`FieldHelp`,
+`src/components/ui/field-help.tsx`, options `side` / `contentClassName` pour les textes longs). Appliqué à
+tous les onglets du module.
 
 **Tables Supabase** : `liberalites` (donations et legs, table unique discriminée par `type`), plus en
 lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, `asset_indivisaires`,

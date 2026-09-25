@@ -9,6 +9,7 @@ import { Shield, FileText, AlertTriangle, ArrowRight, ChevronRight, Scale, UserC
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { FieldHelp } from '@/components/ui/field-help';
 import { AVContractDetail } from './av/AVContractDetail';
 import { ClauseStructuree, BeneficiaireEntry } from './av/ClauseBeneficiaireBuilder';
 import { NATURES_AV_HORS_SUCCESSION, NATURES_PER, isContratHorsSuccession } from '@/constants/assetTypes';
@@ -547,6 +548,11 @@ export const AssuranceVie = () => {
             <CardTitle className="text-[15px] font-semibold flex items-center gap-2 text-[var(--text-primary)]">
               <Scale className="h-4 w-4 text-[var(--ink-400)]" />
               Répartition fiscale en cas de décès
+              <FieldHelp>
+                Assurance-vie : répartition selon l'âge réel du souscripteur à chaque versement enregistré (pas
+                son âge actuel). PER assurantiel : selon l'âge du titulaire au décès. Le conjoint ou partenaire
+                de PACS est exonéré dans tous les cas.
+              </FieldHelp>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5 pt-0">
@@ -556,7 +562,14 @@ export const AssuranceVie = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Badge className="bg-[var(--ink-900)] text-white border-transparent rounded-[var(--radius-md)]">Art. 990 I</Badge>
-                    <span className="text-xs text-[var(--text-secondary)]">Primes avant 70 ans</span>
+                    <span className="text-xs text-[var(--text-secondary)]">
+                      Primes avant 70 ans
+                      <FieldHelp>
+                        Abattement de 152 500 € par bénéficiaire tous contrats confondus (partagé entre usufruitier et
+                        nu-propriétaire en cas de clause démembrée), puis prélèvement de 20 % jusqu'à 700 000 € et
+                        31,25 % au-delà (art. 990 I CGI).
+                      </FieldHelp>
+                    </span>
                   </div>
                 </div>
                 <div className="space-y-2 text-sm">
@@ -600,7 +613,14 @@ export const AssuranceVie = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Badge className="bg-[var(--ink-050)] text-[var(--ink-700)] border-transparent rounded-[var(--radius-md)]">Art. 757 B</Badge>
-                    <span className="text-xs text-[var(--text-secondary)]">Primes après 70 ans</span>
+                    <span className="text-xs text-[var(--text-secondary)]">
+                      Primes après 70 ans
+                      <FieldHelp>
+                        Abattement global de 30 500 € réparti entre les bénéficiaires non exonérés au prorata de leurs
+                        primes ; l'excédent est taxé au barème de succession de chaque bénéficiaire (art. 757 B CGI),
+                        pas à un taux fixe — le montant des droits n'est donc pas isolable de la succession, cf. Synthèse.
+                      </FieldHelp>
+                    </span>
                   </div>
                 </div>
                 <div className="space-y-2 text-sm">
@@ -622,20 +642,10 @@ export const AssuranceVie = () => {
                     <span className="text-[var(--text-primary)]">Réintégré aux droits de succession</span>
                     <span className="kairos-num text-[var(--negative)]">{formatCurrency(fiscalSummary.totalReintegration757B)}</span>
                   </div>
-                  <p className="text-xs text-[var(--text-secondary)]">
-                    Taxé au barème de succession de chaque bénéficiaire (art. 757 B), pas à un taux fixe — le montant des droits n'est donc pas isolable de la succession, cf. Synthèse.
-                  </p>
                 </div>
               </div>
             </div>
 
-            <div className="mt-4 flex items-start gap-2 p-3 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--kt-border)]">
-              <AlertTriangle className="h-4 w-4 text-[var(--warning)] shrink-0 mt-0.5" />
-              <p className="text-xs text-[var(--text-secondary)]">
-                Calcul basé sur l'âge réel du souscripteur à chaque versement enregistré (pas sur son âge actuel).
-                Le conjoint ou partenaire de PACS est exonéré dans tous les cas.
-              </p>
-            </div>
           </CardContent>
         </Card>
       )}
@@ -752,23 +762,6 @@ export const AssuranceVie = () => {
               </button>
             </React.Fragment>
           ))}
-        </CardContent>
-      </Card>
-
-      {/* Note fiscale */}
-      <Card className="bg-[var(--warning-soft)] border-[var(--warning)]/20 rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <AlertTriangle className="h-5 w-5 text-[var(--warning)] shrink-0 mt-0.5" />
-            <div className="space-y-2 text-sm">
-              <p className="font-medium text-[var(--text-primary)]">Régime fiscal de l'assurance-vie en cas de décès</p>
-              <ul className="list-disc list-inside space-y-1 text-[var(--text-secondary)]">
-                <li><strong className="text-[var(--text-primary)]">Primes versées avant 70 ans :</strong> abattement de 152 500 € par bénéficiaire tous contrats confondus (partagé entre usufruitier et nu-propriétaire en cas de clause démembrée), puis prélèvement de 20 % jusqu'à 700 000 € et 31,25 % au-delà (art. 990 I CGI)</li>
-                <li><strong className="text-[var(--text-primary)]">Primes versées après 70 ans :</strong> abattement global de 30 500 € réparti entre les bénéficiaires non exonérés au prorata de leurs primes, excédent soumis aux droits de succession (art. 757 B CGI)</li>
-                <li><strong className="text-[var(--text-primary)]">Conjoint / partenaire PACS :</strong> exonéré dans tous les cas</li>
-              </ul>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

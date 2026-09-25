@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calculator, Users, Scale, FileText, PiggyBank, Receipt, TrendingUp, Lightbulb, AlertCircle, ArrowRight, UserSquare2 } from 'lucide-react';
+import { Calculator, Users, Scale, FileText, PiggyBank, Receipt, TrendingUp, AlertCircle, ArrowRight, UserSquare2 } from 'lucide-react';
+import { FieldHelp } from '@/components/ui/field-help';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -506,28 +507,31 @@ export const ProcessusCalcul = () => {
             <Calculator className="h-5 w-5 text-[var(--ink-400)]" />
             Processus de calcul de transmission
           </CardTitle>
-          <CardDescription className="text-[var(--text-secondary)]">
-            Méthodologie complète de calcul de la transmission successorale
-          </CardDescription>
         </CardHeader>
         <CardContent className="p-5 pt-0 space-y-8">
           {calculSteps.map((step, index) => (
             <div key={index} className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Colonne gauche : Calcul détaillé */}
-                <div className="lg:col-span-2 space-y-4">
-                  <div className="flex items-start gap-4">
+              {/* Description et conseils derrière le "?" : seuls le détail chiffré
+                  et la formule restent affichés en clair. */}
+              <div className="space-y-4">
+                  <div className="flex items-center gap-4">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--ink-050)]">
                       <step.icon className="h-5 w-5 text-[var(--ink-700)]" />
                     </div>
-                    <div className="flex-1 space-y-2">
-                      <h3 className="text-lg font-semibold text-[var(--text-primary)]">{step.title}</h3>
-                      <p className="text-sm text-[var(--text-secondary)]">{step.description}</p>
-                    </div>
+                    <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                      {step.title}
+                      <FieldHelp>
+                        <p className="font-medium">{step.description}</p>
+                        <ul className="mt-2 space-y-1">
+                          {step.conseils.map((conseil, idx) => (
+                            <li key={idx}>→ {conseil}</li>
+                          ))}
+                        </ul>
+                      </FieldHelp>
+                    </h3>
                   </div>
 
-                  <div className="space-y-2 pt-2">
-                    <h4 className="text-sm font-medium text-[var(--text-primary)]">Détails du calcul :</h4>
+                  <div className="space-y-2">
                     <ul className="space-y-1 text-sm text-[var(--text-secondary)]">
                       {step.details.map((detail, idx) => (
                         <li key={idx} className="pl-4">
@@ -537,28 +541,9 @@ export const ProcessusCalcul = () => {
                     </ul>
                   </div>
 
-                  <div className="mt-4 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--kt-border)] p-3">
+                  <div className="rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--kt-border)] p-3">
                     <p className="kairos-num text-sm font-mono text-[var(--text-primary)]">{step.formula}</p>
                   </div>
-                </div>
-
-                {/* Colonne droite : Conseils */}
-                <div className="lg:col-span-1">
-                  <div className="rounded-[var(--radius-lg)] border border-[var(--kt-border)] bg-[var(--surface-sunken)] p-4 space-y-3 h-full">
-                    <div className="flex items-center gap-2 text-[var(--text-primary)]">
-                      <Lightbulb className="h-4 w-4 text-[var(--ink-400)]" />
-                      <h4 className="text-sm font-semibold">Conseils pratiques</h4>
-                    </div>
-                    <ul className="space-y-2 text-sm text-[var(--text-secondary)]">
-                      {step.conseils.map((conseil, idx) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <span className="text-[var(--ink-400)] mt-0.5">→</span>
-                          <span>{conseil}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
               </div>
 
               {index < calculSteps.length - 1 && (
@@ -570,18 +555,18 @@ export const ProcessusCalcul = () => {
           <Separator className="my-6 bg-[var(--kt-border)]" />
 
           <div className="space-y-6">
-            <div className="flex items-start gap-4">
+            <div className="flex items-center gap-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--ink-050)]">
                 <UserSquare2 className="h-5 w-5 text-[var(--ink-700)]" />
               </div>
-              <div className="flex-1 space-y-2">
-                <h3 className="text-lg font-semibold text-[var(--text-primary)]">Détail par héritier</h3>
-                <p className="text-sm text-[var(--text-secondary)]">
-                  Vue consolidée de ce que reçoit chaque héritier au titre de la succession, des donations
-                  antérieures et de l'assurance-vie — donations et capitaux décès inclus, contrairement au
-                  "Transmission nette" de l'onglet Synthèse qui ne couvre que le net de succession.
-                </p>
-              </div>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                Détail par héritier
+                <FieldHelp>
+                  Ce que reçoit chaque héritier au titre de la succession, des donations antérieures et de
+                  l'assurance-vie. Contrairement à la « Transmission nette » de l'onglet Synthèse, qui ne
+                  couvre que le net de succession, donations et capitaux décès sont inclus.
+                </FieldHelp>
+              </h3>
             </div>
 
             <div className="overflow-auto">
@@ -659,19 +644,6 @@ export const ProcessusCalcul = () => {
             </div>
           </div>
 
-          <div className="mt-8 rounded-[var(--radius-lg)] border border-[var(--kt-border)] bg-[var(--surface-sunken)] p-6">
-            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-[var(--text-primary)]">
-              <TrendingUp className="h-5 w-5 text-[var(--ink-400)]" />
-              Synthèse du processus
-            </h3>
-            <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-              Le calcul de transmission successorale suit un processus en 7 étapes interdépendantes.
-              Chaque étape s'appuie sur les résultats de la précédente pour aboutir à la détermination
-              des parts finales de chaque héritier et du coût fiscal global de la transmission.
-              Ce processus garantit le respect des règles du Code civil (protection de la réserve héréditaire)
-              tout en permettant d'optimiser la fiscalité selon les dispositifs légaux disponibles.
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

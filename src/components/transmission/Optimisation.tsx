@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FieldHelp } from '@/components/ui/field-help';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -273,9 +274,6 @@ export const Optimisation = () => {
             {saving && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[var(--ink-900)]" />}
             {selectedOption && !saving && <Check className="h-4 w-4 text-[var(--kt-positive)]" />}
           </div>
-          <CardDescription className="text-[var(--text-secondary)]">
-            Choisissez l'option successorale du conjoint survivant en fonction de votre situation familiale.
-          </CardDescription>
         </CardHeader>
         <CardContent className="p-5 pt-0 space-y-4">
           {/* Situation badges */}
@@ -329,19 +327,23 @@ export const Optimisation = () => {
           <CardHeader className="p-5">
             <div className="flex items-center gap-2">
               <Home className="h-5 w-5 text-[var(--ink-400)]" />
-              <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Droit d'usage et d'habitation</CardTitle>
+              <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">
+                Droit d'usage et d'habitation
+                <FieldHelp>
+                  Option du conjoint survivant sur le logement (C. civ. art. 764-766), distincte du droit de
+                  jouissance temporaire d'un an : à exercer dans le délai légal d'un an, jamais tacite. La valeur
+                  retenue (60 % de la valeur d'usufruit du logement, barème art. 669 CGI) s'impute sur la part
+                  successorale du conjoint plutôt que de s'y ajouter.
+                </FieldHelp>
+              </CardTitle>
               {savingDuh && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[var(--ink-900)]" />}
             </div>
-            <CardDescription className="text-[var(--text-secondary)]">
-              Indiquez si le conjoint survivant a opté pour le droit d'usage et d'habitation sur le logement (C. civ. art. 764-766) — option distincte du droit de jouissance temporaire d'un an, à exercer dans le délai légal d'un an, jamais tacite.
-            </CardDescription>
           </CardHeader>
           <CardContent className="p-5 pt-0">
             <Switch
               checked={duhOpte}
               onCheckedChange={handleDuhOpteChange}
-              label="Droit d'usage et d'habitation optée"
-              description="La valeur retenue (60% de la valeur d'usufruit du logement, barème art. 669 CGI) s'impute sur la part successorale du conjoint plutôt que de s'y ajouter."
+              label="Droit d'usage et d'habitation opté"
             />
           </CardContent>
         </Card>
@@ -352,19 +354,22 @@ export const Optimisation = () => {
         <CardHeader className="p-5">
           <div className="flex items-center gap-2">
             <Handshake className="h-5 w-5 text-[var(--ink-400)]" />
-            <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Partage envisagé</CardTitle>
+            <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">
+              Partage envisagé
+              <FieldHelp>
+                Acte de partage effectivement envisagé entre les héritiers : déclenche le droit de partage (2,5 %
+                de l'actif net partagé, art. 746 CGI). Sans effet en cas de démembrement (usufruit/nue-propriété) ;
+                les héritiers peuvent aussi rester en indivision indéfiniment sans jamais le payer.
+              </FieldHelp>
+            </CardTitle>
             {savingPartage && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[var(--ink-900)]" />}
           </div>
-          <CardDescription className="text-[var(--text-secondary)]">
-            Indiquez si un acte de partage est effectivement envisagé entre les héritiers.
-          </CardDescription>
         </CardHeader>
         <CardContent className="p-5 pt-0">
           <Switch
             checked={partageEnvisage}
             onCheckedChange={handlePartageEnvisageChange}
             label="Partage envisagé"
-            description="Déclenche le droit de partage (2,5% de l'actif net partagé, art. 746 CGI). Sans effet en cas de démembrement (usufruit/nue-propriété) : les héritiers peuvent aussi rester en indivision indéfiniment sans jamais le payer."
           />
         </CardContent>
       </Card>

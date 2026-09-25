@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FieldHelp } from '@/components/ui/field-help';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
@@ -438,7 +439,15 @@ export const Succession2ndDeces = () => {
   return (
     <div className="kairos-transmission space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-sm font-medium text-[var(--text-secondary)]">Ordre des décès :</span>
+        <span className="text-sm font-medium text-[var(--text-secondary)]">
+          Ordre des décès
+          <FieldHelp>
+            L'option retenue par le survivant (1/4 en pleine propriété, usufruit…) est celle choisie dans
+            Optimisation, appliquée aux deux ordres. Si elle n'est pas ouverte dans un sens, le calcul retient
+            1/4 en pleine propriété.
+          </FieldHelp>
+          {' '}:
+        </span>
         <div className="inline-flex rounded-[var(--radius-lg)] border border-[var(--kt-border)] overflow-hidden">
           <button
             type="button"
@@ -467,13 +476,6 @@ export const Succession2ndDeces = () => {
         </div>
       </div>
 
-      {ordre === 'inverse' && (
-        <p className="text-xs text-[var(--text-secondary)]">
-          L'option retenue par le survivant (1/4 en pleine propriété, usufruit…) est celle choisie dans
-          Optimisation, appliquée aux deux ordres. Si elle n'est pas ouverte dans ce sens, le calcul
-          retient 1/4 en pleine propriété.
-        </p>
-      )}
 
       {!current.result ? (
         <div className="kairos-transmission text-center py-12">
@@ -560,11 +562,11 @@ const Succession2ndDecesContent: React.FC<ContentProps> = ({
         <CardHeader className="p-5">
           <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">
             Succession de {decedentSecondNom} (2nd décès)
+            <FieldHelp>
+              Patrimoine propre de {decedentSecondNom} à l'issue du 1er décès de {decedentFirstNom}, sans
+              l'usufruit qu'il/elle détenait, réuni séparément ci-dessous.
+            </FieldHelp>
           </CardTitle>
-          <CardDescription className="text-[var(--text-secondary)]">
-            Patrimoine propre de {decedentSecondNom} à l'issue du 1er décès de {decedentFirstNom} — sans l'usufruit
-            qu'il/elle détenait, réuni séparément ci-dessous.
-          </CardDescription>
         </CardHeader>
         <CardContent className="p-5 pt-0">
           <div className="grid gap-6 md:grid-cols-2">
@@ -588,12 +590,12 @@ const Succession2ndDecesContent: React.FC<ContentProps> = ({
         <CardHeader className="p-5">
           <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">
             Réunion de l'usufruit
+            <FieldHelp>
+              Art. 1133 CGI : l'usufruit que {decedentSecondNom} détenait sur la part de {decedentFirstNom}
+              s'éteint à son décès et complète directement la propriété des nu-propriétaires, sans taxation et
+              sans jamais entrer dans la masse fiscale ci-dessus.
+            </FieldHelp>
           </CardTitle>
-          <CardDescription className="text-[var(--text-secondary)]">
-            Art. 1133 CGI — l'usufruit que {decedentSecondNom} détenait sur la part de {decedentFirstNom} s'éteint à
-            son décès et complète directement la propriété des nu-propriétaires, <strong>sans taxation</strong> et
-            sans jamais entrer dans la masse fiscale ci-dessus.
-          </CardDescription>
         </CardHeader>
         <CardContent className="p-5 pt-0 space-y-4">
           <div className="flex items-center justify-between rounded-[var(--radius-lg)] border border-[var(--kt-border)] bg-[var(--positive-subtle,var(--surface-sunken))] px-5 py-4">
@@ -630,10 +632,8 @@ const Succession2ndDecesContent: React.FC<ContentProps> = ({
         <CardHeader className="p-5">
           <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">
             Transmission nette combinée
+            <FieldHelp>Héritage net du 2nd décès + réunion d'usufruit hors taxation, par bénéficiaire.</FieldHelp>
           </CardTitle>
-          <CardDescription className="text-[var(--text-secondary)]">
-            Héritage net du 2nd décès + réunion d'usufruit hors taxation, par bénéficiaire.
-          </CardDescription>
         </CardHeader>
         <CardContent className="p-5 pt-0">
           <Table>

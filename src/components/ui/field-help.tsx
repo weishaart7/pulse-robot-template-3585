@@ -6,13 +6,17 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 interface FieldHelpProps {
   children: React.ReactNode
   className?: string
+  // Largeur de la bulle, à élargir pour un texte long (ex. "w-96").
+  contentClassName?: string
+  // Côté d'ouverture : "bottom" pour un texte long affiché haut dans la page.
+  side?: "top" | "bottom"
 }
 
 // Petit "?" placé juste après un libellé de champ : la précision s'ouvre au
 // survol, au toucher ou au focus clavier, au lieu de s'afficher en texte sous
 // le champ. Le clic est neutralisé pour ne pas refermer ce que le survol vient
 // d'ouvrir.
-const FieldHelp = ({ children, className }: FieldHelpProps) => {
+const FieldHelp = ({ children, className, contentClassName, side = "top" }: FieldHelpProps) => {
   const [open, setOpen] = React.useState(false)
 
   return (
@@ -35,8 +39,8 @@ const FieldHelp = ({ children, className }: FieldHelpProps) => {
         </button>
       </PopoverTrigger>
       <PopoverContent
-        side="top"
-        className="w-72 p-3 text-xs font-normal leading-relaxed"
+        side={side}
+        className={cn("w-72 p-3 text-xs font-normal leading-relaxed", contentClassName)}
         onOpenAutoFocus={(e) => e.preventDefault()}
         // Sans ça, Radix rend le focus au bouton à la fermeture, ce qui
         // déclenche son onFocus et rouvre aussitôt la bulle.

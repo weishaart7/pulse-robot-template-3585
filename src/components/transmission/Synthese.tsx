@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Calculator, FileText, DollarSign, Shield, AlertTriangle, ArrowRight } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FieldHelp } from '@/components/ui/field-help';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
@@ -35,6 +36,22 @@ import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
 import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcquets';
 import transmissionParamsData from '@/data/transmission-params.json';
 import './kairos-transmission.css';
+
+// Explication du moteur (successionLegale.ts / transmission/index.ts) : la
+// première phrase reste affichée, le texte complet passe derrière un "?"
+// quand il va au-delà. Coupe au premier " : ", " — " ou fin de phrase après
+// 40 caractères au moins ; un point d'abréviation ("C. civ. art. 763",
+// "al. 3", "cf. ") n'est jamais une fin de phrase.
+const COUPURE_EXPLICATION = / : | — |(?<!\b(?:C|civ|art|al|cf|ex|assur|CGI))\. (?=[A-ZÀ-Ý])/g;
+
+function resumerExplication(texte: string): { essentiel: string; complet: string | null } {
+  COUPURE_EXPLICATION.lastIndex = 40;
+  const match = COUPURE_EXPLICATION.exec(texte);
+  if (!match) return { essentiel: texte, complet: null };
+  const reste = texte.slice(match.index + match[0].length).trim();
+  if (!reste) return { essentiel: texte, complet: null };
+  return { essentiel: texte.slice(0, match.index) + '.', complet: texte };
+}
 
 const TYPE_QUOTE_PART_LABELS: Record<string, string> = {
   pleine_propriete: 'pleine propriété',
@@ -497,7 +514,11 @@ export const Synthese = () => {
         <Alert className="bg-[var(--warning-soft)] border-[var(--warning)]/30">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Assurance-vie hors succession civile, sous réserve des primes manifestement exagérées (art. L. 132-13 C. assur.) — critère d'appréciation multicritère (âge, situation patrimoniale et familiale, utilité du contrat) laissé à votre analyse, non automatisé dans cet outil.
+            Assurance-vie hors succession, sous réserve des primes manifestement exagérées (non vérifié par l'outil).
+            <FieldHelp>
+              Art. L. 132-13 C. assur. : critère d'appréciation multicritère (âge, situation patrimoniale et
+              familiale, utilité du contrat) laissé à votre analyse, non automatisé dans cet outil.
+            </FieldHelp>
           </AlertDescription>
         </Alert>
       )}
@@ -505,7 +526,11 @@ export const Synthese = () => {
         <Alert className="bg-[var(--surface-sunken)] border-[var(--kt-border)]">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Le PER assurantiel du conjoint survivant n'est pas réintégré dans la communauté à liquider : un PER n'est en principe pas rachetable avant la retraite, et l'application à sa valeur de la règle retenue pour l'assurance-vie non dénouée est discutée. À apprécier au cas par cas.
+            PER assurantiel du conjoint survivant non réintégré dans la communauté.
+            <FieldHelp>
+              Un PER n'est en principe pas rachetable avant la retraite, et l'application à sa valeur de la
+              règle retenue pour l'assurance-vie non dénouée est discutée. À apprécier au cas par cas.
+            </FieldHelp>
           </AlertDescription>
         </Alert>
       )}
@@ -521,15 +546,18 @@ export const Synthese = () => {
         <Alert className="bg-[var(--warning-soft)] border-[var(--warning)]/30">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            {legsCaducs.length === 1 ? 'Un legs est caduc' : `${legsCaducs.length} legs sont caducs`} (bien légué introuvable) et {legsCaducs.length === 1 ? "n'a" : "n'ont"} pas été pris en compte dans le calcul :
+            {legsCaducs.length === 1 ? 'Un legs est caduc' : `${legsCaducs.length} legs sont caducs`} (bien légué introuvable) et {legsCaducs.length === 1 ? "n'a" : "n'ont"} pas été pris en compte dans le calcul
+            <FieldHelp>
+              Seule la suppression du bien est détectée. Un bien vendu mais toujours présent dans votre
+              patrimoine n'est pas identifié automatiquement — vérifiez manuellement la validité de vos legs
+              après une vente.
+            </FieldHelp>
+            :
             <ul className="mt-1 ml-4 list-disc">
               {legsCaducs.map((legs, index) => (
                 <li key={index}>{legs.denomination} — {legs.beneficiaireNom}</li>
               ))}
             </ul>
-            <p className="mt-1 text-xs">
-              Seule la suppression du bien est détectée. Un bien vendu mais toujours présent dans votre patrimoine n'est pas identifié automatiquement — vérifiez manuellement la validité de vos legs après une vente.
-            </p>
           </AlertDescription>
         </Alert>
       )}
@@ -537,32 +565,29 @@ export const Synthese = () => {
       {transmissionResult.explicationsTexte && transmissionResult.explicationsTexte.length > 0 && (
         <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardHeader className="p-5">
-            <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Succession légale</CardTitle>
-            <CardDescription className="text-[var(--text-secondary)]">
-              À défaut de dispositions testamentaires
-            </CardDescription>
+            <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">
+              Succession légale
+              <FieldHelp>
+                À défaut de dispositions testamentaires. L'option du conjoint survivant se modifie dans
+                l'onglet Optimisation.
+              </FieldHelp>
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-5 pt-0">
+            {/* Seule la première phrase de chaque explication reste affichée,
+                le texte complet (fondement, exclusions, nuances) derrière un "?". */}
             <div className="space-y-2">
-              {transmissionResult.explicationsTexte.map((explication, index) => (
-                <p key={index} className="text-sm text-[var(--text-secondary)]">
-                  {explication}
-                </p>
-              ))}
+              {transmissionResult.explicationsTexte.map((explication, index) => {
+                const { essentiel, complet } = resumerExplication(explication);
+                return (
+                  <p key={index} className="text-sm text-[var(--text-secondary)]">
+                    {essentiel}
+                    {complet && <FieldHelp side="bottom" contentClassName="w-[32rem] max-w-[90vw]">{complet}</FieldHelp>}
+                  </p>
+                );
+              })}
             </div>
 
-            {transmissionResult.optionConjoint && (
-              <div className="mt-4 p-4 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--kt-border)]">
-                <h4 className="font-medium mb-2 text-[var(--text-primary)]">Option du conjoint survivant</h4>
-                <p className="text-sm text-[var(--text-secondary)]">
-                  Le conjoint peut choisir entre :
-                </p>
-                <ul className="text-sm text-[var(--text-secondary)] mt-1 ml-4 list-disc">
-                  <li>1/4 en pleine propriété</li>
-                  <li>La totalité en usufruit (enfants en nue-propriété)</li>
-                </ul>
-              </div>
-            )}
           </CardContent>
         </Card>
       )}
@@ -572,9 +597,6 @@ export const Synthese = () => {
         <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardHeader className="p-5">
             <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Transmission nette</CardTitle>
-            <CardDescription className="text-[var(--text-secondary)]">
-              Répartition entre les héritiers
-            </CardDescription>
           </CardHeader>
           <CardContent className="p-5 pt-0">
             <div className="relative h-80">
@@ -621,9 +643,6 @@ export const Synthese = () => {
         <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
           <CardHeader className="p-5">
             <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Détail par héritier</CardTitle>
-            <CardDescription className="text-[var(--text-secondary)]">
-              Montants détaillés pour chaque héritier
-            </CardDescription>
           </CardHeader>
           <CardContent className="p-5 pt-0">
             <div className="space-y-4">
@@ -676,10 +695,8 @@ export const Synthese = () => {
             <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-[var(--text-primary)]">
               <Calculator className="h-5 w-5 text-[var(--ink-400)]" />
               Coûts de la succession
+              <FieldHelp>Droits de mutation (DMTG), frais de notaire et droit de partage, par héritier.</FieldHelp>
             </CardTitle>
-            <CardDescription className="text-[var(--text-secondary)]">
-              Droits de mutation (DMTG), frais de notaire et droit de partage par héritier
-            </CardDescription>
           </CardHeader>
           <CardContent className="p-5 pt-0">
             {(() => {
@@ -781,10 +798,8 @@ export const Synthese = () => {
             <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-[var(--text-primary)]">
               <Shield className="h-5 w-5 text-[var(--ink-400)]" />
               Abattements restants
+              <FieldHelp>Abattements fiscaux résiduels de chaque héritier, selon son lien avec le défunt.</FieldHelp>
             </CardTitle>
-            <CardDescription className="text-[var(--text-secondary)]">
-              Abattements fiscaux résiduels par héritier en fonction de son lien avec le défunt
-            </CardDescription>
           </CardHeader>
           <CardContent className="p-5 pt-0">
             {(() => {
