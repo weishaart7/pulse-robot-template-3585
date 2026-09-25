@@ -46,7 +46,7 @@ permet de l'alimenter (voir §3).
 - **Fiche client** et **Conjoint** saisissent l'identité civile de chaque membre du couple, dont
   une bonne partie de champs déclaratifs (adresse, nationalité…) qui restent aujourd'hui dormants
   (§3).
-- **Régime matrimonial** structure 5 onglets visibles seulement si `statut_couple === 'Marié(e)'`
+- **Régime matrimonial** (titre + rappel « statut depuis année · régime ») structure 5 onglets (`SegmentedTabs`, barre « Enregistrer » collante en bas de page) visibles seulement si `statut_couple === 'Marié(e)'`
   (vues distinctes pour Pacsé(e)/Concubinage) : régime légal (avec, sous les régimes concernés, la
   désignation des biens de la société d'acquêts et l'extension aux propres par nature — voir §2),
   récompenses/créances, participation aux acquêts, donation au dernier vivant, historique. Le

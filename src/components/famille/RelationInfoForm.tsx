@@ -10,14 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Heart, FileText, Gift, History, Scale, Coins } from "lucide-react";
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+import { SegmentedTabs } from '@/components/ui/segmented-tabs';
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { SmartDateInput } from "@/components/family/SmartDateInput";
@@ -261,34 +254,12 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
       <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-8">
         {/* Barre de navigation des sous-sections */}
         {sections.length > 0 && (
-          <Breadcrumb>
-            <BreadcrumbList className="flex-nowrap overflow-x-auto text-sm sm:flex-wrap">
-              {sections.map((section, index) => (
-                <Fragment key={section.id}>
-                  {index > 0 && <BreadcrumbSeparator />}
-                  <BreadcrumbItem className="shrink-0">
-                    {activeSection === section.id ? (
-                      <BreadcrumbPage className="inline-flex items-center gap-1.5 text-foreground font-medium">
-                        <section.icon className="h-3.5 w-3.5" />
-                        {section.label}
-                      </BreadcrumbPage>
-                    ) : (
-                      <BreadcrumbLink asChild>
-                        <button
-                          type="button"
-                          onClick={() => setActiveSection(section.id)}
-                          className="inline-flex items-center gap-1.5"
-                        >
-                          <section.icon className="h-3.5 w-3.5" />
-                          {section.label}
-                        </button>
-                      </BreadcrumbLink>
-                    )}
-                  </BreadcrumbItem>
-                </Fragment>
-              ))}
-            </BreadcrumbList>
-          </Breadcrumb>
+          <SegmentedTabs
+            tabs={sections.map(({ id, label }) => ({ id, label }))}
+            value={activeSection}
+            onValueChange={(id) => setActiveSection(id as Section)}
+            className="overflow-x-auto overflow-y-hidden whitespace-nowrap"
+          />
         )}
 
         {/* MARIÉ */}
@@ -369,49 +340,57 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
                       )}
                     />
 
-                    <div className="flex flex-wrap items-center gap-6">
-                      <FormField
-                        control={form.control}
-                        name="pasDeContrat"
-                        render={({ field }) => (
-                          <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Pas de contrat de mariage" />
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="residenceSeparee"
-                        render={({ field }) => (
-                          <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Résidence séparée" />
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="separationDeCorps"
-                        render={({ field }) => (
-                          <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Séparation de corps" />
-                        )}
-                      />
-                      {/* L'époux séparé de corps reste conjoint successible sauf clause de
-                          renonciation dans la convention (C. civ. art. 732, référentiel §5.1) */}
-                      <FormField
-                        control={form.control}
-                        name="separationCorpsClauseRenonciation"
-                        render={({ field }) => (
-                          <CheckboxWithLabel
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={!separationDeCorps}
-                            label="Clause de renonciation aux droits successoraux (convention de séparation)"
-                          />
-                        )}
-                      />
-                    </div>
+                    <FormField
+                      control={form.control}
+                      name="pasDeContrat"
+                      render={({ field }) => (
+                        <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Pas de contrat de mariage" />
+                      )}
+                    />
 
                     {!pasDeContrat && (
-                      <div className="mt-5">
+                      <div className="mt-3">
                         <QualificationRegimeOptions regimeType={simplifiedRegimeType} />
                       </div>
                     )}
+
+                    <div className="mt-5 border-t border-border pt-4">
+                      <p className="ds-eyebrow text-muted-foreground mb-1">Situation du couple</p>
+                      <div className="flex flex-wrap items-center gap-x-6">
+                        <FormField
+                          control={form.control}
+                          name="residenceSeparee"
+                          render={({ field }) => (
+                            <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Résidence séparée" />
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="separationDeCorps"
+                          render={({ field }) => (
+                            <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Séparation de corps" />
+                          )}
+                        />
+                      </div>
+                      {/* L'époux séparé de corps reste conjoint successible sauf clause de
+                          renonciation dans la convention (C. civ. art. 732, référentiel §5.1) */}
+                      {separationDeCorps && (
+                        <div className="ml-7 border-l border-border pl-4">
+                          <FormField
+                            control={form.control}
+                            name="separationCorpsClauseRenonciation"
+                            render={({ field }) => (
+                              <CheckboxWithLabel
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                label="Clause de renonciation aux droits successoraux (convention de séparation)"
+                              />
+                            )}
+                          />
+                        </div>
+                      )}
+                    </div>
+
                   </div>
                 </div>
               </div>
@@ -732,7 +711,7 @@ export function RelationInfoForm({ relationStatus, onSuccess }: Props) {
           </div>
         )}
 
-        <div className="flex justify-end">
+        <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-6 flex justify-end border-t border-border bg-background/90 px-4 sm:px-6 py-3 backdrop-blur">
           <Button
             type="submit"
             disabled={saving}
