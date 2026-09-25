@@ -17,7 +17,7 @@ Le calcul central, `usePatrimoineCalculations.ts`, dérive trois agrégats à pa
 
 Deux notions transverses pèsent sur ces trois agrégats :
 
-- **Démembrement** (`lib/patrimoine/demembrementFraction.ts` + `bareme669CGI.ts`) : un actif en Usufruit/Nue-propriété est pondéré par le barème fiscal de l'art. 669 CGI selon l'âge de l'usufruitier ; si cet âge n'est pas calculable, l'actif est exclu des totaux (jamais compté à sa valeur pleine propriété par défaut).
+- **Démembrement** (`lib/patrimoine/demembrementFraction.ts` + `bareme669CGI.ts`) : un actif en Usufruit/Nue-propriété est pondéré par le barème fiscal de l'art. 669 CGI selon l'âge de l'usufruitier ; si cet âge n'est pas calculable, l'actif est exclu des totaux (jamais compté à sa valeur pleine propriété par défaut). Pour un bien détenu en indivision avec des tiers (`detenteur = 'Indivision'`), l'usufruitier retenu est le client : seule sa quote-part entre dans le foyer (le conjoint ne peut pas être co-indivisaire), l'âge des co-indivisaires n'intervenant que sur leurs propres quotes-parts.
 - **Qualification civile** (`qualification_bien`, calculée par `lib/patrimoine/qualification.ts::qualifierBien`) : bien propre / commun / indivision / personnel, qui détermine la part revenant à chacun. Un bien jamais qualifié (`qualification_bien` NULL ou `'À qualifier'`) lève `BienNonQualifieError`.
 
 ## 2. Architecture & décisions

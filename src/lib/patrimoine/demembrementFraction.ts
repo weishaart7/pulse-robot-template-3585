@@ -61,6 +61,14 @@ export const getTrancheDemembrement = (
     const ageSpouse = computeAge(ctx.maritalStatus?.date_naissance_conjoint, referenceDate);
     if (ageUser !== null) clientAges.push(ageUser);
     if (ageSpouse !== null) clientAges.push(ageSpouse);
+  } else if (detenteurLower === 'indivision') {
+    // Indivision avec des tiers : seule la quote-part du client entre dans le
+    // foyer (le conjoint ne peut pas être co-indivisaire, cf.
+    // getPartUtilisateurIndivisionTiers). Sur cette quote-part, l'usufruitier
+    // est le client ; l'âge des co-indivisaires ne joue que sur leurs propres
+    // quotes-parts, hors foyer.
+    const age = computeAge(ctx.familyProfile?.date_naissance, referenceDate);
+    if (age !== null) clientAges.push(age);
   }
 
   const counterpartAges = demembrementsForAsset
