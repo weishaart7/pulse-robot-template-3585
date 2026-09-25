@@ -1148,16 +1148,7 @@ export function buildSurvivingSpousePatrimony(
       return sum + valeur * partConjoint;
     }, 0);
 
-  // Pleine propriété reçue au 1er décès (héritage en PP + legs/donations
-  // entre époux déjà maintenus) : déjà intégrée à `partFinale` par
-  // computeTransmission — ne retenir que les lignes 'pleine_propriete' du
-  // conjoint, jamais ses lignes 'usufruit' (cf. note ci-dessus).
-  const ppRecueAuDeces = firstDeathResult.heirs
-    .filter(h => h.personId === survivingSpouseId && h.typeQuotePart === 'pleine_propriete')
-    .reduce((sum, h) => sum + h.partFinale, 0);
-
-  const prelev990IConjoint = firstDeathResult.dmtg.perBeneficiary[survivingSpouseId]?.prelev990I || 0;
-  const capitalDecesNetConjoint = capitalDecesNetPourBeneficiaire(avContracts, survivingSpouseId, prelev990IConjoint);
+  const recu = computeRecuAuPremierDeces(firstDeathResult, survivingSpouseId, avContracts);
 
   const totalPassifsConjoint = spousePassifs.reduce(
     (sum, p) => sum + (p.montant_du || 0) * getFractionPassifParDetenteur(p, 'conjoint'), 0
@@ -1165,7 +1156,7 @@ export function buildSurvivingSpousePatrimony(
 
   return {
     date: new Date().toISOString().split('T')[0],
-    biensExistants: totalAssetsConjoint + ppRecueAuDeces + Math.max(0, capitalDecesNetConjoint),
+    biensExistants: totalAssetsConjoint + recu.total,
     passifs: totalPassifsConjoint,
     assuranceVieTotal: 0
   };
@@ -1267,17 +1258,74 @@ export function addReunifiedFullOwnership(
   survivorId: PersonId,
   avContracts: AVContract[] = []
 ): PatrimonySnapshot {
-  const ppRecue = firstDeathResult.heirs
-    .filter(h => h.personId === survivorId && h.typeQuotePart === 'pleine_propriete')
-    .reduce((sum, h) => sum + h.partFinale, 0);
-
-  const prelev990I = firstDeathResult.dmtg.perBeneficiary[survivorId]?.prelev990I || 0;
-  const capitalDecesNet = capitalDecesNetPourBeneficiaire(avContracts, survivorId, prelev990I);
-
   return {
     ...base,
-    biensExistants: base.biensExistants + ppRecue + Math.max(0, capitalDecesNet)
+    biensExistants: base.biensExistants + computeRecuAuPremierDeces(firstDeathResult, survivorId, avContracts).total
   };
+}
+
+export interface RecuAuPremierDeces {
+  // Héritage/legs/donations entre époux reçus en pleine propriété (lignes
+  // 'pleine_propriete' du survivant, `partFinale`) — jamais l'usufruit, qui
+  // s'éteint au 2nd décès sans taxation (art. 1133 CGI).
+  pleinePropriete: number;
+  // Capitaux décès AV/PER assurantiel revenant au survivant, nets du
+  // prélèvement 990 I.
+  capitauxDecesNets: number;
+  total: number;
+}
+
+/**
+ * Ce que le survivant a reçu en pleine propriété au 1er décès d'un chaînage,
+ * et qui entre dans SA succession au 2nd décès. Source unique du civil
+ * (buildSurvivingSpousePatrimony, addReunifiedFullOwnership) et du fiscal
+ * (buildRecuAuPremierDecesRawAssets), pour que les deux assiettes ne
+ * puissent pas diverger.
+ *
+ * Hypothèse simplificatrice actée : ce reçu est supposé conservé tel quel
+ * jusqu'au 2nd décès (ni consommé, ni réinvesti — ex. en assurance-vie).
+ * `avContracts` doit avoir été résolu contre le graphe du 1er décès
+ * (buildAVContracts), dont `survivorId` est le conjoint survivant.
+ */
+export function computeRecuAuPremierDeces(
+  firstDeathResult: TransmissionResult,
+  survivorId: PersonId,
+  avContracts: AVContract[] = []
+): RecuAuPremierDeces {
+  const pleinePropriete = firstDeathResult.heirs
+    .filter(h => h.personId === survivorId && h.typeQuotePart === 'pleine_propriete')
+    .reduce((sum, h) => sum + h.partFinale, 0);
+  const prelev990I = firstDeathResult.dmtg.perBeneficiary[survivorId]?.prelev990I || 0;
+  const capitauxDecesNets = Math.max(0, capitalDecesNetPourBeneficiaire(avContracts, survivorId, prelev990I));
+  return { pleinePropriete, capitauxDecesNets, total: pleinePropriete + capitauxDecesNets };
+}
+
+/**
+ * Lignes d'actif synthétiques portant le reçu du 1er décès dans l'assiette
+ * FISCALE du 2nd décès (rawAssets de computeTransmission, qui ne voit sinon
+ * que les biens saisis du survivant). Qualifiées 'Bien propre' sans détenteur
+ * (même neutralisation que buildSpouseRawAssets : computeTransmission pondère
+ * toujours du point de vue de l'Utilisateur, un détenteur 'spouse' donnerait
+ * 0 %) pour être retenues à 100 % par getPartSuccessorale ; nature financière (jamais immobilière) : ni
+ * abattement résidence principale, ni frais de notaire immobiliers, même si
+ * l'héritage reçu comprenait de l'immobilier — approximation documentée.
+ */
+export function buildRecuAuPremierDecesRawAssets(
+  recu: RecuAuPremierDeces
+): RawAssetInput[] {
+  const ligne = (id: string, denomination: string, valeur: number): RawAssetInput => ({
+    id,
+    denomination,
+    valeur_estimee: valeur,
+    nature: 'Comptes courants',
+    qualification_bien: 'Bien propre',
+    detenteur: undefined,
+    mode_detention: 'Pleine propriété'
+  });
+  return [
+    ...(recu.pleinePropriete > 0 ? [ligne('recu-1er-deces-pleine-propriete', 'Héritage reçu au 1er décès (pleine propriété)', recu.pleinePropriete)] : []),
+    ...(recu.capitauxDecesNets > 0 ? [ligne('recu-1er-deces-capitaux', 'Capitaux décès reçus au 1er décès', recu.capitauxDecesNets)] : [])
+  ];
 }
 
 /**

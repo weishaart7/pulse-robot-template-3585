@@ -263,6 +263,15 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   du défunt simulé, le défunt lui-même pour un contrat détenu par le conjoint survivant (résolu via
   `getDecedentRole(family.decedentId)` et `row.detenteur`). Sans effet fiscal (un contrat du survivant
   n'est pas dénoué), mais évite d'afficher le survivant comme bénéficiaire de son propre contrat.
+- **2nd décès : reçu du 1er décès dans la succession du survivant.** Ce que le survivant a reçu en
+  pleine propriété au 1er décès (lignes `pleine_propriete` de `heirs`, capitaux AV/PER assurantiel nets du
+  990 I) entre dans sa succession, au civil ET au fiscal, dans les deux ordres. Source unique :
+  `computeRecuAuPremierDeces` (`transmissionHelpers.ts`), consommée par `buildSurvivingSpousePatrimony` /
+  `addReunifiedFullOwnership` (masse civile) et par `buildRecuAuPremierDecesRawAssets` (lignes d'actif
+  synthétiques ajoutées aux `rawAssets` du 2nd décès, sans quoi `computeTransmission` ne taxe que les
+  biens saisis du survivant). Hypothèse actée : reçu conservé tel quel jusqu'au 2nd décès, taxé comme un
+  actif financier (ni abattement résidence principale, ni frais de notaire immobiliers). L'usufruit éteint
+  reste hors taxation (art. 1133 CGI, `computeChainedTransmission`).
 - **Processus de calcul aligné sur la Synthèse.** `ProcessusCalcul.tsx` lit `option_conjoint`
   (comme `Synthese.tsx`/`Succession2ndDeces.tsx`) au lieu d'une option `quart_pp` figée ; le libellé
   « Conjoint survivant » est dérivé des droits réellement attribués par le moteur. La formule de la

@@ -16,6 +16,8 @@ import {
   buildAVContracts,
   buildSpouseAsDecedentFamilyGraph,
   buildSurvivingSpousePatrimony,
+  computeRecuAuPremierDeces,
+  buildRecuAuPremierDecesRawAssets,
   buildSpouseRawAssets,
   buildSpouseOwnBasePatrimony,
   addReunifiedFullOwnership,
@@ -303,15 +305,18 @@ export const Succession2ndDeces = () => {
         // par détenteur (choix aligné sur buildPatrimonySnapshot, qui ne
         // pondère pas non plus les passifs du 1er défunt aujourd'hui — cf.
         // limitation documentée dans le résumé remis à l'utilisateur).
+        // Contrats réels du 1er décès (plus []) : les capitaux AV/PER reçus par
+        // le conjoint entrent dans sa succession — cf. computeRecuAuPremierDeces.
         const spousePatrimony = buildSurvivingSpousePatrimony(
           assets || [],
           passifLinesBrut,
           firstDeathUtilisateur,
           familyUtilisateur.survivingSpouseId!,
-          [],
+          avContractsUtilisateur,
           assetDemembrements,
           demembrementCtx
         );
+        const recuParConjoint = computeRecuAuPremierDeces(firstDeathUtilisateur, familyUtilisateur.survivingSpouseId!, avContractsUtilisateur);
         const chained = computeChainedTransmission({
           firstDeath: ctxUtilisateurDecede,
           secondDeath: {
@@ -320,7 +325,12 @@ export const Succession2ndDeces = () => {
             liberalites: [],
             params,
             referenceDate,
-            rawAssets: buildSpouseRawAssets(assets || [], assetDemembrements, demembrementCtx),
+            // + reçu du 1er décès dans l'assiette fiscale (même montant que le
+            // civil ci-dessus, cf. buildRecuAuPremierDecesRawAssets).
+            rawAssets: [
+              ...buildSpouseRawAssets(assets || [], assetDemembrements, demembrementCtx),
+              ...buildRecuAuPremierDecesRawAssets(recuParConjoint)
+            ],
             assetDemembrements,
             demembrementCtx,
             avContracts: []
@@ -392,7 +402,12 @@ export const Succession2ndDeces = () => {
             liberalites: [],
             params,
             referenceDate,
-            rawAssets: assets || [],
+            rawAssets: [
+              ...(assets || []),
+              ...buildRecuAuPremierDecesRawAssets(
+                computeRecuAuPremierDeces(firstDeathConjoint, familyUtilisateur.decedentId, avContractsUtilisateur)
+              )
+            ],
             assetDemembrements,
             demembrementCtx,
             avContracts: []
@@ -563,8 +578,10 @@ const Succession2ndDecesContent: React.FC<ContentProps> = ({
           <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">
             Succession de {decedentSecondNom} (2nd décès)
             <FieldHelp>
-              Patrimoine propre de {decedentSecondNom} à l'issue du 1er décès de {decedentFirstNom}, sans
-              l'usufruit qu'il/elle détenait, réuni séparément ci-dessous.
+              Patrimoine propre de {decedentSecondNom} à l'issue du 1er décès de {decedentFirstNom} : ses propres
+              biens, plus ce qu'il/elle a reçu en pleine propriété (héritage, capitaux d'assurance-vie et de PER
+              nets de prélèvement), supposé conservé tel quel jusqu'au 2nd décès et taxé comme un actif financier.
+              Sans l'usufruit qu'il/elle détenait, réuni séparément ci-dessous.
             </FieldHelp>
           </CardTitle>
         </CardHeader>

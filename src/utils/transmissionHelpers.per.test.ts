@@ -13,6 +13,9 @@ import {
   buildFamilyGraph,
   computeAVReintegrationCivile,
   hasPERNonDenoueConjoint,
+  computeRecuAuPremierDeces,
+  buildRecuAuPremierDecesRawAssets,
+  buildSurvivingSpousePatrimony,
   splitPrimesPER,
   AVContractRawRow,
   AVDonneesInsuffisantesError
@@ -157,5 +160,30 @@ describe('clause « conjoint » d\'un contrat détenu par le conjoint survivant'
     );
     expect(contrat.niveaux[0].beneficiaires[0].beneficiaryId).toBe(family.decedentId);
     expect(contrat.niveaux[0].beneficiaires[0].beneficiaryId).not.toBe(family.survivingSpouseId);
+  });
+});
+
+describe('2nd décès : reçu du 1er décès dans la succession du survivant', () => {
+  it('capitaux AV/PER reçus : dans la masse civile ET dans l\'assiette fiscale, jamais l\'usufruit éteint', () => {
+    const { result, avContracts } = run(
+      [perRow('PER', 40000, 'user', 'Assurantiel', clause(['conjoint', 100]))],
+      [asset('PER', 'PER individuel', 40000, 'user', { sous_type_per: 'Assurantiel' })]
+    );
+    const conjointId = result.family.survivingSpouseId!;
+    const recu = computeRecuAuPremierDeces(result, conjointId, avContracts);
+    // 100 % usufruit : aucune pleine propriété reçue, seuls les 40 000 € de capitaux.
+    expect(recu).toEqual({ pleinePropriete: 0, capitauxDecesNets: 40000, total: 40000 });
+
+    const base = buildSurvivingSpousePatrimony([] as never, [], result, conjointId, []);
+    const avecCapitaux = buildSurvivingSpousePatrimony([] as never, [], result, conjointId, avContracts);
+    expect(avecCapitaux.biensExistants - base.biensExistants).toBe(40000);
+
+    const lignes = buildRecuAuPremierDecesRawAssets(recu);
+    expect(lignes).toHaveLength(1);
+    expect(lignes[0]).toMatchObject({ valeur_estimee: 40000, qualification_bien: 'Bien propre', detenteur: undefined });
+  });
+
+  it('rien de reçu : aucune ligne synthétique', () => {
+    expect(buildRecuAuPremierDecesRawAssets({ pleinePropriete: 0, capitauxDecesNets: 0, total: 0 })).toEqual([]);
   });
 });
