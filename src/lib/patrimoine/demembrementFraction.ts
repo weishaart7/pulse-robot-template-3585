@@ -23,6 +23,11 @@ export interface DemembrementFractionContext {
   familyLinks?: Array<{ id?: string; date_naissance?: string | null }>;
 }
 
+// Seuls champs lus sur une ligne de démembrement : permet de passer aussi bien
+// des lignes persistées (`AssetDemembrement`) que des brouillons de saisie
+// (`DemembrementDraft`, aperçu du formulaire).
+export type DemembrementPartie = Pick<AssetDemembrement, 'type_partie' | 'family_link_id' | 'date_naissance_tiers'>;
+
 /**
  * Tranche du barème 669 CGI applicable à un actif démembré, déterminée à
  * partir de l'âge de l'usufruitier (client, conjoint, ou tiers/famille via
@@ -31,7 +36,7 @@ export interface DemembrementFractionContext {
  */
 export const getTrancheDemembrement = (
   asset: Pick<Asset, 'mode_detention' | 'detenteur'>,
-  demembrementsForAsset: AssetDemembrement[],
+  demembrementsForAsset: DemembrementPartie[],
   ctx: DemembrementFractionContext,
   // Date à laquelle l'âge de l'usufruitier est apprécié (aujourd'hui par
   // défaut ; date d'un point d'historique ou date d'acquisition sinon).
@@ -70,7 +75,7 @@ export const getTrancheDemembrement = (
 
 export const getFractionDemembrement = (
   asset: Pick<Asset, 'mode_detention' | 'detenteur'>,
-  demembrementsForAsset: AssetDemembrement[],
+  demembrementsForAsset: DemembrementPartie[],
   ctx: DemembrementFractionContext,
   referenceDate: Date = new Date()
 ): number | null => {

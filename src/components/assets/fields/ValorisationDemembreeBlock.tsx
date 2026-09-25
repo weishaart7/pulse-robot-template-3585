@@ -2,9 +2,9 @@ import React from 'react';
 import { Info } from 'lucide-react';
 import { UseFormReturn } from 'react-hook-form';
 import { AssetFormValues } from '@/schemas/assetSchema';
-import { FamilyInfo } from '@/lib/patrimoine/utils';
+import { FamilyInfo, mapDetenteurToDb } from '@/lib/patrimoine/utils';
 import { FamilyMember } from '@/hooks/useAssetForm';
-import { computeAge, getTrancheBaremeForYoungest } from '@/lib/patrimoine/bareme669CGI';
+import { getTrancheDemembrement } from '@/lib/patrimoine/demembrementFraction';
 import { DemembrementDraft } from '@/components/assets/DemembrementSection';
 
 const formatEur = (n: number) =>
@@ -32,27 +32,18 @@ export const ValorisationDemembreeBlock: React.FC<ValorisationDemembreeBlockProp
 
   if (!isDemembre || !watchedValeurEstimee) return null;
 
-  const clientIsUsufruitier = watchedModeDetention === 'Usufruit';
-  const clientAges: number[] = [];
-  if (watchedDetenteur === familyData.userFirstName || watchedDetenteur === 'Vous') {
-    const age = computeAge(familyData.userDateNaissance);
-    if (age !== null) clientAges.push(age);
-  } else if (watchedDetenteur === familyData.partnerFirstName || watchedDetenteur === 'Conjoint') {
-    const age = computeAge(familyData.partnerDateNaissance);
-    if (age !== null) clientAges.push(age);
-  } else if (watchedDetenteur === 'Le couple') {
-    const ageUser = computeAge(familyData.userDateNaissance);
-    const ageSpouse = computeAge(familyData.partnerDateNaissance);
-    if (ageUser !== null) clientAges.push(ageUser);
-    if (ageSpouse !== null) clientAges.push(ageSpouse);
-  }
-  const counterpartAges: number[] = demembrements
-    .map((d) => d.type_partie === 'tiers'
-      ? computeAge(d.date_naissance_tiers)
-      : computeAge(familyMembers.find((m) => m.id === d.family_link_id)?.date_naissance))
-    .filter((a): a is number => a !== null);
-  const usufruitierAges = clientIsUsufruitier ? clientAges : counterpartAges;
-  const trancheBareme669 = getTrancheBaremeForYoungest(usufruitierAges);
+  // Même calcul que les totaux du Résumé Patrimoine et de Transmission
+  // (getTrancheDemembrement) : le détenteur saisi (libellé affiché) est
+  // ramené à sa valeur persistée avant le calcul.
+  const trancheBareme669 = getTrancheDemembrement(
+    { mode_detention: watchedModeDetention, detenteur: mapDetenteurToDb(watchedDetenteur || '', familyData) },
+    demembrements,
+    {
+      familyProfile: { date_naissance: familyData.userDateNaissance },
+      maritalStatus: { date_naissance_conjoint: familyData.partnerDateNaissance },
+      familyLinks: familyMembers,
+    }
+  );
 
   return (
     <div className="rounded-2xl border border-border/60 bg-card p-5 animate-fade-in">
