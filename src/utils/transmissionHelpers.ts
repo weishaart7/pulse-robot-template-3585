@@ -400,13 +400,20 @@ export function buildAVContracts(
           .filter(b => !!b.familyLinkId)
           .map(b => {
             const beneficiaryId = resolveBeneficiaryId(b.familyLinkId);
+            // Bénéficiaire dont le prédécès est connu du graphe : le conjoint
+            // du souscripteur déjà décédé dans ce chaînage (marqueur
+            // 'conjoint' sans conjoint survivant à qui le rattacher), ou une
+            // personne marquée décédée dans Famille. Même effet que le statut
+            // 'decede' saisi sur la clause (cf. resolveEffectiveAVBeneficiaires).
+            const personne = family.persons.find(p => p.id === beneficiaryId);
+            const predecede = (b.familyLinkId === 'conjoint' && beneficiaryId === 'conjoint') || personne?.estDecede === true;
             const entry: AVContract['niveaux'][number]['beneficiaires'][number] = {
               beneficiaryId,
               quotePart: (b.pourcentage || 0) / 100,
-              statut: b.statut
+              statut: predecede ? 'decede' : b.statut
             };
 
-            if (b.typeDetention === 'usufruit' && b.nuProprietaireId) {
+            if (!predecede && b.typeDetention === 'usufruit' && b.nuProprietaireId) {
               const usufruitier = family.persons.find(p => p.id === beneficiaryId);
               if (!usufruitier?.dateNaissance) {
                 throw new AVDonneesInsuffisantesError(

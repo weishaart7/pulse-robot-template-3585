@@ -18,13 +18,13 @@ interface ResolvedAVShare {
  *   pas de bascule vers le niveau suivant tant qu'il reste un acceptant.
  * - Renonciation totale (aucun acceptant dans le niveau) : bascule
  *   entièrement sur le niveau suivant, avec la même logique.
- * - Prédécès ('decede') : traité exactement comme 'accepte' ici (aucune
- *   cascade, aucune redistribution) — décision actée, seule l'UI avertit
- *   l'utilisateur (cf. ClauseBeneficiaireBuilder.tsx). Ne pas ajouter de
- *   branche dédiée à ce statut dans cette fonction.
- * - Si tous les niveaux sont intégralement renoncés, la clause retombe sur
- *   "mes héritiers" — non modélisé en données structurées (cf. diagnostic) :
- *   aucun bénéficiaire résolu, ce contrat ne contribue à aucune fiscalité.
+ * - Prédécès ('decede') : même effet qu'une renonciation — accroissement aux
+ *   bénéficiaires vivants du même rang, puis rang suivant (décision actée,
+ *   applicable à tous les calculs, 1er comme 2nd décès).
+ * - Si aucun niveau ne laisse de bénéficiaire (tous renoncés ou prédécédés),
+ *   aucun bénéficiaire n'est résolu : la clause est caduque et le capital
+ *   entre dans la succession du souscripteur (art. L132-11 C. assur.) —
+ *   cf. getPartCaduque, repris par computeTransmission.
  * - Démembrement : un bénéficiaire acceptant en usufruit voit sa part
  *   effective scindée entre lui (part × usufruitPct, déjà résolu par
  *   buildAVContracts selon le barème art. 669 CGI) et son nu-propriétaire
@@ -33,7 +33,7 @@ interface ResolvedAVShare {
  */
 export function resolveEffectiveAVBeneficiaires(niveaux: AVContract['niveaux']): ResolvedAVShare[] {
   for (const niveau of niveaux) {
-    const acceptants = niveau.beneficiaires.filter(b => b.statut !== 'renoncant');
+    const acceptants = niveau.beneficiaires.filter(b => b.statut !== 'renoncant' && b.statut !== 'decede');
     const totalAcceptantsPct = acceptants.reduce((sum, b) => sum + b.quotePart, 0);
 
     if (acceptants.length === 0 || totalAcceptantsPct <= 0) {
@@ -58,6 +58,19 @@ export function resolveEffectiveAVBeneficiaires(niveaux: AVContract['niveaux']):
   }
 
   return [];
+}
+
+/**
+ * Part (0 à 1) du capital d'un contrat qu'aucun bénéficiaire ne recueille
+ * (tous les niveaux renoncés ou prédécédés) : caduque, elle entre dans la
+ * succession du souscripteur (art. L132-11 C. assur.). 0 pour une clause
+ * sans aucun bénéficiaire saisi — donnée manquante, jamais assimilée à une
+ * absence de désignation.
+ */
+export function getPartCaduque(niveaux: AVContract['niveaux']): number {
+  const aDesBeneficiaires = niveaux.some(n => n.beneficiaires.length > 0);
+  if (!aDesBeneficiaires) return 0;
+  return resolveEffectiveAVBeneficiaires(niveaux).length === 0 ? 1 : 0;
 }
 
 export function computeAssuranceVie(

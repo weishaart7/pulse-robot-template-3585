@@ -6,7 +6,7 @@
  * suivant ; prédécès ('decede') → aucune cascade, traité comme 'accepte'.
  */
 import { describe, it, expect } from 'vitest';
-import { resolveEffectiveAVBeneficiaires, computeAssuranceVie } from './assurance-vie';
+import { resolveEffectiveAVBeneficiaires, getPartCaduque, computeAssuranceVie } from './assurance-vie';
 import { AVContract, Beneficiary, DmtgParams } from './types';
 import dmtgParamsData from './params-dmtg.json';
 
@@ -64,7 +64,7 @@ describe('resolveEffectiveAVBeneficiaires', () => {
     expect(resolveEffectiveAVBeneficiaires(niveaux)).toEqual([]);
   });
 
-  it('bénéficiaire décédé : aucune cascade, sa part reste inchangée (traité comme un acceptant classique)', () => {
+  it('bénéficiaire décédé : sa part accroît aux bénéficiaires vivants du même rang', () => {
     const niveaux: AVContract['niveaux'] = [
       {
         beneficiaires: [
@@ -74,12 +74,27 @@ describe('resolveEffectiveAVBeneficiaires', () => {
       }
     ];
 
-    const shares = resolveEffectiveAVBeneficiaires(niveaux);
-
-    expect(shares).toEqual([
-      { beneficiaryId: 'A', quotePart: 0.5, coefAbattement990I: 1 },
-      { beneficiaryId: 'B', quotePart: 0.5, coefAbattement990I: 1 }
+    expect(resolveEffectiveAVBeneficiaires(niveaux)).toEqual([
+      { beneficiaryId: 'B', quotePart: 1, coefAbattement990I: 1 }
     ]);
+    expect(getPartCaduque(niveaux)).toBe(0);
+  });
+
+  it('bénéficiaire unique décédé : bascule sur le rang suivant, sinon clause caduque', () => {
+    const conjointDecede = { beneficiaryId: 'conjoint', quotePart: 1, statut: 'decede' as const };
+    const avecSecondRang: AVContract['niveaux'] = [
+      { beneficiaires: [conjointDecede] },
+      { beneficiaires: [{ beneficiaryId: 'E1', quotePart: 0.5 }, { beneficiaryId: 'E2', quotePart: 0.5 }] }
+    ];
+    expect(resolveEffectiveAVBeneficiaires(avecSecondRang).map(s => s.beneficiaryId)).toEqual(['E1', 'E2']);
+    expect(getPartCaduque(avecSecondRang)).toBe(0);
+
+    expect(resolveEffectiveAVBeneficiaires([{ beneficiaires: [conjointDecede] }])).toEqual([]);
+    expect(getPartCaduque([{ beneficiaires: [conjointDecede] }])).toBe(1);
+  });
+
+  it('clause sans aucun bénéficiaire saisi : donnée manquante, jamais caduque', () => {
+    expect(getPartCaduque([])).toBe(0);
   });
 
   it('démembrement : un bénéficiaire en usufruit voit sa part scindée avec son nu-propriétaire selon usufruitPct déjà résolu', () => {
@@ -171,7 +186,7 @@ describe('computeAssuranceVie — intégration cascade + démembrement dans le c
     expect(result.perBeneficiary['enfant1'].prelev990I).toBeCloseTo(41700, 0);
   });
 
-  it('bénéficiaire décédé : le calcul reste identique à un bénéficiaire acceptant classique (aucune redistribution)', () => {
+  it('bénéficiaire décédé : sa part accroît au co-bénéficiaire vivant, taxé sur la totalité', () => {
     const contracts: AVContract[] = [{
       id: 'av1',
       capitalDeces: 300000,
@@ -198,8 +213,9 @@ describe('computeAssuranceVie — intégration cascade + démembrement dans le c
     }];
     const resultSansDeces = computeAssuranceVie(contractsSansStatut, beneficiaries, params, '2026-07-20');
 
-    expect(resultAvecDeces.perBeneficiary['enfant1']).toEqual(resultSansDeces.perBeneficiary['enfant1']);
-    expect(resultAvecDeces.perBeneficiary['enfant2']).toEqual(resultSansDeces.perBeneficiary['enfant2']);
+    expect(resultAvecDeces.perBeneficiary['enfant1'].capitalBrut).toBe(0);
+    expect(resultAvecDeces.perBeneficiary['enfant2'].capitalBrut).toBe(300000);
+    expect(resultSansDeces.perBeneficiary['enfant2'].capitalBrut).toBe(150000);
   });
 
   it('exonération frère/sœur (art. 796-0 ter CGI) déclarée sur le contrat : échappe au prélèvement 990 I', () => {

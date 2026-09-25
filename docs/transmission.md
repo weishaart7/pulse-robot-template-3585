@@ -87,8 +87,11 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   décès, `addReunifiedFullOwnership` ajoute la PP reçue au patrimoine de l'Utilisateur veuf et
   `computeChainedTransmission` réunit l'usufruit hors taxation. Sans l'option (2nd décès de l'ordre
   normal), aucun survivant. Récompenses, créances et participation aux acquêts suivent déjà le sens
-  du décès (`decedentRole`). Limites restantes : contrats d'assurance-vie et libéralités du conjoint
-  non modélisés dans sa succession ; conjoint sans enfant renseigné non modélisable. Tests :
+  du décès (`decedentRole`). Contrats d'assurance-vie / PER assurantiel : dans les deux ordres et
+  aux deux décès, `Succession2ndDeces.tsx` passe à chaque `computeTransmission` les contrats du défunt
+  de ce décès, résolus par `buildAVContracts` contre le graphe de CE décès (le conjoint déjà décédé y
+  est absent). Limites restantes : libéralités du conjoint non modélisées dans sa succession ; conjoint
+  sans enfant renseigné non modélisable. Tests :
   `utils/transmissionHelpers.ordreInverse.test.ts`.
 - **Droit temporaire au logement (1 an).** Message informatif, sans effet sur les parts. Conjoint
   marié successible : art. 763. Partenaire de PACS : même droit par renvoi de l'art. 515-6 al. 3
@@ -272,6 +275,17 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   biens saisis du survivant). Hypothèse actée : reçu conservé tel quel jusqu'au 2nd décès, taxé comme un
   actif financier (ni abattement résidence principale, ni frais de notaire immobiliers). L'usufruit éteint
   reste hors taxation (art. 1133 CGI, `computeChainedTransmission`).
+- **Bénéficiaire prédécédé et clause caduque.** Un bénéficiaire `statut: 'decede'` a le même effet
+  qu'un renonçant (`resolveEffectiveAVBeneficiaires`, `dmtg/assurance-vie.ts`) : sa part accroît aux
+  bénéficiaires vivants du même rang, puis bascule au rang suivant — applicable à tous les calculs
+  (remplace l'ancienne décision « décédé = accepté »). `buildAVContracts` marque décédé tout
+  bénéficiaire dont le prédécès est connu du graphe : personne `estDecede`, ou marqueur `'conjoint'`
+  sans conjoint survivant auquel le rattacher (2nd décès d'un chaînage). Si aucun bénéficiaire ne
+  reste, la clause est caduque (`getPartCaduque`) : le capital entre dans la succession du souscripteur
+  (art. L132-11 C. assur.), dans la masse civile et en ligne synthétique `ajustement-av-clause-caduque`
+  de l'assiette DMTG (`computeTransmission`), jamais en 990 I / 757 B. Une clause sans aucun
+  bénéficiaire saisi n'est jamais caduque (donnée manquante). Conséquence : une renonciation de tous
+  les bénéficiaires, jusqu'ici sans effet, fait aussi entrer le capital dans la succession.
 - **Processus de calcul aligné sur la Synthèse.** `ProcessusCalcul.tsx` lit `option_conjoint`
   (comme `Synthese.tsx`/`Succession2ndDeces.tsx`) au lieu d'une option `quart_pp` figée ; le libellé
   « Conjoint survivant » est dérivé des droits réellement attribués par le moteur. La formule de la

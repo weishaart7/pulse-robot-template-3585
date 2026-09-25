@@ -301,6 +301,16 @@ export const Succession2ndDeces = () => {
       try {
         const firstDeathUtilisateur = computeTransmission(ctxUtilisateurDecede);
         const spouseFamily = buildSpouseAsDecedentFamilyGraph(familyProfile, maritalStatus, familyLinks || []);
+        // Contrats du conjoint, dénoués à SON décès : clauses résolues contre
+        // le graphe du 2nd décès (l'Utilisateur y est déjà décédé — une clause
+        // à son profit est caduque ou bascule au rang suivant).
+        const avContractsConjointAuDeces = buildAVContracts(
+          avContractsRaw,
+          familyProfile?.date_naissance,
+          spouseFamily,
+          referenceDate,
+          (maritalStatus as any)?.date_naissance_conjoint
+        );
         // Passifs du conjoint : mêmes lignes que le 1er décès, non repondérées
         // par détenteur (choix aligné sur buildPatrimonySnapshot, qui ne
         // pondère pas non plus les passifs du 1er défunt aujourd'hui — cf.
@@ -333,7 +343,7 @@ export const Succession2ndDeces = () => {
             ],
             assetDemembrements,
             demembrementCtx,
-            avContracts: []
+            avContracts: avContractsConjointAuDeces
           }
         });
         normalResult = { result: chained, errorMessage: null, errorKind: null };
@@ -346,6 +356,13 @@ export const Succession2ndDeces = () => {
       try {
         // L'Utilisateur survit au conjoint : héritier (marié) ou partenaire de PACS.
         const spouseFamilyFirst = buildSpouseAsDecedentFamilyGraph(familyProfile, maritalStatus, familyLinks || [], { utilisateurSurvivant: true });
+        const avContractsConjointPremier = buildAVContracts(
+          avContractsRaw,
+          familyProfile?.date_naissance,
+          spouseFamilyFirst,
+          referenceDate,
+          (maritalStatus as any)?.date_naissance_conjoint
+        );
         const spouseBasePatrimony = buildSpouseOwnBasePatrimony(assets || [], passifLinesBrut, assetDemembrements, demembrementCtx);
         const ctxConjointDecede: TransmissionContext = {
           family: spouseFamilyFirst,
@@ -361,12 +378,9 @@ export const Succession2ndDeces = () => {
           rawAssets: buildSpouseRawAssets(assets || [], assetDemembrements, demembrementCtx),
           assetDemembrements,
           demembrementCtx,
-          // avContracts volontairement vide : limitation connue (décision du
-          // 2026-07-17, chantier séparé, pas rouverte ici) — les contrats
-          // construits par buildAVContracts résolvent les bénéficiaires contre
-          // familyUtilisateur, pas spouseFamilyFirst, donc inutilisables tels
-          // quels pour le calcul fiscal 990I/757B de CETTE succession.
-          avContracts: [],
+          // Contrats du conjoint, dénoués à son décès : résolus contre
+          // spouseFamilyFirst (le conjoint du souscripteur y est l'Utilisateur).
+          avContracts: avContractsConjointPremier,
           // Contrat AV détenu par l'Utilisateur, non dénoué puisque c'est le
           // conjoint qui décède en premier ici : réintégré civilement (doctrine
           // Ciot, §9.6.1), via le même mécanisme que ctxUtilisateurDecede —
@@ -391,7 +405,17 @@ export const Succession2ndDeces = () => {
           utilisateurBasePatrimony,
           firstDeathConjoint,
           familyUtilisateur.decedentId,
-          avContractsUtilisateur
+          avContractsConjointPremier
+        );
+        // Contrats de l'Utilisateur, dénoués à son décès (2nd) : résolus contre
+        // le graphe veuf — une clause au profit du conjoint prédécédé est
+        // caduque ou bascule au rang suivant.
+        const avContractsUtilisateurVeuf = buildAVContracts(
+          avContractsRaw,
+          familyProfile?.date_naissance,
+          utilisateurVeufFamily,
+          referenceDate,
+          (maritalStatus as any)?.date_naissance_conjoint
         );
 
         const chainedInverse = computeChainedTransmission({
@@ -405,12 +429,12 @@ export const Succession2ndDeces = () => {
             rawAssets: [
               ...(assets || []),
               ...buildRecuAuPremierDecesRawAssets(
-                computeRecuAuPremierDeces(firstDeathConjoint, familyUtilisateur.decedentId, avContractsUtilisateur)
+                computeRecuAuPremierDeces(firstDeathConjoint, familyUtilisateur.decedentId, avContractsConjointPremier)
               )
             ],
             assetDemembrements,
             demembrementCtx,
-            avContracts: []
+            avContracts: avContractsUtilisateurVeuf
           }
         });
         inverseResult = { result: chainedInverse, errorMessage: null, errorKind: null };

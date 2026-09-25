@@ -182,7 +182,7 @@ export const Synthese = () => {
         sousTypePer: a.sous_type_per
       }));
 
-      // Statut 'decede' de la clause bénéficiaire AV : aucune cascade automatique
+      // Statut 'decede' de la clause bénéficiaire AV : redistribué par le moteur
       // (cf. dmtg/assurance-vie.ts::resolveEffectiveAVBeneficiaires), seule l'UI
       // avertit — jusqu'ici uniquement dans ClauseBeneficiaireBuilder.tsx, on relaie
       // ici pour un utilisateur qui ne consulte que la synthèse.
@@ -538,7 +538,12 @@ export const Synthese = () => {
         <Alert className="bg-[var(--warning-soft)] border-[var(--warning)]/30">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Un bénéficiaire de la clause assurance-vie est marqué décédé — la répartition n'est pas recalculée automatiquement. Vérifiez la clause bénéficiaire.
+            Un bénéficiaire d'une clause assurance-vie est marqué décédé : sa part a été redistribuée.
+            <FieldHelp>
+              Sa part revient aux autres bénéficiaires du même rang, puis au rang suivant. Sans bénéficiaire
+              restant, la clause est caduque et le capital entre dans la succession du souscripteur
+              (art. L132-11 C. assur.). Vérifiez que la clause reflète bien la situation.
+            </FieldHelp>
           </AlertDescription>
         </Alert>
       )}

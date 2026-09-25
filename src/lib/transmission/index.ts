@@ -41,7 +41,8 @@ import {
   Beneficiary as DmtgBeneficiary,
   CivilShare,
   Donation as DmtgDonation,
-  AVContract as DmtgAVContract
+  AVContract as DmtgAVContract,
+  getPartCaduque
 } from '../dmtg';
 
 export interface TransmissionContext {
@@ -290,8 +291,16 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // bougerait, désalignant à nouveau le civil et le fiscal (cf. le bug déjà
   // corrigé une fois entre Synthese.tsx et ProcessusCalcul.tsx sur
   // netBreakdown, lib/patrimoine/succession.ts).
+  // Capital des contrats dénoués par CE décès dont la clause est caduque
+  // (tous bénéficiaires renoncés ou prédécédés) : entre dans la succession
+  // du souscripteur (art. L132-11 C. assur.), au civil ci-dessous comme au
+  // fiscal (ligne synthétique dans dmtgAssets) — jamais taxé en 990I/757B,
+  // resolveEffectiveAVBeneficiaires ne lui attribuant aucun bénéficiaire.
+  const capitalAVCaduc = avContracts.reduce(
+    (sum, contract) => sum + contract.capitalDeces * getPartCaduque(contract.niveaux), 0
+  );
   const deltaCivilTotal = deltaRecompensesCreances + deltaParticipationAcquets
-    + (ctx.avReintegrationCivileMontant || 0);
+    + (ctx.avReintegrationCivileMontant || 0) + capitalAVCaduc;
   const patrimony: PatrimonySnapshot = deltaCivilTotal !== 0
     ? { ...ctx.patrimony, biensExistants: ctx.patrimony.biensExistants + deltaCivilTotal }
     : ctx.patrimony;
@@ -857,6 +866,19 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       id: 'ajustement-participation-acquets',
       label: 'Créance de participation aux acquêts',
       valeurVenale: deltaParticipationAcquets,
+      nature: 'autre',
+      location: 'metropole',
+      exclurePour: {}
+    });
+  }
+
+  // Capital d'assurance-vie / PER à clause caduque (cf. capitalAVCaduc) :
+  // actif financier de droit commun de la succession du souscripteur.
+  if (capitalAVCaduc > 0) {
+    dmtgAssets.push({
+      id: 'ajustement-av-clause-caduque',
+      label: 'Capitaux décès à clause bénéficiaire caduque',
+      valeurVenale: capitalAVCaduc,
       nature: 'autre',
       location: 'metropole',
       exclurePour: {}

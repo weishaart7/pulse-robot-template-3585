@@ -24,9 +24,8 @@ export interface BeneficiaireEntry {
   // bénéficiaires acceptants du même niveau, ou fait basculer intégralement
   // sur le niveau suivant si personne n'accepte dans ce niveau — cf.
   // dmtg/assurance-vie.ts::resolveEffectiveAVBeneficiaires. Le prédécès
-  // ('decede') ne déclenche aucune cascade automatique : signal d'alerte
-  // uniquement (cf. avertissement ci-dessous), la répartition n'est pas
-  // recalculée pour ce cas.
+  // ('decede') a le même effet qu'une renonciation ; sans aucun bénéficiaire
+  // restant, la clause est caduque et le capital entre dans la succession.
   statut?: 'accepte' | 'renoncant' | 'decede';
 }
 
@@ -419,7 +418,7 @@ export const ClauseBeneficiaireBuilder: React.FC<ClauseBeneficiaireBuilderProps>
                     <div className="flex items-start gap-2 px-3 py-2 rounded-md bg-[var(--warning-soft)] text-[var(--text-primary)] text-xs">
                       <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                       <span>
-                        Bénéficiaire marqué décédé : la répartition n'est pas recalculée automatiquement, vérifiez la clause.
+                        Bénéficiaire décédé : sa part revient aux autres bénéficiaires du même rang, puis au rang suivant. Sans bénéficiaire restant, le capital entre dans la succession.
                       </span>
                     </div>
                   )}

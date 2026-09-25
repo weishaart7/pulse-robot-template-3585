@@ -78,7 +78,7 @@ function run(perRows: AVContractRawRow[], perAssets: ReturnType<typeof asset>[],
   return { result, patrimony, avContracts };
 }
 
-const perRow = (id: string, valeur: number, detenteur: 'user' | 'spouse', sousTypePer: string | null, c: ReturnType<typeof clause>, operations: AVContractRawRow['operations'] = []): AVContractRawRow => ({
+const perRow = (id: string, valeur: number, detenteur: 'user' | 'spouse', sousTypePer: string | null, c: AVContractRawRow['clauseBeneficiaireStructuree'], operations: AVContractRawRow['operations'] = []): AVContractRawRow => ({
   assetId: id, label: id, valeurEstimee: valeur, detenteur, origineFonds: 'deniers_communs',
   nature: 'PER individuel', sousTypePer, operations, clauseBeneficiaireStructuree: c
 });
@@ -185,5 +185,30 @@ describe('2nd décès : reçu du 1er décès dans la succession du survivant', (
 
   it('rien de reçu : aucune ligne synthétique', () => {
     expect(buildRecuAuPremierDecesRawAssets({ pleinePropriete: 0, capitauxDecesNets: 0, total: 0 })).toEqual([]);
+  });
+});
+
+describe('clause bénéficiaire caduque (bénéficiaire unique prédécédé, sans rang suivant)', () => {
+  const clauseDecede = { niveaux: [{ beneficiaires: [{ familyLinkId: HUGO, pourcentage: 100, statut: 'decede' as const }] }] };
+
+  it('le capital entre dans la succession du souscripteur, au civil et au fiscal (art. L132-11)', () => {
+    const avecCaduc = run(
+      [perRow('PER', 40000, 'user', 'Assurantiel', clauseDecede)],
+      [asset('PER', 'PER individuel', 40000, 'user', { sous_type_per: 'Assurantiel' })]
+    );
+    const sansContrat = run([], []);
+    expect(avecCaduc.result.masseCalcul - sansContrat.result.masseCalcul).toBe(40000);
+    expect(avecCaduc.result.dmtg.totals.prelev990I).toBe(0);
+    expect(avecCaduc.result.dmtg.totals.droitsTotaux).toBeGreaterThan(sansContrat.result.dmtg.totals.droitsTotaux);
+  });
+
+  it('marqueur « conjoint » sans conjoint survivant (2nd décès) : bénéficiaire prédécédé', () => {
+    const family = buildFamilyGraph(familyProfile as never, maritalStatus as never, familyLinks as never);
+    const veuf = { ...family, hasSurvivingSpouse: false, survivingSpouseId: undefined };
+    const [contrat] = buildAVContracts(
+      [perRow('PER', 40000, 'user', 'Assurantiel', clause(['conjoint', 100]))],
+      familyProfile.date_naissance, veuf, REF, maritalStatus.date_naissance_conjoint
+    );
+    expect(contrat.niveaux[0].beneficiaires[0].statut).toBe('decede');
   });
 });
