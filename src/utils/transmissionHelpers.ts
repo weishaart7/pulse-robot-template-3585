@@ -66,6 +66,8 @@ export interface LiberaliteRow {
   beneficiaire_conjoint?: boolean | null;
   // 'pleine_propriete' (défaut) ou 'usufruit' viager (imputation en assiette).
   droit_transmis?: string | null;
+  // Donation : valeur au jour du partage (art. 860, 924-2). NULL = valeur au décès.
+  valeur_partage?: number | null;
   generation_intermediaire_id?: string | null;
   // "Dons familiaux de sommes d'argent" (DonationForm.tsx::naturesOptions) déclenche
   // l'exonération dédiée art. 790 G CGI (31 865€, cumulable avec l'abattement général) —
@@ -160,6 +162,8 @@ export function buildTransmissionLiberalites(
       valeurFiscaleActe: row.valeur_fiscale_acte ?? undefined,
       generationIntermediaireId: row.generation_intermediaire_id || undefined,
       droitTransmis: row.droit_transmis === 'usufruit' ? 'usufruit' as const : undefined,
+      // Déjà proratisée par donataire à l'enregistrement, comme `montant`.
+      valeurPartage: row.type === 'donation' && row.valeur_partage != null ? Number(row.valeur_partage) : undefined,
       nature: row.nature || undefined
     });
   }

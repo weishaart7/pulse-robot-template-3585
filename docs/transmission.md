@@ -121,8 +121,8 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   l'**acte** (art. 1078, gel légal) ; pour toute autre donation, elle porte désormais la valeur au
   **décès** (art. 922 — le libellé de `DonationForm.tsx` a été changé de « Valeur au jour de la
   donation » à « Valeur au jour du décès (estimation actuelle du bien) », avec une note explicative).
-  La valeur au **partage** (art. 860, distincte du décès), elle, n'est toujours pas capturée
-  séparément — limite documentée, cf. §3 (T3).
+  La valeur au **partage** (art. 860) est capturée à part depuis le 2026-09-29
+  (`Liberalite.valeurPartage`, cf. « Valeurs au jour du partage » ci-dessous).
 - **Rapport gated par `childrenIds` de façon symétrique entre donations et legs** (`reserve.ts::computeRapport`,
   commit `c89808f`) — corrige l'ancien comportement où un conjoint ayant reçu une donation `avance_part`
   pouvait être compté à tort dans le rapport (finding T5, art. 857 : seul un enfant réservataire est
@@ -255,6 +255,25 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   Hors périmètre : usufruit temporaire, extinction de l'usufruit d'un non-conjoint à son décès,
   conversion (art. 1098), cantonnement (art. 1094-1 al. 2). Tests :
   `lib/transmission/imputationAssiette.test.ts`, `lib/transmission/quotiteSpeciale.test.ts`.
+- **Valeurs au jour du partage (art. 860, 924-2, 2026-09-29).** Deux dates, comme le code civil :
+  réunion fictive, réserve, imputation, réduction et droits de succession au **décès** (art. 922) ;
+  masse à partager au **partage**. Saisie facultative, sans effet quand elle est vide :
+  - `liberalites.valeur_partage` (`DonationForm.tsx`, proratisée par donataire comme `montant`) : valeur
+    au partage dans l'état du bien au jour de la donation (aide contextuelle : améliorations du
+    donataire exclues, bien vendu → valeur à la vente, somme d'argent → nominal ou bien acquis,
+    art. 860-1) ;
+  - `marital_status.valeur_biens_partage` (onglet Optimisation, à côté de « Partage envisagé ») :
+    valeur nette des biens existants au partage, rapportée à l'actif net au décès (`rho`).
+  Moteur : `reserve.ts::coefPartage` (valeurPartage / valeur) ; `computeRapport` expose
+  `montantRapportPartage` (rapport au partage, forfait inchangé, clause
+  `CLAUSE_EVALUATION_DECES` → valeur au décès, Cass. civ. 1, 17 nov. 2010) ; `partage.ts` réévalue les
+  indemnités de réduction des donations (`totalIndemnitesPartage`, jamais écarté par une clause),
+  multiplie par `rho` biens existants, legs et parts du conjoint (quotes-parts des biens, décision
+  validée), et raisonne l'égalité, les soultes et `recuSuccession` en valeurs au partage. Les droits
+  du conjoint (art. 758-5) restent calculés au décès. Fiscalité : assiette au décès, seule la clé de
+  répartition (`civilShares`) suit les valeurs au partage. Exemples du référentiel §9.9.2 et §9.9.4
+  vérifiés (indemnité réévaluée 107 143 €, soulte 96 428,50 €). Tests :
+  `lib/transmission/valeurPartage.test.ts`.
 - **Fente successorale : branche familiale saisissable pour les 4 rangs** (commit `de8a722`, finding
   F18) — corrige un défaut de saisie qui pouvait conduire à une **déshérence à tort** (le message
   « l'État français hérite » s'affichait alors que des grands-parents vivants existaient, faute de
@@ -548,19 +567,6 @@ handicap par la phase 2, le net à recevoir par la phase 3, les règles complém
 - *(soldé 2026-09-29, phase 4 : cf. §2 « Règles notariales complémentaires »)*
 
 
-- **La valeur au jour du partage (art. 860) n'est jamais capturée séparément, donc l'indemnité de
-  réduction n'est jamais réévaluée entre le décès et le partage** (finding T3, art. 924-2).
-  `applyReductions` ([reserve.ts:209-306](src/lib/transmission/reserve.ts)) calcule une réduction unique
-  au décès ; `computeRapport` la réintègre **brute** dans la masse à partager
-  ([reserve.ts:372](src/lib/transmission/reserve.ts)), sans appliquer la formule de réévaluation
-  `indemnité_partage = valeur_partage × (indemnité_décès / valeur_décès)`. Conséquence directe et
-  documentée de la décision T1 (§2) : le champ unique `Liberalite.valeur` ne porte, au mieux, que la
-  valeur au décès — jamais celle au partage. Sur l'exemple du référentiel (donation hors part, valeur
-  décès 175 000 €, valeur partage 250 000 €, réduction 75 000 € au décès), l'indemnité réintégrée reste
-  75 000 € au lieu des 107 143 € dus — écart de 32 143 € sur la masse à partager, au détriment de tous
-  les héritiers autres que le débiteur de l'indemnité. *(Vérifié toujours ouvert au 2026-08-27 :
-  `reserve.ts` ne contient aucune formule de réévaluation ; le commit `bf7bc00` a explicitement
-  documenté ce point comme dette V2 plutôt que de le corriger.)*
 - **9 des 11 clauses de donation restent purement déclaratives.** `nature`, `demembrement`,
   `droitsParDonateur`/`prise_en_charge_droits`, `realiseePar`/`realise_par`, et 9 clauses sur 11
   (inaliénabilité, retour conventionnel, exclusion/inclusion de communauté, administration spéciale,
@@ -710,10 +716,6 @@ handicap par la phase 2, le net à recevoir par la phase 3, les règles complém
     la première fois un concept d'attribution en nature dans un moteur entièrement value-based ;
     chantier à part entière avec sa propre phase de conception, arrêté avant codage plutôt que livré en
     version simplifiée fausse (§3).
-  - **Réévaluation de l'indemnité de réduction au partage (art. 924-2, T3)** — suppose de capturer une
-    troisième valeur par libéralité (au partage, distincte de l'acte et du décès) et, plus largement, de
-    faire évoluer `PatrimonySnapshot` d'un instant T unique vers deux dates distinctes ; documenté comme
-    dette V2 explicite dans le code lui-même (commit `bf7bc00`), pas silencieusement absorbé.
   - **Clauses de donation autres que dispense/rapport forfaitaire** (9 sur 11) — juridiquement
     identifiables mais purement cosmétiques ; brancher chacune suppose un arbitrage produit au cas par
     cas (ex. retour conventionnel, usufruit successif).

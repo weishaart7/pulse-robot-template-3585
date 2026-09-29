@@ -5,6 +5,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
 import { AlertCircle, Heart, Info, Check, Handshake, Home } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
@@ -33,6 +34,9 @@ export const Optimisation = () => {
   const [saving, setSaving] = useState(false);
   const [partageEnvisage, setPartageEnvisage] = useState(false);
   const [savingPartage, setSavingPartage] = useState(false);
+  // Valeur nette des biens existants au jour du partage (art. 860) : vide =
+  // valeurs du décès simulé.
+  const [valeurBiensPartage, setValeurBiensPartage] = useState<string>('');
   const [duhOpte, setDuhOpte] = useState(false);
   const [savingDuh, setSavingDuh] = useState(false);
 
@@ -58,6 +62,8 @@ export const Optimisation = () => {
     }
     if (maritalData) {
       setPartageEnvisage(!!maritalData.partage_envisage);
+      const vbp = (maritalData as { valeur_biens_partage?: number | null }).valeur_biens_partage;
+      setValeurBiensPartage(vbp != null ? String(vbp) : '');
       setDuhOpte(!!(maritalData as any).duh_opte);
     }
   }, [maritalData]);
@@ -127,6 +133,31 @@ export const Optimisation = () => {
         description: "Impossible d'enregistrer l'hypothèse de partage.",
         variant: "destructive",
       });
+    } finally {
+      setSavingPartage(false);
+    }
+  };
+
+  const handleValeurBiensPartageSave = async () => {
+    if (!user) return;
+    const valeur = valeurBiensPartage.trim() === '' ? null : Number(valeurBiensPartage);
+    if (valeur !== null && (Number.isNaN(valeur) || valeur < 0)) {
+      toast({ title: "Erreur", description: "Saisissez un montant positif ou laissez vide.", variant: "destructive" });
+      return;
+    }
+    try {
+      setSavingPartage(true);
+      const { error } = await supabase
+        .from('marital_status')
+        .update({ valeur_biens_partage: valeur })
+        .eq('user_id', user.id);
+      if (error) throw error;
+      toast({ title: "Enregistré", description: "La valeur des biens au jour du partage a été enregistrée." });
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error('Error saving valeur_biens_partage:', error);
+      }
+      toast({ title: "Erreur", description: "Impossible d'enregistrer la valeur au partage.", variant: "destructive" });
     } finally {
       setSavingPartage(false);
     }
@@ -371,6 +402,27 @@ export const Optimisation = () => {
             onCheckedChange={handlePartageEnvisageChange}
             label="Partage envisagé"
           />
+          <div className="mt-4">
+            <Label htmlFor="valeurBiensPartage" className="flex items-center gap-1 text-sm">
+              Valeur nette des biens existants au jour du partage (optionnel)
+              <FieldHelp>
+                Le partage se fait aux valeurs du jour du partage (C. civ. art. 860) : renseignez la valeur
+                nette (actif − passif) des biens de la succession à cette date. Les rapports et indemnités de
+                réduction se renseignent sur chaque donation. Vide : valeurs au jour du décès. La réserve,
+                la réduction et les droits de succession restent calculés au décès.
+              </FieldHelp>
+            </Label>
+            <Input
+              id="valeurBiensPartage"
+              type="number"
+              min="0"
+              value={valeurBiensPartage}
+              onChange={(e) => setValeurBiensPartage(e.target.value)}
+              onBlur={handleValeurBiensPartageSave}
+              placeholder="Valeur au décès"
+              className="mt-1 max-w-xs"
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

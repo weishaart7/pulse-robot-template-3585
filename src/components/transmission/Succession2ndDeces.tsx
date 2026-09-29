@@ -296,6 +296,8 @@ export const Succession2ndDeces = () => {
         // computeTransmission, cf. commentaire de ce champ).
         avReintegrationCivileMontant: computeAVReintegrationCivile(avContractsUtilisateur, 'spouse', regimeMatrimonial),
         partageEnvisage,
+        // Valeurs au jour du partage (art. 860) — succession de l'Utilisateur.
+        valeurBiensPartage: (maritalStatus as { valeur_biens_partage?: number | null } | null)?.valeur_biens_partage ?? null,
         duhOpte,
         regimeMatrimonial,
         participationAcquets,

@@ -121,6 +121,10 @@ export interface TransmissionContext {
   // tacite) : sans ce booléen explicite, aucune valeur n'est imputée sur la
   // part du conjoint — pas de calcul automatique par défaut.
   duhOpte?: boolean;
+  // marital_status.valeur_biens_partage : valeur nette des biens existants au
+  // jour du partage (masse à partager, art. 860). Absente = valeurs du décès.
+  // Sans effet sur la réserve, la réduction ni la fiscalité (décès).
+  valeurBiensPartage?: number | null;
   // Sociétés dont le pacte Dutreil est validé (societe_dutreil.eligibilite_validee,
   // art. 787 B CGI) : les titres rattachés (assets.societe_id) sont exonérés à
   // 75 % dans l'assiette des droits. Engagement individuel de conservation des
@@ -495,6 +499,9 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       ? Math.max(0, imputationConjoint.assietteUsufruitMax - imputationConjoint.assietteUsufruitMaintenue)
       : undefined,
     totalLegsNonHeritiers,
+    ratioBiensPartage: ctx.valeurBiensPartage != null && actifNet > 0
+      ? Math.max(0, ctx.valeurBiensPartage) / actifNet
+      : 1,
     pctUsufruit: hasDemembrement || usufruitConjointRequis ? pctUsufruitConjoint : 0,
     pctNuePropriete: hasDemembrement || usufruitConjointRequis ? 1 - pctUsufruitConjoint : 1,
   });
@@ -536,6 +543,16 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       );
     }
   });
+  const partageADesValeursPropres = ctx.valeurBiensPartage != null
+    || liberalites.some(l => l.type === 'donation' && l.valeurPartage !== undefined);
+  if (partageADesValeursPropres) {
+    successionLegaleResult.explicationsTexte.push(
+      `Partage évalué au jour du partage (C. civ. art. 860) : rapports à la valeur des biens donnés au ` +
+      `partage, dans leur état au jour de la donation, indemnités de réduction réévaluées (art. 924-2), ` +
+      `biens existants à leur valeur au partage. Réserve, réduction et droits de succession restent ` +
+      `calculés au jour du décès (art. 922).`
+    );
+  }
   if (partage.totalIndemnitesReduction > 0) {
     successionLegaleResult.explicationsTexte.push(
       `Une ou plusieurs donations excèdent la quotité disponible : le donataire doit une indemnité de ` +
@@ -692,10 +709,15 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // réduction, jamais les donations déjà détenues ni les soultes de rapport,
   // déjà taxées comme donations). L'indemnité de réduction entre dans
   // l'assiette DMTG via une ligne d'actif synthétique (cf. dmtgAssets).
+  // Les héritiers se partagent l'assiette hors legs aux non-héritiers au
+  // prorata de ce qu'ils reçoivent, exprimé en valeurs au partage (art. 860) :
+  // l'assiette fiscale reste celle du décès (R29), seule la clé en dépend.
   const baseRepartition = residuelReel + partage.totalIndemnitesReduction;
+  const partHeritiers = baseRepartition > 0 ? Math.max(0, baseRepartition - totalLegsNonHeritiers) / baseRepartition : 0;
+  const totalRecuHeritiers = cashReparti.reduce((sum, c) => sum + Math.max(0, c), 0);
   const civilShares: CivilShare[] = heirs.map((heir, i) => ({
     beneficiaryId: heir.personId,
-    fraction: baseRepartition > 0 ? cashReparti[i] / baseRepartition : 0,
+    fraction: totalRecuHeritiers > 0 ? (Math.max(0, cashReparti[i]) / totalRecuHeritiers) * partHeritiers : 0,
     source: 'legal'
   }));
   legsNonHeritiers.forEach(l => {

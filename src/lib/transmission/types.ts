@@ -69,6 +69,11 @@ export const CLAUSE_DISPENSE_RAPPORT =
 
 // Libellé exact de la clause "Rapport forfaitaire" — même principe de
 // partage que CLAUSE_DISPENSE_RAPPORT ci-dessus (audit Bloc 1, T6, 2026-08).
+// Clause modifiant la date d'évaluation du rapport : valeur au jour du décès
+// plutôt qu'au partage (Cass. civ. 1, 17 nov. 2010, n° 09-13213 ; art. 860 al. 3).
+export const CLAUSE_EVALUATION_DECES =
+  "Évaluation au jour du décès : le rapport retient la valeur du bien au décès plutôt qu'au partage";
+
 export const CLAUSE_RAPPORT_FORFAITAIRE =
   'Rapport forfaitaire : fixer contractuellement une valeur figée au rapport';
 
@@ -144,6 +149,11 @@ export interface Liberalite {
   // Usufruit du bénéficiaire au barème art. 669 CGI (âge au décès), résolu
   // par computeTransmission — jamais saisi.
   pctUsufruit?: number;
+  // Donation : valeur au jour du PARTAGE, dans l'état du bien au jour de la
+  // donation (liberalites.valeur_partage) — rapport (art. 860) et
+  // réévaluation de l'indemnité de réduction (art. 924-2). Absente = `valeur`
+  // (décès). Même unité que `valeur` (assiette pour un usufruit).
+  valeurPartage?: number;
 }
 
 export interface TransmissionParams {
@@ -259,7 +269,9 @@ export interface TransmissionResult {
   nbSouchesEnfants: number;
   details: {
     reductions: { liberaliteId: string; montantReduit: number }[];
-    rapports: { personId: PersonId; montantRapport: number }[];
+    // montantRapport au décès ; montantRapportPartage (donations) au jour du
+    // partage (art. 860), cf. reserve.ts::RapportResultat.
+    rapports: { personId: PersonId; montantRapport: number; montantRapportPartage?: number; estLegs?: boolean }[];
   };
   explicationsTexte?: string[];
   // Légataires qui n'héritent pas (tiers, famille hors dévolution légale,

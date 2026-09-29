@@ -52,6 +52,8 @@ export interface Liberalite {
   beneficiaire_conjoint?: boolean;
   // Libéralité au conjoint : 'pleine_propriete' ou 'usufruit' (art. 1094-1 C. civ.).
   droit_transmis?: string | null;
+  // Donation : valeur au jour du partage, proratisée par donataire (art. 860).
+  valeur_partage?: number | null;
   // Donation-partage transgénérationnelle (art. 1078-8) : id du parent
   // (génération intermédiaire consentante) sur la réserve duquel la donation
   // s'impute — cf. lib/transmission/types.ts::Liberalite.generationIntermediaireId.

@@ -306,6 +306,8 @@ export const Synthese = () => {
         // computeTransmission).
         avReintegrationCivileMontant: computeAVReintegrationCivile(avContracts, 'spouse', regimeMatrimonialSiMarie),
         partageEnvisage,
+        // Valeurs au jour du partage (art. 860) — succession de l'Utilisateur.
+        valeurBiensPartage: (maritalStatus as { valeur_biens_partage?: number | null } | null)?.valeur_biens_partage ?? null,
         duhOpte,
         regimeMatrimonial: regimeMatrimonialSiMarie,
         recompenses: buildRecompensesCalcInput((recompensesRows || []) as Recompense[]),

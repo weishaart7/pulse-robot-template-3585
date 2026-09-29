@@ -153,6 +153,7 @@ export const ProcessusCalcul = () => {
         // computeTransmission).
         avReintegrationCivileMontant: computeAVReintegrationCivile(avContracts, 'spouse', regimeMatrimonialSiMarie),
         partageEnvisage: !!(maritalStatus as any)?.partage_envisage,
+        valeurBiensPartage: (maritalStatus as { valeur_biens_partage?: number | null } | null)?.valeur_biens_partage ?? null,
         duhOpte: !!(maritalStatus as any)?.duh_opte,
         regimeMatrimonial: regimeMatrimonialSiMarie,
         recompenses: buildRecompensesCalcInput(recompenses),
@@ -389,7 +390,10 @@ export const ProcessusCalcul = () => {
         `Donations rapportables : ${transmissionResult.details.rapports.length}`,
         ...transmissionResult.details.rapports.map(r => {
           const person = familyGraph.persons.find(p => p.id === r.personId);
-          return `• ${person?.prenom} ${person?.nom} : ${r.montantRapport.toLocaleString('fr-FR')} € à rapporter`;
+          const auPartage = r.montantRapportPartage !== undefined && Math.round(r.montantRapportPartage) !== Math.round(r.montantRapport)
+            ? ` (${Math.round(r.montantRapport).toLocaleString('fr-FR')} € au décès → ${Math.round(r.montantRapportPartage).toLocaleString('fr-FR')} € au jour du partage, art. 860)`
+            : '';
+          return `• ${person?.prenom} ${person?.nom} : ${Math.round(r.montantRapportPartage ?? r.montantRapport).toLocaleString('fr-FR')} € à rapporter${auPartage}`;
         }),
         ...soultesPartage.map(sl => sl.montant < 0
           ? `• ${sl.nom} doit une soulte de ${Math.round(-sl.montant).toLocaleString('fr-FR')} € (donations supérieures à sa part)`

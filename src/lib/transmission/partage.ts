@@ -1,5 +1,5 @@
 import { Liberalite, PersonId, TypeQuotePart } from './types';
-import { ReductionResult } from './reserve';
+import { ReductionResult, RapportResultat, coefPartage } from './reserve';
 
 /**
  * Partage de la succession entre héritiers (phase 1 de l'audit « résultat
@@ -37,7 +37,10 @@ export interface PartageInput {
   liberalites: Liberalite[];
   reductions: ReductionResult;
   // Rapports dus par chaque enfant réservataire (reserve.ts::computeRapport).
-  rapports: { personId: PersonId; montantRapport: number }[];
+  rapports: RapportResultat[];
+  // Valeur nette des biens existants au partage / au décès (art. 860, masse à
+  // partager). Défaut 1 : partage réputé intervenir aux valeurs du décès.
+  ratioBiensPartage?: number;
   childrenIds: PersonId[];
   spouseId?: PersonId;
   // QD non consommée par les libéralités (après réduction), plafond des
@@ -76,8 +79,10 @@ export interface PartageHeirResult {
 
 export interface PartageResult {
   heirs: PartageHeirResult[];
-  // Indemnités de réduction dues par des donataires (hors biens existants).
+  // Indemnités de réduction dues par des donataires (hors biens existants),
+  // au décès puis réévaluées au partage (art. 924-2).
   totalIndemnitesReduction: number;
+  totalIndemnitesPartage: number;
   droitsConjointPlafonnes: boolean;
 }
 
@@ -125,6 +130,7 @@ export function computePartage(input: PartageInput): PartageResult {
 
   // Donations déjà détenues par chaque héritier (R1).
   const donationsDetenues = new Map<PersonId, number>();
+  const donationsDetenuesPartage = new Map<PersonId, number>();
   liberalites.filter(l => l.type === 'donation').forEach(l => {
     const titulaire = (l.typeImputation === 'partage' && l.generationIntermediaireId && personIds.has(l.generationIntermediaireId))
       ? l.generationIntermediaireId
@@ -133,10 +139,28 @@ export function computePartage(input: PartageInput): PartageResult {
     // Donation en usufruit : valeur de l'usufruit détenu.
     const valeur = l.droitTransmis === 'usufruit' ? maintenu(l, reductions) * (l.pctUsufruit ?? 0) : maintenu(l, reductions);
     donationsDetenues.set(titulaire, (donationsDetenues.get(titulaire) || 0) + valeur);
+    // Même donation, à sa valeur au partage (art. 860) — affichage de ce que
+    // l'héritier détient déjà, cohérent avec son rapport.
+    donationsDetenuesPartage.set(titulaire, (donationsDetenuesPartage.get(titulaire) || 0) + valeur * coefPartage(l, true));
   });
 
-  // Pot = biens non légués + indemnités de réduction.
+  // Pot = biens non légués + indemnités de réduction (valeurs au décès : les
+  // droits du conjoint s'y calculent, art. 758-5).
   const pot = Math.max(0, actifNet - input.totalLegsNonHeritiers - totalLegsHeritiers) + totalIndemnitesReduction;
+
+  // Valeurs au jour du partage (R25-R28) : les biens existants, les legs et
+  // les parts du conjoint (quotes-parts des biens) évoluent comme les biens
+  // (rho) ; les indemnités de réduction sont réévaluées selon la valeur au
+  // partage de chaque donation réduite (art. 924-2) ; les rapports suivent la
+  // valeur au partage de chaque donation (art. 860).
+  const rho = input.ratioBiensPartage ?? 1;
+  const totalIndemnitesPartage = reductions.reductions
+    .reduce((sum, r) => {
+      const lib = liberalites.find(l => l.id === r.liberaliteId);
+      if (lib?.type !== 'donation') return sum;
+      const valeur = lib.droitTransmis === 'usufruit' ? r.montantReduit * (lib.pctUsufruit ?? 0) : r.montantReduit;
+      return sum + valeur * coefPartage(lib, false);
+    }, 0);
 
   // ── Conjoint (R3) ──
   const spouseLines = lines.map((l, i) => ({ l, i })).filter(x => spouseId && x.l.personId === spouseId);
@@ -176,6 +200,9 @@ export function computePartage(input: PartageInput): PartageResult {
   // jamais au-delà des biens restants.
   const assietteUsufruit = Math.min(potApresPP, Math.max(assietteUsufruitOption, assietteLegsUsufruitConjoint));
   const valeurUsufruitConjoint = assietteUsufruit * pctUsufruit;
+  // Parts du conjoint au partage : quotes-parts des biens, réévaluées comme eux.
+  const spousePPPartage = spousePPduPot * rho;
+  const valeurUsufruitPartage = valeurUsufruitConjoint * rho;
 
   // Libellé des parts conjoint.
   // L'usufruit (option ou legs) est porté par la ligne usufruit si elle
@@ -183,16 +210,16 @@ export function computePartage(input: PartageInput): PartageResult {
   const ligneUsufruit = spouseLines.find(x => x.l.typeQuotePart === 'usufruit') ?? spouseLines[0];
   spouseLines.forEach(({ l, i }, k) => {
     if (l.typeQuotePart === 'pleine_propriete') {
-      results[i].recuSuccession = spousePPduPot;
-      results[i].partFinale = spousePPduPot;
+      results[i].recuSuccession = spousePPPartage;
+      results[i].partFinale = spousePPPartage;
     }
     if (ligneUsufruit && ligneUsufruit.i === i) {
-      results[i].recuSuccession += valeurUsufruitConjoint;
-      results[i].partFinale += valeurUsufruitConjoint;
-      results[i].valeurUsufruit = valeurUsufruitConjoint;
+      results[i].recuSuccession += valeurUsufruitPartage;
+      results[i].partFinale += valeurUsufruitPartage;
+      results[i].valeurUsufruit = valeurUsufruitPartage;
     }
     if (k === 0 && spouseId) {
-      const legs = legsHorsPartParHeritier.get(spouseId) || 0;
+      const legs = (legsHorsPartParHeritier.get(spouseId) || 0) * rho;
       const don = donationsDetenues.get(spouseId) || 0;
       results[i].recuSuccession += legs;
       results[i].dejaDetenu = don;
@@ -208,12 +235,18 @@ export function computePartage(input: PartageInput): PartageResult {
   // donation rapportable, sortie du patrimoine).
   const legsSurPart = (id: PersonId) => liberalites
     .filter(l => l.type === 'legs' && l.beneficiaireId === id && l.typeImputation === 'avance_part' && childrenIds.includes(id))
-    .reduce((s, l) => s + maintenu(l, reductions), 0);
-  const rapportDe = (id: PersonId) => input.rapports.filter(r => r.personId === id).reduce((s, r) => s + r.montantRapport, 0);
-  // Valeur restant aux autres héritiers : biens restants, dont ceux grevés de
-  // l'usufruit du conjoint pour leur seule nue-propriété. L'égalité se
-  // raisonne en valeur, donations rapportées (pleine propriété) comprises.
-  const valeurPourAutres = potApresPP - valeurUsufruitConjoint;
+    .reduce((s, l) => s + maintenu(l, reductions), 0) * rho;
+  // Rapports au jour du partage : donation à sa valeur au partage (art. 860),
+  // legs sur part comme les biens existants.
+  const rapportDe = (id: PersonId) => input.rapports
+    .filter(r => r.personId === id)
+    .reduce((s, r) => s + (r.estLegs ? r.montantRapport * rho : (r.montantRapportPartage ?? r.montantRapport)), 0);
+  // Valeur restant aux autres héritiers, au jour du partage : biens restants
+  // (dont ceux grevés de l'usufruit du conjoint pour leur seule
+  // nue-propriété) + indemnités de réduction réévaluées. L'égalité se
+  // raisonne en valeur, donations rapportées comprises.
+  const valeurPourAutres = Math.max(0, potApresPP - totalIndemnitesReduction - valeurUsufruitConjoint) * rho
+    + totalIndemnitesPartage;
   const masseEgalitaire = valeurPourAutres + others.reduce((s, x) => s + rapportDe(x.l.personId) - legsSurPart(x.l.personId), 0);
 
   const aRecevoir = others.map(x => {
@@ -223,7 +256,7 @@ export function computePartage(input: PartageInput): PartageResult {
   });
   const totalSoultesDues = aRecevoir.filter(v => v < 0).reduce((s, v) => s - v, 0);
   const totalPositif = aRecevoir.filter(v => v > 0).reduce((s, v) => s + v, 0);
-  const indemniteParPot = pot > 0 ? totalIndemnitesReduction / pot : 0;
+  const indemniteParPot = valeurPourAutres > 0 ? totalIndemnitesPartage / valeurPourAutres : 0;
 
   others.forEach((x, k) => {
     const r = results[x.i];
@@ -241,11 +274,11 @@ export function computePartage(input: PartageInput): PartageResult {
     }
     const dejaImpute = firstLineOf(x.l.personId) !== x.i;
     if (!dejaImpute) {
-      r.dejaDetenu = donationsDetenues.get(x.l.personId) || 0;
-      r.recuSuccession += legsHorsPartParHeritier.get(x.l.personId) || 0;
+      r.dejaDetenu = donationsDetenuesPartage.get(x.l.personId) || 0;
+      r.recuSuccession += (legsHorsPartParHeritier.get(x.l.personId) || 0) * rho;
     }
     r.partFinale = r.recuSuccession + r.soulte + r.dejaDetenu;
   });
 
-  return { heirs: results, totalIndemnitesReduction, droitsConjointPlafonnes };
+  return { heirs: results, totalIndemnitesReduction, totalIndemnitesPartage, droitsConjointPlafonnes };
 }

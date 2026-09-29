@@ -317,7 +317,7 @@ describe('dispense de rapport (audit Bloc 1, T6, §9.4)', () => {
 
     const result = computeRapport(patrimony300k, donations, noReduction, ['enfant1', 'enfant2']);
 
-    expect(result.rapports).toEqual([]);
+    expect(result.rapports).toMatchObject([]);
     // Non réintégrée : massePartageable reste biensExistants - passifs = 300 000.
     expect(result.massePartageable).toBe(300000);
   });
@@ -362,7 +362,7 @@ describe('rapport forfaitaire (audit Bloc 1, T6, §9.8)', () => {
 
     const result = computeRapport(patrimony300k, donations, noReduction, ['aurelien', 'blandine']);
 
-    expect(result.rapports).toEqual([{ personId: 'aurelien', montantRapport: 100000 }]);
+    expect(result.rapports).toMatchObject([{ personId: 'aurelien', montantRapport: 100000 }]);
     // Réintégrée pour le seul montant du forfait : 300 000 + 100 000 = 400 000.
     // Les 20 000 € d'avantage hors part ne sont jamais rapportés.
     expect(result.massePartageable).toBe(400000);
@@ -389,7 +389,7 @@ describe('rapport forfaitaire (audit Bloc 1, T6, §9.8)', () => {
     expect(don?.imputeSurQD).toBe(0);
 
     const rapport = computeRapport(patrimony300k, donations, noReduction, ['aurelien', 'blandine']);
-    expect(rapport.rapports).toEqual([{ personId: 'aurelien', montantRapport: 120000 }]);
+    expect(rapport.rapports).toMatchObject([{ personId: 'aurelien', montantRapport: 120000 }]);
   });
 });
 
@@ -408,7 +408,7 @@ describe('computeRapport', () => {
 
     const result = computeRapport(patrimony300k, legs, noReduction, ['enfant1', 'enfant2']);
 
-    expect(result.rapports).toEqual([{ personId: 'enfant1', montantRapport: 40000 }]);
+    expect(result.rapports).toMatchObject([{ personId: 'enfant1', montantRapport: 40000 }]);
     // Non soustrait : le legs reste dans le pot à diviser, biensExistants - passifs = 300 000.
     expect(result.massePartageable).toBe(300000);
   });
@@ -427,7 +427,7 @@ describe('computeRapport', () => {
 
     const result = computeRapport(patrimony300k, legs, noReduction, ['enfant1', 'enfant2']);
 
-    expect(result.rapports).toEqual([]);
+    expect(result.rapports).toMatchObject([]);
     // Prélevé avant partage : 300 000 - 50 000 = 250 000.
     expect(result.massePartageable).toBe(250000);
   });
@@ -446,7 +446,7 @@ describe('computeRapport', () => {
 
     const result = computeRapport(patrimony300k, donations, noReduction, ['enfant1', 'enfant2']);
 
-    expect(result.rapports).toEqual([{ personId: 'enfant2', montantRapport: 30000 }]);
+    expect(result.rapports).toMatchObject([{ personId: 'enfant2', montantRapport: 30000 }]);
     // Réintégrée : biensExistants + donation rapportée = 300 000 + 30 000 = 330 000.
     expect(result.massePartageable).toBe(330000);
   });
@@ -468,7 +468,7 @@ describe('computeRapport', () => {
 
     const result = computeRapport(patrimony300k, donations, noReduction, ['enfant1', 'enfant2']);
 
-    expect(result.rapports).toEqual([]);
+    expect(result.rapports).toMatchObject([]);
     // Non réintégrée : massePartageable reste biensExistants - passifs = 300 000.
     expect(result.massePartageable).toBe(300000);
   });
@@ -491,7 +491,7 @@ describe('computeRapport', () => {
 
     const result = computeRapport(patrimony300k, donations, noReduction, ['aurelien', 'blandine']);
 
-    expect(result.rapports).toEqual([{ personId: 'aurelien', montantRapport: 100000 }]);
+    expect(result.rapports).toMatchObject([{ personId: 'aurelien', montantRapport: 100000 }]);
     // Réintégrée : biensExistants + donation rapportée = 300 000 + 100 000 = 400 000.
     expect(result.massePartageable).toBe(400000);
   });
@@ -513,7 +513,7 @@ describe('computeRapport', () => {
 
     const result = computeRapport(patrimony300k, donations, noReduction, ['enfant1', 'enfant2']);
 
-    expect(result.rapports).toEqual([]);
+    expect(result.rapports).toMatchObject([]);
     expect(result.massePartageable).toBe(300000);
   });
 
@@ -556,7 +556,7 @@ describe('computeRapport', () => {
     //   - don-avance-part (enfant2, avance_part) : réintégrée -> 250 000 + 30 000 = 280 000
     // + indemnités de réduction (totalReduit = 0, pas de dépassement de QD dans ce scénario) -> 280 000
     expect(result.massePartageable).toBe(280000);
-    expect(result.rapports).toEqual([
+    expect(result.rapports).toMatchObject([
       { personId: 'enfant1', montantRapport: 40000 },
       { personId: 'enfant2', montantRapport: 30000 },
     ]);

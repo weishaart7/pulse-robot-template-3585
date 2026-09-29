@@ -20,7 +20,8 @@ import { useMaritalStatus, useFamilyProfile } from '@/hooks/useFamilyData';
 import { computeValeurNueProprieteDonation } from '@/lib/patrimoine/bareme669CGI';
 import { useToast } from '@/hooks/use-toast';
 import { liberaliteService, Liberalite, LiberaliteTypeImputation } from '@/services/liberaliteService';
-import { CLAUSE_DISPENSE_RAPPORT, CLAUSE_RAPPORT_FORFAITAIRE } from '@/lib/transmission/types';
+import { CLAUSE_DISPENSE_RAPPORT, CLAUSE_RAPPORT_FORFAITAIRE, CLAUSE_EVALUATION_DECES } from '@/lib/transmission/types';
+import { FieldHelp } from '@/components/ui/field-help';
 
 // Id sentinelle du conjoint/partenaire de PACS, absent de family_links :
 // enregistré via liberalites.beneficiaire_conjoint, jamais beneficiaire_id.
@@ -81,6 +82,9 @@ const DEFAULT_FORM_DATA = {
   // Valeur totale déclarée dans l'acte (art. 784 CGI), base du rappel fiscal
   // — répartie ensuite entre donataires au même pourcentage que `montant`.
   valeurFiscaleActe: undefined as number | undefined,
+  // Valeur totale au jour du partage, dans l'état au jour de la donation
+  // (rapport, art. 860 ; indemnité de réduction, art. 924-2). Facultative.
+  valeurPartage: undefined as number | undefined,
 };
 
 export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: DonationFormProps) => {
@@ -178,6 +182,8 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
     // Chaîne partagée avec reserve.ts : ne pas modifier ce libellé sans
     // mettre à jour CLAUSE_RAPPORT_FORFAITAIRE.
     CLAUSE_RAPPORT_FORFAITAIRE,
+    // Chaîne partagée avec reserve.ts : rapport évalué au décès (art. 860 al. 3).
+    CLAUSE_EVALUATION_DECES,
     'Exclusion ou inclusion dans la communauté : déterminer si le bien reste propre',
     'Administration spéciale : désigner un administrateur autre que les parents',
     'Obligation d\'emploi : imposer une affectation précise des fonds',
@@ -269,6 +275,9 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
         // Colonne stockée par donataire (proratisée) : on reconstitue le total.
         valeurFiscaleActe: first.valeur_fiscale_acte != null
           ? first.valeur_fiscale_acte / ((first.pourcentage ?? 100) / 100)
+          : undefined,
+        valeurPartage: first.valeur_partage != null
+          ? first.valeur_partage / ((first.pourcentage ?? 100) / 100)
           : undefined,
       });
       setSelectedClauses(first.clauses || []);
@@ -434,6 +443,9 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
           groupe_id: groupeId,
           montant: montantTotal * (beneficiaire.pourcentage / 100),
           valeur_fiscale_acte: valeurActeTotale * (beneficiaire.pourcentage / 100),
+          valeur_partage: formData.valeurPartage !== undefined
+            ? formData.valeurPartage * (beneficiaire.pourcentage / 100)
+            : null,
           pourcentage: beneficiaire.pourcentage,
           date_acte: dateActe,
           nature: formData.nature || undefined,
@@ -756,6 +768,33 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
               )}
             </div>
           )}
+
+          {/* Valeur au jour du partage (art. 860) */}
+          <div>
+            <Label htmlFor="valeurPartage" className="flex items-center gap-1">
+              Valeur au jour du partage (optionnel)
+              <FieldHelp contentClassName="w-[28rem] max-w-[90vw]">
+                Le rapport retient la valeur du bien au jour du partage, dans l'état où il a été donné
+                (C. civ. art. 860) : les améliorations faites par le donataire sont exclues, les
+                dégradations de son fait ajoutées. Bien vendu avant le partage : valeur à la date de la
+                vente. Somme d'argent : son montant, sauf si elle a servi à acheter un bien, auquel cas la
+                valeur de ce bien au partage (art. 860-1). Sert aussi à réévaluer l'indemnité de réduction
+                (art. 924-2). Vide : valeur au jour du décès.
+              </FieldHelp>
+            </Label>
+            <Input
+              id="valeurPartage"
+              type="number"
+              min="0"
+              value={formData.valeurPartage ?? ''}
+              onChange={(e) => setFormData({
+                ...formData,
+                valeurPartage: e.target.value === '' ? undefined : Number(e.target.value)
+              })}
+              placeholder="Ex : 350000"
+              className="mt-1 max-w-xs"
+            />
+          </div>
 
           {/* Date */}
           <div>

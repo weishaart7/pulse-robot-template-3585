@@ -1728,6 +1728,7 @@ export type Database = {
       }
       liberalites: {
         Row: {
+          valeur_partage: number | null
           droit_transmis: string | null
           beneficiaire_conjoint: boolean
           beneficiaire_id: string | null
@@ -1757,6 +1758,7 @@ export type Database = {
           valeur_fiscale_acte: number | null
         }
         Insert: {
+          valeur_partage?: number | null
           droit_transmis?: string | null
           beneficiaire_conjoint?: boolean
           beneficiaire_id?: string | null
@@ -1786,6 +1788,7 @@ export type Database = {
           valeur_fiscale_acte?: number | null
         }
         Update: {
+          valeur_partage?: number | null
           droit_transmis?: string | null
           beneficiaire_conjoint?: boolean
           beneficiaire_id?: string | null
@@ -1833,6 +1836,7 @@ export type Database = {
       }
       marital_status: {
         Row: {
+          valeur_biens_partage: number | null
           adresse_conjoint: string | null
           ancien_combattant_conjoint: boolean | null
           capacite_juridique_conjoint: string
@@ -1893,6 +1897,7 @@ export type Database = {
           ville_conjoint: string | null
         }
         Insert: {
+          valeur_biens_partage?: number | null
           adresse_conjoint?: string | null
           ancien_combattant_conjoint?: boolean | null
           capacite_juridique_conjoint?: string
@@ -1953,6 +1958,7 @@ export type Database = {
           ville_conjoint?: string | null
         }
         Update: {
+          valeur_biens_partage?: number | null
           adresse_conjoint?: string | null
           ancien_combattant_conjoint?: boolean | null
           capacite_juridique_conjoint?: string

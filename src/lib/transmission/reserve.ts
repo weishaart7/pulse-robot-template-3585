@@ -1,4 +1,16 @@
-import { PatrimonySnapshot, Liberalite, CLAUSE_DISPENSE_RAPPORT, CLAUSE_RAPPORT_FORFAITAIRE } from './types';
+import { PatrimonySnapshot, Liberalite, CLAUSE_DISPENSE_RAPPORT, CLAUSE_RAPPORT_FORFAITAIRE, CLAUSE_EVALUATION_DECES } from './types';
+
+/**
+ * Coefficient d'évolution d'une donation entre le décès et le partage
+ * (valeurPartage / valeur) : réévaluation de l'indemnité de réduction
+ * (art. 924-2, jamais écartée par une clause) et, sauf clause d'évaluation au
+ * décès, du rapport (art. 860). 1 sans valeur au partage saisie.
+ */
+export function coefPartage(lib: Liberalite, pourRapport: boolean): number {
+  if (pourRapport && lib.clauses?.includes(CLAUSE_EVALUATION_DECES)) return 1;
+  if (lib.valeurPartage === undefined || lib.valeur <= 0) return 1;
+  return lib.valeurPartage / lib.valeur;
+}
 
 /**
  * Une donation dispensée de rapport (art. 860 al. 3, §9.4) est reclassée
@@ -495,16 +507,26 @@ export function imputeLiberalitesConjoint(
 /**
  * Calcule la masse partageable après rapport
  */
+export interface RapportResultat {
+  personId: string;
+  // Valeur au décès : masse de calcul des droits du conjoint (art. 758-5).
+  montantRapport: number;
+  // Donation : valeur au jour du partage (art. 860), masse à partager.
+  montantRapportPartage?: number;
+  // Legs sur part successorale : resté dans les biens existants.
+  estLegs?: boolean;
+}
+
 export function computeRapport(
   patrimony: PatrimonySnapshot,
   liberalites: Liberalite[],
   reductions: ReductionResult,
   childrenIds: string[]
-): { massePartageable: number; rapports: { personId: string; montantRapport: number }[] } {
+): { massePartageable: number; rapports: RapportResultat[] } {
   // Biens existants - libéralités à cause de mort maintenues + rapports + indemnités de réduction
   let massePartageable = patrimony.biensExistants - patrimony.passifs;
 
-  const rapports: { personId: string; montantRapport: number }[] = [];
+  const rapports: RapportResultat[] = [];
 
   // Un legs 'hors_part' (ou à un non-réservataire) est prélevé sur le pot
   // avant division, puis réattribué en totalité à son légataire (index.ts::
@@ -526,7 +548,8 @@ export function computeRapport(
       if (montantMaintenu > 0) {
         rapports.push({
           personId: legLib.beneficiaireId as string,
-          montantRapport: montantMaintenu
+          montantRapport: montantMaintenu,
+          estLegs: true
         });
       }
     } else {
@@ -556,6 +579,9 @@ export function computeRapport(
     const forfait = getMontantRapportForfaitaire(donation);
 
     let montantRapport: number;
+    // Rapport à la valeur du partage (art. 860), réduction réévaluée dans la
+    // même proportion (art. 924-2) ; le forfait, lui, reste fixe.
+    let montantRapportPartage: number;
     if (forfait !== undefined) {
       // Rapport forfaitaire (art. 860 al. 4, §9.8) : c'est le forfait qui est
       // rapporté, pas la valeur pleine — l'écart (avantage hors part) n'est
@@ -567,16 +593,19 @@ export function computeRapport(
       const reductionSurAvantage = Math.min(reductionTotal, avantageHorsPart);
       const reductionSurForfait = reductionTotal - reductionSurAvantage;
       montantRapport = forfait - reductionSurForfait;
+      montantRapportPartage = montantRapport;
     } else {
       // Donation en usufruit : rapportée pour la valeur de l'usufruit maintenu.
       montantRapport = valeurLiberalite({ ...donation, valeur: donation.valeur - reductionTotal });
+      montantRapportPartage = montantRapport * coefPartage(donation, true);
     }
 
     if (montantRapport > 0) {
       massePartageable += montantRapport;
       rapports.push({
         personId: donation.beneficiaireId as string,
-        montantRapport
+        montantRapport,
+        montantRapportPartage
       });
     }
   }
