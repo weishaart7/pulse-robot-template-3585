@@ -8,7 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
 import { trimestresProjetesParAnnee } from '@/lib/retraite/hypotheseRevenuFutur';
-import { familyService } from '@/services/familyService';
+import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
+import { donneesAutresRegimesDepuisRetraiteData } from '@/hooks/usePensionConsolidee';
+import { calculerResultatFonctionPublique, calculerResultatCNAVPL } from '@/lib/retraite/pensionConsolidee';
+import { nombreEnfantsEligiblesMajorationTroisEnfants } from '@/lib/retraite/enfantsEligiblesMajoration';
 import { computeAge } from '@/lib/patrimoine/bareme669CGI';
 import {
   trimestresRequisPourGeneration,
@@ -27,6 +30,7 @@ import {
   dateNaissanceDepuisISO,
   dateEffetSimuleeParAge,
   dateDepuisISO,
+  dateEffetDepartAgeLegal,
   surcotePourTrimestresCotises,
   trimestresSurcoteClassique,
   ageEnMois,
@@ -72,8 +76,13 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   // donnée, la surcote resterait figée à 0 ici alors qu'elle ne l'est pas sur
   // l'écran Carrière pour le même client, ce qui romprait la parité visée.
   const { periodes: detailCarriere, loading: loadingCarriereDetail } = useCarriereDetail(personne);
-  const [dateNaissance, setDateNaissance] = useState<string | null | undefined>(undefined);
-  const [loadingProfile, setLoadingProfile] = useState(true);
+  // Date de naissance et liens familiaux (majoration enfants FP/CNAVPL) :
+  // même source que Carrière et Synthèse.
+  const {
+    dateNaissanceISO: dateNaissance,
+    familyLinks,
+    loading: loadingProfile,
+  } = useProfilFamilialRetraite(personne);
   // Date de liquidation envisagée : source de vérité du scénario simulé
   // (Option 2, docs/audit/conception-date-effet.md) — l'âge de départ n'est
   // plus qu'une valeur dérivée affichée, cf. `resultatSelection.ageAffiche`
@@ -88,33 +97,6 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   const [revenuMoyen3Ans, setRevenuMoyen3Ans] = useState<string>('');
   const [nombreTrimestresRachat, setNombreTrimestresRachat] = useState<string>('1');
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoadingProfile(true);
-    // Conjoint : pas de fiche famille séparée (pas de compte Supabase
-    // propre) — sa date de naissance vit dans marital_status.date_naissance_conjoint,
-    // même source que Carriere.tsx pour la colonne conjoint.
-    const chargerDateNaissance = personne === 'conjoint'
-      ? familyService.getMaritalStatus().then((statut) => statut?.date_naissance_conjoint ?? null)
-      : familyService.getFamilyProfile().then((profil) => profil?.date_naissance ?? null);
-
-    chargerDateNaissance
-      .then((date) => {
-        if (!cancelled) setDateNaissance(date);
-      })
-      .catch((error) => {
-        if (import.meta.env.DEV) {
-          console.error('Erreur lors du chargement de la date de naissance:', error);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingProfile(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [personne]);
-
   const ageActuel = computeAge(dateNaissance);
   // Date de naissance complète (année + mois), pas seulement l'année : le
   // barème légal a des découpages infra-annuels (1951, 1961, 1965 — cf.
@@ -123,14 +105,15 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   // l'audit référentiel (docs/audit/audit-retraite.md §7).
   const dateNaissanceDetail = dateNaissance ? dateNaissanceDepuisISO(dateNaissance) : undefined;
 
-  // Initialise la date de liquidation sur l'anniversaire de l'âge actuel
-  // (borné 60-70) dès qu'elle est connue, une seule fois, pour ne pas
-  // écraser une sélection déjà faite par l'utilisateur — même logique que
-  // l'ancienne initialisation du slider, transposée en date.
+  // Initialise la date de liquidation sur le départ à l'âge légal (ou le
+  // mois prochain si l'âge légal est déjà atteint), une seule fois, pour ne
+  // pas écraser une sélection déjà faite par l'utilisateur.
   useEffect(() => {
     if (dateNaissanceDetail && ageActuel !== null && !dateLiquidationInitialisee) {
-      const ageDepart = Math.min(AGE_MAX, Math.max(AGE_MIN, ageActuel));
-      setDateLiquidation(isoDate(dateEffetSimuleeParAge(dateNaissanceDetail, ageDepart)));
+      const dateEffetLegal = dateEffetDepartAgeLegal(dateNaissanceDetail, new Date());
+      setDateLiquidation(
+        isoDate(dateEffetLegal ?? dateEffetSimuleeParAge(dateNaissanceDetail, Math.min(AGE_MAX, Math.max(AGE_MIN, ageActuel))))
+      );
       setDateLiquidationInitialisee(true);
     }
   }, [dateNaissanceDetail, ageActuel, dateLiquidationInitialisee]);
@@ -148,6 +131,14 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     const pension = pensionComplementaireAnnuelle(regime);
     return pension !== undefined ? total + pension : total;
   }, 0);
+
+  // Fonction publique / CNAVPL (données persistées, même conversion que la
+  // Synthèse) : leurs trimestres comptent dans la durée tous régimes (décote,
+  // condition de durée de la surcote) et leurs pensions dans le total.
+  const { fonctionPublique, cnavpl } = donneesAutresRegimesDepuisRetraiteData(retraiteData);
+  const trimestresAutresRegimes =
+    (fonctionPublique?.trimestresLiquidables ?? 0) + (cnavpl?.trimestresCNAVPL ?? 0);
+  const nombreEnfantsEligibles = nombreEnfantsEligiblesMajorationTroisEnfants(familyLinks);
 
   const regimesPointsExclusCount = regimesPoints.filter(
     (regime) => pensionComplementaireAnnuelle(regime) === undefined
@@ -204,14 +195,17 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   const ageActuelConfirme: number = ageActuel;
   const dateNaissanceConfirmee = dateNaissanceDetail;
 
-  const dateLiquidationMin = isoDate(dateEffetSimuleeParAge(dateNaissanceConfirmee, AGE_MIN));
+  // Borne basse : départ à l'âge légal (hors dispositifs de départ anticipé,
+  // non modélisés), ou le mois prochain si l'âge légal est déjà atteint.
+  const dateEffetAgeLegal = dateEffetDepartAgeLegal(dateNaissanceConfirmee, new Date());
+  const dateLiquidationMin = isoDate(dateEffetAgeLegal ?? dateEffetSimuleeParAge(dateNaissanceConfirmee, AGE_MIN));
   const dateLiquidationMax = isoDate(dateEffetSimuleeParAge(dateNaissanceConfirmee, AGE_MAX));
   // Repli avant que l'effet d'initialisation n'ait posé la valeur par défaut
   // (premier rendu, dateLiquidation encore vide) — même valeur que ce que
   // l'effet posera de toute façon, pour ne jamais calculer sur une date vide.
   const dateLiquidationEffet = dateLiquidation
     ? dateDepuisISO(dateLiquidation)
-    : dateEffetSimuleeParAge(dateNaissanceConfirmee, Math.min(AGE_MAX, Math.max(AGE_MIN, ageActuelConfirme)));
+    : dateEffetAgeLegal ?? dateEffetSimuleeParAge(dateNaissanceConfirmee, Math.min(AGE_MAX, Math.max(AGE_MIN, ageActuelConfirme)));
 
   // Calcule le scénario pour une date d'effet donnée — la source de vérité
   // depuis cette session (Option 2, docs/audit/conception-date-effet.md) :
@@ -234,11 +228,23 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
         (total, a) => total + a.trimestres,
         0
       );
+    const trimestresTousRegimes = trimestresValidesProjetes + trimestresAutresRegimes;
     const trimestresRequis = trimestresRequisPourGeneration(dateNaissanceConfirmee, dateEffet);
     // Calculée mais non encore affichée (aucun écran ne montre l'âge légal à
     // ce jour) — reconnecte ageLegalPourGeneration() à un appelant réel,
     // cf. docs/audit/audit-retraite.md §7, écart #2/#3.
     const ageLegal = ageLegalPourGeneration(dateNaissanceConfirmee, dateEffet);
+    // Départ juridiquement impossible avant le 1er du mois suivant
+    // l'anniversaire de l'âge légal (carrière longue, handicap, incapacité :
+    // non modélisés).
+    const avantAgeLegal =
+      ageLegal.stable &&
+      dateEffet.getTime() <
+        Date.UTC(
+          dateAnniversaireLegal(dateNaissanceConfirmee, ageLegal.age).getUTCFullYear(),
+          dateAnniversaireLegal(dateNaissanceConfirmee, ageLegal.age).getUTCMonth() + 1,
+          1
+        );
     const taux = tauxProratisation(trimestresValidesProjetes, trimestresRequis);
     // decoteSurTrimestres() est symétrique : au-delà de trimestresRequis, sa
     // branche positive (sans plafond ni porte d'éligibilité) n'est pas une
@@ -248,7 +254,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     // docs/audit/branchement-surcote-optimisation.md §2).
     const decote = Math.min(
       decoteApplicable(
-        decoteSurTrimestres(trimestresValidesProjetes, trimestresRequis),
+        decoteSurTrimestres(trimestresTousRegimes, trimestresRequis),
         decoteSurAge(ageDepartAnnees)
       ),
       0
@@ -261,7 +267,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     // docs/audit/branchement-surcote-optimisation.md §1.4).
     const ageLegalAtteintFlag = ageLegalAtteint(dateNaissanceConfirmee, dateEffet);
     const ageLegalParentaleEligibleFlag = ageLegalParentaleEligible(dateNaissanceConfirmee, dateEffet);
-    const dureeRequiseAtteinte = trimestresValidesProjetes >= trimestresRequis;
+    const dureeRequiseAtteinte = trimestresTousRegimes >= trimestresRequis;
     // Surcote classique : trimestres cotisés APRÈS l'âge légal jusqu'au
     // trimestre civil précédant la date de liquidation (référentiel §2.3.1).
     // Les trimestres futurs (après aujourd'hui) sont supposés cotisés —
@@ -270,7 +276,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
       parAnnee: resultatTrimestresDetailCarriere.parAnnee,
       dateNaissance: dateNaissanceConfirmee,
       dateEffet,
-      trimestresTousRegimes: trimestresValidesProjetes,
+      trimestresTousRegimes,
       trimestresRequis,
       projeterDepuis: new Date(),
     });
@@ -301,17 +307,47 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     const pensionBaseBrute = pensionBase(salaireAnnuelMoyen, taux, 0);
     const pensionBaseValue =
       pensionBaseBrute * (1 + decote / 100) + pensionBaseBrute * (surcoteTotalePct / 100);
+    // Pensions fonction publique (y compris RAFP) et CNAVPL à cette même date
+    // d'effet — mêmes fonctions que Carrière/Synthèse.
+    const resultatFP = fonctionPublique
+      ? calculerResultatFonctionPublique(
+          fonctionPublique,
+          trimestresRequis,
+          trimestresValidesProjetes + (cnavpl?.trimestresCNAVPL ?? 0),
+          dateNaissanceConfirmee,
+          dateEffet,
+          auMoinsUnTrimestreMajorationEnfant,
+          nombreEnfantsEligibles
+        )
+      : { pensionFinale: 0, rafpAnnuelle: 0 };
+    const resultatCNAVPL = cnavpl
+      ? calculerResultatCNAVPL(
+          cnavpl,
+          trimestresRequis,
+          trimestresValidesProjetes + (fonctionPublique?.trimestresLiquidables ?? 0),
+          dateNaissanceConfirmee,
+          dateEffet,
+          auMoinsUnTrimestreMajorationEnfant,
+          nombreEnfantsEligibles
+        )
+      : { pensionFinale: 0 };
+    const pensionAutresRegimes =
+      resultatFP.pensionFinale + resultatFP.rafpAnnuelle + resultatCNAVPL.pensionFinale;
+
     return {
       ageAffiche,
       ageDepartAnnees,
+      avantAgeLegal,
       trimestresValidesProjetes,
+      trimestresTousRegimes,
       trimestresRequis,
       ageLegal,
       decote,
       surcoteTotalePct,
       pensionBaseBrute,
       pensionBaseValue,
-      pensionTotale: pensionBaseValue + totalPensionComplementaireAnnuelle,
+      pensionAutresRegimes,
+      pensionTotale: pensionBaseValue + totalPensionComplementaireAnnuelle + pensionAutresRegimes,
     };
   };
 
@@ -354,10 +390,11 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   const coutTotalRachat =
     coutUnitaireRachat !== undefined ? coutUnitaireRachat * nombreTrimestresRachatNum : undefined;
 
-  const trimestresValidesProjetesAvecRachat =
-    resultatSelection.trimestresValidesProjetes + nombreTrimestresRachatNum;
+  // Option « taux seul » : les trimestres rachetés ne comptent que pour la
+  // décote, pas pour la durée d'assurance du régime général (proratisation).
+  // Option « taux et durée » : les deux.
   const tauxAvecRachat = tauxProratisation(
-    trimestresValidesProjetesAvecRachat,
+    resultatSelection.trimestresValidesProjetes + (optionRachat === 'tauxEtDuree' ? nombreTrimestresRachatNum : 0),
     resultatSelection.trimestresRequis
   );
   // Même écrêtage de la branche fautive que dans simulerPourDateEffet()
@@ -373,7 +410,10 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   // rachat/surcote), cf. docs/audit/branchement-surcote-optimisation.md §2.
   const decoteAvecRachat = Math.min(
     decoteApplicable(
-      decoteSurTrimestres(trimestresValidesProjetesAvecRachat, resultatSelection.trimestresRequis),
+      decoteSurTrimestres(
+        resultatSelection.trimestresTousRegimes + nombreTrimestresRachatNum,
+        resultatSelection.trimestresRequis
+      ),
       decoteSurAge(resultatSelection.ageDepartAnnees)
     ),
     0
@@ -417,8 +457,14 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
             />
             <p className="text-xs text-muted-foreground">
               Âge calculé automatiquement à partir de cette date et de votre date de naissance —
-              simulation possible entre {AGE_MIN} et {AGE_MAX} ans.
+              simulation possible de l'âge légal à {AGE_MAX} ans.
             </p>
+            {resultatSelection.avantAgeLegal && (
+              <p className="text-xs text-destructive">
+                Cette date précède l'âge légal de départ : départ impossible hors dispositifs de
+                départ anticipé (carrière longue, handicap, incapacité), non simulés ici.
+              </p>
+            )}
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
@@ -427,6 +473,11 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
                 {resultatSelection.trimestresValidesProjetes}
               </div>
               <div className="text-xs text-muted-foreground">Trimestres validés projetés</div>
+              {trimestresAutresRegimes > 0 && (
+                <div className="text-xs text-muted-foreground">
+                  {resultatSelection.trimestresTousRegimes} tous régimes
+                </div>
+              )}
             </div>
 
             <div className="text-center p-3 border rounded-lg">
@@ -461,6 +512,9 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
             <p className="text-xs text-muted-foreground mt-1">
               Pension de base : {formatEuro2(resultatSelection.pensionBaseValue)} + pensions
               complémentaires calculables : {formatEuro2(totalPensionComplementaireAnnuelle)}
+              {resultatSelection.pensionAutresRegimes > 0 && (
+                <> + fonction publique / CNAVPL : {formatEuro2(resultatSelection.pensionAutresRegimes)}</>
+              )}
             </p>
             {regimesPointsExclusCount > 0 && (
               <p className="text-xs text-spark mt-1">
@@ -630,6 +684,16 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
             <TableBody>
               {AGES_COMPARATIF.map((age) => {
                 const resultat = simulerPourAge(age);
+                if (resultat.avantAgeLegal) {
+                  return (
+                    <TableRow key={age}>
+                      <TableCell className="font-medium">{age} ans</TableCell>
+                      <TableCell colSpan={4} className="text-xs text-muted-foreground">
+                        Avant l'âge légal — départ impossible hors dispositifs de départ anticipé
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
                 const decoteOuSurcoteLigne = resultat.decote + resultat.surcoteTotalePct;
                 return (
                   <TableRow

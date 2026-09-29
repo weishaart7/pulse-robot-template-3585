@@ -29,15 +29,9 @@ import {
   pensionFonctionPubliqueAvecMajorationEnfants,
   VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
   supplementNBI,
+  VALEUR_SERVICE_POINT_RAFP_2026,
 } from '@/lib/retraite/calculFonctionPublique';
 
-// Valeur de service du point RAFP 2026 (source : rafp.fr, communiqué ERAFP
-// du 16 décembre 2025) — sert à convertir des points déjà accumulés en
-// rente annuelle via pensionComplementaireAnnuelle(). La valeur d'acquisition
-// (1,4596 €, conversion € → points) n'est pas utilisée ici : les points sont
-// saisis directement par l'utilisateur, pas reconstitués depuis un historique
-// de primes (même principe que regimes_points pour l'Agirc-Arrco).
-const VALEUR_SERVICE_POINT_RAFP_2026 = 0.05671;
 
 const formatEuro2 = (valeur: number) =>
   valeur.toLocaleString('fr-FR', {

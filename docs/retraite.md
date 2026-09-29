@@ -254,6 +254,33 @@ Classement par risque, revérifié contre le code au 2026-09-24 (`git log`, lect
 
 ### 🔴 Bloquant (peut fausser un calcul montré au client)
 
+**Audit du 2026-09-29** ([audit-retraite-2026-09-29.md](audit-retraite-2026-09-29.md), classement
+et feuille de route validés). Nouveaux points bloquants :
+- complémentaires figées au jour du RIS : ni projection des points, ni minoration Agirc-Arrco (R1) ;
+- valeur de référence du MIGA (1 248,33 €) à confronter aux 1 366,35 € publiés pour 2026, MIGA
+  calculé sur les trimestres liquidables au lieu des services effectifs (R2, complément du point
+  MIGA ci-dessous) ;
+
+Soldés en phase 0 (2026-09-29) :
+- R3 : en option « taux seul », les trimestres rachetés ne réduisent que la décote ; seule l'option
+  « taux et durée » améliore la proratisation ;
+- R5 : dans l'onglet Optimisation, la date de liquidation est bornée au départ à l'âge légal et
+  initialisée sur celui-ci ; une date saisie plus tôt est signalée ; dans le comparatif, les lignes
+  avant l'âge légal affichent « départ impossible » (dispositifs de départ anticipé non modélisés) ;
+- R6 : l'onglet Optimisation apprécie la décote et la durée de la surcote tous régimes, et ajoute les
+  pensions FP (RAFP comprise) et CNAVPL au total ; il réutilise pour cela
+  `calculerResultatFonctionPublique()` / `calculerResultatCNAVPL()` (désormais exportées de
+  `pensionConsolidee.ts`) et `donneesAutresRegimesDepuisRetraiteData()` (`usePensionConsolidee.ts`,
+  même conversion que la Synthèse) ;
+- `VALEUR_SERVICE_POINT_RAFP_2026` n'est plus définie qu'à un seul endroit
+  (`calculFonctionPublique.ts`) ; la source du barème de rachat est corrigée ; le commentaire périmé
+  de `coefficientsRevalorisationCNAV.ts` est rectifié.
+
+Le barème de rachat a été vérifié conforme à la circulaire Cnav 2026-04 et à l'arrêté du
+21/10/2012. Sa non-monotonie sur la tranche 75-100 % du PASS vient du texte officiel, pas du code.
+
+La **condition de taux plein du MIGA**, ci-dessous, est désormais confirmée par SRE et CNRACL.
+
 Un seul point ouvert au 2026-09-24 (ci-dessous). L'audit des calculs du 2026-09-24 a relevé cinq anomalies
 bloquantes, toutes soldées (cf. §2) : plafonnement SAM avant revalorisation + PASS 2026, plafond de
 décote -25 %, période de la surcote classique, date d'effet unique et projection des trimestres,
@@ -354,9 +381,9 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   Réglage global, hors périmètre du module.
 - **`retraite_carriere_detail` sans contrainte d'unicité** : l'import RIS remplace toutes les périodes
   (suppression puis insertion), donc pas de doublon attendu, mais aucune clé naturelle n'est définie.
-- **`Trimestres.tsx` (onglet « Optimisation ») n'affiche ni MICO/MIGA, ni majoration enfants** —
-  décision produit documentée (écran volontairement plus simple qu'un détail de pension complet), pas
-  un oubli, mais crée une divergence de niveau de détail entre les deux écrans de simulation.
+- **`Trimestres.tsx` (onglet « Optimisation ») n'applique au régime général ni le MICO ni la
+  majoration enfants** — décision produit documentée (écran volontairement plus simple). Les pensions
+  FP et CNAVPL y sont en revanche complètes (MIGA et majorations comprises) depuis le 2026-09-29.
 - **`Synthese.tsx` n'a pas de branche de calcul propre à la fonction publique/CNAVPL détaillée** au
   même niveau que `Carriere.tsx` (MICO/MIGA affichés en synthèse consolidée, pas ligne à ligne).
 - **Aucune granularité de test de rendu de composant** (pas de `@testing-library/react`, environnement

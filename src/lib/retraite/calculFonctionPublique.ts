@@ -192,6 +192,14 @@ export function decoteFonctionPublique(e: EntreeDecoteFonctionPublique): number 
   return decoteAge === null ? decoteDuree : decoteApplicable(decoteDuree, decoteAge);
 }
 
+// Valeur de service du point RAFP 2026 (source : rafp.fr, communiqué ERAFP
+// du 16 décembre 2025) — sert à convertir des points déjà accumulés en
+// rente annuelle via pensionComplementaireAnnuelle(). La valeur d'acquisition
+// (1,4596 €, conversion € → points) n'est pas utilisée ici : les points sont
+// saisis directement par l'utilisateur, pas reconstitués depuis un historique
+// de primes (même principe que regimes_points pour l'Agirc-Arrco).
+export const VALEUR_SERVICE_POINT_RAFP_2026 = 0.05671;
+
 /**
  * Valeur de référence du minimum garanti (traitement indiciaire brut au 1er
  * janvier 2004 de l'indice majoré 227, revalorisé) — donnée **2025

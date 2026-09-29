@@ -972,9 +972,20 @@ export function pensionComplementaireAnnuelle(regime: RegimeDetecte): number | u
  * CARMF, CARPIMKO, CAVEC...) : leur barème de rachat n'est pas public, chaque
  * caisse établit un devis individualisé sur demande.
  *
- * Source : moneyvox.fr, citant la circulaire CNAV n° 2026-04. À
- * vérifier/réactualiser chaque année si une nouvelle circulaire CNAV est
- * publiée.
+ * Sources primaires (vérifiées le 2026-09-29) : annexe de la circulaire Cnav
+ * n° 2026-04 du 05/02/2026 (montants identiques à ce tableau) et arrêté du
+ * 21/10/2012 (barème 2013, toujours applicable) — la colonne intermédiaire
+ * est « en pourcentage du salaire ou revenu annuel », sans part fixe.
+ *
+ * ⚠️ Effet de seuil réel, pas un défaut : les forfaits ont été fixés en 2013
+ * comme pourcentage × seuils du PASS 2013 (barème alors continu) puis gelés,
+ * alors que les seuils suivent le PASS. Le coût n'est donc plus monotone :
+ * un revenu juste sous le PASS coûte plus qu'un revenu juste au-dessus.
+ *
+ * Non modélisé : rachats alignés (affiliation tardive, activité hors de
+ * France…) à 67 ans et plus — montant à 62 ans diminué de 2,5 % par année
+ * révolue au-delà de 62 ans. Le versement pour la retraite classique, seul
+ * simulé ici, est limité aux moins de 67 ans.
  */
 export type OptionRachat = 'tauxSeul' | 'tauxEtDuree';
 

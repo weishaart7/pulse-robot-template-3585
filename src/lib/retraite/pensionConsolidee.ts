@@ -52,10 +52,9 @@ import {
   pensionFonctionPubliqueAvecMajorationEnfants,
   VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
   supplementNBI,
+  VALEUR_SERVICE_POINT_RAFP_2026,
 } from './calculFonctionPublique';
 import { pensionBaseCNAVPL, decoteCNAVPL } from './calculCNAVPL';
-
-const VALEUR_SERVICE_POINT_RAFP_2026 = 0.05671;
 
 export interface DonneesFonctionPublique {
   traitementIndiciaireBrut: number;
@@ -144,7 +143,7 @@ export interface ResultatPensionConsolidee {
   detailRegimeGeneral: DetailRegimeGeneral;
 }
 
-function calculerResultatFonctionPublique(
+export function calculerResultatFonctionPublique(
   donnees: DonneesFonctionPublique,
   trimestresRequis: number,
   trimestresAutresRegimes: number,
@@ -226,7 +225,7 @@ function calculerResultatFonctionPublique(
   return { pensionFinale, rafpAnnuelle };
 }
 
-function calculerResultatCNAVPL(
+export function calculerResultatCNAVPL(
   donnees: DonneesCNAVPL,
   trimestresRequis: number,
   trimestresAutresRegimes: number,

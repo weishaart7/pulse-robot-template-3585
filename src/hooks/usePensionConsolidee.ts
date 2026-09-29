@@ -2,9 +2,12 @@ import { useMemo } from 'react';
 import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
 import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
+import { RetraiteData } from '@/hooks/useRetraiteData';
 import {
   calculerPensionConsolidee,
   ResultatPensionConsolidee,
+  DonneesFonctionPublique,
+  DonneesCNAVPL,
 } from '@/lib/retraite/pensionConsolidee';
 import { trimestresRequisPourGeneration } from '@/lib/retraite/calcul';
 import { calculerProjectionRevenuFutur } from '@/lib/retraite/hypotheseRevenuFutur';
@@ -28,6 +31,40 @@ export interface UsePensionConsolideeResult extends ResultatPensionConsolidee {
   dateEffet: Date | null;
   // Années passées sans donnée dans le détail de carrière, non projetées.
   anneesPasseesSansDonnees: number[];
+}
+
+/**
+ * Données fonction publique / CNAVPL persistées dans `retraite_data`,
+ * converties au format du moteur (`null` si le régime n'est pas coché).
+ * Partagé par la Synthèse (ci-dessous) et l'onglet Optimisation.
+ */
+export function donneesAutresRegimesDepuisRetraiteData(
+  data: RetraiteData
+): { fonctionPublique: DonneesFonctionPublique | null; cnavpl: DonneesCNAVPL | null } {
+  return {
+    fonctionPublique: data.has_fonction_publique
+      ? {
+          traitementIndiciaireBrut: data.traitement_indiciaire_brut ?? 0,
+          trimestresLiquidables: data.trimestres_liquidables_fp ?? 0,
+          pointsRAFP: data.points_rafp ?? 0,
+          departAnticipeCategorieActive: data.depart_anticipe_categorie_active ?? false,
+          ageDepartAnticipe: data.age_depart_anticipe,
+          ageAnnulationDecote: data.age_annulation_decote,
+          departPourInvalidite: data.depart_pour_invalidite ?? false,
+          anneeOuvertureDroits: data.annee_ouverture_droits,
+          regimeAffiliation: data.regime_affiliation_fp,
+          moyenneAnnuelleNBI: data.moyenne_annuelle_nbi ?? 0,
+          trimestresLiquidablesNBI: data.trimestres_liquidables_nbi ?? 0,
+        }
+      : null,
+    cnavpl: data.has_cnavpl
+      ? {
+          trimestresCNAVPL: data.trimestres_cnavpl ?? 0,
+          pointsCNAVPL: data.points_cnavpl ?? 0,
+          valeurPointCNAVPL: data.valeur_point_cnavpl ?? 0,
+        }
+      : null,
+  };
 }
 
 /**
@@ -104,28 +141,7 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     familyLinks,
     auMoinsUnTrimestreMajorationEnfant: data.au_moins_un_trimestre_majoration_enfant ?? false,
     autresPensionsMensuelles: data.autres_pensions_mensuelles ?? 0,
-    fonctionPublique: data.has_fonction_publique
-      ? {
-          traitementIndiciaireBrut: data.traitement_indiciaire_brut ?? 0,
-          trimestresLiquidables: data.trimestres_liquidables_fp ?? 0,
-          pointsRAFP: data.points_rafp ?? 0,
-          departAnticipeCategorieActive: data.depart_anticipe_categorie_active ?? false,
-          ageDepartAnticipe: data.age_depart_anticipe,
-          ageAnnulationDecote: data.age_annulation_decote,
-          departPourInvalidite: data.depart_pour_invalidite ?? false,
-          anneeOuvertureDroits: data.annee_ouverture_droits,
-          regimeAffiliation: data.regime_affiliation_fp,
-          moyenneAnnuelleNBI: data.moyenne_annuelle_nbi ?? 0,
-          trimestresLiquidablesNBI: data.trimestres_liquidables_nbi ?? 0,
-        }
-      : null,
-    cnavpl: data.has_cnavpl
-      ? {
-          trimestresCNAVPL: data.trimestres_cnavpl ?? 0,
-          pointsCNAVPL: data.points_cnavpl ?? 0,
-          valeurPointCNAVPL: data.valeur_point_cnavpl ?? 0,
-        }
-      : null,
+    ...donneesAutresRegimesDepuisRetraiteData(data),
   });
 
   const aDesDonnees = salaireAnnuelMoyen > 0 || trimestresValides > 0;
