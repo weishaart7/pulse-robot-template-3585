@@ -656,7 +656,8 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       comesFromRepresentationWithPlurality: heir.lien === 'neveu_niece' && !!heir.representation,
       isAdoptionSimple: person?.enfantAdopte === 'Adoption simple',
       adoptionSimpleAbattementPlein: person?.adoptionSimpleAbattementPlein || false,
-      exonerationSuccession: person?.exonerationSuccession || false
+      exonerationSuccession: person?.exonerationSuccession || false,
+      isHandicapped: !!person?.handicap
     };
   });
 
@@ -686,7 +687,8 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       lien: lienFiscalLegataire(l.personId),
       isAdoptionSimple: person?.enfantAdopte === 'Adoption simple',
       adoptionSimpleAbattementPlein: person?.adoptionSimpleAbattementPlein || false,
-      exonerationSuccession: person?.exonerationSuccession || false
+      exonerationSuccession: person?.exonerationSuccession || false,
+      isHandicapped: !!person?.handicap
     });
   });
 
@@ -752,6 +754,32 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // DMTG, taxés séparément via avContracts (990 I / 757 B, cf. dmtg/assurance-vie.ts) — sans
   // cette exclusion, un même contrat serait taxé deux fois dès qu'avContracts est réellement
   // alimenté (cf. isContratHorsSuccession, constants/assetTypes.ts — inclut le PER assurantiel).
+  // Abattement de 20 % sur la résidence principale (art. 764 bis CGI) : dû
+  // seulement si, au décès, le logement est aussi la résidence principale du
+  // conjoint ou partenaire de PACS survivant, ou d'un enfant (du défunt ou de
+  // son conjoint) mineur ou handicapé. L'occupation effective n'est pas
+  // saisie : elle est présumée dès qu'une telle personne existe (hypothèse
+  // validée le 2026-09-29), et rappelée dans les explications. Un enfant sans
+  // date de naissance n'est jamais présumé mineur.
+  const aUneRP = (rawAssets || []).some(a => a.nature === 'Résidence principale' && !isContratHorsSuccession(a));
+  const enfantsOccupantsPossibles = family.persons.filter(p =>
+    !p.estDecede && p.id !== family.decedentId &&
+    (family.childrenOfDecedent.includes(p.id) || p.lienFamilial?.toLowerCase() === 'enfant') &&
+    (p.handicap || (!!p.dateNaissance && getAgeAtDate(p.dateNaissance, referenceDate) < 18))
+  );
+  const survivantCohabitant = (family.hasSurvivingSpouse || !!family.survivantPartenairePacs) && !!family.survivingSpouseId;
+  const abattementRPApplicable = survivantCohabitant || enfantsOccupantsPossibles.length > 0;
+  if (aUneRP) {
+    successionLegaleResult.explicationsTexte.push(abattementRPApplicable
+      ? `Abattement de 20 % appliqué à la résidence principale (art. 764 bis CGI), en présumant qu'elle ` +
+        `était aussi, au décès, la résidence principale ${survivantCohabitant
+          ? (family.survivantPartenairePacs ? 'du partenaire de PACS survivant' : 'du conjoint survivant')
+          : "d'un enfant mineur ou handicapé"} — à confirmer.`
+      : `Pas d'abattement de 20 % sur la résidence principale (art. 764 bis CGI) : il suppose qu'au décès ` +
+        `le logement soit aussi occupé par le conjoint, le partenaire de PACS ou un enfant mineur ou ` +
+        `handicapé, et aucune de ces personnes n'est présente.`);
+  }
+
   const dmtgAssets: DmtgAsset[] = (rawAssets || [])
     .filter(asset => !isContratHorsSuccession(asset))
     .map(asset => ({
@@ -760,7 +788,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       valeurVenale: getValeurEstimeePonderee(asset) * getFractionSuccessorale(asset),
       nature: getAssetCategory(asset.nature || '') === 'actifs immobiliers' ? 'immobilier' : 'autre',
       location: 'metropole',
-      isResidencePrincipale: asset.nature === 'Résidence principale',
+      isResidencePrincipale: asset.nature === 'Résidence principale' && abattementRPApplicable,
       exclurePour: {}
     }));
 

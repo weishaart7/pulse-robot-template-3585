@@ -166,6 +166,18 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
     phase 3) ; `ProcessusCalcul.tsx` l'affiche à l'étape 6 et dans la fiche de chaque héritier.
   Tests : `lib/transmission/partage.test.ts` (scénarios de l'audit),
   `doubleMasseConjoint.audit-2026-08.test.ts` (réécrit sur ces règles).
+- **Abattement de 20 % sur la résidence principale conditionné (art. 764 bis CGI, phase 2 de
+  l'audit du 2026-09-29).** `computeTransmission` ne pose `isResidencePrincipale` que si le
+  conjoint ou le partenaire de PACS survit, ou si un enfant du défunt ou du conjoint est mineur au
+  décès (date de naissance requise, jamais présumé mineur sans elle) ou handicapé
+  (`Person.handicap`). L'occupation effective n'étant pas saisie, elle est présumée (hypothèse
+  validée) et rappelée dans `explicationsTexte`, qui indique aussi l'absence d'abattement. Effet
+  direct : pas d'abattement au 2nd décès sans enfant mineur ou handicapé.
+- **Abattement handicap (art. 779 II CGI, phase 2).** `Person.handicap` (saisi dans Famille) est
+  désormais transmis à `Beneficiary.isHandicapped` pour les héritiers et les légataires (il ne
+  l'était jamais : l'abattement n'était appliqué à personne). `dmtg/recall.ts` : 159 325 € ouverts
+  à tous, tiers compris, cumulés avec les abattements de parenté, en remplacement des 1 594 € de
+  l'art. 788 IV. Tests : `lib/transmission/phase2NotaireAudit.test.ts`.
 - **Fente successorale : branche familiale saisissable pour les 4 rangs** (commit `de8a722`, finding
   F18) — corrige un défaut de saisie qui pouvait conduire à une **déshérence à tort** (le message
   « l'État français hérite » s'affichait alors que des grands-parents vivants existaient, faute de
@@ -452,18 +464,13 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
 
 **Audit « résultat notaire » du 2026-09-29** — points reproduits sur un scénario chiffré. Les
 écarts civils (répartition, droits du conjoint, réserve, rapport, réduction) sont corrigés par la
-phase 1 (cf. §2, « Partage entre héritiers ») ; restent ouverts, pour les phases 2 à 4 :
+phase 1 (cf. §2, « Partage entre héritiers »), l'abattement résidence principale et l'abattement
+handicap par la phase 2 (cf. §2) ; restent ouverts, pour les phases 3 et 4 :
 
-- **Abattement de 20 % sur la résidence principale appliqué sans condition.** Art. 764 bis CGI : il
-  faut qu'au décès le logement soit aussi la résidence principale du conjoint, du partenaire de PACS
-  ou d'un enfant mineur ou protégé. Veuf avec 2 enfants majeurs, RP de 500 k€ → 20 044 € de droits
-  par enfant au lieu de 30 544 €. Touche tous les 2nds décès.
 - **Net à recevoir calculé sur l'assiette fiscale, pas sur la valeur reçue.** `netBreakdown` part de
   `baseApresFrais` (après −20 % RP, et 757 B inclus) : avec une RP de 500 k€, chaque enfant « reçoit »
   176 k€ pour 250 k€ hérités. Assurance-vie 757 B : les primes réintégrées sont comptées à la fois
   dans `baseApresFrais` et dans `capitalAVNet` (contrat de 200 k€ → 357 k€ nets affichés).
-- **Abattement handicap (art. 779 II)** : refusé au lien `autre` (tiers handicapé à 0 € au lieu de
-  159 325 €), cumulé à tort avec les 1 594 € de l'art. 788 IV pour les autres liens.
 - **Non modélisés, mais appliqués par le notaire** : réduction de droits pour charges de famille
   (art. 780 CGI), exonération partielle Dutreil (art. 787 B), dévolution entre demi-frères et
   demi-sœurs par branches (art. 752 C. civ.), rappel des donations reçues par le représenté (art. 784).

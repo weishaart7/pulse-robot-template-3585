@@ -64,9 +64,15 @@ export function computeRecallAndAllowances(input: {
     abattementBase = abattementRepresente / nbRepresentants;
   }
 
-  // Abattement handicap (cumulable sauf avec tiers)
-  if (beneficiary.isHandicapped && beneficiary.lien !== 'autre') {
-    abattementBase += params.abattements.handicap;
+  // Abattement handicap (art. 779 II CGI) : ouvert à tout héritier,
+  // légataire ou donataire, tiers compris. Cumulable avec les abattements
+  // liés à la parenté (779 I, III, IV, V), mais il remplace celui de 1 594€
+  // de l'art. 788 IV, qui ne joue qu'à défaut de tout autre abattement.
+  if (beneficiary.isHandicapped && abattementBase !== Infinity) {
+    const abattementParente = abattementBase === params.abattements.tiers && !beneficiary.representedOf
+      ? 0
+      : abattementBase;
+    abattementBase = abattementParente + params.abattements.handicap;
   }
 
   // Calculer l'abattement consommé par les donations dans les 15 ans

@@ -581,10 +581,12 @@ describe('Golden Scenarios — Transmission (docs/Golden_Scenarios_Transmission.
     // Défunt + enfant unique, pas de conjoint, un seul bien de 300 000€ dont
     // la nature varie selon le cas — même valeur pour isoler l'effet de la
     // catégorisation (assiette immobilière) et du libellé exact (abattement RP).
+    // Enfant mineur au décès : condition d'occupation de l'art. 764 bis CGI
+    // remplie, pour que l'abattement -20% reste observable sans conjoint.
     const family: FamilyGraph = {
       persons: [
         { id: 'defunt', nom: 'Defunt', prenom: 'Jean' },
-        { id: 'enfant1', nom: 'Enfant', prenom: 'Un', lienFamilial: 'Enfant' }
+        { id: 'enfant1', nom: 'Enfant', prenom: 'Un', lienFamilial: 'Enfant', dateNaissance: '2012-01-01' }
       ],
       links: [{ from: 'defunt', to: 'enfant1', relation: 'child' }],
       marriages: [],
