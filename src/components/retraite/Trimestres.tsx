@@ -8,27 +8,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
 import {
-  trimestresProjetesParAnnee,
   revenuAnnuelHypotheseDerniereAnneeConnue,
   salaireProjectionComplementaire,
 } from '@/lib/retraite/hypotheseRevenuFutur';
 import {
   separerRegimesPoints,
   estRegimeAgircArrco,
-  pointsAgircArrcoAnnuels,
-  coefficientAnticipationAgircArrco,
-  pensionAgircArrco,
 } from '@/lib/retraite/calculAgircArrco';
 import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
 import { donneesAutresRegimesDepuisRetraiteData } from '@/hooks/usePensionConsolidee';
-import { calculerResultatFonctionPublique, calculerResultatCNAVPL } from '@/lib/retraite/pensionConsolidee';
 import { nombreEnfantsEligiblesMajorationTroisEnfants } from '@/lib/retraite/enfantsEligiblesMajoration';
 import { computeAge } from '@/lib/patrimoine/bareme669CGI';
 import {
   trimestresRequisPourGeneration,
-  ageLegalPourGeneration,
-  ageLegalAtteint,
-  ageLegalParentaleEligible,
   dateAnniversaireLegal,
   tauxProratisation,
   decoteSurTrimestres,
@@ -42,15 +34,11 @@ import {
   dateEffetSimuleeParAge,
   dateDepuisISO,
   dateEffetDepartAgeLegal,
-  surcotePourTrimestresCotises,
-  trimestresSurcoteClassique,
   ageEnMois,
-  surcoteParentale,
-  surcoteTotale,
   OptionRachat,
 } from '@/lib/retraite/calcul';
 import { trimestresCotisesEtAssimilesDepuisCarriere } from '@/lib/retraite/calculTrimestres';
-import { evaluerCarriereLongue, carriereLongueOuverteA } from '@/lib/retraite/calculCarriereLongue';
+import { creerSimulateurDepart } from '@/lib/retraite/simulationDepart';
 import { MILLESIME_COURANT } from '@/lib/retraite/parametres';
 
 // Format ISO ("YYYY-MM-DD") d'une date UTC-midnight, pour la valeur d'un
@@ -144,14 +132,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   // Carriere.tsx, cf. docs/audit/branchement-surcote-optimisation.md §1.3).
   const auMoinsUnTrimestreMajorationEnfant = retraiteData.au_moins_un_trimestre_majoration_enfant || false;
 
-  // Complémentaires : Agirc-Arrco recalculé à chaque date de départ (points
-  // projetés, coefficient d'anticipation si la base est décotée — cf.
-  // calculAgircArrco.ts) ; autres régimes à points constants.
-  const { pointsAgircArrco, aUnRegimeAgircArrco, autresRegimes } = separerRegimesPoints(regimesPoints);
-  const pensionAutresRegimesPoints = autresRegimes.reduce((total, regime) => {
-    const pension = pensionComplementaireAnnuelle(regime);
-    return pension !== undefined ? total + pension : total;
-  }, 0);
+  const { aUnRegimeAgircArrco } = separerRegimesPoints(regimesPoints);
 
   // Fonction publique / CNAVPL (données persistées, même conversion que la
   // Synthèse) : leurs trimestres comptent dans la durée tous régimes (décote,
@@ -216,71 +197,6 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   const ageActuelConfirme: number = ageActuel;
   const dateNaissanceConfirmee = dateNaissanceDetail;
 
-  const trimestresProjetesJusqua = (dateEffet: Date) =>
-    trimestresProjetesParAnnee(resultatTrimestresDetailCarriere.parAnnee, new Date(), dateEffet).reduce(
-      (total, a) => total + a.trimestres,
-      0
-    );
-
-  // Départs anticipés (phase 5) : carrière longue (calculée, circulaire Cnav
-  // 2026-29) et départ confirmé par la caisse (handicap, incapacité
-  // permanente… — saisi dans l'onglet Carrière). Dans les deux cas, pension
-  // du régime général à taux plein.
-  const carriereLongue = evaluerCarriereLongue({
-    dateNaissance: dateNaissanceConfirmee,
-    trimestres: resultatTrimestresDetailCarriere,
-    trimestresAutresRegimes,
-    trimestresProjetesJusqua,
-    aujourdHui: new Date(),
-  });
-  const ageDepartConfirme = retraiteData.depart_anticipe_confirme_motif
-    ? retraiteData.depart_anticipe_confirme_age ?? null
-    : null;
-  const dateEffetDepartConfirme =
-    ageDepartConfirme !== null
-      ? (() => {
-          const ans = Math.floor(ageDepartConfirme);
-          const anniversaire = dateAnniversaireLegal(dateNaissanceConfirmee, {
-            ans,
-            mois: Math.round((ageDepartConfirme - ans) * 12),
-          });
-          return new Date(Date.UTC(anniversaire.getUTCFullYear(), anniversaire.getUTCMonth() + 1, 1));
-        })()
-      : null;
-  const departAnticipeOuvertA = (dateEffet: Date): 'carriere_longue' | 'confirme' | null =>
-    dateEffetDepartConfirme && dateEffet.getTime() >= dateEffetDepartConfirme.getTime()
-      ? 'confirme'
-      : carriereLongueOuverteA(carriereLongue, dateEffet)
-      ? 'carriere_longue'
-      : null;
-
-  // Borne basse : départ à l'âge légal, ou plus tôt si un départ anticipé est
-  // ouvert ; le mois prochain si l'âge légal est déjà atteint.
-  const dateEffetAgeLegal = dateEffetDepartAgeLegal(dateNaissanceConfirmee, new Date());
-  const datesAuPlusTot = [dateEffetAgeLegal, carriereLongue.premiereDateEligible, dateEffetDepartConfirme].filter(
-    (d): d is Date => d !== null
-  );
-  const moisProchain = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1));
-  const dateDepartAuPlusTot =
-    datesAuPlusTot.length > 0
-      ? new Date(Math.max(moisProchain.getTime(), Math.min(...datesAuPlusTot.map((d) => d.getTime()))))
-      : null;
-  const dateLiquidationMin = isoDate(dateDepartAuPlusTot ?? dateEffetSimuleeParAge(dateNaissanceConfirmee, AGE_MIN));
-  const dateLiquidationMax = isoDate(dateEffetSimuleeParAge(dateNaissanceConfirmee, AGE_MAX));
-  // Repli avant que l'effet d'initialisation n'ait posé la valeur par défaut
-  // (premier rendu, dateLiquidation encore vide) — même valeur que ce que
-  // l'effet posera de toute façon, pour ne jamais calculer sur une date vide.
-  const dateLiquidationEffet = dateLiquidation
-    ? dateDepuisISO(dateLiquidation)
-    : dateEffetAgeLegal ?? dateEffetSimuleeParAge(dateNaissanceConfirmee, Math.min(AGE_MAX, Math.max(AGE_MIN, ageActuelConfirme)));
-
-  // Calcule le scénario pour une date d'effet donnée — la source de vérité
-  // depuis cette session (Option 2, docs/audit/conception-date-effet.md) :
-  // l'ancien paramètre `age` ne pilote plus rien, il est dérivé de la date
-  // via `computeAge()` uniquement pour l'affichage et pour les besoins
-  // internes qui restent exprimés en âge (projection des trimestres,
-  // decoteSurAge — non concernée par la bascule de barème, cf.
-  // docs/audit/implementation-date-effet-moteur.md, point d'entrée #4).
   // Salaire de projection des points Agirc-Arrco : salaire brut total saisi,
   // sinon revenu de l'hypothèse de revenu futur (plafonné au PASS en mode RIS).
   const revenuHypothese =
@@ -289,177 +205,41 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
       : retraiteData.revenu_hypothese_manuel ?? null;
   const salaireComplementaire = salaireProjectionComplementaire(retraiteData.salaire_brut_annuel, revenuHypothese);
 
-  // Complémentaires à une date de départ : Agirc-Arrco (points acquis +
-  // projetés, coefficient d'anticipation selon la décote de la base) + autres
-  // régimes à points. Réutilisé pour le scénario avec rachat.
-  const complementairesPourDepart = (
-    decoteBase: number,
-    ageDepartAnnees: number,
-    trimestresManquants: number,
-    trimestresProjetes: number
-  ): number => {
-    if (!aUnRegimeAgircArrco) return pensionAutresRegimesPoints;
-    const agirc = pensionAgircArrco({
-      pointsAcquis: pointsAgircArrco,
-      pointsProjetes: salaireComplementaire
-        ? (pointsAgircArrcoAnnuels(salaireComplementaire.salaireAnnuel) * trimestresProjetes) / 4
-        : 0,
-      coefficientAnticipation: coefficientAnticipationAgircArrco(decoteBase < 0, ageDepartAnnees, trimestresManquants),
-      nombreEnfantsEligibles,
-    });
-    return agirc.pensionAnnuelle + pensionAutresRegimesPoints;
-  };
+  // Simulation par date de départ : moteur pur partagé avec la décision de
+  // départ (simulationDepart.ts) — base, décote/surcote, départs anticipés,
+  // Agirc-Arrco, fonction publique, CNAVPL.
+  const simulateur = creerSimulateurDepart({
+    dateNaissance: dateNaissanceConfirmee,
+    aujourdHui: new Date(),
+    trimestresValidesActuels,
+    salaireAnnuelMoyen,
+    regimesPoints,
+    auMoinsUnTrimestreMajorationEnfant,
+    trimestresCarriere: resultatTrimestresDetailCarriere,
+    fonctionPublique,
+    cnavpl,
+    nombreEnfantsEligibles,
+    salaireComplementaire: salaireComplementaire?.salaireAnnuel ?? null,
+    ageDepartAnticipeConfirme: retraiteData.depart_anticipe_confirme_motif
+      ? retraiteData.depart_anticipe_confirme_age ?? null
+      : null,
+  });
+  const { carriereLongue, dateEffetAgeLegal, dateDepartAuPlusTot, departAnticipeOuvertA, complementairesPourDepart } =
+    simulateur;
+  const moisProchain = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1));
 
-  const simulerPourDateEffet = (dateEffet: Date) => {
-    const ageAffiche = computeAge(dateNaissance, dateEffet) ?? ageActuelConfirme;
-    // Âge de départ au mois près (décote âge, trimestres manquants arrondis
-    // au supérieur) et trimestres projetés par trimestre civil, du trimestre
-    // en cours au trimestre précédant la date d'effet, plafonnés à 4/an
-    // trimestres réels compris — mêmes fonctions que Carrière/Synthèse
-    // (auparavant : 4 × écart d'âge en années entières).
-    const ageDepartAnnees = ageEnMois(dateNaissanceConfirmee, dateEffet) / 12;
-    const trimestresProjetes = trimestresProjetesJusqua(dateEffet);
-    const trimestresValidesProjetes = trimestresValidesActuels + trimestresProjetes;
-    const trimestresTousRegimes = trimestresValidesProjetes + trimestresAutresRegimes;
-    const trimestresRequis = trimestresRequisPourGeneration(dateNaissanceConfirmee, dateEffet);
-    // Calculée mais non encore affichée (aucun écran ne montre l'âge légal à
-    // ce jour) — reconnecte ageLegalPourGeneration() à un appelant réel,
-    // cf. docs/audit/audit-retraite.md §7, écart #2/#3.
-    const ageLegal = ageLegalPourGeneration(dateNaissanceConfirmee, dateEffet);
-    // Départ avant le 1er du mois suivant l'anniversaire de l'âge légal :
-    // possible seulement si un départ anticipé est ouvert à cette date.
-    const departAnticipe = departAnticipeOuvertA(dateEffet);
-    const avantAgeLegalBrut =
-      ageLegal.stable &&
-      dateEffet.getTime() <
-        Date.UTC(
-          dateAnniversaireLegal(dateNaissanceConfirmee, ageLegal.age).getUTCFullYear(),
-          dateAnniversaireLegal(dateNaissanceConfirmee, ageLegal.age).getUTCMonth() + 1,
-          1
-        );
-    const avantAgeLegal = avantAgeLegalBrut && departAnticipe === null;
-    const taux = tauxProratisation(trimestresValidesProjetes, trimestresRequis);
-    // decoteSurTrimestres() est symétrique : au-delà de trimestresRequis, sa
-    // branche positive (sans plafond ni porte d'éligibilité) n'est pas une
-    // surcote légitime (référentiel §2.3.1/§2.3.2) — écrêtée à 0 ci-dessous,
-    // même correctif que Carriere.tsx (cf.
-    // docs/audit/branchement-majorations-pension-finale.md §1.b et
-    // docs/audit/branchement-surcote-optimisation.md §2).
-    // Départ anticipé (carrière longue, départ confirmé par la caisse) :
-    // taux plein au régime général, donc ni décote ni coefficient
-    // d'anticipation Agirc-Arrco.
-    const decote =
-      departAnticipe !== null
-        ? 0
-        : Math.min(
-            decoteApplicable(
-              decoteSurTrimestres(trimestresTousRegimes, trimestresRequis),
-              decoteSurAge(ageDepartAnnees)
-            ),
-            0
-          );
+  const dateLiquidationMin = isoDate(dateDepartAuPlusTot ?? dateEffetSimuleeParAge(dateNaissanceConfirmee, AGE_MIN));
+  const dateLiquidationMax = isoDate(dateEffetSimuleeParAge(dateNaissanceConfirmee, AGE_MAX));
+  // Repli avant que l'effet d'initialisation n'ait posé la valeur par défaut
+  // (premier rendu, dateLiquidation encore vide).
+  const dateLiquidationEffet = dateLiquidation
+    ? dateDepuisISO(dateLiquidation)
+    : dateEffetAgeLegal ?? dateEffetSimuleeParAge(dateNaissanceConfirmee, Math.min(AGE_MAX, Math.max(AGE_MIN, ageActuelConfirme)));
 
-    // Surcote (classique + parentale), assise sur la pension avant décote
-    // mais ajoutée après (référentiel §12.3) — même schéma de branchement que
-    // Carriere.tsx, reproduit tel quel : régime général, donc cumul additif
-    // (pas de fonction publique/CNAVPL sur cet écran, cf. diagnostic
-    // docs/audit/branchement-surcote-optimisation.md §1.4).
-    const ageLegalAtteintFlag = ageLegalAtteint(dateNaissanceConfirmee, dateEffet);
-    const ageLegalParentaleEligibleFlag = ageLegalParentaleEligible(dateNaissanceConfirmee, dateEffet);
-    const dureeRequiseAtteinte = trimestresTousRegimes >= trimestresRequis;
-    // Surcote classique : trimestres cotisés APRÈS l'âge légal jusqu'au
-    // trimestre civil précédant la date de liquidation (référentiel §2.3.1).
-    // Les trimestres futurs (après aujourd'hui) sont supposés cotisés —
-    // même hypothèse de poursuite d'activité que trimestresValidesProjetes.
-    const trimestresSurcote = trimestresSurcoteClassique({
-      parAnnee: resultatTrimestresDetailCarriere.parAnnee,
-      dateNaissance: dateNaissanceConfirmee,
-      dateEffet,
-      trimestresTousRegimes,
-      trimestresRequis,
-      projeterDepuis: new Date(),
-    });
-    // Surcote parentale : trimestres cotisés sur l'année PRÉCÉDANT l'âge
-    // légal (référentiel §2.3.2) — période distincte de la surcote classique.
-    const anneeReferenceSurcoteParentale =
-      ageLegal.stable
-        ? dateAnniversaireLegal(dateNaissanceConfirmee, ageLegal.age).getUTCFullYear() - 1
-        : null;
-    const trimestresCotisesAnneeReferenceParentale =
-      anneeReferenceSurcoteParentale !== null
-        ? resultatTrimestresDetailCarriere.parAnnee.find((a) => a.annee === anneeReferenceSurcoteParentale)
-            ?.cotises ?? 0
-        : 0;
-    const surcoteClassiquePct = surcotePourTrimestresCotises(
-      trimestresSurcote,
-      ageLegalAtteintFlag,
-      dureeRequiseAtteinte
-    );
-    const surcoteParentalePct = surcoteParentale(
-      auMoinsUnTrimestreMajorationEnfant,
-      ageLegalParentaleEligibleFlag,
-      dureeRequiseAtteinte,
-      trimestresCotisesAnneeReferenceParentale
-    );
-    const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true);
-
-    const pensionBaseBrute = pensionBase(salaireAnnuelMoyen, taux, 0);
-    const pensionBaseValue =
-      pensionBaseBrute * (1 + decote / 100) + pensionBaseBrute * (surcoteTotalePct / 100);
-    // Pensions fonction publique (y compris RAFP) et CNAVPL à cette même date
-    // d'effet — mêmes fonctions que Carrière/Synthèse.
-    const resultatFP = fonctionPublique
-      ? calculerResultatFonctionPublique(
-          fonctionPublique,
-          trimestresRequis,
-          trimestresValidesProjetes + (cnavpl?.trimestresCNAVPL ?? 0),
-          dateNaissanceConfirmee,
-          dateEffet,
-          auMoinsUnTrimestreMajorationEnfant,
-          nombreEnfantsEligibles
-        )
-      : { pensionFinale: 0, rafpAnnuelle: 0, rafpCapital: 0 };
-    const resultatCNAVPL = cnavpl
-      ? calculerResultatCNAVPL(
-          cnavpl,
-          trimestresRequis,
-          trimestresValidesProjetes + (fonctionPublique?.trimestresLiquidables ?? 0),
-          dateNaissanceConfirmee,
-          dateEffet,
-          auMoinsUnTrimestreMajorationEnfant,
-          nombreEnfantsEligibles
-        )
-      : { pensionFinale: 0 };
-    const pensionAutresRegimes =
-      resultatFP.pensionFinale + resultatFP.rafpAnnuelle + resultatCNAVPL.pensionFinale;
-
-    const pensionComplementaires = complementairesPourDepart(
-      decote,
-      ageDepartAnnees,
-      trimestresRequis - trimestresTousRegimes,
-      trimestresProjetes
-    );
-
-    return {
-      ageAffiche,
-      ageDepartAnnees,
-      avantAgeLegal,
-      departAnticipe: avantAgeLegalBrut ? departAnticipe : null,
-      trimestresProjetes,
-      trimestresValidesProjetes,
-      trimestresTousRegimes,
-      trimestresRequis,
-      ageLegal,
-      decote,
-      surcoteTotalePct,
-      pensionBaseBrute,
-      pensionBaseValue,
-      pensionComplementaires,
-      pensionAutresRegimes,
-      rafpCapital: resultatFP.rafpCapital,
-      pensionTotale: pensionBaseValue + pensionComplementaires + pensionAutresRegimes,
-    };
-  };
+  const simulerPourDateEffet = (dateEffet: Date) => ({
+    ...simulateur.simuler(dateEffet),
+    ageAffiche: computeAge(dateNaissance, dateEffet) ?? ageActuelConfirme,
+  });
 
   // Tableau comparatif par âge fixe (62-70 ans, cf. plus bas) : pas un
   // contrôle de saisie, seulement une liste de scénarios de référence —
