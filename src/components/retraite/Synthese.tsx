@@ -14,6 +14,7 @@ import {
   ResultatNetRetraiteFoyer,
 } from '@/lib/retraite/calculNetRetraite';
 import { TrancheCSGPension } from '@/lib/retraite/parametres';
+import { reversionPourSurvivant, statutCoupleDepuisLibelle, StatutCouple, DetailReversion } from '@/lib/retraite/calculReversion';
 
 const formatEuro0 = (valeur: number) =>
   valeur.toLocaleString('fr-FR', {
@@ -27,6 +28,8 @@ interface SyntheseProps {
   hasConjoint: boolean;
   nomUtilisateur: string;
   nomConjoint: string;
+  /** Libellé `marital_status.statut_couple` (réversion : mariage seul). */
+  statutCouple?: string;
 }
 
 interface CartePensionFoyerProps {
@@ -188,24 +191,24 @@ const LigneNet = ({ titre, resultat, tauxRemplacement }: { titre: string; result
   </div>
 );
 
-const CarteRevenuNet = ({ hasConjoint, nomUtilisateur, nomConjoint }: CartePensionFoyerProps) => {
-  const utilisateur = usePensionConsolidee('utilisateur');
-  const conjoint = usePensionConsolidee('conjoint');
-  const { data: foyerFiscal, loading: loadingFoyer } = useFoyerFiscal();
+type LigneRevenuNet = { titre: string; resultat: ResultatNetRetraiteFoyer; tauxRemplacement: number | null };
 
-  if (utilisateur.loading || (hasConjoint && conjoint.loading) || loadingFoyer || !utilisateur.aDesDonnees) {
-    return null;
-  }
+const remplacement = (r: ResultatPersonne) => tauxRemplacementBrut(r.pensionTotaleConsolidee, r.revenuActiviteBrutReference);
 
-  const avecConjoint = hasConjoint && conjoint.aDesDonnees;
-  const foyerSaisi = foyerFiscal ?? null;
+// Revenu net du foyer actuel (phase 3) : foyer commun si marié ou pacsé dans
+// le module Fiscalité, sinon foyers séparés. Partagé par la carte « Revenu
+// net » et la carte « Protection du conjoint survivant » (net du couple).
+const lignesRevenuNet = (
+  utilisateur: ResultatPersonne,
+  conjoint: ResultatPersonne | null,
+  foyerSaisi: FoyerFiscalInput | null,
+  nomUtilisateur: string,
+  nomConjoint: string
+): LigneRevenuNet[] => {
   const impositionCommune =
-    avecConjoint && (foyerSaisi?.situationFamille === 'marie' || foyerSaisi?.situationFamille === 'pacse');
-
-  const remplacement = (r: ResultatPersonne) => tauxRemplacementBrut(r.pensionTotaleConsolidee, r.revenuActiviteBrutReference);
-
-  let lignes: { titre: string; resultat: ResultatNetRetraiteFoyer; tauxRemplacement: number | null }[];
-  if (impositionCommune && foyerSaisi) {
+    conjoint !== null && (foyerSaisi?.situationFamille === 'marie' || foyerSaisi?.situationFamille === 'pacse');
+  let lignes: LigneRevenuNet[];
+  if (impositionCommune && foyerSaisi && conjoint) {
     const foyer = foyerSansEnfantsACharge(foyerSaisi, foyerSaisi.situationFamille);
     lignes = [
       {
@@ -230,7 +233,7 @@ const CarteRevenuNet = ({ hasConjoint, nomUtilisateur, nomConjoint }: CartePensi
         resultat: calculerNetRetraiteFoyer([pensionsBrutes(utilisateur)], calculerPartsFiscales(foyerUtilisateur), situationUtilisateur),
         tauxRemplacement: remplacement(utilisateur),
       },
-      ...(avecConjoint
+      ...(conjoint !== null
         ? [
             {
               titre: nomConjoint,
@@ -241,6 +244,24 @@ const CarteRevenuNet = ({ hasConjoint, nomUtilisateur, nomConjoint }: CartePensi
         : []),
     ];
   }
+
+  return lignes;
+};
+
+const CarteRevenuNet = ({ hasConjoint, nomUtilisateur, nomConjoint }: CartePensionFoyerProps) => {
+  const utilisateur = usePensionConsolidee('utilisateur');
+  const conjoint = usePensionConsolidee('conjoint');
+  const { data: foyerFiscal, loading: loadingFoyer } = useFoyerFiscal();
+
+  if (utilisateur.loading || (hasConjoint && conjoint.loading) || loadingFoyer || !utilisateur.aDesDonnees) {
+    return null;
+  }
+
+  const avecConjoint = hasConjoint && conjoint.aDesDonnees;
+  const foyerSaisi = foyerFiscal ?? null;
+  const impositionCommune =
+    avecConjoint && (foyerSaisi?.situationFamille === 'marie' || foyerSaisi?.situationFamille === 'pacse');
+  const lignes = lignesRevenuNet(utilisateur, avecConjoint ? conjoint : null, foyerSaisi, nomUtilisateur, nomConjoint);
 
   return (
     <Card className="border border-border">
@@ -272,6 +293,151 @@ const CarteRevenuNet = ({ hasConjoint, nomUtilisateur, nomConjoint }: CartePensi
             Revenus du foyer limités aux pensions (loyers, dividendes et rachats d'assurance-vie non inclus : tranche
             d'imposition possiblement sous-estimée) ; enfants à charge non retenus dans les parts.
             {avecConjoint && ' Les deux conjoints sont supposés retraités.'}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+interface CarteConjointSurvivantProps extends CartePensionFoyerProps {
+  statutCouple?: string;
+}
+
+// Revenu du survivant : sa pension propre + la réversion, imposé seul (veuf
+// si marié, célibataire sinon — 1 part, sans enfant à charge).
+const revenuSurvivant = (survivant: ResultatPersonne, defunt: ResultatPersonne, statut: StatutCouple) => {
+  const propres = pensionsBrutes(survivant);
+  const reversion = reversionPourSurvivant(defunt.assietteReversion, survivant.pensionTotaleConsolidee, statut);
+  const situation: FoyerFiscalInput['situationFamille'] = statut === 'marie' ? 'veuf' : 'celibataire';
+  const net = calculerNetRetraiteFoyer(
+    [
+      {
+        base: propres.base + reversion.regimeGeneral + reversion.cnavpl + reversion.fonctionPublique + reversion.rafp,
+        complementaires: propres.complementaires + reversion.agircArrco,
+      },
+    ],
+    calculerPartsFiscales(foyerSansEnfantsACharge(FOYER_PAR_DEFAUT, situation)),
+    situation
+  );
+  return { reversion, net };
+};
+
+const DetailSurvivant = ({
+  titre,
+  pensionPropre,
+  reversion,
+  net,
+  netCoupleMensuel,
+}: {
+  titre: string;
+  pensionPropre: number;
+  reversion: DetailReversion;
+  net: ResultatNetRetraiteFoyer;
+  netCoupleMensuel: number;
+}) => {
+  const perte = netCoupleMensuel - net.netMensuel;
+  const detail = (
+    [
+      ['Régime général', reversion.regimeGeneral],
+      ['Agirc-Arrco', reversion.agircArrco],
+      ['Fonction publique', reversion.fonctionPublique],
+      ['RAFP', reversion.rafp],
+      ['CNAVPL', reversion.cnavpl],
+    ] as [string, number][]
+  )
+    .filter(([, montant]) => montant > 0)
+    .map(([libelle, montant]) => `${libelle} ${formatEuro0(montant)}`)
+    .join(', ');
+  return (
+    <div className="space-y-1">
+      <p className="text-xs text-muted-foreground">{titre}</p>
+      <div className="text-2xl font-bold text-primary">{formatEuro0(net.netMensuel)} / mois net</div>
+      <p className="text-xs text-muted-foreground">
+        Pension propre {formatEuro0(pensionPropre)} / an + réversion {formatEuro0(reversion.total)} / an
+        {detail && <> ({detail})</>}
+      </p>
+      {reversion.reduiteParPlafondRessources && (
+        <p className="text-xs text-muted-foreground">
+          Réversion du régime général réduite par le plafond de ressources (25 001,60 €/an pour une personne seule).
+        </p>
+      )}
+      {netCoupleMensuel > 0 && (
+        <p className="text-xs">
+          Baisse du revenu net du foyer :{' '}
+          <span className="font-semibold text-destructive">−{formatEuro0(perte)} / mois</span> ({formatPct(perte / netCoupleMensuel)})
+        </p>
+      )}
+    </div>
+  );
+};
+
+const CarteConjointSurvivant = ({ hasConjoint, nomUtilisateur, nomConjoint, statutCouple }: CarteConjointSurvivantProps) => {
+  const utilisateur = usePensionConsolidee('utilisateur');
+  const conjoint = usePensionConsolidee('conjoint');
+  const { data: foyerFiscal, loading: loadingFoyer } = useFoyerFiscal();
+  const statut = statutCoupleDepuisLibelle(statutCouple);
+
+  if (
+    !hasConjoint ||
+    !statut ||
+    utilisateur.loading ||
+    conjoint.loading ||
+    loadingFoyer ||
+    !utilisateur.aDesDonnees ||
+    !conjoint.aDesDonnees
+  ) {
+    return null;
+  }
+
+  const netCoupleMensuel = lignesRevenuNet(utilisateur, conjoint, foyerFiscal ?? null, nomUtilisateur, nomConjoint).reduce(
+    (total, l) => total + l.resultat.netMensuel,
+    0
+  );
+  const survivantConjoint = revenuSurvivant(conjoint, utilisateur, statut);
+  const survivantUtilisateur = revenuSurvivant(utilisateur, conjoint, statut);
+
+  return (
+    <Card className="border border-border">
+      <CardHeader className="p-5">
+        <CardTitle className="text-[15px] font-semibold tracking-tight">Protection du conjoint survivant</CardTitle>
+      </CardHeader>
+      <CardContent className="p-5 pt-0 space-y-4">
+        {statut !== 'marie' && (
+          <p className="text-xs rounded-lg border border-destructive/40 p-3 text-destructive">
+            {statut === 'pacse' ? 'PACS' : 'Concubinage'} : aucune pension de réversion n'est versée, dans aucun régime.
+            Seul le mariage ouvre ce droit — le survivant ne garde que sa propre pension.
+          </p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Revenu net du couple retraité : {formatEuro0(netCoupleMensuel)} / mois.
+        </p>
+        <div className="grid gap-4 md:grid-cols-2">
+          <DetailSurvivant
+            titre={`Décès de ${nomUtilisateur} — revenu de ${nomConjoint}`}
+            pensionPropre={conjoint.pensionTotaleConsolidee}
+            reversion={survivantConjoint.reversion}
+            net={survivantConjoint.net}
+            netCoupleMensuel={netCoupleMensuel}
+          />
+          <DetailSurvivant
+            titre={`Décès de ${nomConjoint} — revenu de ${nomUtilisateur}`}
+            pensionPropre={utilisateur.pensionTotaleConsolidee}
+            reversion={survivantUtilisateur.reversion}
+            net={survivantUtilisateur.net}
+            netCoupleMensuel={netCoupleMensuel}
+          />
+        </div>
+        <div className="space-y-1 pt-3 border-t text-xs text-muted-foreground">
+          <p>
+            Hypothèses : les deux conjoints sont retraités ; le survivant a au moins 55 ans, vit seul et ne se remarie
+            pas. Ressources prises en compte pour le plafond du régime général : ses seules pensions (revenus du
+            patrimoine ignorés — réversion possiblement surestimée).
+          </p>
+          <p>
+            Non modélisés : majoration de 11,1 % des petites pensions après 65 ans, partage entre ex-conjoints,
+            réversion des autres régimes à points (RCI, Ircantec…). Réversion CNAVPL alignée sur le régime général, à
+            confirmer.
           </p>
         </div>
       </CardContent>
@@ -390,7 +556,7 @@ const BoutonExportPDF = ({ hasConjoint, nomUtilisateur, nomConjoint }: BoutonExp
   );
 };
 
-export const Synthese = ({ hasConjoint, nomUtilisateur, nomConjoint }: SyntheseProps) => {
+export const Synthese = ({ hasConjoint, nomUtilisateur, nomConjoint, statutCouple }: SyntheseProps) => {
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
@@ -400,6 +566,13 @@ export const Synthese = ({ hasConjoint, nomUtilisateur, nomConjoint }: SyntheseP
       <CartePensionFoyer hasConjoint={hasConjoint} nomUtilisateur={nomUtilisateur} nomConjoint={nomConjoint} />
 
       <CarteRevenuNet hasConjoint={hasConjoint} nomUtilisateur={nomUtilisateur} nomConjoint={nomConjoint} />
+
+      <CarteConjointSurvivant
+        hasConjoint={hasConjoint}
+        nomUtilisateur={nomUtilisateur}
+        nomConjoint={nomConjoint}
+        statutCouple={statutCouple}
+      />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <CarteTrimestresManquants personne="utilisateur" nom={nomUtilisateur} />

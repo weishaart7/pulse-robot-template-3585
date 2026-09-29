@@ -109,6 +109,23 @@ Rejoué par `calculNetRetraite.test.ts`. **Entrées** : foyer marié, 2 parts, m
 | Impôt | arrondi(1 715,89 − 706,56) | 1 009 € |
 | **Net annuel** | 45 000 − 3 460 − 1 009 | **40 531 €** |
 
+## Scénario R1 — Réversion au décès du conjoint le mieux pensionné (phase 4)
+
+Rejoué par `calculReversion.test.ts`. **Entrées** : couple marié. Défunt : 20 000 € de pension de base
+régime général (hors majoration enfants, 172 trimestres) et 10 000 € d'Agirc-Arrco. Survivant : 12 000 € de
+base + 3 000 € de complémentaires (15 000 € de pensions propres).
+
+| Étape | Calcul | Résultat |
+|---|---|---:|
+| Réversion régime général brute | 20 000 × 54 % (entre minimum 4 019,04 € et maximum 12 976,20 €) | 10 800,00 € |
+| Plafond de ressources (personne seule) | 15 000 + 10 800 = 25 800 € > 25 001,60 € : réduite de 798,40 € | 10 001,60 € |
+| Réversion Agirc-Arrco | 10 000 × 60 %, sans condition de ressources | 6 000,00 € |
+| Revenu brut du survivant | 15 000 + 10 001,60 + 6 000 | 31 001,60 € |
+| Tranche de CSG (veuf, 1 part) | oscillation médian/normal au seuil de 26 471 € → tranche la plus élevée | 8,3 % |
+| Prélèvements sociaux | CSG 2 573,13 + CRDS 155,01 + CASA 93,00 + maladie 1 % × 9 000 | 2 911,14 € |
+| Impôt | (26 255,26 − 11 600) × 11 % = 1 612,08 ; décote 167,53 | 1 445 € |
+| **Net annuel du survivant** | 31 001,60 − 2 911,14 − 1 445 | **26 645,46 €** |
+
 ---
 
 ## Limite connue documentée : périodes MSA dans le SAM (audit R7)

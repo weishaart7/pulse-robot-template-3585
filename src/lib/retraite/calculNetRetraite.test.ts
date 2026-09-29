@@ -65,6 +65,16 @@ describe('calculerNetRetraiteFoyer — scénario de référence couple marié (d
     expect(r.netAnnuel).toBeCloseTo(40531, 2);
   });
 
+  it('oscillation au seuil médian/normal : la tranche la plus élevée est retenue', () => {
+    // 31 001,60 € brut, 1 part : au taux médian le RFR dépasse 26 471 €, au taux normal il repasse dessous.
+    const r = calculerNetRetraiteFoyer(
+      [{ base: 22001.6, complementaires: 9000 }],
+      calculerPartsFiscales(foyer('veuf')),
+      'veuf'
+    );
+    expect(r.tranche).toBe('tauxNormal');
+  });
+
   it('petite pension isolée : exonérée de CSG et non imposable', () => {
     const r = calculerNetRetraiteFoyer([{ base: 11000, complementaires: 0 }], calculerPartsFiscales(foyer('celibataire')), 'celibataire');
     expect(r.tranche).toBe('exoneration');

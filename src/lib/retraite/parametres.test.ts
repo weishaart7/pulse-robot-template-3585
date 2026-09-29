@@ -16,6 +16,7 @@ describe('params-retraite.json — cohérence', () => {
       'agircArrcoValeurServicePoint',
       'agircArrcoPlafondMajorationEnfantsAnnuel',
       'prelevementsSociauxPensions',
+      'reversionRegimeGeneral',
     ];
     for (const cle of cles) expect(MILLESIME_COURANT.sources[cle]).toBeTruthy();
   });

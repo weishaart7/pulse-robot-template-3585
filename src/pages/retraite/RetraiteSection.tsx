@@ -50,7 +50,7 @@ export const RetraiteSection = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'synthese':
-        return <Synthese hasConjoint={hasConjoint} nomUtilisateur={nomUtilisateur} nomConjoint={nomConjoint} />;
+        return <Synthese hasConjoint={hasConjoint} nomUtilisateur={nomUtilisateur} nomConjoint={nomConjoint} statutCouple={maritalStatus?.statut_couple ?? undefined} />;
       case 'carriere':
         return (
           <ColonnesPersonnes
@@ -73,7 +73,7 @@ export const RetraiteSection = () => {
           />
         );
       default:
-        return <Synthese hasConjoint={hasConjoint} nomUtilisateur={nomUtilisateur} nomConjoint={nomConjoint} />;
+        return <Synthese hasConjoint={hasConjoint} nomUtilisateur={nomUtilisateur} nomConjoint={nomConjoint} statutCouple={maritalStatus?.statut_couple ?? undefined} />;
     }
   };
 

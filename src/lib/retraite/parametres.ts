@@ -30,6 +30,12 @@ export interface MillesimeRetraite {
   agircArrcoPrixAchatPoint: number;
   agircArrcoValeurServicePoint: number;
   agircArrcoPlafondMajorationEnfantsAnnuel: number;
+  reversionRegimeGeneral: {
+    plafondRessourcesSeulAnnuel: number;
+    plafondRessourcesCoupleAnnuel: number;
+    minimumMensuel: number;
+    maximumMensuel: number;
+  };
   prelevementsSociauxPensions: {
     seuilsRfrUnePart: { exoneration: number; tauxReduit: number; tauxMedian: number };
     majorationSeuilsParDemiPart: { exoneration: number; tauxReduit: number; tauxMedian: number };
@@ -70,10 +76,21 @@ export interface TauxPrelevementsPension {
   maladieComplementaire: number;
 }
 
+export interface ParametresReversion {
+  source: string;
+  tauxRegimeGeneral: number;
+  tauxCNAVPL: number;
+  tauxAgircArrco: number;
+  tauxFonctionPublique: number;
+  tauxRAFP: number;
+  trimestresMinimumComplet: number;
+}
+
 interface ParamsRetraite {
   millesimes: MillesimeRetraite[];
   agircArrco: ParametresAgircArrco;
   rafp: ParametresRAFP;
+  reversion: ParametresReversion;
   prelevementsSociauxPensions: { source: string; tranches: Record<TrancheCSGPension, TauxPrelevementsPension> };
   rachat: {
     source: string;
@@ -118,3 +135,4 @@ export const PARAMETRES_AGIRC_ARRCO: ParametresAgircArrco = PARAMS.agircArrco;
 export const PARAMETRES_RAFP: ParametresRAFP = PARAMS.rafp;
 export const TAUX_PRELEVEMENTS_PENSIONS: Record<TrancheCSGPension, TauxPrelevementsPension> =
   PARAMS.prelevementsSociauxPensions.tranches;
+export const PARAMETRES_REVERSION: ParametresReversion = PARAMS.reversion;

@@ -122,14 +122,23 @@ export function calculerNetRetraiteFoyer(
     return { ps, revenuImposable, impot };
   };
 
-  // Point fixe sur la tranche : départ au taux normal, recalcul du RFR, au
-  // plus autant d'itérations que de tranches (convergence monotone ; en cas
-  // d'oscillation à un seuil, la dernière tranche calculée est retenue).
+  // Point fixe sur la tranche : départ au taux normal, recalcul du RFR.
+  // Oscillation possible près d'un seuil (la CSG déductible d'une tranche
+  // plus basse fait repasser le RFR au-dessus du seuil, et inversement) :
+  // la tranche la plus élevée des deux est alors retenue (choix prudent, le
+  // net ne peut être que sous-estimé).
   let tranche: TrancheCSGPension = 'tauxNormal';
   let resultat = calculerPourTranche(tranche);
+  const visitees = new Set<TrancheCSGPension>([tranche]);
   for (let i = 0; i < ORDRE_TRANCHES.length; i++) {
     const nouvelle = trancheCSGPension(resultat.impot.revenuFiscalReference, parts.nombreParts);
     if (nouvelle === tranche) break;
+    if (visitees.has(nouvelle)) {
+      tranche = ORDRE_TRANCHES.indexOf(nouvelle) > ORDRE_TRANCHES.indexOf(tranche) ? nouvelle : tranche;
+      resultat = calculerPourTranche(tranche);
+      break;
+    }
+    visitees.add(nouvelle);
     tranche = nouvelle;
     resultat = calculerPourTranche(tranche);
   }

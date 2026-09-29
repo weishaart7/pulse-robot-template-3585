@@ -160,6 +160,25 @@ export interface ResultatPensionConsolidee {
   detailRegimeGeneral: DetailRegimeGeneral;
   /** Détail Agirc-Arrco, `null` si aucun régime Agirc-Arrco dans le RIS. */
   detailAgircArrco: DetailAgircArrco | null;
+  /** Pensions du titulaire servant d'assiette à la réversion (cf. calculReversion.ts). */
+  assietteReversion: AssietteReversion;
+}
+
+/**
+ * Assiette de la réversion, par régime (montants annuels bruts du
+ * titulaire). Régime général et CNAVPL : pension hors majoration pour 3
+ * enfants (non transmise, le survivant la reçoit sur ses propres droits).
+ * Agirc-Arrco : pension servie (coefficient d'anticipation et majoration
+ * enfants compris). Fonction publique : pension finale ; RAFP : rente
+ * seulement (un capital déjà versé n'est pas réversible).
+ */
+export interface AssietteReversion {
+  regimeGeneral: number;
+  trimestresRegimeGeneral: number;
+  agircArrco: number;
+  fonctionPublique: number;
+  rafp: number;
+  cnavpl: number;
 }
 
 export function calculerResultatFonctionPublique(
@@ -252,7 +271,7 @@ export function calculerResultatCNAVPL(
   dateEffet: Date,
   auMoinsUnTrimestreMajorationEnfant: boolean,
   nombreEnfantsEligibles: number
-): { pensionFinale: number } {
+): { pensionFinale: number; pensionHorsMajorationEnfants: number } {
   const decoteSeule = decoteCNAVPL(
     donnees.trimestresCNAVPL + trimestresAutresRegimes,
     trimestresRequis,
@@ -288,7 +307,7 @@ export function calculerResultatCNAVPL(
   const majorationEnfantsPct = majorationTroisEnfants(nombreEnfantsEligibles);
   const pensionFinale = pensionApresSurcote * (1 + majorationEnfantsPct / 100);
 
-  return { pensionFinale };
+  return { pensionFinale, pensionHorsMajorationEnfants: pensionApresSurcote };
 }
 
 /**
@@ -452,7 +471,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
         auMoinsUnTrimestreMajorationEnfant,
         nombreEnfantsEligibles
       )
-    : { pensionFinale: 0 };
+    : { pensionFinale: 0, pensionHorsMajorationEnfants: 0 };
 
   // Écrêtement du MICO (référentiel §3.5.5) : le plafond porte sur le total
   // des pensions personnelles brutes tous régimes, base et complémentaires —
@@ -515,5 +534,13 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
       nombreEnfantsEligibles,
     },
     detailAgircArrco,
+    assietteReversion: {
+      regimeGeneral: pensionApresSurcoteRegimeGeneral,
+      trimestresRegimeGeneral: trimestresValides,
+      agircArrco: detailAgircArrco?.pensionAnnuelle ?? 0,
+      fonctionPublique: resultatFonctionPublique.pensionFinale,
+      rafp: resultatFonctionPublique.rafpAnnuelle,
+      cnavpl: resultatCNAVPL.pensionHorsMajorationEnfants,
+    },
   };
 }

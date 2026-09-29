@@ -21,7 +21,8 @@
         "agircArrcoPrixAchatPoint": "LégiSocial, repères 2026 (salaire de référence 20,1877 €)",
         "agircArrcoValeurServicePoint": "Circulaire Agirc-Arrco 2025-15-DT du 23/10/2025 (valeur inchangée au 01/11/2025 : 1,4386 €)",
         "agircArrcoPlafondMajorationEnfantsAnnuel": "altis-conseil.fr, majorations pour enfants Agirc-Arrco 2026 (2 367,48 €/an depuis le 01/11/2025)",
-        "prelevementsSociauxPensions": "L'Assurance retraite, « Prélèvements sociaux en 2026 : augmentation des seuils » (métropole, RFR N-2)"
+        "prelevementsSociauxPensions": "L'Assurance retraite, « Prélèvements sociaux en 2026 : augmentation des seuils » (métropole, RFR N-2)",
+        "reversionRegimeGeneral": "moinsdimpots.fr et mes-allocs.fr, pension de réversion 2026 (plafonds 2 080 × SMIC horaire 12,02 € et × 1,6 ; minimum 334,92 €/mois ; maximum 1 081,35 €/mois)"
       },
       "agircArrcoPrixAchatPoint": 20.1877,
       "agircArrcoValeurServicePoint": 1.4386,
@@ -37,6 +38,12 @@
           "tauxReduit": 4555,
           "tauxMedian": 7066
         }
+      },
+      "reversionRegimeGeneral": {
+        "plafondRessourcesSeulAnnuel": 25001.6,
+        "plafondRessourcesCoupleAnnuel": 40002.56,
+        "minimumMensuel": 334.92,
+        "maximumMensuel": 1081.35
       }
     }
   ],
@@ -629,5 +636,14 @@
         "maladieComplementaire": 0.01
       }
     }
+  },
+  "reversion": {
+    "source": "Taux : régime général et CNAVPL 54 %, Agirc-Arrco 60 %, fonction publique et RAFP 50 % ; CNAVPL alignée sur le régime général (conditions de ressources) — à confirmer ; minimum proratisé si le défunt a moins de 60 trimestres au régime général",
+    "tauxRegimeGeneral": 0.54,
+    "tauxCNAVPL": 0.54,
+    "tauxAgircArrco": 0.6,
+    "tauxFonctionPublique": 0.5,
+    "tauxRAFP": 0.5,
+    "trimestresMinimumComplet": 60
   }
 }

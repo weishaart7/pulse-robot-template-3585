@@ -133,6 +133,25 @@ uniquement applicatif via `familyService`.
     charges salariales sourcé).
   - Non couverts : autres pensions déclarées (`autres_pensions_mensuelles`, qui ne servent qu'à
     l'écrêtement du MICO et n'entrent pas dans le total), capital RAFP (hors revenu annuel), DOM.
+- **Réversion et conjoint survivant (phase 4 de l'audit, 2026-09-29)** — [calculReversion.ts](src/lib/retraite/calculReversion.ts),
+  carte « Protection du conjoint survivant » de `Synthese.tsx` (statut du couple transmis par
+  `RetraiteSection.tsx` depuis `marital_status.statut_couple`) :
+  - Mariage seul : PACS et concubinage n'ouvrent aucune réversion (alerte rouge à l'écran).
+  - Régime général : 54 % de la pension du défunt hors majoration enfants, minimum (proratisé sous 60
+    trimestres) et maximum 2026, plafond de ressources « personne seule » (réversion réduite du
+    dépassement). Ressources = pensions propres du survivant seulement (revenus du patrimoine ignorés,
+    réversion possiblement surestimée). CNAVPL : 54 %, même plafond appliqué au total RG + CNAVPL —
+    alignement à confirmer. Agirc-Arrco 60 %, fonction publique et RAFP (rente) 50 %.
+  - Assiette : `assietteReversion` exposée par `calculerPensionConsolidee()`.
+  - Revenu du survivant : pension propre + réversion, net via `calculerNetRetraiteFoyer()` (veuf ou
+    célibataire, 1 part), comparé au net du couple (même calcul que la carte « Revenu net », extrait
+    dans `lignesRevenuNet()`). Les deux ordres de décès sont affichés.
+  - Hypothèses affichées : deux conjoints retraités, survivant d'au moins 55 ans, seul, non remarié.
+  - Non modélisés : majoration de 11,1 % après 65 ans, partage entre ex-conjoints, réversion des autres
+    régimes à points. Pas de lien avec le module Transmission (décision du 2026-09-29 : la réversion ne
+    dépend pas de l'option successorale ; vue d'ensemble de la protection du survivant à concevoir).
+  - Correctif du calcul net (phase 3) : le point fixe sur la tranche de CSG pouvait osciller entre deux
+    tranches au voisinage d'un seuil ; la tranche la plus élevée est désormais retenue (prudent).
 - **Scénarios de référence** : [Golden_Scenarios_Retraite.md](docs/Golden_Scenarios_Retraite.md),
   calculés à la main et rejoués par `goldenScenarios.test.ts` (taux plein avec Agirc-Arrco, décote,
   MICO avec 3 enfants, polypensionné RG + FP porté au MIGA avec RAFP en capital, cadre de 45 ans
