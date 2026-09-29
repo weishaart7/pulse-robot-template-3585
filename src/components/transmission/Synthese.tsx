@@ -711,7 +711,7 @@ export const Synthese = () => {
             <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-[var(--text-primary)]">
               <Calculator className="h-5 w-5 text-[var(--ink-400)]" />
               Coûts de la succession
-              <FieldHelp>Droits de mutation (DMTG), frais de notaire et droit de partage, par héritier.</FieldHelp>
+              <FieldHelp>Droits de mutation (DMTG), frais de notaire, droit de partage et quote-part des frais funéraires (forfait de 1 500 €), par héritier.</FieldHelp>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5 pt-0">
@@ -733,6 +733,7 @@ export const Synthese = () => {
                   droitsDMTG,
                   fraisNotaire: fraisNotaireHeritier,
                   droitPartage: droitPartageHeritier,
+                  fraisFuneraires: net?.fraisFuneraires || 0,
                   totalCouts,
                   color: getColorForLien(heritier.lien, idx)
                 };
@@ -741,6 +742,7 @@ export const Synthese = () => {
               const totalDMTG = rows.reduce((s, r) => s + r.droitsDMTG, 0);
               const totalFrais = rows.reduce((s, r) => s + r.fraisNotaire, 0);
               const totalPartage = rows.reduce((s, r) => s + r.droitPartage, 0);
+              const totalFuneraires = rows.reduce((s, r) => s + r.fraisFuneraires, 0);
               const grandTotal = rows.reduce((s, r) => s + r.totalCouts, 0);
 
               return (
@@ -753,6 +755,7 @@ export const Synthese = () => {
                           <TableHead className="text-right text-[var(--text-secondary)]">DMTG</TableHead>
                           <TableHead className="text-right text-[var(--text-secondary)]">Frais de notaire</TableHead>
                           <TableHead className="text-right text-[var(--text-secondary)]">Droit de partage</TableHead>
+                          <TableHead className="text-right text-[var(--text-secondary)]">Frais funéraires</TableHead>
                           <TableHead className="text-right font-semibold text-[var(--text-secondary)]">Total</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -771,6 +774,7 @@ export const Synthese = () => {
                             <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{formatCurrency(row.droitsDMTG)}</TableCell>
                             <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{formatCurrency(row.fraisNotaire)}</TableCell>
                             <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{formatCurrency(row.droitPartage)}</TableCell>
+                            <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{formatCurrency(row.fraisFuneraires)}</TableCell>
                             <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{formatCurrency(row.totalCouts)}</TableCell>
                           </TableRow>
                         ))}
@@ -779,6 +783,7 @@ export const Synthese = () => {
                           <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{formatCurrency(totalDMTG)}</TableCell>
                           <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{formatCurrency(totalFrais)}</TableCell>
                           <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{formatCurrency(totalPartage)}</TableCell>
+                          <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{formatCurrency(totalFuneraires)}</TableCell>
                           <TableCell className="kairos-num text-right tabular-nums font-bold text-[var(--text-primary)]">{formatCurrency(grandTotal)}</TableCell>
                         </TableRow>
                       </TableBody>
@@ -795,7 +800,8 @@ export const Synthese = () => {
                         <Tooltip formatter={(value: number) => formatCurrency(value)} />
                         <Bar dataKey="droitsDMTG" name="DMTG" fill="var(--negative)" stackId="costs" radius={[0, 0, 0, 0]} />
                         <Bar dataKey="fraisNotaire" name="Frais de notaire" fill="var(--warning)" stackId="costs" />
-                        <Bar dataKey="droitPartage" name="Droit de partage" fill="var(--data-purple)" stackId="costs" radius={[0, 4, 4, 0]} />
+                        <Bar dataKey="droitPartage" name="Droit de partage" fill="var(--data-purple)" stackId="costs" />
+                        <Bar dataKey="fraisFuneraires" name="Frais funéraires" fill="var(--ink-400)" stackId="costs" radius={[0, 4, 4, 0]} />
                         <Legend />
                       </BarChart>
                     </ResponsiveContainer>

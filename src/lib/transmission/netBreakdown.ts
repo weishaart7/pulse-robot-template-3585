@@ -74,6 +74,8 @@ export interface NetPerHeirResult {
   droitsDMTG: number;
   fraisNotaire: number;
   droitPartage: number;
+  /** Quote-part du forfait de frais funéraires (cf. NetPerHeirInput.fraisFuneraires). */
+  fraisFuneraires: number;
   totalCouts: number;
   /** Capital AV net hors succession déjà additionné à `netARecevoir` (cf. NetPerHeirInput). */
   capitalAVNet: number;
@@ -165,7 +167,8 @@ export function computeNetPerHeir(
       ? 0
       : valeur(h) / totalBaseCopartageants;
     const droitPartage = Math.round(droitPartageTotal * quotePartPartage);
-    const totalCouts = h.droitsTotaux + fraisNotaire + droitPartage + Math.round(h.fraisFuneraires || 0);
+    const fraisFuneraires = Math.round(h.fraisFuneraires || 0);
+    const totalCouts = h.droitsTotaux + fraisNotaire + droitPartage + fraisFuneraires;
     const capitalAVNet = h.capitalAVNet || 0;
     const soulte = Math.round(h.soulte || 0);
     // Les droits dus sur les primes 757 B se paient sur le capital AV : le
@@ -183,6 +186,7 @@ export function computeNetPerHeir(
       droitsDMTG: h.droitsTotaux,
       fraisNotaire,
       droitPartage,
+      fraisFuneraires,
       totalCouts,
       capitalAVNet,
       netARecevoir
