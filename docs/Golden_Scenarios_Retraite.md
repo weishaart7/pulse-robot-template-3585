@@ -92,6 +92,23 @@ salaire brut 90 000 €/an ; 76 trimestres projetés d'ici au départ.
 Avant la phase 2, l'outil aurait affiché 9 000 × 1,4386 = 12 947,40 € d'Agirc-Arrco, sans projection
 ni abattement.
 
+## Scénario N1 — Revenu net d'un couple marié (phase 3)
+
+Rejoué par `calculNetRetraite.test.ts`. **Entrées** : foyer marié, 2 parts, métropole. Pensionné A :
+20 000 € de base + 10 000 € de complémentaires ; pensionné B : 12 000 € + 3 000 €. Total brut 45 000 €.
+
+| Étape | Calcul | Résultat |
+|---|---|---:|
+| 1ʳᵉ itération (taux normal) | RFR = (28 230 + 14 115) − abattements 4 234,50 | 38 110,50 € |
+| Seuils 2 parts | exonération 20 016 € ; 3,8 % jusqu'à 26 167 € ; 6,6 % jusqu'à 40 603 € | taux médian |
+| 2ᵉ itération (taux médian, CSG déductible 4,2 %) | (28 740 + 14 370) − abattements (2 874 + 1 437) | 38 799,00 € |
+| Point fixe | 38 799 € ≤ 40 603 € | taux médian, stable |
+| Prélèvements sociaux | CSG 6,6 % × 45 000 + CRDS 225 + CASA 135 + maladie 1 % × 13 000 | 3 460,00 € |
+| Impôt brut | 2 × (19 399,50 − 11 600) × 11 % | 1 715,89 € |
+| Décote couple | 1 483 − 1 715,89 × 45,25 % | 706,56 € |
+| Impôt | arrondi(1 715,89 − 706,56) | 1 009 € |
+| **Net annuel** | 45 000 − 3 460 − 1 009 | **40 531 €** |
+
 ---
 
 ## Limite connue documentée : périodes MSA dans le SAM (audit R7)

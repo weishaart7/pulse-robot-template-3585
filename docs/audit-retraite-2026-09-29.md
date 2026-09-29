@@ -134,7 +134,7 @@ contient « assurance retraite ».
 - Risque : SAM sous-estimé pour un ex-artisan ou un ancien salarié agricole.
 - À confirmer sur un RIS réel anonymisé : le libellé des lignes SSI d'avant 2020 est à vérifier.
 
-**R8. Montants bruts, en euros constants, sans le dire.**
+**R8. Montants bruts, en euros constants, sans le dire.** ✅ Net corrigé le 2026-09-29 (phase 3) ; libellé « euros constants » encore à ajouter.
 - Tous les montants sont **bruts** : ni CSG/CRDS/CASA, ni cotisation maladie de 1 % sur les
   complémentaires, ni impôt sur le revenu.
 - Les montants projetés sont en euros constants 2026 (dernier PASS, MICO 2026), mais aucun libellé
@@ -263,7 +263,7 @@ Exemples :
 | **0. Corrections** | R2 (condition de taux plein et valeur du MIGA, services effectifs), R3, R5, R6, commentaire périmé, dédoublonnage RAFP, source du barème de rachat (R4) | `calculFonctionPublique.ts`, `Trimestres.tsx`, `calcul.ts` |
 | **1. Barèmes versionnés** ✅ 2026-09-29 | Sortir tous les paramètres dans un `params-retraite.json` daté par date d'effet (sur le modèle de `params-dmtg.json`), avec contrôle de péremption ; scénarios de référence (sur le modèle de `Golden_Scenarios_Transmission.md`) confrontés à M@rel | `src/lib/retraite/`, `docs/` |
 | **2. Complémentaires** ✅ 2026-09-29 | Moteur Agirc-Arrco (projection, minoration, majoration), RAFP capital/rente, sections CNAVPL ; saisie du salaire brut complet | nouveau `calculAgircArrco.ts`, `pensionConsolidee.ts` |
-| **3. Net** | Branchement des moteurs Fiscalité (PS et IR), taux de remplacement, libellé en euros constants | `pensionConsolidee.ts`, `src/lib/fiscalite/` |
+| **3. Net** ✅ 2026-09-29 | Branchement des moteurs Fiscalité (PS et IR), taux de remplacement, libellé en euros constants | `pensionConsolidee.ts`, `src/lib/fiscalite/` |
 | **4. Réversion et couple** | Moteur de réversion multi-régimes, revenu du survivant, lien Transmission, alertes PACS | nouveau `reversion.ts` |
 | **5. Départs anticipés et transitions** | Carrières longues (LFSS 2026), handicap, retraite progressive, cumul emploi-retraite | `calcul.ts` |
 | **6. Moteur de décision** | Âge optimal (valeur actualisée, points morts), arbitrage rachat/PER/travail, écart Budget, projection et sortie de l'épargne retraite, scénarios de sensibilité, rapport PDF enrichi | nouveau `decision.ts`, `Synthese.tsx`, `EpargneRetraite.tsx` |

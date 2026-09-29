@@ -110,6 +110,29 @@ uniquement applicatif via `familyService`.
     inclut l'abattement Agirc-Arrco supprimé.
   - Non couverts : projection des autres régimes à points (RCI, Ircantec, sections CNAVPL…), toujours
     évalués sur les points acquis et la valeur du RIS ; points gratuits (chômage, maladie).
+- **Revenu net à la retraite (phase 3 de l'audit, 2026-09-29)** — [calculNetRetraite.ts](src/lib/retraite/calculNetRetraite.ts),
+  carte « Revenu net à la retraite » de `Synthese.tsx` :
+  - *Prélèvements sociaux* : tranche de CSG (0 / 3,8 / 6,6 / 8,3 %) selon le RFR et le nombre de parts
+    (seuils 2026 de l'Assurance retraite, +1 majoration par demi-part), CRDS 0,5 % hors exonération,
+    CASA 0,3 % aux taux médian et normal, cotisation maladie de 1 % sur les complémentaires (Agirc-Arrco
+    et autres régimes à points) dès le taux réduit — hypothèse, la source ne tranchant pas ce cas.
+    Écrit ici : le module Fiscalité ne calculait la CSG que sur les rentes viagères.
+  - *Impôt* : pension − CSG déductible (3,8 / 4,2 / 5,9 %) − abattement de 10 %
+    (`abattementPensionDeclarant`, plafond foyer 4 439 €), puis `calculerImpot()` du module Fiscalité.
+  - *RFR* : régime de croisière (pensions seules), point fixe sur la tranche de CSG ; le décalage N-2
+    des deux premières années est signalé à l'écran, pas simulé.
+  - *Foyer* : celui du module Fiscalité (`useFoyerFiscal`), sans les enfants à charge (décision
+    prudente du 2026-09-29) ; imposition commune si marié ou pacsé et conjoint avec données retraite ;
+    sinon foyers séparés (1 part pour le conjoint). Foyer non renseigné : foyers séparés, signalé.
+    Les deux conjoints sont supposés retraités.
+  - *Revenus* : pensions seules (revenus du patrimoine en phase 6, sous-estimation possible de la
+    tranche signalée).
+  - *Taux de remplacement brut* : pension brute ÷ dernier revenu d'activité brut
+    (`salaire_brut_annuel`, sinon revenu de l'hypothèse de revenu futur, exposé par
+    `usePensionConsolidee` sous `revenuActiviteBrutReference`). Pas de ratio net/net (aucun taux de
+    charges salariales sourcé).
+  - Non couverts : autres pensions déclarées (`autres_pensions_mensuelles`, qui ne servent qu'à
+    l'écrêtement du MICO et n'entrent pas dans le total), capital RAFP (hors revenu annuel), DOM.
 - **Scénarios de référence** : [Golden_Scenarios_Retraite.md](docs/Golden_Scenarios_Retraite.md),
   calculés à la main et rejoués par `goldenScenarios.test.ts` (taux plein avec Agirc-Arrco, décote,
   MICO avec 3 enfants, polypensionné RG + FP porté au MIGA avec RAFP en capital, cadre de 45 ans

@@ -5,6 +5,15 @@ import { Button } from '@/components/ui/button';
 import { usePensionConsolidee } from '@/hooks/usePensionConsolidee';
 import { Personne } from '@/hooks/useRetraiteData';
 import { exporterSyntheseRetraitePDF, DonneesPersonneExportPDF } from '@/lib/retraite/exportSyntheseRetraitePDF';
+import { useFoyerFiscal } from '@/hooks/useFoyerFiscal';
+import { calculerPartsFiscales, FoyerFiscalInput } from '@/lib/fiscalite';
+import {
+  calculerNetRetraiteFoyer,
+  tauxRemplacementBrut,
+  PensionsBrutesPersonne,
+  ResultatNetRetraiteFoyer,
+} from '@/lib/retraite/calculNetRetraite';
+import { TrancheCSGPension } from '@/lib/retraite/parametres';
 
 const formatEuro0 = (valeur: number) =>
   valeur.toLocaleString('fr-FR', {
@@ -111,6 +120,160 @@ const CartePensionFoyer = ({ hasConjoint, nomUtilisateur, nomConjoint }: CartePe
             )}
           </div>
         )}
+      </CardContent>
+    </Card>
+  );
+};
+
+const LIBELLE_TRANCHE_CSG: Record<TrancheCSGPension, string> = {
+  exoneration: 'exonéré de CSG',
+  tauxReduit: 'CSG à 3,8 %',
+  tauxMedian: 'CSG à 6,6 %',
+  tauxNormal: 'CSG à 8,3 %',
+};
+
+const formatPct = (valeur: number) => `${(valeur * 100).toLocaleString('fr-FR', { maximumFractionDigits: 0 })} %`;
+
+type ResultatPersonne = ReturnType<typeof usePensionConsolidee>;
+
+// Pensions brutes séparées base / complémentaires (cotisation maladie de 1 %
+// sur les seules complémentaires : Agirc-Arrco et autres régimes à points).
+const pensionsBrutes = (r: ResultatPersonne): PensionsBrutesPersonne => ({
+  base: r.pensionTotaleConsolidee - r.repartitionParRegime.complementaireRegimeGeneral,
+  complementaires: r.repartitionParRegime.complementaireRegimeGeneral,
+});
+
+// Situation « foyer fiscal à la retraite » (décision du 2026-09-29) : celle
+// enregistrée dans le module Fiscalité, sans les enfants à charge (plus à
+// charge au départ en retraite — choix prudent, l'impôt ne peut être que
+// surestimé).
+const foyerSansEnfantsACharge = (foyer: FoyerFiscalInput, situationFamille: FoyerFiscalInput['situationFamille']): FoyerFiscalInput => ({
+  ...foyer,
+  situationFamille,
+  enfantsCharge: [],
+  enfantsMajeursRattaches: 0,
+  parentIsole: false,
+});
+
+const FOYER_PAR_DEFAUT: FoyerFiscalInput = {
+  situationFamille: 'celibataire',
+  lieuResidence: 'metropole',
+  enfantsCharge: [],
+  personnesInvalidesCharge: [],
+  enfantsMajeursRattaches: 0,
+  parentIsole: false,
+  ancienParentIsole: false,
+  invaliditeDeclarant1: false,
+  invaliditeDeclarant2: false,
+  ancienCombattantDeclarant1: false,
+  ancienCombattantDeclarant2: false,
+  veufAncienCombattant: false,
+  veuveDeGuerre: false,
+};
+
+const LigneNet = ({ titre, resultat, tauxRemplacement }: { titre: string; resultat: ResultatNetRetraiteFoyer; tauxRemplacement: number | null }) => (
+  <div className="space-y-1">
+    <p className="text-xs text-muted-foreground">{titre}</p>
+    <div className="text-2xl font-bold text-primary">{formatEuro0(resultat.netMensuel)} / mois net</div>
+    <p className="text-xs text-muted-foreground">
+      Brut {formatEuro0(resultat.pensionsBrutes)} / an − prélèvements sociaux {formatEuro0(resultat.prelevementsSociaux)}{' '}
+      ({LIBELLE_TRANCHE_CSG[resultat.tranche]}) − impôt {formatEuro0(resultat.impot)} (TMI {formatPct(resultat.tmi)}) ={' '}
+      {formatEuro0(resultat.netAnnuel)} / an
+    </p>
+    {tauxRemplacement !== null && (
+      <p className="text-xs text-muted-foreground">
+        Taux de remplacement brut : {formatPct(tauxRemplacement)} du dernier revenu d'activité brut
+      </p>
+    )}
+  </div>
+);
+
+const CarteRevenuNet = ({ hasConjoint, nomUtilisateur, nomConjoint }: CartePensionFoyerProps) => {
+  const utilisateur = usePensionConsolidee('utilisateur');
+  const conjoint = usePensionConsolidee('conjoint');
+  const { data: foyerFiscal, loading: loadingFoyer } = useFoyerFiscal();
+
+  if (utilisateur.loading || (hasConjoint && conjoint.loading) || loadingFoyer || !utilisateur.aDesDonnees) {
+    return null;
+  }
+
+  const avecConjoint = hasConjoint && conjoint.aDesDonnees;
+  const foyerSaisi = foyerFiscal ?? null;
+  const impositionCommune =
+    avecConjoint && (foyerSaisi?.situationFamille === 'marie' || foyerSaisi?.situationFamille === 'pacse');
+
+  const remplacement = (r: ResultatPersonne) => tauxRemplacementBrut(r.pensionTotaleConsolidee, r.revenuActiviteBrutReference);
+
+  let lignes: { titre: string; resultat: ResultatNetRetraiteFoyer; tauxRemplacement: number | null }[];
+  if (impositionCommune && foyerSaisi) {
+    const foyer = foyerSansEnfantsACharge(foyerSaisi, foyerSaisi.situationFamille);
+    lignes = [
+      {
+        titre: `Foyer fiscal commun (${nomUtilisateur} et ${nomConjoint})`,
+        resultat: calculerNetRetraiteFoyer(
+          [pensionsBrutes(utilisateur), pensionsBrutes(conjoint)],
+          calculerPartsFiscales(foyer),
+          foyer.situationFamille
+        ),
+        tauxRemplacement: null,
+      },
+    ];
+  } else {
+    // Foyers séparés : concubins, ou foyer fiscal non renseigné dans Fiscalité.
+    const situationUtilisateur =
+      foyerSaisi && !['marie', 'pacse'].includes(foyerSaisi.situationFamille) ? foyerSaisi.situationFamille : 'celibataire';
+    const foyerUtilisateur = foyerSansEnfantsACharge(foyerSaisi ?? FOYER_PAR_DEFAUT, situationUtilisateur);
+    const foyerConjoint = foyerSansEnfantsACharge(FOYER_PAR_DEFAUT, 'celibataire');
+    lignes = [
+      {
+        titre: nomUtilisateur,
+        resultat: calculerNetRetraiteFoyer([pensionsBrutes(utilisateur)], calculerPartsFiscales(foyerUtilisateur), situationUtilisateur),
+        tauxRemplacement: remplacement(utilisateur),
+      },
+      ...(avecConjoint
+        ? [
+            {
+              titre: nomConjoint,
+              resultat: calculerNetRetraiteFoyer([pensionsBrutes(conjoint)], calculerPartsFiscales(foyerConjoint), 'celibataire' as const),
+              tauxRemplacement: remplacement(conjoint),
+            },
+          ]
+        : []),
+    ];
+  }
+
+  return (
+    <Card className="border border-border">
+      <CardHeader className="p-5">
+        <CardTitle className="text-[15px] font-semibold tracking-tight">Revenu net à la retraite</CardTitle>
+      </CardHeader>
+      <CardContent className="p-5 pt-0 space-y-4">
+        {lignes.map((l) => (
+          <LigneNet key={l.titre} {...l} />
+        ))}
+        {impositionCommune && (
+          <p className="text-xs text-muted-foreground">
+            Taux de remplacement brut : {nomUtilisateur}{' '}
+            {remplacement(utilisateur) !== null ? formatPct(remplacement(utilisateur)!) : 'non calculable'} · {nomConjoint}{' '}
+            {remplacement(conjoint) !== null ? formatPct(remplacement(conjoint)!) : 'non calculable'}
+          </p>
+        )}
+        <div className="space-y-1 pt-3 border-t text-xs text-muted-foreground">
+          {!foyerSaisi && (
+            <p className="text-spark">
+              Foyer fiscal non renseigné dans le module Fiscalité : chaque personne est imposée séparément, sur 1 part.
+            </p>
+          )}
+          <p>
+            Régime de croisière : la CSG est calculée sur le revenu fiscal des seules pensions. Les deux premières années,
+            le revenu fiscal de référence (N-2) contient encore des salaires : taux de CSG souvent plus élevé.
+          </p>
+          <p>
+            Revenus du foyer limités aux pensions (loyers, dividendes et rachats d'assurance-vie non inclus : tranche
+            d'imposition possiblement sous-estimée) ; enfants à charge non retenus dans les parts.
+            {avecConjoint && ' Les deux conjoints sont supposés retraités.'}
+          </p>
+        </div>
       </CardContent>
     </Card>
   );
@@ -235,6 +398,8 @@ export const Synthese = ({ hasConjoint, nomUtilisateur, nomConjoint }: SyntheseP
       </div>
 
       <CartePensionFoyer hasConjoint={hasConjoint} nomUtilisateur={nomUtilisateur} nomConjoint={nomConjoint} />
+
+      <CarteRevenuNet hasConjoint={hasConjoint} nomUtilisateur={nomUtilisateur} nomConjoint={nomConjoint} />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <CarteTrimestresManquants personne="utilisateur" nom={nomUtilisateur} />

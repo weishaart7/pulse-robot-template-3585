@@ -34,6 +34,9 @@ export interface UsePensionConsolideeResult extends ResultatPensionConsolidee {
   // Points Agirc-Arrco futurs projetés sur un revenu plafonné au PASS (aucun
   // salaire brut total saisi) : sous-estimation pour un cadre.
   salaireComplementaireEstPlafonne: boolean;
+  // Dernier revenu d'activité brut de référence (taux de remplacement) :
+  // salaire brut total saisi, sinon revenu de l'hypothèse de revenu futur.
+  revenuActiviteBrutReference: number | null;
 }
 
 /**
@@ -171,5 +174,6 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     dateEffet: dateEffetProjection,
     anneesPasseesSansDonnees,
     salaireComplementaireEstPlafonne: salaireComplementaire?.estPlafonne ?? false,
+    revenuActiviteBrutReference: salaireComplementaire?.salaireAnnuel ?? null,
   };
 };

@@ -30,6 +30,10 @@ export interface MillesimeRetraite {
   agircArrcoPrixAchatPoint: number;
   agircArrcoValeurServicePoint: number;
   agircArrcoPlafondMajorationEnfantsAnnuel: number;
+  prelevementsSociauxPensions: {
+    seuilsRfrUnePart: { exoneration: number; tauxReduit: number; tauxMedian: number };
+    majorationSeuilsParDemiPart: { exoneration: number; tauxReduit: number; tauxMedian: number };
+  };
   sources: Record<string, string>;
 }
 
@@ -56,10 +60,21 @@ export interface ParametresRAFP {
   coefficientsConversionCapitalParAge: Record<string, number>;
 }
 
+export type TrancheCSGPension = 'exoneration' | 'tauxReduit' | 'tauxMedian' | 'tauxNormal';
+
+export interface TauxPrelevementsPension {
+  csg: number;
+  csgDeductible: number;
+  crds: number;
+  casa: number;
+  maladieComplementaire: number;
+}
+
 interface ParamsRetraite {
   millesimes: MillesimeRetraite[];
   agircArrco: ParametresAgircArrco;
   rafp: ParametresRAFP;
+  prelevementsSociauxPensions: { source: string; tranches: Record<TrancheCSGPension, TauxPrelevementsPension> };
   rachat: {
     source: string;
     seuilBasEnPass: number;
@@ -101,3 +116,5 @@ export function baremePerime(aujourdHui: Date): boolean {
 export const BAREME_RACHAT = PARAMS.rachat;
 export const PARAMETRES_AGIRC_ARRCO: ParametresAgircArrco = PARAMS.agircArrco;
 export const PARAMETRES_RAFP: ParametresRAFP = PARAMS.rafp;
+export const TAUX_PRELEVEMENTS_PENSIONS: Record<TrancheCSGPension, TauxPrelevementsPension> =
+  PARAMS.prelevementsSociauxPensions.tranches;

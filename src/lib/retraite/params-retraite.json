@@ -20,11 +20,24 @@
         "cnavplValeurPoint": "CNAVPL (cnavpl.fr), valeur au 01/01/2026",
         "agircArrcoPrixAchatPoint": "LégiSocial, repères 2026 (salaire de référence 20,1877 €)",
         "agircArrcoValeurServicePoint": "Circulaire Agirc-Arrco 2025-15-DT du 23/10/2025 (valeur inchangée au 01/11/2025 : 1,4386 €)",
-        "agircArrcoPlafondMajorationEnfantsAnnuel": "altis-conseil.fr, majorations pour enfants Agirc-Arrco 2026 (2 367,48 €/an depuis le 01/11/2025)"
+        "agircArrcoPlafondMajorationEnfantsAnnuel": "altis-conseil.fr, majorations pour enfants Agirc-Arrco 2026 (2 367,48 €/an depuis le 01/11/2025)",
+        "prelevementsSociauxPensions": "L'Assurance retraite, « Prélèvements sociaux en 2026 : augmentation des seuils » (métropole, RFR N-2)"
       },
       "agircArrcoPrixAchatPoint": 20.1877,
       "agircArrcoValeurServicePoint": 1.4386,
-      "agircArrcoPlafondMajorationEnfantsAnnuel": 2367.48
+      "agircArrcoPlafondMajorationEnfantsAnnuel": 2367.48,
+      "prelevementsSociauxPensions": {
+        "seuilsRfrUnePart": {
+          "exoneration": 13048,
+          "tauxReduit": 17057,
+          "tauxMedian": 26471
+        },
+        "majorationSeuilsParDemiPart": {
+          "exoneration": 3484,
+          "tauxReduit": 4555,
+          "tauxMedian": 7066
+        }
+      }
     }
   ],
   "rachat": {
@@ -582,6 +595,39 @@
       "73": 18.61,
       "74": 17.84,
       "75": 17.07
+    }
+  },
+  "prelevementsSociauxPensions": {
+    "source": "L'Assurance retraite (taux CSG, CRDS 0,5 %, CASA 0,3 %) ; CSG déductible : 3,8 % / 4,2 % / 5,9 % ; cotisation maladie de 1 % sur les complémentaires hors exonération de CSG (hypothèse : due dès le taux réduit)",
+    "tranches": {
+      "exoneration": {
+        "csg": 0,
+        "csgDeductible": 0,
+        "crds": 0,
+        "casa": 0,
+        "maladieComplementaire": 0
+      },
+      "tauxReduit": {
+        "csg": 0.038,
+        "csgDeductible": 0.038,
+        "crds": 0.005,
+        "casa": 0,
+        "maladieComplementaire": 0.01
+      },
+      "tauxMedian": {
+        "csg": 0.066,
+        "csgDeductible": 0.042,
+        "crds": 0.005,
+        "casa": 0.003,
+        "maladieComplementaire": 0.01
+      },
+      "tauxNormal": {
+        "csg": 0.083,
+        "csgDeductible": 0.059,
+        "crds": 0.005,
+        "casa": 0.003,
+        "maladieComplementaire": 0.01
+      }
     }
   }
 }
