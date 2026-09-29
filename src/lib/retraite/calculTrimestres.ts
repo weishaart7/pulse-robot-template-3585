@@ -535,6 +535,16 @@ export interface ResultatTrimestresCotisesEtAssimiles {
    * session).
    */
   anneesSansBaremeConnu: number[];
+  /**
+   * Trimestres assimilés retenus sur toute la carrière, ventilés par nature
+   * (retraite anticipée pour carrière longue : limites propres à chaque
+   * nature, cf. calculCarriereLongue.ts). Dans une année où le plafond de 4
+   * trimestres coupe les assimilés, ils sont attribués dans l'ordre maternité,
+   * maladie, chômage indemnisé, chômage non indemnisé. Maternité : trimestres
+   * de la seule maternité dans le décompte commun maladie + maternité (seuil
+   * de 60 jours).
+   */
+  assimilesParNature: { maternite: number; maladie: number; chomageIndemnise: number; chomageNonIndemnise: number };
 }
 
 /**
@@ -625,6 +635,11 @@ export function trimestresCotisesEtAssimilesDepuisCarriere(
   for (const periode of periodesMaladie) {
     repartirJoursAssimilesParAnnee(periode, joursMaladieParAnnee);
   }
+  const joursMaterniteParAnnee = new Map<number, number>();
+  for (const periode of periodesMaladie.filter((p) => p.typeActivite === 'maternite')) {
+    repartirJoursAssimilesParAnnee(periode, joursMaterniteParAnnee);
+  }
+  const assimilesParNature = { maternite: 0, maladie: 0, chomageIndemnise: 0, chomageNonIndemnise: 0 };
 
   const annees = new Set<number>([
     ...revenuParAnnee.keys(),
@@ -662,6 +677,24 @@ export function trimestresCotisesEtAssimilesDepuisCarriere(
     const placeRestante = PLAFOND_TRIMESTRES_PAR_AN - cotisesAnnee;
     const assimilesAnnee = Math.min(assimilesBruts, placeRestante);
 
+    // Ventilation par nature des assimilés retenus (même total).
+    const trimestresMaladieEtMaternite = Math.floor(joursMaladie / JOURS_PAR_TRIMESTRE_MALADIE);
+    const trimestresMaternite = Math.min(
+      trimestresMaladieEtMaternite,
+      Math.floor((joursMaterniteParAnnee.get(annee) ?? 0) / JOURS_PAR_TRIMESTRE_MALADIE)
+    );
+    let reste = assimilesAnnee;
+    for (const [nature, bruts] of [
+      ['maternite', trimestresMaternite],
+      ['maladie', trimestresMaladieEtMaternite - trimestresMaternite],
+      ['chomageIndemnise', Math.floor(joursChomage / JOURS_PAR_TRIMESTRE_CHOMAGE)],
+      ['chomageNonIndemnise', trimestresChomageNonIndemnise],
+    ] as [keyof typeof assimilesParNature, number][]) {
+      const retenus = Math.min(bruts, reste);
+      assimilesParNature[nature] += retenus;
+      reste -= retenus;
+    }
+
     cotises += cotisesAnnee;
     assimiles += assimilesAnnee;
     parAnnee.push({ annee, cotises: cotisesAnnee, assimiles: assimilesAnnee, revenuCotise: revenu });
@@ -669,5 +702,5 @@ export function trimestresCotisesEtAssimilesDepuisCarriere(
   parAnnee.sort((a, b) => a.annee - b.annee);
   anneesSansBaremeConnu.sort((a, b) => a - b);
 
-  return { cotises, assimiles, total: cotises + assimiles, parAnnee, anneesSansBaremeConnu };
+  return { cotises, assimiles, total: cotises + assimiles, parAnnee, anneesSansBaremeConnu, assimilesParNature };
 }

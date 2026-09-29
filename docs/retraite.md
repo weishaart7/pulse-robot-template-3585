@@ -152,6 +152,29 @@ uniquement applicatif via `familyService`.
     dépend pas de l'option successorale ; vue d'ensemble de la protection du survivant à concevoir).
   - Correctif du calcul net (phase 3) : le point fixe sur la tranche de CSG pouvait osciller entre deux
     tranches au voisinage d'un seuil ; la tranche la plus élevée est désormais retenue (prudent).
+- **Départs anticipés et transitions (phase 5 de l'audit, 2026-09-29)** :
+  - *Carrière longue* — [calculCarriereLongue.ts](src/lib/retraite/calculCarriereLongue.ts), barème de
+    la circulaire Cnav n° 2026-29 du 04/09/2026 (annexe 2, générations 09/1963 et suivantes) dans
+    `params-retraite.json`. Début d'activité : 5 trimestres validés (4 si né au 4e trimestre) à la fin de
+    l'année du 16e/18e/20e/21e anniversaire, lus dans `parAnnee`. Durée cotisée : cotisés RIS + projetés
+    + trimestres FP/CNAVPL + réputés cotisés visibles (maternité sans limite, maladie et chômage
+    indemnisé 4 chacun, via la nouvelle ventilation `assimilesParNature` de `calculTrimestres.ts`).
+    Service national, invalidité, AVPF, majorations enfants, rachats : non comptés (choix prudent validé),
+    signalé. Date d'effet au plus tôt le 01/09/2026 et le mois prochain. Effet : taux plein au régime
+    général et à l'Agirc-Arrco ; FP et CNAVPL gardent leur décote (dispositifs propres non modélisés).
+    Affiché dans Optimisation (carte dédiée, borne basse du sélecteur de date, lignes 58-61 ans du
+    comparatif) et dans la Synthèse (`dateCarriereLongue` de `usePensionConsolidee`). Le scénario
+    Carrière/Synthèse reste le départ à l'âge légal.
+  - *Départ anticipé confirmé par la caisse* (handicap, incapacité permanente, autre) : colonnes
+    `depart_anticipe_confirme_motif`/`_age` (migration `20260929230000`), saisies dans Carrière ;
+    Optimisation simule le taux plein au régime général dès cet âge. Aucune vérification d'éligibilité.
+  - *Retraite progressive* (Optimisation, non persistée) : dès 60 ans, 150 trimestres tous régimes,
+    temps partiel 40-80 % ; fraction = 100 % − temps de travail, appliquée à la pension provisoire
+    calculée à la date de début ; salaire à temps partiel = salaire brut saisi (ou revenu hypothèse) ×
+    quotité. Pension définitive non recalculée.
+  - *Cumul emploi-retraite* : encart informatif selon la date de liquidation — avant 2027, cumul
+    intégral si taux plein (seconde pension plafonnée à 5 % du PASS), sinon plafonné ; à compter de 2027,
+    règles de l'article 102 de la LFSS 2026 décrites sans chiffrage (décrets non publiés).
 - **Scénarios de référence** : [Golden_Scenarios_Retraite.md](docs/Golden_Scenarios_Retraite.md),
   calculés à la main et rejoués par `goldenScenarios.test.ts` (taux plein avec Agirc-Arrco, décote,
   MICO avec 3 enfants, polypensionné RG + FP porté au MIGA avec RAFP en capital, cadre de 45 ans

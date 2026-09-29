@@ -10,7 +10,12 @@ import {
   DonneesCNAVPL,
 } from '@/lib/retraite/pensionConsolidee';
 import { trimestresRequisPourGeneration } from '@/lib/retraite/calcul';
-import { calculerProjectionRevenuFutur, salaireProjectionComplementaire } from '@/lib/retraite/hypotheseRevenuFutur';
+import {
+  calculerProjectionRevenuFutur,
+  salaireProjectionComplementaire,
+  trimestresProjetesParAnnee,
+} from '@/lib/retraite/hypotheseRevenuFutur';
+import { evaluerCarriereLongue } from '@/lib/retraite/calculCarriereLongue';
 
 export interface UsePensionConsolideeResult extends ResultatPensionConsolidee {
   loading: boolean;
@@ -37,6 +42,9 @@ export interface UsePensionConsolideeResult extends ResultatPensionConsolidee {
   // Dernier revenu d'activité brut de référence (taux de remplacement) :
   // salaire brut total saisi, sinon revenu de l'hypothèse de revenu futur.
   revenuActiviteBrutReference: number | null;
+  // Première date de départ anticipé pour carrière longue (circulaire Cnav
+  // 2026-29), `null` si non ouverte ou date de naissance inconnue.
+  dateCarriereLongue: Date | null;
 }
 
 /**
@@ -165,6 +173,23 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     (data.has_fonction_publique ? data.trimestres_liquidables_fp ?? 0 : 0) +
     (data.has_cnavpl ? data.trimestres_cnavpl ?? 0 : 0);
 
+  const trimestresAutresRegimes =
+    (data.has_fonction_publique ? data.trimestres_liquidables_fp ?? 0 : 0) +
+    (data.has_cnavpl ? data.trimestres_cnavpl ?? 0 : 0);
+  const dateCarriereLongue = dateNaissanceDetail
+    ? evaluerCarriereLongue({
+        dateNaissance: dateNaissanceDetail,
+        trimestres: resultat.historiqueTrimestres,
+        trimestresAutresRegimes,
+        trimestresProjetesJusqua: (d) =>
+          trimestresProjetesParAnnee(resultat.historiqueTrimestres.parAnnee, new Date(), d).reduce(
+            (total, a) => total + a.trimestres,
+            0
+          ),
+        aujourdHui: new Date(),
+      }).premiereDateEligible
+    : null;
+
   return {
     ...resultat,
     loading,
@@ -175,5 +200,6 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     anneesPasseesSansDonnees,
     salaireComplementaireEstPlafonne: salaireComplementaire?.estPlafonne ?? false,
     revenuActiviteBrutReference: salaireComplementaire?.salaireAnnuel ?? null,
+    dateCarriereLongue,
   };
 };

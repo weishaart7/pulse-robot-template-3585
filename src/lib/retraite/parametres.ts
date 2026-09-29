@@ -86,11 +86,25 @@ export interface ParametresReversion {
   trimestresMinimumComplet: number;
 }
 
+export interface ParametresCarriereLongue {
+  source: string;
+  dateEffetMinimale: string;
+  trimestresDebutActivite: number;
+  trimestresDebutActiviteNeAuQuatriemeTrimestre: number;
+  plafondsReputesCotises: { maladie: number; chomageIndemnise: number };
+  generations: {
+    naissanceMin: string; // "AAAA-MM"
+    naissanceMax: string;
+    ages: { debutAvant: number; ans: number; mois: number }[];
+  }[];
+}
+
 interface ParamsRetraite {
   millesimes: MillesimeRetraite[];
   agircArrco: ParametresAgircArrco;
   rafp: ParametresRAFP;
   reversion: ParametresReversion;
+  carriereLongue: ParametresCarriereLongue;
   prelevementsSociauxPensions: { source: string; tranches: Record<TrancheCSGPension, TauxPrelevementsPension> };
   rachat: {
     source: string;
@@ -136,3 +150,4 @@ export const PARAMETRES_RAFP: ParametresRAFP = PARAMS.rafp;
 export const TAUX_PRELEVEMENTS_PENSIONS: Record<TrancheCSGPension, TauxPrelevementsPension> =
   PARAMS.prelevementsSociauxPensions.tranches;
 export const PARAMETRES_REVERSION: ParametresReversion = PARAMS.reversion;
+export const PARAMETRES_CARRIERE_LONGUE: ParametresCarriereLongue = PARAMS.carriereLongue;

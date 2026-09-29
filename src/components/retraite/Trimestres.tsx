@@ -50,16 +50,19 @@ import {
   OptionRachat,
 } from '@/lib/retraite/calcul';
 import { trimestresCotisesEtAssimilesDepuisCarriere } from '@/lib/retraite/calculTrimestres';
+import { evaluerCarriereLongue, carriereLongueOuverteA } from '@/lib/retraite/calculCarriereLongue';
+import { MILLESIME_COURANT } from '@/lib/retraite/parametres';
 
 // Format ISO ("YYYY-MM-DD") d'une date UTC-midnight, pour la valeur d'un
 // <input type="date"> — .toISOString() ne décale pas ce cas puisque
 // dateEffetSimuleeParAge()/dateDepuisISO() construisent déjà un instant UTC
 // à minuit (aucune conversion de fuseau horaire local en jeu).
 const isoDate = (date: Date) => date.toISOString().slice(0, 10);
+const formatDate = (date: Date) => date.toLocaleDateString('fr-FR', { timeZone: 'UTC' });
 
 const AGE_MIN = 60;
 const AGE_MAX = 70;
-const AGES_COMPARATIF = [62, 63, 64, 65, 66, 67, 68, 69, 70];
+const AGES_COMPARATIF = [58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70];
 const TRIMESTRES_RACHAT_MIN = 1;
 const TRIMESTRES_RACHAT_MAX = 12;
 
@@ -107,6 +110,10 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   const [optionRachat, setOptionRachat] = useState<OptionRachat>('tauxSeul');
   const [revenuMoyen3Ans, setRevenuMoyen3Ans] = useState<string>('');
   const [nombreTrimestresRachat, setNombreTrimestresRachat] = useState<string>('1');
+
+  // Retraite progressive — sandbox éphémère, aucune persistance.
+  const [dateProgressive, setDateProgressive] = useState<string>('');
+  const [quotiteTempsPartiel, setQuotiteTempsPartiel] = useState<string>('60');
 
   const ageActuel = computeAge(dateNaissance);
   // Date de naissance complète (année + mois), pas seulement l'année : le
@@ -209,10 +216,56 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   const ageActuelConfirme: number = ageActuel;
   const dateNaissanceConfirmee = dateNaissanceDetail;
 
-  // Borne basse : départ à l'âge légal (hors dispositifs de départ anticipé,
-  // non modélisés), ou le mois prochain si l'âge légal est déjà atteint.
+  const trimestresProjetesJusqua = (dateEffet: Date) =>
+    trimestresProjetesParAnnee(resultatTrimestresDetailCarriere.parAnnee, new Date(), dateEffet).reduce(
+      (total, a) => total + a.trimestres,
+      0
+    );
+
+  // Départs anticipés (phase 5) : carrière longue (calculée, circulaire Cnav
+  // 2026-29) et départ confirmé par la caisse (handicap, incapacité
+  // permanente… — saisi dans l'onglet Carrière). Dans les deux cas, pension
+  // du régime général à taux plein.
+  const carriereLongue = evaluerCarriereLongue({
+    dateNaissance: dateNaissanceConfirmee,
+    trimestres: resultatTrimestresDetailCarriere,
+    trimestresAutresRegimes,
+    trimestresProjetesJusqua,
+    aujourdHui: new Date(),
+  });
+  const ageDepartConfirme = retraiteData.depart_anticipe_confirme_motif
+    ? retraiteData.depart_anticipe_confirme_age ?? null
+    : null;
+  const dateEffetDepartConfirme =
+    ageDepartConfirme !== null
+      ? (() => {
+          const ans = Math.floor(ageDepartConfirme);
+          const anniversaire = dateAnniversaireLegal(dateNaissanceConfirmee, {
+            ans,
+            mois: Math.round((ageDepartConfirme - ans) * 12),
+          });
+          return new Date(Date.UTC(anniversaire.getUTCFullYear(), anniversaire.getUTCMonth() + 1, 1));
+        })()
+      : null;
+  const departAnticipeOuvertA = (dateEffet: Date): 'carriere_longue' | 'confirme' | null =>
+    dateEffetDepartConfirme && dateEffet.getTime() >= dateEffetDepartConfirme.getTime()
+      ? 'confirme'
+      : carriereLongueOuverteA(carriereLongue, dateEffet)
+      ? 'carriere_longue'
+      : null;
+
+  // Borne basse : départ à l'âge légal, ou plus tôt si un départ anticipé est
+  // ouvert ; le mois prochain si l'âge légal est déjà atteint.
   const dateEffetAgeLegal = dateEffetDepartAgeLegal(dateNaissanceConfirmee, new Date());
-  const dateLiquidationMin = isoDate(dateEffetAgeLegal ?? dateEffetSimuleeParAge(dateNaissanceConfirmee, AGE_MIN));
+  const datesAuPlusTot = [dateEffetAgeLegal, carriereLongue.premiereDateEligible, dateEffetDepartConfirme].filter(
+    (d): d is Date => d !== null
+  );
+  const moisProchain = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1));
+  const dateDepartAuPlusTot =
+    datesAuPlusTot.length > 0
+      ? new Date(Math.max(moisProchain.getTime(), Math.min(...datesAuPlusTot.map((d) => d.getTime()))))
+      : null;
+  const dateLiquidationMin = isoDate(dateDepartAuPlusTot ?? dateEffetSimuleeParAge(dateNaissanceConfirmee, AGE_MIN));
   const dateLiquidationMax = isoDate(dateEffetSimuleeParAge(dateNaissanceConfirmee, AGE_MAX));
   // Repli avant que l'effet d'initialisation n'ait posé la valeur par défaut
   // (premier rendu, dateLiquidation encore vide) — même valeur que ce que
@@ -265,11 +318,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     // trimestres réels compris — mêmes fonctions que Carrière/Synthèse
     // (auparavant : 4 × écart d'âge en années entières).
     const ageDepartAnnees = ageEnMois(dateNaissanceConfirmee, dateEffet) / 12;
-    const trimestresProjetes = trimestresProjetesParAnnee(
-      resultatTrimestresDetailCarriere.parAnnee,
-      new Date(),
-      dateEffet
-    ).reduce((total, a) => total + a.trimestres, 0);
+    const trimestresProjetes = trimestresProjetesJusqua(dateEffet);
     const trimestresValidesProjetes = trimestresValidesActuels + trimestresProjetes;
     const trimestresTousRegimes = trimestresValidesProjetes + trimestresAutresRegimes;
     const trimestresRequis = trimestresRequisPourGeneration(dateNaissanceConfirmee, dateEffet);
@@ -277,10 +326,10 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     // ce jour) — reconnecte ageLegalPourGeneration() à un appelant réel,
     // cf. docs/audit/audit-retraite.md §7, écart #2/#3.
     const ageLegal = ageLegalPourGeneration(dateNaissanceConfirmee, dateEffet);
-    // Départ juridiquement impossible avant le 1er du mois suivant
-    // l'anniversaire de l'âge légal (carrière longue, handicap, incapacité :
-    // non modélisés).
-    const avantAgeLegal =
+    // Départ avant le 1er du mois suivant l'anniversaire de l'âge légal :
+    // possible seulement si un départ anticipé est ouvert à cette date.
+    const departAnticipe = departAnticipeOuvertA(dateEffet);
+    const avantAgeLegalBrut =
       ageLegal.stable &&
       dateEffet.getTime() <
         Date.UTC(
@@ -288,6 +337,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
           dateAnniversaireLegal(dateNaissanceConfirmee, ageLegal.age).getUTCMonth() + 1,
           1
         );
+    const avantAgeLegal = avantAgeLegalBrut && departAnticipe === null;
     const taux = tauxProratisation(trimestresValidesProjetes, trimestresRequis);
     // decoteSurTrimestres() est symétrique : au-delà de trimestresRequis, sa
     // branche positive (sans plafond ni porte d'éligibilité) n'est pas une
@@ -295,13 +345,19 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     // même correctif que Carriere.tsx (cf.
     // docs/audit/branchement-majorations-pension-finale.md §1.b et
     // docs/audit/branchement-surcote-optimisation.md §2).
-    const decote = Math.min(
-      decoteApplicable(
-        decoteSurTrimestres(trimestresTousRegimes, trimestresRequis),
-        decoteSurAge(ageDepartAnnees)
-      ),
-      0
-    );
+    // Départ anticipé (carrière longue, départ confirmé par la caisse) :
+    // taux plein au régime général, donc ni décote ni coefficient
+    // d'anticipation Agirc-Arrco.
+    const decote =
+      departAnticipe !== null
+        ? 0
+        : Math.min(
+            decoteApplicable(
+              decoteSurTrimestres(trimestresTousRegimes, trimestresRequis),
+              decoteSurAge(ageDepartAnnees)
+            ),
+            0
+          );
 
     // Surcote (classique + parentale), assise sur la pension avant décote
     // mais ajoutée après (référentiel §12.3) — même schéma de branchement que
@@ -388,6 +444,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
       ageAffiche,
       ageDepartAnnees,
       avantAgeLegal,
+      departAnticipe: avantAgeLegalBrut ? departAnticipe : null,
       trimestresProjetes,
       trimestresValidesProjetes,
       trimestresTousRegimes,
@@ -461,7 +518,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   // sélection sans rachat inclut déjà une surcote. Documenté comme
   // simplification assumée (sandbox éphémère, hors périmètre d'un modèle
   // rachat/surcote), cf. docs/audit/branchement-surcote-optimisation.md §2.
-  const decoteAvecRachat = Math.min(
+  const decoteAvecRachat = departAnticipeOuvertA(dateLiquidationEffet) !== null ? 0 : Math.min(
     decoteApplicable(
       decoteSurTrimestres(
         resultatSelection.trimestresTousRegimes + nombreTrimestresRachatNum,
@@ -490,6 +547,28 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     coutTotalRachat !== undefined && gainPensionAnnuelRachat > 0
       ? pointMort(coutTotalRachat, gainPensionAnnuelRachat)
       : undefined;
+
+  // Retraite progressive : dès 60 ans, 150 trimestres tous régimes, temps
+  // partiel de 40 à 80 % ; fraction de pension = 100 % − temps de travail,
+  // appliquée à la pension provisoire calculée à la date de début.
+  // Au plus tôt le 1er du mois suivant les 60 ans, et le mois prochain.
+  const anniversaire60 = dateAnniversaireLegal(dateNaissanceConfirmee, { ans: 60, mois: 0 });
+  const dateProgressiveMin = new Date(
+    Math.max(
+      moisProchain.getTime(),
+      Date.UTC(anniversaire60.getUTCFullYear(), anniversaire60.getUTCMonth() + 1, 1)
+    )
+  );
+  const dateProgressiveEffet = dateProgressive ? dateDepuisISO(dateProgressive) : dateProgressiveMin;
+  const progressive = simulerPourDateEffet(dateProgressiveEffet);
+  const quotiteProgressive = parseFloat(quotiteTempsPartiel) || 0;
+  const fractionProgressive = Math.max(0, 1 - quotiteProgressive / 100);
+  const progressiveEligible =
+    progressive.ageDepartAnnees >= 60 &&
+    progressive.trimestresTousRegimes >= 150 &&
+    quotiteProgressive >= 40 &&
+    quotiteProgressive <= 80;
+  const salaireProgressive = salaireComplementaire ? salaireComplementaire.salaireAnnuel * (quotiteProgressive / 100) : 0;
 
   return (
     <div className="space-y-6">
@@ -524,8 +603,22 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
             </p>
             {resultatSelection.avantAgeLegal && (
               <p className="text-xs text-destructive">
-                Cette date précède l'âge légal de départ : départ impossible hors dispositifs de
-                départ anticipé (carrière longue, handicap, incapacité), non simulés ici.
+                Cette date précède l'âge légal de départ et aucun départ anticipé n'est ouvert à cette date.
+              </p>
+            )}
+            {resultatSelection.departAnticipe && (
+              <p className="text-xs text-positive">
+                Départ avant l'âge légal au titre{' '}
+                {resultatSelection.departAnticipe === 'carriere_longue'
+                  ? 'de la carrière longue'
+                  : "du départ anticipé confirmé par la caisse"}{' '}
+                : pension du régime général à taux plein.
+              </p>
+            )}
+            {dateEffetAgeLegal && dateDepartAuPlusTot && dateDepartAuPlusTot.getTime() < dateEffetAgeLegal.getTime() && (
+              <p className="text-xs text-muted-foreground">
+                Âge légal : départ au {formatDate(dateEffetAgeLegal)} ; départ anticipé possible dès le{' '}
+                {formatDate(dateDepartAuPlusTot)}.
               </p>
             )}
           </div>
@@ -745,7 +838,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
         <CardHeader className="p-5">
           <CardTitle className="text-[15px] font-semibold tracking-tight">Comparatif par âge de départ</CardTitle>
           <CardDescription className="text-xs">
-            Pension totale estimée pour chaque âge de départ entre 62 et 70 ans
+            Pension totale estimée pour chaque âge de départ possible, jusqu'à 70 ans
           </CardDescription>
         </CardHeader>
         <CardContent className="p-5 pt-0">
@@ -762,6 +855,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
             <TableBody>
               {AGES_COMPARATIF.map((age) => {
                 const resultat = simulerPourAge(age);
+                if (resultat.avantAgeLegal && age < 62) return null;
                 if (resultat.avantAgeLegal) {
                   return (
                     <TableRow key={age}>
@@ -778,7 +872,14 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
                     key={age}
                     className={age === resultatSelection.ageAffiche ? 'bg-muted/50' : undefined}
                   >
-                    <TableCell className="font-medium">{age} ans</TableCell>
+                    <TableCell className="font-medium">
+                      {age} ans
+                      {resultat.departAnticipe && (
+                        <span className="block text-xs text-muted-foreground">
+                          {resultat.departAnticipe === 'carriere_longue' ? 'carrière longue' : 'départ anticipé confirmé'}
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell>{resultat.trimestresValidesProjetes}</TableCell>
                     <TableCell
                       className={
@@ -801,6 +902,158 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
               })}
             </TableBody>
           </Table>
+        </CardContent>
+      </Card>
+
+      <Card className="border border-border">
+        <CardHeader className="p-5">
+          <CardTitle className="text-[15px] font-semibold tracking-tight">Retraite anticipée pour carrière longue</CardTitle>
+          <CardDescription className="text-xs">
+            Conditions de la circulaire Cnav n° 2026-29 (pensions prenant effet à compter du 01/09/2026)
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-5 pt-0 space-y-3">
+          {carriereLongue.options.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Génération hors barème de la carrière longue.</p>
+          ) : (
+            <>
+              {carriereLongue.premiereDateEligible ? (
+                <p className="text-sm font-semibold text-positive">
+                  Départ anticipé possible dès le {formatDate(carriereLongue.premiereDateEligible)}, à taux plein.
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Conditions de la carrière longue non réunies.</p>
+              )}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Début d'activité avant</TableHead>
+                    <TableHead>Départ à</TableHead>
+                    <TableHead>Condition de début</TableHead>
+                    <TableHead>Durée cotisée</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {carriereLongue.options.map((o) => (
+                    <TableRow key={o.debutAvant}>
+                      <TableCell>{o.debutAvant} ans</TableCell>
+                      <TableCell>
+                        {o.ageDepart.ans} ans{o.ageDepart.mois > 0 ? ` ${o.ageDepart.mois} mois` : ''} ({formatDate(o.dateEffet)})
+                      </TableCell>
+                      <TableCell>{o.debutActiviteRempli ? 'remplie' : 'non remplie'}</TableCell>
+                      <TableCell className={o.dureeCotisee >= o.dureeRequise ? 'text-positive' : 'text-destructive'}>
+                        {o.dureeCotisee} / {o.dureeRequise} trimestres
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <p className="text-xs text-muted-foreground">
+                Début d'activité : 5 trimestres validés à la fin de l'année de l'anniversaire (4 si né au 4e trimestre).
+                Durée cotisée : trimestres cotisés (projetés jusqu'au départ, autres régimes de base compris) + maternité
+                + maladie et chômage indemnisé (4 trimestres chacun au plus). Service national, invalidité, AVPF,
+                majorations pour enfants et rachats ne sont pas visibles au relevé et ne sont pas comptés : à vérifier
+                auprès de la caisse, ils peuvent ouvrir le droit plus tôt.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Taux plein appliqué au régime général et à l'Agirc-Arrco ; les pensions fonction publique et CNAVPL
+                gardent leur propre décote (dispositifs de carrière longue propres non modélisés).
+              </p>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border border-border">
+        <CardHeader className="p-5">
+          <CardTitle className="text-[15px] font-semibold tracking-tight">Retraite progressive</CardTitle>
+          <CardDescription className="text-xs">
+            Dès 60 ans avec 150 trimestres tous régimes et un temps partiel de 40 à 80 %
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-5 pt-0 space-y-3">
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="date-retraite-progressive" className="text-xs">Début de la retraite progressive</Label>
+              <Input
+                id="date-retraite-progressive"
+                type="date"
+                value={dateProgressive || isoDate(dateProgressiveEffet)}
+                min={isoDate(dateProgressiveMin)}
+                onChange={(e) => setDateProgressive(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="quotite-temps-partiel" className="text-xs">Temps de travail (% d'un temps plein)</Label>
+              <Input
+                id="quotite-temps-partiel"
+                type="number"
+                min={40}
+                max={80}
+                value={quotiteTempsPartiel}
+                onChange={(e) => setQuotiteTempsPartiel(e.target.value)}
+              />
+            </div>
+          </div>
+          {!progressiveEligible ? (
+            <p className="text-xs text-destructive">
+              Conditions non remplies à cette date :{' '}
+              {[
+                progressive.ageDepartAnnees < 60 ? 'moins de 60 ans' : null,
+                progressive.trimestresTousRegimes < 150 ? `${progressive.trimestresTousRegimes} trimestres sur 150` : null,
+                quotiteProgressive < 40 || quotiteProgressive > 80 ? 'temps de travail hors 40-80 %' : null,
+              ]
+                .filter(Boolean)
+                .join(', ')}
+              .
+            </p>
+          ) : (
+            <div className="p-3 bg-muted/50 rounded-lg space-y-1">
+              <div className="text-lg font-semibold text-primary">
+                {formatEuro2((fractionProgressive * progressive.pensionTotale + salaireProgressive) / 12)} / mois brut
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Fraction de pension {Math.round(fractionProgressive * 100)} % × pension provisoire{' '}
+                {formatEuro2(progressive.pensionTotale)} / an = {formatEuro2(fractionProgressive * progressive.pensionTotale)} / an
+                {salaireProgressive > 0 && <> + salaire à temps partiel {formatEuro2(salaireProgressive)} / an</>}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                La pension provisoire est calculée comme si la liquidation intervenait à cette date (décote comprise) ;
+                les cotisations versées pendant la retraite progressive sont reprises au départ définitif, où la
+                pension est recalculée.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border border-border">
+        <CardHeader className="p-5">
+          <CardTitle className="text-[15px] font-semibold tracking-tight">Cumul emploi-retraite</CardTitle>
+          <CardDescription className="text-xs">Règles applicables à la date de liquidation simulée ci-dessus</CardDescription>
+        </CardHeader>
+        <CardContent className="p-5 pt-0 space-y-2 text-xs text-muted-foreground">
+          {dateLiquidationEffet.getTime() < Date.UTC(2027, 0, 1) ? (
+            <>
+              <p>
+                Liquidation avant le 01/01/2027 :{' '}
+                {resultatSelection.decote === 0
+                  ? 'retraite à taux plein — cumul intégral possible, sans plafond, une fois toutes les pensions liquidées.'
+                  : 'retraite décotée — cumul plafonné (revenus au-delà du plafond réduisant la pension).'}
+              </p>
+              <p>
+                Un cumul intégral ouvre une seconde pension de base, plafonnée à 5 % du PASS (
+                {formatEuro2(0.05 * MILLESIME_COURANT.pass)} / an en {MILLESIME_COURANT.annee}).
+              </p>
+            </>
+          ) : (
+            <p>
+              Liquidation à compter du 01/01/2027 : nouvelles règles de l'article 102 de la LFSS 2026 — revenus
+              d'activité réduisant la pension avant l'âge légal, cumul plafonné entre l'âge légal et 67 ans, cumul
+              intégral (avec nouveaux droits) à partir de 67 ans. Seuils fixés par décrets non publiés à ce jour :
+              non chiffrés ici.
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>

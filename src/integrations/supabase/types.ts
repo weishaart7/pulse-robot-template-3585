@@ -2391,6 +2391,8 @@ export type Database = {
           regimes_points: Json
           revenu_hypothese_manuel: number | null
           salaire_brut_annuel: number | null
+          depart_anticipe_confirme_motif: string | null
+          depart_anticipe_confirme_age: number | null
           salaire_annuel_moyen: number | null
           traitement_indiciaire_brut: number | null
           trimestres_cnavpl: number | null
@@ -2425,6 +2427,8 @@ export type Database = {
           regimes_points?: Json
           revenu_hypothese_manuel?: number | null
           salaire_brut_annuel?: number | null
+          depart_anticipe_confirme_motif?: string | null
+          depart_anticipe_confirme_age?: number | null
           salaire_annuel_moyen?: number | null
           traitement_indiciaire_brut?: number | null
           trimestres_cnavpl?: number | null
@@ -2459,6 +2463,8 @@ export type Database = {
           regimes_points?: Json
           revenu_hypothese_manuel?: number | null
           salaire_brut_annuel?: number | null
+          depart_anticipe_confirme_motif?: string | null
+          depart_anticipe_confirme_age?: number | null
           salaire_annuel_moyen?: number | null
           traitement_indiciaire_brut?: number | null
           trimestres_cnavpl?: number | null

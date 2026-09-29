@@ -150,7 +150,7 @@ de liquidation n'est pas non plus appliqué.
 `tauxProratisation()` plafonne à 1. En FP, les bonifications peuvent porter le taux jusqu'à 80 %.
 C'est une sous-estimation marginale.
 
-**R11. Aucun dispositif de départ anticipé.**
+**R11. Aucun dispositif de départ anticipé.** ✅ Corrigé le 2026-09-29 (phase 5).
 Carrière longue (y compris ses paramètres LFSS 2026), handicap, incapacité permanente, catégories
 actives hors saisie manuelle : rien de tout cela n'existe. La carrière longue concerne pourtant une
 part notable des départs.
@@ -265,7 +265,7 @@ Exemples :
 | **2. Complémentaires** ✅ 2026-09-29 | Moteur Agirc-Arrco (projection, minoration, majoration), RAFP capital/rente, sections CNAVPL ; saisie du salaire brut complet | nouveau `calculAgircArrco.ts`, `pensionConsolidee.ts` |
 | **3. Net** ✅ 2026-09-29 | Branchement des moteurs Fiscalité (PS et IR), taux de remplacement, libellé en euros constants | `pensionConsolidee.ts`, `src/lib/fiscalite/` |
 | **4. Réversion et couple** ✅ 2026-09-29 | Moteur de réversion multi-régimes, revenu du survivant, lien Transmission, alertes PACS | nouveau `reversion.ts` |
-| **5. Départs anticipés et transitions** | Carrières longues (LFSS 2026), handicap, retraite progressive, cumul emploi-retraite | `calcul.ts` |
+| **5. Départs anticipés et transitions** ✅ 2026-09-29 | Carrières longues (LFSS 2026), handicap, retraite progressive, cumul emploi-retraite | `calcul.ts` |
 | **6. Moteur de décision** | Âge optimal (valeur actualisée, points morts), arbitrage rachat/PER/travail, écart Budget, projection et sortie de l'épargne retraite, scénarios de sensibilité, rapport PDF enrichi | nouveau `decision.ts`, `Synthese.tsx`, `EpargneRetraite.tsx` |
 
 Chaque phase touchant à une règle fiscale ou réglementaire commencera par un exposé des règles et de

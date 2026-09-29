@@ -645,5 +645,212 @@
     "tauxFonctionPublique": 0.5,
     "tauxRAFP": 0.5,
     "trimestresMinimumComplet": 60
+  },
+  "carriereLongue": {
+    "source": "Circulaire Cnav n° 2026-29 du 04/09/2026 (pensions prenant effet à compter du 01/09/2026), annexe 2 et points 1.1.2, 1.2.3",
+    "dateEffetMinimale": "2026-09-01",
+    "trimestresDebutActivite": 5,
+    "trimestresDebutActiviteNeAuQuatriemeTrimestre": 4,
+    "plafondsReputesCotises": {
+      "maladie": 4,
+      "chomageIndemnise": 4
+    },
+    "generations": [
+      {
+        "naissanceMin": "1963-09",
+        "naissanceMax": "1963-12",
+        "ages": [
+          {
+            "debutAvant": 20,
+            "ans": 60,
+            "mois": 3
+          }
+        ]
+      },
+      {
+        "naissanceMin": "1964-01",
+        "naissanceMax": "1964-12",
+        "ages": [
+          {
+            "debutAvant": 20,
+            "ans": 60,
+            "mois": 6
+          }
+        ]
+      },
+      {
+        "naissanceMin": "1965-01",
+        "naissanceMax": "1965-11",
+        "ages": [
+          {
+            "debutAvant": 20,
+            "ans": 60,
+            "mois": 9
+          }
+        ]
+      },
+      {
+        "naissanceMin": "1965-12",
+        "naissanceMax": "1965-12",
+        "ages": [
+          {
+            "debutAvant": 20,
+            "ans": 60,
+            "mois": 8
+          }
+        ]
+      },
+      {
+        "naissanceMin": "1966-01",
+        "naissanceMax": "1966-12",
+        "ages": [
+          {
+            "debutAvant": 18,
+            "ans": 60,
+            "mois": 0
+          },
+          {
+            "debutAvant": 20,
+            "ans": 60,
+            "mois": 9
+          },
+          {
+            "debutAvant": 21,
+            "ans": 63,
+            "mois": 0
+          }
+        ]
+      },
+      {
+        "naissanceMin": "1967-01",
+        "naissanceMax": "1967-12",
+        "ages": [
+          {
+            "debutAvant": 16,
+            "ans": 58,
+            "mois": 0
+          },
+          {
+            "debutAvant": 18,
+            "ans": 60,
+            "mois": 0
+          },
+          {
+            "debutAvant": 20,
+            "ans": 61,
+            "mois": 0
+          },
+          {
+            "debutAvant": 21,
+            "ans": 63,
+            "mois": 0
+          }
+        ]
+      },
+      {
+        "naissanceMin": "1968-01",
+        "naissanceMax": "1968-12",
+        "ages": [
+          {
+            "debutAvant": 16,
+            "ans": 58,
+            "mois": 0
+          },
+          {
+            "debutAvant": 18,
+            "ans": 60,
+            "mois": 0
+          },
+          {
+            "debutAvant": 20,
+            "ans": 61,
+            "mois": 3
+          },
+          {
+            "debutAvant": 21,
+            "ans": 63,
+            "mois": 0
+          }
+        ]
+      },
+      {
+        "naissanceMin": "1969-01",
+        "naissanceMax": "1969-12",
+        "ages": [
+          {
+            "debutAvant": 16,
+            "ans": 58,
+            "mois": 0
+          },
+          {
+            "debutAvant": 18,
+            "ans": 60,
+            "mois": 0
+          },
+          {
+            "debutAvant": 20,
+            "ans": 61,
+            "mois": 6
+          },
+          {
+            "debutAvant": 21,
+            "ans": 63,
+            "mois": 0
+          }
+        ]
+      },
+      {
+        "naissanceMin": "1970-01",
+        "naissanceMax": "1970-12",
+        "ages": [
+          {
+            "debutAvant": 16,
+            "ans": 58,
+            "mois": 0
+          },
+          {
+            "debutAvant": 18,
+            "ans": 60,
+            "mois": 0
+          },
+          {
+            "debutAvant": 20,
+            "ans": 61,
+            "mois": 9
+          },
+          {
+            "debutAvant": 21,
+            "ans": 63,
+            "mois": 0
+          }
+        ]
+      },
+      {
+        "naissanceMin": "1971-01",
+        "naissanceMax": "9999-12",
+        "ages": [
+          {
+            "debutAvant": 16,
+            "ans": 58,
+            "mois": 0
+          },
+          {
+            "debutAvant": 18,
+            "ans": 60,
+            "mois": 0
+          },
+          {
+            "debutAvant": 20,
+            "ans": 62,
+            "mois": 0
+          },
+          {
+            "debutAvant": 21,
+            "ans": 63,
+            "mois": 0
+          }
+        ]
+      }
+    ]
   }
 }

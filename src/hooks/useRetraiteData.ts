@@ -55,7 +55,13 @@ export interface RetraiteData {
   // src/lib/retraite/calculAgircArrco.ts. Non renseigné = repli sur
   // l'hypothèse de revenu futur, plafonnée au PASS.
   salaire_brut_annuel?: number;
+  // Départ anticipé confirmé par la caisse (handicap, incapacité permanente…)
+  // — cf. migration 20260929230000 : pension simulée à taux plein dès l'âge saisi.
+  depart_anticipe_confirme_motif?: MotifDepartAnticipeConfirme;
+  depart_anticipe_confirme_age?: number;
 }
+
+export type MotifDepartAnticipeConfirme = 'handicap' | 'incapacite_permanente' | 'autre';
 
 // 'conjoint' : même user_id (le conjoint n'a pas de compte séparé, cf.
 // marital_status.prenom_conjoint/nom_conjoint) — seule la colonne `personne`
@@ -71,6 +77,7 @@ const depuisLigne = (ligne: Tables<'retraite_data'>): RetraiteData => ({
   regimes_points: (ligne.regimes_points ?? undefined) as unknown as RegimeDetecte[] | undefined,
   regime_affiliation_fp: (ligne.regime_affiliation_fp ?? undefined) as RetraiteData['regime_affiliation_fp'],
   mode_hypothese_revenu_futur: ligne.mode_hypothese_revenu_futur as ModeHypotheseRevenuFutur,
+  depart_anticipe_confirme_motif: (ligne.depart_anticipe_confirme_motif ?? undefined) as RetraiteData['depart_anticipe_confirme_motif'],
 } as RetraiteData);
 
 const versLigne = (updates: Partial<RetraiteData>): TablesUpdate<'retraite_data'> => {

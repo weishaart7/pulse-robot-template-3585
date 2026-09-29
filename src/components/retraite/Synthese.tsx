@@ -82,6 +82,13 @@ const CartePensionFoyer = ({ hasConjoint, nomUtilisateur, nomConjoint }: CartePe
                       Départ simulé au {utilisateur.dateEffet.toLocaleDateString('fr-FR', { timeZone: 'UTC' })}
                     </p>
                   )}
+                  {utilisateur.dateCarriereLongue && utilisateur.dateEffet &&
+                    utilisateur.dateCarriereLongue.getTime() < utilisateur.dateEffet.getTime() && (
+                      <p className="text-xs text-positive">
+                        Carrière longue : départ anticipé à taux plein possible dès le{' '}
+                        {utilisateur.dateCarriereLongue.toLocaleDateString('fr-FR', { timeZone: 'UTC' })} (onglet Optimisation)
+                      </p>
+                    )}
                   {utilisateur.repartitionParRegime.rafpCapital > 0 && (
                     <p className="text-xs text-muted-foreground">
                       + capital RAFP de {formatEuro0(utilisateur.repartitionParRegime.rafpCapital)} au départ

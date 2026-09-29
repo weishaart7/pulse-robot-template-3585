@@ -126,6 +126,22 @@ base + 3 000 € de complémentaires (15 000 € de pensions propres).
 | Impôt | (26 255,26 − 11 600) × 11 % = 1 612,08 ; décote 167,53 | 1 445 € |
 | **Net annuel du survivant** | 31 001,60 − 2 911,14 − 1 445 | **26 645,46 €** |
 
+## Scénario CL1 — Carrière longue, génération 1970, début à 17 ans (phase 5)
+
+Rejoué par `calculCarriereLongue.test.ts`. **Entrées** : née en mars 1970 ; 4 trimestres cotisés par an de
+1987 (17 ans) à 2025 (156 trimestres) ; aujourd'hui le 29/09/2026 ; trimestres futurs supposés cotisés du
+trimestre en cours au trimestre précédant le départ.
+
+| Option (circulaire Cnav 2026-29) | Début d'activité | Date d'effet | Durée cotisée | Requise | Ouvert |
+|---|---|---|---:|---:|---|
+| avant 16 ans → 58 ans | non (aucun trimestre fin 1986) | 01/04/2028 | — | 172 | non |
+| avant 18 ans → 60 ans | oui (8 trimestres fin 1988) | 01/04/2030 | 156 + 15 = 171 | 172 | **non (1 trimestre manquant)** |
+| avant 20 ans → 61 ans 9 mois | oui | 01/01/2032 | 156 + 22 = 178 | 172 | **oui** |
+| avant 21 ans → 63 ans | oui | 01/04/2033 | 181 | 172 | oui |
+
+Premier départ anticipé : **01/01/2032**, à taux plein. Variante : avec 2 trimestres de maladie (réputés
+cotisés, 4 au plus), la durée cotisée à 60 ans atteint 173 et le départ est ouvert dès le **01/04/2030**.
+
 ---
 
 ## Limite connue documentée : périodes MSA dans le SAM (audit R7)

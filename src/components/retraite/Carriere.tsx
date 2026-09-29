@@ -6,7 +6,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Upload, Trash2, Pencil, CheckCircle2, AlertTriangle, ChevronDown } from 'lucide-react';
-import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
+import { useRetraiteData, Personne, MotifDepartAnticipeConfirme } from '@/hooks/useRetraiteData';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useHypotheseRevenuFutur, UseHypotheseRevenuFuturResult } from '@/hooks/useHypotheseRevenuFutur';
@@ -190,6 +191,10 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   // Salaire brut annuel total (non plafonné) — projection des points
   // Agirc-Arrco futurs (colonne salaire_brut_annuel, cf. calculAgircArrco.ts).
   const [salaireBrutAnnuel, setSalaireBrutAnnuel] = useState<string>('');
+  // Départ anticipé confirmé par la caisse (handicap, incapacité
+  // permanente…) — utilisé par l'onglet Optimisation (taux plein dès cet âge).
+  const [motifDepartAnticipeConfirme, setMotifDepartAnticipeConfirme] = useState<MotifDepartAnticipeConfirme | ''>('');
+  const [ageDepartAnticipeConfirme, setAgeDepartAnticipeConfirme] = useState<string>('');
 
   // Carrière fonction publique — état remonté ici (plutôt que gardé local à
   // CarriereFonctionPublique) car le total de trimestres tous régimes doit
@@ -342,6 +347,10 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       if (data.valeur_point_cnavpl !== undefined && data.valeur_point_cnavpl !== null) {
         setValeurPointCNAVPL(data.valeur_point_cnavpl.toString());
       }
+      setMotifDepartAnticipeConfirme(data.depart_anticipe_confirme_motif ?? '');
+      if (data.depart_anticipe_confirme_age !== undefined && data.depart_anticipe_confirme_age !== null) {
+        setAgeDepartAnticipeConfirme(data.depart_anticipe_confirme_age.toString());
+      }
       if (data.salaire_brut_annuel !== undefined && data.salaire_brut_annuel !== null) {
         setSalaireBrutAnnuel(data.salaire_brut_annuel.toString());
       }
@@ -396,6 +405,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             valeur_point_cnavpl: parseFloat(valeurPointCNAVPL) || 0,
             autres_pensions_mensuelles: parseFloat(autresPensionsMensuelles) || 0,
             salaire_brut_annuel: parseFloat(salaireBrutAnnuel) || null,
+            depart_anticipe_confirme_motif: motifDepartAnticipeConfirme === '' ? null : motifDepartAnticipeConfirme,
+            depart_anticipe_confirme_age:
+              motifDepartAnticipeConfirme === '' ? null : parseFloat(ageDepartAnticipeConfirme) || null,
           },
           { silent: true }
         ),
@@ -427,6 +439,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       valeurPointCNAVPL,
       autresPensionsMensuelles,
       salaireBrutAnnuel,
+      motifDepartAnticipeConfirme,
+      ageDepartAnticipeConfirme,
     ]
   );
 
@@ -939,6 +953,43 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
               Pensions personnelles brutes d'autres régimes non modélisés par cet outil (étranger,
               complémentaires non saisies...) — sert uniquement à l'écrêtement du MICO (référentiel
               §3.5.5). Non renseigné = 0, aucun effet sur le calcul.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Départ anticipé confirmé par la caisse (optionnel)</Label>
+            <div className="flex flex-wrap gap-3">
+              <Select
+                value={motifDepartAnticipeConfirme === '' ? 'aucun' : motifDepartAnticipeConfirme}
+                onValueChange={(v) => setMotifDepartAnticipeConfirme(v === 'aucun' ? '' : (v as MotifDepartAnticipeConfirme))}
+              >
+                <SelectTrigger className="max-w-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="aucun">Aucun</SelectItem>
+                  <SelectItem value="handicap">Handicap</SelectItem>
+                  <SelectItem value="incapacite_permanente">Incapacité permanente</SelectItem>
+                  <SelectItem value="autre">Autre dispositif</SelectItem>
+                </SelectContent>
+              </Select>
+              {motifDepartAnticipeConfirme !== '' && (
+                <Input
+                  type="number"
+                  step="0.25"
+                  min={50}
+                  max={70}
+                  placeholder="Âge (ex. 62)"
+                  value={ageDepartAnticipeConfirme}
+                  onChange={(e) => setAgeDepartAnticipeConfirme(e.target.value)}
+                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring max-w-[160px]"
+                />
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Âge d'ouverture confirmé par la caisse (conditions dépendant de justificatifs que l'outil ne vérifie pas) :
+              l'onglet Optimisation simule alors une pension du régime général à taux plein dès cet âge. La carrière
+              longue, elle, est calculée automatiquement.
             </p>
           </div>
 
