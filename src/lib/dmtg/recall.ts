@@ -61,7 +61,10 @@ export function computeRecallAndAllowances(input: {
     const nbRepresentants = beneficiary.numberOfRepresentants && beneficiary.numberOfRepresentants > 0
       ? beneficiary.numberOfRepresentants
       : 1;
-    abattementBase = abattementRepresente / nbRepresentants;
+    const part = beneficiary.partDansSouche !== undefined && beneficiary.partDansSouche > 0
+      ? beneficiary.partDansSouche
+      : 1 / nbRepresentants;
+    abattementBase = abattementRepresente * part;
   }
 
   // Abattement handicap (art. 779 II CGI) : ouvert à tout héritier,

@@ -1325,9 +1325,13 @@ export function computeRecuAuPremierDeces(
   survivorId: PersonId,
   avContracts: AVContract[] = []
 ): RecuAuPremierDeces {
+  // Ce que le survivant a réellement reçu des biens de la succession (legs
+  // compris, après DUH), hors valeur de l'usufruit (éteint à son décès) et hors
+  // donations déjà détenues (déjà dans son patrimoine propre) — pas partFinale,
+  // qui inclut ces donations.
   const pleinePropriete = firstDeathResult.heirs
-    .filter(h => h.personId === survivorId && h.typeQuotePart === 'pleine_propriete')
-    .reduce((sum, h) => sum + h.partFinale, 0);
+    .filter(h => h.personId === survivorId)
+    .reduce((sum, h) => sum + (h.recuSuccession ?? (h.typeQuotePart === 'pleine_propriete' ? h.partFinale : 0)) - (h.valeurUsufruit || 0), 0);
   const prelev990I = firstDeathResult.dmtg.perBeneficiary[survivorId]?.prelev990I || 0;
   const capitauxDecesNets = Math.max(0, capitalDecesNetPourBeneficiaire(avContracts, survivorId, prelev990I));
   return { pleinePropriete, capitauxDecesNets, total: pleinePropriete + capitauxDecesNets };

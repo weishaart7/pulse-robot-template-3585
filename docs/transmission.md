@@ -212,6 +212,17 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
     à un enfant ou frère/sœur représenté sont rappelées sur ses représentants, au prorata de leur
     part dans la souche (`index.ts`, avant `computeDMTG`).
   Tests : `lib/transmission/phase4NotaireAudit.test.ts`.
+- **Contre-audit du 2026-09-29 (phase 5).**
+  - **Legs sur part successorale** à un enfant (`partage.ts`) : resté dans le pot, il s'impute sur
+    sa part sans être ajouté à la masse égalitaire (seules les donations rapportables le sont).
+  - **Adoption simple (art. 786 CGI)** : sans exception déclarée, barème des non-parents (60 %) en
+    plus de l'abattement de 1 594 € ; pas de réduction pour charges de famille en ligne directe.
+  - **Abattement des représentants** (art. 779 I) : divisé au prorata de la part de chacun dans la
+    souche (`Beneficiary.partDansSouche`), plus à parts égales.
+  - **2nd décès** : `computeRecuAuPremierDeces` lit `recuSuccession` (legs compris, aligné sur le
+    DUH), hors valeur d'usufruit et hors donations déjà détenues ; `computeChainedTransmission`
+    ne réunit que `HeirShare.valeurUsufruit`.
+  Tests : `lib/transmission/phase5NotaireAudit.test.ts`.
 - **Fente successorale : branche familiale saisissable pour les 4 rangs** (commit `de8a722`, finding
   F18) — corrige un défaut de saisie qui pouvait conduire à une **déshérence à tort** (le message
   « l'État français hérite » s'affichait alors que des grands-parents vivants existaient, faute de
@@ -495,6 +506,7 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
 ## 3. Dette identifiée
 
 ### 🔴 Bloquant (peut fausser un calcul montré au client)
+
 
 **Audit « résultat notaire » du 2026-09-29** — points reproduits sur un scénario chiffré. Les
 écarts civils (répartition, droits du conjoint, réserve, rapport, réduction) sont corrigés par la

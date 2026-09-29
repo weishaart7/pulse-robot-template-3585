@@ -62,6 +62,9 @@ export interface PartageHeirResult {
   soulte: number;
   // Part de l'indemnité de réduction revenant à cet héritier (incluse dans recuSuccession).
   indemniteReduction: number;
+  // Valeur de l'usufruit porté par cette ligne (0 sinon) : seule valeur réunie
+  // aux nus-propriétaires au décès de l'usufruitier (index.ts, chaînage).
+  valeurUsufruit: number;
 }
 
 export interface PartageResult {
@@ -78,7 +81,7 @@ export function computePartage(input: PartageInput): PartageResult {
   const { lines, liberalites, reductions, childrenIds, spouseId, pctUsufruit, pctNuePropriete } = input;
   const actifNet = Math.max(0, input.biensExistants - input.passifs);
   const results: PartageHeirResult[] = lines.map(() => ({
-    partFinale: 0, recuSuccession: 0, dejaDetenu: 0, soulte: 0, indemniteReduction: 0
+    partFinale: 0, recuSuccession: 0, dejaDetenu: 0, soulte: 0, indemniteReduction: 0, valeurUsufruit: 0
   }));
   const personIds = new Set(lines.map(l => l.personId));
   const firstLineOf = (id: PersonId) => lines.findIndex(l => l.personId === id);
@@ -147,6 +150,7 @@ export function computePartage(input: PartageInput): PartageResult {
     } else {
       results[i].recuSuccession = valeurUsufruitConjoint;
       results[i].partFinale = valeurUsufruitConjoint;
+      results[i].valeurUsufruit = valeurUsufruitConjoint;
     }
     if (k === 0 && spouseId) {
       const legs = legsHorsPartParHeritier.get(spouseId) || 0;
@@ -160,14 +164,21 @@ export function computePartage(input: PartageInput): PartageResult {
   // ── Autres héritiers (enfants, ou ordres suivants) : égalité avec rapport (R4) ──
   const others = lines.map((l, i) => ({ l, i })).filter(x => !(spouseId && x.l.personId === spouseId));
   const sumQ = others.reduce((s, x) => s + x.l.quotePart, 0);
+  // Legs « sur part successorale » à un enfant : resté dans le pot, il s'impute
+  // sur sa part sans être ajouté à la masse égalitaire (contrairement à une
+  // donation rapportable, sortie du patrimoine).
+  const legsSurPart = (id: PersonId) => liberalites
+    .filter(l => l.type === 'legs' && l.beneficiaireId === id && l.typeImputation === 'avance_part' && childrenIds.includes(id))
+    .reduce((s, l) => s + maintenu(l, reductions), 0);
   const rapportDe = (id: PersonId) => input.rapports.filter(r => r.personId === id).reduce((s, r) => s + r.montantRapport, 0);
-  const masseEgalitaire = potApresPP + others.reduce((s, x) => s + rapportDe(x.l.personId), 0);
+  const masseEgalitaire = potApresPP + others.reduce((s, x) => s + rapportDe(x.l.personId) - legsSurPart(x.l.personId), 0);
   // Valorisation : nue-propriété si les enfants sont nus-propriétaires.
   const coef = (t: TypeQuotePart) => t === 'nue_propriete' ? pctNuePropriete : 1;
 
   const aRecevoir = others.map(x => {
     const s = sumQ > 0 ? x.l.quotePart / sumQ : 0;
-    return s * masseEgalitaire - rapportDe(x.l.personId);
+    // Le legs sur part reste compté dans ce qui est reçu de la succession.
+    return s * masseEgalitaire - rapportDe(x.l.personId) + legsSurPart(x.l.personId);
   });
   const totalSoultesDues = aRecevoir.filter(v => v < 0).reduce((s, v) => s - v, 0);
   const totalPositif = aRecevoir.filter(v => v > 0).reduce((s, v) => s + v, 0);

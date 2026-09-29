@@ -81,10 +81,16 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
     const taxableAfterAllowance = Math.max(0, baseFiscale - (recallResult.allowanceGeneralResidual === Infinity ? baseFiscale : recallResult.allowanceGeneralResidual));
     if (import.meta.env.DEV) console.log(`Base taxable après abattement: ${taxableAfterAllowance}€`);
 
+    // Adoption simple sans exception (art. 786 CGI) : le lien de parenté
+    // adoptif est ignoré — barème des non-parents (60 %), en plus de
+    // l'abattement de 1 594 € déjà appliqué par recall.ts.
+    const adoptionSimpleIgnoree = beneficiary.lien === 'enfant' && !!beneficiary.isAdoptionSimple && !beneficiary.adoptionSimpleAbattementPlein;
+    const lienBareme = adoptionSimpleIgnoree ? 'autre' : beneficiary.lien;
+
     // Phase 5 : Barème & calcul de droits
     const taxResult = computeProgressiveTax(
       taxableAfterAllowance,
-      beneficiary.lien,
+      lienBareme,
       recallResult.consumedBracketsAmount,
       params,
       beneficiary.comesFromRepresentationWithPlurality,
@@ -95,7 +101,8 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
 
     // Réduction pour charges de famille (art. 780 CGI) : par enfant au-delà du
     // 2e, 610 € en ligne directe, 305 € sinon, dans la limite des droits dus.
-    const ligneDirecte = beneficiary.lien === 'enfant' || beneficiary.lien === 'petit_enfant' || beneficiary.lien === 'ascendant';
+    const ligneDirecte = !adoptionSimpleIgnoree &&
+      (beneficiary.lien === 'enfant' || beneficiary.lien === 'petit_enfant' || beneficiary.lien === 'ascendant');
     const reductionChargesFamille = Math.min(
       taxResult.taxe,
       Math.max(0, (beneficiary.nbEnfants || 0) - 2) * (ligneDirecte ? 610 : 305)

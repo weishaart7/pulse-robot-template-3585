@@ -216,6 +216,8 @@ export interface HeirShare {
   recuSuccession?: number;
   soulte?: number;
   indemniteReduction?: number;
+  // Valeur de l'usufruit porté par cette ligne (0 sinon), cf. partage.ts.
+  valeurUsufruit?: number;
 }
 
 export interface TransmissionResult {

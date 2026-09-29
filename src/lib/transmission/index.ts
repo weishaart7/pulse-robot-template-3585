@@ -436,7 +436,8 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       dejaDetenu: p.dejaDetenu,
       recuSuccession: p.recuSuccession,
       soulte: p.soulte,
-      indemniteReduction: p.indemniteReduction
+      indemniteReduction: p.indemniteReduction,
+      valeurUsufruit: p.valeurUsufruit
     };
   });
   const cashReparti = heirs.map(h => h.recuSuccession);
@@ -497,6 +498,8 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
             ? c - imputeDUH * (recuConjoint > 0 ? c / recuConjoint : 0)
             : c + imputeDUH * (c / recuAutres);
         });
+        // Aligne ce qui est reçu de la succession (lu au 2nd décès) sur le DUH.
+        cashReparti.forEach((c, i) => { heirs[i].recuSuccession = c; });
       }
 
       successionLegaleResult.explicationsTexte.push(
@@ -640,6 +643,14 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       return !!p && (!p.estDecede || aDescendanceVivante(p.id));
     }).length;
 
+  // Part de chaque représentant dans sa souche (art. 779 I CGI).
+  const partSouche = (rootId: PersonId, personId: PersonId): number => {
+    const membres = heirs.filter(h => !!h.representation && (h.representationRootId || h.personId) === rootId);
+    const total = membres.reduce((s, h) => s + h.partCivile, 0);
+    const siens = membres.filter(h => h.personId === personId).reduce((s, h) => s + h.partCivile, 0);
+    return total > 0 ? siens / total : 0;
+  };
+
   const beneficiaries: DmtgBeneficiary[] = heirs.map(heir => {
     // Le lien retenu pour la fiscalité DMTG est celui calculé par la
     // dévolution civile (heir.lien), pas la catégorie du formulaire famille
@@ -673,6 +684,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       representedOf: representationRootId,
       representationGroup: representationRootId,
       numberOfRepresentants: isRepresentation ? heir.representationCount : undefined,
+      partDansSouche: representationRootId ? partSouche(representationRootId, heir.personId) : undefined,
       comesFromRepresentationWithPlurality: heir.lien === 'neveu_niece' && !!heir.representation,
       isAdoptionSimple: person?.enfantAdopte === 'Adoption simple',
       adoptionSimpleAbattementPlein: person?.adoptionSimpleAbattementPlein || false,
@@ -1187,10 +1199,12 @@ export function computeChainedTransmission(input: ChainedTransmissionInput): Cha
   // Usufruit détenu par le conjoint sur la part du 1er défunt (une seule
   // ligne en pratique, mais on somme par sécurité — un même héritier peut
   // porter plusieurs lignes de parts, cf. quart_pp_3quarts_us).
+  // Seule la valeur de l'usufruit (jamais les libéralités du conjoint, que
+  // partFinale inclut sur sa première ligne) est réunie aux nus-propriétaires.
   const reunionTotalBrut = survivingSpouseId
     ? firstDeath.heirs
         .filter(h => h.personId === survivingSpouseId && h.typeQuotePart === 'usufruit')
-        .reduce((sum, h) => sum + h.partFinale, 0)
+        .reduce((sum, h) => sum + (h.valeurUsufruit ?? h.partFinale), 0)
     : 0;
   const reunionTotal = Math.round(reunionTotalBrut);
 

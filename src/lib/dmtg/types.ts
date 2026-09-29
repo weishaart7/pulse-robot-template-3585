@@ -15,6 +15,10 @@ export interface Beneficiary {
   // Nombre de représentants se partageant l'abattement de la personne
   // représentée (même souche). Défaut 1 si non renseigné.
   numberOfRepresentants?: number;
+  // Part de ce représentant dans la souche (0 à 1) : l'abattement du représenté
+  // se divise d'après la dévolution légale (art. 779 I CGI). Défaut : parts
+  // égales entre les numberOfRepresentants.
+  partDansSouche?: number;
   // Adoption simple (art. 786 CGI) : abattement réduit à 1 594€ sauf
   // exception déclarée par le conseiller (adoptionSimpleAbattementPlein).
   isAdoptionSimple?: boolean;
