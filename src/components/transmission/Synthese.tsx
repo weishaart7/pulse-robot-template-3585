@@ -610,7 +610,7 @@ export const Synthese = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={heritiersData}
+                    data={heritiersData.filter(h => h.value > 0)}
                     cx="50%"
                     cy="50%"
                     innerRadius={95}
@@ -620,7 +620,7 @@ export const Synthese = () => {
                     stroke="var(--surface)"
                     strokeWidth={2}
                   >
-                    {heritiersData.map((entry, index) => (
+                    {heritiersData.filter(h => h.value > 0).map((entry, index) => (
                       <Cell
                         key={`cell-${index}`}
                         fill={getColorForLien(entry.lien, index)}
@@ -683,9 +683,13 @@ export const Synthese = () => {
                         </div>
                       </div>
                       <div className="text-right">
+                        {/* Net négatif = soulte de rapport à verser aux cohéritiers (art. 858). */}
                         <div className="kairos-num font-semibold text-[var(--text-primary)]">
-                          {formatCurrency(heritier.value)}
+                          {formatCurrency(heritier.value < 0 ? -heritier.value : heritier.value)}
                         </div>
+                        {heritier.value < 0 && (
+                          <div className="text-xs text-[var(--text-secondary)]">Soulte à verser</div>
+                        )}
                       </div>
                     </div>
                   ))

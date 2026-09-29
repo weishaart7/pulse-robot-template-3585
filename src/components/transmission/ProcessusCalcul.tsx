@@ -438,11 +438,9 @@ export const ProcessusCalcul = () => {
   const heritierDetails = (() => {
     // Identité (nom/lien) par personId — dédupliquée depuis `heirs`, qui peut
     // contenir plusieurs lignes par personne en cas de démembrement
-    // (usufruit + nue-propriété). `partFinale` n'est PAS utilisé ici : c'est
-    // une part de la masse de calcul (patrimoine + donations rapportées,
-    // cf. transmission/index.ts ~L367-403), pas le patrimoine réellement
-    // transmis — l'"héritage brut" ci-dessous vient de dmtg.baseApresFrais,
-    // qui est la même base que celle déjà affichée à l'étape 7 ("sur X €").
+    // (usufruit + nue-propriété). `partFinale` n'est PAS utilisé ici (il inclut
+    // les donations déjà détenues) : l'"héritage brut" ci-dessous est la valeur
+    // civile reçue de la succession (netBreakdown.valeurRecue).
     const identites = new Map<string, { personId: string; nom: string; lien: string }>();
     transmissionResult.heirs.forEach(h => {
       if (!identites.has(h.personId)) {
@@ -470,7 +468,10 @@ export const ProcessusCalcul = () => {
         .reduce((s, r) => s + r.montantReduit, 0);
       const donationsNettes = donationsBrutes - reductionTotal;
 
-      const heritageBrut = dmtgHeir?.baseApresFrais ?? 0;
+      // Valeur civile reçue de la succession (netBreakdown.valeurRecue, phase 3 de
+      // l'audit du 2026-09-29) : valeur pleine des biens, jamais l'assiette fiscale.
+      const netHeir = transmissionResult.netBreakdown.heirs.find(n => n.personId === g.personId);
+      const heritageBrut = netHeir?.valeurRecue ?? dmtgHeir?.baseApresFrais ?? 0;
       const abattement = dmtgHeir?.allowanceGeneralResidual ?? 0;
       const partNetteTaxable = dmtgHeir?.taxableAfterAllowance ?? 0;
       const droitsSuccession = dmtgHeir?.droitsHorsAV ?? 0;

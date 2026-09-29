@@ -134,7 +134,7 @@ describe('computeNetPerHeir — cas limites', () => {
     const result = computeNetPerHeir([], { actifBrut: 500000, passif: 0, fraisNotaireTotal: 3000 });
 
     expect(result.heirs).toEqual([]);
-    expect(result.totals).toEqual({ droitsDMTG: 0, fraisNotaire: 0, droitPartage: 0, netTotal: 0 });
+    expect(result.totals).toEqual({ droitsDMTG: 0, fraisNotaire: 0, droitPartage: 0, capitalAVNet: 0, netTotal: 0 });
   });
 
   it('9. base civile totale nulle (tous les héritiers à 0) → ne divise pas par zéro', () => {

@@ -44,6 +44,14 @@ export interface NetPerHeirInput {
    *  successorale (art. L132-12 C. assur.) : n'entre jamais dans l'assiette du droit
    *  de partage, seulement ajouté au net final. Défaut 0 (héritier sans contrat AV). */
   capitalAVNet?: number;
+  /** Valeur civile réellement reçue des biens de la succession (TransmissionResult.
+   *  heirs[].recuSuccession, ou montant du legs) : valeur pleine des biens, jamais
+   *  l'assiette fiscale (ni −20 % résidence principale, ni forfait mobilier, ni primes
+   *  757 B réintégrées). Base du net et clé de répartition des frais (phase 3 de l'audit
+   *  « résultat notaire » du 2026-09-29). Défaut : baseApresFrais (appelants historiques). */
+  valeurRecue?: number;
+  /** Soulte de rapport (> 0 reçue, < 0 due, cf. lib/transmission/partage.ts). Défaut 0. */
+  soulte?: number;
   /** Légataire d'un bien ou d'une somme déterminés, qui n'hérite pas : jamais en
    *  indivision avec les héritiers, donc exclu du droit de partage (ni compté dans
    *  le nombre de copartageants, ni débiteur d'une quote-part). Défaut false. */
@@ -58,12 +66,16 @@ export interface NetPerHeirResult {
   nom: string;
   lien: string;
   baseApresFrais: number;
+  valeurRecue: number;
+  soulte: number;
   droitsDMTG: number;
   fraisNotaire: number;
   droitPartage: number;
   totalCouts: number;
   /** Capital AV net hors succession déjà additionné à `netARecevoir` (cf. NetPerHeirInput). */
   capitalAVNet: number;
+  /** Peut être négatif : héritier débiteur d'une soulte de rapport supérieure à ce qu'il
+   *  reçoit (montant à verser à ses cohéritiers, jamais écrasé à 0). */
   netARecevoir: number;
   /** Part de ce net dans le total net réparti entre héritiers, en %, arrondie à 1 décimale.
    *  Par construction, la somme des percentage de tous les héritiers vaut 100 (±0.1 d'arrondi). */
@@ -112,7 +124,7 @@ export function computeNetPerHeir(
   params: NetBreakdownParams
 ): NetBreakdownResult {
   if (heirs.length === 0) {
-    return { heirs: [], totals: { droitsDMTG: 0, fraisNotaire: 0, droitPartage: 0, netTotal: 0 } };
+    return { heirs: [], totals: { droitsDMTG: 0, fraisNotaire: 0, droitPartage: 0, capitalAVNet: 0, netTotal: 0 } };
   }
 
   const taux = params.tauxDroitPartage ?? 0.025;
@@ -138,25 +150,33 @@ export function computeNetPerHeir(
       ? Math.round(actifNetPartage * taux)
       : 0;
 
-  const totalBase = heirs.reduce((sum, h) => sum + h.baseApresFrais, 0);
-  const totalBaseCopartageants = copartageants.reduce((sum, h) => sum + h.baseApresFrais, 0);
+  // Clé de répartition des frais et du droit de partage : valeur civile reçue.
+  const valeur = (h: NetPerHeirInput) => h.valeurRecue ?? h.baseApresFrais;
+  const totalBase = heirs.reduce((sum, h) => sum + valeur(h), 0);
+  const totalBaseCopartageants = copartageants.reduce((sum, h) => sum + valeur(h), 0);
 
   const provisional = heirs.map(h => {
-    const quotePart = totalBase > 0 ? h.baseApresFrais / totalBase : 1 / heirs.length;
+    const quotePart = totalBase > 0 ? valeur(h) / totalBase : 1 / heirs.length;
     const fraisNotaire = Math.round(params.fraisNotaireTotal * quotePart);
     const quotePartPartage = h.horsIndivision || totalBaseCopartageants <= 0
       ? 0
-      : h.baseApresFrais / totalBaseCopartageants;
+      : valeur(h) / totalBaseCopartageants;
     const droitPartage = Math.round(droitPartageTotal * quotePartPartage);
     const totalCouts = h.droitsTotaux + fraisNotaire + droitPartage;
     const capitalAVNet = h.capitalAVNet || 0;
-    const netARecevoir = Math.max(0, h.baseApresFrais - totalCouts) + capitalAVNet;
+    const soulte = Math.round(h.soulte || 0);
+    // Les droits dus sur les primes 757 B se paient sur le capital AV : le
+    // plancher s'applique après l'ajout de ce capital. Seule la soulte due peut
+    // ensuite rendre le net négatif (montant à verser aux cohéritiers).
+    const netARecevoir = Math.round(Math.max(0, valeur(h) + capitalAVNet - totalCouts) + soulte);
 
     return {
       personId: h.personId,
       nom: h.nom,
       lien: h.lien,
       baseApresFrais: h.baseApresFrais,
+      valeurRecue: Math.round(valeur(h)),
+      soulte,
       droitsDMTG: h.droitsTotaux,
       fraisNotaire,
       droitPartage,
@@ -167,10 +187,12 @@ export function computeNetPerHeir(
   });
 
   const netTotal = provisional.reduce((sum, h) => sum + h.netARecevoir, 0);
+  // Pourcentages sur les seuls nets positifs (un débiteur de soulte n'a pas de part).
+  const netPositif = provisional.reduce((sum, h) => sum + Math.max(0, h.netARecevoir), 0);
 
   const result: NetPerHeirResult[] = provisional.map(h => ({
     ...h,
-    percentage: netTotal > 0 ? Number(((h.netARecevoir / netTotal) * 100).toFixed(1)) : 0
+    percentage: netPositif > 0 ? Number(((Math.max(0, h.netARecevoir) / netPositif) * 100).toFixed(1)) : 0
   }));
 
   return {

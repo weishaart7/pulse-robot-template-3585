@@ -702,7 +702,7 @@ const Succession2ndDecesContent: React.FC<ContentProps> = ({
                       {reunion ? `+ ${formatCurrency(reunion.montant)}` : '—'}
                     </TableCell>
                     <TableCell className="text-right kairos-num font-semibold">
-                      {formatCurrency(entry.montant)}
+                      {entry.montant < 0 ? `${formatCurrency(-entry.montant)} à verser` : formatCurrency(entry.montant)}
                     </TableCell>
                   </TableRow>
                 );

@@ -9,8 +9,8 @@
  * - l'enfant dont la donation rapportable dépasse sa part doit la différence
  *   à ses cohéritiers (soulte, héritier supposé acceptant) ;
  * - l'indemnité de réduction due par le donataire revient aux réservataires.
- * `netARecevoir` ne comprend pas encore la soulte reçue (phase 3, net sur la
- * valeur civile) : elle est vérifiée via `heirs[].soulte`.
+ * Depuis la phase 3, `netARecevoir` part de la valeur civile reçue et intègre la
+ * soulte signée : un enfant débiteur d'une soulte a un net négatif (à verser).
  */
 import { describe, it, expect } from 'vitest';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams, Liberalite, RawAssetInput } from './index';
@@ -73,7 +73,7 @@ describe('Audit 2026-08 — double masse du conjoint (art. 758-5), correctif "ra
     // 150 000 € au-delà de sa part théorique (900k détenus vs 750k dus), ne reçoit
     // plus rien du résiduel réel.
     expect(enfantNet?.netARecevoir).toBe(0);
-    expect(conjointNet?.netARecevoir).toBe(97755); // ≈ résiduel réel, net des frais de notaire
+    expect(conjointNet?.netARecevoir).toBe(99255); // valeur civile reçue (100 000 €), nette des frais de notaire
     expect((conjointNet?.netARecevoir || 0) + (enfantNet?.netARecevoir || 0)).toBeLessThanOrEqual(100000);
 
     // Résiduel insuffisant pour couvrir le cashDu théorique du conjoint (250 000 €) :
@@ -121,13 +121,13 @@ describe('Audit 2026-08 — double masse du conjoint (art. 758-5), correctif "ra
     // 375 000 € → Σ = 625 000 € > résiduel réel (100 000 €). Répartition proportionnelle :
     // conjoint 250/625 × 100 000 = 40 000 € ; enfantNonCommun 375/625 × 100 000 = 60 000 €
     // (avant frais/droits — cf. valeurs nettes ci-dessous).
-    expect(enfantCommunNet?.netARecevoir).toBe(0);
+    expect(enfantCommunNet?.netARecevoir).toBe(-166667);
     // QD épuisée par la donation (réduite) : le conjoint ne reçoit rien (art. 758-5 al. 2).
     // Masse égalitaire 1 000 000 € → 500 000 € par enfant : l'enfant commun (666 667 €
     // maintenus) doit 166 667 € ; l'enfant non commun reçoit 333 333 € (biens +
     // indemnité de réduction) + 166 667 € de soulte.
     expect(conjointNet?.netARecevoir).toBe(0);
-    expect(enfantNonCommunNet?.netARecevoir).toBe(283194);
+    expect(enfantNonCommunNet?.netARecevoir).toBe(451361);
     expect(soulte(result, 'enfantCommun')).toBe(-166667);
     expect(soulte(result, 'enfantNonCommun')).toBe(166667);
 
@@ -177,17 +177,17 @@ describe('Audit 2026-08 — double masse du conjoint (art. 758-5), correctif "ra
     // Σ = 742 500 € > résiduel réel (500 000 €) : répartition proportionnelle,
     // les 3 héritiers sous-dotés reçoivent la même proportion (parts théoriques
     // identiques ici).
-    expect(e1Net?.netARecevoir).toBe(0);
+    expect(e1Net?.netARecevoir).toBe(-161667);
     // QD restante 5 000 € (247 500 € − 242 500 € imputés) : plafond des droits du conjoint.
-    expect(conjointNet?.netARecevoir).toBe(4957);
+    expect(conjointNet?.netARecevoir).toBe(4972);
     // e2/e3 : 152 143€ (au lieu de 153 809€) depuis l'ajout du forfait
     // mobilier 5% (art. 764 CGI) : conjoint exonéré donc net inchangé, e2/e3
     // paient plus de droits sur leur quote-part du forfait, donc reçoivent
     // 1 666€ de moins chacun.
     // Masse égalitaire 495 000 + 490 000 = 985 000 € → 328 333 € par enfant :
     // e1 doit 161 667 €, partagés entre e2 et e3 (80 833 € chacun).
-    expect(e2Net?.netARecevoir).toBe(215355);
-    expect(e3Net?.netARecevoir).toBe(215355);
+    expect(e2Net?.netARecevoir).toBe(296931);
+    expect(e3Net?.netARecevoir).toBe(296931);
     expect(soulte(result, 'e1')).toBe(-161667);
     expect(soulte(result, 'e2')).toBe(80833);
 
@@ -230,9 +230,9 @@ describe('Audit 2026-08 — double masse du conjoint (art. 758-5), correctif "ra
     const e1Net = result.netBreakdown.heirs.find(h => h.personId === 'e1');
     const e2Net = result.netBreakdown.heirs.find(h => h.personId === 'e2');
 
-    expect(e1Net?.netARecevoir).toBe(0);
+    expect(e1Net?.netARecevoir).toBe(-166667);
     expect(conjointNet?.netARecevoir).toBe(0);
-    expect(e2Net?.netARecevoir).toBe(283449); // 50 000 € + indemnité de réduction 283 333 €, nets
+    expect(e2Net?.netARecevoir).toBe(451616); // 50 000 € + indemnité de réduction 283 333 €, nets
     expect(soulte(result, 'e2')).toBe(166667);
 
     expect(result.explicationsTexte?.some(t => DROITS_CONJOINT_PLAFONNES.test(t))).toBe(true);
@@ -279,10 +279,10 @@ describe('Audit 2026-08 — double masse du conjoint (art. 758-5), correctif "ra
     // code actuel dès que Σ cashDu > résiduel réel, qu'un ou plusieurs héritiers
     // soient concernés (comportement volontairement simple, pas une distinction
     // testée séparément par le design).
-    expect(e1Net?.netARecevoir).toBe(0);
+    expect(e1Net?.netARecevoir).toBe(-166667);
     // e2 : réserve de 333 333 € couverte par les biens (10 000 €) et l'indemnité de
     // réduction (323 333 €), + soulte de rapport de 166 667 € due par e1.
-    expect(e2Net?.netARecevoir).toBe(283715);
+    expect(e2Net?.netARecevoir).toBe(451882);
     expect(soulte(result, 'e2')).toBe(166667);
   });
 });

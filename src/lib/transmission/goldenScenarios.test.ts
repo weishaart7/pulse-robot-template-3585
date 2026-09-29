@@ -417,11 +417,14 @@ describe('Golden Scenarios — Transmission (docs/Golden_Scenarios_Transmission.
       expect(Math.abs(result.fraisNotaire - 5289)).toBeLessThanOrEqual(TOLERANCE);
     });
 
-    it('netARecevoir ≈246 605€ (conjoint) / ≈216 061€ (enfant, en baisse de 2 500€ du fait des droits supplémentaires liés au forfait mobilier)', () => {
+    // Depuis la phase 3 de l'audit « résultat notaire » (2026-09-29), le net part de
+    // la valeur civile reçue : le forfait fiscal de frais funéraires (art. 775 CGI)
+    // réduit l'assiette des droits mais n'est plus retranché du net (+750€ chacun).
+    it('netARecevoir ≈247 355€ (conjoint) / ≈216 811€ (enfant), sur la valeur civile reçue', () => {
       const conjointNet = result.netBreakdown.heirs.find(h => h.personId === 'conjoint')!;
       const enfantNet = result.netBreakdown.heirs.find(h => h.personId === 'enfant1')!;
-      expect(Math.abs(conjointNet.netARecevoir - 246605)).toBeLessThanOrEqual(TOLERANCE);
-      expect(Math.abs(enfantNet.netARecevoir - 216061)).toBeLessThanOrEqual(TOLERANCE);
+      expect(Math.abs(conjointNet.netARecevoir - 247355)).toBeLessThanOrEqual(TOLERANCE);
+      expect(Math.abs(enfantNet.netARecevoir - 216811)).toBeLessThanOrEqual(TOLERANCE);
     });
   });
 
@@ -472,9 +475,11 @@ describe('Golden Scenarios — Transmission (docs/Golden_Scenarios_Transmission.
       expect(Math.abs(result.fraisNotaire - 4278)).toBeLessThanOrEqual(TOLERANCE);
     });
 
-    it('netARecevoir ≈112 560€ chacun (en baisse de ≈4 500€ du fait des droits supplémentaires liés au forfait mobilier)', () => {
+    // Net sur la valeur civile reçue (phase 3, 2026-09-29) : le forfait fiscal de
+    // frais funéraires n'est plus retranché du net (+750€ chacun).
+    it('netARecevoir ≈113 310€ chacun, sur la valeur civile reçue', () => {
       result.netBreakdown.heirs.forEach(h => {
-        expect(Math.abs(h.netARecevoir - 112560)).toBeLessThanOrEqual(TOLERANCE);
+        expect(Math.abs(h.netARecevoir - 113310)).toBeLessThanOrEqual(TOLERANCE);
       });
     });
 

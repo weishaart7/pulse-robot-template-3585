@@ -162,8 +162,8 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
     (`computeRapport`).
   - Le DUH s'impute sur ce que le conjoint reçoit de la succession, la part imputée revenant aux
     autres héritiers au prorata de leur réception.
-  - `netARecevoir` n'inclut pas encore la soulte reçue ou due (net refait sur la valeur civile en
-    phase 3) ; `ProcessusCalcul.tsx` l'affiche à l'étape 6 et dans la fiche de chaque héritier.
+  - La soulte est intégrée au net à recevoir (phase 3, ci-dessous) ; `ProcessusCalcul.tsx`
+    l'affiche aussi à l'étape 6 et dans la fiche de chaque héritier.
   Tests : `lib/transmission/partage.test.ts` (scénarios de l'audit),
   `doubleMasseConjoint.audit-2026-08.test.ts` (réécrit sur ces règles).
 - **Abattement de 20 % sur la résidence principale conditionné (art. 764 bis CGI, phase 2 de
@@ -178,6 +178,19 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   l'était jamais : l'abattement n'était appliqué à personne). `dmtg/recall.ts` : 159 325 € ouverts
   à tous, tiers compris, cumulés avec les abattements de parenté, en remplacement des 1 594 € de
   l'art. 788 IV. Tests : `lib/transmission/phase2NotaireAudit.test.ts`.
+- **Net à recevoir sur la valeur civile reçue (`netBreakdown.ts`, phase 3 de l'audit du
+  2026-09-29).** `netARecevoir = max(0, valeurRecue + capitalAVNet − droits hors 990 I − frais de
+  notaire − droit de partage) + soulte`. `valeurRecue` = ce que l'héritier reçoit des biens de la
+  succession (`recuSuccession` après DUH, cumulé par personne ; montant du legs pour un légataire) :
+  valeur pleine, jamais l'assiette fiscale — ni −20 % résidence principale, ni forfait mobilier, ni
+  primes 757 B réintégrées, ni forfait de frais funéraires (déduction fiscale seulement). Le capital
+  AV n'est donc compté qu'une fois, et les droits 757 B se paient dessus (plancher appliqué après
+  lui). Seule une soulte due rend le net négatif : affiché « soulte à verser » dans `Synthese.tsx`
+  (exclu du graphique et des pourcentages) et `Succession2ndDeces.tsx`. Frais de notaire et droit de
+  partage répartis au prorata de `valeurRecue`. `netBreakdown` reçoit une entrée par personne (et
+  non plus par ligne de quote-part). `transmissionNette` ajoute les indemnités de réduction.
+  « Héritage brut » de `ProcessusCalcul.tsx` = `valeurRecue`. Tests :
+  `lib/transmission/phase3NotaireAudit.test.ts`.
 - **Fente successorale : branche familiale saisissable pour les 4 rangs** (commit `de8a722`, finding
   F18) — corrige un défaut de saisie qui pouvait conduire à une **déshérence à tort** (le message
   « l'État français hérite » s'affichait alors que des grands-parents vivants existaient, faute de
@@ -465,12 +478,8 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
 **Audit « résultat notaire » du 2026-09-29** — points reproduits sur un scénario chiffré. Les
 écarts civils (répartition, droits du conjoint, réserve, rapport, réduction) sont corrigés par la
 phase 1 (cf. §2, « Partage entre héritiers »), l'abattement résidence principale et l'abattement
-handicap par la phase 2 (cf. §2) ; restent ouverts, pour les phases 3 et 4 :
+handicap par la phase 2, le net à recevoir par la phase 3 (cf. §2) ; reste ouvert, pour la phase 4 :
 
-- **Net à recevoir calculé sur l'assiette fiscale, pas sur la valeur reçue.** `netBreakdown` part de
-  `baseApresFrais` (après −20 % RP, et 757 B inclus) : avec une RP de 500 k€, chaque enfant « reçoit »
-  176 k€ pour 250 k€ hérités. Assurance-vie 757 B : les primes réintégrées sont comptées à la fois
-  dans `baseApresFrais` et dans `capitalAVNet` (contrat de 200 k€ → 357 k€ nets affichés).
 - **Non modélisés, mais appliqués par le notaire** : réduction de droits pour charges de famille
   (art. 780 CGI), exonération partielle Dutreil (art. 787 B), dévolution entre demi-frères et
   demi-sœurs par branches (art. 752 C. civ.), rappel des donations reçues par le représenté (art. 784).

@@ -980,7 +980,10 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   const patrimoineNet = patrimony.biensExistants - patrimony.passifs;
   const capitalAVNetTotal = Object.values(dmtgResult.perBeneficiary)
     .reduce((sum, b) => sum + (b.capitalAVNet || 0), 0);
-  const transmissionNette = patrimoineNet + capitalAVNetTotal - dmtgResult.totals.droitsTotaux - fraisNotaireTotal;
+  // + indemnités de réduction versées par les donataires réduits, qui entrent
+  // dans ce que reçoivent les héritiers (phase 3, R10).
+  const transmissionNette = patrimoineNet + partage.totalIndemnitesReduction + capitalAVNetTotal
+    - dmtgResult.totals.droitsTotaux - fraisNotaireTotal;
 
   // 11. Répartition nette par héritier (droits DMTG + frais de notaire +
   // droit de partage, prorata part civile) : source unique de vérité pour
@@ -995,16 +998,34 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     };
   });
 
+  // Une entrée par personne (un conjoint peut porter une ligne PP et une ligne
+  // usufruit) : valeur civile reçue (cashReparti, après DUH) et soulte cumulées.
+  const heirsNet = Array.from(heirs.reduce((m, h, i) => {
+    const e = m.get(h.personId);
+    if (e) {
+      e.valeurRecue += cashReparti[i];
+      e.soulte += h.soulte || 0;
+      if (e.typeQuotePart !== h.typeQuotePart) e.typeQuotePart = 'usufruit';
+    } else {
+      m.set(h.personId, { h, valeurRecue: cashReparti[i], soulte: h.soulte || 0, typeQuotePart: h.typeQuotePart });
+    }
+    return m;
+  }, new Map<PersonId, { h: typeof heirs[number]; valeurRecue: number; soulte: number; typeQuotePart?: typeof heirs[number]['typeQuotePart'] }>()).values());
+
   const netBreakdown = computeNetPerHeir(
-    [...heirs.map(h => ({
+    [...heirsNet.map(({ h, valeurRecue, soulte, typeQuotePart }) => ({
       personId: h.personId,
       nom: h.nom,
       lien: h.lien,
       baseApresFrais: dmtgResult.perBeneficiary[h.personId]?.baseApresFrais || 0,
+      valeurRecue,
+      soulte,
       // droitsHorsAV (PAS droitsTotaux) : le 990I porte sur le capital AV,
       // déjà déduit une fois dans capitalAVNet ci-dessous — cf. netBreakdown.ts.
+      // Les droits dus sur les primes 757 B y figurent, le capital restant
+      // entier dans capitalAVNet et absent de valeurRecue (pas de double compte).
       droitsTotaux: dmtgResult.perBeneficiary[h.personId]?.droitsHorsAV || 0,
-      typeQuotePart: h.typeQuotePart,
+      typeQuotePart,
       capitalAVNet: dmtgResult.perBeneficiary[h.personId]?.capitalAVNet || 0
     })),
     ...legatairesResult.map(l => ({
@@ -1012,6 +1033,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       nom: l.nom,
       lien: l.lien,
       baseApresFrais: dmtgResult.perBeneficiary[l.personId]?.baseApresFrais || 0,
+      valeurRecue: l.montant,
       droitsTotaux: dmtgResult.perBeneficiary[l.personId]?.droitsHorsAV || 0,
       typeQuotePart: 'pleine_propriete' as const,
       capitalAVNet: dmtgResult.perBeneficiary[l.personId]?.capitalAVNet || 0,
