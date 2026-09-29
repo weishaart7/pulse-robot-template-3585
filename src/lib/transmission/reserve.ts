@@ -137,6 +137,11 @@ export function imputeLiberalites(
 
   let qdRestante = reserveResult.quotiteDisponible;
   let reserveEnfantsRestante = reserveResult.reserveEnfants;
+  // Réserve individuelle restante de chaque enfant (art. 919-1) : décomptée
+  // au fil des libéralités en avance de part qu'il reçoit, pour que deux
+  // donations au même enfant ne s'imputent pas chacune en entier sur sa part.
+  const reservePersonnelleInitiale = childrenIds.length > 0 ? reserveResult.reserveEnfants / childrenIds.length : 0;
+  const reserveRestanteParEnfant = new Map<string, number>(childrenIds.map(id => [id, reservePersonnelleInitiale]));
 
   // 1. Imputer d'abord les donations (ordre chronologique)
   for (const donation of donations) {
@@ -169,8 +174,10 @@ export function imputeLiberalites(
       // directement sur la QD, jamais sur la réserve personnelle du bénéficiaire.
       const forfait = getMontantRapportForfaitaire(donation);
       const valeurImputable = forfait ?? donation.valeur;
-      const reservePersonnelle = reserveResult.reserveEnfants / childrenIds.length;
+      const enfantReserveId = (imputeSurReserveDuParent ? donation.generationIntermediaireId : donation.beneficiaireId) as string;
+      const reservePersonnelle = reserveRestanteParEnfant.get(enfantReserveId) ?? 0;
       imputeSurReserve = Math.min(valeurImputable, reservePersonnelle);
+      reserveRestanteParEnfant.set(enfantReserveId, reservePersonnelle - imputeSurReserve);
       reserveEnfantsRestante -= imputeSurReserve;
 
       const excedentForfait = valeurImputable - imputeSurReserve;
@@ -220,8 +227,10 @@ export function imputeLiberalites(
 
     if (childrenIds.includes(legItem.beneficiaireId as string) &&
         legItem.typeImputation === "avance_part") {
-      const reservePersonnelle = reserveResult.reserveEnfants / childrenIds.length;
+      const legataireId = legItem.beneficiaireId as string;
+      const reservePersonnelle = reserveRestanteParEnfant.get(legataireId) ?? 0;
       const imputeSurReserve = Math.min(legItem.valeur, reservePersonnelle);
+      reserveRestanteParEnfant.set(legataireId, reservePersonnelle - imputeSurReserve);
       reserveEnfantsRestante -= imputeSurReserve;
 
       const excedent = legItem.valeur - imputeSurReserve;
@@ -449,8 +458,14 @@ export function computeRapport(
     }
   }
   
-  // Ajouter les indemnités de réduction
-  massePartageable += reductions.totalReduit;
+  // Indemnités de réduction : seules celles dues par un DONATAIRE (bien sorti
+  // du patrimoine) s'ajoutent à la masse. La réduction d'un legs est déjà
+  // restée dans le pot (seul le montant maintenu en a été retiré ci-dessus) :
+  // l'ajouter à nouveau la compterait deux fois.
+  const indemnitesDonations = reductions.reductions
+    .filter(r => liberalites.find(l => l.id === r.liberaliteId)?.type === 'donation')
+    .reduce((sum, r) => sum + r.montantReduit, 0);
+  massePartageable += indemnitesDonations;
   
   return { massePartageable, rapports };
 }

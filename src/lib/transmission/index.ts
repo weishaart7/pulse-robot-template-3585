@@ -18,6 +18,7 @@ import {
 } from './reserve';
 import { computeNotaryFees, computeDebours } from './fiscal';
 import { computeNetPerHeir } from './netBreakdown';
+import { computePartage } from './partage';
 import { getPartSuccessorale } from '../patrimoine/succession';
 import { getFractionDemembrement, DemembrementFractionContext } from '../patrimoine/demembrementFraction';
 import { AssetDemembrement } from '../../services/assetDemembrementService';
@@ -356,162 +357,14 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     successionLegaleResult.souchesEnfantsRootIds
   );
 
-  // 6. Calcul des parts civiles finales (valeur économique réelle : le
-  // démembrement usufruit/nue-propriété est appliqué ici, pas dans
-  // successionLegale.ts qui ne fait que qualifier le type de droit).
-  const personIdsDejaImputes = new Set<PersonId>();
-  // dejaDetenus[i] (aligné avec heirs[i]) = donations RAPPORTABLES déjà
-  // détenues par cet héritier (= le rapportTotal soustrait ci-dessous, avant
-  // réintégration des libéralités maintenues) — nécessaire en aval (§6bis)
-  // pour distinguer, dans partFinale, ce qui est déjà en possession de
-  // l'héritier de ce qui reste réellement à recevoir en cash de la
-  // succession. Comme rapportTotal/liberalitesMaintenues, n'est renseigné
-  // qu'une seule fois par personId (première ligne rencontrée), 0 sinon.
-  const dejaDetenus: number[] = [];
-  const heirs = heirsShares.map(heir => {
-    // Usufruit et nue-propriété portent chacun quotePart = 1.0 sur la MÊME
-    // assiette : sans ce facteur, la somme des partFinale double la masse
-    // partageable pour tout héritier démembré. Barème art. 669 CGI, fonction
-    // de l'âge du conjoint (seul usufruitier possible dans ce module) à la
-    // date de référence.
-    let demembrementPct = 1;
-    if (heir.typeQuotePart === 'usufruit' || heir.typeQuotePart === 'nue_propriete') {
-      const ageConjoint = getConjointAge(family, referenceDate);
-      demembrementPct = getDemembrementPct(ageConjoint, heir.typeQuotePart);
-    }
-
-    // Part civile ajustée selon les réductions et rapports
-    let partFinale = heir.quotePart * rapportResult.massePartageable * demembrementPct;
-
-    // Un même héritier peut désormais porter plusieurs parts (ex: conjoint 1/4 PP + usufruit 3/4).
-    // Rapport et libéralités ne doivent être imputés qu'une seule fois par personne, pas par ligne.
-    const dejaImpute = personIdsDejaImputes.has(heir.personId);
-    personIdsDejaImputes.add(heir.personId);
-
-    let dejaDetenu = 0;
-    if (!dejaImpute) {
-      // Somme de tous les rapports de cet héritier (pas juste le premier
-      // trouvé) : un même enfant peut cumuler une donation en avance de
-      // part ET un legs sur part successorale, les deux doivent se déduire.
-      const rapportTotal = rapportResult.rapports
-        .filter(r => r.personId === heir.personId)
-        .reduce((sum, r) => sum + r.montantRapport, 0);
-      partFinale -= rapportTotal;
-      dejaDetenu = rapportTotal;
-
-      // Ajouter les libéralités maintenues. Une donation-partage
-      // transgénérationnelle (art. 1078-8) a pour beneficiaireId un
-      // petit-enfant (jamais un heir.personId ici) : sa valeur doit être
-      // créditée au PARENT désigné par generationIntermediaireId, dont la
-      // réserve a été consommée par cette donation (cf. reserve.ts::
-      // imputeLiberalites) — sinon la souche du parent reçoit sa part de
-      // succession pleine en plus de ce que le petit-enfant détient déjà,
-      // sur-créditant le total de la branche du montant de la donation.
-      const liberalitesMaintenues = liberalites
-        .filter(lib =>
-          lib.beneficiaireId === heir.personId ||
-          (lib.typeImputation === "partage" && lib.generationIntermediaireId === heir.personId)
-        )
-        .reduce((sum, lib) => {
-          const reduction = reductionResult.reductions.find(r => r.liberaliteId === lib.id);
-          return sum + (lib.valeur - (reduction?.montantReduit || 0));
-        }, 0);
-
-      partFinale += liberalitesMaintenues;
-    }
-    dejaDetenus.push(dejaDetenu);
-
-    return {
-      personId: heir.personId,
-      nom: `${heir.prenom} ${heir.nom}`.trim(),
-      lien: heir.lien,
-      partCivile: heir.quotePart * masseCalcul,
-      partFinale: Math.max(0, partFinale),
-      typeQuotePart: heir.typeQuotePart,
-      representation: heir.representation,
-      representationRootId: heir.representationRootId,
-      representationCount: heir.representationCount
-    };
-  });
-
-  // 5.9bis. Droit d'usage et d'habitation (DUH, C. civ. art. 764-766,
-  // référentiel §5.9) — optionnel (1 an pour se manifester, jamais tacite,
-  // d'où `duhOpte` explicite plutôt qu'un calcul automatique par défaut),
-  // distinct du droit de jouissance temporaire ci-dessous (§6ter, effet
-  // direct du mariage, purement informatif). Traité comme une libéralité déjà
-  // reçue par le conjoint (même logique que dejaDetenus ci-dessus, §6bis) :
-  // réduit le cash réellement dû, sans jamais toucher `partFinale` (part
-  // théorique). Assiette : logement de nature exacte 'Résidence principale'
-  // (même libellé que l'abattement DMTG -20%, ligne ~660 ci-dessous — même
-  // simplification déjà actée : pas de vérification d'occupation effective ni
-  // des exclusions légales SCI/logement loué/usufruit seul du défunt,
-  // signalées comme caveat dans le texte plutôt que qualifiées ici), pondéré
-  // par la même fraction successorale que cette assiette. Valeur = 60% de la
-  // valeur d'usufruit (barème art. 669 CGI, `getDemembrementPct` — même
-  // fonction que le démembrement conjoint ci-dessus), âge du conjoint pris UN
-  // AN APRÈS le décès (art. 764), pas son âge au décès : seule variable
-  // propre au DUH, d'où un referenceDate décalé passé à `getConjointAge`.
-  //
-  // Nuance découverte en testant ce bloc (docs/recapitulatif-2026-07-29.md) :
-  // contrairement à une donation rapportable réelle (déjà sortie du
-  // patrimoine, donc `patrimony.biensExistants` déjà réduit d'autant), le
-  // logement reste ici dans le pot à partager — le crédit sur `dejaDetenus`
-  // fait donc mécaniquement chuter `sumCashDu` sous `residuelReel` dès que le
-  // DUH s'applique, ce qui active la branche « surplus » du §6bis
-  // (répartition proportionnelle aux quoteParts d'origine, cf. commentaire
-  // plus bas) : une fraction du DUH revient de fait au conjoint par ce canal
-  // distinct, au lieu d'un transfert net intégral vers les autres héritiers.
-  // Comportement hérité du moteur §6bis existant (déjà documenté comme
-  // approximatif pour ce sous-cas), pas une erreur propre au DUH — non
-  // corrigé ici, hors périmètre de ce correctif ponctuel.
-  if (duhOpte && family.hasSurvivingSpouse && rawAssets) {
-    const valeurLogementDUH = rawAssets
-      .filter(asset => asset.nature === 'Résidence principale')
-      .reduce((sum, asset) => sum + getValeurEstimeePonderee(asset) * getFractionSuccessorale(asset), 0);
-
-    if (valeurLogementDUH > 0) {
-      const referenceDateUnAnApres = new Date(referenceDate);
-      referenceDateUnAnApres.setFullYear(referenceDateUnAnApres.getFullYear() + 1);
-      const ageConjointDansUnAn = getConjointAge(family, referenceDateUnAnApres.toISOString().slice(0, 10));
-      const pctUsufruitDUH = getDemembrementPct(ageConjointDansUnAn, 'usufruit');
-      const valeurDUH = valeurLogementDUH * pctUsufruitDUH * 0.60;
-
-      const indexConjointHeir = heirs.findIndex(h => h.personId === family.survivingSpouseId);
-      if (indexConjointHeir !== -1) {
-        dejaDetenus[indexConjointHeir] += valeurDUH;
-      }
-
-      successionLegaleResult.explicationsTexte.push(
-        `Le conjoint survivant a opté pour le droit d'usage et d'habitation sur le logement qui ` +
-        `constituait la résidence principale effective du défunt (C. civ. art. 764-766) — option ` +
-        `exercée dans le délai d'un an, non tacite. Valeur retenue : 60% de la valeur d'usufruit du ` +
-        `logement selon le barème art. 669 CGI, calculée à l'âge du conjoint un an après le décès ` +
-        `(${ageConjointDansUnAn} ans), soit ${Math.round(valeurDUH).toLocaleString('fr-FR')} € ` +
-        `(${Math.round(valeurLogementDUH).toLocaleString('fr-FR')} € × ${Math.round(pctUsufruitDUH * 100)}% × 60%). ` +
-        `Cette valeur s'impute sur la part successorale du conjoint (elle ne s'y ajoute pas) : si elle ` +
-        `dépasse la part qui lui revient, aucune soulte n'est due aux autres héritiers. Sont exclus de ` +
-        `l'assiette : logement détenu via une SCI (sauf bail), logement loué, logement dont le défunt ` +
-        `n'avait que l'usufruit après cession de la nue-propriété — à vérifier au cas par cas par le ` +
-        `notaire, non qualifié automatiquement ici.`
-      );
-    }
-  }
-
-  // 6bis. Répartition du CASH RÉEL par « rapport en moins prenant » (art. 858
-  // C. civ., Annexe 1 Étape 7.2-7.3) — corrige l'absence de masse d'exercice
-  // distincte pour le conjoint (art. 758-5). `partFinale` reste la part
-  // théorique TOTALE en valeur (donation antérieure comprise) : on n'y touche
-  // pas. La fraction utilisée en aval pour répartir le cash réellement
-  // disponible (civilShares → assiette fiscale DMTG ET netBreakdown, un seul
-  // point de correction pour les deux, cf. docs/audit-transmission-clamp-
-  // double-masse-2026-08.md Étape 0) doit en revanche exclure ce qu'un
-  // héritier détient déjà via une donation rapportable maintenue (dejaDetenu),
-  // sous peine de continuer à faire percevoir au donataire déjà sur-doté une
-  // part du résiduel réel qui devrait revenir aux héritiers sous-dotés (dont
-  // le conjoint en priorité). Cf. docs/design-rapport-moins-prenant-2026-08.md
-  // pour la démonstration et la vérification contre 5 scénarios.
-  const residuelReel = Math.max(0, patrimony.biensExistants - patrimony.passifs);
-
+  // 6. Partage entre héritiers (lib/transmission/partage.ts — audit « résultat
+  // notaire » du 2026-09-29, règles R1-R5 documentées dans docs/transmission.md) :
+  // ce que chacun détient déjà (donations), reçoit des biens de la succession
+  // (clé de l'assiette DMTG), reçoit ou doit en soulte de rapport, et reçoit
+  // au titre d'une indemnité de réduction. Le démembrement usufruit /
+  // nue-propriété est valorisé au barème 669 CGI (âge du conjoint au décès).
+  const actifNet = Math.max(0, patrimony.biensExistants - patrimony.passifs);
+  const residuelReel = actifNet;
   // 6bis-0. Legs maintenus à des légataires qui n'héritent pas (tiers, famille
   // hors dévolution légale, partenaire de PACS) : déjà retirés de
   // massePartageable par computeRapport, ils doivent aussi sortir du résiduel
@@ -521,7 +374,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // legs sans bénéficiaire identifié ('tiers') reste une ligne distincte par
   // legs (personnes a priori différentes). Si les legs excèdent le résiduel
   // (passif important), ils sont ramenés au prorata du disponible.
-  const heirIds = new Set(heirs.map(h => h.personId));
+  const heirIds = new Set(heirsShares.map(h => h.personId));
   const legsNonHeritiersBruts = liberalites
     .filter(lib => lib.type === 'legs' && !heirIds.has(lib.beneficiaireId))
     .map(lib => {
@@ -545,45 +398,116 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   });
   const legsNonHeritiers = Array.from(legsParLegataire.values());
   const totalLegsNonHeritiers = legsNonHeritiers.reduce((sum, l) => sum + l.montant, 0);
-  // Résiduel réellement disponible pour les héritiers.
-  const residuelHeritiers = Math.max(0, residuelReel - totalLegsNonHeritiers);
 
-  const cashDus = heirs.map((h, i) => Math.max(0, h.partFinale - dejaDetenus[i]));
-  const sumCashDu = cashDus.reduce((sum, c) => sum + c, 0);
+  const hasDemembrement = heirsShares.some(h => h.typeQuotePart === 'usufruit' || h.typeQuotePart === 'nue_propriete');
+  const ageConjointDemembrement = hasDemembrement ? getConjointAge(family, referenceDate) : 0;
+  const partage = computePartage({
+    lines: heirsShares.map(h => ({ personId: h.personId, quotePart: h.quotePart, typeQuotePart: h.typeQuotePart })),
+    biensExistants: patrimony.biensExistants,
+    passifs: patrimony.passifs,
+    liberalites,
+    reductions: reductionResult,
+    rapports: rapportResult.rapports,
+    childrenIds: successionLegaleResult.souchesEnfantsRootIds,
+    spouseId: family.hasSurvivingSpouse ? family.survivingSpouseId : undefined,
+    qdRestante: Math.max(0, reserveResult.quotiteDisponible - Math.min(imputationResult.besoinTotalSurQD, reserveResult.quotiteDisponible)),
+    totalLegsNonHeritiers,
+    pctUsufruit: hasDemembrement ? getDemembrementPct(ageConjointDemembrement, 'usufruit') : 0,
+    pctNuePropriete: hasDemembrement ? getDemembrementPct(ageConjointDemembrement, 'nue_propriete') : 1,
+  });
 
-  let cashReparti: number[];
-  if (sumCashDu <= residuelHeritiers) {
-    cashReparti = cashDus.slice();
-    const surplus = residuelHeritiers - sumCashDu;
-    if (surplus > 0) {
-      // Résiduel réel strictement supérieur à la somme des cashDu théoriques :
-      // sous-cas non rencontré dans les 5 scénarios de docs/design-rapport-
-      // moins-prenant-2026-08.md (§1.1 — ne peut structurellement survenir
-      // qu'en l'absence de donation rapportable significative, cas où
-      // sumCashDu == résiduelReel par construction). Réparti au prorata des
-      // quoteParts d'origine (avant rapport/démembrement), faute de scénario
-      // testé validant une autre clé pour ce sous-cas précis.
-      const sumQuotePart = heirsShares.reduce((sum, h) => sum + h.quotePart, 0);
-      cashReparti = cashReparti.map((c, i) =>
-        c + (sumQuotePart > 0 ? surplus * (heirsShares[i].quotePart / sumQuotePart) : 0)
+  const heirs = heirsShares.map((heir, i) => {
+    const p = partage.heirs[i];
+    return {
+      personId: heir.personId,
+      nom: `${heir.prenom} ${heir.nom}`.trim(),
+      lien: heir.lien,
+      partCivile: heir.quotePart * masseCalcul,
+      partFinale: Math.max(0, p.partFinale),
+      typeQuotePart: heir.typeQuotePart,
+      representation: heir.representation,
+      representationRootId: heir.representationRootId,
+      representationCount: heir.representationCount,
+      dejaDetenu: p.dejaDetenu,
+      recuSuccession: p.recuSuccession,
+      soulte: p.soulte,
+      indemniteReduction: p.indemniteReduction
+    };
+  });
+  const cashReparti = heirs.map(h => h.recuSuccession);
+
+  if (partage.droitsConjointPlafonnes) {
+    successionLegaleResult.explicationsTexte.push(
+      `Les droits du conjoint en pleine propriété sont limités aux biens restant disponibles : ` +
+      `ils ne s'exercent que sur les biens non légués et sans entamer la réserve des enfants ` +
+      `(C. civ. art. 758-5 al. 2), après imputation des libéralités qu'il a déjà reçues (art. 758-6).`
+    );
+  }
+  heirs.forEach((h, i) => {
+    if (h.soulte < 0 && partage.heirs.findIndex((_, k) => heirs[k].personId === h.personId) === i) {
+      successionLegaleResult.explicationsTexte.push(
+        `${h.nom} a reçu des donations rapportables supérieures à sa part : il doit une soulte de ` +
+        `${Math.round(-h.soulte).toLocaleString('fr-FR')} € à ses cohéritiers (rapport en valeur, C. civ. ` +
+        `art. 858 et 860), en supposant qu'il accepte la succession.`
       );
     }
-  } else {
-    // Résiduel réel insuffisant pour couvrir tous les cashDu simultanément
-    // (conjoint exhérédé de fait, art. 758-5, éventuellement en concurrence
-    // avec un autre héritier sous-doté) : répartition proportionnelle aux
-    // cashDu respectifs — arbitrage rendu le 2026-08 (docs/design-rapport-
-    // moins-prenant-2026-08.md §1.2), faute de clé de répartition explicite
-    // dans le référentiel entre plusieurs héritiers simultanément sous-dotés.
-    // Approximation à confirmer par le notaire, pas un partage légalement figé.
-    cashReparti = cashDus.map(c => sumCashDu > 0 ? residuelHeritiers * (c / sumCashDu) : 0);
+  });
+  if (partage.totalIndemnitesReduction > 0) {
     successionLegaleResult.explicationsTexte.push(
-      `Le résiduel réellement disponible (${Math.round(residuelHeritiers).toLocaleString('fr-FR')} €) ` +
-      `est insuffisant pour couvrir les parts dues aux héritiers non intégralement couvertes ` +
-      `par leurs libéralités déjà perçues (${Math.round(sumCashDu).toLocaleString('fr-FR')} € au total, art. 758-5, 858 C. civ.). ` +
-      `La répartition affichée est une approximation proportionnelle aux montants dus par chacun, ` +
-      `pas un partage légalement figé — à confirmer par le notaire.`
+      `Une ou plusieurs donations excèdent la quotité disponible : le donataire doit une indemnité de ` +
+      `réduction de ${Math.round(partage.totalIndemnitesReduction).toLocaleString('fr-FR')} € aux ` +
+      `héritiers réservataires (C. civ. art. 924), intégrée à leur part.`
     );
+  }
+
+  // 5.9bis. Droit d'usage et d'habitation (DUH, C. civ. art. 764-766,
+  // référentiel §5.9) — optionnel (1 an pour se manifester, jamais tacite,
+  // d'où `duhOpte` explicite). Sa valeur s'impute sur ce que le conjoint
+  // reçoit des biens de la succession (art. 765) ; si elle dépasse ses droits,
+  // aucune soulte n'est due. La part ainsi imputée revient aux autres
+  // héritiers, au prorata de ce qu'ils reçoivent déjà de la succession.
+  // Assiette : logement de nature exacte 'Résidence principale', sans
+  // vérification d'occupation ni des exclusions légales (SCI, logement loué,
+  // usufruit seul du défunt), signalées dans le texte. Valeur = 60 % de
+  // l'usufruit (barème 669 CGI) à l'âge du conjoint un an après le décès.
+  if (duhOpte && family.hasSurvivingSpouse && rawAssets) {
+    const valeurLogementDUH = rawAssets
+      .filter(asset => asset.nature === 'Résidence principale')
+      .reduce((sum, asset) => sum + getValeurEstimeePonderee(asset) * getFractionSuccessorale(asset), 0);
+
+    if (valeurLogementDUH > 0) {
+      const referenceDateUnAnApres = new Date(referenceDate);
+      referenceDateUnAnApres.setFullYear(referenceDateUnAnApres.getFullYear() + 1);
+      const ageConjointDansUnAn = getConjointAge(family, referenceDateUnAnApres.toISOString().slice(0, 10));
+      const pctUsufruitDUH = getDemembrementPct(ageConjointDansUnAn, 'usufruit');
+      const valeurDUH = valeurLogementDUH * pctUsufruitDUH * 0.60;
+
+      const estConjoint = (i: number) => heirs[i].personId === family.survivingSpouseId;
+      const recuConjoint = cashReparti.reduce((sum, c, i) => sum + (estConjoint(i) ? c : 0), 0);
+      const imputeDUH = Math.min(valeurDUH, recuConjoint);
+      const recuAutres = cashReparti.reduce((sum, c, i) => sum + (estConjoint(i) ? 0 : c), 0);
+      if (imputeDUH > 0 && recuAutres > 0) {
+        cashReparti.forEach((c, i) => {
+          cashReparti[i] = estConjoint(i)
+            ? c - imputeDUH * (recuConjoint > 0 ? c / recuConjoint : 0)
+            : c + imputeDUH * (c / recuAutres);
+        });
+      }
+
+      successionLegaleResult.explicationsTexte.push(
+        `Le conjoint survivant a opté pour le droit d'usage et d'habitation sur le logement qui ` +
+        `constituait la résidence principale effective du défunt (C. civ. art. 764-766) — option ` +
+        `exercée dans le délai d'un an, non tacite. Valeur retenue : 60% de la valeur d'usufruit du ` +
+        `logement selon le barème art. 669 CGI, calculée à l'âge du conjoint un an après le décès ` +
+        `(${ageConjointDansUnAn} ans), soit ${Math.round(valeurDUH).toLocaleString('fr-FR')} € ` +
+        `(${Math.round(valeurLogementDUH).toLocaleString('fr-FR')} € × ${Math.round(pctUsufruitDUH * 100)}% × 60%). ` +
+        `Cette valeur s'impute sur la part successorale du conjoint (elle ne s'y ajoute pas) : si elle ` +
+        `dépasse la part qui lui revient, aucune soulte n'est due aux autres héritiers. Sont exclus de ` +
+        `l'assiette : logement détenu via une SCI (sauf bail), logement loué, logement dont le défunt ` +
+        `n'avait que l'usufruit après cession de la nue-propriété — à vérifier au cas par cas par le ` +
+        `notaire, non qualifié automatiquement ici.`
+      );
+    }
   }
 
   // 6ter. Droit de jouissance temporaire du logement (C. civ. art. 763,
@@ -677,19 +601,21 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // de la consolidation du moteur : computeTransmission appelle lui-même
   // computeDMTG, l'UI n'a plus à connaître la forme du contexte DMTG).
 
-  // civilShares[].fraction = part de CHAQUE héritier dans le résiduel réel
-  // disponible (cashReparti, ci-dessus), PAS dans la masse théorique totale
-  // (partFinale) — c'est ce qui distingue « ce qui est dû en valeur » de « ce
-  // qui reste réellement à recevoir en cash de la succession ».
+  // civilShares[].fraction = part de CHAQUE héritier dans ce qu'il reçoit
+  // réellement de la succession (cashReparti : biens existants + indemnité de
+  // réduction, jamais les donations déjà détenues ni les soultes de rapport,
+  // déjà taxées comme donations). L'indemnité de réduction entre dans
+  // l'assiette DMTG via une ligne d'actif synthétique (cf. dmtgAssets).
+  const baseRepartition = residuelReel + partage.totalIndemnitesReduction;
   const civilShares: CivilShare[] = heirs.map((heir, i) => ({
     beneficiaryId: heir.personId,
-    fraction: residuelReel > 0 ? cashReparti[i] / residuelReel : 0,
+    fraction: baseRepartition > 0 ? cashReparti[i] / baseRepartition : 0,
     source: 'legal'
   }));
   legsNonHeritiers.forEach(l => {
     civilShares.push({
       beneficiaryId: l.personId,
-      fraction: residuelReel > 0 ? l.montant / residuelReel : 0,
+      fraction: baseRepartition > 0 ? l.montant / baseRepartition : 0,
       source: 'legal'
     });
   });
@@ -866,6 +792,19 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       id: 'ajustement-participation-acquets',
       label: 'Créance de participation aux acquêts',
       valeurVenale: deltaParticipationAcquets,
+      nature: 'autre',
+      location: 'metropole',
+      exclurePour: {}
+    });
+  }
+
+  // Indemnité de réduction due par un donataire réduit (art. 924) : reçue
+  // par les réservataires au titre de la succession, donc taxable comme telle.
+  if (partage.totalIndemnitesReduction > 0) {
+    dmtgAssets.push({
+      id: 'indemnite-reduction',
+      label: 'Indemnités de réduction',
+      valeurVenale: partage.totalIndemnitesReduction,
       nature: 'autre',
       location: 'metropole',
       exclurePour: {}

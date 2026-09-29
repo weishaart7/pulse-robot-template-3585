@@ -115,7 +115,7 @@ describe('Phase 4b — legs à un non-héritier', () => {
     expect(liberalites[0].beneficiaireId).toBe('conjoint');
   });
 
-  it('donation au conjoint marié (sentinelle \'conjoint\') : créditée à sa part, jamais à un tiers', () => {
+  it('donation au conjoint marié (sentinelle \'conjoint\') : imputée sur ses droits (art. 758-6), jamais à un tiers', () => {
     const family = famille([], { id: 'cj', marie: true });
     const sansDon = computeTransmission({ family, patrimony: buildPatrimonySnapshot(rawAssets, [], 0), liberalites: [], params: {} as any, referenceDate: REF, rawAssets, conjointOption: 'quart_pp' });
     const avecDon = computeTransmission({
@@ -124,6 +124,9 @@ describe('Phase 4b — legs à un non-héritier', () => {
     });
     const partConjoint = (r: typeof avecDon) => r.heirs.filter(h => h.personId === 'cj').reduce((sum, h) => sum + h.partFinale, 0);
     expect(avecDon.legataires).toEqual([]);
-    expect(partConjoint(avecDon) - partConjoint(sansDon)).toBeCloseTo(50000, 0); // hors part : hors masse partageable, créditée telle quelle
+    // Art. 758-6 : la donation s'impute sur les droits du conjoint, qui ne reçoit
+    // que le complément — sa part totale est inchangée, la donation comprise.
+    expect(partConjoint(avecDon)).toBeCloseTo(partConjoint(sansDon), 0);
+    expect(avecDon.heirs.find(h => h.personId === 'cj')?.dejaDetenu).toBe(50000);
   });
 });

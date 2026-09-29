@@ -200,6 +200,16 @@ export interface HeirShare {
   // (successionLegale.ts) — propagés jusqu'ici pour le calcul DMTG.
   representationRootId?: PersonId;
   representationCount?: number;
+  // Détail du partage (lib/transmission/partage.ts), portés par la première
+  // ligne de chaque personne pour dejaDetenu :
+  // - dejaDetenu : donations maintenues déjà détenues (jamais re-réclamées) ;
+  // - recuSuccession : reçu des biens de la succession (clé de l'assiette DMTG) ;
+  // - soulte : > 0 reçue, < 0 due (rapport excédentaire, art. 858) ;
+  // - indemniteReduction : part d'indemnité de réduction incluse dans recuSuccession.
+  dejaDetenu?: number;
+  recuSuccession?: number;
+  soulte?: number;
+  indemniteReduction?: number;
 }
 
 export interface TransmissionResult {

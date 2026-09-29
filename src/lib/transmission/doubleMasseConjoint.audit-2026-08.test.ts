@@ -1,29 +1,16 @@
 /**
- * Correctif délibéré (2026-08) — répartition du cash réel par « rapport en moins
- * prenant » (art. 858 C. civ., Annexe 1 Étape 7.2-7.3), résolvant l'absence de masse
- * d'exercice distincte pour le conjoint (art. 758-5) constatée par
- * docs/audit-transmission-devolution-conjoint-2026-08.md §4.4 puis chiffrée par
- * docs/audit-transmission-clamp-double-masse-2026-08.md.
- *
- * Ce fichier documentait auparavant le comportement BUGUÉ figé (avant correctif) :
- * conjoint 24 439 € / enfant sur-doté 73 316 € sur le scénario S1. Il documente
- * maintenant le comportement CORRIGÉ, conforme au design
- * docs/design-rapport-moins-prenant-2026-08.md (S1 à S5).
- *
- * Principe implémenté dans index.ts (§6bis) : `partFinale` reste la part théorique
- * totale en valeur (donation comprise), inchangée. La fraction utilisée pour
- * répartir le cash RÉELLEMENT disponible (civilShares → assiette fiscale DMTG ET
- * netBreakdown, un seul point de correction pour les deux) exclut désormais ce
- * qu'un héritier détient déjà via une donation rapportable maintenue (`dejaDetenu`) :
- *   cashDu(héritier) = max(0, partFinale − dejaDetenu)
- * Si Σ cashDu ≤ résiduel réel : chacun reçoit son cashDu (+ surplus éventuel au
- * prorata des quoteParts d'origine, cf. S1.1 du design, sous-cas non rencontré ici).
- * Si Σ cashDu > résiduel réel (conjoint exhérédé de fait, éventuellement en
- * concurrence avec un autre héritier sous-doté) : répartition proportionnelle aux
- * cashDu respectifs — arbitrage rendu le 2026-08 (design §1.2), faute de clé de
- * répartition explicite dans le référentiel pour ce cas. Un message est alors ajouté
- * à `explicationsTexte` pour signaler que l'affichage est une approximation à
- * confirmer par le notaire.
+ * Double masse du conjoint (art. 758-5) et rapport en valeur (art. 858) —
+ * comportement issu de la phase 1 de l'audit « résultat notaire » du
+ * 2026-09-29 (lib/transmission/partage.ts), qui remplace la répartition
+ * proportionnelle du correctif 2026-08 :
+ * - les droits en PP du conjoint (1/4 de la masse de l'art. 758-5) s'exercent
+ *   sur les biens non légués, sans entamer la réserve des enfants : plafonnés
+ *   à la QD restant après imputation des libéralités ;
+ * - l'enfant dont la donation rapportable dépasse sa part doit la différence
+ *   à ses cohéritiers (soulte, héritier supposé acceptant) ;
+ * - l'indemnité de réduction due par le donataire revient aux réservataires.
+ * `netARecevoir` ne comprend pas encore la soulte reçue (phase 3, net sur la
+ * valeur civile) : elle est vérifiée via `heirs[].soulte`.
  */
 import { describe, it, expect } from 'vitest';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams, Liberalite, RawAssetInput } from './index';
@@ -45,7 +32,9 @@ function residuelAsset(valeur: number): RawAssetInput[] {
   return [{ id: 'residuel', denomination: 'Résiduel', valeur_estimee: valeur, nature: 'valeur_mobiliere', qualification_bien: 'Bien propre', detenteur: 'user' }];
 }
 
-const AVERTISSEMENT_RESIDUEL_INSUFFISANT = /résiduel réellement disponible.*insuffisant/;
+const DROITS_CONJOINT_PLAFONNES = /droits du conjoint en pleine propriété sont limités/;
+const soulte = (r: { heirs: { personId: string; soulte?: number }[] }, id: string) =>
+  Math.round(r.heirs.find(h => h.personId === id)?.soulte || 0);
 
 describe('Audit 2026-08 — double masse du conjoint (art. 758-5), correctif "rapport en moins prenant"', () => {
   it('S1 — 1 enfant commun sur-doté (900k€, sous réserve+QD, pas de réduction), résiduel 100k€, conjoint seul sous-doté', () => {
@@ -89,10 +78,10 @@ describe('Audit 2026-08 — double masse du conjoint (art. 758-5), correctif "ra
 
     // Résiduel insuffisant pour couvrir le cashDu théorique du conjoint (250 000 €) :
     // avertissement attendu.
-    expect(result.explicationsTexte?.some(t => AVERTISSEMENT_RESIDUEL_INSUFFISANT.test(t))).toBe(true);
+    expect(result.explicationsTexte?.some(t => DROITS_CONJOINT_PLAFONNES.test(t))).toBe(true);
   });
 
-  it('S2 — option fermée (enfant non commun), don 900k€ à l\'enfant commun, résiduel 100k€ : 2 héritiers simultanément sous-dotés → répartition proportionnelle', () => {
+  it('S2 — option fermée (enfant non commun), don 900k€ à l\'enfant commun, résiduel 100k€ : QD épuisée, conjoint à 0, soulte due par l\'enfant sur-doté', () => {
     const family: FamilyGraph = {
       persons: [
         { id: 'defunt', nom: 'D', prenom: 'J' },
@@ -133,13 +122,19 @@ describe('Audit 2026-08 — double masse du conjoint (art. 758-5), correctif "ra
     // conjoint 250/625 × 100 000 = 40 000 € ; enfantNonCommun 375/625 × 100 000 = 60 000 €
     // (avant frais/droits — cf. valeurs nettes ci-dessous).
     expect(enfantCommunNet?.netARecevoir).toBe(0);
-    expect(conjointNet?.netARecevoir).toBe(39102);
-    expect(enfantNonCommunNet?.netARecevoir).toBe(58653);
+    // QD épuisée par la donation (réduite) : le conjoint ne reçoit rien (art. 758-5 al. 2).
+    // Masse égalitaire 1 000 000 € → 500 000 € par enfant : l'enfant commun (666 667 €
+    // maintenus) doit 166 667 € ; l'enfant non commun reçoit 333 333 € (biens +
+    // indemnité de réduction) + 166 667 € de soulte.
+    expect(conjointNet?.netARecevoir).toBe(0);
+    expect(enfantNonCommunNet?.netARecevoir).toBe(283194);
+    expect(soulte(result, 'enfantCommun')).toBe(-166667);
+    expect(soulte(result, 'enfantNonCommun')).toBe(166667);
 
-    expect(result.explicationsTexte?.some(t => AVERTISSEMENT_RESIDUEL_INSUFFISANT.test(t))).toBe(true);
+    expect(result.explicationsTexte?.some(t => DROITS_CONJOINT_PLAFONNES.test(t))).toBe(true);
   });
 
-  it('S3 — 3 enfants communs, donation proche du plafond réserve+QD sans le dépasser (490k€), résiduel 500k€ : 3 héritiers simultanément sous-dotés', () => {
+  it('S3 — 3 enfants communs, donation proche du plafond réserve+QD sans le dépasser (490k€), résiduel 500k€ : conjoint plafonné à la QD restante, soulte partagée', () => {
     const family: FamilyGraph = {
       persons: [
         { id: 'defunt', nom: 'D', prenom: 'J' },
@@ -183,18 +178,23 @@ describe('Audit 2026-08 — double masse du conjoint (art. 758-5), correctif "ra
     // les 3 héritiers sous-dotés reçoivent la même proportion (parts théoriques
     // identiques ici).
     expect(e1Net?.netARecevoir).toBe(0);
-    expect(conjointNet?.netARecevoir).toBe(165237);
+    // QD restante 5 000 € (247 500 € − 242 500 € imputés) : plafond des droits du conjoint.
+    expect(conjointNet?.netARecevoir).toBe(4957);
     // e2/e3 : 152 143€ (au lieu de 153 809€) depuis l'ajout du forfait
     // mobilier 5% (art. 764 CGI) : conjoint exonéré donc net inchangé, e2/e3
     // paient plus de droits sur leur quote-part du forfait, donc reçoivent
     // 1 666€ de moins chacun.
-    expect(e2Net?.netARecevoir).toBe(152143);
-    expect(e3Net?.netARecevoir).toBe(152143);
+    // Masse égalitaire 495 000 + 490 000 = 985 000 € → 328 333 € par enfant :
+    // e1 doit 161 667 €, partagés entre e2 et e3 (80 833 € chacun).
+    expect(e2Net?.netARecevoir).toBe(215355);
+    expect(e3Net?.netARecevoir).toBe(215355);
+    expect(soulte(result, 'e1')).toBe(-161667);
+    expect(soulte(result, 'e2')).toBe(80833);
 
-    expect(result.explicationsTexte?.some(t => AVERTISSEMENT_RESIDUEL_INSUFFISANT.test(t))).toBe(true);
+    expect(result.explicationsTexte?.some(t => DROITS_CONJOINT_PLAFONNES.test(t))).toBe(true);
   });
 
-  it('S4 — 2 enfants communs, donation dépassant le plafond (950k€, réduction déclenchée), résiduel 50k€ : réduction ne neutralise pas l\'écart de répartition du cash réel', () => {
+  it('S4 — 2 enfants communs, donation dépassant le plafond (950k€, réduction déclenchée), résiduel 50k€ : indemnité de réduction et soulte à e2, conjoint à 0', () => {
     const family: FamilyGraph = {
       persons: [
         { id: 'defunt', nom: 'D', prenom: 'J' },
@@ -231,13 +231,14 @@ describe('Audit 2026-08 — double masse du conjoint (art. 758-5), correctif "ra
     const e2Net = result.netBreakdown.heirs.find(h => h.personId === 'e2');
 
     expect(e1Net?.netARecevoir).toBe(0);
-    expect(conjointNet?.netARecevoir).toBe(19204);
-    expect(e2Net?.netARecevoir).toBe(28806);
+    expect(conjointNet?.netARecevoir).toBe(0);
+    expect(e2Net?.netARecevoir).toBe(283449); // 50 000 € + indemnité de réduction 283 333 €, nets
+    expect(soulte(result, 'e2')).toBe(166667);
 
-    expect(result.explicationsTexte?.some(t => AVERTISSEMENT_RESIDUEL_INSUFFISANT.test(t))).toBe(true);
+    expect(result.explicationsTexte?.some(t => DROITS_CONJOINT_PLAFONNES.test(t))).toBe(true);
   });
 
-  it('S5 — sans conjoint, 2 enfants dont 1 sur-doté (990k€, réduction déclenchée), résiduel 10k€ : un seul héritier sous-doté, pas d\'avertissement nécessaire', () => {
+  it('S5 — sans conjoint, 2 enfants dont 1 sur-doté (990k€, réduction déclenchée), résiduel 10k€ : réserve servie par l\'indemnité de réduction', () => {
     const family: FamilyGraph = {
       persons: [
         { id: 'defunt', nom: 'D', prenom: 'J' },
@@ -279,6 +280,9 @@ describe('Audit 2026-08 — double masse du conjoint (art. 758-5), correctif "ra
     // soient concernés (comportement volontairement simple, pas une distinction
     // testée séparément par le design).
     expect(e1Net?.netARecevoir).toBe(0);
-    expect(e2Net?.netARecevoir).toBe(8276);
+    // e2 : réserve de 333 333 € couverte par les biens (10 000 €) et l'indemnité de
+    // réduction (323 333 €), + soulte de rapport de 166 667 € due par e1.
+    expect(e2Net?.netARecevoir).toBe(283715);
+    expect(soulte(result, 'e2')).toBe(166667);
   });
 });

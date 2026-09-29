@@ -61,8 +61,8 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
 - `successionLegale.ts` détermine la dévolution légale (`calculateBrancheA`/`calculateBrancheB`, ordres
   1 à 4, fente successorale, option du conjoint) → `reserve.ts` calcule la réserve/QD, impute les
   libéralités, applique les réductions et le rapport → `transmission/index.ts::computeTransmission`
-  orchestre l'ensemble, y répartit le **cash réellement disponible** par héritier (§6bis, « rapport en
-  moins prenant »), puis appelle `computeDMTG` (`lib/dmtg/`) pour la fiscalité par bénéficiaire.
+  orchestre l'ensemble, répartit ce que chaque héritier reçoit (`partage.ts` : droits du conjoint,
+  rapport en valeur, indemnités de réduction, §2), puis appelle `computeDMTG` (`lib/dmtg/`) pour la fiscalité par bénéficiaire.
 - **Option du conjoint face aux enfants.** Sans DDV (art. 757) : 1/4 PP ou 100 % usufruit si tous
   les enfants sont communs, 1/4 PP imposé dès qu'un enfant ne l'est pas. Avec DDV (art. 1094-1) :
   les quatre options (`quart_pp`, `usufruit_total`, `quart_pp_3quarts_us`, `qd_pp`) sont ouvertes
@@ -139,21 +139,33 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   sans montant positif. Les 9 autres clauses (inaliénabilité, retour conventionnel, exclusion de
   communauté, administration spéciale, obligation d'emploi, gestion d'un bien démembré, usufruit
   réservé/successif, délivrance à terme) restent purement déclaratives — cf. §3.
-- **« Rapport en moins prenant » pour la répartition du cash réel** (`index.ts`, §6bis, commit `e341c98`,
-  suite au diagnostic `audit-transmission-clamp-double-masse-2026-08.md` et à la conception
-  `design-rapport-moins-prenant-2026-08.md`) — corrige l'absence de masse d'exercice distincte pour le
-  conjoint (art. 758-5). Le diagnostic avait établi que le clamp `Math.max(0, partFinale)` suspecté
-  était **mathématiquement mort** (jamais déclenché : identité algébrique `liberalitesMaintenues −
-  rapportTotal ≥ 0` toujours vraie) ; le vrai bug était que `civilShares.fraction` (qui répartit à la
-  fois le cash civil affiché et l'assiette fiscale DMTG — un seul point de correction pour les deux)
-  était calculée sur la masse théorique totale (`partFinale`, donation antérieure comprise) plutôt que
-  sur le résiduel réellement disponible. `partFinale` reste la part théorique totale ; une nouvelle
-  fraction `cashReparti` exclut désormais ce qu'un héritier détient déjà via une donation rapportable
-  maintenue. **Ambiguïté légale tranchée explicitement** : quand le résiduel réel ne suffit pas à
-  couvrir plusieurs héritiers simultanément sous-dotés (le référentiel ne donne aucune clé pour ce cas
-  précis, cf. `design-rapport-moins-prenant-2026-08.md` §1.2), le code répartit au prorata des montants
-  dus par chacun et affiche un avertissement explicite (« approximation … à confirmer par le notaire »)
-  plutôt que de présenter un résultat figé comme définitif — arbitrage produit assumé, pas un défaut.
+- **Partage entre héritiers (`lib/transmission/partage.ts`, phase 1 de l'audit « résultat
+  notaire » du 2026-09-29).** Remplace la répartition au prorata du « rapport en moins prenant »
+  (§6bis, 2026-08) et son avertissement « approximation à confirmer par le notaire ». Pour chaque
+  héritier, `HeirShare` expose `dejaDetenu` (donations maintenues, jamais réclamées une 2e fois),
+  `recuSuccession` (biens de la succession + indemnité de réduction, seule clé de l'assiette DMTG),
+  `soulte` (> 0 reçue, < 0 due) et `indemniteReduction`. Règles :
+  - **R1** : toute donation déjà détenue (hors part, donation-partage, dispense de rapport, au
+    conjoint) reste au donataire en plus de sa part des biens existants.
+  - **R2** : réserve individuelle décomptée enfant par enfant (`reserve.ts::imputeLiberalites`,
+    art. 919-1).
+  - **R3** : droits en PP du conjoint = quote-part × (biens existants, legs compris, − passif
+    + donations rapportables aux enfants — jamais celles au conjoint, choix validé), diminués de ses
+    libéralités (art. 758-6), exercés sur les biens non légués et, en présence de descendants,
+    plafonnés à la QD restante (art. 758-5 al. 2) — message dans `explicationsTexte` si plafonné.
+    L'usufruit porte sur les biens non légués restant après le quart en PP.
+  - **R4** : rapport en valeur (art. 858, 860) — l'enfant dont la donation rapportable dépasse sa
+    part doit la différence à ses cohéritiers, supposé acceptant (choix validé). Enfants
+    nus-propriétaires : égalité raisonnée en pleine propriété puis valorisée au barème 669.
+  - **R5** : l'indemnité de réduction due par un donataire revient aux héritiers (ligne d'actif
+    DMTG `indemnite-reduction`) ; la réduction d'un legs n'est plus comptée deux fois
+    (`computeRapport`).
+  - Le DUH s'impute sur ce que le conjoint reçoit de la succession, la part imputée revenant aux
+    autres héritiers au prorata de leur réception.
+  - `netARecevoir` n'inclut pas encore la soulte reçue ou due (net refait sur la valeur civile en
+    phase 3) ; `ProcessusCalcul.tsx` l'affiche à l'étape 6 et dans la fiche de chaque héritier.
+  Tests : `lib/transmission/partage.test.ts` (scénarios de l'audit),
+  `doubleMasseConjoint.audit-2026-08.test.ts` (réécrit sur ces règles).
 - **Fente successorale : branche familiale saisissable pour les 4 rangs** (commit `de8a722`, finding
   F18) — corrige un défaut de saisie qui pouvait conduire à une **déshérence à tort** (le message
   « l'État français hérite » s'affichait alors que des grands-parents vivants existaient, faute de
@@ -438,6 +450,24 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
 
 ### 🔴 Bloquant (peut fausser un calcul montré au client)
 
+**Audit « résultat notaire » du 2026-09-29** — points reproduits sur un scénario chiffré. Les
+écarts civils (répartition, droits du conjoint, réserve, rapport, réduction) sont corrigés par la
+phase 1 (cf. §2, « Partage entre héritiers ») ; restent ouverts, pour les phases 2 à 4 :
+
+- **Abattement de 20 % sur la résidence principale appliqué sans condition.** Art. 764 bis CGI : il
+  faut qu'au décès le logement soit aussi la résidence principale du conjoint, du partenaire de PACS
+  ou d'un enfant mineur ou protégé. Veuf avec 2 enfants majeurs, RP de 500 k€ → 20 044 € de droits
+  par enfant au lieu de 30 544 €. Touche tous les 2nds décès.
+- **Net à recevoir calculé sur l'assiette fiscale, pas sur la valeur reçue.** `netBreakdown` part de
+  `baseApresFrais` (après −20 % RP, et 757 B inclus) : avec une RP de 500 k€, chaque enfant « reçoit »
+  176 k€ pour 250 k€ hérités. Assurance-vie 757 B : les primes réintégrées sont comptées à la fois
+  dans `baseApresFrais` et dans `capitalAVNet` (contrat de 200 k€ → 357 k€ nets affichés).
+- **Abattement handicap (art. 779 II)** : refusé au lien `autre` (tiers handicapé à 0 € au lieu de
+  159 325 €), cumulé à tort avec les 1 594 € de l'art. 788 IV pour les autres liens.
+- **Non modélisés, mais appliqués par le notaire** : réduction de droits pour charges de famille
+  (art. 780 CGI), exonération partielle Dutreil (art. 787 B), dévolution entre demi-frères et
+  demi-sœurs par branches (art. 752 C. civ.), rappel des donations reçues par le représenté (art. 784).
+
 
 - **La valeur au jour du partage (art. 860) n'est jamais capturée séparément, donc l'indemnité de
   réduction n'est jamais réévaluée entre le décès et le partage** (finding T3, art. 924-2).
@@ -546,11 +576,6 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   taxe de publicité foncière + contribution de sécurité immobilière 0,10 % pour l'attestation
   immobilière) : `computeNotaryFees` calcule l'émolument (correct au centime, vérifié valeur par valeur)
   et un poste `débours` générique explicitement illustratif, mais pas ces montants légalement fixes.
-- **Double masse du conjoint : ambiguïté résolue par une approximation proportionnelle, pas une règle
-  légale explicite** (§2) — quand plusieurs héritiers sont simultanément sous-dotés, le référentiel ne
-  fournit aucune clé de répartition ; le code applique un prorata aux montants dus avec avertissement
-  explicite. Comportement assumé et documenté, mais reste une approximation à confirmer par le notaire
-  dans ce cas précis, pas un résultat légalement figé.
 - **`hasSurvivingSpouse` toujours binaire pour les cas les plus rares** (mariage posthume, séparation de
   corps avec clause de renonciation expresse) — la séparation de corps simple est désormais distinguée
   (commit `c65fa6b`, §2), mais ces deux cas plus rares n'ont toujours aucune façon d'être saisis, ce qui
@@ -610,8 +635,8 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   dévolution légale) ; réserve/QD avec barème 1/2-2/3-3/4 ; imputation et réduction des libéralités avec
   ordre légal (legs puis donations, plus récente vers plus ancienne, réduction proportionnelle) ; rapport
   des libéralités avec exclusion correcte du conjoint et gestion des clauses dispense/rapport
-  forfaitaire ; répartition du cash réel par « rapport en moins prenant » (art. 858, masse d'exercice du
-  conjoint) ; indivision successorale avec tiers (pourcentage réel, P14) ; fiscalité DMTG avec forfait
+  forfaitaire ; partage entre héritiers avec droits du conjoint plafonnés à la QD, rapport en valeur et
+  indemnités de réduction (art. 758-5, 758-6, 858) ; indivision successorale avec tiers (pourcentage réel, P14) ; fiscalité DMTG avec forfait
   mobilier 5 %, rappel 15 ans, exonération frère/sœur, frais de notaire écrêtés.
 - **Différé, décisions explicitement documentées** :
   - **Attribution préférentielle du logement et tout partage en nature** — nécessite d'introduire pour

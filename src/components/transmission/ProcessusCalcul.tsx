@@ -245,6 +245,14 @@ export const ProcessusCalcul = () => {
     .filter(h => h.lien === 'conjoint')
     .map(h => `${(h.partCivile / transmissionResult.masseCalcul * 100).toFixed(1)}% ${TYPE_QUOTE_PART_LABEL[h.typeQuotePart as string] ?? ''}`.trim())
     .join(' + ');
+  // Soultes de rapport (lib/transmission/partage.ts) : une ligne par personne.
+  const soultesPartage = Array.from(
+    transmissionResult.heirs.reduce((m, h) => {
+      if (h.soulte) m.set(h.personId, { nom: h.nom, montant: (m.get(h.personId)?.montant || 0) + h.soulte });
+      return m;
+    }, new Map<string, { nom: string; montant: number }>()).values()
+  ).filter(sl => Math.round(sl.montant) !== 0);
+
   const calculSteps = [
     {
       icon: Users,
@@ -375,6 +383,9 @@ export const ProcessusCalcul = () => {
           const person = familyGraph.persons.find(p => p.id === r.personId);
           return `• ${person?.prenom} ${person?.nom} : ${r.montantRapport.toLocaleString('fr-FR')} € à rapporter`;
         }),
+        ...soultesPartage.map(sl => sl.montant < 0
+          ? `• ${sl.nom} doit une soulte de ${Math.round(-sl.montant).toLocaleString('fr-FR')} € (donations supérieures à sa part)`
+          : `• ${sl.nom} reçoit une soulte de ${Math.round(sl.montant).toLocaleString('fr-FR')} €`),
         "Le rapport permet d'égaliser les parts entre cohéritiers"
       ] : [
         "Aucune donation rapportable",
@@ -388,7 +399,7 @@ export const ProcessusCalcul = () => {
         "Le rapport ne s'applique qu'aux donations rapportables (sauf mention 'hors part')",
         transmissionResult.details.rapports.length > 0 ? "Les enfants ayant reçu des donations devront les rapporter au partage" : null,
         "Vous pouvez faire des donations 'hors part' dans la limite de la quotité disponible",
-        "Le rapport fictif n'oblige pas à rembourser : il ajuste les parts au partage"
+        "Le rapport se fait en moins prenant ; si la donation dépasse la part, la différence est due aux cohéritiers (art. 858)"
       ].filter(Boolean)
     },
     {
@@ -467,7 +478,11 @@ export const ProcessusCalcul = () => {
       const capitalAVNet = dmtgHeir?.capitalAVNet ?? 0;
       const prelev990I = dmtgHeir?.prelev990I ?? 0;
       const droitsTotaux = dmtgHeir?.droitsTotaux ?? 0;
-      const transmissionNetteHeritier = heritageNet + donationsNettes + capitalAVNet;
+      // Soulte de rapport (> 0 reçue, < 0 due), cf. lib/transmission/partage.ts.
+      const soulte = transmissionResult.heirs
+        .filter(h => h.personId === g.personId)
+        .reduce((s, h) => s + (h.soulte || 0), 0);
+      const transmissionNetteHeritier = heritageNet + donationsNettes + capitalAVNet + soulte;
       const tauxMoyenSuccession = heritageBrut > 0 ? (droitsSuccession / heritageBrut) * 100 : 0;
       // Taux de couverture des droits par les capitaux décès (même logique que le
       // tableau "Transmission et droits" d'une étude notariale) : les capitaux AV
@@ -491,6 +506,7 @@ export const ProcessusCalcul = () => {
         capitalAVNet,
         prelev990I,
         droitsTotaux,
+        soulte,
         transmissionNetteHeritier,
         tauxCouverture
       };
@@ -630,6 +646,9 @@ export const ProcessusCalcul = () => {
                       <div className="flex justify-between"><dt className="text-[var(--text-secondary)]">Donations nettes</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.donationsNettes.toLocaleString('fr-FR')} €</dd></div>
                       {h.reductionTotal > 0 && (
                         <div className="flex justify-between"><dt className="text-[var(--text-secondary)]">Donations réduites en valeur</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.reductionTotal.toLocaleString('fr-FR')} €</dd></div>
+                      )}
+                      {Math.round(h.soulte) !== 0 && (
+                        <div className="flex justify-between"><dt className="text-[var(--text-secondary)]">{h.soulte > 0 ? 'Soulte de rapport reçue' : 'Soulte de rapport due'}</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{Math.round(h.soulte).toLocaleString('fr-FR')} €</dd></div>
                       )}
                       <div className="flex justify-between"><dt className="text-[var(--text-secondary)]">Capitaux décès nets</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.capitalAVNet.toLocaleString('fr-FR')} €</dd></div>
                       <div className="flex justify-between font-semibold"><dt className="text-[var(--text-primary)]">Transmission nette</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.transmissionNetteHeritier.toLocaleString('fr-FR')} €</dd></div>
