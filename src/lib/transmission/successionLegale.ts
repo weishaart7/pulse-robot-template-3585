@@ -281,7 +281,7 @@ function calculateBrancheB(
         });
       });
       const resteFratrie = 1.0 - (partParent * parentsVivants.length);
-      distributeToSouchesFratrie(result, souchesFratrie, resteFratrie);
+      distributeToSouchesFratrie(graph, result, souchesFratrie, resteFratrie);
       result.explicationsTexte.push(
         `Chaque parent reçoit 1/4, les frères/sœurs se partagent le reste (${Math.round(resteFratrie * 100)}%).`
       );
@@ -315,7 +315,7 @@ function calculateBrancheB(
 
   // B4. Aucun parent. Y a-t-il des frères et sœurs (ou neveux/nièces) ?
   if (souchesFratrie.length > 0) {
-    distributeToSouchesFratrie(result, souchesFratrie, 1.0);
+    distributeToSouchesFratrie(graph, result, souchesFratrie, 1.0);
     result.explicationsTexte.push(`Les frères/sœurs héritent de la totalité à parts égales.`);
     return result;
   }
@@ -539,14 +539,45 @@ function buildSouchesFratrie(graph: FamilyGraph, personnesVivantes: any[]): Souc
   return souches;
 }
 
+/**
+ * Part de chaque souche de la fratrie (art. 752 C. civ.) : à parts égales si
+ * tous sont du même lit ; sinon division par moitié entre ligne paternelle et
+ * ligne maternelle, les germains prenant dans les deux, les consanguins
+ * (même père) et utérins (même mère) dans la leur seulement. Une ligne sans
+ * frère ni sœur laisse sa moitié à l'autre (art. 752 al. 2 — à l'exclusion
+ * des autres parents de cette ligne). Lit non renseigné = germain.
+ */
+function partsFratrieParLignes(graph: FamilyGraph, souches: SoucheFratrie[]): number[] {
+  const lit = (s: SoucheFratrie) => graph.persons.find(p => p.id === s.rootSiblingId)?.lienFratrie || 'germain';
+  const lits = souches.map(lit);
+  if (lits.every(l => l === 'germain')) return souches.map(() => 1 / souches.length);
+  const paternels = lits.filter(l => l !== 'uterin').length;
+  const maternels = lits.filter(l => l !== 'consanguin').length;
+  const moitiePaternelle = maternels === 0 ? 1 : paternels === 0 ? 0 : 0.5;
+  const moitieMaternelle = 1 - moitiePaternelle;
+  return lits.map(l =>
+    (l !== 'uterin' && paternels > 0 ? moitiePaternelle / paternels : 0) +
+    (l !== 'consanguin' && maternels > 0 ? moitieMaternelle / maternels : 0)
+  );
+}
+
 function distributeToSouchesFratrie(
+  graph: FamilyGraph,
   result: SuccessionLegaleResult,
   souches: SoucheFratrie[],
   totalShare: number
 ): void {
-  const partParSouche = totalShare / souches.length;
+  const parts = partsFratrieParLignes(graph, souches);
+  if (parts.some(p => Math.abs(p - 1 / souches.length) > 1e-9)) {
+    result.explicationsTexte.push(
+      `Frères et sœurs de lits différents : la part de la fratrie est divisée par moitié entre les ` +
+      `lignes paternelle et maternelle ; les germains prennent dans les deux, les demi-frères et ` +
+      `demi-sœurs dans leur ligne seulement (C. civ. art. 752).`
+    );
+  }
 
-  for (const souche of souches) {
+  souches.forEach((souche, i) => {
+    const partParSouche = totalShare * parts[i];
     const nbRepresentants = souche.heritiers.length;
     for (const h of souche.heritiers) {
       result.heritiers.push({
@@ -562,7 +593,7 @@ function distributeToSouchesFratrie(
         representationCount: h.representation ? nbRepresentants : undefined
       });
     }
-  }
+  });
 }
 
 // ─── Fente successorale (B5) ────────────────────────────────────────

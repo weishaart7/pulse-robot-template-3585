@@ -27,6 +27,9 @@ export interface Person {
   // Branche paternelle/maternelle (utilisé par la fente successorale,
   // cf. successionLegale.ts::collectFenteHeritiers).
   brancheFamiliale?: string;
+  // Frère/Sœur : 'germain' (défaut), 'consanguin' (même père) ou 'uterin'
+  // (même mère) — partage de la fratrie par lignes, art. 752 C. civ.
+  lienFratrie?: 'germain' | 'consanguin' | 'uterin';
   // Exonération de droits de succession pour frère/sœur (art. 796-0 ter
   // CGI) : déclaratif — reprend family_links.exoneration_succession tel
   // quel, aucune des 3 conditions légales (âge/infirmité, situation
@@ -184,6 +187,9 @@ export interface RawAssetInput {
   // Usufruit/Nue-propriété (cf. lib/patrimoine/demembrementFraction.ts) : pondère
   // valeur_estimee par le barème 669 CGI dans les mêmes calculs que ci-dessus.
   mode_detention?: string | null;
+  // Société dont ces titres sont les parts (assets.societe_id) — exonération
+  // Dutreil de 75 % si la société figure dans TransmissionContext.societesDutreil.
+  societe_id?: string | null;
 }
 
 export type TypeQuotePart = "pleine_propriete" | "usufruit" | "nue_propriete";

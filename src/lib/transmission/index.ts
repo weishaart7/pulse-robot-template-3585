@@ -119,6 +119,11 @@ export interface TransmissionContext {
   // tacite) : sans ce booléen explicite, aucune valeur n'est imputée sur la
   // part du conjoint — pas de calcul automatique par défaut.
   duhOpte?: boolean;
+  // Sociétés dont le pacte Dutreil est validé (societe_dutreil.eligibilite_validee,
+  // art. 787 B CGI) : les titres rattachés (assets.societe_id) sont exonérés à
+  // 75 % dans l'assiette des droits. Engagement individuel de conservation des
+  // héritiers (4 ans) présumé, signalé dans les explications.
+  societesDutreil?: string[];
 }
 
 /**
@@ -620,6 +625,21 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     });
   });
 
+  // Enfants (vivants, ou décédés en laissant une descendance) d'un bénéficiaire,
+  // pour la réduction pour charges de famille (art. 780 CGI).
+  const aDescendanceVivante = (id: PersonId): boolean => family.links
+    .filter(l => l.from === id && l.relation === 'child')
+    .some(l => {
+      const p = family.persons.find(x => x.id === l.to);
+      return !!p && (!p.estDecede || aDescendanceVivante(p.id));
+    });
+  const nbEnfantsDe = (id: PersonId): number => family.links
+    .filter(l => l.from === id && l.relation === 'child')
+    .filter(l => {
+      const p = family.persons.find(x => x.id === l.to);
+      return !!p && (!p.estDecede || aDescendanceVivante(p.id));
+    }).length;
+
   const beneficiaries: DmtgBeneficiary[] = heirs.map(heir => {
     // Le lien retenu pour la fiscalité DMTG est celui calculé par la
     // dévolution civile (heir.lien), pas la catégorie du formulaire famille
@@ -657,7 +677,8 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       isAdoptionSimple: person?.enfantAdopte === 'Adoption simple',
       adoptionSimpleAbattementPlein: person?.adoptionSimpleAbattementPlein || false,
       exonerationSuccession: person?.exonerationSuccession || false,
-      isHandicapped: !!person?.handicap
+      isHandicapped: !!person?.handicap,
+      nbEnfants: nbEnfantsDe(heir.personId)
     };
   });
 
@@ -688,7 +709,8 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       isAdoptionSimple: person?.enfantAdopte === 'Adoption simple',
       adoptionSimpleAbattementPlein: person?.adoptionSimpleAbattementPlein || false,
       exonerationSuccession: person?.exonerationSuccession || false,
-      isHandicapped: !!person?.handicap
+      isHandicapped: !!person?.handicap,
+      nbEnfants: nbEnfantsDe(l.personId)
     });
   });
 
@@ -780,6 +802,15 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
         `handicapé, et aucune de ces personnes n'est présente.`);
   }
 
+  const titresDutreil = (rawAssets || []).filter(a => !!a.societe_id && (ctx.societesDutreil || []).includes(a.societe_id));
+  if (titresDutreil.length > 0) {
+    successionLegaleResult.explicationsTexte.push(
+      `Pacte Dutreil (art. 787 B CGI) : les titres ${titresDutreil.map(a => a.denomination || 'de société').join(', ')} ` +
+      `sont exonérés de droits à hauteur de 75 %. Suppose que chaque héritier s'engage à conserver ` +
+      `les titres pendant 4 ans et que l'un d'eux exerce une fonction de direction pendant 3 ans — à confirmer.`
+    );
+  }
+
   const dmtgAssets: DmtgAsset[] = (rawAssets || [])
     .filter(asset => !isContratHorsSuccession(asset))
     .map(asset => ({
@@ -789,6 +820,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       nature: getAssetCategory(asset.nature || '') === 'actifs immobiliers' ? 'immobilier' : 'autre',
       location: 'metropole',
       isResidencePrincipale: asset.nature === 'Résidence principale' && abattementRPApplicable,
+      isDutreil: !!asset.societe_id && (ctx.societesDutreil || []).includes(asset.societe_id),
       exclurePour: {}
     }));
 
@@ -944,6 +976,28 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       type: l.nature === NATURE_790G && verifier790G(l) ? 'familiale_790G' as const : undefined
     }));
 
+  // Rappel fiscal des donations reçues par un enfant ou frère/sœur représenté
+  // (prédécédé ou renonçant, art. 784 CGI) : elles consomment l'abattement que
+  // ses représentants se partagent, au prorata de leur part dans la souche.
+  const partParPersonne = new Map<PersonId, number>();
+  heirs.forEach(h => partParPersonne.set(h.personId, (partParPersonne.get(h.personId) || 0) + h.partCivile));
+  const representantsParSouche = new Map<PersonId, PersonId[]>();
+  beneficiaries.forEach(b => {
+    if (!b.representedOf) return;
+    const ids = representantsParSouche.get(b.representedOf) || [];
+    if (!ids.includes(b.id)) ids.push(b.id);
+    representantsParSouche.set(b.representedOf, ids);
+  });
+  representantsParSouche.forEach((ids, representeId) => {
+    const totalSouche = ids.reduce((sum, id) => sum + (partParPersonne.get(id) || 0), 0);
+    dmtgDonations
+      .filter(d => d.doneeId === representeId)
+      .forEach(d => ids.forEach(id => {
+        const ratio = totalSouche > 0 ? (partParPersonne.get(id) || 0) / totalSouche : 1 / ids.length;
+        dmtgDonations.push({ ...d, id: `${d.id}-rappel-${id}`, doneeId: id, valeurDon: d.valeurDon * ratio });
+      }));
+  });
+
   const dmtgResult = computeDMTG({
     deathDate: referenceDate,
     params: DEFAULT_DMTG_PARAMS,
@@ -1020,6 +1074,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       baseApresFrais: dmtgResult.perBeneficiary[h.personId]?.baseApresFrais || 0,
       valeurRecue,
       soulte,
+      fraisFuneraires: dmtgResult.perBeneficiary[h.personId]?.fraisFunerairesImputes || 0,
       // droitsHorsAV (PAS droitsTotaux) : le 990I porte sur le capital AV,
       // déjà déduit une fois dans capitalAVNet ci-dessous — cf. netBreakdown.ts.
       // Les droits dus sur les primes 757 B y figurent, le capital restant
@@ -1034,6 +1089,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       lien: l.lien,
       baseApresFrais: dmtgResult.perBeneficiary[l.personId]?.baseApresFrais || 0,
       valeurRecue: l.montant,
+      fraisFuneraires: dmtgResult.perBeneficiary[l.personId]?.fraisFunerairesImputes || 0,
       droitsTotaux: dmtgResult.perBeneficiary[l.personId]?.droitsHorsAV || 0,
       typeQuotePart: 'pleine_propriete' as const,
       capitalAVNet: dmtgResult.perBeneficiary[l.personId]?.capitalAVNet || 0,

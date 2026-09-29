@@ -191,6 +191,27 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   non plus par ligne de quote-part). `transmissionNette` ajoute les indemnités de réduction.
   « Héritage brut » de `ProcessusCalcul.tsx` = `valeurRecue`. Tests :
   `lib/transmission/phase3NotaireAudit.test.ts`.
+- **Règles notariales complémentaires (phase 4 de l'audit du 2026-09-29).**
+  - **Frais funéraires** : la quote-part du forfait de 1 500 € (art. 775 CGI) est retranchée du net
+    (`NetPerHeirInput.fraisFuneraires`), des obsèques étant toujours payées par la succession.
+  - **Charges de famille (art. 780 CGI)** : `dmtg/index.ts` réduit les droits de 610 € (ligne
+    directe) ou 305 € (autres) par enfant de l'héritier au-delà du 2e, dans la limite des droits
+    (`DMTGBeneficiaryResult.reductionChargesFamille`). Enfants comptés dans le graphe (liens
+    `enfant_de`), vivants ou décédés avec descendance : un héritier dont les enfants ne sont pas
+    saisis n'en bénéficie pas.
+  - **Dutreil (art. 787 B CGI)** : titres d'une société dont `societe_dutreil.eligibilite_validee`
+    est vrai (`societeDutreilService.getSocietesEligibles`, `TransmissionContext.societesDutreil`,
+    rattachement par `assets.societe_id`) exonérés à 75 % dans l'assiette (`dmtg/assets.ts`), sur la
+    valeur de l'actif. Engagements de conservation (4 ans) et de direction (3 ans) présumés, signalés.
+    Chargé par les 3 écrans de calcul, conservé côté conjoint par `buildSpouseRawAssets`.
+  - **Demi-frères et demi-sœurs (art. 752 C. civ.)** : `successionLegale.ts::partsFratrieParLignes`
+    divise la part de la fratrie par moitié entre lignes paternelle et maternelle si les lits
+    diffèrent (`Person.lienFratrie`, saisi dans Famille, cf. `docs/famille.md`), une ligne vide
+    laissant sa moitié à l'autre ; parts égales sinon.
+  - **Rappel des donations du représenté (art. 784 CGI)** : les donations de moins de 15 ans faites
+    à un enfant ou frère/sœur représenté sont rappelées sur ses représentants, au prorata de leur
+    part dans la souche (`index.ts`, avant `computeDMTG`).
+  Tests : `lib/transmission/phase4NotaireAudit.test.ts`.
 - **Fente successorale : branche familiale saisissable pour les 4 rangs** (commit `de8a722`, finding
   F18) — corrige un défaut de saisie qui pouvait conduire à une **déshérence à tort** (le message
   « l'État français hérite » s'affichait alors que des grands-parents vivants existaient, faute de
@@ -478,11 +499,9 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
 **Audit « résultat notaire » du 2026-09-29** — points reproduits sur un scénario chiffré. Les
 écarts civils (répartition, droits du conjoint, réserve, rapport, réduction) sont corrigés par la
 phase 1 (cf. §2, « Partage entre héritiers »), l'abattement résidence principale et l'abattement
-handicap par la phase 2, le net à recevoir par la phase 3 (cf. §2) ; reste ouvert, pour la phase 4 :
+handicap par la phase 2, le net à recevoir par la phase 3, les règles complémentaires par la phase 4 (cf. §2) :
 
-- **Non modélisés, mais appliqués par le notaire** : réduction de droits pour charges de famille
-  (art. 780 CGI), exonération partielle Dutreil (art. 787 B), dévolution entre demi-frères et
-  demi-sœurs par branches (art. 752 C. civ.), rappel des donations reçues par le représenté (art. 784).
+- *(soldé 2026-09-29, phase 4 : cf. §2 « Règles notariales complémentaires »)*
 
 
 - **La valeur au jour du partage (art. 860) n'est jamais capturée séparément, donc l'indemnité de

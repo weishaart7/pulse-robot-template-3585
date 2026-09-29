@@ -33,6 +33,7 @@ import { FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transm
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
+import { societeDutreilService } from '@/services/societeExtendedService';
 import transmissionParamsData from '@/data/transmission-params.json';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import './kairos-transmission.css';
@@ -52,6 +53,11 @@ export const ProcessusCalcul = () => {
   const { data: patrimoineOriginaire, loading: patrimoineOriginaireLoading } = usePatrimoineOriginaire();
   const { data: patrimoineFinal, loading: patrimoineFinalLoading } = usePatrimoineFinal();
   const [assetDemembrements, setAssetDemembrements] = useState<AssetDemembrement[]>([]);
+  // Sociétés sous pacte Dutreil validé (art. 787 B CGI, exonération de 75 %).
+  const [societesDutreil, setSocietesDutreil] = useState<string[]>([]);
+  useEffect(() => {
+    societeDutreilService.getSocietesEligibles().then(setSocietesDutreil).catch(() => setSocietesDutreil([]));
+  }, []);
 
   useEffect(() => {
     assetDemembrementService.getAllForUser()
@@ -136,6 +142,7 @@ export const ProcessusCalcul = () => {
         // enregistrée dans l'onglet Optimisation, jamais une valeur figée.
         conjointOption: ((maritalStatus as any)?.option_conjoint as ConjointOption | null) || undefined,
         rawAssets: assets || [],
+        societesDutreil,
         assetDemembrements,
         demembrementCtx,
         avContracts,
@@ -167,7 +174,8 @@ export const ProcessusCalcul = () => {
     }
   }, [
     familyGraph, assets, passifs, emprunts, transmissionLiberalites, params, maritalStatus, avContractsRaw, familyProfile,
-    recompenses, creancesEntreEpoux, patrimoineOriginaire, patrimoineFinal, assetDemembrements, demembrementCtx
+    recompenses, creancesEntreEpoux, patrimoineOriginaire, patrimoineFinal, assetDemembrements, demembrementCtx,
+    societesDutreil
   ]);
 
   if (

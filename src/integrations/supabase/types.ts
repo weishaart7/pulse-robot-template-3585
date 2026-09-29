@@ -1002,6 +1002,7 @@ export type Database = {
           fiscalement_a_charge: boolean | null
           handicap: boolean | null
           id: string
+          lien_fratrie: string | null
           lien_familial: string
           mandat_protection_future: boolean
           mesure_protection_juridique: string
@@ -1036,6 +1037,7 @@ export type Database = {
           fiscalement_a_charge?: boolean | null
           handicap?: boolean | null
           id?: string
+          lien_fratrie?: string | null
           lien_familial: string
           mandat_protection_future?: boolean
           mesure_protection_juridique?: string
@@ -1070,6 +1072,7 @@ export type Database = {
           fiscalement_a_charge?: boolean | null
           handicap?: boolean | null
           id?: string
+          lien_fratrie?: string | null
           lien_familial?: string
           mandat_protection_future?: boolean
           mesure_protection_juridique?: string

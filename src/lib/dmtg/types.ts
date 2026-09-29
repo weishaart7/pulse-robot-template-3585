@@ -24,6 +24,9 @@ export interface Beneficiary {
   // conditions légales — cf. recall.ts (abattement infini) et tax.ts
   // (retour anticipé taxe: 0), même mécanique que conjoint/pacs.
   exonerationSuccession?: boolean;
+  // Nombre d'enfants (vivants ou représentés) du bénéficiaire : réduction de
+  // droits pour charges de famille à partir du 3e (art. 780 CGI).
+  nbEnfants?: number;
 }
 
 export interface Asset {
@@ -35,6 +38,7 @@ export interface Asset {
   isResidencePrincipale?: boolean;
   isMonumentHistoriqueOuvert?: boolean;
   isBoisForetOuGF?: boolean; // applique -75%
+  isDutreil?: boolean; // titres sous pacte Dutreil (art. 787 B CGI) : -75%
   // Filtrages fiscaux
   exclurePour: {
     avantageMatrimonial?: boolean;
@@ -213,6 +217,8 @@ export interface DMTGBeneficiaryResult {
   taxableAfterAllowance: Money;
   consumedBracketsAmount: Money;
   droitsHorsAV: Money;
+  // Réduction pour charges de famille (art. 780 CGI), déjà déduite de droitsHorsAV.
+  reductionChargesFamille: Money;
   prelev990I: Money;
   reintegration757B: Money;
   droitsTotaux: Money; // droitsHorsAV + prelev990I (hors 757B, déjà intégré dans base)

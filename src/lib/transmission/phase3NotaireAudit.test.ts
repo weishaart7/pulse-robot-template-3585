@@ -39,7 +39,7 @@ describe('Phase 3 — net à recevoir sur la valeur civile reçue', () => {
     });
     const h = r.netBreakdown.heirs.find(x => x.personId === 'E1')!;
     expect(h.valeurRecue).toBe(250000);
-    expect(h.netARecevoir).toBe(250000 - h.droitsDMTG - h.fraisNotaire - h.droitPartage);
+    expect(h.netARecevoir).toBe(250000 - h.totalCouts); // droits + frais de notaire + partage + frais funéraires
   });
 
   it('assurance-vie de 200 k€ versée après 70 ans : capital compté une seule fois', () => {
@@ -66,7 +66,7 @@ describe('Phase 3 — net à recevoir sur la valeur civile reçue', () => {
     expect(net(r, 'E1')).toBe(-50000);
     const e2 = r.netBreakdown.heirs.find(x => x.personId === 'E2')!;
     expect(e2.soulte).toBe(50000);
-    expect(e2.netARecevoir).toBe(100000 - e2.droitsDMTG - e2.fraisNotaire - e2.droitPartage + 50000);
+    expect(e2.netARecevoir).toBe(100000 - e2.totalCouts + 50000);
     expect(r.netBreakdown.heirs.find(x => x.personId === 'E1')!.percentage).toBe(0);
   });
 });

@@ -73,7 +73,7 @@ describe('Audit 2026-08 — double masse du conjoint (art. 758-5), correctif "ra
     // 150 000 € au-delà de sa part théorique (900k détenus vs 750k dus), ne reçoit
     // plus rien du résiduel réel.
     expect(enfantNet?.netARecevoir).toBe(0);
-    expect(conjointNet?.netARecevoir).toBe(99255); // valeur civile reçue (100 000 €), nette des frais de notaire
+    expect(conjointNet?.netARecevoir).toBe(97755); // valeur civile reçue (100 000 €), nette des frais de notaire et funéraires
     expect((conjointNet?.netARecevoir || 0) + (enfantNet?.netARecevoir || 0)).toBeLessThanOrEqual(100000);
 
     // Résiduel insuffisant pour couvrir le cashDu théorique du conjoint (250 000 €) :
@@ -127,7 +127,7 @@ describe('Audit 2026-08 — double masse du conjoint (art. 758-5), correctif "ra
     // maintenus) doit 166 667 € ; l'enfant non commun reçoit 333 333 € (biens +
     // indemnité de réduction) + 166 667 € de soulte.
     expect(conjointNet?.netARecevoir).toBe(0);
-    expect(enfantNonCommunNet?.netARecevoir).toBe(451361);
+    expect(enfantNonCommunNet?.netARecevoir).toBe(449861);
     expect(soulte(result, 'enfantCommun')).toBe(-166667);
     expect(soulte(result, 'enfantNonCommun')).toBe(166667);
 
@@ -179,15 +179,15 @@ describe('Audit 2026-08 — double masse du conjoint (art. 758-5), correctif "ra
     // identiques ici).
     expect(e1Net?.netARecevoir).toBe(-161667);
     // QD restante 5 000 € (247 500 € − 242 500 € imputés) : plafond des droits du conjoint.
-    expect(conjointNet?.netARecevoir).toBe(4972);
+    expect(conjointNet?.netARecevoir).toBe(4957);
     // e2/e3 : 152 143€ (au lieu de 153 809€) depuis l'ajout du forfait
     // mobilier 5% (art. 764 CGI) : conjoint exonéré donc net inchangé, e2/e3
     // paient plus de droits sur leur quote-part du forfait, donc reçoivent
     // 1 666€ de moins chacun.
     // Masse égalitaire 495 000 + 490 000 = 985 000 € → 328 333 € par enfant :
     // e1 doit 161 667 €, partagés entre e2 et e3 (80 833 € chacun).
-    expect(e2Net?.netARecevoir).toBe(296931);
-    expect(e3Net?.netARecevoir).toBe(296931);
+    expect(e2Net?.netARecevoir).toBe(296189);
+    expect(e3Net?.netARecevoir).toBe(296189);
     expect(soulte(result, 'e1')).toBe(-161667);
     expect(soulte(result, 'e2')).toBe(80833);
 
@@ -232,7 +232,7 @@ describe('Audit 2026-08 — double masse du conjoint (art. 758-5), correctif "ra
 
     expect(e1Net?.netARecevoir).toBe(-166667);
     expect(conjointNet?.netARecevoir).toBe(0);
-    expect(e2Net?.netARecevoir).toBe(451616); // 50 000 € + indemnité de réduction 283 333 €, nets
+    expect(e2Net?.netARecevoir).toBe(450116); // 50 000 € + indemnité de réduction 283 333 €, nets
     expect(soulte(result, 'e2')).toBe(166667);
 
     expect(result.explicationsTexte?.some(t => DROITS_CONJOINT_PLAFONNES.test(t))).toBe(true);
@@ -282,7 +282,7 @@ describe('Audit 2026-08 — double masse du conjoint (art. 758-5), correctif "ra
     expect(e1Net?.netARecevoir).toBe(-166667);
     // e2 : réserve de 333 333 € couverte par les biens (10 000 €) et l'indemnité de
     // réduction (323 333 €), + soulte de rapport de 166 667 € due par e1.
-    expect(e2Net?.netARecevoir).toBe(451882);
+    expect(e2Net?.netARecevoir).toBe(450382);
     expect(soulte(result, 'e2')).toBe(166667);
   });
 });

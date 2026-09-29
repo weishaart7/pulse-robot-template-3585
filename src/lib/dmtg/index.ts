@@ -93,11 +93,20 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
     
     if (import.meta.env.DEV) console.log(`Droits calculés: ${taxResult.taxe}€`);
 
+    // Réduction pour charges de famille (art. 780 CGI) : par enfant au-delà du
+    // 2e, 610 € en ligne directe, 305 € sinon, dans la limite des droits dus.
+    const ligneDirecte = beneficiary.lien === 'enfant' || beneficiary.lien === 'petit_enfant' || beneficiary.lien === 'ascendant';
+    const reductionChargesFamille = Math.min(
+      taxResult.taxe,
+      Math.max(0, (beneficiary.nbEnfants || 0) - 2) * (ligneDirecte ? 610 : 305)
+    );
+    const droitsHorsAV = taxResult.taxe - reductionChargesFamille;
+
     const prelev990I = avResult.perBeneficiary[benId]?.prelev990I || 0;
-    const droitsTotaux = taxResult.taxe + prelev990I;
+    const droitsTotaux = droitsHorsAV + prelev990I;
     const capitalBrutAV = avResult.perBeneficiary[benId]?.capitalBrut || 0;
 
-    totalDroitsHorsAV += taxResult.taxe;
+    totalDroitsHorsAV += droitsHorsAV;
     totalPrelev990I += prelev990I;
 
     perBeneficiary[benId] = {
@@ -108,7 +117,8 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
       allowanceGeneralResidual: recallResult.allowanceGeneralResidual,
       taxableAfterAllowance: Math.round(taxableAfterAllowance),
       consumedBracketsAmount: recallResult.consumedBracketsAmount,
-      droitsHorsAV: taxResult.taxe,
+      droitsHorsAV,
+      reductionChargesFamille,
       prelev990I: Math.round(prelev990I),
       reintegration757B: Math.round(reintegration757B),
       droitsTotaux: Math.round(droitsTotaux),

@@ -47,6 +47,12 @@ export function filterAndValueEstateAssets(
         justifs.push("Monument historique ouvert : exonération totale");
       }
 
+      // Titres sous pacte Dutreil (art. 787 B CGI) : exonération de 75 %
+      if (asset.isDutreil) {
+        baseTaxable *= 0.25;
+        justifs.push("Pacte Dutreil : exonération de 75 %");
+      }
+
       // Bois/forêts & parts de GF : abattement 75%
       if (asset.isBoisForetOuGF) {
         baseTaxable *= 0.25;

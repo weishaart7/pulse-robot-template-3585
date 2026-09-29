@@ -50,6 +50,9 @@ export interface NetPerHeirInput {
    *  757 B réintégrées). Base du net et clé de répartition des frais (phase 3 de l'audit
    *  « résultat notaire » du 2026-09-29). Défaut : baseApresFrais (appelants historiques). */
   valeurRecue?: number;
+  /** Quote-part des frais funéraires (forfait de 1 500 €, art. 775 CGI) : toujours payés
+   *  par la succession, retranchés du net (phase 4, R15). Défaut 0. */
+  fraisFuneraires?: number;
   /** Soulte de rapport (> 0 reçue, < 0 due, cf. lib/transmission/partage.ts). Défaut 0. */
   soulte?: number;
   /** Légataire d'un bien ou d'une somme déterminés, qui n'hérite pas : jamais en
@@ -162,7 +165,7 @@ export function computeNetPerHeir(
       ? 0
       : valeur(h) / totalBaseCopartageants;
     const droitPartage = Math.round(droitPartageTotal * quotePartPartage);
-    const totalCouts = h.droitsTotaux + fraisNotaire + droitPartage;
+    const totalCouts = h.droitsTotaux + fraisNotaire + droitPartage + Math.round(h.fraisFuneraires || 0);
     const capitalAVNet = h.capitalAVNet || 0;
     const soulte = Math.round(h.soulte || 0);
     // Les droits dus sur les primes 757 B se paient sur le capital AV : le

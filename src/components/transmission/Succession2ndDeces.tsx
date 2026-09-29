@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { societeDutreilService } from '@/services/societeExtendedService';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import {
@@ -130,6 +131,9 @@ export const Succession2ndDeces = () => {
         .from('family_links')
         .select('*')
         .eq('user_id', user!.id);
+
+      // Sociétés sous pacte Dutreil validé (art. 787 B CGI, exonération de 75 %).
+      const societesDutreil = await societeDutreilService.getSocietesEligibles().catch(() => [] as string[]);
 
       const { data: assets } = await supabase
         .from('assets')
@@ -278,6 +282,7 @@ export const Succession2ndDeces = () => {
         patrimony: patrimonyUtilisateur,
         liberalites: liberalitesFormatted,
         params,
+        societesDutreil,
         conjointOption: (optionConjoint as any) || undefined,
         referenceDate,
         rawAssets: assets || [],
@@ -336,6 +341,7 @@ export const Succession2ndDeces = () => {
             patrimony: spousePatrimony,
             liberalites: [],
             params,
+            societesDutreil,
             referenceDate,
             // + reçu du 1er décès dans l'assiette fiscale (même montant que le
             // civil ci-dessus, cf. buildRecuAuPremierDecesRawAssets).
@@ -371,6 +377,7 @@ export const Succession2ndDeces = () => {
           patrimony: spouseBasePatrimony,
           liberalites: [],
           params,
+          societesDutreil,
           // Option du survivant commune aux deux ordres (décision V1) : celle
           // choisie pour le conjoint au décès de l'Utilisateur. Si elle n'est
           // pas ouverte dans ce sens (DDV non consentie par le conjoint,
@@ -427,6 +434,7 @@ export const Succession2ndDeces = () => {
             patrimony: utilisateurVeufPatrimony,
             liberalites: [],
             params,
+            societesDutreil,
             referenceDate,
             rawAssets: [
               ...(assets || []),

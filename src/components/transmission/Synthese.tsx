@@ -9,6 +9,7 @@ import { Calculator, FileText, DollarSign, Shield, AlertTriangle, ArrowRight } f
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FieldHelp } from '@/components/ui/field-help';
 import { supabase } from '@/integrations/supabase/client';
+import { societeDutreilService } from '@/services/societeExtendedService';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import {
@@ -115,6 +116,9 @@ export const Synthese = () => {
         .eq('user_id', user!.id);
 
       // Récupérer les assets
+      // Sociétés sous pacte Dutreil validé (art. 787 B CGI, exonération de 75 %).
+      const societesDutreil = await societeDutreilService.getSocietesEligibles().catch(() => [] as string[]);
+
       const { data: assets } = await supabase
         .from('assets')
         .select('*')
@@ -288,6 +292,7 @@ export const Synthese = () => {
         patrimony,
         liberalites: liberalitesFormatted,
         params,
+        societesDutreil,
         conjointOption: (optionConjoint as any) || undefined,
         referenceDate,
         rawAssets: assets || [],

@@ -197,6 +197,16 @@ export interface SocieteDutreil {
 }
 
 export const societeDutreilService = {
+  /** Sociétés dont le pacte Dutreil est validé (art. 787 B CGI) — exonération
+   *  de 75 % de leurs titres dans la succession (lib/transmission/index.ts). */
+  async getSocietesEligibles(): Promise<string[]> {
+    const { data, error } = await supabase
+      .from('societe_dutreil')
+      .select('societe_id')
+      .eq('eligibilite_validee', true);
+    if (error) throw error;
+    return (data || []).map(d => d.societe_id);
+  },
   async get(societeId: string): Promise<SocieteDutreil | null> {
     const { data, error } = await supabase
       .from('societe_dutreil')

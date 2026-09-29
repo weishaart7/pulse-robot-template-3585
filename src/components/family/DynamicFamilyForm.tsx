@@ -198,6 +198,32 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
         />
       )}
 
+      {/* Lit du frère ou de la sœur : partage de la fratrie par lignes (art. 752 C. civ.) */}
+      {linkType === 'Frère/Sœur' && (
+        <FormField
+          control={form.control}
+          name="lien_fratrie"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Lien de fratrie</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || 'germain'}>
+                <FormControl>
+                  <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="germain">Même père et même mère</SelectItem>
+                  <SelectItem value="consanguin">Même père uniquement (demi-frère/sœur paternel)</SelectItem>
+                  <SelectItem value="uterin">Même mère uniquement (demi-frère/sœur maternel)</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
+
       <FormSectionTitle>Identité</FormSectionTitle>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

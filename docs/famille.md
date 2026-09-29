@@ -289,6 +289,14 @@ permet de l'alimenter (voir §3).
   Aucun champ, schéma de validation ni
   logique métier n'est modifié par cet habillage.
 
+- **Lit des frères et sœurs (`family_links.lien_fratrie`, 2026-09-29).** Pour un lien
+  `Frère/Sœur` uniquement : `germain` (mêmes père et mère, défaut), `consanguin` (même père) ou
+  `uterin` (même mère), contrainte CHECK, `NULL` = germain (les liens antérieurs gardent ainsi le
+  partage à parts égales). Saisi dans `DynamicFamilyForm.tsx` (« Lien de fratrie »), écrit par
+  `FamilyMemberFormDialog.tsx` (remis à `NULL` pour tout autre lien), lu par `buildFamilyGraph`
+  (`Person.lienFratrie`) pour le partage par lignes de l'art. 752 C. civ. (cf.
+  `docs/transmission.md` §2). Migration `20260929120000_family_links_lien_fratrie.sql`.
+
 ## 3. Dette identifiée
 
 Classement par risque. Chaque ligne indique si l'item est toujours ouvert (vérifié dans le code au

@@ -36,6 +36,7 @@ export const membreFamilleSchema = z.object({
   enfant_renoncant: z.boolean().default(false),
   enfant_renoncant_de: z.string().optional(),
   branche_familiale: z.string().optional(),
+  lien_fratrie: z.string().optional(),
   enfant_de: z.string().optional(),
   exoneration_succession: z.boolean().default(false),
   exo_frere_soeur_seul: z.boolean().default(false),
@@ -80,6 +81,7 @@ const DEFAULT_VALUES: MembreFamille = {
   enfant_adopte: 'Non',
   adoption_simple_abattement_plein: false,
   enfant_renoncant: false,
+  lien_fratrie: 'germain',
   exoneration_succession: false,
   exo_frere_soeur_seul: false,
   exo_frere_soeur_infirmite: false,
@@ -169,6 +171,7 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
           enfant_renoncant: member.enfant_renoncant || false,
           enfant_renoncant_de: member.enfant_renoncant_de || '',
           branche_familiale: member.branche_familiale || '',
+          lien_fratrie: member.lien_fratrie || 'germain',
           enfant_de: member.enfant_de || '',
           exoneration_succession: member.exoneration_succession || false,
           exo_frere_soeur_seul: member.exo_frere_soeur_seul || false,
@@ -225,6 +228,8 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
           enfant_renoncant: data.enfant_renoncant,
           enfant_renoncant_de: data.enfant_renoncant_de,
           branche_familiale: data.branche_familiale,
+          // Frère/Sœur : germain, consanguin ou utérin (partage par lignes, art. 752 C. civ.).
+          lien_fratrie: data.lien_familial === 'Frère/Sœur' ? (data.lien_fratrie || 'germain') : null,
           enfant_de: data.enfant_de,
           // parent_de n'a de sens que pour lien_familial === 'Enfant' (valeurs
           // 'user'/'spouse'/'both_parents' lues par transmissionHelpers.ts pour

@@ -677,6 +677,7 @@ export function buildFamilyGraph(
       enfantAdopte: link.enfant_adopte || undefined,
       adoptionSimpleAbattementPlein: link.adoption_simple_abattement_plein || false,
       brancheFamiliale: link.branche_familiale || undefined,
+      lienFratrie: (link.lien_fratrie as Person['lienFratrie']) || undefined,
       exonerationSuccession: link.exoneration_succession || false
     });
 
@@ -819,6 +820,7 @@ export function buildSpouseAsDecedentFamilyGraph(
       enfantAdopte: link.enfant_adopte || undefined,
       adoptionSimpleAbattementPlein: link.adoption_simple_abattement_plein || false,
       brancheFamiliale: link.branche_familiale || undefined,
+      lienFratrie: (link.lien_fratrie as Person['lienFratrie']) || undefined,
       exonerationSuccession: link.exoneration_succession || false
     });
 
@@ -1231,7 +1233,9 @@ export function buildSpouseRawAssets(
         nature: asset.nature,
         qualification_bien: 'Bien propre',
         detenteur: undefined,
-        mode_detention: undefined
+        mode_detention: undefined,
+        // Titres de société : conservé pour l'exonération Dutreil (art. 787 B CGI).
+        societe_id: (asset as { societe_id?: string | null }).societe_id ?? null
       };
     });
 }
