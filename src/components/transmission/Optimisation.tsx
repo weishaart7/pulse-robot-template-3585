@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FieldHelp } from '@/components/ui/field-help';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -12,6 +12,7 @@ import { useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { hasDDVConsentieParDefunt } from '@/utils/transmissionHelpers';
+import { ComparaisonOptionsConjoint } from './ComparaisonOptionsConjoint';
 import './kairos-transmission.css';
 
 type ConjointOption = 
@@ -244,7 +245,7 @@ export const Optimisation = () => {
     }
   };
 
-  const options = getOptions();
+  const options = useMemo(getOptions, [scenario, enfants.length]);
 
   if (loading) {
     return (
@@ -351,6 +352,8 @@ export const Optimisation = () => {
           )}
         </CardContent>
       </Card>
+
+      <ComparaisonOptionsConjoint options={options} selectedOption={selectedOption} />
 
       {/* Droit d'usage et d'habitation (DUH, C. civ. art. 764-766) */}
       {isMarried && (

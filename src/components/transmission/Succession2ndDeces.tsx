@@ -5,48 +5,30 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { societeDutreilService } from '@/services/societeExtendedService';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import {
-  buildFamilyGraph,
   buildPatrimonySnapshot,
-  buildPassifLines,
-  buildTransmissionLiberalites,
   buildAVContracts,
   buildSpouseAsDecedentFamilyGraph,
-  buildSurvivingSpousePatrimony,
   computeRecuAuPremierDeces,
   buildRecuAuPremierDecesRawAssets,
   buildSpouseRawAssets,
   buildSpouseOwnBasePatrimony,
   addReunifiedFullOwnership,
   widowFamilyGraph,
-  buildParticipationAcquetsContext,
-  buildRecompensesCalcInput,
-  buildCreancesCalcInput,
   computeAVReintegrationCivile,
-  AVContractRawRow,
   AVDonneesInsuffisantesError,
   SpouseSuccessionNonModelisableError
 } from '@/utils/transmissionHelpers';
+import { loadTransmissionData, buildOrdreNormalBase, computeOrdreNormal } from '@/utils/transmissionOrdreNormal';
 import {
   computeTransmission,
   computeChainedTransmission,
   ChainedTransmissionResult,
-  FamilyGraph,
-  TransmissionParams,
   TransmissionContext
 } from '@/lib/transmission';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
-import { DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
-import { assetDemembrementService } from '@/services/assetDemembrementService';
-import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcquets';
-import { Recompense } from '@/types/recompense';
-import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
-import { hasDonneesContratAV } from '@/constants/assetTypes';
-import transmissionParamsData from '@/data/transmission-params.json';
 import './kairos-transmission.css';
 
 type Ordre = 'normal' | 'inverse';
@@ -80,19 +62,6 @@ export const Succession2ndDeces = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, passifsLoading, passifs, empruntsLoading, emprunts]);
 
-  const buildParams = (): TransmissionParams => ({
-    abattements: {
-      ...transmissionParamsData.abattements,
-      conjoint: transmissionParamsData.abattements.conjoint === 'Infinity' ? Infinity : Number(transmissionParamsData.abattements.conjoint)
-    },
-    bareme: transmissionParamsData.bareme,
-    prelevement990I: transmissionParamsData.prelevement990I,
-    debours: {
-      mode: transmissionParamsData.debours.mode as 'pourcentage' | 'forfait',
-      valeur: transmissionParamsData.debours.valeur
-    }
-  });
-
   const errorToOrdreResult = (error: unknown): OrdreResult => {
     if (error instanceof BienNonQualifieError) {
       return { result: null, errorMessage: error.message, errorKind: 'bien-non-qualifie' };
@@ -115,248 +84,33 @@ export const Succession2ndDeces = () => {
     try {
       setLoading(true);
 
-      const { data: familyProfile } = await supabase
-        .from('family_profiles')
-        .select('*')
-        .eq('user_id', user!.id)
-        .single();
-
-      const { data: maritalStatus } = await supabase
-        .from('marital_status')
-        .select('*')
-        .eq('user_id', user!.id)
-        .single();
-
-      const { data: familyLinks } = await supabase
-        .from('family_links')
-        .select('*')
-        .eq('user_id', user!.id);
-
-      // Sociétés sous pacte Dutreil validé (art. 787 B CGI, exonération de 75 %).
-      const societesDutreil = await societeDutreilService.getSocietesEligibles().catch(() => [] as string[]);
-
-      const { data: assets } = await supabase
-        .from('assets')
-        .select('*')
-        .eq('user_id', user!.id);
-
-      // Démembrement (barème 669 CGI) des actifs déjà en Usufruit/Nue-propriété
-      // — même pondération que le Résumé Patrimoine (usePatrimoineCalculations.ts).
-      const assetDemembrements = await assetDemembrementService.getAllForUser();
-      const demembrementCtx: DemembrementFractionContext = { familyProfile, maritalStatus, familyLinks };
-
-      const avAssets = (assets || []).filter(a => hasDonneesContratAV(a));
-      const totalAV = avAssets.reduce((sum, a) => sum + (Number(a.valeur_estimee) || 0), 0);
-      const avAssetIds = avAssets.map(a => a.id);
-      const [avDetailsRes, avOperationsRes] = avAssetIds.length > 0
-        ? await Promise.all([
-            supabase.from('av_contract_details').select('asset_id, clause_beneficiaire_structuree, origine_fonds').in('asset_id', avAssetIds),
-            supabase.from('av_operations').select('asset_id, type_operation, montant, date_operation').in('asset_id', avAssetIds)
-          ])
-        : [{ data: [], error: null }, { data: [], error: null }];
-
-      if (avDetailsRes.error) {
-        if (import.meta.env.DEV) {
-          console.error('Erreur chargement détails assurance-vie:', avDetailsRes.error);
-        }
-        throw new Error("Les données d'assurance-vie n'ont pas pu être chargées, le calcul ne peut pas être fiable.");
-      }
-      if (avOperationsRes.error) {
-        if (import.meta.env.DEV) {
-          console.error('Erreur chargement opérations assurance-vie:', avOperationsRes.error);
-        }
-        throw new Error("Les opérations d'assurance-vie n'ont pas pu être chargées, le calcul ne peut pas être fiable.");
-      }
-
-      const avClauseByAsset = new Map<string, any>(
-        (avDetailsRes.data || []).map((d: any) => [d.asset_id, d.clause_beneficiaire_structuree || null])
-      );
-      const avOrigineFondsByAsset = new Map<string, string | null>(
-        (avDetailsRes.data || []).map((d: any) => [d.asset_id, d.origine_fonds || null])
-      );
-      const avOperationsByAsset = new Map<string, { type_operation: string; montant: number | null; date_operation: string }[]>();
-      (avOperationsRes.data || []).forEach((op: any) => {
-        const list = avOperationsByAsset.get(op.asset_id) || [];
-        list.push({ type_operation: op.type_operation, montant: op.montant, date_operation: op.date_operation });
-        avOperationsByAsset.set(op.asset_id, list);
-      });
-      const avContractsRaw: AVContractRawRow[] = avAssets.map(a => ({
-        assetId: a.id,
-        label: a.denomination,
-        valeurEstimee: a.valeur_estimee,
-        detenteur: a.detenteur,
-        origineFonds: avOrigineFondsByAsset.get(a.id) || null,
-        operations: avOperationsByAsset.get(a.id) || [],
-        clauseBeneficiaireStructuree: avClauseByAsset.get(a.id) || null,
-        nature: a.nature,
-        sousTypePer: a.sous_type_per,
-        garantieDeces: a.garantie_deces,
-        conditionsExoneration990I: a.conditions_exoneration_990i
-      }));
-
-      const { data: liberalites } = await supabase
-        .from('liberalites')
-        .select('*')
-        .eq('user_id', user!.id);
-      const { liberalites: liberalitesFormatted } = buildTransmissionLiberalites(liberalites || [], assets || [], true);
-
-      // Participation aux acquêts (art. 1569-1581 C. civ.) : lignes globales
-      // au couple, identiques quel que soit le sens de décès simulé — cf.
-      // diagnostic chantier participation aux acquêts (symétrie confirmée,
-      // contrairement aux avantages matrimoniaux ci-dessous qui restent
-      // asymétriques par construction).
-      const { data: patrimoineOriginaireRows } = await supabase
-        .from('patrimoine_originaire')
-        .select('*')
-        .eq('user_id', user!.id);
-      const { data: patrimoineFinalRows } = await supabase
-        .from('patrimoine_final')
-        .select('*')
-        .eq('user_id', user!.id);
-
-      // Récompenses/créances entre époux (chantier 3A) : dernier trou du
-      // module Transmission comblé ici — même raisonnement de symétrie que
-      // participationAcquets ci-dessus (delta scalaire sur patrimony.
-      // biensExistants + ligne DMTG synthétique, jamais sur rawAssets/
-      // qualification_bien), donc mêmes données passées aux deux sens.
-      const { data: recompensesRows } = await supabase
-        .from('recompenses')
-        .select('*')
-        .eq('user_id', user!.id);
-      const { data: creancesRows } = await supabase
-        .from('creances_entre_epoux')
-        .select('*')
-        .eq('user_id', user!.id);
+      const data = await loadTransmissionData(user!.id);
+      const { familyProfile, maritalStatus, familyLinks, assets, assetDemembrements, demembrementCtx, societesDutreil, avContractsRaw } = data;
 
       setNomUtilisateur(`${familyProfile?.prenom || ''} ${familyProfile?.nom || ''}`.trim() || 'Vous');
       setNomConjoint(`${maritalStatus?.prenom_conjoint || ''} ${maritalStatus?.nom_conjoint || ''}`.trim() || 'Votre conjoint');
 
-      const params = buildParams();
-      const referenceDate = new Date().toISOString().split('T')[0];
-      const optionConjoint = (maritalStatus as any)?.option_conjoint as string | null;
-      const partageEnvisage = !!(maritalStatus as any)?.partage_envisage;
-      const duhOpte = !!(maritalStatus as any)?.duh_opte;
-      // regime_matrimonial n'a de sens que sous Marié(e) : ce champ n'est
-      // jamais effacé en changeant de statut (cf. RelationInfoForm.tsx), donc
-      // un ex-marié devenu Pacsé/Concubin peut garder une valeur périmée.
-      const regimeMatrimonial = (maritalStatus as any)?.statut_couple === 'Marié(e)'
-        ? ((maritalStatus as any)?.regime_matrimonial as string | null)
-        : undefined;
-
-      // Graphe et contexte "Utilisateur décède en premier" : identiques à ce
-      // que Synthese.tsx construit déjà pour le 1er décès — même fonctions,
-      // aucune logique nouvelle.
-      const familyUtilisateur: FamilyGraph = buildFamilyGraph(familyProfile, maritalStatus, familyLinks || []);
-      const avContractsUtilisateur = buildAVContracts(
-        avContractsRaw,
-        familyProfile?.date_naissance,
-        familyUtilisateur,
-        referenceDate,
-        (maritalStatus as any)?.date_naissance_conjoint
-      );
-      // Passifs + emprunts fusionnés une seule fois : les quatre constructeurs
-      // de patrimoine de cet écran (1er décès et 2nd décès, dans les deux
-      // ordres) doivent partir du même passif, sans quoi le même écran serait
-      // cohérent sur un décès et pas sur l'autre.
-      // Deux variantes du passif fusionné : `passifLinesUtilisateur` déduit la
-      // part des emprunts couverte par l'assurance décès de l'Utilisateur (les
-      // deux buildPatrimonySnapshot ci-dessous modélisent toujours SON propre
-      // patrimoine, quel que soit l'ordre de décès simulé — jamais celui du
-      // conjoint) ; `passifLinesBrut` reste inchangé, pour
-      // buildSurvivingSpousePatrimony/buildSpouseOwnBasePatrimony qui
-      // approximent le passif du conjoint (limitation documentée, hors
-      // périmètre de ce chantier — l'assurance emprunteur du conjoint n'est
-      // pas déduite).
-      const passifLinesUtilisateur = buildPassifLines(passifs, emprunts, 'user');
-      const passifLinesBrut = buildPassifLines(passifs, emprunts);
-      const patrimonyUtilisateur = buildPatrimonySnapshot(assets || [], passifLinesUtilisateur, totalAV, assetDemembrements, demembrementCtx);
-      const participationAcquets = buildParticipationAcquetsContext(
-        (patrimoineOriginaireRows || []) as PatrimoineOriginaire[],
-        (patrimoineFinalRows || []) as PatrimoineFinal[],
-        false
-      );
-      const recompenses = buildRecompensesCalcInput((recompensesRows || []) as Recompense[]);
-      const creancesEntreEpoux = buildCreancesCalcInput((creancesRows || []) as CreanceEntreEpoux[]);
-      const ctxUtilisateurDecede: TransmissionContext = {
-        family: familyUtilisateur,
-        patrimony: patrimonyUtilisateur,
-        liberalites: liberalitesFormatted,
+      // Éléments communs aux deux ordres (graphe, contrats AV, passifs,
+      // régime) : même construction que Synthese.tsx pour le 1er décès.
+      const base = buildOrdreNormalBase(data, passifs, emprunts);
+      const {
         params,
-        societesDutreil,
-        conjointOption: (optionConjoint as any) || undefined,
         referenceDate,
-        rawAssets: assets || [],
-        assetDemembrements,
-        demembrementCtx,
-        avContracts: avContractsUtilisateur,
-        // Contrat AV détenu par le conjoint survivant, non dénoué puisque
-        // l'Utilisateur décède en premier ici : réintégré civilement (doctrine
-        // Ciot, §9.6.1) sous régime de communauté + origine_fonds deniers
-        // communs, jamais dans avContracts (déjà filtré par détenteur dans
-        // computeTransmission, cf. commentaire de ce champ).
-        avReintegrationCivileMontant: computeAVReintegrationCivile(avContractsUtilisateur, 'spouse', regimeMatrimonial),
-        partageEnvisage,
-        // Valeurs au jour du partage (art. 860) — succession de l'Utilisateur.
-        valeurBiensPartage: (maritalStatus as { valeur_biens_partage?: number | null } | null)?.valeur_biens_partage ?? null,
-        duhOpte,
+        optionConjointEnregistree: optionConjoint,
         regimeMatrimonial,
+        familyUtilisateur,
+        avContractsUtilisateur,
+        passifLinesUtilisateur,
+        passifLinesBrut,
         participationAcquets,
         recompenses,
         creancesEntreEpoux
-      };
+      } = base;
 
       // --- Ordre normal (Utilisateur d'abord) ---
       let normalResult: OrdreResult;
       try {
-        const firstDeathUtilisateur = computeTransmission(ctxUtilisateurDecede);
-        const spouseFamily = buildSpouseAsDecedentFamilyGraph(familyProfile, maritalStatus, familyLinks || []);
-        // Contrats du conjoint, dénoués à SON décès : clauses résolues contre
-        // le graphe du 2nd décès (l'Utilisateur y est déjà décédé — une clause
-        // à son profit est caduque ou bascule au rang suivant).
-        const avContractsConjointAuDeces = buildAVContracts(
-          avContractsRaw,
-          familyProfile?.date_naissance,
-          spouseFamily,
-          referenceDate,
-          (maritalStatus as any)?.date_naissance_conjoint
-        );
-        // Passifs du conjoint : mêmes lignes que le 1er décès, non repondérées
-        // par détenteur (choix aligné sur buildPatrimonySnapshot, qui ne
-        // pondère pas non plus les passifs du 1er défunt aujourd'hui — cf.
-        // limitation documentée dans le résumé remis à l'utilisateur).
-        // Contrats réels du 1er décès (plus []) : les capitaux AV/PER reçus par
-        // le conjoint entrent dans sa succession — cf. computeRecuAuPremierDeces.
-        const spousePatrimony = buildSurvivingSpousePatrimony(
-          assets || [],
-          passifLinesBrut,
-          firstDeathUtilisateur,
-          familyUtilisateur.survivingSpouseId!,
-          avContractsUtilisateur,
-          assetDemembrements,
-          demembrementCtx
-        );
-        const recuParConjoint = computeRecuAuPremierDeces(firstDeathUtilisateur, familyUtilisateur.survivingSpouseId!, avContractsUtilisateur);
-        const chained = computeChainedTransmission({
-          firstDeath: ctxUtilisateurDecede,
-          secondDeath: {
-            family: spouseFamily,
-            patrimony: spousePatrimony,
-            liberalites: [],
-            params,
-            societesDutreil,
-            referenceDate,
-            // + reçu du 1er décès dans l'assiette fiscale (même montant que le
-            // civil ci-dessus, cf. buildRecuAuPremierDecesRawAssets).
-            rawAssets: [
-              ...buildSpouseRawAssets(assets || [], assetDemembrements, demembrementCtx),
-              ...buildRecuAuPremierDecesRawAssets(recuParConjoint)
-            ],
-            assetDemembrements,
-            demembrementCtx,
-            avContracts: avContractsConjointAuDeces
-          }
-        });
-        normalResult = { result: chained, errorMessage: null, errorKind: null };
+        normalResult = { result: computeOrdreNormal(base, optionConjoint), errorMessage: null, errorKind: null };
       } catch (error) {
         normalResult = errorToOrdreResult(error);
       }

@@ -70,6 +70,17 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   d'un enfant non commun et d'une option comportant de l'usufruit, un message informatif rappelle
   la faculté de conversion de l'art. 1098, non exercée d'office (les parts restent celles de
   l'option choisie). Tests : `lib/transmission/ddvEnfantNonCommun.test.ts`.
+- **Comparaison des options du conjoint (onglet Optimisation).** `ComparaisonOptionsConjoint.tsx`
+  affiche, sous le sélecteur d'option, une colonne par option ouverte (au moins deux, sinon rien) :
+  net reçu par le conjoint et par les autres héritiers au 1er décès, droits au 1er puis au 2nd décès,
+  total des droits, frais de notaire cumulés, net cumulé des héritiers hors conjoint (réunion
+  d'usufruit incluse). Ordre normal seulement (l'Utilisateur décède en premier), deux décès à la date
+  du jour. Chaque colonne est un appel à `computeOrdreNormal(base, option)`
+  ([transmissionOrdreNormal.ts](src/utils/transmissionOrdreNormal.ts)), la même fonction que l'ordre
+  normal de `Succession2ndDeces.tsx` : la colonne de l'option retenue retombe exactement sur l'onglet
+  2nd décès. Seules sont mises en évidence la plus faible valeur du total des droits et la plus forte du net
+  des héritiers, sans recommandation (l'intérêt du conjoint relève du conseil). Une erreur de calcul
+  sur une option n'affecte que sa colonne. Tests : `utils/transmissionOrdreNormal.test.ts`.
 - **Sens de la DDV.** Seule la donation consentie par le défunt simulé joue dans sa succession :
   `hasDDVConsentieParDefunt(maritalStatus, 'user' | 'spouse')` lit
   `donation_dernier_vivant_personne` (consentie par l'Utilisateur) pour `buildFamilyGraph` et
@@ -670,6 +681,11 @@ handicap par la phase 2, le net à recevoir par la phase 3, les règles complém
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
+- Chargement des données Transmission encore dupliqué : `Succession2ndDeces.tsx` et
+  `ComparaisonOptionsConjoint.tsx` partagent `loadTransmissionData` / `buildOrdreNormalBase`
+  ([transmissionOrdreNormal.ts](src/utils/transmissionOrdreNormal.ts)), mais `Synthese.tsx` et
+  `ProcessusCalcul.tsx` gardent leur propre copie des requêtes et de la construction du contexte du
+  1er décès, qui peut diverger.
 - Distinction « dépense nécessaire » indépendante de « dépense qualifiante » réduite à 2 branches au
   lieu des 4 cas légaux de l'art. 1469 pour le calcul des récompenses (`computeMontantRecompense`,
   [recompensesCreances.ts](src/lib/patrimoine/recompensesCreances.ts) — moteur côté Patrimoine, cf.
