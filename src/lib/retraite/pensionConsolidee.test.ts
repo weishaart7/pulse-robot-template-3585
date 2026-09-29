@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { calculerPensionConsolidee, EntreePensionConsolidee } from './pensionConsolidee';
+import { calculerPensionConsolidee,
+  calculerResultatFonctionPublique, EntreePensionConsolidee } from './pensionConsolidee';
 import {
   tauxProratisation,
   pensionBase,
@@ -321,5 +322,42 @@ describe('calculerPensionConsolidee — écrêtement du MICO tous régimes (réf
       Math.max(0, sans.majorationMicoAvantEcretement - Math.max(0, depassement)),
       6
     );
+  });
+});
+
+describe('calculerResultatFonctionPublique — MIGA réservé au taux plein (art. L. 17 CPCMR)', () => {
+  const dateNaissance = { annee: 1990, mois: 6 };
+  const dateEffet = new Date(Date.UTC(2054, 6, 1)); // 64 ans 0 mois
+  const donnees = {
+    traitementIndiciaireBrut: 20000,
+    trimestresLiquidables: 172,
+    pointsRAFP: 0,
+    departAnticipeCategorieActive: false,
+    departPourInvalidite: false,
+    moyenneAnnuelleNBI: 0,
+    trimestresLiquidablesNBI: 0,
+  };
+
+  it('taux plein par la durée : pension portée au minimum garanti 2026 (43 ans de services → 100 %)', () => {
+    const r = calculerResultatFonctionPublique(donnees, 172, 0, dateNaissance, dateEffet, false, 0);
+    expect(r.pensionFinale).toBeCloseTo(16396.19, 2);
+  });
+
+  it('pension décotée : minimum garanti refusé, pension calculée seule', () => {
+    const r = calculerResultatFonctionPublique(
+      { ...donnees, trimestresLiquidables: 100 },
+      172, 0, dateNaissance, dateEffet, false, 0
+    );
+    // Décote âge (12 trimestres avant 67 ans, -15 %) plus favorable que la décote durée (-25 %).
+    expect(r.pensionFinale).toBeCloseTo(20000 * 0.75 * (100 / 172) * 0.85, 2);
+  });
+
+  it('invalidité : minimum garanti accordé malgré la décote', () => {
+    const r = calculerResultatFonctionPublique(
+      { ...donnees, trimestresLiquidables: 100, departPourInvalidite: true },
+      172, 0, dateNaissance, dateEffet, false, 0
+    );
+    // 25 ans de services : 57,5 % + 2,5 × 10 = 82,5 %.
+    expect(r.pensionFinale).toBeCloseTo(16396.19 * 0.825, 2);
   });
 });

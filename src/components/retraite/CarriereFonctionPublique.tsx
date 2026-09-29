@@ -24,10 +24,11 @@ import {
   pensionBaseFonctionPublique,
   decoteFonctionPublique,
   minimumGaranti,
+  minimumGarantiApplicable,
   pensionFonctionPubliqueFinale,
   majorationEnfantsFonctionPublique,
   pensionFonctionPubliqueAvecMajorationEnfants,
-  VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
+  VALEUR_REFERENCE_MIGA_ANNUELLE_2026,
   supplementNBI,
   VALEUR_SERVICE_POINT_RAFP_2026,
 } from '@/lib/retraite/calculFonctionPublique';
@@ -172,10 +173,9 @@ export const CarriereFonctionPublique = ({
   });
 
   const pensionCalculee = pensionBaseFonctionPublique(tib, taux, decote);
-  const minimumGarantiValue = minimumGaranti(
-    trimestresLiquidablesNum,
-    trimestresRequis,
-    VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
+  const minimumGarantiValue = minimumGarantiApplicable(
+    minimumGaranti(trimestresLiquidablesNum, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2026, departPourInvalidite),
+    decote,
     departPourInvalidite
   );
   const pensionApresMiga = pensionFonctionPubliqueFinale(pensionCalculee, minimumGarantiValue);
@@ -486,11 +486,19 @@ export const CarriereFonctionPublique = ({
                   Calculée : {formatEuro2(pensionCalculee)} / an · Minimum garanti :{' '}
                   {formatEuro2(minimumGarantiValue)} / an
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Minimum garanti calculé sur la valeur de référence 2025 (1 248,33 €/mois,
-                  indice majoré 227) — la valeur 2026 n'est pas encore confirmée par une source
-                  opposable.
-                </p>
+                {decote < 0 && !departPourInvalidite ? (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Minimum garanti non applicable : il est réservé aux pensions sans décote (durée
+                    requise ou âge d'annulation de la décote atteint), sauf invalidité.
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Minimum garanti calculé sur la valeur de référence 2026 (1 366,35 €/mois pour
+                    40 ans de services), sur les trimestres liquidables — bonifications comprises,
+                    alors que seuls les services effectifs comptent : approximation possiblement
+                    favorable.
+                  </p>
+                )}
                 {dureeRequiseAtteinte && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Surcote non calculée pour ce régime : les trimestres cotisés après l'âge légal ne

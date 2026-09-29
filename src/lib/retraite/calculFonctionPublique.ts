@@ -202,23 +202,18 @@ export const VALEUR_SERVICE_POINT_RAFP_2026 = 0.05671;
 
 /**
  * Valeur de référence du minimum garanti (traitement indiciaire brut au 1er
- * janvier 2004 de l'indice majoré 227, revalorisé) — donnée **2025
- * confirmée** par le référentiel (§7.5), mensuelle. Exportée en constante
- * plutôt que codée en dur dans `minimumGaranti()` : cette dernière prend la
- * valeur de référence en paramètre, jamais une valeur par défaut interne.
+ * janvier 2004 de l'indice majoré 227, revalorisé comme les pensions) —
+ * montant attribué pour 40 ans de services, au 01/01/2026 : 16 396,19 €/an,
+ * soit 1 366,35 €/mois. Exportée en constante plutôt que codée en dur dans
+ * `minimumGaranti()`, qui prend la valeur de référence en paramètre.
  *
- * ⚠️ La valeur 2026 (environ 1 366,35 €) n'est **volontairement pas**
- * retenue ici : le référentiel la qualifie lui-même de « à vérifier auprès
- * du SRE », donc non confirmée par une source opposable au moment de cette
- * implémentation. Ne pas ajouter cette valeur en dur tant qu'une source
- * datée et sourcée ne la confirme pas — passer la valeur 2025 ci-dessous à
- * `minimumGaranti()` en attendant, ou une valeur mise à jour et sourcée le
- * cas échéant.
- *
- * Source : Service des Retraites de l'État, "Le minimum garanti".
+ * Source : Service des retraites de l'État, « Le minimum garanti »
+ * (retraitesdeletat.gouv.fr, vérifié le 2026-09-29). La valeur 1 248,33 €
+ * retenue jusque-là était erronée (≈ -9 %). ⚠️ À réviser à chaque
+ * revalorisation des pensions.
  */
-export const VALEUR_REFERENCE_MIGA_MENSUELLE_2025 = 1248.33;
-export const VALEUR_REFERENCE_MIGA_ANNUELLE_2025 = VALEUR_REFERENCE_MIGA_MENSUELLE_2025 * 12;
+export const VALEUR_REFERENCE_MIGA_ANNUELLE_2026 = 16396.19;
+export const VALEUR_REFERENCE_MIGA_MENSUELLE_2026 = VALEUR_REFERENCE_MIGA_ANNUELLE_2026 / 12;
 
 /**
  * Minimum garanti fonction publique, barème par palier (référentiel §7.5,
@@ -230,15 +225,15 @@ export const VALEUR_REFERENCE_MIGA_ANNUELLE_2025 = VALEUR_REFERENCE_MIGA_MENSUEL
  * souhaité (mensuelle pour un résultat mensuel, annuelle pour un résultat
  * annuel) — cette fonction ne fait aucune hypothèse d'unité, contrairement
  * au reste du module qui travaille exclusivement en annuel : à la charge de
- * l'appelant de passer `VALEUR_REFERENCE_MIGA_ANNUELLE_2025` pour rester
+ * l'appelant de passer `VALEUR_REFERENCE_MIGA_ANNUELLE_2026` pour rester
  * cohérent avec `pensionBaseFonctionPublique()` et
  * `pensionFonctionPubliqueFinale()`.
  *
  * `trimestresServicesEffectifs` : durée de services effectifs de l'agent
- * (pas la durée requise tous régimes) — cette fonction ne distingue pas les
- * bonifications éventuellement incluses dans les trimestres liquidables,
- * comme le reste de ce module ne le fait pas non plus ailleurs (même
- * simplification que `tauxProratisation()`/`decoteSurTrimestresPlafond25()`).
+ * (art. L. 17 CPCMR, hors bonifications). ⚠️ Approximation assumée
+ * (décision du 2026-09-29) : faute de champ dédié, les appelants passent les
+ * trimestres liquidables, bonifications comprises — le minimum peut être
+ * légèrement surestimé pour un agent bonifié ; signalé à l'écran.
  *
  * Quatre paliers, appliqués sur la durée de services en années
  * (`trimestresServicesEffectifs / 4`, calcul continu — pas arrondi à
@@ -257,9 +252,8 @@ export const VALEUR_REFERENCE_MIGA_ANNUELLE_2025 = VALEUR_REFERENCE_MIGA_MENSUEL
  *    continu en fonction des trimestres, pas seulement des années entières.
  * 4. **40 ans et plus** : 100 % de la valeur de référence, plafond atteint.
  *
- * Accessible à l'âge d'annulation de la décote — cette fonction ne vérifie
- * aucune condition d'âge, à la charge de l'appelant (même principe que
- * l'ancienne version).
+ * Ne vérifie pas la condition d'accès (taux plein) : cf.
+ * `minimumGarantiApplicable()` ci-dessous, à composer par l'appelant.
  */
 export function minimumGaranti(
   trimestresServicesEffectifs: number,
@@ -285,6 +279,23 @@ export function minimumGaranti(
   }
 
   return valeurReference;
+}
+
+/**
+ * Condition d'accès au minimum garanti (art. L. 17 CPCMR, réforme 2010 ;
+ * SRE et CNRACL, vérifié le 2026-09-29) : réservé aux pensions liquidées
+ * sans décote — durée d'assurance requise atteinte ou âge d'annulation de la
+ * décote atteint, ce qu'exprime `decote === 0` (décote FP déjà calculée comme
+ * la plus favorable des deux, cf. `decoteFonctionPublique()`). Exception :
+ * pension pour invalidité, toujours éligible. Les autres exceptions
+ * (fonctionnaire handicapé, parent d'un enfant handicapé) ne sont pas
+ * représentées dans les données : non accordées par défaut.
+ *
+ * Retourne le montant du minimum retenu : `minimum` si éligible, 0 sinon
+ * (la pension calculée, décotée, s'applique alors seule).
+ */
+export function minimumGarantiApplicable(minimum: number, decote: number, estInvalidite = false): number {
+  return estInvalidite || decote >= 0 ? minimum : 0;
 }
 
 /**

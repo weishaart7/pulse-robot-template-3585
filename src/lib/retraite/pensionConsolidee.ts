@@ -47,10 +47,11 @@ import {
   pensionBaseFonctionPublique,
   decoteFonctionPublique,
   minimumGaranti,
+  minimumGarantiApplicable,
   pensionFonctionPubliqueFinale,
   majorationEnfantsFonctionPublique,
   pensionFonctionPubliqueAvecMajorationEnfants,
-  VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
+  VALEUR_REFERENCE_MIGA_ANNUELLE_2026,
   supplementNBI,
   VALEUR_SERVICE_POINT_RAFP_2026,
 } from './calculFonctionPublique';
@@ -165,10 +166,9 @@ export function calculerResultatFonctionPublique(
   });
 
   const pensionCalculee = pensionBaseFonctionPublique(donnees.traitementIndiciaireBrut, taux, decote);
-  const minimumGarantiValue = minimumGaranti(
-    donnees.trimestresLiquidables,
-    trimestresRequis,
-    VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
+  const minimumGarantiValue = minimumGarantiApplicable(
+    minimumGaranti(donnees.trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2026, donnees.departPourInvalidite),
+    decote,
     donnees.departPourInvalidite
   );
   const pensionApresMiga = pensionFonctionPubliqueFinale(pensionCalculee, minimumGarantiValue);

@@ -257,9 +257,6 @@ Classement par risque, revérifié contre le code au 2026-09-24 (`git log`, lect
 **Audit du 2026-09-29** ([audit-retraite-2026-09-29.md](audit-retraite-2026-09-29.md), classement
 et feuille de route validés). Nouveaux points bloquants :
 - complémentaires figées au jour du RIS : ni projection des points, ni minoration Agirc-Arrco (R1) ;
-- valeur de référence du MIGA (1 248,33 €) à confronter aux 1 366,35 € publiés pour 2026, MIGA
-  calculé sur les trimestres liquidables au lieu des services effectifs (R2, complément du point
-  MIGA ci-dessous) ;
 
 Soldés en phase 0 (2026-09-29) :
 - R3 : en option « taux seul », les trimestres rachetés ne réduisent que la décote ; seule l'option
@@ -274,23 +271,24 @@ Soldés en phase 0 (2026-09-29) :
   même conversion que la Synthèse) ;
 - `VALEUR_SERVICE_POINT_RAFP_2026` n'est plus définie qu'à un seul endroit
   (`calculFonctionPublique.ts`) ; la source du barème de rachat est corrigée ; le commentaire périmé
-  de `coefficientsRevalorisationCNAV.ts` est rectifié.
+  de `coefficientsRevalorisationCNAV.ts` est rectifié ;
+- R2 : le MIGA est réservé aux pensions sans décote (`minimumGarantiApplicable()`,
+  calculFonctionPublique.ts : décote FP nulle, ou pension d'invalidité), branché dans
+  `pensionConsolidee.ts` et `CarriereFonctionPublique.tsx`, avec un message à l'écran quand il est
+  refusé. Les autres exceptions (fonctionnaire handicapé, parent d'enfant handicapé) ne sont pas
+  représentées dans les données : non accordées. Valeur de référence 2026 : 16 396,19 €/an
+  (`VALEUR_REFERENCE_MIGA_ANNUELLE_2026`, source SRE) ; la valeur 1 248,33 €/mois retenue jusque-là
+  était erronée d'environ 9 %. Approximation validée : les trimestres liquidables (bonifications
+  comprises) tiennent lieu de services effectifs, faute de champ dédié — signalé à l'écran.
 
 Le barème de rachat a été vérifié conforme à la circulaire Cnav 2026-04 et à l'arrêté du
 21/10/2012. Sa non-monotonie sur la tranche 75-100 % du PASS vient du texte officiel, pas du code.
 
-La **condition de taux plein du MIGA**, ci-dessous, est désormais confirmée par SRE et CNRACL.
-
-Un seul point ouvert au 2026-09-24 (ci-dessous). L'audit des calculs du 2026-09-24 a relevé cinq anomalies
+L'audit des calculs du 2026-09-24 a relevé cinq anomalies
 bloquantes, toutes soldées (cf. §2) : plafonnement SAM avant revalorisation + PASS 2026, plafond de
 décote -25 %, période de la surcote classique, date d'effet unique et projection des trimestres,
 écrêtement du MICO tous régimes.
 
-- **MIGA accordé sans condition de taux plein.** `minimumGaranti()` ne vérifie ni la durée requise ni
-  l'âge d'annulation de la décote. L'article L. 17 CPCMR (réforme 2010) subordonnerait l'accès au MIGA
-  à l'une de ces conditions (sauf exceptions, dont l'invalidité), mais le référentiel (§7.5) n'en dit
-  rien : non implémenté (décision du 2026-09-24) en attendant vérification de la source. MIGA
-  probablement surestimé pour un fonctionnaire décoté.
 - **Calcul FP/CNAVPL dupliqué entre les cartes et `pensionConsolidee.ts`** : chaque correction de
   règle doit être reportée aux deux endroits (décotes désormais partagées, mais pas MIGA, surcote,
   majorations, NBI). `decoteSurTrimestresPlafond25()` (calcul.ts) n'est plus appelée que par des
@@ -361,10 +359,10 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   (décrets d'application LFSS 2024 non publiés selon le référentiel au moment de l'audit) — cas très
   minoritaire pour un outil de simulation prospective, mais aucun garde-fou n'empêche de calculer les
   deux minimums indépendamment et de les additionner à tort si un futur écran le faisait.
-- **Valeur de référence MIGA 2026 non confirmée.** Le calcul retient volontairement la valeur 2025
-  (1 248,33 €/mois), avec avertissement à l'écran — un fonctionnaire liquidant en 2026 avec une valeur
-  2026 réellement supérieure verrait son minimum garanti légèrement sous-estimé tant que cette valeur
-  n'est pas mise à jour.
+- **Plafond « dernier traitement » appliqué même sans majoration enfants.**
+  `pensionFonctionPubliqueAvecMajorationEnfants()` retient `min(pension × (1 + majoration), TIB)` :
+  une pension portée au MIGA au-delà du TIB est ramenée au TIB même sans enfant. Cas théorique (TIB
+  inférieur au minimum garanti, donc sous le SMIC), relevé lors des tests du 2026-09-29, non corrigé.
 - **Régime de base non modélisé par l'app (MSA agricole non-salarié, régime étranger) absent du total
   « tous régimes »** utilisé par la bascule de dénominateur du MICO palier 1 — un polypensionné dans
   un tel régime reste à tort au Cas 1 (dénominateur = durée requise) même si son total réel dépasse

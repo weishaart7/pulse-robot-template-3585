@@ -69,7 +69,7 @@ lus dans le RIS, qui correspondent aux droits acquis au jour du relevé.
 - *Scénario* : cadre né en 1980, 9 000 points au RIS, 60 k€ brut/an. Il acquiert encore environ
   18 ans de points, mais la pension affichée ne compte que les 9 000 points actuels.
 
-**R2. MIGA accordé sans condition de taux plein, avec une valeur de référence douteuse.**
+**R2. MIGA accordé sans condition de taux plein, avec une valeur de référence douteuse.** ✅ Corrigé le 2026-09-29 (valeur SRE 2026 : 16 396,19 €/an ; approximation services effectifs validée).
 `calculFonctionPublique.ts` `minimumGaranti()`, appelé par `pensionConsolidee.ts:169`.
 - SRE et CNRACL confirment que le minimum garanti n'est ouvert qu'avec la durée requise **ou** à
   l'âge d'annulation de la décote, sauf en cas d'invalidité. Le point était ouvert au §3 de

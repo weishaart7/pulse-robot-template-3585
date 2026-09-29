@@ -11,8 +11,8 @@ import {
   majorationEnfantsFonctionPublique,
   supplementNBI,
   pensionFonctionPubliqueAvecMajorationEnfants,
-  VALEUR_REFERENCE_MIGA_ANNUELLE_2025,
-  VALEUR_REFERENCE_MIGA_MENSUELLE_2025,
+  VALEUR_REFERENCE_MIGA_ANNUELLE_2026,
+  minimumGarantiApplicable,
 } from './calculFonctionPublique';
 import {
   tauxProratisation,
@@ -78,8 +78,8 @@ describe('minimumGaranti — barème par palier (référentiel §7.5, art. L. 17
   // directement aux exemples chiffrés du référentiel (eux-mêmes exprimés en
   // €/mois) — le reste du module (pensionBaseFonctionPublique, etc.) reste
   // en annuel, cf. describes suivants qui utilisent
-  // VALEUR_REFERENCE_MIGA_ANNUELLE_2025.
-  const VALEUR_REF = VALEUR_REFERENCE_MIGA_MENSUELLE_2025; // 1 248,33 €
+  // VALEUR_REFERENCE_MIGA_ANNUELLE_2026.
+  const VALEUR_REF = 1248.33; // valeur arbitraire : ces tests portent sur la formule, pas sur la valeur
 
   describe('Moins de 15 ans, hors invalidité', () => {
     it('13 ans de services (52 trimestres), 168 trimestres requis', () => {
@@ -180,7 +180,7 @@ describe('Comparaison pension de droit commun / MIGA — le plus élevé des deu
     const taux = Math.min(trimestresLiquidables / trimestresRequis, 1);
 
     const pensionCalculee = pensionBaseFonctionPublique(traitementAnnuel, taux, 0);
-    const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2025);
+    const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2026);
     const pensionFinale = pensionFonctionPubliqueFinale(pensionCalculee, mg);
 
     expect(pensionCalculee).toBeGreaterThan(mg);
@@ -275,7 +275,7 @@ describe('Ordre d’application fonction publique, majoration enfants incluse : 
   const decote = 0; // isolé pour ce scénario, non testé ici
 
   const pensionCalculee = pensionBaseFonctionPublique(traitementAnnuel, tauxProrata, decote);
-  const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2025);
+  const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2026);
   const pensionApresMinimumGaranti = pensionFonctionPubliqueFinale(pensionCalculee, mg);
   const majorationPct = majorationEnfantsFonctionPublique(3); // 10 %
 
@@ -352,7 +352,7 @@ describe('Profil complet — fonction publique (mission : branchement des majora
     expect(decote).toBe(-25); // plafond -25 %
 
     const pensionCalculee = pensionBaseFonctionPublique(tib, taux, decote);
-    const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2025);
+    const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2026);
     const pensionApresMiga = pensionFonctionPubliqueFinale(pensionCalculee, mg);
 
     expect(pensionApresMiga).toBe(mg);
@@ -372,7 +372,7 @@ describe('Profil complet — fonction publique (mission : branchement des majora
     expect(decote).toBe(0);
 
     const pensionCalculee = pensionBaseFonctionPublique(tib, taux, decote);
-    const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2025);
+    const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2026);
     const pensionApresMiga = pensionFonctionPubliqueFinale(pensionCalculee, mg);
 
     const trimestresCotisesAnneeReference = 4;
@@ -396,7 +396,7 @@ describe('Profil complet — fonction publique (mission : branchement des majora
     const trimestresLiquidables = 180;
     const taux = tauxProratisation(trimestresLiquidables, trimestresRequis);
     const pensionCalculee = pensionBaseFonctionPublique(tib, taux, 0);
-    const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2025);
+    const mg = minimumGaranti(trimestresLiquidables, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2026);
     const pensionApresMiga = pensionFonctionPubliqueFinale(pensionCalculee, mg);
 
     const surcoteTotalePct = surcoteTotale(
@@ -480,5 +480,20 @@ describe('decoteFonctionPublique — plus favorable des deux comptages, taux du 
         ageAnnulationDecote: 62,
       })
     ).toBeCloseTo(-10, 10); // 8 trimestres d'âge < 17 de durée
+  });
+});
+
+describe('minimumGarantiApplicable — condition de taux plein (art. L. 17 CPCMR)', () => {
+  it('accorde le minimum sans décote (durée requise ou âge d\'annulation atteint)', () => {
+    expect(minimumGarantiApplicable(15000, 0)).toBe(15000);
+  });
+  it('refuse le minimum à une pension décotée', () => {
+    expect(minimumGarantiApplicable(15000, -5)).toBe(0);
+  });
+  it('accorde le minimum à une pension d\'invalidité même décotée', () => {
+    expect(minimumGarantiApplicable(15000, -5, true)).toBe(15000);
+  });
+  it('valeur de référence 2026 : 16 396,19 €/an pour 40 ans de services (SRE)', () => {
+    expect(minimumGaranti(160, 172, VALEUR_REFERENCE_MIGA_ANNUELLE_2026)).toBeCloseTo(16396.19, 2);
   });
 });
