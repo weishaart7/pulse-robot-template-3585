@@ -53,9 +53,16 @@ import {
   pensionFonctionPubliqueAvecMajorationEnfants,
   VALEUR_REFERENCE_MIGA_ANNUELLE_2026,
   supplementNBI,
-  VALEUR_SERVICE_POINT_RAFP_2026,
 } from './calculFonctionPublique';
 import { pensionBaseCNAVPL, decoteCNAVPL } from './calculCNAVPL';
+import {
+  separerRegimesPoints,
+  pointsAgircArrcoAnnuels,
+  coefficientAnticipationAgircArrco,
+  pensionAgircArrco,
+  prestationRAFP,
+  DetailAgircArrco,
+} from './calculAgircArrco';
 
 export interface DonneesFonctionPublique {
   traitementIndiciaireBrut: number;
@@ -100,6 +107,13 @@ export interface EntreePensionConsolidee {
   autresPensionsMensuelles: number;
   fonctionPublique: DonneesFonctionPublique | null;
   cnavpl: DonneesCNAVPL | null;
+  /**
+   * Projection des points Agirc-Arrco futurs (cf. calculAgircArrco.ts) :
+   * salaire brut annuel retenu et nombre de trimestres projetés jusqu'à la
+   * date d'effet (mêmes trimestres que la retraite de base). Absent = aucun
+   * point futur (droits acquis au RIS seulement).
+   */
+  projectionComplementaire?: { salaireAnnuel: number; trimestresProjetes: number };
 }
 
 // Sous-totaux annuels par régime — exposés pour l'annexe de l'export PDF
@@ -111,6 +125,8 @@ export interface RepartitionParRegime {
   fonctionPublique: number;
   rafp: number;
   cnavpl: number;
+  /** Capital RAFP versé en une fois (moins de 5 125 points) — hors pension annuelle. */
+  rafpCapital: number;
 }
 
 // Détail du calcul régime général — exposé pour les écrans qui affichent la
@@ -142,6 +158,8 @@ export interface ResultatPensionConsolidee {
   historiqueTrimestres: ResultatTrimestresCotisesEtAssimiles;
   ageLegal: AgeLegalResultat | null;
   detailRegimeGeneral: DetailRegimeGeneral;
+  /** Détail Agirc-Arrco, `null` si aucun régime Agirc-Arrco dans le RIS. */
+  detailAgircArrco: DetailAgircArrco | null;
 }
 
 export function calculerResultatFonctionPublique(
@@ -152,7 +170,7 @@ export function calculerResultatFonctionPublique(
   dateEffet: Date,
   auMoinsUnTrimestreMajorationEnfant: boolean,
   nombreEnfantsEligibles: number
-): { pensionFinale: number; rafpAnnuelle: number } {
+): { pensionFinale: number; rafpAnnuelle: number; rafpCapital: number } {
   const taux = tauxProratisation(donnees.trimestresLiquidables, trimestresRequis);
   const decote = decoteFonctionPublique({
     trimestresTousRegimes: donnees.trimestresLiquidables + trimestresAutresRegimes,
@@ -214,15 +232,16 @@ export function calculerResultatFonctionPublique(
       : 0;
   const pensionFinale = pensionAvantNBI + montantSupplementNBI;
 
-  const rafpAnnuelle =
-    pensionComplementaireAnnuelle({
-      nom: 'RAFP',
-      type: 'points',
-      points: donnees.pointsRAFP,
-      valeurPoint: VALEUR_SERVICE_POINT_RAFP_2026,
-    }) ?? 0;
+  // RAFP : rente à partir de 5 125 points (majorée selon l'âge au départ),
+  // capital en dessous — cf. prestationRAFP().
+  const rafp = prestationRAFP(
+    donnees.pointsRAFP,
+    dateNaissance ? ageEnMois(dateNaissance, dateEffet) / 12 : null
+  );
+  const rafpAnnuelle = rafp.forme === 'rente' ? rafp.renteAnnuelle : 0;
+  const rafpCapital = rafp.forme === 'capital' ? rafp.capital : 0;
 
-  return { pensionFinale, rafpAnnuelle };
+  return { pensionFinale, rafpAnnuelle, rafpCapital };
 }
 
 export function calculerResultatCNAVPL(
@@ -297,6 +316,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
     autresPensionsMensuelles,
     fonctionPublique,
     cnavpl,
+    projectionComplementaire,
   } = entree;
 
   const hasFonctionPublique = fonctionPublique !== null;
@@ -383,10 +403,32 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
   const nombreEnfantsEligibles = nombreEnfantsEligiblesMajorationTroisEnfants(familyLinks);
   const majorationEnfantsPct = majorationTroisEnfants(nombreEnfantsEligibles);
 
-  const totalPensionComplementaireAnnuelle = regimesPoints.reduce((total, regime) => {
-    const pension = pensionComplementaireAnnuelle(regime);
-    return pension !== undefined ? total + pension : total;
-  }, 0);
+  // Complémentaires : Agirc-Arrco (points acquis + projetés, coefficient
+  // d'anticipation si la base est décotée, majoration enfants — cf.
+  // calculAgircArrco.ts) ; autres régimes à points (RCI, Ircantec…) inchangés.
+  const { pointsAgircArrco, aUnRegimeAgircArrco, autresRegimes } = separerRegimesPoints(regimesPoints);
+  const detailAgircArrco = aUnRegimeAgircArrco
+    ? pensionAgircArrco({
+        pointsAcquis: pointsAgircArrco,
+        pointsProjetes: projectionComplementaire
+          ? (pointsAgircArrcoAnnuels(projectionComplementaire.salaireAnnuel) *
+              projectionComplementaire.trimestresProjetes) /
+            4
+          : 0,
+        coefficientAnticipation: coefficientAnticipationAgircArrco(
+          decoteSurcote < 0,
+          dateNaissance ? ageEnMois(dateNaissance, dateEffet) / 12 : null,
+          trimestresRequis - trimestresTousRegimes
+        ),
+        nombreEnfantsEligibles,
+      })
+    : null;
+  const totalPensionComplementaireAnnuelle =
+    (detailAgircArrco?.pensionAnnuelle ?? 0) +
+    autresRegimes.reduce((total, regime) => {
+      const pension = pensionComplementaireAnnuelle(regime);
+      return pension !== undefined ? total + pension : total;
+    }, 0);
 
   const resultatFonctionPublique = hasFonctionPublique
     ? calculerResultatFonctionPublique(
@@ -398,7 +440,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
         auMoinsUnTrimestreMajorationEnfant,
         nombreEnfantsEligibles
       )
-    : { pensionFinale: 0, rafpAnnuelle: 0 };
+    : { pensionFinale: 0, rafpAnnuelle: 0, rafpCapital: 0 };
 
   const resultatCNAVPL = hasCNAVPL
     ? calculerResultatCNAVPL(
@@ -453,6 +495,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
       fonctionPublique: resultatFonctionPublique.pensionFinale,
       rafp: resultatFonctionPublique.rafpAnnuelle,
       cnavpl: resultatCNAVPL.pensionFinale,
+      rafpCapital: resultatFonctionPublique.rafpCapital,
     },
     historiqueTrimestres: resultatTrimestresDetailCarriere,
     ageLegal: ageLegalResultat,
@@ -471,5 +514,6 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
       majorationEnfantsPct,
       nombreEnfantsEligibles,
     },
+    detailAgircArrco,
   };
 }

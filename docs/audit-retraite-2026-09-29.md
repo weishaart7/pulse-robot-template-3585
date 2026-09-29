@@ -53,7 +53,7 @@ et le lien avec les modules Budget, Fiscalité et Transmission (§5).
 
 ### 🔴 Bloquant : fausse un montant présenté au client
 
-**R1. Complémentaires figées, sans projection ni minoration.**
+**R1. Complémentaires figées, sans projection ni minoration.** ✅ Corrigé le 2026-09-29 (phase 2).
 `pensionConsolidee.ts:387-390` (et `Trimestres.tsx`) calcule `points × valeurPoint` avec les points
 lus dans le RIS, qui correspondent aux droits acquis au jour du relevé.
 - La base est projetée jusqu'à la date d'effet (`calculerProjectionRevenuFutur`), mais pas les
@@ -142,7 +142,7 @@ contient « assurance retraite ».
 - Le module Fiscalité dispose déjà de `calculerPrelevementsSociauxPensionsRetraitesRentes` et du
   moteur d'IR. Ils ne sont pas branchés sur Retraite.
 
-**R9. RAFP toujours versée en rente.**
+**R9. RAFP toujours versée en rente.** ✅ Corrigé le 2026-09-29 (phase 2).
 En dessous de 5 125 points, la RAFP est versée en capital. Le coefficient de majoration lié à l'âge
 de liquidation n'est pas non plus appliqué.
 
@@ -262,7 +262,7 @@ Exemples :
 |---|---|---|
 | **0. Corrections** | R2 (condition de taux plein et valeur du MIGA, services effectifs), R3, R5, R6, commentaire périmé, dédoublonnage RAFP, source du barème de rachat (R4) | `calculFonctionPublique.ts`, `Trimestres.tsx`, `calcul.ts` |
 | **1. Barèmes versionnés** ✅ 2026-09-29 | Sortir tous les paramètres dans un `params-retraite.json` daté par date d'effet (sur le modèle de `params-dmtg.json`), avec contrôle de péremption ; scénarios de référence (sur le modèle de `Golden_Scenarios_Transmission.md`) confrontés à M@rel | `src/lib/retraite/`, `docs/` |
-| **2. Complémentaires** | Moteur Agirc-Arrco (projection, minoration, majoration), RAFP capital/rente, sections CNAVPL ; saisie du salaire brut complet | nouveau `calculAgircArrco.ts`, `pensionConsolidee.ts` |
+| **2. Complémentaires** ✅ 2026-09-29 | Moteur Agirc-Arrco (projection, minoration, majoration), RAFP capital/rente, sections CNAVPL ; saisie du salaire brut complet | nouveau `calculAgircArrco.ts`, `pensionConsolidee.ts` |
 | **3. Net** | Branchement des moteurs Fiscalité (PS et IR), taux de remplacement, libellé en euros constants | `pensionConsolidee.ts`, `src/lib/fiscalite/` |
 | **4. Réversion et couple** | Moteur de réversion multi-régimes, revenu du survivant, lien Transmission, alertes PACS | nouveau `reversion.ts` |
 | **5. Départs anticipés et transitions** | Carrières longues (LFSS 2026), handicap, retraite progressive, cumul emploi-retraite | `calcul.ts` |

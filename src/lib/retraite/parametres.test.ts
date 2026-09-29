@@ -12,6 +12,9 @@ describe('params-retraite.json — cohérence', () => {
       'migaReferenceAnnuelle',
       'rafpValeurServicePoint',
       'cnavplValeurPoint',
+      'agircArrcoPrixAchatPoint',
+      'agircArrcoValeurServicePoint',
+      'agircArrcoPlafondMajorationEnfantsAnnuel',
     ];
     for (const cle of cles) expect(MILLESIME_COURANT.sources[cle]).toBeTruthy();
   });

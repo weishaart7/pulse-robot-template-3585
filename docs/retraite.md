@@ -84,9 +84,36 @@ uniquement applicatif via `familyService`.
   ajouter un millésime, sans modifier les précédents. Les tables historiques et législatives (barème
   âge/durée par génération, PASS et seuils de validation par année, coefficients de revalorisation,
   durée du SAM) restent en TypeScript, à côté de leur documentation de sources.
+- **Retraites complémentaires (phase 2 de l'audit, 2026-09-29)** — [calculAgircArrco.ts](src/lib/retraite/calculAgircArrco.ts),
+  branché dans `pensionConsolidee.ts` (Carrière, Synthèse) et `Trimestres.tsx` (Optimisation) :
+  - *Agirc-Arrco* : régime repéré par son nom dans `regimes_points` ; pension = (points acquis au RIS
+    + points projetés) × valeur de service du millésime courant (1,4386 €, la valeur du point lue au RIS
+    n'est plus utilisée pour ce régime) × coefficient d'anticipation + majoration enfants. Points
+    projetés : (salaire ≤ PASS × 6,20 % + salaire entre 1 et 8 PASS × 17 %) ÷ 20,1877 €, au prorata des
+    trimestres projetés jusqu'à la date d'effet. Salaire : `retraite_data.salaire_brut_annuel`
+    (migration `20260929210000`, saisie dans la carte des régimes à points de Carrière), sinon repli
+    sur le revenu de l'hypothèse de revenu futur, plafonné au PASS en mode RIS — sous-estimation
+    signalée à l'écran (Carrière, Synthèse, Optimisation).
+  - *Coefficient d'anticipation* : seulement si la base du régime général est décotée ; le plus
+    favorable de la grille par âge (années révolues — choix prudent validé, la règle infra-annuelle
+    n'ayant pas été trouvée) et de la grille par trimestres manquants (≤ 20). Lignes 2-4, 6-9, 11, 13-14
+    et 16-19 de cette seconde grille déduites de la règle (−1 %/trimestre jusqu'à 12, puis −1,25 %),
+    non vérifiées ligne à ligne.
+  - *Majoration enfants* : 10 % des droits avant coefficient, plafonnée à 2 367,48 €/an, sur tous les
+    points (approximation validée, légèrement favorable pour les points d'avant 2012) ; la majoration
+    n'est pas elle-même minorée (lecture littérale de la source, à confirmer).
+  - *RAFP* : rente à partir de 5 125 points, avec coefficient de majoration par âge révolu ; capital
+    en dessous (× coefficient de conversion interpolé au mois), exposé à part
+    (`repartitionParRegime.rafpCapital`) et exclu de la pension annuelle. Barèmes ERAFP officiels ;
+    l'exemple rafp.fr (4 448 points à 64 ans → 6 965,93 €) est un test.
+  - *Optimisation* : Agirc-Arrco recalculé à chaque date de départ ; le gain d'un rachat de trimestres
+    inclut l'abattement Agirc-Arrco supprimé.
+  - Non couverts : projection des autres régimes à points (RCI, Ircantec, sections CNAVPL…), toujours
+    évalués sur les points acquis et la valeur du RIS ; points gratuits (chômage, maladie).
 - **Scénarios de référence** : [Golden_Scenarios_Retraite.md](docs/Golden_Scenarios_Retraite.md),
   calculés à la main et rejoués par `goldenScenarios.test.ts` (taux plein avec Agirc-Arrco, décote,
-  MICO avec 3 enfants, polypensionné RG + FP porté au MIGA). Non confrontés à M@rel (connexion
+  MICO avec 3 enfants, polypensionné RG + FP porté au MIGA avec RAFP en capital, cadre de 45 ans
+  décoté avec Agirc-Arrco projeté et abattu). Non confrontés à M@rel (connexion
   FranceConnect requise).
 - **Couverture de test — rattrapée depuis l'audit initial.** L'audit du 2026-08-11 constatait une
   couverture nulle sur ce module ; 10 fichiers `*.test.ts` co-localisés couvrent le
@@ -269,7 +296,6 @@ Classement par risque, revérifié contre le code au 2026-09-24 (`git log`, lect
 
 **Audit du 2026-09-29** ([audit-retraite-2026-09-29.md](audit-retraite-2026-09-29.md), classement
 et feuille de route validés). Nouveaux points bloquants :
-- complémentaires figées au jour du RIS : ni projection des points, ni minoration Agirc-Arrco (R1) ;
 
 Soldés en phase 0 (2026-09-29) :
 - R3 : en option « taux seul », les trimestres rachetés ne réduisent que la décote ; seule l'option

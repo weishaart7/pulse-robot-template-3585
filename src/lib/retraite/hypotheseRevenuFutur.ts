@@ -152,6 +152,10 @@ export interface ProjectionRevenuFutur {
   dateEffet: Date | null;
   /** Années passées sans donnée, non projetées (cf. `anneesPasseesSansDonnees()`). */
   anneesPasseesSansDonnees: number[];
+  /** Trimestres civils projetés jusqu'à la date d'effet, même sans revenu hypothèse. */
+  trimestresProjetesJusquADateEffet: number;
+  /** Revenu annuel hypothèse retenu (plafonné au PASS en mode RIS), `null` si indéterminé. */
+  revenuHypothese: number | null;
 }
 
 /**
@@ -179,6 +183,8 @@ export function calculerProjectionRevenuFutur(
     trimestresValidesProjetes: 0,
     dateEffet,
     anneesPasseesSansDonnees: anneesPasseesSansDonnees(parAnnee, aujourdHui),
+    trimestresProjetesJusquADateEffet: 0,
+    revenuHypothese: null as number | null,
   };
   if (!dateNaissance || !dateEffet) return sansProjection;
 
@@ -189,7 +195,7 @@ export function calculerProjectionRevenuFutur(
   const projection = trimestresProjetesParAnnee(parAnnee, aujourdHui, dateEffet);
   const trimestresValidesProjetes = projection.reduce((total, a) => total + a.trimestres, 0);
   if (revenuHypothese === null || revenuHypothese <= 0 || trimestresValidesProjetes === 0) {
-    return sansProjection;
+    return { ...sansProjection, trimestresProjetesJusquADateEffet: trimestresValidesProjetes, revenuHypothese };
   }
 
   const salaireAnnuelMoyenProjete = calculerSAM(
@@ -199,5 +205,27 @@ export function calculerProjectionRevenuFutur(
     dateEffet.getUTCFullYear()
   ).sam;
 
-  return { ...sansProjection, salaireAnnuelMoyenProjete, trimestresValidesProjetes };
+  return {
+    ...sansProjection,
+    salaireAnnuelMoyenProjete,
+    trimestresValidesProjetes,
+    trimestresProjetesJusquADateEffet: trimestresValidesProjetes,
+    revenuHypothese,
+  };
+}
+
+/**
+ * Salaire retenu pour projeter les points Agirc-Arrco futurs : le salaire
+ * brut total saisi s'il existe, sinon le revenu hypothèse de la retraite de
+ * base — plafonné au PASS en mode RIS, donc sous-estimant les points de
+ * tranche 2 d'un cadre (`estPlafonne`, à signaler à l'écran). `null` si
+ * aucun des deux n'est connu.
+ */
+export function salaireProjectionComplementaire(
+  salaireBrutAnnuel: number | null | undefined,
+  revenuHypothese: number | null
+): { salaireAnnuel: number; estPlafonne: boolean } | null {
+  if (salaireBrutAnnuel && salaireBrutAnnuel > 0) return { salaireAnnuel: salaireBrutAnnuel, estPlafonne: false };
+  if (revenuHypothese && revenuHypothese > 0) return { salaireAnnuel: revenuHypothese, estPlafonne: true };
+  return null;
 }

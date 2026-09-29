@@ -10,7 +10,7 @@ import {
   DonneesCNAVPL,
 } from '@/lib/retraite/pensionConsolidee';
 import { trimestresRequisPourGeneration } from '@/lib/retraite/calcul';
-import { calculerProjectionRevenuFutur } from '@/lib/retraite/hypotheseRevenuFutur';
+import { calculerProjectionRevenuFutur, salaireProjectionComplementaire } from '@/lib/retraite/hypotheseRevenuFutur';
 
 export interface UsePensionConsolideeResult extends ResultatPensionConsolidee {
   loading: boolean;
@@ -31,6 +31,9 @@ export interface UsePensionConsolideeResult extends ResultatPensionConsolidee {
   dateEffet: Date | null;
   // Années passées sans donnée dans le détail de carrière, non projetées.
   anneesPasseesSansDonnees: number[];
+  // Points Agirc-Arrco futurs projetés sur un revenu plafonné au PASS (aucun
+  // salaire brut total saisi) : sous-estimation pour un cadre.
+  salaireComplementaireEstPlafonne: boolean;
 }
 
 /**
@@ -109,6 +112,8 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     trimestresValidesProjetes: trimestresProjetes,
     dateEffet: dateEffetProjection,
     anneesPasseesSansDonnees,
+    trimestresProjetesJusquADateEffet,
+    revenuHypothese,
   } = useMemo(
     () =>
       calculerProjectionRevenuFutur(
@@ -130,6 +135,8 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     ? trimestresRequisPourGeneration(dateNaissanceDetail, dateEffet)
     : 172;
 
+  const salaireComplementaire = salaireProjectionComplementaire(data.salaire_brut_annuel, revenuHypothese);
+
   const resultat = calculerPensionConsolidee({
     salaireAnnuelMoyen: salaireAnnuelMoyenProjete,
     trimestresValides: trimestresValides + trimestresProjetes,
@@ -142,6 +149,9 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     auMoinsUnTrimestreMajorationEnfant: data.au_moins_un_trimestre_majoration_enfant ?? false,
     autresPensionsMensuelles: data.autres_pensions_mensuelles ?? 0,
     ...donneesAutresRegimesDepuisRetraiteData(data),
+    projectionComplementaire: salaireComplementaire
+      ? { salaireAnnuel: salaireComplementaire.salaireAnnuel, trimestresProjetes: trimestresProjetesJusquADateEffet }
+      : undefined,
   });
 
   const aDesDonnees = salaireAnnuelMoyen > 0 || trimestresValides > 0;
@@ -160,5 +170,6 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     trimestresValidesTousRegimes,
     dateEffet: dateEffetProjection,
     anneesPasseesSansDonnees,
+    salaireComplementaireEstPlafonne: salaireComplementaire?.estPlafonne ?? false,
   };
 };

@@ -70,6 +70,16 @@ const CartePensionFoyer = ({ hasConjoint, nomUtilisateur, nomConjoint }: CartePe
                       Départ simulé au {utilisateur.dateEffet.toLocaleDateString('fr-FR', { timeZone: 'UTC' })}
                     </p>
                   )}
+                  {utilisateur.repartitionParRegime.rafpCapital > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      + capital RAFP de {formatEuro0(utilisateur.repartitionParRegime.rafpCapital)} au départ
+                    </p>
+                  )}
+                  {utilisateur.salaireComplementaireEstPlafonne && (
+                    <p className="text-xs text-spark">
+                      Agirc-Arrco projeté sur un revenu plafonné au PASS (salaire brut total non renseigné).
+                    </p>
+                  )}
                 </div>
               )}
             </div>

@@ -50,6 +50,11 @@ export interface RetraiteData {
   // valeur y est dérivée du RIS, jamais stockée).
   mode_hypothese_revenu_futur?: ModeHypotheseRevenuFutur;
   revenu_hypothese_manuel?: number;
+  // Salaire brut annuel total (non plafonné), base de la projection des
+  // points Agirc-Arrco futurs (tranche 2 au-delà du PASS) — cf.
+  // src/lib/retraite/calculAgircArrco.ts. Non renseigné = repli sur
+  // l'hypothèse de revenu futur, plafonnée au PASS.
+  salaire_brut_annuel?: number;
 }
 
 // 'conjoint' : même user_id (le conjoint n'a pas de compte séparé, cf.

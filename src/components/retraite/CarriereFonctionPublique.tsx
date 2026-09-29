@@ -12,14 +12,15 @@ import {
 } from '@/components/ui/select';
 import {
   tauxProratisation,
-  pensionComplementaireAnnuelle,
   ageLegalAtteint,
+  ageEnMois,
   ageLegalParentaleEligible,
   surcotePourTrimestresCotises,
   surcoteParentale,
   surcoteTotale,
   DateNaissance,
 } from '@/lib/retraite/calcul';
+import { prestationRAFP } from '@/lib/retraite/calculAgircArrco';
 import {
   pensionBaseFonctionPublique,
   decoteFonctionPublique,
@@ -30,7 +31,6 @@ import {
   pensionFonctionPubliqueAvecMajorationEnfants,
   VALEUR_REFERENCE_MIGA_ANNUELLE_2026,
   supplementNBI,
-  VALEUR_SERVICE_POINT_RAFP_2026,
 } from '@/lib/retraite/calculFonctionPublique';
 
 
@@ -239,17 +239,10 @@ export const CarriereFonctionPublique = ({
       : 0;
   const pensionFinale = pensionAvantNBI + montantSupplementNBI;
 
-  // points et valeurPoint sont toujours définis ici (pointsRAFPNum est un
-  // number, la valeur de service est une constante) : le résultat n'est
-  // donc jamais undefined en pratique, malgré la signature générique de
-  // pensionComplementaireAnnuelle.
-  const rafpAnnuelle =
-    pensionComplementaireAnnuelle({
-      nom: 'RAFP',
-      type: 'points',
-      points: pointsRAFPNum,
-      valeurPoint: VALEUR_SERVICE_POINT_RAFP_2026,
-    }) ?? 0;
+  // RAFP : rente à partir de 5 125 points (majorée selon l'âge au départ),
+  // capital en dessous — même fonction que pensionConsolidee.ts.
+  const rafp = prestationRAFP(pointsRAFPNum, dateNaissance ? ageEnMois(dateNaissance, dateEffet) / 12 : null);
+  const rafpAnnuelle = rafp.forme === 'rente' ? rafp.renteAnnuelle : 0;
 
   useEffect(() => {
     onResultChange?.({ pensionFinale, rafpAnnuelle });
@@ -535,9 +528,25 @@ export const CarriereFonctionPublique = ({
 
               <div className="p-3 bg-muted/50 rounded-lg">
                 <div className="text-xs text-muted-foreground mb-1">RAFP</div>
-                <div className="text-lg font-semibold text-primary">
-                  {formatEuro2(rafpAnnuelle)} / an
-                </div>
+                {rafp.forme === 'capital' ? (
+                  <>
+                    <div className="text-lg font-semibold text-primary">{formatEuro2(rafp.capital)} en capital</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Moins de 5 125 points : versement unique (coefficient de conversion{' '}
+                      {rafp.coefficientConversion.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}, majoration{' '}
+                      {rafp.coefficientMajoration.toLocaleString('fr-FR')}), hors pension annuelle.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-lg font-semibold text-primary">{formatEuro2(rafpAnnuelle)} / an</div>
+                    {rafp.coefficientMajoration > 1 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Coefficient de majoration pour âge : {rafp.coefficientMajoration.toLocaleString('fr-FR')}
+                      </p>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           </>

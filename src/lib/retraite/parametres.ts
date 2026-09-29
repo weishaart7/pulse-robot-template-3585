@@ -27,6 +27,9 @@ export interface MillesimeRetraite {
   migaReferenceAnnuelle: number;
   rafpValeurServicePoint: number;
   cnavplValeurPoint: number;
+  agircArrcoPrixAchatPoint: number;
+  agircArrcoValeurServicePoint: number;
+  agircArrcoPlafondMajorationEnfantsAnnuel: number;
   sources: Record<string, string>;
 }
 
@@ -36,8 +39,27 @@ export interface TrancheRachat {
   haut: number; // coût fixe si revenu > seuil haut
 }
 
+export interface ParametresAgircArrco {
+  source: string;
+  tauxContractuelT1: number;
+  tauxContractuelT2: number;
+  plafondT2EnPass: number;
+  tauxMajorationEnfants: number;
+  coefficientsAnticipationParAge: Record<string, number>;
+  coefficientsAnticipationParTrimestresManquants: Record<string, number>;
+}
+
+export interface ParametresRAFP {
+  source: string;
+  seuilRentePoints: number;
+  coefficientsMajorationParAge: Record<string, number>;
+  coefficientsConversionCapitalParAge: Record<string, number>;
+}
+
 interface ParamsRetraite {
   millesimes: MillesimeRetraite[];
+  agircArrco: ParametresAgircArrco;
+  rafp: ParametresRAFP;
   rachat: {
     source: string;
     seuilBasEnPass: number;
@@ -77,3 +99,5 @@ export function baremePerime(aujourdHui: Date): boolean {
 }
 
 export const BAREME_RACHAT = PARAMS.rachat;
+export const PARAMETRES_AGIRC_ARRCO: ParametresAgircArrco = PARAMS.agircArrco;
+export const PARAMETRES_RAFP: ParametresRAFP = PARAMS.rafp;

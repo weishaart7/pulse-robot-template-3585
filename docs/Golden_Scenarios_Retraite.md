@@ -67,8 +67,30 @@ pas l'exactitude des règles elles-mêmes.
 | Décote FP | 172 trimestres tous régimes → 0 (taux plein) | 0 % |
 | MIGA | 28 ans de services : 57,5 % + 2,5 × 13 = 90 % × 16 396,19 | 14 756,57 € |
 | Pension FP retenue | max(14 651,16 ; 14 756,57), MIGA accessible (taux plein) | 14 756,57 € |
-| RAFP | 3 000 × 0,05671 | 170,13 € |
-| **Total** | | **20 159,26 €** |
+| RAFP | 3 000 points < 5 125 : versée en capital, hors pension annuelle | 0 € / an |
+| **Total annuel** | | **19 989,13 €** |
+| Capital RAFP | 3 000 × 1,08 (majoration à 64 ans) × 0,05671 × 25,57 (conversion à 64 ans 0 mois) | 4 698,24 € |
+
+## Scénario 5 — Cadre de 45 ans, départ décoté : Agirc-Arrco projeté et abattu
+
+**Entrées** : née en mars 1981, départ à l'âge légal (64 ans) le 01/04/2045 ; SAM 45 000 € ;
+150 trimestres tous régimes au départ (projection comprise) ; 9 000 points Agirc-Arrco au RIS ;
+salaire brut 90 000 €/an ; 76 trimestres projetés d'ici au départ.
+
+| Étape | Calcul | Résultat |
+|---|---|---:|
+| Base brute | 45 000 × 50 % × 150/172 | 19 622,09 € |
+| Décote | durée : 22 trimestres manquants → −25 % (plafond) ; âge : −15 % → plus favorable | −15 % |
+| Base décotée | 19 622,09 × 0,85 | 16 678,78 € |
+| Points Agirc-Arrco par an | (48 060 × 6,20 % + 41 940 × 17 %) ÷ 20,1877 | 500,78 |
+| Points projetés | 500,78 × 76/4 | 9 514,75 |
+| Pension Agirc-Arrco avant coefficient | (9 000 + 9 514,75) × 1,4386 | 26 635,32 € |
+| Coefficient d'anticipation | base décotée ; âge 64 ans → 0,88 ; 22 trimestres manquants > 20 → grille âge seule | 0,88 |
+| Agirc-Arrco retenue | 26 635,32 × 0,88 | 23 439,08 € |
+| **Total** | | **40 117,86 €** |
+
+Avant la phase 2, l'outil aurait affiché 9 000 × 1,4386 = 12 947,40 € d'Agirc-Arrco, sans projection
+ni abattement.
 
 ---
 

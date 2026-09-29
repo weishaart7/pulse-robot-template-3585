@@ -7,7 +7,18 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
-import { trimestresProjetesParAnnee } from '@/lib/retraite/hypotheseRevenuFutur';
+import {
+  trimestresProjetesParAnnee,
+  revenuAnnuelHypotheseDerniereAnneeConnue,
+  salaireProjectionComplementaire,
+} from '@/lib/retraite/hypotheseRevenuFutur';
+import {
+  separerRegimesPoints,
+  estRegimeAgircArrco,
+  pointsAgircArrcoAnnuels,
+  coefficientAnticipationAgircArrco,
+  pensionAgircArrco,
+} from '@/lib/retraite/calculAgircArrco';
 import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
 import { donneesAutresRegimesDepuisRetraiteData } from '@/hooks/usePensionConsolidee';
 import { calculerResultatFonctionPublique, calculerResultatCNAVPL } from '@/lib/retraite/pensionConsolidee';
@@ -126,8 +137,11 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   // Carriere.tsx, cf. docs/audit/branchement-surcote-optimisation.md §1.3).
   const auMoinsUnTrimestreMajorationEnfant = retraiteData.au_moins_un_trimestre_majoration_enfant || false;
 
-  // Pension complémentaire : constante, indépendante de l'âge de départ simulé.
-  const totalPensionComplementaireAnnuelle = regimesPoints.reduce((total, regime) => {
+  // Complémentaires : Agirc-Arrco recalculé à chaque date de départ (points
+  // projetés, coefficient d'anticipation si la base est décotée — cf.
+  // calculAgircArrco.ts) ; autres régimes à points constants.
+  const { pointsAgircArrco, aUnRegimeAgircArrco, autresRegimes } = separerRegimesPoints(regimesPoints);
+  const pensionAutresRegimesPoints = autresRegimes.reduce((total, regime) => {
     const pension = pensionComplementaireAnnuelle(regime);
     return pension !== undefined ? total + pension : total;
   }, 0);
@@ -141,7 +155,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   const nombreEnfantsEligibles = nombreEnfantsEligiblesMajorationTroisEnfants(familyLinks);
 
   const regimesPointsExclusCount = regimesPoints.filter(
-    (regime) => pensionComplementaireAnnuelle(regime) === undefined
+    (regime) => !estRegimeAgircArrco(regime.nom) && pensionComplementaireAnnuelle(regime) === undefined
   ).length;
 
   // Trimestres cotisés par année, dérivés du détail de carrière (import RIS)
@@ -214,6 +228,35 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   // internes qui restent exprimés en âge (projection des trimestres,
   // decoteSurAge — non concernée par la bascule de barème, cf.
   // docs/audit/implementation-date-effet-moteur.md, point d'entrée #4).
+  // Salaire de projection des points Agirc-Arrco : salaire brut total saisi,
+  // sinon revenu de l'hypothèse de revenu futur (plafonné au PASS en mode RIS).
+  const revenuHypothese =
+    (retraiteData.mode_hypothese_revenu_futur ?? 'derniere_annee_connue') === 'derniere_annee_connue'
+      ? revenuAnnuelHypotheseDerniereAnneeConnue(resultatTrimestresDetailCarriere.parAnnee)
+      : retraiteData.revenu_hypothese_manuel ?? null;
+  const salaireComplementaire = salaireProjectionComplementaire(retraiteData.salaire_brut_annuel, revenuHypothese);
+
+  // Complémentaires à une date de départ : Agirc-Arrco (points acquis +
+  // projetés, coefficient d'anticipation selon la décote de la base) + autres
+  // régimes à points. Réutilisé pour le scénario avec rachat.
+  const complementairesPourDepart = (
+    decoteBase: number,
+    ageDepartAnnees: number,
+    trimestresManquants: number,
+    trimestresProjetes: number
+  ): number => {
+    if (!aUnRegimeAgircArrco) return pensionAutresRegimesPoints;
+    const agirc = pensionAgircArrco({
+      pointsAcquis: pointsAgircArrco,
+      pointsProjetes: salaireComplementaire
+        ? (pointsAgircArrcoAnnuels(salaireComplementaire.salaireAnnuel) * trimestresProjetes) / 4
+        : 0,
+      coefficientAnticipation: coefficientAnticipationAgircArrco(decoteBase < 0, ageDepartAnnees, trimestresManquants),
+      nombreEnfantsEligibles,
+    });
+    return agirc.pensionAnnuelle + pensionAutresRegimesPoints;
+  };
+
   const simulerPourDateEffet = (dateEffet: Date) => {
     const ageAffiche = computeAge(dateNaissance, dateEffet) ?? ageActuelConfirme;
     // Âge de départ au mois près (décote âge, trimestres manquants arrondis
@@ -222,12 +265,12 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     // trimestres réels compris — mêmes fonctions que Carrière/Synthèse
     // (auparavant : 4 × écart d'âge en années entières).
     const ageDepartAnnees = ageEnMois(dateNaissanceConfirmee, dateEffet) / 12;
-    const trimestresValidesProjetes =
-      trimestresValidesActuels +
-      trimestresProjetesParAnnee(resultatTrimestresDetailCarriere.parAnnee, new Date(), dateEffet).reduce(
-        (total, a) => total + a.trimestres,
-        0
-      );
+    const trimestresProjetes = trimestresProjetesParAnnee(
+      resultatTrimestresDetailCarriere.parAnnee,
+      new Date(),
+      dateEffet
+    ).reduce((total, a) => total + a.trimestres, 0);
+    const trimestresValidesProjetes = trimestresValidesActuels + trimestresProjetes;
     const trimestresTousRegimes = trimestresValidesProjetes + trimestresAutresRegimes;
     const trimestresRequis = trimestresRequisPourGeneration(dateNaissanceConfirmee, dateEffet);
     // Calculée mais non encore affichée (aucun écran ne montre l'âge légal à
@@ -319,7 +362,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
           auMoinsUnTrimestreMajorationEnfant,
           nombreEnfantsEligibles
         )
-      : { pensionFinale: 0, rafpAnnuelle: 0 };
+      : { pensionFinale: 0, rafpAnnuelle: 0, rafpCapital: 0 };
     const resultatCNAVPL = cnavpl
       ? calculerResultatCNAVPL(
           cnavpl,
@@ -334,10 +377,18 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     const pensionAutresRegimes =
       resultatFP.pensionFinale + resultatFP.rafpAnnuelle + resultatCNAVPL.pensionFinale;
 
+    const pensionComplementaires = complementairesPourDepart(
+      decote,
+      ageDepartAnnees,
+      trimestresRequis - trimestresTousRegimes,
+      trimestresProjetes
+    );
+
     return {
       ageAffiche,
       ageDepartAnnees,
       avantAgeLegal,
+      trimestresProjetes,
       trimestresValidesProjetes,
       trimestresTousRegimes,
       trimestresRequis,
@@ -346,8 +397,10 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
       surcoteTotalePct,
       pensionBaseBrute,
       pensionBaseValue,
+      pensionComplementaires,
       pensionAutresRegimes,
-      pensionTotale: pensionBaseValue + totalPensionComplementaireAnnuelle + pensionAutresRegimes,
+      rafpCapital: resultatFP.rafpCapital,
+      pensionTotale: pensionBaseValue + pensionComplementaires + pensionAutresRegimes,
     };
   };
 
@@ -422,7 +475,17 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   const pensionBaseAvecRachat =
     pensionBaseBruteAvecRachat * (1 + decoteAvecRachat / 100) +
     pensionBaseBruteAvecRachat * (resultatSelection.surcoteTotalePct / 100);
-  const gainPensionAnnuelRachat = pensionBaseAvecRachat - resultatSelection.pensionBaseValue;
+  // Le rachat supprime aussi tout ou partie de l'abattement Agirc-Arrco
+  // (coefficient d'anticipation lié à la décote de la base) : gain inclus.
+  const complementairesAvecRachat = complementairesPourDepart(
+    decoteAvecRachat,
+    resultatSelection.ageDepartAnnees,
+    resultatSelection.trimestresRequis - resultatSelection.trimestresTousRegimes - nombreTrimestresRachatNum,
+    resultatSelection.trimestresProjetes
+  );
+  const gainComplementairesRachat = complementairesAvecRachat - resultatSelection.pensionComplementaires;
+  const gainPensionAnnuelRachat =
+    pensionBaseAvecRachat - resultatSelection.pensionBaseValue + gainComplementairesRachat;
   const pointMortRachat =
     coutTotalRachat !== undefined && gainPensionAnnuelRachat > 0
       ? pointMort(coutTotalRachat, gainPensionAnnuelRachat)
@@ -511,7 +574,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Pension de base : {formatEuro2(resultatSelection.pensionBaseValue)} + pensions
-              complémentaires calculables : {formatEuro2(totalPensionComplementaireAnnuelle)}
+              complémentaires calculables : {formatEuro2(resultatSelection.pensionComplementaires)}
               {resultatSelection.pensionAutresRegimes > 0 && (
                 <> + fonction publique / CNAVPL : {formatEuro2(resultatSelection.pensionAutresRegimes)}</>
               )}
@@ -520,6 +583,18 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
               <p className="text-xs text-spark mt-1">
                 {regimesPointsExclusCount} régime{regimesPointsExclusCount > 1 ? 's' : ''} non
                 inclus, valeur du point manquante
+              </p>
+            )}
+            {resultatSelection.rafpCapital > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                RAFP versée en capital (moins de 5 125 points), hors pension annuelle :{' '}
+                {formatEuro2(resultatSelection.rafpCapital)}
+              </p>
+            )}
+            {aUnRegimeAgircArrco && salaireComplementaire?.estPlafonne && (
+              <p className="text-xs text-spark mt-1">
+                Points Agirc-Arrco futurs projetés sur un revenu plafonné au PASS : renseignez le salaire
+                brut total dans l'onglet Carrière pour un cadre.
               </p>
             )}
           </div>
@@ -646,6 +721,9 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
                       Gain de pension : <span className="font-semibold text-positive">
                         +{formatEuro2(gainPensionAnnuelRachat)} / an
                       </span>
+                      {gainComplementairesRachat > 0 && (
+                        <> dont {formatEuro2(gainComplementairesRachat)} d'abattement Agirc-Arrco supprimé</>
+                      )}
                       {pointMortRachat !== undefined && coutTotalRachat !== undefined && (
                         <> — point mort : <span className="font-semibold">{pointMortRachat.toFixed(1)} ans</span> (brut, sans fiscalité)</>
                       )}

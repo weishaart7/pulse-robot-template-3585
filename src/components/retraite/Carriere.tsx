@@ -22,7 +22,8 @@ import {
   dateEffetDepartAgeLegal,
 } from '@/lib/retraite/calcul';
 import { calculerPensionConsolidee, EntreePensionConsolidee } from '@/lib/retraite/pensionConsolidee';
-import { calculerProjectionRevenuFutur } from '@/lib/retraite/hypotheseRevenuFutur';
+import { calculerProjectionRevenuFutur, salaireProjectionComplementaire } from '@/lib/retraite/hypotheseRevenuFutur';
+import { estRegimeAgircArrco } from '@/lib/retraite/calculAgircArrco';
 import { CarriereFonctionPublique } from '@/components/retraite/CarriereFonctionPublique';
 import { CarriereCNAVPL, VALEUR_POINT_CNAVPL_2026 } from '@/components/retraite/CarriereCNAVPL';
 import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
@@ -186,6 +187,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   // comportement inchangé (aucune réduction) tant que le champ n'est pas
   // renseigné.
   const [autresPensionsMensuelles, setAutresPensionsMensuelles] = useState<string>('');
+  // Salaire brut annuel total (non plafonné) — projection des points
+  // Agirc-Arrco futurs (colonne salaire_brut_annuel, cf. calculAgircArrco.ts).
+  const [salaireBrutAnnuel, setSalaireBrutAnnuel] = useState<string>('');
 
   // Carrière fonction publique — état remonté ici (plutôt que gardé local à
   // CarriereFonctionPublique) car le total de trimestres tous régimes doit
@@ -338,6 +342,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       if (data.valeur_point_cnavpl !== undefined && data.valeur_point_cnavpl !== null) {
         setValeurPointCNAVPL(data.valeur_point_cnavpl.toString());
       }
+      if (data.salaire_brut_annuel !== undefined && data.salaire_brut_annuel !== null) {
+        setSalaireBrutAnnuel(data.salaire_brut_annuel.toString());
+      }
       if (data.autres_pensions_mensuelles !== undefined && data.autres_pensions_mensuelles !== null) {
         setAutresPensionsMensuelles(data.autres_pensions_mensuelles.toString());
       }
@@ -388,6 +395,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             points_cnavpl: parseFloat(pointsCNAVPL) || 0,
             valeur_point_cnavpl: parseFloat(valeurPointCNAVPL) || 0,
             autres_pensions_mensuelles: parseFloat(autresPensionsMensuelles) || 0,
+            salaire_brut_annuel: parseFloat(salaireBrutAnnuel) || null,
           },
           { silent: true }
         ),
@@ -418,6 +426,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       pointsCNAVPL,
       valeurPointCNAVPL,
       autresPensionsMensuelles,
+      salaireBrutAnnuel,
     ]
   );
 
@@ -531,8 +540,10 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       maximumFractionDigits: 2,
     });
 
+  // Agirc-Arrco : toujours calculable (valeur de service du millésime
+  // courant, cf. calculAgircArrco.ts), même sans valeur du point au RIS.
   const regimesPointsExclusCount = regimesPoints.filter(
-    (regime) => pensionComplementaireAnnuelle(regime) === undefined
+    (regime) => !estRegimeAgircArrco(regime.nom) && pensionComplementaireAnnuelle(regime) === undefined
   ).length;
 
   // Hypothèse de revenu futur — hook appelé une seule fois ici (plutôt que
@@ -572,6 +583,11 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       hypotheseRevenuFutur.mode,
       hypotheseRevenuFutur.valeurManuelle,
     ]
+  );
+
+  const salaireComplementaire = salaireProjectionComplementaire(
+    parseFloat(salaireBrutAnnuel) || null,
+    projectionRevenuFutur.revenuHypothese
   );
 
   // Source unique de calcul (cf. docs/audit/audit-pension-consolidation.md) :
@@ -616,6 +632,12 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             valeurPointCNAVPL: parseFloat(valeurPointCNAVPL) || 0,
           }
         : null,
+      projectionComplementaire: salaireComplementaire
+        ? {
+            salaireAnnuel: salaireComplementaire.salaireAnnuel,
+            trimestresProjetes: projectionRevenuFutur.trimestresProjetesJusquADateEffet,
+          }
+        : undefined,
     }),
     [
       projectionRevenuFutur,
@@ -644,6 +666,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       trimestresCNAVPL,
       pointsCNAVPL,
       valeurPointCNAVPL,
+      salaireComplementaire,
     ]
   );
 
@@ -652,7 +675,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
     [entreePensionConsolidee]
   );
 
-  const { detailRegimeGeneral, repartitionParRegime, historiqueTrimestres } = resultatPension;
+  const { detailRegimeGeneral, repartitionParRegime, historiqueTrimestres, detailAgircArrco } = resultatPension;
 
   // Minimum contributif (MiCo, régime général, version non majorée) : le
   // state brut (non projeté à cette étape) sert aussi à l'indicateur de
@@ -974,6 +997,12 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                   {regimesPointsExclusCount} régime{regimesPointsExclusCount > 1 ? 's' : ''} non inclus, valeur du point manquante
                 </p>
               )}
+              {repartitionParRegime.rafpCapital > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  RAFP versée en capital (moins de 5 125 points), hors pension annuelle :{' '}
+                  {formatEuro2(repartitionParRegime.rafpCapital)}
+                </p>
+              )}
               {aDesRegimesSupplementaires && (
                 <p className="text-xs text-muted-foreground mt-2 pt-2 border-t">
                   Détail par régime : régime général (base + complémentaires) ={' '}
@@ -1004,7 +1033,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
           ) : (
             <div className="space-y-2">
               {regimesPoints.map((regime, index) => {
-                const pensionAnnuelle = pensionComplementaireAnnuelle(regime);
+                const pensionAnnuelle = estRegimeAgircArrco(regime.nom)
+                  ? undefined
+                  : pensionComplementaireAnnuelle(regime);
                 return (
                   <div
                     key={`${regime.nom}-${index}`}
@@ -1032,7 +1063,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                           </>
                         )}
                       </div>
-                      {pensionAnnuelle !== undefined ? (
+                      {estRegimeAgircArrco(regime.nom) ? (
+                        <div className="text-xs text-muted-foreground">Points acquis au RIS — pension détaillée ci-dessous</div>
+                      ) : pensionAnnuelle !== undefined ? (
                         <div className="text-xs font-medium text-primary">
                           Pension complémentaire : {formatEuro2(pensionAnnuelle)} / an ({formatEuro2(pensionAnnuelle / 12)} / mois)
                         </div>
@@ -1053,6 +1086,61 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {detailAgircArrco && (
+            <div className="mt-3 p-3 bg-muted/50 rounded-lg space-y-1">
+              <Label className="text-xs">Agirc-Arrco au départ du {dateEffetScenario.toLocaleDateString('fr-FR', { timeZone: 'UTC' })}</Label>
+              <div className="text-lg font-semibold text-primary">
+                {formatEuro2(detailAgircArrco.pensionAnnuelle)} / an
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {Math.round(detailAgircArrco.pointsAcquis).toLocaleString('fr-FR')} points acquis +{' '}
+                {Math.round(detailAgircArrco.pointsProjetes).toLocaleString('fr-FR')} points projetés ×{' '}
+                {detailAgircArrco.valeurServicePoint.toLocaleString('fr-FR', { minimumFractionDigits: 4 })} €
+                = {formatEuro2(detailAgircArrco.pensionAvantCoefficient)} / an
+              </p>
+              {detailAgircArrco.coefficientAnticipation < 1 && (
+                <p className="text-xs text-spark">
+                  Coefficient d'anticipation {detailAgircArrco.coefficientAnticipation.toLocaleString('fr-FR')} :
+                  la retraite de base est décotée, l'abattement Agirc-Arrco est définitif.
+                </p>
+              )}
+              {detailAgircArrco.majorationEnfants > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Majoration pour 3 enfants ou plus : +{formatEuro2(detailAgircArrco.majorationEnfants)} / an (10 %
+                  plafonnés, appliqués à tous les points — approximation légèrement favorable pour les points
+                  acquis avant 2012)
+                </p>
+              )}
+            </div>
+          )}
+
+          {regimesPoints.some((r) => estRegimeAgircArrco(r.nom)) && (
+            <div className="mt-3 space-y-1.5">
+              <Label htmlFor="salaire-brut-annuel" className="text-xs">
+                Salaire brut annuel total, non plafonné (projection des points Agirc-Arrco)
+              </Label>
+              <Input
+                id="salaire-brut-annuel"
+                type="number"
+                placeholder="Ex: 85000"
+                value={salaireBrutAnnuel}
+                onChange={(e) => setSalaireBrutAnnuel(e.target.value)}
+                className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring max-w-xs"
+              />
+              {salaireComplementaire?.estPlafonne && (
+                <p className="text-xs text-spark">
+                  Non renseigné : les points futurs sont projetés sur le revenu de l'hypothèse (plafonné au
+                  PASS), ce qui sous-estime les droits d'un cadre (tranche 2 au-delà de 48 060 €).
+                </p>
+              )}
+              {!salaireComplementaire && (
+                <p className="text-xs text-muted-foreground">
+                  Aucun revenu connu : seuls les points déjà acquis sont comptés.
+                </p>
+              )}
             </div>
           )}
         </CardContent>

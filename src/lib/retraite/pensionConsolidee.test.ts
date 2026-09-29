@@ -138,7 +138,7 @@ describe('calculerPensionConsolidee — detailRegimeGeneral (non-régression Car
       fonctionPublique: {
         traitementIndiciaireBrut: 36000,
         trimestresLiquidables: 80,
-        pointsRAFP: 4000,
+        pointsRAFP: 6000, // ≥ 5 125 points : rente (en dessous : capital, hors pension annuelle)
         departAnticipeCategorieActive: false,
         departPourInvalidite: false,
         moyenneAnnuelleNBI: 0,
