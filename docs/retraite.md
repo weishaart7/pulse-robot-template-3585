@@ -71,10 +71,23 @@ uniquement applicatif via `familyService`.
   (extraction PDF), [pensionConsolidee.ts](src/lib/retraite/pensionConsolidee.ts) (assembleur unique
   consommé par Carrière et Synthèse depuis le 2026-08-18).
   **Contrairement à `dmtg`/`transmission`**, pas de `types.ts` ni `index.ts` dédiés (les types vivent
-  dans `parseRIS.ts`), et aucun paramètre externalisé en JSON (tous les barèmes — trimestres requis,
-  taux de décote, PASS, coefficients de revalorisation, seuils de validation de trimestre — sont en
-  dur dans le TS, contrairement à `params-dmtg.json`). Écart d'architecture assumé, non corrigé à ce
-  jour (§3).
+  dans `parseRIS.ts`).
+- **Paramètres annuels externalisés dans [params-retraite.json](src/lib/retraite/params-retraite.json)**
+  (sur le modèle de `params-dmtg.json`), lus via [parametres.ts](src/lib/retraite/parametres.ts) :
+  un millésime par année (PASS, MICO non majoré/majoré, plafond d'écrêtement, valeur de référence du
+  MIGA, points RAFP et CNAVPL), avec une date de vérification et une source par valeur, plus le
+  barème de rachat (gelé depuis 2013, seuils exprimés en fraction du PASS). `millesimePourDate()`
+  résout le millésime d'une date (dernier connu pour une date future, cohérent avec les euros
+  constants) ; les constantes historiques (`MINIMUM_CONTRIBUTIF_NON_MAJORE_2026`, etc.) sont
+  conservées mais adossées au JSON. `baremePerime()` déclenche un bandeau en tête du module
+  (`RetraiteSection.tsx`) dès le 1er janvier suivant le dernier millésime. Mise à jour annuelle :
+  ajouter un millésime, sans modifier les précédents. Les tables historiques et législatives (barème
+  âge/durée par génération, PASS et seuils de validation par année, coefficients de revalorisation,
+  durée du SAM) restent en TypeScript, à côté de leur documentation de sources.
+- **Scénarios de référence** : [Golden_Scenarios_Retraite.md](docs/Golden_Scenarios_Retraite.md),
+  calculés à la main et rejoués par `goldenScenarios.test.ts` (taux plein avec Agirc-Arrco, décote,
+  MICO avec 3 enfants, polypensionné RG + FP porté au MIGA). Non confrontés à M@rel (connexion
+  FranceConnect requise).
 - **Couverture de test — rattrapée depuis l'audit initial.** L'audit du 2026-08-11 constatait une
   couverture nulle sur ce module ; 10 fichiers `*.test.ts` co-localisés couvrent le
   moteur (`calcul.test.ts`, `calculSAM.test.ts`, `calculTrimestres.test.ts`, `calculFonctionPublique.test.ts`,
@@ -370,10 +383,7 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
-- **Pas de `types.ts`/`index.ts`, pas de paramètres externalisés en JSON**, contrairement au pattern
-  `dmtg`/`transmission` — tous les barèmes réglementaires (trimestres requis, taux de décote, PASS,
-  seuils de validation) restent en dur dans le TS, dispersés entre `lib/retraite/` et deux composants
-  (`CarriereCNAVPL.tsx`, `CarriereFonctionPublique.tsx` pour les valeurs de point CNAVPL/RAFP 2026).
+- **Pas de `types.ts`/`index.ts`**, contrairement au pattern `dmtg`/`transmission`.
 - **`strict: false` / `strictNullChecks: false` au niveau du projet** : les unions discriminées sur un
   booléen (ex. `AgeLegalResultat`) ne se restreignent pas via `.stable` — utiliser `'raison' in x`.
   Réglage global, hors périmètre du module.
@@ -387,9 +397,15 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
 - **Aucune granularité de test de rendu de composant** (pas de `@testing-library/react`, environnement
   vitest `node`) — toute vérification visuelle des écrans reste manuelle, documentée comme non
   réalisée dans chaque rapport de session (application protégée par authentification).
-- **Barèmes annuels à réviser chaque année** (valeur du point CNAVPL, RAFP, PASS, MICO, seuils de
-  validation de trimestre, barème de rachat CNAV) — commentaires explicites dans le code rappelant la
-  nécessité de mise à jour annuelle, aucun mécanisme de rappel ou d'alerte de péremption.
+- **Tables historiques à réviser chaque année hors `params-retraite.json`** : PASS de l'année et
+  seuil de validation de trimestre (tables par année), coefficients de revalorisation CNAV (recalculés
+  en totalité à chaque circulaire). Le bandeau de péremption couvre le millésime JSON, pas ces tables ;
+  un test vérifie seulement que le PASS du millésime figure dans `PASS_PAR_ANNEE`.
+- **Périodes MSA exclues du SAM (audit R7)** : `calculerSAM()` ne retient que les périodes « assurance
+  retraite ». Les indépendants récents y sont rattachés sur les relevés observés, mais une période
+  « MSA » est exclue, alors que les salaires MSA salariés entrent dans le SAM unique (LURA) — et que
+  les revenus d'exploitant n'y entrent pas. Les deux portent le même libellé : non tranché sans relevé
+  réel.
 - **Découpage « carrière longue 1965/1966 »** mentionné par le référentiel comme un cinquième
   découpage infra-annuel potentiel, non modélisé faute de barème chiffré disponible au moment de
   l'implémentation — signalé comme incertitude à lever, pas un oubli.
@@ -421,6 +437,5 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   - **Formules MIGA antérieures à 2014** et **articulation MICO/MIGA polypensionné fonction
     publique** : non pertinentes pour une simulation prospective / bloquées par des décrets
     d'application non publiés selon le référentiel au moment de l'audit.
-  - **Externalisation des barèmes réglementaires** (façon `params-dmtg.json`) et **package
-    `types.ts`/`index.ts`** : écart d'architecture assumé vis-à-vis du pattern `dmtg`/`transmission`,
-    non planifié à ce jour.
+  - **Package `types.ts`/`index.ts`** : écart d'architecture assumé vis-à-vis du pattern
+    `dmtg`/`transmission`, non planifié à ce jour.

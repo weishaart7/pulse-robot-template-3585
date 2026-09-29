@@ -14,10 +14,11 @@ import {
   DateNaissance,
 } from '@/lib/retraite/calcul';
 import { pensionBaseCNAVPL, decoteCNAVPL } from '@/lib/retraite/calculCNAVPL';
+import { MILLESIME_COURANT } from '@/lib/retraite/parametres';
 
 // Valeur du point CNAVPL 2026 (source : CNAVPL, cnavpl.fr) — pré-remplie
 // mais modifiable par l'utilisateur, pas codée en dur dans le calcul.
-export const VALEUR_POINT_CNAVPL_2026 = 0.6599;
+export const VALEUR_POINT_CNAVPL_2026 = MILLESIME_COURANT.cnavplValeurPoint;
 
 const formatEuro2 = (valeur: number) =>
   valeur.toLocaleString('fr-FR', {

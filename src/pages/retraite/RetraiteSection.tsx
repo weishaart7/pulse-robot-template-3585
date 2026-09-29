@@ -8,6 +8,7 @@ import { Trimestres } from '@/components/retraite/Trimestres';
 import { ColonnesPersonnes } from '@/components/retraite/ColonnesPersonnes';
 import { familyService, FamilyProfile, MaritalStatus } from '@/services/familyService';
 import { checkIsInCouple } from '@/lib/patrimoine/utils';
+import { baremePerime, MILLESIME_COURANT } from '@/lib/retraite/parametres';
 
 export const RetraiteSection = () => {
   const [activeTab, setActiveTab] = useState('synthese');
@@ -78,6 +79,13 @@ export const RetraiteSection = () => {
 
   return (
     <div className="p-6">
+      {baremePerime(new Date()) && (
+        <p className="mb-4 rounded-lg border border-destructive/40 p-3 text-xs text-destructive">
+          Barèmes retraite {MILLESIME_COURANT.annee} (MICO, minimum garanti, points RAFP/CNAVPL, PASS) :
+          une revalorisation est intervenue depuis. Les montants affichés reposent sur des valeurs
+          probablement dépassées — mettre à jour src/lib/retraite/params-retraite.json.
+        </p>
+      )}
       {renderContent()}
     </div>
   );

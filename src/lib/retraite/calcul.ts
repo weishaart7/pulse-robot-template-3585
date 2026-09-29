@@ -5,6 +5,7 @@
  */
 
 import { RegimeDetecte } from './parseRIS';
+import { MILLESIME_COURANT, BAREME_RACHAT, TrancheRachat } from './parametres';
 
 /**
  * Date de naissance décomposée en année + mois (1-12) — nécessaire pour
@@ -683,7 +684,7 @@ export function decoteApplicable(decoteSurTrimestres: number, decoteSurAge: numb
  * `majorationPalier2MICO()` ci-dessous, pas ici (cf.
  * docs/audit/implementation-mico-majore.md).
  */
-export const MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 = 9075.48;
+export const MINIMUM_CONTRIBUTIF_NON_MAJORE_2026 = MILLESIME_COURANT.micoNonMajoreAnnuel;
 
 /**
  * Minimum contributif proratisé, régime général, version non majorée
@@ -727,7 +728,7 @@ export function minimumContributif(
  * 1er janvier 2026 (903,93 €/mois × 12). ⚠️ À réviser chaque année lors de
  * la revalorisation, comme `MINIMUM_CONTRIBUTIF_NON_MAJORE_2026`.
  */
-export const MINIMUM_CONTRIBUTIF_MAJORE_2026 = 10847.16;
+export const MINIMUM_CONTRIBUTIF_MAJORE_2026 = MILLESIME_COURANT.micoMajoreAnnuel;
 
 /**
  * Plafond global annuel des pensions de retraite (référentiel §3.5.5, art.
@@ -743,7 +744,7 @@ export const MINIMUM_CONTRIBUTIF_MAJORE_2026 = 10847.16;
  * dans ce module, même simplification assumée qu'ailleurs pour la date
  * d'effet, cf. écart #2 documenté dans docs/audit/audit-retraite.md).
  */
-export const PLAFOND_GLOBAL_PENSIONS_2026 = 16930.68;
+export const PLAFOND_GLOBAL_PENSIONS_2026 = MILLESIME_COURANT.plafondGlobalPensionsAnnuel;
 
 /**
  * Seuil de trimestres cotisés (régime général et régimes alignés) ouvrant
@@ -989,114 +990,13 @@ export function pensionComplementaireAnnuelle(regime: RegimeDetecte): number | u
  */
 export type OptionRachat = 'tauxSeul' | 'tauxEtDuree';
 
-interface TrancheRachat {
-  bas: number; // coût fixe si revenu < 36 045 €
-  pourcentage: number; // % du revenu si 36 045 € <= revenu <= 48 060 €
-  haut: number; // coût fixe si revenu > 48 060 €
-}
-
-const BAREME_RACHAT_TAUX_SEUL: Record<number, TrancheRachat> = {
-  20: { bas: 1055, pourcentage: 3.8, haut: 1407 },
-  21: { bas: 1076, pourcentage: 3.87, haut: 1434 },
-  22: { bas: 1097, pourcentage: 3.95, haut: 1462 },
-  23: { bas: 1118, pourcentage: 4.03, haut: 1491 },
-  24: { bas: 1168, pourcentage: 4.2, haut: 1557 },
-  25: { bas: 1219, pourcentage: 4.39, haut: 1625 },
-  26: { bas: 1271, pourcentage: 4.58, haut: 1694 },
-  27: { bas: 1324, pourcentage: 4.77, haut: 1765 },
-  28: { bas: 1377, pourcentage: 4.96, haut: 1836 },
-  29: { bas: 1432, pourcentage: 5.16, haut: 1909 },
-  30: { bas: 1487, pourcentage: 5.35, haut: 1983 },
-  31: { bas: 1543, pourcentage: 5.55, haut: 2057 },
-  32: { bas: 1599, pourcentage: 5.76, haut: 2132 },
-  33: { bas: 1656, pourcentage: 5.96, haut: 2208 },
-  34: { bas: 1713, pourcentage: 6.17, haut: 2284 },
-  35: { bas: 1771, pourcentage: 6.38, haut: 2361 },
-  36: { bas: 1828, pourcentage: 6.58, haut: 2438 },
-  37: { bas: 1886, pourcentage: 6.79, haut: 2515 },
-  38: { bas: 1945, pourcentage: 7.0, haut: 2593 },
-  39: { bas: 2005, pourcentage: 7.22, haut: 2673 },
-  40: { bas: 2065, pourcentage: 7.43, haut: 2753 },
-  41: { bas: 2126, pourcentage: 7.65, haut: 2834 },
-  42: { bas: 2187, pourcentage: 7.87, haut: 2915 },
-  43: { bas: 2247, pourcentage: 8.09, haut: 2995 },
-  44: { bas: 2306, pourcentage: 8.3, haut: 3075 },
-  45: { bas: 2366, pourcentage: 8.52, haut: 3154 },
-  46: { bas: 2426, pourcentage: 8.74, haut: 3235 },
-  47: { bas: 2488, pourcentage: 8.96, haut: 3317 },
-  48: { bas: 2549, pourcentage: 9.18, haut: 3398 },
-  49: { bas: 2610, pourcentage: 9.4, haut: 3479 },
-  50: { bas: 2672, pourcentage: 9.62, haut: 3563 },
-  51: { bas: 2734, pourcentage: 9.84, haut: 3646 },
-  52: { bas: 2796, pourcentage: 10.07, haut: 3728 },
-  53: { bas: 2857, pourcentage: 10.29, haut: 3810 },
-  54: { bas: 2919, pourcentage: 10.51, haut: 3891 },
-  55: { bas: 2980, pourcentage: 10.73, haut: 3973 },
-  56: { bas: 3041, pourcentage: 10.95, haut: 4055 },
-  57: { bas: 3103, pourcentage: 11.17, haut: 4138 },
-  58: { bas: 3162, pourcentage: 11.39, haut: 4216 },
-  59: { bas: 3220, pourcentage: 11.59, haut: 4294 },
-  60: { bas: 3275, pourcentage: 11.79, haut: 4367 },
-  61: { bas: 3329, pourcentage: 11.99, haut: 4439 },
-  62: { bas: 3383, pourcentage: 12.18, haut: 4510 },
-  63: { bas: 3298, pourcentage: 11.87, haut: 4397 },
-  64: { bas: 3214, pourcentage: 11.57, haut: 4285 },
-  65: { bas: 3129, pourcentage: 11.27, haut: 4172 },
-  66: { bas: 3044, pourcentage: 10.96, haut: 4059 },
-};
-
-const BAREME_RACHAT_TAUX_ET_DUREE: Record<number, TrancheRachat> = {
-  20: { bas: 1564, pourcentage: 5.63, haut: 2085 },
-  21: { bas: 1594, pourcentage: 5.74, haut: 2126 },
-  22: { bas: 1625, pourcentage: 5.85, haut: 2167 },
-  23: { bas: 1657, pourcentage: 5.96, haut: 2209 },
-  24: { bas: 1731, pourcentage: 6.23, haut: 2308 },
-  25: { bas: 1806, pourcentage: 6.5, haut: 2408 },
-  26: { bas: 1883, pourcentage: 6.78, haut: 2511 },
-  27: { bas: 1961, pourcentage: 7.06, haut: 2615 },
-  28: { bas: 2041, pourcentage: 7.35, haut: 2721 },
-  29: { bas: 2122, pourcentage: 7.64, haut: 2829 },
-  30: { bas: 2204, pourcentage: 7.93, haut: 2938 },
-  31: { bas: 2286, pourcentage: 8.23, haut: 3048 },
-  32: { bas: 2370, pourcentage: 8.53, haut: 3160 },
-  33: { bas: 2454, pourcentage: 8.84, haut: 3272 },
-  34: { bas: 2539, pourcentage: 9.14, haut: 3385 },
-  35: { bas: 2624, pourcentage: 9.45, haut: 3499 },
-  36: { bas: 2709, pourcentage: 9.76, haut: 3613 },
-  37: { bas: 2795, pourcentage: 10.06, haut: 3727 },
-  38: { bas: 2882, pourcentage: 10.38, haut: 3843 },
-  39: { bas: 2971, pourcentage: 10.7, haut: 3961 },
-  40: { bas: 3060, pourcentage: 11.02, haut: 4080 },
-  41: { bas: 3150, pourcentage: 11.34, haut: 4201 },
-  42: { bas: 3240, pourcentage: 11.67, haut: 4320 },
-  43: { bas: 3329, pourcentage: 11.99, haut: 4439 },
-  44: { bas: 3418, pourcentage: 12.3, haut: 4557 },
-  45: { bas: 3506, pourcentage: 12.62, haut: 4674 },
-  46: { bas: 3596, pourcentage: 12.95, haut: 4794 },
-  47: { bas: 3687, pourcentage: 13.27, haut: 4915 },
-  48: { bas: 3777, pourcentage: 13.6, haut: 5036 },
-  49: { bas: 3867, pourcentage: 13.92, haut: 5156 },
-  50: { bas: 3960, pourcentage: 14.26, haut: 5279 },
-  51: { bas: 4052, pourcentage: 14.59, haut: 5402 },
-  52: { bas: 4143, pourcentage: 14.92, haut: 5525 },
-  53: { bas: 4234, pourcentage: 15.25, haut: 5646 },
-  54: { bas: 4325, pourcentage: 15.57, haut: 5767 },
-  55: { bas: 4416, pourcentage: 15.9, haut: 5888 },
-  56: { bas: 4507, pourcentage: 16.23, haut: 6009 },
-  57: { bas: 4599, pourcentage: 16.56, haut: 6132 },
-  58: { bas: 4686, pourcentage: 16.87, haut: 6248 },
-  59: { bas: 4772, pourcentage: 17.18, haut: 6363 },
-  60: { bas: 4854, pourcentage: 17.48, haut: 6472 },
-  61: { bas: 4933, pourcentage: 17.76, haut: 6578 },
-  62: { bas: 5013, pourcentage: 18.05, haut: 6684 },
-  63: { bas: 4888, pourcentage: 17.6, haut: 6517 },
-  64: { bas: 4762, pourcentage: 17.15, haut: 6350 },
-  65: { bas: 4637, pourcentage: 16.7, haut: 6183 },
-  66: { bas: 4512, pourcentage: 16.24, haut: 6015 },
-};
-
-const SEUIL_REVENU_BAS = 36045;
-const SEUIL_REVENU_HAUT = 48060;
+// Barème (montants par âge) et seuils : params-retraite.json, cf. parametres.ts.
+// Seuils exprimés en fraction du PASS en vigueur au 1er janvier de l'année
+// de la demande (circulaire Cnav 2026-04) — PASS du millésime courant.
+const BAREME_RACHAT_TAUX_SEUL: Record<string, TrancheRachat> = BAREME_RACHAT.tauxSeul;
+const BAREME_RACHAT_TAUX_ET_DUREE: Record<string, TrancheRachat> = BAREME_RACHAT.tauxEtDuree;
+const SEUIL_REVENU_BAS = BAREME_RACHAT.seuilBasEnPass * MILLESIME_COURANT.pass;
+const SEUIL_REVENU_HAUT = BAREME_RACHAT.seuilHautEnPass * MILLESIME_COURANT.pass;
 
 /**
  * Coût d'un trimestre racheté, selon l'âge au moment du rachat, le revenu
@@ -1123,7 +1023,7 @@ export function coutRachatTrimestre(
   }
   const ageBareme = Math.max(20, ageRevolu);
   const bareme = option === 'tauxSeul' ? BAREME_RACHAT_TAUX_SEUL : BAREME_RACHAT_TAUX_ET_DUREE;
-  const tranche = bareme[ageBareme];
+  const tranche = bareme[String(ageBareme)];
 
   if (revenuMoyen3DernieresAnnees < SEUIL_REVENU_BAS) {
     return tranche.bas;

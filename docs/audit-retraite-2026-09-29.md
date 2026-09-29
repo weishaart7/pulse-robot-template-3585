@@ -261,7 +261,7 @@ Exemples :
 | Phase | Contenu | Fichiers principaux |
 |---|---|---|
 | **0. Corrections** | R2 (condition de taux plein et valeur du MIGA, services effectifs), R3, R5, R6, commentaire périmé, dédoublonnage RAFP, source du barème de rachat (R4) | `calculFonctionPublique.ts`, `Trimestres.tsx`, `calcul.ts` |
-| **1. Barèmes versionnés** | Sortir tous les paramètres dans un `params-retraite.json` daté par date d'effet (sur le modèle de `params-dmtg.json`), avec contrôle de péremption ; scénarios de référence (sur le modèle de `Golden_Scenarios_Transmission.md`) confrontés à M@rel | `src/lib/retraite/`, `docs/` |
+| **1. Barèmes versionnés** ✅ 2026-09-29 | Sortir tous les paramètres dans un `params-retraite.json` daté par date d'effet (sur le modèle de `params-dmtg.json`), avec contrôle de péremption ; scénarios de référence (sur le modèle de `Golden_Scenarios_Transmission.md`) confrontés à M@rel | `src/lib/retraite/`, `docs/` |
 | **2. Complémentaires** | Moteur Agirc-Arrco (projection, minoration, majoration), RAFP capital/rente, sections CNAVPL ; saisie du salaire brut complet | nouveau `calculAgircArrco.ts`, `pensionConsolidee.ts` |
 | **3. Net** | Branchement des moteurs Fiscalité (PS et IR), taux de remplacement, libellé en euros constants | `pensionConsolidee.ts`, `src/lib/fiscalite/` |
 | **4. Réversion et couple** | Moteur de réversion multi-régimes, revenu du survivant, lien Transmission, alertes PACS | nouveau `reversion.ts` |

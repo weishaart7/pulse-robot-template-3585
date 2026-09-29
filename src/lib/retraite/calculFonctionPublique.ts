@@ -15,6 +15,7 @@
  */
 
 import { DateNaissance, ageEnMois, decoteApplicable } from './calcul';
+import { MILLESIME_COURANT } from './parametres';
 
 /**
  * Pension de base fonction publique = TIB annuel de référence (dernier
@@ -198,7 +199,7 @@ export function decoteFonctionPublique(e: EntreeDecoteFonctionPublique): number 
 // (1,4596 €, conversion € → points) n'est pas utilisée ici : les points sont
 // saisis directement par l'utilisateur, pas reconstitués depuis un historique
 // de primes (même principe que regimes_points pour l'Agirc-Arrco).
-export const VALEUR_SERVICE_POINT_RAFP_2026 = 0.05671;
+export const VALEUR_SERVICE_POINT_RAFP_2026 = MILLESIME_COURANT.rafpValeurServicePoint;
 
 /**
  * Valeur de référence du minimum garanti (traitement indiciaire brut au 1er
@@ -212,7 +213,7 @@ export const VALEUR_SERVICE_POINT_RAFP_2026 = 0.05671;
  * retenue jusque-là était erronée (≈ -9 %). ⚠️ À réviser à chaque
  * revalorisation des pensions.
  */
-export const VALEUR_REFERENCE_MIGA_ANNUELLE_2026 = 16396.19;
+export const VALEUR_REFERENCE_MIGA_ANNUELLE_2026 = MILLESIME_COURANT.migaReferenceAnnuelle;
 export const VALEUR_REFERENCE_MIGA_MENSUELLE_2026 = VALEUR_REFERENCE_MIGA_ANNUELLE_2026 / 12;
 
 /**
