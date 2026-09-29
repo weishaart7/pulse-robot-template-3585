@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { PatrimoineTreeView } from './PatrimoineTreeView';
 import { AssetForm } from '@/components/assets/AssetForm';
 import { AssetCreationWizard } from '@/components/assets/wizard/AssetCreationWizard';
-import { Plus } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { useAssets } from '@/hooks/useAssets';
 import { Asset, AssetCharge, assetService } from '@/services/assetService';
 import { assetIndivisaireService } from '@/services/assetIndivisaireService';
@@ -16,6 +16,7 @@ import { DemembrementDraft } from '@/components/assets/DemembrementSection';
 export const PatrimoineActifs = () => {
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const { assets, createAsset, updateAsset, deleteAsset } = useAssets();
 
   // Retourne true en cas de succès (ou si l'étape ne s'applique pas), false en cas d'échec.
@@ -170,19 +171,31 @@ export const PatrimoineActifs = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Gestion des actifs</h3>
-        <button
-          onClick={() => setShowAssetForm(true)}
-          className="inline-flex items-center gap-2 rounded-full bg-foreground hover:bg-foreground/85 text-background shadow-whisper pl-1 pr-4 py-1 text-sm font-medium transition-colors"
-        >
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background/15">
-            <Plus className="h-4 w-4 text-background" />
-          </span>
-          Ajouter un actif
-        </button>
+        <div className="flex items-center gap-3">
+          <label className="flex w-80 cursor-text items-center gap-3 h-9 rounded-2xl border bg-popover px-4 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-accent focus-within:bg-popover">
+            <Search className="h-5 w-5 shrink-0" />
+            <input
+              placeholder="Rechercher un actif..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-transparent text-foreground placeholder:text-muted-foreground outline-none"
+            />
+          </label>
+          <button
+            onClick={() => setShowAssetForm(true)}
+            className="inline-flex items-center gap-2 rounded-full bg-foreground hover:bg-foreground/85 text-background shadow-whisper pl-1 pr-4 py-1 text-sm font-medium transition-colors"
+          >
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background/15">
+              <Plus className="h-4 w-4 text-background" />
+            </span>
+            Ajouter un actif
+          </button>
+        </div>
       </div>
       
       <PatrimoineTreeView 
         assets={assets}
+        searchQuery={searchQuery}
         onAssetEdit={(asset) => {
           setEditingAsset(asset);
           setShowAssetForm(true);

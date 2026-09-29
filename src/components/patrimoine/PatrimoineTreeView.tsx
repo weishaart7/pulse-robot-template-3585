@@ -1,12 +1,11 @@
 import { hasConjoint } from '@/lib/family/maritalStatus';
 import React, { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
-import { ChevronDown, ChevronRight, MoreHorizontal, Edit, Trash2, Search, TrendingUp, TrendingDown, Scale, Link2, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronRight, MoreHorizontal, Edit, Trash2, TrendingUp, TrendingDown, Scale, Link2, AlertTriangle } from 'lucide-react';
 import { Asset } from '@/services/assetService';
 import { Emprunt } from '@/services/passifService';
 import { getAssetCategory, NATURES_WITHOUT_ACQUISITION, getNatureDisplayLabel } from '@/constants/assetTypes';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { FullTable } from '@/components/ui/full-table';
 import {
   DropdownMenu,
@@ -25,16 +24,16 @@ import { resolveAssetFiscalRegime } from '@/lib/patrimoine/assetFiscalRegime';
 import { getFractionDemembrement, DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
 
 interface PatrimoineTreeViewProps {
+  searchQuery: string;
   assets: Asset[];
   onAssetEdit: (asset: Asset) => void;
   onAssetDelete?: (asset: Asset) => void;
 }
 
-export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: PatrimoineTreeViewProps) => {
+export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDelete }: PatrimoineTreeViewProps) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
   const { data: familyLinks } = useFamilyLinks();
@@ -138,6 +137,13 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
     }, {} as Record<string, Asset[]>);
   }, [filteredAssets]);
 
+  // Une recherche déroule toutes les catégories qui contiennent un résultat.
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      setExpandedCategories(new Set(Object.keys(assetsByCategory)));
+    }
+  }, [searchQuery, assetsByCategory]);
+
   const toggleCategory = (category: string) => {
     const newExpanded = new Set(expandedCategories);
     if (newExpanded.has(category)) {
@@ -232,19 +238,6 @@ export const PatrimoineTreeView = ({ assets, onAssetEdit, onAssetDelete }: Patri
 
   return (
     <>
-      {/* Search bar */}
-      <div className="mb-4">
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher un actif..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-      </div>
-
       <FullTable variant="categorized">
         <FullTable.Colgroup>
           <FullTable.Col className="w-[35%]" />

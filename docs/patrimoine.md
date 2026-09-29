@@ -5,7 +5,7 @@
 Le module Patrimoine centralise la saisie et la valorisation des actifs (`assets`) et des passifs (`passifs` / `emprunts`) du foyer, et en dérive trois lectures agrégées :
 
 - **Résumé** (`PatrimoineResume.tsx`) : totaux actifs/passifs/patrimoine net, répartition par catégorie (donut), évolution des actifs dans le temps, patrimoine par tête, plus-values.
-- **Actifs** (`PatrimoineActifs.tsx` + `PatrimoineTreeView.tsx`) : CRUD des actifs, arborescence par catégorie avec poids relatif et plus-value par ligne.
+- **Actifs** (`PatrimoineActifs.tsx` + `PatrimoineTreeView.tsx`) : CRUD des actifs, arborescence par catégorie avec poids relatif et plus-value par ligne. La recherche (« Rechercher un actif... ») est placée dans l'en-tête, à gauche du bouton « Ajouter un actif », avec le même habillage que la barre de recherche de la déclaration 2042 (`Declaration2042Interface.tsx`) mais en saisie directe (pas de spotlight) ; son état vit dans `PatrimoineActifs.tsx` et est transmis à `PatrimoineTreeView` (prop `searchQuery`) qui filtre et déroule automatiquement toutes les catégories contenant un résultat.
 - **Passifs** (`PatrimoinePassifs.tsx`) : CRUD des emprunts et dettes simples.
 - **Plus-values** (`PatrimoinePlusValues.tsx`) : détail des plus/moins-values latentes et fiscalité associée (PFU, PVI, régimes spécifiques par nature d'actif).
 
