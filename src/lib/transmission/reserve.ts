@@ -25,9 +25,10 @@ function getMontantRapportForfaitaire(liberalite: Liberalite): number | undefine
 }
 
 /** Valeur civile d'une libéralité : `valeur` en pleine propriété, ou
- *  `valeur` × usufruit (barème 669) pour une libéralité au conjoint en usufruit. */
-export function valeurLiberalite(lib: Liberalite, pctUsufruitConjoint: number): number {
-  return lib.droitConjoint === 'usufruit' ? lib.valeur * pctUsufruitConjoint : lib.valeur;
+ *  `valeur` (assiette) × usufruit du bénéficiaire (barème 669, résolu dans
+ *  Liberalite.pctUsufruit) pour une libéralité en usufruit. */
+export function valeurLiberalite(lib: Liberalite): number {
+  return lib.droitTransmis === 'usufruit' ? lib.valeur * (lib.pctUsufruit ?? 0) : lib.valeur;
 }
 
 export interface ReserveResult {
@@ -56,10 +57,7 @@ export interface ReductionResult {
  */
 export function computeMasseCalcul(
   patrimony: PatrimonySnapshot, 
-  liberalites: Liberalite[],
-  // Barème 669 à l'âge du conjoint : valorise une donation au conjoint en
-  // usufruit (Liberalite.droitConjoint). Défaut 1 (pleine propriété).
-  pctUsufruitConjoint: number = 1
+  liberalites: Liberalite[]
 ): number {
   // Biens existants au décès - dettes, écrêté à 0 si le passif excède l'actif
   // (art. 922 : le solde n'est jamais négatif pour la masse de calcul)
@@ -68,7 +66,8 @@ export function computeMasseCalcul(
   // + toutes donations pour leur valeur au décès
   const donations = liberalites.filter(lib => lib.type === "donation");
   donations.forEach(donation => {
-    masseCalcul += valeurLiberalite(donation, pctUsufruitConjoint);
+    // Donation en usufruit : valeur de l'usufruit au jour du décès (art. 922).
+    masseCalcul += valeurLiberalite(donation);
   });
   
   // Les legs ne rentrent pas dans la masse de calcul pour la réserve
@@ -396,47 +395,51 @@ export function applyReductions(
 }
 
 export interface ImputationConjointResult {
-  // Disponible total ouvert au conjoint après les libéralités faites à
-  // d'autres (valeur, usufruit au barème 669) : forme la plus large de
-  // l'art. 1094-1 — QDO en PP, 1/4 PP + 3/4 US, ou totalité en usufruit.
-  disponibleConjoint: number;
-  // Pleine propriété encore disponible pour le conjoint (jamais au-delà de la QDO).
-  ppMaxConjoint: number;
-  // Valeur des libéralités au conjoint maintenues, et leur part en PP.
-  valeurMaintenue: number;
+  // Pleine propriété encore disponible pour le conjoint après les
+  // libéralités aux autres : QDO restante (forme « QDO en PP ») ou, dès qu'il
+  // reçoit aussi de l'usufruit, min(1/4 de la masse, QDO restante).
+  ppMaxSansUsufruit: number;
+  ppMaxAvecUsufruit: number;
+  // Assiette maximale grevée d'usufruit au profit du conjoint : masse moins ce
+  // qu'ont pris les libéralités aux autres et sa propre pleine propriété.
+  assietteUsufruitMax: number;
+  // Libéralités au conjoint maintenues : pleine propriété, assiette de
+  // l'usufruit, et valeur totale (usufruit au barème 669).
   ppMaintenue: number;
+  assietteUsufruitMaintenue: number;
+  valeurMaintenue: number;
   reductions: { liberaliteId: string; montantReduit: number; ratioReduction: number }[];
 }
 
 /**
  * Quotité spéciale entre époux (art. 1094-1 C. civ.), en présence de
- * descendants. Les libéralités à d'autres sont déjà imputées sur la QDO
- * (imputeLiberalites/applyReductions) ; celles au conjoint s'imputent sur ce
- * qu'elles laissent du disponible le plus large (jurisprudence du cumul des
- * quotités), la pleine propriété ne dépassant jamais le reliquat de QDO.
+ * descendants, contrôlée « en assiette » (Cass. civ. 1, 22 juin 2022,
+ * référentiel §8.6.2 ; donations-legs §3.3) : la pleine propriété du conjoint
+ * se compare à la QDO restante (ou au quart s'il reçoit aussi de l'usufruit),
+ * l'usufruit se compare par son assiette aux biens restant après les
+ * libéralités aux autres et sa propre pleine propriété (usufruit de tout).
+ * Les libéralités aux autres sont déjà imputées sur la QDO par
+ * imputeLiberalites/applyReductions (en assiette elles aussi).
  * Réduction : legs d'abord (au marc le franc), puis donations de la plus
- * récente à la plus ancienne ; la pleine propriété excédentaire d'abord.
- * Usufruit valorisé au barème art. 669 CGI (convention validée le 2026-09-29).
+ * récente à la plus ancienne ; la pleine propriété avant l'usufruit.
  */
 export function imputeLiberalitesConjoint(
   liberalites: Liberalite[],
   conjointId: string,
   reserveResult: ReserveResult,
-  imputationAutres: ImputationResult,
-  pctUsufruit: number
+  imputationAutres: ImputationResult
 ): ImputationConjointResult {
   const M = reserveResult.masseCalcul;
   const QDO = reserveResult.quotiteDisponible;
   const consommeAutres = Math.min(imputationAutres.besoinTotalSurQD, QDO);
-  const disponibleConjoint = Math.max(0,
-    Math.max(QDO, M / 4 + (3 * M / 4) * pctUsufruit, M * pctUsufruit) - consommeAutres);
-  const ppMaxConjoint = Math.max(0, QDO - consommeAutres);
+  const ppMaxSansUsufruit = Math.max(0, QDO - consommeAutres);
+  const ppMaxAvecUsufruit = Math.min(M / 4, ppMaxSansUsufruit);
 
   const libs = liberalites.filter(l => l.beneficiaireId === conjointId);
-  const valeur = new Map(libs.map(l => [l.id, valeurLiberalite(l, pctUsufruit)]));
-  const estPP = (l: Liberalite) => l.droitConjoint !== 'usufruit';
-  // Ordre de réduction : legs (ensemble, au marc le franc) puis donations
-  // de la plus récente à la plus ancienne.
+  const estUS = (l: Liberalite) => l.droitTransmis === 'usufruit';
+  // Montants en unité d'assiette (`valeur`) : PP pour la pleine propriété,
+  // biens grevés pour l'usufruit.
+  const maintenu = new Map(libs.map(l => [l.id, l.valeur]));
   const legs = libs.filter(l => l.type === 'legs');
   const donationsRecentes = libs.filter(l => l.type === 'donation')
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -444,43 +447,47 @@ export function imputeLiberalitesConjoint(
   const reduire = (excedent: number, filtre: (l: Liberalite) => boolean) => {
     let reste = excedent;
     const legsVises = legs.filter(filtre);
-    const totalLegs = legsVises.reduce((s, l) => s + valeur.get(l.id)!, 0);
+    const totalLegs = legsVises.reduce((s, l) => s + maintenu.get(l.id)!, 0);
     const surLegs = Math.min(reste, totalLegs);
     legsVises.forEach(l => {
-      const v = valeur.get(l.id)!;
-      valeur.set(l.id, v - (totalLegs > 0 ? surLegs * (v / totalLegs) : 0));
+      const v = maintenu.get(l.id)!;
+      maintenu.set(l.id, v - (totalLegs > 0 ? surLegs * (v / totalLegs) : 0));
     });
     reste -= surLegs;
     for (const d of donationsRecentes.filter(filtre)) {
       if (reste <= 0) break;
-      const v = valeur.get(d.id)!;
+      const v = maintenu.get(d.id)!;
       const r = Math.min(v, reste);
-      valeur.set(d.id, v - r);
+      maintenu.set(d.id, v - r);
       reste -= r;
     }
   };
-
   const somme = (filtre: (l: Liberalite) => boolean) =>
-    libs.filter(filtre).reduce((s, l) => s + valeur.get(l.id)!, 0);
-  const excedentPP = somme(estPP) - ppMaxConjoint;
-  if (excedentPP > 0) reduire(excedentPP, estPP);
-  const excedentTotal = somme(() => true) - disponibleConjoint;
-  if (excedentTotal > 0) reduire(excedentTotal, () => true);
+    libs.filter(filtre).reduce((s, l) => s + maintenu.get(l.id)!, 0);
+
+  const aDeLUsufruit = libs.some(estUS);
+  const ppMax = aDeLUsufruit ? ppMaxAvecUsufruit : ppMaxSansUsufruit;
+  const excedentPP = somme(l => !estUS(l)) - ppMax;
+  if (excedentPP > 0) reduire(excedentPP, l => !estUS(l));
+  const ppMaintenue = somme(l => !estUS(l));
+  const assietteUsufruitMax = Math.max(0, M - consommeAutres - ppMaintenue);
+  const excedentUS = somme(estUS) - assietteUsufruitMax;
+  if (excedentUS > 0) reduire(excedentUS, estUS);
 
   const reductions = libs
     .map(l => {
-      const valeurReduite = valeurLiberalite(l, pctUsufruit) - valeur.get(l.id)!;
-      // Réduction exprimée dans l'unité de `valeur` (biens grevés pour un usufruit).
-      const montantReduit = l.droitConjoint === 'usufruit' && pctUsufruit > 0 ? valeurReduite / pctUsufruit : valeurReduite;
+      const montantReduit = l.valeur - maintenu.get(l.id)!;
       return { liberaliteId: l.id, montantReduit, ratioReduction: l.valeur > 0 ? montantReduit / l.valeur : 0 };
     })
     .filter(r => r.montantReduit > 0.005);
 
   return {
-    disponibleConjoint,
-    ppMaxConjoint,
-    valeurMaintenue: somme(() => true),
-    ppMaintenue: somme(estPP),
+    ppMaxSansUsufruit,
+    ppMaxAvecUsufruit,
+    assietteUsufruitMax,
+    ppMaintenue,
+    assietteUsufruitMaintenue: somme(estUS),
+    valeurMaintenue: libs.reduce((s, l) => s + valeurLiberalite({ ...l, valeur: maintenu.get(l.id)! }), 0),
     reductions,
   };
 }
@@ -561,7 +568,8 @@ export function computeRapport(
       const reductionSurForfait = reductionTotal - reductionSurAvantage;
       montantRapport = forfait - reductionSurForfait;
     } else {
-      montantRapport = donation.valeur - reductionTotal;
+      // Donation en usufruit : rapportée pour la valeur de l'usufruit maintenu.
+      montantRapport = valeurLiberalite({ ...donation, valeur: donation.valeur - reductionTotal });
     }
 
     if (montantRapport > 0) {

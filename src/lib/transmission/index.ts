@@ -203,12 +203,24 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // Sentinelle 'conjoint' (liberalites.beneficiaire_conjoint) résolue vers le
   // conjoint du graphe — marié (héritier) ou partenaire de PACS (légataire
   // seulement). Sans conjoint dans le graphe : traité comme un tiers.
-  const liberalites = ctx.liberalites.map(lib =>
-    lib.beneficiaireId === 'conjoint'
-      ? { ...lib, beneficiaireId: family.survivingSpouseId || 'tiers' }
-      : lib
-  );
   const referenceDate = ctx.referenceDate || new Date().toISOString().split('T')[0];
+  // Libéralité en usufruit viager : usufruit du bénéficiaire au barème 669 CGI
+  // selon son âge au décès (valeur au jour du décès, art. 922). Jamais deviné :
+  // bénéficiaire hors fiche ou sans date de naissance → erreur explicite.
+  const liberalites = ctx.liberalites.map(lib => {
+    const resolue = lib.beneficiaireId === 'conjoint'
+      ? { ...lib, beneficiaireId: family.survivingSpouseId || 'tiers' }
+      : lib;
+    if (resolue.droitTransmis !== 'usufruit') return resolue;
+    const beneficiaire = family.persons.find(p => p.id === resolue.beneficiaireId);
+    if (!beneficiaire?.dateNaissance) {
+      throw new Error(
+        `Libéralité en usufruit « ${resolue.beneficiaireName || resolue.id} » : date de naissance du bénéficiaire ` +
+        `manquante, impossible de valoriser l'usufruit (barème art. 669 CGI).`
+      );
+    }
+    return { ...resolue, pctUsufruit: getDemembrementPct(getAgeAtDate(beneficiaire.dateNaissance, referenceDate), 'usufruit') };
+  });
 
   // 0. Récompenses (art. 1468-1478 C. civ.) et créances entre époux
   // (art. 1479, 1543 C. civ.) — chantier 3A, branché sur le mécanisme A.
@@ -327,14 +339,14 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // Conjoint marié ou partenaire de PACS (légataire) : tous deux peuvent
   // recevoir une libéralité en usufruit.
   const usufruitConjointRequis = successionLegaleResult.heritiers.some(h => h.typeQuotePart === 'usufruit')
-    || liberalites.some(l => l.droitConjoint === 'usufruit' && l.beneficiaireId === family.survivingSpouseId);
+    || liberalites.some(l => l.droitTransmis === 'usufruit' && l.beneficiaireId === family.survivingSpouseId);
   const conjointPersonne = family.persons.find(p => p.id === family.survivingSpouseId);
   const pctUsufruitConjoint = family.survivingSpouseId && (usufruitConjointRequis || conjointPersonne?.dateNaissance)
     ? getDemembrementPct(getConjointAge(family, referenceDate), 'usufruit')
     : 0;
 
   // 2. Masse de calcul / réserve / QD
-  const masseCalcul = computeMasseCalcul(patrimony, liberalites, pctUsufruitConjoint);
+  const masseCalcul = computeMasseCalcul(patrimony, liberalites);
   // Nombre d'enfants au sens de la réserve = nombre de souches (enfants
   // vivants ou représentés) déjà calculé par calculateSuccessionLegale, qui
   // tient compte des décès ET des renonciations (successionLegale.ts).
@@ -372,7 +384,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     reserveResult
   );
   const imputationConjoint = conjointQDSId
-    ? imputeLiberalitesConjoint(liberalites, conjointQDSId, reserveResult, imputationResult, pctUsufruitConjoint)
+    ? imputeLiberalitesConjoint(liberalites, conjointQDSId, reserveResult, imputationResult)
     : undefined;
   const reductionResult = imputationConjoint && imputationConjoint.reductions.length > 0
     ? {
@@ -380,12 +392,21 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
         totalReduit: reductionAutres.totalReduit + imputationConjoint.reductions.reduce((s, r) => s + r.montantReduit, 0)
       }
     : reductionAutres;
+  if (reductionAutres.reductions.some(r => liberalites.find(l => l.id === r.liberaliteId)?.droitTransmis === 'usufruit')) {
+    successionLegaleResult.explicationsTexte.push(
+      `Une libéralité en usufruit excède la quotité disponible : elle est comparée « en assiette » ` +
+      `(les biens qu'elle grève face à la quotité disponible, Cass. civ. 1, 22 juin 2022) et réduite ` +
+      `à l'usufruit de ce qui reste disponible ; les héritiers réservataires recouvrent la pleine ` +
+      `propriété du surplus.`
+    );
+  }
   if (imputationConjoint && imputationConjoint.reductions.length > 0) {
     successionLegaleResult.explicationsTexte.push(
       `Les libéralités consenties au conjoint excèdent la quotité disponible spéciale entre époux ` +
       `(C. civ. art. 1094-1 : quotité ordinaire en pleine propriété, 1/4 en pleine propriété et 3/4 en ` +
       `usufruit, ou totalité en usufruit), compte tenu des libéralités faites à d'autres : elles sont ` +
-      `réduites. Usufruit valorisé au barème de l'art. 669 CGI.`
+      `réduites. Contrôle « en assiette » : l'usufruit se compare par les biens qu'il grève ` +
+      `(Cass. civ. 1, 22 juin 2022).`
     );
   }
 
@@ -425,8 +446,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       return {
         personId: lib.beneficiaireId === 'tiers' ? `tiers-${lib.id}` : lib.beneficiaireId,
         nom: lib.beneficiaireName || 'Légataire',
-        montant: Math.max(0, valeurLiberalite(
-          { ...lib, valeur: lib.valeur - (reduction?.montantReduit || 0) }, pctUsufruitConjoint))
+        montant: Math.max(0, valeurLiberalite({ ...lib, valeur: lib.valeur - (reduction?.montantReduit || 0) }))
       };
     })
     .filter(l => l.montant > 0);
@@ -446,6 +466,8 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   const hasDemembrement = heirsShares.some(h => h.typeQuotePart === 'usufruit' || h.typeQuotePart === 'nue_propriete');
   // Option du conjoint issue d'une donation au dernier vivant (libéralité,
   // soumise à la quotité spéciale) plutôt que de la loi (art. 757).
+  const conjointAUsufruit = heirsShares.some(h => h.personId === conjointId && h.typeQuotePart === 'usufruit')
+    || liberalites.some(l => l.beneficiaireId === conjointId && l.droitTransmis === 'usufruit');
   const optionIssueDDV = !!family.hasDDV && (
     conjointOption === 'qd_pp' || conjointOption === 'quart_pp_3quarts_us' ||
     (conjointOption === 'usufruit_total' && !successionLegaleResult.optionConjoint?.enfantsCommuns)
@@ -461,13 +483,16 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     spouseId: family.hasSurvivingSpouse ? family.survivingSpouseId : undefined,
     // Pleine propriété encore disponible : QDO moins les libéralités aux
     // autres et, sous quotité spéciale, la PP déjà reçue par le conjoint.
+    // Pleine propriété encore disponible pour le conjoint : QDO restante, ou
+    // le quart s'il reçoit aussi de l'usufruit (option DDV ou libéralité).
     qdRestante: imputationConjoint
-      ? Math.max(0, imputationConjoint.ppMaxConjoint - imputationConjoint.ppMaintenue)
+      ? Math.max(0, (conjointAUsufruit ? imputationConjoint.ppMaxAvecUsufruit : imputationConjoint.ppMaxSansUsufruit)
+          - imputationConjoint.ppMaintenue)
       : Math.max(0, reserveResult.quotiteDisponible - Math.min(imputationResult.besoinTotalSurQD, reserveResult.quotiteDisponible)),
-    // Option issue d'une DDV : plafonnée à ce qui reste du disponible spécial
-    // après les libéralités aux autres et au conjoint (art. 1094-1, R20).
-    plafondValeurOptionDDV: imputationConjoint && optionIssueDDV
-      ? Math.max(0, imputationConjoint.disponibleConjoint - imputationConjoint.valeurMaintenue)
+    // Option issue d'une DDV : l'assiette de son usufruit est plafonnée « en
+    // assiette » par ce que laissent les autres libéralités (art. 1094-1).
+    plafondAssietteUsufruitDDV: imputationConjoint && optionIssueDDV
+      ? Math.max(0, imputationConjoint.assietteUsufruitMax - imputationConjoint.assietteUsufruitMaintenue)
       : undefined,
     totalLegsNonHeritiers,
     pctUsufruit: hasDemembrement || usufruitConjointRequis ? pctUsufruitConjoint : 0,

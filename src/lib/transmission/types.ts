@@ -135,11 +135,15 @@ export interface Liberalite {
   // un petit-enfant plutôt qu'un enfant du défunt — cf. reserve.ts::
   // imputeLiberalites et index.ts (liberalitesMaintenues, crédite ce parent).
   generationIntermediaireId?: PersonId;
-  // Libéralité au conjoint (beneficiaireId === 'conjoint') consentie en
-  // usufruit (art. 1094-1 C. civ.) : `valeur` porte alors la valeur en pleine
-  // propriété des biens grevés, la libéralité valant valeur × usufruit (barème
-  // art. 669 CGI, âge du conjoint au décès). Absent = pleine propriété.
-  droitConjoint?: 'usufruit';
+  // Libéralité consentie en usufruit viager (liberalites.droit_transmis) :
+  // `valeur` porte la valeur en pleine propriété des biens grevés (son
+  // « assiette »), la libéralité valant valeur × pctUsufruit. Imputation « en
+  // assiette » sur la QD (Cass. civ. 1, 22 juin 2022) ou, pour le conjoint,
+  // sur la quotité spéciale (art. 1094-1). Absent = pleine propriété.
+  droitTransmis?: 'usufruit';
+  // Usufruit du bénéficiaire au barème art. 669 CGI (âge au décès), résolu
+  // par computeTransmission — jamais saisi.
+  pctUsufruit?: number;
 }
 
 export interface TransmissionParams {

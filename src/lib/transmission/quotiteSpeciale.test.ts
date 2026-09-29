@@ -43,7 +43,7 @@ const reduit = (r: ReturnType<typeof run>, id: string) =>
 
 const legsConjoint = (valeur: number, usufruit = false): Liberalite => ({
   id: 'lc', type: 'legs', beneficiaireId: 'conjoint', valeur, date: '2026-01-01', typeImputation: 'hors_part',
-  ...(usufruit ? { droitConjoint: 'usufruit' as const } : {}),
+  ...(usufruit ? { droitTransmis: 'usufruit' as const } : {}),
 });
 
 describe('Quotité spéciale entre époux (art. 1094-1)', () => {
@@ -68,22 +68,23 @@ describe('Quotité spéciale entre époux (art. 1094-1)', () => {
     expect(recu(r, 'E1')).toBe(133333);
   });
 
-  it('R20 — donation hors part épuisant la QDO + DDV 1/4 PP + 3/4 US : le conjoint garde un usufruit réduit', () => {
+  it('R20/R23 — donation hors part épuisant la QDO + DDV 1/4 PP + 3/4 US : plus de PP, usufruit sur tout le reste (contrôle en assiette)', () => {
     const don: Liberalite = { id: 'd', type: 'donation', beneficiaireId: 'E1', valeur: 133333.34, valeurFiscaleActe: 133333, date: '2020-01-01', typeImputation: 'hors_part' };
     const r = run(famille(2, { ddv: true }), 266666.66, [don], 'quart_pp_3quarts_us');
-    // Disponible spécial : 1/4 × 400 000 + 3/4 × 400 000 × 30 % = 190 000 − 133 333 = 56 667, en usufruit (plus de PP).
-    expect(recu(r, 'C')).toBe(56667);
-    expect(recu(r, 'E1')).toBe(105000);
-    expect(recu(r, 'E2')).toBe(105000);
+    // QDO épuisée : aucune pleine propriété ; usufruit sur les 266 667 € restants
+    // (assiette ≤ 400 000 − 133 333), soit 80 000 € ; enfants en nue-propriété.
+    expect(recu(r, 'C')).toBe(80000);
+    expect(recu(r, 'E1')).toBe(93333);
+    expect(recu(r, 'E2')).toBe(93333);
     expect(r.explicationsTexte?.some(t => t.includes('sont limités'))).toBe(true);
   });
 
-  it('R19/R20 — legs à un tiers + DDV usufruit total (enfant non commun) : usufruit plafonné', () => {
+  it('R19/R23 — legs à un tiers + DDV usufruit total (enfant non commun) : usufruit sur les biens non légués', () => {
     const legsTiers: Liberalite = { id: 'lt', type: 'legs', beneficiaireId: 'tiers', valeur: 133333.34, date: '2026-01-01', typeImputation: 'hors_part', beneficiaireName: 'Ami' };
     const r = run(famille(2, { ddv: true, nonCommun: true }), 400000, [legsTiers], 'usufruit_total');
-    // 190 000 − 133 333 = 56 667 d'usufruit, au lieu de 266 667 × 30 % = 80 000.
-    expect(recu(r, 'C')).toBe(56667);
-    expect(recu(r, 'E1') + recu(r, 'E2')).toBe(210000);
+    // En assiette : usufruit sur les 266 667 € non légués (≤ 400 000 − 133 333), 80 000 €.
+    expect(recu(r, 'C')).toBe(80000);
+    expect(Math.abs(recu(r, 'E1') + recu(r, 'E2') - 186667)).toBeLessThanOrEqual(1); // arrondi par héritier
   });
 
   it('usufruit légal (art. 757, sans DDV) : non plafonné par la quotité spéciale', () => {

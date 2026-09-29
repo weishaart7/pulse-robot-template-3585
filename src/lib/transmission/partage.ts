@@ -43,11 +43,12 @@ export interface PartageInput {
   // QD non consommée par les libéralités (après réduction), plafond des
   // droits du conjoint en présence de descendants.
   qdRestante: number;
-  // Option du conjoint issue d'une donation au dernier vivant : valeur
-  // maximale (PP + usufruit au barème 669) qu'elle peut encore atteindre sous
-  // la quotité spéciale (art. 1094-1), cf. reserve.ts::imputeLiberalitesConjoint.
-  // Absent : option légale (art. 757), non plafonnée ici.
-  plafondValeurOptionDDV?: number;
+  // Option du conjoint issue d'une donation au dernier vivant : assiette
+  // maximale de son usufruit sous la quotité spéciale, avant déduction de la
+  // pleine propriété prise par l'option (art. 1094-1, contrôle en assiette,
+  // cf. reserve.ts::imputeLiberalitesConjoint). Absent : option légale
+  // (art. 757), non plafonnée ici.
+  plafondAssietteUsufruitDDV?: number;
   // Legs maintenus à des non-héritiers, déjà sortis du pot par l'appelant.
   totalLegsNonHeritiers: number;
   pctUsufruit: number;
@@ -97,8 +98,8 @@ export function computePartage(input: PartageInput): PartageResult {
     .reduce((sum, r) => {
       const lib = liberalites.find(l => l.id === r.liberaliteId);
       if (lib?.type !== 'donation') return sum;
-      // Donation au conjoint en usufruit : indemnité = valeur d'usufruit réduite.
-      return sum + (lib.droitConjoint === 'usufruit' ? r.montantReduit * pctUsufruit : r.montantReduit);
+      // Donation en usufruit : indemnité = valeur d'usufruit réduite.
+      return sum + (lib.droitTransmis === 'usufruit' ? r.montantReduit * (lib.pctUsufruit ?? 0) : r.montantReduit);
     }, 0);
 
   // Legs maintenus aux héritiers, hors part ou au conjoint : prélevés sur le
@@ -108,14 +109,17 @@ export function computePartage(input: PartageInput): PartageResult {
   // Legs au conjoint en usufruit (art. 1094-1) : les biens grevés restent dans
   // le pot (nue-propriété aux autres héritiers) ; seule leur assiette est retenue.
   const assietteLegsUsufruitConjoint = liberalites
-    .filter(l => l.type === 'legs' && spouseId && l.beneficiaireId === spouseId && l.droitConjoint === 'usufruit')
+    .filter(l => l.type === 'legs' && spouseId && l.beneficiaireId === spouseId && l.droitTransmis === 'usufruit')
     .reduce((s, l) => s + maintenu(l, reductions), 0);
   liberalites
-    .filter(l => l.type === 'legs' && personIds.has(l.beneficiaireId as PersonId) && l.droitConjoint !== 'usufruit')
+    // Legs d'usufruit à un autre héritier : sa valeur (assiette maintenue ×
+    // usufruit du légataire) lui revient, la nue-propriété restant aux héritiers.
+    .filter(l => l.type === 'legs' && personIds.has(l.beneficiaireId as PersonId) && !(spouseId && l.beneficiaireId === spouseId && l.droitTransmis === 'usufruit'))
     .filter(l => !(l.typeImputation === 'avance_part' && childrenIds.includes(l.beneficiaireId as PersonId)))
     .forEach(l => legsHorsPartParHeritier.set(
       l.beneficiaireId as PersonId,
-      (legsHorsPartParHeritier.get(l.beneficiaireId as PersonId) || 0) + maintenu(l, reductions)
+      (legsHorsPartParHeritier.get(l.beneficiaireId as PersonId) || 0)
+        + (l.droitTransmis === 'usufruit' ? maintenu(l, reductions) * (l.pctUsufruit ?? 0) : maintenu(l, reductions))
     ));
   const totalLegsHeritiers = Array.from(legsHorsPartParHeritier.values()).reduce((s, v) => s + v, 0);
 
@@ -126,8 +130,8 @@ export function computePartage(input: PartageInput): PartageResult {
       ? l.generationIntermediaireId
       : l.beneficiaireId as PersonId;
     if (!personIds.has(titulaire)) return;
-    // Donation au conjoint en usufruit : valeur de l'usufruit détenu.
-    const valeur = l.droitConjoint === 'usufruit' ? maintenu(l, reductions) * pctUsufruit : maintenu(l, reductions);
+    // Donation en usufruit : valeur de l'usufruit détenu.
+    const valeur = l.droitTransmis === 'usufruit' ? maintenu(l, reductions) * (l.pctUsufruit ?? 0) : maintenu(l, reductions);
     donationsDetenues.set(titulaire, (donationsDetenues.get(titulaire) || 0) + valeur);
   });
 
@@ -160,15 +164,12 @@ export function computePartage(input: PartageInput): PartageResult {
   // Plafond de l'option issue d'une DDV (R20) : l'usufruit est réduit d'abord,
   // puis la pleine propriété.
   let assietteUsufruitOption = hasSpouseUS ? Math.max(0, pot - spousePPduPot) : 0;
-  if (input.plafondValeurOptionDDV !== undefined) {
-    let excedent = spousePPduPot + assietteUsufruitOption * pctUsufruit - input.plafondValeurOptionDDV;
-    if (excedent > 0.5) droitsConjointPlafonnes = true;
-    if (excedent > 0 && assietteUsufruitOption > 0 && pctUsufruit > 0) {
-      const reductionUS = Math.min(assietteUsufruitOption * pctUsufruit, excedent);
-      assietteUsufruitOption -= reductionUS / pctUsufruit;
-      excedent -= reductionUS;
+  if (input.plafondAssietteUsufruitDDV !== undefined && hasSpouseUS) {
+    const plafond = Math.max(0, input.plafondAssietteUsufruitDDV - spousePPduPot);
+    if (assietteUsufruitOption > plafond + 0.5) {
+      assietteUsufruitOption = plafond;
+      droitsConjointPlafonnes = true;
     }
-    if (excedent > 0) spousePPduPot = Math.max(0, spousePPduPot - excedent);
   }
   const potApresPP = Math.max(0, pot - spousePPduPot);
   // Assiette totale grevée d'usufruit au profit du conjoint (option et/ou legs),

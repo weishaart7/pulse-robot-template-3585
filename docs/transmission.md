@@ -223,31 +223,38 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
     DUH), hors valeur d'usufruit et hors donations déjà détenues ; `computeChainedTransmission`
     ne réunit que `HeirShare.valeurUsufruit`.
   Tests : `lib/transmission/phase5NotaireAudit.test.ts`.
-- **Quotité disponible spéciale entre époux (art. 1094-1 C. civ., 2026-09-29).** En présence
-  de descendants, les libéralités au conjoint marié ne relèvent plus de la QD ordinaire
-  (`imputeLiberalites` les exclut) mais de `reserve.ts::imputeLiberalitesConjoint` :
-  - disponible du conjoint = forme la plus large entre QDO en PP, 1/4 PP + 3/4 US et totalité en
-    usufruit, diminuée de ce que les libéralités aux autres ont pris sur la QDO (cumul des
-    quotités) ; sa pleine propriété ne dépasse jamais le reliquat de QDO ;
-  - réduction : PP excédentaire d'abord, puis total ; legs au marc le franc, puis donations de la
-    plus récente à la plus ancienne ;
-  - **libéralité en usufruit** : `liberalites.droit_conjoint` (`pleine_propriete` par défaut |
-    `usufruit`, migration `20260929150000_liberalites_droit_conjoint.sql`), saisi par
-    `DroitConjointSelect` dans `DonationForm.tsx`/`LegsForm.tsx` quand le conjoint est coché.
-    `valeur` porte alors les biens grevés, la libéralité vaut `valeur × usufruit` (barème 669 à
-    l'âge du conjoint au décès, convention validée, également retenue pour le civil) ;
-  - option issue d'une DDV (`qd_pp`, `quart_pp_3quarts_us`, `usufruit_total` hors enfants tous
-    communs) : plafonnée par `partage.ts` à ce que laisse le disponible spécial
-    (`plafondValeurOptionDDV`), l'usufruit étant réduit avant la pleine propriété. L'usufruit
-    légal (art. 757) n'y est pas soumis ;
-  - `partage.ts` : l'usufruit (option ou legs) grève les biens restants, les autres héritiers en
-    recevant la nue-propriété ; l'égalité entre enfants se raisonne en valeur (donations
-    rapportées comprises), plus en pleine propriété puis décote. `HeirShare.valeurUsufruit`
-    alimente la réunion au 2nd décès, y compris pour un usufruit légué ;
-  - sans descendant, le conjoint réservataire (1/4) impute ses libéralités sur sa propre réserve
+- **Libéralités en usufruit et imputation « en assiette » (2026-09-29).** Toute donation ou tout
+  legs peut être consenti en usufruit viager : `liberalites.droit_transmis` (`pleine_propriete` par
+  défaut | `usufruit`, migrations `20260929150000_liberalites_droit_conjoint.sql` puis
+  `20260929170000_liberalites_droit_transmis.sql`), saisi par `DroitTransmisSelect` dans
+  `DonationForm.tsx`/`LegsForm.tsx` pour tout bénéficiaire de la fiche Famille (date de naissance
+  exigée, jamais un tiers hors fiche ; incompatible avec une réserve d'usufruit du donateur).
+  `valeur` porte l'assiette (biens grevés en pleine propriété) ; `computeTransmission` résout
+  `Liberalite.pctUsufruit` au barème 669 selon l'âge du bénéficiaire au décès (erreur si date
+  manquante). `reserve.ts::valeurLiberalite` = assiette × usufruit : masse de calcul (art. 922),
+  rapport, valeur reçue par un légataire, indemnité de réduction.
+  - **QD ordinaire** : imputation et réduction « en assiette » (Cass. civ. 1, 22 juin 2022,
+    référentiel §8.6.2) — chaque libéralité consomme `valeur` (PP ou assiette) sur la QD, dans
+    l'ordre légal ; une libéralité réduite garde l'usufruit de l'assiette maintenue. Exemple du
+    référentiel vérifié : réduction de 29 100 €.
+  - **Quotité spéciale entre époux (art. 1094-1)**, en présence de descendants,
+    `reserve.ts::imputeLiberalitesConjoint`, également en assiette : pleine propriété ≤ QDO
+    restante (ou ≤ min(1/4 de la masse, QDO restante) si le conjoint reçoit aussi de l'usufruit) ;
+    assiette de l'usufruit ≤ masse − libéralités aux autres − sa pleine propriété. Réduction : PP
+    avant usufruit, legs au marc le franc puis donations de la plus récente à la plus ancienne. La
+    comparaison en valeur ne sert qu'au complément des droits légaux (art. 758-6).
+  - **Option issue d'une DDV** (`qd_pp`, `quart_pp_3quarts_us`, `usufruit_total` hors enfants tous
+    communs) : `partage.ts` plafonne l'assiette de son usufruit (`plafondAssietteUsufruitDDV`) et sa
+    PP (`qdRestante`). L'usufruit légal (art. 757) n'y est pas soumis.
+  - `partage.ts` : l'usufruit du conjoint (option ou legs) grève les biens restants, les autres
+    héritiers en recevant la nue-propriété ; un legs d'usufruit à un autre héritier lui vaut sa
+    valeur d'usufruit. Égalité entre enfants raisonnée en valeur. `HeirShare.valeurUsufruit`
+    alimente la réunion au 2nd décès (usufruit légal, DDV ou légué au conjoint).
+  - Sans descendant, le conjoint réservataire (1/4) impute ses libéralités sur sa propre réserve
     avant la QD (art. 924), sans réduction à son propre profit.
-  Hors périmètre : conversion (art. 1098), cantonnement (art. 1094-1 al. 2). Tests :
-  `lib/transmission/quotiteSpeciale.test.ts`.
+  Hors périmètre : usufruit temporaire, extinction de l'usufruit d'un non-conjoint à son décès,
+  conversion (art. 1098), cantonnement (art. 1094-1 al. 2). Tests :
+  `lib/transmission/imputationAssiette.test.ts`, `lib/transmission/quotiteSpeciale.test.ts`.
 - **Fente successorale : branche familiale saisissable pour les 4 rangs** (commit `de8a722`, finding
   F18) — corrige un défaut de saisie qui pouvait conduire à une **déshérence à tort** (le message
   « l'État français hérite » s'affichait alors que des grands-parents vivants existaient, faute de
@@ -560,16 +567,10 @@ handicap par la phase 2, le net à recevoir par la phase 3, les règles complém
   obligation d'emploi, gestion d'un bien démembré, usufruit réservé, usufruit successif, délivrance à
   terme) sont saisis dans `DonationForm.tsx`, stockés, mais **jamais lus par le moteur**
   (`reserve.ts`/`transmission/index.ts`), confirmé exhaustivement par le Bloc 4. Un conseiller qui coche
-  « Dispense de rapport » voit son choix pris en compte (§2), mais qui coche une des 9 autres clauses —
-  notamment un usufruit réservé sur une donation, qui devrait s'imputer « en assiette » et non en pleine
-  propriété — obtient un résultat civilement identique à une donation sans clause, sans aucun
-  avertissement. *(Vérifié toujours ouvert.)*
-- **Imputation « en assiette » d'une libéralité en usufruit hors part jamais modélisée** (référentiel
-  §8.6.2, exemple chiffré à 29 100 € d'écart entre les deux méthodes). Le champ `demembrement` de
-  `DonationForm.tsx` (Aucun / Réserve d'usufruit / Réserve d'usufruit réversible) est stocké mais absent
-  de `LiberaliteRow` ([transmissionHelpers.ts:29-38](src/utils/transmissionHelpers.ts)) — jamais transmis
-  au calcul. Toute libéralité est donc traitée comme une valeur en pleine propriété, quel que soit le
-  démembrement réel déclaré. *(Vérifié toujours ouvert.)*
+  « Dispense de rapport » voit son choix pris en compte (§2), mais qui coche une des 9 autres clauses
+  obtient un résultat civilement identique à une donation sans clause, sans aucun avertissement. (La
+  réserve d'usufruit du donateur n'est pas en cause : le bien s'impute pour sa valeur en pleine
+  propriété au décès, référentiel §8.6.2, ce que fait déjà le moteur.) *(Vérifié toujours ouvert.)*
 - **Enfant renonçant sans descendance, tenu au rapport par stipulation expresse (art. 845), non compté
   dans N.** `buildSouchesEnfants` ([successionLegale.ts:330-384](src/lib/transmission/successionLegale.ts))
   ne couvre que 3 des 4 catégories d'enfants comptés pour le barème de réserve (vivants, décédés
@@ -715,7 +716,7 @@ handicap par la phase 2, le net à recevoir par la phase 3, les règles complém
     dette V2 explicite dans le code lui-même (commit `bf7bc00`), pas silencieusement absorbé.
   - **Clauses de donation autres que dispense/rapport forfaitaire** (9 sur 11) — juridiquement
     identifiables mais purement cosmétiques ; brancher chacune suppose un arbitrage produit au cas par
-    cas (ex. usufruit réservé nécessite l'imputation « en assiette », elle-même non modélisée).
+    cas (ex. retour conventionnel, usufruit successif).
   - **RAAR, droit de retour (père/mère, frères/sœurs), option successorale (acceptation
     à concurrence de l'actif net), droits accessoires du conjoint autres que les 3 mentions narratives
     ajoutées** — absences confirmées individuellement par les audits Bloc 1/2, non triviales à

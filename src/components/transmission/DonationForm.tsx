@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { DroitConjointSelect, DroitConjoint } from './DroitConjointSelect';
+import { DroitTransmisSelect, DroitTransmis } from './DroitTransmisSelect';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,8 @@ interface FamilyMember {
   nom: string;
   prenom: string;
   lien_familial: string;
+  // Requise pour une donation en usufruit (barème art. 669 CGI).
+  date_naissance?: string | null;
 }
 
 interface Beneficiary {
@@ -74,8 +76,8 @@ const DEFAULT_FORM_DATA = {
   // transgénérationnelle. Pertinent uniquement si nature ===
   // 'Donation-partage transgénérationnelle' et typeDonation === 'partage'.
   generationIntermediaireId: undefined as string | undefined,
-  // Donation au conjoint : pleine propriété ou usufruit (art. 1094-1).
-  droitConjoint: 'pleine_propriete' as DroitConjoint,
+  // Pleine propriété ou usufruit viager (imputation en assiette).
+  droitTransmis: 'pleine_propriete' as DroitTransmis,
   // Valeur totale déclarée dans l'acte (art. 784 CGI), base du rappel fiscal
   // — répartie ensuite entre donataires au même pourcentage que `montant`.
   valeurFiscaleActe: undefined as number | undefined,
@@ -106,6 +108,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
           nom: maritalStatus.nom_conjoint || 'Conjoint',
           prenom: maritalStatus.prenom_conjoint || '',
           lien_familial: maritalStatus.statut_couple === 'Pacsé(e)' ? 'Partenaire de PACS' : 'Conjoint',
+          date_naissance: maritalStatus.date_naissance_conjoint,
         }]
       : [];
     return [...conjoint, ...familyMembers];
@@ -196,7 +199,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
     try {
       const { data, error } = await supabase
         .from('family_links')
-        .select('id, nom, prenom, lien_familial')
+        .select('id, nom, prenom, lien_familial, date_naissance')
         .order('nom');
 
       if (error) throw error;
@@ -262,7 +265,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
         statut: first.statut || 'acte',
         montantRapportForfaitaire: first.montant_rapport_forfaitaire ?? undefined,
         generationIntermediaireId: first.generation_intermediaire_id ?? undefined,
-        droitConjoint: (editingGroup.find(r => r.beneficiaire_conjoint)?.droit_conjoint as DroitConjoint) || 'pleine_propriete',
+        droitTransmis: (first.droit_transmis as DroitTransmis) || 'pleine_propriete',
         // Colonne stockée par donataire (proratisée) : on reconstitue le total.
         valeurFiscaleActe: first.valeur_fiscale_acte != null
           ? first.valeur_fiscale_acte / ((first.pourcentage ?? 100) / 100)
@@ -333,6 +336,21 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
         variant: "destructive",
       });
       return;
+    }
+
+    if (formData.droitTransmis === 'usufruit') {
+      const sansDate = beneficiaries.filter(b =>
+        !donatairesPossibles.find(m => m.id === b.id)?.date_naissance);
+      if (formData.demembrement !== 'aucun' || sansDate.length > 0) {
+        toast({
+          title: "Erreur",
+          description: formData.demembrement !== 'aucun'
+            ? "Une donation en usufruit ne peut pas être aussi assortie d'une réserve d'usufruit."
+            : `Donation en usufruit : date de naissance manquante pour ${sansDate.map(b => `${b.prenom || ''} ${b.nom}`.trim()).join(', ')} (barème art. 669 CGI).`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     if (Math.abs(totalPourcentage - 100) > 0.01) {
@@ -411,7 +429,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
           denomination: formData.libelle,
           beneficiaire_id: beneficiaire.id === CONJOINT_ID ? undefined : beneficiaire.id,
           beneficiaire_conjoint: beneficiaire.id === CONJOINT_ID,
-          droit_conjoint: beneficiaire.id === CONJOINT_ID ? formData.droitConjoint : null,
+          droit_transmis: formData.droitTransmis === 'usufruit' ? 'usufruit' : null,
           beneficiaire_nom: `${beneficiaire.prenom || ''} ${beneficiaire.nom}`.trim(),
           groupe_id: groupeId,
           montant: montantTotal * (beneficiaire.pourcentage / 100),
@@ -899,18 +917,18 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
                                 />
                               </div>
                             )}
-                            {isSelected && member.id === CONJOINT_ID && (
-                              <DroitConjointSelect
-                                id="droit-conjoint-donation"
-                                value={formData.droitConjoint}
-                                onChange={(droitConjoint) => setFormData({ ...formData, droitConjoint })}
-                              />
-                            )}
                           </div>
                         </div>
                       </div>
                     );
                   })}
+                  {beneficiaries.length > 0 && (
+                    <DroitTransmisSelect
+                      id="droit-transmis-donation"
+                      value={formData.droitTransmis}
+                      onChange={(droitTransmis) => setFormData({ ...formData, droitTransmis })}
+                    />
+                  )}
                   {beneficiaries.length > 0 && (
                     <div className="mt-4 p-3 bg-muted rounded-lg">
                       <div className="text-sm">

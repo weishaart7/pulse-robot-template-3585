@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { DroitConjointSelect, DroitConjoint } from './DroitConjointSelect';
+import { DroitTransmisSelect, DroitTransmis } from './DroitTransmisSelect';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,8 +46,8 @@ const DEFAULT_FORM_DATA = {
   biensSelectionnes: [] as string[],
   clausesSelectionnees: [] as string[],
   legataires: [] as { id: string; nom: string; pourcentage: number }[],
-  // Legs au conjoint : pleine propriété ou usufruit (art. 1094-1).
-  droitConjoint: 'pleine_propriete' as DroitConjoint
+  // Pleine propriété ou usufruit viager (imputation en assiette).
+  droitTransmis: 'pleine_propriete' as DroitTransmis
 };
 
 export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingGroup, onSaved }) => {
@@ -67,6 +67,7 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
           nom: maritalStatus.nom_conjoint || 'Conjoint',
           prenom: maritalStatus.prenom_conjoint || '',
           lien_familial: maritalStatus.statut_couple === 'Pacsé(e)' ? 'Partenaire de PACS' : 'Conjoint',
+          date_naissance: maritalStatus.date_naissance_conjoint,
         }]
       : [];
     return [...conjointLegataire, ...familyLinksBruts];
@@ -184,7 +185,7 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
         biensSelectionnes: (first.biens || []).map(b => b.asset_id),
         clausesSelectionnees: first.clauses || [],
         legataires: [],
-        droitConjoint: (editingGroup.find(r => r.beneficiaire_conjoint)?.droit_conjoint as DroitConjoint) || 'pleine_propriete',
+        droitTransmis: (first.droit_transmis as DroitTransmis) || 'pleine_propriete',
       });
     } else {
       setFormData(DEFAULT_FORM_DATA);
@@ -221,6 +222,19 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
       return;
     }
 
+    if (formData.droitTransmis === 'usufruit') {
+      const sansDate = formData.legataires.filter(l =>
+        !(familyLinks.find(m => m.id === l.id) as { date_naissance?: string | null } | undefined)?.date_naissance);
+      if (sansDate.length > 0) {
+        toast({
+          title: "Erreur",
+          description: `Legs en usufruit : date de naissance manquante pour ${sansDate.map(l => l.nom).join(', ')} (barème art. 669 CGI).`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     if (Math.abs(totalPourcentage - 100) > 0.01) {
       toast({
         title: "Erreur",
@@ -245,7 +259,7 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
           denomination: formData.libelle,
           beneficiaire_id: legataire.id === CONJOINT_ID ? undefined : legataire.id,
           beneficiaire_conjoint: legataire.id === CONJOINT_ID,
-          droit_conjoint: legataire.id === CONJOINT_ID ? formData.droitConjoint : null,
+          droit_transmis: formData.droitTransmis === 'usufruit' ? 'usufruit' : null,
           beneficiaire_nom: legataire.nom,
           groupe_id: groupeId,
           // Proratise la valeur relue en live des biens légués entre les
@@ -524,17 +538,17 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
                           </div>
                         )}
                       </div>
-                      {member.id === CONJOINT_ID && formData.legataires.some(l => l.id === member.id) && (
-                        <DroitConjointSelect
-                          id="droit-conjoint-legs"
-                          value={formData.droitConjoint}
-                          onChange={(droitConjoint) => setFormData(prev => ({ ...prev, droitConjoint }))}
-                        />
-                      )}
                       </div>
                     ))}
                   </div>
                   
+                  {formData.legataires.length > 0 && (
+                    <DroitTransmisSelect
+                      id="droit-transmis-legs"
+                      value={formData.droitTransmis}
+                      onChange={(droitTransmis) => setFormData(prev => ({ ...prev, droitTransmis }))}
+                    />
+                  )}
                   {formData.legataires.length > 0 && (
                     <div className="pt-2 border-t">
                       <p className={`text-sm font-medium ${totalPourcentage > 100 ? 'text-destructive' : 'text-muted-foreground'}`}>
