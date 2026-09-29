@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { DroitConjointSelect, DroitConjoint } from './DroitConjointSelect';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,7 +45,9 @@ const DEFAULT_FORM_DATA = {
   notes: '',
   biensSelectionnes: [] as string[],
   clausesSelectionnees: [] as string[],
-  legataires: [] as { id: string; nom: string; pourcentage: number }[]
+  legataires: [] as { id: string; nom: string; pourcentage: number }[],
+  // Legs au conjoint : pleine propriété ou usufruit (art. 1094-1).
+  droitConjoint: 'pleine_propriete' as DroitConjoint
 };
 
 export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingGroup, onSaved }) => {
@@ -181,6 +184,7 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
         biensSelectionnes: (first.biens || []).map(b => b.asset_id),
         clausesSelectionnees: first.clauses || [],
         legataires: [],
+        droitConjoint: (editingGroup.find(r => r.beneficiaire_conjoint)?.droit_conjoint as DroitConjoint) || 'pleine_propriete',
       });
     } else {
       setFormData(DEFAULT_FORM_DATA);
@@ -241,6 +245,7 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
           denomination: formData.libelle,
           beneficiaire_id: legataire.id === CONJOINT_ID ? undefined : legataire.id,
           beneficiaire_conjoint: legataire.id === CONJOINT_ID,
+          droit_conjoint: legataire.id === CONJOINT_ID ? formData.droitConjoint : null,
           beneficiaire_nom: legataire.nom,
           groupe_id: groupeId,
           // Proratise la valeur relue en live des biens légués entre les
@@ -491,7 +496,8 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
                 <div className="space-y-4">
                   <div className="space-y-3">
                     {familyLinks.map((member) => (
-                      <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div key={member.id} className="space-y-2">
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center space-x-3">
                           <Checkbox
                             checked={formData.legataires.some(l => l.id === member.id)}
@@ -517,6 +523,14 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
                             <span className="text-sm">%</span>
                           </div>
                         )}
+                      </div>
+                      {member.id === CONJOINT_ID && formData.legataires.some(l => l.id === member.id) && (
+                        <DroitConjointSelect
+                          id="droit-conjoint-legs"
+                          value={formData.droitConjoint}
+                          onChange={(droitConjoint) => setFormData(prev => ({ ...prev, droitConjoint }))}
+                        />
+                      )}
                       </div>
                     ))}
                   </div>

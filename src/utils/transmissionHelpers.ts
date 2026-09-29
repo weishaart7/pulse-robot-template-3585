@@ -64,6 +64,8 @@ export interface LiberaliteRow {
   montant_rapport_forfaitaire?: number | null;
   valeur_fiscale_acte?: number | null;
   beneficiaire_conjoint?: boolean | null;
+  // Libéralité au conjoint : 'pleine_propriete' (défaut) ou 'usufruit' (art. 1094-1).
+  droit_conjoint?: string | null;
   generation_intermediaire_id?: string | null;
   // "Dons familiaux de sommes d'argent" (DonationForm.tsx::naturesOptions) déclenche
   // l'exonération dédiée art. 790 G CGI (31 865€, cumulable avec l'abattement général) —
@@ -157,6 +159,7 @@ export function buildTransmissionLiberalites(
       montantRapportForfaitaire: row.montant_rapport_forfaitaire ?? undefined,
       valeurFiscaleActe: row.valeur_fiscale_acte ?? undefined,
       generationIntermediaireId: row.generation_intermediaire_id || undefined,
+      droitConjoint: row.beneficiaire_conjoint && row.droit_conjoint === 'usufruit' ? 'usufruit' as const : undefined,
       nature: row.nature || undefined
     });
   }

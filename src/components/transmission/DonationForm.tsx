@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { DroitConjointSelect, DroitConjoint } from './DroitConjointSelect';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,6 +74,8 @@ const DEFAULT_FORM_DATA = {
   // transgénérationnelle. Pertinent uniquement si nature ===
   // 'Donation-partage transgénérationnelle' et typeDonation === 'partage'.
   generationIntermediaireId: undefined as string | undefined,
+  // Donation au conjoint : pleine propriété ou usufruit (art. 1094-1).
+  droitConjoint: 'pleine_propriete' as DroitConjoint,
   // Valeur totale déclarée dans l'acte (art. 784 CGI), base du rappel fiscal
   // — répartie ensuite entre donataires au même pourcentage que `montant`.
   valeurFiscaleActe: undefined as number | undefined,
@@ -259,6 +262,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
         statut: first.statut || 'acte',
         montantRapportForfaitaire: first.montant_rapport_forfaitaire ?? undefined,
         generationIntermediaireId: first.generation_intermediaire_id ?? undefined,
+        droitConjoint: (editingGroup.find(r => r.beneficiaire_conjoint)?.droit_conjoint as DroitConjoint) || 'pleine_propriete',
         // Colonne stockée par donataire (proratisée) : on reconstitue le total.
         valeurFiscaleActe: first.valeur_fiscale_acte != null
           ? first.valeur_fiscale_acte / ((first.pourcentage ?? 100) / 100)
@@ -407,6 +411,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
           denomination: formData.libelle,
           beneficiaire_id: beneficiaire.id === CONJOINT_ID ? undefined : beneficiaire.id,
           beneficiaire_conjoint: beneficiaire.id === CONJOINT_ID,
+          droit_conjoint: beneficiaire.id === CONJOINT_ID ? formData.droitConjoint : null,
           beneficiaire_nom: `${beneficiaire.prenom || ''} ${beneficiaire.nom}`.trim(),
           groupe_id: groupeId,
           montant: montantTotal * (beneficiaire.pourcentage / 100),
@@ -893,6 +898,13 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
                                   className="mt-1 w-32"
                                 />
                               </div>
+                            )}
+                            {isSelected && member.id === CONJOINT_ID && (
+                              <DroitConjointSelect
+                                id="droit-conjoint-donation"
+                                value={formData.droitConjoint}
+                                onChange={(droitConjoint) => setFormData({ ...formData, droitConjoint })}
+                              />
                             )}
                           </div>
                         </div>

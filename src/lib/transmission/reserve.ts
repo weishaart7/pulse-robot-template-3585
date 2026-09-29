@@ -24,6 +24,12 @@ function getMontantRapportForfaitaire(liberalite: Liberalite): number | undefine
   return typeof montant === 'number' && montant > 0 ? montant : undefined;
 }
 
+/** Valeur civile d'une libéralité : `valeur` en pleine propriété, ou
+ *  `valeur` × usufruit (barème 669) pour une libéralité au conjoint en usufruit. */
+export function valeurLiberalite(lib: Liberalite, pctUsufruitConjoint: number): number {
+  return lib.droitConjoint === 'usufruit' ? lib.valeur * pctUsufruitConjoint : lib.valeur;
+}
+
 export interface ReserveResult {
   masseCalcul: number;
   reserveGlobale: number;
@@ -50,7 +56,10 @@ export interface ReductionResult {
  */
 export function computeMasseCalcul(
   patrimony: PatrimonySnapshot, 
-  liberalites: Liberalite[]
+  liberalites: Liberalite[],
+  // Barème 669 à l'âge du conjoint : valorise une donation au conjoint en
+  // usufruit (Liberalite.droitConjoint). Défaut 1 (pleine propriété).
+  pctUsufruitConjoint: number = 1
 ): number {
   // Biens existants au décès - dettes, écrêté à 0 si le passif excède l'actif
   // (art. 922 : le solde n'est jamais négatif pour la masse de calcul)
@@ -59,7 +68,7 @@ export function computeMasseCalcul(
   // + toutes donations pour leur valeur au décès
   const donations = liberalites.filter(lib => lib.type === "donation");
   donations.forEach(donation => {
-    masseCalcul += donation.valeur;
+    masseCalcul += valeurLiberalite(donation, pctUsufruitConjoint);
   });
   
   // Les legs ne rentrent pas dans la masse de calcul pour la réserve
@@ -121,10 +130,20 @@ export function computeReserveAndQD(
  * Impute les libéralités sur la réserve et la quotité disponible selon l'ordre légal
  */
 export function imputeLiberalites(
-  liberalites: Liberalite[],
+  liberalitesToutes: Liberalite[],
   reserveResult: ReserveResult,
-  childrenIds: string[]
+  childrenIds: string[],
+  // Conjoint en présence de descendants : ses libéralités relèvent de la
+  // quotité spéciale (art. 1094-1) et sont imputées à part, par
+  // imputeLiberalitesConjoint — exclues ici de la QD ordinaire.
+  conjointQDSId?: string,
+  // Conjoint réservataire (sans descendant, art. 914-1) : ses libéralités
+  // s'imputent d'abord sur sa propre réserve, puis sur la QD (art. 924).
+  conjointReservataireId?: string
 ): ImputationResult {
+  const liberalites = conjointQDSId
+    ? liberalitesToutes.filter(l => l.beneficiaireId !== conjointQDSId)
+    : liberalitesToutes;
   // Trier les donations par date (plus anciennes d'abord pour l'imputation)
   const donations = liberalites
     .filter(lib => lib.type === "donation")
@@ -142,6 +161,10 @@ export function imputeLiberalites(
   // donations au même enfant ne s'imputent pas chacune en entier sur sa part.
   const reservePersonnelleInitiale = childrenIds.length > 0 ? reserveResult.reserveEnfants / childrenIds.length : 0;
   const reserveRestanteParEnfant = new Map<string, number>(childrenIds.map(id => [id, reservePersonnelleInitiale]));
+  if (conjointReservataireId && reserveResult.reserveConjoint > 0) {
+    reserveRestanteParEnfant.set(conjointReservataireId, reserveResult.reserveConjoint);
+  }
+  const estReservataire = (id: string) => childrenIds.includes(id) || id === conjointReservataireId;
 
   // 1. Imputer d'abord les donations (ordre chronologique)
   for (const donation of donations) {
@@ -164,7 +187,7 @@ export function imputeLiberalites(
     // hors part (ni reclassée hors part par une dispense de rapport, §9.4) :
     // 'avance_part' et 'partage' suivent le même chemin d'imputation sur la
     // réserve (seule 'partage' diffère ensuite sur le rapport, cf. computeRapport).
-    if ((childrenIds.includes(donation.beneficiaireId as string) || imputeSurReserveDuParent) &&
+    if ((estReservataire(donation.beneficiaireId as string) || imputeSurReserveDuParent) &&
         donation.typeImputation !== "hors_part" &&
         !isDispenseeDeRapport(donation)) {
       // Donation en avancement de part : s'impute d'abord sur la part de réserve du bénéficiaire.
@@ -225,8 +248,10 @@ export function imputeLiberalites(
     let imputeSurQD = 0;
     let besoinSurQD = 0;
 
-    if (childrenIds.includes(legItem.beneficiaireId as string) &&
-        legItem.typeImputation === "avance_part") {
+    // Legs 'avance_part' à un enfant, ou tout legs au conjoint réservataire :
+    // réserve personnelle d'abord, excédent sur la QD.
+    if ((childrenIds.includes(legItem.beneficiaireId as string) && legItem.typeImputation === "avance_part") ||
+        legItem.beneficiaireId === conjointReservataireId) {
       const legataireId = legItem.beneficiaireId as string;
       const reservePersonnelle = reserveRestanteParEnfant.get(legataireId) ?? 0;
       const imputeSurReserve = Math.min(legItem.valeur, reservePersonnelle);
@@ -296,7 +321,7 @@ export function applyReductions(
   
   // 1. Réduire d'abord les legs concurremment (y compris donations entre époux si elles s'imputent avec)
   const legsToReduce = liberalites
-    .filter(lib => lib.type === "legs")
+    .filter(lib => lib.type === "legs" && imputationResult.legs.some(l => l.liberaliteId === lib.id))
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   
   let depassementRestant = depassement;
@@ -344,7 +369,7 @@ export function applyReductions(
   // 2. Si nécessaire, réduire les donations (plus récente vers plus ancienne)
   if (depassementRestant > 0) {
     const donationsToReduce = liberalites
-      .filter(lib => lib.type === "donation")
+      .filter(lib => lib.type === "donation" && imputationResult.donations.some(d => d.liberaliteId === lib.id))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
     for (const donationLib of donationsToReduce) {
@@ -368,6 +393,96 @@ export function applyReductions(
   }
   
   return { reductions, totalReduit };
+}
+
+export interface ImputationConjointResult {
+  // Disponible total ouvert au conjoint après les libéralités faites à
+  // d'autres (valeur, usufruit au barème 669) : forme la plus large de
+  // l'art. 1094-1 — QDO en PP, 1/4 PP + 3/4 US, ou totalité en usufruit.
+  disponibleConjoint: number;
+  // Pleine propriété encore disponible pour le conjoint (jamais au-delà de la QDO).
+  ppMaxConjoint: number;
+  // Valeur des libéralités au conjoint maintenues, et leur part en PP.
+  valeurMaintenue: number;
+  ppMaintenue: number;
+  reductions: { liberaliteId: string; montantReduit: number; ratioReduction: number }[];
+}
+
+/**
+ * Quotité spéciale entre époux (art. 1094-1 C. civ.), en présence de
+ * descendants. Les libéralités à d'autres sont déjà imputées sur la QDO
+ * (imputeLiberalites/applyReductions) ; celles au conjoint s'imputent sur ce
+ * qu'elles laissent du disponible le plus large (jurisprudence du cumul des
+ * quotités), la pleine propriété ne dépassant jamais le reliquat de QDO.
+ * Réduction : legs d'abord (au marc le franc), puis donations de la plus
+ * récente à la plus ancienne ; la pleine propriété excédentaire d'abord.
+ * Usufruit valorisé au barème art. 669 CGI (convention validée le 2026-09-29).
+ */
+export function imputeLiberalitesConjoint(
+  liberalites: Liberalite[],
+  conjointId: string,
+  reserveResult: ReserveResult,
+  imputationAutres: ImputationResult,
+  pctUsufruit: number
+): ImputationConjointResult {
+  const M = reserveResult.masseCalcul;
+  const QDO = reserveResult.quotiteDisponible;
+  const consommeAutres = Math.min(imputationAutres.besoinTotalSurQD, QDO);
+  const disponibleConjoint = Math.max(0,
+    Math.max(QDO, M / 4 + (3 * M / 4) * pctUsufruit, M * pctUsufruit) - consommeAutres);
+  const ppMaxConjoint = Math.max(0, QDO - consommeAutres);
+
+  const libs = liberalites.filter(l => l.beneficiaireId === conjointId);
+  const valeur = new Map(libs.map(l => [l.id, valeurLiberalite(l, pctUsufruit)]));
+  const estPP = (l: Liberalite) => l.droitConjoint !== 'usufruit';
+  // Ordre de réduction : legs (ensemble, au marc le franc) puis donations
+  // de la plus récente à la plus ancienne.
+  const legs = libs.filter(l => l.type === 'legs');
+  const donationsRecentes = libs.filter(l => l.type === 'donation')
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const reduire = (excedent: number, filtre: (l: Liberalite) => boolean) => {
+    let reste = excedent;
+    const legsVises = legs.filter(filtre);
+    const totalLegs = legsVises.reduce((s, l) => s + valeur.get(l.id)!, 0);
+    const surLegs = Math.min(reste, totalLegs);
+    legsVises.forEach(l => {
+      const v = valeur.get(l.id)!;
+      valeur.set(l.id, v - (totalLegs > 0 ? surLegs * (v / totalLegs) : 0));
+    });
+    reste -= surLegs;
+    for (const d of donationsRecentes.filter(filtre)) {
+      if (reste <= 0) break;
+      const v = valeur.get(d.id)!;
+      const r = Math.min(v, reste);
+      valeur.set(d.id, v - r);
+      reste -= r;
+    }
+  };
+
+  const somme = (filtre: (l: Liberalite) => boolean) =>
+    libs.filter(filtre).reduce((s, l) => s + valeur.get(l.id)!, 0);
+  const excedentPP = somme(estPP) - ppMaxConjoint;
+  if (excedentPP > 0) reduire(excedentPP, estPP);
+  const excedentTotal = somme(() => true) - disponibleConjoint;
+  if (excedentTotal > 0) reduire(excedentTotal, () => true);
+
+  const reductions = libs
+    .map(l => {
+      const valeurReduite = valeurLiberalite(l, pctUsufruit) - valeur.get(l.id)!;
+      // Réduction exprimée dans l'unité de `valeur` (biens grevés pour un usufruit).
+      const montantReduit = l.droitConjoint === 'usufruit' && pctUsufruit > 0 ? valeurReduite / pctUsufruit : valeurReduite;
+      return { liberaliteId: l.id, montantReduit, ratioReduction: l.valeur > 0 ? montantReduit / l.valeur : 0 };
+    })
+    .filter(r => r.montantReduit > 0.005);
+
+  return {
+    disponibleConjoint,
+    ppMaxConjoint,
+    valeurMaintenue: somme(() => true),
+    ppMaintenue: somme(estPP),
+    reductions,
+  };
 }
 
 /**

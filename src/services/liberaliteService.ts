@@ -50,6 +50,8 @@ export interface Liberalite {
   // Libéralité au conjoint/partenaire de PACS (absent de family_links) :
   // exclusif de beneficiaire_id (contrainte en base).
   beneficiaire_conjoint?: boolean;
+  // Libéralité au conjoint : 'pleine_propriete' ou 'usufruit' (art. 1094-1 C. civ.).
+  droit_conjoint?: string | null;
   // Donation-partage transgénérationnelle (art. 1078-8) : id du parent
   // (génération intermédiaire consentante) sur la réserve duquel la donation
   // s'impute — cf. lib/transmission/types.ts::Liberalite.generationIntermediaireId.

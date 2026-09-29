@@ -1728,6 +1728,7 @@ export type Database = {
       }
       liberalites: {
         Row: {
+          droit_conjoint: string | null
           beneficiaire_conjoint: boolean
           beneficiaire_id: string | null
           beneficiaire_nom: string
@@ -1756,6 +1757,7 @@ export type Database = {
           valeur_fiscale_acte: number | null
         }
         Insert: {
+          droit_conjoint?: string | null
           beneficiaire_conjoint?: boolean
           beneficiaire_id?: string | null
           beneficiaire_nom: string
@@ -1784,6 +1786,7 @@ export type Database = {
           valeur_fiscale_acte?: number | null
         }
         Update: {
+          droit_conjoint?: string | null
           beneficiaire_conjoint?: boolean
           beneficiaire_id?: string | null
           beneficiaire_nom?: string

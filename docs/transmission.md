@@ -223,6 +223,31 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
     DUH), hors valeur d'usufruit et hors donations déjà détenues ; `computeChainedTransmission`
     ne réunit que `HeirShare.valeurUsufruit`.
   Tests : `lib/transmission/phase5NotaireAudit.test.ts`.
+- **Quotité disponible spéciale entre époux (art. 1094-1 C. civ., 2026-09-29).** En présence
+  de descendants, les libéralités au conjoint marié ne relèvent plus de la QD ordinaire
+  (`imputeLiberalites` les exclut) mais de `reserve.ts::imputeLiberalitesConjoint` :
+  - disponible du conjoint = forme la plus large entre QDO en PP, 1/4 PP + 3/4 US et totalité en
+    usufruit, diminuée de ce que les libéralités aux autres ont pris sur la QDO (cumul des
+    quotités) ; sa pleine propriété ne dépasse jamais le reliquat de QDO ;
+  - réduction : PP excédentaire d'abord, puis total ; legs au marc le franc, puis donations de la
+    plus récente à la plus ancienne ;
+  - **libéralité en usufruit** : `liberalites.droit_conjoint` (`pleine_propriete` par défaut |
+    `usufruit`, migration `20260929150000_liberalites_droit_conjoint.sql`), saisi par
+    `DroitConjointSelect` dans `DonationForm.tsx`/`LegsForm.tsx` quand le conjoint est coché.
+    `valeur` porte alors les biens grevés, la libéralité vaut `valeur × usufruit` (barème 669 à
+    l'âge du conjoint au décès, convention validée, également retenue pour le civil) ;
+  - option issue d'une DDV (`qd_pp`, `quart_pp_3quarts_us`, `usufruit_total` hors enfants tous
+    communs) : plafonnée par `partage.ts` à ce que laisse le disponible spécial
+    (`plafondValeurOptionDDV`), l'usufruit étant réduit avant la pleine propriété. L'usufruit
+    légal (art. 757) n'y est pas soumis ;
+  - `partage.ts` : l'usufruit (option ou legs) grève les biens restants, les autres héritiers en
+    recevant la nue-propriété ; l'égalité entre enfants se raisonne en valeur (donations
+    rapportées comprises), plus en pleine propriété puis décote. `HeirShare.valeurUsufruit`
+    alimente la réunion au 2nd décès, y compris pour un usufruit légué ;
+  - sans descendant, le conjoint réservataire (1/4) impute ses libéralités sur sa propre réserve
+    avant la QD (art. 924), sans réduction à son propre profit.
+  Hors périmètre : conversion (art. 1098), cantonnement (art. 1094-1 al. 2). Tests :
+  `lib/transmission/quotiteSpeciale.test.ts`.
 - **Fente successorale : branche familiale saisissable pour les 4 rangs** (commit `de8a722`, finding
   F18) — corrige un défaut de saisie qui pouvait conduire à une **déshérence à tort** (le message
   « l'État français hérite » s'affichait alors que des grands-parents vivants existaient, faute de
@@ -545,12 +570,6 @@ handicap par la phase 2, le net à recevoir par la phase 3, les règles complém
   de `LiberaliteRow` ([transmissionHelpers.ts:29-38](src/utils/transmissionHelpers.ts)) — jamais transmis
   au calcul. Toute libéralité est donc traitée comme une valeur en pleine propriété, quel que soit le
   démembrement réel déclaré. *(Vérifié toujours ouvert.)*
-- **QDS entre époux (art. 1094-1) et combinaison QDO/QDS absentes.** `computeReserveAndQD`
-  (`reserve.ts`) ne calcule qu'une quotité disponible ordinaire unique ; toute libéralité au conjoint,
-  y compris une donation de la totalité en usufruit qui devrait échapper à toute réduction (QDS
-  couvrant l'intégralité de l'usufruit), est imputée comme n'importe quelle autre libéralité sur la QDO
-  — un résultat civilement faux dans ce cas précis (réduction déclenchée à tort). *(Vérifié toujours
-  ouvert : aucune branche liée au bénéficiaire conjoint dans `computeReserveAndQD`/`imputeLiberalites`.)*
 - **Enfant renonçant sans descendance, tenu au rapport par stipulation expresse (art. 845), non compté
   dans N.** `buildSouchesEnfants` ([successionLegale.ts:330-384](src/lib/transmission/successionLegale.ts))
   ne couvre que 3 des 4 catégories d'enfants comptés pour le barème de réserve (vivants, décédés
@@ -697,7 +716,7 @@ handicap par la phase 2, le net à recevoir par la phase 3, les règles complém
   - **Clauses de donation autres que dispense/rapport forfaitaire** (9 sur 11) — juridiquement
     identifiables mais purement cosmétiques ; brancher chacune suppose un arbitrage produit au cas par
     cas (ex. usufruit réservé nécessite l'imputation « en assiette », elle-même non modélisée).
-  - **RAAR, QDS entre époux, droit de retour (père/mère, frères/sœurs), option successorale (acceptation
+  - **RAAR, droit de retour (père/mère, frères/sœurs), option successorale (acceptation
     à concurrence de l'actif net), droits accessoires du conjoint autres que les 3 mentions narratives
     ajoutées** — absences confirmées individuellement par les audits Bloc 1/2, non triviales à
     implémenter (suivi temporel post-décès, notion de dettes personnelles des héritiers), à trancher

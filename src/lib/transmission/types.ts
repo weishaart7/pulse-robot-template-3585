@@ -135,6 +135,11 @@ export interface Liberalite {
   // un petit-enfant plutôt qu'un enfant du défunt — cf. reserve.ts::
   // imputeLiberalites et index.ts (liberalitesMaintenues, crédite ce parent).
   generationIntermediaireId?: PersonId;
+  // Libéralité au conjoint (beneficiaireId === 'conjoint') consentie en
+  // usufruit (art. 1094-1 C. civ.) : `valeur` porte alors la valeur en pleine
+  // propriété des biens grevés, la libéralité valant valeur × usufruit (barème
+  // art. 669 CGI, âge du conjoint au décès). Absent = pleine propriété.
+  droitConjoint?: 'usufruit';
 }
 
 export interface TransmissionParams {
