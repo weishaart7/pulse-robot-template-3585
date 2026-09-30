@@ -127,6 +127,8 @@ export interface RepartitionParRegime {
   cnavpl: number;
   /** Capital RAFP versé en une fois (moins de 5 125 points) — hors pension annuelle. */
   rafpCapital: number;
+  /** Autres pensions déclarées (régimes non modélisés : étranger…), annuelles. */
+  autresPensions: number;
 }
 
 // Détail du calcul régime général — exposé pour les écrans qui affichent la
@@ -497,13 +499,17 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
 
   const pensionTotaleRegimeGeneral = pensionBaseAjustee + totalPensionComplementaireAnnuelle;
 
-  const pensionTotaleConsolidee = pensionTotaleConsolideeTousRegimes(
-    pensionTotaleRegimeGeneral,
-    hasFonctionPublique,
-    resultatFonctionPublique,
-    hasCNAVPL,
-    resultatCNAVPL
-  );
+  // Autres pensions déclarées (régimes non modélisés) : comptées dans le
+  // total depuis le 2026-09-30 (auparavant seulement dans l'écrêtement du MICO).
+  const autresPensionsDeclarees = autresPensionsMensuelles * 12;
+  const pensionTotaleConsolidee =
+    pensionTotaleConsolideeTousRegimes(
+      pensionTotaleRegimeGeneral,
+      hasFonctionPublique,
+      resultatFonctionPublique,
+      hasCNAVPL,
+      resultatCNAVPL
+    ) + autresPensionsDeclarees;
 
   return {
     pensionTotaleConsolidee,
@@ -515,6 +521,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
       rafp: resultatFonctionPublique.rafpAnnuelle,
       cnavpl: resultatCNAVPL.pensionFinale,
       rafpCapital: resultatFonctionPublique.rafpCapital,
+      autresPensions: autresPensionsDeclarees,
     },
     historiqueTrimestres: resultatTrimestresDetailCarriere,
     ageLegal: ageLegalResultat,

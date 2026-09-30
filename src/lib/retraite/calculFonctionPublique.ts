@@ -426,6 +426,8 @@ export function supplementNBI(
  * majoration et son plafond, dans cet ordre précis de l'appelant :
  * base → décote/surcote → minimum garanti → majoration enfants (plafonnée).
  *
+ * Le plafond ne réduit jamais la pension sous son montant avant majoration.
+ *
  * `dernierTraitementAnnuel` : même convention d'unités que
  * `pensionBaseFonctionPublique()` (TIB annuel, mensuel × 12 à la charge de
  * l'appelant).
@@ -436,5 +438,8 @@ export function pensionFonctionPubliqueAvecMajorationEnfants(
   dernierTraitementAnnuel: number
 ): number {
   const pensionAvecMajoration = pensionPorteeAuMinimumGaranti * (1 + majorationPourcent / 100);
-  return Math.min(pensionAvecMajoration, dernierTraitementAnnuel);
+  // Le plafond du dernier traitement borne la MAJORATION, jamais la pension
+  // elle-même : une pension portée au minimum garanti au-delà du traitement
+  // (cas d'un traitement très bas) n'est pas réduite (correctif du 2026-09-30).
+  return Math.max(pensionPorteeAuMinimumGaranti, Math.min(pensionAvecMajoration, dernierTraitementAnnuel));
 }

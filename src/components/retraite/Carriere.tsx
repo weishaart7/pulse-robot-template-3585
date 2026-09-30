@@ -25,6 +25,7 @@ import {
 import { calculerPensionConsolidee, EntreePensionConsolidee } from '@/lib/retraite/pensionConsolidee';
 import { calculerProjectionRevenuFutur, salaireProjectionComplementaire } from '@/lib/retraite/hypotheseRevenuFutur';
 import { estRegimeAgircArrco } from '@/lib/retraite/calculAgircArrco';
+import { MILLESIME_COURANT } from '@/lib/retraite/parametres';
 import { CarriereFonctionPublique } from '@/components/retraite/CarriereFonctionPublique';
 import { CarriereCNAVPL, VALEUR_POINT_CNAVPL_2026 } from '@/components/retraite/CarriereCNAVPL';
 import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
@@ -951,8 +952,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             />
             <p className="text-xs text-muted-foreground">
               Pensions personnelles brutes d'autres régimes non modélisés par cet outil (étranger,
-              complémentaires non saisies...) — sert uniquement à l'écrêtement du MICO (référentiel
-              §3.5.5). Non renseigné = 0, aucun effet sur le calcul.
+              complémentaires non saisies...) — ajoutées au total consolidé et prises en compte pour
+              l'écrêtement du MICO (référentiel §3.5.5). Non renseigné = 0.
             </p>
           </div>
 
@@ -1042,6 +1043,13 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
               </div>
               <p className="text-xs text-muted-foreground">
                 Pension de base ajustée : {formatEuro2(pensionBaseAjustee)} + pensions complémentaires calculables : {formatEuro2(totalPensionComplementaireAnnuelle)}
+                {repartitionParRegime.autresPensions > 0 && (
+                  <> + autres pensions déclarées : {formatEuro2(repartitionParRegime.autresPensions)}</>
+                )}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Montants bruts annuels en euros constants {MILLESIME_COURANT.annee} (barèmes et revenus projetés au niveau
+                de {MILLESIME_COURANT.annee}).
               </p>
               {regimesPointsExclusCount > 0 && (
                 <p className="text-xs text-spark mt-1">

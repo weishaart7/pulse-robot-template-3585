@@ -131,8 +131,7 @@ uniquement applicatif via `familyService`.
     (`salaire_brut_annuel`, sinon revenu de l'hypothèse de revenu futur, exposé par
     `usePensionConsolidee` sous `revenuActiviteBrutReference`). Pas de ratio net/net (aucun taux de
     charges salariales sourcé).
-  - Non couverts : autres pensions déclarées (`autres_pensions_mensuelles`, qui ne servent qu'à
-    l'écrêtement du MICO et n'entrent pas dans le total), capital RAFP (hors revenu annuel), DOM.
+  - Non couverts : capital RAFP (hors revenu annuel), DOM.
 - **Réversion et conjoint survivant (phase 4 de l'audit, 2026-09-29)** — [calculReversion.ts](src/lib/retraite/calculReversion.ts),
   carte « Protection du conjoint survivant » de `Synthese.tsx` (statut du couple transmis par
   `RetraiteSection.tsx` depuis `marital_status.statut_couple`) :
@@ -213,6 +212,14 @@ uniquement applicatif via `familyService`.
     hypothèses dans `params-retraite.json`. Hypothèses saisies non persistées.
   - Non couverts : fiscalité des rachats d'assurance-vie dans la couverture (encours compté brut),
     revenus du patrimoine financier, sortie PER fractionnée sur plusieurs années (mentionnée seulement).
+- **Correctifs mineurs (2026-09-30)** :
+  - Plafond du dernier traitement (fonction publique) : il borne désormais la seule majoration pour
+    enfants, jamais la pension (`pensionFonctionPubliqueAvecMajorationEnfants()` ne descend plus sous la
+    pension portée au minimum garanti).
+  - Autres pensions déclarées (`autres_pensions_mensuelles`) : ajoutées au total consolidé
+    (`repartitionParRegime.autresPensions`, Carrière, Synthèse, export PDF), donc au revenu net et à
+    l'écart de revenu ; toujours prises en compte pour l'écrêtement du MICO.
+  - Mention « montants bruts en euros constants » sur Carrière, Synthèse, Optimisation et l'export PDF.
 - **Scénarios de référence** : [Golden_Scenarios_Retraite.md](docs/Golden_Scenarios_Retraite.md),
   calculés à la main et rejoués par `goldenScenarios.test.ts` (taux plein avec Agirc-Arrco, décote,
   MICO avec 3 enfants, polypensionné RG + FP porté au MIGA avec RAFP en capital, cadre de 45 ans
@@ -501,10 +508,6 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   (décrets d'application LFSS 2024 non publiés selon le référentiel au moment de l'audit) — cas très
   minoritaire pour un outil de simulation prospective, mais aucun garde-fou n'empêche de calculer les
   deux minimums indépendamment et de les additionner à tort si un futur écran le faisait.
-- **Plafond « dernier traitement » appliqué même sans majoration enfants.**
-  `pensionFonctionPubliqueAvecMajorationEnfants()` retient `min(pension × (1 + majoration), TIB)` :
-  une pension portée au MIGA au-delà du TIB est ramenée au TIB même sans enfant. Cas théorique (TIB
-  inférieur au minimum garanti, donc sous le SMIC), relevé lors des tests du 2026-09-29, non corrigé.
 - **Régime de base non modélisé par l'app (MSA agricole non-salarié, régime étranger) absent du total
   « tous régimes »** utilisé par la bascule de dénominateur du MICO palier 1 — un polypensionné dans
   un tel régime reste à tort au Cas 1 (dénominateur = durée requise) même si son total réel dépasse

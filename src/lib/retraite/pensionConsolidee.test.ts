@@ -361,3 +361,15 @@ describe('calculerResultatFonctionPublique — MIGA réservé au taux plein (art
     expect(r.pensionFinale).toBeCloseTo(16396.19 * 0.825, 2);
   });
 });
+
+describe('calculerPensionConsolidee — autres pensions déclarées', () => {
+  it('comptées dans le total et dans la répartition', () => {
+    const sans = calculerPensionConsolidee(entreeBase);
+    const avec = calculerPensionConsolidee({ ...entreeBase, autresPensionsMensuelles: 300 });
+    expect(avec.repartitionParRegime.autresPensions).toBe(3600);
+    expect(avec.pensionTotaleConsolidee - sans.pensionTotaleConsolidee).toBeCloseTo(
+      3600 + (avec.repartitionParRegime.baseRegimeGeneral - sans.repartitionParRegime.baseRegimeGeneral),
+      6
+    );
+  });
+});

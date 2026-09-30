@@ -514,6 +514,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
             <div className="text-lg font-semibold text-primary">
               {formatEuro2(resultatSelection.pensionTotale)} / an
             </div>
+            <p className="text-xs text-muted-foreground">Brut, en euros constants {MILLESIME_COURANT.annee}.</p>
             <p className="text-xs text-muted-foreground mt-1">
               Pension de base : {formatEuro2(resultatSelection.pensionBaseValue)} + pensions
               complémentaires calculables : {formatEuro2(resultatSelection.pensionComplementaires)}

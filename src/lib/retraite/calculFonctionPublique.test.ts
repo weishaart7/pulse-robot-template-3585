@@ -497,3 +497,13 @@ describe('minimumGarantiApplicable — condition de taux plein (art. L. 17 CPCMR
     expect(minimumGaranti(160, 172, VALEUR_REFERENCE_MIGA_ANNUELLE_2026)).toBeCloseTo(16396.19, 2);
   });
 });
+
+describe('pensionFonctionPubliqueAvecMajorationEnfants — plafond sur la majoration seulement', () => {
+  it('sans majoration : pension au minimum garanti supérieure au traitement conservée', () => {
+    expect(pensionFonctionPubliqueAvecMajorationEnfants(16000, 0, 12000)).toBe(16000);
+  });
+  it('avec majoration : majoration écrêtée au traitement, pension jamais réduite', () => {
+    expect(pensionFonctionPubliqueAvecMajorationEnfants(16000, 10, 12000)).toBe(16000);
+    expect(pensionFonctionPubliqueAvecMajorationEnfants(20000, 10, 21000)).toBe(21000);
+  });
+});

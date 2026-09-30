@@ -10,6 +10,7 @@
  */
 import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer';
 import { UsePensionConsolideeResult } from '@/hooks/usePensionConsolidee';
+import { MILLESIME_COURANT } from './parametres';
 import { AgeLegal } from './calcul';
 
 export interface DonneesPersonneExportPDF extends UsePensionConsolideeResult {
@@ -67,6 +68,10 @@ const Entete = ({ dateGeneration }: { dateGeneration: Date }) => (
     <View>
       <Text style={styles.title}>Synthèse retraite</Text>
       <Text style={styles.subtitle}>Document généré le {formatDate(dateGeneration)}</Text>
+      <Text style={styles.cardHint}>
+        Montants bruts en euros constants {MILLESIME_COURANT.annee} (barèmes et revenus projetés au niveau de{' '}
+        {MILLESIME_COURANT.annee}).
+      </Text>
     </View>
   </View>
 );
@@ -149,6 +154,7 @@ const TableRepartitionRegime = ({ donnees }: { donnees: DonneesPersonneExportPDF
     { label: 'Fonction publique', valeur: repartitionParRegime.fonctionPublique },
     { label: 'RAFP', valeur: repartitionParRegime.rafp },
     { label: 'CNAVPL', valeur: repartitionParRegime.cnavpl },
+    { label: 'Autres pensions déclarées', valeur: repartitionParRegime.autresPensions },
   ].filter((ligne) => ligne.valeur !== 0);
 
   if (lignes.length === 0) {

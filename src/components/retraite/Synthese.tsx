@@ -12,6 +12,7 @@ import {
   ResultatNetRetraiteFoyer,
 } from '@/lib/retraite/calculNetRetraite';
 import { TrancheCSGPension } from '@/lib/retraite/parametres';
+import { MILLESIME_COURANT } from '@/lib/retraite/parametres';
 import {
   pensionsBrutes,
   foyerSansEnfantsACharge,
@@ -64,6 +65,10 @@ const CartePensionFoyer = ({ hasConjoint, nomUtilisateur, nomConjoint }: CartePe
         <CardTitle className="text-[15px] font-semibold tracking-tight">
           Pension au départ à l'âge légal
         </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Montants bruts en euros constants {MILLESIME_COURANT.annee} (barèmes et revenus projetés au niveau de{' '}
+          {MILLESIME_COURANT.annee}).
+        </p>
       </CardHeader>
       <CardContent className="p-5 pt-0">
         {loading ? (

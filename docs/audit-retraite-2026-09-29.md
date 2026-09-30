@@ -134,7 +134,7 @@ contient « assurance retraite ».
 - Risque : SAM sous-estimé pour un ex-artisan ou un ancien salarié agricole.
 - À confirmer sur un RIS réel anonymisé : le libellé des lignes SSI d'avant 2020 est à vérifier.
 
-**R8. Montants bruts, en euros constants, sans le dire.** ✅ Net corrigé le 2026-09-29 (phase 3) ; libellé « euros constants » encore à ajouter.
+**R8. Montants bruts, en euros constants, sans le dire.** ✅ Net corrigé le 2026-09-29 (phase 3), libellé « euros constants » ajouté le 2026-09-30.
 - Tous les montants sont **bruts** : ni CSG/CRDS/CASA, ni cotisation maladie de 1 % sur les
   complémentaires, ni impôt sur le revenu.
 - Les montants projetés sont en euros constants 2026 (dernier PASS, MICO 2026), mais aucun libellé
