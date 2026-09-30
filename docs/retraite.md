@@ -175,6 +175,20 @@ uniquement applicatif via `familyService`.
   - *Cumul emploi-retraite* : encart informatif selon la date de liquidation — avant 2027, cumul
     intégral si taux plein (seconde pension plafonnée à 5 % du PASS), sinon plafonné ; à compter de 2027,
     règles de l'article 102 de la LFSS 2026 décrites sans chiffrage (décrets non publiés).
+- **Décision de départ (phase 6a de l'audit, 2026-09-29)** :
+  - *Simulation par date* — [simulationDepart.ts](src/lib/retraite/simulationDepart.ts) : logique
+    extraite de `Trimestres.tsx` sans changement de règle (base, décote/surcote, départs anticipés,
+    Agirc-Arrco, FP, CNAVPL), partagée par l'onglet Optimisation et le moteur de décision.
+  - *Moteur* — [decisionDepart.ts](src/lib/retraite/decisionDepart.ts) : dates testées trimestre par
+    trimestre du premier départ possible à 70 ans ; cumul des pensions brutes (capital RAFP compris)
+    jusqu'à un âge de référence = 65 ans + espérance de vie INSEE 2025 à 65 ans (hommes 20,0, femmes
+    23,6, moyenne si civilité inconnue — `useProfilFamilialRetraite` expose désormais `civilite`) ;
+    actualisation réglable 0-3 % (0 % par défaut, euros constants) ; âge de rattrapage de chaque date
+    par rapport au premier départ ; sensibilité à ±5 ans d'espérance de vie ; première date à taux plein.
+  - *Écran* : carte « Quand partir ? » de l'onglet Optimisation (graphique du cumul, tableau annuel avec
+    net indicatif pour une personne seule).
+  - Limites affichées : tables INSEE « du moment » (longévité sous-estimée, départs précoces
+    avantagés), salaires d'une activité poursuivie non comptés, pensions brutes.
 - **Scénarios de référence** : [Golden_Scenarios_Retraite.md](docs/Golden_Scenarios_Retraite.md),
   calculés à la main et rejoués par `goldenScenarios.test.ts` (taux plein avec Agirc-Arrco, décote,
   MICO avec 3 enfants, polypensionné RG + FP porté au MIGA avec RAFP en capital, cadre de 45 ans

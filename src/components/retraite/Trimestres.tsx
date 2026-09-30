@@ -39,7 +39,11 @@ import {
 } from '@/lib/retraite/calcul';
 import { trimestresCotisesEtAssimilesDepuisCarriere } from '@/lib/retraite/calculTrimestres';
 import { creerSimulateurDepart } from '@/lib/retraite/simulationDepart';
-import { MILLESIME_COURANT } from '@/lib/retraite/parametres';
+import { deciderDateDepart, sexeDepuisCivilite } from '@/lib/retraite/decisionDepart';
+import { calculerNetRetraiteFoyer } from '@/lib/retraite/calculNetRetraite';
+import { calculerPartsFiscales } from '@/lib/fiscalite';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { MILLESIME_COURANT, PARAMETRES_ESPERANCE_VIE } from '@/lib/retraite/parametres';
 
 // Format ISO ("YYYY-MM-DD") d'une date UTC-midnight, pour la valeur d'un
 // <input type="date"> — .toISOString() ne décale pas ce cas puisque
@@ -47,6 +51,30 @@ import { MILLESIME_COURANT } from '@/lib/retraite/parametres';
 // à minuit (aucune conversion de fuseau horaire local en jeu).
 const isoDate = (date: Date) => date.toISOString().slice(0, 10);
 const formatDate = (date: Date) => date.toLocaleDateString('fr-FR', { timeZone: 'UTC' });
+const formatAge = (age: number) => {
+  const ans = Math.floor(age + 1e-9);
+  const mois = Math.round((age - ans) * 12);
+  return mois > 0 ? `${ans} ans ${mois} mois` : `${ans} ans`;
+};
+const formatEuro0 = (valeur: number) =>
+  valeur.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+// Foyer fiscal « personne seule » (1 part) pour le net indicatif de la décision de départ.
+const partsPersonneSeule = calculerPartsFiscales({
+  situationFamille: 'celibataire',
+  lieuResidence: 'metropole',
+  enfantsCharge: [],
+  personnesInvalidesCharge: [],
+  enfantsMajeursRattaches: 0,
+  parentIsole: false,
+  ancienParentIsole: false,
+  invaliditeDeclarant1: false,
+  invaliditeDeclarant2: false,
+  ancienCombattantDeclarant1: false,
+  ancienCombattantDeclarant2: false,
+  veufAncienCombattant: false,
+  veuveDeGuerre: false,
+});
 
 const AGE_MIN = 60;
 const AGE_MAX = 70;
@@ -83,6 +111,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   const {
     dateNaissanceISO: dateNaissance,
     familyLinks,
+    civilite,
     loading: loadingProfile,
   } = useProfilFamilialRetraite(personne);
   // Date de liquidation envisagée : source de vérité du scénario simulé
@@ -102,6 +131,9 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   // Retraite progressive — sandbox éphémère, aucune persistance.
   const [dateProgressive, setDateProgressive] = useState<string>('');
   const [quotiteTempsPartiel, setQuotiteTempsPartiel] = useState<string>('60');
+
+  // Décision de départ : taux d'actualisation (0 % par défaut, euros constants).
+  const [tauxActualisation, setTauxActualisation] = useState<string>('0');
 
   const ageActuel = computeAge(dateNaissance);
   // Date de naissance complète (année + mois), pas seulement l'année : le
@@ -328,6 +360,16 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
       ? pointMort(coutTotalRachat, gainPensionAnnuelRachat)
       : undefined;
 
+  // Décision « quand partir ? » (decisionDepart.ts).
+  const sexe = sexeDepuisCivilite(civilite);
+  const decision = deciderDateDepart({
+    simulateur,
+    dateNaissance: dateNaissanceConfirmee,
+    sexe,
+    tauxActualisation: Math.min(0.03, Math.max(0, (parseFloat(tauxActualisation) || 0) / 100)),
+  });
+  const donneesGraphique = decision.lignes.map((l) => ({ age: l.simulation.ageDepartAnnees, cumul: l.cumul }));
+
   // Retraite progressive : dès 60 ans, 150 trimestres tous régimes, temps
   // partiel de 40 à 80 % ; fraction de pension = 100 % − temps de travail,
   // appliquée à la pension provisoire calculée à la date de début.
@@ -471,6 +513,155 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
               </p>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border border-border">
+        <CardHeader className="p-5">
+          <CardTitle className="text-[15px] font-semibold tracking-tight">Quand partir ?</CardTitle>
+          <CardDescription className="text-xs">
+            Pensions cumulées jusqu'à {formatAge(decision.ageReference)} (espérance de vie INSEE{' '}
+            {PARAMETRES_ESPERANCE_VIE.annee}
+            {sexe ? (sexe === 'femme' ? ', femmes' : ', hommes') : ', moyenne hommes-femmes'}), selon la date de départ
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-5 pt-0 space-y-4">
+          {!decision.meilleure ? (
+            <p className="text-xs text-muted-foreground">Aucune date de départ calculable.</p>
+          ) : (
+            <>
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="p-3 border rounded-lg">
+                  <div className="text-xs text-muted-foreground">Meilleur cumul</div>
+                  <div className="text-lg font-semibold text-primary">
+                    {formatDate(decision.meilleure.simulation.dateEffet)} ({formatAge(decision.meilleure.simulation.ageDepartAnnees)})
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {formatEuro0(decision.meilleure.cumul)} cumulés · {formatEuro0(decision.meilleure.simulation.pensionTotale)} / an
+                  </div>
+                </div>
+                <div className="p-3 border rounded-lg">
+                  <div className="text-xs text-muted-foreground">Premier départ possible</div>
+                  <div className="text-lg font-semibold">
+                    {formatDate(decision.lignes[0].simulation.dateEffet)} ({formatAge(decision.lignes[0].simulation.ageDepartAnnees)})
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {formatEuro0(decision.lignes[0].cumul)} cumulés · {formatEuro0(decision.lignes[0].simulation.pensionTotale)} / an
+                  </div>
+                </div>
+                <div className="p-3 border rounded-lg">
+                  <div className="text-xs text-muted-foreground">Taux plein</div>
+                  <div className="text-lg font-semibold">
+                    {decision.premiereDateTauxPlein ? formatDate(decision.premiereDateTauxPlein) : 'non atteint avant 70 ans'}
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs">
+                {decision.meilleureSiVieCourte?.getTime() === decision.meilleure.simulation.dateEffet.getTime() &&
+                decision.meilleureSiVieLongue?.getTime() === decision.meilleure.simulation.dateEffet.getTime()
+                  ? "Recommandation robuste : la meilleure date ne change pas avec une espérance de vie de ±5 ans."
+                  : `Recommandation sensible à la longévité : meilleure date au ${
+                      decision.meilleureSiVieCourte ? formatDate(decision.meilleureSiVieCourte) : '—'
+                    } avec 5 ans de vie en moins, au ${
+                      decision.meilleureSiVieLongue ? formatDate(decision.meilleureSiVieLongue) : '—'
+                    } avec 5 ans de plus.`}
+              </p>
+
+              <div className="h-56" role="img" aria-label="Pensions cumulées selon l'âge de départ">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={donneesGraphique} margin={{ top: 8, right: 16, bottom: 0, left: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                    <XAxis dataKey="age" tickFormatter={(v: number) => `${Math.floor(v)} ans`} className="text-xs" />
+                    <YAxis tickFormatter={(v: number) => `${Math.round(v / 1000)} k€`} className="text-xs" width={56} />
+                    <Tooltip
+                      formatter={(v: number) => [formatEuro0(v), 'Pensions cumulées']}
+                      labelFormatter={(v: number) => `Départ à ${formatAge(v)}`}
+                    />
+                    <Line type="monotone" dataKey="cumul" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Label htmlFor="taux-actualisation" className="text-xs">Taux d'actualisation (%/an)</Label>
+                <Input
+                  id="taux-actualisation"
+                  type="number"
+                  min={0}
+                  max={3}
+                  step={0.5}
+                  value={tauxActualisation}
+                  onChange={(e) => setTauxActualisation(e.target.value)}
+                  className="max-w-[100px]"
+                />
+              </div>
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Départ</TableHead>
+                    <TableHead>Pension brute / an</TableHead>
+                    <TableHead>Net indicatif / mois</TableHead>
+                    <TableHead>Cumul</TableHead>
+                    <TableHead>Rattrapage du 1er départ</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {decision.lignes
+                    .filter((_, i) => i % 4 === 0 || decision.lignes[i] === decision.meilleure)
+                    .map((l) => (
+                      <TableRow
+                        key={l.simulation.dateEffet.toISOString()}
+                        className={l === decision.meilleure ? 'bg-muted/50' : undefined}
+                      >
+                        <TableCell>
+                          {formatDate(l.simulation.dateEffet)} ({formatAge(l.simulation.ageDepartAnnees)})
+                        </TableCell>
+                        <TableCell>{formatEuro0(l.simulation.pensionTotale)}</TableCell>
+                        <TableCell>
+                          {formatEuro0(
+                            calculerNetRetraiteFoyer(
+                              [
+                                {
+                                  base: l.simulation.pensionTotale - l.simulation.pensionComplementaires,
+                                  complementaires: l.simulation.pensionComplementaires,
+                                },
+                              ],
+                              partsPersonneSeule,
+                              'celibataire'
+                            ).netMensuel
+                          )}
+                        </TableCell>
+                        <TableCell>{formatEuro0(l.cumul)}</TableCell>
+                        <TableCell>
+                          {l === decision.lignes[0]
+                            ? '—'
+                            : l.ageRecuperation === null
+                            ? 'jamais'
+                            : l.ageRecuperation > decision.ageReference
+                            ? `${formatAge(l.ageRecuperation)} (après l'âge de référence)`
+                            : formatAge(l.ageRecuperation)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+
+              <div className="space-y-1 text-xs text-muted-foreground">
+                <p>
+                  Tableau : une date par an (et la meilleure) ; le graphique couvre chaque trimestre. Pensions brutes tous
+                  régimes, en euros constants, capital RAFP compris. Net indicatif : personne seule, 1 part, pensions
+                  seules.
+                </p>
+                <p>
+                  Espérances de vie « du moment » (INSEE) : elles sous-estiment la longévité des générations actuelles, ce
+                  qui avantage les départs précoces. Les salaires d'une activité poursuivie ne sont pas comptés : continuer
+                  à travailler apporte en plus un revenu d'activité.
+                </p>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

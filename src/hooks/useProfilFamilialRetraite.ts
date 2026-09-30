@@ -7,6 +7,8 @@ export interface ProfilFamilialRetraite {
   dateNaissanceDetail: DateNaissance | null;
   dateNaissanceISO: string | null;
   familyLinks: FamilyLink[];
+  /** Civilité (fiche famille ou conjoint), sert à l'espérance de vie par sexe. */
+  civilite: string | null;
   loading: boolean;
 }
 
@@ -32,15 +34,23 @@ export const useProfilFamilialRetraite = (personne: Personne = 'utilisateur'): P
   const [dateNaissanceDetail, setDateNaissanceDetail] = useState<DateNaissance | null>(null);
   const [dateNaissanceISO, setDateNaissanceISO] = useState<string | null>(null);
   const [familyLinks, setFamilyLinks] = useState<FamilyLink[]>([]);
+  const [civilite, setCivilite] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const chargerDateNaissance = personne === 'conjoint'
-      ? familyService.getMaritalStatus().then((statut) => statut?.date_naissance_conjoint ?? null)
-      : familyService.getFamilyProfile().then((profil) => profil?.date_naissance ?? null);
+    const chargerIdentite = personne === 'conjoint'
+      ? familyService.getMaritalStatus().then((statut) => ({
+          dateNaissance: statut?.date_naissance_conjoint ?? null,
+          civilite: statut?.civilite_conjoint ?? null,
+        }))
+      : familyService.getFamilyProfile().then((profil) => ({
+          dateNaissance: profil?.date_naissance ?? null,
+          civilite: profil?.civility ?? null,
+        }));
 
-    Promise.all([chargerDateNaissance, familyService.getFamilyLinks()])
-      .then(([dateNaissance, liens]) => {
+    Promise.all([chargerIdentite, familyService.getFamilyLinks()])
+      .then(([{ dateNaissance, civilite: civiliteChargee }, liens]) => {
+        setCivilite(civiliteChargee);
         if (dateNaissance) {
           setDateNaissanceDetail(dateNaissanceDepuisISO(dateNaissance));
           setDateNaissanceISO(dateNaissance);
@@ -55,5 +65,5 @@ export const useProfilFamilialRetraite = (personne: Personne = 'utilisateur'): P
       .finally(() => setLoading(false));
   }, [personne]);
 
-  return { dateNaissanceDetail, dateNaissanceISO, familyLinks, loading };
+  return { dateNaissanceDetail, dateNaissanceISO, familyLinks, civilite, loading };
 };

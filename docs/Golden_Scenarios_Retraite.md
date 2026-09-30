@@ -142,6 +142,21 @@ trimestre en cours au trimestre précédant le départ.
 Premier départ anticipé : **01/01/2032**, à taux plein. Variante : avec 2 trimestres de maladie (réputés
 cotisés, 4 au plus), la durée cotisée à 60 ans atteint 173 et le départ est ouvert dès le **01/04/2030**.
 
+## Scénario D1 — Décision de départ (phase 6a)
+
+Rejoué par `decisionDepart.test.ts` sur un simulateur fictif (pension de 12 000 €/an au premier départ, le
+01/04/2034 à 64 ans, +100 €/an par mois d'attente, décote pendant les 12 premiers mois). Civilité inconnue :
+âge de référence 65 + (20,0 + 23,6)/2 = 86,8 ans, soit 86 ans 10 mois (janvier 2057). Taux d'actualisation 0 %.
+
+| Étape | Calcul | Résultat |
+|---|---|---:|
+| Dates testées | trimestre par trimestre, 01/04/2034 → 01/04/2040 | 25 dates |
+| Cumul au premier départ | 1 000 €/mois × 273 mois | 273 000 € |
+| Cumul d'un départ un an plus tard | 1 100 €/mois × 261 mois | 287 100 € |
+| Rattrapage | 12 000 € perdus ÷ 1 200 €/an gagnés, à partir de 65 ans | 75 ans |
+| Taux plein | fin de la décote après 12 mois | 01/04/2035 |
+| Meilleur cumul | maximum de (1 000 + 8,33 m)(273 − m) au-delà de la dernière date testée | 01/04/2040 |
+
 ---
 
 ## Limite connue documentée : périodes MSA dans le SAM (audit R7)

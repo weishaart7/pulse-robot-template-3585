@@ -99,12 +99,20 @@ export interface ParametresCarriereLongue {
   }[];
 }
 
+export interface ParametresEsperanceVie {
+  source: string;
+  annee: number;
+  a60: { hommes: number; femmes: number };
+  a65: { hommes: number; femmes: number };
+}
+
 interface ParamsRetraite {
   millesimes: MillesimeRetraite[];
   agircArrco: ParametresAgircArrco;
   rafp: ParametresRAFP;
   reversion: ParametresReversion;
   carriereLongue: ParametresCarriereLongue;
+  esperanceVie: ParametresEsperanceVie;
   prelevementsSociauxPensions: { source: string; tranches: Record<TrancheCSGPension, TauxPrelevementsPension> };
   rachat: {
     source: string;
@@ -151,3 +159,4 @@ export const TAUX_PRELEVEMENTS_PENSIONS: Record<TrancheCSGPension, TauxPreleveme
   PARAMS.prelevementsSociauxPensions.tranches;
 export const PARAMETRES_REVERSION: ParametresReversion = PARAMS.reversion;
 export const PARAMETRES_CARRIERE_LONGUE: ParametresCarriereLongue = PARAMS.carriereLongue;
+export const PARAMETRES_ESPERANCE_VIE: ParametresEsperanceVie = PARAMS.esperanceVie;
