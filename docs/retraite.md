@@ -220,6 +220,14 @@ uniquement applicatif via `familyService`.
     (`repartitionParRegime.autresPensions`, Carrière, Synthèse, export PDF), donc au revenu net et à
     l'écart de revenu ; toujours prises en compte pour l'écrêtement du MICO.
   - Mention « montants bruts en euros constants » sur Carrière, Synthèse, Optimisation et l'export PDF.
+- **Épargne complémentaire recommandée dans l'export PDF (2026-09-30)** : la section affichait « 0 € —
+  calcul détaillé à venir ». Elle reprend désormais l'analyse de la carte « Écart de revenu »
+  (`analyserEcartRevenu()`, calculEpargneRetraite.ts) avec ses hypothèses par défaut : budget cible
+  calculé, aucun versement futur, rendements par défaut ; résultat du scénario central (aucune épargne
+  nécessaire, déficit déjà couvert, ou versement annuel à constituer via `versementAnnuelPourCapital()`).
+  Les données du foyer sont rassemblées par le hook `useEcartRevenuRetraite` (partagé par la carte et
+  l'export) ; section omise si elles sont indisponibles. Les hypothèses modifiées dans la carte ne sont
+  pas reprises dans le PDF (non persistées).
 - **Scénarios de référence** : [Golden_Scenarios_Retraite.md](docs/Golden_Scenarios_Retraite.md),
   calculés à la main et rejoués par `goldenScenarios.test.ts` (taux plein avec Agirc-Arrco, décote,
   MICO avec 3 enfants, polypensionné RG + FP porté au MIGA avec RAFP en capital, cadre de 45 ans

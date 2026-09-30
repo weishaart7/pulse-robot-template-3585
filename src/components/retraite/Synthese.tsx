@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { usePensionConsolidee } from '@/hooks/usePensionConsolidee';
 import { Personne } from '@/hooks/useRetraiteData';
 import { exporterSyntheseRetraitePDF, DonneesPersonneExportPDF } from '@/lib/retraite/exportSyntheseRetraitePDF';
+import { useEcartRevenuRetraite } from '@/hooks/useEcartRevenuRetraite';
+import { analyserEcartRevenu } from '@/lib/retraite/calculEpargneRetraite';
+import { PARAMETRES_EPARGNE_RETRAITE } from '@/lib/retraite/parametres';
 import { useFoyerFiscal } from '@/hooks/useFoyerFiscal';
 import { calculerPartsFiscales, FoyerFiscalInput } from '@/lib/fiscalite';
 import {
@@ -444,9 +447,10 @@ interface BoutonExportPDFProps {
 const BoutonExportPDF = ({ hasConjoint, nomUtilisateur, nomConjoint }: BoutonExportPDFProps) => {
   const utilisateur = usePensionConsolidee('utilisateur');
   const conjoint = usePensionConsolidee('conjoint');
+  const ecartRevenu = useEcartRevenuRetraite(hasConjoint, nomUtilisateur, nomConjoint);
   const [exportEnCours, setExportEnCours] = useState(false);
 
-  const loading = utilisateur.loading || (hasConjoint && conjoint.loading);
+  const loading = utilisateur.loading || (hasConjoint && conjoint.loading) || ecartRevenu.loading;
   const afficherConjoint = hasConjoint && !conjoint.loading && conjoint.aDesDonnees;
 
   const handleExport = async () => {
@@ -457,10 +461,35 @@ const BoutonExportPDF = ({ hasConjoint, nomUtilisateur, nomConjoint }: BoutonExp
         ? { ...conjoint, nom: nomConjoint }
         : null;
 
+      // Épargne complémentaire : hypothèses par défaut de la carte « Écart de
+      // revenu » (budget calculé, aucun versement futur, rendements par défaut).
+      const d = ecartRevenu.donnees;
+      const ecart = d
+        ? {
+            analyse: analyserEcartRevenu({
+              netMensuel: d.netMensuel,
+              revenusActifsMensuels: d.revenusActifsMensuels,
+              budgetMensuel: d.budgetCalculeMensuel,
+              encoursPER: d.encoursPER,
+              encoursAssuranceVie: d.encoursAssuranceVie,
+              versementAnnuel: 0,
+              anneesAvantDepart: d.anneesAvantDepart,
+              ageDepart: d.ageDepart,
+              ageReference: d.ageReference,
+              rendements: PARAMETRES_EPARGNE_RETRAITE.rendementsHypotheses,
+            }),
+            netMensuel: d.netMensuel,
+            revenusActifsMensuels: d.revenusActifsMensuels,
+            budgetMensuel: d.budgetCalculeMensuel,
+            dateDepart: d.dateDepart,
+          }
+        : null;
+
       await exporterSyntheseRetraitePDF({
         utilisateur: donneesUtilisateur,
         conjoint: donneesConjoint,
         dateGeneration: new Date(),
+        ecart,
       });
     } finally {
       setExportEnCours(false);

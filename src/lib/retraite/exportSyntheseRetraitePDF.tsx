@@ -10,7 +10,8 @@
  */
 import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer';
 import { UsePensionConsolideeResult } from '@/hooks/usePensionConsolidee';
-import { MILLESIME_COURANT } from './parametres';
+import { MILLESIME_COURANT, PARAMETRES_EPARGNE_RETRAITE } from './parametres';
+import { ResultatAnalyseEcart } from './calculEpargneRetraite';
 import { AgeLegal } from './calcul';
 
 export interface DonneesPersonneExportPDF extends UsePensionConsolideeResult {
@@ -23,6 +24,17 @@ export interface SyntheseRetraitePDFProps {
   // d'affichage que Synthese.tsx : aDesDonnees).
   conjoint: DonneesPersonneExportPDF | null;
   dateGeneration: Date;
+  /** `null` : données du foyer indisponibles (budget, épargne…), section omise. */
+  ecart: EcartRevenuExportPDF | null;
+}
+
+/** Écart de revenu du foyer (hypothèses par défaut de la carte « Écart de revenu »). */
+export interface EcartRevenuExportPDF {
+  analyse: ResultatAnalyseEcart;
+  netMensuel: number;
+  revenusActifsMensuels: number;
+  budgetMensuel: number;
+  dateDepart: Date;
 }
 
 const formatEuro0 = (valeur: number) =>
@@ -117,7 +129,55 @@ const CarteSynthesePersonne = ({ donnees }: { donnees: DonneesPersonneExportPDF 
   );
 };
 
-const PageSynthese = ({ utilisateur, conjoint, dateGeneration }: SyntheseRetraitePDFProps) => {
+const SectionEpargneComplementaire = ({ ecart }: { ecart: EcartRevenuExportPDF }) => {
+  const { analyse } = ecart;
+  const central = analyse.scenarios.find((s) => s.cle === 'central')!;
+  const { prudent, favorable } = PARAMETRES_EPARGNE_RETRAITE.rendementsHypotheses;
+  return (
+    <View>
+      <Text style={styles.sectionTitle}>Épargne complémentaire recommandée</Text>
+      <View style={styles.card}>
+        {analyse.deficitAnnuel === 0 ? (
+          <>
+            <Text style={styles.cardValue}>Aucune</Text>
+            <Text style={styles.cardHint}>
+              Revenu net des pensions ({formatEuro0(ecart.netMensuel)} / mois) et revenus d'actifs (
+              {formatEuro0(ecart.revenusActifsMensuels)} / mois) couvrent le budget cible (
+              {formatEuro0(ecart.budgetMensuel)} / mois).
+            </Text>
+          </>
+        ) : analyse.capitalManquantCentral === 0 ? (
+          <>
+            <Text style={styles.cardValue}>Déficit couvert par l'épargne actuelle</Text>
+            <Text style={styles.cardHint}>
+              Déficit de {formatEuro0(-analyse.ecartMensuel)} / mois, couvert à{' '}
+              {Math.round((central.couverture ?? 0) * 100)} % par l'épargne retraite projetée (scénario central).
+            </Text>
+          </>
+        ) : (
+          <>
+            <Text style={styles.cardValue}>{formatEuro0(analyse.versementAnnuelComplementaire)} / an</Text>
+            <Text style={styles.cardHint}>
+              À épargner jusqu'au départ pour constituer {formatEuro0(analyse.capitalManquantCentral)} de capital
+              supplémentaire et couvrir un déficit de {formatEuro0(-analyse.ecartMensuel)} / mois (budget cible{' '}
+              {formatEuro0(ecart.budgetMensuel)}, revenu net des pensions {formatEuro0(ecart.netMensuel)}, revenus
+              d'actifs {formatEuro0(ecart.revenusActifsMensuels)}).
+            </Text>
+          </>
+        )}
+        <Text style={[styles.cardHint, { marginTop: 4 }]}>
+          Scénario central : rendement de {Math.round(central.rendement * 100)} % par an (réel, net de frais, non garanti),{' '}
+          {central.anneesVersement} ans de retraite à partir du {formatDate(ecart.dateDepart)}. Scénarios prudent (
+          {Math.round(prudent * 100)} %) et favorable ({Math.round(favorable * 100)} %) détaillés dans l'outil. Budget
+          cible : charges actuelles hors crédits terminés au départ ; épargne actuelle : PER et assurance-vie du foyer,
+          sans versement futur.
+        </Text>
+      </View>
+    </View>
+  );
+};
+
+const PageSynthese = ({ utilisateur, conjoint, dateGeneration, ecart }: SyntheseRetraitePDFProps) => {
   const pensionCumulee = utilisateur.pensionTotaleConsolidee + (conjoint?.pensionTotaleConsolidee ?? 0);
 
   return (
@@ -135,11 +195,7 @@ const PageSynthese = ({ utilisateur, conjoint, dateGeneration }: SyntheseRetrait
         </View>
       )}
 
-      <Text style={styles.sectionTitle}>Épargne complémentaire recommandée</Text>
-      <View style={styles.card}>
-        <Text style={styles.cardValue}>0 €</Text>
-        <Text style={styles.cardHint}>Calcul détaillé à venir — ce montant n'est pas encore une estimation.</Text>
-      </View>
+      {ecart && <SectionEpargneComplementaire ecart={ecart} />}
 
       <Pied />
     </Page>

@@ -119,3 +119,74 @@ export function scenarioCouverture(params: {
     revenuAnnuelPermis: annuiteDepuisCapital(capital, rendement, anneesVersement),
   };
 }
+
+/** Versement annuel constant (fin d'année) nécessaire pour constituer `capital` en `annees`. */
+export function versementAnnuelPourCapital(capital: number, rendement: number, annees: number): number {
+  if (capital <= 0) return 0;
+  if (annees <= 0) return capital;
+  return rendement === 0 ? capital / annees : (capital * rendement) / (Math.pow(1 + rendement, annees) - 1);
+}
+
+export interface EntreeAnalyseEcart {
+  netMensuel: number;
+  revenusActifsMensuels: number;
+  budgetMensuel: number;
+  encoursPER: number;
+  encoursAssuranceVie: number;
+  versementAnnuel: number;
+  anneesAvantDepart: number;
+  ageDepart: number;
+  ageReference: number;
+  rendements: Record<'prudent' | 'central' | 'favorable', number>;
+}
+
+export interface ResultatAnalyseEcart {
+  ecartMensuel: number;
+  deficitAnnuel: number;
+  scenarios: ({ cle: 'prudent' | 'central' | 'favorable' } & ScenarioCouverture)[];
+  /** Capital supplémentaire à constituer d'ici le départ (scénario central), 0 si couvert. */
+  capitalManquantCentral: number;
+  /** Versement annuel supplémentaire équivalent, au rendement central. */
+  versementAnnuelComplementaire: number;
+}
+
+/**
+ * Écart de revenu et couverture par l'épargne, pour les trois scénarios
+ * (rendement, durée de retraite = âge de référence ± écart de longévité).
+ * Partagé par la carte « Écart de revenu » et l'export PDF de la Synthèse.
+ */
+export function analyserEcartRevenu(e: EntreeAnalyseEcart): ResultatAnalyseEcart {
+  const ecartMensuel = e.netMensuel + e.revenusActifsMensuels - e.budgetMensuel;
+  const deficitAnnuel = Math.max(0, -ecartMensuel * 12);
+  const ecartVie = PARAMETRES_EPARGNE_RETRAITE.ecartEsperanceVieScenarios;
+  const scenarios = (
+    [
+      ['prudent', ecartVie],
+      ['central', 0],
+      ['favorable', -ecartVie],
+    ] as const
+  ).map(([cle, decalage]) => ({
+    cle,
+    ...scenarioCouverture({
+      epargneActuelle: e.encoursPER + e.encoursAssuranceVie,
+      versementAnnuel: e.versementAnnuel,
+      anneesAvantDepart: e.anneesAvantDepart,
+      deficitAnnuel,
+      rendement: e.rendements[cle],
+      anneesVersement: Math.max(1, Math.round(e.ageReference + decalage - e.ageDepart)),
+    }),
+  }));
+  const central = scenarios[1];
+  const capitalManquantCentral = Math.max(0, central.capitalNecessaire - central.capitalProjete);
+  return {
+    ecartMensuel,
+    deficitAnnuel,
+    scenarios,
+    capitalManquantCentral,
+    versementAnnuelComplementaire: versementAnnuelPourCapital(
+      capitalManquantCentral,
+      e.rendements.central,
+      e.anneesAvantDepart
+    ),
+  };
+}

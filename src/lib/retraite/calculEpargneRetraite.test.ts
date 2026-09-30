@@ -8,6 +8,8 @@ import {
   sortiePERCapital,
   sortiePERRente,
   scenarioCouverture,
+  versementAnnuelPourCapital,
+  analyserEcartRevenu,
 } from './calculEpargneRetraite';
 
 describe('capitalisation et annuités', () => {
@@ -76,5 +78,36 @@ describe('scenarioCouverture — scénario E1 (docs/Golden_Scenarios_Retraite.md
         anneesVersement: 20,
       }).couverture
     ).toBeNull();
+  });
+});
+
+describe('analyserEcartRevenu — épargne complémentaire recommandée', () => {
+  const base = {
+    netMensuel: 2500,
+    revenusActifsMensuels: 0,
+    budgetMensuel: 3000,
+    encoursPER: 20000,
+    encoursAssuranceVie: 0,
+    versementAnnuel: 0,
+    anneesAvantDepart: 15,
+    ageDepart: 64,
+    ageReference: 84,
+    rendements: { prudent: 0.01, central: 0.02, favorable: 0.03 },
+  };
+  it('déficit de 500 €/mois : capital manquant et versement annuel équivalent (scénario central)', () => {
+    const r = analyserEcartRevenu(base);
+    expect(r.deficitAnnuel).toBe(6000);
+    const projete = 20000 * Math.pow(1.02, 15);
+    expect(r.capitalManquantCentral).toBeCloseTo(100070.77 - projete, 1);
+    expect(r.versementAnnuelComplementaire).toBeCloseTo(versementAnnuelPourCapital(100070.77 - projete, 0.02, 15), 1);
+  });
+  it('versement équivalent : reconstitue le capital manquant', () => {
+    const v = versementAnnuelPourCapital(50000, 0.02, 15);
+    expect(capitalProjete(0, v, 0.02, 15)).toBeCloseTo(50000, 6);
+  });
+  it('excédent : rien à constituer', () => {
+    const r = analyserEcartRevenu({ ...base, netMensuel: 3500 });
+    expect(r.capitalManquantCentral).toBe(0);
+    expect(r.versementAnnuelComplementaire).toBe(0);
   });
 });

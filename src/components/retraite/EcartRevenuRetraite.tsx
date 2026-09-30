@@ -3,32 +3,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { usePensionConsolidee } from '@/hooks/usePensionConsolidee';
-import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
-import { useFoyerFiscal } from '@/hooks/useFoyerFiscal';
-import { useCharges, useRevenus } from '@/hooks/useBudget';
-import { useAssets } from '@/hooks/useAssets';
-import { NATURES_PER } from '@/constants/assetTypes';
-import { getRepartitionFoyer, BienNonQualifieError } from '@/lib/patrimoine/succession';
-import { sumAnnualActive } from '@/lib/budget/periodicite';
-import { ageEnMois } from '@/lib/retraite/calcul';
-import { lignesRevenuNet } from '@/lib/retraite/revenuNetFoyer';
-import { ageReferenceDeces, sexeDepuisCivilite } from '@/lib/retraite/decisionDepart';
+import { useEcartRevenuRetraite } from '@/hooks/useEcartRevenuRetraite';
 import {
+  analyserEcartRevenu,
   capitalProjete,
-  scenarioCouverture,
   annuiteDepuisCapital,
   sortiePERCapital,
   sortiePERRente,
 } from '@/lib/retraite/calculEpargneRetraite';
 import { PARAMETRES_EPARGNE_RETRAITE, ScenarioEpargne } from '@/lib/retraite/parametres';
-
-const NATURES_ASSURANCE_VIE = [
-  "Contrat d'assurance-vie",
-  'Contrat vie-génération',
-  'PEP assurance vie',
-  'Bons & contrats de capitalisation',
-];
 
 const formatEuro0 = (valeur: number) =>
   valeur.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -52,13 +35,7 @@ interface EcartRevenuRetraiteProps {
  * calculEpargneRetraite.ts). Hypothèses saisies ici non persistées.
  */
 export const EcartRevenuRetraite = ({ hasConjoint, nomUtilisateur, nomConjoint }: EcartRevenuRetraiteProps) => {
-  const utilisateur = usePensionConsolidee('utilisateur');
-  const conjoint = usePensionConsolidee('conjoint');
-  const profil = useProfilFamilialRetraite('utilisateur');
-  const { data: foyerFiscal, loading: loadingFoyer } = useFoyerFiscal();
-  const { charges, loading: loadingCharges } = useCharges();
-  const { revenus, loading: loadingRevenus } = useRevenus();
-  const { assets, loading: loadingAssets } = useAssets();
+  const { donnees } = useEcartRevenuRetraite(hasConjoint, nomUtilisateur, nomConjoint);
 
   const [budgetSaisi, setBudgetSaisi] = useState<string>('');
   const [versementAnnuel, setVersementAnnuel] = useState<string>('0');
@@ -68,80 +45,40 @@ export const EcartRevenuRetraite = ({ hasConjoint, nomUtilisateur, nomConjoint }
     favorable: String(PARAMETRES_EPARGNE_RETRAITE.rendementsHypotheses.favorable * 100),
   });
 
-  const loading =
-    utilisateur.loading ||
-    (hasConjoint && conjoint.loading) ||
-    profil.loading ||
-    loadingFoyer ||
-    loadingCharges ||
-    loadingRevenus ||
-    loadingAssets;
-  if (loading || !utilisateur.aDesDonnees || !profil.dateNaissanceDetail) return null;
+  if (!donnees) return null;
+  const {
+    dateDepart,
+    anneesAvantDepart,
+    netMensuel,
+    tmiRetraite,
+    budgetCalculeMensuel: budgetCalcule,
+    revenusActifsMensuels,
+    encoursPER,
+    encoursAssuranceVie,
+    ageDepart,
+    ageReference,
+  } = donnees;
 
-  const avecConjoint = hasConjoint && conjoint.aDesDonnees;
-
-  // Date de référence : les deux conjoints retraités (départ à l'âge légal le plus tardif).
-  const datesDepart = [utilisateur.dateEffet, avecConjoint ? conjoint.dateEffet : null].filter(
-    (d): d is Date => d !== null
-  );
-  const dateDepart = datesDepart.length > 0 ? new Date(Math.max(...datesDepart.map((d) => d.getTime()))) : new Date();
-  const anneesAvantDepart = Math.max(0, (dateDepart.getTime() - Date.now()) / (365.25 * 24 * 3600 * 1000));
-
-  const netMensuel = lignesRevenuNet(
-    utilisateur,
-    avecConjoint ? conjoint : null,
-    foyerFiscal ?? null,
-    nomUtilisateur,
-    nomConjoint
-  ).reduce((total, l) => total + l.resultat.netMensuel, 0);
-  const tmiRetraite = Math.max(
-    ...lignesRevenuNet(utilisateur, avecConjoint ? conjoint : null, foyerFiscal ?? null, nomUtilisateur, nomConjoint).map(
-      (l) => l.resultat.tmi
-    )
-  );
-
-  // Budget cible : charges actives à la date de départ (crédits terminés exclus), modifiable.
-  const budgetCalcule = sumAnnualActive(charges, dateDepart) / 12;
   const budgetMensuel = budgetSaisi !== '' ? parseFloat(budgetSaisi) || 0 : budgetCalcule;
-  // Revenus d'actifs qui continuent à la retraite (loyers…), bruts ; salaires exclus.
-  const revenusActifsMensuels =
-    sumAnnualActive(
-      revenus.filter((r) => r.source === 'immobilier'),
-      dateDepart
-    ) / 12;
-  const ecartMensuel = netMensuel + revenusActifsMensuels - budgetMensuel;
-  const deficitAnnuel = Math.max(0, -ecartMensuel * 12);
-
-  // Épargne retraite du foyer (part du foyer, tiers indivisaires exclus).
-  const partFoyer = (asset: (typeof assets)[number]) => {
-    try {
-      const { user, spouse } = getRepartitionFoyer(asset);
-      return user + spouse;
-    } catch (error) {
-      if (error instanceof BienNonQualifieError) return 0;
-      throw error;
-    }
-  };
-  const encours = (natures: string[]) =>
-    assets.filter((a) => natures.includes(a.nature)).reduce((t, a) => t + (a.valeur_estimee || 0) * partFoyer(a), 0);
-  const encoursPER = encours(NATURES_PER);
-  const encoursAssuranceVie = encours(NATURES_ASSURANCE_VIE);
   const versement = Math.max(0, parseFloat(versementAnnuel) || 0);
-
-  const ageDepart = ageEnMois(profil.dateNaissanceDetail, dateDepart) / 12;
-  const ageReference = ageReferenceDeces(sexeDepuisCivilite(profil.civilite));
   const rendement = (cle: ScenarioEpargne) => Math.max(0, (parseFloat(rendements[cle]) || 0) / 100);
 
-  const scenarios = SCENARIOS.map(({ cle, libelle, ecartVie }) => ({
-    libelle,
-    ...scenarioCouverture({
-      epargneActuelle: encoursPER + encoursAssuranceVie,
-      versementAnnuel: versement,
-      anneesAvantDepart,
-      deficitAnnuel,
-      rendement: rendement(cle),
-      anneesVersement: Math.max(1, Math.round(ageReference + ecartVie - ageDepart)),
-    }),
+  const analyse = analyserEcartRevenu({
+    netMensuel,
+    revenusActifsMensuels,
+    budgetMensuel,
+    encoursPER,
+    encoursAssuranceVie,
+    versementAnnuel: versement,
+    anneesAvantDepart,
+    ageDepart,
+    ageReference,
+    rendements: { prudent: rendement('prudent'), central: rendement('central'), favorable: rendement('favorable') },
+  });
+  const { ecartMensuel, deficitAnnuel } = analyse;
+  const scenarios = analyse.scenarios.map((sc) => ({
+    ...sc,
+    libelle: SCENARIOS.find((x) => x.cle === sc.cle)!.libelle,
   }));
 
   // Sortie du PER (scénario central) : l'encours actuel et les versements
@@ -260,6 +197,21 @@ export const EcartRevenuRetraite = ({ hasConjoint, nomUtilisateur, nomConjoint }
               ))}
             </TableBody>
           </Table>
+          {deficitAnnuel > 0 && (
+            <p className="text-xs">
+              Épargne complémentaire recommandée (scénario central) :{' '}
+              {analyse.capitalManquantCentral > 0 ? (
+                <>
+                  <span className="font-semibold">{formatEuro0(analyse.capitalManquantCentral)}</span> à constituer d'ici
+                  le départ, soit environ{' '}
+                  <span className="font-semibold">{formatEuro0(analyse.versementAnnuelComplementaire)} / an</span> de
+                  versements supplémentaires.
+                </>
+              ) : (
+                "le déficit est couvert par l'épargne projetée."
+              )}
+            </p>
+          )}
         </div>
 
         {perAuDepart > 0 && (
