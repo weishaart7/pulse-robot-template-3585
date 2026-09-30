@@ -4,6 +4,7 @@ import { useModuleSubNav } from '@/hooks/useModuleSubNav';
 import { Synthese } from '@/components/retraite/Synthese';
 import { Carriere } from '@/components/retraite/Carriere';
 import { EpargneRetraite } from '@/components/retraite/EpargneRetraite';
+import { EcartRevenuRetraite } from '@/components/retraite/EcartRevenuRetraite';
 import { Trimestres } from '@/components/retraite/Trimestres';
 import { ColonnesPersonnes } from '@/components/retraite/ColonnesPersonnes';
 import { familyService, FamilyProfile, MaritalStatus } from '@/services/familyService';
@@ -39,7 +40,7 @@ export const RetraiteSection = () => {
   const TABS = [
     { id: 'synthese', label: 'Synthèse' },
     { id: 'carriere', label: 'Carrière' },
-    { id: 'epargne', label: 'Épargne retraite' },
+    { id: 'epargne', label: 'Épargne et écart de revenu' },
     { id: 'optimisation', label: 'Optimisation' }
   ];
 
@@ -60,10 +61,13 @@ export const RetraiteSection = () => {
         );
       case 'epargne':
         return (
-          <ColonnesPersonnes
-            {...colonnesProps}
-            render={(personne) => <EpargneRetraite personne={personne} />}
-          />
+          <div className="space-y-6">
+            <EcartRevenuRetraite {...colonnesProps} />
+            <ColonnesPersonnes
+              {...colonnesProps}
+              render={(personne) => <EpargneRetraite personne={personne} />}
+            />
+          </div>
         );
       case 'optimisation':
         return (

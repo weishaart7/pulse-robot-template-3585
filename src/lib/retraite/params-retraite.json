@@ -22,7 +22,8 @@
         "agircArrcoValeurServicePoint": "Circulaire Agirc-Arrco 2025-15-DT du 23/10/2025 (valeur inchangée au 01/11/2025 : 1,4386 €)",
         "agircArrcoPlafondMajorationEnfantsAnnuel": "altis-conseil.fr, majorations pour enfants Agirc-Arrco 2026 (2 367,48 €/an depuis le 01/11/2025)",
         "prelevementsSociauxPensions": "L'Assurance retraite, « Prélèvements sociaux en 2026 : augmentation des seuils » (métropole, RFR N-2)",
-        "reversionRegimeGeneral": "moinsdimpots.fr et mes-allocs.fr, pension de réversion 2026 (plafonds 2 080 × SMIC horaire 12,02 € et × 1,6 ; minimum 334,92 €/mois ; maximum 1 081,35 €/mois)"
+        "reversionRegimeGeneral": "moinsdimpots.fr et mes-allocs.fr, pension de réversion 2026 (plafonds 2 080 × SMIC horaire 12,02 € et × 1,6 ; minimum 334,92 €/mois ; maximum 1 081,35 €/mois)",
+        "per": "Linxea, PER 2026 : 10 % de 8 PASS 2025 (37 680 €), minimum 10 % du PASS 2025 (4 710 €), report 5 ans"
       },
       "agircArrcoPrixAchatPoint": 20.1877,
       "agircArrcoValeurServicePoint": 1.4386,
@@ -44,6 +45,10 @@
         "plafondRessourcesCoupleAnnuel": 40002.56,
         "minimumMensuel": 334.92,
         "maximumMensuel": 1081.35
+      },
+      "per": {
+        "plafondDeductionMinimum": 4710,
+        "plafondDeductionMaximum": 37680
       }
     }
   ],
@@ -864,5 +869,21 @@
       "hommes": 20.0,
       "femmes": 23.6
     }
+  },
+  "epargneRetraite": {
+    "source": "PER : prélèvements sociaux 18,6 % (LFSS 2026, France Épargne), prélèvement forfaitaire 12,8 % sur les gains ; assurance-vie : prélèvements sociaux 17,2 % (exclue de la hausse), 7,5 % après 8 ans au-delà de l'abattement 4 600 / 9 200 € (Nalo) ; rendements : hypothèses validées le 2026-09-30, non sourcées (réels, nets de frais)",
+    "tauxDeductionPER": 0.1,
+    "prelevementsSociauxPER": 0.186,
+    "prelevementsSociauxAssuranceVie": 0.172,
+    "tauxForfaitaireGains": 0.128,
+    "tauxAssuranceVieApres8Ans": 0.075,
+    "abattementAssuranceVieSeul": 4600,
+    "abattementAssuranceVieCouple": 9200,
+    "rendementsHypotheses": {
+      "prudent": 0.01,
+      "central": 0.02,
+      "favorable": 0.03
+    },
+    "ecartEsperanceVieScenarios": 5
   }
 }

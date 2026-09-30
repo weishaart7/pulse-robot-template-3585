@@ -266,7 +266,7 @@ Exemples :
 | **3. Net** ✅ 2026-09-29 | Branchement des moteurs Fiscalité (PS et IR), taux de remplacement, libellé en euros constants | `pensionConsolidee.ts`, `src/lib/fiscalite/` |
 | **4. Réversion et couple** ✅ 2026-09-29 | Moteur de réversion multi-régimes, revenu du survivant, lien Transmission, alertes PACS | nouveau `reversion.ts` |
 | **5. Départs anticipés et transitions** ✅ 2026-09-29 | Carrières longues (LFSS 2026), handicap, retraite progressive, cumul emploi-retraite | `calcul.ts` |
-| **6. Moteur de décision** | Âge optimal (valeur actualisée, points morts), arbitrage rachat/PER/travail, écart Budget, projection et sortie de l'épargne retraite, scénarios de sensibilité, rapport PDF enrichi | nouveau `decision.ts`, `Synthese.tsx`, `EpargneRetraite.tsx` |
+| **6. Moteur de décision** ✅ 2026-09-30 | Âge optimal (valeur actualisée, points morts), arbitrage rachat/PER/travail, écart Budget, projection et sortie de l'épargne retraite, scénarios de sensibilité, rapport PDF enrichi | nouveau `decision.ts`, `Synthese.tsx`, `EpargneRetraite.tsx` |
 
 Chaque phase touchant à une règle fiscale ou réglementaire commencera par un exposé des règles et de
 la séquence d'intervention, à valider avant de coder (CLAUDE.md).

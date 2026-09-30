@@ -36,6 +36,7 @@ export interface MillesimeRetraite {
     minimumMensuel: number;
     maximumMensuel: number;
   };
+  per: { plafondDeductionMinimum: number; plafondDeductionMaximum: number };
   prelevementsSociauxPensions: {
     seuilsRfrUnePart: { exoneration: number; tauxReduit: number; tauxMedian: number };
     majorationSeuilsParDemiPart: { exoneration: number; tauxReduit: number; tauxMedian: number };
@@ -106,6 +107,21 @@ export interface ParametresEsperanceVie {
   a65: { hommes: number; femmes: number };
 }
 
+export type ScenarioEpargne = 'prudent' | 'central' | 'favorable';
+
+export interface ParametresEpargneRetraite {
+  source: string;
+  tauxDeductionPER: number;
+  prelevementsSociauxPER: number;
+  prelevementsSociauxAssuranceVie: number;
+  tauxForfaitaireGains: number;
+  tauxAssuranceVieApres8Ans: number;
+  abattementAssuranceVieSeul: number;
+  abattementAssuranceVieCouple: number;
+  rendementsHypotheses: Record<ScenarioEpargne, number>;
+  ecartEsperanceVieScenarios: number;
+}
+
 interface ParamsRetraite {
   millesimes: MillesimeRetraite[];
   agircArrco: ParametresAgircArrco;
@@ -113,6 +129,7 @@ interface ParamsRetraite {
   reversion: ParametresReversion;
   carriereLongue: ParametresCarriereLongue;
   esperanceVie: ParametresEsperanceVie;
+  epargneRetraite: ParametresEpargneRetraite;
   prelevementsSociauxPensions: { source: string; tranches: Record<TrancheCSGPension, TauxPrelevementsPension> };
   rachat: {
     source: string;
@@ -160,3 +177,4 @@ export const TAUX_PRELEVEMENTS_PENSIONS: Record<TrancheCSGPension, TauxPreleveme
 export const PARAMETRES_REVERSION: ParametresReversion = PARAMS.reversion;
 export const PARAMETRES_CARRIERE_LONGUE: ParametresCarriereLongue = PARAMS.carriereLongue;
 export const PARAMETRES_ESPERANCE_VIE: ParametresEsperanceVie = PARAMS.esperanceVie;
+export const PARAMETRES_EPARGNE_RETRAITE: ParametresEpargneRetraite = PARAMS.epargneRetraite;

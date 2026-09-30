@@ -157,6 +157,22 @@ Rejoué par `decisionDepart.test.ts` sur un simulateur fictif (pension de 12 000
 | Taux plein | fin de la décote après 12 mois | 01/04/2035 |
 | Meilleur cumul | maximum de (1 000 + 8,33 m)(273 − m) au-delà de la dernière date testée | 01/04/2040 |
 
+## Scénario E1 — Couverture d'un déficit par l'épargne (phase 6b)
+
+Rejoué par `calculEpargneRetraite.test.ts`. **Entrées** : épargne actuelle 50 000 €, versements de 3 000 €/an
+pendant 15 ans jusqu'au départ, rendement central 2 %/an ; déficit de 6 000 €/an pendant 20 ans de retraite.
+
+| Étape | Calcul | Résultat |
+|---|---|---:|
+| Épargne au départ | 50 000 × 1,02¹⁵ + 3 000 × (1,02¹⁵ − 1) / 0,02 | 119 173,67 € |
+| Capital nécessaire | 6 000 × (1 − 1,02⁻²⁰) × 1,02 / 0,02 (versements en début d'année) | 100 070,77 € |
+| Couverture | 119 173,67 / 100 070,77 | 119 % |
+| Revenu annuel permis | annuité de 119 173,67 € sur 20 ans à 2 % | 7 145,36 € |
+
+Sorties du PER rejouées par le même fichier : capital de 100 000 € dont 60 000 € de versements déduits, TMI
+30 % → impôt 23 120 €, prélèvements sociaux 7 440 €, net 69 440 € ; rente de 6 000 €/an dès 64 ans, TMI
+11 % → impôt 594 €, prélèvements sociaux 446,40 € (40 % × 18,6 %), net 4 959,60 €.
+
 ---
 
 ## Limite connue documentée : périodes MSA dans le SAM (audit R7)

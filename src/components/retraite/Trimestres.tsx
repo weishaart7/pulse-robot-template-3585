@@ -39,11 +39,13 @@ import {
 } from '@/lib/retraite/calcul';
 import { trimestresCotisesEtAssimilesDepuisCarriere } from '@/lib/retraite/calculTrimestres';
 import { creerSimulateurDepart } from '@/lib/retraite/simulationDepart';
-import { deciderDateDepart, sexeDepuisCivilite } from '@/lib/retraite/decisionDepart';
+import { deciderDateDepart, sexeDepuisCivilite, ageReferenceDeces } from '@/lib/retraite/decisionDepart';
+import { capitalProjete, annuiteDepuisCapital, plafondDeductionPER } from '@/lib/retraite/calculEpargneRetraite';
+import { useFiscalOverview } from '@/hooks/useFiscalOverview';
 import { calculerNetRetraiteFoyer } from '@/lib/retraite/calculNetRetraite';
 import { calculerPartsFiscales } from '@/lib/fiscalite';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { MILLESIME_COURANT, PARAMETRES_ESPERANCE_VIE } from '@/lib/retraite/parametres';
+import { MILLESIME_COURANT, PARAMETRES_ESPERANCE_VIE, PARAMETRES_EPARGNE_RETRAITE } from '@/lib/retraite/parametres';
 
 // Format ISO ("YYYY-MM-DD") d'une date UTC-midnight, pour la valeur d'un
 // <input type="date"> — .toISOString() ne décale pas ce cas puisque
@@ -131,6 +133,10 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   // Retraite progressive — sandbox éphémère, aucune persistance.
   const [dateProgressive, setDateProgressive] = useState<string>('');
   const [quotiteTempsPartiel, setQuotiteTempsPartiel] = useState<string>('60');
+
+  // Comparaison rachat / PER : taux marginal actuel (module Fiscalité, ou saisi).
+  const fiscalite = useFiscalOverview();
+  const [tmiSaisie, setTmiSaisie] = useState<string>('');
 
   // Décision de départ : taux d'actualisation (0 % par défaut, euros constants).
   const [tauxActualisation, setTauxActualisation] = useState<string>('0');
@@ -359,6 +365,27 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     coutTotalRachat !== undefined && gainPensionAnnuelRachat > 0
       ? pointMort(coutTotalRachat, gainPensionAnnuelRachat)
       : undefined;
+
+  // Rachat ou PER, à même effort net d'impôt : le coût du rachat et un
+  // versement PER du même montant sont tous deux déductibles (PER dans la
+  // limite du plafond) ; le PER est capitalisé au rendement central jusqu'au
+  // départ puis servi en annuité jusqu'à l'âge de référence.
+  const tmiActuelle =
+    tmiSaisie !== ''
+      ? Math.max(0, parseFloat(tmiSaisie) || 0) / 100
+      : fiscalite.loading
+      ? 0
+      : fiscalite.impot.tmi;
+  const rendementCentral = PARAMETRES_EPARGNE_RETRAITE.rendementsHypotheses.central;
+  const anneesAvantLiquidation = Math.max(0, (dateLiquidationEffet.getTime() - Date.now()) / (365.25 * 24 * 3600 * 1000));
+  const horizonRetraite = Math.max(
+    1,
+    Math.round(ageReferenceDeces(sexeDepuisCivilite(civilite)) - resultatSelection.ageDepartAnnees)
+  );
+  const capitalPERComparaison =
+    coutTotalRachat !== undefined ? capitalProjete(coutTotalRachat, 0, rendementCentral, anneesAvantLiquidation) : 0;
+  const rentePERComparaison = annuiteDepuisCapital(capitalPERComparaison, rendementCentral, horizonRetraite);
+  const plafondPER = salaireComplementaire ? plafondDeductionPER(salaireComplementaire.salaireAnnuel) : null;
 
   // Décision « quand partir ? » (decisionDepart.ts).
   const sexe = sexeDepuisCivilite(civilite);
@@ -797,6 +824,47 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
                       À {resultatSelection.ageAffiche} ans, vos trimestres validés projetés couvrent déjà les trimestres
                       requis : ce rachat n'améliore pas la pension de base à cet âge de départ.
                     </p>
+                  )}
+
+                  {coutTotalRachat !== undefined && coutTotalRachat > 0 && (
+                    <div className="pt-2 mt-2 border-t space-y-1">
+                      <p className="text-xs font-semibold">Et si ce montant allait sur un PER ?</p>
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="tmi-actuelle" className="text-xs">Taux marginal d'imposition actuel (%)</Label>
+                        <Input
+                          id="tmi-actuelle"
+                          type="number"
+                          placeholder={String(Math.round(tmiActuelle * 100))}
+                          value={tmiSaisie}
+                          onChange={(e) => setTmiSaisie(e.target.value)}
+                          className="h-8 max-w-[90px]"
+                        />
+                      </div>
+                      <p className="text-xs">
+                        Effort net d'impôt identique : {formatEuro2(coutTotalRachat * (1 - tmiActuelle))} (coût déductible
+                        au taux marginal de {Math.round(tmiActuelle * 100)} %).
+                      </p>
+                      <p className="text-xs">
+                        Rachat : +{formatEuro2(Math.max(0, gainPensionAnnuelRachat))} / an à vie, rien de transmissible au
+                        décès.
+                      </p>
+                      <p className="text-xs">
+                        PER : {formatEuro2(capitalPERComparaison)} au départ (rendement central{' '}
+                        {Math.round(rendementCentral * 100)} %), soit environ {formatEuro2(rentePERComparaison)} / an pendant{' '}
+                        {horizonRetraite} ans ; le capital restant est transmissible au décès.
+                      </p>
+                      {plafondPER !== null && coutTotalRachat > plafondPER && (
+                        <p className="text-xs text-spark">
+                          Ce montant dépasse le plafond annuel de déduction PER estimé ({formatEuro2(plafondPER)}, hors
+                          plafonds reportés des années précédentes).
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Montants bruts : la pension issue du rachat et la rente PER sont toutes deux imposées comme des
+                        pensions ; les prélèvements sociaux de la rente PER ne portent que sur une fraction liée à l'âge.
+                        Rendement : hypothèse non garantie.
+                      </p>
+                    </div>
                   )}
                 </div>
               )}

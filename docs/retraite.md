@@ -189,6 +189,30 @@ uniquement applicatif via `familyService`.
     net indicatif pour une personne seule).
   - Limites affichées : tables INSEE « du moment » (longévité sous-estimée, départs précoces
     avantagés), salaires d'une activité poursuivie non comptés, pensions brutes.
+- **Épargne et écart de revenu (phase 6b de l'audit, 2026-09-30)** — [calculEpargneRetraite.ts](src/lib/retraite/calculEpargneRetraite.ts),
+  carte [EcartRevenuRetraite.tsx](src/components/retraite/EcartRevenuRetraite.tsx) en tête de l'onglet
+  renommé « Épargne et écart de revenu » :
+  - *Écart* : revenu net des pensions du foyer (`lignesRevenuNet`, extrait de `Synthese.tsx` vers
+    [revenuNetFoyer.ts](src/lib/retraite/revenuNetFoyer.ts)) + revenus d'actifs du Budget qui continuent
+    (source `immobilier`, bruts) − budget cible = charges du Budget actives à la date de départ
+    (`sumAnnualActive`, crédits terminés exclus), modifiable. Date de référence : départ à l'âge légal le
+    plus tardif du couple.
+  - *Épargne* : encours PER et assurance-vie du foyer (Patrimoine, part du foyer), versements annuels
+    futurs saisis (sur le PER), capitalisés aux rendements prudent / central / favorable (1 / 2 / 3 %
+    réels nets de frais par défaut, modifiables — hypothèses non sourcées validées le 2026-09-30).
+    Capital nécessaire = valeur actuelle du déficit jusqu'à l'âge de référence 6a, ±5 ans selon le
+    scénario ; couverture et revenu permis par l'épargne.
+  - *Sortie du PER* : capital (versements déduits au TMI du foyer retraité, gains à 12,8 % + 18,6 %) ou
+    rente estimée par annuité (imposée comme une pension, prélèvements sociaux sur la fraction liée à
+    l'âge) ; encours actuel supposé entièrement issu de versements déduits.
+  - *Rachat ou PER* (onglet Optimisation, carte rachat) : même effort net d'impôt (coût déductible au TMI
+    actuel, repris de `useFiscalOverview` ou saisi) ; PER capitalisé au rendement central puis servi en
+    annuité, capital restant transmissible ; alerte si le montant dépasse le plafond de déduction PER
+    estimé (`plafondDeductionPER`, hors reports).
+  - Paramètres : plafonds PER 2026 (millésime), taux de prélèvements PER/assurance-vie, rendements
+    hypothèses dans `params-retraite.json`. Hypothèses saisies non persistées.
+  - Non couverts : fiscalité des rachats d'assurance-vie dans la couverture (encours compté brut),
+    revenus du patrimoine financier, sortie PER fractionnée sur plusieurs années (mentionnée seulement).
 - **Scénarios de référence** : [Golden_Scenarios_Retraite.md](docs/Golden_Scenarios_Retraite.md),
   calculés à la main et rejoués par `goldenScenarios.test.ts` (taux plein avec Agirc-Arrco, décote,
   MICO avec 3 enfants, polypensionné RG + FP porté au MIGA avec RAFP en capital, cadre de 45 ans
