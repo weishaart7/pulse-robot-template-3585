@@ -212,7 +212,20 @@ Réalisé le 17/09/2026 (audit du sous-module Dettes contre 5 fiches Fidroit —
 - **I2 — Bornes de cohérence** dans `passifEmpruntSchema.ts` (montants ≥ 0, durée restante entière ≥ 0, taux/TAEG/quotités/pourcentages entre 0 et 100) et en base (migration `20261007110000_bornes_passifs_emprunts.sql`, CHECK sur `passifs` et `emprunts`, tables vides au moment de la migration). Pas de contrainte « somme des pourcentages = 100 » : un emprunt lié à un actif en indivision avec des tiers peut légitimement hériter d'une part du foyer < 100 %.
 - **I3 — Confirmation avant suppression** d'un emprunt ou d'un passif (`WizardConfirmDialog`, pas `window.confirm`, bloqué dans le navigateur intégré).
 
-**Restent ouverts :** I4 qualification d'une dette sans date ni origine (dette antérieure au mariage qualifiée commune sous régime légal, art. 1410) — règle métier à valider ; I5 instances séparées de `usePassifs`/`useEmprunts` entre onglets.
+**Passifs — qualification des dettes (`lib/patrimoine/qualification.ts::qualifierDette`, 07/10/2026, règles validées par l'utilisateur).** Fonction distincte de `qualifierBien()`, appelée par `usePassifEmpruntForm.ts` à chaque changement de détenteur, actif lié, date de souscription ou nature. Ordre de priorité :
+1. **Hors couple** → « Bien personnel ».
+2. **R1 — Dette liée à un actif** (`asset_id`) → reprend la `qualification_bien` enregistrée de l'actif (accessoire ; « À qualifier » ignoré). La récompense due si des fonds communs remboursent la dette d'un bien propre (art. 1437) relève du module Récompenses.
+3. **Concubinage** → « Indivision » si contractée par les deux, sinon « Bien personnel ».
+4. **R4 — Dette successorale** (nature « Dettes successorales… ») sous communauté hors universelle → « Bien propre » (art. 1410).
+5. **R2 — Dette antérieure à l'union** (`date_souscription` < date de mariage ou de PACS) → « Bien commun » sous communauté universelle (art. 1526), « Indivision » si contractée par les deux, sinon « Bien propre » (art. 1410).
+6. **Régime communautaire** (ou marié sans régime renseigné) → « Bien commun » (art. 1409).
+7. **R3 — Hors communauté** (séparation, participation aux acquêts, séparation avec société d'acquêts, PACS quelle que soit la convention) → « Indivision » si contractée par les deux, sinon « Bien propre ». Corrige l'impossibilité antérieure de saisir un co-emprunt de séparatistes (« Le couple » était vidé par le garde-fou car qualifié « Bien propre »).
+
+Sans `date_souscription` (colonne ajoutée à `emprunts` et `passifs`, migration `20261007120000_add_date_souscription_passifs_emprunts.sql`, facultative), la dette est présumée contractée pendant l'union et la raison affichée le dit. Tests : `qualificationDette.test.ts`.
+
+Limites assumées : art. 1415 (emprunt d'un seul époux sans consentement — effet sur le gage des créanciers, pas sur la contribution), art. 220 (solidarité ménagère), dette contractée dans l'intérêt personnel d'un époux ; pas de champ de quote-part dans le formulaire passif/emprunt, une dette en indivision est donc à 50/50 sauf préremplissage depuis l'actif lié.
+
+**Reste ouvert :** I5 instances séparées de `usePassifs`/`useEmprunts` entre onglets.
 
 **Deux dettes actées, non corrigées à ce stade (arbitrage utilisateur du 17/09/2026), toutes deux dans le rayon de cet audit :**
 - **Doublon IFI / Emprunts.** La déductibilité IFI d'un emprunt immobilier se saisit dans une table entièrement séparée (`ifi_passifs_deductions`, `lib/ifi/calcul.ts`), sans lien avec `emprunts` — un même crédit immobilier doit être saisi deux fois pour être à la fois visible dans Patrimoine et déduit de l'assiette IFI. Assumé pour V1 : pas de FK ni de pré-remplissage croisé. À corriger si l'IFI entre dans un futur périmètre de liaison inter-modules.

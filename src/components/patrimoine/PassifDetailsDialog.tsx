@@ -95,6 +95,12 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
                       <p className="font-medium">{emprunt.duree_restante} mois</p>
                     </div>
                   )}
+                  {emprunt.date_souscription && (
+                    <div className="p-3 rounded-lg bg-muted">
+                      <span className="text-sm text-muted-foreground">Date de souscription</span>
+                      <p className="font-medium">{new Date(emprunt.date_souscription).toLocaleDateString('fr-FR')}</p>
+                    </div>
+                  )}
                   {emprunt.mode_amortissement && (
                     <div className="p-3 rounded-lg bg-muted">
                       <span className="text-sm text-muted-foreground">Mode d'amortissement</span>
@@ -240,6 +246,12 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
                   <span className="text-sm text-muted-foreground">Nature du passif</span>
                   <p className="font-medium">{simplePassif.nature}</p>
                 </div>
+                {simplePassif.date_souscription && (
+                  <div className="p-3 rounded-lg bg-muted mt-3">
+                    <span className="text-sm text-muted-foreground">Date de souscription</span>
+                    <p className="font-medium">{new Date(simplePassif.date_souscription).toLocaleDateString('fr-FR')}</p>
+                  </div>
+                )}
               </div>
             </>
           )}

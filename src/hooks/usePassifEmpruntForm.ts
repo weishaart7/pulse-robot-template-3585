@@ -8,7 +8,7 @@ import { hasConjoint } from '@/lib/family/maritalStatus';
 import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, mapDetenteurToDb, FamilyInfo } from '@/lib/patrimoine/utils';
 import { EMPRUNT_NATURES } from '@/constants/assetTypes';
-import { qualifierBien, QualificationContext } from '@/lib/patrimoine/qualification';
+import { qualifierDette, QualificationContext } from '@/lib/patrimoine/qualification';
 
 export const isEmpruntRecord = (item: Emprunt | Passif): item is Emprunt => 'libelle' in item;
 
@@ -106,6 +106,7 @@ export const usePassifEmpruntForm = ({
       form.reset({
         nature: item.nature,
         libelle: isEmpruntItem ? item.libelle : '',
+        date_souscription: item.date_souscription || '',
         montant_du: !isEmpruntItem ? (item as Passif).montant_du : undefined,
         capital_restant_du: isEmpruntItem ? item.capital_restant_du : undefined,
         taux_interet: isEmpruntItem ? item.taux_interet : undefined,
@@ -174,21 +175,23 @@ export const usePassifEmpruntForm = ({
     return () => subscription.unsubscribe();
   }, [form, familyData]);
 
-  // Auto-qualification propre/commun (même modèle que useAssetForm.ts) : une
-  // dette n'a pas d'origine/date d'acquisition dans ce formulaire, donc
-  // qualifierBien() ne s'appuie ici que sur le régime matrimonial et le
-  // détenteur — reste correct pour une dette contractée pendant l'union
-  // (présumée commune sous régime légal, propre sous séparation de biens).
+  // Auto-qualification propre/commun/indivision via qualifierDette() (règles
+  // propres aux dettes : actif financé, date de souscription, co-emprunt hors
+  // communauté — cf. docs/patrimoine.md).
   useEffect(() => {
-    const watchedFields = ['detenteur', 'qualification_auto'];
+    const watchedFields = ['detenteur', 'qualification_auto', 'asset_id', 'date_souscription', 'nature'];
     const recompute = (value: any) => {
-      const { qualification, raison } = qualifierBien({
+      const actifLie = value.asset_id ? assets.find((a) => a.id === value.asset_id) : undefined;
+      const { qualification, raison } = qualifierDette({
         statutCouple: maritalContext.statutCouple,
         regimeMatrimonial: maritalContext.regimeMatrimonial,
         dateMariage: maritalContext.dateMariage,
         conventionPacs: maritalContext.conventionPacs,
         datePacs: maritalContext.datePacs,
         detenteur: value.detenteur,
+        natureDette: value.nature,
+        dateSouscription: value.date_souscription || undefined,
+        qualificationActifLie: actifLie?.qualification_bien || undefined,
       });
       form.setValue('qualification_bien', qualification);
       setQualificationRaison(raison);
@@ -206,7 +209,7 @@ export const usePassifEmpruntForm = ({
       recompute(value);
     });
     return () => subscription.unsubscribe();
-  }, [form, maritalContext]);
+  }, [form, maritalContext, assets]);
 
   // "Le couple" (commun, 50/50 fixé par la loi) n'a de sens que si la
   // qualification n'est pas "Bien propre"/"Bien personnel" — même garde-fou
@@ -269,6 +272,7 @@ export const usePassifEmpruntForm = ({
         const empruntData: any = {
           nature: values.nature,
           libelle: values.libelle || '',
+          date_souscription: values.date_souscription || null,
           capital_restant_du: values.capital_restant_du,
           taux_interet: values.taux_interet,
           mensualite: values.mensualite,
@@ -301,6 +305,7 @@ export const usePassifEmpruntForm = ({
         const passifData: any = {
           nature: values.nature,
           montant_du: values.montant_du ?? 0,
+          date_souscription: values.date_souscription || null,
           detenteur: dbDetenteur,
           pourcentage_utilisateur: finalUserPercentage,
           pourcentage_conjoint: finalSpousePercentage,

@@ -32,6 +32,8 @@ export interface Emprunt {
   type_taux?: 'Fixe' | 'Variable' | 'Mixte' | string;
   taeg?: number;
   cout_total_credit?: number;
+  // Date à laquelle la dette a été contractée (qualification, cf. qualifierDette).
+  date_souscription?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -41,6 +43,7 @@ export interface Passif {
   user_id: string;
   nature: string;
   montant_du: number;
+  date_souscription?: string | null;
   detenteur?: string;
   pourcentage_utilisateur?: number;
   pourcentage_conjoint?: number;

@@ -510,3 +510,129 @@ export const QUALIFICATION_OPTIONS: QualificationBien[] = [
   'Indivision',
   'À qualifier',
 ];
+
+// ---------------------------------------------------------------------------
+// Qualification d'une dette (emprunt ou passif simple)
+// ---------------------------------------------------------------------------
+//
+// Distincte de qualifierBien() : une dette n'a ni origine, ni clause de
+// remploi, ni financement mixte, et deux règles lui sont propres (accessoire
+// d'un actif financé, co-emprunt hors communauté). Ordre de priorité :
+//   R1 — dette liée à un actif : suit la qualification de cet actif
+//        (accessoire ; art. 1406/1410 pour un bien propre financé à crédit —
+//        la récompense due si des fonds communs remboursent relève du module
+//        Récompenses, art. 1437) ;
+//   R4 — dette successorale sous communauté (hors universelle) : propre
+//        (art. 1410) ;
+//   R2 — dette antérieure à l'union (date de souscription < mariage/PACS) :
+//        personnelle au débiteur, indivise si contractée par les deux,
+//        commune sous communauté universelle (art. 1526) ;
+//   R3 — dette pendant l'union hors communauté (séparation, participation,
+//        PACS) : personnelle au débiteur, indivise si contractée par les deux.
+//   Défaut — régime communautaire : commune (art. 1409).
+// Hors périmètre (limites documentées dans docs/patrimoine.md) : art. 1415
+// (emprunt d'un seul époux sans consentement, effet sur le gage des
+// créanciers, pas sur la contribution), art. 220 (solidarité ménagère),
+// dettes contractées dans l'intérêt personnel d'un époux.
+
+export interface QualificationDetteContext {
+  statutCouple?: string;
+  regimeMatrimonial?: string;
+  dateMariage?: string;
+  conventionPacs?: string;
+  datePacs?: string;
+  detenteur?: string;
+  natureDette?: string;
+  dateSouscription?: string;
+  // Qualification enregistrée de l'actif financé (emprunts.asset_id), si lié.
+  qualificationActifLie?: string;
+}
+
+const QUALIFICATIONS_DEFINITIVES: QualificationBien[] = ['Bien propre', 'Bien commun', 'Bien personnel', 'Indivision'];
+
+const isDetteSuccessorale = (nature?: string): boolean =>
+  !!nature && nature.toLowerCase().startsWith('dettes successorales');
+
+const estAnterieure = (dateSouscription?: string, dateUnion?: string): boolean => {
+  if (!dateSouscription || !dateUnion) return false;
+  const dS = new Date(dateSouscription);
+  const dU = new Date(dateUnion);
+  return !isNaN(dS.getTime()) && !isNaN(dU.getTime()) && dS < dU;
+};
+
+export const qualifierDette = (ctx: QualificationDetteContext): {
+  qualification: QualificationBien;
+  raison: string;
+} => {
+  const { statutCouple, conventionPacs, datePacs, detenteur, natureDette, dateSouscription, qualificationActifLie } = ctx;
+  const regimeMatrimonial = isMarie(statutCouple) ? ctx.regimeMatrimonial : undefined;
+  const parLesDeux = isDetenteurCommon(detenteur);
+
+  if (!isInCouple(statutCouple)) {
+    return { qualification: 'Bien personnel', raison: 'Vous n\'êtes pas en couple : dette personnelle.' };
+  }
+
+  // R1
+  if (qualificationActifLie && QUALIFICATIONS_DEFINITIVES.includes(qualificationActifLie as QualificationBien)) {
+    return {
+      qualification: qualificationActifLie as QualificationBien,
+      raison: `Dette liée à un actif qualifié « ${qualificationActifLie} » : elle suit la qualification du bien qu'elle finance.`,
+    };
+  }
+
+  if (isConcubinage(statutCouple)) {
+    return parLesDeux
+      ? { qualification: 'Indivision', raison: 'Concubinage : dette contractée par les deux concubins, tenus chacun pour sa part (pas de masse commune).' }
+      : { qualification: 'Bien personnel', raison: 'Concubinage : dette personnelle au concubin qui l\'a contractée.' };
+  }
+
+  const marie = isMarie(statutCouple);
+  const communautaire = marie && (!regimeMatrimonial || isRegimeCommunautaire(regimeMatrimonial));
+  const universelle = marie && isCommunauteUniverselle(regimeMatrimonial);
+
+  // R4
+  if (communautaire && !universelle && isDetteSuccessorale(natureDette)) {
+    return {
+      qualification: 'Bien propre',
+      raison: 'Dette grevant une succession recueillie par l\'un des époux : propre à cet époux (art. 1410).',
+    };
+  }
+
+  // R2
+  const dateUnion = marie ? ctx.dateMariage : datePacs;
+  if (estAnterieure(dateSouscription, dateUnion)) {
+    if (universelle) {
+      return { qualification: 'Bien commun', raison: 'Dette antérieure au mariage : commune sous communauté universelle (art. 1526).' };
+    }
+    if (parLesDeux) {
+      return { qualification: 'Indivision', raison: `Dette contractée par les deux avant ${marie ? 'le mariage' : 'le PACS'} : chacun en est tenu pour sa part.` };
+    }
+    return {
+      qualification: 'Bien propre',
+      raison: marie
+        ? 'Dette contractée avant le mariage : elle reste propre à l\'époux débiteur (art. 1410).'
+        : 'Dette contractée avant le PACS : elle reste personnelle au partenaire débiteur.',
+    };
+  }
+
+  const sansDate = !dateSouscription ? ' (date de souscription non renseignée : dette présumée contractée pendant l\'union)' : '';
+
+  if (communautaire) {
+    return {
+      qualification: 'Bien commun',
+      raison: `Dette contractée pendant le mariage sous un régime de communauté : commune (art. 1409)${sansDate}.`,
+    };
+  }
+
+  // R3 — séparation, participation aux acquêts, PACS (quelle que soit la convention)
+  if (parLesDeux) {
+    return {
+      qualification: 'Indivision',
+      raison: `Dette contractée par les deux hors régime de communauté : chacun en est tenu pour sa part${sansDate}.`,
+    };
+  }
+  return {
+    qualification: 'Bien propre',
+    raison: `Hors régime de communauté, la dette est personnelle à celui qui l'a contractée${sansDate}.`,
+  };
+};

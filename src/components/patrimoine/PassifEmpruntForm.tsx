@@ -101,6 +101,19 @@ export const PassifEmpruntForm = ({
               </FormItem>
             )} />
 
+            <FormField control={form.control} name="date_souscription" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Date de souscription</FormLabel>
+                <FieldHelp>
+                  Date à laquelle la dette a été contractée. Une dette antérieure au mariage ou au PACS reste personnelle à celui qui l'a contractée. Sans date, elle est présumée contractée pendant l'union.
+                </FieldHelp>
+                <FormControl>
+                  <Input type="date" {...field} value={field.value || ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
             {isEmprunt && (
               <>
                 <FormField control={form.control} name="libelle" render={({ field }) => (

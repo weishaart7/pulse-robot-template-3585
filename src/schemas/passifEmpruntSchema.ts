@@ -12,6 +12,7 @@ const pourcentage = z.number().min(0, 'Minimum 0 %').max(100, 'Maximum 100 %').o
 export const passifEmpruntSchema = z.object({
   nature: z.string().min(1, 'La nature est requise'),
   libelle: z.string().optional(),
+  date_souscription: z.string().optional(),
   montant_du: montant,
   capital_restant_du: montant,
   taux_interet: pourcentage,
@@ -41,6 +42,7 @@ export type PassifEmpruntFormValues = z.infer<typeof passifEmpruntSchema>;
 export const getDefaultPassifEmpruntValues = (): PassifEmpruntFormValues => ({
   nature: '',
   libelle: '',
+  date_souscription: '',
   detenteur: '',
   contributeur_remboursement: undefined,
   pourcentage_utilisateur: 50,
