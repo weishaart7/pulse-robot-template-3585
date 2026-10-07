@@ -15,7 +15,7 @@ de synthèse par module. Aucune logique métier propre : la page agrège des cal
 
 ## 2. Habillage
 
-Suit [design-system.md](design-system.md). Cadre commun [dash-card.tsx](../src/components/ui/dash-card.tsx)
+Suit [design-system.md](design-system.md). Cadre commun [dash-card.tsx](../src/components/ui/dash-card.tsx) — qui exporte aussi les briques de contenu partagées avec la Synthèse retraite (`DashEyebrow`, `DashFigure`, `DashRow`, `DashTickStrip`, `DashOrbit`, `DashSoonChip`, `DashInset`) —
 (`DashCard`) : plaque taupe à plat (`bg-secondary`, ou `bg-border` pour les modules à venir,
 `variant="soon"`), coins 20 px, ni ombre ni bordure. En-tête : titre, pastille de période (`tag`),
 compteur (`meta`). Pied : bouton pilule encre « Voir le détail » vers la page du module (`to`).

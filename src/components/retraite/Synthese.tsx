@@ -1,7 +1,18 @@
 import React, { useState } from 'react';
-import { Download } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Download, PiggyBank, Landmark, Wallet, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DashCard,
+  DashEyebrow,
+  DashFigure,
+  DashRow,
+  DashTickStrip,
+  DashOrbit,
+  DashSoonChip,
+  DashInset,
+  DASH_INK,
+  DASH_MUTED,
+} from '@/components/ui/dash-card';
 import { usePensionConsolidee } from '@/hooks/usePensionConsolidee';
 import { Personne } from '@/hooks/useRetraiteData';
 import { exporterSyntheseRetraitePDF, DonneesPersonneExportPDF } from '@/lib/retraite/exportSyntheseRetraitePDF';
@@ -62,91 +73,107 @@ const CartePensionFoyer = ({ hasConjoint, nomUtilisateur, nomConjoint }: CartePe
     (utilisateur.aDesDonnees ? utilisateur.pensionTotaleConsolidee : 0) +
     (afficherConjoint ? conjoint.pensionTotaleConsolidee : 0);
 
+  const totalAffiche = afficherConjoint ? pensionCumulee : utilisateur.pensionTotaleConsolidee;
+
   return (
-    <Card className="border border-border">
-      <CardHeader className="p-5">
-        <CardTitle className="text-[15px] font-semibold tracking-tight">
-          Pension au départ à l'âge légal
-        </CardTitle>
-        <p className="text-xs text-muted-foreground">
-          Montants bruts en euros constants {MILLESIME_COURANT.annee} (barèmes et revenus projetés au niveau de{' '}
-          {MILLESIME_COURANT.annee}).
+    <DashCard
+      title="Pension au départ à l'âge légal"
+      tag="Brut / an"
+      className="lg:col-span-2"
+    >
+      {loading ? (
+        <p className="text-[12px] text-muted-foreground">Chargement…</p>
+      ) : !utilisateur.aDesDonnees ? (
+        <p className="text-[12px] text-muted-foreground">
+          Aucune donnée de carrière saisie pour l'instant (onglet Carrière).
         </p>
-      </CardHeader>
-      <CardContent className="p-5 pt-0">
-        {loading ? (
-          <p className="text-xs text-muted-foreground">Chargement…</p>
-        ) : (
-          <div className="space-y-4">
+      ) : (
+        <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+          <div className="flex flex-col justify-between gap-4">
             <div>
-              <p className="text-xs text-muted-foreground mb-1">{nomUtilisateur}</p>
-              {!utilisateur.aDesDonnees ? (
-                <p className="text-xs text-muted-foreground">
-                  Aucune donnée de carrière saisie pour l'instant (onglet Carrière).
-                </p>
-              ) : (
-                <div className="space-y-1">
-                  <div className="text-2xl font-bold text-primary">
-                    {formatEuro0(utilisateur.pensionTotaleConsolidee)} / an
-                  </div>
-                  <p className="text-xs text-muted-foreground">{utilisateur.ageTauxPlein}</p>
-                  {utilisateur.dateEffet && (
-                    <p className="text-xs text-muted-foreground">
-                      Départ simulé au {utilisateur.dateEffet.toLocaleDateString('fr-FR', { timeZone: 'UTC' })}
-                    </p>
-                  )}
-                  {utilisateur.dateCarriereLongue && utilisateur.dateEffet &&
-                    utilisateur.dateCarriereLongue.getTime() < utilisateur.dateEffet.getTime() && (
-                      <p className="text-xs text-positive">
-                        Carrière longue : départ anticipé à taux plein possible dès le{' '}
-                        {utilisateur.dateCarriereLongue.toLocaleDateString('fr-FR', { timeZone: 'UTC' })} (onglet Optimisation)
-                      </p>
-                    )}
-                  {utilisateur.repartitionParRegime.rafpCapital > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      + capital RAFP de {formatEuro0(utilisateur.repartitionParRegime.rafpCapital)} au départ
-                    </p>
-                  )}
-                  {utilisateur.salaireComplementaireEstPlafonne && (
-                    <p className="text-xs text-spark">
-                      Agirc-Arrco projeté sur un revenu plafonné au PASS (salaire brut total non renseigné).
-                    </p>
-                  )}
-                </div>
-              )}
+              <DashEyebrow>{afficherConjoint ? 'Pension cumulée du foyer' : nomUtilisateur}</DashEyebrow>
+              <div className="mt-2"><DashFigure value={totalAffiche} suffix="/ an" /></div>
+              <p className="mt-2 text-[11px] text-ash">
+                Euros constants {MILLESIME_COURANT.annee} (barèmes et revenus projetés au niveau de {MILLESIME_COURANT.annee}).
+              </p>
             </div>
-
-            {afficherConjoint && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">{nomConjoint}</p>
-                <div className="space-y-1">
-                  <div className="text-2xl font-bold text-primary">
-                    {formatEuro0(conjoint.pensionTotaleConsolidee)} / an
-                  </div>
-                  <p className="text-xs text-muted-foreground">{conjoint.ageTauxPlein}</p>
-                  {conjoint.dateEffet && (
-                    <p className="text-xs text-muted-foreground">
-                      Départ simulé au {conjoint.dateEffet.toLocaleDateString('fr-FR', { timeZone: 'UTC' })}
-                    </p>
-                  )}
+            {utilisateur.repartitionParRegime.rafpCapital > 0 && (
+              <DashInset className="w-fit">
+                <div className="flex items-center justify-between gap-6">
+                  <span className="text-muted-foreground">Capital RAFP au départ</span>
+                  <span className="font-medium tabular-nums">{formatEuro0(utilisateur.repartitionParRegime.rafpCapital)}</span>
                 </div>
-              </div>
-            )}
-
-            {afficherConjoint && (
-              <div className="pt-3 border-t">
-                <p className="text-xs text-muted-foreground mb-1">Pension cumulée du foyer</p>
-                <div className="text-2xl font-bold text-primary">
-                  {formatEuro0(pensionCumulee)} / an
-                </div>
-              </div>
+              </DashInset>
             )}
           </div>
-        )}
-      </CardContent>
-    </Card>
+
+          <div className="space-y-4">
+            <BlocPersonnePension
+              nom={nomUtilisateur}
+              resultat={utilisateur}
+              dot={DASH_INK}
+              part={afficherConjoint && pensionCumulee > 0 ? utilisateur.pensionTotaleConsolidee / pensionCumulee : null}
+            />
+            {afficherConjoint && (
+              <BlocPersonnePension
+                nom={nomConjoint}
+                resultat={conjoint}
+                dot={DASH_MUTED}
+                part={pensionCumulee > 0 ? conjoint.pensionTotaleConsolidee / pensionCumulee : null}
+              />
+            )}
+            {utilisateur.dateCarriereLongue && utilisateur.dateEffet &&
+              utilisateur.dateCarriereLongue.getTime() < utilisateur.dateEffet.getTime() && (
+                <p className="text-[11px] text-positive">
+                  Carrière longue : départ anticipé à taux plein possible dès le{' '}
+                  {utilisateur.dateCarriereLongue.toLocaleDateString('fr-FR', { timeZone: 'UTC' })} (onglet Optimisation)
+                </p>
+              )}
+            {utilisateur.salaireComplementaireEstPlafonne && (
+              <p className="text-[11px] text-spark">
+                Agirc-Arrco projeté sur un revenu plafonné au PASS (salaire brut total non renseigné).
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </DashCard>
   );
 };
+
+// Ligne de personne : nom, part dans le foyer, bande en traits, montant, puis
+// âge du taux plein et date de départ simulée.
+const BlocPersonnePension = ({
+  nom,
+  resultat,
+  dot,
+  part,
+}: {
+  nom: string;
+  resultat: ReturnType<typeof usePensionConsolidee>;
+  dot: string;
+  part: number | null;
+}) => (
+  <div className="space-y-1.5">
+    <div className="flex items-baseline justify-between gap-3 text-[12px]">
+      <span className="flex min-w-0 items-baseline gap-2">
+        <span className="truncate">{nom}</span>
+        {part !== null && <span className="tabular-nums text-ash">{Math.round(part * 100)} %</span>}
+      </span>
+      <span className="font-medium tabular-nums">{formatEuro0(resultat.pensionTotaleConsolidee)}</span>
+    </div>
+    {part !== null && <DashTickStrip ratio={part} lead={dot === DASH_INK} />}
+    <div>
+      <DashRow dot={dot} label="Âge du taux plein" value={resultat.ageTauxPlein} />
+      {resultat.dateEffet && (
+        <DashRow
+          label="Départ simulé"
+          value={resultat.dateEffet.toLocaleDateString('fr-FR', { timeZone: 'UTC' })}
+        />
+      )}
+    </div>
+  </div>
+);
 
 const LIBELLE_TRANCHE_CSG: Record<TrancheCSGPension, string> = {
   exoneration: 'exonéré de CSG',
@@ -160,19 +187,21 @@ const formatPct = (valeur: number) => `${(valeur * 100).toLocaleString('fr-FR', 
 type ResultatPersonne = ReturnType<typeof usePensionConsolidee>;
 
 const LigneNet = ({ titre, resultat, tauxRemplacement }: { titre: string; resultat: ResultatNetRetraiteFoyer; tauxRemplacement: number | null }) => (
-  <div className="space-y-1">
-    <p className="text-xs text-muted-foreground">{titre}</p>
-    <div className="text-2xl font-bold text-primary">{formatEuro0(resultat.netMensuel)} / mois net</div>
-    <p className="text-xs text-muted-foreground">
-      Brut {formatEuro0(resultat.pensionsBrutes)} / an − prélèvements sociaux {formatEuro0(resultat.prelevementsSociaux)}{' '}
-      ({LIBELLE_TRANCHE_CSG[resultat.tranche]}) − impôt {formatEuro0(resultat.impot)} (TMI {formatPct(resultat.tmi)}) ={' '}
-      {formatEuro0(resultat.netAnnuel)} / an
-    </p>
-    {tauxRemplacement !== null && (
-      <p className="text-xs text-muted-foreground">
-        Taux de remplacement brut : {formatPct(tauxRemplacement)} du dernier revenu d'activité brut
-      </p>
-    )}
+  <div>
+    <DashEyebrow>{titre}</DashEyebrow>
+    <div className="mt-2"><DashFigure value={resultat.netMensuel} size={30} suffix="net / mois" /></div>
+    <div className="mt-3">
+      <DashRow dot={DASH_INK} label="Pensions brutes" value={`${formatEuro0(resultat.pensionsBrutes)} / an`} />
+      <DashRow
+        label={`Prélèvements sociaux (${LIBELLE_TRANCHE_CSG[resultat.tranche]})`}
+        value={`− ${formatEuro0(resultat.prelevementsSociaux)}`}
+      />
+      <DashRow label={`Impôt sur le revenu (TMI ${formatPct(resultat.tmi)})`} value={`− ${formatEuro0(resultat.impot)}`} />
+      <DashRow dot={DASH_MUTED} label="Net annuel" value={`${formatEuro0(resultat.netAnnuel)} / an`} />
+      {tauxRemplacement !== null && (
+        <DashRow label="Taux de remplacement brut" value={formatPct(tauxRemplacement)} />
+      )}
+    </div>
   </div>
 );
 
@@ -192,22 +221,21 @@ const CarteRevenuNet = ({ hasConjoint, nomUtilisateur, nomConjoint }: CartePensi
   const lignes = lignesRevenuNet(utilisateur, avecConjoint ? conjoint : null, foyerSaisi, nomUtilisateur, nomConjoint);
 
   return (
-    <Card className="border border-border">
-      <CardHeader className="p-5">
-        <CardTitle className="text-[15px] font-semibold tracking-tight">Revenu net à la retraite</CardTitle>
-      </CardHeader>
-      <CardContent className="p-5 pt-0 space-y-4">
-        {lignes.map((l) => (
-          <LigneNet key={l.titre} {...l} />
-        ))}
+    <DashCard title="Revenu net à la retraite" tag="Par mois" className="lg:col-span-2">
+      <div className="space-y-5">
+        <div className={lignes.length > 1 ? 'grid gap-5 md:grid-cols-2' : ''}>
+          {lignes.map((l) => (
+            <LigneNet key={l.titre} {...l} />
+          ))}
+        </div>
         {impositionCommune && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             Taux de remplacement brut : {nomUtilisateur}{' '}
             {remplacement(utilisateur) !== null ? formatPct(remplacement(utilisateur)!) : 'non calculable'} · {nomConjoint}{' '}
             {remplacement(conjoint) !== null ? formatPct(remplacement(conjoint)!) : 'non calculable'}
           </p>
         )}
-        <div className="space-y-1 pt-3 border-t text-xs text-muted-foreground">
+        <div className="space-y-1 border-t border-border pt-3 text-[11px] text-ash">
           {!foyerSaisi && (
             <p className="text-spark">
               Foyer fiscal non renseigné dans le module Fiscalité : chaque personne est imposée séparément, sur 1 part.
@@ -223,8 +251,8 @@ const CarteRevenuNet = ({ hasConjoint, nomUtilisateur, nomConjoint }: CartePensi
             {avecConjoint && ' Les deux conjoints sont supposés retraités.'}
           </p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </DashCard>
   );
 };
 
@@ -278,25 +306,28 @@ const DetailSurvivant = ({
     .map(([libelle, montant]) => `${libelle} ${formatEuro0(montant)}`)
     .join(', ');
   return (
-    <div className="space-y-1">
-      <p className="text-xs text-muted-foreground">{titre}</p>
-      <div className="text-2xl font-bold text-primary">{formatEuro0(net.netMensuel)} / mois net</div>
-      <p className="text-xs text-muted-foreground">
-        Pension propre {formatEuro0(pensionPropre)} / an + réversion {formatEuro0(reversion.total)} / an
-        {detail && <> ({detail})</>}
-      </p>
+    <DashInset className="px-4 py-4">
+      <DashEyebrow>{titre}</DashEyebrow>
+      <div className="mt-2"><DashFigure value={net.netMensuel} size={30} suffix="net / mois" /></div>
+      <div className="mt-3">
+        <DashRow dot={DASH_INK} label="Pension propre" value={`${formatEuro0(pensionPropre)} / an`} />
+        <DashRow dot={DASH_MUTED} label="Réversion" value={`${formatEuro0(reversion.total)} / an`} muted={reversion.total === 0} />
+      </div>
+      {detail && <p className="mt-1 text-[11px] text-ash">{detail}</p>}
       {reversion.reduiteParPlafondRessources && (
-        <p className="text-xs text-muted-foreground">
+        <p className="mt-1 text-[11px] text-muted-foreground">
           Réversion du régime général réduite par le plafond de ressources (25 001,60 €/an pour une personne seule).
         </p>
       )}
       {netCoupleMensuel > 0 && (
-        <p className="text-xs">
-          Baisse du revenu net du foyer :{' '}
-          <span className="font-semibold text-destructive">−{formatEuro0(perte)} / mois</span> ({formatPct(perte / netCoupleMensuel)})
-        </p>
+        <div className="mt-3 flex items-center justify-between gap-3 rounded-full bg-destructive/10 px-3 py-1.5 text-[11px]">
+          <span className="text-muted-foreground">Baisse du revenu du foyer</span>
+          <span className="font-medium tabular-nums text-destructive">
+            −{formatEuro0(perte)} / mois · {formatPct(perte / netCoupleMensuel)}
+          </span>
+        </div>
       )}
-    </div>
+    </DashInset>
   );
 };
 
@@ -326,20 +357,18 @@ const CarteConjointSurvivant = ({ hasConjoint, nomUtilisateur, nomConjoint, stat
   const survivantUtilisateur = revenuSurvivant(utilisateur, conjoint, statut);
 
   return (
-    <Card className="border border-border">
-      <CardHeader className="p-5">
-        <CardTitle className="text-[15px] font-semibold tracking-tight">Protection du conjoint survivant</CardTitle>
-      </CardHeader>
-      <CardContent className="p-5 pt-0 space-y-4">
+    <DashCard title="Protection du conjoint survivant" tag="Si décès" className="sm:col-span-2 lg:col-span-4">
+      <div className="space-y-4">
         {statut !== 'marie' && (
-          <p className="text-xs rounded-lg border border-destructive/40 p-3 text-destructive">
+          <p className="rounded-2xl border border-destructive/40 bg-background p-3 text-[12px] text-destructive">
             {statut === 'pacse' ? 'PACS' : 'Concubinage'} : aucune pension de réversion n'est versée, dans aucun régime.
             Seul le mariage ouvre ce droit — le survivant ne garde que sa propre pension.
           </p>
         )}
-        <p className="text-xs text-muted-foreground">
-          Revenu net du couple retraité : {formatEuro0(netCoupleMensuel)} / mois.
-        </p>
+        <div>
+          <DashEyebrow>Revenu net du couple retraité</DashEyebrow>
+          <div className="mt-2"><DashFigure value={netCoupleMensuel} size={30} suffix="/ mois" /></div>
+        </div>
         <div className="grid gap-4 md:grid-cols-2">
           <DetailSurvivant
             titre={`Décès de ${nomUtilisateur} — revenu de ${nomConjoint}`}
@@ -356,7 +385,7 @@ const CarteConjointSurvivant = ({ hasConjoint, nomUtilisateur, nomConjoint, stat
             netCoupleMensuel={netCoupleMensuel}
           />
         </div>
-        <div className="space-y-1 pt-3 border-t text-xs text-muted-foreground">
+        <div className="space-y-1 border-t border-border pt-3 text-[11px] text-ash">
           <p>
             Hypothèses : les deux conjoints sont retraités ; le survivant a au moins 55 ans, vit seul et ne se remarie
             pas. Ressources prises en compte pour le plafond du régime général : ses seules pensions (revenus du
@@ -368,8 +397,8 @@ const CarteConjointSurvivant = ({ hasConjoint, nomUtilisateur, nomConjoint, stat
             confirmer.
           </p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </DashCard>
   );
 };
 
@@ -392,50 +421,42 @@ const CarteTrimestresManquants = ({ personne, nom }: CarteTrimestresManquantsPro
   const anneesRestantes = trimestresManquants > 0 ? trimestresManquants / 4 : 0;
 
   return (
-    <Card className="border border-border">
-      <CardHeader className="p-5">
-        <CardTitle className="text-[15px] font-semibold tracking-tight">
-          Trimestres manquants — {nom}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-5 pt-0">
-        {loading ? (
-          <p className="text-xs text-muted-foreground">Chargement…</p>
-        ) : !aDesDonnees ? (
-          <p className="text-xs text-muted-foreground">
-            Aucune donnée de carrière saisie pour l'instant (onglet Carrière).
-          </p>
-        ) : trimestresManquants <= 0 ? (
-          <p className="text-sm font-semibold text-primary">
-            Trimestres requis déjà atteints ({trimestresValidesTousRegimes} / {trimestresRequis})
-          </p>
-        ) : (
-          <div className="space-y-1">
-            <div className="text-2xl font-bold text-primary">{trimestresManquants} trimestres</div>
-            <p className="text-xs text-muted-foreground">
-              Soit environ {anneesRestantes.toFixed(1).replace('.0', '')} an{anneesRestantes >= 2 ? 's' : ''} à
-              cotisation continue au rythme actuel (4 trimestres/an).
-            </p>
+    <DashCard
+      title="Trimestres"
+      tag={nom}
+      meta={!loading && aDesDonnees ? { count: trimestresValidesTousRegimes, label: `validés sur ${trimestresRequis} requis` } : undefined}
+    >
+      {loading ? (
+        <p className="text-[12px] text-muted-foreground">Chargement…</p>
+      ) : !aDesDonnees ? (
+        <p className="text-[12px] text-muted-foreground">
+          Aucune donnée de carrière saisie pour l'instant (onglet Carrière).
+        </p>
+      ) : (
+        <div>
+          <DashEyebrow>Trimestres manquants</DashEyebrow>
+          <div className="mt-2">
+            <DashFigure value={Math.max(0, trimestresManquants)} size={30} unit="trim." />
           </div>
-        )}
-      </CardContent>
-    </Card>
+          <div className="mt-4">
+            <DashTickStrip ratio={trimestresRequis > 0 ? trimestresValidesTousRegimes / trimestresRequis : 0} />
+          </div>
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            {trimestresManquants <= 0
+              ? 'Trimestres requis déjà atteints.'
+              : `Soit environ ${anneesRestantes.toFixed(1).replace('.0', '')} an${anneesRestantes >= 2 ? 's' : ''} à cotisation continue au rythme actuel (4 trimestres/an).`}
+          </p>
+        </div>
+      )}
+    </DashCard>
   );
 };
 
 const CarteComplementsRetraite = () => (
-  <Card className="border border-border">
-    <CardHeader className="p-5">
-      <CardTitle className="text-[15px] font-semibold tracking-tight">Compléments de retraite</CardTitle>
-      <CardDescription className="text-xs">PER, assurance-vie et autres épargnes retraite</CardDescription>
-    </CardHeader>
-    <CardContent className="p-5 pt-0">
-      <div className="text-2xl font-bold text-muted-foreground">0 €</div>
-      <p className="text-xs text-muted-foreground mt-1">
-        Calcul détaillé à venir — ce montant n'est pas encore une estimation.
-      </p>
-    </CardContent>
-  </Card>
+  <DashCard title="Compléments de retraite" tag="PER, assurance-vie" variant="soon">
+    <DashOrbit center={PiggyBank} satellites={[Landmark, Wallet, Shield]} />
+    <DashSoonChip>Calcul détaillé à venir</DashSoonChip>
+  </DashCard>
 );
 
 interface BoutonExportPDFProps {
@@ -511,29 +532,24 @@ const BoutonExportPDF = ({ hasConjoint, nomUtilisateur, nomConjoint }: BoutonExp
 };
 
 export const Synthese = ({ hasConjoint, nomUtilisateur, nomConjoint, statutCouple }: SyntheseProps) => {
+  const personnes = { hasConjoint, nomUtilisateur, nomConjoint };
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex justify-end">
-        <BoutonExportPDF hasConjoint={hasConjoint} nomUtilisateur={nomUtilisateur} nomConjoint={nomConjoint} />
+        <BoutonExportPDF {...personnes} />
       </div>
 
-      <CartePensionFoyer hasConjoint={hasConjoint} nomUtilisateur={nomUtilisateur} nomConjoint={nomConjoint} />
-
-      <CarteRevenuNet hasConjoint={hasConjoint} nomUtilisateur={nomUtilisateur} nomConjoint={nomConjoint} />
-
-      <CarteConjointSurvivant
-        hasConjoint={hasConjoint}
-        nomUtilisateur={nomUtilisateur}
-        nomConjoint={nomConjoint}
-        statutCouple={statutCouple}
-      />
-
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      {/* Grille de la Vue d'ensemble (Dashboard.tsx) : 4 colonnes, plaques taupe. */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <CartePensionFoyer {...personnes} />
         <CarteTrimestresManquants personne="utilisateur" nom={nomUtilisateur} />
-        {hasConjoint && <CarteTrimestresManquants personne="conjoint" nom={nomConjoint} />}
-      </div>
+        {hasConjoint ? <CarteTrimestresManquants personne="conjoint" nom={nomConjoint} /> : <CarteComplementsRetraite />}
 
-      <CarteComplementsRetraite />
+        <CarteRevenuNet {...personnes} />
+        {hasConjoint && <CarteComplementsRetraite />}
+
+        <CarteConjointSurvivant {...personnes} statutCouple={statutCouple} />
+      </div>
     </div>
   );
 };

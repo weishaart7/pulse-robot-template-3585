@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { DashCard, DASH_INK, DASH_MUTED, DASH_TRACK } from '@/components/ui/dash-card';
+import { DashCard, DashEyebrow, DashFigure, DashRow, DashOrbit, DashSoonChip, DASH_INK, DASH_MUTED, DASH_TRACK } from '@/components/ui/dash-card';
 import { useRevenus, useCharges } from '@/hooks/useBudget';
 import { sumAnnualActive } from '@/lib/budget/periodicite';
 import { useAssets } from '@/hooks/useAssets';
@@ -10,7 +10,7 @@ import { computePatrimoineBreakdown } from '@/components/patrimoine/PatrimoineCh
 import { AlertesConseil } from '@/components/alertes/AlertesConseil';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { useFiscalOverview } from '@/hooks/useFiscalOverview';
-import { ChevronRight, Users, Gift, Scale, FileText, Landmark, Hourglass, PiggyBank, CalendarDays, Wallet, type LucideIcon } from 'lucide-react';
+import { ChevronRight, Users, Gift, Scale, FileText, Landmark, Hourglass, PiggyBank, CalendarDays, Wallet } from 'lucide-react';
 
 function formatEuros(valeur: number): string {
   return `${Math.round(valeur).toLocaleString('fr-FR')} €`;
@@ -18,33 +18,9 @@ function formatEuros(valeur: number): string {
 
 // Contenu des cartes de la Vue d'ensemble (cf. dash-card.tsx) : gros chiffres en Inter 300,
 // « € » réduit et grisé, graphiques en traits fins, encre pour l'élément principal.
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return <p className="text-[11px] text-muted-foreground">{children}</p>;
-}
-
-function Figure({ value, size = 40 }: { value: number; size?: number }) {
-  return (
-    <span className="font-light leading-none tabular-nums" style={{ fontSize: size, letterSpacing: '-0.03em' }}>
-      {value < 0 ? '−' : ''}{Math.round(Math.abs(value)).toLocaleString('fr-FR')}
-      <span className="ml-1 text-[0.38em] font-normal text-ash" style={{ letterSpacing: 0 }}>€</span>
-    </span>
-  );
-}
-
-function Row({ label, value, count, dot, muted }: { label: string; value: string; count?: number; dot?: string; muted?: boolean }) {
-  return (
-    <div className="flex items-center justify-between gap-3 border-t border-border py-2 text-[12px]">
-      <span className="flex min-w-0 items-center gap-2.5 text-muted-foreground">
-        <span className="h-3 w-3 shrink-0 rounded-full border border-input p-[2px]">
-          {dot && <span className="block h-full w-full rounded-full" style={{ background: dot }} />}
-        </span>
-        <span className="truncate">{label}</span>
-        {count !== undefined && <span className="text-[12px] tabular-nums text-ash">{count}</span>}
-      </span>
-      <span className={`shrink-0 font-medium tabular-nums ${muted ? 'text-ash' : ''}`}>{value}</span>
-    </div>
-  );
-}
+const Eyebrow = DashEyebrow;
+const Figure = DashFigure;
+const Row = DashRow;
 
 // Ligne de catégorie : nom, part, bande « code-barres » de 28 traits dont la part
 // remplie suit le poids de la catégorie, puis la valeur. La première est à l'encre, les suivantes en cendre.
@@ -108,31 +84,8 @@ function TickGauge({ ratio, solde }: { ratio: number; solde: number }) {
   );
 }
 
-// Orbite d'icônes pour les modules pas encore branchés.
-function Orbit({ center: Center, satellites }: { center: LucideIcon; satellites: LucideIcon[] }) {
-  const pos = ['left-1/2 top-0 -translate-x-1/2', 'right-0 top-1/2 -translate-y-1/2', 'left-1/2 bottom-0 -translate-x-1/2', 'left-0 top-1/2 -translate-y-1/2'];
-  return (
-    <div className="relative mx-auto h-24 w-24">
-      <div className="absolute inset-3 rounded-full border border-dashed border-ash/60" />
-      <div className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-background shadow-whisper">
-        <Center className="h-4 w-4" strokeWidth={1.75} />
-      </div>
-      {satellites.slice(0, 4).map((Icon, i) => (
-        <div key={i} className={`absolute flex h-7 w-7 items-center justify-center rounded-full bg-background/80 ${pos[i]}`}>
-          <Icon className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function SoonChip() {
-  return (
-    <div className="mx-auto mt-3 w-fit rounded-full bg-background px-3 py-1 text-[10px] text-muted-foreground">
-      Contenu à venir
-    </div>
-  );
-}
+const Orbit = DashOrbit;
+const SoonChip = DashSoonChip;
 
 const Dashboard = () => {
   const {

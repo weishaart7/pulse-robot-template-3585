@@ -29,6 +29,8 @@ surcote, rachat de trimestres) et une synthèse consolidée exportable en PDF.
 | Onglet | Composant | Rôle |
 |---|---|---|
 | Synthèse | [Synthese.tsx](src/components/retraite/Synthese.tsx) → `usePensionConsolidee` | Pension consolidée tous régimes, trimestres manquants, export PDF ([exportSyntheseRetraitePDF.tsx](src/lib/retraite/exportSyntheseRetraitePDF.tsx)) — plus un stub à l'origine (§2) |
+
+**Habillage de la Synthèse** : calqué sur la Vue d'ensemble ([dashboard.md](dashboard.md)) — grille 4 colonnes de plaques `DashCard` (taupe, coins 20 px), chiffres en Inter 300 (`DashFigure`), lignes à pastille (`DashRow`), bandes en traits (`DashTickStrip`) pour la part de chaque conjoint et les trimestres validés / requis. Pension (2 col.) + Trimestres par personne, Revenu net (2 col.), Conjoint survivant (pleine largeur), Compléments de retraite en plaque « à venir ». Les autres onglets (Carrière, Épargne, Optimisation) gardent les `Card` shadcn.
 | Carrière | [Carriere.tsx](src/components/retraite/Carriere.tsx) | Écran principal : SAM, trimestres, import RIS, sous-cartes fonction publique/CNAVPL, détail MICO/surcote/majoration par régime |
 | — sous-carte | [CarriereFonctionPublique.tsx](src/components/retraite/CarriereFonctionPublique.tsx) | TIB, trimestres liquidables, RAFP, décote catégorie active, MIGA |
 | — sous-carte | [CarriereCNAVPL.tsx](src/components/retraite/CarriereCNAVPL.tsx) | Points CNAVPL, valeur du point, décote/surcote |
