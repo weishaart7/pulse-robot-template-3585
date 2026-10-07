@@ -30,7 +30,9 @@ export const useImmobilierAssets = () => {
 
       if (error) throw error;
 
-      setAssets(data || []);
+      // Cast sûr : les colonnes resserrées en union dans Asset sont garanties par
+      // une contrainte CHECK en base (cf. assetService.ts).
+      setAssets((data || []) as Asset[]);
     } catch (error) {
       if (import.meta.env.DEV) console.error('Error fetching immobilier assets:', error);
       toast({

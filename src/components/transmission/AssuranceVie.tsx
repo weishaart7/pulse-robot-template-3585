@@ -144,7 +144,9 @@ export const AssuranceVie = () => {
 
         // Seuls les contrats transmettant un capital via une clause : exclut PER
         // bancaire et contrat de retraite par rente sans garantie décès.
-        const avContracts = (contractsRes.data || []).filter(a => isContratHorsSuccession(a) && !isRetraiteRenteSansGarantie(a));
+        // Cast sûr : les colonnes resserrées en union dans Asset sont garanties par
+        // une contrainte CHECK en base (cf. assetService.ts).
+        const avContracts = ((contractsRes.data || []) as Asset[]).filter(a => isContratHorsSuccession(a) && !isRetraiteRenteSansGarantie(a));
         setContracts(avContracts);
 
         setSubscriberAge(computeAge(profileRes.data?.date_naissance));
@@ -256,7 +258,7 @@ export const AssuranceVie = () => {
               familyLinks: familyLinksRows
             };
             const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(
-              allAssets || [],
+              (allAssets || []) as Asset[],
               buildPassifLines(passifsRes.data || [], empruntsRes.data || [], 'user'),
               0,
               assetDemembrements,

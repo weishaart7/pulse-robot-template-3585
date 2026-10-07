@@ -9,6 +9,7 @@ import { Calculator, FileText, DollarSign, Shield, AlertTriangle, ArrowRight } f
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FieldHelp } from '@/components/ui/field-help';
 import { supabase } from '@/integrations/supabase/client';
+import { Asset } from '@/services/assetService';
 import { societeDutreilService } from '@/services/societeExtendedService';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
@@ -248,7 +249,7 @@ export const Synthese = () => {
       );
 
       // Construire le patrimoine
-      const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(assets || [], buildPassifLines(passifs, emprunts, 'user'), totalAV, assetDemembrements, demembrementCtx);
+      const patrimony: PatrimonySnapshot = buildPatrimonySnapshot((assets || []) as Asset[], buildPassifLines(passifs, emprunts, 'user'), totalAV, assetDemembrements, demembrementCtx);
 
       // Transformer les libéralités : jointure live vers assets pour la valeur
       // des legs (jamais figée en base), et exclusion des legs caducs (bien
