@@ -310,6 +310,7 @@ export type Database = {
           certificat_expertise_reference: string | null
           clause_entree_communaute: boolean | null
           clause_remploi: boolean | null
+          conditions_exoneration_990i: boolean | null
           created_at: string
           cto_multi_actifs: boolean | null
           cto_nature_sous_jacent: string | null
@@ -334,6 +335,7 @@ export type Database = {
           frais_bancaires: number | null
           frais_hypotheque: number | null
           frais_notaire: number | null
+          garantie_deces: boolean | null
           id: string
           licitation_acquereur: string | null
           lieu_stockage: string | null
@@ -365,8 +367,6 @@ export type Database = {
           societe_id: string | null
           sous_jacent: string | null
           sous_type_per: string | null
-          garantie_deces: boolean | null
-          conditions_exoneration_990i: boolean | null
           statut_bien: string | null
           support_investissement: string | null
           surface_m2: number | null
@@ -394,6 +394,7 @@ export type Database = {
           certificat_expertise_reference?: string | null
           clause_entree_communaute?: boolean | null
           clause_remploi?: boolean | null
+          conditions_exoneration_990i?: boolean | null
           created_at?: string
           cto_multi_actifs?: boolean | null
           cto_nature_sous_jacent?: string | null
@@ -418,6 +419,7 @@ export type Database = {
           frais_bancaires?: number | null
           frais_hypotheque?: number | null
           frais_notaire?: number | null
+          garantie_deces?: boolean | null
           id?: string
           licitation_acquereur?: string | null
           lieu_stockage?: string | null
@@ -449,8 +451,6 @@ export type Database = {
           societe_id?: string | null
           sous_jacent?: string | null
           sous_type_per?: string | null
-          garantie_deces?: boolean | null
-          conditions_exoneration_990i?: boolean | null
           statut_bien?: string | null
           support_investissement?: string | null
           surface_m2?: number | null
@@ -478,6 +478,7 @@ export type Database = {
           certificat_expertise_reference?: string | null
           clause_entree_communaute?: boolean | null
           clause_remploi?: boolean | null
+          conditions_exoneration_990i?: boolean | null
           created_at?: string
           cto_multi_actifs?: boolean | null
           cto_nature_sous_jacent?: string | null
@@ -502,6 +503,7 @@ export type Database = {
           frais_bancaires?: number | null
           frais_hypotheque?: number | null
           frais_notaire?: number | null
+          garantie_deces?: boolean | null
           id?: string
           licitation_acquereur?: string | null
           lieu_stockage?: string | null
@@ -533,8 +535,6 @@ export type Database = {
           societe_id?: string | null
           sous_jacent?: string | null
           sous_type_per?: string | null
-          garantie_deces?: boolean | null
-          conditions_exoneration_990i?: boolean | null
           statut_bien?: string | null
           support_investissement?: string | null
           surface_m2?: number | null
@@ -746,7 +746,7 @@ export type Database = {
           libelle: string
           montant: number | null
           nature: string
-          periodicite: string | null
+          periodicite: string
           updated_at: string
           user_id: string
         }
@@ -761,7 +761,7 @@ export type Database = {
           libelle: string
           montant?: number | null
           nature: string
-          periodicite?: string | null
+          periodicite?: string
           updated_at?: string
           user_id: string
         }
@@ -776,7 +776,7 @@ export type Database = {
           libelle?: string
           montant?: number | null
           nature?: string
-          periodicite?: string | null
+          periodicite?: string
           updated_at?: string
           user_id?: string
         }
@@ -880,6 +880,7 @@ export type Database = {
           contributeur_remboursement: string | null
           cout_total_credit: number | null
           created_at: string
+          date_souscription: string | null
           detenteur: string | null
           duree_restante: number | null
           id: string
@@ -910,6 +911,7 @@ export type Database = {
           contributeur_remboursement?: string | null
           cout_total_credit?: number | null
           created_at?: string
+          date_souscription?: string | null
           detenteur?: string | null
           duree_restante?: number | null
           id?: string
@@ -940,6 +942,7 @@ export type Database = {
           contributeur_remboursement?: string | null
           cout_total_credit?: number | null
           created_at?: string
+          date_souscription?: string | null
           detenteur?: string | null
           duree_restante?: number | null
           id?: string
@@ -1002,8 +1005,8 @@ export type Database = {
           fiscalement_a_charge: boolean | null
           handicap: boolean | null
           id: string
-          lien_fratrie: string | null
           lien_familial: string
+          lien_fratrie: string | null
           mandat_protection_future: boolean
           mesure_protection_juridique: string
           nationalite: string | null
@@ -1037,8 +1040,8 @@ export type Database = {
           fiscalement_a_charge?: boolean | null
           handicap?: boolean | null
           id?: string
-          lien_fratrie?: string | null
           lien_familial: string
+          lien_fratrie?: string | null
           mandat_protection_future?: boolean
           mesure_protection_juridique?: string
           nationalite?: string | null
@@ -1072,8 +1075,8 @@ export type Database = {
           fiscalement_a_charge?: boolean | null
           handicap?: boolean | null
           id?: string
-          lien_fratrie?: string | null
           lien_familial?: string
+          lien_fratrie?: string | null
           mandat_protection_future?: boolean
           mesure_protection_juridique?: string
           nationalite?: string | null
@@ -1728,8 +1731,6 @@ export type Database = {
       }
       liberalites: {
         Row: {
-          valeur_partage: number | null
-          droit_transmis: string | null
           beneficiaire_conjoint: boolean
           beneficiaire_id: string | null
           beneficiaire_nom: string
@@ -1740,6 +1741,7 @@ export type Database = {
           demembrement: string | null
           denomination: string
           description: string | null
+          droit_transmis: string | null
           generation_intermediaire_id: string | null
           groupe_id: string | null
           id: string
@@ -1756,10 +1758,9 @@ export type Database = {
           updated_at: string
           user_id: string
           valeur_fiscale_acte: number | null
+          valeur_partage: number | null
         }
         Insert: {
-          valeur_partage?: number | null
-          droit_transmis?: string | null
           beneficiaire_conjoint?: boolean
           beneficiaire_id?: string | null
           beneficiaire_nom: string
@@ -1770,6 +1771,7 @@ export type Database = {
           demembrement?: string | null
           denomination: string
           description?: string | null
+          droit_transmis?: string | null
           generation_intermediaire_id?: string | null
           groupe_id?: string | null
           id?: string
@@ -1786,10 +1788,9 @@ export type Database = {
           updated_at?: string
           user_id: string
           valeur_fiscale_acte?: number | null
+          valeur_partage?: number | null
         }
         Update: {
-          valeur_partage?: number | null
-          droit_transmis?: string | null
           beneficiaire_conjoint?: boolean
           beneficiaire_id?: string | null
           beneficiaire_nom?: string
@@ -1800,6 +1801,7 @@ export type Database = {
           demembrement?: string | null
           denomination?: string
           description?: string | null
+          droit_transmis?: string | null
           generation_intermediaire_id?: string | null
           groupe_id?: string | null
           id?: string
@@ -1816,6 +1818,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           valeur_fiscale_acte?: number | null
+          valeur_partage?: number | null
         }
         Relationships: [
           {
@@ -1836,7 +1839,6 @@ export type Database = {
       }
       marital_status: {
         Row: {
-          valeur_biens_partage: number | null
           adresse_conjoint: string | null
           ancien_combattant_conjoint: boolean | null
           capacite_juridique_conjoint: string
@@ -1894,10 +1896,10 @@ export type Database = {
           telephone_conjoint: string | null
           updated_at: string | null
           user_id: string
+          valeur_biens_partage: number | null
           ville_conjoint: string | null
         }
         Insert: {
-          valeur_biens_partage?: number | null
           adresse_conjoint?: string | null
           ancien_combattant_conjoint?: boolean | null
           capacite_juridique_conjoint?: string
@@ -1955,10 +1957,10 @@ export type Database = {
           telephone_conjoint?: string | null
           updated_at?: string | null
           user_id: string
+          valeur_biens_partage?: number | null
           ville_conjoint?: string | null
         }
         Update: {
-          valeur_biens_partage?: number | null
           adresse_conjoint?: string | null
           ancien_combattant_conjoint?: boolean | null
           capacite_juridique_conjoint?: string
@@ -2016,6 +2018,7 @@ export type Database = {
           telephone_conjoint?: string | null
           updated_at?: string | null
           user_id?: string
+          valeur_biens_partage?: number | null
           ville_conjoint?: string | null
         }
         Relationships: []
@@ -2023,6 +2026,7 @@ export type Database = {
       passifs: {
         Row: {
           created_at: string
+          date_souscription: string | null
           detenteur: string | null
           id: string
           montant_du: number
@@ -2036,6 +2040,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          date_souscription?: string | null
           detenteur?: string | null
           id?: string
           montant_du: number
@@ -2049,6 +2054,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          date_souscription?: string | null
           detenteur?: string | null
           id?: string
           montant_du?: number
@@ -2378,6 +2384,8 @@ export type Database = {
           autres_pensions_mensuelles: number | null
           created_at: string
           depart_anticipe_categorie_active: boolean
+          depart_anticipe_confirme_age: number | null
+          depart_anticipe_confirme_motif: string | null
           depart_pour_invalidite: boolean
           has_cnavpl: boolean
           has_fonction_publique: boolean
@@ -2390,10 +2398,8 @@ export type Database = {
           regime_affiliation_fp: string | null
           regimes_points: Json
           revenu_hypothese_manuel: number | null
-          salaire_brut_annuel: number | null
-          depart_anticipe_confirme_motif: string | null
-          depart_anticipe_confirme_age: number | null
           salaire_annuel_moyen: number | null
+          salaire_brut_annuel: number | null
           traitement_indiciaire_brut: number | null
           trimestres_cnavpl: number | null
           trimestres_cotises_apres_age_legal_cnavpl: number
@@ -2414,6 +2420,8 @@ export type Database = {
           autres_pensions_mensuelles?: number | null
           created_at?: string
           depart_anticipe_categorie_active?: boolean
+          depart_anticipe_confirme_age?: number | null
+          depart_anticipe_confirme_motif?: string | null
           depart_pour_invalidite?: boolean
           has_cnavpl?: boolean
           has_fonction_publique?: boolean
@@ -2426,10 +2434,8 @@ export type Database = {
           regime_affiliation_fp?: string | null
           regimes_points?: Json
           revenu_hypothese_manuel?: number | null
-          salaire_brut_annuel?: number | null
-          depart_anticipe_confirme_motif?: string | null
-          depart_anticipe_confirme_age?: number | null
           salaire_annuel_moyen?: number | null
+          salaire_brut_annuel?: number | null
           traitement_indiciaire_brut?: number | null
           trimestres_cnavpl?: number | null
           trimestres_cotises_apres_age_legal_cnavpl?: number
@@ -2450,6 +2456,8 @@ export type Database = {
           autres_pensions_mensuelles?: number | null
           created_at?: string
           depart_anticipe_categorie_active?: boolean
+          depart_anticipe_confirme_age?: number | null
+          depart_anticipe_confirme_motif?: string | null
           depart_pour_invalidite?: boolean
           has_cnavpl?: boolean
           has_fonction_publique?: boolean
@@ -2462,10 +2470,8 @@ export type Database = {
           regime_affiliation_fp?: string | null
           regimes_points?: Json
           revenu_hypothese_manuel?: number | null
-          salaire_brut_annuel?: number | null
-          depart_anticipe_confirme_motif?: string | null
-          depart_anticipe_confirme_age?: number | null
           salaire_annuel_moyen?: number | null
+          salaire_brut_annuel?: number | null
           traitement_indiciaire_brut?: number | null
           trimestres_cnavpl?: number | null
           trimestres_cotises_apres_age_legal_cnavpl?: number
@@ -2491,7 +2497,7 @@ export type Database = {
           libelle: string
           montant: number | null
           nature: string
-          periodicite: string | null
+          periodicite: string
           revenu_disponible: boolean | null
           updated_at: string
           user_id: string
@@ -2507,7 +2513,7 @@ export type Database = {
           libelle: string
           montant?: number | null
           nature: string
-          periodicite?: string | null
+          periodicite?: string
           revenu_disponible?: boolean | null
           updated_at?: string
           user_id: string
@@ -2523,7 +2529,7 @@ export type Database = {
           libelle?: string
           montant?: number | null
           nature?: string
-          periodicite?: string | null
+          periodicite?: string
           revenu_disponible?: boolean | null
           updated_at?: string
           user_id?: string
@@ -3509,10 +3515,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      delete_family_link_cascade: {
-        Args: { p_id: string }
-        Returns: undefined
-      }
+      delete_family_link_cascade: { Args: { p_id: string }; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -141,7 +141,9 @@ export interface AssetRevenu {
 }
 
 export const assetService = {
-  async getAssets() {
+  // Les colonnes texte resserrées en union dans Asset (licitation_acquereur)
+  // sont garanties par une contrainte CHECK en base : le cast est sûr.
+  async getAssets(): Promise<Asset[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -152,10 +154,10 @@ export const assetService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data;
+    return data as Asset[];
   },
 
-  async getAsset(id: string) {
+  async getAsset(id: string): Promise<Asset> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -167,10 +169,10 @@ export const assetService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Asset;
   },
 
-  async createAsset(asset: Omit<Asset, 'id' | 'user_id' | 'created_at' | 'updated_at'>) {
+  async createAsset(asset: Omit<Asset, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Asset> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -181,10 +183,10 @@ export const assetService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Asset;
   },
 
-  async updateAsset(id: string, asset: Partial<Asset>) {
+  async updateAsset(id: string, asset: Partial<Asset>): Promise<Asset> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -208,7 +210,7 @@ export const assetService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Asset;
   },
 
   /** Tous les biens en location nue du foyer (type_location = 'Location nue'), tous natures
