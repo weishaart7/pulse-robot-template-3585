@@ -305,6 +305,12 @@ identité SIRENE, régime fiscal, 6 champs comptables « snapshot »), et 8 tabl
 - **`SocieteFinancesEmprunts.tsx` et `SocieteActifsDetenus.tsx` interrogent Supabase directement**
   (`supabase.from('emprunts'|'assets')`) sans passer par un service applicatif dédié, à la différence du
   reste du module — même écart architectural que documenté pour Immobilier.
+- **Suppression d'une société → suppression de ses emprunts.** Un emprunt est saisi dans Patrimoine puis
+  rattaché à une société (Finances > Emprunts, `update` de `societe_id`). `emprunts.societe_id` est en
+  `ON DELETE CASCADE` (arbitrage utilisateur du 07/10/2026, plutôt qu'un détachement automatique qui le
+  ferait revenir dans le patrimoine personnel) : supprimer la société supprime donc ces emprunts. La
+  confirmation de suppression (`SocietesMesSocietes.tsx`) les liste nommément et invite à les délier
+  d'abord pour les conserver.
 - **Libellé de repli « Lié famille » dans la table de capitalisation** (`SocietesGouvernance.tsx:140`)
   s'affiche pour tout associé sans `nom_libre`, indépendamment du membre de famille réel, puisque
   `family_link_id` n'est jamais renseignable dans le formulaire — texte trompeur pour un champ mort

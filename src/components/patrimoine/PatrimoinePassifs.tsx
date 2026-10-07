@@ -7,6 +7,7 @@ import { Plus, MoreHorizontal, Edit, Trash2, Landmark, Receipt } from 'lucide-re
 import { useEmprunts, usePassifs } from '@/hooks/usePassifs';
 import { useAssets } from '@/hooks/useAssets';
 import { PassifDetailsDialog } from './PassifDetailsDialog';
+import { WizardConfirmDialog } from '@/components/assets/wizard/WizardConfirmDialog';
 import { Emprunt, Passif } from '@/services/passifService';
 import {
   DropdownMenu,
@@ -26,6 +27,7 @@ export const PatrimoinePassifs = () => {
   const [selectedPassif, setSelectedPassif] = useState<Emprunt | Passif | null>(null);
   const [passifType, setPassifType] = useState<'emprunt' | 'passif'>('emprunt');
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; type: 'emprunt' | 'passif'; label: string } | null>(null);
   const { emprunts, loading: empruntsLoading, createEmprunt, updateEmprunt, deleteEmprunt } = useEmprunts();
   const { passifs, loading: passifsLoading, createPassif, updatePassif, deletePassif } = usePassifs();
   const { assets } = useAssets();
@@ -102,11 +104,20 @@ export const PatrimoinePassifs = () => {
                         <Landmark className="h-4 w-4" style={{ color: TEAL }} />
                       </span>
                       <div className="min-w-0">
-                        <p className="font-medium truncate">{emprunt.libelle}</p>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <p className="font-medium truncate">{emprunt.libelle}</p>
+                          {/* Emprunt lié à une société (module Sociétés) : déjà reflété
+                              dans la valorisation des parts, donc exclu des totaux. */}
+                          {emprunt.societe_id && (
+                            <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
+                              Société · hors totaux
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-muted-foreground truncate">
                           {emprunt.nature} •
-                          {emprunt.capital_restant_du && ` Capital: ${emprunt.capital_restant_du.toLocaleString('fr-FR')}€`}
-                          {emprunt.mensualite && ` • Mensualité: ${emprunt.mensualite.toLocaleString('fr-FR')}€`}
+                          {emprunt.capital_restant_du != null && ` Capital: ${emprunt.capital_restant_du.toLocaleString('fr-FR')}€`}
+                          {emprunt.mensualite != null && ` • Mensualité: ${emprunt.mensualite.toLocaleString('fr-FR')}€`}
                         </p>
                       </div>
                     </div>
@@ -133,7 +144,7 @@ export const PatrimoinePassifs = () => {
                         <DropdownMenuItem
                           onClick={(e) => {
                             e.stopPropagation();
-                            deleteEmprunt(emprunt.id);
+                            setPendingDelete({ id: emprunt.id, type: 'emprunt', label: emprunt.libelle || emprunt.nature });
                           }}
                           className="text-destructive"
                         >
@@ -213,7 +224,7 @@ export const PatrimoinePassifs = () => {
                         <DropdownMenuItem
                           onClick={(e) => {
                             e.stopPropagation();
-                            deletePassif(passif.id);
+                            setPendingDelete({ id: passif.id, type: 'passif', label: passif.nature });
                           }}
                           className="text-destructive"
                         >
@@ -229,6 +240,20 @@ export const PatrimoinePassifs = () => {
           </CardContent>
         </Card>
       </div>
+
+      <WizardConfirmDialog
+        open={pendingDelete !== null}
+        title="Supprimer ce passif ?"
+        description={pendingDelete ? `« ${pendingDelete.label} » sera définitivement supprimé.` : ''}
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        onConfirm={() => {
+          if (pendingDelete?.type === 'emprunt') deleteEmprunt(pendingDelete.id);
+          else if (pendingDelete) deletePassif(pendingDelete.id);
+          setPendingDelete(null);
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
 
       <PassifDetailsDialog
         passif={selectedPassif}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { societeService, type Societe } from '@/services/societeService';
+import { passifService, type Emprunt } from '@/services/passifService';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -27,6 +28,24 @@ export const SocietesMesSocietes = ({ onEdit, onAdd }: SocietesMesSocietesProps)
   const [loading, setLoading] = useState(true);
   const [societeToDelete, setSocieteToDelete] = useState<Societe | null>(null);
   const { participations, refetch: refetchParticipations } = useSocieteParticipations();
+  // Emprunts rattachés à la société à supprimer : supprimés avec elle
+  // (emprunts.societe_id en ON DELETE CASCADE), alors qu'ils ont été saisis
+  // dans Patrimoine — d'où l'avertissement explicite (cf. docs/societes.md).
+  const [linkedEmprunts, setLinkedEmprunts] = useState<Emprunt[]>([]);
+
+  useEffect(() => {
+    setLinkedEmprunts([]);
+    if (!societeToDelete) return;
+    let cancelled = false;
+    passifService.getEmprunts()
+      .then(data => {
+        if (!cancelled) setLinkedEmprunts(data.filter(e => e.societe_id === societeToDelete.id));
+      })
+      .catch(error => {
+        if (import.meta.env.DEV) console.error('Error loading emprunts:', error);
+      });
+    return () => { cancelled = true; };
+  }, [societeToDelete]);
 
   useEffect(() => {
     loadSocietes();
@@ -105,9 +124,17 @@ export const SocietesMesSocietes = ({ onEdit, onAdd }: SocietesMesSocietesProps)
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer « {societeToDelete?.denomination} » ?</AlertDialogTitle>
             <AlertDialogDescription>
-              {impactCount > 0
-                ? `Cette société est liée à ${impactCount} participation${impactCount > 1 ? 's' : ''} inter-sociétés (comme société mère et/ou fille). Ces liens seront supprimés avec la société. Cette action est irréversible.`
-                : 'Cette action est irréversible.'}
+              {impactCount > 0 && `Cette société est liée à ${impactCount} participation${impactCount > 1 ? 's' : ''} inter-sociétés (comme société mère et/ou fille). Ces liens seront supprimés avec la société. `}
+              {linkedEmprunts.length > 0 && (
+                <>
+                  {linkedEmprunts.length > 1
+                    ? `Les ${linkedEmprunts.length} emprunts rattachés à cette société seront définitivement supprimés, y compris de Patrimoine > Passifs : `
+                    : `L'emprunt rattaché à cette société sera définitivement supprimé, y compris de Patrimoine > Passifs : `}
+                  {linkedEmprunts.map(e => `« ${e.libelle || e.nature} »`).join(', ')}
+                  {'. Pour les conserver, déliez-les d\'abord depuis Finances > Emprunts. '}
+                </>
+              )}
+              Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

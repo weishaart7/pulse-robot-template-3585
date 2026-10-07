@@ -19,7 +19,7 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
   if (!passif) return null;
 
   const formatCurrency = (value: number | undefined | null) => {
-    if (!value) return 'Non renseigné';
+    if (value === undefined || value === null) return 'Non renseigné';
     return formatCurrencyUtil(value);
   };
 
@@ -71,13 +71,13 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
                     <span className="text-sm text-muted-foreground">Nature</span>
                     <p className="font-medium">{emprunt.nature}</p>
                   </div>
-                  {emprunt.mensualite && (
+                  {emprunt.mensualite != null && (
                     <div className="p-3 rounded-lg bg-muted">
                       <span className="text-sm text-muted-foreground">Mensualité</span>
                       <p className="font-medium">{formatCurrency(emprunt.mensualite)}</p>
                     </div>
                   )}
-                  {emprunt.taux_interet && (
+                  {emprunt.taux_interet != null && (
                     <div className="p-3 rounded-lg bg-muted">
                       <div className="flex items-center gap-2">
                         <Percent className="h-4 w-4 text-muted-foreground" />
@@ -86,7 +86,7 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
                       <p className="font-medium">{emprunt.taux_interet}%</p>
                     </div>
                   )}
-                  {emprunt.duree_restante && (
+                  {emprunt.duree_restante != null && (
                     <div className="p-3 rounded-lg bg-muted">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -173,41 +173,49 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
               )}
 
               {/* Calculs */}
-              {emprunt.mensualite && emprunt.duree_restante && (
-                <>
-                  <Separator />
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3">Projections</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-3 rounded-lg bg-muted">
-                        <span className="text-sm text-muted-foreground">Total restant à rembourser</span>
-                        <p className="font-medium text-lg">
-                          {formatCurrency(emprunt.mensualite * emprunt.duree_restante)}
-                        </p>
-                      </div>
-                      {(() => {
-                        const coutInterets = emprunt.capital_restant_du
-                          ? (emprunt.mensualite * emprunt.duree_restante) - emprunt.capital_restant_du
-                          : null;
-                        const isCalculable = coutInterets !== null && coutInterets >= 0;
-                        return (
-                          <div className="p-3 rounded-lg bg-muted">
-                            <span className="text-sm text-muted-foreground">Coût total des intérêts</span>
-                            <p className="font-medium text-lg text-destructive">
-                              {isCalculable ? formatCurrency(coutInterets) : 'Non calculable'}
+              {!!emprunt.mensualite && !!emprunt.duree_restante && (() => {
+                // In fine : les mensualités ne couvrent que les intérêts, le
+                // capital restant dû est remboursé en une fois à l'échéance.
+                const isInFine = emprunt.mode_amortissement === 'In fine';
+                const totalMensualites = emprunt.mensualite * emprunt.duree_restante;
+                const crd = emprunt.capital_restant_du;
+                const totalRestant = isInFine
+                  ? (crd != null ? totalMensualites + crd : null)
+                  : totalMensualites;
+                const coutInterets = isInFine
+                  ? totalMensualites
+                  : (crd != null ? totalMensualites - crd : null);
+                const isCalculable = coutInterets !== null && coutInterets >= 0;
+                return (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3">Projections</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-3 rounded-lg bg-muted">
+                          <span className="text-sm text-muted-foreground">Total restant à rembourser</span>
+                          <p className="font-medium text-lg">
+                            {totalRestant !== null ? formatCurrency(totalRestant) : 'Non calculable'}
+                          </p>
+                        </div>
+                        <div className="p-3 rounded-lg bg-muted">
+                          <span className="text-sm text-muted-foreground">Coût total des intérêts</span>
+                          <p className="font-medium text-lg text-destructive">
+                            {isCalculable ? formatCurrency(coutInterets) : 'Non calculable'}
+                          </p>
+                          {isCalculable && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {isInFine
+                                ? 'Estimation : mensualités d\'intérêts constantes jusqu\'à l\'échéance, capital remboursé en une fois, hors variation de taux et remboursement anticipé.'
+                                : 'Estimation : suppose une mensualité constante sur la durée restante, hors variation de taux et remboursement anticipé.'}
                             </p>
-                            {isCalculable && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Estimation : suppose une mensualité constante sur la durée restante, hors variation de taux et remboursement anticipé.
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })()}
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </>
-              )}
+                  </>
+                );
+              })()}
             </>
           )}
 
