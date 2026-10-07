@@ -311,6 +311,19 @@ identité SIRENE, régime fiscal, 6 champs comptables « snapshot »), et 8 tabl
   ferait revenir dans le patrimoine personnel) : supprimer la société supprime donc ces emprunts. La
   confirmation de suppression (`SocietesMesSocietes.tsx`) les liste nommément et invite à les délier
   d'abord pour les conserver.
+- **Suppression d'une société → ses actifs « parts » restent dans Patrimoine.** Asymétrie voulue avec
+  les emprunts : un emprunt rattaché est une dette *de* la société (déjà reflétée dans la valeur des
+  parts), un actif rattaché représente les parts *détenues par le foyer* — supprimer la fiche société
+  ne signifie pas que le foyer ne les détient plus. `assets.societe_id` reste en `ON DELETE SET NULL`
+  et le trigger `trg_decoche_transfert_societe` (BEFORE DELETE sur `societes`, migration
+  `20261007140000_decoche_transfert_societe_on_delete.sql`) décoche `transfert_societe` sur ces actifs :
+  sans cela, `syncSocieteFromAsset` recréait une société vide à la sauvegarde suivante de l'actif
+  (case cochée sans `societe_id`). La confirmation de suppression liste ces actifs et rappelle de les
+  supprimer dans Patrimoine si les parts ont été cédées (arbitrage utilisateur du 07/10/2026).
+- **`SocieteActifsDetenus.tsx` mélange deux notions** : il affiche les actifs `assets.societe_id =
+  societe.id` comme des biens détenus *par* la société (« Biens immobiliers détenus »), alors que ce lien
+  désigne les parts détenues *par le foyer* dans la société (chemin `syncSocieteFromAsset`, Dutreil,
+  `syncQualificationToLinkedAsset`). Non corrigé, à traiter dans un audit du module Sociétés.
 - **Libellé de repli « Lié famille » dans la table de capitalisation** (`SocietesGouvernance.tsx:140`)
   s'affiche pour tout associé sans `nom_libre`, indépendamment du membre de famille réel, puisque
   `family_link_id` n'est jamais renseignable dans le formulaire — texte trompeur pour un champ mort

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { societeService, type Societe } from '@/services/societeService';
 import { passifService, type Emprunt } from '@/services/passifService';
+import { assetService, type Asset } from '@/services/assetService';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -28,21 +29,27 @@ export const SocietesMesSocietes = ({ onEdit, onAdd }: SocietesMesSocietesProps)
   const [loading, setLoading] = useState(true);
   const [societeToDelete, setSocieteToDelete] = useState<Societe | null>(null);
   const { participations, refetch: refetchParticipations } = useSocieteParticipations();
-  // Emprunts rattachés à la société à supprimer : supprimés avec elle
-  // (emprunts.societe_id en ON DELETE CASCADE), alors qu'ils ont été saisis
-  // dans Patrimoine — d'où l'avertissement explicite (cf. docs/societes.md).
+  // Éléments de Patrimoine rattachés à la société à supprimer, listés
+  // nommément dans la confirmation (cf. docs/societes.md) :
+  // - emprunts : supprimés avec elle (emprunts.societe_id ON DELETE CASCADE) ;
+  // - actifs « parts » : conservés, détachés (ON DELETE SET NULL) et
+  //   transfert_societe décoché par trigger.
   const [linkedEmprunts, setLinkedEmprunts] = useState<Emprunt[]>([]);
+  const [linkedAssets, setLinkedAssets] = useState<Asset[]>([]);
 
   useEffect(() => {
     setLinkedEmprunts([]);
+    setLinkedAssets([]);
     if (!societeToDelete) return;
     let cancelled = false;
-    passifService.getEmprunts()
-      .then(data => {
-        if (!cancelled) setLinkedEmprunts(data.filter(e => e.societe_id === societeToDelete.id));
+    Promise.all([passifService.getEmprunts(), assetService.getAssets()])
+      .then(([emprunts, assets]) => {
+        if (cancelled) return;
+        setLinkedEmprunts(emprunts.filter(e => e.societe_id === societeToDelete.id));
+        setLinkedAssets(assets.filter(a => a.societe_id === societeToDelete.id));
       })
       .catch(error => {
-        if (import.meta.env.DEV) console.error('Error loading emprunts:', error);
+        if (import.meta.env.DEV) console.error('Error loading linked items:', error);
       });
     return () => { cancelled = true; };
   }, [societeToDelete]);
@@ -132,6 +139,15 @@ export const SocietesMesSocietes = ({ onEdit, onAdd }: SocietesMesSocietesProps)
                     : `L'emprunt rattaché à cette société sera définitivement supprimé, y compris de Patrimoine > Passifs : `}
                   {linkedEmprunts.map(e => `« ${e.libelle || e.nature} »`).join(', ')}
                   {'. Pour les conserver, déliez-les d\'abord depuis Finances > Emprunts. '}
+                </>
+              )}
+              {linkedAssets.length > 0 && (
+                <>
+                  {linkedAssets.length > 1 ? 'Les actifs ' : 'L\'actif '}
+                  {linkedAssets.map(a => `« ${a.denomination || a.nature} »`).join(', ')}
+                  {linkedAssets.length > 1
+                    ? ' resteront dans Patrimoine, détachés de la société. Si les parts ont été cédées, supprimez-les aussi dans Patrimoine. '
+                    : ' restera dans Patrimoine, détaché de la société. Si les parts ont été cédées, supprimez-le aussi dans Patrimoine. '}
                 </>
               )}
               Cette action est irréversible.
