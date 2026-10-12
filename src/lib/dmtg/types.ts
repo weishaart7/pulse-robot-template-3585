@@ -95,6 +95,13 @@ export interface AVContract {
   capitalDeces: Money;
   primesAvant70: Money; // pour 990 I (soumis au prélèvement)
   primesApres70: Money; // pour 757 B (à réintégrer au-delà de 30 500 partagé)
+  // Primes hors de tout prélèvement : versées avant le 13/10/1998 (avant 70
+  // ans, ou à tout âge sur un contrat souscrit avant le 20/11/1991). Comptent
+  // dans le prorata du capital, sans taxation. Défaut 0.
+  primesExonerees?: Money;
+  // Date de souscription renseignée (assets.date_acquisition) : sinon le
+  // régime des contrats souscrits depuis le 20/11/1991 est présumé.
+  dateSouscriptionConnue?: boolean;
   isExonereBeneficiaireConjointPacs?: boolean; // true si conj/pacs applicable
   isSiblingExonEligible?: boolean; // conditions remplies (flags calculés ailleurs)
   // Détenteur réel du contrat (souscripteur/assuré, cf. assets.detenteur) —

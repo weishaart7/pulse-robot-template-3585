@@ -885,19 +885,23 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // conjoint/frère-sœur importent réellement ici (le barème 990I/757B est
   // plat, `lien` ne sert qu'aux exonérations, cf. dmtg/assurance-vie.ts).
   const dmtgBeneficiaryIds = new Set(beneficiaries.map(b => b.id));
+  // Bénéficiaire AV non héritier : même lien fiscal qu'un légataire. Il
+  // compte pour les primes versées après 70 ans, taxées au barème des
+  // successions selon la parenté (art. 757 B) — petit-enfant en ligne
+  // directe, enfant renonçant avec son abattement de 100 000 €, neveu à 55 %.
   const registerAvBeneficiary = (id: string) => {
     if (dmtgBeneficiaryIds.has(id)) return;
     dmtgBeneficiaryIds.add(id);
-
-    let lien: DmtgBeneficiary['lien'] = 'autre';
-    if (id === family.survivingSpouseId) {
-      lien = 'conjoint';
-    } else {
-      const person = family.persons.find(p => p.id === id);
-      if (person?.lienFamilial === 'Frère/Sœur') lien = 'frere_soeur';
-    }
-
-    beneficiaries.push({ id, lien });
+    const person = family.persons.find(p => p.id === id);
+    beneficiaries.push({
+      id,
+      lien: lienFiscalLegataire(id),
+      isAdoptionSimple: person?.enfantAdopte === 'Adoption simple',
+      adoptionSimpleAbattementPlein: person?.adoptionSimpleAbattementPlein || false,
+      exonerationSuccession: person?.exonerationSuccession || false,
+      isHandicapped: !!person?.handicap,
+      nbEnfants: nbEnfantsDe(id)
+    });
   };
   avContracts.forEach(contract => {
     contract.niveaux.forEach(niveau => {
@@ -972,6 +976,21 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       `ce bien n'entre donc pas dans la succession. Exception : si la nue-propriété appartient à un héritier ` +
       `présomptif sans donation régulière antérieure de plus de trois mois, le bien est présumé faire partie ` +
       `de la succession en pleine propriété (art. 751 CGI) — à vérifier.`
+    );
+  }
+
+  if (avContracts.some(c => (c.primesExonerees || 0) > 0)) {
+    successionLegaleResult.explicationsTexte.push(
+      `Assurance-vie : les primes versées avant le 13 octobre 1998 (avant 70 ans, ou à tout âge sur un contrat ` +
+      `souscrit avant le 20 novembre 1991) ne supportent ni le prélèvement de l'art. 990 I ni les droits de ` +
+      `l'art. 757 B (BOI-TCAS-AUT-60 § 80).`
+    );
+  }
+  if (avContracts.some(c => !c.dateSouscriptionConnue && c.primesApres70 > 0)) {
+    successionLegaleResult.explicationsTexte.push(
+      `Assurance-vie : date d'ouverture non renseignée pour un contrat alimenté après 70 ans — régime des contrats ` +
+      `souscrits depuis le 20 novembre 1991 présumé (art. 757 B). Un contrat plus ancien relève du seul art. 990 I : ` +
+      `renseignez la date d'ouverture du contrat.`
     );
   }
 

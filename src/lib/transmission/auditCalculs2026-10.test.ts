@@ -243,3 +243,76 @@ describe('#13 — famille du conjoint distincte de celle du défunt', () => {
     expect(legataire.droitsTotaux).toBe(Math.round((legataire.taxableAfterAllowance) * 0.6));
   });
 });
+
+import { splitPrimesAvantApres70 } from '@/utils/transmissionHelpers';
+import type { AVContract } from '@/lib/dmtg/types';
+
+describe('#7 — bénéficiaire d\'assurance-vie non héritier : lien fiscal pour les primes après 70 ans', () => {
+  const avPour = (id: string): AVContract => ({
+    id: 'av1', niveaux: [{ beneficiaires: [{ beneficiaryId: id, quotePart: 1 }] }],
+    capitalDeces: 230500, primesAvant70: 0, primesApres70: 230500, detenteur: 'user', dateSouscriptionConnue: true
+  });
+  const familleEtendue = (): FamilyGraph => {
+    const f = famille(true);
+    return {
+      ...f,
+      persons: [
+        ...f.persons.map(p => p.id === 'e2' ? { ...p, renoncant: true, renoncantDe: 'defunt' } : p),
+        { id: 'pe1', nom: 'D', prenom: 'PE', lienFamilial: 'Petit-enfant' },
+        { id: 'nev', nom: 'D', prenom: 'N', lienFamilial: 'Neveu/Nièce' }
+      ],
+      links: [...f.links, { from: 'e1', to: 'pe1', relation: 'child' }]
+    };
+  };
+  const droits = (id: string) => computeTransmission({
+    family: familleEtendue(), patrimony: { date: REF, biensExistants: 0, passifs: 0 }, liberalites: [], params,
+    conjointOption: 'quart_pp', referenceDate: REF, avContracts: [avPour(id)]
+  }).dmtg.perBeneficiary[id];
+
+  it('petit-enfant : barème en ligne directe, abattement de 1 594 € (37 876 € et non 119 044 €)', () => {
+    expect(droits('pe1').droitsTotaux).toBe(37876);
+  });
+
+  it('enfant renonçant : abattement de 100 000 € conservé', () => {
+    expect(droits('e2').allowanceGeneralResidual).toBe(100000);
+    // 200 000 − 100 000 = 100 000 € taxables en ligne directe.
+    expect(droits('e2').droitsTotaux).toBe(18194);
+  });
+
+  it('neveu : 55 % après 7 967 €', () => {
+    expect(droits('nev').droitsTotaux).toBe(Math.round((200000 - 7967) * 0.55));
+  });
+});
+
+describe('#8 — régimes transitoires de l\'assurance-vie', () => {
+  const ops = [
+    { type_operation: 'versement', montant: 10000, date_operation: '1990-01-01' },  // 40 ans, avant 1998
+    { type_operation: 'versement', montant: 20000, date_operation: '2005-01-01' },  // 55 ans
+    { type_operation: 'versement', montant: 30000, date_operation: '2025-01-01' }   // 75 ans
+  ];
+  const naissance = '1950-01-01';
+
+  it('contrat souscrit depuis le 20/11/1991 : primes avant 1998 exonérées, après 70 ans en 757 B', () => {
+    expect(splitPrimesAvantApres70(ops, naissance, 'C', '1995-01-01'))
+      .toEqual({ primesAvant70: 20000, primesApres70: 30000, primesExonerees: 10000 });
+  });
+
+  it('contrat souscrit avant le 20/11/1991 : jamais de 757 B, 990 I sur les primes depuis le 13/10/1998', () => {
+    expect(splitPrimesAvantApres70(ops, naissance, 'C', '1989-06-01'))
+      .toEqual({ primesAvant70: 50000, primesApres70: 0, primesExonerees: 10000 });
+  });
+
+  it('les primes exonérées emportent leur part du capital, hors 990 I', () => {
+    const r = computeTransmission({
+      family: famille(true), patrimony: { date: REF, biensExistants: 0, passifs: 0 }, liberalites: [], params,
+      conjointOption: 'quart_pp', referenceDate: REF,
+      avContracts: [{
+        id: 'av', niveaux: [{ beneficiaires: [{ beneficiaryId: 'e1', quotePart: 1 }] }],
+        capitalDeces: 600000, primesAvant70: 200000, primesApres70: 0, primesExonerees: 100000, detenteur: 'user', dateSouscriptionConnue: true
+      }]
+    });
+    // 990 I sur 2/3 du capital : 400 000 − 152 500 = 247 500 × 20 %.
+    expect(r.dmtg.perBeneficiary['e1'].prelev990I).toBe(49500);
+    expect(r.dmtg.perBeneficiary['e1'].capitalAVNet).toBe(600000 - 49500);
+  });
+});

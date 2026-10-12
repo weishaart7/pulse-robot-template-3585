@@ -118,7 +118,9 @@ export function computeAssuranceVie(
     // Capital décès rattaché aux primes versées avant 70 ans (assiette 990 I :
     // sommes dues, plus-values comprises), au prorata des primes — approximation
     // faute de valeur acquise suivie versement par versement.
-    const totalPrimes = contract.primesAvant70 + contract.primesApres70;
+    // Les primes exonérées (antérieures au 13/10/1998) portent leur part du
+    // capital, hors 990 I comme hors 757 B.
+    const totalPrimes = contract.primesAvant70 + contract.primesApres70 + (contract.primesExonerees || 0);
     const capital990I = totalPrimes > 0
       ? contract.capitalDeces * (contract.primesAvant70 / totalPrimes)
       : 0;

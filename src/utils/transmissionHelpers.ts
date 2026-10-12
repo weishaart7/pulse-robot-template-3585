@@ -206,9 +206,15 @@ export interface AVOperationRow {
 }
 
 /**
- * Agrège les opérations d'un contrat AV en deux totaux de primes
- * (avant/après le 70e anniversaire du souscripteur), à partir de l'âge exact
- * du souscripteur à la date de chaque versement — jamais de son âge actuel.
+ * Répartit les primes d'un contrat AV selon leur régime au décès (art. 990 I,
+ * 757 B CGI ; BOI-TCAS-AUT-60 § 80 et § 270), à partir de l'âge exact du
+ * souscripteur à la date de chaque versement — jamais de son âge actuel :
+ * - contrat souscrit avant le 20/11/1991 : primes versées avant le 13/10/1998
+ *   exonérées ; à partir de cette date, 990 I quel que soit l'âge (jamais 757 B) ;
+ * - contrat plus récent (ou date de souscription non renseignée — régime
+ *   présumé, signalé par l'appelant) : primes versées à 70 ans ou plus →
+ *   757 B ; avant 70 ans → 990 I si versées à compter du 13/10/1998,
+ *   exonérées sinon.
  * Les rachats (`type_operation: 'rachat'`) ne sont pas des primes : exclus.
  *
  * Ne devine jamais une répartition par défaut (cf. CLAUDE.md, décisions
@@ -216,11 +222,15 @@ export interface AVOperationRow {
  * aucun versement enregistré, ou si la date de naissance du souscripteur est
  * inconnue (sans elle, l'âge à chaque versement ne peut pas être calculé).
  */
+export const DATE_REGIME_757B = '1991-11-20';
+export const DATE_REGIME_990I = '1998-10-13';
+
 export function splitPrimesAvantApres70(
   operations: AVOperationRow[],
   dateNaissance: string | null | undefined,
-  contractLabel?: string
-): { primesAvant70: number; primesApres70: number } {
+  contractLabel?: string,
+  dateSouscription?: string | null
+): { primesAvant70: number; primesApres70: number; primesExonerees: number } {
   const label = contractLabel ? ` ${contractLabel}` : '';
   const versements = operations.filter(op => op.type_operation === 'versement');
 
@@ -236,20 +246,28 @@ export function splitPrimesAvantApres70(
   }
 
   const birthTime = new Date(dateNaissance).getTime();
+  const contratAncien = !!dateSouscription && dateSouscription.slice(0, 10) < DATE_REGIME_757B;
   let primesAvant70 = 0;
   let primesApres70 = 0;
+  let primesExonerees = 0;
 
   for (const op of versements) {
     const ageAuVersement = (new Date(op.date_operation).getTime() - birthTime) / (365.25 * 24 * 60 * 60 * 1000);
+    const avant1998 = op.date_operation.slice(0, 10) < DATE_REGIME_990I;
     const montant = Number(op.montant) || 0;
-    if (ageAuVersement < 70) {
-      primesAvant70 += montant;
-    } else {
+    if (contratAncien) {
+      if (avant1998) primesExonerees += montant;
+      else primesAvant70 += montant;
+    } else if (ageAuVersement >= 70) {
       primesApres70 += montant;
+    } else if (avant1998) {
+      primesExonerees += montant;
+    } else {
+      primesAvant70 += montant;
     }
   }
 
-  return { primesAvant70, primesApres70 };
+  return { primesAvant70, primesApres70, primesExonerees };
 }
 
 /**
@@ -308,6 +326,9 @@ export interface AVContractRawRow {
   // par rente uniquement (cf. NATURES_RETRAITE_RENTE).
   garantieDeces?: boolean | null;
   conditionsExoneration990I?: boolean | null;
+  // assets.date_acquisition : date d'ouverture du contrat (« Ouvert le »),
+  // régime antérieur au 20/11/1991 (cf. splitPrimesAvantApres70).
+  dateSouscription?: string | null;
   // assets.detenteur (texte libre, 'user'/'spouse' par convention, cf.
   // lib/patrimoine/utils.ts::isDetenteurSpouse) — détenteur réel du contrat,
   // pour distinguer un contrat de l'Utilisateur de celui du conjoint
@@ -409,18 +430,19 @@ export function buildAVContracts(
       && !isRetraiteRenteSansGarantie({ nature: row.nature, garantie_deces: row.garantieDeces }))
     .map(row => {
       const resolveBeneficiaryId = resolveBeneficiaryIdPour(row.detenteur);
-      const { primesAvant70, primesApres70 } = isPERAssurantiel({ nature: row.nature, sous_type_per: row.sousTypePer })
-        ? splitPrimesPER(
+      const { primesAvant70, primesApres70, primesExonerees } = isPERAssurantiel({ nature: row.nature, sous_type_per: row.sousTypePer })
+        ? { ...splitPrimesPER(
           row.operations,
           resolveDateNaissanceSouscripteur(row.detenteur),
           Number(row.valeurEstimee) || 0,
           referenceDate,
           row.label || undefined
-        )
+        ), primesExonerees: 0 }
         : splitPrimesAvantApres70(
           row.operations,
           resolveDateNaissanceSouscripteur(row.detenteur),
-          row.label || undefined
+          row.label || undefined,
+          row.dateSouscription
         );
 
       const niveaux = (row.clauseBeneficiaireStructuree?.niveaux || []).map(niveau => ({
@@ -475,6 +497,9 @@ export function buildAVContracts(
         capitalDeces: Number(row.valeurEstimee) || 0,
         primesAvant70,
         primesApres70,
+        primesExonerees,
+        // Sans objet pour un PER (régime fixé par l'âge au décès).
+        dateSouscriptionConnue: isPERAssurantiel({ nature: row.nature, sous_type_per: row.sousTypePer }) || !!row.dateSouscription,
         isExonereBeneficiaireConjointPacs: hasConjointBeneficiaire,
         isSiblingExonEligible: hasExoneratedSiblingBeneficiaire,
         detenteur: isDetenteurSpouse(row.detenteur || undefined) ? 'spouse' : 'user',

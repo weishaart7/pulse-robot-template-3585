@@ -186,7 +186,8 @@ export const Synthese = () => {
         nature: a.nature,
         sousTypePer: a.sous_type_per,
         garantieDeces: a.garantie_deces,
-        conditionsExoneration990I: a.conditions_exoneration_990i
+        conditionsExoneration990I: a.conditions_exoneration_990i,
+        dateSouscription: a.date_acquisition
       }));
 
       // Statut 'decede' de la clause bénéficiaire AV : redistribué par le moteur

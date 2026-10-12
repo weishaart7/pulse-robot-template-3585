@@ -151,7 +151,8 @@ export async function loadTransmissionData(userId: string): Promise<Transmission
     nature: a.nature,
     sousTypePer: a.sous_type_per,
     garantieDeces: a.garantie_deces,
-    conditionsExoneration990I: a.conditions_exoneration_990i
+    conditionsExoneration990I: a.conditions_exoneration_990i,
+    dateSouscription: a.date_acquisition
   }));
 
   const { data: liberalites } = await supabase
