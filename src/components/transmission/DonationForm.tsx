@@ -57,7 +57,9 @@ interface DonationFormProps {
 }
 
 const DEFAULT_FORM_DATA = {
-  libelle: 'Donation appartement Rue de la Paix',
+  // Vide : le texte d'exemple n'est qu'un placeholder (il était auparavant
+  // pré-rempli comme valeur et s'enregistrait avec la donation).
+  libelle: '',
   nature: '',
   demembrement: 'aucun',
   // Présomption art. 843 C. civ. : une donation à un héritier réservataire
@@ -456,7 +458,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
       for (const beneficiaire of beneficiaries) {
         const created = await liberaliteService.createLiberalite({
           type: 'donation',
-          denomination: formData.libelle,
+          denomination: formData.libelle.trim() || 'Donation',
           beneficiaire_id: beneficiaire.id === CONJOINT_ID ? undefined : beneficiaire.id,
           beneficiaire_conjoint: beneficiaire.id === CONJOINT_ID,
           droit_transmis: formData.droitTransmis === 'usufruit' ? 'usufruit' : null,
