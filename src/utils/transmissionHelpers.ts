@@ -606,6 +606,33 @@ function resolveRenoncantDe(
 }
 
 /**
+ * Côté familial d'un ascendant ou d'un collatéral (Parent, Grand-parent,
+ * Frère/Sœur, Neveu/Nièce, Oncle/Tante, Cousin…) : on remonte `enfant_de`
+ * jusqu'à 'user', 'spouse' ou un Enfant (`parent_de`). Rattachement absent :
+ * côté Utilisateur (convention historique de la fiche Famille). Sans objet
+ * pour les descendants, dont la filiation passe par `parent_de`.
+ */
+const LIENS_ASCENDANTS_COLLATERAUX = [
+  'Parent', 'Grand-parent', 'Arrière grand-parent', 'Frère/Sœur', 'Neveu/Nièce',
+  'Petit neveu/nièce', 'Oncle/Tante', 'Cousin/Cousine'
+];
+export function coteFamilial(link: FamilyLink, familyLinks: FamilyLink[]): 'user' | 'spouse' | 'both' | undefined {
+  if (!LIENS_ASCENDANTS_COLLATERAUX.includes(link.lien_familial)) return undefined;
+  const parId = new Map(familyLinks.filter(l => !!l.id).map(l => [l.id!, l]));
+  const vus = new Set<string>();
+  let courant: FamilyLink | undefined = link;
+  while (courant) {
+    const rattachement = courant.lien_familial === 'Enfant' ? courant.parent_de : courant.enfant_de;
+    if (rattachement === 'user' || rattachement === 'spouse') return rattachement;
+    if (rattachement === 'both_parents') return 'both';
+    if (!rattachement || vus.has(rattachement)) return 'user';
+    vus.add(rattachement);
+    courant = parId.get(rattachement);
+  }
+  return 'user';
+}
+
+/**
  * Converts family data from the database to the transmission library format
  */
 export function buildFamilyGraph(
@@ -699,6 +726,7 @@ export function buildFamilyGraph(
       adoptionSimpleAbattementPlein: link.adoption_simple_abattement_plein || false,
       brancheFamiliale: link.branche_familiale || undefined,
       enfantDe: link.enfant_de || undefined,
+      horsFamilleDuDefunt: coteFamilial(link, familyLinks) === 'spouse',
       lienFratrie: (link.lien_fratrie as Person['lienFratrie']) || undefined,
       exonerationSuccession: link.exoneration_succession || false
     });
@@ -843,6 +871,7 @@ export function buildSpouseAsDecedentFamilyGraph(
       adoptionSimpleAbattementPlein: link.adoption_simple_abattement_plein || false,
       brancheFamiliale: link.branche_familiale || undefined,
       enfantDe: link.enfant_de || undefined,
+      horsFamilleDuDefunt: coteFamilial(link, familyLinks) === 'user',
       lienFratrie: (link.lien_fratrie as Person['lienFratrie']) || undefined,
       exonerationSuccession: link.exoneration_succession || false
     });

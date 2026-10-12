@@ -41,10 +41,16 @@ export interface SuccessionLegaleResult {
  * Calcule la succession légale selon le droit français
  */
 export function calculateSuccessionLegale(
-  graph: FamilyGraph,
+  graphComplet: FamilyGraph,
   hasTestament: boolean = false,
   optionConjoint?: string
 ): SuccessionLegaleResult {
+  // Ascendants et collatéraux de l'autre époux (beaux-parents, beaux-frères…) :
+  // aucune vocation successorale dans la succession du défunt.
+  const graph: FamilyGraph = {
+    ...graphComplet,
+    persons: graphComplet.persons.filter(p => !p.horsFamilleDuDefunt)
+  };
   if (hasTestament) {
     return {
       heritiers: [],

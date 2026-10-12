@@ -200,3 +200,46 @@ describe('#4 — libéralités de l\'Utilisateur à son décès après celui du 
     expect(r.explicationsTexte.some(t => t.includes('art. 1039'))).toBe(true);
   });
 });
+
+import { buildFamilyGraph, coteFamilial } from '@/utils/transmissionHelpers';
+import type { FamilyLink } from '@/services/familyService';
+
+describe('#13 — famille du conjoint distincte de celle du défunt', () => {
+  const lien = (id: string, lien_familial: string, extra: Partial<FamilyLink> = {}) =>
+    ({ id, nom: id, prenom: '', lien_familial, ...extra }) as FamilyLink;
+  const links = [
+    lien('pereU', 'Parent', { enfant_de: 'user' }),
+    lien('pereC', 'Parent', { enfant_de: 'spouse' }),
+    lien('mereC', 'Parent', { enfant_de: 'spouse' }),
+    lien('gpC', 'Grand-parent', { enfant_de: 'pereC', branche_familiale: 'Branche paternelle' }),
+    lien('soeurC', 'Frère/Sœur', { enfant_de: 'spouse' }),
+    lien('neveuC', 'Neveu/Nièce', { enfant_de: 'soeurC' }),
+    lien('frereU', 'Frère/Sœur'),
+  ];
+  const profile = { id: 'U', nom: 'D', prenom: 'Jean', date_naissance: '1960-01-01' } as never;
+  const marie = { statut_couple: 'Marié(e)', nom_conjoint: 'D', prenom_conjoint: 'Marie', date_naissance_conjoint: '1962-01-01' } as never;
+
+  it('remonte enfant_de jusqu\'à l\'époux de rattachement (défaut : Utilisateur)', () => {
+    expect(links.map(l => coteFamilial(l, links))).toEqual(['user', 'spouse', 'spouse', 'spouse', 'spouse', 'spouse', 'user']);
+  });
+
+  it('couple marié sans enfant : les beaux-parents n\'héritent pas (art. 757-1 : conjoint 3/4, père 1/4)', () => {
+    const family = buildFamilyGraph(profile, marie, links);
+    const r = computeTransmission({ family, patrimony: { date: REF, biensExistants: 400000, passifs: 0 }, liberalites: [], params, referenceDate: REF });
+    const parts = Object.fromEntries(r.heirs.map(h => [h.personId, h.partCivile]));
+    expect(parts).toEqual({ [family.survivingSpouseId!]: 300000, pereU: 100000 });
+  });
+
+  it('beau-parent légataire : taxé comme un tiers (60 %), pas en ligne directe', () => {
+    const family = buildFamilyGraph(profile, marie, links);
+    const r = computeTransmission({
+      family, patrimony: { date: REF, biensExistants: 400000, passifs: 0 }, params, referenceDate: REF,
+      liberalites: [{ id: 'l1', type: 'legs', beneficiaireId: 'mereC', valeur: 50000, date: REF }],
+      rawAssets: [{ id: 'cc', denomination: 'Comptes', valeur_estimee: 400000, nature: 'Comptes courants', qualification_bien: 'Bien propre', detenteur: 'user' }]
+    });
+    const legataire = r.dmtg.perBeneficiary['mereC'];
+    expect(r.legataires.map(l => l.personId)).toEqual(['mereC']);
+    expect(legataire.allowanceGeneralResidual).toBe(1594);
+    expect(legataire.droitsTotaux).toBe(Math.round((legataire.taxableAfterAllowance) * 0.6));
+  });
+});

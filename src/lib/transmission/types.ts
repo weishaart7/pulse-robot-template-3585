@@ -31,7 +31,11 @@ export interface Person {
   // Grand-parent pointe vers un Parent, un Arrière grand-parent vers un
   // Grand-parent). Sert à situer la ligne du parent survivant (art. 738-1).
   enfantDe?: PersonId;
+  // Ascendant ou collatéral de l'AUTRE époux (beau-parent, beau-frère…),
+  // présent dans le graphe pour rester désignable comme légataire ou
+  // bénéficiaire, mais étranger à la famille du défunt : ni héritier légal,
   // ni lien de parenté fiscal (tiers).
+  horsFamilleDuDefunt?: boolean;
   // Frère/Sœur : 'germain' (défaut), 'consanguin' (même père) ou 'uterin'
   // (même mère) — partage de la fratrie par lignes, art. 752 C. civ.
   lienFratrie?: 'germain' | 'consanguin' | 'uterin';

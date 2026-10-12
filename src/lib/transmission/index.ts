@@ -849,7 +849,10 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // famille : 60 %.
   const lienFiscalLegataire = (personId: PersonId): DmtgBeneficiary['lien'] => {
     if (personId === family.survivingSpouseId) return 'conjoint';
-    const lien = family.persons.find(p => p.id === personId)?.lienFamilial?.toLowerCase() || '';
+    const personne = family.persons.find(p => p.id === personId);
+    // Beau-parent, beau-frère… : aucun lien de parenté avec le défunt (tiers).
+    if (personne?.horsFamilleDuDefunt) return 'autre';
+    const lien = personne?.lienFamilial?.toLowerCase() || '';
     if (lien === 'enfant') return 'enfant';
     if (lien.includes('petit-enfant') || lien.includes('petit_enfant')) return 'petit_enfant';
     if (lien === 'parent' || lien === 'père' || lien === 'mère' || lien.includes('grand-parent') ||
@@ -1094,7 +1097,8 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   const verifier790G = (l: Liberalite): boolean => {
     const donataire = family.persons.find(p => p.id === l.beneficiaireId);
     const nomDonataire = l.beneficiaireName || (donataire ? `${donataire.prenom} ${donataire.nom}`.trim() : 'donataire');
-    const lien = donataire?.lienFamilial?.toLowerCase() || '';
+    // Neveu ou nièce du conjoint : hors du champ de l'art. 790 G pour ce donateur.
+    const lien = donataire?.horsFamilleDuDefunt ? '' : (donataire?.lienFamilial?.toLowerCase() || '');
     const estDescendant = lien === 'enfant' || lien.includes('petit-enfant');
     const estNeveu = lien.includes('neveu') || lien.includes('nièce');
     const motifs: string[] = [];
