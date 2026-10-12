@@ -241,8 +241,11 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // actif en Usufruit/Nue-propriété (même fonction que le Résumé Patrimoine,
   // lib/patrimoine/demembrementFraction.ts::getFractionDemembrement). Fraction
   // non calculable (âge de l'usufruitier manquant) : valeur 0, jamais compté à
-  // sa valeur pleine propriété.
+  // sa valeur pleine propriété. Usufruit viager : éteint au décès de son
+  // titulaire (art. 617 C. civ., art. 1133 CGI), valeur successorale nulle —
+  // même règle que transmissionHelpers.ts côté civil.
   const getValeurEstimeePonderee = (asset: RawAssetInput): number => {
+    if (asset.mode_detention === 'Usufruit') return 0;
     const brute = Number(asset.valeur_estimee) || Number(asset.valeur_acquisition) || 0;
     const demembrementsForAsset = (ctx.assetDemembrements || []).filter(d => d.asset_id === asset.id);
     const fraction = getFractionDemembrement(asset, demembrementsForAsset, ctx.demembrementCtx || {});
@@ -264,14 +267,15 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   const soldeRecompenses = computeSoldeRecompenses(ctx.recompenses || []);
   const soldeCreances = computeSoldeCreancesEntreEpoux(ctx.creancesEntreEpoux || []);
 
-  // Récompenses : n'affectent que la masse commune, donc seulement pertinentes
-  // si le régime en a une (cf. regimeHasMasseCommune). Ratio successoral de
-  // 50% repris de getPartSuccessorale('Bien commun') — mécanisme A ne gère
-  // pas encore les parts inégales/attribution intégrale (trou déjà identifié,
-  // chantier séparé) : ce ratio fixe devra être revu en même temps que ce
-  // chantier-là plutôt qu'ici.
+  // Récompenses : seulement pertinentes si le régime a une masse commune (cf.
+  // regimeHasMasseCommune). La communauté varie de la somme des soldes
+  // (solde = doit − dû), dont le défunt recueille la moitié (ratio 50 % de
+  // getPartSuccessorale('Bien commun')) ; mais il paie lui-même son propre
+  // solde. Effet net : (solde survivant − solde défunt) / 2 — une récompense
+  // due par le défunt réduit sa succession, celle due par le survivant l'accroît.
+  const survivantRole = decedentRole === 'user' ? 'spouse' : 'user';
   const impactRecompenses = regimeHasMasseCommune(ctx.regimeMatrimonial)
-    ? soldeRecompenses.ajustementBoniCommun * 0.5
+    ? (soldeRecompenses.parEpoux[survivantRole].soldeNet - soldeRecompenses.parEpoux[decedentRole].soldeNet) / 2
     : 0;
   // Créances entre époux : dette/créance du patrimoine PROPRE du défunt
   // simulé, à 100% (pas de fractionnement, contrairement à la masse commune).
@@ -912,6 +916,17 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       : `Pas d'abattement de 20 % sur la résidence principale (art. 764 bis CGI) : il suppose qu'au décès ` +
         `le logement soit aussi occupé par le conjoint, le partenaire de PACS ou un enfant mineur ou ` +
         `handicapé, et aucune de ces personnes n'est présente.`);
+  }
+
+  const biensEnUsufruit = (rawAssets || []).filter(a => a.mode_detention === 'Usufruit' && getFractionSuccessorale(a) > 0);
+  if (biensEnUsufruit.length > 0) {
+    successionLegaleResult.explicationsTexte.push(
+      `Usufruit détenu par le défunt sur ${biensEnUsufruit.map(a => a.denomination || 'un bien').join(', ')} : ` +
+      `il s'éteint au décès (C. civ. art. 617) et la nue-propriété se réunit sans droits (art. 1133 CGI), ` +
+      `ce bien n'entre donc pas dans la succession. Exception : si la nue-propriété appartient à un héritier ` +
+      `présomptif sans donation régulière antérieure de plus de trois mois, le bien est présumé faire partie ` +
+      `de la succession en pleine propriété (art. 751 CGI) — à vérifier.`
+    );
   }
 
   const titresDutreil = (rawAssets || []).filter(a => !!a.societe_id && (ctx.societesDutreil || []).includes(a.societe_id));

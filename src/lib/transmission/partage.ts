@@ -166,8 +166,10 @@ export function computePartage(input: PartageInput): PartageResult {
   const spouseLines = lines.map((l, i) => ({ l, i })).filter(x => spouseId && x.l.personId === spouseId);
   const qpPP = spouseLines.filter(x => x.l.typeQuotePart === 'pleine_propriete').reduce((s, x) => s + x.l.quotePart, 0);
   const hasSpouseUS = spouseLines.some(x => x.l.typeQuotePart === 'usufruit');
+  // Donations rapportables seulement : un legs « sur part successorale » fait
+  // déjà partie des biens existants (actifNet), le réunir le compterait deux fois.
   const rapportsEnfants = input.rapports
-    .filter(r => childrenIds.includes(r.personId))
+    .filter(r => childrenIds.includes(r.personId) && !r.estLegs)
     .reduce((s, r) => s + r.montantRapport, 0);
   const liberalitesConjoint = spouseId
     ? (donationsDetenues.get(spouseId) || 0) + (legsHorsPartParHeritier.get(spouseId) || 0)

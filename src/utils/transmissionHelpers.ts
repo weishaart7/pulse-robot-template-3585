@@ -26,12 +26,20 @@ import { AssetDemembrement } from '@/services/assetDemembrementService';
  * lib/patrimoine/demembrementFraction.ts::getFractionDemembrement). Fraction
  * non calculable (âge de l'usufruitier manquant) : valeur 0, jamais compté à
  * sa valeur pleine propriété.
+ *
+ * Usufruit : valeur successorale nulle. L'usufruit viager s'éteint au décès
+ * de son titulaire (art. 617 C. civ.), la nue-propriété se réunit sans droits
+ * (art. 1133 CGI) — rien ne passe aux héritiers, contrairement au Résumé
+ * Patrimoine qui affiche la valeur de l'usufruit du vivant du titulaire.
+ * Vaut pour les deux successions (Utilisateur et conjoint) : un usufruit
+ * conjoint passe au survivant par réversion, jamais par succession.
  */
 function getValeurEstimeePonderee(
   asset: Pick<Asset, 'id' | 'valeur_estimee' | 'valeur_acquisition' | 'mode_detention' | 'detenteur'>,
   assetDemembrements: AssetDemembrement[],
   demembrementCtx: DemembrementFractionContext
 ): number {
+  if (asset.mode_detention === 'Usufruit') return 0;
   const brute = asset.valeur_estimee || asset.valeur_acquisition || 0;
   const demembrementsForAsset = asset.id ? assetDemembrements.filter(d => d.asset_id === asset.id) : [];
   const fraction = getFractionDemembrement(asset, demembrementsForAsset, demembrementCtx);

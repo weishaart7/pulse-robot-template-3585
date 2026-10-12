@@ -102,39 +102,36 @@ describe('Branchement réel — récompenses/créances entre époux dans compute
     expect(totalConjointDecede).toBe(0);
   });
 
-  it('récompense (masse commune) : impact identique quel que soit le sens du décès, contrairement à la créance ci-dessus', () => {
-    const recompenses = [
+  it('récompense (masse commune) : le signe dépend de l\'époux débiteur, qui paie seul sa récompense', () => {
+    const regimeMatrimonial = 'Communauté réduite aux acquêts';
+    const calcul = (family: FamilyGraph, recompenses: Parameters<typeof computeTransmission>[0]['recompenses']) =>
+      computeTransmission({
+        family,
+        patrimony: patrimonyVide,
+        liberalites: [],
+        params: buildParams(),
+        conjointOption: 'quart_pp',
+        referenceDate: '2026-07-24',
+        regimeMatrimonial,
+        recompenses
+      }).reintegrationsCiviles;
+
+    // L'Utilisateur doit 60 000 € à la communauté : la communauté s'accroît de
+    // 60 000 € (moitié à chaque époux), mais l'Utilisateur les paie seul.
+    const dueParUtilisateur = [
       { sens: 'epoux_vers_communaute' as const, epoux: 'user' as const, depenseFaite: 60000, natureDepense: 'autre' as const, modeEvaluationConventionnel: 'nominal' as const }
     ];
-    const regimeMatrimonial = 'Communauté réduite aux acquêts';
+    // Décès de l'Utilisateur (débiteur) : +30 000 − 60 000 = −30 000 €.
+    expect(calcul(buildFamilyUtilisateurDecede(), dueParUtilisateur)).toBeCloseTo(-30000, 0);
+    // Décès du conjoint (non débiteur) : sa moitié de communauté accrue, +30 000 €.
+    expect(calcul(buildFamilyConjointDecede(), dueParUtilisateur)).toBeCloseTo(30000, 0);
 
-    // Récompense due à la communauté par l'un des époux : accroît la masse
-    // commune (art. 1470-1474), donc la masse successorale, pour moitié
-    // (50%, ratio successoral fixe du mécanisme A) — indépendamment de qui décède.
-    const resultUtilisateurDecede = computeTransmission({
-      family: buildFamilyUtilisateurDecede(),
-      patrimony: patrimonyVide,
-      liberalites: [],
-      params: buildParams(),
-      conjointOption: 'quart_pp',
-      referenceDate: '2026-07-24',
-      regimeMatrimonial,
-      recompenses
-    });
-    const totalUtilisateurDecede = resultUtilisateurDecede.heirs.reduce((s, h) => s + h.partFinale, 0);
-    expect(totalUtilisateurDecede).toBeCloseTo(30000, 0);
-
-    const resultConjointDecede = computeTransmission({
-      family: buildFamilyConjointDecede(),
-      patrimony: patrimonyVide,
-      liberalites: [],
-      params: buildParams(),
-      conjointOption: 'quart_pp',
-      referenceDate: '2026-07-24',
-      regimeMatrimonial,
-      recompenses
-    });
-    const totalConjointDecede = resultConjointDecede.heirs.reduce((s, h) => s + h.partFinale, 0);
-    expect(totalConjointDecede).toBeCloseTo(30000, 0);
+    // La communauté doit 60 000 € à l'Utilisateur : il les prélève, sa moitié
+    // de communauté diminue de 30 000 €.
+    const dueAUtilisateur = [
+      { sens: 'communaute_vers_epoux' as const, epoux: 'user' as const, depenseFaite: 60000, natureDepense: 'autre' as const, modeEvaluationConventionnel: 'nominal' as const }
+    ];
+    expect(calcul(buildFamilyUtilisateurDecede(), dueAUtilisateur)).toBeCloseTo(30000, 0);
+    expect(calcul(buildFamilyConjointDecede(), dueAUtilisateur)).toBeCloseTo(-30000, 0);
   });
 });
