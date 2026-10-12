@@ -101,7 +101,7 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   du décès (`decedentRole`). Contrats d'assurance-vie / PER assurantiel : dans les deux ordres et
   aux deux décès, `Succession2ndDeces.tsx` passe à chaque `computeTransmission` les contrats du défunt
   de ce décès, résolus par `buildAVContracts` contre le graphe de CE décès (le conjoint déjà décédé y
-  est absent). Limites restantes : libéralités du conjoint non modélisées dans sa succession ; conjoint
+  est absent). Limites restantes : legs du conjoint non modélisés (seules ses donations le sont) ; conjoint
   sans enfant renseigné non modélisable. Tests :
   `utils/transmissionHelpers.ordreInverse.test.ts`.
 - **Droit temporaire au logement (1 an).** Message informatif, sans effet sur les parts. Conjoint
@@ -161,7 +161,8 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   - **R2** : réserve individuelle décomptée enfant par enfant (`reserve.ts::imputeLiberalites`,
     art. 919-1).
   - **R3** : droits en PP du conjoint = quote-part × (biens existants, legs compris, − passif
-    + donations rapportables aux enfants — jamais celles au conjoint, choix validé), diminués de ses
+    + donations rapportables aux enfants — jamais celles au conjoint, choix validé, ni les legs
+    « sur part successorale », déjà dans les biens existants), diminués de ses
     libéralités (art. 758-6), exercés sur les biens non légués et, en présence de descendants,
     plafonnés à la QD restante (art. 758-5 al. 2) — message dans `explicationsTexte` si plafonné.
     L'usufruit porte sur les biens non légués restant après le quart en PP.
@@ -507,7 +508,7 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   (`buildPatrimonySnapshot`) comme côté conjoint (`buildSurvivingSpousePatrimony`,
   `buildSpouseOwnBasePatrimony`, qui reprenaient auparavant tout le passif brut à 100 %, dettes propres
   du 1er défunt comprises). Tests : `lib/transmission/phase4aAudit.test.ts`.
-- **Assurance-vie : 990 I et 757 B (`dmtg/assurance-vie.ts`).**
+- **Assurance-vie : 990 I et 757 B (`dmtg/assurance-vie.ts`).** (Primes antérieures au 13/10/1998 : cf. ci-dessous, #8.)
   - Assiette 990 I = capital décès rattaché aux primes versées avant 70 ans, au prorata des primes
     (`capitalDeces × primesAvant70 / (primesAvant70 + primesApres70)`), plus-values comprises.
     Approximation : pas de suivi de la valeur acquise versement par versement.
@@ -565,6 +566,91 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   (abattement 100 000 €, barème ligne directe) ; oncles/tantes et cousins germains → `collateral_4`
   (55 %, abattement 1 594 €). Tests : `lib/transmission/phase1Audit.test.ts`, `lib/dmtg/phase2Audit.test.ts`.
 
+- **Récompenses : effet signé selon l'époux débiteur (audit du 2026-10-12, #1).** Effet sur la
+  succession du défunt = (solde du survivant − solde du défunt) / 2, avec solde = doit − dû à la
+  communauté (`index.ts`, `impactRecompenses`) : la communauté varie de la somme des soldes, dont le
+  défunt recueille la moitié, mais il paie seul sa propre récompense. Récompense de 60 000 € due par
+  l'Utilisateur : −30 000 € à son décès, +30 000 € au décès du conjoint. Tests :
+  `lib/transmission/recompensesCreances.branchement.test.ts`.
+- **Usufruit viager du défunt hors succession (audit du 2026-10-12, #2).** Un actif en
+  `mode_detention = 'Usufruit'` vaut 0 dans toute succession (`getValeurEstimeePonderee` de
+  `transmissionHelpers.ts` et de `index.ts`, donc masse civile, assiette DMTG, base du DUH, côté
+  Utilisateur comme conjoint) : l'usufruit s'éteint au décès (art. 617 C. civ.), la réunion est
+  exonérée (art. 1133 CGI). Le Résumé Patrimoine continue d'afficher sa valeur au barème 669. Un
+  message rappelle la présomption de l'art. 751 CGI (nue-propriété détenue par un héritier
+  présomptif). La nue-propriété reste évaluée au barème 669. Tests :
+  `lib/transmission/auditCalculs2026-10.test.ts`.
+
+- **Donateur des donations et libéralités au 2nd décès (audit du 2026-10-12, #3 et #4).**
+  `liberalites.realise_par` (`DonationForm.tsx`, champ « Donateur » obligatoire : « Vous » =
+  `epoux1`, « Votre conjoint » = `epoux2`, « Vous deux (biens communs) » = `communaute`, ce dernier
+  réservé aux époux mariés) devient `Liberalite.donateur` (`buildTransmissionLiberalites`, défaut
+  Utilisateur). `computeTransmission` ne retient que les libéralités du défunt simulé
+  (`liberalitesDuDefunt`) : 100 % des siennes, 50 % d'une donation de biens communs (chaque époux
+  donateur pour moitié — masse de calcul, rapport art. 850 C. civ., rappel fiscal art. 784 CGI ;
+  valeurs au décès, à l'acte, au partage et forfait de rapport toutes pondérées), aucune de l'autre
+  époux ; les legs sont toujours ceux de l'Utilisateur. Tous les écrans passent donc la liste
+  complète à chaque décès (`Succession2ndDeces.tsx`, `transmissionOrdreNormal.ts` : 2nd décès de
+  l'ordre normal et les deux décès de l'ordre inversé, auparavant `liberalites: []`).
+  `ProcessusCalcul.tsx` affiche la même sélection. Conjoint prédécédé dans le chaînage
+  (`FamilyGraph.conjointPredecede`, posé par `widowFamilyGraph` et
+  `buildSpouseAsDecedentFamilyGraph` sans survivant) : legs au conjoint caduc (art. 1039 C. civ.,
+  message), donation au conjoint conservée dans la masse de calcul sans héritier. Réserve
+  d'usufruit d'une donation : nue-propriété évaluée à l'âge de chaque donateur pour sa part
+  (`computeValeurNueProprieteDonationParDonateurs`). Nature « Donation-partage conjonctive »
+  retirée (couverte par « Vous deux »). Tests : `lib/transmission/auditCalculs2026-10.test.ts`.
+
+- **Ordres d'héritiers 2 à 4 sans conjoint (audit du 2026-10-12, #6).** `successionLegale.ts` :
+  - un seul parent sans fratrie (art. 738-1) : moitié au parent, moitié aux ascendants les plus
+    proches de l'autre branche, sinon tout au parent — les collatéraux ordinaires sont exclus. La
+    branche du parent se lit sur son libellé (père/mère) ou sur les grands-parents rattachés à lui
+    ou à l'autre parent (`Person.enfantDe`, repris de `family_links.enfant_de`) ; indéterminable
+    alors que des ascendants existent → erreur explicite, jamais devinée ;
+  - sinon (`applyFenteSuccessorale`) : ascendants ordinaires d'abord (art. 747-748, le plus proche
+    par ligne, une ligne vide laisse sa moitié à l'autre), collatéraux ordinaires seulement à
+    défaut de tout ascendant (art. 749-750, même règle), déshérence enfin. Corrige le mélange
+    d'ordres entre branches (grand-mère maternelle + oncle paternel : 100 % à la grand-mère) et la
+    lecture d'un « Arrière grand-parent » comme grand-parent. Tests :
+    `lib/transmission/successionLegale.test.ts`.
+
+- **Famille du conjoint distincte de celle du défunt (audit du 2026-10-12, #13).**
+  `coteFamilial` (`transmissionHelpers.ts`) remonte `enfant_de` d'un ascendant ou collatéral
+  (Parent, Grand-parent, Frère/Sœur, Neveu/Nièce, Oncle/Tante, Cousin…) jusqu'à 'user', 'spouse'
+  ou un Enfant (`parent_de`) ; sans rattachement, côté Utilisateur. `buildFamilyGraph` et
+  `buildSpouseAsDecedentFamilyGraph` posent `Person.horsFamilleDuDefunt` pour la famille de
+  l'autre époux : exclue de la dévolution (`calculateSuccessionLegale`), lien fiscal « tiers »
+  pour un légataire ou un bénéficiaire AV, hors du champ de l'art. 790 G. Avant : un couple marié
+  sans enfant donnait 1/4 à chaque beau-parent. Tests : `lib/transmission/auditCalculs2026-10.test.ts`.
+
+- **Assurance-vie : lien fiscal des bénéficiaires non héritiers et régimes transitoires (audit du
+  2026-10-12, #7 et #8).**
+  - Un bénéficiaire AV absent des héritiers reçoit le même lien fiscal qu'un légataire
+    (`lienFiscalLegataire`), avec handicap, adoption simple, exonération frère/sœur et charges de
+    famille : les primes 757 B sont taxées selon la parenté (petit-enfant en ligne directe, enfant
+    renonçant avec 100 000 €, neveu à 55 %). Auparavant 60 % pour tous sauf conjoint et fratrie.
+  - `splitPrimesAvantApres70` (BOI-TCAS-AUT-60 § 80, § 270) : primes versées avant le 13/10/1998
+    exonérées (`AVContract.primesExonerees`, prorata du capital sans taxation) ; contrat souscrit
+    avant le 20/11/1991 (`assets.date_acquisition`, déjà affichée « Ouvert le ») : 990 I à tout âge
+    pour les primes depuis le 13/10/1998, jamais de 757 B. Date d'ouverture absente : régime des
+    contrats récents présumé, signalé si le contrat a été alimenté après 70 ans.
+  Tests : `lib/transmission/auditCalculs2026-10.test.ts`.
+
+- **Neveux, dons 790 A bis et valeur des legs (audit du 2026-10-12, #9, #10, #12).**
+  - Neveux venant en représentation : tarif et abattement des frères et sœurs seulement si
+    plusieurs souches de la fratrie viennent à la succession (`HeritierLegal.pluraliteSouches`,
+    BOI-ENR-DMTG-10-50-80 § 330 et § 390) ; souche unique → neveux de leur chef (7 967 €, 55 %).
+  - Natures « Don d'argent pour résidence principale (2025) » (15/02/2025-31/12/2026) et « … sous
+    condition de remploi (2020) » (15/07/2020-30/06/2021) : exonération art. 790 A bis jusqu'à
+    100 000 € par donateur (`params-dmtg.json`, `don_790A_bis`), fraction exonérée non rappelée
+    (BOI-ENR-DMTG-20-20-20 § 980), excédent rappelé comme un don ordinaire. Donataire hors du cercle
+    du 790 G ou don hors période : don ordinaire, signalé ; emploi des fonds présumé. « Don d'argent
+    exonéré » (régime non précisé) : don ordinaire, signalé.
+  - Valeur d'un legs (`buildTransmissionLiberalites`, `poidsBienLegue`) selon les droits du
+    testateur : usufruit 0, nue-propriété au barème 669, bien propre du conjoint 0 (art. 1021),
+    indivision à sa quote-part, bien commun à 100 % (art. 1423 al. 2). Les 3 écrans de calcul
+    passent les démembrements.
+  Tests : `lib/transmission/auditCalculs2026-10.test.ts`.
+
 ## 3. Dette identifiée
 
 ### 🔴 Bloquant (peut fausser un calcul montré au client)
@@ -577,9 +663,30 @@ handicap par la phase 2, le net à recevoir par la phase 3, les règles complém
 
 - *(soldé 2026-09-29, phase 4 : cf. §2 « Règles notariales complémentaires »)*
 
+**Audit des calculs du 2026-10-12** — constats reproduits sur scénarios chiffrés, à corriger par
+phases (0 : constat ; 1 : #1, #2, #5 ; 2 : #3, #4 ; 3 : #6 ; 4 : #7, #8 ; 5 : #9-#12 ; #13 traité après la phase 3). Données en
+base au 2026-10-12 : 2 donations (`realise_par = epoux1`), aucun bien démembré, aucune récompense
+ni créance, aucun versement AV antérieur au 13/10/1998 — pas de reprise de données à prévoir.
+
+- *#1, #2 et #5 soldés le 2026-10-12 (phase 1) : cf. §2 « Récompenses : effet signé selon l'époux
+  débiteur », « Usufruit viager du défunt hors succession », et la règle R3 du partage.*
+- *#3 et #4 soldés le 2026-10-12 (phase 2) : cf. §2 « Donateur des donations et libéralités au
+  2nd décès ».*
+- *#6 soldé le 2026-10-12 (phase 3) : cf. §2 « Ordres d'héritiers 2 à 4 sans conjoint ».*
+- *#13 soldé le 2026-10-12 : cf. §2 « Famille du conjoint distincte de celle du défunt ».*
+- *#7 et #8 soldés le 2026-10-12 (phase 4) : cf. §2 « Assurance-vie : lien fiscal des bénéficiaires
+  non héritiers et régimes transitoires ».*
+- *#9, #10 et #12 soldés le 2026-10-12 (phase 5) : cf. §2 « Neveux, dons 790 A bis et valeur des legs ».*
+- **#11 (non confirmé, ouvert)** : une donation à un petit-enfant couverte par l'abattement de
+  31 865 € (art. 790 B) est rappelée sur l'abattement de succession du petit-enfant (1 594 € s'il
+  vient de son chef). Aucune source officielle trouvée sur ce point : à faire valider par un notaire
+  avant toute modification de `dmtg/recall.ts`.
+- **Écran de gestion des libéralités** (`Liberalites.tsx`) : affiche la valeur brute des biens légués,
+  sans la pondération des droits du testateur appliquée par le calcul (#12).
+
 
 - **9 des 11 clauses de donation restent purement déclaratives.** `nature`, `demembrement`,
-  `droitsParDonateur`/`prise_en_charge_droits`, `realiseePar`/`realise_par`, et 9 clauses sur 11
+  `droitsParDonateur`/`prise_en_charge_droits`, et 9 clauses sur 11
   (inaliénabilité, retour conventionnel, exclusion/inclusion de communauté, administration spéciale,
   obligation d'emploi, gestion d'un bien démembré, usufruit réservé, usufruit successif, délivrance à
   terme) sont saisis dans `DonationForm.tsx`, stockés, mais **jamais lus par le moteur**
