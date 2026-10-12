@@ -316,3 +316,85 @@ describe('#8 — régimes transitoires de l\'assurance-vie', () => {
     expect(r.dmtg.perBeneficiary['e1'].capitalAVNet).toBe(600000 - 49500);
   });
 });
+
+describe('#9 — neveux : représentation fiscale seulement s\'il y a plusieurs souches', () => {
+  const graphe = (avecFrereVivant: boolean): FamilyGraph => ({
+    persons: [
+      { id: 'defunt', nom: 'D', prenom: 'J' },
+      { id: 'soeur', nom: 'S', prenom: 'S', lienFamilial: 'Frère/Sœur', estDecede: true },
+      { id: 'n1', nom: 'N1', prenom: '', lienFamilial: 'Neveu/Nièce' },
+      { id: 'n2', nom: 'N2', prenom: '', lienFamilial: 'Neveu/Nièce' },
+      ...(avecFrereVivant ? [{ id: 'frere', nom: 'F', prenom: 'F', lienFamilial: 'Frère/Sœur' }] : [])
+    ],
+    links: [{ from: 'soeur', to: 'n1', relation: 'child' }, { from: 'soeur', to: 'n2', relation: 'child' }],
+    marriages: [], decedentId: 'defunt', hasSurvivingSpouse: false, childrenOfDecedent: [], childrenCommonWithSpouse: []
+  });
+  const calcul = (g: FamilyGraph) => computeTransmission({
+    family: g, patrimony: { date: REF, biensExistants: 300000, passifs: 0 }, liberalites: [], params, referenceDate: REF,
+    rawAssets: [{ id: 'cc', denomination: 'Comptes', valeur_estimee: 300000, nature: 'Comptes courants', qualification_bien: 'Bien propre', detenteur: 'user' }]
+  }).dmtg.perBeneficiary['n1'];
+
+  it('souche unique : neveux de leur chef, 7 967 € et 55 % (BOI-ENR-DMTG-10-50-80 § 330)', () => {
+    const n1 = calcul(graphe(false));
+    expect(n1.allowanceGeneralResidual).toBe(7967);
+    expect(n1.droitsTotaux).toBe(Math.round(n1.taxableAfterAllowance * 0.55));
+  });
+
+  it('plusieurs souches : tarif frères et sœurs, 15 932 € partagés', () => {
+    const n1 = calcul(graphe(true));
+    expect(n1.allowanceGeneralResidual).toBe(7966);
+    expect(n1.droitsTotaux).toBe(Math.round(24430 * 0.35 + (n1.taxableAfterAllowance - 24430) * 0.45));
+  });
+});
+
+describe('#10 — dons exonérés de l\'art. 790 A bis', () => {
+  const don = (valeur: number, date: string, nature = "Don d'argent pour résidence principale (2025)"): Liberalite => ({
+    id: `d-${valeur}-${date}`, type: 'donation', beneficiaireId: 'e1', valeur, valeurFiscaleActe: valeur, date, typeImputation: 'avance_part', nature
+  });
+  const e1 = (libs: Liberalite[]) => {
+    const r = computeTransmission({
+      family: famille(false), patrimony: { date: REF, biensExistants: 400000, passifs: 0 }, liberalites: libs, params, referenceDate: REF
+    });
+    return { b: r.dmtg.perBeneficiary['e1'], textes: r.explicationsTexte };
+  };
+
+  it('100 000 € exonérés : non rappelés, abattement de 100 000 € intact', () => {
+    expect(e1([don(100000, '2025-06-01')]).b.allowanceGeneralResidual).toBe(100000);
+  });
+
+  it('150 000 € : seuls 50 000 € sont rappelés', () => {
+    const { b } = e1([don(150000, '2025-06-01')]);
+    expect(b.allowanceGeneralResidual).toBe(50000);
+    expect(b.consumedBracketsAmount).toBe(0);
+  });
+
+  it('hors période ou nature imprécise : donation ordinaire, signalée', () => {
+    const horsPeriode = e1([don(100000, '2024-06-01')]);
+    expect(horsPeriode.b.allowanceGeneralResidual).toBe(0);
+    expect(horsPeriode.textes.some(t => t.includes('790 A bis non retenue'))).toBe(true);
+    const imprecis = e1([don(100000, '2025-06-01', "Don d'argent exonéré")]);
+    expect(imprecis.b.allowanceGeneralResidual).toBe(0);
+    expect(imprecis.textes.some(t => t.includes('régime d\'exonération non précisé'))).toBe(true);
+  });
+});
+
+describe('#12 — valeur d\'un legs selon les droits du testateur', () => {
+  const legsDe = (asset: Record<string, unknown>) => buildTransmissionLiberalites(
+    [{ id: 'L', type: 'legs', beneficiaire_nom: 'Ami', denomination: 'Legs', biens: [{ asset_id: 'b' }] }],
+    [{ id: 'b', valeur_estimee: 400000, denomination: 'Bien', ...asset }],
+    false,
+    { assetDemembrements: [{ asset_id: 'b', type_partie: 'tiers', date_naissance_tiers: '1960-01-01' } as never], demembrementCtx: { familyProfile: { date_naissance: '1960-01-01' } } }
+  ).liberalites[0].valeur;
+
+  it('usufruit : 0 ; nue-propriété : barème 669 ; bien propre du conjoint : 0', () => {
+    expect(legsDe({ qualification_bien: 'Bien propre', detenteur: 'user', mode_detention: 'Usufruit' })).toBe(0);
+    // Usufruitier tiers de 66 ans : nue-propriété 60 %.
+    expect(legsDe({ qualification_bien: 'Bien propre', detenteur: 'user', mode_detention: 'Nue-propriété' })).toBe(240000);
+    expect(legsDe({ qualification_bien: 'Bien propre', detenteur: 'spouse', mode_detention: 'Pleine propriété' })).toBe(0);
+  });
+
+  it('bien commun : valeur totale (art. 1423 al. 2) ; indivision : quote-part du testateur', () => {
+    expect(legsDe({ qualification_bien: 'Bien commun', mode_detention: 'Pleine propriété' })).toBe(400000);
+    expect(legsDe({ qualification_bien: 'Indivision', pourcentage_utilisateur: 30, mode_detention: 'Pleine propriété' })).toBe(120000);
+  });
+});

@@ -86,6 +86,9 @@ export function computeRecallAndAllowances(input: {
   // donateur/donataire sur la fenêtre de 15 ans (donations15y déjà filtrées
   // sur ce donataire et cette fenêtre), consommé dans l'ordre chronologique.
   let exo790GConsommee = 0;
+  // Exonération 790 A bis : 100 000 € par donateur, fraction exonérée exclue
+  // du rappel (BOI-ENR-DMTG-20-20-20 § 980) ; l'excédent est un don ordinaire.
+  let exo790ABisConsommee = 0;
 
   // Traiter les donations par ordre chronologique
   for (const donation of donations15y) {
@@ -103,6 +106,13 @@ export function computeRecallAndAllowances(input: {
       const exo790GUtilisee = Math.min(valeurDon, exo790GDisponible);
       exo790GConsommee += exo790GUtilisee;
       valeurSoumiseAbattementGeneral = valeurDon - exo790GUtilisee;
+    }
+
+    if (donation.type === 'exonere_790A_bis') {
+      const disponible = Math.max(0, params.abattements.don_790A_bis - exo790ABisConsommee);
+      const exoneree = Math.min(valeurDon, disponible);
+      exo790ABisConsommee += exoneree;
+      valeurSoumiseAbattementGeneral = valeurDon - exoneree;
     }
 
     // Appliquer l'abattement général disponible

@@ -89,6 +89,43 @@ export interface LiberaliteRow {
 interface AssetValeur {
   id?: string | null;
   valeur_estimee?: number | null;
+  qualification_bien?: string | null;
+  detenteur?: string | null;
+  pourcentage_utilisateur?: number | null;
+  pourcentage_conjoint?: number | null;
+  mode_detention?: string | null;
+  denomination?: string | null;
+}
+
+/**
+ * Part de la valeur d'un bien légué que le légataire recueille réellement,
+ * selon les droits de l'Utilisateur (testateur) sur ce bien :
+ * - usufruit : éteint au décès, rien à transmettre (art. 617 C. civ.) ;
+ * - nue-propriété : valeur au barème 669 (âge de l'usufruitier) ;
+ * - bien commun : valeur totale, le légataire pouvant la réclamer sur la
+ *   part des héritiers et les biens propres du testateur (art. 1423 al. 2) ;
+ * - bien propre du conjoint : legs de la chose d'autrui, nul (art. 1021) ;
+ * - indivision : quote-part du testateur (getPartSuccessorale).
+ * `ponderation` absent (écran de gestion Liberalites.tsx) : valeur brute,
+ * pour l'affichage seulement.
+ */
+function poidsBienLegue(
+  asset: AssetValeur,
+  ponderation: { assetDemembrements: AssetDemembrement[]; demembrementCtx: DemembrementFractionContext }
+): number {
+  if (asset.mode_detention === 'Usufruit') return 0;
+  const fractionDemembrement = asset.mode_detention === 'Nue-propriété'
+    ? getFractionDemembrement(
+        asset as Pick<Asset, 'mode_detention' | 'detenteur'>,
+        ponderation.assetDemembrements.filter(d => d.asset_id === asset.id),
+        ponderation.demembrementCtx
+      )
+    : 1;
+  if (fractionDemembrement === null) return 0;
+  const partDroits = asset.qualification_bien === 'Bien commun'
+    ? 1
+    : getPartSuccessorale(asset, asset.denomination || asset.id || undefined);
+  return fractionDemembrement * partDroits;
 }
 
 export interface LegsCaduc {
@@ -121,7 +158,10 @@ export interface LegsCaduc {
 export function buildTransmissionLiberalites(
   rows: LiberaliteRow[],
   assets: AssetValeur[],
-  excludeProjets: boolean = false
+  excludeProjets: boolean = false,
+  // Démembrements des biens : pondère la valeur des legs selon les droits réels
+  // du testateur (cf. poidsBienLegue). Obligatoire pour un calcul réel.
+  ponderation?: { assetDemembrements: AssetDemembrement[]; demembrementCtx: DemembrementFractionContext }
 ): { liberalites: Liberalite[]; legsCaducs: LegsCaduc[] } {
   const assetsById = new Map(
     assets.filter((a): a is AssetValeur & { id: string } => !!a.id).map(a => [a.id, a])
@@ -145,7 +185,7 @@ export function buildTransmissionLiberalites(
           caduc = true;
           continue;
         }
-        sommeBiens += Number(asset.valeur_estimee) || 0;
+        sommeBiens += (Number(asset.valeur_estimee) || 0) * (ponderation ? poidsBienLegue(asset, ponderation) : 1);
       }
       if (caduc) {
         legsCaducs.push({ denomination: row.denomination, beneficiaireNom: row.beneficiaire_nom });

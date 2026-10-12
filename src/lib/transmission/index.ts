@@ -565,6 +565,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       representation: heir.representation,
       representationRootId: heir.representationRootId,
       representationCount: heir.representationCount,
+      pluraliteSouches: heir.pluraliteSouches,
       dejaDetenu: p.dejaDetenu,
       recuSuccession: p.recuSuccession,
       soulte: p.soulte,
@@ -820,7 +821,11 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     // souche ; un neveu/nièce représentant un frère/sœur prédécédé partage
     // l'abattement frère/sœur (15 932€) et relève du barème frère/sœur
     // plutôt que du barème collatéral à 55%.
-    const isRepresentation = !!heir.representation && (heir.lien === 'petit_enfant' || heir.lien === 'neveu_niece');
+    // En ligne collatérale, la représentation fiscale suppose plusieurs
+    // souches (BOI-ENR-DMTG-10-50-80 § 330, aucune dérogation) : neveux d'une
+    // souche unique taxés de leur chef (7 967 € chacun, 55 %).
+    const representationNeveu = heir.lien === 'neveu_niece' && !!heir.representation && !!heir.pluraliteSouches;
+    const isRepresentation = !!heir.representation && (heir.lien === 'petit_enfant' || representationNeveu);
     const representationRootId = isRepresentation ? (heir.representationRootId || heir.personId) : null;
 
     const person = family.persons.find(p => p.id === heir.personId);
@@ -832,7 +837,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       representationGroup: representationRootId,
       numberOfRepresentants: isRepresentation ? heir.representationCount : undefined,
       partDansSouche: representationRootId ? partSouche(representationRootId, heir.personId) : undefined,
-      comesFromRepresentationWithPlurality: heir.lien === 'neveu_niece' && !!heir.representation,
+      comesFromRepresentationWithPlurality: representationNeveu,
       isAdoptionSimple: person?.enfantAdopte === 'Adoption simple',
       adoptionSimpleAbattementPlein: person?.adoptionSimpleAbattementPlein || false,
       exonerationSuccession: person?.exonerationSuccession || false,
@@ -1153,6 +1158,51 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     return true;
   };
 
+  // Dons de sommes d'argent exonérés au titre de l'art. 790 A bis (logement
+  // neuf ou rénovation énergétique, 2025-2026 ; versions 2020-2021) : jusqu'à
+  // 100 000 € par donateur, fraction exonérée exclue du rappel fiscal
+  // (BOI-ENR-DMTG-20-20-20 § 980). Même cercle de donataires que l'art. 790 G,
+  // sans condition d'âge. L'emploi des fonds dans les 6 mois est présumé.
+  const NATURES_790A_BIS: Record<string, { debut: string; fin: string }> = {
+    "Don d'argent pour résidence principale (2025)": { debut: '2025-02-15', fin: '2026-12-31' },
+    "Don d'argent sous condition de remploi (2020)": { debut: '2020-07-15', fin: '2021-06-30' }
+  };
+  const verifier790ABis = (l: Liberalite): boolean => {
+    const periode = NATURES_790A_BIS[l.nature || ''];
+    const donataire = family.persons.find(p => p.id === l.beneficiaireId);
+    const nomDonataire = l.beneficiaireName || (donataire ? `${donataire.prenom} ${donataire.nom}`.trim() : 'donataire');
+    const lien = donataire?.horsFamilleDuDefunt ? '' : (donataire?.lienFamilial?.toLowerCase() || '');
+    const estDescendant = lien === 'enfant' || lien.includes('petit-enfant');
+    const estNeveu = lien.includes('neveu') || lien.includes('nièce');
+    const motifs: string[] = [];
+    if (!(estDescendant || (estNeveu && !aDesDescendants))) {
+      motifs.push('le donataire n\'est ni un descendant ni, à défaut de descendance, un neveu ou une nièce');
+    }
+    const date = (l.date || '').slice(0, 10);
+    if (date < periode.debut || date > periode.fin) {
+      motifs.push(`don hors de la période d'application (${periode.debut.split('-').reverse().join('/')} – ${periode.fin.split('-').reverse().join('/')})`);
+    }
+    if (motifs.length > 0) {
+      successionLegaleResult.explicationsTexte.push(
+        `Don de sommes d'argent à ${nomDonataire} : exonération de l'art. 790 A bis non retenue (${motifs.join(' ; ')}). ` +
+        `Traité comme une donation ordinaire pour le rappel fiscal.`
+      );
+      return false;
+    }
+    successionLegaleResult.explicationsTexte.push(
+      `Don de sommes d'argent à ${nomDonataire} : exonération de l'art. 790 A bis retenue dans la limite de 100 000 € ` +
+      `par donateur, en présumant l'emploi des fonds dans les 6 mois (logement neuf ou rénovation énergétique) ; la ` +
+      `fraction exonérée n'est pas rappelée (BOI-ENR-DMTG-20-20-20 § 980).`
+    );
+    return true;
+  };
+  if (liberalites.some(l => l.type === 'donation' && l.nature === "Don d'argent exonéré")) {
+    successionLegaleResult.explicationsTexte.push(
+      `Don « Don d'argent exonéré » : régime d'exonération non précisé, traité comme une donation ordinaire pour ` +
+      `le rappel fiscal. Choisissez la nature exacte du don (don familial art. 790 G, ou art. 790 A bis).`
+    );
+  }
+
   const dmtgDonations: DmtgDonation[] = liberalites
     .filter(l => l.type === 'donation')
     .map(l => ({
@@ -1166,7 +1216,9 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       // distincte de l'abattement général en ligne directe — cf. recall.ts,
       // branche `type === 'familiale_790G'`. Valeur de `nature` alignée sur
       // l'option "Dons familiaux de sommes d'argent" de DonationForm.tsx.
-      type: l.nature === NATURE_790G && verifier790G(l) ? 'familiale_790G' as const : undefined
+      type: l.nature === NATURE_790G && verifier790G(l) ? 'familiale_790G' as const
+        : NATURES_790A_BIS[l.nature || ''] && verifier790ABis(l) ? 'exonere_790A_bis' as const
+        : undefined
     }));
 
   // Rappel fiscal des donations reçues par un enfant ou frère/sœur représenté

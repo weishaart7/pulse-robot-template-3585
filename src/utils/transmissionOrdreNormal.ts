@@ -254,7 +254,7 @@ export function buildOrdreNormalBase(data: TransmissionData, passifs: Passif[], 
   const participationAcquets = buildParticipationAcquetsContext(data.patrimoineOriginaireRows, data.patrimoineFinalRows, false);
   const recompenses = buildRecompensesCalcInput(data.recompensesRows);
   const creancesEntreEpoux = buildCreancesCalcInput(data.creancesRows);
-  const { liberalites: liberalitesFormatted } = buildTransmissionLiberalites(data.liberalites, assets, true);
+  const { liberalites: liberalitesFormatted } = buildTransmissionLiberalites(data.liberalites, assets, true, { assetDemembrements, demembrementCtx });
 
   const ctxUtilisateurDecedeSansOption: TransmissionContext = {
     family: familyUtilisateur,

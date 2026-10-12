@@ -88,13 +88,13 @@ export const ProcessusCalcul = () => {
   // du défunt ; `transmissionLiberalites` (affichage) applique la même
   // sélection : donations du conjoint exclues, biens communs pour moitié.
   const { toutesLiberalites, transmissionLiberalites, legsCaducs } = useMemo(() => {
-    const built = buildTransmissionLiberalites(liberalites, assets, true);
+    const built = buildTransmissionLiberalites(liberalites, assets, true, { assetDemembrements, demembrementCtx });
     return {
       toutesLiberalites: built.liberalites,
       transmissionLiberalites: liberalitesDuDefunt(built.liberalites, 'user'),
       legsCaducs: built.legsCaducs
     };
-  }, [liberalites, assets]);
+  }, [liberalites, assets, assetDemembrements, demembrementCtx]);
 
   const params: TransmissionParams = useMemo(() => {
     const rawParams = transmissionParamsData as any;

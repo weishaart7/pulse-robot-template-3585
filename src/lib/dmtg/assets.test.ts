@@ -11,6 +11,7 @@ const params: DmtgParams = {
     tiers: 1594,
     handicap: 159325,
     don_790G: 31865,
+    don_790A_bis: 100000,
     apres70_AV_global: 30500,
     av_990I_allowance: 152500
   },

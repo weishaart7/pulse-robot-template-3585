@@ -243,6 +243,8 @@ export interface HeirShare {
   // (successionLegale.ts) — propagés jusqu'ici pour le calcul DMTG.
   representationRootId?: PersonId;
   representationCount?: number;
+  // Fratrie : plusieurs souches (représentation fiscale des neveux possible).
+  pluraliteSouches?: boolean;
   // Détail du partage (lib/transmission/partage.ts), portés par la première
   // ligne de chaque personne pour dejaDetenu :
   // - dejaDetenu : donations maintenues déjà détenues (jamais re-réclamées) ;

@@ -16,6 +16,10 @@ export interface HeritierLegal {
   // souche (art. 779 CGI).
   representationRootId?: PersonId;
   representationCount?: number;
+  // Fratrie : plusieurs souches viennent à la succession (frères ou sœurs
+  // vivants ou représentés). Condition de la représentation fiscale des
+  // neveux (BOI-ENR-DMTG-10-50-80 § 330) ; sans elle, ils viennent de leur chef.
+  pluraliteSouches?: boolean;
 }
 
 export interface SuccessionLegaleResult {
@@ -606,6 +610,7 @@ function distributeToSouchesFratrie(
         typeQuotePart: 'pleine_propriete',
         ordre: 2,
         representation: h.representation,
+        pluraliteSouches: souches.length > 1,
         representationRootId: h.representation ? souche.rootSiblingId : undefined,
         representationCount: h.representation ? nbRepresentants : undefined
       });

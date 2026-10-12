@@ -258,7 +258,8 @@ export const Synthese = () => {
       const { liberalites: liberalitesFormatted, legsCaducs } = buildTransmissionLiberalites(
         liberalites || [],
         assets || [],
-        true
+        true,
+        { assetDemembrements, demembrementCtx }
       );
       setLegsCaducs(legsCaducs);
 

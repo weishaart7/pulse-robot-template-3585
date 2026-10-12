@@ -133,7 +133,7 @@ export interface Donation {
   donorId: string; // défunt
   doneeId: string; // beneficiaryId
   valeurDon: Money; // valeur au jour de la donation (rappel = valeur à la donation)
-  type?: 'simple'|'partage'|'familiale_790G'|'autre';
+  type?: 'simple'|'partage'|'familiale_790G'|'exonere_790A_bis'|'autre';
 }
 
 export interface DmtgParams {
@@ -146,6 +146,7 @@ export interface DmtgParams {
     tiers: Money; // 1594
     handicap: Money; // 159325
     don_790G: Money; // param 31 865 etc., géré séparément (cumulable)
+    don_790A_bis: Money; // 100 000 par donateur, fraction exonérée non rappelée
     apres70_AV_global: Money; // 30500 (art. 757B)
     av_990I_allowance: Money; // ex. 152500 par bénéficiaire
   };
