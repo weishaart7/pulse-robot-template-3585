@@ -27,6 +27,11 @@ export interface Person {
   // Branche paternelle/maternelle (utilisé par la fente successorale,
   // cf. successionLegale.ts::collectFenteHeritiers).
   brancheFamiliale?: string;
+  // family_links.enfant_de : personne dont celle-ci est le parent (un
+  // Grand-parent pointe vers un Parent, un Arrière grand-parent vers un
+  // Grand-parent). Sert à situer la ligne du parent survivant (art. 738-1).
+  enfantDe?: PersonId;
+  // ni lien de parenté fiscal (tiers).
   // Frère/Sœur : 'germain' (défaut), 'consanguin' (même père) ou 'uterin'
   // (même mère) — partage de la fratrie par lignes, art. 752 C. civ.
   lienFratrie?: 'germain' | 'consanguin' | 'uterin';

@@ -47,7 +47,7 @@ describe('fente successorale (applyFenteSuccessorale)', () => {
     const parts = result.heritiers.map(h => h.quotePart).sort();
     expect(parts).toEqual([0.5, 0.5]);
     expect(result.heritiers.reduce((s, h) => s + h.quotePart, 0)).toBeCloseTo(1);
-    expect(result.explicationsTexte.some(t => t.includes('50% branche paternelle, 50% branche maternelle'))).toBe(true);
+    expect(result.explicationsTexte.some(t => t.includes('50 % branche paternelle, 50 % branche maternelle'))).toBe(true);
   });
 
   it('2. branche maternelle éteinte, un grand-parent paternel vivant → 100% à la branche paternelle', () => {
@@ -64,7 +64,7 @@ describe('fente successorale (applyFenteSuccessorale)', () => {
     expect(result.heritiers).toHaveLength(1);
     expect(result.heritiers[0].personId).toBe('GPP');
     expect(result.heritiers[0].quotePart).toBe(1);
-    expect(result.explicationsTexte.some(t => t.includes('Vacance de branche maternelle'))).toBe(true);
+    expect(result.explicationsTexte.some(t => t.includes('la branche paternelle hérite de tout'))).toBe(true);
   });
 
   it("3. aucun héritier jusqu'au 6e degré dans aucune branche → l'État hérite, pas de crash", () => {
@@ -136,8 +136,12 @@ describe('un seul parent sans fratrie, ascendants dans l\'autre branche (art. 73
     const g = graph({
       persons: [
         defunt,
-        person({ id: 'MERE', nom: 'Mere', lienFamilial: 'Parent' }),
-        person({ id: 'GPP', nom: 'GrandPereP', lienFamilial: 'Grand-parent', brancheFamiliale: 'Branche paternelle' }),
+        // Le grand-père paternel est rattaché au père prédécédé : la mère est
+        // donc de l'autre branche (audit du 2026-10-12, #6 — la ligne du
+        // parent survivant n'est jamais devinée).
+        person({ id: 'MERE', nom: 'Mere', lienFamilial: 'Parent', enfantDe: 'user' }),
+        person({ id: 'PERE', nom: 'Pere', lienFamilial: 'Parent', enfantDe: 'user', estDecede: true }),
+        person({ id: 'GPP', nom: 'GrandPereP', lienFamilial: 'Grand-parent', brancheFamiliale: 'Branche paternelle', enfantDe: 'PERE' }),
       ],
     });
 
@@ -244,5 +248,68 @@ describe('représentation neveu/nièce (Règle C, Découverte 8)', () => {
     expect(heir.representationRootId).toBe('S');
     expect(heir.representationCount).toBe(1);
     expect(heir.quotePart).toBe(1);
+  });
+});
+
+describe('audit du 2026-10-12, #6 — ordres d\'héritiers sans conjoint, descendant ni fratrie', () => {
+  const part = (r: ReturnType<typeof calculateSuccessionLegale>, id: string) =>
+    r.heritiers.filter(h => h.personId === id).reduce((s, h) => s + h.quotePart, 0);
+
+  it('parent seul, sans autre héritier : il prend tout, sans mention de déshérence', () => {
+    const r = calculateSuccessionLegale(graph({ persons: [defunt, person({ id: 'MERE', nom: 'Mere', lienFamilial: 'Parent', enfantDe: 'user' })] }));
+    expect(part(r, 'MERE')).toBe(1);
+    expect(r.explicationsTexte.some(t => t.includes("L'État"))).toBe(false);
+  });
+
+  it('parent seul + grand-parent de SA branche + oncle de l\'autre branche : le parent prend tout (art. 738-1, 734)', () => {
+    const r = calculateSuccessionLegale(graph({ persons: [
+      defunt,
+      person({ id: 'PERE', nom: 'Pere', lienFamilial: 'Parent', enfantDe: 'user' }),
+      person({ id: 'GPP', nom: 'GPP', lienFamilial: 'Grand-parent', brancheFamiliale: 'Branche paternelle', enfantDe: 'PERE' }),
+      person({ id: 'OM', nom: 'OncleM', lienFamilial: 'Oncle/Tante', brancheFamiliale: 'Branche maternelle' }),
+    ] }));
+    expect(part(r, 'PERE')).toBe(1);
+    expect(r.heritiers).toHaveLength(1);
+  });
+
+  it('ligne du parent survivant indéterminable : calcul arrêté, jamais deviné', () => {
+    const g = graph({ persons: [
+      defunt,
+      person({ id: 'MERE', nom: 'Mere', lienFamilial: 'Parent', enfantDe: 'user' }),
+      person({ id: 'GPP', nom: 'GPP', lienFamilial: 'Grand-parent', brancheFamiliale: 'Branche paternelle' }),
+    ] });
+    expect(() => calculateSuccessionLegale(g)).toThrow(/branche du parent survivant/);
+  });
+
+  it('grand-mère maternelle + oncle paternel : les ascendants excluent les collatéraux ordinaires (art. 734, 748)', () => {
+    const r = calculateSuccessionLegale(graph({ persons: [
+      defunt,
+      person({ id: 'GMM', nom: 'GMM', lienFamilial: 'Grand-parent', brancheFamiliale: 'Branche maternelle' }),
+      person({ id: 'OP', nom: 'OncleP', lienFamilial: 'Oncle/Tante', brancheFamiliale: 'Branche paternelle' }),
+    ] }));
+    expect(part(r, 'GMM')).toBe(1);
+    expect(part(r, 'OP')).toBe(0);
+  });
+
+  it('grand-parent d\'une ligne, arrière-grand-parent de l\'autre : fente entre ascendants, le plus proche dans chaque ligne', () => {
+    const r = calculateSuccessionLegale(graph({ persons: [
+      defunt,
+      person({ id: 'GPP', nom: 'GPP', lienFamilial: 'Grand-parent', brancheFamiliale: 'Branche paternelle' }),
+      person({ id: 'AGPP', nom: 'AGPP', lienFamilial: 'Arrière grand-parent', brancheFamiliale: 'Branche paternelle' }),
+      person({ id: 'AGPM', nom: 'AGPM', lienFamilial: 'Arrière grand-parent', brancheFamiliale: 'Branche maternelle' }),
+    ] }));
+    expect(part(r, 'GPP')).toBe(0.5);
+    expect(part(r, 'AGPP')).toBe(0);
+    expect(part(r, 'AGPM')).toBe(0.5);
+  });
+
+  it('aucun ascendant : oncle d\'une ligne et cousin de l\'autre se partagent par moitié (art. 749-750)', () => {
+    const r = calculateSuccessionLegale(graph({ persons: [
+      defunt,
+      person({ id: 'OP', nom: 'OncleP', lienFamilial: 'Oncle/Tante', brancheFamiliale: 'Branche paternelle' }),
+      person({ id: 'CM', nom: 'CousinM', lienFamilial: 'Cousin/Cousine', brancheFamiliale: 'Branche maternelle' }),
+    ] }));
+    expect(part(r, 'OP')).toBe(0.5);
+    expect(part(r, 'CM')).toBe(0.5);
   });
 });

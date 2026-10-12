@@ -1,4 +1,4 @@
-import { FamilyGraph, PersonId, TypeQuotePart } from './types';
+import { FamilyGraph, Person, PersonId, TypeQuotePart } from './types';
 
 export interface HeritierLegal {
   personId: PersonId;
@@ -297,17 +297,28 @@ function calculateBrancheB(
         });
         result.explicationsTexte.push(`Chaque parent reçoit 1/2.`);
       } else {
-        // Un seul parent sans fratrie → parent 1/2, reste 1/2 passe à la fente (B5, art. 738-1)
+        // Un seul parent, sans fratrie (art. 738-1) : moitié au parent, moitié
+        // aux seuls ascendants de l'autre branche (le plus proche en degré) ;
+        // à défaut, le parent prend tout. Les collatéraux ordinaires (4e
+        // ordre) sont exclus par le parent (2e ordre, art. 734).
+        const parent = parentsVivants[0];
+        const ascendantsAutreLigne = getAscendantsAutreLigne(graph, personnesVivantes, parent);
+        const partParent = ascendantsAutreLigne.length > 0 ? 0.5 : 1;
         result.heritiers.push({
-          personId: parentsVivants[0].id, nom: parentsVivants[0].nom, prenom: parentsVivants[0].prenom || '',
-          lien: 'parent', quotePart: 0.5,
+          personId: parent.id, nom: parent.nom, prenom: parent.prenom || '',
+          lien: 'parent', quotePart: partParent,
           typeQuotePart: 'pleine_propriete', ordre: 2
         });
-        // 1/2 restant va à la fente pour l'autre branche
-        applyFenteSuccessorale(graph, result, personnesVivantes, 0.5);
-        result.explicationsTexte.push(
-          `Le parent survivant reçoit 1/2, l'autre 1/2 est attribuée via la fente successorale.`
-        );
+        if (ascendantsAutreLigne.length > 0) {
+          distributeFenteHeritiers(result, ascendantsAutreLigne, 0.5);
+          result.explicationsTexte.push(
+            `Le parent survivant reçoit 1/2, l'autre 1/2 revient aux ascendants les plus proches de l'autre branche (C. civ. art. 738-1).`
+          );
+        } else {
+          result.explicationsTexte.push(
+            `Le parent survivant reçoit la totalité : ni frère ou sœur, ni ascendant dans l'autre branche (C. civ. art. 738-1, 734).`
+          );
+        }
       }
     }
     return result;
@@ -321,7 +332,7 @@ function calculateBrancheB(
   }
 
   // B5. La fente successorale
-  applyFenteSuccessorale(graph, result, personnesVivantes, 1.0);
+  applyFenteSuccessorale(result, personnesVivantes, 1.0);
 
   return result;
 }
@@ -596,97 +607,122 @@ function distributeToSouchesFratrie(
   });
 }
 
-// ─── Fente successorale (B5) ────────────────────────────────────────
+// ─── Ascendants et collatéraux ordinaires (B5, ordres 3 et 4) ────────
 
+type Ligne = 'paternelle' | 'maternelle';
+
+/**
+ * Défunt sans conjoint successible, descendant, parent ni frère ou sœur :
+ * - 3e ordre, ascendants ordinaires (art. 747-748) : moitié par ligne, le
+ *   plus proche en degré dans chaque ligne ; une ligne sans ascendant laisse
+ *   sa moitié aux ascendants de l'autre ;
+ * - 4e ordre, collatéraux ordinaires (art. 749-750), seulement à défaut de
+ *   tout ascendant : même partage par lignes, même report d'une ligne vide ;
+ * - personne : déshérence.
+ */
 function applyFenteSuccessorale(
-  graph: FamilyGraph,
   result: SuccessionLegaleResult,
-  personnesVivantes: any[],
+  personnesVivantes: Person[],
   totalShare: number
 ): void {
-  // Identifier les héritiers par branche et par rang
-  const branchePaternelle = collectFenteHeritiers(graph, personnesVivantes, 'paternelle');
-  const brancheMaternelle = collectFenteHeritiers(graph, personnesVivantes, 'maternelle');
+  const ascendants = { paternelle: ascendantsLigne(personnesVivantes, 'paternelle'), maternelle: ascendantsLigne(personnesVivantes, 'maternelle') };
+  const collateraux = { paternelle: collaterauxLigne(personnesVivantes, 'paternelle'), maternelle: collaterauxLigne(personnesVivantes, 'maternelle') };
+  const parOrdre = ascendants.paternelle.length + ascendants.maternelle.length > 0
+    ? { lignes: ascendants, libelle: 'ascendants', articles: 'art. 747-748' }
+    : collateraux.paternelle.length + collateraux.maternelle.length > 0
+      ? { lignes: collateraux, libelle: 'collatéraux', articles: 'art. 749-750' }
+      : null;
 
-  const hasPat = branchePaternelle.length > 0;
-  const hasMat = brancheMaternelle.length > 0;
-
-  if (!hasPat && !hasMat) {
+  if (!parOrdre) {
     result.explicationsTexte.push(`Aucun héritier jusqu'au 6ème degré. L'État français hérite.`);
     return;
   }
 
-  if (hasPat && hasMat) {
-    // Fente 50/50
-    distributeFenteHeritiers(result, branchePaternelle, totalShare / 2);
-    distributeFenteHeritiers(result, brancheMaternelle, totalShare / 2);
-    result.explicationsTexte.push(`Fente successorale : 50% branche paternelle, 50% branche maternelle.`);
-  } else if (hasPat) {
-    // Vacance de branche maternelle → tout à la paternelle
-    distributeFenteHeritiers(result, branchePaternelle, totalShare);
-    result.explicationsTexte.push(`Vacance de branche maternelle : la branche paternelle hérite de tout.`);
+  const { paternelle, maternelle } = parOrdre.lignes;
+  if (paternelle.length > 0 && maternelle.length > 0) {
+    distributeFenteHeritiers(result, paternelle, totalShare / 2);
+    distributeFenteHeritiers(result, maternelle, totalShare / 2);
+    result.explicationsTexte.push(
+      `Fente successorale entre les ${parOrdre.libelle} : 50 % branche paternelle, 50 % branche maternelle (C. civ. ${parOrdre.articles}).`
+    );
   } else {
-    // Vacance de branche paternelle → tout à la maternelle
-    distributeFenteHeritiers(result, brancheMaternelle, totalShare);
-    result.explicationsTexte.push(`Vacance de branche paternelle : la branche maternelle hérite de tout.`);
+    const ligne: Ligne = paternelle.length > 0 ? 'paternelle' : 'maternelle';
+    distributeFenteHeritiers(result, parOrdre.lignes[ligne], totalShare);
+    result.explicationsTexte.push(
+      `Aucun ${parOrdre.libelle === 'ascendants' ? 'ascendant' : 'collatéral'} dans l'autre branche : la branche ${ligne} hérite de tout (C. civ. ${parOrdre.articles}).`
+    );
   }
 }
 
+const estDeLaLigne = (p: Person, ligne: Ligne): boolean => {
+  const b = p.brancheFamiliale?.toLowerCase() || '';
+  const labels = ligne === 'paternelle' ? ['paternelle', 'paternel', 'père'] : ['maternelle', 'maternel', 'mère'];
+  return labels.some(label => b.includes(label));
+};
+const estGrandParent = (p: Person) => {
+  const lien = p.lienFamilial?.toLowerCase() || '';
+  return !estArriereGrandParent(p) && (lien.includes('grand-parent') || lien.includes('grand_parent') || lien === 'grand-père' || lien === 'grand-mère');
+};
+const estArriereGrandParent = (p: Person) => {
+  const lien = p.lienFamilial?.toLowerCase() || '';
+  return lien.includes('arriere-grand') || lien.includes('arrière-grand') || lien.includes('arriere_grand') || lien.includes('arrière grand');
+};
+
+/** Ascendants ordinaires d'une ligne au degré le plus proche (grands-parents, à défaut arrière-grands-parents). */
+function ascendantsLigne(personnesVivantes: Person[], ligne: Ligne): Person[] {
+  const gp = personnesVivantes.filter(p => estGrandParent(p) && estDeLaLigne(p, ligne));
+  if (gp.length > 0) return gp;
+  return personnesVivantes.filter(p => estArriereGrandParent(p) && estDeLaLigne(p, ligne));
+}
+
 /**
- * Collecte les héritiers d'une branche (paternelle ou maternelle) par ordre de rang.
- * Rang 1 : Grands-parents
- * Rang 2 : Arrière-grands-parents
- * Rang 3 : Oncles et tantes
- * Rang 4 : Cousins germains
- * Le premier rang présent exclut les suivants.
+ * Collatéraux ordinaires d'une ligne au degré le plus proche (oncles et
+ * tantes, 3e degré, à défaut cousins germains, 4e). Le formulaire famille
+ * enregistre 'Oncle/Tante' et 'Cousin/Cousine', d'où includes().
  */
-function collectFenteHeritiers(
-  graph: FamilyGraph,
-  personnesVivantes: any[],
-  branche: 'paternelle' | 'maternelle'
-): any[] {
-  const brancheLabels = branche === 'paternelle'
-    ? ['paternelle', 'paternel', 'père']
-    : ['maternelle', 'maternel', 'mère'];
+function collaterauxLigne(personnesVivantes: Person[], ligne: Ligne): Person[] {
+  const lien = (p: Person) => p.lienFamilial?.toLowerCase() || '';
+  const oncles = personnesVivantes.filter(p => (lien(p).includes('oncle') || lien(p).includes('tante')) && estDeLaLigne(p, ligne));
+  if (oncles.length > 0) return oncles;
+  return personnesVivantes.filter(p => lien(p).includes('cousin') && estDeLaLigne(p, ligne));
+}
 
-  const isBranche = (p: any) => {
-    const b = p.brancheFamiliale?.toLowerCase() || p.lienFamilial?.toLowerCase() || '';
-    return brancheLabels.some(label => b.includes(label));
-  };
+/**
+ * Ascendants les plus proches de la ligne opposée à celle du parent
+ * survivant (art. 738-1). La ligne du parent se déduit de son libellé
+ * (père/mère) ou des grands-parents rattachés à lui (enfant_de) ; à défaut,
+ * de ceux rattachés à l'autre parent. Jamais devinée : si des ascendants
+ * existent sans qu'on puisse situer la ligne du parent, le calcul s'arrête.
+ */
+function getAscendantsAutreLigne(graph: FamilyGraph, personnesVivantes: Person[], parent: Person): Person[] {
+  const candidats = [...ascendantsLigne(personnesVivantes, 'paternelle'), ...ascendantsLigne(personnesVivantes, 'maternelle')];
+  if (candidats.length === 0) return [];
 
-  // Rang 1 : Grands-parents
-  const grandsParents = personnesVivantes.filter(p => {
-    const lien = p.lienFamilial?.toLowerCase() || '';
-    return (lien.includes('grand-parent') || lien.includes('grand_parent') || lien === 'grand-père' || lien === 'grand-mère') && isBranche(p);
+  const ligneDe = (p: Person): Ligne | undefined =>
+    estDeLaLigne(p, 'paternelle') ? 'paternelle' : estDeLaLigne(p, 'maternelle') ? 'maternelle' : undefined;
+  const lienParent = parent.lienFamilial?.toLowerCase() || '';
+  const grandsParentsRattaches = (parentId: string) =>
+    graph.persons.filter(p => estGrandParent(p) && p.enfantDe === parentId).map(ligneDe).find(Boolean);
+  // L'autre parent du défunt (vivant ou non) : même rattachement (enfant_de).
+  const autresParents = graph.persons.filter(p => {
+    const lien = p.lienFamilial?.toLowerCase();
+    return p.id !== parent.id && p.enfantDe === parent.enfantDe && (lien === 'parent' || lien === 'père' || lien === 'mère');
   });
-  if (grandsParents.length > 0) return grandsParents;
+  const ligneAutreParent = autresParents.map(p => grandsParentsRattaches(p.id)).find(Boolean);
 
-  // Rang 2 : Arrière-grands-parents
-  const arriereGP = personnesVivantes.filter(p => {
-    const lien = p.lienFamilial?.toLowerCase() || '';
-    return (lien.includes('arriere-grand') || lien.includes('arrière-grand') || lien.includes('arriere_grand')) && isBranche(p);
-  });
-  if (arriereGP.length > 0) return arriereGP;
+  const ligneParent: Ligne | undefined = lienParent === 'père' ? 'paternelle'
+    : lienParent === 'mère' ? 'maternelle'
+    : grandsParentsRattaches(parent.id)
+      ?? (ligneAutreParent ? (ligneAutreParent === 'paternelle' ? 'maternelle' : 'paternelle') : undefined);
 
-  // Rang 3 : Oncles et tantes. Le formulaire famille enregistre une seule
-  // valeur combinée 'Oncle/Tante' (cf. useFamilyLinkLogic.ts) — jamais
-  // 'Oncle' ou 'Tante' isolément — d'où l'usage de includes() et non ===
-  // (une comparaison stricte ne matchait jamais aucune donnée réelle).
-  const onclesTantes = personnesVivantes.filter(p => {
-    const lien = p.lienFamilial?.toLowerCase() || '';
-    return (lien.includes('oncle') || lien.includes('tante')) && isBranche(p);
-  });
-  if (onclesTantes.length > 0) return onclesTantes;
-
-  // Rang 4 : Cousins germains. Même remarque : le formulaire enregistre
-  // 'Cousin/Cousine', jamais 'Cousin' ou 'Cousine' isolément.
-  const cousins = personnesVivantes.filter(p => {
-    const lien = p.lienFamilial?.toLowerCase() || '';
-    return (lien.includes('cousin') || lien.includes('cousin_germain')) && isBranche(p);
-  });
-  if (cousins.length > 0) return cousins;
-
-  return [];
+  if (!ligneParent) {
+    throw new Error(
+      `Impossible de situer la branche du parent survivant (${`${parent.prenom || ''} ${parent.nom || ''}`.trim()}) : ` +
+      `rattachez dans Famille au moins un grand-parent à son enfant (champ « Enfant de »). Seuls les ascendants ` +
+      `de l'autre branche partagent la succession avec lui (C. civ. art. 738-1).`
+    );
+  }
+  return ascendantsLigne(personnesVivantes, ligneParent === 'paternelle' ? 'maternelle' : 'paternelle');
 }
 
 function distributeFenteHeritiers(
@@ -745,7 +781,7 @@ function findAllLivingDescendants(graph: FamilyGraph, ancestorId: PersonId): any
 function mapLienFamilial(lien: string): string {
   if (lien.includes('grand-parent') || lien.includes('grand_parent') || lien === 'grand-père' || lien === 'grand-mère') return 'grand_parent';
   if (lien.includes('arriere-grand') || lien.includes('arrière-grand')) return 'arriere_grand_parent';
-  // Même remarque que dans collectFenteHeritiers : la valeur réelle du
+  // Même remarque que dans collaterauxLigne : la valeur réelle du
   // formulaire est 'Oncle/Tante' / 'Cousin/Cousine' (jamais isolée).
   if (lien.includes('oncle') || lien.includes('tante')) return 'oncle_tante';
   if (lien.includes('cousin')) return 'cousin';
