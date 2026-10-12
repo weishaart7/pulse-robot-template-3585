@@ -73,3 +73,23 @@ export const computeValeurNueProprieteDonation = (
   return { valeur: valeurPleinePropriete * nuePropriete, nuePropriete, age };
 };
 
+
+/**
+ * Même valeur fiscale pour une donation avec réserve d'usufruit consentie par
+ * plusieurs donateurs à parts égales (donation de biens communs par les deux
+ * époux : chacun donne sa moitié et s'en réserve l'usufruit) — chaque part
+ * est évaluée selon l'âge de SON donateur. Null si un âge manque.
+ */
+export const computeValeurNueProprieteDonationParDonateurs = (
+  valeurPleinePropriete: number,
+  datesNaissanceDonateurs: Array<string | undefined | null>,
+  dateActe: Date | string | undefined | null
+): { valeur: number; nuePropriete: number; ages: number[] } | null => {
+  if (datesNaissanceDonateurs.length === 0) return null;
+  const part = valeurPleinePropriete / datesNaissanceDonateurs.length;
+  const parts = datesNaissanceDonateurs.map(d => computeValeurNueProprieteDonation(part, d, dateActe));
+  if (parts.some(p => p === null)) return null;
+  const valeur = parts.reduce((s, p) => s + p!.valeur, 0);
+  const nuePropriete = parts.reduce((s, p) => s + p!.nuePropriete, 0) / parts.length;
+  return { valeur, nuePropriete, ages: parts.map(p => p!.age) };
+};

@@ -28,7 +28,7 @@ import {
   computeAVReintegrationCivile,
   AVDonneesInsuffisantesError
 } from '@/utils/transmissionHelpers';
-import { computeTransmission, TransmissionContext, ConjointOption } from '@/lib/transmission';
+import { computeTransmission, TransmissionContext, ConjointOption, liberalitesDuDefunt } from '@/lib/transmission';
 import { FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission/types';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
@@ -84,10 +84,17 @@ export const ProcessusCalcul = () => {
   // Convertir les libéralités : jointure live vers assets pour la valeur des
   // legs (jamais figée en base), et exclusion des legs caducs (bien légué
   // supprimé — cf. buildTransmissionLiberalites).
-  const { liberalites: transmissionLiberalites, legsCaducs } = useMemo(
-    () => buildTransmissionLiberalites(liberalites, assets, true),
-    [liberalites, assets]
-  );
+  // `toutesLiberalites` alimente le moteur, qui ne retient lui-même que celles
+  // du défunt ; `transmissionLiberalites` (affichage) applique la même
+  // sélection : donations du conjoint exclues, biens communs pour moitié.
+  const { toutesLiberalites, transmissionLiberalites, legsCaducs } = useMemo(() => {
+    const built = buildTransmissionLiberalites(liberalites, assets, true);
+    return {
+      toutesLiberalites: built.liberalites,
+      transmissionLiberalites: liberalitesDuDefunt(built.liberalites, 'user'),
+      legsCaducs: built.legsCaducs
+    };
+  }, [liberalites, assets]);
 
   const params: TransmissionParams = useMemo(() => {
     const rawParams = transmissionParamsData as any;
@@ -136,7 +143,7 @@ export const ProcessusCalcul = () => {
       const ctx: TransmissionContext = {
         family: familyGraph,
         patrimony,
-        liberalites: transmissionLiberalites,
+        liberalites: toutesLiberalites,
         params,
         // Même source que Synthese.tsx/Succession2ndDeces.tsx : l'option
         // enregistrée dans l'onglet Optimisation, jamais une valeur figée.
@@ -174,7 +181,7 @@ export const ProcessusCalcul = () => {
       return { patrimony: null, transmissionResult: null, computeErrorMessage: null, computeErrorKind: null };
     }
   }, [
-    familyGraph, assets, passifs, emprunts, transmissionLiberalites, params, maritalStatus, avContractsRaw, familyProfile,
+    familyGraph, assets, passifs, emprunts, toutesLiberalites, params, maritalStatus, avContractsRaw, familyProfile,
     recompenses, creancesEntreEpoux, patrimoineOriginaire, patrimoineFinal, assetDemembrements, demembrementCtx,
     societesDutreil
   ]);

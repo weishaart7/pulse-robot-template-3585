@@ -81,6 +81,9 @@ export interface LiberaliteRow {
   // l'exonération dédiée art. 790 G CGI (31 865€, cumulable avec l'abattement général) —
   // cf. lib/transmission/index.ts::dmtgDonations, lib/dmtg/recall.ts.
   nature?: string | null;
+  // 'epoux1' (Utilisateur), 'epoux2' (conjoint), 'communaute' (les deux, biens
+  // communs) — DonationForm.tsx. Ignoré pour un legs (toujours de l'Utilisateur).
+  realise_par?: string | null;
 }
 
 interface AssetValeur {
@@ -172,7 +175,10 @@ export function buildTransmissionLiberalites(
       droitTransmis: row.droit_transmis === 'usufruit' ? 'usufruit' as const : undefined,
       // Déjà proratisée par donataire à l'enregistrement, comme `montant`.
       valeurPartage: row.type === 'donation' && row.valeur_partage != null ? Number(row.valeur_partage) : undefined,
-      nature: row.nature || undefined
+      nature: row.nature || undefined,
+      donateur: row.type === 'donation'
+        ? (row.realise_par === 'epoux2' ? 'spouse' as const : row.realise_par === 'communaute' ? 'communaute' as const : 'user' as const)
+        : 'user' as const
     });
   }
 
@@ -871,7 +877,8 @@ export function buildSpouseAsDecedentFamilyGraph(
       hasSurvivingSpouse: false,
       childrenOfDecedent,
       childrenCommonWithSpouse: [],
-      hasDDV: hasDDVConsentieParDefunt(maritalStatus, 'spouse')
+      hasDDV: hasDDVConsentieParDefunt(maritalStatus, 'spouse'),
+      conjointPredecede: true
     };
   }
 
@@ -1408,6 +1415,7 @@ export function widowFamilyGraph(graph: FamilyGraph, familyLinks: FamilyLink[]):
     hasSurvivingSpouse: false,
     survivingSpouseId: undefined,
     survivantPartenairePacs: false,
+    conjointPredecede: true,
     childrenOfDecedent: graph.childrenOfDecedent.filter(id => !spouseOnlyChildIds.has(id)),
     childrenCommonWithSpouse: []
   };

@@ -50,6 +50,10 @@ export interface FamilyGraph {
   // Survivant lié au défunt par un PACS (jamais héritier légal, mais titulaire
   // du droit temporaire au logement, C. civ. art. 515-6 al. 3 renvoyant à 763).
   survivantPartenairePacs?: boolean;
+  // Le conjoint du défunt est déjà décédé dans ce chaînage (2nd décès) :
+  // une libéralité désignant « le conjoint » vise une personne prédécédée
+  // (legs caduc, art. 1039 C. civ.), et non un tiers.
+  conjointPredecede?: boolean;
 }
 
 export interface PatrimonySnapshot {
@@ -101,6 +105,11 @@ export interface Liberalite {
   // de l'indemnité de réduction (art. 924-2) réutilisent cette même valeur.
   // Limite documentée, non corrigée en V1 — cf. audit Bloc 1, finding T3.
   valeur: number;
+  // Donateur d'une donation (liberalites.realise_par) : l'Utilisateur, son
+  // conjoint, ou les deux sur des biens communs (chacun donateur pour
+  // moitié). Absent = Utilisateur (lignes antérieures). Un legs est toujours
+  // de l'Utilisateur. Cf. liberalitesDuDefunt (index.ts).
+  donateur?: 'user' | 'spouse' | 'communaute';
   date: string;
   // Non défini est traité comme 'avance_part' (présomption art. 843 C. civ.
   // pour un bénéficiaire réservataire) de façon cohérente par

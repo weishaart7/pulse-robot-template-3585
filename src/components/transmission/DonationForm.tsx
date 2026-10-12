@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAssets } from '@/hooks/useAssets';
 import { useMaritalStatus, useFamilyProfile } from '@/hooks/useFamilyData';
-import { computeValeurNueProprieteDonation } from '@/lib/patrimoine/bareme669CGI';
+import { computeValeurNueProprieteDonationParDonateurs } from '@/lib/patrimoine/bareme669CGI';
 import { useToast } from '@/hooks/use-toast';
 import { liberaliteService, Liberalite, LiberaliteTypeImputation } from '@/services/liberaliteService';
 import { CLAUSE_DISPENSE_RAPPORT, CLAUSE_RAPPORT_FORFAITAIRE, CLAUSE_EVALUATION_DECES } from '@/lib/transmission/types';
@@ -87,6 +87,17 @@ const DEFAULT_FORM_DATA = {
   valeurPartage: undefined as number | undefined,
 };
 
+// Donateur(s) selon « Réalisée par » : la réserve d'usufruit est évaluée à
+// l'âge de chaque donateur (biens communs : chaque époux pour sa moitié).
+const datesNaissanceDonateurs = (
+  realiseePar: string,
+  familyProfile: { date_naissance?: string | null } | null | undefined,
+  maritalStatus: { date_naissance_conjoint?: string | null } | null | undefined
+) =>
+  realiseePar === 'epoux2' ? [maritalStatus?.date_naissance_conjoint]
+    : realiseePar === 'communaute' ? [familyProfile?.date_naissance, maritalStatus?.date_naissance_conjoint]
+    : [familyProfile?.date_naissance];
+
 export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: DonationFormProps) => {
   const { assets, loading } = useAssets();
   const { toast } = useToast();
@@ -144,8 +155,10 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
     formData.statut === 'projet'
   );
   const calculNuePropriete = isDemembree
-    ? computeValeurNueProprieteDonation(formData.valeurFiscaleActe ?? 0, familyProfile?.date_naissance, formData.date)
+    ? computeValeurNueProprieteDonationParDonateurs(formData.valeurFiscaleActe ?? 0, datesNaissanceDonateurs(formData.realiseePar, familyProfile, maritalStatus), formData.date)
     : null;
+  const estMarie = maritalStatus?.statut_couple === 'Marié(e)';
+  const aUnConjoint = !!maritalStatus?.statut_couple && ['Marié(e)', 'Pacsé(e)'].includes(maritalStatus.statut_couple);
 
   // Avertissement non bloquant : lien de parenté hors du champ de l'art. 790 G
   // (le moteur, transmission/index.ts, vérifie aussi les conditions d'âge).
@@ -169,8 +182,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
     'Donation-partage',
     'Donation graduelle',
     'Donation résiduelle',
-    'Donation-partage transgénérationnelle',
-    'Donation-partage conjonctive'
+    'Donation-partage transgénérationnelle'
   ];
 
   const clausesOptions = [
@@ -301,12 +313,12 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
     }
     const first = editingGroup?.[0];
     if (pleineProprieteReconstituee.current || !first?.demembrement || first.valeur_fiscale_acte == null) return;
-    const bareme = computeValeurNueProprieteDonation(1, familyProfile?.date_naissance, first.date_acte);
+    const bareme = computeValeurNueProprieteDonationParDonateurs(1, datesNaissanceDonateurs(first.realise_par || '', familyProfile, maritalStatus), first.date_acte);
     if (!bareme || bareme.nuePropriete <= 0) return;
     pleineProprieteReconstituee.current = true;
     const nueProprieteTotale = first.valeur_fiscale_acte / ((first.pourcentage ?? 100) / 100);
     setFormData(prev => ({ ...prev, valeurFiscaleActe: nueProprieteTotale / bareme.nuePropriete }));
-  }, [open, editingGroup, familyProfile]);
+  }, [open, editingGroup, familyProfile, maritalStatus]);
 
   // Reconstruction des donataires : nécessite familyMembers chargé pour
   // retrouver nom/prénom/lien à partir de beneficiaire_id.
@@ -333,6 +345,15 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
       toast({
         title: "Erreur",
         description: "Sélectionnez un type de donation.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.realiseePar) {
+      toast({
+        title: "Erreur",
+        description: "Indiquez qui a consenti la donation : elle n'entre dans la succession de chaque époux que pour sa part (moitié pour des biens communs).",
         variant: "destructive",
       });
       return;
@@ -403,7 +424,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
     if (isDemembree && !calculNuePropriete) {
       toast({
         title: "Erreur",
-        description: "Donation démembrée : la date de l'acte et la date de naissance du donateur (profil) sont nécessaires pour valoriser la nue-propriété (barème art. 669 CGI).",
+        description: "Donation démembrée : la date de l'acte et la date de naissance de chaque donateur (profil, conjoint) sont nécessaires pour valoriser la nue-propriété (barème art. 669 CGI).",
         variant: "destructive",
       });
       return;
@@ -711,17 +732,21 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
 
           {/* Réalisée par */}
           <div>
-            <Label>Réalisée par</Label>
+            <Label>Donateur *</Label>
             <Select value={formData.realiseePar} onValueChange={(value) => setFormData({ ...formData, realiseePar: value })}>
               <SelectTrigger size="lg">
-                <SelectValue placeholder="Sélectionnez qui a réalisé" />
+                <SelectValue placeholder="Qui a consenti la donation ?" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="epoux1">Époux 1</SelectItem>
-                <SelectItem value="epoux2">Époux 2</SelectItem>
-                <SelectItem value="communaute">Communauté</SelectItem>
+                <SelectItem value="epoux1">Vous</SelectItem>
+                {aUnConjoint && <SelectItem value="epoux2">Votre conjoint</SelectItem>}
+                {estMarie && <SelectItem value="communaute">Vous deux (biens communs)</SelectItem>}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Une donation n'entre que dans la succession de son donateur ; une donation de biens communs
+              compte pour moitié dans chacune des deux successions (rapport, rappel fiscal).
+            </p>
           </div>
 
           {/* Notes */}
@@ -762,8 +787,8 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
               {isDemembree && (
                 <p className="text-xs mt-1 text-[var(--text-secondary)]">
                   {calculNuePropriete
-                    ? `Nue-propriété transmise (barème art. 669 CGI) : ${(formData.valeurFiscaleActe ?? 0).toLocaleString('fr-FR')} € × ${Math.round(calculNuePropriete.nuePropriete * 100)} % (donateur de ${calculNuePropriete.age} ans à l'acte) = ${Math.round(calculNuePropriete.valeur).toLocaleString('fr-FR')} €`
-                    : "Renseignez la date de l'acte (et la date de naissance du donateur dans le profil) pour calculer la valeur de la nue-propriété."}
+                    ? `Nue-propriété transmise (barème art. 669 CGI) : ${(formData.valeurFiscaleActe ?? 0).toLocaleString('fr-FR')} € × ${Math.round(calculNuePropriete.nuePropriete * 100)} % (${calculNuePropriete.ages.length > 1 ? `donateurs de ${calculNuePropriete.ages.join(' et ')} ans, chacun pour moitié` : `donateur de ${calculNuePropriete.ages[0]} ans`} à l'acte) = ${Math.round(calculNuePropriete.valeur).toLocaleString('fr-FR')} €`
+                    : "Renseignez la date de l'acte (et la date de naissance de chaque donateur) pour calculer la valeur de la nue-propriété."}
                 </p>
               )}
             </div>

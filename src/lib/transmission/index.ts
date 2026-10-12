@@ -198,24 +198,66 @@ export function getConjointAge(family: FamilyGraph, referenceDateISO: string): n
 }
 
 /**
+ * Libéralités du défunt simulé (`role`), pondérées selon leur donateur :
+ * 100 % pour ses propres donations, 50 % pour une donation de biens communs
+ * consentie par les deux époux (chacun donateur pour moitié : masse de
+ * calcul, rapport — art. 850 C. civ. —, rappel fiscal — art. 784 CGI), 0 %
+ * pour celles de l'autre époux. Les legs, toujours de l'Utilisateur, ne
+ * jouent que dans sa succession. Les valeurs pondérées sont toutes celles
+ * portées par la libéralité (décès, acte, partage, forfait de rapport).
+ */
+export function liberalitesDuDefunt(liberalites: Liberalite[], role: 'user' | 'spouse'): Liberalite[] {
+  return liberalites.flatMap(lib => {
+    if (lib.type === 'legs') return role === 'user' ? [lib] : [];
+    const donateur = lib.donateur ?? 'user';
+    const coef = donateur === 'communaute' ? 0.5 : donateur === role ? 1 : 0;
+    if (coef === 0) return [];
+    if (coef === 1) return [lib];
+    const pondere = (v: number | undefined) => (v === undefined ? undefined : v * coef);
+    return [{
+      ...lib,
+      valeur: lib.valeur * coef,
+      valeurFiscaleActe: pondere(lib.valeurFiscaleActe),
+      valeurPartage: pondere(lib.valeurPartage),
+      montantRapportForfaitaire: pondere(lib.montantRapportForfaitaire)
+    }];
+  });
+}
+
+/**
  * Orchestrateur principal : calcule la transmission complète (dévolution
  * civile + fiscalité DMTG + net par héritier). Seul point d'entrée appelé
  * par l'UI — computeDMTG n'est plus invoqué directement par les composants.
  */
 export function computeTransmission(ctx: TransmissionContext): TransmissionResult {
   const { family, params, conjointOption, rawAssets, partageEnvisage, duhOpte } = ctx;
+  const explicationsLiberalites: string[] = [];
   // Sentinelle 'conjoint' (liberalites.beneficiaire_conjoint) résolue vers le
   // conjoint du graphe — marié (héritier) ou partenaire de PACS (légataire
-  // seulement). Sans conjoint dans le graphe : traité comme un tiers.
+  // seulement). Conjoint prédécédé dans ce chaînage : legs caduc (art. 1039
+  // C. civ.), donation conservée dans la masse de calcul (art. 922) sous un id
+  // sans héritier. Sans conjoint dans le graphe (divorce…) : traité comme un tiers.
   const referenceDate = ctx.referenceDate || new Date().toISOString().split('T')[0];
+  const liberalitesDefunt = liberalitesDuDefunt(ctx.liberalites, getDecedentRole(family.decedentId))
+    .filter(lib => {
+      const caduc = lib.type === 'legs' && lib.beneficiaireId === 'conjoint' && !family.survivingSpouseId && !!family.conjointPredecede;
+      if (caduc) {
+        explicationsLiberalites.push(
+          `Legs « ${lib.beneficiaireName || lib.id} » au conjoint prédécédé : caduc (C. civ. art. 1039), les biens restent dans la succession.`
+        );
+      }
+      return !caduc;
+    });
   // Libéralité en usufruit viager : usufruit du bénéficiaire au barème 669 CGI
   // selon son âge au décès (valeur au jour du décès, art. 922). Jamais deviné :
   // bénéficiaire hors fiche ou sans date de naissance → erreur explicite.
-  const liberalites = ctx.liberalites.map(lib => {
+  const liberalites = liberalitesDefunt.map(lib => {
     const resolue = lib.beneficiaireId === 'conjoint'
-      ? { ...lib, beneficiaireId: family.survivingSpouseId || 'tiers' }
+      ? { ...lib, beneficiaireId: family.survivingSpouseId || (family.conjointPredecede ? 'conjoint-predecede' : 'tiers') }
       : lib;
     if (resolue.droitTransmis !== 'usufruit') return resolue;
+    // Usufruit donné au conjoint prédécédé : éteint à son décès, plus rien à évaluer.
+    if (resolue.beneficiaireId === 'conjoint-predecede') return { ...resolue, pctUsufruit: 0 };
     const beneficiaire = family.persons.find(p => p.id === resolue.beneficiaireId);
     if (!beneficiaire?.dateNaissance) {
       throw new Error(
@@ -338,6 +380,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // un testament ne fait que redistribuer la quotité disponible (ne supprime pas la réserve).
   const successionLegaleResult = calculateSuccessionLegale(family, false, conjointOption);
   const heirsShares = successionLegaleResult.heritiers;
+  successionLegaleResult.explicationsTexte.push(...explicationsLiberalites);
 
   // Usufruit du conjoint au barème 669 (âge au décès) : nécessaire dès qu'un
   // démembrement légal/DDV ou une libéralité au conjoint existe (quotité

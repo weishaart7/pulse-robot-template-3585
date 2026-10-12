@@ -131,7 +131,9 @@ export const Succession2ndDeces = () => {
         const ctxConjointDecede: TransmissionContext = {
           family: spouseFamilyFirst,
           patrimony: spouseBasePatrimony,
-          liberalites: [],
+          // computeTransmission ne retient que les donations du conjoint
+          // (seul ou pour moitié des biens communs), cf. liberalitesDuDefunt.
+          liberalites: base.ctxUtilisateurDecedeSansOption.liberalites,
           params,
           societesDutreil,
           // Option du survivant commune aux deux ordres (décision V1) : celle
@@ -188,7 +190,9 @@ export const Succession2ndDeces = () => {
           secondDeath: {
             family: utilisateurVeufFamily,
             patrimony: utilisateurVeufPatrimony,
-            liberalites: [],
+            // Libéralités de l'Utilisateur à son propre décès (legs au
+            // conjoint prédécédé caducs, cf. computeTransmission).
+            liberalites: base.ctxUtilisateurDecedeSansOption.liberalites,
             params,
             societesDutreil,
             referenceDate,

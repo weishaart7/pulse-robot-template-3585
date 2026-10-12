@@ -337,7 +337,9 @@ export function computeOrdreNormal(base: OrdreNormalBase, conjointOption: Conjoi
     secondDeath: {
       family: spouseFamily,
       patrimony: spousePatrimony,
-      liberalites: [],
+      // Toutes les libéralités saisies : computeTransmission ne retient que
+      // celles du conjoint (seul ou pour moitié des biens communs).
+      liberalites: base.ctxUtilisateurDecedeSansOption.liberalites,
       params,
       societesDutreil: data.societesDutreil,
       referenceDate,

@@ -2,11 +2,13 @@
  * Audit des calculs du 2026-10-12, phase 1 (cf. docs/transmission.md §3) :
  * #2 usufruit viager du défunt hors succession, #5 masse de l'art. 758-5 sans
  * double compte des legs « sur part successorale ». Le #1 (récompenses) est
- * couvert par recompensesCreances.branchement.test.ts.
+ * couvert par recompensesCreances.branchement.test.ts. Phase 2 : #3 donateur
+ * des donations, #4 libéralités au 2nd décès.
  */
 import { describe, it, expect } from 'vitest';
-import { computeTransmission, FamilyGraph, Liberalite, TransmissionParams } from './index';
-import { buildPatrimonySnapshot } from '@/utils/transmissionHelpers';
+import { computeTransmission, FamilyGraph, Liberalite, TransmissionParams, liberalitesDuDefunt } from './index';
+import { buildPatrimonySnapshot, buildTransmissionLiberalites } from '@/utils/transmissionHelpers';
+import { computeValeurNueProprieteDonationParDonateurs } from '@/lib/patrimoine/bareme669CGI';
 import type { Asset } from '@/services/assetService';
 import transmissionParamsData from '../../data/transmission-params.json';
 
@@ -100,5 +102,101 @@ describe('#5 — masse de l\'art. 758-5 et legs sur part successorale', () => {
     expect(recu('conjoint')).toBeCloseTo(200000, 0);
     expect(recu('e1')).toBeCloseTo(300000, 0);
     expect(recu('e2')).toBeCloseTo(300000, 0);
+  });
+});
+
+describe('#3 — donateur des donations (realise_par)', () => {
+  const donation = (donateur: Liberalite['donateur']): Liberalite => ({
+    id: 'd1', type: 'donation', beneficiaireId: 'e1', valeur: 200000, valeurFiscaleActe: 200000,
+    valeurPartage: 220000, date: '2018-01-01', typeImputation: 'avance_part', donateur
+  });
+
+  it('realise_par est traduit en donateur (défaut : Utilisateur)', () => {
+    const rows = ['epoux1', 'epoux2', 'communaute', null].map((r, i) => ({
+      id: `d${i}`, type: 'donation', beneficiaire_nom: 'A', montant: 1000, denomination: 'D', realise_par: r
+    }));
+    const { liberalites } = buildTransmissionLiberalites(rows, []);
+    expect(liberalites.map(l => l.donateur)).toEqual(['user', 'spouse', 'communaute', 'user']);
+  });
+
+  it('pondération : 100 % donateur seul, 50 % biens communs, 0 % autre époux ; legs à l\'Utilisateur seulement', () => {
+    const legs: Liberalite = { id: 'l1', type: 'legs', beneficiaireId: 'e2', valeur: 50000, date: REF };
+    const libs = [donation('user'), { ...donation('communaute'), id: 'd2' }, { ...donation('spouse'), id: 'd3' }, legs];
+    const user = liberalitesDuDefunt(libs, 'user');
+    expect(user.map(l => [l.id, l.valeur])).toEqual([['d1', 200000], ['d2', 100000], ['l1', 50000]]);
+    expect(user[1].valeurFiscaleActe).toBe(100000);
+    expect(user[1].valeurPartage).toBe(110000);
+    expect(liberalitesDuDefunt(libs, 'spouse').map(l => [l.id, l.valeur])).toEqual([['d2', 100000], ['d3', 200000]]);
+  });
+
+  it('donation de biens communs : rappel fiscal pour moitié dans la succession de l\'Utilisateur', () => {
+    const r = computeTransmission({
+      family: famille(true), patrimony: { date: REF, biensExistants: 800000, passifs: 0 },
+      liberalites: [donation('communaute')], params, conjointOption: 'quart_pp', referenceDate: REF
+    });
+    const e1 = r.dmtg.perBeneficiary['e1'];
+    expect(e1.allowanceGeneralResidual).toBe(0);
+    expect(e1.consumedBracketsAmount).toBe(0);
+    // Masse de calcul : 800 000 + 100 000 (moitié de la donation).
+    expect(r.masseCalcul).toBe(900000);
+  });
+
+  it('donation du conjoint seul : absente de la succession de l\'Utilisateur, présente dans celle du conjoint', () => {
+    const rUser = computeTransmission({
+      family: famille(true), patrimony: { date: REF, biensExistants: 800000, passifs: 0 },
+      liberalites: [donation('spouse')], params, conjointOption: 'quart_pp', referenceDate: REF
+    });
+    expect(rUser.masseCalcul).toBe(800000);
+    expect(rUser.dmtg.perBeneficiary['e1'].allowanceGeneralResidual).toBe(100000);
+
+    const familleConjoint: FamilyGraph = {
+      ...famille(false),
+      persons: famille(false).persons.map(p => p.id === 'defunt' ? { ...p, id: 'conjoint-defunt' } : p),
+      links: famille(false).links.map(l => ({ ...l, from: 'conjoint-defunt' })),
+      decedentId: 'conjoint-defunt',
+      conjointPredecede: true
+    };
+    const rConjoint = computeTransmission({
+      family: familleConjoint, patrimony: { date: REF, biensExistants: 400000, passifs: 0 },
+      liberalites: [donation('spouse')], params, referenceDate: REF
+    });
+    expect(rConjoint.masseCalcul).toBe(600000);
+    expect(rConjoint.dmtg.perBeneficiary['e1'].consumedBracketsAmount).toBe(100000);
+  });
+
+  it('nue-propriété d\'une donation de biens communs : chaque moitié à l\'âge de son donateur', () => {
+    // 60 ans (NP 50 %) et 70 ans (NP 60 %) à l'acte, 400 000 € en PP.
+    const r = computeValeurNueProprieteDonationParDonateurs(400000, ['1960-01-01', '1950-01-01'], '2020-06-01');
+    expect(r?.valeur).toBe(220000);
+    expect(r?.ages).toEqual([60, 70]);
+    expect(computeValeurNueProprieteDonationParDonateurs(400000, ['1960-01-01', null], '2020-06-01')).toBeNull();
+  });
+});
+
+describe('#4 — libéralités de l\'Utilisateur à son décès après celui du conjoint', () => {
+  const veuf = (): FamilyGraph => ({ ...famille(false), conjointPredecede: true });
+
+  it('le rappel fiscal de ses donations s\'applique', () => {
+    const r = computeTransmission({
+      family: veuf(), patrimony: { date: REF, biensExistants: 600000, passifs: 0 },
+      liberalites: [{ id: 'd1', type: 'donation', beneficiaireId: 'e1', valeur: 100000, valeurFiscaleActe: 100000, date: '2021-01-01', typeImputation: 'avance_part' }],
+      params, referenceDate: REF
+    });
+    expect(r.dmtg.perBeneficiary['e1'].allowanceGeneralResidual).toBe(0);
+  });
+
+  it('un legs au conjoint prédécédé est caduc ; une donation à ce conjoint reste dans la masse', () => {
+    const r = computeTransmission({
+      family: veuf(), patrimony: { date: REF, biensExistants: 600000, passifs: 0 },
+      liberalites: [
+        { id: 'l1', type: 'legs', beneficiaireId: 'conjoint', beneficiaireName: 'Marie', valeur: 100000, date: REF },
+        { id: 'd1', type: 'donation', beneficiaireId: 'conjoint', valeur: 50000, date: '2015-01-01', typeImputation: 'hors_part' }
+      ],
+      params, referenceDate: REF
+    });
+    expect(r.legataires).toHaveLength(0);
+    expect(r.masseCalcul).toBe(650000);
+    expect(r.heirs.reduce((s, h) => s + h.recuSuccession, 0)).toBeCloseTo(600000, 0);
+    expect(r.explicationsTexte.some(t => t.includes('art. 1039'))).toBe(true);
   });
 });
