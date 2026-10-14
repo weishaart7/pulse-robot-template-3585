@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Sparkle } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { KairosLogo } from '@/components/brand/KairosLogo';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { bottomItems, menuItems, getCurrentNavValue } from '@/components/layout/navigation-items';
@@ -167,7 +168,7 @@ export function DashboardSidebar() {
             className={cn(railButton, "mb-4")}
             aria-label="Accueil Kairos"
           >
-            <Sparkle className="h-6 w-6 fill-white text-white" strokeWidth={1.5} />
+            <KairosLogo className="h-6 w-6 text-white" />
           </button>
 
           <nav aria-label="Modules" className="flex flex-col items-center gap-1">

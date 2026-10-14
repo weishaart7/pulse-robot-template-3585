@@ -33,9 +33,13 @@ lui passer leur contenu.
 (`ElevateNavbar`, adapté de Hyperiux Vault « Elevate Navbar »).
 
 - Pastille noire centrée, fixe en haut (`top-12`), coins 12 px, **aucune ombre**.
+- Logo Kairos (`KairosLogo` → `/`) : desktop, noir 32 px sans fond, fixe en haut à gauche
+  (`left-12 top-12` : glyphe à 32 px des bords haut et gauche de la carte du hero, centré sur la hauteur de la pastille, même animation `nav-intro`) ; noir car
+  tous les fonds de la landing sont clairs (hero pastel, sections blanches). Mobile : blanc 20 px
+  à gauche dans la barre noire, en face du bouton menu.
 - Liens : Fonctionnalités, Tarifs, À propos (ancres) ; CTA blanc « Se connecter » → `/login`.
 - Survol : bascule verticale du texte animée avec GSAP.
-- Mobile (< 768 px) : bouton menu ouvrant un panneau déroulant, avec focus trap.
+- Mobile (< 768 px) : logo à gauche, bouton menu à droite ouvrant un panneau déroulant, avec focus trap.
 - **Animation d'apparition** : la barre s'étend horizontalement depuis son centre
   (`clip-path` de `inset(0 50%)` à `inset(0 0)`), 0,8 s, délai 0,15 s, courbe
   `cubic-bezier(0.22, 1, 0.36, 1)`, fondu bref au départ. Aucun déplacement vertical.

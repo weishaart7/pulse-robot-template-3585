@@ -11,6 +11,7 @@ import {
 } from "react";
 import { Link } from "react-router-dom";
 import gsap from "gsap";
+import { KairosLogo } from "@/components/brand/KairosLogo";
 
 /* ---------- inline icons ---------- */
 function ChevronDown({ className = "" }: { className?: string }) {
@@ -1028,7 +1029,14 @@ function ElevateNavbarMobile({
         style={{ pointerEvents: "none" }}
       />
 
-      <div className="nav-intro flex items-center justify-end rounded-xl border border-white/10 bg-black px-1.5 py-1.5">
+      <div className="nav-intro flex items-center justify-between rounded-xl border border-white/10 bg-black px-1.5 py-1.5">
+        <Link
+          to="/"
+          aria-label="Accueil Kairos"
+          className="flex h-8 w-8 items-center justify-center text-white"
+        >
+          <KairosLogo className="h-5 w-5" />
+        </Link>
         <button
           ref={toggleButtonRef}
           type="button"

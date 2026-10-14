@@ -49,6 +49,8 @@ Surtitres techniques (étapes de wizard, en-têtes de section `SectionHeader`) :
 - `Checkbox` : coins fixes 5 px (indépendants de `--radius`).
 - `Dialog`, `AlertDialog` : coins 24 px, `shadow-whisper`, voile noir 40 %.
 - `Popover` : coins 14 px, `shadow-whisper`.
+- Logo : `KairosLogo` (`src/components/brand/KairosLogo.tsx`), SVG inline en `currentColor`
+  (couleur via `text-*`), même tracé que `public/logo.svg` (aussi favicon, avec `public/favicon.ico`).
 
 ## 5. Cadre de l'app (`src/components/layout`)
 
@@ -61,7 +63,7 @@ Surtitres techniques (étapes de wizard, en-têtes de section `SectionHeader`) :
   Parti pris : sobre, sans effets décoratifs (pas de ressort, de voile translucide, d'ombre ni de
   suivi du survol).
   - **Rail des modules** : colonne noire 64 px, coins 12 px — exception assumée à la palette taupe,
-    reprise de la navbar de la landing. Logo (→ `/`), 9 modules en icônes 18 px blanc 55 % (blanc
+    reprise de la navbar de la landing. Logo Kairos blanc 24 px (→ `/`), 9 modules en icônes 18 px blanc 55 % (blanc
     au survol) ; module actif en carré blanc plein coins 8 px, icône noire (comme le bouton blanc
     de la navbar). En bas, sous un filet blanc 10 % : Blog, Nouveautés, Suggestion et le menu
     profil (`ProfileMenu`, ouvert à droite). Infobulles à droite.
@@ -78,7 +80,7 @@ Surtitres techniques (étapes de wizard, en-têtes de section `SectionHeader`) :
     rail jusqu'au repère ; active en encre 500, inactives en smoke ; animations coupées si
     `prefers-reduced-motion` ; `aria-current="page"`.
 - Téléphone (< 768 px) : rail et panneau masqués. Barre du haut (`DashboardTopNav`, `md:hidden`) :
-  bouton menu, logo, sélecteur de modules en pilules sur piste taupe filetée (module actif en
+  bouton menu, logo Kairos encre, sélecteur de modules en pilules sur piste taupe filetée (module actif en
   pastille encre, ramené en vue), profil. Le bouton menu ouvre un panneau latéral gauche taupe avec
   le même contenu (`SidebarNav`) plus les liens du bas. Marge latérale de la zone principale 16 px
   (`px-4`), 24 px à partir de `md`.
