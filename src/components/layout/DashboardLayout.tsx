@@ -10,12 +10,12 @@ const DashboardLayout = () => {
     <SubNavProvider>
       <div className={cn("dashboard-shell flex flex-col bg-background w-full h-screen overflow-hidden")}>
         <DashboardTopNav />
-        {/* Écran large : fond taupe continu avec la barre latérale ; le contenu est une
-            plaque eggshell arrondie, entourée d'une fine bande taupe. */}
-        <div className="flex flex-1 min-h-0 md:bg-secondary">
+        {/* Écran large : noir chaud continu avec la barre latérale ; le contenu est une
+            plaque eggshell arrondie, entourée d'une bande noire. */}
+        <div className="flex flex-1 min-h-0 md:bg-sidebar-bg">
           <DashboardSidebar />
-          <div className="flex flex-1 min-w-0 md:py-1.5 md:pr-1.5">
-            <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background md:rounded-[12px] md:border md:border-border px-4 pb-4 md:p-6 pt-3 min-w-0">
+          <div className="flex flex-1 min-w-0 md:py-3.5 md:pr-3.5">
+            <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background md:rounded-[8px] px-4 pb-4 md:p-6 pt-3 min-w-0">
               <Outlet />
             </main>
           </div>

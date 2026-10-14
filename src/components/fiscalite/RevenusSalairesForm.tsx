@@ -7,6 +7,7 @@ import { useRevenusSalaires } from '@/hooks/useRevenusSalaires';
 import { RevenusSalaires } from '@/services/revenusSalairesService';
 import { RevenusSalairesInput } from '@/lib/fiscalite';
 import { CaseLigne, DeclarantsHeader, MontantLigne } from './DeclarationLigne';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const REVENUS_VIDE: RevenusSalairesInput = {
   case1aj: null,
@@ -79,9 +80,8 @@ export const RevenusSalairesForm = ({ onSaved }: RevenusSalairesFormProps) => {
   if (loading) {
     return (
       <Card>
-        <CardContent className="p-6 flex items-center justify-center text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          Chargement des revenus de salaires...
+        <CardContent className="p-0">
+          <LoadingSpinner text="Chargement des revenus de salaires..." />
         </CardContent>
       </Card>
     );

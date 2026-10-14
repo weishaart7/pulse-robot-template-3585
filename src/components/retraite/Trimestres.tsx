@@ -46,6 +46,7 @@ import { calculerNetRetraiteFoyer } from '@/lib/retraite/calculNetRetraite';
 import { calculerPartsFiscales } from '@/lib/fiscalite';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { MILLESIME_COURANT, PARAMETRES_ESPERANCE_VIE, PARAMETRES_EPARGNE_RETRAITE } from '@/lib/retraite/parametres';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 // Format ISO ("YYYY-MM-DD") d'une date UTC-midnight, pour la valeur d'un
 // <input type="date"> — .toISOString() ne décale pas ce cas puisque
@@ -198,7 +199,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     return (
       <div className="space-y-6">
         <Card className="border border-border">
-          <CardContent className="py-8 text-center text-muted-foreground">Chargement...</CardContent>
+          <CardContent className="p-0"><LoadingSpinner /></CardContent>
         </Card>
       </div>
     );

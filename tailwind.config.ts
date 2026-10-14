@@ -59,7 +59,13 @@ export default {
 					accent: 'hsl(var(--sidebar-accent))',
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
-					ring: 'hsl(var(--sidebar-ring))'
+					ring: 'hsl(var(--sidebar-ring))',
+					// Barre latérale noire du dashboard (relevés de la maquette de référence)
+					bg: '#1e1d19',
+					active: '#2c2b28',
+					card: '#2f2e2c',
+					ink: '#dcdbd7',
+					muted: '#9d9c97'
 				},
 				// Échelle chaude du simulateur (tokens dans index.css)
 				graphite: 'hsl(var(--graphite))',

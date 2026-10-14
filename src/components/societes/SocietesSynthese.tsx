@@ -7,6 +7,7 @@ import { useSocietesIFI, useSocietesTransmission, getSocieteCategory } from '@/h
 import { societeBilanService, SocieteBilan } from '@/services/societeExtendedService';
 import { Building2, TrendingUp, Scale, ShieldCheck, AlertTriangle, Wallet } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--ring))', 'hsl(var(--muted-foreground))', 'hsl(var(--accent-foreground))', ASH, STONE];
 
@@ -32,7 +33,7 @@ export const SocietesSynthese = () => {
       .catch((e) => { if (import.meta.env.DEV) console.error(e); });
   }, []);
 
-  if (isLoading) return <div className="text-center py-12"><p className="text-muted-foreground">Chargement...</p></div>;
+  if (isLoading) return <LoadingSpinner />;
 
   const totalSocietes = societes.length;
   const valeurTotale = societes.reduce((s, c) => s + (c.valeur_estimee || 0), 0);

@@ -54,31 +54,33 @@ Surtitres techniques (étapes de wizard, en-têtes de section `SectionHeader`) :
 
 ## 5. Cadre de l'app (`src/components/layout`)
 
-- Fond eggshell partout (plus de `bg-white` sur la zone principale).
-- Écran large (≥ `md`) : **pas de barre du haut**. Fond taupe sur toute la hauteur ; la zone de contenu est une plaque
-  eggshell coins 12 px, filet stone 1 px, entourée d'une bande taupe de 6 px (haut, bas, droite ; à gauche, la
-  barre latérale), ce qui arrondit visuellement le bord droit du panneau du sous-menu. Navigation dans `DashboardSidebar.tsx` :
-  Bande taupe (`bg-secondary`) collée aux bords haut, bas et gauche de l'écran, qui porte le rail
-  (marge 6 px) et le panneau du sous-menu.
-  Parti pris : sobre, sans effets décoratifs (pas de ressort, de voile translucide, d'ombre ni de
-  suivi du survol).
-  - **Rail des modules** : colonne noire 64 px, coins 12 px — exception assumée à la palette taupe,
-    reprise de la navbar de la landing. Logo Aurevia blanc 32 px (→ `/`), 9 modules en icônes 18 px blanc 55 % (blanc
-    au survol) ; module actif en carré blanc plein coins 8 px, icône noire (comme le bouton blanc
-    de la navbar). En bas, sous un filet blanc 10 % : Blog, Nouveautés, Suggestion et le menu
-    profil (`ProfileMenu`, ouvert à droite). Infobulles à droite.
-  - **Panneau du sous-menu** : 188 px, sans plaque propre (posé sur la bande taupe), affiché seulement si le module
-    déclare un sous-menu (`useModuleSubNav` : Patrimoine, Immobilier, Sociétés, Budget, Retraite).
-    Repliable par simple glissement de largeur (bouton de l'en-tête, clic sur l'icône du module
-    actif, `⌘B` / `Ctrl+B`) ; replié, un bouton miroir « Afficher le panneau »
-    reste visible sur la bande taupe, à droite du rail, à la hauteur de l'ancien bouton « Réduire ». Les deux boutons sont une simple tête de flèche
-    (`ChevronLeft` / `ChevronRight`, 16 px) en smoke, encre au survol, sans fond ; état mémorisé en `localStorage` (`kairos.sidebar.open`). En-tête : nom
-    du module en Instrument Sans 500 22 px, tracking -0.02em (police du titre du hero de la
-    landing). Entrées via `TreeNav` (`components/ui/tree-nav.tsx`, lignes de 32 px, Inter 13 px) :
-    rail vertical stone terminé par un point, repère losange encre et fond encre 5 % qui glissent
-    (ressort sans rebond) vers l'entrée survolée puis reviennent sur l'entrée active, tracé encre du
-    rail jusqu'au repère ; active en encre 500, inactives en smoke ; animations coupées si
-    `prefers-reduced-motion` ; `aria-current="page"`.
+- Fond eggshell partout. Dashboard (`.dashboard-shell`, `index.css`) : coins des cartes resserrés à **8 px** — règle qui écrase `rounded-card`,
+  `rounded-2xl`, `rounded-3xl` et `rounded-[16|18|20|22px]` à l'intérieur du dashboard, sans toucher la landing ni
+  les fenêtres (dialogues, menus) rendues hors du cadre.
+- Écran large (≥ `md`) : **pas de barre du haut**. Fond noir chaud `#1e1d19` sur toute la hauteur ; la zone de
+  contenu est une plaque eggshell coins 8 px, entourée d'une bande de 14 px de ce noir (haut, bas, droite ; à gauche,
+  la barre latérale qui se prolonge dans le même noir). Navigation dans `DashboardSidebar.tsx` : **barre latérale
+  noire pleine** calquée sur une maquette de référence (couleurs relevées dessus, tokens Tailwind `sidebar-bg`
+  `#1e1d19`, `sidebar-active` `#2c2b28`, `sidebar-card` `#2f2e2c`, `sidebar-ink` `#dcdbd7`, `sidebar-muted`
+  `#9d9c97`). Police : Inter chargée avec l'axe `opsz` (14..32), d'où la coupe display aux grandes tailles, lissage `antialiased`.
+  Icônes : Phosphor (`@phosphor-icons/react`), propres à la barre latérale (`SIDEBAR_ICONS`), bicolores (`duotone`)
+  au repos et pleines (`fill`) sur l'entrée active ; la navigation mobile garde les icônes Lucide.
+  - **Dépliée (248 px)** : en-tête logo Aurevia blanc 24 px + « Aurevia » Inter 500 20 px, tracking -0.03em
+    (→ `/`), bouton de repli (`SidebarSimple`) à droite. 9 modules en lignes de 36 px espacées de 4 px, icône
+    18 px + libellé Inter 350 14 px tracking -0.01em en `sidebar-ink` (blanc et fond blanc 4 % au survol) ; module
+    actif en pilule `sidebar-active` coins 6 px, texte blanc. Le sous-menu du module actif (`useModuleSubNav` :
+    Patrimoine, Immobilier, Sociétés, Budget, Retraite) s'affiche imbriqué sous sa ligne, via `TreeNav`
+    (`components/ui/tree-nav.tsx`, lignes de 32 px, Inter 13 px : rail vertical terminé par un point, repère
+    losange et fond 5 % qui glissent vers l'entrée survolée puis reviennent sur l'entrée active ; animations
+    coupées si `prefers-reduced-motion` ; `aria-current="page"`). Ses couleurs passent en clair grâce à la classe
+    `.sidebar-dark` (`index.css`), qui inverse localement `--foreground`, `--muted-foreground`, `--border`,
+    `--primary` et `--ring`. En bas : Blog, Nouveautés, Suggestion (lignes de 32 px, 13 px, icônes 16 px), puis carte profil
+    `sidebar-card` coins 6 px (pastille initiale 32 px, nom 14 px 400 — `full_name` des métadonnées, sinon
+    début de l'e-mail —, e-mail 12 px `sidebar-muted`, `DotsThreeVertical`) qui ouvre `ProfileMenu` à droite.
+  - **Repliée (64 px)** : rail d'icônes seules (logo, modules, liens du bas, profil), sous-menu masqué,
+    infobulles à droite. Bascule par glissement de largeur (bouton de l'en-tête, `⌘B` / `Ctrl+B`) ; état
+    mémorisé en `localStorage` (`kairos.sidebar.open`).
+  - `SidebarNav` (nom du module + `TreeNav` sur fond clair) reste exporté pour le panneau mobile.
 - Téléphone (< 768 px) : rail et panneau masqués. Barre du haut (`DashboardTopNav`, `md:hidden`) :
   bouton menu, logo Aurevia encre, sélecteur de modules en pilules sur piste taupe filetée (module actif en
   pastille encre, ramené en vue), profil. Le bouton menu ouvre un panneau latéral gauche taupe avec
@@ -91,7 +93,7 @@ Surtitres techniques (étapes de wizard, en-têtes de section `SectionHeader`) :
 
 Plus de scope dédié : les formulaires suivent les tokens de `:root`.
 - Cadre `ActifFormFrame` et cartes des formulaires Famille / régime
-  matrimonial : `rounded-3xl` (24 px), filet `border-border`, fond `bg-card`, sans halo.
+  matrimonial : `rounded-3xl` (ramené à 8 px dans le dashboard), filet `border-border`, fond `bg-card`, sans halo.
 - Blocs de champs internes : `bg-secondary` (taupe), coins 14 px.
 - Champs `bg-muted` au focus ou ouverts : bordure encre, fond eggshell (règle globale dans
   `index.css`).
@@ -134,3 +136,16 @@ auparavant le thème du système, faute de `ThemeProvider`).
   pages Blog et Nouveautés, composants `ui/` génériques (`toast`, `action-hub-input`).
 - Écrans non vérifiés à l'écran après la refonte : onglets de Transmission hors Synthèse,
   onglets de détail de Retraite, Immobilier (LMNP) et Fiscalité (IFI), Sociétés avec données.
+
+## Chargements
+
+- Chargeur commun `LoadingSpinner` (`components/ui/loading-spinner.tsx`) : logo Aurevia (`/logo.svg`) rendu en trame
+  Ben-Day animée par `Benday` (`components/ui/benday.tsx`, canvas). Réglages : `bake={{ grid: 52, threshold: 0.52,
+  gamma: 0.85 }}`, `preset="shimmer"` (vague diagonale qui fait gonfler et foncer les points), `fit="natural"`.
+  Tailles : `sm` 56 px (blocs compacts), `md` 112 px (sections, défaut), `lg` 256 px (écran de démarrage, connexion).
+  Points en couleur de texte courante ; animation figée si `prefers-reduced-motion` ; `role="status"`.
+- `Benday` cuit l'image une fois par jeu de réglages (cache en mémoire) : encre d'une cellule = opacité × (1 − luminance),
+  courbe `gamma`, point gardé si encre ≥ `threshold`, rayon ∝ √encre. Presets : `shimmer`, `pulse`, `static`.
+- Utilisé pour les chargements de pages et de sections (démarrage, connexion, Famille, Fiscalité, Sociétés,
+  Immobilier, Retraite, Transmission). Restent hors périmètre : les petits indicateurs dans les boutons et
+  champs (`Loader2` 16 px) et les mentions « Chargement… » dans les tuiles de synthèse Retraite.

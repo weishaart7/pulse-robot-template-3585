@@ -7,6 +7,7 @@ import { useGainsActionnariatSalarie } from '@/hooks/useGainsActionnariatSalarie
 import { GainsActionnariatSalarie } from '@/services/gainsActionnariatSalarieService';
 import { GainsActionnariatSalarieInput } from '@/lib/fiscalite';
 import { DeclarantsHeader, MontantLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const GAINS_VIDE: GainsActionnariatSalarieInput = {
   case1tp: null,
@@ -64,9 +65,8 @@ export const GainsActionnariatSalarieForm = ({ onSaved }: GainsActionnariatSalar
   if (loading) {
     return (
       <Card>
-        <CardContent className="p-6 flex items-center justify-center text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          Chargement des gains d'actionnariat salarié...
+        <CardContent className="p-0">
+          <LoadingSpinner text="Chargement des gains d'actionnariat salarié..." />
         </CardContent>
       </Card>
     );

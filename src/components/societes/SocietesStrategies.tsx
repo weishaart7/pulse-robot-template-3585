@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   Percent
 } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 export const SocietesStrategies = () => {
   const { societes, isLoading } = useSocietes();
@@ -39,9 +40,7 @@ export const SocietesStrategies = () => {
 
   if (isLoading) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Chargement...</p>
-      </div>
+      <LoadingSpinner text="Chargement..." />
     );
   }
 

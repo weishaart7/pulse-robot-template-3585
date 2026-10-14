@@ -1,9 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { AureviaLogo } from '@/components/brand/AureviaLogo';
 import { cn } from '@/lib/utils';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import {
+  Armchair, Article, Briefcase, Buildings, ChatCircleDots, DotsThreeVertical, HouseSimple, Receipt,
+  SidebarSimple, Sparkle, TreeStructure, UsersThree, Vault, Wallet, type Icon as PhosphorIcon,
+} from '@phosphor-icons/react';
+import { useAuth } from '@/contexts/AuthContext';
 import { bottomItems, menuItems, getCurrentNavValue } from '@/components/layout/navigation-items';
 import { useSubNav } from '@/contexts/SubNavContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -12,7 +17,8 @@ import { TreeNav } from '@/components/ui/tree-nav';
 
 const STORAGE_KEY = 'kairos.sidebar.open';
 const EASE = [0.25, 0.1, 0.25, 1] as const;
-const PANEL_WIDTH = 188;
+const PANEL_WIDTH = 248;
+const RAIL_WIDTH = 64;
 
 function readStoredOpen(): boolean {
   try {
@@ -21,11 +27,6 @@ function readStoredOpen(): boolean {
     return true;
   }
 }
-
-const railButton = cn(
-  "relative h-10 w-10 flex items-center justify-center rounded-[8px] transition-colors outline-none",
-  "focus-visible:ring-1 focus-visible:ring-white/70"
-);
 
 // Sous-menu en arbre (TreeNav) : rail vertical, repère losange et fond qui
 // suivent le survol puis reviennent sur l'entrée active.
@@ -118,7 +119,8 @@ export function SidebarNav({
   );
 }
 
-function RailTooltip({ label, children }: { label: string; children: React.ReactNode }) {
+function RailTooltip({ label, enabled, children }: { label: string; enabled: boolean; children: React.ReactNode }) {
+  if (!enabled) return <>{children}</>;
   return (
     <Tooltip delayDuration={150}>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
@@ -127,13 +129,43 @@ function RailTooltip({ label, children }: { label: string; children: React.React
   );
 }
 
-// Écran large : rail noir des modules (esprit navbar de la landing) + panneau clair
-// du sous-menu, repliable. Masqués sur téléphone (navigation dans DashboardTopNav).
+// Icônes Phosphor propres à la barre latérale : bicolores au repos, pleines sur l'entrée active.
+// (La navigation mobile garde les icônes Lucide de navigation-items.)
+const SIDEBAR_ICONS: Record<string, PhosphorIcon> = {
+  dashboard: HouseSimple,
+  famille: UsersThree,
+  patrimoine: Vault,
+  immobilier: Buildings,
+  societes: Briefcase,
+  budget: Wallet,
+  retraite: Armchair,
+  fiscalite: Receipt,
+  transmission: TreeStructure,
+  '/dashboard/blog': Article,
+  '/nouveautes': Sparkle,
+  '/suggestion': ChatCircleDots,
+};
+
+const navRow = cn(
+  "relative flex h-9 items-center gap-2.5 rounded-[6px] text-[14px] font-[350] tracking-[-0.01em] transition-colors outline-none",
+  "focus-visible:ring-1 focus-visible:ring-white/70"
+);
+
+function displayName(user: ReturnType<typeof useAuth>['user']): string {
+  const meta = user?.user_metadata as { full_name?: string; name?: string } | undefined;
+  return meta?.full_name || meta?.name || user?.email?.split('@')[0] || '';
+}
+
+// Écran large : barre latérale noire chaude pleine, dont le noir se prolonge en bande autour
+// de la carte principale. Dépliée : logo + nom, modules avec libellés, sous-menu du module
+// actif imbriqué dessous, carte profil en bas. Repliée : rail d'icônes. Masquée sur téléphone.
 export function DashboardSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { items: subNavItems } = useSubNav();
   const currentValue = getCurrentNavValue(location.pathname);
+  const { user } = useAuth();
+  const name = displayName(user);
 
   const [open, setOpenState] = useState(readStoredOpen);
   const setOpen = useCallback((value: boolean) => {
@@ -157,99 +189,118 @@ export function DashboardSidebar() {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, setOpen]);
 
-  const panelVisible = open && subNavItems.length > 0;
+  const rowClass = (active: boolean) =>
+    cn(
+      navRow,
+      open ? "w-full px-3" : "w-9 justify-center",
+      active ? "bg-sidebar-active text-white" : "text-sidebar-ink hover:bg-white/[0.04] hover:text-white"
+    );
 
   return (
-    <div className="hidden md:flex shrink-0 p-1.5 bg-secondary">
-      {/* Rail des modules */}
-        <div className="w-16 flex flex-col items-center py-4 gap-1 bg-black text-white rounded-[12px]">
-          <button
-            onClick={() => navigate('/')}
-            className={cn(railButton, "mb-4")}
-            aria-label="Accueil Aurevia"
-          >
-            <AureviaLogo className="h-8 w-8 shrink-0 text-white" />
-          </button>
+    <motion.aside
+      className="sidebar-dark hidden md:flex shrink-0 flex-col bg-sidebar-bg text-white overflow-hidden"
+      initial={false}
+      animate={{ width: open ? PANEL_WIDTH : RAIL_WIDTH }}
+      transition={{ duration: 0.2, ease: EASE }}
+    >
+      {/* En-tête : logo + nom, bouton de repli */}
+      <div className={cn("flex items-center pt-5 pb-5", open ? "justify-between pl-5 pr-4" : "flex-col gap-4 px-3")}>
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2.5 rounded-[6px] outline-none focus-visible:ring-1 focus-visible:ring-white/70"
+          aria-label="Accueil Aurevia"
+        >
+          <AureviaLogo className="h-6 w-6 shrink-0 text-white" />
+          {open && (
+            <span className="text-[20px] font-medium leading-none tracking-[-0.03em]">Aurevia</span>
+          )}
+        </button>
+        <Tooltip delayDuration={200}>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => setOpen(!open)}
+              className="p-1 rounded-[6px] text-sidebar-muted hover:text-white transition-colors outline-none focus-visible:ring-1 focus-visible:ring-white/70"
+              aria-label={open ? "Réduire la barre latérale" : "Déplier la barre latérale"}
+            >
+              <SidebarSimple size={19} weight="duotone" className={open ? undefined : "-scale-x-100"} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">{open ? 'Réduire' : 'Déplier'} (⌘B)</TooltipContent>
+        </Tooltip>
+      </div>
 
-          <nav aria-label="Modules" className="flex flex-col items-center gap-1">
-            {menuItems.map(item => {
-              const Icon = item.icon;
-              const active = item.value === currentValue;
-              return (
-                <RailTooltip key={item.value} label={item.label}>
-                  <button
-                    onClick={() => (active ? setOpen(!open) : navigate(item.href))}
-                    aria-label={item.label}
-                    aria-current={active ? 'page' : undefined}
-                    className={cn(railButton, active ? "bg-white text-black" : "text-white/55 hover:text-white")}
-                  >
-                    <Icon className="h-[18px] w-[18px]" strokeWidth={1.5} />
-                  </button>
-                </RailTooltip>
-              );
-            })}
-          </nav>
-
-          <div className="mt-auto flex flex-col items-center gap-1 pt-3 border-t border-white/10">
-            {bottomItems.map(item => {
-              const Icon = item.icon;
-              const active = location.pathname === item.href;
-              return (
-                <RailTooltip key={item.href} label={item.label}>
-                  <button
-                    onClick={() => navigate(item.href)}
-                    aria-label={item.label}
-                    aria-current={active ? 'page' : undefined}
-                    className={cn(railButton, active ? "bg-white text-black" : "text-white/55 hover:text-white")}
-                  >
-                    <Icon className="h-4 w-4" strokeWidth={1.5} />
-                  </button>
-                </RailTooltip>
-              );
-            })}
-            <ProfileMenu
-              side="right"
-              align="end"
-              triggerClassName={cn(railButton, "text-white/55 hover:text-white hover:bg-transparent")}
-            />
-          </div>
-        </div>
-
-      {/* Panneau replié : bouton miroir de « Réduire », à la même hauteur, sur la bande taupe. */}
-      {!open && subNavItems.length > 0 && (
-        <div className="w-10 flex justify-center pt-[19px]">
-          <Tooltip delayDuration={200}>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => setOpen(true)}
-                className="h-fit p-1 rounded-[6px] text-muted-foreground hover:text-foreground transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                aria-label="Afficher le panneau"
-              >
-                <ChevronRight className="h-4 w-4" strokeWidth={2.25} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right">Afficher (⌘B)</TooltipContent>
-          </Tooltip>
-        </div>
-      )}
-
-      {/* Panneau du sous-menu */}
-      <AnimatePresence initial={false}>
-        {panelVisible && (
-          <motion.div
-            key="subnav-panel"
-            className="flex flex-col overflow-hidden"
-            initial={{ width: 0 }}
-            animate={{ width: PANEL_WIDTH }}
-            exit={{ width: 0 }}
-            transition={{ duration: 0.2, ease: EASE }}
-          >
-            <div className="flex flex-col h-full" style={{ width: PANEL_WIDTH }}>
-              <SidebarNav onCollapse={() => setOpen(false)} />
+      {/* Modules */}
+      <nav aria-label="Modules" className={cn("flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-1 px-3", !open && "items-center")}>
+        {menuItems.map(item => {
+          const Icon = SIDEBAR_ICONS[item.value];
+          const active = item.value === currentValue;
+          return (
+            <div key={item.value} className={cn("flex flex-col", !open && "items-center")}>
+              <RailTooltip label={item.label} enabled={!open}>
+                <button
+                  onClick={() => navigate(item.href)}
+                  aria-label={open ? undefined : item.label}
+                  aria-current={active ? 'page' : undefined}
+                  className={rowClass(active)}
+                >
+                  <Icon size={18} weight={active ? "fill" : "duotone"} className="shrink-0" />
+                  {open && <span className="truncate">{item.label}</span>}
+                </button>
+              </RailTooltip>
+              {open && active && subNavItems.length > 0 && (
+                <div className="pl-4 pt-1.5 pb-1">
+                  <SubNavTree />
+                </div>
+              )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+          );
+        })}
+      </nav>
+
+      {/* Liens du bas + carte profil */}
+      <div className={cn("flex flex-col gap-1 px-3 pt-3 pb-3", !open && "items-center")}>
+        {bottomItems.map(item => {
+          const Icon = SIDEBAR_ICONS[item.href];
+          const active = location.pathname === item.href;
+          return (
+            <RailTooltip key={item.href} label={item.label} enabled={!open}>
+              <button
+                onClick={() => navigate(item.href)}
+                aria-label={open ? undefined : item.label}
+                aria-current={active ? 'page' : undefined}
+                className={cn(rowClass(active), "h-8 text-[13px]")}
+              >
+                <Icon size={16} weight={active ? "fill" : "duotone"} className="shrink-0" />
+                {open && <span className="truncate">{item.label}</span>}
+              </button>
+            </RailTooltip>
+          );
+        })}
+        <ProfileMenu
+          side="right"
+          align="end"
+          triggerClassName={cn(
+            "mt-2 flex items-center rounded-[6px] bg-sidebar-card text-white hover:bg-sidebar-active transition-colors",
+            open ? "w-full gap-2.5 p-2.5 text-left" : "h-10 w-10 justify-center p-0"
+          )}
+          label={
+            <>
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-active text-[14px] font-medium uppercase">
+                {name.charAt(0)}
+              </span>
+              {open && (
+                <>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-[14px] font-normal leading-tight tracking-[-0.01em]">{name}</span>
+                    <span className="truncate text-[12px] leading-tight text-sidebar-muted">{user?.email}</span>
+                  </span>
+                  <DotsThreeVertical size={18} weight="bold" className="shrink-0 text-sidebar-muted" />
+                </>
+              )}
+            </>
+          }
+        />
+      </div>
+    </motion.aside>
   );
 }

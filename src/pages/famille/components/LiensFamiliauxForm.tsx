@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Trash2, Edit, Loader2, MoreHorizontal, Plus } from 'lucide-react';
+import { Trash2, Edit, MoreHorizontal, Plus } from 'lucide-react';
 import { FamilyTreeCards } from '@/components/famille/FamilyTreeCards';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 import { formatAgeCourt } from '@/lib/family/age';
 import { getInitials } from '@/lib/family/initials';
 import { grouperMembres } from '@/lib/family/groupesMembres';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 // Tag de la table Liens familiaux — accent = avantage fiscal.
 function FamilyTag({ children, accent = false }: { children: React.ReactNode; accent?: boolean }) {
@@ -85,10 +86,7 @@ export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Chargement des données...</span>
-      </div>;
+    return <LoadingSpinner text="Chargement des données..." />;
   }
   return <div className="space-y-6">
       {view === 'arbre' && <div className="rounded-3xl border border-border bg-card p-4 md:p-6">

@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { assetService, type Asset, type AssetCharge, type AssetRevenu } from '@/services/assetService';
 import { computeRentabiliteLMP, TAUX_COTISATIONS_SOCIALES_LMP_DEFAUT, type RentabiliteLMPResult } from '@/lib/immobilier/rentabilite';
 import { formatCurrency } from '@/lib/patrimoine/utils';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface SimulateurRentabiliteLMPSectionProps {
   asset: Asset;
@@ -56,7 +57,7 @@ export const SimulateurRentabiliteLMPSection = ({ asset }: SimulateurRentabilite
       </CardHeader>
       <CardContent className="space-y-6">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Chargement des revenus et charges...</p>
+          <LoadingSpinner text="Chargement des revenus et charges..." />
         ) : (
           <>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">

@@ -8,6 +8,7 @@ import { computeAmortissement, computeQuotePart } from '@/lib/immobilier/rentabi
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { getFractionDemembrement } from '@/lib/patrimoine/demembrementFraction';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface ImmobilierOverviewProps {
   assets: Asset[];
@@ -209,9 +210,7 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
 
   if (loading) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Chargement des statistiques...</p>
-      </div>
+      <LoadingSpinner text="Chargement des statistiques..." />
     );
   }
 

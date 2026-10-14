@@ -1,5 +1,5 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600&display=swap');
@@ -156,6 +156,18 @@
 .dashboard-shell .text-3xl { font-size: 1.5rem; }
 .dashboard-shell .text-4xl { font-size: 1.75rem; }
 .dashboard-shell .text-5xl { font-size: 2.25rem; }
+/* Dashboard : coins des cartes resserrés à 8 px (rendu calqué sur la maquette de
+   référence de la barre latérale). Hors layer pour primer sur les utilitaires
+   d'arrondi codés en dur dans les modules. */
+.dashboard-shell .rounded-card,
+.dashboard-shell .rounded-2xl,
+.dashboard-shell .rounded-3xl,
+.dashboard-shell .rounded-\[16px\],
+.dashboard-shell .rounded-\[18px\],
+.dashboard-shell .rounded-\[20px\],
+.dashboard-shell .rounded-\[22px\] {
+  border-radius: 8px;
+}
 /* Titres de page : Inter 300, tracking serré — la graisse fine porte
    l'autorité (référence ElevenLabs). Spécificité supérieure aux utilitaires
    font-* posés sur les h1 existants. */
@@ -407,4 +419,18 @@
 .nav-intro-centered, .nav-intro { animation: navIntroCentered 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.15s backwards; }
 @media (prefers-reduced-motion: reduce) {
   .nav-intro-centered, .nav-intro { animation: none; }
+}
+
+/* Barre latérale noire : tokens inversés pour les composants partagés (TreeNav) ;
+   Inter en coupe display (opsz) comme la maquette. */
+.sidebar-dark {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --foreground: 0 0% 100%;
+  --muted-foreground: 45 3% 60%;
+  --border: 0 0% 24%;
+  --primary: 0 0% 100%;
+  --ring: 0 0% 100%;
 }

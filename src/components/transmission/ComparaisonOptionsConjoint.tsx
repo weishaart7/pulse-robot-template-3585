@@ -16,6 +16,7 @@ import {
   TransmissionData
 } from '@/utils/transmissionOrdreNormal';
 import './kairos-transmission.css';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface Props {
   options: { value: ConjointOption; label: string }[];
@@ -127,9 +128,7 @@ export const ComparaisonOptionsConjoint: React.FC<Props> = ({ options, selectedO
         {erreurGlobale ? (
           <p className="text-sm text-[var(--text-secondary)]">Comparaison indisponible : {erreurGlobale}</p>
         ) : !calcul ? (
-          <div className="flex justify-center py-6">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[var(--ink-900)]" />
-          </div>
+          <LoadingSpinner size="sm" text="" className="p-4" />
         ) : (
           <div className="overflow-x-auto">
             <Table>

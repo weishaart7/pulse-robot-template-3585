@@ -10,6 +10,7 @@ import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { useFoyerFiscal } from '@/hooks/useFoyerFiscal';
 import { FoyerFiscal } from '@/services/foyerFiscalService';
 import { EnfantCharge, FoyerFiscalInput, PersonneInvalideCharge } from '@/lib/fiscalite';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const SITUATION_FAMILLE_OPTIONS: { value: FoyerFiscalInput['situationFamille']; label: string }[] = [
   { value: 'marie', label: 'Marié(e)' },
@@ -120,9 +121,8 @@ export const MenageForm = ({ onSaved, onChange }: MenageFormProps) => {
   if (loading) {
     return (
       <Card>
-        <CardContent className="p-6 flex items-center justify-center text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          Chargement du foyer fiscal...
+        <CardContent className="p-0">
+          <LoadingSpinner text="Chargement du foyer fiscal..." />
         </CardContent>
       </Card>
     );

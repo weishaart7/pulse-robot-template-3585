@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Home, Briefcase } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface Props { societeId: string }
 
@@ -18,7 +19,7 @@ export const SocieteActifsDetenus: React.FC<Props> = ({ societeId }) => {
     })();
   }, [societeId]);
 
-  if (loading) return <p className="text-muted-foreground">Chargement...</p>;
+  if (loading) return <LoadingSpinner size="sm" />;
 
   const immo = actifs.filter(a => ['Résidence principale', 'Résidence secondaire', 'Bien locatif', 'Bien immobilier'].includes(a.nature));
   const autres = actifs.filter(a => !immo.includes(a));

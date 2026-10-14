@@ -6,6 +6,7 @@ import { useRevenusExoneresTauxEffectif } from '@/hooks/useRevenusExoneresTauxEf
 import { RevenusExoneresTauxEffectif } from '@/services/revenusExoneresTauxEffectifService';
 import { RevenusExoneresTauxEffectifInput } from '@/lib/fiscalite';
 import { CaseLigne, DeclarantsHeader, MontantLigne, TexteLigne } from './DeclarationLigne';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const REVENUS_VIDE: RevenusExoneresTauxEffectifInput = {
   case1ac: null,
@@ -50,9 +51,8 @@ export const RevenusExoneresTauxEffectifForm = ({ onSaved }: RevenusExoneresTaux
   if (loading) {
     return (
       <Card>
-        <CardContent className="p-6 flex items-center justify-center text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          Chargement des salaires et pensions exonérés...
+        <CardContent className="p-0">
+          <LoadingSpinner text="Chargement des salaires et pensions exonérés..." />
         </CardContent>
       </Card>
     );

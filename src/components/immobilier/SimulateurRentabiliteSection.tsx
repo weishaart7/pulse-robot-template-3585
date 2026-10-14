@@ -9,6 +9,7 @@ import { assetService, type Asset, type AssetCharge, type AssetRevenu } from '@/
 import { computeLoyersAnnuels, computeQuotePart, computeRentabilite, type RentabiliteResult } from '@/lib/immobilier/rentabilite';
 import { SEUIL_MICRO_FONCIER } from '@/lib/immobilier/foncierFoyer';
 import { formatCurrency } from '@/lib/patrimoine/utils';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface SimulateurRentabiliteSectionProps {
   asset: Asset;
@@ -69,7 +70,7 @@ export const SimulateurRentabiliteSection = ({ asset }: SimulateurRentabiliteSec
       </CardHeader>
       <CardContent className="space-y-6">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Chargement des revenus et charges...</p>
+          <LoadingSpinner text="Chargement des revenus et charges..." />
         ) : (
           <>
             {regimeReelObligatoireFoyer && (

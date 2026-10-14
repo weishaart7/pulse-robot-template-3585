@@ -22,6 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { liberaliteService, Liberalite, LiberaliteTypeImputation } from '@/services/liberaliteService';
 import { CLAUSE_DISPENSE_RAPPORT, CLAUSE_RAPPORT_FORFAITAIRE, CLAUSE_EVALUATION_DECES } from '@/lib/transmission/types';
 import { FieldHelp } from '@/components/ui/field-help';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 // Id sentinelle du conjoint/partenaire de PACS, absent de family_links :
 // enregistré via liberalites.beneficiaire_conjoint, jamais beneficiaire_id.
@@ -858,7 +859,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
             </CardHeader>
             <CardContent>
               {loading ? (
-                <p className="text-muted-foreground">Chargement des biens...</p>
+                <LoadingSpinner size="sm" text="Chargement des biens..." />
               ) : assets.length === 0 ? (
                 <p className="text-muted-foreground">Aucun bien disponible</p>
               ) : (

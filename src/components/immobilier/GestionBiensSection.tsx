@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { assetService, type Asset, type AssetCharge, type AssetRevenu } from '@/services/assetService';
 import { annualiserCharge, annualiserRevenu, computeChargesAnnuelles, computeLoyersAnnuels } from '@/lib/immobilier/rentabilite';
 import { formatCurrency } from '@/lib/patrimoine/utils';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface GestionBiensSectionProps {
   assets: Asset[];
@@ -51,7 +52,7 @@ export const GestionBiensSection = ({ assets }: GestionBiensSectionProps) => {
   }, [assets.map((a) => a.id).join(',')]);
 
   if (isLoading) {
-    return <p className="text-sm text-muted-foreground text-center py-12">Chargement...</p>;
+    return <LoadingSpinner />;
   }
 
   const revenusParBien = new Map<string, AssetRevenu[]>();

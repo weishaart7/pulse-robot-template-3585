@@ -18,6 +18,7 @@ import {
 import { useSocieteParticipations } from '@/hooks/useSocieteParticipations';
 import { SocieteParticipationsGraph } from './SocieteParticipationsGraph';
 import { SocieteParticipationsDialog } from './SocieteParticipationsDialog';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface SocietesMesSocietesProps {
   onEdit: (societeId: string) => void;
@@ -91,9 +92,7 @@ export const SocietesMesSocietes = ({ onEdit, onAdd }: SocietesMesSocietesProps)
 
   if (loading) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Chargement des sociétés...</p>
-      </div>
+      <LoadingSpinner text="Chargement des sociétés..." />
     );
   }
 

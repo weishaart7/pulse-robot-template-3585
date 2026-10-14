@@ -12,6 +12,7 @@ import { ChargeForm } from './ChargeForm';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface ImmobilierGestionDialogProps {
   asset: Asset | null;
@@ -180,9 +181,7 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
             </CardHeader>
             <CardContent>
               {isLoadingRevenus ? (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground">Chargement...</p>
-                </div>
+                <LoadingSpinner text="Chargement..." />
               ) : revenus.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="text-4xl mb-4">💰</div>
@@ -247,9 +246,7 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
             </CardHeader>
             <CardContent>
               {isLoadingCharges ? (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground">Chargement...</p>
-                </div>
+                <LoadingSpinner text="Chargement..." />
               ) : charges.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="text-4xl mb-4">📋</div>

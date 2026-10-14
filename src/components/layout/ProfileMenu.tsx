@@ -8,10 +8,13 @@ export function ProfileMenu({
   side,
   align = 'end',
   triggerClassName,
+  label,
 }: {
   side?: 'top' | 'right' | 'bottom' | 'left';
   align?: 'start' | 'center' | 'end';
   triggerClassName?: string;
+  /** Contenu du déclencheur à la place de l'icône (carte profil de la barre latérale). */
+  label?: React.ReactNode;
 } = {}) {
   const { user, logout } = useAuth();
 
@@ -22,7 +25,7 @@ export function ProfileMenu({
           className={cn("p-2 rounded-full hover:bg-accent transition-colors text-foreground", triggerClassName)}
           aria-label="Menu utilisateur"
         >
-          <CircleUserRound className="h-5 w-5" strokeWidth={1.5} />
+          {label ?? <CircleUserRound className="h-5 w-5 shrink-0" strokeWidth={1.5} />}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="max-w-64" side={side} align={align} sideOffset={side === 'right' ? 12 : 4}>

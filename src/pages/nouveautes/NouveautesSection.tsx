@@ -25,10 +25,10 @@ const NouveautesSection = () => {
   };
 
   return (
-    <div className="flex bg-background w-full h-screen overflow-hidden">
+    <div className="flex bg-background md:bg-sidebar-bg w-full h-screen overflow-hidden">
       <DashboardSidebar />
-      <div className="flex-1 flex flex-col">
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 rounded-tl-xl" style={{ backgroundColor: '#f6f5f6' }}>
+      <div className="flex-1 flex flex-col min-w-0 md:py-3.5 md:pr-3.5">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 bg-background md:rounded-[8px]">
           <div className="p-6">
       <div className="mb-6">
         <h2 className="text-2xl font-bold tracking-tight">Nouveautés</h2>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { Benday } from '@/components/ui/benday';
 
 interface LoadingSpinnerProps {
   className?: string;
@@ -7,26 +8,23 @@ interface LoadingSpinnerProps {
   text?: string;
 }
 
-export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
-  className, 
-  size = 'md', 
-  text = 'Chargement...' 
-}) => {
-  const sizeClasses = {
-    sm: 'h-6 w-6',
-    md: 'h-8 w-8',
-    lg: 'h-12 w-12'
-  };
+// Taille du logo tramé selon le contexte : bloc compact, section, écran entier.
+const SIZES = { sm: 56, md: 112, lg: 256 } as const;
 
-  return (
-    <div className={cn("flex flex-col items-center justify-center p-8", className)}>
-      <div className={cn(
-        "animate-spin rounded-full border-2 border-muted border-t-primary",
-        sizeClasses[size]
-      )} />
-      {text && (
-        <p className="mt-4 text-sm text-muted-foreground">{text}</p>
-      )}
-    </div>
-  );
-};
+// Chargeur commun : logo Aurevia en trame Ben-Day animée (vague « shimmer »).
+export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
+  className,
+  size = 'md',
+  text = 'Chargement...'
+}) => (
+  <div role="status" aria-live="polite" className={cn("flex flex-col items-center justify-center p-8 text-foreground", className)}>
+    <Benday
+      src="/logo.svg"
+      bake={{ grid: 52, threshold: 0.52, gamma: 0.85 }}
+      preset="shimmer"
+      size={SIZES[size]}
+      fit="natural"
+    />
+    {text ? <p className="mt-4 text-sm text-muted-foreground">{text}</p> : <span className="sr-only">Chargement</span>}
+  </div>
+);

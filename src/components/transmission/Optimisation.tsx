@@ -14,6 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { hasDDVConsentieParDefunt } from '@/utils/transmissionHelpers';
 import { ComparaisonOptionsConjoint } from './ComparaisonOptionsConjoint';
 import './kairos-transmission.css';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 type ConjointOption = 
   | 'usufruit_total'
@@ -249,8 +250,8 @@ export const Optimisation = () => {
 
   if (loading) {
     return (
-      <div className="kairos-transmission flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--ink-900)]" />
+      <div className="kairos-transmission">
+        <LoadingSpinner text="" />
       </div>
     );
   }

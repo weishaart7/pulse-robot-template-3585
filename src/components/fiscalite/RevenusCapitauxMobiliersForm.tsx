@@ -6,6 +6,7 @@ import { useRevenusCapitauxMobiliers } from '@/hooks/useRevenusCapitauxMobiliers
 import { RevenusCapitauxMobiliers } from '@/services/revenusCapitauxMobiliersService';
 import { RevenusCapitauxMobiliersInput } from '@/lib/fiscalite';
 import { MontantEclateLigne, SingleCaseLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const REVENUS_VIDE: RevenusCapitauxMobiliersInput = {
   case2dh: null, case2ch: null, case2uu: null, case2vv: null, case2ww: null,
@@ -51,9 +52,8 @@ export const RevenusCapitauxMobiliersForm = ({ onSaved }: RevenusCapitauxMobilie
   if (loading) {
     return (
       <Card>
-        <CardContent className="p-6 flex items-center justify-center text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          Chargement des revenus de capitaux mobiliers...
+        <CardContent className="p-0">
+          <LoadingSpinner text="Chargement des revenus de capitaux mobiliers..." />
         </CardContent>
       </Card>
     );
