@@ -5,9 +5,9 @@ const faqs = [
       "Oui. Vos données patrimoniales sont hébergées en Europe, chiffrées, et ne sont jamais partagées ni revendues à des tiers.",
   },
   {
-    question: "Kairos remplace-t-il mon conseiller ?",
+    question: "Aurevia remplace-t-il mon conseiller ?",
     answer:
-      "Non. Kairos vous donne une vision claire pour décider par vous-même, mais un accompagnement humain reste disponible dès qu'une question dépasse l'outil.",
+      "Non. Aurevia vous donne une vision claire pour décider par vous-même, mais un accompagnement humain reste disponible dès qu'une question dépasse l'outil.",
   },
   {
     question: "Combien de temps faut-il pour prendre en main l'outil ?",
@@ -15,7 +15,7 @@ const faqs = [
       "Quelques minutes pour importer votre situation et obtenir vos premiers résultats. Aucune compétence technique ou fiscale n'est requise.",
   },
   {
-    question: "Kairos est-il fait pour moi si je ne suis pas du métier ?",
+    question: "Aurevia est-il fait pour moi si je ne suis pas du métier ?",
     answer:
       "Oui, c'est même l'objectif : rendre le patrimoine et la fiscalité compréhensibles, que vous soyez particulier ou professionnel du conseil.",
   },

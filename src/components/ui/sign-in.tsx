@@ -68,7 +68,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                 className="h-6 w-6 rounded-full"
                 style={{ background: 'linear-gradient(180deg, #4a7ff2 0%, #c98ab5 100%)' }}
               />
-              <span className="text-lg font-medium" style={{ color: '#0d1b1e' }}>Kairos</span>
+              <span className="text-lg font-medium" style={{ color: '#0d1b1e' }}>Aurevia</span>
             </Link>
 
             <div className="flex flex-col gap-2">

@@ -33,9 +33,9 @@ lui passer leur contenu.
 (`ElevateNavbar`, adapté de Hyperiux Vault « Elevate Navbar »).
 
 - Pastille noire centrée, fixe en haut (`top-12`), coins 12 px, **aucune ombre**.
-- Logo Kairos (`KairosLogo` → `/`) : desktop, noir 32 px sans fond, fixe en haut à gauche
-  (`left-12 top-12` : glyphe à 32 px des bords haut et gauche de la carte du hero, centré sur la hauteur de la pastille, même animation `nav-intro`) ; noir car
-  tous les fonds de la landing sont clairs (hero pastel, sections blanches). Mobile : blanc 20 px
+- Logo Aurevia (`AureviaLogo` → `/`) : desktop, noir 44 px sans fond, fixe en haut à gauche
+  (`left-12 top-12` : boîte de 40 px dans laquelle le glyphe déborde en restant centré, centré sur la hauteur de la pastille, même animation `nav-intro`) ; noir car
+  tous les fonds de la landing sont clairs (hero pastel, sections blanches). Mobile : blanc 24 px
   à gauche dans la barre noire, en face du bouton menu.
 - Liens : Fonctionnalités, Tarifs, À propos (ancres) ; CTA blanc « Se connecter » → `/login`.
 - Survol : bascule verticale du texte animée avec GSAP.

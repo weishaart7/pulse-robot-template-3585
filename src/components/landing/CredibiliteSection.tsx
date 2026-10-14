@@ -7,7 +7,7 @@ export function CredibiliteSection() {
       heading="Rigoureux sur le fond, agréable à parcourir"
       paragraphs={[
         "Décidez l'esprit tranquille : chaque calcul de succession, d'IFI ou de fiscalité s'appuie sur des règles sourcées et testées à chaque mise à jour. Aucune approximation, aucune boîte noire.",
-        "Un sujet réputé aride, enfin agréable à parcourir : Kairos transforme des données patrimoniales denses en une navigation claire.",
+        "Un sujet réputé aride, enfin agréable à parcourir : Aurevia transforme des données patrimoniales denses en une navigation claire.",
       ]}
       items={[
         { icon: ShieldCheck, color: "#007aff", label: "Règles fiscales sourcées" },

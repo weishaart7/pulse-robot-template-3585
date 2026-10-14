@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Menu } from 'lucide-react';
-import { KairosLogo } from '@/components/brand/KairosLogo';
+import { AureviaLogo } from '@/components/brand/AureviaLogo';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { SidebarNav } from '@/components/layout/DashboardSidebar';
 import { PillTabs, PillTabsList, PillTabsTrigger } from '@/components/ui/pill-tabs';
@@ -41,7 +41,7 @@ export function DashboardTopNav() {
           <Menu className="h-5 w-5" strokeWidth={1.5} />
         </button>
         <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
-          <KairosLogo className="h-6 w-6 text-foreground" />
+          <AureviaLogo className="h-6 w-6 text-foreground" />
         </div>
       </div>
 

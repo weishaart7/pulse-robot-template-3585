@@ -1,5 +1,5 @@
 // Adapted from Hyperiux Vault (https://vault.hyperiux.com) "Elevate Navbar"
-// for Kairos: pure black pill, no logo, no dropdown thumbnails, CTA = login.
+// for Aurevia: pure black pill, no logo, no dropdown thumbnails, CTA = login.
 
 import {
   useCallback,
@@ -11,7 +11,7 @@ import {
 } from "react";
 import { Link } from "react-router-dom";
 import gsap from "gsap";
-import { KairosLogo } from "@/components/brand/KairosLogo";
+import { AureviaLogo } from "@/components/brand/AureviaLogo";
 
 /* ---------- inline icons ---------- */
 function ChevronDown({ className = "" }: { className?: string }) {
@@ -1032,10 +1032,10 @@ function ElevateNavbarMobile({
       <div className="nav-intro flex items-center justify-between rounded-xl border border-white/10 bg-black px-1.5 py-1.5">
         <Link
           to="/"
-          aria-label="Accueil Kairos"
+          aria-label="Accueil Aurevia"
           className="flex h-8 w-8 items-center justify-center text-white"
         >
-          <KairosLogo className="h-5 w-5" />
+          <AureviaLogo className="h-6 w-6" />
         </Link>
         <button
           ref={toggleButtonRef}

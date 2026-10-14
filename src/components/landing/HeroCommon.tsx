@@ -62,7 +62,7 @@ export function HeroCommon() {
           <div className="overflow-hidden rounded-[16px] bg-white">
             <img
               src="/product-preview-placeholder.svg"
-              alt="Aperçu du tableau de bord Kairos"
+              alt="Aperçu du tableau de bord Aurevia"
               className="w-full"
             />
           </div>

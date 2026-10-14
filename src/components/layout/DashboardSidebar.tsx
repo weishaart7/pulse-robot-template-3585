@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { KairosLogo } from '@/components/brand/KairosLogo';
+import { AureviaLogo } from '@/components/brand/AureviaLogo';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { bottomItems, menuItems, getCurrentNavValue } from '@/components/layout/navigation-items';
@@ -166,9 +166,9 @@ export function DashboardSidebar() {
           <button
             onClick={() => navigate('/')}
             className={cn(railButton, "mb-4")}
-            aria-label="Accueil Kairos"
+            aria-label="Accueil Aurevia"
           >
-            <KairosLogo className="h-6 w-6 text-white" />
+            <AureviaLogo className="h-8 w-8 shrink-0 text-white" />
           </button>
 
           <nav aria-label="Modules" className="flex flex-col items-center gap-1">

@@ -29,7 +29,7 @@ export function LandingFooter() {
                 }}
               />
               <span className="font-mono text-sm uppercase tracking-widest">
-                Kairos
+                Aurevia
               </span>
             </div>
             <p className="mt-4 max-w-xs text-sm text-[var(--lp-smoke)]">
@@ -75,7 +75,7 @@ export function LandingFooter() {
         </div>
 
         <div className="flex flex-col items-center justify-between gap-3 border-t border-black/10 pt-6 pb-8 font-mono text-xs uppercase tracking-wider text-[var(--lp-smoke)] sm:flex-row">
-          <span>© {new Date().getFullYear()} Kairos</span>
+          <span>© {new Date().getFullYear()} Aurevia</span>
           <Link
             to="/login"
             className="text-[var(--lp-ink)] transition-colors hover:opacity-70"

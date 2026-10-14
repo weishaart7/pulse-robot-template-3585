@@ -507,7 +507,7 @@ export const Synthese = () => {
     color: `hsl(${index * 45}, 70%, 50%)`
   }));
 
-  // Couleurs dynamiques selon le lien familial (palette data-visualisation Kairos)
+  // Couleurs dynamiques selon le lien familial (palette data-visualisation Aurevia)
   const getColorForLien = (lien: string, index: number) => {
     const colors = [
       'var(--data-green)',

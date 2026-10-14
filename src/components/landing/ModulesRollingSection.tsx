@@ -72,13 +72,13 @@ export function ModulesRollingSection() {
             fontWeight: 500,
           }}
         >
-          Les équipes patrimoniales exigeantes utilisent Kairos pour :
+          Les équipes patrimoniales exigeantes utilisent Aurevia pour :
         </h2>
 
         <div
           className="relative w-[200px] justify-self-start overflow-hidden md:justify-self-center"
           style={{ height: ROW_HEIGHT * VISIBLE_ROWS }}
-          aria-label="Modules Kairos"
+          aria-label="Modules Aurevia"
         >
           <ul className="sr-only">
             {MODULES.map((module) => (

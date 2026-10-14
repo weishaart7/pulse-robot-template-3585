@@ -7,7 +7,7 @@ import { FoyerFiscalInput, RevenusCapitauxMobiliersInput } from './types';
 
 /**
  * Cas réel signalé par un utilisateur : célibataire, 2GO = 4 000 € et
- * 2CH = 6 000 € isolés (2OP décoché — PFU). Kairos annonçait 744 € de PS
+ * 2CH = 6 000 € isolés (2OP décoché — PFU). Aurevia annonçait 744 € de PS
  * (2GO seul, à 18,6 %) contre 1 860 € au simulateur officiel — 2CH était
  * exclu à tort du calcul PS (voir « Bug corrigé » dans
  * calculerPrelevementsSociauxCapitauxMobiliers.ts). L'IR (640 €) était déjà

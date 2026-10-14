@@ -14,7 +14,7 @@ import { RevenusCapitauxMobiliersInput } from './types';
  * 2026 dès les revenus 2025 — seuls les « produits de placement » réellement
  * prélevés à la source pendant l'année (PFU non libératoire déjà versé)
  * resteraient au taux historique de 17,2 % pour 2025. Écart signalé par un
- * utilisateur comparant Kairos au simulateur officiel de la DGFiP : le
+ * utilisateur comparant Aurevia au simulateur officiel de la DGFiP : le
  * détail du calcul y affiche explicitement « CSG-CRDS 11,10 % » (10,6+0,5)
  * et « prélèvement de solidarité 7,5 % », soit 18,6 % au total.
  */

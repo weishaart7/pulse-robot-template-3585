@@ -10,7 +10,7 @@ export function HowItWorksSection() {
       ]}
       items={[
         { icon: UploadCloud, color: "#007aff", label: "Vous importez votre patrimoine" },
-        { icon: BarChart3, color: "#22c55e", label: "Kairos l'analyse" },
+        { icon: BarChart3, color: "#22c55e", label: "Aurevia l'analyse" },
         { icon: Compass, color: "#f59e0b", label: "Vous décidez, accompagné" },
       ]}
     />

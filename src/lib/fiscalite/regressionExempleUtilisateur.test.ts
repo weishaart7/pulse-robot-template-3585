@@ -6,7 +6,7 @@ import { calculerImpot } from './calculerImpot';
 import { FoyerFiscalInput, RevenusExoneresTauxEffectifInput, RevenusSalairesInput } from './types';
 
 /**
- * Cas réel signalé par un utilisateur : Kairos donnait 10 314 € quand le
+ * Cas réel signalé par un utilisateur : Aurevia donnait 10 314 € quand le
  * simulateur officiel DGFiP donne 10 356 €. Cause : le choix 10 %/frais réels
  * (art. 83 CGI) était arbitré indépendamment pour 1AJ (salaire France) et
  * 1AC/1AE (salaire exonéré retenu pour le taux effectif) du même déclarant,
@@ -64,7 +64,7 @@ describe('régression : marié, 1AJ/1BJ + 1AC/1AE (frais réels) + 1AH', () => {
 });
 
 /**
- * Cas réel signalé par un utilisateur : Kairos donnait 28 371 € quand le
+ * Cas réel signalé par un utilisateur : Aurevia donnait 28 371 € quand le
  * simulateur officiel DGFiP donne 28 866 €. Cause : une fois les frais réels
  * combinés (1AK + 1AE = 15 000 €) retenus comme plus favorables que
  * l'abattement forfaitaire (12 950 € sur la base combinée 129 500 €),
@@ -125,7 +125,7 @@ describe('régression : célibataire, 1AJ+1GB (frais réels 1AK) + 1AC/1AE (frai
     expect(impot.impotNet).toBe(28866);
     // RFR : 1GH (3 600 €), 1AD (4 200 €) et 1PB (980 €) réintégrés — simulateur officiel IRPP donne
     // 122 402 € (écart résiduel de 102 € non expliqué, lié au cas limite 1GB, voir docs/fiscalite.md) ;
-    // ClickImpôts donne 123 280 €, identique à Kairos ici (les deux réintègrent 1PB en totalité).
+    // ClickImpôts donne 123 280 €, identique à Aurevia ici (les deux réintègrent 1PB en totalité).
     expect(impot.revenuFiscalReference).toBe(123280);
   });
 });
