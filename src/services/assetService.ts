@@ -60,6 +60,14 @@ export interface Asset {
   // Biens ruraux, groupements fonciers, bois et forêts (cf. constants/assetTypes.ts::NATURES_RURALES).
   regime_exoneration_rural?: 'forestier' | 'agricole' | 'aucun' | string | null;
   conditions_exoneration_rural?: boolean | null;
+  // Entreprise individuelle / biens professionnels (art. 787 C CGI).
+  conditions_787c?: boolean | null;
+  // Bijoux, objets d'art, collections : plancher de 60 % (art. 764 II CGI).
+  valeur_assuree?: number | null;
+  // Assurance-vie dont l'assuré n'est pas le souscripteur.
+  assure_tiers?: boolean | null;
+  // Régime de retraite étranger : transmission au décès.
+  regime_retraite_etrangere?: string | null;
   cto_multi_actifs?: boolean;
   cto_nature_sous_jacent?: string;
   clause_entree_communaute?: boolean;

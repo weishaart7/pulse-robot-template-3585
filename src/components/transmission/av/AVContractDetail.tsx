@@ -53,6 +53,9 @@ interface AVDetails {
   // null = non renseignée : plus de valeur présumée (choix obligatoire à
   // l'enregistrement, cf. saveDetails).
   origine_fonds: 'deniers_propres' | 'deniers_communs' | null;
+  // Avance consentie par l'assureur, non remboursée : déduite du capital décès
+  // versé aux bénéficiaires (cf. transmissionHelpers.ts::buildAVContracts).
+  avance_en_cours: number | null;
 }
 
 interface AVOperation {
@@ -80,6 +83,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
     rachats_programmes_montant: null,
     rachats_programmes_periodicite: null,
     origine_fonds: null,
+    avance_en_cours: null,
   });
   const [operations, setOperations] = useState<AVOperation[]>([]);
   const [beneficiaires, setBeneficiaires] = useState<{ id: string; nom: string; prenom: string | null; lien: string }[]>([]);
@@ -163,6 +167,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
           rachats_programmes_montant: d.rachats_programmes_montant || null,
           rachats_programmes_periodicite: d.rachats_programmes_periodicite || null,
           origine_fonds: d.origine_fonds === 'deniers_propres' || d.origine_fonds === 'deniers_communs' ? d.origine_fonds : null,
+          avance_en_cours: d.avance_en_cours ?? null,
         });
         // Restore structured clause if exists
         if (d.clause_beneficiaire_structuree) {
@@ -225,6 +230,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
         rachats_programmes_periodicite: details.rachats_programmes_periodicite,
         clause_beneficiaire_structuree: clauseMode === 'assistee' ? clauseStructuree : null,
         origine_fonds: details.origine_fonds,
+        avance_en_cours: details.avance_en_cours,
       };
 
       if (details.id) {
@@ -516,6 +522,27 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
               )}
               <p className="text-xs text-muted-foreground mt-2">
                 Détermine, si ce contrat n'est pas dénoué au décès simulé, si sa valeur de rachat est réintégrée dans la masse commune à liquider (régime de communauté uniquement).
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Avance en cours (déduite du capital décès) */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Avance en cours</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={details.avance_en_cours ?? ''}
+                onChange={e => setDetails(prev => ({ ...prev, avance_en_cours: e.target.value ? Math.max(0, parseFloat(e.target.value)) : null }))}
+                placeholder="0"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                Avance consentie par l'assureur et non remboursée (intérêts compris). Au décès, l'assureur la déduit du capital
+                versé aux bénéficiaires : elle réduit l'assiette du prélèvement et n'est pas une dette de la succession.
               </p>
             </CardContent>
           </Card>

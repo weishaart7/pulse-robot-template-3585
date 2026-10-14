@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { FieldHelp } from '@/components/ui/field-help';
 import { AVContractDetail } from './av/AVContractDetail';
 import { ClauseStructuree, BeneficiaireEntry } from './av/ClauseBeneficiaireBuilder';
-import { NATURES_AV_HORS_SUCCESSION, NATURES_PER, NATURES_RETRAITE_RENTE, NATURES_PREVOYANCE_DECES, NATURE_ARTICLE_82, isContratHorsSuccession, isRetraiteRenteSansGarantie, getCapitalDecesContrat } from '@/constants/assetTypes';
+import { NATURES_AV_HORS_SUCCESSION, NATURES_PER, NATURES_RETRAITE_RENTE, NATURES_PREVOYANCE_DECES, NATURE_ARTICLE_82, isContratHorsSuccession, isContratNonTransmis, getCapitalDecesContrat, NATURE_RETRAITE_ETRANGERE } from '@/constants/assetTypes';
 import {
   buildFamilyGraph,
   buildPatrimonySnapshot,
@@ -46,7 +46,7 @@ import transmissionParamsData from '@/data/transmission-params.json';
 // hors succession (bons de capitalisation toujours exclus, cf. isContratHorsSuccession).
 // Contrats de prévoyance décès (capital garanti affiché à la place de la valeur estimée, cf.
 // getCapitalDecesContrat) et article 82 : clause et primes se saisissent ici aussi.
-const AV_NATURES = [...NATURES_AV_HORS_SUCCESSION, ...NATURES_PER, ...NATURES_RETRAITE_RENTE, ...NATURES_PREVOYANCE_DECES, NATURE_ARTICLE_82];
+const AV_NATURES = [...NATURES_AV_HORS_SUCCESSION, ...NATURES_PER, ...NATURES_RETRAITE_RENTE, ...NATURES_PREVOYANCE_DECES, NATURE_ARTICLE_82, NATURE_RETRAITE_ETRANGERE];
 
 interface OperationsByContract {
   [assetId: string]: { type_operation: string; montant: number }[];
@@ -149,7 +149,7 @@ export const AssuranceVie = () => {
         // bancaire et contrat de retraite par rente sans garantie décès.
         // Cast sûr : les colonnes resserrées en union dans Asset sont garanties par
         // une contrainte CHECK en base (cf. assetService.ts).
-        const avContracts = ((contractsRes.data || []) as Asset[]).filter(a => isContratHorsSuccession(a) && !isRetraiteRenteSansGarantie(a));
+        const avContracts = ((contractsRes.data || []) as Asset[]).filter(a => isContratHorsSuccession(a) && !isContratNonTransmis(a));
         setContracts(avContracts);
 
         setSubscriberAge(computeAge(profileRes.data?.date_naissance));
@@ -189,7 +189,7 @@ export const AssuranceVie = () => {
               .in('asset_id', assetIds),
             supabase
               .from('av_contract_details')
-              .select('asset_id, clause_beneficiaire_structuree')
+              .select('asset_id, clause_beneficiaire_structuree, avance_en_cours')
               .in('asset_id', assetIds),
           ]);
 
@@ -232,6 +232,9 @@ export const AssuranceVie = () => {
               label: a.denomination,
               valeurEstimee: a.valeur_estimee,
               capitalGaranti: a.capital_garanti,
+              assureTiers: a.assure_tiers,
+              avanceEnCours: avClausesRaw.find((d: { asset_id: string; avance_en_cours?: number | null }) => d.asset_id === a.id)?.avance_en_cours ?? null,
+              regimeRetraiteEtrangere: a.regime_retraite_etrangere,
               detenteur: a.detenteur,
               operations: opsByAsset.get(a.id!) || [],
               clauseBeneficiaireStructuree: clauseByAsset.get(a.id!) || null,

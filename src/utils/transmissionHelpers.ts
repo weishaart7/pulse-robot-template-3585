@@ -9,7 +9,7 @@ import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcqu
 import { RecompenseCalcInput, CreanceCalcInput } from '@/lib/patrimoine/recompensesCreances';
 import { Recompense } from '@/types/recompense';
 import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
-import { getExonerationRurale, isContratHorsSuccession, isPER, isPERAssurantiel, isPERNonQualifie, isRetraiteRente, isRetraiteRenteNonQualifie, isRetraiteRenteSansGarantie, isPrevoyanceDeces, isPrevoyanceNonQualifiee, NATURE_PREVOYANCE_RACHETABLE, NATURE_ARTICLE_82, getCapitalDecesContrat } from '@/constants/assetTypes';
+import { getExonerationRurale, isContratHorsSuccession, isPER, isPERAssurantiel, isPERNonQualifie, isRetraiteRente, isRetraiteRenteNonQualifie, isRetraiteRenteSansGarantie, isContratNonTransmis, isRetraiteEtrangereNonQualifiee, NATURE_RETRAITE_ETRANGERE, isPrevoyanceDeces, isPrevoyanceNonQualifiee, NATURE_PREVOYANCE_RACHETABLE, NATURE_ARTICLE_82, getCapitalDecesContrat } from '@/constants/assetTypes';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { getAgeAtDate, getDemembrementPct, getDecedentRole } from '@/lib/transmission';
 import { resolveEffectiveAVBeneficiaires } from '@/lib/dmtg/assurance-vie';
@@ -421,6 +421,14 @@ export interface AVContractRawRow {
   assetId: string;
   label?: string | null;
   valeurEstimee?: number | null;
+  // assets.regime_retraite_etrangere — seul 'clause_beneficiaire' devient un AVContract.
+  regimeRetraiteEtrangere?: string | null;
+  // av_contract_details.avance_en_cours — avance non remboursée, déduite par
+  // l'assureur du capital décès (jamais une dette de la succession).
+  avanceEnCours?: number | null;
+  // assets.assure_tiers — assuré distinct du souscripteur : contrat non dénoué
+  // au décès du souscripteur, jamais un AVContract (cf. isContratHorsSuccession).
+  assureTiers?: boolean | null;
   // assets.capital_garanti — capital décès transmis par un contrat de
   // prévoyance décès (cf. getCapitalDecesContrat), à la place de valeurEstimee.
   capitalGaranti?: number | null;
@@ -536,11 +544,16 @@ export function buildAVContracts(
   // Contrat de retraite par rente sans garantie décès : épargne acquise à
   // l'assureur, jamais transmise — pas un AVContract.
   return rows
-    .filter(row => isContratHorsSuccession({ nature: row.nature, sous_type_per: row.sousTypePer })
-      && !isRetraiteRenteSansGarantie({ nature: row.nature, garantie_deces: row.garantieDeces }))
+    .filter(row => isContratHorsSuccession({ nature: row.nature, sous_type_per: row.sousTypePer, assure_tiers: row.assureTiers, regime_retraite_etrangere: row.regimeRetraiteEtrangere })
+      && !isContratNonTransmis({ nature: row.nature, garantie_deces: row.garantieDeces, regime_retraite_etrangere: row.regimeRetraiteEtrangere }))
     .map(row => {
       const resolveBeneficiaryId = resolveBeneficiaryIdPour(row.detenteur);
-      const capitalDeces = getCapitalDecesContrat({ nature: row.nature, valeur_estimee: row.valeurEstimee, capital_garanti: row.capitalGaranti });
+      // Avance non remboursée : déduite par l'assureur du capital versé aux
+      // bénéficiaires — assiette 990 I nette (avance excédant le capital : non
+      // modélisé, l'assureur réclamerait le solde à la succession).
+      const capitalDeces = Math.max(0,
+        getCapitalDecesContrat({ nature: row.nature, valeur_estimee: row.valeurEstimee, capital_garanti: row.capitalGaranti })
+        - (Number(row.avanceEnCours) || 0));
       // Prévoyance décès : assiette 990 I fixée ici (fraction rachetable +
       // primes de la dernière année), cf. splitPrimesPrevoyance.
       const prevoyance = isPrevoyanceDeces(row.nature)
@@ -635,7 +648,8 @@ export function buildAVContracts(
           : undefined,
         nature: row.nature || undefined,
         exonere990I: isRetraiteRente(row.nature) && row.conditionsExoneration990I === true,
-        ...(prevoyance ? { assiette990I: prevoyance.assiette990I } : {})
+        ...(prevoyance ? { assiette990I: prevoyance.assiette990I } : {}),
+        ...((Number(row.avanceEnCours) || 0) > 0 ? { avanceDeduite: Number(row.avanceEnCours) } : {})
       };
     });
 }
@@ -1262,7 +1276,7 @@ export function buildPassifsParBien(passifLines: PassifLine[], cote: 'user' | 'c
  * BienNonQualifieError pour réutiliser le renvoi "Qualifier ce bien dans
  * Patrimoine" déjà affiché par Synthese/ProcessusCalcul/Succession2ndDeces.
  */
-export function assertPERQualifies(assets: Array<{ nature?: string | null; sous_type_per?: string | null; garantie_deces?: boolean | null; capital_garanti?: number | null; denomination?: string | null }>): void {
+export function assertPERQualifies(assets: Array<{ nature?: string | null; sous_type_per?: string | null; garantie_deces?: boolean | null; capital_garanti?: number | null; regime_retraite_etrangere?: string | null; denomination?: string | null }>): void {
   const perNonQualifie = assets.find(isPERNonQualifie);
   if (perNonQualifie) {
     throw new BienNonQualifieError(
@@ -1278,6 +1292,12 @@ export function assertPERQualifies(assets: Array<{ nature?: string | null; sous_
       `Le contrat de prévoyance « ${prevoyanceNonQualifiee.denomination || prevoyanceNonQualifiee.nature} » n'indique pas son capital garanti : impossible de calculer le capital transmis au décès. Renseignez-le dans la fiche du bien.`
     );
   }
+  const etrangerNonQualifie = assets.find(isRetraiteEtrangereNonQualifiee);
+  if (etrangerNonQualifie) {
+    throw new BienNonQualifieError(
+      `Le régime de retraite étranger « ${etrangerNonQualifie.denomination || etrangerNonQualifie.nature} » n'indique pas ce qu'il transmet au décès (épargne dans la succession, capital à des bénéficiaires désignés, ou rien) : impossible de calculer la succession. Renseignez-le dans la fiche du bien.`
+    );
+  }
   const retraiteNonQualifiee = assets.find(isRetraiteRenteNonQualifie);
   if (retraiteNonQualifiee) {
     throw new BienNonQualifieError(
@@ -1290,7 +1310,7 @@ export function assertPERQualifies(assets: Array<{ nature?: string | null; sous_
 // rachetables avant la retraite — jamais réintégrés au titre de la doctrine
 // Ciot (décision actée), signalés à l'écran (cf. hasPERNonDenoueConjoint).
 function isContratRetraiteNonRachetable(nature: string | null | undefined): boolean {
-  return isPER(nature) || isRetraiteRente(nature) || nature === NATURE_ARTICLE_82;
+  return isPER(nature) || isRetraiteRente(nature) || nature === NATURE_ARTICLE_82 || nature === NATURE_RETRAITE_ETRANGERE;
 }
 
 // Contrats jamais réintégrés au titre de la doctrine Ciot : les précédents,
@@ -1479,7 +1499,11 @@ export function buildSpouseRawAssets(
         societe_id: (asset as { societe_id?: string | null }).societe_id ?? null,
         // Biens ruraux : conservés pour l'exonération des art. 793 et 793 bis CGI.
         regime_exoneration_rural: asset.regime_exoneration_rural ?? null,
-        conditions_exoneration_rural: asset.conditions_exoneration_rural ?? null
+        conditions_exoneration_rural: asset.conditions_exoneration_rural ?? null,
+        // Art. 787 C, plancher d'assurance (art. 764 II), assuré tiers.
+        conditions_787c: asset.conditions_787c ?? null,
+        valeur_assuree: asset.valeur_assuree != null ? asset.valeur_assuree * partConjoint : null,
+        assure_tiers: asset.assure_tiers ?? false
       };
     });
 }

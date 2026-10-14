@@ -36,7 +36,7 @@ import {
   regimeIsParticipationAcquets,
   PatrimoineLigneCalcInput,
 } from '../patrimoine/participationAcquets';
-import { getAssetCategory, isContratHorsSuccession, isBienRuralNonQualifie, getExonerationRurale, isNatureRurale, isPrevoyanceDeces, NATURE_ARTICLE_82 } from '../../constants/assetTypes';
+import { getAssetCategory, isContratHorsSuccession, isBienRuralNonQualifie, getExonerationRurale, isNatureRurale, isPrevoyanceDeces, NATURE_ARTICLE_82, isBien787CNonQualifie, isExonere787C, NATURES_787C, NATURES_PLANCHER_ASSURANCE, TAUX_PLANCHER_ASSURANCE, isAssuranceVieHorsSuccession, NATURE_RETRAITE_ETRANGERE } from '../../constants/assetTypes';
 import {
   computeDMTG,
   DEFAULT_DMTG_PARAMS,
@@ -1013,6 +1013,13 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     );
   }
 
+  if (avContracts.some(c => (c.avanceDeduite || 0) > 0)) {
+    successionLegaleResult.explicationsTexte.push(
+      `Avance en cours sur ${avContracts.filter(c => (c.avanceDeduite || 0) > 0).map(c => c.label || 'un contrat').join(', ')} : ` +
+      `déduite par l'assureur du capital versé aux bénéficiaires, qui sert d'assiette au prélèvement ; elle n'est pas ` +
+      `déduite du passif de la succession — à confirmer.`
+    );
+  }
   if (avContracts.some(c => isPrevoyanceDeces(c.nature))) {
     successionLegaleResult.explicationsTexte.push(
       `Prévoyance décès : capital garanti versé hors succession aux bénéficiaires de la clause (art. L132-12 ` +
@@ -1070,6 +1077,79 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     );
   }
 
+  // Entreprise individuelle (art. 787 C CGI) : conditions saisies, jamais présumées.
+  const bien787CNonQualifie = (rawAssets || []).find(a => isBien787CNonQualifie(a) && getFractionSuccessorale(a) > 0);
+  if (bien787CNonQualifie) {
+    throw new BienNonQualifieError(
+      `Le bien « ${bien787CNonQualifie.denomination || bien787CNonQualifie.nature} » n'indique pas si les conditions de ` +
+      `l'exonération des biens professionnels (art. 787 C CGI) sont remplies : impossible de calculer ses droits de ` +
+      `succession. Renseignez-le dans la fiche du bien.`
+    );
+  }
+  const biens787C = (rawAssets || []).filter(a => NATURES_787C.includes(a.nature || '') && getFractionSuccessorale(a) > 0);
+  if (biens787C.some(isExonere787C)) {
+    successionLegaleResult.explicationsTexte.push(
+      `Entreprise individuelle (art. 787 C CGI) : ${biens787C.filter(isExonere787C).map(a => a.denomination || a.nature).join(', ')} ` +
+      `exonérés de droits à hauteur de 75 %. Suppose que les héritiers s'engagent à conserver les biens pendant 4 ans ` +
+      `et que l'un d'eux poursuive l'exploitation pendant 3 ans — à confirmer.`
+    );
+  }
+  if (biens787C.some(a => !isExonere787C(a))) {
+    successionLegaleResult.explicationsTexte.push(
+      `${biens787C.filter(a => !isExonere787C(a)).map(a => a.denomination || a.nature).join(', ')} : conditions de ` +
+      `l'art. 787 C non remplies, biens taxés sur leur pleine valeur.`
+    );
+  }
+
+  // Bijoux, objets d'art ou de collection : plancher de 60 % de la valeur
+  // d'assurance (art. 764 II CGI), appliqué au calcul fiscal seulement.
+  const biensPlancher = (rawAssets || []).filter(a =>
+    NATURES_PLANCHER_ASSURANCE.includes(a.nature || '') && (Number(a.valeur_assuree) || 0) > 0 && getFractionSuccessorale(a) > 0
+  );
+  const valeurFiscalePlancher = (asset: RawAssetInput, valeur: number): number => {
+    if (!NATURES_PLANCHER_ASSURANCE.includes(asset.nature || '') || asset.mode_detention === 'Usufruit') return valeur;
+    const plancher = TAUX_PLANCHER_ASSURANCE * (Number(asset.valeur_assuree) || 0) * getFractionSuccessorale(asset);
+    return Math.max(valeur, plancher);
+  };
+  if (biensPlancher.length > 0) {
+    successionLegaleResult.explicationsTexte.push(
+      `Bijoux, objets d'art et de collection (${biensPlancher.map(a => a.denomination || a.nature).join(', ')}) : valeur ` +
+      `imposable d'au moins 60 % de leur valeur d'assurance (contrat en cours, conclu depuis moins de 10 ans, art. 764 ` +
+      `II CGI), sauf preuve contraire.`
+    );
+  }
+
+  // Assurance-vie dont l'assuré n'est pas le souscripteur : non dénouée par ce
+  // décès, sa valeur de rachat entre dans l'actif successoral (droit commun).
+  const avAssureTiers = (rawAssets || []).filter(a => isAssuranceVieHorsSuccession(a.nature) && a.assure_tiers && getFractionSuccessorale(a) > 0);
+  if (avAssureTiers.length > 0) {
+    successionLegaleResult.explicationsTexte.push(
+      `${avAssureTiers.map(a => a.denomination || a.nature).join(', ')} : assuré distinct du souscripteur, contrat non ` +
+      `dénoué par ce décès — sa valeur de rachat entre dans la succession du souscripteur et se transmet à ses héritiers ` +
+      `(droits de succession de droit commun, ni 990 I ni 757 B). Le capital sera versé au décès de l'assuré.`
+    );
+  }
+
+  // Stock-options non levées : doctrine incertaine, aucun traitement dédié.
+  const stockOptions = (rawAssets || []).filter(a => a.nature === 'Stock-options' && getFractionSuccessorale(a) > 0);
+  if (stockOptions.length > 0) {
+    successionLegaleResult.explicationsTexte.push(
+      `Stock-options (${stockOptions.map(a => a.denomination || a.nature).join(', ')}) : retenues pour leur valeur saisie. ` +
+      `Des options non levées au décès sont exerçables par les héritiers dans les 6 mois ; leur inclusion dans l'actif ` +
+      `taxable (exclusion, ou valeur intrinsèque : cours moins prix d'exercice) est discutée — à faire confirmer par le notaire.`
+    );
+  }
+
+  // Régime de retraite étranger : transmission qualifiée sur le bien.
+  const retraitesEtrangeres = (rawAssets || []).filter(a => a.nature === NATURE_RETRAITE_ETRANGERE && getFractionSuccessorale(a) > 0);
+  if (retraitesEtrangeres.length > 0) {
+    successionLegaleResult.explicationsTexte.push(
+      `Régimes de retraite étrangers (${retraitesEtrangeres.map(a => a.denomination || a.nature).join(', ')}) : traités ` +
+      `selon la transmission indiquée (succession, capital aux bénéficiaires au régime de l'assurance-vie, ou rien). ` +
+      `L'application du droit français (art. 990 I / 757 B, convention fiscale) est à vérifier.`
+    );
+  }
+
   const meublesMeublants = (rawAssets || []).filter(a => a.nature === 'Meubles meublants' && getFractionSuccessorale(a) > 0);
   if (meublesMeublants.length > 0 && !params.inventaireNotarieProduit) {
     successionLegaleResult.explicationsTexte.push(
@@ -1118,7 +1198,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     .map(asset => ({
       id: asset.id,
       label: asset.denomination || '',
-      valeurVenale: getValeurEstimeePonderee(asset) * getFractionSuccessorale(asset),
+      valeurVenale: valeurFiscalePlancher(asset, getValeurEstimeePonderee(asset) * getFractionSuccessorale(asset)),
       nature: getAssetCategory(asset.nature || '') === 'actifs immobiliers' ? 'immobilier' : 'autre',
       location: 'metropole',
       isResidencePrincipale: asset.nature === 'Résidence principale' && abattementRPApplicable,
@@ -1127,6 +1207,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
         ? (ctx.dutreilPartsNonAffectees?.[asset.societe_id] ?? 0) / 100
         : undefined,
       exonerationRurale: getExonerationRurale(asset) ?? undefined,
+      isExonere787C: isExonere787C(asset),
       isMeublesMeublants: asset.nature === 'Meubles meublants',
       detteImputee: ctx.passifsParBien?.[asset.id],
       exclurePour: {}

@@ -35,7 +35,7 @@ export function filterAndValueEstateAssets(
       // sa fraction taxable reste déduite. L'excédent éventuel reste dans le
       // passif général. Abattement de la résidence principale exclu : c'est
       // une règle d'évaluation, pas une exonération.
-      const bienExonere = asset.isMonumentHistoriqueOuvert || asset.isDutreil || !!asset.exonerationRurale;
+      const bienExonere = asset.isMonumentHistoriqueOuvert || asset.isDutreil || asset.isExonere787C || !!asset.exonerationRurale;
       if (bienExonere && (asset.detteImputee || 0) > 0 && baseTaxable > 0) {
         const imputation = Math.min(asset.detteImputee!, baseTaxable);
         baseTaxable -= imputation;
@@ -72,6 +72,12 @@ export function filterAndValueEstateAssets(
         justifs.push(partNonExoneree > 0
           ? `Pacte Dutreil : exonération de 75 % hors biens non affectés à l'activité (${Math.round(partNonExoneree * 100)} %)`
           : "Pacte Dutreil : exonération de 75 %");
+      }
+
+      // Biens d'une entreprise individuelle (art. 787 C CGI) : exonération de 75 %.
+      if (asset.isExonere787C) {
+        baseTaxable *= 0.25;
+        justifs.push("Entreprise individuelle (art. 787 C CGI) : exonération de 75 %");
       }
 
       // Bois, forêts, groupements forestiers (art. 793-1-3°, 793-2-2° CGI) :

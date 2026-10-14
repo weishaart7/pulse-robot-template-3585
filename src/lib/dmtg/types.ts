@@ -47,6 +47,9 @@ export interface Asset {
   // bénéficiaire, 1/2 au-delà (art. 793 bis CGI, seuil appliqué dans beneficiary.ts).
   exonerationRurale?: 'forestier' | 'agricole';
   isDutreil?: boolean; // titres sous pacte Dutreil (art. 787 B CGI) : -75%
+  // Biens affectés à l'exploitation d'une entreprise individuelle, conditions
+  // de l'art. 787 C CGI remplies : -75 %.
+  isExonere787C?: boolean;
   // Part (0 à 1) de la valeur des titres Dutreil correspondant à des biens non
   // affectés à l'activité (« somptuaires », art. 787 B, LF 2026 — transmissions
   // depuis le 21/02/2026) : exclue de l'exonération. Défaut 0.
@@ -148,6 +151,8 @@ export interface AVContract {
   // proratisation du capital par les primes ; plafonnée au capital décès.
   // L'assiette 757 B est alors primesApres70, plafonnée au capital.
   assiette990I?: Money;
+  // Avance non remboursée déjà déduite de capitalDeces (affichage uniquement).
+  avanceDeduite?: Money;
 }
 
 export interface Donation {

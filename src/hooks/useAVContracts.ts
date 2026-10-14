@@ -38,7 +38,7 @@ export function useAVContracts(assets: Asset[]) {
       setLoading(true);
       setError(null);
       const [detailsRes, opsRes] = await Promise.all([
-        supabase.from('av_contract_details').select('asset_id, clause_beneficiaire_structuree, origine_fonds').in('asset_id', ids),
+        supabase.from('av_contract_details').select('asset_id, clause_beneficiaire_structuree, origine_fonds, avance_en_cours').in('asset_id', ids),
         supabase.from('av_operations').select('asset_id, type_operation, montant, date_operation').in('asset_id', ids)
       ]);
       if (cancelled) return;
@@ -72,8 +72,11 @@ export function useAVContracts(assets: Asset[]) {
         label: a.denomination,
         valeurEstimee: a.valeur_estimee,
         capitalGaranti: a.capital_garanti,
+        assureTiers: a.assure_tiers,
+        regimeRetraiteEtrangere: a.regime_retraite_etrangere,
         detenteur: a.detenteur,
         origineFonds: origineFondsByAsset.get(a.id!) || null,
+        avanceEnCours: (detailsRes.data || []).find((d: { asset_id: string; avance_en_cours?: number | null }) => d.asset_id === a.id)?.avance_en_cours ?? null,
         operations: opsByAsset.get(a.id!) || [],
         clauseBeneficiaireStructuree: clauseByAsset.get(a.id!) || null,
         nature: a.nature,

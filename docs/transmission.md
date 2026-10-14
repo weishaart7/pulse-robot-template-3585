@@ -683,6 +683,37 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   Engagements des héritiers (gestion durable 30 ans, conservation 5 ans pour le seuil de 600 000 €,
   version en vigueur depuis la LF 2025) présumés et signalés ; seuil de 20 M€ (18 ans) non modélisé. Le forfait mobilier exclut la fraction exonérée aux
   3/4 (approximation au-delà du seuil). Tests : `lib/transmission/exonerationRurale.test.ts`.
+- **Entreprise individuelle (art. 787 C CGI).** « Entreprise individuelle » et « Autres biens
+  professionnels » (`NATURES_787C`) : `assets.conditions_787c` obligatoire (formulaire et calcul,
+  `BienNonQualifieError`). Conditions remplies (détention de 2 ans si acquis à titre onéreux,
+  conservation 4 ans par les héritiers — inchangée par la LF 2026, qui ne vise que l'art. 787 B —,
+  poursuite de l'exploitation 3 ans) : 75 % exonérés (`Asset.isExonere787C`), dette rattachée imputée
+  sur le bien (art. 769 II). Non remplies : pleine valeur, signalé. Une entreprise individuelle saisie
+  dans Sociétés avec pacte Dutreil reste traitée par l'art. 787 B (aucune en base).
+- **Bijoux, objets d'art et de collection (art. 764 II CGI).** « Bijoux et pierres précieuses »,
+  « Montres », « Objets d'art et antiquités », « Objets de collection » (`NATURES_PLANCHER_ASSURANCE`) :
+  valeur fiscale = max(valeur estimée, 60 % de `assets.valeur_assuree` × part du défunt) — contrat
+  d'assurance vol/incendie en cours conclu depuis moins de 10 ans, sauf preuve contraire. Fiscal
+  seulement (masse civile inchangée) ; sans valeur assurée, valeur estimée.
+- **Assurance-vie dont l'assuré n'est pas le souscripteur.** `assets.assure_tiers` (défaut false, cas
+  usuel) : contrat non dénoué au décès du souscripteur, exclu de `isContratHorsSuccession` — sa valeur
+  de rachat entre dans les masses civile et fiscale (part du défunt selon le régime), sans 990 I ni
+  757 B, et n'est jamais un `AVContract`. Le dénouement au décès de l'assuré n'est pas modélisé.
+  Tests (3 points) : `lib/transmission/phaseC1Actifs.test.ts`.
+- **Avance sur contrat d'assurance-vie.** Saisie sur le contrat (`av_contract_details.avance_en_cours`,
+  écran du contrat), déduite par `buildAVContracts` du capital décès versé aux bénéficiaires — assiette
+  990 I nette (`AVContract.avanceDeduite`, signalé « à confirmer »). Jamais une dette de la succession :
+  la nature de passif « Avances sur contrats d'assurance-vie » n'est plus proposée (0 ligne en base).
+  Avance supérieure au capital (solde réclamé à la succession) non modélisée.
+- **Régimes de retraite étrangers.** `assets.regime_retraite_etrangere` obligatoire (formulaire,
+  `assertPERQualifies`) : `actif_successoral` (dans l'actif, droit commun), `clause_beneficiaire`
+  (hors succession, `AVContract` au régime de l'assurance-vie, clause et versements dans l'écran
+  Assurance-vie) ou `aucune` (hors succession, rien transmis — `isContratNonTransmis`). Jamais
+  réintégré au titre de la doctrine Ciot. Application du droit français et des conventions fiscales
+  signalée à vérifier.
+- **Stock-options.** Retenues pour leur valeur saisie ; doctrine incertaine sur les options non levées
+  (exclusion de l'actif taxable, ou valeur intrinsèque) signalée dans le calcul et la fiche — aucun
+  traitement dédié (décision actée). Tests (3 points) : `utils/transmissionHelpers.phaseC2.test.ts`.
 - **Prévoyance décès et contrat article 82 hors succession (art. L132-12 C. assur.).** « Temporaire
   décès », « Vie entière », « Contrat prévoyance individuelle » (`NATURES_PREVOYANCE_DECES`) et
   « Contrat article 82 » sont exclus des masses civile et fiscale (`isContratHorsSuccession`) et
@@ -800,18 +831,10 @@ successoral. Données en base : aucun actif de prévoyance décès ni article 82
 - *N3, N4 et N5 soldés le 2026-10-14 (phase B) : cf. §2 « Forfait mobilier », « Assiette DMTG nette
   du passif » et « Biens ruraux ». N5 se limitait aux donations rurales antérieures : la conservation
   de 5 ans et l'application aux baux antérieurs à 2025 (réponse ministérielle) étaient conformes.*
-- **N6 Stock-options** : `prix_exercice` saisi mais ignoré, la valeur imposable est la valeur
-  intrinsèque (cours − prix d'exercice).
-- **N7 Entreprise individuelle (art. 787 C)** : exonérée de 75 % seulement si saisie dans Sociétés
-  avec Dutreil validé ; un actif « Entreprise individuelle » / « Autres biens professionnels » est
-  sinon taxé à 100 %.
-- **N8 Bijoux, objets d'art, collections** : plancher de 60 % de l'évaluation des contrats d'assurance
-  (art. 764 II) non modélisé.
-- **N9 « Avances sur contrats d'assurance-vie »** déduites du passif successoral, alors que l'assureur
-  les impute sur le capital décès hors succession.
-- **N10 Régimes de retraite étrangers** : toujours dans l'actif successoral, sans qualification.
-- **N11 Assurance-vie souscrite sur la tête d'un tiers** (défunt souscripteur non assuré) : la valeur
-  de rachat devrait entrer dans la succession ; le contrat est toujours traité comme dénoué.
+- *N7, N8 et N11 soldés le 2026-10-14 (phase C1) : cf. §2 « Entreprise individuelle », « Bijoux, objets
+  d'art et de collection », « Assurance-vie dont l'assuré n'est pas le souscripteur ».*
+- *N6, N9 et N10 soldés le 2026-10-14 (phase C2) : cf. §2 « Stock-options », « Avance sur contrat
+  d'assurance-vie », « Régimes de retraite étrangers ». L'audit des classes d'actifs est clos.*
 - *Dutreil jamais appliqué en pratique (`eligibilite_validee` jamais enregistrée) : soldé le
   2026-10-14, cf. `docs/societes.md` (éligibilité Dutreil).*
 - **`emprunts.asset_id` en `ON DELETE SET NULL`**, en écart avec la règle CASCADE de CLAUDE.md —

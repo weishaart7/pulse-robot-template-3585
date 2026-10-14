@@ -235,6 +235,12 @@ export interface RawAssetInput {
   // NATURES_RURALES) : exonération partielle de DMTG, art. 793 et 793 bis CGI.
   regime_exoneration_rural?: string | null;
   conditions_exoneration_rural?: boolean | null;
+  // Entreprise individuelle (art. 787 C), plancher d'assurance (art. 764 II),
+  // assurance-vie sur la tête d'un tiers — cf. constants/assetTypes.ts.
+  conditions_787c?: boolean | null;
+  valeur_assuree?: number | null;
+  assure_tiers?: boolean | null;
+  regime_retraite_etrangere?: string | null;
 }
 
 export type TypeQuotePart = "pleine_propriete" | "usufruit" | "nue_propriete";

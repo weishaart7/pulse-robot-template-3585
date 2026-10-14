@@ -16,6 +16,10 @@ import {
   isRetraiteRente,
   isPrevoyanceDeces,
   NATURE_ARTICLE_82,
+  NATURES_787C,
+  NATURES_PLANCHER_ASSURANCE,
+  isAssuranceVieHorsSuccession,
+  NATURE_RETRAITE_ETRANGERE,
   CTO_SOUS_JACENT_OPTIONS,
   PARTS_FONCIERES_NATURES,
   REGIME_FISCAL_PARTS_OPTIONS,
@@ -95,6 +99,9 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
   // Biens ruraux, groupements fonciers, bois et forêts : régime d'exonération
   // imposé (« Bois & forêts ») ou proposé par défaut (GFA), modifiable.
   const isRurale = isNatureRurale(watchedNature);
+  const isBien787C = NATURES_787C.includes(watchedNature);
+  const isPlancherAssurance = NATURES_PLANCHER_ASSURANCE.includes(watchedNature);
+  const isAssuranceVie = isAssuranceVieHorsSuccession(watchedNature);
   const regimeRuralImpose = REGIME_RURAL_IMPOSE[watchedNature];
   const watchedRegimeRural = form.watch('regime_exoneration_rural');
   useEffect(() => {
@@ -445,6 +452,113 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
             )} />
           )}
         </div>
+      )}
+
+      {watchedNature === NATURE_RETRAITE_ETRANGERE && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField control={form.control} name="regime_retraite_etrangere" render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                Transmission au décès
+                <FieldHelp>
+                  Selon le droit du régime : épargne individuelle transmise par la succession, capital versé aux
+                  bénéficiaires désignés (traité comme une assurance-vie, art. 990 I / 757 B — à vérifier selon la
+                  convention fiscale), ou rente viagère éteinte au décès sans rien transmettre.
+                </FieldHelp>
+              </FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                    <SelectValue placeholder="Choisir" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="actif_successoral">Épargne transmise par la succession</SelectItem>
+                  <SelectItem value="clause_beneficiaire">Capital versé à des bénéficiaires désignés</SelectItem>
+                  <SelectItem value="aucune">Rien n'est transmis (rente éteinte)</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )} />
+        </div>
+      )}
+
+      {isBien787C && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField control={form.control} name="conditions_787c" render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                Exonération des biens professionnels (art. 787 C)
+                <FieldHelp>
+                  Biens affectés à l'exploitation d'une entreprise individuelle, exonérés de droits de succession à 75 % si :
+                  biens détenus depuis au moins 2 ans (s'ils ont été acquis à titre onéreux), engagement des héritiers de
+                  les conserver 4 ans, et poursuite de l'exploitation par l'un d'eux pendant 3 ans.
+                </FieldHelp>
+              </FormLabel>
+              <Select
+                onValueChange={val => field.onChange(val === 'oui')}
+                value={field.value === true ? 'oui' : field.value === false ? 'non' : undefined}
+              >
+                <FormControl>
+                  <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                    <SelectValue placeholder="Choisir" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="oui">Conditions remplies</SelectItem>
+                  <SelectItem value="non">Conditions non remplies</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )} />
+        </div>
+      )}
+
+      {isPlancherAssurance && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField control={form.control} name="valeur_assuree" render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                Valeur assurée (€)
+                <FieldHelp>
+                  Évaluation figurant dans le contrat d'assurance vol ou incendie en cours, conclu depuis moins de 10 ans.
+                  Pour les droits de succession, la valeur retenue ne peut être inférieure à 60 % de ce montant
+                  (art. 764 II CGI), sauf preuve contraire. Laisser vide sans contrat.
+                </FieldHelp>
+              </FormLabel>
+              <FormControl>
+                <Input
+                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                  type="number"
+                  step="0.01"
+                  {...field}
+                  value={field.value ?? ''}
+                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        </div>
+      )}
+
+      {isAssuranceVie && (
+        <FormField control={form.control} name="assure_tiers" render={({ field }) => (
+          <FormItem className="flex flex-row items-start gap-2 space-y-0">
+            <FormControl>
+              <Checkbox checked={!!field.value} onCheckedChange={v => field.onChange(v === true)} />
+            </FormControl>
+            <FormLabel className="font-normal">
+              L'assuré n'est pas le souscripteur
+              <FieldHelp>
+                Contrat souscrit sur la tête d'une autre personne : il n'est pas dénoué au décès du souscripteur, sa valeur
+                de rachat entre alors dans la succession du souscripteur. Le capital n'est versé qu'au décès de l'assuré.
+              </FieldHelp>
+            </FormLabel>
+          </FormItem>
+        )} />
       )}
 
       {isRurale && (
@@ -817,7 +931,14 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           {showPrixExercice && (
             <FormField control={form.control} name="prix_exercice" render={({ field }) => (
               <FormItem>
-                <FormLabel>Prix d'exercice (€)</FormLabel>
+                <FormLabel>
+                  Prix d'exercice (€)
+                  <FieldHelp>
+                    Succession : options non levées au décès, exerçables par les héritiers dans les 6 mois. Leur prise en
+                    compte dans l'actif taxable est discutée (exclusion, ou valeur intrinsèque : cours moins prix
+                    d'exercice). Saisissez en valeur estimée la valeur intrinsèque totale, à faire confirmer par le notaire.
+                  </FieldHelp>
+                </FormLabel>
                 <FormControl>
                   <Input
                     className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"

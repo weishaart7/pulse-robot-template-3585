@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { isBienRuralNonQualifie, isPERNonQualifie, isRetraiteRenteNonQualifie } from '@/constants/assetTypes';
+import { isBienRuralNonQualifie, isBien787CNonQualifie, isRetraiteEtrangereNonQualifiee, isPERNonQualifie, isRetraiteRenteNonQualifie } from '@/constants/assetTypes';
 
 // Constants
 // Origines proposées à l'utilisateur. `value` est ce qui est stocké dans
@@ -99,6 +99,14 @@ export const assetSchema = z.object({
   // Biens ruraux, groupements fonciers, bois et forêts (cf. NATURES_RURALES).
   regime_exoneration_rural: z.enum(['forestier', 'agricole', 'aucun']).optional(),
   conditions_exoneration_rural: z.boolean().optional(),
+  // Biens professionnels d'une entreprise individuelle (cf. NATURES_787C).
+  conditions_787c: z.boolean().optional(),
+  // Bijoux, objets d'art, collections (cf. NATURES_PLANCHER_ASSURANCE).
+  valeur_assuree: z.number().finite().nonnegative().optional(),
+  // Assurance-vie : assuré distinct du souscripteur.
+  assure_tiers: z.boolean().optional(),
+  // Régimes de retraite étrangers (cf. NATURE_RETRAITE_ETRANGERE).
+  regime_retraite_etrangere: z.enum(['actif_successoral', 'clause_beneficiaire', 'aucune']).optional(),
   cto_multi_actifs: z.boolean().optional(),
   cto_nature_sous_jacent: z.string().optional(),
   clause_entree_communaute: z.boolean().optional(),
@@ -169,6 +177,22 @@ export const assetSchema = z.object({
       message: values.regime_exoneration_rural
         ? "Précisez si les conditions de l'exonération sont remplies"
         : "Précisez le régime d'exonération de ce bien",
+    });
+  }
+  // Biens professionnels d'une entreprise individuelle : l'exonération de
+  // l'art. 787 C dépend d'engagements à confirmer — jamais présumée.
+  if (isRetraiteEtrangereNonQualifiee(values)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['regime_retraite_etrangere'],
+      message: 'Précisez ce que ce régime transmet au décès',
+    });
+  }
+  if (isBien787CNonQualifie(values)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['conditions_787c'],
+      message: "Précisez si les conditions de l'exonération de l'art. 787 C sont remplies",
     });
   }
 });

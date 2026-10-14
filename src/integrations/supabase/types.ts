@@ -312,6 +312,10 @@ export type Database = {
           clause_remploi: boolean | null
           conditions_exoneration_990i: boolean | null
           conditions_exoneration_rural: boolean | null
+          conditions_787c: boolean | null
+          valeur_assuree: number | null
+          assure_tiers: boolean
+          regime_retraite_etrangere: string | null
           created_at: string
           cto_multi_actifs: boolean | null
           cto_nature_sous_jacent: string | null
@@ -398,6 +402,10 @@ export type Database = {
           clause_remploi?: boolean | null
           conditions_exoneration_990i?: boolean | null
           conditions_exoneration_rural?: boolean | null
+          conditions_787c?: boolean | null
+          valeur_assuree?: number | null
+          assure_tiers?: boolean
+          regime_retraite_etrangere?: string | null
           created_at?: string
           cto_multi_actifs?: boolean | null
           cto_nature_sous_jacent?: string | null
@@ -484,6 +492,10 @@ export type Database = {
           clause_remploi?: boolean | null
           conditions_exoneration_990i?: boolean | null
           conditions_exoneration_rural?: boolean | null
+          conditions_787c?: boolean | null
+          valeur_assuree?: number | null
+          assure_tiers?: boolean
+          regime_retraite_etrangere?: string | null
           created_at?: string
           cto_multi_actifs?: boolean | null
           cto_nature_sous_jacent?: string | null
@@ -571,6 +583,7 @@ export type Database = {
       av_contract_details: {
         Row: {
           asset_id: string
+          avance_en_cours: number | null
           clause_beneficiaire: string | null
           clause_beneficiaire_structuree: Json | null
           created_at: string
@@ -594,6 +607,7 @@ export type Database = {
         }
         Insert: {
           asset_id: string
+          avance_en_cours?: number | null
           clause_beneficiaire?: string | null
           clause_beneficiaire_structuree?: Json | null
           created_at?: string
@@ -617,6 +631,7 @@ export type Database = {
         }
         Update: {
           asset_id?: string
+          avance_en_cours?: number | null
           clause_beneficiaire?: string | null
           clause_beneficiaire_structuree?: Json | null
           created_at?: string

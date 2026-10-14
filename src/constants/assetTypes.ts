@@ -147,9 +147,11 @@ export const TYPE_TAUX_OPTIONS = [
   "Mixte",
 ] as const;
 
+// « Avances sur contrats d'assurance-vie » retirée (2026-10-14) : l'avance se saisit sur le contrat
+// (av_contract_details.avance_en_cours), l'assureur la déduisant du capital décès — ce n'est pas une
+// dette de la succession.
 export const PASSIF_NATURES = [
   "Autres dettes diverses",
-  "Avances sur contrats d'assurance-vie",
   "Cotisations sociales non réglées",
   "Dettes issues d'un divorce ou d'un partage de communauté", 
   "Dettes successorales (droits de succession restant dus)",
@@ -415,7 +417,29 @@ export const NATURES_RETRAITE_RENTE_EXONERATION_990I_PAR_DEFAUT = [
 export const isRetraiteRente = (nature: string | null | undefined): boolean =>
   !!nature && NATURES_RETRAITE_RENTE.includes(nature);
 
-type ContratInput = { nature?: string | null; sous_type_per?: string | null; garantie_deces?: boolean | null };
+// assure_tiers : assurance-vie dont l'assuré n'est pas le souscripteur — non dénouée au décès du
+// souscripteur, sa valeur de rachat entre dans l'actif successoral (jamais hors succession).
+type ContratInput = {
+  nature?: string | null; sous_type_per?: string | null; garantie_deces?: boolean | null; assure_tiers?: boolean | null;
+  regime_retraite_etrangere?: string | null;
+};
+
+// Régime de retraite étranger : sa transmission au décès dépend du droit du régime — qualifiée sur
+// le bien, jamais présumée (calcul bloqué sinon, cf. transmissionHelpers.ts::assertPERQualifies).
+// 'actif_successoral' : épargne transmise par la succession ; 'clause_beneficiaire' : capital versé
+// aux bénéficiaires désignés, régime de l'assurance-vie (990 I / 757 B) ; 'aucune' : rente éteinte.
+export const NATURE_RETRAITE_ETRANGERE = "Régimes de retraite étrangers";
+export type RegimeRetraiteEtrangere = 'actif_successoral' | 'clause_beneficiaire' | 'aucune';
+
+export const isRetraiteEtrangereNonQualifiee = (asset: ContratInput): boolean =>
+  asset.nature === NATURE_RETRAITE_ETRANGERE
+  && !['actif_successoral', 'clause_beneficiaire', 'aucune'].includes(asset.regime_retraite_etrangere || '');
+
+// Contrat hors succession qui ne transmet rien (épargne acquise à l'assureur ou rente éteinte) :
+// jamais un AVContract.
+export const isContratNonTransmis = (asset: ContratInput): boolean =>
+  isRetraiteRenteSansGarantie(asset)
+  || (asset.nature === NATURE_RETRAITE_ETRANGERE && asset.regime_retraite_etrangere === 'aucune');
 
 // Garantie décès non renseignée : impossible de savoir si le contrat transmet quoi que ce
 // soit — calcul bloqué (cf. transmissionHelpers.ts::assertContratsRetraiteQualifies).
@@ -466,11 +490,14 @@ export const getCapitalDecesContrat = (asset: { nature?: string | null; valeur_e
 export const hasDonneesContratAV = (asset: ContratInput): boolean =>
   getAssetCategory(asset.nature || '') === 'épargne et assurance-vie' || isPERAssurantiel(asset)
   || (isRetraiteRente(asset.nature) && asset.garantie_deces === true)
-  || isPrevoyanceDeces(asset.nature) || asset.nature === NATURE_ARTICLE_82;
+  || isPrevoyanceDeces(asset.nature) || asset.nature === NATURE_ARTICLE_82
+  || (asset.nature === NATURE_RETRAITE_ETRANGERE && asset.regime_retraite_etrangere === 'clause_beneficiaire');
 
 export const isContratHorsSuccession = (asset: ContratInput): boolean =>
-  isAssuranceVieHorsSuccession(asset.nature) || isPERAssurantiel(asset) || isRetraiteRente(asset.nature)
-  || isPrevoyanceDeces(asset.nature) || asset.nature === NATURE_ARTICLE_82;
+  (isAssuranceVieHorsSuccession(asset.nature) && !asset.assure_tiers) || isPERAssurantiel(asset) || isRetraiteRente(asset.nature)
+  || isPrevoyanceDeces(asset.nature) || asset.nature === NATURE_ARTICLE_82
+  || (asset.nature === NATURE_RETRAITE_ETRANGERE
+    && (asset.regime_retraite_etrangere === 'clause_beneficiaire' || asset.regime_retraite_etrangere === 'aucune'));
 
 // Les 4 natures de la famille "épargne et assurance-vie" (hors succession + "Bons & contrats de
 // capitalisation") — utilisée dans AssetForm.tsx pour le vocabulaire assurantiel ("Souscripteur"
@@ -541,6 +568,30 @@ export const getExonerationRurale = (asset: BienRuralInput): 'forestier' | 'agri
     && (asset.regime_exoneration_rural === 'forestier' || asset.regime_exoneration_rural === 'agricole')
     ? asset.regime_exoneration_rural
     : null;
+
+// Biens affectés à l'exploitation d'une entreprise individuelle (art. 787 C CGI) : exonération de
+// 75 % si les conditions sont remplies (détention de 2 ans si acquis à titre onéreux, engagement
+// des héritiers de conserver les biens 4 ans — la LF 2026 n'a modifié que l'art. 787 B —, et
+// poursuite de l'exploitation par l'un d'eux pendant 3 ans). Non renseigné : calcul bloqué.
+export const NATURES_787C = ["Entreprise individuelle", "Autres biens professionnels"];
+
+export const isBien787CNonQualifie = (asset: { nature?: string | null; conditions_787c?: boolean | null }): boolean =>
+  !!asset.nature && NATURES_787C.includes(asset.nature)
+  && asset.conditions_787c !== true && asset.conditions_787c !== false;
+
+export const isExonere787C = (asset: { nature?: string | null; conditions_787c?: boolean | null }): boolean =>
+  !!asset.nature && NATURES_787C.includes(asset.nature) && asset.conditions_787c === true;
+
+// Bijoux, pierreries, objets d'art ou de collection : valeur imposable au moins égale à 60 % de
+// l'évaluation du contrat d'assurance vol/incendie en cours, conclu depuis moins de 10 ans (art. 764
+// II CGI) — plancher fiscal seulement, la valeur civile reste la valeur estimée.
+export const NATURES_PLANCHER_ASSURANCE = [
+  "Bijoux et pierres précieuses",
+  "Montres",
+  "Objets d'art et antiquités",
+  "Objets de collection",
+];
+export const TAUX_PLANCHER_ASSURANCE = 0.6;
 
 // Options de régime fiscal proposées pour chacune des natures ci-dessus (AssetForm.tsx,
 // champ regime_fiscal_parts) — la liste dépend de la nature sélectionnée.
