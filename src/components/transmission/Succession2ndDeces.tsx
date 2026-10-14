@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import {
   buildPatrimonySnapshot,
+  buildPassifsParBien,
   buildAVContracts,
   buildSpouseAsDecedentFamilyGraph,
   computeRecuAuPremierDeces,
@@ -85,7 +86,7 @@ export const Succession2ndDeces = () => {
       setLoading(true);
 
       const data = await loadTransmissionData(user!.id);
-      const { familyProfile, maritalStatus, familyLinks, assets, assetDemembrements, demembrementCtx, societesDutreil, avContractsRaw } = data;
+      const { familyProfile, maritalStatus, familyLinks, assets, assetDemembrements, demembrementCtx, societesDutreil, dutreilPartsNonAffectees, avContractsRaw } = data;
 
       setNomUtilisateur(`${familyProfile?.prenom || ''} ${familyProfile?.nom || ''}`.trim() || 'Vous');
       setNomConjoint(`${maritalStatus?.prenom_conjoint || ''} ${maritalStatus?.nom_conjoint || ''}`.trim() || 'Votre conjoint');
@@ -136,6 +137,8 @@ export const Succession2ndDeces = () => {
           liberalites: base.ctxUtilisateurDecedeSansOption.liberalites,
           params,
           societesDutreil,
+          dutreilPartsNonAffectees,
+          passifsParBien: buildPassifsParBien(passifLinesBrut, 'conjoint'),
           // Option du survivant commune aux deux ordres (décision V1) : celle
           // choisie pour le conjoint au décès de l'Utilisateur. Si elle n'est
           // pas ouverte dans ce sens (DDV non consentie par le conjoint,
@@ -195,6 +198,8 @@ export const Succession2ndDeces = () => {
             liberalites: base.ctxUtilisateurDecedeSansOption.liberalites,
             params,
             societesDutreil,
+            dutreilPartsNonAffectees,
+            passifsParBien: buildPassifsParBien(passifLinesUtilisateur),
             referenceDate,
             rawAssets: [
               ...(assets || []),

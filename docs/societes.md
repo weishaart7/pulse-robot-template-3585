@@ -28,7 +28,7 @@ pattern `lib/ifi/`/`lib/patrimoine/` demandé par `CLAUDE.md`, mais très incomp
 | Mes sociétés | [SocietesMesSocietes.tsx](src/components/societes/SocietesMesSocietes.tsx) → [SocieteParticipationsGraph.tsx](src/components/societes/SocieteParticipationsGraph.tsx) | Graphe de détention société→société (React Flow), suppression avec avertissement d'impact sur les participations |
 | Associés & gouvernance | [SocietesGouvernance.tsx](src/components/societes/gouvernance/SocietesGouvernance.tsx) | Table de capitalisation (« associés »), dividendes agrégés par bénéficiaire, pacte d'associés, comptes courants d'associés |
 | Stratégies fiscales | [SocietesStrategiesFiscales.tsx](src/components/societes/strategies/SocietesStrategiesFiscales.tsx) + [SocietesStrategies.tsx](src/components/societes/SocietesStrategies.tsx) (non monté, cf. §3) | Simulateurs IS/IR, rémunération/dividendes, gain holding (régime mère-fille) |
-| Transmission des parts | [SocietesTransmission.tsx](src/components/societes/transmission/SocietesTransmission.tsx) | Pacte Dutreil (éligibilité, économie DMTG), simulation OBO, renvoi vers le module Transmission |
+| Transmission des parts | [SocietesTransmission.tsx](src/components/societes/transmission/SocietesTransmission.tsx) | Pacte Dutreil (éligibilité avec engagement individuel de 6 ans depuis la LF 2026, part des biens non affectés à l'activité exclue de l'exonération — `societe_dutreil.part_biens_non_affectes`, obligatoire pour le calcul de succession —, économie DMTG), simulation OBO, renvoi vers le module Transmission. Éligibilité : cf. « Éligibilité Dutreil » ci-dessous |
 
 Le formulaire société (créer/modifier) est en mode page pleine largeur avec ses propres onglets
 (Synthèse à venir / Informations / Finances / Bilans / Actifs détenus), piloté par
@@ -173,6 +173,26 @@ identité SIRENE, régime fiscal, 6 champs comptables « snapshot »), et 8 tabl
   composants ne se recoupent pas totalement en contenu (`SocietesStrategies` a un onglet IFI et un
   onglet Holding informatif absents de `SocietesStrategiesFiscales`) — ce n'est pas un doublon strict
   mais une fonctionnalité développée (onglet IFI dédié, liste des holdings) puis rendue inaccessible.
+
+
+### Éligibilité Dutreil (art. 787 B CGI)
+
+`lib/patrimoine/dutreil.ts::evaluerEligibiliteDutreil`, appelée par `SocietesTransmission.tsx` à la
+date du jour (décès simulé aujourd'hui), est la seule source de `societe_dutreil.eligibilite_validee`,
+enregistré avec la fiche et lu par le calcul de transmission (`getSocietesEligibles`). Conditions :
+- engagement collectif en cours au jour de la transmission, selon `type_engagement_collectif`
+  (migration `20261014140000`) : `signe` (date de signature renseignée, antérieure ou égale à la
+  date de référence — les 2 ans n'ont pas à être écoulés), `repute_acquis` (détention de 2 ans et
+  direction par le défunt ou son conjoint, déclaratif) ou `post_mortem` (signé par les héritiers dans
+  les 6 mois, présumé) ;
+- fonction de direction renseignée ;
+- part des biens non affectés à l'activité renseignée (`part_biens_non_affectes`, 0 accepté) ;
+- confirmation par le conseiller de l'activité éligible (opérationnelle ou holding animatrice) et des
+  seuils de l'engagement collectif (10 % des droits financiers, 20 % des droits de vote) — case non
+  stockée, reprise de `eligibilite_validee` à l'ouverture.
+L'engagement individuel (6 ans, 4 ans avant le 21/02/2026) est pris par les héritiers ou donataires
+lors de la transmission : présumé, jamais vérifié (`engagement_individuel_date` informatif). Le
+brouillon de la fiche est remis à zéro au changement de société. Tests : `lib/patrimoine/dutreil.test.ts`.
 
 ## 3. Dette identifiée
 

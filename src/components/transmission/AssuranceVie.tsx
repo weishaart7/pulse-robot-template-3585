@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { FieldHelp } from '@/components/ui/field-help';
 import { AVContractDetail } from './av/AVContractDetail';
 import { ClauseStructuree, BeneficiaireEntry } from './av/ClauseBeneficiaireBuilder';
-import { NATURES_AV_HORS_SUCCESSION, NATURES_PER, NATURES_RETRAITE_RENTE, isContratHorsSuccession, isRetraiteRenteSansGarantie } from '@/constants/assetTypes';
+import { NATURES_AV_HORS_SUCCESSION, NATURES_PER, NATURES_RETRAITE_RENTE, NATURES_PREVOYANCE_DECES, NATURE_ARTICLE_82, isContratHorsSuccession, isRetraiteRenteSansGarantie, getCapitalDecesContrat } from '@/constants/assetTypes';
 import {
   buildFamilyGraph,
   buildPatrimonySnapshot,
@@ -22,7 +22,8 @@ import {
   buildCreancesCalcInput,
   buildParticipationAcquetsContext,
   AVContractRawRow,
-  AVDonneesInsuffisantesError
+  AVDonneesInsuffisantesError,
+  buildPassifsParBien
 } from '@/utils/transmissionHelpers';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission';
 import { resolveEffectiveAVBeneficiaires } from '@/lib/dmtg/assurance-vie';
@@ -43,7 +44,9 @@ import transmissionParamsData from '@/data/transmission-params.json';
 // Les PER et contrats de retraite par rente sont chargés avec, puis filtrés côté client : seuls
 // un PER assurantiel et un contrat de retraite avec garantie décès ont une clause bénéficiaire
 // hors succession (bons de capitalisation toujours exclus, cf. isContratHorsSuccession).
-const AV_NATURES = [...NATURES_AV_HORS_SUCCESSION, ...NATURES_PER, ...NATURES_RETRAITE_RENTE];
+// Contrats de prévoyance décès (capital garanti affiché à la place de la valeur estimée, cf.
+// getCapitalDecesContrat) et article 82 : clause et primes se saisissent ici aussi.
+const AV_NATURES = [...NATURES_AV_HORS_SUCCESSION, ...NATURES_PER, ...NATURES_RETRAITE_RENTE, ...NATURES_PREVOYANCE_DECES, NATURE_ARTICLE_82];
 
 interface OperationsByContract {
   [assetId: string]: { type_operation: string; montant: number }[];
@@ -138,7 +141,7 @@ export const AssuranceVie = () => {
           // écran afficherait un patrimoine net divergent de la Synthèse.
           supabase
             .from('emprunts')
-            .select('capital_restant_du, qualification_bien, societe_id, capital_garanti_deces, quotite_assuree_utilisateur, quotite_assuree_conjoint')
+            .select('asset_id, capital_restant_du, qualification_bien, societe_id, capital_garanti_deces, quotite_assuree_utilisateur, quotite_assuree_conjoint')
             .eq('user_id', user.id),
         ]);
 
@@ -228,6 +231,7 @@ export const AssuranceVie = () => {
               assetId: a.id!,
               label: a.denomination,
               valeurEstimee: a.valeur_estimee,
+              capitalGaranti: a.capital_garanti,
               detenteur: a.detenteur,
               operations: opsByAsset.get(a.id!) || [],
               clauseBeneficiaireStructuree: clauseByAsset.get(a.id!) || null,
@@ -258,9 +262,10 @@ export const AssuranceVie = () => {
               maritalStatus: maritalRes.data,
               familyLinks: familyLinksRows
             };
+            const passifLines = buildPassifLines(passifsRes.data || [], empruntsRes.data || [], 'user');
             const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(
               (allAssets || []) as Asset[],
-              buildPassifLines(passifsRes.data || [], empruntsRes.data || [], 'user'),
+              passifLines,
               0,
               assetDemembrements,
               demembrementCtx
@@ -280,6 +285,7 @@ export const AssuranceVie = () => {
               liberalites: [],
               params,
               rawAssets: allAssets || [],
+              passifsParBien: buildPassifsParBien(passifLines),
               assetDemembrements,
               demembrementCtx,
               avContracts: builtAvContracts,
@@ -328,7 +334,7 @@ export const AssuranceVie = () => {
   // réintégration 757B lus directement dans transmissionResult.dmtg
   // (dmtg/assurance-vie.ts, jamais recalculés ici).
   const fiscalSummary = useMemo(() => {
-    const totalValeur = contracts.reduce((sum, c) => sum + (c.valeur_estimee || 0), 0);
+    const totalValeur = contracts.reduce((sum, c) => sum + getCapitalDecesContrat(c), 0);
     const dmtgPerBeneficiary = transmissionResult?.dmtg?.perBeneficiary || {};
 
     // Assiettes et abattements réellement retenus par le moteur
@@ -468,7 +474,7 @@ export const AssuranceVie = () => {
     );
   }
 
-  const totalValeur = contracts.reduce((sum, c) => sum + (c.valeur_estimee || 0), 0);
+  const totalValeur = contracts.reduce((sum, c) => sum + getCapitalDecesContrat(c), 0);
 
   if (isLoading) {
     return (
@@ -777,7 +783,7 @@ export const AssuranceVie = () => {
                 <div className="flex items-center gap-3">
                   <div className="text-right">
                     <p className="kairos-num font-semibold text-lg text-[var(--text-primary)]">
-                      {formatCurrency(contract.valeur_estimee || 0)}
+                      {formatCurrency(getCapitalDecesContrat(contract))}
                     </p>
                     {contract.mode_detention && (
                       <p className="text-xs text-[var(--text-secondary)]">{contract.mode_detention}</p>

@@ -14,7 +14,7 @@ import { ArrowLeft, Calendar, TrendingUp, TrendingDown, Shield, Users, FileText,
 import { supabase } from '@/integrations/supabase/client';
 import { Asset } from '@/services/assetService';
 import { formatCurrency } from '@/lib/patrimoine/utils';
-import { isPER } from '@/constants/assetTypes';
+import { isPER, isPrevoyanceDeces, NATURE_ARTICLE_82, getCapitalDecesContrat } from '@/constants/assetTypes';
 import { toast } from 'sonner';
 import { AVFiscalInfo } from './AVFiscalInfo';
 import { AVOperationsTable } from './AVOperationsTable';
@@ -337,9 +337,24 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
               à partir de 70 ans, les primes versées relèvent du 757 B (les versements doivent alors être renseignés).
             </p>
           )}
+          {isPrevoyanceDeces(contract.nature) && (
+            <p className="text-sm text-muted-foreground mt-2 flex items-start gap-1.5">
+              <Info className="h-4 w-4 mt-0.5 shrink-0" />
+              Contrat de prévoyance : le capital garanti est versé hors succession. Le prélèvement de l'art. 990 I ne porte
+              que sur les primes de la dernière année (plus la valeur de rachat d'une vie entière), le 757 B sur les primes
+              versées après 70 ans — renseignez les primes versées.
+            </p>
+          )}
+          {contract.nature === NATURE_ARTICLE_82 && (
+            <p className="text-sm text-muted-foreground mt-2 flex items-start gap-1.5">
+              <Info className="h-4 w-4 mt-0.5 shrink-0" />
+              Contrat article 82 : avant la liquidation, le capital est versé hors succession, avec le régime d'une
+              assurance-vie selon l'âge à chaque cotisation (990 I avant 70 ans, 757 B après).
+            </p>
+          )}
         </div>
         <div className="text-right">
-          <p className="text-2xl font-bold">{formatCurrency(contract.valeur_estimee || 0)}</p>
+          <p className="text-2xl font-bold">{formatCurrency(getCapitalDecesContrat(contract))}</p>
           {contract.detenteur && (
             <p className="text-sm text-muted-foreground">{contract.detenteur}</p>
           )}
@@ -729,7 +744,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
                       onChange={setClauseStructuree}
                       familyMembers={beneficiaires}
                       conjointName={conjointName}
-                      contractValue={contract.valeur_estimee || 0}
+                      contractValue={getCapitalDecesContrat(contract)}
                     />
                   ) : (
                     <div className="py-6 text-center space-y-2">

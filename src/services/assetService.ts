@@ -57,6 +57,9 @@ export interface Asset {
   sous_type_per?: 'Bancaire' | 'Assurantiel' | string;
   garantie_deces?: boolean | null;
   conditions_exoneration_990i?: boolean | null;
+  // Biens ruraux, groupements fonciers, bois et forêts (cf. constants/assetTypes.ts::NATURES_RURALES).
+  regime_exoneration_rural?: 'forestier' | 'agricole' | 'aucun' | string | null;
+  conditions_exoneration_rural?: boolean | null;
   cto_multi_actifs?: boolean;
   cto_nature_sous_jacent?: string;
   clause_entree_communaute?: boolean;

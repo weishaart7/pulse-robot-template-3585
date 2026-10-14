@@ -19,6 +19,7 @@ const params: DmtgParams = {
   av_990I_rates: [],
   demembrementViager: [],
   corseEndDate: '2027-12-31',
+  exonerationRurale: { tauxForestier: 0.75, tauxAgricole: 0.75, seuilAgricole: 600000, tauxAgricoleAuDela: 0.5 },
   fraisFunerairesForfait: 1500
 };
 

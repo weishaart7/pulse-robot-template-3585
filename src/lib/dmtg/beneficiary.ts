@@ -6,7 +6,11 @@ export function buildTaxBaseByBeneficiary(
   beneficiaries: Beneficiary[],
   params: DmtgParams,
   deathDate: string,
-  passif: number = 0
+  passif: number = 0,
+  // Donations de biens ruraux en régime agricole du défunt à chaque
+  // bénéficiaire, depuis moins de 15 ans : s'imputent sur son seuil (art.
+  // 793 bis al. 2 CGI). Défaut : aucune.
+  donationsRuralesParBeneficiaire: Record<string, number> = {}
 ): TaxBaseResult {
   // Actif net taxable (art. 768 CGI) : le passif s'impute sur l'actif après
   // abattements par bien (RP, bois…), jamais sous 0. Le forfait mobilier
@@ -28,6 +32,18 @@ export function buildTaxBaseByBeneficiary(
     if (perBeneficiary.hasOwnProperty(share.beneficiaryId)) {
       const partBrute = actifNetTaxable * share.fraction;
       perBeneficiary[share.beneficiaryId] += partBrute;
+
+      // Biens ruraux en régime agricole (art. 793 bis CGI) : au-delà du seuil
+      // apprécié sur la part de CE bénéficiaire, l'exonération tombe de 3/4 à
+      // 1/2 — la différence est réintégrée dans sa base.
+      const { seuilAgricole, tauxAgricole, tauxAgricoleAuDela } = params.exonerationRurale;
+      const seuilResiduel = Math.max(0, seuilAgricole - (donationsRuralesParBeneficiaire[share.beneficiaryId] || 0));
+      const excedentAgricole = Math.max(0, assetValuations.valeurRuraleAgricole * share.fraction - seuilResiduel);
+      if (excedentAgricole > 0) {
+        const reintegration = excedentAgricole * (tauxAgricole - tauxAgricoleAuDela);
+        perBeneficiary[share.beneficiaryId] += reintegration;
+        justifs.push(`${share.beneficiaryId} : biens ruraux au-delà de ${Math.round(seuilResiduel)}€, exonération ramenée à 1/2 (+${Math.round(reintegration)}€)`);
+      }
       justifs.push(`${share.beneficiaryId} : ${(share.fraction * 100)}% = ${Math.round(partBrute)}€`);
 
       // Forfait mobilier (art. 764 CGI) : même clé de répartition, mais

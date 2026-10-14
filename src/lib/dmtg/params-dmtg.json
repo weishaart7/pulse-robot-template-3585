@@ -49,5 +49,11 @@
     { "minAge": 91, "maxAge": 999, "usufruitPct": 0.10, "nuePropPct": 0.90 }
   ],
   "corseEndDate": "2027-12-31",
+  "exonerationRurale": {
+    "tauxForestier": 0.75,
+    "tauxAgricole": 0.75,
+    "seuilAgricole": 600000,
+    "tauxAgricoleAuDela": 0.5
+  },
   "fraisFunerairesForfait": 1500
 }

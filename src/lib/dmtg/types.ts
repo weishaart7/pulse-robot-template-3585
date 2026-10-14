@@ -41,8 +41,24 @@ export interface Asset {
   location?: 'corse'|'metropole'|'autre';
   isResidencePrincipale?: boolean;
   isMonumentHistoriqueOuvert?: boolean;
-  isBoisForetOuGF?: boolean; // applique -75%
+  // Exonération partielle des biens ruraux (conditions déjà vérifiées en amont,
+  // cf. constants/assetTypes.ts::getExonerationRurale) : 'forestier' = 3/4 sans
+  // plafond (art. 793-1-3°, 793-2-2° CGI) ; 'agricole' = 3/4 jusqu'au seuil par
+  // bénéficiaire, 1/2 au-delà (art. 793 bis CGI, seuil appliqué dans beneficiary.ts).
+  exonerationRurale?: 'forestier' | 'agricole';
   isDutreil?: boolean; // titres sous pacte Dutreil (art. 787 B CGI) : -75%
+  // Part (0 à 1) de la valeur des titres Dutreil correspondant à des biens non
+  // affectés à l'activité (« somptuaires », art. 787 B, LF 2026 — transmissions
+  // depuis le 21/02/2026) : exclue de l'exonération. Défaut 0.
+  partNonExonereeDutreil?: number;
+  // Meubles meublants (art. 764 CGI) : leur valeur déclarée se compare au
+  // forfait de 5 % des autres biens, sans s'y ajouter (cf. assets.ts).
+  isMeublesMeublants?: boolean;
+  // Dette contractée pour l'acquisition ou dans l'intérêt de ce bien, déjà
+  // pondérée (part du défunt, assurance emprunteur déduite) et comprise dans
+  // DMTGContext.passif. Imputée par priorité sur la valeur d'un bien exonéré
+  // en tout ou partie (art. 769 II CGI), ignorée sinon.
+  detteImputee?: Money;
   // Filtrages fiscaux
   exclurePour: {
     avantageMatrimonial?: boolean;
@@ -125,6 +141,13 @@ export interface AVContract {
   // conditions de l'art. 990 I al. 2 CGI (primes sur 15 ans, sortie à la
   // retraite) : exclu du prélèvement 990 I, le 757 B restant applicable.
   exonere990I?: boolean;
+  // Contrat de prévoyance décès non rachetable (temporaire décès, vie entière,
+  // prévoyance individuelle) : assiette 990 I fixée en amont — fraction
+  // rachetable + primes de la dernière année (art. 990 I, BOI-TCAS-AUT-60),
+  // cf. transmissionHelpers.ts::splitPrimesPrevoyance. Remplace la
+  // proratisation du capital par les primes ; plafonnée au capital décès.
+  // L'assiette 757 B est alors primesApres70, plafonnée au capital.
+  assiette990I?: Money;
 }
 
 export interface Donation {
@@ -134,6 +157,9 @@ export interface Donation {
   doneeId: string; // beneficiaryId
   valeurDon: Money; // valeur au jour de la donation (rappel = valeur à la donation)
   type?: 'simple'|'partage'|'familiale_790G'|'exonere_790A_bis'|'autre';
+  // Part de valeurDon portant sur des biens ruraux en régime agricole
+  // (art. 793 bis) : s'impute sur le seuil de 600 000 € du donataire. Défaut 0.
+  valeurRuraleAgricole?: Money;
 }
 
 export interface DmtgParams {
@@ -162,6 +188,13 @@ export interface DmtgParams {
   demembrementViager: Array<{ minAge: number; maxAge: number; usufruitPct: number; nuePropPct: number }>;
   // Autres règles
   corseEndDate: string; // "2027-12-31"
+  // Biens ruraux (art. 793 et 793 bis CGI).
+  exonerationRurale: {
+    tauxForestier: number; // 0.75
+    tauxAgricole: number; // 0.75 jusqu'au seuil
+    seuilAgricole: Money; // 600 000 par bénéficiaire (LF 2025)
+    tauxAgricoleAuDela: number; // 0.50
+  };
   fraisFunerairesForfait: Money; // 1500
 }
 
@@ -172,6 +205,13 @@ export interface AssetValuationResult {
   // l'assiette taxable pour le calcul des droits (beneficiary.ts,
   // dmtg/index.ts) mais jamais à `totalBaseTaxable` — cf. assets.ts.
   forfaitMobilier: Money;
+  // Valeur vénale (avant exonération) des biens ruraux en régime agricole
+  // (art. 793 bis) : le seuil de 600 000 € s'apprécie sur la part de chaque
+  // bénéficiaire, cf. beneficiary.ts. 0 sans tel bien.
+  valeurRuraleAgricole: Money;
+  // Dettes imputées sur des biens exonérés (art. 769 II CGI), à retrancher
+  // du passif déduit globalement (beneficiary.ts) pour ne pas les déduire deux fois.
+  passifImputeSurBiens: Money;
 }
 
 export interface TaxBaseResult {

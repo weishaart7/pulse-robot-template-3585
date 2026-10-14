@@ -71,6 +71,7 @@ export function useAVContracts(assets: Asset[]) {
         assetId: a.id!,
         label: a.denomination,
         valeurEstimee: a.valeur_estimee,
+        capitalGaranti: a.capital_garanti,
         detenteur: a.detenteur,
         origineFonds: origineFondsByAsset.get(a.id!) || null,
         operations: opsByAsset.get(a.id!) || [],

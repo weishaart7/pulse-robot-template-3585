@@ -9,7 +9,7 @@ import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcqu
 import { RecompenseCalcInput, CreanceCalcInput } from '@/lib/patrimoine/recompensesCreances';
 import { Recompense } from '@/types/recompense';
 import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
-import { isContratHorsSuccession, isPER, isPERAssurantiel, isPERNonQualifie, isRetraiteRente, isRetraiteRenteNonQualifie, isRetraiteRenteSansGarantie } from '@/constants/assetTypes';
+import { getExonerationRurale, isContratHorsSuccession, isPER, isPERAssurantiel, isPERNonQualifie, isRetraiteRente, isRetraiteRenteNonQualifie, isRetraiteRenteSansGarantie, isPrevoyanceDeces, isPrevoyanceNonQualifiee, NATURE_PREVOYANCE_RACHETABLE, NATURE_ARTICLE_82, getCapitalDecesContrat } from '@/constants/assetTypes';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { getAgeAtDate, getDemembrementPct, getDecedentRole } from '@/lib/transmission';
 import { resolveEffectiveAVBeneficiaires } from '@/lib/dmtg/assurance-vie';
@@ -95,6 +95,9 @@ interface AssetValeur {
   pourcentage_conjoint?: number | null;
   mode_detention?: string | null;
   denomination?: string | null;
+  nature?: string | null;
+  regime_exoneration_rural?: string | null;
+  conditions_exoneration_rural?: boolean | null;
 }
 
 /**
@@ -176,6 +179,18 @@ export function buildTransmissionLiberalites(
     const biens = Array.isArray(row.biens) ? (row.biens as { asset_id: string }[]) : [];
 
     let valeur: number;
+    // Donation de biens ruraux en régime agricole exonéré (art. 793 bis) :
+    // part de la valeur des biens donnés, d'après leur fiche dans Patrimoine
+    // (bien absent : régime inconnu, non imputé).
+    let partRuraleAgricole: number | undefined;
+    if (row.type === 'donation') {
+      const biensDonnes = Array.isArray(row.biens) ? (row.biens as { asset_id: string; valeur?: number | null }[]) : [];
+      const total = biensDonnes.reduce((sum, b) => sum + (Number(b.valeur) || 0), 0);
+      const rural = biensDonnes
+        .filter(b => { const a = assetsById.get(b.asset_id); return !!a && getExonerationRurale(a) === 'agricole'; })
+        .reduce((sum, b) => sum + (Number(b.valeur) || 0), 0);
+      if (total > 0 && rural > 0) partRuraleAgricole = rural / total;
+    }
     if (row.type === 'legs') {
       let caduc = false;
       let sommeBiens = 0;
@@ -216,6 +231,7 @@ export function buildTransmissionLiberalites(
       // Déjà proratisée par donataire à l'enregistrement, comme `montant`.
       valeurPartage: row.type === 'donation' && row.valeur_partage != null ? Number(row.valeur_partage) : undefined,
       nature: row.nature || undefined,
+      partRuraleAgricole,
       donateur: row.type === 'donation'
         ? (row.realise_par === 'epoux2' ? 'spouse' as const : row.realise_par === 'communaute' ? 'communaute' as const : 'user' as const)
         : 'user' as const
@@ -350,10 +366,64 @@ export function splitPrimesPER(
   };
 }
 
+/**
+ * Contrat de prévoyance décès (temporaire décès, vie entière, prévoyance
+ * individuelle), non rachetable : l'assiette 990 I est la fraction rachetable
+ * (`valeurRachat`, vie entière uniquement) plus les primes versées au titre de
+ * la dernière année, soit les versements des 12 mois précédant le décès
+ * (`referenceDate`) effectués avant 70 ans — plafonnée au capital par
+ * computeAssuranceVie. 757 B : versements effectués à 70 ans ou plus, quelle
+ * que soit leur date. Mêmes garde-fous que splitPrimesAvantApres70 : aucun
+ * versement ou date de naissance inconnue → AVDonneesInsuffisantesError.
+ */
+export function splitPrimesPrevoyance(
+  operations: AVOperationRow[],
+  dateNaissance: string | null | undefined,
+  valeurRachat: number,
+  referenceDate: string,
+  contractLabel?: string
+): { primesAvant70: number; primesApres70: number; assiette990I: number } {
+  const label = contractLabel ? ` ${contractLabel}` : '';
+  const versements = operations.filter(op => op.type_operation === 'versement');
+
+  if (versements.length === 0) {
+    throw new AVDonneesInsuffisantesError(
+      `Aucune prime enregistrée pour le contrat de prévoyance${label} — impossible de déterminer l'assiette du prélèvement (art. 990 I, primes de la dernière année) ni les primes versées après 70 ans (art. 757 B).`
+    );
+  }
+  if (!dateNaissance) {
+    throw new AVDonneesInsuffisantesError(
+      `Date de naissance de l'assuré non renseignée — impossible de déterminer l'âge aux versements du contrat de prévoyance${label}.`
+    );
+  }
+
+  const debutDerniereAnnee = new Date(referenceDate);
+  debutDerniereAnnee.setFullYear(debutDerniereAnnee.getFullYear() - 1);
+  const debut = debutDerniereAnnee.toISOString().slice(0, 10);
+  const fin = referenceDate.slice(0, 10);
+
+  let primesAvant70 = 0;
+  let primesApres70 = 0;
+  for (const op of versements) {
+    const montant = Number(op.montant) || 0;
+    const date = op.date_operation.slice(0, 10);
+    if (getAgeAtDate(dateNaissance, date) >= 70) {
+      primesApres70 += montant;
+    } else if (date > debut && date <= fin) {
+      primesAvant70 += montant;
+    }
+  }
+
+  return { primesAvant70, primesApres70, assiette990I: valeurRachat + primesAvant70 };
+}
+
 export interface AVContractRawRow {
   assetId: string;
   label?: string | null;
   valeurEstimee?: number | null;
+  // assets.capital_garanti — capital décès transmis par un contrat de
+  // prévoyance décès (cf. getCapitalDecesContrat), à la place de valeurEstimee.
+  capitalGaranti?: number | null;
   // assets.nature — permet à buildAVContracts d'exclure les "Bons & contrats de
   // capitalisation" (jamais hors succession, cf. isAssuranceVieHorsSuccession) et à
   // dmtg/assurance-vie.ts d'appliquer l'abattement 990 I bis (20%) réservé au
@@ -470,7 +540,21 @@ export function buildAVContracts(
       && !isRetraiteRenteSansGarantie({ nature: row.nature, garantie_deces: row.garantieDeces }))
     .map(row => {
       const resolveBeneficiaryId = resolveBeneficiaryIdPour(row.detenteur);
-      const { primesAvant70, primesApres70, primesExonerees } = isPERAssurantiel({ nature: row.nature, sous_type_per: row.sousTypePer })
+      const capitalDeces = getCapitalDecesContrat({ nature: row.nature, valeur_estimee: row.valeurEstimee, capital_garanti: row.capitalGaranti });
+      // Prévoyance décès : assiette 990 I fixée ici (fraction rachetable +
+      // primes de la dernière année), cf. splitPrimesPrevoyance.
+      const prevoyance = isPrevoyanceDeces(row.nature)
+        ? splitPrimesPrevoyance(
+          row.operations,
+          resolveDateNaissanceSouscripteur(row.detenteur),
+          row.nature === NATURE_PREVOYANCE_RACHETABLE ? Number(row.valeurEstimee) || 0 : 0,
+          referenceDate,
+          row.label || undefined
+        )
+        : null;
+      const { primesAvant70, primesApres70, primesExonerees } = prevoyance
+        ? { primesAvant70: prevoyance.primesAvant70, primesApres70: prevoyance.primesApres70, primesExonerees: 0 }
+        : isPERAssurantiel({ nature: row.nature, sous_type_per: row.sousTypePer })
         ? { ...splitPrimesPER(
           row.operations,
           resolveDateNaissanceSouscripteur(row.detenteur),
@@ -534,12 +618,12 @@ export function buildAVContracts(
         id: row.assetId,
         label: row.label || undefined,
         niveaux,
-        capitalDeces: Number(row.valeurEstimee) || 0,
+        capitalDeces,
         primesAvant70,
         primesApres70,
         primesExonerees,
         // Sans objet pour un PER (régime fixé par l'âge au décès).
-        dateSouscriptionConnue: isPERAssurantiel({ nature: row.nature, sous_type_per: row.sousTypePer }) || !!row.dateSouscription,
+        dateSouscriptionConnue: isPERAssurantiel({ nature: row.nature, sous_type_per: row.sousTypePer }) || !!prevoyance || !!row.dateSouscription,
         isExonereBeneficiaireConjointPacs: hasConjointBeneficiaire,
         isSiblingExonEligible: hasExoneratedSiblingBeneficiaire,
         detenteur: isDetenteurSpouse(row.detenteur || undefined) ? 'spouse' : 'user',
@@ -550,7 +634,8 @@ export function buildAVContracts(
           ? row.origineFonds
           : undefined,
         nature: row.nature || undefined,
-        exonere990I: isRetraiteRente(row.nature) && row.conditionsExoneration990I === true
+        exonere990I: isRetraiteRente(row.nature) && row.conditionsExoneration990I === true,
+        ...(prevoyance ? { assiette990I: prevoyance.assiette990I } : {})
       };
     });
 }
@@ -577,7 +662,7 @@ export function computeAVReintegrationCivile(
 ): number {
   if (!isRegimeCommunautaire(regimeMatrimonial || undefined)) return 0;
   const contratSansOrigine = avContracts.find(
-    c => c.detenteur === holderNonDenoue && !isContratRetraiteNonRachetable(c.nature) && !c.origineFonds
+    c => c.detenteur === holderNonDenoue && !isContratNonReintegreCiot(c.nature) && !c.origineFonds
   );
   if (contratSansOrigine) {
     throw new AVDonneesInsuffisantesError(
@@ -588,7 +673,8 @@ export function computeAVReintegrationCivile(
     // PER exclu (décision actée) : un PER n'est en principe pas rachetable
     // avant la retraite, l'application de la doctrine Ciot à sa valeur est
     // discutée — non réintégré, signalé à l'écran (cf. hasPERNonDenoueConjoint).
-    .filter(c => c.detenteur === holderNonDenoue && c.origineFonds === 'deniers_communs' && !isContratRetraiteNonRachetable(c.nature))
+    // Prévoyance décès exclue : contrat sans valeur de rachat (cf. isContratNonReintegreCiot).
+    .filter(c => c.detenteur === holderNonDenoue && c.origineFonds === 'deniers_communs' && !isContratNonReintegreCiot(c.nature))
     // Bien commun : seule la moitié de la valeur de rachat revient à la
     // succession du défunt, l'autre moitié restant au conjoint survivant —
     // même pondération que tout autre bien commun (getPartSuccessorale).
@@ -1019,6 +1105,8 @@ export function buildSpouseAsDecedentFamilyGraph(
  */
 export interface PassifLine {
   montant_du: number;
+  // Emprunt rattaché à un bien (emprunts.asset_id, « actif financé / garanti »).
+  asset_id?: string | null;
   qualification_bien?: string | null;
   detenteur?: string | null;
   pourcentage_utilisateur?: number | null;
@@ -1061,6 +1149,7 @@ export function buildPassifLines(
     pourcentage_conjoint?: number | null;
   }[],
   emprunts: {
+    asset_id?: string | null;
     capital_restant_du?: number | null;
     qualification_bien?: string | null;
     societe_id?: string | null;
@@ -1089,6 +1178,7 @@ export function buildPassifLines(
         if (!defunt) {
           return {
             montant_du: capitalRestantDu,
+            asset_id: e.asset_id,
             qualification_bien: e.qualification_bien,
             detenteur: e.detenteur,
             pourcentage_utilisateur: e.pourcentage_utilisateur,
@@ -1110,6 +1200,7 @@ export function buildPassifLines(
 
         return {
           montant_du: Math.max(0, capitalRestantDu - montantAssure),
+          asset_id: e.asset_id,
           qualification_bien: e.qualification_bien,
           detenteur: e.detenteur,
           pourcentage_utilisateur: e.pourcentage_utilisateur,
@@ -1149,12 +1240,29 @@ function getFractionPassifParDetenteur(passif: PassifLine, cote: 'user' | 'conjo
 }
 
 /**
+ * Dettes rattachées à un bien (emprunts liés via `asset_id`), pondérées comme
+ * dans le passif global de la succession étudiée (même fraction que
+ * buildPatrimonySnapshot côté Utilisateur, getPartConjointSuccession côté
+ * conjoint) : alimente TransmissionContext.passifsParBien, pour l'imputation
+ * d'une dette sur un bien exonéré (art. 769 II CGI). `passifLines` doit être
+ * la même liste que celle du passif global de ce calcul.
+ */
+export function buildPassifsParBien(passifLines: PassifLine[], cote: 'user' | 'conjoint' = 'user'): Record<string, number> {
+  const parBien: Record<string, number> = {};
+  for (const p of passifLines) {
+    if (!p.asset_id) continue;
+    parBien[p.asset_id] = (parBien[p.asset_id] || 0) + (p.montant_du || 0) * getFractionPassifParDetenteur(p, cote);
+  }
+  return parBien;
+}
+
+/**
  * Bloque le calcul si un PER n'a pas de sous-type (Assurantiel/Bancaire) :
  * selon la réponse, il sort ou non de l'actif successoral — jamais deviné.
  * BienNonQualifieError pour réutiliser le renvoi "Qualifier ce bien dans
  * Patrimoine" déjà affiché par Synthese/ProcessusCalcul/Succession2ndDeces.
  */
-export function assertPERQualifies(assets: Array<{ nature?: string | null; sous_type_per?: string | null; garantie_deces?: boolean | null; denomination?: string | null }>): void {
+export function assertPERQualifies(assets: Array<{ nature?: string | null; sous_type_per?: string | null; garantie_deces?: boolean | null; capital_garanti?: number | null; denomination?: string | null }>): void {
   const perNonQualifie = assets.find(isPERNonQualifie);
   if (perNonQualifie) {
     throw new BienNonQualifieError(
@@ -1163,6 +1271,13 @@ export function assertPERQualifies(assets: Array<{ nature?: string | null; sous_
   }
   // Même garde-fou pour les contrats de retraite par rente : sans l'information
   // "garantie décès", impossible de savoir si le contrat transmet quoi que ce soit.
+  // Prévoyance décès sans capital garanti : capital transmis inconnu.
+  const prevoyanceNonQualifiee = assets.find(isPrevoyanceNonQualifiee);
+  if (prevoyanceNonQualifiee) {
+    throw new BienNonQualifieError(
+      `Le contrat de prévoyance « ${prevoyanceNonQualifiee.denomination || prevoyanceNonQualifiee.nature} » n'indique pas son capital garanti : impossible de calculer le capital transmis au décès. Renseignez-le dans la fiche du bien.`
+    );
+  }
   const retraiteNonQualifiee = assets.find(isRetraiteRenteNonQualifie);
   if (retraiteNonQualifiee) {
     throw new BienNonQualifieError(
@@ -1171,10 +1286,18 @@ export function assertPERQualifies(assets: Array<{ nature?: string | null; sous_
   }
 }
 
-// PER et contrats de retraite par rente : en principe non rachetables avant la
-// retraite — jamais réintégrés au titre de la doctrine Ciot (décision actée).
+// PER, contrats de retraite par rente et article 82 : en principe non
+// rachetables avant la retraite — jamais réintégrés au titre de la doctrine
+// Ciot (décision actée), signalés à l'écran (cf. hasPERNonDenoueConjoint).
 function isContratRetraiteNonRachetable(nature: string | null | undefined): boolean {
-  return isPER(nature) || isRetraiteRente(nature);
+  return isPER(nature) || isRetraiteRente(nature) || nature === NATURE_ARTICLE_82;
+}
+
+// Contrats jamais réintégrés au titre de la doctrine Ciot : les précédents,
+// plus la prévoyance décès (aucune valeur de rachat, hors vie entière dont la
+// valeur de rachat éventuelle n'est pas réintégrée non plus — limitation).
+function isContratNonReintegreCiot(nature: string | null | undefined): boolean {
+  return isContratRetraiteNonRachetable(nature) || isPrevoyanceDeces(nature);
 }
 
 /**
@@ -1353,7 +1476,10 @@ export function buildSpouseRawAssets(
         detenteur: undefined,
         mode_detention: undefined,
         // Titres de société : conservé pour l'exonération Dutreil (art. 787 B CGI).
-        societe_id: (asset as { societe_id?: string | null }).societe_id ?? null
+        societe_id: (asset as { societe_id?: string | null }).societe_id ?? null,
+        // Biens ruraux : conservés pour l'exonération des art. 793 et 793 bis CGI.
+        regime_exoneration_rural: asset.regime_exoneration_rural ?? null,
+        conditions_exoneration_rural: asset.conditions_exoneration_rural ?? null
       };
     });
 }

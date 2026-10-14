@@ -197,6 +197,8 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         sous_type_per: asset.sous_type_per as AssetFormValues['sous_type_per'] || undefined,
         garantie_deces: asset.garantie_deces ?? undefined,
         conditions_exoneration_990i: asset.conditions_exoneration_990i ?? undefined,
+        regime_exoneration_rural: (asset.regime_exoneration_rural as AssetFormValues['regime_exoneration_rural']) ?? undefined,
+        conditions_exoneration_rural: asset.conditions_exoneration_rural ?? undefined,
         cto_multi_actifs: asset.cto_multi_actifs || false,
         cto_nature_sous_jacent: asset.cto_nature_sous_jacent || undefined,
         clause_entree_communaute: asset.clause_entree_communaute || false,

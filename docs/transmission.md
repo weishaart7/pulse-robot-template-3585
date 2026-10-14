@@ -214,8 +214,16 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   - **Dutreil (art. 787 B CGI)** : titres d'une société dont `societe_dutreil.eligibilite_validee`
     est vrai (`societeDutreilService.getSocietesEligibles`, `TransmissionContext.societesDutreil`,
     rattachement par `assets.societe_id`) exonérés à 75 % dans l'assiette (`dmtg/assets.ts`), sur la
-    valeur de l'actif. Engagements de conservation (4 ans) et de direction (3 ans) présumés, signalés.
-    Chargé par les 3 écrans de calcul, conservé côté conjoint par `buildSpouseRawAssets`.
+    valeur de l'actif. Transmissions depuis le 21/02/2026 (loi n° 2026-103, art. 8,
+    `DATE_DUTREIL_LF2026`) : la part de la valeur des titres correspondant à des biens non affectés à
+    l'activité (`societe_dutreil.part_biens_non_affectes`, %, saisie dans Sociétés → Transmission,
+    `TransmissionContext.dutreilPartsNonAffectees`) est exclue de l'exonération — obligatoire (0
+    accepté), sinon `BienNonQualifieError` ; engagement individuel de 6 ans (4 ans avant).
+    `eligibilite_validee` est posé par la fiche Dutreil (`lib/patrimoine/dutreil.ts`, cf.
+    `docs/societes.md`). Engagements
+    de conservation et de direction (3 ans) présumés, signalés. Chargé par les 3 écrans de calcul,
+    conservé côté conjoint par `buildSpouseRawAssets`. L'écran Assurance-vie ne transmet pas les
+    sociétés Dutreil (sans effet sur la fiscalité des contrats qu'il affiche).
   - **Demi-frères et demi-sœurs (art. 752 C. civ.)** : `successionLegale.ts::partsFratrieParLignes`
     divise la part de la fratrie par moitié entre lignes paternelle et maternelle si les lits
     diffèrent (`Person.lienFratrie`, saisi dans Famille, cf. `docs/famille.md`), une ligne vide
@@ -487,8 +495,13 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   l'abattement général ; l'excédent le consomme normalement. **Vérifié** : 3 nouveaux tests dédiés
   (`recall.test.ts`), résultat recoupé avec une étude notarielle réelle (donation de 42 000 € → 10 135 €
   imposables → abattement résiduel 89 865 €, conforme).
-- **Forfait mobilier (art. 764 CGI, 5 % du taxable) sans réglage pour le désactiver — limitation
-  connue, non corrigée.** `dmtg/assets.ts:7` expose un paramètre `inventaireNotarieProduit` qui met le
+- **Forfait mobilier (art. 764 CGI) : valeur minimale des meubles meublants.** Sans inventaire, la
+  valeur imposable des meubles est le maximum de leur valeur déclarée (actifs « Meubles meublants »,
+  `Asset.isMeublesMeublants`) et de 5 % des autres biens taxables, meubles exclus de la base : seul
+  l'excédent du forfait sur la valeur déclarée s'ajoute (`dmtg/assets.ts`, fiction fiscale jamais
+  ajoutée au patrimoine réel). Sans meubles saisis : 5 % du taxable, comme avant. Tests :
+  `lib/transmission/phaseBActifs.test.ts`. **Réglage d'inventaire absent — limitation connue, non
+  corrigée.** `dmtg/assets.ts:7` expose un paramètre `inventaireNotarieProduit` qui met le
   forfait à 0 quand un inventaire notarié réel remplace la présomption forfaitaire, mais **aucun écran
   ne le renseigne** (`grep` sur `inventaireNotarieProduit` : uniquement lu, jamais écrit côté UI/DB) —
   toujours `false` par défaut, forfait toujours appliqué. Explique un écart résiduel constant d'environ
@@ -500,7 +513,14 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   à `computeDMTG` (`DMTGContext.passif`) ; `dmtg/beneficiary.ts` répartit entre bénéficiaires
   `max(0, actif taxable − passif)` (actif taxable = après abattements par bien : RP, bois…). Le forfait
   mobilier de 5 % reste calculé sur l'actif brut, jamais réduit par le passif. Le passif lui-même est
-  pondéré comme l'actif du même régime (cf. point suivant).
+  pondéré comme l'actif du même régime (cf. point suivant). Dette rattachée à un bien exonéré en tout
+  ou partie (Dutreil, bois et forêts, biens ruraux ; pas la résidence principale, dont l'abattement est
+  une règle d'évaluation) : imputée par priorité sur la valeur du bien avant exonération (art. 769 II
+  CGI), seul l'excédent éventuel restant au passif général (`AssetValuationResult.
+  passifImputeSurBiens`). Rattachement : `emprunts.asset_id` (« actif financé / garanti »), présumé
+  désigner un prêt d'acquisition et signalé ; montants pondérés comme le passif global par
+  `transmissionHelpers.ts::buildPassifsParBien` (`TransmissionContext.passifsParBien`, 1er et 2nd
+  décès, ordres normal et inversé). Les `passifs` hors emprunts ne sont jamais rattachés à un bien.
 - **Pondération du passif (`getFractionPassifParDetenteur`, `utils/transmissionHelpers.ts`).**
   `Bien commun` → 50 % ; `Bien propre`/`Bien personnel`/`Indivision` → détenteur ou quote-part via
   `getPartSuccessorale` (défunt = Utilisateur) ou `getPartConjointSuccession` (défunt = conjoint) ;
@@ -651,6 +671,43 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
     passent les démembrements.
   Tests : `lib/transmission/auditCalculs2026-10.test.ts`.
 
+- **Biens ruraux, groupements fonciers, bois et forêts (art. 793 et 793 bis CGI).** Régime et
+  conditions saisis sur le bien (`assets.regime_exoneration_rural`, `conditions_exoneration_rural`,
+  migration `20261012120000_assets_exoneration_rurale.sql`), jamais présumés : un bien non qualifié
+  bloque le calcul (`BienNonQualifieError`). Forestier : 3/4 exonérés sans plafond. Agricole (GFA, GAF,
+  GFV, terres à bail à long terme) : 3/4 exonérés, ramenés à 1/2 sur la part de chaque bénéficiaire
+  au-delà de 600 000 € (`dmtg/beneficiary.ts`, `params-dmtg.json` › `exonerationRurale`). Le seuil de
+  chaque bénéficiaire est diminué des donations de biens ruraux en régime agricole reçues du défunt
+  depuis moins de 15 ans (art. 793 bis al. 2 ; `Liberalite.partRuraleAgricole`, déduite des biens
+  donnés encore présents dans Patrimoine — bien supprimé : non imputé). GFR : régime dominant.
+  Engagements des héritiers (gestion durable 30 ans, conservation 5 ans pour le seuil de 600 000 €,
+  version en vigueur depuis la LF 2025) présumés et signalés ; seuil de 20 M€ (18 ans) non modélisé. Le forfait mobilier exclut la fraction exonérée aux
+  3/4 (approximation au-delà du seuil). Tests : `lib/transmission/exonerationRurale.test.ts`.
+- **Prévoyance décès et contrat article 82 hors succession (art. L132-12 C. assur.).** « Temporaire
+  décès », « Vie entière », « Contrat prévoyance individuelle » (`NATURES_PREVOYANCE_DECES`) et
+  « Contrat article 82 » sont exclus des masses civile et fiscale (`isContratHorsSuccession`) et
+  deviennent des `AVContract` (clause et primes saisies dans Transmission → Assurance-vie, comme une
+  assurance-vie). Prévoyance : capital transmis = `assets.capital_garanti` (`getCapitalDecesContrat`),
+  calcul bloqué s'il manque (`BienNonQualifieError`). Contrat non rachetable : assiette 990 I =
+  fraction rachetable (valeur estimée d'une vie entière, 0 sinon) + versements des 12 mois précédant
+  le décès effectués avant 70 ans, plafonnée au capital (`splitPrimesPrevoyance`,
+  `AVContract.assiette990I`) ; 757 B sur tous les versements effectués à 70 ans ou plus ; aucun
+  versement → `AVDonneesInsuffisantesError`. Retenu : la pratique des assureurs (dernière prime
+  annuelle) plutôt que le quotient de mortalité de la doctrine 2018. Article 82 : régime de
+  l'assurance-vie (âge à chaque versement), phase de constitution présumée et signalée. Jamais
+  réintégrés au titre de la doctrine Ciot (`isContratNonReintegreCiot` ; article 82 signalé avec les
+  PER). Non modélisés : échéance d'une temporaire (contrat présumé en cours), réintégration Ciot de
+  la valeur de rachat d'une vie entière du conjoint, régime des contrats de prévoyance antérieurs au
+  20/11/1991. Le champ texte libre « Bénéficiaire désigné » n'est plus proposé dans la fiche (colonne
+  `beneficiaire_designe` conservée). Tests : `utils/transmissionHelpers.prevoyance.test.ts`.
+- **Paramètres légaux vérifiés pour 2026 (`params-dmtg.json`, `fiscal.ts`).** Barèmes et abattements
+  DMTG, 990 I (152 500 €, 20 % puis 31,25 % au-delà de 700 000 €), 757 B (30 500 €), barème 669, frais
+  funéraires (1 500 €), charges de famille (610 € / 305 €) : inchangés par la LF 2026. Art. 790 A bis :
+  dons jusqu'au 31/12/2026, sans prorogation votée. Émoluments de succession (A444-59, A444-63,
+  A444-66) identiques dans la version de Légifrance en vigueur au 01/08/2026, malgré l'arrêté du
+  25/02/2026. À surveiller : le PLF 2027 (790 G porté à 50 000 € pour les dons du 1er semestre 2027),
+  non voté.
+
 ## 3. Dette identifiée
 
 ### 🔴 Bloquant (peut fausser un calcul montré au client)
@@ -677,13 +734,92 @@ ni créance, aucun versement AV antérieur au 13/10/1998 — pas de reprise de d
 - *#7 et #8 soldés le 2026-10-12 (phase 4) : cf. §2 « Assurance-vie : lien fiscal des bénéficiaires
   non héritiers et régimes transitoires ».*
 - *#9, #10 et #12 soldés le 2026-10-12 (phase 5) : cf. §2 « Neveux, dons 790 A bis et valeur des legs ».*
-- **#11 (non confirmé, ouvert)** : une donation à un petit-enfant couverte par l'abattement de
-  31 865 € (art. 790 B) est rappelée sur l'abattement de succession du petit-enfant (1 594 € s'il
-  vient de son chef). Aucune source officielle trouvée sur ce point : à faire valider par un notaire
-  avant toute modification de `dmtg/recall.ts`.
+- **#11 (confirmé, ouvert) — rappel fiscal recalculé avec l'abattement de succession.** Selon
+  BOI-ENR-DMTG-10-50-50 § 110, 120, 280 et 290, une donation antérieure consomme l'abattement
+  réellement appliqué dans l'acte, et ses tranches sont la part taxée après cet abattement.
+  `dmtg/recall.ts` recalcule les deux avec l'abattement de succession du bénéficiaire. Écart pour un
+  petit-enfant de son chef (790 B à l'acte, 31 865 € ; 1 594 € de l'art. 788 IV au décès, que l'art.
+  784 ne vise pas), un représentant (le 790 B n'entame pas les 100 000 € de l'art. 779 I reçus par
+  représentation), un arrière-petit-enfant (790 D, 5 310 €) et un tiers (aucun abattement à l'acte).
+  Scénarios : legs de 100 000 € à un petit-enfant ayant reçu 31 865 € en 2021 → 19 970 € calculés pour
+  17 846 € dus ; représentant ayant reçu 40 000 € → 86 044 € pour ≈ 79 261 €. Aucun écart pour les
+  enfants, ascendants, frères et sœurs, neveux et l'abattement handicap (même abattement à l'acte et
+  au décès). L'abattement utilisé à l'acte n'est pas saisi : à déduire du lien au jour de la donation.
 - **Écran de gestion des libéralités** (`Liberalites.tsx`) : affiche la valeur brute des biens légués,
   sans la pondération des droits du testateur appliquée par le calcul (#12).
 
+**Audit complet du 2026-10-12 (2e passe)** — constats reproduits sur scénarios chiffrés (moteur
+réel), non corrigés. Données en base : 2 donations à des enfants, `duh_opte` faux partout, aucun
+legs, aucune récompense ni créance, aucun emprunt, aucun pacte Dutreil, mais 1 actif « Parts de GFA,
+GAF, GFV et GFR » et 1 « Parts de groupements fonciers » (#17).
+
+- **#14 DUH attribué aux autres héritiers.** `index.ts` (§5.9bis) retire la valeur du DUH de ce que
+  reçoit le conjoint et l'ajoute aux autres héritiers. Or le DUH s'impute sur les droits du conjoint
+  (C. civ. art. 765) : il le reçoit, et les enfants recueillent le logement grevé (DUH = 60 % de
+  l'usufruit, art. 762 bis CGI). Scénario (1/4 PP, 2 enfants, RP 400 000 €, conjoint de 64 ans) :
+  base de chaque enfant 344 438 € → 388 526 €, droits 50 532 € → 59 791 €, alors qu'ils devraient
+  rester inchangés. Seul effet légitime : exclure la valeur du DUH (droit viager) du reçu au 2nd décès.
+- **#15 Légataire particulier taxé au prorata de l'assiette globale.** Sa `civilShare` (legs / actif
+  net) lui fait partager l'abattement de 20 % de la RP, l'exonération Dutreil ou les frais funéraires
+  sur des biens qu'il ne reçoit pas, et lui impute une part du forfait mobilier. Scénario : legs de
+  100 000 € de liquidités à un neveu, RP de 400 000 € → base 83 700 € + forfait 4 200 €, droits 43 963 €
+  pour 50 618 € (hors forfait) ; l'écart est reporté sur les héritiers. L'application du forfait
+  mobilier à un légataire particulier de sommes d'argent reste à faire confirmer par un notaire.
+- **#16 Biens ruraux, GFA, bois et forêts jamais exonérés.** `Asset.isBoisForetOuGF` n'est jamais
+  renseigné (`dmtgAssets`) : « Bois & forêts », « Parts de groupements fonciers » et « Parts de GFA,
+  GAF, GFV et GFR » sont taxés à 100 %. Exonérations ignorées : art. 793-1-3° et 793-2-2° (bois et
+  groupements forestiers, 3/4, engagement de gestion) ; art. 793 bis (GFA, biens ruraux à bail à long
+  terme : 75 % jusqu'à 600 000 € par bénéficiaire, 50 % au-delà, LF 2025). La branche existante
+  (75 % sans seuil) ne convient pas au 793 bis. Conditions non saisies : à qualifier par bien, jamais
+  présumées. Scénario (GFA de 500 000 €, 1/4 PP, 2 enfants) : 17 457 € de droits par enfant, 0 € si
+  l'exonération s'applique. Dossier réel concerné (#17).
+- *#16 soldé le 2026-10-13 : cf. §2 « Biens ruraux, groupements fonciers, bois et forêts ».*
+- **#17 Données réelles touchées par #16 (saisie à faire)** : 1 actif « Parts de GFA, GAF, GFV et GFR », 1 « Parts de
+  groupements fonciers » (nature ambiguë : forestier, agricole ou immobilier — à requalifier).
+- *#18 soldé le 2026-10-14 (phase B de l'audit des classes d'actifs) : cf. §2 « Dutreil ».*
+- **#19 Liquidation du régime au 1er décès absente du patrimoine du survivant au 2nd.** Récompenses,
+  créances entre époux, créance de participation et réintégration Ciot modifient la 1re succession,
+  mais `buildSurvivingSpousePatrimony` / `buildSpouseOwnBasePatrimony` n'en portent pas la
+  contrepartie (récompense de 60 000 € due par le 1er défunt : −30 000 € sur sa succession, jamais
+  +30 000 € sur celle du survivant). De même, le passif du 2nd décès (`passifLinesBrut`) garde un
+  emprunt déjà remboursé par l'assurance décès du 1er défunt.
+- **#20 Assurance emprunteur sans assuré.** `buildPassifLines` déduit `capital_garanti_deces` quel que
+  soit l'époux décédé : au décès du conjoint, un emprunt assuré sur la seule tête de l'Utilisateur est
+  quand même réduit. Le formulaire (`PassifEmpruntForm.tsx`) n'a qu'un capital garanti, sans assuré.
+- **#21 Communauté universelle.** Depuis le retrait des clauses (2026-09-22), une communauté
+  universelle avec attribution intégrale est liquidée comme une communauté ordinaire (50 % au 1er
+  décès), sans aucun avertissement dans Transmission ; le résultat affiché est alors sans rapport avec
+  la réalité (rien ne passe aux enfants au 1er décès, art. 1524).
+
+
+**Audit des classes d'actifs du 2026-10-14** — chaque nature d'actif confrontée à son régime
+successoral. Données en base : aucun actif de prévoyance décès ni article 82.
+
+- *N1 et N2 soldés le 2026-10-14 (phase A) : cf. §2 « Prévoyance décès et contrat article 82 hors
+  succession ».*
+- *N3, N4 et N5 soldés le 2026-10-14 (phase B) : cf. §2 « Forfait mobilier », « Assiette DMTG nette
+  du passif » et « Biens ruraux ». N5 se limitait aux donations rurales antérieures : la conservation
+  de 5 ans et l'application aux baux antérieurs à 2025 (réponse ministérielle) étaient conformes.*
+- **N6 Stock-options** : `prix_exercice` saisi mais ignoré, la valeur imposable est la valeur
+  intrinsèque (cours − prix d'exercice).
+- **N7 Entreprise individuelle (art. 787 C)** : exonérée de 75 % seulement si saisie dans Sociétés
+  avec Dutreil validé ; un actif « Entreprise individuelle » / « Autres biens professionnels » est
+  sinon taxé à 100 %.
+- **N8 Bijoux, objets d'art, collections** : plancher de 60 % de l'évaluation des contrats d'assurance
+  (art. 764 II) non modélisé.
+- **N9 « Avances sur contrats d'assurance-vie »** déduites du passif successoral, alors que l'assureur
+  les impute sur le capital décès hors succession.
+- **N10 Régimes de retraite étrangers** : toujours dans l'actif successoral, sans qualification.
+- **N11 Assurance-vie souscrite sur la tête d'un tiers** (défunt souscripteur non assuré) : la valeur
+  de rachat devrait entrer dans la succession ; le contrat est toujours traité comme dénoué.
+- *Dutreil jamais appliqué en pratique (`eligibilite_validee` jamais enregistrée) : soldé le
+  2026-10-14, cf. `docs/societes.md` (éligibilité Dutreil).*
+- **`emprunts.asset_id` en `ON DELETE SET NULL`**, en écart avec la règle CASCADE de CLAUDE.md —
+  cohérent (supprimer un bien ne doit pas supprimer l'emprunt), à acter comme exception.
+- **Typage** : `ProcessusCalcul.tsx` passe des `Asset[]` (`id` optionnel) en `rawAssets`
+  (`RawAssetInput.id` requis) — erreur `tsc` préexistante.
+- **Typage** : `'date_echeance'` utilisé dans `VALEURS_MOBILIERES_NATURES_CHAMPS` (Produits
+  structurés, Autres produits dérivés) sans figurer dans `ValeursMobilieresChamp` (erreur `tsc`).
 
 - **9 des 11 clauses de donation restent purement déclaratives.** `nature`, `demembrement`,
   `droitsParDonateur`/`prise_en_charge_droits`, et 9 clauses sur 11
@@ -787,6 +923,16 @@ ni créance, aucun versement AV antérieur au 13/10/1998 — pas de reprise de d
   1036 tests restants inchangés).
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
+
+- **Petit-neveu, petite-nièce** : `lienFiscalLegataire` les rattache aux neveux (`includes('neveu')`),
+  soit 7 967 € d'abattement au lieu de 1 594 € (l'art. 779 V ne vise que les neveux et nièces) ; même
+  test dans `verifier790G`/`verifier790ABis`, alors qu'un petit-neveu n'est éligible que par
+  représentation.
+- **Code mort fiscal** : branches Corse (art. 1135 bis, `location` toujours `'metropole'`) et
+  monuments historiques (art. 795 A) jamais alimentées.
+- **Forfait mobilier** : les lignes synthétiques négatives (récompense due par le défunt, créance de
+  participation due) réduisent son assiette, alors qu'il se calcule avant déduction du passif.
+- `fiscal.ts` cite l'art. A444-121 pour l'attestation immobilière : c'est l'art. A444-59.
 
 - Chargement des données Transmission encore dupliqué : `Succession2ndDeces.tsx` et
   `ComparaisonOptionsConjoint.tsx` partagent `loadTransmissionData` / `buildOrdreNormalBase`

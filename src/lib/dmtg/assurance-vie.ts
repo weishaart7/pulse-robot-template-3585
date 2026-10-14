@@ -120,18 +120,24 @@ export function computeAssuranceVie(
     // faute de valeur acquise suivie versement par versement.
     // Les primes exonérées (antérieures au 13/10/1998) portent leur part du
     // capital, hors 990 I comme hors 757 B.
+    // Contrat de prévoyance non rachetable : assiettes fixées en amont
+    // (assiette990I), le capital garanti étant sans rapport avec les primes.
     const totalPrimes = contract.primesAvant70 + contract.primesApres70 + (contract.primesExonerees || 0);
-    const capital990I = totalPrimes > 0
-      ? contract.capitalDeces * (contract.primesAvant70 / totalPrimes)
-      : 0;
+    const capital990I = contract.assiette990I !== undefined
+      ? Math.min(contract.assiette990I, contract.capitalDeces)
+      : totalPrimes > 0
+        ? contract.capitalDeces * (contract.primesAvant70 / totalPrimes)
+        : 0;
 
     // Assiette 757 B du contrat : primes versées après 70 ans, jamais
     // diminuées des rachats partiels (BOI-ENR-DMTG-10-10-20-20 § 190), mais
     // plafonnées au capital décès qui leur correspond quand le contrat est en
     // moins-value (les sommes versées sont alors inférieures aux primes).
-    const capital757B = totalPrimes > 0
-      ? contract.capitalDeces * (contract.primesApres70 / totalPrimes)
-      : 0;
+    const capital757B = contract.assiette990I !== undefined
+      ? contract.capitalDeces
+      : totalPrimes > 0
+        ? contract.capitalDeces * (contract.primesApres70 / totalPrimes)
+        : 0;
     const assiette757BContrat = Math.min(contract.primesApres70, capital757B);
 
     effectiveShares.forEach(share => {

@@ -21,7 +21,7 @@ import {
 import { computeNotaryFees, computeDebours } from './fiscal';
 import { computeNetPerHeir } from './netBreakdown';
 import { computePartage } from './partage';
-import { getPartSuccessorale } from '../patrimoine/succession';
+import { getPartSuccessorale, BienNonQualifieError } from '../patrimoine/succession';
 import { getFractionDemembrement, DemembrementFractionContext } from '../patrimoine/demembrementFraction';
 import { AssetDemembrement } from '../../services/assetDemembrementService';
 import {
@@ -36,7 +36,7 @@ import {
   regimeIsParticipationAcquets,
   PatrimoineLigneCalcInput,
 } from '../patrimoine/participationAcquets';
-import { getAssetCategory, isContratHorsSuccession } from '../../constants/assetTypes';
+import { getAssetCategory, isContratHorsSuccession, isBienRuralNonQualifie, getExonerationRurale, isNatureRurale, isPrevoyanceDeces, NATURE_ARTICLE_82 } from '../../constants/assetTypes';
 import {
   computeDMTG,
   DEFAULT_DMTG_PARAMS,
@@ -128,9 +128,23 @@ export interface TransmissionContext {
   // Sociétés dont le pacte Dutreil est validé (societe_dutreil.eligibilite_validee,
   // art. 787 B CGI) : les titres rattachés (assets.societe_id) sont exonérés à
   // 75 % dans l'assiette des droits. Engagement individuel de conservation des
-  // héritiers (4 ans) présumé, signalé dans les explications.
+  // héritiers (4 ans, 6 ans depuis le 21/02/2026) présumé, signalé dans les explications.
   societesDutreil?: string[];
+  // Part (0 à 100 %) de la valeur des titres de chaque société Dutreil
+  // correspondant à des biens non affectés à l'activité (societe_dutreil.
+  // part_biens_non_affectes, LF 2026) — exclue de l'exonération. Obligatoire
+  // (0 accepté) pour une transmission depuis le 21/02/2026, sinon calcul bloqué.
+  dutreilPartsNonAffectees?: Record<string, number | null>;
+  // Dettes rattachées à un bien (emprunts.asset_id), déjà pondérées et
+  // comprises dans patrimony.passifs (cf. transmissionHelpers.ts::
+  // buildPassifsParBien) : imputées par priorité sur un bien exonéré (art.
+  // 769 II CGI).
+  passifsParBien?: Record<string, number>;
 }
+
+// Loi n° 2026-103 du 19/02/2026, art. 8 : engagement individuel porté à 6 ans
+// et exclusion des biens non affectés à l'activité, transmissions depuis cette date.
+export const DATE_DUTREIL_LF2026 = '2026-02-21';
 
 /**
  * Rôle ('user' ou 'spouse') du défunt simulé dans CE calcul, déduit de
@@ -999,12 +1013,103 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     );
   }
 
+  if (avContracts.some(c => isPrevoyanceDeces(c.nature))) {
+    successionLegaleResult.explicationsTexte.push(
+      `Prévoyance décès : capital garanti versé hors succession aux bénéficiaires de la clause (art. L132-12 ` +
+      `C. assur.), contrat présumé en cours au décès. Contrat non rachetable : le prélèvement de l'art. 990 I ne ` +
+      `porte que sur les primes versées dans l'année précédant le décès (plus la valeur de rachat d'une vie ` +
+      `entière) ; les primes versées après 70 ans relèvent de l'art. 757 B.`
+    );
+  }
+  if (avContracts.some(c => c.nature === NATURE_ARTICLE_82)) {
+    successionLegaleResult.explicationsTexte.push(
+      `Contrat article 82 : présumé en phase de constitution au décès — capital versé hors succession aux ` +
+      `bénéficiaires de la clause, régime de l'assurance-vie (art. 990 I / 757 B). Une rente déjà liquidée et ` +
+      `non réversible ne transmet rien.`
+    );
+  }
+
   const titresDutreil = (rawAssets || []).filter(a => !!a.societe_id && (ctx.societesDutreil || []).includes(a.societe_id));
+  const regimeDutreil2026 = referenceDate >= DATE_DUTREIL_LF2026;
+  // Biens non affectés à l'activité (LF 2026) : jamais présumés absents.
+  const titreDutreilNonQualifie = regimeDutreil2026
+    ? titresDutreil.find(a => ctx.dutreilPartsNonAffectees?.[a.societe_id!] == null)
+    : undefined;
+  if (titreDutreilNonQualifie) {
+    throw new BienNonQualifieError(
+      `Pacte Dutreil : la part de la valeur des titres « ${titreDutreilNonQualifie.denomination || 'de société'} » ` +
+      `correspondant à des biens non affectés à l'activité (véhicules de tourisme, yachts, objets d'art, logements…) ` +
+      `n'est pas renseignée — elle n'est plus exonérée depuis le 21/02/2026 (art. 787 B CGI). Renseignez-la (0 % si ` +
+      `aucun) dans Sociétés → Transmission.`
+    );
+  }
   if (titresDutreil.length > 0) {
     successionLegaleResult.explicationsTexte.push(
       `Pacte Dutreil (art. 787 B CGI) : les titres ${titresDutreil.map(a => a.denomination || 'de société').join(', ')} ` +
-      `sont exonérés de droits à hauteur de 75 %. Suppose que chaque héritier s'engage à conserver ` +
-      `les titres pendant 4 ans et que l'un d'eux exerce une fonction de direction pendant 3 ans — à confirmer.`
+      `sont exonérés de droits à hauteur de 75 %${regimeDutreil2026
+        ? ", hors fraction de leur valeur correspondant à des biens non affectés à l'activité depuis 3 ans"
+        : ''}. Suppose que chaque héritier s'engage à conserver les titres pendant ${regimeDutreil2026 ? 6 : 4} ans ` +
+      `et que l'un d'eux exerce une fonction de direction pendant 3 ans — à confirmer.`
+    );
+  }
+
+  // Dette rattachée à un bien exonéré (art. 769 II CGI) : imputée par
+  // priorité sur sa valeur. Le rattachement (« actif financé / garanti »)
+  // est présumé désigner un prêt d'acquisition, signalé.
+  const biensExoneresEndettes = (rawAssets || []).filter(a =>
+    !isContratHorsSuccession(a) && (ctx.passifsParBien?.[a.id] || 0) > 0 && (
+      (!!a.societe_id && (ctx.societesDutreil || []).includes(a.societe_id)) || getExonerationRurale(a) !== null
+    )
+  );
+  if (biensExoneresEndettes.length > 0) {
+    successionLegaleResult.explicationsTexte.push(
+      `Emprunt rattaché à ${biensExoneresEndettes.map(a => a.denomination || a.nature).join(', ')} : bien exonéré en ` +
+      `partie, la dette s'impute par priorité sur sa valeur (art. 769 II CGI) et n'est déduite que pour sa fraction ` +
+      `taxable. Présume un emprunt contracté pour l'acquisition ou dans l'intérêt du bien — sans effet si le bien n'en ` +
+      `est que la garantie, à vérifier.`
+    );
+  }
+
+  const meublesMeublants = (rawAssets || []).filter(a => a.nature === 'Meubles meublants' && getFractionSuccessorale(a) > 0);
+  if (meublesMeublants.length > 0 && !params.inventaireNotarieProduit) {
+    successionLegaleResult.explicationsTexte.push(
+      `Meubles meublants : sans inventaire, leur valeur imposable ne peut être inférieure à 5 % des autres biens de la ` +
+      `succession (art. 764 CGI) — la valeur déclarée est retenue si elle est supérieure, le forfait sinon.`
+    );
+  }
+
+  // Biens ruraux, groupements fonciers, bois et forêts (art. 793 et 793 bis
+  // CGI) : régime et conditions saisis dans Patrimoine, jamais présumés — un
+  // bien non qualifié bloque le calcul (même renvoi que BienNonQualifieError).
+  const bienRuralNonQualifie = (rawAssets || []).find(a => isBienRuralNonQualifie(a) && getFractionSuccessorale(a) > 0);
+  if (bienRuralNonQualifie) {
+    throw new BienNonQualifieError(
+      `Le bien « ${bienRuralNonQualifie.denomination || bienRuralNonQualifie.nature} » n'indique pas son régime d'exonération ` +
+      `(forestier, agricole ou aucun) ni si ses conditions sont remplies : impossible de calculer ses droits de succession ` +
+      `(art. 793 et 793 bis CGI). Renseignez-le dans la fiche du bien.`
+    );
+  }
+  const biensRuraux = (rawAssets || []).filter(a => isNatureRurale(a.nature) && getFractionSuccessorale(a) > 0);
+  const biensRurauxExoneres = biensRuraux.filter(a => getExonerationRurale(a) !== null);
+  if (biensRurauxExoneres.some(a => getExonerationRurale(a) === 'forestier')) {
+    successionLegaleResult.explicationsTexte.push(
+      `Bois et forêts (art. 793 CGI) : ${biensRurauxExoneres.filter(a => getExonerationRurale(a) === 'forestier').map(a => a.denomination || a.nature).join(', ')} ` +
+      `exonérés de droits aux 3/4, sans plafond. Suppose que chaque héritier s'engage à appliquer une gestion durable ` +
+      `pendant 30 ans — à confirmer.`
+    );
+  }
+  if (biensRurauxExoneres.some(a => getExonerationRurale(a) === 'agricole')) {
+    successionLegaleResult.explicationsTexte.push(
+      `Biens ruraux et GFA loués par bail à long terme (art. 793 bis CGI) : ${biensRurauxExoneres.filter(a => getExonerationRurale(a) === 'agricole').map(a => a.denomination || a.nature).join(', ')} ` +
+      `exonérés aux 3/4 jusqu'à 600 000 € par héritier, à 1/2 au-delà. Suppose que chaque héritier conserve les biens ` +
+      `5 ans — à confirmer. Le seuil de 20 M€ (conservation 18 ans) n'est pas modélisé.`
+    );
+  }
+  const biensRurauxTaxes = biensRuraux.filter(a => getExonerationRurale(a) === null);
+  if (biensRurauxTaxes.length > 0) {
+    successionLegaleResult.explicationsTexte.push(
+      `${biensRurauxTaxes.map(a => a.denomination || a.nature).join(', ')} : aucune exonération de droits retenue ` +
+      `(régime « aucun » ou conditions non remplies), bien taxé sur sa pleine valeur.`
     );
   }
 
@@ -1018,6 +1123,12 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       location: 'metropole',
       isResidencePrincipale: asset.nature === 'Résidence principale' && abattementRPApplicable,
       isDutreil: !!asset.societe_id && (ctx.societesDutreil || []).includes(asset.societe_id),
+      partNonExonereeDutreil: regimeDutreil2026 && asset.societe_id
+        ? (ctx.dutreilPartsNonAffectees?.[asset.societe_id] ?? 0) / 100
+        : undefined,
+      exonerationRurale: getExonerationRurale(asset) ?? undefined,
+      isMeublesMeublants: asset.nature === 'Meubles meublants',
+      detteImputee: ctx.passifsParBien?.[asset.id],
       exclurePour: {}
     }));
 
@@ -1211,6 +1322,8 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       donorId: family.decedentId,
       doneeId: l.beneficiaireId,
       valeurDon: l.valeurFiscaleActe ?? l.valeur,
+      // Biens ruraux donnés (art. 793 bis) : s'imputent sur le seuil du donataire.
+      valeurRuraleAgricole: (l.valeurFiscaleActe ?? l.valeur) * (l.partRuraleAgricole || 0),
       // Don familial de sommes d'argent (art. 790 G CGI) : exonération
       // dédiée de 31 865€ (params.abattements.don_790G), cumulable avec et
       // distincte de l'abattement général en ligne directe — cf. recall.ts,
@@ -1239,7 +1352,10 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       .filter(d => d.doneeId === representeId)
       .forEach(d => ids.forEach(id => {
         const ratio = totalSouche > 0 ? (partParPersonne.get(id) || 0) / totalSouche : 1 / ids.length;
-        dmtgDonations.push({ ...d, id: `${d.id}-rappel-${id}`, doneeId: id, valeurDon: d.valeurDon * ratio });
+        dmtgDonations.push({
+          ...d, id: `${d.id}-rappel-${id}`, doneeId: id, valeurDon: d.valeurDon * ratio,
+          valeurRuraleAgricole: (d.valeurRuraleAgricole || 0) * ratio
+        });
       }));
   });
 

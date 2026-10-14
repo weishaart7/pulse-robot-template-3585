@@ -14,6 +14,7 @@ import {
   buildFamilyGraph,
   buildPatrimonySnapshot,
   buildPassifLines,
+  buildPassifsParBien,
   buildTransmissionLiberalites,
   buildAVContracts,
   buildSpouseAsDecedentFamilyGraph,
@@ -40,7 +41,7 @@ import { DemembrementFractionContext } from '@/lib/patrimoine/demembrementFracti
 import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcquets';
 import { Recompense } from '@/types/recompense';
 import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
-import { hasDonneesContratAV } from '@/constants/assetTypes';
+import { hasDonneesContratAV, getCapitalDecesContrat } from '@/constants/assetTypes';
 import transmissionParamsData from '@/data/transmission-params.json';
 
 export const buildTransmissionParams = (): TransmissionParams => ({
@@ -63,6 +64,7 @@ export interface TransmissionData {
   familyLinks: any[];
   assets: any[];
   societesDutreil: string[];
+  dutreilPartsNonAffectees: Record<string, number | null>;
   assetDemembrements: Awaited<ReturnType<typeof assetDemembrementService.getAllForUser>>;
   demembrementCtx: DemembrementFractionContext;
   totalAV: number;
@@ -94,6 +96,7 @@ export async function loadTransmissionData(userId: string): Promise<Transmission
 
   // Sociétés sous pacte Dutreil validé (art. 787 B CGI, exonération de 75 %).
   const societesDutreil = await societeDutreilService.getSocietesEligibles().catch(() => [] as string[]);
+  const dutreilPartsNonAffectees = await societeDutreilService.getPartsBiensNonAffectes().catch(() => ({} as Record<string, number | null>));
 
   const { data: assets } = await supabase
     .from('assets')
@@ -106,7 +109,7 @@ export async function loadTransmissionData(userId: string): Promise<Transmission
   const demembrementCtx: DemembrementFractionContext = { familyProfile, maritalStatus, familyLinks };
 
   const avAssets = (assets || []).filter(a => hasDonneesContratAV(a));
-  const totalAV = avAssets.reduce((sum, a) => sum + (Number(a.valeur_estimee) || 0), 0);
+  const totalAV = avAssets.reduce((sum, a) => sum + getCapitalDecesContrat(a), 0);
   const avAssetIds = avAssets.map(a => a.id);
   const [avDetailsRes, avOperationsRes] = avAssetIds.length > 0
     ? await Promise.all([
@@ -144,6 +147,7 @@ export async function loadTransmissionData(userId: string): Promise<Transmission
     assetId: a.id,
     label: a.denomination,
     valeurEstimee: a.valeur_estimee,
+    capitalGaranti: a.capital_garanti,
     detenteur: a.detenteur,
     origineFonds: avOrigineFondsByAsset.get(a.id) || null,
     operations: avOperationsByAsset.get(a.id) || [],
@@ -186,6 +190,7 @@ export async function loadTransmissionData(userId: string): Promise<Transmission
     familyLinks: familyLinks || [],
     assets: assets || [],
     societesDutreil,
+    dutreilPartsNonAffectees,
     assetDemembrements,
     demembrementCtx,
     totalAV,
@@ -262,6 +267,8 @@ export function buildOrdreNormalBase(data: TransmissionData, passifs: Passif[], 
     liberalites: liberalitesFormatted,
     params,
     societesDutreil: data.societesDutreil,
+    dutreilPartsNonAffectees: data.dutreilPartsNonAffectees,
+    passifsParBien: buildPassifsParBien(passifLinesUtilisateur),
     referenceDate,
     rawAssets: assets,
     assetDemembrements,
@@ -343,6 +350,8 @@ export function computeOrdreNormal(base: OrdreNormalBase, conjointOption: Conjoi
       liberalites: base.ctxUtilisateurDecedeSansOption.liberalites,
       params,
       societesDutreil: data.societesDutreil,
+      dutreilPartsNonAffectees: data.dutreilPartsNonAffectees,
+      passifsParBien: buildPassifsParBien(base.passifLinesBrut, 'conjoint'),
       referenceDate,
       // + reçu du 1er décès dans l'assiette fiscale (même montant que le
       // civil ci-dessus, cf. buildRecuAuPremierDecesRawAssets).

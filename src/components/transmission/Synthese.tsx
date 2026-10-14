@@ -26,13 +26,14 @@ import {
   hasPERNonDenoueConjoint,
   AVContractRawRow,
   AVDonneesInsuffisantesError,
-  LegsCaduc
+  LegsCaduc,
+  buildPassifsParBien
 } from '@/utils/transmissionHelpers';
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
 import { assetDemembrementService } from '@/services/assetDemembrementService';
-import { hasDonneesContratAV } from '@/constants/assetTypes';
+import { hasDonneesContratAV, getCapitalDecesContrat } from '@/constants/assetTypes';
 import { Recompense } from '@/types/recompense';
 import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
 import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcquets';
@@ -119,6 +120,7 @@ export const Synthese = () => {
       // Récupérer les assets
       // Sociétés sous pacte Dutreil validé (art. 787 B CGI, exonération de 75 %).
       const societesDutreil = await societeDutreilService.getSocietesEligibles().catch(() => [] as string[]);
+      const dutreilPartsNonAffectees = await societeDutreilService.getPartsBiensNonAffectes().catch(() => ({} as Record<string, number | null>));
 
       const { data: assets } = await supabase
         .from('assets')
@@ -137,7 +139,7 @@ export const Synthese = () => {
       // jamais le littéral 'assurance-vie' — même famille de bug que celui
       // déjà corrigé sur l'immobilier avec getAssetCategory.
       const avAssets = (assets || []).filter(a => hasDonneesContratAV(a));
-      const totalAV = avAssets.reduce((sum, a) => sum + (Number(a.valeur_estimee) || 0), 0);
+      const totalAV = avAssets.reduce((sum, a) => sum + getCapitalDecesContrat(a), 0);
       setHasAVContracts(avAssets.length > 0);
 
       // Récupérer le détail des contrats AV (clause bénéficiaire structurée +
@@ -179,6 +181,7 @@ export const Synthese = () => {
         assetId: a.id,
         label: a.denomination,
         valeurEstimee: a.valeur_estimee,
+        capitalGaranti: a.capital_garanti,
         detenteur: a.detenteur,
         origineFonds: avOrigineFondsByAsset.get(a.id) || null,
         operations: avOperationsByAsset.get(a.id) || [],
@@ -250,7 +253,8 @@ export const Synthese = () => {
       );
 
       // Construire le patrimoine
-      const patrimony: PatrimonySnapshot = buildPatrimonySnapshot((assets || []) as Asset[], buildPassifLines(passifs, emprunts, 'user'), totalAV, assetDemembrements, demembrementCtx);
+      const passifLines = buildPassifLines(passifs, emprunts, 'user');
+      const patrimony: PatrimonySnapshot = buildPatrimonySnapshot((assets || []) as Asset[], passifLines, totalAV, assetDemembrements, demembrementCtx);
 
       // Transformer les libéralités : jointure live vers assets pour la valeur
       // des legs (jamais figée en base), et exclusion des legs caducs (bien
@@ -296,6 +300,8 @@ export const Synthese = () => {
         liberalites: liberalitesFormatted,
         params,
         societesDutreil,
+        dutreilPartsNonAffectees,
+        passifsParBien: buildPassifsParBien(passifLines),
         conjointOption: (optionConjoint as any) || undefined,
         referenceDate,
         rawAssets: assets || [],

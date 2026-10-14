@@ -26,7 +26,8 @@ import {
   buildCreancesCalcInput,
   buildParticipationAcquetsContext,
   computeAVReintegrationCivile,
-  AVDonneesInsuffisantesError
+  AVDonneesInsuffisantesError,
+  buildPassifsParBien
 } from '@/utils/transmissionHelpers';
 import { computeTransmission, TransmissionContext, ConjointOption, liberalitesDuDefunt } from '@/lib/transmission';
 import { FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission/types';
@@ -55,8 +56,10 @@ export const ProcessusCalcul = () => {
   const [assetDemembrements, setAssetDemembrements] = useState<AssetDemembrement[]>([]);
   // Sociétés sous pacte Dutreil validé (art. 787 B CGI, exonération de 75 %).
   const [societesDutreil, setSocietesDutreil] = useState<string[]>([]);
+  const [dutreilPartsNonAffectees, setDutreilPartsNonAffectees] = useState<Record<string, number | null>>({});
   useEffect(() => {
     societeDutreilService.getSocietesEligibles().then(setSocietesDutreil).catch(() => setSocietesDutreil([]));
+    societeDutreilService.getPartsBiensNonAffectes().then(setDutreilPartsNonAffectees).catch(() => setDutreilPartsNonAffectees({}));
   }, []);
 
   useEffect(() => {
@@ -122,7 +125,8 @@ export const ProcessusCalcul = () => {
 
     try {
       // Assurance-vie non séparée ici : pas de régression, à traiter séparément si besoin
-      const patrimony = buildPatrimonySnapshot(assets, buildPassifLines(passifs, emprunts, 'user'), 0, assetDemembrements, demembrementCtx);
+      const passifLines = buildPassifLines(passifs, emprunts, 'user');
+      const patrimony = buildPatrimonySnapshot(assets, passifLines, 0, assetDemembrements, demembrementCtx);
       // Répartition avant/après 70 ans à partir des vraies primes (av_operations) —
       // lève AVDonneesInsuffisantesError si un contrat n'a aucune opération
       // enregistrée ou si la date de naissance du souscripteur réel (utilisateur
@@ -150,6 +154,8 @@ export const ProcessusCalcul = () => {
         conjointOption: ((maritalStatus as any)?.option_conjoint as ConjointOption | null) || undefined,
         rawAssets: assets || [],
         societesDutreil,
+        dutreilPartsNonAffectees,
+        passifsParBien: buildPassifsParBien(passifLines),
         assetDemembrements,
         demembrementCtx,
         avContracts,
@@ -183,7 +189,7 @@ export const ProcessusCalcul = () => {
   }, [
     familyGraph, assets, passifs, emprunts, toutesLiberalites, params, maritalStatus, avContractsRaw, familyProfile,
     recompenses, creancesEntreEpoux, patrimoineOriginaire, patrimoineFinal, assetDemembrements, demembrementCtx,
-    societesDutreil
+    societesDutreil, dutreilPartsNonAffectees
   ]);
 
   if (

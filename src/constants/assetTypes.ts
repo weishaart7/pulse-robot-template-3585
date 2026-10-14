@@ -426,15 +426,51 @@ export const isRetraiteRenteNonQualifie = (asset: ContratInput): boolean =>
 export const isRetraiteRenteSansGarantie = (asset: ContratInput): boolean =>
   isRetraiteRente(asset.nature) && asset.garantie_deces === false;
 
+// Contrats de prévoyance décès (temporaire décès, vie entière, prévoyance individuelle) : capital
+// versé hors succession aux bénéficiaires de la clause (art. L132-12 C. assur.). Le capital
+// transmis est le capital garanti (assets.capital_garanti), jamais la valeur estimée. Contrats non
+// rachetables : l'assiette 990 I est la fraction rachetable (valeur de rachat d'une vie entière,
+// assets.valeur_estimee ; 0 pour les deux autres) plus les primes de la dernière année, plafonnée
+// au capital (art. 990 I, BOI-TCAS-AUT-60) ; 757 B sur les primes versées après 70 ans.
+export const NATURES_PREVOYANCE_DECES = [
+  "Temporaire décès",
+  "Vie entière",
+  "Contrat prévoyance individuelle",
+];
+
+// Seule nature de prévoyance pouvant avoir une valeur de rachat.
+export const NATURE_PREVOYANCE_RACHETABLE = "Vie entière";
+
+export const isPrevoyanceDeces = (nature: string | null | undefined): boolean =>
+  !!nature && NATURES_PREVOYANCE_DECES.includes(nature);
+
+// Capital garanti non renseigné : capital transmis inconnu — calcul bloqué
+// (cf. transmissionHelpers.ts::assertPERQualifies).
+export const isPrevoyanceNonQualifiee = (asset: { nature?: string | null; capital_garanti?: number | null }): boolean =>
+  isPrevoyanceDeces(asset.nature) && !(Number(asset.capital_garanti) > 0);
+
+// Contrat article 82 (retraite supplémentaire à cotisations définies, assurance de groupe) : en
+// phase de constitution, capital décès versé hors succession aux bénéficiaires de la clause,
+// même régime qu'une assurance-vie (990 I / 757 B selon l'âge à chaque versement).
+export const NATURE_ARTICLE_82 = "Contrat article 82";
+
+// Capital décès d'un contrat transmis par clause : capital garanti pour la prévoyance, valeur
+// estimée (valeur du contrat) sinon.
+export const getCapitalDecesContrat = (asset: { nature?: string | null; valeur_estimee?: number | null; capital_garanti?: number | null }): number =>
+  isPrevoyanceDeces(asset.nature) ? Number(asset.capital_garanti) || 0 : Number(asset.valeur_estimee) || 0;
+
 // Biens dont les données de contrat (av_contract_details : clause bénéficiaire, origine des
 // fonds ; av_operations : versements) sont chargées pour le calcul de transmission : famille
-// "épargne et assurance-vie" + PER assurantiels + contrats de retraite par rente avec garantie décès.
+// "épargne et assurance-vie" + PER assurantiels + contrats de retraite par rente avec garantie
+// décès + prévoyance décès + article 82.
 export const hasDonneesContratAV = (asset: ContratInput): boolean =>
   getAssetCategory(asset.nature || '') === 'épargne et assurance-vie' || isPERAssurantiel(asset)
-  || (isRetraiteRente(asset.nature) && asset.garantie_deces === true);
+  || (isRetraiteRente(asset.nature) && asset.garantie_deces === true)
+  || isPrevoyanceDeces(asset.nature) || asset.nature === NATURE_ARTICLE_82;
 
 export const isContratHorsSuccession = (asset: ContratInput): boolean =>
-  isAssuranceVieHorsSuccession(asset.nature) || isPERAssurantiel(asset) || isRetraiteRente(asset.nature);
+  isAssuranceVieHorsSuccession(asset.nature) || isPERAssurantiel(asset) || isRetraiteRente(asset.nature)
+  || isPrevoyanceDeces(asset.nature) || asset.nature === NATURE_ARTICLE_82;
 
 // Les 4 natures de la famille "épargne et assurance-vie" (hors succession + "Bons & contrats de
 // capitalisation") — utilisée dans AssetForm.tsx pour le vocabulaire assurantiel ("Souscripteur"
@@ -455,6 +491,56 @@ export const PARTS_FONCIERES_NATURES = [
   "Parts de GFA, GAF, GFV et GFR",
   "Parts de sociétés d'épargne forestière",
 ] as const;
+
+// Biens ruraux, groupements fonciers, bois et forêts : exonération partielle de DMTG
+// (art. 793-1-3°, 793-2-2° et 793 bis CGI), selon le régime et les conditions saisis sur le
+// bien (assets.regime_exoneration_rural / conditions_exoneration_rural). Jamais présumé :
+// un bien de ces natures non qualifié bloque le calcul de transmission.
+// - 'forestier' : bois, forêts, groupements forestiers — 3/4 sans plafond ;
+// - 'agricole' : GFA, GAF, GFV, biens ruraux loués par bail à long terme — 3/4 jusqu'à
+//   600 000 € par bénéficiaire, 1/2 au-delà ;
+// - 'aucun' : pas d'exonération (groupement foncier immobilier, terre non louée…).
+// GFR (forêts et terres agricoles) : régime dominant.
+export type RegimeExonerationRurale = 'forestier' | 'agricole' | 'aucun';
+
+export const NATURES_RURALES = [
+  "Bois & forêts",
+  "Parts de groupements fonciers",
+  "Parts de GFA, GAF, GFV et GFR",
+  "Terrains agricoles",
+] as const;
+
+// Régime imposé par la nature (« Bois & forêts ») ou proposé par défaut (GFA), modifiable.
+export const REGIME_RURAL_IMPOSE: Record<string, RegimeExonerationRurale> = {
+  "Bois & forêts": 'forestier',
+};
+export const REGIME_RURAL_PAR_DEFAUT: Record<string, RegimeExonerationRurale> = {
+  "Parts de GFA, GAF, GFV et GFR": 'agricole',
+};
+
+export const isNatureRurale = (nature: string | null | undefined): boolean =>
+  !!nature && (NATURES_RURALES as readonly string[]).includes(nature);
+
+type BienRuralInput = {
+  nature?: string | null;
+  regime_exoneration_rural?: string | null;
+  conditions_exoneration_rural?: boolean | null;
+};
+
+// Régime ou conditions non renseignés (les conditions sont sans objet en régime 'aucun').
+export const isBienRuralNonQualifie = (asset: BienRuralInput): boolean =>
+  isNatureRurale(asset.nature) && (
+    !asset.regime_exoneration_rural
+    || (asset.regime_exoneration_rural !== 'aucun'
+      && asset.conditions_exoneration_rural !== true && asset.conditions_exoneration_rural !== false)
+  );
+
+// Régime d'exonération effectivement applicable (conditions remplies), sinon null.
+export const getExonerationRurale = (asset: BienRuralInput): 'forestier' | 'agricole' | null =>
+  isNatureRurale(asset.nature) && asset.conditions_exoneration_rural === true
+    && (asset.regime_exoneration_rural === 'forestier' || asset.regime_exoneration_rural === 'agricole')
+    ? asset.regime_exoneration_rural
+    : null;
 
 // Options de régime fiscal proposées pour chacune des natures ci-dessus (AssetForm.tsx,
 // champ regime_fiscal_parts) — la liste dépend de la nature sélectionnée.
@@ -481,16 +567,16 @@ export const CORPS_NATURES_CHAMPS: Record<string, CorpsChamp[]> = {
 };
 
 // Champs additionnels proposés, dans AssetForm.tsx (pill "Caractéristiques"), pour certaines
-// natures de la famille "épargne retraite et prévoyance". "beneficiaire_designe" est listé ici
-// pour les 3 natures PER, mais reste soumis en plus, côté AssetForm.tsx, à la condition
-// sous_type_per === 'Assurantiel' (masqué si Bancaire ou non renseigné) — cette nuance ne peut
-// pas être exprimée dans ce mapping statique nature → champs.
-export type RetraitePrevoyanceChamp = 'capital_garanti' | 'beneficiaire_designe' | 'mode_sortie';
+// natures de la famille "épargne retraite et prévoyance". Le champ texte libre
+// "beneficiaire_designe" n'est plus proposé (colonne conservée en base) : la clause des PER
+// assurantiels, des contrats de prévoyance décès et des contrats article 82 se saisit dans
+// Transmission → Assurance-vie (clause structurée, seule lue par le calcul de transmission).
+export type RetraitePrevoyanceChamp = 'capital_garanti' | 'mode_sortie';
 
 export const RETRAITE_PREVOYANCE_NATURES_CHAMPS: Record<string, RetraitePrevoyanceChamp[]> = {
-  'PER individuel': ['beneficiaire_designe', 'mode_sortie'],
-  'PER entreprise collectif': ['beneficiaire_designe', 'mode_sortie'],
-  'PER entreprise obligatoire': ['beneficiaire_designe', 'mode_sortie'],
+  'PER individuel': ['mode_sortie'],
+  'PER entreprise collectif': ['mode_sortie'],
+  'PER entreprise obligatoire': ['mode_sortie'],
   'PERCO/PERCOI': ['mode_sortie'],
   'PERP': ['mode_sortie'],
   'Contrat loi Madelin': ['mode_sortie'],
@@ -500,9 +586,9 @@ export const RETRAITE_PREVOYANCE_NATURES_CHAMPS: Record<string, RetraitePrevoyan
   'Contrat Préfon-retraite': ['mode_sortie'],
   'Contrat retraite mutualiste du combattant': ['mode_sortie'],
   'Régimes de retraite étrangers': ['mode_sortie'],
-  'Temporaire décès': ['capital_garanti', 'beneficiaire_designe'],
-  'Vie entière': ['capital_garanti', 'beneficiaire_designe'],
-  'Contrat prévoyance individuelle': ['capital_garanti', 'beneficiaire_designe'],
+  'Temporaire décès': ['capital_garanti'],
+  'Vie entière': ['capital_garanti'],
+  'Contrat prévoyance individuelle': ['capital_garanti'],
 };
 
 export const MODE_SORTIE_OPTIONS = ['Rente', 'Capital', 'Mixte'] as const;

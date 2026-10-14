@@ -311,6 +311,7 @@ export type Database = {
           clause_entree_communaute: boolean | null
           clause_remploi: boolean | null
           conditions_exoneration_990i: boolean | null
+          conditions_exoneration_rural: boolean | null
           created_at: string
           cto_multi_actifs: boolean | null
           cto_nature_sous_jacent: string | null
@@ -357,6 +358,7 @@ export type Database = {
           prix_exercice: number | null
           qualification_auto: boolean | null
           qualification_bien: string | null
+          regime_exoneration_rural: string | null
           quantite: string | null
           quantite_millesime: string | null
           reduction_ir_entree: number | null
@@ -395,6 +397,7 @@ export type Database = {
           clause_entree_communaute?: boolean | null
           clause_remploi?: boolean | null
           conditions_exoneration_990i?: boolean | null
+          conditions_exoneration_rural?: boolean | null
           created_at?: string
           cto_multi_actifs?: boolean | null
           cto_nature_sous_jacent?: string | null
@@ -441,6 +444,7 @@ export type Database = {
           prix_exercice?: number | null
           qualification_auto?: boolean | null
           qualification_bien?: string | null
+          regime_exoneration_rural?: string | null
           quantite?: string | null
           quantite_millesime?: string | null
           reduction_ir_entree?: number | null
@@ -479,6 +483,7 @@ export type Database = {
           clause_entree_communaute?: boolean | null
           clause_remploi?: boolean | null
           conditions_exoneration_990i?: boolean | null
+          conditions_exoneration_rural?: boolean | null
           created_at?: string
           cto_multi_actifs?: boolean | null
           cto_nature_sous_jacent?: string | null
@@ -525,6 +530,7 @@ export type Database = {
           prix_exercice?: number | null
           qualification_auto?: boolean | null
           qualification_bien?: string | null
+          regime_exoneration_rural?: string | null
           quantite?: string | null
           quantite_millesime?: string | null
           reduction_ir_entree?: number | null
@@ -3172,7 +3178,9 @@ export type Database = {
           engagement_individuel_date: string | null
           fonction_direction: string | null
           id: string
+          part_biens_non_affectes: number | null
           societe_id: string
+          type_engagement_collectif: string | null
           updated_at: string
           user_id: string
           valeur_parts_transmises: number | null
@@ -3186,7 +3194,9 @@ export type Database = {
           engagement_individuel_date?: string | null
           fonction_direction?: string | null
           id?: string
+          part_biens_non_affectes?: number | null
           societe_id: string
+          type_engagement_collectif?: string | null
           updated_at?: string
           user_id: string
           valeur_parts_transmises?: number | null
@@ -3200,7 +3210,9 @@ export type Database = {
           engagement_individuel_date?: string | null
           fonction_direction?: string | null
           id?: string
+          part_biens_non_affectes?: number | null
           societe_id?: string
+          type_engagement_collectif?: string | null
           updated_at?: string
           user_id?: string
           valeur_parts_transmises?: number | null

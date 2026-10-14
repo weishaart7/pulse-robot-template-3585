@@ -28,14 +28,24 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
   const assetValuations = filterAndValueEstateAssets(assets, params, deathDate, inventaireNotarieProduit);
   logs.push(`Masse taxable après abattements : ${assetValuations.totalBaseTaxable}€`);
 
-  // Phase 3 : Base par bénéficiaire (hors AV)
+  // Phase 3 : Base par bénéficiaire (hors AV). Passif général diminué des
+  // dettes déjà imputées sur des biens exonérés (art. 769 II CGI, assets.ts).
+  // Donations rurales de moins de 15 ans : imputées sur le seuil 793 bis de
+  // chaque donataire.
+  const passifGeneral = Math.max(0, (passif || 0) - assetValuations.passifImputeSurBiens);
+  const donationsRuralesParBeneficiaire: Record<string, number> = {};
+  beneficiaries.forEach(b => {
+    donationsRuralesParBeneficiaire[b.id] = filterDonations15Years(donations, deathDate, b.id)
+      .reduce((sum, d) => sum + (d.valeurRuraleAgricole || 0), 0);
+  });
   const taxBaseResult = buildTaxBaseByBeneficiary(
     civilShares,
     assetValuations,
     beneficiaries,
     params,
     deathDate,
-    passif || 0
+    passifGeneral,
+    donationsRuralesParBeneficiaire
   );
   logs.push(`Base répartie entre ${beneficiaries.length} bénéficiaires`);
 

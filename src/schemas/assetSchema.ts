@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { isPERNonQualifie, isRetraiteRenteNonQualifie } from '@/constants/assetTypes';
+import { isBienRuralNonQualifie, isPERNonQualifie, isRetraiteRenteNonQualifie } from '@/constants/assetTypes';
 
 // Constants
 // Origines proposées à l'utilisateur. `value` est ce qui est stocké dans
@@ -96,6 +96,9 @@ export const assetSchema = z.object({
   // Contrats de retraite par rente (cf. NATURES_RETRAITE_RENTE).
   garantie_deces: z.boolean().optional(),
   conditions_exoneration_990i: z.boolean().optional(),
+  // Biens ruraux, groupements fonciers, bois et forêts (cf. NATURES_RURALES).
+  regime_exoneration_rural: z.enum(['forestier', 'agricole', 'aucun']).optional(),
+  conditions_exoneration_rural: z.boolean().optional(),
   cto_multi_actifs: z.boolean().optional(),
   cto_nature_sous_jacent: z.string().optional(),
   clause_entree_communaute: z.boolean().optional(),
@@ -155,6 +158,17 @@ export const assetSchema = z.object({
       code: z.ZodIssueCode.custom,
       path: ['garantie_deces'],
       message: 'Précisez si ce contrat comporte une garantie décès',
+    });
+  }
+  // Bien rural, groupement foncier, bois et forêts : le régime et les conditions
+  // déterminent l'exonération partielle de droits de succession — jamais présumés.
+  if (isBienRuralNonQualifie(values)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: [values.regime_exoneration_rural ? 'conditions_exoneration_rural' : 'regime_exoneration_rural'],
+      message: values.regime_exoneration_rural
+        ? "Précisez si les conditions de l'exonération sont remplies"
+        : "Précisez le régime d'exonération de ce bien",
     });
   }
 });

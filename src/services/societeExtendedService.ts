@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { TypeEngagementCollectif } from '@/lib/patrimoine/dutreil';
 
 const requireUser = async () => {
   const { data } = await supabase.auth.getUser();
@@ -193,6 +194,11 @@ export interface SocieteDutreil {
   fonction_direction?: string | null;
   eligibilite_validee?: boolean;
   valeur_parts_transmises?: number | null;
+  // % (0-100) de la valeur des titres correspondant à des biens non affectés
+  // à l'activité, exclu de l'exonération (art. 787 B CGI, LF 2026).
+  part_biens_non_affectes?: number | null;
+  // Forme de l'engagement collectif (cf. lib/patrimoine/dutreil.ts).
+  type_engagement_collectif?: TypeEngagementCollectif | null;
   commentaire?: string | null;
 }
 
@@ -206,6 +212,16 @@ export const societeDutreilService = {
       .eq('eligibilite_validee', true);
     if (error) throw error;
     return (data || []).map(d => d.societe_id);
+  },
+  /** Part des biens non affectés à l'activité (%, NULL si non renseignée)
+   *  des sociétés au pacte validé — TransmissionContext.dutreilPartsNonAffectees. */
+  async getPartsBiensNonAffectes(): Promise<Record<string, number | null>> {
+    const { data, error } = await supabase
+      .from('societe_dutreil')
+      .select('societe_id, part_biens_non_affectes')
+      .eq('eligibilite_validee', true);
+    if (error) throw error;
+    return Object.fromEntries((data || []).map(d => [d.societe_id, d.part_biens_non_affectes]));
   },
   async get(societeId: string): Promise<SocieteDutreil | null> {
     const { data, error } = await supabase

@@ -172,6 +172,10 @@ export interface Liberalite {
   // réévaluation de l'indemnité de réduction (art. 924-2). Absente = `valeur`
   // (décès). Même unité que `valeur` (assiette pour un usufruit).
   valeurPartage?: number;
+  // Donation : part (0 à 1) de sa valeur portant sur des biens ruraux en
+  // régime agricole exonéré (art. 793 bis), d'après les biens donnés encore
+  // présents dans Patrimoine — imputée sur le seuil de 600 000 € du donataire.
+  partRuraleAgricole?: number;
 }
 
 export interface TransmissionParams {
@@ -227,6 +231,10 @@ export interface RawAssetInput {
   // Société dont ces titres sont les parts (assets.societe_id) — exonération
   // Dutreil de 75 % si la société figure dans TransmissionContext.societesDutreil.
   societe_id?: string | null;
+  // Biens ruraux, groupements fonciers, bois et forêts (cf. constants/assetTypes.ts::
+  // NATURES_RURALES) : exonération partielle de DMTG, art. 793 et 793 bis CGI.
+  regime_exoneration_rural?: string | null;
+  conditions_exoneration_rural?: boolean | null;
 }
 
 export type TypeQuotePart = "pleine_propriete" | "usufruit" | "nue_propriete";

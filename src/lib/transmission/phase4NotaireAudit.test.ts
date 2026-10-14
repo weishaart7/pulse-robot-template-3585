@@ -13,10 +13,12 @@ const compte = (valeur: number, extra: Partial<RawAssetInput> = {}): RawAssetInp
   ({ id: 'cpt', denomination: 'Compte', valeur_estimee: valeur, nature: 'Compte courant', qualification_bien: 'Bien propre', detenteur: 'user', ...extra });
 
 function run(family: FamilyGraph, rawAssets: RawAssetInput[], liberalites: Liberalite[] = [], societesDutreil: string[] = []) {
+  // Part des biens non affectés à l'activité (LF 2026) : 0 % par société.
+  const dutreilPartsNonAffectees = Object.fromEntries(societesDutreil.map(id => [id, 0]));
   const biens = rawAssets.reduce((s, a) => s + (a.valeur_estimee || 0), 0);
   return computeTransmission({
     family, patrimony: { date: REF, biensExistants: biens, passifs: 0 }, liberalites,
-    params: {} as any, referenceDate: REF, rawAssets, societesDutreil,
+    params: {} as any, referenceDate: REF, rawAssets, societesDutreil, dutreilPartsNonAffectees,
   });
 }
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import { societeDutreilService } from '@/services/societeExtendedService';
 import { Gift, Handshake, ArrowRightLeft, Building2, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { getPartSuccessorale, BienNonQualifieError } from '@/lib/patrimoine/succession';
+import { evaluerEligibiliteDutreil, TYPE_ENGAGEMENT_COLLECTIF_OPTIONS } from '@/lib/patrimoine/dutreil';
 
 // Barème DMTG ligne directe simplifié 2024
 const computeDMTG = (base: number, abattement = 100000) => {
@@ -32,6 +33,17 @@ export const SocietesTransmission: React.FC = () => {
   const societe = societes.find(s => s.id === societeId);
   const { dutreil, refetch } = useSocieteDutreil(societeId);
   const [draft, setDraft] = useState<any>(null);
+  // Activité éligible et seuils de détention : déclaratifs, confirmés par le
+  // conseiller — repris de eligibilite_validee à l'ouverture de la fiche.
+  const [confirmationActivite, setConfirmationActivite] = useState(false);
+  useEffect(() => {
+    setConfirmationActivite(!!dutreil?.eligibilite_validee);
+  }, [dutreil]);
+  // Brouillon propre à la société affichée : sans cette remise à zéro, la
+  // fiche d'une société restait affichée (et enregistrée) sur la suivante.
+  useEffect(() => {
+    setDraft(null);
+  }, [societeId]);
 
   // OBO state
   const [valeurOBO, setValeurOBO] = useState(1000000);
@@ -61,20 +73,18 @@ export const SocietesTransmission: React.FC = () => {
 
   const valeurParts = d.valeur_parts_transmises ?? societePart.valeur;
 
-  const eligibilite = useMemo(() => {
-    if (!d.engagement_collectif_date || !d.engagement_individuel_date) return null;
-    const ecYears = (Date.now() - new Date(d.engagement_collectif_date).getTime()) / (1000 * 60 * 60 * 24 * 365);
-    const eiYears = (Date.now() - new Date(d.engagement_individuel_date).getTime()) / (1000 * 60 * 60 * 24 * 365);
-    return {
-      collectif: ecYears >= 2,
-      individuel: eiYears >= 4,
-      fonction: !!d.fonction_direction,
-    };
-  }, [d]);
-
-  const eligible = eligibilite && eligibilite.collectif && eligibilite.individuel && eligibilite.fonction;
+  // Éligibilité au jour d'une transmission simulée aujourd'hui (art. 787 B
+  // CGI, cf. lib/patrimoine/dutreil.ts) — enregistrée dans eligibilite_validee,
+  // seul drapeau lu par le calcul de transmission.
+  const eligibilite = useMemo(
+    () => evaluerEligibiliteDutreil(d, new Date().toISOString().split('T')[0], confirmationActivite),
+    [d, confirmationActivite]
+  );
+  const eligible = eligibilite.eligible;
   const baseClassique = Number(valeurParts) || 0;
-  const baseDutreil = baseClassique * 0.25; // abattement 75%
+  // Abattement de 75 %, hors part des biens non affectés à l'activité (LF 2026).
+  const partNonAffectee = Math.min(100, Math.max(0, Number(d.part_biens_non_affectes) || 0)) / 100;
+  const baseDutreil = baseClassique * (1 - 0.75 * (1 - partNonAffectee));
   const dmtgClassique = computeDMTG(baseClassique);
   const dmtgDutreil = computeDMTG(baseDutreil);
   const economie = dmtgClassique - dmtgDutreil;
@@ -87,8 +97,8 @@ export const SocietesTransmission: React.FC = () => {
   const saveDutreil = async () => {
     if (!societeId) return;
     try {
-      await societeDutreilService.upsert({ societe_id: societeId, ...d });
-      toast.success('Pacte Dutreil enregistré');
+      await societeDutreilService.upsert({ societe_id: societeId, ...d, eligibilite_validee: eligible });
+      toast.success(eligible ? 'Pacte Dutreil enregistré — éligibilité validée' : 'Pacte Dutreil enregistré — éligibilité non validée');
       setDraft(null);
       refetch();
     } catch (e) { toast.error('Erreur'); if (import.meta.env.DEV) console.error(e); }
@@ -132,20 +142,54 @@ export const SocietesTransmission: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>Date engagement collectif (≥ 2 ans)</Label><Input type="date" value={d.engagement_collectif_date || ''} onChange={e => setDraft({ ...d, engagement_collectif_date: e.target.value })} /></div>
-                <div><Label>Date engagement individuel (≥ 4 ans)</Label><Input type="date" value={d.engagement_individuel_date || ''} onChange={e => setDraft({ ...d, engagement_individuel_date: e.target.value })} /></div>
+                <div>
+                  <Label>Engagement collectif de conservation</Label>
+                  <Select value={d.type_engagement_collectif || undefined} onValueChange={v => setDraft({ ...d, type_engagement_collectif: v })}>
+                    <SelectTrigger><SelectValue placeholder="Choisir la forme de l'engagement" /></SelectTrigger>
+                    <SelectContent>
+                      {TYPE_ENGAGEMENT_COLLECTIF_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {d.type_engagement_collectif === 'signe' && (
+                  <div><Label>Date de signature de l'engagement collectif</Label><Input type="date" value={d.engagement_collectif_date || ''} onChange={e => setDraft({ ...d, engagement_collectif_date: e.target.value })} /></div>
+                )}
+                <div>
+                  <Label>Date engagement individuel (si déjà pris)</Label>
+                  <Input type="date" value={d.engagement_individuel_date || ''} onChange={e => setDraft({ ...d, engagement_individuel_date: e.target.value })} />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Pris par chaque héritier ou donataire lors de la transmission, pour 6 ans (4 ans avant le 21/02/2026) : présumé.
+                  </p>
+                </div>
                 <div><Label>Fonction de direction exercée</Label><Input value={d.fonction_direction || ''} onChange={e => setDraft({ ...d, fonction_direction: e.target.value })} placeholder="Gérant, président..." /></div>
                 <div><Label>Valeur des parts transmises (€)</Label><Input type="number" value={d.valeur_parts_transmises ?? ''} onChange={e => setDraft({ ...d, valeur_parts_transmises: e.target.value ? Number(e.target.value) : null })} placeholder={String(societePart.valeur || 0)} /></div>
+                <div>
+                  <Label>Part de biens non affectés à l'activité (%)</Label>
+                  <Input type="number" min={0} max={100} step="0.1" value={d.part_biens_non_affectes ?? ''} onChange={e => setDraft({ ...d, part_biens_non_affectes: e.target.value === '' ? null : Math.min(100, Math.max(0, Number(e.target.value))) })} placeholder="0 si aucun" />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Véhicules de tourisme, yachts, objets d'art, logements… non affectés à l'activité depuis 3 ans : cette part de la valeur
+                    des titres n'est plus exonérée (art. 787 B CGI, depuis le 21/02/2026). Obligatoire pour le calcul de la succession.
+                  </p>
+                </div>
               </div>
 
-              {eligibilite && (
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">{eligibilite.collectif ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}Engagement collectif ≥ 2 ans</div>
-                  <div className="flex items-center gap-2">{eligibilite.individuel ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}Engagement individuel ≥ 4 ans</div>
-                  <div className="flex items-center gap-2">{eligibilite.fonction ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}Fonction de direction renseignée</div>
-                  <Badge variant={eligible ? 'default' : 'secondary'}>{eligible ? 'Éligibilité validée' : 'Éligibilité incomplète'}</Badge>
-                </div>
-              )}
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">{eligibilite.engagementCollectif ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}Engagement collectif en cours au jour de la transmission (signé, réputé acquis ou post mortem)</div>
+                <div className="flex items-center gap-2">{eligibilite.fonctionDirection ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}Fonction de direction renseignée</div>
+                <div className="flex items-center gap-2">{eligibilite.partBiensNonAffectes ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}Part de biens non affectés à l'activité renseignée</div>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <Checkbox checked={confirmationActivite} onCheckedChange={v => setConfirmationActivite(v === true)} className="mt-0.5" />
+                  <span>
+                    Je confirme que la société exerce une activité éligible (industrielle, commerciale, artisanale, agricole,
+                    libérale, ou holding animatrice) et que l'engagement collectif porte sur au moins 10 % des droits financiers
+                    et 20 % des droits de vote.
+                  </span>
+                </label>
+                <Badge variant={eligible ? 'default' : 'secondary'}>{eligible ? 'Éligibilité validée' : 'Éligibilité incomplète'}</Badge>
+                <p className="text-xs text-muted-foreground">
+                  Seule une éligibilité validée et enregistrée ouvre l'exonération de 75 % dans le calcul de la succession.
+                </p>
+              </div>
 
               <div className="grid grid-cols-3 gap-3 pt-3 border-t border-border/60">
                 <div className="p-3 rounded-[5px] bg-muted/40"><div className="text-xs text-muted-foreground">Donation classique</div><div className="text-lg font-semibold">{dmtgClassique.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</div></div>
