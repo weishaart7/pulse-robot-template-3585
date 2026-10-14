@@ -69,12 +69,14 @@ Surtitres techniques (étapes de wizard, en-têtes de section `SectionHeader`) :
     (→ `/`), bouton de repli (`SidebarSimple`) à droite. 9 modules en lignes de 36 px espacées de 4 px, icône
     18 px + libellé Inter 350 14 px tracking -0.01em en `sidebar-ink` (blanc et fond blanc 4 % au survol) ; module
     actif en pilule `sidebar-active` coins 6 px, texte blanc. Le sous-menu du module actif (`useModuleSubNav` :
-    Patrimoine, Immobilier, Sociétés, Budget, Retraite) s'affiche imbriqué sous sa ligne, via `TreeNav`
-    (`components/ui/tree-nav.tsx`, lignes de 32 px, Inter 13 px : rail vertical terminé par un point, repère
-    losange et fond 5 % qui glissent vers l'entrée survolée puis reviennent sur l'entrée active ; animations
-    coupées si `prefers-reduced-motion` ; `aria-current="page"`). Ses couleurs passent en clair grâce à la classe
+    Patrimoine, Immobilier, Sociétés, Budget, Retraite) s'affiche imbriqué sous sa ligne (texte aligné sur les libellés des modules), via `TreeNav` en variante
+    `thread` (`components/ui/tree-nav.tsx`, lignes de 32 px, Inter 13 px) : fil vertical 1 px gris sous l'icône du
+    module ; un segment blanc de 3 × 16 px glisse le long du fil vers l'entrée survolée puis revient sur l'entrée
+    active, en s'étirant selon sa vitesse (jusqu'à 44 px) avant de se recontracter ; l'entrée repérée passe en blanc,
+    les autres en gris ; animations coupées si
+    `prefers-reduced-motion` ; `aria-current="page"`. Ses couleurs passent en clair grâce à la classe
     `.sidebar-dark` (`index.css`), qui inverse localement `--foreground`, `--muted-foreground`, `--border`,
-    `--primary` et `--ring`. En bas : Blog, Nouveautés, Suggestion (lignes de 32 px, 13 px, icônes 16 px), puis carte profil
+    `--primary` et `--ring`. Le panneau mobile garde la variante `rail` (rail vertical, repère losange). En bas : Blog, Nouveautés, Suggestion (lignes de 32 px, 13 px, icônes 16 px), puis carte profil
     `sidebar-card` coins 6 px (pastille initiale 32 px, nom 14 px 400 — `full_name` des métadonnées, sinon
     début de l'e-mail —, e-mail 12 px `sidebar-muted`, `DotsThreeVertical`) qui ouvre `ProfileMenu` à droite.
   - **Repliée (64 px)** : rail d'icônes seules (logo, modules, liens du bas, profil), sous-menu masqué,

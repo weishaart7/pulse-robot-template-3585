@@ -1,5 +1,5 @@
 import * as React from "react";
-import { animate, motion, useMotionValue, useTransform } from "motion/react";
+import { animate, motion, useMotionValue, useTransform, useVelocity } from "motion/react";
 
 import { cn } from "@/lib/utils";
 import { usePrefersReducedMotion } from "@/components/ui/tree-nav-utils/use-typewriter";
@@ -27,6 +27,12 @@ export interface TreeNavProps {
   followHover?: boolean;
   /** Element used for links. Defaults to a plain anchor. */
   linkComponent?: LinkComponent;
+  /**
+   * rail : rail vertical + repère losange + fond léger (défaut).
+   * thread : fil vertical fin ; un court segment clair glisse le long du fil, s'étire pendant
+   *   le déplacement et se recontracte à l'arrivée.
+   */
+  variant?: "rail" | "thread";
   onSelect?: (
     item: TreeNavItem,
     event: React.MouseEvent<HTMLAnchorElement>,
@@ -42,6 +48,10 @@ const RAIL_X = 10;
 // Critically damped (no overshoot) with a ~0.3s response. Springs re-target from
 // the live value and carry velocity, so sweeping the pointer never stutters.
 const GLIDE = { type: "spring", visualDuration: 0.22, bounce: 0 } as const;
+// Variante fil : segment de 16 px, étiré selon la vitesse (jusqu'à +28 px).
+const THREAD_SEG = 16;
+const THREAD_STRETCH_MAX = 28;
+const THREAD_X = 1;
 const FADE = { duration: 0.12, ease: "easeOut" } as const;
 
 export function TreeNav({
@@ -49,6 +59,7 @@ export function TreeNav({
   activeHref,
   followHover = true,
   linkComponent: Link = "a",
+  variant = "rail",
   onSelect,
   className,
 }: TreeNavProps) {
@@ -65,6 +76,8 @@ export function TreeNav({
     activeRef.current = activeIndex;
   });
 
+  const isThread = variant === "thread";
+  const [hovered, setHovered] = React.useState<number | null>(null);
   const [end, setEnd] = React.useState(0);
   const [measured, setMeasured] = React.useState(false);
 
@@ -72,6 +85,11 @@ export function TreeNav({
   const visibility = useMotionValue(0);
   const pillY = useTransform(centerY, (v) => v - ROW_H / 2);
   const markerY = useTransform(centerY, (v) => v - MARKER / 2);
+  const velocity = useVelocity(centerY);
+  const segH = useTransform(velocity, (v) =>
+    THREAD_SEG + Math.min(THREAD_STRETCH_MAX, Math.abs(v) * 0.08),
+  );
+  const segY = useTransform([centerY, segH], ([c, h]: number[]) => c - h / 2);
   const accentScale = useTransform(centerY, (v) =>
     end > 0 ? Math.min(1, v / end) : 0,
   );
@@ -117,20 +135,32 @@ export function TreeNav({
   const enter = (index: number) => {
     if (!followHover) return;
     hoveredRef.current = index;
+    setHovered(index);
     moveTo(index);
   };
   const leave = () => {
     if (!followHover) return;
     hoveredRef.current = null;
+    setHovered(null);
     moveTo(activeRef.current);
   };
 
   return (
     <ul
       ref={listRef}
-      className={cn("relative flex flex-col gap-0.5 ps-6", className)}
+      className={cn("relative flex flex-col gap-0.5", isThread ? "ps-2" : "ps-6", className)}
       onPointerLeave={leave}
     >
+      {isThread && (
+        <span aria-hidden className="pointer-events-none absolute inset-y-0 start-0 w-[3px]">
+          <span className="absolute inset-y-0 w-px bg-border" style={{ insetInlineStart: THREAD_X }} />
+          <motion.span
+            className="absolute top-0 w-[3px] rounded-full bg-foreground will-change-transform"
+            style={{ insetInlineStart: THREAD_X - 1, height: segH, y: segY, opacity: visibility }}
+          />
+        </span>
+      )}
+      {!isThread && (
       <span aria-hidden className="pointer-events-none absolute inset-y-0 start-0 w-5">
         <span
           className="absolute top-0 w-px bg-border"
@@ -161,15 +191,20 @@ export function TreeNav({
           }}
         />
       </span>
+      )}
 
+      {!isThread && (
       <motion.span
         aria-hidden
         className="pointer-events-none absolute end-0 start-6 top-0 rounded-lg bg-foreground/[0.05] will-change-transform"
         style={{ height: ROW_H, y: pillY, opacity: visibility }}
       />
+      )}
 
       {items.map((item, index) => {
         const isActive = index === activeIndex;
+        // En fil, l'entrée repérée (survolée, sinon active) passe en encre.
+        const isLit = isThread && (hovered === null ? isActive : index === hovered);
         return (
           <li
             key={item.href}
@@ -189,10 +224,12 @@ export function TreeNav({
               onBlur={leave}
               className={cn(
                 "flex h-8 items-center gap-2 rounded-lg px-3 text-[13px] leading-5 antialiased outline-none transition-colors duration-150 ease-out",
-                isActive && !measured && "bg-foreground/[0.05]",
-                isActive
-                  ? "font-medium text-foreground"
-                  : "font-normal text-muted-foreground hover:text-foreground",
+                isActive && !measured && !isThread && "bg-foreground/[0.05]",
+                isThread
+                  ? cn(isActive && "font-medium", isLit ? "text-foreground" : "text-muted-foreground")
+                  : isActive
+                    ? "font-medium text-foreground"
+                    : "font-normal text-muted-foreground hover:text-foreground",
               )}
             >
               <span className="truncate">{item.label}</span>

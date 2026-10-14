@@ -30,13 +30,14 @@ function readStoredOpen(): boolean {
 
 // Sous-menu en arbre (TreeNav) : rail vertical, repère losange et fond qui
 // suivent le survol puis reviennent sur l'entrée active.
-function SubNavTree({ onItemClick }: { onItemClick?: () => void }) {
+function SubNavTree({ onItemClick, variant = 'rail' }: { onItemClick?: () => void; variant?: 'rail' | 'thread' }) {
   const { items, activeId, onSelect } = useSubNav();
   return (
     <nav>
       <TreeNav
         items={items.map(item => ({ label: item.label, href: `#${item.id}` }))}
         activeHref={`#${activeId}`}
+        variant={variant}
         onSelect={(item, event) => {
           event.preventDefault();
           onSelect(item.href.slice(1));
@@ -248,8 +249,8 @@ export function DashboardSidebar() {
                 </button>
               </RailTooltip>
               {open && active && subNavItems.length > 0 && (
-                <div className="pl-4 pt-1.5 pb-1">
-                  <SubNavTree />
+                <div className="pl-[21px] pt-1 pb-1">
+                  <SubNavTree variant="thread" />
                 </div>
               )}
             </div>
