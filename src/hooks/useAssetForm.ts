@@ -41,7 +41,6 @@ export interface MaritalContext {
   datePacs?: string;
   societeAcquetsAssetIds?: string[];
   societeAcquetsResidencePrincipale?: boolean;
-  extensionProprsParNature?: boolean;
 }
 
 export interface FamilyMember {
@@ -115,7 +114,6 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
           datePacs: maritalStatus?.date_pacs,
           societeAcquetsAssetIds: societeAcquets?.selectedAssets,
           societeAcquetsResidencePrincipale: societeAcquets?.options?.residencePrincipale,
-          extensionProprsParNature: clausesContrat?.extension_propres_par_nature?.enabled,
         });
       } catch (error) {
         if (import.meta.env.DEV) console.error('Erreur lors du chargement des données familiales:', error);
@@ -269,7 +267,6 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         societeAcquetsAssetIds: maritalContext.societeAcquetsAssetIds,
         societeAcquetsResidencePrincipale: maritalContext.societeAcquetsResidencePrincipale,
         estPropreParNature: value.est_propre_par_nature,
-        extensionProprsParNature: maritalContext.extensionProprsParNature,
         valeurAcquisition: value.valeur_acquisition,
         fraisAcquisition: value.frais_acquisition,
         apportFondsPropres: value.financement_mixte_apport_propre,

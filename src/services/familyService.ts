@@ -88,7 +88,7 @@ export interface MaritalStatus {
   donation_dernier_vivant_conjoint?: boolean;
   date_donation_personne?: string;
   date_donation_conjoint?: string;
-  /** Réservé aux clés société_acquets/extension_propres_par_nature (qualification de bien, cf. lib/patrimoine/qualification.ts) — le catalogue de clauses de régime a été retiré en V1. */
+  /** Réservé à la clé societe_acquets (qualification de bien, cf. lib/patrimoine/qualification.ts) — le catalogue de clauses de régime a été retiré en V1. */
   clauses_contrat?: any;
   // Le droit de partage (2,5% de l'actif net partagé, art. 746 CGI) n'est dû que
   // si un partage est effectivement envisagé entre les héritiers — jamais présumé

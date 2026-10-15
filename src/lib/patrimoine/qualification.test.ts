@@ -30,16 +30,10 @@ describe('qualifierBien — biens propres par nature (art. 1404)', () => {
     estPropreParNature: true,
   };
 
-  it('instrument de travail nécessaire à la profession : propre même sous communauté universelle, sans clause d\'extension', () => {
+  it('instrument de travail nécessaire à la profession : propre même sous communauté universelle', () => {
     const result = qualifierBien(base);
 
     expect(result.qualification).toBe('Bien propre');
-  });
-
-  it('avec la clause d\'extension de la communauté aux biens propres par nature (art. 1526) : commun', () => {
-    const result = qualifierBien({ ...base, extensionProprsParNature: true });
-
-    expect(result.qualification).toBe('Bien commun');
   });
 });
 
@@ -269,7 +263,7 @@ describe('qualifierBien — exclusions art. 515-5-2 sous PACS-indivision', () =>
 });
 
 describe('qualifierBien — regime_matrimonial périmé après un changement de statut (Option A, non effacé en base)', () => {
-  it('statut Pacsé(e) avec un regime_matrimonial resté en base d\'un mariage précédent : ignoré, ne bascule pas en "Bien commun" via la clause d\'extension propre au mariage', () => {
+  it('statut Pacsé(e) avec un regime_matrimonial resté en base d\'un mariage précédent : ignoré, reste propre', () => {
     const result = qualifierBien({
       statutCouple: 'Pacsé(e)',
       regimeMatrimonial: 'Communauté universelle',
@@ -278,7 +272,6 @@ describe('qualifierBien — regime_matrimonial périmé après un changement de 
       origineActif: ['Achat'],
       detenteur: 'user',
       estPropreParNature: true,
-      extensionProprsParNature: true,
     });
 
     expect(result.qualification).toBe('Bien propre');

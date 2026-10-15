@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useMaritalStatus } from '@/hooks/useFamilyData';
-import { RegimeType, getSimplifiedRegime } from '@/types/matrimonial';
+import { RegimeType } from '@/types/matrimonial';
 import { AssetSelectionModal } from './AssetSelectionModal';
 
 interface QualificationRegimeOptionsProps {
@@ -18,11 +18,8 @@ interface QualificationRegimeOptionsProps {
  * - Séparation de biens avec société d'acquêts : sans la liste des biens
  *   désignés dans la société d'acquêts, ce régime ne peut plus jamais
  *   qualifier un bien comme commun.
- * - Régime communautaire : l'extension de la communauté aux biens propres par
- *   nature (art. 1404/1526) fait tomber ces biens en commun.
- * Stockées dans `marital_status.clauses_contrat.societe_acquets` /
- * `.extension_propres_par_nature`, mêmes clés qu'avant le retrait des
- * clauses — seule l'UI de saisie a changé.
+ * Stockées dans `marital_status.clauses_contrat.societe_acquets`, même clé
+ * qu'avant le retrait des clauses — seule l'UI de saisie a changé.
  */
 export const QualificationRegimeOptions: React.FC<QualificationRegimeOptionsProps> = ({ regimeType }) => {
   const { data: maritalData, saveData } = useMaritalStatus();
@@ -31,9 +28,6 @@ export const QualificationRegimeOptions: React.FC<QualificationRegimeOptionsProp
   const clausesContrat = (maritalData as any)?.clauses_contrat || {};
   const societeAcquets = clausesContrat.societe_acquets as
     | { enabled?: boolean; selectedAssets?: string[]; options?: { residencePrincipale?: boolean } }
-    | undefined;
-  const extensionProprsParNature = clausesContrat.extension_propres_par_nature as
-    | { enabled?: boolean }
     | undefined;
 
   const persist = (patch: Record<string, unknown>) =>
@@ -93,23 +87,6 @@ export const QualificationRegimeOptions: React.FC<QualificationRegimeOptionsProp
           }
           preSelectedAssets={selectedAssets}
         />
-      </div>
-    );
-  }
-
-  if (getSimplifiedRegime(regimeType) === 'communauté') {
-    return (
-      <div className="flex items-center h-9 space-x-3">
-        <Checkbox
-          id="extension_propres_par_nature"
-          checked={extensionProprsParNature?.enabled || false}
-          onCheckedChange={(checked) =>
-            persist({ extension_propres_par_nature: { enabled: !!checked } })
-          }
-        />
-        <Label htmlFor="extension_propres_par_nature" className="text-sm cursor-pointer">
-          Étendre la communauté aux biens propres par nature (art. 1404, 1526)
-        </Label>
       </div>
     );
   }

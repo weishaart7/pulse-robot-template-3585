@@ -16,7 +16,7 @@
  *   stipulation expresse d'entrée en communauté actée sur une donation ou une
  *   succession → commun (art. 1405 al. 2) ; vaut aussi sous communauté
  *   universelle, où c'est la seule exception restante hors "propres par
- *   nature" (art. 1404, cf. clause d'extension)
+ *   nature" (art. 1404)
  * - Régime de séparation de biens → toujours bien propre
  * - Régime de séparation de biens avec société d'acquêts (3 masses : propre
  *   époux A / société d'acquêts commune / propre époux B) → bien commun si
@@ -69,8 +69,6 @@ export interface QualificationContext {
   societeAcquetsResidencePrincipale?: boolean;
   /** Bien propre par nature (art. 1404 : vêtements, actions en réparation d'un dommage corporel/moral, créances et pensions incessibles, instruments de travail nécessaires à la profession), saisi manuellement sur l'actif. */
   estPropreParNature?: boolean;
-  /** Clause d'extension de la communauté aux biens propres par nature (art. 1526), lue depuis clauses_contrat.extension_propres_par_nature?.enabled. */
-  extensionProprsParNature?: boolean;
   /** Prix total d'acquisition (financement mixte, art. 1436), pour le comparer à apportFondsPropres. */
   valeurAcquisition?: number;
   /** Frais d'acquisition (financement mixte, art. 1436) : à inclure dans le coût total comparé à apportFondsPropres (Cass. 1re civ., 7 oct. 2018, n°17-25965). */
@@ -207,7 +205,6 @@ export const qualifierBien = (ctx: QualificationContext): {
     clauseRemploi,
     natureActif,
     estPropreParNature,
-    extensionProprsParNature,
     valeurAcquisition,
     fraisAcquisition,
     apportFondsPropres,
@@ -253,24 +250,14 @@ export const qualifierBien = (ctx: QualificationContext): {
   const pacsIndivision = isPacsIndivision(statutCouple, conventionPacs, datePacs);
 
   // Bien propre par nature (art. 1404) → prioritaire sur tout le reste dans
-  // les régimes communautaires, y compris universelle, sauf clause
-  // d'extension de la communauté aux biens propres par nature (art. 1526),
-  // qui les fait alors tomber en commun (lecture littérale de l'art. 1526 :
-  // "ne tombent point dans cette communauté", sauf stipulation contraire).
-  // Sous PACS-indivision, même logique par analogie (art. 515-5-2, biens à
-  // caractère personnel) mais sans notion de clause d'extension, propre au
-  // contrat de mariage, sans équivalent PACS.
+  // les régimes communautaires, y compris universelle (art. 1526 : "ne
+  // tombent point dans cette communauté"). Sous PACS-indivision, même logique
+  // par analogie (art. 515-5-2, biens à caractère personnel).
   if (estPropreParNature && (isRegimeCommunautaire(regimeMatrimonial) || pacsIndivision)) {
     if (isRegimeCommunautaire(regimeMatrimonial)) {
-      if (extensionProprsParNature) {
-        return {
-          qualification: 'Bien commun',
-          raison: 'Bien propre par nature (art. 1404), mais la clause d\'extension de la communauté aux biens propres par nature (art. 1526) le fait tomber en commun.',
-        };
-      }
       return {
         qualification: 'Bien propre',
-        raison: 'Bien propre par nature (art. 1404) : reste propre même en communauté, y compris universelle, sauf clause d\'extension.',
+        raison: 'Bien propre par nature (art. 1404) : reste propre même en communauté, y compris universelle.',
       };
     }
     return {

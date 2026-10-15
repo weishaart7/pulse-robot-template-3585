@@ -228,7 +228,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
               <div className="space-y-1 leading-none">
                 <FormLabel>Bien propre par nature (art. 1404)</FormLabel>
                 <FieldHelp>
-                  Vêtements, actions en réparation d'un dommage corporel ou moral, créances et pensions incessibles, instruments de travail nécessaires à la profession : reste propre même en communauté (y compris universelle), sauf clause d'extension de la communauté aux biens propres par nature.
+                  Vêtements, actions en réparation d'un dommage corporel ou moral, créances et pensions incessibles, instruments de travail nécessaires à la profession : reste propre même en communauté (y compris universelle).
                 </FieldHelp>
               </div>
             </FormItem>
