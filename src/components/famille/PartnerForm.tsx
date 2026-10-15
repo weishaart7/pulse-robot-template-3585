@@ -6,8 +6,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMaritalStatus } from "@/hooks/useFamilyData";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import ActionHubInput from "@/components/ui/action-hub-input";
@@ -20,6 +18,7 @@ import { SmartDateInput } from "@/components/family/SmartDateInput";
 import { CheckboxWithLabel } from "@/components/family/CheckboxWithLabel";
 import { SectionHeader } from "@/components/family/SectionHeader";
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { WorkspaceHeader } from "@/components/layout/workspace-panel";
 
 const formSchema = z.object({
   statutCouple: z.enum(['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)', 'Divorcé(e)', 'Veuf/Veuve']).optional(),
@@ -69,7 +68,14 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
+interface PartnerFormProps {
+  onSuccess?: () => void;
+  onBack?: () => void;
+  title: string;
+  summary?: string;
+}
+
+export function PartnerForm({ onSuccess, onBack, title, summary }: PartnerFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -157,64 +163,82 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="rounded-3xl border border-border bg-card p-8 space-y-10">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="workspace-panel -mx-4 -mt-3 md:-m-6">
+        <WorkspaceHeader
+          icon={<User strokeWidth={1.75} />}
+          trail={['Famille', 'Foyer', 'Conjoint']}
+          actions={
+            <>
+              {onBack && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="inline-flex h-8 items-center rounded-[2px] border border-border px-3 text-[12.5px] font-medium text-foreground transition-colors hover:bg-secondary"
+                >
+                  Retour
+                </button>
+              )}
+              <Button type="submit" disabled={saving} size="sm" className="h-8 rounded-[2px] bg-foreground px-3.5 text-[12.5px] text-background hover:opacity-90">
+                {saving ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enregistrement...</>) : 'Enregistrer'}
+              </Button>
+            </>
+          }
+        />
+
+        <div className="px-8 pt-6 pb-4">
+          <h1 className="text-[24px] font-medium leading-tight tracking-[-0.02em]">{title}</h1>
+          {summary && <p className="mt-1 text-[12.5px] text-muted-foreground">{summary}</p>}
+        </div>
+
+        <div className="divide-y divide-border border-t border-border">
             {/* Statut & Identité */}
-            <div>
+            <div className="px-8 py-6">
               <SectionHeader icon={User} title="Identité" />
 
               {!showPartnerFields && (
-                <div className="flex items-start gap-3 rounded-md border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
+                <div className="flex items-start gap-3 text-[13px] text-muted-foreground">
                   <Info className="h-4 w-4 mt-0.5 shrink-0" />
                   <div className="space-y-3">
                     <p>
                       Le statut matrimonial n'est pas encore renseigné. Rendez-vous sur la fiche personnelle
-                      (onglet « Ma famille ») pour définir un statut de couple (Concubinage, Pacsé(e) ou Marié(e))
+                      (page Foyer) pour définir un statut de couple (Concubinage, Pacsé(e) ou Marié(e))
                       avant de saisir les informations du partenaire.
                     </p>
                     <Button type="button" variant="outline" size="sm" onClick={() => navigate('/dashboard/famille')}>
-                      Aller à la fiche personnelle
+                      Aller au Foyer
                     </Button>
                   </div>
                 </div>
               )}
 
               {showPartnerFields && (
-                <div className="rounded-lg bg-secondary p-5 space-y-5">
+                <div className="space-y-5">
                   <FormField
                     control={form.control}
                     name="civilitePartenaire"
                     render={({ field }) => (
-                      <FormItem className="space-y-2 mb-5">
+                      <FormItem className="flex flex-col items-start gap-3 space-y-0">
                         <FormLabel>
                           Civilité <span className="text-destructive">*</span>
                         </FormLabel>
                         <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            value={field.value}
-                            className="flex flex-row gap-4"
-                          >
-                            {[
-                              { value: 'M.', label: 'M.' },
-                              { value: 'Mme', label: 'Mme' },
-                              { value: 'Mlle', label: 'Mlle' },
-                              { value: 'Autre', label: 'Autre' },
-                            ].map((option) => (
-                              <label
-                                key={option.value}
+                          <div role="radiogroup" className="inline-grid grid-cols-4 gap-[3px] rounded-[5px] border border-border bg-muted/40 p-[3px]">
+                            {['M.', 'Mme', 'Mlle', 'Autre'].map((option) => (
+                              <button
+                                key={option}
+                                type="button"
+                                role="radio"
+                                aria-checked={field.value === option}
+                                onClick={() => field.onChange(option)}
                                 className={cn(
-                                  "flex items-center gap-2 px-4 py-2.5 rounded-md border cursor-pointer transition-all duration-200",
-                                  field.value === option.value
-                                    ? "border-foreground bg-foreground/5 text-foreground"
-                                    : "border-border hover:border-primary/40 hover:bg-muted/50"
+                                  "h-8 rounded-[2px] border px-4 text-[12.5px] transition-colors",
+                                  field.value === option ? "border-foreground bg-foreground text-background" : "border-transparent text-muted-foreground hover:text-foreground"
                                 )}
                               >
-                                <RadioGroupItem value={option.value} id={`civ-p-${option.value}`} />
-                                <span className="text-sm font-medium">{option.label}</span>
-                              </label>
+                                {option}
+                              </button>
                             ))}
-                          </RadioGroup>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -309,13 +333,11 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
 
             {showPartnerFields && (
               <>
-                <Separator />
-
                 {/* Profession & Naissance */}
-                <div>
+                <div className="px-8 py-6">
                   <SectionHeader icon={Briefcase} title="Profession & Naissance" />
 
-                  <div className="rounded-lg bg-secondary p-5 space-y-5">
+                  <div className="space-y-5">
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <FormField
@@ -393,13 +415,11 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                   </div>
                 </div>
 
-                <Separator />
-
                 {/* Situation juridique */}
-                <div>
+                <div className="px-8 py-6">
                   <SectionHeader icon={ShieldCheck} title="Situation juridique" />
 
-                  <div className="rounded-lg bg-secondary p-5">
+                  <div>
 
                   <div className="flex flex-wrap items-end gap-6">
                     <FormField
@@ -411,7 +431,7 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
                             <FormLabel>Capacité juridique</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
-                                <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
+                                <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md">
                                   <SelectValue placeholder="Sélectionner la capacité juridique" />
                                 </SelectTrigger>
                               </FormControl>
@@ -482,25 +502,6 @@ export function PartnerForm({ onSuccess }: { onSuccess?: () => void } = {}) {
             )}
           </div>
 
-        {/* Bouton Enregistrer */}
-        <div className="flex justify-end">
-          <Button
-            type="submit"
-            disabled={saving}
-            size="lg"
-            className="bg-foreground min-w-[160px] text-background hover:opacity-90"
-            
-          >
-            {saving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Enregistrement...
-              </>
-            ) : (
-              'Enregistrer'
-            )}
-          </Button>
-        </div>
       </form>
     </Form>
   );
