@@ -18,7 +18,7 @@ lequel reposent tous les calculs montrés au client.
 
 | Sous-section (panneau) | Route | Composant |
 |---|---|---|
-| Foyer | `/dashboard/famille` | [FamilleSection.tsx](../src/pages/famille/FamilleSection.tsx) (bandeau Foyer + arbre, via [LiensFamiliauxForm.tsx](../src/pages/famille/components/LiensFamiliauxForm.tsx) `view="arbre"`) |
+| Foyer | `/dashboard/famille` | [FamilleSection.tsx](../src/pages/famille/FamilleSection.tsx) (panneau : bandeau couple / statut / composition + arbre, via [LiensFamiliauxForm.tsx](../src/pages/famille/components/LiensFamiliauxForm.tsx) `view="arbre"`) |
 | ↳ Fiche client (Foyer actif) | `/dashboard/famille/client` | [ClientPage.tsx](../src/pages/famille/ClientPage.tsx) → [FicheClientForm.tsx](../src/pages/famille/components/FicheClientForm.tsx) |
 | ↳ Conjoint (Foyer actif) | `/dashboard/famille/conjoint` | [ConjointPage.tsx](../src/pages/famille/ConjointPage.tsx) → [PartnerForm.tsx](../src/components/famille/PartnerForm.tsx) |
 | Régime matrimonial (5 onglets) | `/dashboard/famille/situation-matrimoniale` | [SituationMatrimonialePage.tsx](../src/pages/famille/SituationMatrimonialePage.tsx) → [RelationInfoForm.tsx](../src/components/famille/RelationInfoForm.tsx) |
@@ -33,11 +33,14 @@ permet de l'alimenter (voir §3).
 **Flux clés** :
 - **Foyer** est un tableau de bord en lecture seule (dérivé de `family_profiles` /
   `marital_status` / `family_links`) doté d'un menu déroulant Statut (6 valeurs) toujours
-  modifiable, y compris en couple. La page Foyer compte deux blocs : un bandeau « Foyer »
-  compact (cartes client et conjoint — surtitre, nom, naissance · âge · profession, chevron — qui
-  ouvrent leur fiche, et carte Statut ; sans partenaire, la carte client s'élargit ; le détail du régime
-  n'y est plus répété, il vit dans la sous-section Régime matrimonial) et l'arbre familial, avec un lien « Ajouter / Gérer les membres »
-  vers la sous-section Membres. La liste des membres (une carte par branche — descendants, ascendants, collatéraux, alliés, autres — via `lib/family/groupesMembres.ts`, disposées côte à côte en colonnes sur écran large ; ligne cliquable pour modifier ; seul point d'entrée « Ajouter un membre »,
+  modifiable, y compris en couple. La page Foyer est un panneau de travail unique (même modèle que Régime
+  matrimonial) : barre d'en-tête (fil d'Ariane « Famille / Foyer » + bouton « Ajouter / Gérer les membres »
+  vers la sous-section Membres), titre « Foyer » et rappel « statut · N membres », puis un bandeau en colonnes
+  filetées — Client, Conjoint(e)/Partenaire (si en couple) en lignes libellé / valeur (nom, naissance, âge,
+  profession) avec un lien « Voir la fiche », et une colonne Statut du couple (menu déroulant) + Composition
+  (nombre de membres par branche, via `grouperMembres`) — et enfin l'arbre familial pleine largeur (l'arbre
+  demande ~960 px, d'où le bandeau plutôt qu'un panneau latéral). Plus de photo de profil ; le détail du
+  régime n'y est pas répété, il vit dans la sous-section Régime matrimonial. La liste des membres (une carte par branche — descendants, ascendants, collatéraux, alliés, autres — via `lib/family/groupesMembres.ts`, disposées côte à côte en colonnes sur écran large ; ligne cliquable pour modifier ; seul point d'entrée « Ajouter un membre »,
   état vide explicatif sans membre) vit dans la sous-section Membres. Les personnes décédées sont estompées
   (carte détourée d'un filet, « † année ») dans l'arbre et grisées dans le tableau. Quitter un statut en
   couple (vers Célibataire, Divorcé(e), Veuf/Veuve) passe par une confirmation qui liste les enfants
@@ -46,7 +49,7 @@ permet de l'alimenter (voir §3).
 - **Fiche client** et **Conjoint** saisissent l'identité civile de chaque membre du couple, dont
   une bonne partie de champs déclaratifs (adresse, nationalité…) qui restent aujourd'hui dormants
   (§3).
-- **Régime matrimonial** (titre + rappel « statut depuis année · régime ») structure 5 onglets (`SegmentedTabs`, barre « Enregistrer » collante en bas de page) visibles seulement si `statut_couple === 'Marié(e)'`
+- **Régime matrimonial** (titre + rappel « statut depuis année · régime ») structure 5 onglets (`GooeyNav`) dans un panneau de travail unique inspiré de la maquette de référence : barre d'en-tête (fil d'Ariane « Famille / … » + bouton « Enregistrer » noir), colonne principale (titre, rappel, onglets, sections séparées par des filets) et, pour Marié(e) / Pacsé(e), un panneau « Synthèse » à droite (≥ `lg`) qui relit en direct les valeurs du formulaire en lignes libellé / valeur (statut, mariage, lieu, régime, contrat et situation en étiquettes, donations au dernier vivant, mariages précédents ; pour le PACS : date, convention, résidence) — affichage seul, aucun calcul visibles seulement si `statut_couple === 'Marié(e)'`
   (vues distinctes pour Pacsé(e)/Concubinage) : régime légal (avec, sous les régimes concernés, la
   désignation des biens de la société d'acquêts et l'extension aux propres par nature — voir §2),
   récompenses/créances, participation aux acquêts, donation au dernier vivant, historique. Le

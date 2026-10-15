@@ -51,13 +51,13 @@ export function PatrimoineFinalSection() {
   const describe = (l: PatrimoineFinal) => `${l.nature} (${l.epoux === 'user' ? 'vous' : 'conjoint'})`;
 
   return (
-    <div className="rounded-3xl border border-border bg-card p-8">
+    <div className="px-6 py-6">
       <SectionHeader icon={Flag} title="Patrimoine final" />
       <p className="text-xs text-muted-foreground -mt-4 mb-5">
         Ce que chaque époux possède au jour de la dissolution du régime (art. 1571 C. civ.).
       </p>
 
-      <div className="rounded-lg bg-secondary p-5">
+      <div>
 
       {lignes.length > 0 && (
         <div className="space-y-3 mb-5">

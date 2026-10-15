@@ -94,8 +94,26 @@ Surtitres techniques (étapes de wizard, en-têtes de section `SectionHeader`) :
 ## 6. Formulaires (Actifs, Famille)
 
 Plus de scope dédié : les formulaires suivent les tokens de `:root`.
-- Cadre `ActifFormFrame` et cartes des formulaires Famille / régime
-  matrimonial : `rounded-3xl` (ramené à 8 px dans le dashboard), filet `border-border`, fond `bg-card`, sans halo.
+- Panneaux de travail (Foyer, Régime matrimonial) : briques communes dans `components/layout/workspace-panel.tsx`
+  (`WorkspaceHeader` fil d'Ariane + actions, `PanelTitle`, `SummaryRow`, `Chip`, `PanelDivider`) et classe
+  `.workspace-panel` pour la lisibilité. Foyer : bandeau en colonnes `divide-x` (Client, Conjoint, Statut +
+  Composition en chiffres 22 px), arbre pleine largeur dessous ; bouton « Gérer les membres » à contour et menu
+  Statut du couple à angles quasi droits (2 px).
+- Régime matrimonial (`RelationInfoForm`, `components/famille/matrimonial/*Section`) : panneau unique `rounded-card`
+  filet, barre d'en-tête 56 px (fil d'Ariane 13 px, bouton noir coins 6 px), grille `1fr | 320px` séparée par un filet
+  vertical ; sections `px-6 py-6` séparées par `divide-y` ; titres de section en sans 15 px 500 (`SectionHeader`,
+  sans icône — aussi dans Fiche client / Conjoint) ; panneau « Synthèse » en lignes libellé (smoke, colonne 112 px) /
+  valeur (encre) 13 px, étiquettes taupe coins 6 px.
+  Lisibilité renforcée sur tout le panneau via la classe `.workspace-panel` (`index.css`) : texte secondaire
+  `#5d5852` au lieu du smoke, filets `#dcd7d0`, bordure des champs plus marquée, `text-xs` relevé à 13 px et
+  `text-sm` à 14 px, libellés de champs homogènes (13 px 500 encre), saisie en 14 px ; synthèse en 14 px,
+  étiquettes sur fond pierre `#e9e5e0` 13 px.
+  Navigation entre onglets : `GooeyNav` (`components/ui/gooey-nav.tsx`, adapté de rare-ui « gooey-nav » sans
+  Next.js) — barre pierre `#e9e5e0` d'où l'onglet actif (fond encre, texte eggshell) se détache de 12 px avec
+  un « col » visqueux qui s'étire puis se rompt (ressort amorti), coins 6 px, Inter 500 14 px, inactifs en graphite
+  `#44403b` (encre au survol) ;
+  `role="tablist"`, transition coupée si `prefers-reduced-motion`.
+- Cadre `ActifFormFrame` et cartes des formulaires Famille : `rounded-3xl` (ramené à 8 px dans le dashboard), filet `border-border`, fond `bg-card`, sans halo.
 - Blocs de champs internes : `bg-secondary` (taupe), coins 14 px.
 - Champs `bg-muted` au focus ou ouverts : bordure encre, fond eggshell (règle globale dans
   `index.css`).

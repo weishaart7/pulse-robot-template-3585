@@ -168,6 +168,20 @@
 .dashboard-shell .rounded-\[22px\] {
   border-radius: 8px;
 }
+/* Panneaux de travail (Foyer, Régime matrimonial) : contraste et lisibilité renforcés
+   (texte secondaire plus foncé, filets plus marqués, petites tailles relevées,
+   libellés de champs homogènes). */
+.workspace-panel {
+  --muted-foreground: 30 5% 34%;   /* #5d5852, au lieu du smoke #777169 */
+  --border: 34 12% 85%;            /* #dcd7d0, filets plus visibles */
+  --input: 33 12% 78%;
+}
+.workspace-panel .text-xs { font-size: 0.8125rem; line-height: 1.15rem; }   /* 13 px */
+.workspace-panel .text-sm { font-size: 0.875rem; line-height: 1.25rem; }    /* 14 px */
+.workspace-panel label { font-size: 0.8125rem; font-weight: 500; color: hsl(var(--foreground)); }
+.workspace-panel input,
+.workspace-panel button[role="combobox"] { font-size: 0.875rem; }
+
 /* Titres de page : Inter 300, tracking serré — la graisse fine porte
    l'autorité (référence ElevenLabs). Spécificité supérieure aux utilitaires
    font-* posés sur les h1 existants. */
@@ -433,4 +447,12 @@
   --border: 0 0% 24%;
   --primary: 0 0% 100%;
   --ring: 0 0% 100%;
+}
+
+/* `outline-hidden` est une classe Tailwind v4, absente de la v3 utilisée ici : sans cette
+   définition, les composants qui s'y fient (options de Select, menus…) gardaient le contour
+   de focus par défaut du navigateur. Même sémantique qu'en v4. */
+.outline-hidden {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
 }

@@ -89,18 +89,8 @@ export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
     return <LoadingSpinner text="Chargement des données..." />;
   }
   return <div className="space-y-6">
-      {view === 'arbre' && <div className="rounded-3xl border border-border bg-card p-4 md:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
-          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-            Arbre familial
-          </p>
-          <button
-            onClick={() => navigate('/dashboard/famille/membres')}
-            className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
-          >
-            {familyLinks.length === 0 ? 'Ajouter des membres' : 'Gérer les membres'}
-          </button>
-        </div>
+      {/* Arbre seul : le cadre, le titre et l'accès aux membres sont portés par la page Foyer. */}
+      {view === 'arbre' && <div>
         <FamilyTreeCards
           familyProfile={familyProfile}
           maritalStatus={maritalStatus}

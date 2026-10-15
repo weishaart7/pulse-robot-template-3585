@@ -139,13 +139,13 @@ export function RecompensesSection() {
   };
 
   return (
-    <div className="rounded-3xl border border-border bg-card p-8">
+    <div className="px-6 py-6">
       <SectionHeader icon={Scale} title="Récompenses" />
       <p className="text-xs text-muted-foreground -mt-4 mb-5">
         Mouvements de valeur entre un patrimoine propre et la masse commune (art. 1468 à 1478 C. civ.), à régler à la liquidation.
       </p>
 
-      <div className="rounded-lg bg-secondary p-5">
+      <div>
 
       {recompenses.length > 0 && (
         <div className="space-y-3 mb-5">

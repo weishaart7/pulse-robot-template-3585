@@ -25,17 +25,8 @@ export default function SituationMatrimonialePage() {
   ].filter(Boolean).join(' · ');
 
   return (
-    <div>
-      <div className="w-full mx-auto px-4 sm:px-6 pt-8 pb-4">
-        <h1 className="ds-display text-3xl sm:text-4xl leading-tight">
-          {title}
-        </h1>
-        {summary && <p className="text-sm text-muted-foreground mt-1">{summary}</p>}
-      </div>
-
-      <div className="w-full mx-auto px-4 sm:px-6 pb-12 space-y-6">
-        <RelationInfoForm relationStatus={relationStatus} />
-      </div>
+    <div className="pb-6">
+      <RelationInfoForm relationStatus={relationStatus} title={title} summary={summary} />
     </div>
   );
 }

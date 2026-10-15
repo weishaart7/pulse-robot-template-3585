@@ -1,23 +1,13 @@
-import type { ComponentType } from 'react';
+import type { ElementType } from 'react';
 
 interface SectionHeaderProps {
-  icon: ComponentType<{ className?: string; strokeWidth?: number }>;
+  /** Conservé pour compatibilité des appels ; l'en-tête n'affiche plus d'icône. */
+  icon?: ElementType;
   title: string;
 }
 
-// En-tête de section partagé (badge icône + titre uppercase) — même format
-// que FicheClientForm, réutilisé dans les formulaires famille/régime
-// matrimonial pour une apparence cohérente. Libellé en surtitre mono
-// (.ds-eyebrow, cf. docs/design-system.md).
-export function SectionHeader({ icon: Icon, title }: SectionHeaderProps) {
-  return (
-    <div className="flex items-center gap-2.5 mb-6">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary">
-        <Icon className="h-4 w-4 text-foreground" strokeWidth={1.75} />
-      </span>
-      <h3 className="ds-eyebrow text-foreground">
-        {title}
-      </h3>
-    </div>
-  );
+// En-tête de carte partagé par les formulaires famille / régime matrimonial :
+// titre de section en sans 15 px medium (esprit « Related Papers » de la maquette de référence).
+export function SectionHeader({ title }: SectionHeaderProps) {
+  return <h3 className="mb-4 text-[15px] font-medium tracking-[-0.01em] text-foreground">{title}</h3>;
 }

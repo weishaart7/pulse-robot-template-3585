@@ -59,7 +59,7 @@ export const QualificationRegimeOptions: React.FC<QualificationRegimeOptionsProp
             </span>
           )}
         </Button>
-        <div className="flex items-center space-x-2 p-2 bg-muted/30 rounded-md">
+        <div className="flex items-center h-9 space-x-3">
           <Checkbox
             id="societe_acquets_residence_principale"
             checked={societeAcquets?.options?.residencePrincipale || false}
@@ -99,7 +99,7 @@ export const QualificationRegimeOptions: React.FC<QualificationRegimeOptionsProp
 
   if (getSimplifiedRegime(regimeType) === 'communauté') {
     return (
-      <div className="flex items-center space-x-2 p-2 bg-muted/30 rounded-md">
+      <div className="flex items-center h-9 space-x-3">
         <Checkbox
           id="extension_propres_par_nature"
           checked={extensionProprsParNature?.enabled || false}

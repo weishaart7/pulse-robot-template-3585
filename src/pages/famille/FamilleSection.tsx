@@ -7,7 +7,9 @@ import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
 import { ageEnAnnees } from '@/lib/family/age';
 import { childrenLinkedToSpouse, leavesCouple } from '@/lib/family/statutTransition';
 import { FamilyLink } from '@/services/familyService';
-import { ChevronRight } from 'lucide-react';
+import { Users } from 'lucide-react';
+import { grouperMembres } from '@/lib/family/groupesMembres';
+import { PanelTitle, SummaryRow, WorkspaceHeader } from '@/components/layout/workspace-panel';
 import { useFamilleSubNav } from './useFamilleSubNav';
 import {
   AlertDialog,
@@ -19,42 +21,38 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import profilHomme from '@/assets/Profil homme.png';
-import profilFemme from '@/assets/Profil femme.png';
 
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
 const STATUTS = ['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)', 'Divorcé(e)', 'Veuf/Veuve'];
 
-const profileImage = (civility?: string) => (civility === 'Mme' || civility === 'Mlle' ? profilFemme : profilHomme);
-
-// Carte d'identité du Foyer (client ou conjoint) : ouvre la fiche au clic.
-function PersonCard({ image, eyebrow, name, details, onClick, className = '' }: {
-  className?: string;
-  image: string;
-  eyebrow: string;
-  name: string;
-  details: string[];
-  onClick: () => void;
+// Bloc d'une personne du foyer dans le panneau latéral : titre + lien vers la fiche, puis
+// lignes libellé / valeur.
+function PersonBlock({ title, name, birth, profession, onOpen }: {
+  title: string;
+  name?: string;
+  birth?: string;
+  profession?: string;
+  onOpen: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`group flex w-full items-center gap-4 ${className} rounded-card border border-border bg-card p-4 text-left transition-colors hover:border-foreground/25 ${FOCUS_RING}`}
-    >
-      <img src={image} alt="" className="h-14 w-14 shrink-0 rounded-full object-cover object-top ring-1 ring-border" />
-      <div className="min-w-0 flex-1">
-        <p className="ds-eyebrow text-muted-foreground">{eyebrow}</p>
-        <p className="mt-1 text-base font-semibold leading-tight text-foreground truncate">{name}</p>
-        <p className="mt-1 text-xs text-muted-foreground truncate">
-          {details.length > 0 ? details.join(' · ') : 'Fiche à compléter'}
-        </p>
-      </div>
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors group-hover:bg-muted group-hover:text-foreground">
-        <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
-      </span>
-    </button>
+    <section>
+      <PanelTitle
+        action={
+          <button type="button" onClick={onOpen} className={`text-[13px] text-muted-foreground hover:text-foreground rounded-[4px] ${FOCUS_RING}`}>
+            Voir la fiche
+          </button>
+        }
+      >
+        {title}
+      </PanelTitle>
+      <dl className="mt-3">
+        <SummaryRow label="Nom">{name}</SummaryRow>
+        <SummaryRow label="Naissance">{birth ? format(new Date(birth), 'dd/MM/yyyy') : undefined}</SummaryRow>
+        <SummaryRow label="Âge">{birth ? `${ageEnAnnees(birth)} ans` : undefined}</SummaryRow>
+        <SummaryRow label="Profession">{profession || undefined}</SummaryRow>
+      </dl>
+    </section>
   );
 }
 
@@ -90,7 +88,7 @@ const FamilleSection = () => {
 
   const statutSelect = (
     <Select value={relationStatus || 'Célibataire'} onValueChange={handleStatutChange}>
-      <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
+      <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-[2px] focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -107,42 +105,85 @@ const FamilleSection = () => {
 
   const clientName = familyProfile?.prenom && familyProfile?.nom
     ? `${familyProfile.prenom} ${familyProfile.nom}`
-    : 'Utilisateur';
+    : undefined;
 
-  // Naissance · âge · profession, en omettant ce qui n'est pas renseigné.
-  const personDetails = (dateStr?: string, profession?: string) => [
-    ...(dateStr ? [`${format(new Date(dateStr), 'dd/MM/yyyy')}`, `${ageEnAnnees(dateStr)} ans`] : []),
-    ...(profession ? [profession] : []),
-  ];
+  const membres = familyLinks ?? [];
+  const groupes = grouperMembres(membres);
+  const summary = [relationStatus || 'Célibataire', `${membres.length} membre${membres.length > 1 ? 's' : ''}`].join(' · ');
 
   return (
-    <div className="pb-6 md:px-6 space-y-5">
-      {/* Foyer : client, conjoint et statut ; le détail du régime vit dans sa sous-section */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-        <PersonCard
-          image={profileImage(familyProfile?.civility)}
-          eyebrow="Client"
-          className={hasPartner ? '' : 'sm:col-span-2 lg:col-span-2'}
-          name={clientName}
-          details={personDetails(familyProfile?.date_naissance, familyProfile?.profession)}
-          onClick={() => navigate('/dashboard/famille/client')}
+    <div className="pb-6">
+      <div className="workspace-panel rounded-card border border-border bg-card overflow-hidden">
+        <WorkspaceHeader
+          icon={<Users strokeWidth={1.75} />}
+          trail={['Famille', 'Foyer']}
+          actions={
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard/famille/membres')}
+              className={`inline-flex h-9 items-center rounded-[2px] border border-border px-3.5 text-[13px] font-medium text-foreground transition-colors hover:bg-secondary ${FOCUS_RING}`}
+            >
+              {membres.length === 0 ? 'Ajouter des membres' : 'Gérer les membres'}
+            </button>
+          }
         />
-        {hasPartner ? (
-          <PersonCard
-            image={profileImage(maritalData?.civilite_conjoint)}
-            eyebrow={relationStatus === 'Marié(e)' ? 'Conjoint(e)' : 'Partenaire'}
-            name={partnerName || 'Partenaire'}
-            details={personDetails(maritalData?.date_naissance_conjoint, maritalData?.profession_conjoint)}
-            onClick={() => navigate('/dashboard/famille/conjoint')}
-          />
-        ) : null}
-        <div className="flex flex-col justify-center gap-1.5 rounded-card border border-border bg-card p-4 sm:col-span-2 lg:col-span-1 lg:w-56">
-          <label className="ds-eyebrow text-muted-foreground">Statut</label>
-          {statutSelect}
+
+        <div className="px-6 pt-6 pb-5">
+          <h1 className="text-[26px] font-medium leading-tight tracking-[-0.02em]">Foyer</h1>
+          <p className="mt-1 text-[13px] text-muted-foreground">{summary}</p>
+        </div>
+
+        {/* Bandeau : le couple, son statut et la composition de la famille, en colonnes filetées */}
+        <div className="grid grid-cols-1 border-y border-border md:grid-cols-2 xl:grid-cols-3 divide-y divide-border md:divide-y-0 md:divide-x">
+          <div className="px-6 py-5">
+            <PersonBlock
+              title="Client"
+              name={clientName}
+              birth={familyProfile?.date_naissance}
+              profession={familyProfile?.profession}
+              onOpen={() => navigate('/dashboard/famille/client')}
+            />
+          </div>
+          {hasPartner ? (
+            <div className="px-6 py-5">
+              <PersonBlock
+                title={relationStatus === 'Marié(e)' ? 'Conjoint(e)' : 'Partenaire'}
+                name={partnerName}
+                birth={maritalData?.date_naissance_conjoint}
+                profession={maritalData?.profession_conjoint}
+                onOpen={() => navigate('/dashboard/famille/conjoint')}
+              />
+            </div>
+          ) : null}
+          <div className={`px-6 py-5 ${hasPartner ? 'md:col-span-2 md:border-t md:border-border xl:col-span-1 xl:border-t-0' : 'xl:col-span-2'}`}>
+            <PanelTitle>Statut du couple</PanelTitle>
+            <div className="mt-3 max-w-xs">{statutSelect}</div>
+            <div className="mt-5">
+              <PanelTitle>Composition</PanelTitle>
+              {groupes.length > 0 ? (
+                <div className="mt-3 flex flex-wrap gap-x-7 gap-y-3">
+                  {groupes.map(g => (
+                    <div key={g.id}>
+                      <p className="text-[22px] font-medium leading-none tracking-[-0.02em] text-foreground">{g.membres.length}</p>
+                      <p className="mt-1.5 text-[13px] text-muted-foreground">{g.label}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-3 text-[14px] text-muted-foreground">Aucun membre renseigné.</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Arbre familial, pleine largeur */}
+        <div className="px-6 py-6">
+          <PanelTitle>Arbre familial</PanelTitle>
+          <div className="mt-5">
+            <LiensFamiliauxForm view="arbre" />
+          </div>
         </div>
       </div>
-
-      <LiensFamiliauxForm view="arbre" />
 
       <AlertDialog open={!!pendingStatut} onOpenChange={(open) => { if (!open) setPendingStatut(null); }}>
         <AlertDialogContent>
