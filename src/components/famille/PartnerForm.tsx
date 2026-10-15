@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import ActionHubInput from "@/components/ui/action-hub-input";
 import NationalitySelect from "@/components/ui/nationality-select";
-import { Loader2, Info, User, Briefcase, ShieldCheck } from "lucide-react";
+import { Info, User, Briefcase, ShieldCheck } from "lucide-react";
+import { LogoSpinner } from "@/components/brand/LogoSpinner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -179,7 +180,7 @@ export function PartnerForm({ onSuccess, onBack, title, summary }: PartnerFormPr
                 </button>
               )}
               <Button type="submit" disabled={saving} size="sm" className="h-8 rounded-[2px] bg-foreground px-3.5 text-[12.5px] text-background hover:opacity-90">
-                {saving ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enregistrement...</>) : 'Enregistrer'}
+                {saving ? (<><LogoSpinner />Enregistrement...</>) : 'Enregistrer'}
               </Button>
             </>
           }
@@ -245,7 +246,7 @@ export function PartnerForm({ onSuccess, onBack, title, summary }: PartnerFormPr
                     )}
                   />
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
                     <FormField
                       control={form.control}
                       name="nomPartenaire"
@@ -319,7 +320,7 @@ export function PartnerForm({ onSuccess, onBack, title, summary }: PartnerFormPr
                             <SmartDateInput
                               value={field.value}
                               onChange={field.onChange}
-                              className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20"
+                              className="bg-background border-border shadow-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20"
                             />
                           </div>
                           <FormMessage />
@@ -333,70 +334,36 @@ export function PartnerForm({ onSuccess, onBack, title, summary }: PartnerFormPr
 
             {showPartnerFields && (
               <>
-                {/* Profession & Naissance */}
+                {/* Profession & Nationalité */}
                 <div className="px-8 py-6">
-                  <SectionHeader icon={Briefcase} title="Profession & Naissance" />
+                  <SectionHeader icon={Briefcase} title="Profession & Nationalité" />
 
-                  <div className="space-y-5">
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <FormField
-                      control={form.control}
-                      name="profession"
-                      render={({ field }) => (
-                        <FormItem className="space-y-1">
-                          <FormControl>
-                            <ActionHubInput
-                              label="Profession"
-                              placeholder="Profession"
-                              value={field.value}
-                              onChange={field.onChange}
-                              historyEnabled={false}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                    <FormField
-                      control={form.control}
-                      name="nationalitePartenaire"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="relative w-full flex flex-col gap-1">
-                            <FormLabel>Nationalité</FormLabel>
-                            <FormControl>
-                              <NationalitySelect
-                                value={field.value}
-                                onValueChange={field.onChange}
-                                placeholder="Sélectionner une nationalité"
-                              />
-                            </FormControl>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="doubleNationalitePartenaire"
-                      render={({ field }) => (
-                        <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Double nationalité" />
-                      )}
-                    />
-
-                    {form.watch('doubleNationalitePartenaire') && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                       <FormField
                         control={form.control}
-                        name="nationalite2Partenaire"
+                        name="profession"
+                        render={({ field }) => (
+                          <FormItem className="space-y-1">
+                            <FormControl>
+                              <ActionHubInput
+                                label="Profession"
+                                placeholder="Profession"
+                                value={field.value}
+                                onChange={field.onChange}
+                                historyEnabled={false}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="nationalitePartenaire"
                         render={({ field }) => (
                           <FormItem>
                             <div className="relative w-full flex flex-col gap-1">
-                              <FormLabel>Deuxième nationalité</FormLabel>
+                              <FormLabel>Nationalité</FormLabel>
                               <FormControl>
                                 <NationalitySelect
                                   value={field.value}
@@ -409,94 +376,121 @@ export function PartnerForm({ onSuccess, onBack, title, summary }: PartnerFormPr
                           </FormItem>
                         )}
                       />
-                    )}
-                  </div>
-
-                  </div>
+                      <div className="md:self-end">
+                        <FormField
+                          control={form.control}
+                          name="doubleNationalitePartenaire"
+                          render={({ field }) => (
+                            <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Double nationalité" />
+                          )}
+                        />
+                      </div>
+                      {form.watch('doubleNationalitePartenaire') && (
+                        <div className="md:col-start-2">
+                          <FormField
+                            control={form.control}
+                            name="nationalite2Partenaire"
+                            render={({ field }) => (
+                              <FormItem>
+                                <div className="relative w-full flex flex-col gap-1">
+                                  <FormLabel>Deuxième nationalité</FormLabel>
+                                  <FormControl>
+                                    <NationalitySelect
+                                      value={field.value}
+                                      onValueChange={field.onChange}
+                                      placeholder="Sélectionner une nationalité"
+                                    />
+                                  </FormControl>
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      )}
+                    </div>
                 </div>
 
                 {/* Situation juridique */}
                 <div className="px-8 py-6">
                   <SectionHeader icon={ShieldCheck} title="Situation juridique" />
 
-                  <div>
-
-                  <div className="flex flex-wrap items-end gap-6">
-                    <FormField
-                      control={form.control}
-                      name="capaciteJuridique"
-                      render={({ field }) => (
-                        <FormItem className="w-72">
-                          <div className="relative w-full flex flex-col gap-1">
-                            <FormLabel>Capacité juridique</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md">
-                                  <SelectValue placeholder="Sélectionner la capacité juridique" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Aucune">Aucune</SelectItem>
-                                <SelectItem value="Tutelle">Tutelle</SelectItem>
-                                <SelectItem value="Curatelle">Curatelle</SelectItem>
-                                <SelectItem value="Sauvegarde de justice">Sauvegarde de justice</SelectItem>
-                                <SelectItem value="Habilitation du conjoint">Habilitation du conjoint</SelectItem>
-                                <SelectItem value="Habilitation familiale">Habilitation familiale</SelectItem>
-                                <SelectItem value="Mesure d'accompagnement">Mesure d'accompagnement</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="personneHandicapee"
-                      render={({ field }) => (
-                        <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Personne handicapée" />
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="residenceFiscaleEtrangerPartenaire"
-                      render={({ field }) => (
-                        <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Résidence fiscale à l'étranger" />
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="mandatProtectionFuture"
-                      render={({ field }) => (
-                        <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Mandat de protection future signé" />
-                      )}
-                    />
-
-                    {form.watch('mandatProtectionFuture') && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                       <FormField
                         control={form.control}
-                        name="dateMandatProtectionFuture"
+                        name="capaciteJuridique"
                         render={({ field }) => (
-                          <FormItem className="w-72">
+                          <FormItem>
                             <div className="relative w-full flex flex-col gap-1">
-                              <FormLabel>Date du mandat</FormLabel>
-                              <SmartDateInput
-                                value={field.value}
-                                onChange={field.onChange}
-                                className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20"
-                              />
+                              <FormLabel>Capacité juridique</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md">
+                                    <SelectValue placeholder="Sélectionner la capacité juridique" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="Aucune">Aucune</SelectItem>
+                                  <SelectItem value="Tutelle">Tutelle</SelectItem>
+                                  <SelectItem value="Curatelle">Curatelle</SelectItem>
+                                  <SelectItem value="Sauvegarde de justice">Sauvegarde de justice</SelectItem>
+                                  <SelectItem value="Habilitation du conjoint">Habilitation du conjoint</SelectItem>
+                                  <SelectItem value="Habilitation familiale">Habilitation familiale</SelectItem>
+                                  <SelectItem value="Mesure d'accompagnement">Mesure d'accompagnement</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                    )}
-                  </div>
+                    </div>
 
-                  </div>
+                    <div className="mt-4 flex flex-wrap items-center gap-x-6">
+                      <FormField
+                        control={form.control}
+                        name="personneHandicapee"
+                        render={({ field }) => (
+                          <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Personne handicapée" />
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="residenceFiscaleEtrangerPartenaire"
+                        render={({ field }) => (
+                          <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Résidence fiscale à l'étranger" />
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="mandatProtectionFuture"
+                        render={({ field }) => (
+                          <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Mandat de protection future signé" />
+                        )}
+                      />
+                    </div>
+
+                    {form.watch('mandatProtectionFuture') && (
+                      <div className="ml-7 mt-1 grid grid-cols-1 gap-5 border-l border-border pl-4 md:grid-cols-3">
+                        <FormField
+                          control={form.control}
+                          name="dateMandatProtectionFuture"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="relative w-full flex flex-col gap-1">
+                                <FormLabel>Date du mandat</FormLabel>
+                                <SmartDateInput
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  className="bg-background border-border shadow-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20"
+                                />
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
                 </div>
               </>
             )}

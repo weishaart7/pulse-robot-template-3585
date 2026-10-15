@@ -39,19 +39,19 @@ export default function NationalitySelect({ value, onValueChange, placeholder = 
       onOpenChange={handleOpenChange}
     >
       <div className={cn("w-full", className)}>
-        <Select.Trigger className="w-full inline-flex items-center justify-between h-9 px-3 py-2 text-sm bg-background border border-border rounded-md transition-colors outline-none hover:border-foreground/25 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50 text-foreground data-placeholder:text-muted-foreground">
+        <Select.Trigger className="w-full inline-flex items-center justify-between h-9 px-3 py-2 text-sm bg-background border border-border rounded-[2px] transition-colors outline-none hover:border-foreground/40 focus-visible:border-foreground data-[state=open]:border-foreground [&[data-state=open]_svg]:rotate-180 disabled:cursor-not-allowed disabled:opacity-50 text-foreground data-placeholder:text-muted-foreground">
           <Select.Value placeholder={placeholder}>
             {value}
           </Select.Value>
-          <Select.Icon className="text-muted-foreground opacity-60">
-            <ChevronDown className="w-4 h-4" />
+          <Select.Icon className="text-muted-foreground">
+            <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200" />
           </Select.Icon>
         </Select.Trigger>
         <Select.Portal>
           <Select.Content
             position="popper"
             avoidCollisions={false}
-            className="w-[var(--radix-select-trigger-width)] overflow-hidden mt-1 bg-popover border border-border rounded-md shadow-lg text-sm z-[100]"
+            className="w-[var(--radix-select-trigger-width)] overflow-hidden mt-1 bg-popover border border-border rounded-[4px] shadow-md text-[13px] z-[100]"
           >
             <div className="flex items-center border-b border-border bg-popover sticky top-0 z-10">
               <Search className="h-4 w-4 mx-3 text-muted-foreground shrink-0" />
@@ -66,7 +66,7 @@ export default function NationalitySelect({ value, onValueChange, placeholder = 
                 }}
               />
             </div>
-            <Select.Viewport className="max-h-64 overflow-y-auto bg-popover">
+            <Select.Viewport className="max-h-64 overflow-y-auto bg-popover p-1">
               {filteredNationalities.length < 1 ? (
                 <div className="px-3 py-2 text-muted-foreground bg-popover">Aucune nationalité trouvée.</div>
               ) : (
@@ -90,7 +90,7 @@ const SelectItem = React.forwardRef<
 >(({ children, className, ...props }, forwardedRef) => {
   return (
     <Select.Item
-      className="group flex items-center justify-between px-3 cursor-pointer py-2 duration-150 text-popover-foreground bg-popover data-[state=checked]:text-primary data-[state=checked]:bg-primary/10 data-[highlighted]:text-primary-foreground data-[highlighted]:bg-primary hover:bg-primary hover:text-primary-foreground outline-none"
+      className="group flex items-center justify-between rounded-[2px] px-2 cursor-pointer py-2 text-foreground outline-none data-[state=checked]:font-medium data-[highlighted]:bg-secondary"
       {...props}
       ref={forwardedRef}
     >
@@ -99,7 +99,7 @@ const SelectItem = React.forwardRef<
       </Select.ItemText>
       <div className="w-4">
         <Select.ItemIndicator>
-          <Check className="w-4 h-4 text-primary group-hover:text-primary-foreground group-data-[highlighted]:text-primary-foreground" />
+          <Check className="h-3.5 w-3.5 text-foreground" strokeWidth={2.25} />
         </Select.ItemIndicator>
       </div>
     </Select.Item>

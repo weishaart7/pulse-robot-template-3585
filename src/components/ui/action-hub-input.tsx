@@ -110,7 +110,7 @@ export default function ActionHubInput({
     <div className={`relative w-full flex flex-col gap-1 ${className}`}>
       {label && (
         <Label htmlFor={id} className="text-xs">
-          {label} {required && <span className="text-red-800">*</span>}
+          {label} {required && <span className="text-destructive">*</span>}
         </Label>
       )}
       <div className="relative flex items-center">
