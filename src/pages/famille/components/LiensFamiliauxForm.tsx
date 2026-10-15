@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Trash2, Edit, MoreHorizontal, Plus } from 'lucide-react';
+import { Trash2, Edit, MoreHorizontal, Plus, Users } from 'lucide-react';
 import { FamilyTreeCards } from '@/components/famille/FamilyTreeCards';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,19 +28,13 @@ import { formatAgeCourt } from '@/lib/family/age';
 import { getInitials } from '@/lib/family/initials';
 import { grouperMembres } from '@/lib/family/groupesMembres';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Chip, WorkspaceHeader } from '@/components/layout/workspace-panel';
+import { SectionHeader } from '@/components/family/SectionHeader';
+import { getGroupeTone } from '@/components/famille/groupeTones';
 
-// Tag de la table Liens familiaux — accent = avantage fiscal.
+// Tag de la liste des membres — accent (lagon) = avantage fiscal.
 function FamilyTag({ children, accent = false }: { children: React.ReactNode; accent?: boolean }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium leading-4",
-        accent ? "bg-primary/10 text-primary" : "border border-border text-muted-foreground"
-      )}
-    >
-      {children}
-    </span>
-  );
+  return <Chip tone={accent ? 'lagon' : 'neutral'}>{children}</Chip>;
 }
 
 interface LiensFamiliauxFormProps {
@@ -88,7 +82,7 @@ export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
   if (loading) {
     return <LoadingSpinner text="Chargement des données..." />;
   }
-  return <div className="space-y-6">
+  return <div className={cn(view === 'arbre' && 'space-y-6')}>
       {/* Arbre seul : le cadre, le titre et l'accès aux membres sont portés par la page Foyer. */}
       {view === 'arbre' && <div>
         <FamilyTreeCards
@@ -101,44 +95,48 @@ export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
         />
       </div>}
 
-      {view === 'membres' && <>
-        <div className="flex flex-wrap items-end justify-between gap-4 pt-2">
-          <div>
-            <h1 className="ds-display text-3xl sm:text-4xl leading-tight">Membres de la famille</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {familyLinks.length === 0
-                ? 'Aucun membre renseigné'
-                : `${familyLinks.length} membre${familyLinks.length > 1 ? 's' : ''} · base de la dévolution et des abattements`}
-            </p>
-          </div>
-          <button
-            onClick={() => dialogRef.current?.openForAdd()}
-            className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-foreground hover:bg-foreground/85 text-background shadow-whisper pl-1 pr-4 py-1 text-sm font-medium transition-colors"
-          >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background/15">
-              <Plus className="h-4 w-4 text-background" />
-            </span>
-            Ajouter un membre
-          </button>
+      {view === 'membres' && <div className="workspace-panel -mx-4 -mt-3 md:-m-6">
+        <WorkspaceHeader
+          icon={<Users strokeWidth={1.75} />}
+          trail={['Famille', 'Membres']}
+          actions={
+                <button
+                  onClick={() => dialogRef.current?.openForAdd()}
+                  className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-foreground hover:bg-foreground/85 text-background shadow-whisper pl-1 pr-4 py-1 text-sm font-medium transition-colors"
+                >
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background/15">
+                    <Plus className="h-4 w-4 text-background" />
+                  </span>
+                  Ajouter un membre
+                </button>
+          }
+        />
+
+        <div className="px-8 pt-6 pb-4">
+          <h1 className="text-[24px] font-medium leading-tight tracking-[-0.02em]">Membres de la famille</h1>
+          <p className="mt-1 text-[12.5px] text-muted-foreground">
+            {familyLinks.length === 0
+              ? 'Aucun membre renseigné'
+              : `${familyLinks.length} membre${familyLinks.length > 1 ? 's' : ''} · base de la dévolution et des abattements`}
+          </p>
         </div>
 
-        {familyLinks.length === 0 && (
-          <div className="rounded-card border border-dashed border-border bg-card px-6 py-10 text-center">
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+        {familyLinks.length === 0 ? (
+          <div className="border-t border-border px-8 py-7">
+            <p className="max-w-md text-[13px] text-muted-foreground">
               Ajoutez les enfants, parents, frères et sœurs… : ils servent au calcul de la succession
               et des abattements.
             </p>
           </div>
-        )}
-
-        <div className="columns-1 gap-4 lg:columns-2 2xl:columns-3">
-          {grouperMembres(familyLinks).map(groupe => (
-            <section key={groupe.id} className="mb-4 break-inside-avoid rounded-card border border-border bg-card overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 bg-secondary/40">
-                <p className="ds-eyebrow text-muted-foreground">{groupe.label}</p>
-                <span className="text-xs text-muted-foreground">{groupe.membres.length}</span>
-              </div>
-              <ul>
+        ) : (
+          <div className="grid grid-cols-1 border-t border-border lg:grid-cols-2 divide-y divide-border lg:divide-y-0 lg:[&>*:nth-child(odd)]:border-r lg:[&>*:nth-child(n+3)]:border-t lg:[&>*]:border-border">
+            {grouperMembres(familyLinks).map(groupe => (
+              <section key={groupe.id} className="px-8 py-5">
+                <div className="flex items-baseline justify-between">
+                  <SectionHeader title={groupe.label} markClassName={getGroupeTone(groupe.id).mark} />
+                  <span className="text-[12px] tabular-nums text-muted-foreground">{groupe.membres.length}</span>
+                </div>
+                <ul className="-mx-2 border-b border-border">
                 {groupe.membres.map(member => (
                   <li
                     key={member.id}
@@ -152,13 +150,13 @@ export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
                       }
                     }}
                     className={cn(
-                      "flex items-center gap-3 border-t border-border px-4 py-3 cursor-pointer transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:bg-muted/40",
+                      "flex items-center gap-3 border-t border-border px-2 py-2 cursor-pointer transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:bg-muted/40",
                       member.est_decede && "text-muted-foreground"
                     )}
                   >
                     <span className={cn(
-                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-                      member.est_decede ? "border border-border text-muted-foreground" : "bg-foreground/10 text-foreground"
+                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] text-[11.5px] font-semibold",
+                      member.est_decede ? "border border-border text-muted-foreground" : getGroupeTone(groupe.id).avatar
                     )}>
                       {getInitials(member.prenom, member.nom)}
                     </span>
@@ -167,7 +165,7 @@ export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
                       <p className={cn("text-sm font-medium truncate", !member.est_decede && "text-foreground")}>
                         {[member.prenom, member.nom].filter(Boolean).join(' ')}
                       </p>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
                         <span className="text-xs text-muted-foreground">
                           {member.lien_familial}
                           {member.lien_familial === 'Enfant' && member.parent_de === 'spouse' && ' · beau-fils/belle-fille'}
@@ -206,7 +204,7 @@ export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="rounded-full shadow-none"
+                            className="h-8 w-8 rounded-[2px] shadow-none"
                             disabled={saving}
                             aria-label="Ouvrir le menu"
                           >
@@ -227,11 +225,12 @@ export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
                     </div>
                   </li>
                 ))}
-              </ul>
-            </section>
-          ))}
-        </div>
-      </>}
+                </ul>
+              </section>
+            ))}
+          </div>
+        )}
+      </div>}
 
       <FamilyMemberFormDialog
         ref={dialogRef}

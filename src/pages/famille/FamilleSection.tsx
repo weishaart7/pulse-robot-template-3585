@@ -8,6 +8,7 @@ import { ageEnAnnees } from '@/lib/family/age';
 import { childrenLinkedToSpouse, leavesCouple } from '@/lib/family/statutTransition';
 import { FamilyLink } from '@/services/familyService';
 import { Users } from 'lucide-react';
+import { getGroupeTone } from '@/components/famille/groupeTones';
 import { grouperMembres } from '@/lib/family/groupesMembres';
 import { PanelTitle, SummaryRow, WorkspaceHeader, panelLinkClass } from '@/components/layout/workspace-panel';
 import { useFamilleSubNav } from './useFamilleSubNav';
@@ -25,8 +26,6 @@ import {
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
 // Repères de couleur de la composition (touches lagon / citron du hero de la landing).
-const COMPOSITION_TONES = ['bg-lagon', 'bg-citron', 'bg-lagon-ink', 'bg-[#c9c2b8]'];
-
 const STATUTS = ['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)', 'Divorcé(e)', 'Veuf/Veuve'];
 
 // Bloc d'une personne du foyer dans le panneau latéral : titre + lien vers la fiche, puis
@@ -165,11 +164,11 @@ const FamilleSection = () => {
               <PanelTitle>Composition</PanelTitle>
               {groupes.length > 0 ? (
                 <div className="mt-3 flex flex-wrap gap-x-7 gap-y-3">
-                  {groupes.map((g, i) => (
+                  {groupes.map((g) => (
                     <div key={g.id}>
                       <p className="text-[20px] font-medium leading-none tracking-[-0.02em] text-foreground">{g.membres.length}</p>
                       <p className="mt-1.5 flex items-center gap-1.5 text-[12px] text-muted-foreground">
-                        <span className={`h-2.5 w-2.5 rounded-[2px] ring-1 ring-inset ring-black/10 ${COMPOSITION_TONES[i % COMPOSITION_TONES.length]}`} />
+                        <span className={`h-2.5 w-2.5 rounded-[2px] ring-1 ring-inset ring-black/10 ${getGroupeTone(g.id).mark}`} />
                         {g.label}
                       </p>
                     </div>

@@ -40,7 +40,7 @@ permet de l'alimenter (voir §3).
   profession) avec un lien « Voir la fiche », et une colonne Statut du couple (menu déroulant) + Composition
   (nombre de membres par branche, via `grouperMembres`) — et enfin l'arbre familial pleine largeur (l'arbre
   demande ~960 px, d'où le bandeau plutôt qu'un panneau latéral). Plus de photo de profil ; le détail du
-  régime n'y est pas répété, il vit dans la sous-section Régime matrimonial. La liste des membres (une carte par branche — descendants, ascendants, collatéraux, alliés, autres — via `lib/family/groupesMembres.ts`, disposées côte à côte en colonnes sur écran large ; ligne cliquable pour modifier ; seul point d'entrée « Ajouter un membre »,
+  régime n'y est pas répété, il vit dans la sous-section Régime matrimonial. La liste des membres vit dans un panneau de travail comme Foyer et Régime matrimonial (barre d'en-tête « Famille / Membres » portant le bouton « Ajouter un membre », titre 24 px et rappel) : une section filetée par branche — descendants, ascendants, collatéraux, alliés, autres — via `lib/family/groupesMembres.ts`, sur deux colonnes à partir de `lg`. Chaque branche a une couleur fixe ([groupeTones.ts](../src/components/famille/groupeTones.ts) : descendants lagon, ascendants citron, collatéraux lagon foncé, alliés beige, autres gris), reprise par le repère du titre de section, le carré d'initiales des membres vivants et la pastille du bloc « Composition » du Foyer ; étiquettes en `Chip` (lagon pour les avantages fiscaux) ; ligne cliquable pour modifier ; seul point d'entrée « Ajouter un membre »,
   état vide explicatif sans membre) vit dans la sous-section Membres. Les personnes décédées sont estompées
   (carte détourée d'un filet, « † année ») dans l'arbre et grisées dans le tableau. Quitter un statut en
   couple (vers Célibataire, Divorcé(e), Veuf/Veuve) passe par une confirmation qui liste les enfants
@@ -51,8 +51,8 @@ permet de l'alimenter (voir §3).
   (§3).
 - **Régime matrimonial** (titre + rappel « statut depuis année · régime ») structure 5 onglets (`GooeyNav`) dans un panneau de travail unique inspiré de la maquette de référence : barre d'en-tête (fil d'Ariane « Famille / … » + bouton « Enregistrer » noir), colonne principale (titre, rappel, onglets, sections séparées par des filets) et, pour Marié(e) / Pacsé(e), un panneau « Synthèse » à droite (≥ `lg`) qui relit en direct les valeurs du formulaire en lignes libellé / valeur (statut, mariage, lieu, régime, contrat et situation en étiquettes, donations au dernier vivant, mariages précédents ; pour le PACS : date, convention, résidence) — affichage seul, aucun calcul visibles seulement si `statut_couple === 'Marié(e)'`
   (vues distinctes pour Pacsé(e)/Concubinage) : régime légal (avec, sous les régimes concernés, la
-  désignation des biens de la société d'acquêts et l'extension aux propres par nature — voir §2),
-  récompenses/créances, participation aux acquêts, donation au dernier vivant, historique. Le
+  désignation des biens de la société d'acquêts — voir §2),
+  récompenses/créances, participation aux acquêts, donation au dernier vivant, historique. L'onglet « Informations générales » regroupe en un seul bloc « Mariage & régime » : date et lieu, puis la question « Contrat de mariage » (bascule Avec / Sans contrat). Sans contrat, le régime légal déduit de la date de mariage est affiché en lecture seule ; avec contrat seulement, le sélecteur du régime conventionnel et ses options de qualification apparaissent. Le
   catalogue de clauses du contrat (préciput, attribution intégrale, partage inégal, clauses
   personnalisées) a été retiré en V1, voir §2. Pour
   Divorcé(e)/Veuf-Veuve, un bloc lecture seule affiche le régime de l'union dissoute (régime
@@ -271,17 +271,18 @@ permet de l'alimenter (voir §3).
   moment du retrait) ; `marital_status.clauses_contrat` est conservée, réservée aux deux clés
   ci-dessous.
 
-- **Société d'acquêts et extension aux propres par nature : gardées comme mécanisme de
-  qualification, pas comme clause (2026-09-22).** Ces deux entrées de l'ancien catalogue ne sont pas
-  de simples avantages matrimoniaux optionnels : `qualification.ts::qualifierBien` en a
-  structurellement besoin pour déterminer si un bien est propre ou commun — seul mécanisme
-  désignant les biens de la société d'acquêts sous `separation_societe_acquets`, seul mécanisme
-  faisant tomber un bien propre par nature (art. 1404) en commun sous un régime communautaire
-  (art. 1526). Elles restent donc éditables, dans le nouveau composant minimal
+- **Société d'acquêts : gardée comme mécanisme de qualification, pas comme clause.** Cette entrée
+  de l'ancien catalogue n'est pas un simple avantage matrimonial optionnel :
+  `qualification.ts::qualifierBien` en a structurellement besoin, c'est le seul mécanisme désignant
+  les biens de la société d'acquêts sous `separation_societe_acquets`. Elle reste donc éditable, dans le nouveau composant minimal
   [QualificationRegimeOptions.tsx](../src/components/famille/matrimonial/QualificationRegimeOptions.tsx)
   (monté dans la section « Régime matrimonial » de `RelationInfoForm.tsx`, réutilise
   `AssetSelectionModal.tsx`), et stockées avec le même format qu'avant dans
-  `marital_status.clauses_contrat.societe_acquets` / `.extension_propres_par_nature`.
+  `marital_status.clauses_contrat.societe_acquets`. L'ancienne option « extension de la communauté
+  aux biens propres par nature » a été supprimée (UI et moteur) : la stipulation contraire de
+  l'art. 1526 ne concerne que la communauté universelle et n'est pas utilisée en pratique ; un bien
+  propre par nature (art. 1404) reste toujours propre en régime communautaire. La clé
+  `clauses_contrat.extension_propres_par_nature` éventuellement présente en base est ignorée.
 
 - **Habillage : design system du simulateur** ([design-system.md](design-system.md)). Plus de
   scope `.famille-form` : pages et formulaires suivent les tokens de `:root` (encre, fond eggshell,
@@ -435,7 +436,7 @@ duplication sur les autres membres de la famille a été retirée).
 
 - **V1 — en place** : identité client/conjoint, statut du couple, régime matrimonial (5 onglets,
   sans le catalogue de clauses du contrat retiré le 2026-09-22 — voir §2), désignation des biens de
-  la société d'acquêts et extension aux propres par nature, récompenses/créances, participation aux
+  la société d'acquêts, récompenses/créances, participation aux
   acquêts, donation au dernier vivant, créances entre partenaires de PACS (art. 515-7 dernier al.,
   voir §2), arbre des liens familiaux avec cascade de suppression, branchement complet au moteur de
   succession légale (renonciation, représentation, branches familiales) et aux abattements DMTG
