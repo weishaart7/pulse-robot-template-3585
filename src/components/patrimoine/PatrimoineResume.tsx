@@ -1,9 +1,9 @@
 import { PatrimoinePanel } from './PatrimoinePanel';
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { PanelTitle, SummaryRow, panelLinkClass } from '@/components/layout/workspace-panel';
+import { PanelDivider, PanelTitle, SummaryRow, panelLinkClass } from '@/components/layout/workspace-panel';
 import RangeNavigator from '@/components/ui/range-navigator';
-import { PatrimoineChart } from './PatrimoineChart';
+import { PatrimoineChart, computePatrimoineBreakdown } from './PatrimoineChart';
 import { PlusValuesCard } from './PlusValuesCard';
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
@@ -12,7 +12,7 @@ import { usePatrimoineCalculations, UnqualifiedItem } from '@/hooks/usePatrimoin
 import { assetValorisationService, AssetValorisation } from '@/services/assetValorisationService';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { computeEvolutionPatrimoine } from '@/lib/patrimoine/evolutionPatrimoine';
-import { AlertTriangle } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 interface PatrimoineResumeProps {
   onNavigateToPlusValues?: () => void;
@@ -85,6 +85,56 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
     [evolutionPatrimoine]
   );
 
+  // Composition des actifs par catégorie — même calcul que le donut (part du foyer,
+  // démembrement pondéré, éléments non qualifiés exclus).
+  const composition = useMemo(() => {
+    const items = computePatrimoineBreakdown(assets, passifs, emprunts, assetDemembrements, demembrementCtx)
+      .filter(i => i.type === 'actif' && i.value > 0);
+    const total = items.reduce((sum, i) => sum + i.value, 0);
+    return items.map(i => ({ ...i, pct: total > 0 ? (i.value / total) * 100 : 0 }));
+  }, [assets, passifs, emprunts, assetDemembrements, demembrementCtx]);
+
+  // Variation des actifs sur 12 mois (ou depuis le premier point d'historique s'il est plus récent).
+  const variation = useMemo(() => {
+    if (evolutionPatrimoine.length < 2) return null;
+    const last = evolutionPatrimoine[evolutionPatrimoine.length - 1];
+    const cutoff = new Date();
+    cutoff.setFullYear(cutoff.getFullYear() - 1);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    const base = [...evolutionPatrimoine].reverse().find(p => p.date <= cutoffStr) ?? evolutionPatrimoine[0];
+    if (!base.total || base === last) return null;
+    return {
+      delta: last.total - base.total,
+      pct: ((last.total - base.total) / base.total) * 100,
+      depuis: base.date <= cutoffStr ? 'sur 12 mois' : `depuis le ${new Date(base.date).toLocaleDateString('fr-FR')}`,
+    };
+  }, [evolutionPatrimoine]);
+
+  const tauxEndettement = financialSummary.totalActifs > 0 ? (financialSummary.totalPassifs / financialSummary.totalActifs) * 100 : 0;
+
+  // Points d'attention : ce qui fausse ou affaiblit les chiffres affichés.
+  const unAn = new Date();
+  unAn.setFullYear(unAn.getFullYear() - 1);
+  const nonEvalues = assets.filter(a => !a.valeur_estimee || a.valeur_estimee <= 0);
+  const estimationsAnciennes = assets.filter(a => a.valeur_estimee && a.date_estimation && new Date(a.date_estimation) < unAn);
+  const pointsAttention = [
+    unqualifiedItems.length > 0 && {
+      tone: 'bg-spark',
+      label: `${unqualifiedItems.length} élément${unqualifiedItems.length > 1 ? 's' : ''} exclu${unqualifiedItems.length > 1 ? 's' : ''} des totaux`,
+      detail: unqualifiedItems.map(i => `${i.label}${UNQUALIFIED_REASON_LABEL[i.reason ?? 'qualification']}`).join(', '),
+    },
+    nonEvalues.length > 0 && {
+      tone: 'bg-spark',
+      label: `${nonEvalues.length} actif${nonEvalues.length > 1 ? 's' : ''} sans valeur estimée`,
+      detail: nonEvalues.slice(0, 3).map(a => a.denomination || a.nature).join(', ') + (nonEvalues.length > 3 ? '…' : ''),
+    },
+    estimationsAnciennes.length > 0 && {
+      tone: 'bg-citron-ink',
+      label: `${estimationsAnciennes.length} estimation${estimationsAnciennes.length > 1 ? 's' : ''} de plus d'un an`,
+      detail: estimationsAnciennes.slice(0, 3).map(a => a.denomination || a.nature).join(', ') + (estimationsAnciennes.length > 3 ? '…' : ''),
+    },
+  ].filter(Boolean) as { tone: string; label: string; detail: string }[];
+
   const pv = patrimoineParPersonne;
   const share = (v: number) => (pv.totalValue > 0 ? (v / pv.totalValue) * 100 : 0);
 
@@ -92,40 +142,68 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
     <PatrimoinePanel
       trail="Résumé"
       title="Résumé"
-      summary={`Actifs ${formatCurrency(financialSummary.totalActifs)} · Passifs ${formatCurrency(financialSummary.totalPassifs)}`}
+      summary={[
+        `${assets.length} actif${assets.length > 1 ? 's' : ''}`,
+        `${passifs.length + emprunts.length} passif${passifs.length + emprunts.length > 1 ? 's' : ''}`,
+        composition.length > 0 && `${composition.length} catégorie${composition.length > 1 ? 's' : ''}`,
+      ].filter(Boolean).join(' · ')}
       bare
     >
-      {unqualifiedItems.length > 0 && (
-        <div className="border-b border-border px-8 py-5">
-          <div className="flex items-start gap-3 rounded-[2px] border border-spark/30 bg-spark/10 p-4">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-spark" strokeWidth={1.75} />
-            <div className="min-w-0">
-              <p className="text-[13px] font-medium text-foreground">
-                {unqualifiedItems.length} élément{unqualifiedItems.length > 1 ? 's' : ''} exclu{unqualifiedItems.length > 1 ? 's' : ''} des totaux ci-dessous
-              </p>
-              <p className="mt-0.5 text-[12px] text-foreground/80">
-                {unqualifiedItems.map(i => `${i.label}${UNQUALIFIED_REASON_LABEL[i.reason ?? 'qualification']}`).join(', ')} — à compléter dans Patrimoine pour être pris en compte.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bandeau des totaux : patrimoine net mis en avant, actifs et passifs à côté. */}
-      <div className="grid grid-cols-1 divide-y divide-border border-b border-border md:grid-cols-3 md:divide-x md:divide-y-0">
-        <div className="px-8 py-5">
+      {/* En-tête : patrimoine net et sa variation, puis composition des actifs. */}
+      <div className="grid grid-cols-1 divide-y divide-border border-b border-border lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] lg:divide-x lg:divide-y-0">
+        <div className="px-8 py-6">
           <p className="text-[12px] text-muted-foreground">Patrimoine net</p>
-          <p className="mt-2 text-[30px] font-medium leading-none tracking-[-0.03em] tabular-nums text-foreground">
+          <p className="mt-2 text-[34px] font-medium leading-none tracking-[-0.03em] tabular-nums text-foreground">
             {formatCurrency(financialSummary.patrimoineNet)}
           </p>
+          {variation && (
+            <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px]">
+              <span className={`inline-flex h-6 items-center gap-1 rounded-[2px] px-2 font-medium tabular-nums ${variation.delta >= 0 ? 'bg-positive/10 text-positive' : 'bg-destructive/10 text-destructive'}`}>
+                {variation.delta >= 0 ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
+                {variation.delta >= 0 ? '+' : ''}{variation.pct.toFixed(1).replace('.', ',')} %
+              </span>
+              <span className="text-muted-foreground">
+                actifs {variation.depuis} ({variation.delta >= 0 ? '+' : ''}{formatCurrency(variation.delta)})
+              </span>
+            </p>
+          )}
+          <dl className="mt-5">
+            <SummaryRow label="Actifs"><span className="tabular-nums">{formatCurrency(financialSummary.totalActifs)}</span></SummaryRow>
+            <SummaryRow label="Passifs"><span className="tabular-nums">{formatCurrency(financialSummary.totalPassifs)}</span></SummaryRow>
+            <SummaryRow label="Endettement">
+              <span className="tabular-nums">{tauxEndettement.toFixed(1).replace('.', ',')} %</span>
+              <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">des actifs</span>
+            </SummaryRow>
+          </dl>
         </div>
-        <div className="px-8 py-5">
-          <p className="text-[12px] text-muted-foreground">Actifs</p>
-          <p className="mt-2 text-[20px] font-medium leading-none tracking-[-0.02em] tabular-nums text-foreground">{formatCurrency(financialSummary.totalActifs)}</p>
-        </div>
-        <div className="px-8 py-5">
-          <p className="text-[12px] text-muted-foreground">Passifs</p>
-          <p className="mt-2 text-[20px] font-medium leading-none tracking-[-0.02em] tabular-nums text-foreground">{formatCurrency(financialSummary.totalPassifs)}</p>
+
+        <div className="px-8 py-6">
+          <PanelTitle>Composition des actifs</PanelTitle>
+          {composition.length === 0 ? (
+            <p className="mt-3 text-[13px] text-muted-foreground">Aucun actif valorisé.</p>
+          ) : (
+            <>
+              <div className="mt-4 flex h-2.5 w-full gap-[2px] overflow-hidden rounded-[1px]">
+                {composition.map(c => (
+                  <div key={c.name} title={`${c.name} · ${c.pct.toFixed(1)} %`} className="h-full" style={{ width: `${c.pct}%`, backgroundColor: c.color }} />
+                ))}
+              </div>
+              <ul className="mt-5 grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
+                {composition.map(c => (
+                  <li key={c.name} className="flex items-baseline justify-between gap-3">
+                    <span className="flex min-w-0 items-center gap-2 text-[13px] text-foreground">
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-[2px] ring-1 ring-inset ring-black/10" style={{ backgroundColor: c.color }} />
+                      <span className="truncate">{c.name}</span>
+                    </span>
+                    <span className="flex shrink-0 items-baseline gap-2 tabular-nums">
+                      <span className="text-[13px] font-medium text-foreground">{formatCurrency(c.value)}</span>
+                      <span className="w-11 text-right text-[12px] text-muted-foreground">{c.pct.toFixed(1).replace('.', ',')} %</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       </div>
 
@@ -199,9 +277,27 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
         </div>
 
         <div className="px-8 py-6">
-          <PanelTitle>Objectifs</PanelTitle>
-          <p className="mt-3 text-[13px] text-muted-foreground">Définissez vos objectifs patrimoniaux.</p>
-          <p className="mt-1 text-[12px] text-muted-foreground/70">Fonctionnalité à venir</p>
+          <PanelTitle>Points d'attention</PanelTitle>
+          {pointsAttention.length === 0 ? (
+            <p className="mt-4 flex items-center gap-2 text-[13px] text-foreground">
+              <span className="h-2.5 w-2.5 rounded-[2px] bg-positive" />
+              Rien à signaler : tous les actifs sont qualifiés et valorisés.
+            </p>
+          ) : (
+            <ul className="mt-3">
+              {pointsAttention.map(p => (
+                <li key={p.label} className="border-t border-border py-2.5 first:border-t-0 first:pt-1">
+                  <p className="flex items-center gap-2 text-[13px] font-medium text-foreground">
+                    <span className={`h-2.5 w-2.5 shrink-0 rounded-[2px] ${p.tone}`} />
+                    {p.label}
+                  </p>
+                  {p.detail && <p className="mt-0.5 pl-[18px] text-[12px] text-muted-foreground">{p.detail}</p>}
+                </li>
+              ))}
+            </ul>
+          )}
+          <PanelDivider />
+          <p className="text-[12px] text-muted-foreground">Objectifs patrimoniaux : fonctionnalité à venir.</p>
         </div>
       </div>
     </PatrimoinePanel>
