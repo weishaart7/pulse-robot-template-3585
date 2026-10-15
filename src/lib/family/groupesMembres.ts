@@ -35,3 +35,8 @@ export function grouperMembres(membres: FamilyLink[]): GroupeMembres[] {
 
   return groupes.filter(g => g.membres.length > 0);
 }
+
+/** Branche (id de groupe) d'un lien familial, « autres » s'il n'appartient à aucune. */
+export function groupeIdDuLien(lien: string): string {
+  return GROUPES.find(g => (g.liens as readonly string[]).includes(lien))?.id ?? 'autres';
+}

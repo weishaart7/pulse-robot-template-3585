@@ -3,6 +3,8 @@ import { FamilyLink, FamilyProfile, MaritalStatus } from '@/services/familyServi
 import { buildFamilyGraph, FamilyGraph, FamilyGraphNode } from '@/lib/family/buildFamilyGraph';
 import { initialsFromFullName } from '@/lib/family/initials';
 import { cn } from '@/lib/utils';
+import { groupeIdDuLien } from '@/lib/family/groupesMembres';
+import { getGroupeTone } from '@/components/famille/groupeTones';
 
 interface FamilyTreeCardsProps {
   familyProfile: FamilyProfile | null;
@@ -121,32 +123,31 @@ function MemberCard({
       onClick={onClick}
       title={flag ? `${node.name} · ${flag}` : node.name}
       className={cn(
-        'relative flex h-14 w-[188px] shrink-0 items-center gap-2.5 rounded-2xl px-3 text-left transition-colors duration-200',
+        'relative flex h-12 w-[184px] shrink-0 items-center gap-2.5 rounded-[2px] border px-2.5 text-left transition-colors duration-200',
         isCouple
-          ? 'bg-foreground text-background shadow-whisper hover:bg-foreground/90'
-          : 'bg-secondary text-foreground hover:bg-border',
-        // Décédé : carte estompée mais toujours reliée à ses descendants
-        // (qui viennent à la succession par représentation).
-        node.isDeceased && 'bg-transparent shadow-[inset_0_0_0_1px_hsl(var(--input))] text-muted-foreground hover:bg-secondary',
+          ? 'border-foreground bg-foreground text-background hover:bg-foreground/90'
+          : 'border-border bg-background text-foreground hover:border-foreground/40',
+        // Décédé : carte estompée (filet pointillé) mais toujours reliée à ses
+        // descendants (qui viennent à la succession par représentation).
+        node.isDeceased && 'border-dashed bg-transparent text-muted-foreground hover:bg-secondary',
         FOCUS_RING
       )}
     >
       <span
         className={cn(
-          'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-medium',
-          isCouple ? 'bg-background/15 text-background' : 'bg-background text-foreground',
-          node.isDeceased && 'bg-secondary text-muted-foreground'
+          'flex h-7 w-7 shrink-0 items-center justify-center rounded-[4px] text-[11px] font-semibold',
+          isCouple ? 'bg-background/15 text-background' : node.isDeceased ? 'border border-border text-muted-foreground' : getGroupeTone(groupeIdDuLien(node.relation)).avatar
         )}
       >
         {initialsFromFullName(node.name)}
       </span>
       <span className="min-w-0">
-        <span className="block truncate text-[13px] font-medium">{node.name}</span>
-        <span className={cn('ds-eyebrow mt-0.5 block truncate !text-[10px]', isCouple ? 'text-background/60' : 'text-muted-foreground')}>
+        <span className="block truncate text-[13px] font-medium leading-4">{node.name}</span>
+        <span className={cn('mt-0.5 block truncate text-[11.5px] leading-4', isCouple ? 'text-background/70' : 'text-muted-foreground')}>
           {secondaryLabel}
         </span>
       </span>
-      {flag && <span aria-label={flag} className="absolute right-2.5 top-2.5 h-1.5 w-1.5 rounded-full bg-spark" />}
+      {flag && <span aria-label={flag} className="absolute right-2 top-2 h-1.5 w-1.5 rounded-[1px] bg-citron-ink" />}
     </button>
   );
 }
@@ -286,14 +287,14 @@ export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onS
   return (
     // Défilement horizontal de l'arbre entier : les traits, mesurés dans le
     // conteneur interne, restent alignés.
-    <div ref={scrollRef} className="overflow-x-auto [scrollbar-width:thin]">
+    <div ref={scrollRef} className="no-scrollbar overflow-x-auto">
       <div
         ref={containerRef}
-        className="relative grid w-full min-w-max grid-cols-[6rem_1fr_1fr] items-center gap-x-6 gap-y-10 py-2 md:gap-x-10"
+        className="relative grid w-full min-w-max grid-cols-[7rem_1fr_1fr] items-center gap-x-6 gap-y-9 py-2 md:gap-x-10"
       >
         <svg className="pointer-events-none absolute inset-0 h-full w-full overflow-visible" aria-hidden>
           {paths.map((p, i) => (
-            <path key={i} d={p} fill="none" stroke="hsl(var(--input))" strokeWidth={1.25} strokeLinejoin="round" />
+            <path key={i} d={p} fill="none" stroke="hsl(var(--border))" strokeWidth={1} strokeLinejoin="round" />
           ))}
         </svg>
 
@@ -306,19 +307,19 @@ export function FamilyTreeCards({ familyProfile, maritalStatus, familyLinks, onS
             <div key={generation} className="contents">
               <div
                 className={cn(
-                  'ds-eyebrow self-center text-left !text-[10px] leading-snug',
-                  generation === 0 ? 'text-foreground' : 'text-ash'
+                  'self-center text-left text-[12px] leading-snug',
+                  generation === 0 ? 'font-medium text-foreground' : 'text-muted-foreground'
                 )}
               >
                 {generationLabels(rowNodes).map(label => <span key={label} className="block">{label}</span>)}
               </div>
               {center.length > 0 && left.length === 0 && right.length === 0 ? (
-                <div className="col-span-2 flex justify-center gap-4">{center.map(card)}</div>
+                <div className="col-span-2 flex justify-center gap-3">{center.map(card)}</div>
               ) : (
                 <>
                   {/* Branche client : de l'extérieur vers le centre. */}
-                  <div className="flex flex-row-reverse justify-start gap-4">{left.map(card)}{center.map(card)}</div>
-                  <div className="flex justify-start gap-4">{right.map(card)}</div>
+                  <div className="flex flex-row-reverse justify-start gap-3">{left.map(card)}{center.map(card)}</div>
+                  <div className="flex justify-start gap-3">{right.map(card)}</div>
                 </>
               )}
             </div>
